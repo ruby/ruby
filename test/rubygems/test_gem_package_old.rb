@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 unless Gem.java_platform? # jruby can't require the simple_gem file

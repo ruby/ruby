@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -140,7 +141,7 @@ class Gem::CommandManager
   # Return a sorted list of all command names as strings.
 
   def command_names
-    @commands.keys.collect {|key| key.to_s }.sort
+    @commands.keys.collect(&:to_s).sort
   end
 
   ##
@@ -200,7 +201,7 @@ class Gem::CommandManager
 
     if possibilities.size > 1
       raise Gem::CommandLineError,
-            "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
+            "Ambiguous command #{cmd_name} matches [#{possibilities.join(", ")}]"
     elsif possibilities.empty?
       raise Gem::UnknownCommandError.new(cmd_name)
     end
@@ -237,7 +238,7 @@ class Gem::CommandManager
         load_error = e
       end
       Gem::Commands.const_get(const_name).new
-    rescue Exception => e
+    rescue StandardError => e
       e = load_error if load_error
 
       alert_error clean_text("Loading command: #{command_name} (#{e.class})\n\t#{e}")

@@ -79,6 +79,53 @@ assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
   end
 }
 
+assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
+  # Tests defined? on non-heap objects
+  [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
+    klass.class_eval("def foo = defined?(@foo)")
+  end
+
+  [nil, true, false, 0xFABCAFE, 0.42, :cake].map do |instance|
+    instance.foo
+    instance.foo
+  end
+}
+
+assert_equal '[nil, "instance-variable", nil, "instance-variable"]', %q{
+  # defined? on object that changes shape between calls
+  class Foo
+    def foo
+      defined?(@foo)
+    end
+
+    def add
+      @foo = 1
+    end
+
+    def remove
+      self.remove_instance_variable(:@foo)
+    end
+  end
+
+  obj = Foo.new
+  [obj.foo, (obj.add; obj.foo), (obj.remove; obj.foo), (obj.add; obj.foo)]
+}
+
+assert_equal '["instance-variable", 5]', %q{
+  # defined? on object too complex for shape information
+  class Foo
+    def initialize
+      100.times { |i| instance_variable_set("@foo#{i}", i) }
+    end
+
+    def foo
+      [defined?(@foo5), @foo5]
+    end
+  end
+
+  Foo.new.foo
+}
+
 assert_equal '0', %q{
   # This is a regression test for incomplete invalidation from
   # opt_setinlinecache. This test might be brittle, so
@@ -2244,7 +2291,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # MJIT calls extra Ruby methods
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2326,7 +2373,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # MJIT calls extra Ruby methods
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2341,7 +2388,7 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # MJIT calls extra Ruby methods
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test c_call invalidation
 assert_equal '[[:c_call, :itself]]', %q{
@@ -3583,4 +3630,173 @@ assert_equal 'true', %q{
 # Test send with splat to a cfunc
 assert_equal 'true', %q{
   1.send(:==, 1, *[])
+}
+
+# Test empty splat with cfunc
+assert_equal '2', %q{
+  def foo
+    Integer.sqrt(4, *[])
+  end
+  # call twice to deal with constant exiting
+  foo
+  foo
+}
+
+# Test non-empty splat with cfunc
+assert_equal 'Hello World', %q{
+  def bar
+    args = ["Hello "]
+    greeting = "World"
+    greeting.insert(0, *args)
+    greeting
+  end
+  bar
+}
+
+# Regression: this creates a temp stack with > 127 elements
+assert_normal_exit %q{
+  def foo(a)
+    [
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a,
+    ]
+  end
+
+  def entry
+    foo(1)
+  end
+
+  entry
+}
+
+# Test that splat and rest combined
+# properly dupe the array
+assert_equal "[]", %q{
+  def foo(*rest)
+    rest << 1
+  end
+
+  def test(splat)
+    foo(*splat)
+  end
+
+  EMPTY = []
+  custom = Object.new
+  def custom.to_a
+    EMPTY
+  end
+
+  test(custom)
+  test(custom)
+  EMPTY
+}
+
+# Rest with send
+assert_equal '[1, 2, 3]', %q{
+  def bar(x, *rest)
+    rest.insert(0, x)
+  end
+  send(:bar, 1, 2, 3)
+}
+
+# Fix splat block arg bad compilation
+assert_equal "foo", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    sql << v
+  end
+
+  literal("foo")
+}
+
+# regression test for accidentally having a parameter truncated
+# due to Rust/C signature mismatch. Used to crash with
+# > [BUG] rb_vm_insn_addr2insn: invalid insn address ...
+# or
+# > ... `Err` value: TryFromIntError(())'
+assert_normal_exit %q{
+  n = 16384
+  eval(
+    "def foo(arg); " + "_=arg;" * n + '_=1;' + "Object; end"
+  )
+  foo 1
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_normal_exit %q{
+  class Integer
+    def ===(other)
+      false
+    end
+  end
+
+  def my_func(x)
+    case x
+    when 1
+      1
+    when 2
+      2
+    else
+      3
+    end
+  end
+
+  my_func(1)
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_equal "ArgumentError", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    args = [1, 2, 3]
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    [sql.inspect, v.inspect]
+  end
+
+  begin
+    literal("foo")
+  rescue ArgumentError
+    "ArgumentError"
+  end
+}
+
+# Rest with block
+# Simplified code from railsbench
+assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
+  def match(path, *rest, &block)
+    [path, rest, block]
+  end
+
+  def map_method(method, args, &block)
+    options = args.last
+    args.pop
+    options[:via] = method
+    match(*args, options, &block)
+  end
+
+  def post(*args, &block)
+    map_method(:post, args, &block)
+  end
+
+  post "/a" => "b", as: :c
 }

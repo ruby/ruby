@@ -1534,7 +1534,7 @@ copy_compare_by_id(VALUE hash, VALUE basis)
     return hash;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_new_with_size(st_index_t size)
 {
     VALUE ret = rb_hash_new();
@@ -1594,7 +1594,7 @@ rb_hash_dup(VALUE hash)
     return ret;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_resurrect(VALUE hash)
 {
     VALUE ret = hash_dup(hash, rb_cHash, 0);
@@ -1607,7 +1607,7 @@ rb_hash_modify_check(VALUE hash)
     rb_check_frozen(hash);
 }
 
-MJIT_FUNC_EXPORTED struct st_table *
+RUBY_FUNC_EXPORTED struct st_table *
 rb_hash_tbl_raw(VALUE hash, const char *file, int line)
 {
     return ar_force_convert_table(hash, file, line);
@@ -1801,6 +1801,8 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
     return hash;
 }
 
+static VALUE rb_hash_to_a(VALUE hash);
+
 /*
  *  call-seq:
  *    Hash[] -> new_empty_hash
@@ -1844,12 +1846,22 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
-            hash = hash_alloc(klass);
-            hash_copy(hash, tmp);
-            return hash;
+            if (!RHASH_EMPTY_P(tmp)  && rb_hash_compare_by_id_p(tmp)) {
+                /* hash_copy for non-empty hash will copy compare_by_identity
+                   flag, but we don't want it copied. Work around by
+                   converting hash to flattened array and using that. */
+                tmp = rb_hash_to_a(tmp);
+            }
+            else {
+                hash = hash_alloc(klass);
+                hash_copy(hash, tmp);
+                return hash;
+            }
+        }
+        else {
+            tmp = rb_check_array_type(argv[0]);
         }
 
-        tmp = rb_check_array_type(argv[0]);
         if (!NIL_P(tmp)) {
             long i;
 
@@ -1887,7 +1899,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     return hash;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_to_hash_type(VALUE hash)
 {
     return rb_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
@@ -1960,9 +1972,12 @@ static VALUE
 rb_hash_s_ruby2_keywords_hash(VALUE dummy, VALUE hash)
 {
     Check_Type(hash, T_HASH);
-    hash = rb_hash_dup(hash);
-    RHASH(hash)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
-    return hash;
+    VALUE tmp = rb_hash_dup(hash);
+    if (RHASH_EMPTY_P(hash) && rb_hash_compare_by_id_p(hash)) {
+        rb_hash_compare_by_id(tmp);
+    }
+    RHASH(tmp)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+    return tmp;
 }
 
 struct rehash_arg {
@@ -2078,7 +2093,7 @@ hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
     }
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
 {
     return hash_stlike_lookup(hash, key, pval);
@@ -3550,7 +3565,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *    h.keys # => [:foo, :bar, :baz]
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_keys(VALUE hash)
 {
     st_index_t size = RHASH_SIZE(hash);
@@ -3637,7 +3652,7 @@ rb_hash_values(VALUE hash)
  *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
     return RBOOL(hash_stlike_lookup(hash, key, NULL));
@@ -4292,15 +4307,6 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
-static int
-set_if_not_nil(VALUE key, VALUE value, VALUE hash)
-{
-    if (!NIL_P(value)) {
-        rb_hash_aset(hash, key, value);
-    }
-    return ST_CONTINUE;
-}
-
 /*
  *  call-seq:
  *    hash.compact -> new_hash
@@ -4314,9 +4320,12 @@ set_if_not_nil(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_compact(VALUE hash)
 {
-    VALUE result = rb_hash_new();
+    VALUE result = rb_hash_dup(hash);
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_foreach(hash, set_if_not_nil, result);
+        rb_hash_foreach(result, delete_if_nil, result);
+    }
+    else if (rb_hash_compare_by_id_p(hash)) {
+        result = rb_hash_compare_by_id(result);
     }
     return result;
 }
@@ -4406,7 +4415,7 @@ rb_hash_compare_by_id(VALUE hash)
  *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
     return RBOOL(RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash);

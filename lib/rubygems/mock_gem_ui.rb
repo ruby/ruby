@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "user_interaction"
 
 ##
@@ -23,13 +24,13 @@ class Gem::MockGemUi < Gem::StreamUI
       @exit_code = exit_code
     end
   end
+
   class SystemExitException < RuntimeError; end
 
   module TTY
-
     attr_accessor :tty
 
-    def tty?()
+    def tty?
       @tty = true unless defined?(@tty)
       @tty
     end

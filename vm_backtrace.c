@@ -57,8 +57,11 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
 
         ptrdiff_t n = pc - ISEQ_BODY(iseq)->iseq_encoded;
-        VM_ASSERT(n <= ISEQ_BODY(iseq)->iseq_size);
         VM_ASSERT(n >= 0);
+#if SIZEOF_PTRDIFF_T > SIZEOF_INT
+        VM_ASSERT(n <= (ptrdiff_t)UINT_MAX);
+#endif
+        VM_ASSERT((unsigned int)n <= ISEQ_BODY(iseq)->iseq_size);
         ASSUME(n >= 0);
         size_t pos = n; /* no overflow */
         if (LIKELY(pos)) {
@@ -684,7 +687,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     return btobj;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
     return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE, FALSE);
@@ -735,7 +738,7 @@ rb_backtrace_to_str_ary(VALUE self)
     return bt->strary;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
     const rb_backtrace_t *bt;

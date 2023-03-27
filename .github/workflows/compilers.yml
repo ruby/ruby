@@ -79,18 +79,6 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
-          - name: 'gcc-11 annocheck'
-            container: gcc-11
-            env:
-              # Minimal flags to pass the check.
-              default_cc: 'gcc-11 -fcf-protection -Wa,--generate-missing-build-notes=yes'
-              optflags: '-O2'
-              LDFLAGS: '-Wl,-z,now'
-              # FIXME: Drop skipping options
-              # https://bugs.ruby-lang.org/issues/18061
-              # https://sourceware.org/annobin/annobin.html/Test-pie.html
-              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-gaps"
-            check: true
           - { name: clang-16,  env: { default_cc: clang-16 } }
           - { name: clang-15,  env: { default_cc: clang-15 } }
           - { name: clang-14,  env: { default_cc: clang-14 } }
@@ -177,7 +165,6 @@ jobs:
           - { name: USE_FLONUM=0,                   env: { cppflags: '-DUSE_FLONUM=0' } }
 #         - { name: USE_GC_MALLOC_OBJ_INFO_DETAILS, env: { cppflags: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' } }
           - { name: USE_LAZY_LOAD,                  env: { cppflags: '-DUSE_LAZY_LOAD' } }
-#         - { name: USE_RINCGC=0,                   env: { cppflags: '-DUSE_RINCGC=0' } }
 #         - { name: USE_SYMBOL_GC=0,                env: { cppflags: '-DUSE_SYMBOL_GC=0' } }
 #         - { name: USE_THREAD_CACHE=0,             env: { cppflags: '-DUSE_THREAD_CACHE=0' } }
 #         - { name: USE_TRANSIENT_HEAP=0,           env: { cppflags: '-DUSE_TRANSIENT_HEAP=0' } }
@@ -209,8 +196,10 @@ jobs:
 #         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
 #         - { name: VM_DEBUG_VERIFY_METHOD_CACHE,   env: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
 
-          - { name: MJIT_FORCE_ENABLE,              env: { cppflags: '-DMJIT_FORCE_ENABLE' } }
-          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
+          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' }, rust: true }
+          - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
+          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' }, rust: true }
+#         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
@@ -227,14 +216,22 @@ jobs:
       - name: setenv
         run: |
           echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           path: src
-      - uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0 # v3.2.6
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
-      - run: ./autogen.sh
+      - name: Install Rust
+        if: ${{ matrix.entry.rust }}
+        run: sudo apt-get update && sudo apt install -y rustc
+      - name: autogen
+        run: |
+          if [ ! -f ./autogen.sh ]; then
+            ls -la
+          fi
+          ./autogen.sh
         working-directory: src
       - name: Run configure
         run: >
@@ -264,7 +261,7 @@ jobs:
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
         with:
           payload: |
             {

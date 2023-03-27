@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../package"
 require_relative "../version_option"
@@ -11,11 +12,11 @@ class Gem::Commands::BuildCommand < Gem::Command
 
     add_platform_option
 
-    add_option "--force", "skip validation of the spec" do |value, options|
+    add_option "--force", "skip validation of the spec" do |_value, options|
       options[:force] = true
     end
 
-    add_option "--strict", "consider warnings as errors when validating the spec" do |value, options|
+    add_option "--strict", "consider warnings as errors when validating the spec" do |_value, options|
       options[:strict] = true
     end
 

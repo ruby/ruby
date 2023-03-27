@@ -50,17 +50,13 @@ PUREFUNC(VALUE rb_vm_top_self(void));
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
 const char *rb_source_location_cstr(int *pline);
-MJIT_STATIC void rb_vm_pop_cfunc_frame(void);
+void rb_vm_pop_cfunc_frame(void);
 int rb_vm_add_root_module(VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
-MJIT_STATIC VALUE ruby_vm_special_exception_copy(VALUE);
+VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
-
-MJIT_SYMBOL_EXPORT_BEGIN
-VALUE vm_exec(struct rb_execution_context_struct *, bool); /* used in JIT-ed code */
-MJIT_SYMBOL_EXPORT_END
 
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);
@@ -85,15 +81,11 @@ VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
 
 struct rb_iseq_struct;
-MJIT_SYMBOL_EXPORT_BEGIN
 const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
-MJIT_SYMBOL_EXPORT_END
 
 /* vm_method.c */
 struct rb_execution_context_struct;
-MJIT_SYMBOL_EXPORT_BEGIN
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
-MJIT_SYMBOL_EXPORT_END
 
 void rb_clear_constant_cache(void);
 
@@ -115,10 +107,8 @@ int rb_frame_info_p(VALUE obj);
 int rb_get_node_id_from_frame_info(VALUE obj);
 const struct rb_iseq_struct *rb_get_iseq_from_frame_info(VALUE obj);
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);
 void rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self);
-MJIT_SYMBOL_EXPORT_END
 
 #define RUBY_DTRACE_CREATE_HOOK(name, arg) \
     RUBY_DTRACE_HOOK(name##_CREATE, arg)

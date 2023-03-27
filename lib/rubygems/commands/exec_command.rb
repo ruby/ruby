@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../dependency_installer"
 require_relative "../gem_runner"
@@ -22,7 +23,7 @@ class Gem::Commands::ExecCommand < Gem::Command
 
     add_option(:"Install/Update", "--conservative",
       "Prefer the most recent installed version, ",
-      "rather than the latest version overall") do |value, options|
+      "rather than the latest version overall") do |_value, options|
       options[:conservative] = true
     end
   end

@@ -1,4 +1,5 @@
 #include "internal/gc.h"
+#include "internal/thread.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
@@ -64,7 +65,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
                 rb_thread_t *th = GET_THREAD();
                 bool running;
 
-                RB_GC_SAVE_MACHINE_CONTEXT(th);
+                RB_VM_SAVE_MACHINE_CONTEXT(th);
 
                 if (rb_ractor_status_p(cr, ractor_running)) {
                     rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
@@ -129,7 +130,7 @@ vm_lock_leave(rb_vm_t *vm, unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
@@ -141,7 +142,7 @@ rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
@@ -153,14 +154,14 @@ rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_enter_body_cr(rb_ractor_t *cr, unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
     vm_lock_enter(cr, vm, vm_locked(vm), false, lev APPEND_LOCATION_PARAMS);
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     vm_lock_leave(GET_VM(), lev APPEND_LOCATION_PARAMS);

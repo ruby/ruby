@@ -119,7 +119,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "probes.h"
 #include "regint.h"
 #include "ruby/debug.h"
@@ -469,9 +469,6 @@ int ruby_rgengc_debug;
 #ifndef GC_PROFILE_DETAIL_MEMORY
 #define GC_PROFILE_DETAIL_MEMORY 0
 #endif
-#ifndef GC_ENABLE_INCREMENTAL_MARK
-#define GC_ENABLE_INCREMENTAL_MARK USE_RINCGC
-#endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP   1
 #endif
@@ -694,9 +691,7 @@ typedef struct rb_heap_struct {
     struct heap_page *sweeping_page; /* iterator for .pages */
     struct heap_page *compact_cursor;
     uintptr_t compact_cursor_index;
-#if GC_ENABLE_INCREMENTAL_MARK
     struct heap_page *pooled_pages;
-#endif
     size_t total_pages;      /* total page count in a heap */
     size_t total_slots;      /* total slot count (about total_pages * HEAP_PAGE_OBJ_LIMIT) */
 } rb_heap_t;
@@ -750,9 +745,7 @@ typedef struct rb_objspace {
         unsigned int gc_stressful: 1;
         unsigned int has_hook: 1;
         unsigned int during_minor_gc : 1;
-#if GC_ENABLE_INCREMENTAL_MARK
         unsigned int during_incremental_marking : 1;
-#endif
         unsigned int measure_gc : 1;
     } flags;
 
@@ -864,12 +857,10 @@ typedef struct rb_objspace {
         size_t total_moved;
     } rcompactor;
 
-#if GC_ENABLE_INCREMENTAL_MARK
     struct {
         size_t pooled_slots;
         size_t step_slots;
     } rincgc;
-#endif
 
     st_table *id_to_obj_tbl;
     st_table *obj_to_id_tbl;
@@ -899,7 +890,7 @@ enum {
 #define HEAP_PAGE_ALIGN (1 << HEAP_PAGE_ALIGN_LOG)
 #define HEAP_PAGE_SIZE HEAP_PAGE_ALIGN
 
-#if GC_ENABLE_INCREMENTAL_MARK && !defined(INCREMENTAL_MARK_STEP_ALLOCATIONS)
+#if !defined(INCREMENTAL_MARK_STEP_ALLOCATIONS)
 # define INCREMENTAL_MARK_STEP_ALLOCATIONS 500
 #endif
 
@@ -1167,26 +1158,14 @@ total_freed_pages(rb_objspace_t *objspace)
 #define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
 #define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
-#if GC_ENABLE_INCREMENTAL_MARK
 #define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
-#else
-#define is_incremental_marking(objspace) FALSE
-#endif
-#if GC_ENABLE_INCREMENTAL_MARK
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
-#else
-#define will_be_incremental_marking(objspace) FALSE
-#endif
-#if GC_ENABLE_INCREMENTAL_MARK
 #define GC_INCREMENTAL_SWEEP_SLOT_COUNT 2048
-#endif
 #define is_lazy_sweeping(objspace)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(objspace))
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
-# define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
 # define obj_id_to_ref(objid) ((objid) ^ FIXNUM_FLAG) /* unset FIXNUM_FLAG */
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-# define nonspecial_obj_id(obj) LL2NUM((SIGNED_VALUE)(obj) / 2)
 # define obj_id_to_ref(objid) (FIXNUM_P(objid) ? \
    ((objid) ^ FIXNUM_FLAG) : (NUM2PTR(objid) << 1))
 #else
@@ -1219,8 +1198,6 @@ size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_vm_update_references(void *ptr);
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
-
-static VALUE define_final0(VALUE obj, VALUE block);
 
 NORETURN(static void *gc_vraise(void *ptr));
 NORETURN(static void gc_raise(VALUE exc, const char *fmt, ...));
@@ -1364,7 +1341,7 @@ tick(void)
     return ((unsigned long long)lo)|( ((unsigned long long)hi)<<32);
 }
 
-#elif defined(__powerpc64__) && GCC_VERSION_SINCE(4,8,0)
+#elif defined(__powerpc64__) && (GCC_VERSION_SINCE(4,8,0) || defined(__clang__))
 typedef unsigned long long tick_t;
 #define PRItick "llu"
 
@@ -2028,7 +2005,6 @@ heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
     asan_lock_freelist(page);
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static inline void
 heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
@@ -2042,7 +2018,6 @@ heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pa
 
     asan_lock_freelist(page);
 }
-#endif
 
 static void
 heap_unlink_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
@@ -2484,6 +2459,7 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 static void
 gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
+    if (UNLIKELY(!ec->cfp)) return;
     const VALUE *pc = ec->cfp->pc;
     if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
         int prev_opcode = rb_vm_insn_addr2opcode((void *)*ec->cfp->iseq->body->iseq_encoded);
@@ -2666,7 +2642,6 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
     rb_ractor_newobj_size_pool_cache_t *size_pool_cache = &cache->size_pool_caches[size_pool_idx];
     RVALUE *p = size_pool_cache->freelist;
 
-#if GC_ENABLE_INCREMENTAL_MARK
     if (is_incremental_marking(objspace)) {
         // Not allowed to allocate without running an incremental marking step
         if (cache->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
@@ -2677,7 +2652,6 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
             cache->incremental_mark_step_allocated_slots++;
         }
     }
-#endif
 
     if (p) {
         VALUE obj = (VALUE)p;
@@ -2804,7 +2778,6 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
         {
             ASSERT_vm_locking();
 
-#if GC_ENABLE_INCREMENTAL_MARK
             if (is_incremental_marking(objspace)) {
                 gc_continue(objspace, size_pool, heap);
                 cache->incremental_mark_step_allocated_slots = 0;
@@ -2812,7 +2785,6 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
                 // Retry allocation after resetting incremental_mark_step_allocated_slots
                 obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
             }
-#endif
 
             if (obj == Qfalse) {
                 // Get next free page (possibly running GC)
@@ -2832,6 +2804,12 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
     }
 
     return obj;
+}
+
+static void
+newobj_zero_slot(VALUE obj)
+{
+    memset((char *)obj + sizeof(struct RBasic), 0, rb_gc_obj_slot_size(obj) - sizeof(struct RBasic));
 }
 
 ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t size_pool_idx));
@@ -2864,7 +2842,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
 #endif
         newobj_init(klass, flags, wb_protected, objspace, obj);
 
-        gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_fill(obj, 0, 0, 0));
+        gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_zero_slot(obj));
     }
     RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
 
@@ -3129,7 +3107,7 @@ rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0,
 }
 #endif
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_class_allocate_instance(VALUE klass)
 {
     return rb_class_instance_allocate_internal(klass, T_OBJECT | ROBJECT_EMBED, RGENGC_WB_PROTECTED_OBJECT);
@@ -3452,6 +3430,45 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static bool
+rb_data_free(rb_objspace_t *objspace, VALUE obj)
+{
+    if (DATA_PTR(obj)) {
+        int free_immediately = false;
+        void (*dfree)(void *);
+        void *data = DATA_PTR(obj);
+
+        if (RTYPEDDATA_P(obj)) {
+            free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+            dfree = RANY(obj)->as.typeddata.type->function.dfree;
+        }
+        else {
+            dfree = RANY(obj)->as.data.dfree;
+        }
+
+        if (dfree) {
+            if (dfree == RUBY_DEFAULT_FREE) {
+                xfree(data);
+                RB_DEBUG_COUNTER_INC(obj_data_xfree);
+            }
+            else if (free_immediately) {
+                (*dfree)(data);
+                RB_DEBUG_COUNTER_INC(obj_data_imm_free);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_data_zombie);
+                make_zombie(objspace, obj, dfree, data);
+                return false;
+            }
+        }
+        else {
+            RB_DEBUG_COUNTER_INC(obj_data_empty);
+        }
+    }
+
+    return true;
+}
+
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3495,7 +3512,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
             RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            rb_id_table_free(ROBJECT_IV_HASH(obj));
+            st_free_table(ROBJECT_IV_HASH(obj));
         }
         else if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
@@ -3608,42 +3625,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
         break;
       case T_DATA:
-        if (DATA_PTR(obj)) {
-            int free_immediately = FALSE;
-            void (*dfree)(void *);
-            void *data = DATA_PTR(obj);
-
-            if (RTYPEDDATA_P(obj)) {
-                free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-                dfree = RANY(obj)->as.typeddata.type->function.dfree;
-                if (0 && free_immediately == 0) {
-                    /* to expose non-free-immediate T_DATA */
-                    fprintf(stderr, "not immediate -> %s\n", RANY(obj)->as.typeddata.type->wrap_struct_name);
-                }
-            }
-            else {
-                dfree = RANY(obj)->as.data.dfree;
-            }
-
-            if (dfree) {
-                if (dfree == RUBY_DEFAULT_FREE) {
-                    xfree(data);
-                    RB_DEBUG_COUNTER_INC(obj_data_xfree);
-                }
-                else if (free_immediately) {
-                    (*dfree)(data);
-                    RB_DEBUG_COUNTER_INC(obj_data_imm_free);
-                }
-                else {
-                    make_zombie(objspace, obj, dfree, data);
-                    RB_DEBUG_COUNTER_INC(obj_data_zombie);
-                    return FALSE;
-                }
-            }
-            else {
-                RB_DEBUG_COUNTER_INC(obj_data_empty);
-            }
-        }
+        if (!rb_data_free(objspace, obj)) return false;
         break;
       case T_MATCH:
         if (RANY(obj)->as.match.rmatch) {
@@ -4220,6 +4202,45 @@ should_be_finalizable(VALUE obj)
     rb_check_frozen(obj);
 }
 
+VALUE
+rb_define_finalizer_no_check(VALUE obj, VALUE block)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE table;
+    st_data_t data;
+
+    RBASIC(obj)->flags |= FL_FINALIZE;
+
+    if (st_lookup(finalizer_table, obj, &data)) {
+        table = (VALUE)data;
+
+        /* avoid duplicate block, table is usually small */
+        {
+            long len = RARRAY_LEN(table);
+            long i;
+
+            for (i = 0; i < len; i++) {
+                VALUE recv = RARRAY_AREF(table, i);
+                if (rb_equal(recv, block)) {
+                    block = recv;
+                    goto end;
+                }
+            }
+        }
+
+        rb_ary_push(table, block);
+    }
+    else {
+        table = rb_ary_new3(1, block);
+        RBASIC_CLEAR_CLASS(table);
+        st_add_direct(finalizer_table, obj, table);
+    }
+  end:
+    block = rb_ary_new3(2, INT2FIX(0), block);
+    OBJ_FREEZE(block);
+    return block;
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
@@ -4300,46 +4321,7 @@ define_final(int argc, VALUE *argv, VALUE os)
         rb_warn("finalizer references object to be finalized");
     }
 
-    return define_final0(obj, block);
-}
-
-static VALUE
-define_final0(VALUE obj, VALUE block)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    VALUE table;
-    st_data_t data;
-
-    RBASIC(obj)->flags |= FL_FINALIZE;
-
-    if (st_lookup(finalizer_table, obj, &data)) {
-        table = (VALUE)data;
-
-        /* avoid duplicate block, table is usually small */
-        {
-            long len = RARRAY_LEN(table);
-            long i;
-
-            for (i = 0; i < len; i++) {
-                VALUE recv = RARRAY_AREF(table, i);
-                if (rb_equal(recv, block)) {
-                    block = recv;
-                    goto end;
-                }
-            }
-        }
-
-        rb_ary_push(table, block);
-    }
-    else {
-        table = rb_ary_new3(1, block);
-        RBASIC_CLEAR_CLASS(table);
-        st_add_direct(finalizer_table, obj, table);
-    }
-  end:
-    block = rb_ary_new3(2, INT2FIX(0), block);
-    OBJ_FREEZE(block);
-    return block;
+    return rb_define_finalizer_no_check(obj, block);
 }
 
 VALUE
@@ -4347,7 +4329,7 @@ rb_define_finalizer(VALUE obj, VALUE block)
 {
     should_be_finalizable(obj);
     should_be_callable(block);
-    return define_final0(obj, block);
+    return rb_define_finalizer_no_check(obj, block);
 }
 
 void
@@ -4582,16 +4564,8 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                 if (rb_obj_is_mutex(vp)) break;
                 if (rb_obj_is_fiber(vp)) break;
                 if (rb_obj_is_main_ractor(vp)) break;
-                if (RTYPEDDATA_P(vp)) {
-                    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
-                }
-                RANY(p)->as.free.flags = 0;
-                if (RANY(p)->as.data.dfree == RUBY_DEFAULT_FREE) {
-                    xfree(DATA_PTR(p));
-                }
-                else if (RANY(p)->as.data.dfree) {
-                    make_zombie(objspace, vp, RANY(p)->as.data.dfree, RANY(p)->as.data.data);
-                }
+
+                rb_data_free(objspace, vp);
                 break;
               case T_FILE:
                 if (RANY(p)->as.file.fptr) {
@@ -4681,9 +4655,18 @@ rb_objspace_garbage_object_p(VALUE obj)
     return is_garbage_object(objspace, obj);
 }
 
-static VALUE
-id2ref_obj_tbl(rb_objspace_t *objspace, VALUE objid)
+bool
+rb_gc_is_ptr_to_obj(void *ptr)
 {
+    rb_objspace_t *objspace = &rb_objspace;
+    return is_pointer_to_heap(objspace, ptr);
+}
+
+VALUE
+rb_gc_id2ref_obj_tbl(VALUE objid)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
     VALUE orig;
     if (st_lookup(objspace->id_to_obj_tbl, objid, &orig)) {
         return orig;
@@ -4740,7 +4723,7 @@ id2ref(VALUE objid)
         }
     }
 
-    if (!UNDEF_P(orig = id2ref_obj_tbl(objspace, objid)) &&
+    if (!UNDEF_P(orig = rb_gc_id2ref_obj_tbl(objid)) &&
         is_live_object(objspace, orig)) {
 
         if (!rb_multi_ractor_p() || rb_ractor_shareable_p(orig)) {
@@ -4814,16 +4797,21 @@ cached_object_id(VALUE obj)
 }
 
 static VALUE
-nonspecial_obj_id_(VALUE obj)
+nonspecial_obj_id(VALUE obj)
 {
-    return nonspecial_obj_id(obj);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+    return (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+    return LL2NUM((SIGNED_VALUE)(obj) / 2);
+#else
+# error not supported
+#endif
 }
-
 
 VALUE
 rb_memory_id(VALUE obj)
 {
-    return rb_find_object_id(obj, nonspecial_obj_id_);
+    return rb_find_object_id(obj, nonspecial_obj_id);
 }
 
 /*
@@ -4922,7 +4910,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
-            size += rb_id_table_memsize(ROBJECT_IV_HASH(obj));
+            size += rb_st_memsize(ROBJECT_IV_HASH(obj));
         }
         else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
@@ -5828,9 +5816,7 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->sweeping_page = ccan_list_top(&heap->pages, struct heap_page, page_node);
     heap->free_pages = NULL;
-#if GC_ENABLE_INCREMENTAL_MARK
     heap->pooled_pages = NULL;
-#endif
     if (!objspace->flags.immediate_sweep) {
         struct heap_page *page = NULL;
 
@@ -5847,10 +5833,7 @@ static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
-
-#if GC_ENABLE_INCREMENTAL_MARK
     objspace->rincgc.pooled_slots = 0;
-#endif
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -5960,7 +5943,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
         size_pool->freed_slots = 0;
         size_pool->empty_slots = 0;
 
-#if GC_ENABLE_INCREMENTAL_MARK
         if (!will_be_incremental_marking(objspace)) {
             rb_heap_t *eden_heap = SIZE_POOL_EDEN_HEAP(size_pool);
             struct heap_page *end_page = eden_heap->free_pages;
@@ -5974,7 +5956,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
             eden_heap->pooled_pages = NULL;
             objspace->rincgc.pooled_slots = 0;
         }
-#endif
 #endif
     }
     heap_pages_expand_sorted(objspace);
@@ -5992,8 +5973,6 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 {
     struct heap_page *sweep_page = heap->sweeping_page;
     int unlink_limit = GC_SWEEP_PAGES_FREEABLE_PER_STEP;
-
-#if GC_ENABLE_INCREMENTAL_MARK
     int swept_slots = 0;
 #if USE_RVARGC
     bool need_pool = TRUE;
@@ -6002,9 +5981,6 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
 #endif
 
     gc_report(2, objspace, "gc_sweep_step (need_pool: %d)\n", need_pool);
-#else
-    gc_report(2, objspace, "gc_sweep_step\n");
-#endif
 
     if (sweep_page == NULL) return FALSE;
 
@@ -6041,7 +6017,6 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
             size_pool->empty_slots += ctx.empty_slots;
 #endif
 
-#if GC_ENABLE_INCREMENTAL_MARK
             if (need_pool) {
                 heap_add_poolpage(objspace, heap, sweep_page);
                 need_pool = FALSE;
@@ -6053,10 +6028,6 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
                     break;
                 }
             }
-#else
-            heap_add_freepage(heap, sweep_page);
-            break;
-#endif
         }
         else {
             sweep_page->free_next = NULL;
@@ -6526,7 +6497,7 @@ stack_check(rb_execution_context_t *ec, int water_mark)
 
 #define STACKFRAME_FOR_CALL_CFUNC 2048
 
-MJIT_FUNC_EXPORTED int
+int
 rb_ec_stack_check(rb_execution_context_t *ec)
 {
     return stack_check(ec, STACKFRAME_FOR_CALL_CFUNC);
@@ -7048,11 +7019,9 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
     if (RVALUE_MARKING(obj) == TRUE) rb_bug("gc_grey: %s is marking/remembered.", obj_info(obj));
 #endif
 
-#if GC_ENABLE_INCREMENTAL_MARK
     if (is_incremental_marking(objspace)) {
         MARK_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
     }
-#endif
 
     push_mark_stack(&objspace->mark_stack, obj);
 }
@@ -7272,6 +7241,39 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static bool
+gc_declarative_marking_p(const rb_data_type_t *type)
+{
+    return (type->flags & RUBY_TYPED_DECL_MARKING) != 0;
+}
+
+#define EDGE (VALUE *)((char *)data_struct + offset)
+
+static inline void
+gc_mark_from_offset(rb_objspace_t *objspace, VALUE obj)
+{
+    // we are overloading the dmark callback to contain a list of offsets
+    size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
+    void *data_struct = RANY(obj)->as.typeddata.data;
+
+    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
+        rb_gc_mark_movable(*EDGE);
+    }
+}
+
+static inline void
+gc_ref_update_from_offset(rb_objspace_t *objspace, VALUE obj)
+{
+    // we are overloading the dmark callback to contain a list of offsets
+    size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
+    void *data_struct = RANY(obj)->as.typeddata.data;
+
+    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
+        if (SPECIAL_CONST_P(*EDGE)) continue;
+        *EDGE = rb_gc_location(*EDGE);
+    }
+}
+
 static void
 gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 {
@@ -7381,10 +7383,15 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         {
             void *const ptr = DATA_PTR(obj);
             if (ptr) {
-                RUBY_DATA_FUNC mark_func = RTYPEDDATA_P(obj) ?
-                    any->as.typeddata.type->function.dmark :
-                    any->as.data.dmark;
-                if (mark_func) (*mark_func)(ptr);
+                if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
+                    gc_mark_from_offset(objspace, obj);
+                }
+                else {
+                    RUBY_DATA_FUNC mark_func = RTYPEDDATA_P(obj) ?
+                        any->as.typeddata.type->function.dmark :
+                        any->as.data.dmark;
+                    if (mark_func) (*mark_func)(ptr);
+                }
             }
         }
         break;
@@ -7393,7 +7400,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         {
             rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
             if (rb_shape_obj_too_complex(obj)) {
-                mark_m_tbl(objspace, ROBJECT_IV_HASH(obj));
+                mark_tbl_no_pin(objspace, ROBJECT_IV_HASH(obj));
             }
             else {
                 const VALUE * const ptr = ROBJECT_IVPTR(obj);
@@ -7493,10 +7500,8 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 {
     mark_stack_t *mstack = &objspace->mark_stack;
     VALUE obj;
-#if GC_ENABLE_INCREMENTAL_MARK
     size_t marked_slots_at_the_beginning = objspace->marked_slots;
     size_t popped_count = 0;
-#endif
 
     while (pop_mark_stack(mstack, &obj)) {
         if (UNDEF_P(obj)) continue; /* skip */
@@ -7506,7 +7511,6 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         }
         gc_mark_children(objspace, obj);
 
-#if GC_ENABLE_INCREMENTAL_MARK
         if (incremental) {
             if (RGENGC_CHECK_MODE && !RVALUE_MARKING(obj)) {
                 rb_bug("gc_mark_stacked_objects: incremental, but marking bit is 0");
@@ -7521,7 +7525,6 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         else {
             /* just ignore marking bits */
         }
-#endif
     }
 
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
@@ -8246,7 +8249,6 @@ gc_verify_transient_heap_internal_consistency(VALUE dmy)
 static void
 heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 {
-#if GC_ENABLE_INCREMENTAL_MARK
     if (heap->pooled_pages) {
         if (heap->free_pages) {
             struct heap_page *free_pages_tail = heap->free_pages;
@@ -8261,7 +8263,6 @@ heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 
         heap->pooled_pages = NULL;
     }
-#endif
 }
 
 /* marks */
@@ -8274,7 +8275,6 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     gc_mode_transition(objspace, gc_mode_marking);
 
     if (full_mark) {
-#if GC_ENABLE_INCREMENTAL_MARK
         size_t incremental_marking_steps = (objspace->rincgc.pooled_slots / INCREMENTAL_MARK_STEP_ALLOCATIONS) + 1;
         objspace->rincgc.step_slots = (objspace->marked_slots * 2) / incremental_marking_steps;
 
@@ -8282,7 +8282,6 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
                        "objspace->rincgc.pooled_page_num: %"PRIdSIZE", "
                        "objspace->rincgc.step_slots: %"PRIdSIZE", \n",
                        objspace->marked_slots, objspace->rincgc.pooled_slots, objspace->rincgc.step_slots);
-#endif
         objspace->flags.during_minor_gc = FALSE;
         if (ruby_enable_autocompact) {
             objspace->flags.during_compacting |= TRUE;
@@ -8317,7 +8316,6 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
               full_mark ? "full" : "minor", mark_stack_size(&objspace->mark_stack));
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static inline void
 gc_marks_wb_unprotected_objects_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bits)
 {
@@ -8361,12 +8359,10 @@ gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
 
     gc_mark_stacked_objects_all(objspace);
 }
-#endif
 
 static void
 gc_marks_finish(rb_objspace_t *objspace)
 {
-#if GC_ENABLE_INCREMENTAL_MARK
     /* finish incremental GC */
     if (is_incremental_marking(objspace)) {
         if (RGENGC_CHECK_MODE && is_mark_stack_empty(&objspace->mark_stack) == 0) {
@@ -8389,18 +8385,10 @@ gc_marks_finish(rb_objspace_t *objspace)
             gc_marks_wb_unprotected_objects(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
         }
     }
-#endif /* GC_ENABLE_INCREMENTAL_MARK */
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
-
-    if (is_full_marking(objspace)) {
-        /* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
-        const double r = gc_params.oldobject_limit_factor;
-        objspace->rgengc.uncollectible_wb_unprotected_objects_limit = (size_t)(objspace->rgengc.uncollectible_wb_unprotected_objects * r);
-        objspace->rgengc.old_objects_limit = (size_t)(objspace->rgengc.old_objects * r);
-    }
 
 #if RGENGC_CHECK_MODE >= 4
     during_gc = FALSE;
@@ -8718,11 +8706,9 @@ gc_marks_rest(rb_objspace_t *objspace)
 {
     gc_report(1, objspace, "gc_marks_rest\n");
 
-#if GC_ENABLE_INCREMENTAL_MARK
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         SIZE_POOL_EDEN_HEAP(&size_pools[i])->pooled_pages = NULL;
     }
-#endif
 
     if (is_incremental_marking(objspace)) {
         while (gc_mark_stacked_objects_incremental(objspace, INT_MAX) == FALSE);
@@ -8734,7 +8720,6 @@ gc_marks_rest(rb_objspace_t *objspace)
     gc_marks_finish(objspace);
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static bool
 gc_marks_step(rb_objspace_t *objspace, size_t slots)
 {
@@ -8749,7 +8734,6 @@ gc_marks_step(rb_objspace_t *objspace, size_t slots)
 
     return marking_finished;
 }
-#endif
 
 static bool
 gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
@@ -8759,7 +8743,6 @@ gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t 
 
     gc_marking_enter(objspace);
 
-#if GC_ENABLE_INCREMENTAL_MARK
     if (heap->free_pages) {
         gc_report(2, objspace, "gc_marks_continue: has pooled pages");
 
@@ -8770,7 +8753,6 @@ gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t 
                   mark_stack_size(&objspace->mark_stack));
         gc_marks_rest(objspace);
     }
-#endif
 
     gc_marking_exit(objspace);
 
@@ -9039,7 +9021,6 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
     check_rvalue_consistency(b);
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static void
 gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
 {
@@ -9084,9 +9065,6 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
         }
     }
 }
-#else
-#define gc_writebarrier_incremental(a, b, objspace)
-#endif
 
 void
 rb_gc_writebarrier(VALUE a, VALUE b)
@@ -9167,7 +9145,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 /*
  * remember `obj' if needed.
  */
-MJIT_FUNC_EXPORTED void
+void
 rb_gc_writebarrier_remember(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -9250,9 +9228,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 void
 rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache)
 {
-#if GC_ENABLE_INCREMENTAL_MARK
     newobj_cache->incremental_mark_step_allocated_slots = 0;
-#endif
 
     for (size_t size_pool_idx = 0; size_pool_idx < SIZE_POOL_COUNT; size_pool_idx++) {
         rb_ractor_newobj_size_pool_cache_t *cache = &newobj_cache->size_pool_caches[size_pool_idx];
@@ -9474,9 +9450,7 @@ static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
-#if GC_ENABLE_INCREMENTAL_MARK
     unsigned int immediate_mark = reason & GPR_FLAG_IMMEDIATE_MARK;
-#endif
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
@@ -9529,14 +9503,12 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         reason |= GPR_FLAG_MAJOR_BY_FORCE; /* GC by CAPI, METHOD, and so on. */
     }
 
-#if GC_ENABLE_INCREMENTAL_MARK
-    if (!GC_ENABLE_INCREMENTAL_MARK || objspace->flags.dont_incremental || immediate_mark) {
+    if (objspace->flags.dont_incremental || immediate_mark) {
         objspace->flags.during_incremental_marking = FALSE;
     }
     else {
         objspace->flags.during_incremental_marking = do_full_mark;
     }
-#endif
 
     if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_incremental) {
         objspace->flags.immediate_sweep = TRUE;
@@ -9634,9 +9606,7 @@ gc_current_status_fill(rb_objspace_t *objspace, char *buff)
     if (is_marking(objspace)) {
         buff[i++] = 'M';
         if (is_full_marking(objspace))        buff[i++] = 'F';
-#if GC_ENABLE_INCREMENTAL_MARK
         if (is_incremental_marking(objspace)) buff[i++] = 'I';
-#endif
     }
     else if (is_sweeping(objspace)) {
         buff[i++] = 'S';
@@ -9929,9 +9899,9 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
              * prevent the objects from being collected.  This check prevents
              * objects that are keys in the finalizer table from being moved
              * without directly pinning them. */
-            if (st_is_member(finalizer_table, obj)) {
-                return FALSE;
-            }
+            GC_ASSERT(st_is_member(finalizer_table, obj));
+
+            return FALSE;
         }
         GC_ASSERT(RVALUE_MARKED(obj));
         GC_ASSERT(!RVALUE_PINNED(obj));
@@ -10147,15 +10117,13 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     }
 }
 
-static void update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl);
-
 static void
 gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
 
     if (rb_shape_obj_too_complex(v)) {
-        update_m_tbl(objspace, ROBJECT_IV_HASH(v));
+        rb_gc_update_tbl_refs(ROBJECT_IV_HASH(v));
         return;
     }
 
@@ -10674,7 +10642,10 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         {
             void *const ptr = DATA_PTR(obj);
             if (ptr) {
-                if (RTYPEDDATA_P(obj)) {
+                if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
+                    gc_ref_update_from_offset(objspace, obj);
+                }
+                else if (RTYPEDDATA_P(obj)) {
                     RUBY_DATA_FUNC compact_func = any->as.typeddata.type->function.dcompact;
                     if (compact_func) (*compact_func)(ptr);
                 }
@@ -12354,18 +12325,23 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
         }                                                    \
     } while (0)
 
+static void
+check_malloc_not_in_gc(rb_objspace_t *objspace, const char *msg)
+{
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        dont_gc_on();
+        during_gc = false;
+        rb_bug("Cannot %s during GC", msg);
+    }
+}
+
 /* these shouldn't be called directly.
  * objspace_* functions do not check allocation size.
  */
 static void *
 objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 {
-    if (UNLIKELY(malloc_during_gc_p(objspace))) {
-        rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE || RUBY_DEBUG
-        rb_bug("Cannot malloc during GC");
-#endif
-    }
+    check_malloc_not_in_gc(objspace, "malloc");
 
     void *mem;
 
@@ -12384,12 +12360,7 @@ xmalloc2_size(const size_t count, const size_t elsize)
 static void *
 objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
-    if (UNLIKELY(malloc_during_gc_p(objspace))) {
-        rb_warn("realloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE || RUBY_DEBUG
-        rb_bug("Cannot realloc during GC");
-#endif
-    }
+    check_malloc_not_in_gc(objspace, "realloc");
 
     void *mem;
 
@@ -12859,786 +12830,6 @@ rb_gc_adjust_memory_usage(ssize_t diff)
     else if (diff < 0) {
         objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC);
     }
-}
-
-/*
-  ------------------------------ WeakMap ------------------------------
-*/
-
-struct weakmap {
-    st_table *obj2wmap;		/* obj -> [ref,...] */
-    st_table *wmap2obj;		/* ref -> obj */
-    VALUE final;
-};
-
-#define WMAP_DELETE_DEAD_OBJECT_IN_MARK 0
-
-#if WMAP_DELETE_DEAD_OBJECT_IN_MARK
-static int
-wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (!is_live_object(objspace, obj)) return ST_DELETE;
-    return ST_CONTINUE;
-}
-#endif
-
-static void
-wmap_compact(void *ptr)
-{
-    struct weakmap *w = ptr;
-    if (w->wmap2obj) rb_gc_update_tbl_refs(w->wmap2obj);
-    if (w->obj2wmap) rb_gc_update_tbl_refs(w->obj2wmap);
-    w->final = rb_gc_location(w->final);
-}
-
-static void
-wmap_mark(void *ptr)
-{
-    struct weakmap *w = ptr;
-#if WMAP_DELETE_DEAD_OBJECT_IN_MARK
-    if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
-#endif
-    rb_gc_mark_movable(w->final);
-}
-
-static int
-wmap_free_map(st_data_t key, st_data_t val, st_data_t arg)
-{
-    VALUE *ptr = (VALUE *)val;
-    ruby_sized_xfree(ptr, (ptr[0] + 1) * sizeof(VALUE));
-    return ST_CONTINUE;
-}
-
-static void
-wmap_free(void *ptr)
-{
-    struct weakmap *w = ptr;
-    st_foreach(w->obj2wmap, wmap_free_map, 0);
-    st_free_table(w->obj2wmap);
-    st_free_table(w->wmap2obj);
-    xfree(w);
-}
-
-static int
-wmap_memsize_map(st_data_t key, st_data_t val, st_data_t arg)
-{
-    VALUE *ptr = (VALUE *)val;
-    *(size_t *)arg += (ptr[0] + 1) * sizeof(VALUE);
-    return ST_CONTINUE;
-}
-
-static size_t
-wmap_memsize(const void *ptr)
-{
-    size_t size;
-    const struct weakmap *w = ptr;
-    size = sizeof(*w);
-    size += st_memsize(w->obj2wmap);
-    size += st_memsize(w->wmap2obj);
-    st_foreach(w->obj2wmap, wmap_memsize_map, (st_data_t)&size);
-    return size;
-}
-
-static const rb_data_type_t weakmap_type = {
-    "weakmap",
-    {
-        wmap_mark,
-        wmap_free,
-        wmap_memsize,
-        wmap_compact,
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-static VALUE wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self));
-
-static VALUE
-wmap_allocate(VALUE klass)
-{
-    struct weakmap *w;
-    VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
-    w->obj2wmap = rb_init_identtable();
-    w->wmap2obj = rb_init_identtable();
-    w->final = rb_func_lambda_new(wmap_finalize, obj, 1, 1);
-    return obj;
-}
-
-static int
-wmap_live_p(rb_objspace_t *objspace, VALUE obj)
-{
-    if (SPECIAL_CONST_P(obj)) return TRUE;
-    /* If is_pointer_to_heap returns false, the page could be in the tomb heap
-     * or have already been freed. */
-    if (!is_pointer_to_heap(objspace, (void *)obj)) return FALSE;
-
-    void *poisoned = asan_unpoison_object_temporary(obj);
-
-    enum ruby_value_type t = BUILTIN_TYPE(obj);
-    int ret = (!(t == T_NONE || t >= T_FIXNUM || t == T_ICLASS) &&
-                is_live_object(objspace, obj));
-
-    if (poisoned) {
-        asan_poison_object(obj);
-    }
-
-    return ret;
-}
-
-static int
-wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
-{
-    VALUE wmap, *ptr, size, i, j;
-    if (!existing) return ST_STOP;
-    wmap = (VALUE)arg, ptr = (VALUE *)*value;
-    for (i = j = 1, size = ptr[0]; i <= size; ++i) {
-        if (ptr[i] != wmap) {
-            ptr[j++] = ptr[i];
-        }
-    }
-    if (j == 1) {
-        ruby_sized_xfree(ptr, i * sizeof(VALUE));
-        return ST_DELETE;
-    }
-    if (j < i) {
-        SIZED_REALLOC_N(ptr, VALUE, j + 1, i);
-        ptr[0] = j;
-        *value = (st_data_t)ptr;
-    }
-    return ST_CONTINUE;
-}
-
-/* :nodoc: */
-static VALUE
-wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
-{
-    st_data_t orig, wmap, data;
-    VALUE obj, *rids, i, size;
-    struct weakmap *w;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    /* Get reference from object id. */
-    if (UNDEF_P(obj = id2ref_obj_tbl(&rb_objspace, objid))) {
-        rb_bug("wmap_finalize: objid is not found.");
-    }
-
-    /* obj is original referenced object and/or weak reference. */
-    orig = (st_data_t)obj;
-    if (st_delete(w->obj2wmap, &orig, &data)) {
-        rids = (VALUE *)data;
-        size = *rids++;
-        for (i = 0; i < size; ++i) {
-            wmap = (st_data_t)rids[i];
-            st_delete(w->wmap2obj, &wmap, NULL);
-        }
-        ruby_sized_xfree((VALUE *)data, (size + 1) * sizeof(VALUE));
-    }
-
-    wmap = (st_data_t)obj;
-    if (st_delete(w->wmap2obj, &wmap, &orig)) {
-        wmap = (st_data_t)obj;
-        st_update(w->obj2wmap, orig, wmap_final_func, wmap);
-    }
-    return self;
-}
-
-struct wmap_iter_arg {
-    rb_objspace_t *objspace;
-    VALUE value;
-};
-
-static VALUE
-wmap_inspect_append(rb_objspace_t *objspace, VALUE str, VALUE obj)
-{
-    if (SPECIAL_CONST_P(obj)) {
-        return rb_str_append(str, rb_inspect(obj));
-    }
-    else if (wmap_live_p(objspace, obj)) {
-        return rb_str_append(str, rb_any_to_s(obj));
-    }
-    else {
-        return rb_str_catf(str, "#<collected:%p>", (void*)obj);
-    }
-}
-
-static int
-wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
-    rb_objspace_t *objspace = argp->objspace;
-    VALUE str = argp->value;
-    VALUE k = (VALUE)key, v = (VALUE)val;
-
-    if (RSTRING_PTR(str)[0] == '#') {
-        rb_str_cat2(str, ", ");
-    }
-    else {
-        rb_str_cat2(str, ": ");
-        RSTRING_PTR(str)[0] = '#';
-    }
-    wmap_inspect_append(objspace, str, k);
-    rb_str_cat2(str, " => ");
-    wmap_inspect_append(objspace, str, v);
-
-    return ST_CONTINUE;
-}
-
-static VALUE
-wmap_inspect(VALUE self)
-{
-    VALUE str;
-    VALUE c = rb_class_name(CLASS_OF(self));
-    struct weakmap *w;
-    struct wmap_iter_arg args;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
-    if (w->wmap2obj) {
-        args.objspace = &rb_objspace;
-        args.value = str;
-        st_foreach(w->wmap2obj, wmap_inspect_i, (st_data_t)&args);
-    }
-    RSTRING_PTR(str)[0] = '#';
-    rb_str_cat2(str, ">");
-    return str;
-}
-
-static inline bool
-wmap_live_entry_p(rb_objspace_t *objspace, st_data_t key, st_data_t val)
-{
-    return wmap_live_p(objspace, (VALUE)key) && wmap_live_p(objspace, (VALUE)val);
-}
-
-static int
-wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-
-    if (wmap_live_entry_p(objspace, key, val)) {
-        rb_yield_values(2, (VALUE)key, (VALUE)val);
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-/* Iterates over keys and objects in a weakly referenced object */
-static VALUE
-wmap_each(VALUE self)
-{
-    struct weakmap *w;
-    rb_objspace_t *objspace = &rb_objspace;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    st_foreach(w->wmap2obj, wmap_each_i, (st_data_t)objspace);
-    return self;
-}
-
-static int
-wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-
-    if (wmap_live_entry_p(objspace, key, val)) {
-        rb_yield((VALUE)key);
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-/* Iterates over keys and objects in a weakly referenced object */
-static VALUE
-wmap_each_key(VALUE self)
-{
-    struct weakmap *w;
-    rb_objspace_t *objspace = &rb_objspace;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    st_foreach(w->wmap2obj, wmap_each_key_i, (st_data_t)objspace);
-    return self;
-}
-
-static int
-wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-
-    if (wmap_live_entry_p(objspace, key, val)) {
-        rb_yield((VALUE)val);
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-/* Iterates over keys and objects in a weakly referenced object */
-static VALUE
-wmap_each_value(VALUE self)
-{
-    struct weakmap *w;
-    rb_objspace_t *objspace = &rb_objspace;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    st_foreach(w->wmap2obj, wmap_each_value_i, (st_data_t)objspace);
-    return self;
-}
-
-static int
-wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
-    rb_objspace_t *objspace = argp->objspace;
-    VALUE ary = argp->value;
-
-    if (wmap_live_entry_p(objspace, key, val)) {
-        rb_ary_push(ary, (VALUE)key);
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-/* Iterates over keys and objects in a weakly referenced object */
-static VALUE
-wmap_keys(VALUE self)
-{
-    struct weakmap *w;
-    struct wmap_iter_arg args;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    args.objspace = &rb_objspace;
-    args.value = rb_ary_new();
-    st_foreach(w->wmap2obj, wmap_keys_i, (st_data_t)&args);
-    return args.value;
-}
-
-static int
-wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
-    rb_objspace_t *objspace = argp->objspace;
-    VALUE ary = argp->value;
-
-    if (wmap_live_entry_p(objspace, key, val)) {
-        rb_ary_push(ary, (VALUE)val);
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-/* Iterates over values and objects in a weakly referenced object */
-static VALUE
-wmap_values(VALUE self)
-{
-    struct weakmap *w;
-    struct wmap_iter_arg args;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    args.objspace = &rb_objspace;
-    args.value = rb_ary_new();
-    st_foreach(w->wmap2obj, wmap_values_i, (st_data_t)&args);
-    return args.value;
-}
-
-static int
-wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
-{
-    VALUE size, *ptr, *optr;
-    if (existing) {
-        size = (ptr = optr = (VALUE *)*val)[0];
-        ++size;
-        SIZED_REALLOC_N(ptr, VALUE, size + 1, size);
-    }
-    else {
-        optr = 0;
-        size = 1;
-        ptr = ruby_xmalloc0(2 * sizeof(VALUE));
-    }
-    ptr[0] = size;
-    ptr[size] = (VALUE)arg;
-    if (ptr == optr) return ST_STOP;
-    *val = (st_data_t)ptr;
-    return ST_CONTINUE;
-}
-
-/* Creates a weak reference from the given key to the given value */
-static VALUE
-wmap_aset(VALUE self, VALUE key, VALUE value)
-{
-    struct weakmap *w;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    if (FL_ABLE(value)) {
-        define_final0(value, w->final);
-    }
-    if (FL_ABLE(key)) {
-        define_final0(key, w->final);
-    }
-
-    st_update(w->obj2wmap, (st_data_t)value, wmap_aset_update, key);
-    st_insert(w->wmap2obj, (st_data_t)key, (st_data_t)value);
-    return nonspecial_obj_id(value);
-}
-
-/* Retrieves a weakly referenced object with the given key */
-static VALUE
-wmap_lookup(VALUE self, VALUE key)
-{
-    st_data_t data;
-    VALUE obj;
-    struct weakmap *w;
-    rb_objspace_t *objspace = &rb_objspace;
-    GC_ASSERT(wmap_live_p(objspace, key));
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    if (!st_lookup(w->wmap2obj, (st_data_t)key, &data)) return Qundef;
-    obj = (VALUE)data;
-    if (!wmap_live_p(objspace, obj)) return Qundef;
-    return obj;
-}
-
-/* Retrieves a weakly referenced object with the given key */
-static VALUE
-wmap_aref(VALUE self, VALUE key)
-{
-    VALUE obj = wmap_lookup(self, key);
-    return !UNDEF_P(obj) ? obj : Qnil;
-}
-
-/* Returns +true+ if +key+ is registered */
-static VALUE
-wmap_has_key(VALUE self, VALUE key)
-{
-    return RBOOL(!UNDEF_P(wmap_lookup(self, key)));
-}
-
-/* Returns the number of referenced objects */
-static VALUE
-wmap_size(VALUE self)
-{
-    struct weakmap *w;
-    st_index_t n;
-
-    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    n = w->wmap2obj->num_entries;
-#if SIZEOF_ST_INDEX_T <= SIZEOF_LONG
-    return ULONG2NUM(n);
-#else
-    return ULL2NUM(n);
-#endif
-}
-
-
-/*
-  ------------------------------ WeakKeyMap ------------------------------
-*/
-
-typedef struct weakkeymap_entry {
-    VALUE obj;
-    st_index_t hash;
-} weakkeymap_entry_t;
-
-struct weakkeymap {
-    st_table *map;
-    st_table *obj2hash;
-    VALUE final;
-};
-
-static int
-weakkeymap_cmp_entry(st_data_t a, st_data_t b)
-{
-    struct weakkeymap_entry *entry_a = (struct weakkeymap_entry *)a;
-    struct weakkeymap_entry *entry_b = (struct weakkeymap_entry *)b;
-    if (entry_a == entry_b) {
-        return 0;
-    }
-    else {
-        return rb_any_cmp(entry_a->obj, entry_b->obj);
-    }
-}
-
-static st_index_t
-weakkeymap_hash_entry(st_data_t a)
-{
-    struct weakkeymap_entry *entry_a = (struct weakkeymap_entry *)a;
-    return entry_a->hash;
-}
-
-static const struct st_hash_type weakkeymap_hash = {
-    weakkeymap_cmp_entry,
-    weakkeymap_hash_entry,
-};
-
-static void
-wkmap_compact(void *ptr)
-{
-    struct weakkeymap *w = ptr;
-    if (w->map) rb_gc_update_tbl_refs(w->map);
-    w->final = rb_gc_location(w->final);
-}
-
-static void
-wkmap_mark(void *ptr)
-{
-    struct weakkeymap *w = ptr;
-    rb_mark_tbl_no_pin(w->map);
-    rb_gc_mark_movable(w->final);
-}
-
-static void
-wkmap_free(void *ptr)
-{
-    struct weakkeymap *w = ptr;
-    st_free_table(w->map);
-    st_free_table(w->obj2hash);
-    xfree(w);
-}
-
-static size_t
-wkmap_memsize(const void *ptr)
-{
-    const struct weakkeymap *w = ptr;
-    return sizeof(struct weakkeymap) + st_memsize(w->map) + st_memsize(w->obj2hash);
-}
-
-static const rb_data_type_t weakkeymap_type = {
-    "weakkeymap",
-    {
-        wkmap_mark,
-        wkmap_free,
-        wkmap_memsize,
-        wkmap_compact,
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-static VALUE
-wkmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
-{
-    struct weakkeymap *w;
-    VALUE key;
-
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
-
-    /* Get reference from object id. */
-    if ((key = id2ref_obj_tbl(&rb_objspace, objid)) == Qundef) {
-        rb_bug("wkmap_finalize: objid is not found.");
-    }
-
-    st_index_t hash;
-    if (st_delete(w->obj2hash, (st_data_t *)key, &hash)) {
-        weakkeymap_entry_t lookup_entry = {key, hash};
-        weakkeymap_entry_t *deleted_entry = NULL;
-        if (st_get_key(w->map, (st_data_t)&lookup_entry, (st_data_t *)deleted_entry)) {
-            st_data_t deleted_value;
-            st_delete(w->map, (st_data_t *)deleted_entry, &deleted_value);
-            xfree(deleted_entry);
-        }
-    }
-
-    return self;
-}
-
-static VALUE
-wkmap_allocate(VALUE klass)
-{
-    struct weakkeymap *w;
-    VALUE obj = TypedData_Make_Struct(klass, struct weakkeymap, &weakkeymap_type, w);
-    w->map = st_init_table(&weakkeymap_hash);
-    w->obj2hash = rb_init_identtable();
-    w->final = rb_func_lambda_new(wkmap_finalize, obj, 1, 1);
-    return obj;
-}
-
-static st_index_t
-wkmap_lookup_hash(struct weakkeymap *w, VALUE key)
-{
-    st_index_t hash;
-    if (!st_lookup(w->obj2hash, (st_data_t)key, &hash)) {
-        hash = rb_any_hash(key);
-    }
-    return hash;
-}
-
-static weakkeymap_entry_t*
-wkmap_lookup_entry(struct weakkeymap *w, VALUE key, st_index_t hash)
-{
-    st_data_t data;
-    weakkeymap_entry_t lookup_entry = {key, hash};
-
-    if (st_get_key(w->map, (st_data_t)&lookup_entry, &data)) {
-        return (weakkeymap_entry_t *)data;
-    }
-
-    return NULL;
-}
-
-static VALUE
-wkmap_lookup(VALUE self, VALUE key)
-{
-    st_data_t data;
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
-
-    st_index_t hash = rb_any_hash(key);
-    weakkeymap_entry_t lookup_entry = {key, hash};
-
-    if (st_lookup(w->map, (st_data_t)&lookup_entry, &data)) {
-        return (VALUE)data;
-    }
-    return Qundef;
-}
-
-/*
- *  call-seq:
- *    map[key] -> value
- *
- *  Returns the value associated with the given +key+ if found.
- *
- *  If +key+ is not found, returns +nil+.
- */
-static VALUE
-wkmap_aref(VALUE self, VALUE key)
-{
-    VALUE obj = wkmap_lookup(self, key);
-    return obj != Qundef ? obj : Qnil;
-}
-
-/*
- *  call-seq:
- *    map[key] = value -> value
- *
- *  Associates the given +value+ with the given +key+; returns +value+.
- *
- *  The reference to +key+ is weak, so when there is no other reference
- *  to +key+ it may be garbage collected.
- *
- *  If the given +key+ exists, replaces its value with the given +value+;
- *  the ordering is not affected
- */
-static VALUE
-wkmap_aset(VALUE self, VALUE key, VALUE value)
-{
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
-
-    if (!(FL_ABLE(key) && !SYMBOL_P(key) && !RB_BIGNUM_TYPE_P(key))) {
-        rb_raise(rb_eArgError, "WeakKeyMap must be garbage collectable");
-    }
-
-    st_index_t hash = wkmap_lookup_hash(w, key);
-    weakkeymap_entry_t *key_entry = wkmap_lookup_entry(w, key, hash);
-
-    if (!key_entry) {
-        key_entry = ALLOC(weakkeymap_entry_t);
-        key_entry->obj = key;
-        key_entry->hash = hash;
-    }
-
-    if (!st_insert(w->map, (st_data_t)key_entry, (st_data_t)value)) {
-        st_insert(w->obj2hash, (st_data_t)key, (st_data_t)hash);
-        define_final0(key, w->final);
-    }
-
-    return value;
-}
-
-/*
- *  call-seq:
- *    map.getkey(key) -> existing_key or nil
- *
- *  Returns the existing equal key if it exists, otherwise returns +nil+.
- */
-static VALUE
-wkmap_getkey(VALUE self, VALUE key)
-{
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
-
-    st_index_t hash = rb_any_hash(key);
-    weakkeymap_entry_t lookup_entry = {key, hash};
-
-    weakkeymap_entry_t *key_entry = NULL;
-    if (st_get_key(w->map, (st_data_t)&lookup_entry, (st_data_t *)&key_entry)) {
-        GC_ASSERT(key_entry != NULL);
-
-        VALUE obj = key_entry->obj;
-        if (wmap_live_p(&rb_objspace, obj)) {
-            return obj;
-        }
-    }
-    return Qnil;
-}
-
-/*
- *  call-seq:
- *    hash.key?(key) -> true or false
- *
- *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
- */
-static VALUE
-wkmap_has_key(VALUE self, VALUE key)
-{
-    return RBOOL(wkmap_lookup(self, key) != Qundef);
-}
-
-/*
- *  call-seq:
- *    map.clear -> self
- *
- *  Removes all map entries; returns +self+.
- */
-static VALUE
-wkmap_clear(VALUE self) {
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
-    if (w->map) {
-        st_clear(w->map);
-    }
-    if (w->obj2hash) {
-        st_clear(w->obj2hash);
-    }
-    return self;
-}
-
-/*
- *  call-seq:
- *    map.inspect -> new_string
- *
- *  Returns a new \String containing informations about the map:
-
- *    m = ObjectSpace::WeakKeyMap.new
- *    m[key] = value
- *    m.inspect # => "#<ObjectSpace::WeakKeyMap:0x00000001028dcba8 size=1>"
- *
- */
-static VALUE
-wkmap_inspect(VALUE self)
-{
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
-
-    st_index_t n = 0;
-    if (w->map) {
-        n = w->map->num_entries;
-    }
-
-#if SIZEOF_ST_INDEX_T <= SIZEOF_LONG
-    const char * format = "#<%"PRIsVALUE":%p size=%lu>";
-#else
-    const char * format = "#<%"PRIsVALUE":%p size=%llu>";
-#endif
-
-    VALUE str = rb_sprintf(format, rb_class_name(CLASS_OF(self)), (void *)self, n);
-    return str;
 }
 
 /*
@@ -14661,7 +13852,7 @@ obj_info(VALUE obj)
 }
 #endif
 
-MJIT_FUNC_EXPORTED const char *
+const char *
 rb_obj_info(VALUE obj)
 {
     return obj_info(obj);
@@ -14674,7 +13865,7 @@ rb_obj_info_dump(VALUE obj)
     fprintf(stderr, "rb_obj_info_dump: %s\n", rb_raw_obj_info(buff, 0x100, obj));
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
 {
     char buff[0x100];
@@ -14809,25 +14000,6 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *     Finalizer one on 537763480
  */
 
-/*
- *  Document-class: ObjectSpace::WeakMap
- *
- *  An ObjectSpace::WeakMap object holds references to
- *  any objects, but those objects can get garbage collected.
- *
- *  This class is mostly used internally by WeakRef, please use
- *  +lib/weakref.rb+ for the public interface.
- */
-
-/*
- *  Document-class: ObjectSpace::WeakKeyMap
- *
- *  An ObjectSpace::WeakKeyMap object holds references to
- *  any objects, but objects uses as keys can be garbage collected.
- *
- *  Objects used as values can't be garbage collected until the key is.
- */
-
 /*  Document-class: GC::Profiler
  *
  *  The GC profiler provides access to information on GC runs including time,
@@ -14916,37 +14088,6 @@ Init_GC(void)
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 
     rb_define_module_function(rb_mObjSpace, "count_objects", count_objects, -1);
-
-    {
-        VALUE rb_cWeakMap = rb_define_class_under(rb_mObjSpace, "WeakMap", rb_cObject);
-        rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
-        rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
-        rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
-        rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
-        rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);
-        rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 1);
-        rb_define_method(rb_cWeakMap, "inspect", wmap_inspect, 0);
-        rb_define_method(rb_cWeakMap, "each", wmap_each, 0);
-        rb_define_method(rb_cWeakMap, "each_pair", wmap_each, 0);
-        rb_define_method(rb_cWeakMap, "each_key", wmap_each_key, 0);
-        rb_define_method(rb_cWeakMap, "each_value", wmap_each_value, 0);
-        rb_define_method(rb_cWeakMap, "keys", wmap_keys, 0);
-        rb_define_method(rb_cWeakMap, "values", wmap_values, 0);
-        rb_define_method(rb_cWeakMap, "size", wmap_size, 0);
-        rb_define_method(rb_cWeakMap, "length", wmap_size, 0);
-        rb_include_module(rb_cWeakMap, rb_mEnumerable);
-    }
-
-    {
-        VALUE rb_cWeakKeyMap = rb_define_class_under(rb_mObjSpace, "WeakKeyMap", rb_cObject);
-        rb_define_alloc_func(rb_cWeakKeyMap, wkmap_allocate);
-        rb_define_method(rb_cWeakKeyMap, "[]=", wkmap_aset, 2);
-        rb_define_method(rb_cWeakKeyMap, "[]", wkmap_aref, 1);
-        rb_define_method(rb_cWeakKeyMap, "getkey", wkmap_getkey, 1);
-        rb_define_method(rb_cWeakKeyMap, "key?", wkmap_has_key, 1);
-        rb_define_method(rb_cWeakKeyMap, "clear", wkmap_clear, 0);
-        rb_define_method(rb_cWeakKeyMap, "inspect", wkmap_inspect, 0);
-    }
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);

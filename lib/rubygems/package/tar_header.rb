@@ -1,8 +1,11 @@
 # frozen_string_literal: true
-#--
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#++
+
+# rubocop:enable Style/AsciiComments
 
 ##
 #--
@@ -208,7 +211,7 @@ class Gem::Package::TarHeader
   private
 
   def calculate_checksum(header)
-    header.unpack("C*").inject {|a, b| a + b }
+    header.sum(0)
   end
 
   def header(checksum = @checksum)

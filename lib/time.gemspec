@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Extends the Time class with methods for parsing and conversion.}
   spec.description   = %q{Extends the Time class with methods for parsing and conversion.}
   spec.homepage      = "https://github.com/ruby/time"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

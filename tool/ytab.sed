@@ -75,6 +75,8 @@ s/\( YYFPRINTF *(\)yyo,/\1p,/
 s/\( YYFPRINTF *(\)stderr,/\1p,/
 s/\( YYDPRINTF *((\)stderr,/\1p,/
 s/^\([ 	]*\)\(yyerror[ 	]*([ 	]*parser,\)/\1parser_\2/
+s/\(static\)\( YYSTYPE yyval_default\)/\1 const\2/
+s/\(static\)\( YYLTYPE yyloc_default\)/\1 const\2/
 s!^ *extern char \*getenv();!/* & */!
 s/^\(#.*\)".*\.tab\.c"/\1"parse.c"/
 /^\(#.*\)".*\.y"/s:\\\\:/:g

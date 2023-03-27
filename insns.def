@@ -701,6 +701,20 @@ defined
     }
 }
 
+/* defined?(@foo) */
+DEFINE_INSN
+definedivar
+(ID id, IVC ic, VALUE pushval)
+()
+(VALUE val)
+// attr bool leaf  = false;
+{
+    val = Qnil;
+    if (vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef) != Qundef) {
+        val = pushval;
+    }
+}
+
 /* check `target' matches `pattern'.
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
@@ -799,6 +813,7 @@ send
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -818,6 +833,7 @@ opt_send_without_block
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -920,6 +936,7 @@ invokesuper
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -939,6 +956,7 @@ invokeblock
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -1345,10 +1363,8 @@ opt_aset_with
         val = tmp;
     }
     else {
-#ifndef MJIT_HEADER
         TOPN(0) = rb_str_resurrect(key);
         PUSH(val);
-#endif
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1365,9 +1381,7 @@ opt_aref_with
     val = vm_opt_aref_with(recv, key);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
         PUSH(rb_str_resurrect(key));
-#endif
         CALL_SIMPLE_METHOD();
     }
 }

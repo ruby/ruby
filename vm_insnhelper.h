@@ -11,20 +11,30 @@
 
 **********************************************************************/
 
-MJIT_SYMBOL_EXPORT_BEGIN
-
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-MJIT_SYMBOL_EXPORT_END
+#ifndef RJIT_STATS
+# define RJIT_STATS RUBY_DEBUG
+#endif
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
+#elif RJIT_STATS && YJIT_STATS
+// Both flags could be enabled at the same time. You need to call both in that case.
+#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
+#define COLLECT_USAGE_REGISTER(reg, s)     /* none */
+#elif RJIT_STATS
+// for --rjit-stats
+#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
+#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
 #elif YJIT_STATS
 /* for --yjit-stats */
 #define COLLECT_USAGE_INSN(insn)           rb_yjit_collect_vm_usage_insn(insn)
@@ -171,7 +181,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /* others                                                 */
 /**********************************************************/
 
-#ifndef MJIT_HEADER
 #define CALL_SIMPLE_METHOD() do { \
     rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
     rb_snum_t y = attr_width_opt_send_without_block(0); \
@@ -179,7 +188,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
     ADD_PC(z); \
     DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
 } while (0)
-#endif
 
 #define GET_GLOBAL_CVAR_STATE() (ruby_vm_global_cvar_state)
 #define INC_GLOBAL_CVAR_STATE() (++ruby_vm_global_cvar_state)

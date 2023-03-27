@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/config_file"
 
@@ -470,7 +471,8 @@ if you believe they were disclosed to a third party.
     end
 
     begin
-      verbose, $VERBOSE = $VERBOSE, nil
+      verbose = $VERBOSE
+      $VERBOSE = nil
 
       util_config_file
     ensure

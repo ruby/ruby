@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../version_option"
 
@@ -91,7 +92,7 @@ prefix or only the files that are requireable.
 
   def files_in_gem(spec)
     gem_path  = spec.full_gem_path
-    extra     = "/{#{spec.require_paths.join ','}}" if options[:lib_only]
+    extra     = "/{#{spec.require_paths.join ","}}" if options[:lib_only]
     glob      = "#{gem_path}#{extra}/**/*"
     prefix_re = /#{Regexp.escape(gem_path)}\//
 
@@ -177,7 +178,7 @@ prefix or only the files that are requireable.
       @spec_dirs.sort.each {|dir| say dir }
     end
 
-    return nil
+    nil
   end
 
   def specification_directories # :nodoc:

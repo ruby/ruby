@@ -9,8 +9,8 @@ YJIT - Yet Another Ruby JIT
 ===========================
 
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
-It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
-Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
+It lazily compiles code using a Basic Block Versioning (BBV) architecture.
+The target use case is that of servers running Ruby on Rails.
 YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
@@ -274,11 +274,12 @@ add them to `yjit/cruby.rs` instead.
 
 ### Coding & Debugging Protips
 
-There are 3 test suites:
+There are multiple test suites:
 - `make btest` (see `/bootstraptest`)
 - `make test-all`
 - `make test-spec`
 - `make check` runs all of the above
+- `make yjit-smoke-test` runs quick checks to see that YJIT is working correctly
 
 The tests can be run in parallel like this:
 

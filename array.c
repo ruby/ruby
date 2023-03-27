@@ -881,7 +881,7 @@ VALUE
     return ary;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 {
     VALUE ary;
@@ -1123,7 +1123,7 @@ rb_check_array_type(VALUE ary)
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_check_to_array(VALUE ary)
 {
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
@@ -1428,20 +1428,11 @@ enum ary_take_pos_flags
 };
 
 static VALUE
-ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
+ary_take_first_or_last_n(VALUE ary, long n, enum ary_take_pos_flags last)
 {
-    long n;
-    long len;
+    long len = RARRAY_LEN(ary);
     long offset = 0;
 
-    argc = rb_check_arity(argc, 0, 1);
-    /* the case optional argument is omitted should be handled in
-     * callers of this function.  if another arity case is added,
-     * this arity check needs to rewrite. */
-    RUBY_ASSERT_ALWAYS(argc == 1);
-
-    n = NUM2LONG(argv[0]);
-    len = RARRAY_LEN(ary);
     if (n > len) {
         n = len;
     }
@@ -1452,6 +1443,17 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
         offset = len - n;
     }
     return ary_make_partial(ary, rb_cArray, offset, n);
+}
+
+static VALUE
+ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
+{
+    argc = rb_check_arity(argc, 0, 1);
+    /* the case optional argument is omitted should be handled in
+     * callers of this function.  if another arity case is added,
+     * this arity check needs to rewrite. */
+    RUBY_ASSERT_ALWAYS(argc == 1);
+    return ary_take_first_or_last_n(ary, NUM2LONG(argv[0]), last);
 }
 
 /*
@@ -1655,7 +1657,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ary_behead(VALUE ary, long n)
 {
     if (n <= 0) {
@@ -1800,6 +1802,13 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
     ary_memcpy0(ary, 0, argc, argv, target_ary);
     ARY_SET_LEN(ary, len + argc);
     return ary;
+}
+
+/* non-static for yjit */
+VALUE
+rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
+{
+    return rb_ary_unshift_m(argc, argv, ary);
 }
 
 VALUE
@@ -1981,7 +1990,7 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
     long beg, len, step;
@@ -2020,6 +2029,7 @@ rb_ary_at(VALUE ary, VALUE pos)
     return rb_ary_entry(ary, NUM2LONG(pos));
 }
 
+#if 0
 /*
  *  call-seq:
  *    array.first -> object or nil
@@ -2064,6 +2074,20 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
         return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     }
 }
+#endif
+
+static VALUE
+ary_first(VALUE self)
+{
+    return (RARRAY_LEN(self) == 0) ? Qnil : RARRAY_AREF(self, 0);
+}
+
+static VALUE
+ary_last(VALUE self)
+{
+    long len = RARRAY_LEN(self);
+    return (len == 0) ? Qnil : RARRAY_AREF(self, len-1);
+}
 
 /*
  *  call-seq:
@@ -2100,12 +2124,10 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  */
 
 VALUE
-rb_ary_last(int argc, const VALUE *argv, VALUE ary)
+rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
 {
     if (argc == 0) {
-        long len = RARRAY_LEN(ary);
-        if (len == 0) return Qnil;
-        return RARRAY_AREF(ary, len-1);
+        return ary_last(ary);
     }
     else {
         return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
@@ -8174,6 +8196,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
     n = 0;
     r = Qundef;
+
+    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
+        i = 0;
+        goto init_is_a_value;
+    }
+
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (block_given)
@@ -8258,6 +8286,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     }
 
     goto has_some_value;
+    init_is_a_value:
     for (; i < RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (block_given)
@@ -8795,8 +8824,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);
     rb_define_method(rb_cArray, "at", rb_ary_at, 1);
     rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
-    rb_define_method(rb_cArray, "first", rb_ary_first, -1);
-    rb_define_method(rb_cArray, "last", rb_ary_last, -1);
     rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);

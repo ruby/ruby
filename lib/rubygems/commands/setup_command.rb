@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 ##
@@ -54,9 +55,9 @@ class Gem::Commands::SetupCommand < Gem::Command
                "List the documentation types you wish to",
                "generate.  For example: rdoc,ri" do |value, options|
       options[:document] = case value
-      when nil   then %w[rdoc ri]
-      when false then []
-      else            value
+                           when nil   then %w[rdoc ri]
+                           when false then []
+                           else value
       end
     end
 
@@ -133,7 +134,7 @@ prefix and suffix.  If ruby was installed as `ruby18`, gem will be
 installed as `gem18`.
 
 By default, this RubyGems will install gem as:
-  #{Gem.default_exec_format % 'gem'}
+  #{Gem.default_exec_format % "gem"}
     EOF
   end
 
@@ -356,7 +357,7 @@ By default, this RubyGems will install gem as:
       say "Set the GEM_HOME environment variable if you want RDoc generated"
     end
 
-    return false
+    false
   end
 
   def install_default_bundler_gem(bin_dir)
@@ -432,7 +433,7 @@ By default, this RubyGems will install gem as:
     mkdir_p lib_dir, :mode => 0755
     mkdir_p bin_dir, :mode => 0755
 
-    return lib_dir, bin_dir
+    [lib_dir, bin_dir]
   end
 
   def generate_default_man_dir

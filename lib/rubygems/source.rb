@@ -44,20 +44,18 @@ class Gem::Source
          Gem::Source::Vendor then
       -1
     when Gem::Source then
-      if !@uri
+      unless @uri
         return 0 unless other.uri
         return 1
       end
 
-      return -1 if !other.uri
+      return -1 unless other.uri
 
       # Returning 1 here ensures that when sorting a list of sources, the
       # original ordering of sources supplied by the user is preserved.
       return 1 unless @uri.to_s == other.uri.to_s
 
       0
-    else
-      nil
     end
   end
 
@@ -71,7 +69,7 @@ class Gem::Source
   # Returns a Set that can fetch specifications from this source.
 
   def dependency_resolver_set # :nodoc:
-    return Gem::Resolver::IndexSet.new self if "file" == uri.scheme
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
 
     fetch_uri = if uri.host == "rubygems.org"
       index_uri = uri.dup
@@ -137,7 +135,11 @@ class Gem::Source
 
     if File.exist? local_spec
       spec = Gem.read_binary local_spec
-      spec = Marshal.load(spec) rescue nil
+      spec = begin
+               Marshal.load(spec)
+             rescue StandardError
+               nil
+             end
       return spec if spec
     end
 

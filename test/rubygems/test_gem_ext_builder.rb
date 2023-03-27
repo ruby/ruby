@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/ext"
 require "rubygems/installer"
@@ -104,7 +105,7 @@ install:
   end
 
   def test_build_extensions
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
     @spec.extensions << "ext/extconf.rb"
 
     ext_dir = File.join @spec.gem_dir, "ext"
@@ -140,7 +141,7 @@ install:
   end
 
   def test_build_extensions_with_gemhome_with_space
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
     new_gemhome = File.join @tempdir, "gem home"
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -153,7 +154,7 @@ install:
 
   def test_build_extensions_install_ext_only
     class << Gem
-      alias orig_install_extension_in_lib install_extension_in_lib
+      alias_method :orig_install_extension_in_lib, :install_extension_in_lib
 
       remove_method :install_extension_in_lib
 
@@ -161,7 +162,7 @@ install:
         false
       end
     end
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     @spec.extensions << "ext/extconf.rb"
 
@@ -199,7 +200,7 @@ install:
     class << Gem
       remove_method :install_extension_in_lib
 
-      alias install_extension_in_lib orig_install_extension_in_lib
+      alias_method :install_extension_in_lib, :orig_install_extension_in_lib
     end
   end
 

@@ -62,6 +62,7 @@ module Bundler
   autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
   autoload :Graph,                  File.expand_path("bundler/graph", __dir__)
+  autoload :IncompleteSpecification, File.expand_path("bundler/incomplete_specification", __dir__)
   autoload :Index,                  File.expand_path("bundler/index", __dir__)
   autoload :Injector,               File.expand_path("bundler/injector", __dir__)
   autoload :Installer,              File.expand_path("bundler/installer", __dir__)
@@ -85,6 +86,7 @@ module Bundler
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
+  autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
 
   class << self
     def configure

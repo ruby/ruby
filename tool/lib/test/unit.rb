@@ -89,16 +89,16 @@ module Test
         end
       end
 
-      module MJITFirst
+      module RJITFirst
         def group(list)
-          # MJIT first
-          mjit, others = list.partition {|e| /test_mjit/ =~ e}
-          mjit + others
+          # RJIT first
+          rjit, others = list.partition {|e| /test_rjit/ =~ e}
+          rjit + others
         end
       end
 
       class Alpha < NoSort
-        include MJITFirst
+        include RJITFirst
 
         def sort_by_name(list)
           list.sort_by(&:name)
@@ -112,7 +112,7 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
-        include MJITFirst
+        include RJITFirst
 
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|
@@ -1589,7 +1589,7 @@ module Test
           puts if @verbose
           $stdout.flush
 
-          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
+          unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # compiler process is wrongly considered as leak
             leakchecker.check("#{inst.class}\##{inst.__name__}")
           end
 

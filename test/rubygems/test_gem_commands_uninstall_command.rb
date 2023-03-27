@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "installer_test_case"
 require "rubygems/commands/uninstall_command"
 
@@ -22,12 +23,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     a_4, = util_gem "a", 4
     install_gem a_4, :install_dir => gemhome2
 
-    Gem::Specification.dirs = [@gemhome, gemhome2]
-
-    assert_includes Gem::Specification.all_names, "a-1"
-    assert_includes Gem::Specification.all_names, "a-4"
-    assert_includes Gem::Specification.all_names, "b-2"
-    assert_includes Gem::Specification.all_names, "default-1"
+    assert_gems_presence "a-1", "a-4", "b-2", "default-1", dirs: [@gemhome, gemhome2]
 
     @cmd.options[:all] = true
     @cmd.options[:args] = %w[a]
@@ -162,7 +158,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @cmd.execute
 
     assert_equal false, File.exist?(formatted_executable)
-  rescue
+  rescue StandardError
     Gem::Installer.exec_format = nil
   end
 
@@ -346,11 +342,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     a_4, = util_gem "a", 4
     install_gem a_4
 
-    Gem::Specification.dirs = [@gemhome, gemhome2]
-
-    assert_includes Gem::Specification.all_names, "a-1"
-    assert_includes Gem::Specification.all_names, "a-4"
-    assert_includes Gem::Specification.all_names, "default-1"
+    assert_gems_presence "a-1", "a-4", "default-1", dirs: [@gemhome, gemhome2]
 
     @cmd.options[:all] = true
     @cmd.options[:args] = []
@@ -369,11 +361,9 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     gemhome2 = "#{@gemhome}2"
 
     a_4, = util_gem "a", 4
-    install_gem a_4 , :install_dir => gemhome2
+    install_gem a_4, :install_dir => gemhome2
 
-    Gem::Specification.dirs = [@gemhome, gemhome2]
-
-    assert_includes Gem::Specification.all_names, "a-4"
+    assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
 
     @cmd.options[:args] = ["a:4"]
 
@@ -384,6 +374,26 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert_includes e.message, "a is not installed in GEM_HOME"
+  end
+
+  def test_execute_outside_gem_home_when_install_dir_given
+    gemhome2 = "#{@gemhome}2"
+
+    a_4, = util_gem "a", 4
+    install_gem a_4, :install_dir => gemhome2
+
+    assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
+
+    Gem::Specification.dirs = [@gemhome]
+
+    @cmd.options[:install_dir] = gemhome2
+    @cmd.options[:args] = ["a:4"]
+
+    @cmd.execute
+
+    Gem::Specification.dirs = [gemhome2]
+
+    refute_includes Gem::Specification.all_names.sort, "a-4"
   end
 
   def test_handle_options
@@ -499,6 +509,14 @@ WARNING:  Use your OS package manager to uninstall vendor gems
       use_ui @ui do
         installer.install
       end
+    end
+  end
+
+  def assert_gems_presence(*gems, dirs:)
+    Gem::Specification.dirs = dirs
+
+    gems.each do |full_name|
+      assert_includes Gem::Specification.all_names, full_name
     end
   end
 end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/source"
 require "rubygems/indexer"
@@ -30,7 +31,7 @@ class TestGemSource < Gem::TestCase
   def test_initialize_git
     repository = "git@example:a.git"
 
-    source = Gem::Source::Git.new "a", repository, "master", false
+    source = Gem::Source::Git.new "a", repository, nil, false
 
     assert_equal repository, source.uri
   end
@@ -104,9 +105,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_fetch_spec_platform
-    specs = spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    specs = spec_fetcher(&:legacy_platform)
 
     spec = @source.fetch_spec tuple("pl", Gem::Version.new(1), "i386-linux")
 
@@ -122,7 +121,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_load_specs
-    released = @source.load_specs(:released).map {|spec| spec.full_name }
+    released = @source.load_specs(:released).map(&:full_name)
     assert_equal %W[a-2 a-1 b-2], released
 
     cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
@@ -164,7 +163,7 @@ class TestGemSource < Gem::TestCase
     latest_specs << Gem::NameTuple.new("fixed", Gem::Version.new("1.0.0"), "ruby")
     # Setup valid data on the 'remote'
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] =
-          util_gzip(Marshal.dump(latest_specs))
+      util_gzip(Marshal.dump(latest_specs))
 
     cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
 
@@ -196,7 +195,7 @@ class TestGemSource < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, remote.<=>(remote), "remote <=> remote")
+    assert_equal(0, remote.<=>(remote), "remote <=> remote") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(-1, remote.<=>(specific), "remote <=> specific")
     assert_equal(1, specific.<=>(remote), "specific <=> remote")
@@ -217,7 +216,7 @@ class TestGemSource < Gem::TestCase
     sourceA = Gem::Source.new "http://example.com/a"
     sourceB = Gem::Source.new "http://example.com/b"
 
-    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA")
+    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     assert_equal(1, sourceA.<=>(sourceB), "sourceA <=> sourceB")
     assert_equal(1, sourceB.<=>(sourceA), "sourceB <=> sourceA")
   end

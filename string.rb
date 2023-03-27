@@ -90,7 +90,7 @@
 #    which contains string after match.
 #  - <tt>\`</tt> corresponds to <tt>$`</tt>,
 #    which contains string before match.
-#  - <tt>\+</tt> corresponds to <tt>$+</tt>,
+#  - <tt>\\+</tt> corresponds to <tt>$+</tt>,
 #    which contains last capture group.
 #
 #  See rdoc-ref:regexp.rdoc for details.

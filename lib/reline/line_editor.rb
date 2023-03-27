@@ -972,6 +972,7 @@ class Reline::LineEditor
       prev_line_prompt = @prompt_proc ? prompt_list[@line_index - 1] : prompt
       prev_line_prompt_width = @prompt_proc ? calculate_width(prev_line_prompt, true) : prompt_width
       prev_line = modify_lines(lines)[@line_index - 1]
+      move_cursor_up(@started_from)
       render_partial(prev_line_prompt, prev_line_prompt_width, prev_line, @first_line_started_from + @started_from, with_control: false)
       scroll_down(1)
       render_partial(prompt, prompt_width, @line, @first_line_started_from + @started_from + 1, with_control: false)
@@ -994,22 +995,18 @@ class Reline::LineEditor
         calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
       end
     first_line_diff = new_first_line_started_from - @first_line_started_from
-    new_cursor, new_cursor_max, new_started_from, new_byte_pointer = calculate_nearest_cursor(@buffer_of_lines[@line_index], @cursor, @started_from, @byte_pointer, false)
-    new_started_from = calculate_height_by_width(prompt_width + new_cursor) - 1
+    @cursor, @cursor_max, _, @byte_pointer = calculate_nearest_cursor(@buffer_of_lines[@line_index], @cursor, @started_from, @byte_pointer, false)
+    new_started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     calculate_scroll_partial_screen(@highest_in_all, new_first_line_started_from + new_started_from)
     @previous_line_index = nil
+    @line = @buffer_of_lines[@line_index]
     if @rerender_all
-      @line = @buffer_of_lines[@line_index]
       rerender_all_lines
       @rerender_all = false
       true
     else
-      @line = @buffer_of_lines[@line_index]
       @first_line_started_from = new_first_line_started_from
       @started_from = new_started_from
-      @cursor = new_cursor
-      @cursor_max = new_cursor_max
-      @byte_pointer = new_byte_pointer
       move_cursor_down(first_line_diff + @started_from)
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       false
@@ -1371,8 +1368,8 @@ class Reline::LineEditor
         @completion_state = CompletionState::MENU
       end
       if not just_show_list and target < completed
-        @line = preposing + completed + completion_append_character.to_s + postposing
-        line_to_pointer = preposing + completed + completion_append_character.to_s
+        @line = (preposing + completed + completion_append_character.to_s + postposing).split("\n")[@line_index] || String.new(encoding: @encoding)
+        line_to_pointer = (preposing + completed + completion_append_character.to_s).split("\n").last || String.new(encoding: @encoding)
         @cursor_max = calculate_width(@line)
         @cursor = calculate_width(line_to_pointer)
         @byte_pointer = line_to_pointer.bytesize

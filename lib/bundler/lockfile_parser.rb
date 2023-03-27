@@ -86,7 +86,7 @@ module Bundler
           send("parse_#{@state}", line)
         end
       end
-      @specs = @specs.values.sort_by(&:identifier)
+      @specs = @specs.values.sort_by(&:full_name)
     rescue ArgumentError => e
       Bundler.ui.debug(e)
       raise LockfileError, "Your lockfile is unreadable. Run `rm #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` " \
@@ -199,7 +199,7 @@ module Bundler
         @current_spec.source = @current_source
         @current_source.add_dependency_names(name)
 
-        @specs[@current_spec.identifier] = @current_spec
+        @specs[@current_spec.full_name] = @current_spec
       elsif spaces.size == 6
         version = version.split(",").map(&:strip) if version
         dep = Gem::Dependency.new(name, version)

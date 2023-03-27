@@ -131,6 +131,8 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
     if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
 }
 
+#define thread_sched_to_dead thread_sched_to_waiting
+
 static void
 thread_sched_to_waiting(struct rb_thread_sched *sched)
 {
@@ -751,7 +753,6 @@ timer_thread_func(void *dummy)
     while (WaitForSingleObject(timer_thread.lock,
                                TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
         vm->clock++;
-        ruby_sigchld_handler(vm); /* probably no-op */
         rb_threadptr_check_signal(vm->ractor.main_thread);
     }
     RUBY_DEBUG_LOG("end");

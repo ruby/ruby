@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rubygems"
 require_relative "helper"
 require "rubygems/commands/help_command"
@@ -63,7 +64,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
   def test_gem_help_commands_omits_deprecated_commands
     mgr = Gem::CommandManager.new
 
-    util_gem "commands" do |out, err|
+    util_gem "commands" do |out, _err|
       deprecated_commands = mgr.command_names.select {|cmd| mgr[cmd].deprecated? }
       deprecated_commands.each do |cmd|
         refute_match(/\A\s+#{cmd}\s+\S+\z/, out)

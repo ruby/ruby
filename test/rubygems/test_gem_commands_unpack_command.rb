@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/unpack_command"
 
@@ -15,7 +16,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     util_make_gems
 
     assert_equal(
-      @cmd.find_in_cache(File.basename @a1.cache_file),
+      @cmd.find_in_cache(File.basename(@a1.cache_file)),
       @a1.cache_file,
       "found a-1.gem in the cache"
     )

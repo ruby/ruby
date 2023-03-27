@@ -21,7 +21,7 @@ module Spec
     end
 
     def linux
-      Gem::Platform.new(["x86", "linux", nil])
+      Gem::Platform.new("x86_64-linux")
     end
 
     def x86_mswin32
@@ -50,14 +50,6 @@ module Spec
 
     def all_platforms
       [rb, java, linux, windows_platforms].flatten
-    end
-
-    def local
-      generic_local_platform
-    end
-
-    def specific_local_platform
-      Bundler.local_platform
     end
 
     def not_local
@@ -103,11 +95,11 @@ module Spec
       9999
     end
 
-    def lockfile_platforms
-      lockfile_platforms_for([specific_local_platform])
+    def lockfile_platforms(*extra)
+      formatted_lockfile_platforms(local_platform, *extra)
     end
 
-    def lockfile_platforms_for(platforms)
+    def formatted_lockfile_platforms(*platforms)
       platforms.map(&:to_s).sort.join("\n  ")
     end
   end

@@ -569,6 +569,12 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     return tab;
 }
 
+size_t
+st_table_size(const struct st_table *tbl)
+{
+    return tbl->num_entries;
+}
+
 /* Create and return table with TYPE which can hold a minimal number
    of entries (see comments for get_power2).  */
 st_table *

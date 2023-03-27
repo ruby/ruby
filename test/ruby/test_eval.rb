@@ -488,6 +488,9 @@ class TestEval < Test::Unit::TestCase
       end
     end
     assert_equal(feature6609, feature6609_method)
+  ensure
+    Object.undef_method(:feature6609_block) rescue nil
+    Object.undef_method(:feature6609_method) rescue nil
   end
 
   def test_eval_using_integer_as_binding

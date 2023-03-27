@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -210,7 +211,7 @@ module Gem
       end
     end
 
-    return true
+    true
   end
 
   def self.needs
@@ -338,16 +339,6 @@ module Gem
   end
 
   ##
-  # The path to the data directory specified by the gem name.  If the
-  # package is not available as a gem, return nil.
-
-  def self.datadir(gem_name)
-    spec = @loaded_specs[gem_name]
-    return nil if spec.nil?
-    spec.datadir
-  end
-
-  ##
   # A Zlib::Deflate.deflate wrapper
 
   def self.deflate(data)
@@ -464,7 +455,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # distinction as extensions cannot be shared between the two.
 
   def self.extension_api_version # :nodoc:
-    if "no" == RbConfig::CONFIG["ENABLE_SHARED"]
+    if RbConfig::CONFIG["ENABLE_SHARED"] == "no"
       "#{ruby_api_version}-static"
     else
       ruby_api_version
@@ -498,7 +489,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # the spec dirs directly, so we prune.
     files.uniq! if check_load_path
 
-    return files
+    files
   end
 
   def self.find_files_from_load_path(glob) # :nodoc:
@@ -533,7 +524,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # the spec dirs directly, so we prune.
     files.uniq! if check_load_path
 
-    return files
+    files
   end
 
   ##
@@ -741,7 +732,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     if prefix != File.expand_path(RbConfig::CONFIG["sitelibdir"]) &&
        prefix != File.expand_path(RbConfig::CONFIG["libdir"]) &&
-       "lib" == File.basename(RUBYGEMS_DIR)
+       File.basename(RUBYGEMS_DIR) == "lib"
       prefix
     end
   end
@@ -757,13 +748,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+") do |io|
-      io.read
-    end
+    open_file(path, "rb+", &:read)
   rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb") do |io|
-      io.read
-    end
+    open_file(path, "rb", &:read)
   end
 
   ##
@@ -865,7 +852,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return @ruby_version if defined? @ruby_version
     version = RUBY_VERSION.dup
 
-    unless defined?(RUBY_PATCHLEVEL) && RUBY_PATCHLEVEL != -1
+    if RUBY_PATCHLEVEL == -1
       if RUBY_ENGINE == "ruby"
         desc = RUBY_DESCRIPTION[/\Aruby #{Regexp.quote(RUBY_VERSION)}([^ ]+) /, 1]
       else
@@ -913,7 +900,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Glob pattern for require-able path suffixes.
 
   def self.suffix_pattern
-    @suffix_pattern ||= "{#{suffixes.join(',')}}"
+    @suffix_pattern ||= "{#{suffixes.join(",")}}"
   end
 
   ##
@@ -947,8 +934,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val && !val.empty?
                      ".#{val}"
-                   end,
-                  ].compact.uniq
+                   end].compact.uniq
   end
 
   ##
@@ -994,7 +980,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.win_platform?
     if @@win_platform.nil?
       ruby_platform = RbConfig::CONFIG["host_os"]
-      @@win_platform = !!WIN_PATTERNS.find {|r| ruby_platform =~ r }
+      @@win_platform = !WIN_PATTERNS.find {|r| ruby_platform =~ r }.nil?
     end
 
     @@win_platform
@@ -1026,7 +1012,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
       begin
         load plugin
-      rescue ::Exception => e
+      rescue ScriptError, StandardError => e
         details = "#{plugin.inspect}: #{e.message} (#{e.class})"
         warn "Error loading RubyGems plugin #{details}"
       end
@@ -1101,13 +1087,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require "bundler"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
-        begin
-          Bundler.ui.silence do
-            @gemdeps = Bundler.setup
-          end
-        ensure
-          Gem::DefaultUserInteraction.ui.close
+        Bundler.ui.silence do
+          @gemdeps = Bundler.setup
         end
+      ensure
+        Gem::DefaultUserInteraction.ui.close
       end
     rescue Bundler::BundlerError => e
       warn e.message
@@ -1153,7 +1137,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # This is used throughout RubyGems for enabling reproducible builds.
 
   def self.source_date_epoch
-    Time.at(self.source_date_epoch_string.to_i).utc.freeze
+    Time.at(source_date_epoch_string.to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class

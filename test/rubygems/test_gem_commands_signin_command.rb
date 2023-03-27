@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/signin_command"
 require "rubygems/installer"
@@ -210,7 +211,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     # Set the expected response for the Web-API supplied
     ENV["RUBYGEMS_HOST"]       = host
-    data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
+    data_key                   = "#{ENV["RUBYGEMS_HOST"]}/api/v1/api_key"
     fetcher.data[data_key]     = HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     use_ui key_name_ui do
@@ -241,9 +242,9 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     # Set the expected response for the Web-API supplied
     ENV["RUBYGEMS_HOST"]       = host || Gem::DEFAULT_HOST
-    data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
+    data_key                   = "#{ENV["RUBYGEMS_HOST"]}/api/v1/api_key"
     fetcher.data[data_key]     = response
-    profile                    = "#{ENV['RUBYGEMS_HOST']}/api/v1/profile/me.yaml"
+    profile                    = "#{ENV["RUBYGEMS_HOST"]}/api/v1/profile/me.yaml"
     fetcher.data[profile]      = profile_response
     Gem::RemoteFetcher.fetcher = fetcher
 

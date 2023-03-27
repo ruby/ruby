@@ -1,5 +1,5 @@
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
-[![Actions Status: MJIT](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
+[![Actions Status: RJIT](https://github.com/ruby/ruby/workflows/RJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"RJIT")
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
@@ -34,8 +34,8 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
-Our official distribution site is https://cache.ruby-lang.org/pub/ruby/. You can download
-the whole archive of the release packages and the snapshot of the repository.
+You can download release packages and the snapshot of the repository. If you want to
+download whole versions of Ruby, please visit https://www.ruby-lang.org/en/downloads/releases/.
 
 ### Download with Git
 

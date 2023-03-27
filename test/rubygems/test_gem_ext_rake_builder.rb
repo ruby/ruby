@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/ext"
 
@@ -91,7 +92,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
     create_temp_mkrf_file("task :default do abort 'fail' end")
     output = []
 
-    build_rake_in(false) do |rake|
+    build_rake_in(false) do |_rake|
       error = assert_raise Gem::InstallError do
         Gem::Ext::RakeBuilder.build "mkrf_conf.rb", @dest_path, output, [], nil, @ext
       end

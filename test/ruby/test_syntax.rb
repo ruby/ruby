@@ -990,7 +990,7 @@ eom
      ["p ", ""],                # no-pop
      ["", "p Foo::Bar"],        # pop
     ].each do |p1, p2|
-      src = <<-EOM.gsub(/^\s*\n/, '')
+      src = <<~EOM
       class Foo
         #{"Bar = " + preset if preset}
       end
@@ -1022,7 +1022,7 @@ eom
      ["p ", ""],                # no-pop
      ["", "p ::Bar"],           # pop
     ].each do |p1, p2|
-      src = <<-EOM.gsub(/^\s*\n/, '')
+      src = <<~EOM
       #{"Bar = " + preset if preset}
       class Foo
         #{p1}::Bar #{op}= 42

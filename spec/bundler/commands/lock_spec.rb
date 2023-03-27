@@ -140,6 +140,62 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(@lockfile)
   end
 
+  it "does not unlock git sources when only uri shape changes" do
+    build_git("foo")
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}"
+    G
+
+    # Change uri format to end with "/" and reinstall
+    install_gemfile <<-G, :verbose => true
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}/"
+    G
+
+    expect(out).to include("using resolution from the lockfile")
+    expect(out).not_to include("re-resolving dependencies because the list of sources changed")
+  end
+
+  it "updates specific gems using --update using the locked revision of unrelated git gems for resolving" do
+    ref = build_git("foo").ref_for("HEAD")
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rake"
+      gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :branch => "deadbeef"
+    G
+
+    lockfile <<~L
+      GIT
+        remote: #{file_uri_for(lib_path("foo-1.0"))}
+        revision: #{ref}
+        branch: deadbeef
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          rake (10.0.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+        rake
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update rake --verbose"
+    expect(out).to match(/Writing lockfile to.+lock/)
+    expect(lockfile).to include("rake (13.0.1)")
+  end
+
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 
@@ -266,7 +322,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([java, x86_mingw32, specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array([java, x86_mingw32, local_platform].uniq)
   end
 
   it "supports adding new platforms with force_ruby_platform = true" do
@@ -275,11 +331,11 @@ RSpec.describe "bundle lock" do
         remote: #{file_uri_for(gem_repo1)}/
         specs:
           platform_specific (1.0)
-          platform_specific (1.0-x86-linux)
+          platform_specific (1.0-x86-64_linux)
 
       PLATFORMS
         ruby
-        x86-linux
+        x86_64-linux
 
       DEPENDENCIES
         platform_specific
@@ -298,7 +354,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(["ruby", specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array(["ruby", local_platform].uniq)
   end
 
   it "warns when adding an unknown platform" do
@@ -311,12 +367,12 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([java, x86_mingw32, specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array([java, x86_mingw32, local_platform].uniq)
 
     bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([x86_mingw32, specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array([x86_mingw32, local_platform].uniq)
   end
 
   it "also cleans up redundant platform gems when removing platforms" do
@@ -375,7 +431,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{specific_local_platform}", :raise_on_error => false
+    bundle "lock --remove-platform #{local_platform}", :raise_on_error => false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
@@ -980,6 +1036,31 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to include("autobuild (1.10.1)")
   end
 
+  # Newer rails depends on Bundler, while ancient Rails does not. Bundler tries
+  # a first resolution pass that does not consider pre-releases. However, when
+  # using a pre-release Bundler (like the .dev version), that results in that
+  # pre-release being ignored and resolving to a version that does not depend on
+  # Bundler at all. We should avoid that and still consider .dev Bundler.
+  #
+  it "does not ignore prereleases with there's only one candidate" do
+    build_repo4 do
+      build_gem "rails", "7.4.0.2" do |s|
+        s.add_dependency "bundler", ">= 1.15.0"
+      end
+
+      build_gem "rails", "2.3.18"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rails"
+    G
+
+    bundle "lock"
+    expect(lockfile).to_not include("rails (2.3.18)")
+    expect(lockfile).to include("rails (7.4.0.2)")
+  end
+
   it "deals with platform specific incompatibilities" do
     build_repo4 do
       build_gem "activerecord", "6.0.6"
@@ -1030,6 +1111,54 @@ RSpec.describe "bundle lock" do
       end
 
       expect(lockfile).not_to include("tzinfo-data (1.2022.7)")
+    end
+  end
+
+  context "when resolving platform specific gems as indirect dependencies on truffleruby", :truffleruby_only do
+    before do
+      build_lib "foo", :path => bundled_app do |s|
+        s.add_dependency "nokogiri"
+      end
+
+      build_repo4 do
+        build_gem "nokogiri", "1.14.2"
+        build_gem "nokogiri", "1.14.2" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gemspec
+      G
+    end
+
+    it "locks ruby specs" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock"
+      end
+
+      expect(lockfile).to eq <<~L
+        PATH
+          remote: .
+          specs:
+            foo (1.0)
+              nokogiri
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.14.2)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
   end
 end

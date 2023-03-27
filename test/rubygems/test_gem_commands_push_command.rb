@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/push_command"
 
@@ -105,7 +106,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     end
 
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@spec.metadata['allowed_push_host']}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+    @fetcher.data["#{@spec.metadata["allowed_push_host"]}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     @fetcher.data["#{Gem.host}/api/v1/gems"] =
       ["fail", 500, "Internal Server Error"]
 

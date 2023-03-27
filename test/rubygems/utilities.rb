@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "tempfile"
 require "rubygems"
 require "rubygems/remote_fetcher"
@@ -39,7 +40,7 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path && "file" == path.scheme
+    return Gem.read_binary path.path if URI === path && path.scheme == "file"
 
     if URI === path && "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
@@ -54,7 +55,7 @@ class Gem::FakeFetcher
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
-    if @data[path].kind_of?(Array)
+    if @data[path].is_a?(Array)
       @data[path].shift
     else
       @data[path]
@@ -64,7 +65,7 @@ class Gem::FakeFetcher
   def create_response(uri)
     data = find_data(uri)
     response = data.respond_to?(:call) ? data.call : data
-    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.kind_of?(Net::HTTPResponse)
+    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.is_a?(Net::HTTPResponse)
 
     response
   end
@@ -329,7 +330,8 @@ class Gem::TestCase::SpecFetcherSetup
     Gem::Specification.reset
 
     begin
-      gem_repo, @test.gem_repo = @test.gem_repo, @repository
+      gem_repo = @test.gem_repo
+      @test.gem_repo = @repository
       @test.uri = URI @repository
 
       @test.util_setup_spec_fetcher(*@downloaded)

@@ -118,7 +118,7 @@ BT = Class.new(bt) do
             r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
             w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
           end
-        rescue => e
+        rescue
           r.close if r
         else
           r.close_on_exec = true
@@ -669,7 +669,7 @@ end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
   add_assertion testsrc, -> as do
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # for --jit-wait
       timeout_seconds *= 3
     end
 

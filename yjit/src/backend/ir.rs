@@ -73,7 +73,7 @@ pub enum Opnd
     InsnOut{ idx: usize, num_bits: u8 },
 
     // Pointer to a slot on the VM stack
-    Stack { idx: i32, sp_offset: i16, num_bits: u8 },
+    Stack { idx: i32, sp_offset: i8, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -1179,7 +1179,7 @@ impl Assembler
 /// A struct that allows iterating through an assembler's instructions and
 /// consuming them as it iterates.
 pub struct AssemblerDrainingIterator {
-    insns: std::vec::IntoIter<Insn>,
+    insns: std::iter::Peekable<std::vec::IntoIter<Insn>>,
     index: usize,
     indices: Vec<usize>
 }
@@ -1187,7 +1187,7 @@ pub struct AssemblerDrainingIterator {
 impl AssemblerDrainingIterator {
     fn new(asm: Assembler) -> Self {
         Self {
-            insns: asm.insns.into_iter(),
+            insns: asm.insns.into_iter().peekable(),
             index: 0,
             indices: Vec::default()
         }
@@ -1228,6 +1228,11 @@ impl AssemblerDrainingIterator {
         let index = self.index;
         self.index += 1;
         self.insns.next().map(|insn| (index, insn))
+    }
+
+    /// Returns the next instruction without incrementing the iterator's index.
+    pub fn peek(&mut self) -> Option<&Insn> {
+        self.insns.peek()
     }
 }
 
@@ -1486,7 +1491,10 @@ impl Assembler {
     }
 
     pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
-        self.push_insn(Insn::LoadInto { dest, opnd });
+        match (dest, opnd) {
+            (Opnd::Reg(dest), Opnd::Reg(opnd)) if dest == opnd => {}, // skip if noop
+            _ => self.push_insn(Insn::LoadInto { dest, opnd }),
+        }
     }
 
     #[must_use]

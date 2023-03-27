@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A set of gems for installation sourced from remote sources and local .gem
 # files
@@ -160,7 +161,8 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
         if local_spec = @local_source.find_gem(name, dep.requirement)
           res << Gem::Resolver::IndexSpecification.new(
             self, local_spec.name, local_spec.version,
-            @local_source, local_spec.platform)
+            @local_source, local_spec.platform
+          )
         end
       rescue Gem::Package::FormatError
         # ignore
@@ -183,7 +185,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def inspect # :nodoc:
-    always_install = @always_install.map {|s| s.full_name }
+    always_install = @always_install.map(&:full_name)
 
     "#<%s domain: %s specs: %p always install: %p>" % [
       self.class, @domain, @specs.keys, always_install

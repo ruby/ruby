@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/pristine_command"
 
@@ -200,6 +201,54 @@ class TestGemCommandsPristineCommand < Gem::TestCase
                  out.shift
     assert_equal "Restored #{a.full_name}", out.shift
     assert_empty out, out.inspect
+  end
+
+  def test_execute_extensions_only_missing_extensions
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
+    end
+
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    b = util_spec "b" do |s|
+      s.extensions << "ext/b/extconf.rb"
+    end
+
+    ext_path = File.join @tempdir, "ext", "b", "extconf.rb"
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    install_gem a
+    install_gem b
+
+    # Remove the extension files for b
+    FileUtils.rm_rf b.gem_build_complete_path
+
+    @cmd.options[:only_missing_extensions] = true
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    refute_includes @ui.output, "Restored #{a.full_name}"
+    assert_includes @ui.output, "Restored #{b.full_name}"
   end
 
   def test_execute_no_extension
@@ -547,7 +596,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     FileUtils.rm gem_exec
     FileUtils.rm gem_bindir
 
-    @cmd.handle_options ["--all", "--only-executables", "--bindir", "#{gem_bindir}"]
+    @cmd.handle_options ["--all", "--only-executables", "--bindir", gem_bindir.to_s]
 
     use_ui @ui do
       @cmd.execute

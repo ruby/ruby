@@ -11,7 +11,7 @@ require_relative '../lib/jit_support'
 return unless JITSupport.yjit_supported?
 
 # Tests for YJIT with assertions on compilation and side exits
-# insipired by the MJIT tests in test/ruby/test_mjit.rb
+# insipired by the RJIT tests in test/ruby/test_rjit.rb
 class TestYJIT < Test::Unit::TestCase
   running_with_yjit = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
@@ -1216,6 +1216,25 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_str_concat_encoding_mismatch
+    assert_compiles(<<~'RUBY', result: "incompatible character encodings: ASCII-8BIT and EUC-JP")
+      def bar(a, b)
+        a << b
+      rescue => e
+        e.message
+      end
+
+      def foo(a, b, h)
+        h[nil]
+        bar(a, b) # Ruby call, not set cfp->pc
+      end
+
+      h = Hash.new { nil }
+      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
@@ -1336,13 +1355,24 @@ class TestYJIT < Test::Unit::TestCase
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
+    # Separate thread so we don't deadlock when
+    # the child ruby blocks writing the stats to fd 3
+    stats = ''
+    stats_reader = Thread.new do
+      stats = stats_r.read
+      stats_r.close
+    end
     out, err, status = EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout, ios: {3 => stats_w}
     )
     stats_w.close
-    stats = stats_r.read
+    stats_reader.join(timeout)
     stats = Marshal.load(stats) if !stats.empty?
-    stats_r.close
     [status, out, err, stats]
+  ensure
+    stats_reader&.kill
+    stats_reader&.join(timeout)
+    stats_r&.close
+    stats_w&.close
   end
 end

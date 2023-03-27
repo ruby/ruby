@@ -9549,7 +9549,7 @@ rb_io_s_for_fd(int argc, VALUE *argv, VALUE klass)
  *     ios.autoclose?   -> true or false
  *
  *  Returns +true+ if the underlying file descriptor of _ios_ will be
- *  closed automatically at its finalization, otherwise +false+.
+ *  closed at its finalization or at calling #close, otherwise +false+.
  */
 
 static VALUE
@@ -9567,13 +9567,13 @@ rb_io_autoclose_p(VALUE io)
  *  Sets auto-close flag.
  *
  *     f = open("/dev/null")
- *     IO.for_fd(f.fileno)
- *     # ...
- *     f.gets # may cause Errno::EBADF
+ *     IO.for_fd(f.fileno).close
+ *     f.gets # raises Errno::EBADF
  *
  *     f = open("/dev/null")
- *     IO.for_fd(f.fileno).autoclose = false
- *     # ...
+ *     g = IO.for_fd(f.fileno)
+ *     g.autoclose = false
+ *     g.close
  *     f.gets # won't cause Errno::EBADF
  */
 
@@ -12125,9 +12125,13 @@ static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
     VALUE opt, offset;
+    long off;
     struct foreach_arg arg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
+    if (!NIL_P(offset) && (off = NUM2LONG(offset)) < 0) {
+        rb_raise(rb_eArgError, "negative offset %ld given", off);
+    }
     open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {

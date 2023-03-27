@@ -165,7 +165,7 @@ class Gem::Version
     @version.dup
   end
 
-  alias to_s version
+  alias_method :to_s, :version
 
   ##
   # True if the +version+ string matches RubyGems' requirements.
@@ -272,7 +272,7 @@ class Gem::Version
   # string for backwards (RubyGems 1.3.5 and earlier) compatibility.
 
   def marshal_dump
-    [version]
+    [@version]
   end
 
   ##
@@ -302,7 +302,7 @@ class Gem::Version
 
   def prerelease?
     unless instance_variable_defined? :@prerelease
-      @prerelease = !!(@version =~ /[a-zA-Z]/)
+      @prerelease = !(@version =~ /[a-zA-Z]/).nil?
     end
     @prerelease
   end
@@ -366,7 +366,8 @@ class Gem::Version
     i = 0
 
     while i <= limit
-      lhs, rhs = lhsegments[i] || 0, rhsegments[i] || 0
+      lhs = lhsegments[i] || 0
+      rhs = rhsegments[i] || 0
       i += 1
 
       next      if lhs == rhs
@@ -376,7 +377,7 @@ class Gem::Version
       return lhs <=> rhs
     end
 
-    return 0
+    0
   end
 
   def canonical_segments
@@ -412,6 +413,6 @@ class Gem::Version
     string_start = _segments.index {|s| s.is_a?(String) }
     string_segments = segments
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
-    return numeric_segments, string_segments
+    [numeric_segments, string_segments]
   end
 end

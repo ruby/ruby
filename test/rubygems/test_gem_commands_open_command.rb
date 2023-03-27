@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/open_command"
 
@@ -91,7 +92,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{'foo' is a default gem and can't be opened\.} , @ui.output
+    assert_match %r{'foo' is a default gem and can't be opened\.}, @ui.output
     assert_equal "", @ui.error
   end
 end

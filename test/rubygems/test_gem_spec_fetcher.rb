@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/spec_fetcher"
 
@@ -108,9 +109,7 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_spec_for_dependency_platform
     util_set_arch "i386-linux"
 
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     dep = Gem::Dependency.new "pl", 1
     specs_and_sources, _ = @sf.spec_for_dependency dep
@@ -126,9 +125,7 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_spec_for_dependency_mismatched_platform
     util_set_arch "hrpa-989"
 
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     dep = Gem::Dependency.new "pl", 1
     specs_and_sources, errors = @sf.spec_for_dependency dep

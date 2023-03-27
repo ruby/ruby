@@ -15,6 +15,15 @@ Note: We're only listing outstanding class updates.
 
     * `Array#pack` now raises ArgumentError for unknown directives. [[Bug #19150]]
 
+* Dir
+
+    * `Dir.for_fd` added for returning a Dir object for the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+    * `Dir.fchdir` added for changing the directory to the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+    * `Dir#chdir` added for changing the directory to the directory specified
+      by the provided `Dir` object. [[Feature #19347]]
+
 * String
 
     * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
@@ -35,17 +44,19 @@ The following default gems are updated.
 * bundler 2.5.0.dev
 * csv 3.2.7
 * fiddle 1.1.2
+* irb 1.6.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
+* reline 0.3.3
 * stringio 3.0.6
 * strscan 3.0.7
 * timeout 0.3.2
 
 The following bundled gems are updated.
 
-* minitest 5.17.0
-* rbs 3.0.1
-* typeprof 0.21.5
+* minitest 5.18.0
+* rbs 3.0.4
+* typeprof 0.21.7
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
@@ -64,3 +75,4 @@ changelog for details of the default gems or bundled gems.
 
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
+[Feature #19347]: https://bugs.ruby-lang.org/issues/19347

@@ -160,16 +160,21 @@ class Reline::Unicode
     width = 0
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
+    seq = String.new(encoding: encoding)
     rest.scan(WIDTH_SCANNER) do |gc|
       case
       when gc[NON_PRINTING_START_INDEX]
         in_zero_width = true
+        lines.last << NON_PRINTING_START
       when gc[NON_PRINTING_END_INDEX]
         in_zero_width = false
+        lines.last << NON_PRINTING_END
       when gc[CSI_REGEXP_INDEX]
         lines.last << gc[CSI_REGEXP_INDEX]
+        seq << gc[CSI_REGEXP_INDEX]
       when gc[OSC_REGEXP_INDEX]
         lines.last << gc[OSC_REGEXP_INDEX]
+        seq << gc[OSC_REGEXP_INDEX]
       when gc[GRAPHEME_CLUSTER_INDEX]
         gc = gc[GRAPHEME_CLUSTER_INDEX]
         unless in_zero_width
@@ -177,7 +182,7 @@ class Reline::Unicode
           if (width += mbchar_width) > max_width
             width = mbchar_width
             lines << nil
-            lines << String.new(encoding: encoding)
+            lines << seq.dup
             height += 1
           end
         end

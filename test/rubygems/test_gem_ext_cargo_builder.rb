@@ -36,12 +36,12 @@ class TestGemExtCargoBuilder < Gem::TestCase
     end
 
     output = output.join "\n"
-    bundle = File.join(@dest_path, "rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
+    bundle = File.join(@dest_path, "rust_ruby_example.#{RbConfig::CONFIG["DLEXT"]}")
 
     assert_match(/Finished/, output)
     assert_match(/release/, output)
     assert_ffi_handle bundle, "Init_rust_ruby_example"
-  rescue Exception => e
+  rescue StandardError => e
     pp output if output
 
     raise(e)
@@ -62,12 +62,12 @@ class TestGemExtCargoBuilder < Gem::TestCase
     end
 
     output = output.join "\n"
-    bundle = File.join(@dest_path, "rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
+    bundle = File.join(@dest_path, "rust_ruby_example.#{RbConfig::CONFIG["DLEXT"]}")
 
     assert_ffi_handle bundle, "hello_from_rubygems"
     assert_ffi_handle bundle, "hello_from_rubygems_version"
     refute_ffi_handle bundle, "should_never_exist"
-  rescue Exception => e
+  rescue StandardError => e
     pp output if output
 
     raise(e)

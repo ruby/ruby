@@ -34,7 +34,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -164,7 +164,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq && ISEQ_BODY(iseq)) {
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        mjit_free_iseq(iseq); /* Notify MJIT */
+        rb_rjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
 #endif
@@ -356,16 +356,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
 
         if (reference_updating) {
-#if USE_MJIT
-            mjit_update_references(iseq);
+#if USE_RJIT
+            rb_rjit_iseq_update_references(body);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_update_references(body->yjit_payload);
 #endif
         }
         else {
-#if USE_MJIT
-            mjit_mark_cc_entries(body);
+#if USE_RJIT
+            rb_rjit_iseq_mark(body->rjit_blocks);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
@@ -1908,7 +1908,7 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 }
 #endif
 
-MJIT_FUNC_EXPORTED rb_event_flag_t
+rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
     const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
@@ -3550,8 +3550,31 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
     }
 }
 
-bool rb_vm_call_ivar_attrset_p(const vm_call_handler ch);
 void rb_vm_cc_general(const struct rb_callcache *cc);
+
+static bool
+clear_attr_cc(VALUE v)
+{
+    if (imemo_type_p(v, imemo_callcache) && vm_cc_ivar_p((const struct rb_callcache *)v)) {
+        rb_vm_cc_general((struct rb_callcache *)v);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+static bool
+clear_bf_cc(VALUE v)
+{
+    if (imemo_type_p(v, imemo_callcache) && vm_cc_bf_p((const struct rb_callcache *)v)) {
+        rb_vm_cc_general((struct rb_callcache *)v);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 static int
 clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
@@ -3560,11 +3583,7 @@ clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
-
-        if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
-            rb_vm_cc_general((struct rb_callcache *)v);
-        }
-
+        clear_attr_cc(v);
         asan_poison_object_if(ptr, v);
     }
     return 0;
@@ -3574,6 +3593,25 @@ void
 rb_clear_attr_ccs(void)
 {
     rb_objspace_each_objects(clear_attr_ccs_i, NULL);
+}
+
+static int
+clear_bf_ccs_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+        clear_bf_cc(v);
+        asan_poison_object_if(ptr, v);
+    }
+    return 0;
+}
+
+void
+rb_clear_bf_ccs(void)
+{
+    rb_objspace_each_objects(clear_bf_ccs_i, NULL);
 }
 
 static int
@@ -3589,8 +3627,9 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
         if (rb_obj_is_iseq(v)) {
             rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
         }
-        else if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
-            rb_vm_cc_general((struct rb_callcache *)v);
+        else if (clear_attr_cc(v)) {
+        }
+        else if (clear_bf_cc(v)) {
         }
 
         asan_poison_object_if(ptr, v);

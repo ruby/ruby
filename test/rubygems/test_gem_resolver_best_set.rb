@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemResolverBestSet < Gem::TestCase
@@ -29,7 +30,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map {|s| s.full_name }
+    assert_equal %w[a-1], found.map(&:full_name)
   end
 
   def test_find_all_fallback
@@ -49,7 +50,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     found = set.find_all req
 
-    assert_equal %w[a-1], found.map {|s| s.full_name }
+    assert_equal %w[a-1], found.map(&:full_name)
   end
 
   def test_find_all_local

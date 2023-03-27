@@ -33,7 +33,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     end
 
     @digest = OpenSSL::Digest.new Gem::Security::DIGEST_NAME
-    @trust_dir = Gem::Security.trust_dir.dir # HACK use the object
+    @trust_dir = Gem::Security.trust_dir.dir # HACK: use the object
 
     @no        = Gem::Security::NoSecurity
     @almost_no = Gem::Security::AlmostNoSecurity
@@ -452,7 +452,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name
+      "metadata.gz"
+    end
 
     digests = package.digest s
     metadata_gz_digest = digests[Gem::Security::DIGEST_NAME]["metadata.gz"]
@@ -475,7 +477,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name
+      "metadata.gz"
+    end
 
     digests = package.digest s
     digests[Gem::Security::DIGEST_NAME]["data.tar.gz"] = @digest.hexdigest "hello"
@@ -504,7 +508,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name
+      "metadata.gz"
+    end
 
     digests = package.digest s
     digests[Gem::Security::DIGEST_NAME]["data.tar.gz"] = @digest.hexdigest "hello"
@@ -530,6 +536,6 @@ class TestGemSecurityPolicy < Gem::TestCase
     digests    = { Gem::Security::DIGEST_NAME => { 0 => data } }
     signatures = { 0 => sign(data, key) }
 
-    return digests, signatures
+    [digests, signatures]
   end
 end if Gem::HAVE_OPENSSL

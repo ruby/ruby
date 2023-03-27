@@ -4,6 +4,7 @@ use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
 use crate::stats::YjitExitLocations;
+use crate::stats::incr_counter;
 
 use std::os::raw;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -96,6 +97,23 @@ fn rb_bug_panic_hook() {
 /// NOTE: this should be wrapped in RB_VM_LOCK_ENTER(), rb_vm_barrier() on the C side
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *const u8 {
+    // Reject ISEQs with very large temp stacks,
+    // this will allow us to use u8/i8 values to track stack_size and sp_offset
+    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
+    if stack_max >= i8::MAX as u32 {
+        incr_counter!(iseq_stack_too_large);
+        return std::ptr::null();
+    }
+
+    // Reject ISEQs that are too long,
+    // this will allow us to use u16 for instruction indices if we want to,
+    // very long ISEQs are also much more likely to be initialization code
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    if iseq_size >= u16::MAX as u32 {
+        incr_counter!(iseq_too_long);
+        return std::ptr::null();
+    }
+
     let maybe_code_ptr = gen_entry_point(iseq, ec);
 
     match maybe_code_ptr {

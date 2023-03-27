@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/security"
 
@@ -182,7 +183,7 @@ class TestGemSecurity < Gem::TestCase
     end
 
     assert_equal "incorrect signing key for re-signing " +
-                 "#{ALTERNATE_CERT.subject}",
+                 ALTERNATE_CERT.subject.to_s,
                  e.message
   end
 

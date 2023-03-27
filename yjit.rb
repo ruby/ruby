@@ -261,6 +261,8 @@ module RubyVM::YJIT
         $stderr.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
       end
 
+      $stderr.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
+      $stderr.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
       $stderr.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
       $stderr.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       $stderr.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
@@ -270,6 +272,10 @@ module RubyVM::YJIT
       $stderr.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
       $stderr.puts "defer_count:           " + format_number(13, stats[:defer_count])
       $stderr.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])
+
+      $stderr.puts "branch_insn_count:     " + format_number(13, stats[:branch_insn_count])
+      $stderr.puts "branch_known_count:    " + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
+
       $stderr.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
       $stderr.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
@@ -302,23 +308,24 @@ module RubyVM::YJIT
     end
 
     def print_sorted_exit_counts(stats, prefix:, how_many: 20, left_pad: 4) # :nodoc:
-      exits = []
-      stats.each do |k, v|
-        if k.start_with?(prefix)
-          exits.push [k.to_s.delete_prefix(prefix), v]
-        end
-      end
-
-      exits = exits.select { |_name, count| count > 0 }.sort_by { |_name, count| -count }.first(how_many)
       total_exits = total_exit_count(stats)
 
       if total_exits > 0
+        exits = []
+        stats.each do |k, v|
+          if k.start_with?(prefix)
+            exits.push [k.to_s.delete_prefix(prefix), v]
+          end
+        end
+
+        exits = exits.select { |_name, count| count > 0 }.max_by(how_many) { |_name, count| count }
+
         top_n_total = exits.sum { |name, count| count }
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
         $stderr.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
-        longest_insn_name_len = exits.map { |name, count| name.length }.max
+        longest_insn_name_len = exits.max_by { |name, count| name.length }.first.length
         exits.each do |name, count|
           padding = longest_insn_name_len + left_pad
           padded_name = "%#{padding}s" % name

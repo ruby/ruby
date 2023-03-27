@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -18,7 +19,7 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
       rake = rake.shellsplit
     else
       begin
-        rake = [Gem.ruby, "-I#{File.expand_path("../..", __dir__)}", "-rrubygems", Gem.bin_path("rake", "rake")]
+        rake = ruby << "-rrubygems" << Gem.bin_path("rake", "rake")
       rescue Gem::Exception
         rake = [Gem.default_exec_format % "rake"]
       end

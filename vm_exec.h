@@ -165,12 +165,6 @@ default:                        \
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
-#ifdef MJIT_HEADER
-#define THROW_EXCEPTION(exc) do { \
-    ec->errinfo = (VALUE)(exc); \
-    EC_JUMP_TAG(ec, ec->tag->state); \
-} while (0)
-#else
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
@@ -179,7 +173,14 @@ default:                        \
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
-#endif
+
+#define JIT_EXEC(ec, val) do { \
+    rb_jit_func_t func; \
+    if (val == Qundef && (func = jit_compile(ec))) { \
+        val = func(ec, ec->cfp); \
+        if (ec->tag->state) THROW_EXCEPTION(val); \
+    } \
+} while (0)
 
 #define SCREG(r) (reg_##r)
 
