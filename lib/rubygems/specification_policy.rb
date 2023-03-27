@@ -162,7 +162,7 @@ class Gem::SpecificationPolicy
       if prev = seen[dep.type][dep.name]
         error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
-    add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
+    add_#{dep.type}_dependency \"#{dep.name}\", \"#{dep.requirement}\", \"#{prev.requirement}\"
         MESSAGE
       end
 
@@ -205,16 +205,16 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       base = segments.first 2
 
       recommendation = if [">", ">="].include?(op) && segments == [0]
-        "  use a bounded requirement, such as '~> x.y'"
+        "  use a bounded requirement, such as \"~> x.y\""
       else
         bugfix = if op == ">"
-          ", '> #{dep_version}'"
+          ", \"> #{dep_version}\""
         elsif op == ">=" && base != segments
-          ", '>= #{dep_version}'"
+          ", \">= #{dep_version}\""
         end
 
         "  if #{dep.name} is semantically versioned, use:\n" \
-        "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join "."}'#{bugfix}"
+        "    add_#{dep.type}_dependency \"#{dep.name}\", \"~> #{base.join "."}\"#{bugfix}"
       end
 
       warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"

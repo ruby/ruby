@@ -2610,18 +2610,18 @@ end
 #{w}:  prerelease dependency on c (>= 2.0.rc2, development) is not recommended
 #{w}:  open-ended dependency on i (>= 1.2) is not recommended
   if i is semantically versioned, use:
-    add_runtime_dependency 'i', '~> 1.2'
+    add_runtime_dependency "i", "~> 1.2"
 #{w}:  open-ended dependency on j (>= 1.2.3) is not recommended
   if j is semantically versioned, use:
-    add_runtime_dependency 'j', '~> 1.2', '>= 1.2.3'
+    add_runtime_dependency "j", "~> 1.2", ">= 1.2.3"
 #{w}:  open-ended dependency on k (> 1.2) is not recommended
   if k is semantically versioned, use:
-    add_runtime_dependency 'k', '~> 1.2', '> 1.2'
+    add_runtime_dependency "k", "~> 1.2", "> 1.2"
 #{w}:  open-ended dependency on l (> 1.2.3) is not recommended
   if l is semantically versioned, use:
-    add_runtime_dependency 'l', '~> 1.2', '> 1.2.3'
+    add_runtime_dependency "l", "~> 1.2", "> 1.2.3"
 #{w}:  open-ended dependency on o (>= 0) is not recommended
-  use a bounded requirement, such as '~> x.y'
+  use a bounded requirement, such as "~> x.y"
 #{w}:  See https://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 
@@ -2645,9 +2645,9 @@ end
 
         expected = <<-EXPECTED
 duplicate dependency on b (>= 1.2.3), (~> 1.2) use:
-    add_runtime_dependency 'b', '>= 1.2.3', '~> 1.2'
+    add_runtime_dependency "b", ">= 1.2.3", "~> 1.2"
 duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
-    add_development_dependency 'c', '>= 1.2.3', '~> 1.2'
+    add_development_dependency "c", ">= 1.2.3", "~> 1.2"
         EXPECTED
 
         assert_equal expected, e.message
