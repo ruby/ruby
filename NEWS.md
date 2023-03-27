@@ -47,6 +47,7 @@ The following default gems are updated.
 * irb 1.6.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
+* reline 0.3.3
 * stringio 3.0.6
 * strscan 3.0.7
 * timeout 0.3.2
