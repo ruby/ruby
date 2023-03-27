@@ -433,6 +433,7 @@ generator = BindingGenerator.new(
       RUBY_T_MODULE
       RUBY_T_STRING
       RUBY_T_SYMBOL
+      RUBY_T_OBJECT
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
@@ -558,6 +559,7 @@ generator = BindingGenerator.new(
     rb_str_buf_append
     rb_str_dup
     rb_vm_yield_with_cfunc
+    rb_vm_set_ivar_id
   ],
   types: %w[
     CALL_DATA

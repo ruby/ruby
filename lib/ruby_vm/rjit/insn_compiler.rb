@@ -4028,8 +4028,7 @@ module RubyVM::RJIT
       in C::VM_METHOD_TYPE_CFUNC
         jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       in C::VM_METHOD_TYPE_ATTRSET
-        asm.incr_counter(:send_attrset)
-        return CantCompile
+        jit_call_attrset(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
       in C::VM_METHOD_TYPE_IVAR
         jit_call_ivar(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
       in C::VM_METHOD_TYPE_MISSING
@@ -4163,7 +4162,7 @@ module RubyVM::RJIT
       end
 
       # EXEC_EVENT_HOOK: RUBY_EVENT_C_CALL and RUBY_EVENT_C_RETURN
-      if C.rb_rjit_global_events & (C::RUBY_EVENT_C_CALL | C::RUBY_EVENT_C_RETURN) != 0
+      if c_method_tracing_currently_enabled?
         asm.incr_counter(:send_c_tracing)
         return CantCompile
       end
@@ -4259,6 +4258,58 @@ module RubyVM::RJIT
       assert_equal(1, ctx.sp_offset)
       jump_to_next_insn(jit, ctx, asm)
       EndBlock
+    end
+
+    # vm_call_attrset
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def jit_call_attrset(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
+      if flags & C::VM_CALL_ARGS_SPLAT != 0
+        asm.incr_counter(:send_attrset_splat)
+        return CantCompile
+      end
+      if flags & C::VM_CALL_KWARG != 0
+        asm.incr_counter(:send_attrset_kwarg)
+        return CantCompile
+      elsif argc != 1 || !C.RB_TYPE_P(comptime_recv, C::RUBY_T_OBJECT)
+        asm.incr_counter(:send_attrset_method)
+        return CantCompile
+      elsif c_method_tracing_currently_enabled?
+        # Can't generate code for firing c_call and c_return events
+        # See :attr-tracing:
+        asm.incr_counter(:send_c_tracingg)
+        return CantCompile
+      elsif flags & C::VM_CALL_ARGS_BLOCKARG != 0
+        asm.incr_counter(:send_attrset_blockarg)
+        return CantCompile
+      end
+
+      ivar_name = cme.def.body.attr.id
+
+      # This is a .send call and we need to adjust the stack
+      if flags & C::VM_CALL_OPT_SEND != 0
+        jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+      end
+
+      # Save the PC and SP because the callee may allocate
+      # Note that this modifies REG_SP, which is why we do it first
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # Get the operands from the stack
+      val_opnd = ctx.stack_pop(1)
+      recv_opnd = ctx.stack_pop(1)
+
+      # Call rb_vm_set_ivar_id with the receiver, the ivar name, and the value
+      asm.mov(C_ARGS[0], recv_opnd)
+      asm.mov(C_ARGS[1], ivar_name)
+      asm.mov(C_ARGS[2], val_opnd)
+      asm.call(C.rb_vm_set_ivar_id)
+
+      out_opnd = ctx.stack_push
+      asm.mov(out_opnd, C_RET)
+
+      KeepCompiling
     end
 
     # vm_call_ivar (+ part of vm_call_method_each_type)
@@ -5110,6 +5161,10 @@ module RubyVM::RJIT
         @exit_compiler.compile_full_cfunc_return(asm)
         @ocb.write(asm)
       end
+    end
+
+    def c_method_tracing_currently_enabled?
+      C.rb_rjit_global_events & (C::RUBY_EVENT_C_CALL | C::RUBY_EVENT_C_RETURN) != 0
     end
   end
 end

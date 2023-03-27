@@ -35,8 +35,6 @@ RJIT_RUNTIME_COUNTERS(
     send_protected_check_failed,
     send_tailcall,
     send_notimplemented,
-    send_cfunc,
-    send_attrset,
     send_missing,
     send_bmethod,
     send_alias,
@@ -74,7 +72,11 @@ RJIT_RUNTIME_COUNTERS(
     send_cfunc_too_many_args,
     send_cfunc_ruby_array_varg,
 
-    send_ivar,
+    send_attrset_splat,
+    send_attrset_kwarg,
+    send_attrset_method,
+    send_attrset_blockarg,
+
     send_ivar_splat,
     send_ivar_opt_send,
     send_ivar_blockarg,
