@@ -4103,15 +4103,6 @@ module RubyVM::RJIT
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
       end
 
-      # Save caller SP and PC before pushing a callee frame for backtrace and side exits
-      asm.comment('save SP to caller CFP')
-      recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
-      recv_idx += (block_handler == :captured) ? 0 : 1 # receiver is not on stack when captured->self is used
-      # Skip setting this to SP register. This cfp->sp will be copied to SP on leave insn.
-      asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -recv_idx)) # Pop receiver and arguments to prepare for side exits
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
-      jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
-
       frame_type ||= C::VM_FRAME_MAGIC_METHOD | C::VM_ENV_FLAG_LOCAL
       jit_push_frame(
         jit, ctx, asm, cme, flags, argc, frame_type, block_handler,
@@ -4217,14 +4208,6 @@ module RubyVM::RJIT
 
       # Check interrupts before SP motion to safely side-exit with the original SP.
       jit_check_ints(jit, ctx, asm)
-
-      # Save caller SP and PC before pushing a callee frame for backtrace and side exits
-      asm.comment('save SP to caller CFP')
-      sp_index = -(1 + argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)) # Pop receiver and arguments for side exits. blockarg is not popped yet
-      asm.lea(SP, ctx.sp_opnd(C.VALUE.size * sp_index))
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
-      ctx.sp_offset = -sp_index
-      jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
 
       # Push a callee frame. SP register and ctx are not modified inside this.
       jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler)
@@ -4619,6 +4602,21 @@ module RubyVM::RJIT
       asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
       asm.cmp(CFP, :rax)
       asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
+
+      # Save caller SP and PC before pushing a callee frame for backtrace and side exits
+      asm.comment('save SP to caller CFP')
+      recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
+      recv_idx += (block_handler == :captured) ? 0 : 1 # receiver is not on stack when captured->self is used
+      if iseq
+        # Skip setting this to SP register. This cfp->sp will be copied to SP on leave insn.
+        asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -recv_idx)) # Pop receiver and arguments to prepare for side exits
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
+      else
+        asm.lea(SP, ctx.sp_opnd(C.VALUE.size * -recv_idx))
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
+        ctx.sp_offset = recv_idx
+      end
+      jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
 
       # Pop blockarg after all side exits
       if flags & C::VM_CALL_ARGS_BLOCKARG != 0
