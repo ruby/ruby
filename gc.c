@@ -3677,7 +3677,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         cc_table_free(objspace, obj, FALSE);
         rb_class_remove_from_module_subclasses(obj);
         rb_class_remove_from_super_subclasses(obj);
-#if !USE_RVARGC
+#if !RCLASS_EXT_EMBEDDED
         xfree(RCLASS_EXT(obj));
 #endif
 
