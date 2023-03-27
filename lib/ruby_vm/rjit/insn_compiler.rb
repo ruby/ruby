@@ -4103,6 +4103,12 @@ module RubyVM::RJIT
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
       end
 
+      if block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
+        if jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
+          return KeepCompiling
+        end
+      end
+
       frame_type ||= C::VM_FRAME_MAGIC_METHOD | C::VM_ENV_FLAG_LOCAL
       jit_push_frame(
         jit, ctx, asm, cme, flags, argc, frame_type, block_handler,
@@ -4118,6 +4124,49 @@ module RubyVM::RJIT
       jit_direct_jump(iseq, pc, callee_ctx, asm)
 
       EndBlock
+    end
+
+    def jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
+      builtin_func = builtin_function(iseq)
+      if builtin_func.nil?
+        return false
+      end
+
+      # this is a .send call not currently supported for builtins
+      if flags & C::VM_CALL_OPT_SEND != 0
+        return false
+      end
+
+      builtin_argc = builtin_func.argc
+      if builtin_argc + 1 >= C_ARGS.size
+        return false
+      end
+
+      asm.comment('inlined leaf builtin')
+
+      # Skip this if it doesn't trigger GC
+      if iseq.body.builtin_attrs & C::BUILTIN_ATTR_NO_GC == 0
+        # The callee may allocate, e.g. Integer#abs on a Bignum.
+        # Save SP for GC, save PC for allocation tracing, and prepare
+        # for global invalidation after GC's VM lock contention.
+        jit_prepare_routine_call(jit, ctx, asm)
+      end
+
+      # Call the builtin func (ec, recv, arg1, arg2, ...)
+      asm.mov(C_ARGS[0], EC)
+
+      # Copy self and arguments
+      (0..builtin_argc).each do |i|
+        stack_opnd = ctx.stack_opnd(builtin_argc - i)
+        asm.mov(C_ARGS[i + 1], stack_opnd)
+      end
+      ctx.stack_pop(builtin_argc + 1)
+      asm.call(builtin_func.func_ptr)
+
+      # Push the return value
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+      return true
     end
 
     # vm_call_cfunc
@@ -5163,6 +5212,17 @@ module RubyVM::RJIT
 
     def c_method_tracing_currently_enabled?
       C.rb_rjit_global_events & (C::RUBY_EVENT_C_CALL | C::RUBY_EVENT_C_RETURN) != 0
+    end
+
+    # Return a builtin function if a given iseq consists of only that builtin function
+    def builtin_function(iseq)
+      opt_invokebuiltin_delegate_leave = INSNS.values.find { |i| i.name == :opt_invokebuiltin_delegate_leave }
+      leave = INSNS.values.find { |i| i.name == :leave }
+      if iseq.body.iseq_size == opt_invokebuiltin_delegate_leave.len + leave.len &&
+          C.rb_vm_insn_decode(iseq.body.iseq_encoded[0]) == opt_invokebuiltin_delegate_leave.bin &&
+          C.rb_vm_insn_decode(iseq.body.iseq_encoded[opt_invokebuiltin_delegate_leave.len]) == leave.bin
+        C.rb_builtin_function.new(iseq.body.iseq_encoded[1])
+      end
     end
   end
 end

@@ -396,6 +396,8 @@ generator = BindingGenerator.new(
       BOP_MOD
       BOP_OR
       BOP_PLUS
+      BUILTIN_ATTR_LEAF
+      BUILTIN_ATTR_NO_GC
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
       INVALID_SHAPE_ID
