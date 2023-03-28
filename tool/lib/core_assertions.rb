@@ -111,7 +111,9 @@ module Test
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
+        # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
+        pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        # For previous versions which implemented MJIT
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
         require_relative 'memory_status'
@@ -248,7 +250,11 @@ module Test
         at_exit {
           out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
         }
-        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
+        if defined?(Test::Unit::Runner)
+          Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+        elsif defined?(Test::Unit::AutoRunner)
+          Test::Unit::AutoRunner.need_auto_run = false
+        end
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
@@ -535,11 +541,11 @@ eom
         refute_respond_to(obj, meth, msg)
       end
 
-      # pattern_list is an array which contains regexp and :*.
+      # pattern_list is an array which contains regexp, string and :*.
       # :* means any sequence.
       #
       # pattern_list is anchored.
-      # Use [:*, regexp, :*] for non-anchored match.
+      # Use [:*, regexp/string, :*] for non-anchored match.
       def assert_pattern_list(pattern_list, actual, message=nil)
         rest = actual
         anchored = true
@@ -697,7 +703,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
+              (err.respond_to?(:full_message) ? err.full_message(highlight: false, order: :top) : err.message)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
@@ -731,6 +737,39 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions_foreach assert_all_assertions_foreach
+
+      # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
+      # Array, Range, Enumerator::ArithmeticSequence and other
+      # Enumerable-s, and each elements should be size factors.
+      #
+      # :yield: each elements of +seq+.
+      def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        first = seq.first
+        *arg = pre.call(first)
+        times = (0..(rehearsal || (2 * first))).map do
+          st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          yield(*arg)
+          t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
+          assert_operator 0, :<=, t
+          t.nonzero?
+        end
+        times.compact!
+        tmin, tmax = times.minmax
+        tmax *= tmax / tmin
+        tmax = 10**Math.log10(tmax).ceil
+
+        seq.each do |i|
+          next if i == first
+          t = tmax * i.fdiv(first)
+          *arg = pre.call(i)
+          message = "[#{i}]: in #{t}s"
+          Timeout.timeout(t, Timeout::Error, message) do
+            st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            yield(*arg)
+            assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
+          end
+        end
+      end
 
       def diff(exp, act)
         require 'pp'
