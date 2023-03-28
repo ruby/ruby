@@ -9,6 +9,10 @@ on:
     paths:
       - '.github/workflows/bundled_gems.yml'
       - 'gems/bundled_gems'
+  merge_group:
+    paths:
+      - '.github/workflows/bundled_gems.yml'
+      - 'gems/bundled_gems'
   schedule:
     - cron: '45 6 * * *'
   workflow_dispatch:
