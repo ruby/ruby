@@ -40,11 +40,6 @@ class Reline::Unicode
   CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
   OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
   WIDTH_SCANNER = /\G(?:(#{NON_PRINTING_START})|(#{NON_PRINTING_END})|(#{CSI_REGEXP})|(#{OSC_REGEXP})|(\X))/o
-  NON_PRINTING_START_INDEX = 0
-  NON_PRINTING_END_INDEX = 1
-  CSI_REGEXP_INDEX = 2
-  OSC_REGEXP_INDEX = 3
-  GRAPHEME_CLUSTER_INDEX = 4
 
   def self.get_mbchar_byte_size_by_first_char(c)
     # Checks UTF-8 character byte size
@@ -132,15 +127,14 @@ class Reline::Unicode
       width = 0
       rest = str.encode(Encoding::UTF_8)
       in_zero_width = false
-      rest.scan(WIDTH_SCANNER) do |gc|
+      rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
         case
-        when gc[NON_PRINTING_START_INDEX]
+        when non_printing_start
           in_zero_width = true
-        when gc[NON_PRINTING_END_INDEX]
+        when non_printing_end
           in_zero_width = false
-        when gc[CSI_REGEXP_INDEX], gc[OSC_REGEXP_INDEX]
-        when gc[GRAPHEME_CLUSTER_INDEX]
-          gc = gc[GRAPHEME_CLUSTER_INDEX]
+        when csi, osc
+        when gc
           unless in_zero_width
             width += get_mbchar_width(gc)
           end
@@ -161,22 +155,21 @@ class Reline::Unicode
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
     seq = String.new(encoding: encoding)
-    rest.scan(WIDTH_SCANNER) do |gc|
+    rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
       case
-      when gc[NON_PRINTING_START_INDEX]
+      when non_printing_start
         in_zero_width = true
         lines.last << NON_PRINTING_START
-      when gc[NON_PRINTING_END_INDEX]
+      when non_printing_end
         in_zero_width = false
         lines.last << NON_PRINTING_END
-      when gc[CSI_REGEXP_INDEX]
-        lines.last << gc[CSI_REGEXP_INDEX]
-        seq << gc[CSI_REGEXP_INDEX]
-      when gc[OSC_REGEXP_INDEX]
-        lines.last << gc[OSC_REGEXP_INDEX]
-        seq << gc[OSC_REGEXP_INDEX]
-      when gc[GRAPHEME_CLUSTER_INDEX]
-        gc = gc[GRAPHEME_CLUSTER_INDEX]
+      when csi
+        lines.last << csi
+        seq << csi
+      when osc
+        lines.last << osc
+        seq << osc
+      when gc
         unless in_zero_width
           mbchar_width = get_mbchar_width(gc)
           if (width += mbchar_width) > max_width
@@ -204,18 +197,17 @@ class Reline::Unicode
     total_width = 0
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
-    rest.scan(WIDTH_SCANNER) do |gc|
+    rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
       case
-      when gc[NON_PRINTING_START_INDEX]
+      when non_printing_start
         in_zero_width = true
-      when gc[NON_PRINTING_END_INDEX]
+      when non_printing_end
         in_zero_width = false
-      when gc[CSI_REGEXP_INDEX]
-        chunk << gc[CSI_REGEXP_INDEX]
-      when gc[OSC_REGEXP_INDEX]
-        chunk << gc[OSC_REGEXP_INDEX]
-      when gc[GRAPHEME_CLUSTER_INDEX]
-        gc = gc[GRAPHEME_CLUSTER_INDEX]
+      when csi
+        chunk << csi
+      when osc
+        chunk << osc
+      when gc
         if in_zero_width
           chunk << gc
         else
