@@ -1,7 +1,7 @@
 module RubyVM::RJIT
   class InsnCompiler
     # struct rb_calling_info. Storing flags instead of ci.
-    CallingInfo = Struct.new(:argc, :flags, :send_shift, :block_handler) do
+    CallingInfo = Struct.new(:argc, :flags, :kwarg, :send_shift, :block_handler) do
       def kw_splat = flags & C::VM_CALL_KW_SPLAT != 0
     end
 
@@ -4054,7 +4054,7 @@ module RubyVM::RJIT
       case cme.def.type
       in C::VM_METHOD_TYPE_ISEQ
         iseq = def_iseq_ptr(cme.def)
-        jit_call_iseq_setup(jit, ctx, asm, cme, calling, iseq)
+        jit_call_iseq(jit, ctx, asm, cme, calling, iseq)
       in C::VM_METHOD_TYPE_NOTIMPLEMENTED
         asm.incr_counter(:send_notimplemented)
         return CantCompile
@@ -4083,6 +4083,230 @@ module RubyVM::RJIT
         asm.incr_counter(:send_refined)
         return CantCompile
       end
+    end
+
+    # vm_call_iseq_setup
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def jit_call_iseq(jit, ctx, asm, cme, calling, iseq, frame_type: nil, prev_ep: nil)
+      argc = calling.argc
+      flags = calling.flags
+      send_shift = calling.send_shift
+      block_handler = calling.block_handler
+
+      # When you have keyword arguments, there is an extra object that gets
+      # placed on the stack the represents a bitmap of the keywords that were not
+      # specified at the call site. We need to keep track of the fact that this
+      # value is present on the stack in order to properly set up the callee's
+      # stack pointer.
+      doing_kw_call = iseq.body.param.flags.has_kw
+      supplying_kws = flags & C::VM_CALL_KWARG != 0
+
+      if flags & C::VM_CALL_TAILCALL != 0
+        # We can't handle tailcalls
+        asm.incr_counter(:send_tailcall)
+        return CantCompile
+      end
+
+      # No support for callees with these parameters yet as they require allocation
+      # or complex handling.
+      if iseq.body.param.flags.has_post
+        asm.incr_counter(:send_iseq_complex_has_opt)
+        return CantCompile
+      end
+      if iseq.body.param.flags.has_kwrest
+        asm.incr_counter(:send_iseq_complex_has_kwrest)
+        return CantCompile
+      end
+
+      # In order to handle backwards compatibility between ruby 3 and 2
+      # ruby2_keywords was introduced. It is called only on methods
+      # with splat and changes they way they handle them.
+      # We are just going to not compile these.
+      # https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
+      if iseq.body.param.flags.ruby2_keywords && flags & C::VM_CALL_ARGS_SPLAT != 0
+        asm.incr_counter(:send_iseq_ruby2_keywords)
+        return CantCompile
+      end
+
+      iseq_has_rest = iseq.body.param.flags.has_rest
+      if iseq_has_rest && block_handler == :captured
+        asm.incr_counter(:send_iseq_has_rest_and_captured)
+        return CantCompile
+      end
+
+      if iseq_has_rest && iseq.body.param.flags.has_kw
+        asm.incr_counter(:send_iseq_has_rest_and_kw)
+        return CantCompile
+      end
+
+      # If we have keyword arguments being passed to a callee that only takes
+      # positionals, then we need to allocate a hash. For now we're going to
+      # call that too complex and bail.
+      if supplying_kws && !iseq.body.param.flags.has_kw
+        asm.incr_counter(:send_iseq_has_no_kw)
+        return CantCompile
+      end
+
+      # If we have a method accepting no kwargs (**nil), exit if we have passed
+      # it any kwargs.
+      if supplying_kws && iseq.body.param.flags.accepts_no_kwarg
+        asm.incr_counter(:send_iseq_complex_accepts_no_kwarg)
+        return CantCompile
+      end
+
+      # For computing number of locals to set up for the callee
+      num_params = iseq.body.param.size
+
+      # Block parameter handling. This mirrors setup_parameters_complex().
+      if iseq.body.param.flags.has_block
+        if iseq.body.local_iseq.to_i == iseq.to_i
+          num_params -= 1
+        else
+          # In this case (param.flags.has_block && local_iseq != iseq),
+          # the block argument is setup as a local variable and requires
+          # materialization (allocation). Bail.
+          asm.incr_counter(:send_iseq_materialized_block)
+          return CantCompile
+        end
+      end
+
+      if flags & C::VM_CALL_ARGS_SPLAT != 0 && flags & C::VM_CALL_ZSUPER != 0
+        # zsuper methods are super calls without any arguments.
+        # They are also marked as splat, but don't actually have an array
+        # they pull arguments from, instead we need to change to call
+        # a different method with the current stack.
+        asm.incr_counter(:send_iseq_zsuper)
+        return CantCompile
+      end
+
+      start_pc_offset = 0
+      required_num = iseq.body.param.lead_num
+
+      # This struct represents the metadata about the caller-specified
+      # keyword arguments.
+      kw_arg = calling.kwarg
+      kw_arg_num = if kw_arg.nil?
+        0
+      else
+        kw_arg.keyword_len
+      end
+
+      # Arity handling and optional parameter setup
+      opts_filled = argc - required_num - kw_arg_num
+      opt_num = iseq.body.param.opt_num
+      opts_missing = opt_num - opts_filled
+
+      if doing_kw_call && flags & C::VM_CALL_ARGS_SPLAT != 0
+        asm.incr_counter(:send_iseq_splat_with_kw)
+        return CantCompile
+      end
+
+      if iseq_has_rest && opt_num != 0
+        asm.incr_counter(:send_iseq_has_rest_and_optional)
+        return CantCompile
+      end
+
+      if opts_filled < 0 && flags & C::VM_CALL_ARGS_SPLAT == 0
+        # Too few arguments and no splat to make up for it
+        asm.incr_counter(:send_iseq_arity_error)
+        return CantCompile
+      end
+
+      if opts_filled > opt_num && !iseq_has_rest
+        # Too many arguments and no place to put them (i.e. rest arg)
+        asm.incr_counter(:send_iseq_arity_error)
+        return CantCompile
+      end
+
+      # block_arg = flags & C::VM_CALL_ARGS_BLOCKARG != 0
+      # jit_caller_setup_arg_block already handled send_blockarg_not_nil_or_proxy
+
+      # If we have unfilled optional arguments and keyword arguments then we
+      # would need to adjust the arguments location to account for that.
+      # For now we aren't handling this case.
+      if doing_kw_call && opts_missing > 0
+        asm.incr_counter(:send_iseq_missing_optional_kw)
+        return CantCompile
+      end
+
+      # We will handle splat case later
+      if opt_num > 0 && flags & C::VM_CALL_ARGS_SPLAT == 0
+        num_params -= opts_missing
+        start_pc_offset = iseq.body.param.opt_table[opts_filled]
+      end
+
+      if doing_kw_call
+        asm.incr_counter(:send_iseq_kw_call)
+        return CantCompile
+      end
+
+      # Number of locals that are not parameters
+      num_locals = iseq.body.local_table_size - num_params
+
+      # blockarg is currently popped in jit_push_frame
+
+      if block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
+        if jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
+          return KeepCompiling
+        end
+      end
+
+      # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+      arg_setup_block = (block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
+      block_arg0_splat = arg_setup_block && argc == 1 &&
+        iseq.body.param.flags.has_lead && !iseq.body.param.flags.ambiguous_param0
+
+      # push_splat_args does stack manipulation so we can no longer side exit
+      if flags & C::VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
+        asm.incr_counter(:send_iseq_splat)
+        return CantCompile
+      end
+
+      # This is a .send call and we need to adjust the stack
+      if flags & C::VM_CALL_OPT_SEND != 0
+        jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+      end
+
+      if doing_kw_call
+        asm.incr_counter(:send_iseq_kw_call)
+        return CantCompile
+      end
+
+      # Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
+      # on vm_callee_setup_block_arg for arg_setup_block. This is done after CALLER_SETUP_ARG
+      # and CALLER_REMOVE_EMPTY_KW_SPLAT, so this implementation is put here. This may need
+      # side exits, so you still need to allow side exits here if block_arg0_splat is true.
+      # Note that you can't have side exits after this arg0 splat.
+      if block_arg0_splat
+        asm.incr_counter(:send_iseq_block_arg0_splat)
+        return CantCompile
+      end
+
+      if iseq_has_rest
+        asm.incr_counter(:send_iseq_has_rest)
+        return CantCompile
+      end
+
+      # Setup the new frame
+      frame_type ||= C::VM_FRAME_MAGIC_METHOD | C::VM_ENV_FLAG_LOCAL
+      jit_push_frame(
+        jit, ctx, asm, cme, flags, argc, frame_type, block_handler,
+        iseq:       iseq,
+        local_size: num_locals,
+        stack_max:  iseq.body.stack_max,
+        prev_ep:,
+      )
+
+      # Create a context for the callee
+      callee_ctx = Context.new
+
+      # Directly jump to the entry point of the callee
+      pc = (iseq.body.iseq_encoded + start_pc_offset).to_i
+      jit_direct_jump(iseq, pc, callee_ctx, asm)
+
+      EndBlock
     end
 
     # vm_call_iseq_setup (ISEQ only)
@@ -4154,6 +4378,7 @@ module RubyVM::RJIT
         local_size: iseq.body.local_table_size - iseq.body.param.size,
         stack_max:  iseq.body.stack_max,
         prev_ep:,
+        push_opts: true,
       )
 
       # Jump to a stub for the callee ISEQ
@@ -4695,7 +4920,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
+    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil, push_opts: false)
       # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max)
       asm.comment('stack overflow check')
       asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
@@ -4706,6 +4931,7 @@ module RubyVM::RJIT
       asm.comment('save SP to caller CFP')
       recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
       recv_idx += (block_handler == :captured) ? 0 : 1 # receiver is not on stack when captured->self is used
+      # TODO: consider doing_kw_call
       if iseq
         # Skip setting this to SP register. This cfp->sp will be copied to SP on leave insn.
         asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -recv_idx)) # Pop receiver and arguments to prepare for side exits
@@ -4722,7 +4948,7 @@ module RubyVM::RJIT
         ctx.stack_pop(1)
       end
 
-      if iseq
+      if iseq && push_opts
         # This was not handled in jit_callee_setup_arg
         opts_filled = argc - iseq.body.param.lead_num # TODO: kwarg
         opts_missing = iseq.body.param.opt_num - opts_filled
@@ -5279,6 +5505,7 @@ module RubyVM::RJIT
       CallingInfo.new(
         argc: C.vm_ci_argc(ci),
         flags: C.vm_ci_flag(ci),
+        kwarg: C.vm_ci_kwarg(ci),
         send_shift: 0,
         block_handler:,
       )

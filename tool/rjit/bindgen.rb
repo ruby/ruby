@@ -457,6 +457,7 @@ generator = BindingGenerator.new(
       VM_CALL_OPT_SEND
       VM_CALL_TAILCALL
       VM_CALL_TAILCALL_bit
+      VM_CALL_ZSUPER
       VM_ENV_DATA_INDEX_FLAGS
       VM_ENV_DATA_SIZE
       VM_ENV_FLAG_LOCAL
@@ -614,6 +615,7 @@ generator = BindingGenerator.new(
     rb_jit_func_t
     rb_iseq_param_keyword
     rb_rjit_options
+    rb_callinfo_kwarg
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[
