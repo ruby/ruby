@@ -4709,7 +4709,7 @@ Init_Regexp(void)
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);
-    rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance, -1);
+    rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, 1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, 1);
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);
