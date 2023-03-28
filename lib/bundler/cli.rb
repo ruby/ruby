@@ -5,6 +5,7 @@ require_relative "vendored_thor"
 module Bundler
   class CLI < Thor
     require_relative "cli/common"
+    require_relative "cli/install"
 
     package_name "Bundler"
 
@@ -69,7 +70,7 @@ module Bundler
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
       current_cmd = args.last[:current_command].name
-      auto_install if AUTO_INSTALL_CMDS.include?(current_cmd)
+      Bundler.auto_install if AUTO_INSTALL_CMDS.include?(current_cmd)
     rescue UnknownArgumentError => e
       raise InvalidOption, e.message
     ensure
@@ -736,26 +737,6 @@ module Bundler
     end
 
     private
-
-    # Automatically invoke `bundle install` and resume if
-    # Bundler.settings[:auto_install] exists. This is set through config cmd
-    # `bundle config set --global auto_install 1`.
-    #
-    # Note that this method `nil`s out the global Definition object, so it
-    # should be called first, before you instantiate anything like an
-    # `Installer` that'll keep a reference to the old one instead.
-    def auto_install
-      return unless Bundler.settings[:auto_install]
-
-      begin
-        Bundler.definition.specs
-      rescue GemNotFound, GitError
-        Bundler.ui.info "Automatically installing missing gems."
-        Bundler.reset!
-        invoke :install, []
-        Bundler.reset!
-      end
-    end
 
     def current_command
       _, _, config = @_initializer

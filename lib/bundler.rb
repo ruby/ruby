@@ -40,6 +40,7 @@ module Bundler
   SUDO_MUTEX = Thread::Mutex.new
 
   autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
+  autoload :CLI,                    File.expand_path("bundler/cli", __dir__)
   autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
@@ -162,6 +163,25 @@ module Bundler
         @setup = load.setup
       else
         load.setup(*groups)
+      end
+    end
+
+    # Automatically install dependencies if Bundler.settings[:auto_install] exists.
+    # This is set through config cmd `bundle config set --global auto_install 1`.
+    #
+    # Note that this method `nil`s out the global Definition object, so it
+    # should be called first, before you instantiate anything like an
+    # `Installer` that'll keep a reference to the old one instead.
+    def auto_install
+      return unless settings[:auto_install]
+
+      begin
+        definition.specs
+      rescue GemNotFound, GitError
+        ui.info "Automatically installing missing gems."
+        reset!
+        CLI::Install.new({}).run
+        reset!
       end
     end
 
