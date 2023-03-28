@@ -51,6 +51,7 @@ The following default gems are updated.
 * stringio 3.0.6
 * strscan 3.0.7
 * timeout 0.3.2
+* uri 0.12.1
 
 The following bundled gems are updated.
 
