@@ -16,7 +16,7 @@ RSpec.describe "bundle platform" do
 Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
-* #{specific_local_platform}
+* #{local_platform}
 
 Your Gemfile specifies a Ruby version requirement:
 * ruby #{Gem.ruby_version}
@@ -39,7 +39,7 @@ G
 Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
-* #{specific_local_platform}
+* #{local_platform}
 
 Your Gemfile specifies a Ruby version requirement:
 * #{Bundler::RubyVersion.system.single_version_string}
@@ -60,7 +60,7 @@ G
 Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
-* #{specific_local_platform}
+* #{local_platform}
 
 Your Gemfile does not specify a Ruby version requirement.
 G
@@ -80,7 +80,7 @@ G
 Your platform is: #{Gem::Platform.local}
 
 Your app has gems that work on these platforms:
-* #{specific_local_platform}
+* #{local_platform}
 
 Your Gemfile specifies a Ruby version requirement:
 * ruby #{not_local_ruby_version}

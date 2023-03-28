@@ -55,6 +55,23 @@ class Gem::Ext::Builder
     end
   end
 
+  def self.ruby
+    require "shellwords"
+    # Gem.ruby is quoted if it contains whitespace
+    cmd = Gem.ruby.shellsplit
+
+    # This load_path is only needed when running rubygems test without a proper installation.
+    # Prepending it in a normal installation will cause problem with order of $LOAD_PATH.
+    # Therefore only add load_path if it is not present in the default $LOAD_PATH.
+    load_path = File.expand_path("../..", __dir__)
+    case load_path
+    when RbConfig::CONFIG["sitelibdir"], RbConfig::CONFIG["vendorlibdir"], RbConfig::CONFIG["rubylibdir"]
+      cmd
+    else
+      cmd << "-I#{load_path}"
+    end
+  end
+
   def self.run(command, results, command_name = nil, dir = Dir.pwd, env = {})
     verbose = Gem.configuration.really_verbose
 

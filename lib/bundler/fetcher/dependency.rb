@@ -34,13 +34,9 @@ module Bundler
 
         returned_gems = spec_list.map(&:first).uniq
         specs(deps_list, full_dependency_list + returned_gems, spec_list + last_spec_list)
-      rescue MarshalError
+      rescue MarshalError, HTTPError, GemspecError
         Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
         Bundler.ui.debug "could not fetch from the dependency API, trying the full index"
-        nil
-      rescue HTTPError, GemspecError
-        Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
-        Bundler.ui.debug "could not fetch from the dependency API\nit's suggested to retry using the full index via `bundle install --full-index`"
         nil
       end
 
