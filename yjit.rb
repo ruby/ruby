@@ -29,6 +29,7 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
+  # Resume YJIT compilation after paused on startup with --yjit-pause
   def self.resume
     Primitive.rb_yjit_resume
   end
