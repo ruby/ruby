@@ -140,7 +140,8 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     }
 
     let cb = CodegenGlobals::get_inline_cb();
-    cb.code_gc();
+    let ocb = CodegenGlobals::get_outlined_cb();
+    cb.code_gc(ocb);
     Qnil
 }
 
