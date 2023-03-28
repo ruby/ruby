@@ -26,5 +26,3 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
-test_taint(PathnameInstanceTest) removed at ruby/pathname@c52fd3a835
-test_untaint(PathnameInstanceTest) removed at ruby/pathname@c52fd3a835
