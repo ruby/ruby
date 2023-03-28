@@ -1161,4 +1161,87 @@ RSpec.describe "bundle lock" do
       L
     end
   end
+
+  context "when adding a new gem that requires unlocking other transitive deps" do
+    before do
+      build_repo4 do
+        build_gem "govuk_app_config", "0.1.0"
+
+        build_gem "govuk_app_config", "4.13.0" do |s|
+          s.add_dependency "railties", ">= 5.0"
+        end
+
+        %w[7.0.4.1 7.0.4.3].each do |v|
+          build_gem "railties", v do |s|
+            s.add_dependency "actionpack", v
+            s.add_dependency "activesupport", v
+          end
+
+          build_gem "activesupport", v
+          build_gem "actionpack", v
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "govuk_app_config"
+        gem "activesupport", "7.0.4.3"
+      G
+
+      # Simulate out of sync lockfile because top level dependency on
+      # activesuport has just been added to the Gemfile, and locked to a higher
+      # version
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            actionpack (7.0.4.1)
+            activesupport (7.0.4.1)
+            govuk_app_config (4.13.0)
+              railties (>= 5.0)
+            railties (7.0.4.1)
+              actionpack (= 7.0.4.1)
+              activesupport (= 7.0.4.1)
+
+        PLATFORMS
+          arm64-darwin-22
+
+        DEPENDENCIES
+          govuk_app_config
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "does not downgrade top level dependencies" do
+      simulate_platform "arm64-darwin-22" do
+        bundle "lock"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            actionpack (7.0.4.3)
+            activesupport (7.0.4.3)
+            govuk_app_config (4.13.0)
+              railties (>= 5.0)
+            railties (7.0.4.3)
+              actionpack (= 7.0.4.3)
+              activesupport (= 7.0.4.3)
+
+        PLATFORMS
+          arm64-darwin-22
+
+        DEPENDENCIES
+          activesupport (= 7.0.4.3)
+          govuk_app_config
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
 end
