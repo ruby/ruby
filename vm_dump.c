@@ -950,27 +950,25 @@ rb_dump_machine_register(const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[REG_S2+8], "s10");
         dump_machine_register(mctx->__gregs[REG_S2+9], "s11");
 #   elif defined __loongarch64
-        dump_machine_register(mctx->__gregs[LARCH_REG_SP], "sp");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0], "a0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+1], "a1");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+2], "a2");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+3], "a3");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+4], "a4");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+5], "a5");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+6], "a6");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+1], "s1");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+2], "s2");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+3], "s3");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+4], "s4");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+5], "s5");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+6], "s6");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+7], "s7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+8], "s8");
+        dump_machine_register(mctx->__gregs[3], "sp");
+        dump_machine_register(mctx->__gregs[4], "a0");
+        dump_machine_register(mctx->__gregs[5], "a1");
+        dump_machine_register(mctx->__gregs[6], "a2");
+        dump_machine_register(mctx->__gregs[7], "a3");
+        dump_machine_register(mctx->__gregs[8], "a4");
+        dump_machine_register(mctx->__gregs[9], "a5");
+        dump_machine_register(mctx->__gregs[10], "a6");
+        dump_machine_register(mctx->__gregs[11], "a7");
+        dump_machine_register(mctx->__gregs[22], "fp");
+        dump_machine_register(mctx->__gregs[23], "s0");
+        dump_machine_register(mctx->__gregs[24], "s1");
+        dump_machine_register(mctx->__gregs[25], "s2");
+        dump_machine_register(mctx->__gregs[26], "s3");
+        dump_machine_register(mctx->__gregs[27], "s4");
+        dump_machine_register(mctx->__gregs[28], "s5");
+        dump_machine_register(mctx->__gregs[29], "s6");
+        dump_machine_register(mctx->__gregs[30], "s7");
+        dump_machine_register(mctx->__gregs[31], "s8");
 #   endif
     }
 # elif defined __APPLE__
