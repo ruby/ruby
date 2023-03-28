@@ -51,6 +51,29 @@ class TestYJIT < Test::Unit::TestCase
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
+  def test_starting_paused
+    program = <<~RUBY
+      def not_compiled = nil
+      def will_compile = nil
+      def compiled_counts = RubyVM::YJIT.runtime_stats[:compiled_iseq_count]
+      counts = []
+      not_compiled
+      counts << compiled_counts
+
+      RubyVM::YJIT.resume
+
+      will_compile
+      counts << compiled_counts
+
+      if counts[0] == 0 && counts[1] > 0
+        p :ok
+      end
+    RUBY
+    assert_in_out_err(%w[--yjit-pause --yjit-stats --yjit-call-threshold=1], program, success: true) do |stdout, stderr|
+      assert_equal([":ok"], stdout)
+    end
+  end
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = EnvUtil.invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")

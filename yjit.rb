@@ -29,6 +29,11 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
+  # Resume YJIT compilation after paused on startup with --yjit-pause
+  def self.resume
+    Primitive.rb_yjit_resume
+  end
+
   # If --yjit-trace-exits is enabled parse the hashes from
   # Primitive.rb_yjit_get_exit_locations into a format readable
   # by Stackprof. This will allow us to find the exact location of a
