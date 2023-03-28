@@ -5,7 +5,7 @@
 static VALUE sym_wait_readable, sym_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-static VALUE rb_cAncillaryData;
+VALUE rb_cAncillaryData;
 
 static VALUE
 constant_to_sym(int constant, ID (*intern_const)(int))
@@ -269,6 +269,51 @@ ancillary_unix_rights(VALUE self)
 #else
 #define ancillary_unix_rights rb_f_notimplement
 #endif
+
+/*
+ * call-seq:
+ *   ancillarydata.credentials(local_creds_enabled: false, socket: nil) =>  Socket::Credentials instance
+ *
+ * Interprets the contents of this ancillary message as a Socket::Credentials
+ * instance. If the ancillary data is not of type SCM_CREDS or SCM_CREDENTIALS,
+ * an exception is raised, or if the data is malformed, an exception is raised.
+ *
+ * If _local_creds_enabled_ or _socket_ are passed in, they are used to resolve
+ * any ambiguity in the format of the ancillary message data as described for
+ * Socket::Credentials.from_ancillary_data
+ */
+static VALUE
+ancillary_credentials(int argc, VALUE *argv, VALUE self)
+{
+    /* Annoyingly, we need to support passing local_creds_enabled: and
+     * socket: kwargs through to Socket::Credentials::from_ancillary_data,
+     * if present. It's kind of verbose to do that in C. */
+    VALUE kwarg_hash = Qnil;
+    ID kwarg_keys[2] = {
+      rb_intern("local_creds_enabled"),
+      rb_intern("socket"),
+    };
+    VALUE kwarg_values[2] = { Qundef, Qundef };
+
+    rb_scan_args(argc, argv, "0:", &kwarg_hash);
+    if (RB_TEST(kwarg_hash)) {
+        rb_get_kwargs(kwarg_hash, kwarg_keys, 0, 2, kwarg_values);
+    }
+
+    VALUE passed_args[4];
+    passed_args[0] = rb_attr_get(self, rb_intern("level"));
+    passed_args[1] = rb_attr_get(self, rb_intern("type"));
+    passed_args[2] = rb_attr_get(self, rb_intern("data"));
+    passed_args[3] = RB_TEST(kwarg_hash) ? kwarg_hash : rb_hash_new();
+
+    VALUE r = rb_funcallv_kw(rb_cSocketCredentials, rb_intern("from_ancillary_data"),
+                             4, passed_args, 1);
+    if (!RB_TEST(r)) {
+        rb_raise(rb_eTypeError,
+                 "SCM_CREDS or SCM_CREDENTIALS ancillary data was malformed");
+    }
+    return r;
+}
 
 #if defined(SCM_TIMESTAMP) || defined(SCM_TIMESTAMPNS) || defined(SCM_BINTIME)
 /*
@@ -688,88 +733,19 @@ anc_inspect_socket_rights(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(SCM_CREDENTIALS) /* GNU/Linux */
-static int
-anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
-{
-    if (level == SOL_SOCKET && type == SCM_CREDENTIALS &&
-        RSTRING_LEN(data) == sizeof(struct ucred)) {
-        struct ucred cred;
-        memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
-        rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
-        rb_str_cat2(ret, " (ucred)");
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-#endif
 
-#if defined(SCM_CREDS)
-#define INSPECT_SCM_CREDS
+#if defined(SCM_CREDS) || defined(SCM_CREDENTIALS)
 static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
-    if (level != SOL_SOCKET && type != SCM_CREDS)
+    VALUE cr = rb_funcall(rb_cSocketCredentials, rb_intern("from_ancillary_data"), 3,
+                          RB_INT2NUM(level), RB_INT2NUM(type), data);
+    if (!RB_TEST(cr)) {
         return 0;
-
-    /*
-     * FreeBSD has struct cmsgcred and struct sockcred.
-     * They use both SOL_SOCKET/SCM_CREDS in the ancillary message.
-     * They are not ambiguous from the view of the caller
-     * because struct sockcred is sent if and only if the caller sets LOCAL_CREDS socket option.
-     * But inspect method doesn't know it.
-     * So they are ambiguous from the view of inspect.
-     * This function distinguish them by the size of the ancillary message.
-     * This heuristics works well except when sc_ngroups == CMGROUP_MAX.
-     */
-
-#if defined(HAVE_TYPE_STRUCT_CMSGCRED) /* FreeBSD */
-    if (RSTRING_LEN(data) == sizeof(struct cmsgcred)) {
-        struct cmsgcred cred;
-        memcpy(&cred, RSTRING_PTR(data), sizeof(struct cmsgcred));
-        rb_str_catf(ret, " pid=%u", cred.cmcred_pid);
-        rb_str_catf(ret, " uid=%u", cred.cmcred_uid);
-        rb_str_catf(ret, " euid=%u", cred.cmcred_euid);
-        rb_str_catf(ret, " gid=%u", cred.cmcred_gid);
-        if (cred.cmcred_ngroups) {
-            int i;
-            const char *sep = " groups=";
-            for (i = 0; i < cred.cmcred_ngroups; i++) {
-                rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
-                sep = ",";
-            }
-        }
-        rb_str_cat2(ret, " (cmsgcred)");
-        return 1;
     }
-#endif
-#if defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
-    if ((size_t)RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
-        struct sockcred cred0, *cred;
-        memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
-        if ((size_t)RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
-            cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
-            memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
-            rb_str_catf(ret, " uid=%u", cred->sc_uid);
-            rb_str_catf(ret, " euid=%u", cred->sc_euid);
-            rb_str_catf(ret, " gid=%u", cred->sc_gid);
-            rb_str_catf(ret, " egid=%u", cred->sc_egid);
-            if (cred0.sc_ngroups) {
-                int i;
-                const char *sep = " groups=";
-                for (i = 0; i < cred0.sc_ngroups; i++) {
-                    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
-                    sep = ",";
-                }
-            }
-            rb_str_cat2(ret, " (sockcred)");
-            return 1;
-        }
-    }
-#endif
-    return 0;
+    VALUE fragment = rsock_credentials_inspect_fragment(cr);
+    rb_str_append(ret, fragment);
+    return 1;
 }
 #endif
 
@@ -1030,9 +1006,9 @@ ancillary_inspect(VALUE self)
               case SCM_RIGHTS: inspected = anc_inspect_socket_rights(level, type, data, ret); break;
 #            endif
 #            if defined(SCM_CREDENTIALS) /* GNU/Linux */
-              case SCM_CREDENTIALS: inspected = anc_inspect_passcred_credentials(level, type, data, ret); break;
+              case SCM_CREDENTIALS: inspected = anc_inspect_socket_creds(level, type, data, ret); break;
 #            endif
-#            if defined(INSPECT_SCM_CREDS) /* NetBSD */
+#            if defined(SCM_CREDS) /* FreeBSD, NetBSD */
               case SCM_CREDS: inspected = anc_inspect_socket_creds(level, type, data, ret); break;
 #            endif
             }
@@ -1721,6 +1697,7 @@ rsock_init_ancdata(void)
 
     rb_define_singleton_method(rb_cAncillaryData, "unix_rights", ancillary_s_unix_rights, -1);
     rb_define_method(rb_cAncillaryData, "unix_rights", ancillary_unix_rights, 0);
+    rb_define_method(rb_cAncillaryData, "credentials", ancillary_credentials, -1);
 
     rb_define_method(rb_cAncillaryData, "timestamp", ancillary_timestamp, 0);
 

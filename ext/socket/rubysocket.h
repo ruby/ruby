@@ -283,6 +283,10 @@ extern VALUE rb_cUNIXServer;
 extern VALUE rb_cSocket;
 extern VALUE rb_cAddrinfo;
 extern VALUE rb_cSockOpt;
+extern VALUE rb_cSocketCredentials;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+extern VALUE rb_cAncillaryData;
+#endif
 
 extern VALUE rb_eSocket;
 
@@ -413,6 +417,8 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 
+VALUE rsock_credentials_inspect_fragment(VALUE creds);
+
 void rsock_init_basicsocket(void);
 void rsock_init_ipsocket(void);
 void rsock_init_tcpsocket(void);
@@ -427,6 +433,7 @@ void rsock_init_addrinfo(void);
 void rsock_init_sockopt(void);
 void rsock_init_sockifaddr(void);
 void rsock_init_socket_init(void);
+void rsock_init_credentials(void);
 
 NORETURN(void rsock_syserr_fail_host_port(int err, const char *, VALUE, VALUE));
 NORETURN(void rsock_syserr_fail_path(int err, const char *, VALUE));

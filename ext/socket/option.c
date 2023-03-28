@@ -377,6 +377,33 @@ sockopt_linger(VALUE self)
 
 /*
  * call-seq:
+ *   sockopt.credentials => Socket::Credentials instance
+ *
+ * Interprets the socket option data as a unix credential.
+ *
+ *   s1, s2 = UNIXSocket.pair
+ *   sockopt = s1.getsockopt(:SOCKET, :PEERCRED)
+ *   p sockopt.credentials
+ *   => #<Socket::Credentials: pid=339326 uid=1000 euid=1000 gid=1000 egid=1000 (ucred)>
+ */
+static VALUE
+sockopt_credentials(VALUE self)
+{
+    int level = sockopt_level(self);
+    int optname = sockopt_optname(self);
+    VALUE data = sockopt_data(self);
+
+    VALUE r = rb_funcall(rb_cSocketCredentials, rb_intern("from_sockopt"),
+                         3, RB_INT2NUM(level), RB_INT2NUM(optname), data);
+    if (!RB_TEST(r)) {
+        rb_raise(rb_eTypeError,
+                 "socket option was wrong type or contained malformed credential data");
+    }
+    return r;
+}
+
+/*
+ * call-seq:
  *   Socket::Option.ipv4_multicast_loop(integer) => sockopt
  *
  * Creates a new Socket::Option object for IP_MULTICAST_LOOP.
@@ -1137,54 +1164,18 @@ inspect_tcp_info(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(SOL_SOCKET) && defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
-#if defined(__OpenBSD__)
-#define RUBY_SOCK_PEERCRED struct sockpeercred
-#else
-#define RUBY_SOCK_PEERCRED struct ucred
-#endif
+#if defined(SO_PEERCRED) || defined(LOCAL_PEERCRED)
 static int
-inspect_peercred(int level, int optname, VALUE data, VALUE ret)
+inspect_credentials(int level, int optname, VALUE data, VALUE ret)
 {
-    if (RSTRING_LEN(data) == sizeof(RUBY_SOCK_PEERCRED)) {
-        RUBY_SOCK_PEERCRED cred;
-        memcpy(&cred, RSTRING_PTR(data), sizeof(RUBY_SOCK_PEERCRED));
-        rb_str_catf(ret, " pid=%u euid=%u egid=%u",
-                    (unsigned)cred.pid, (unsigned)cred.uid, (unsigned)cred.gid);
-        rb_str_cat2(ret, " (ucred)");
-        return 1;
-    }
-    else {
+    VALUE cr = rb_funcall(rb_cSocketCredentials, rb_intern("from_sockopt"), 3,
+                          RB_INT2NUM(level), RB_INT2NUM(optname), data);
+    if (!RB_TEST(cr)) {
         return 0;
     }
-}
-#endif
-
-#if defined(LOCAL_PEERCRED) /* FreeBSD, MacOS X */
-static int
-inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
-{
-    if (RSTRING_LEN(data) == sizeof(struct xucred)) {
-        struct xucred cred;
-        memcpy(&cred, RSTRING_PTR(data), sizeof(struct xucred));
-        if (cred.cr_version != XUCRED_VERSION)
-            return 0;
-        rb_str_catf(ret, " version=%u", cred.cr_version);
-        rb_str_catf(ret, " euid=%u", cred.cr_uid);
-        if (cred.cr_ngroups) {
-            int i;
-            const char *sep = " groups=";
-            for (i = 0; i < cred.cr_ngroups; i++) {
-                rb_str_catf(ret, "%s%u", sep, cred.cr_groups[i]);
-                sep = ",";
-            }
-        }
-        rb_str_cat2(ret, " (xucred)");
-        return 1;
-    }
-    else {
-        return 0;
-    }
+    VALUE fragment = rsock_credentials_inspect_fragment(cr);
+    rb_str_append(ret, fragment);
+    return 1;
 }
 #endif
 
@@ -1316,7 +1307,7 @@ sockopt_inspect(VALUE self)
               case SO_SNDTIMEO: inspected = inspect_timeval_as_interval(level, optname, data, ret); break;
 #            endif
 #            if defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
-              case SO_PEERCRED: inspected = inspect_peercred(level, optname, data, ret); break;
+              case SO_PEERCRED: inspected = inspect_credentials(level, optname, data, ret); break;
 #            endif
             }
             break;
@@ -1399,7 +1390,7 @@ sockopt_inspect(VALUE self)
           case 0:
             switch (optname) {
 #            if defined(LOCAL_PEERCRED)
-              case LOCAL_PEERCRED: inspected = inspect_local_peercred(level, optname, data, ret); break;
+              case LOCAL_PEERCRED: inspected = inspect_credentials(level, optname, data, ret); break;
 #            endif
             }
             break;
@@ -1464,6 +1455,8 @@ rsock_init_sockopt(void)
 
     rb_define_singleton_method(rb_cSockOpt, "linger", sockopt_s_linger, 2);
     rb_define_method(rb_cSockOpt, "linger", sockopt_linger, 0);
+
+    rb_define_method(rb_cSockOpt, "credentials", sockopt_credentials, 0);
 
     rb_define_singleton_method(rb_cSockOpt, "ipv4_multicast_ttl", sockopt_s_ipv4_multicast_ttl, 1);
     rb_define_method(rb_cSockOpt, "ipv4_multicast_ttl", sockopt_ipv4_multicast_ttl, 0);
