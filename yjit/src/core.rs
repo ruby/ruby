@@ -2049,7 +2049,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
         // Compilation failed
         None => {
             // Trigger code GC. This entry point will be recompiled later.
-            cb.code_gc();
+            cb.code_gc(ocb);
             return None;
         }
 
@@ -2146,7 +2146,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
             Some(blockref) => blockref,
             None => { // No space
                 // Trigger code GC. This entry point will be recompiled later.
-                cb.code_gc();
+                cb.code_gc(ocb);
                 return None;
             }
         }
@@ -2426,7 +2426,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             // because incomplete code could be used when cb.dropped_bytes is flipped
             // by code GC. So this place, after all compilation, is the safest place
             // to hook code GC on branch_stub_hit.
-            cb.code_gc();
+            cb.code_gc(ocb);
 
             // Failed to service the stub by generating a new block so now we
             // need to exit to the interpreter at the stubbed location. We are
