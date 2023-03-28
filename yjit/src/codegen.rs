@@ -806,9 +806,8 @@ pub fn gen_single_block(
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
     while insn_idx < iseq_size {
-        // Set the starting_ctx so we can use it for side_exiting
-        // if status == CantCompile
-        let starting_ctx = ctx.clone();
+        // Set the initial stack size to check if it's safe to exit on CantCompile
+        let starting_stack_size = ctx.get_stack_size();
 
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
@@ -872,11 +871,10 @@ pub fn gen_single_block(
                 println!("can't compile {}", insn_name(opcode));
             }
 
-            // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
-            // the exit this generates would be wrong. There are some changes that are safe to make
-            // like popping from the stack (but not writing). We are assuming here that only safe
-            // changes were made and using the starting_ctx.
-            gen_exit(jit.pc, &starting_ctx, &mut asm);
+            // Using the latest ctx instead of a starting ctx to allow spilling stack temps in the future.
+            // When you return CantCompile, you should not modify stack_size.
+            assert_eq!(ctx.get_stack_size(), starting_stack_size, "stack_size was modified despite CantCompile");
+            gen_exit(jit.pc, &ctx, &mut asm);
 
             // If this is the first instruction in the block, then
             // the entry address is the address for block_entry_exit
@@ -1997,7 +1995,6 @@ fn gen_get_ivar(
     side_exit: Target,
 ) -> CodegenStatus {
     let comptime_val_klass = comptime_receiver.class_of();
-    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
 
     // If recv isn't already a register, load it.
     let recv = match recv {
@@ -2065,11 +2062,6 @@ fn gen_get_ivar(
     // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(ctx, asm, recv, recv_opnd, side_exit);
 
-    // Pop receiver if it's on the temp stack
-    if recv_opnd != SelfOpnd {
-        ctx.stack_pop(1);
-    }
-
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
 
@@ -2083,12 +2075,17 @@ fn gen_get_ivar(
     jit_chain_guard(
         JCC_JNE,
         jit,
-        &starting_context,
+        &ctx,
         asm,
         ocb,
         max_chain_depth,
         megamorphic_side_exit,
     );
+
+    // Pop receiver if it's on the temp stack
+    if recv_opnd != SelfOpnd {
+        ctx.stack_pop(1);
+    }
 
     match ivar_index {
         // If there is no IVAR index, then the ivar was undefined
@@ -2207,8 +2204,6 @@ fn gen_setinstancevariable(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
-
     // Defer compilation so we can specialize on a runtime `self`
     if !jit.at_current_insn() {
         defer_compilation(jit, ctx, asm, ocb);
@@ -2301,7 +2296,7 @@ fn gen_setinstancevariable(
         jit_chain_guard(
             JCC_JNE,
             jit,
-            &starting_context,
+            &ctx,
             asm,
             ocb,
             SET_IVAR_MAX_DEPTH,
@@ -3567,14 +3562,13 @@ fn gen_opt_case_dispatch(
         defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
-    let starting_context = ctx.clone();
 
     let case_hash = jit.get_arg(0);
     let else_offset = jit.get_arg(1).as_u32();
 
     // Try to reorder case/else branches so that ones that are actually used come first.
     // Supporting only Fixnum for now so that the implementation can be an equality check.
-    let key_opnd = ctx.stack_pop(1);
+    let key_opnd = ctx.stack_opnd(0);
     let comptime_key = jit.peek_at_stack(ctx, 0);
 
     // Check that all cases are fixnums to avoid having to register BOP assumptions on
@@ -3603,16 +3597,17 @@ fn gen_opt_case_dispatch(
 
         // Check if the key is the same value
         asm.cmp(key_opnd, comptime_key.into());
-        let side_exit = get_side_exit(jit, ocb, &starting_context);
+        let side_exit = get_side_exit(jit, ocb, &ctx);
         jit_chain_guard(
             JCC_JNE,
             jit,
-            &starting_context,
+            &ctx,
             asm,
             ocb,
             CASE_WHEN_MAX_DEPTH,
             side_exit,
         );
+        ctx.stack_pop(1); // Pop key_opnd
 
         // Get the offset for the compile-time key
         let mut offset = 0;
@@ -3630,6 +3625,7 @@ fn gen_opt_case_dispatch(
         gen_direct_jump(jit, &ctx, jump_block, asm);
         EndBlock
     } else {
+        ctx.stack_pop(1); // Pop key_opnd
         KeepCompiling // continue with === branches
     }
 }
@@ -5665,8 +5661,43 @@ fn gen_send_iseq(
         }
     }
 
-    // Number of locals that are not parameters
-    let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
+    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+    let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
+    let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
+         get_iseq_flags_has_lead(iseq) && !get_iseq_flags_ambiguous_param0(iseq)
+    };
+    if block_arg0_splat {
+        // If block_arg0_splat, we still need side exits after splat, but
+        // doing push_splat_args here disallows it. So bail out.
+        if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_args_splat);
+            return CantCompile;
+        }
+        // The block_arg0_splat implementation is for the rb_simple_iseq_p case,
+        // but doing_kw_call means it's not a simple ISEQ.
+        if doing_kw_call {
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            return CantCompile;
+        }
+    }
+    let splat_array_length = if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
+        let array = jit.peek_at_stack(ctx, if block_arg { 1 } else { 0 }) ;
+        let array_length = if array == Qnil {
+            0
+        } else {
+            unsafe { rb_yjit_array_len(array) as u32}
+        };
+
+        if opt_num == 0 && required_num != array_length as i32 + argc - 1 {
+            gen_counter_incr!(asm, send_iseq_splat_arity_error);
+            return CantCompile;
+        }
+        Some(array_length)
+    } else {
+        None
+    };
+
+    // We will not have CantCompile from here. You can use stack_pop / stack_pop.
 
     match block_arg_type {
         Some(Type::Nil) => {
@@ -5688,13 +5719,8 @@ fn gen_send_iseq(
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
     let builtin_func = if builtin_func_raw.is_null() { None } else { Some(builtin_func_raw) };
-    if let (None, Some(builtin_info), true) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0) {
-        // this is a .send call not currently supported for builtins
-        if flags & VM_CALL_OPT_SEND != 0 {
-            gen_counter_incr!(asm, send_send_builtin);
-            return CantCompile;
-        }
-
+    let opt_send_call = flags & VM_CALL_OPT_SEND != 0; // .send call is not currently supported for builtins
+    if let (None, Some(builtin_info), true, false) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call) {
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
@@ -5729,6 +5755,9 @@ fn gen_send_iseq(
         }
     }
 
+    // Number of locals that are not parameters
+    let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
+
     // Stack overflow check
     // Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
@@ -5740,37 +5769,11 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow));
 
-    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg
-    let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
-    let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
-         get_iseq_flags_has_lead(iseq) && !get_iseq_flags_ambiguous_param0(iseq)
-    };
-
     // push_splat_args does stack manipulation so we can no longer side exit
-    if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
-        // If block_arg0_splat, we still need side exits after this, but
-        // doing push_splat_args here disallows it. So bail out.
-        if block_arg0_splat {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_args_splat);
-            return CantCompile;
-        }
-
-        let array = jit.peek_at_stack(ctx, if block_arg { 1 } else { 0 }) ;
-        let array_length = if array == Qnil {
-            0
-        } else {
-            unsafe { rb_yjit_array_len(array) as u32}
-        };
-
-        if opt_num == 0 && required_num != array_length as i32 + argc - 1 {
-            gen_counter_incr!(asm, send_iseq_splat_arity_error);
-            return CantCompile;
-        }
-
+    if let Some(array_length) = splat_array_length {
         let remaining_opt = (opt_num as u32 + required_num as u32).saturating_sub(array_length + (argc as u32 - 1));
 
         if opt_num > 0 {
-
             // We are going to jump to the correct offset based on how many optional
             // params are remaining.
             unsafe {
@@ -5800,13 +5803,6 @@ fn gen_send_iseq(
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
         // keyword arguments at this call site.
-
-        // The block_arg0_splat implementation is for the rb_simple_iseq_p case,
-        // but doing_kw_call means it's not a simple ISEQ.
-        if block_arg0_splat {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
-            return CantCompile;
-        }
 
         // Number of positional arguments the callee expects before the first
         // keyword argument
@@ -6522,8 +6518,6 @@ fn gen_send_general(
                         // instead we look up the method and call it,
                         // doing some stack shifting based on the VM_CALL_OPT_SEND flag
 
-                        let starting_context = ctx.clone();
-
                         // Reject nested cases such as `send(:send, :alias_for_send, :foo))`.
                         // We would need to do some stack manipulation here or keep track of how
                         // many levels deep we need to stack manipulate. Because of how exits
@@ -6605,7 +6599,7 @@ fn gen_send_general(
                         jit_chain_guard(
                             JCC_JNE,
                             jit,
-                            &starting_context,
+                            &ctx,
                             asm,
                             ocb,
                             SEND_MAX_CHAIN_DEPTH,
@@ -7541,8 +7535,6 @@ fn gen_getblockparamproxy(
         return EndBlock;
     }
 
-    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
-
     // A mirror of the interpreter code. Checking for the case
     // where it's pushing rb_block_param_proxy.
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -7585,7 +7577,7 @@ fn gen_getblockparamproxy(
         jit_chain_guard(
             JCC_JNZ,
             jit,
-            &starting_context,
+            &ctx,
             asm,
             ocb,
             SEND_MAX_DEPTH,
@@ -7603,7 +7595,7 @@ fn gen_getblockparamproxy(
         jit_chain_guard(
             JCC_JNZ,
             jit,
-            &starting_context,
+            &ctx,
             asm,
             ocb,
             SEND_MAX_DEPTH,
