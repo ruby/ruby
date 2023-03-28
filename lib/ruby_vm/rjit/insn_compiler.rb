@@ -1237,34 +1237,72 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def definedivar(jit, ctx, asm)
+      # Defer compilation so we can specialize base on a runtime receiver
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
       ivar_name = jit.operand(0)
+      # Value that will be pushed on the stack if the ivar is defined. In practice this is always the
+      # string "instance-variable". If the ivar is not defined, nil will be pushed instead.
       pushval = jit.operand(2)
 
       # Get the receiver
-      asm.mov(:rcx, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      recv = :rcx
+      asm.mov(recv, [CFP, C.rb_control_frame_t.offsetof(:self)])
 
-      # Save the PC and SP because the callee may allocate
-      # Note that this modifies REG_SP, which is why we do it first
-      jit_prepare_routine_call(jit, ctx, asm) # clobbers :rax
+      # Specialize base on compile time values
+      comptime_receiver = jit.peek_at_self
 
-      # Call rb_ivar_defined(recv, ivar_name)
-      asm.mov(C_ARGS[0], :rcx)
-      asm.mov(C_ARGS[1], ivar_name)
-      asm.call(C.rb_ivar_defined)
+      if shape_too_complex?(comptime_receiver)
+        # Fall back to calling rb_ivar_defined
 
-      # if (rb_ivar_defined(recv, ivar_name)) {
-      #  val = pushval;
-      # }
-      asm.test(C_RET, 255)
-      asm.mov(:rax, Qnil)
-      asm.mov(:rcx, pushval)
-      asm.cmovnz(:rax, :rcx)
+        # Save the PC and SP because the callee may allocate
+        # Note that this modifies REG_SP, which is why we do it first
+        jit_prepare_routine_call(jit, ctx, asm) # clobbers :rax
 
-      # Push the return value onto the stack
-      stack_ret = ctx.stack_push
-      asm.mov(stack_ret, :rax)
+        # Call rb_ivar_defined(recv, ivar_name)
+        asm.mov(C_ARGS[0], recv)
+        asm.mov(C_ARGS[1], ivar_name)
+        asm.call(C.rb_ivar_defined)
 
-      KeepCompiling
+        # if (rb_ivar_defined(recv, ivar_name)) {
+        #  val = pushval;
+        # }
+        asm.test(C_RET, 255)
+        asm.mov(:rax, Qnil)
+        asm.mov(:rcx, pushval)
+        asm.cmovnz(:rax, :rcx)
+
+        # Push the return value onto the stack
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, :rax)
+
+        return KeepCompiling
+      end
+
+      shape_id = C.rb_shape_get_shape_id(comptime_receiver)
+      ivar_exists = C.rb_shape_get_iv_index(shape_id, ivar_name)
+
+      side_exit = side_exit(jit, ctx)
+
+      # Guard heap object (recv_opnd must be used before stack_pop)
+      guard_object_is_heap(asm, recv, side_exit)
+
+      shape_opnd = DwordPtr[recv, C.rb_shape_id_offset]
+
+      asm.comment('guard shape')
+      asm.cmp(shape_opnd, shape_id)
+      jit_chain_guard(:jne, jit, ctx, asm, side_exit)
+
+      result = ivar_exists ? pushval : Qnil
+      putobject(jit, ctx, asm, val: result)
+
+      # Jump to next instruction. This allows guard chains to share the same successor.
+      jump_to_next_insn(jit, ctx, asm)
+
+      return EndBlock
     end
 
     # checkmatch
