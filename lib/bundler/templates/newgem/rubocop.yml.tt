@@ -9,9 +9,5 @@ Style/StringLiteralsInInterpolation:
   Enabled: true
   EnforcedStyle: double_quotes
 
-Style/GlobalVars:
-  Exclude:
-    - ext/**/extconf.rb
-
 Layout/LineLength:
   Max: 120
