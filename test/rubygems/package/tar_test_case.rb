@@ -67,7 +67,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def calc_checksum(header)
-    sum = header.unpack("C*").inject {|s,a| s + a }
+    sum = header.sum(0)
     SP(Z(to_oct(sum, 6)))
   end
 
@@ -90,31 +90,36 @@ class Gem::Package::TarTestCase < Gem::TestCase
       ASCIIZ("wheel", 32),   # char gname[32];     ASCIIZ
       Z(to_oct(0, 7)),       # char devmajor[8];   0 padded, octal, null
       Z(to_oct(0, 7)),       # char devminor[8];   0 padded, octal, null
-      ASCIIZ(dname, 155), # char prefix[155];   ASCII + (Z unless filled)
+      ASCIIZ(dname, 155),    # char prefix[155];   ASCII + (Z unless filled)
     ]
 
     h = arr.join
-    ret = h + "\0" * (512 - h.size)
+    ret = ASCIIZ(h, 512)
     assert_equal(512, ret.size)
     ret
   end
 
-  def tar_dir_header(name, prefix, mode, mtime)
-    h = header("5", name, prefix, 0, mode, mtime)
+  def header_with_checksum(type, fname, dname, length, mode, mtime, linkname = "")
+    h = header(type, fname, dname, length, mode, mtime, nil, linkname)
     checksum = calc_checksum(h)
-    header("5", name, prefix, 0, mode, mtime, checksum)
+    header(type, fname, dname, length, mode, mtime, checksum, linkname)
+  end
+
+  def tar_dir_header(name, prefix, mode, mtime)
+    header_with_checksum("5", name, prefix, 0, mode, mtime)
   end
 
   def tar_file_header(fname, dname, mode, length, mtime)
-    h = header("0", fname, dname, length, mode, mtime)
-    checksum = calc_checksum(h)
-    header("0", fname, dname, length, mode, mtime, checksum)
+    header_with_checksum("0", fname, dname, length, mode, mtime)
   end
 
-  def tar_symlink_header(fname, prefix, mode, mtime, linkname)
-    h = header("2", fname, prefix, 0, mode, mtime, nil, linkname)
-    checksum = calc_checksum(h)
-    header("2", fname, prefix, 0, mode, mtime, checksum, linkname)
+  def tar_symlink_header(fname, dname, mode, mtime, linkname)
+    header_with_checksum("2", fname, dname, 0, mode, mtime, linkname)
+  end
+
+  def tar_file_contents(content)
+    pad = (512 - (content.size % 512)) % 512
+    content + "\0" * pad
   end
 
   def to_oct(n, pad_size)
@@ -122,11 +127,15 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def util_entry(tar)
-    io = TempIO.new tar
+    io = tar.respond_to?(:read) ? tar : TempIO.new(tar)
 
     header = Gem::Package::TarHeader.from io
 
-    Gem::Package::TarReader::Entry.new header, io
+    Gem::Package::TarReader::Entry.open header, io
+  end
+
+  def close_util_entry(entry)
+    entry.instance_variable_get(:@io).close!
   end
 
   def util_dir_entry
@@ -135,5 +144,31 @@ class Gem::Package::TarTestCase < Gem::TestCase
 
   def util_symlink_entry
     util_entry tar_symlink_header("foo", "bar", 0, Time.now, "link")
+  end
+
+  def util_tar(&block)
+    tar_io = StringIO.new
+    Gem::Package::TarWriter.new(tar_io, &block)
+    tar_io.rewind
+    tar_io
+  end
+
+  def util_tar_gz(&block)
+    tar_io = util_tar(&block)
+    StringIO.new util_gzip(tar_io.string)
+  end
+
+  def util_gem_data_tar(spec = nil, &block)
+    data_tgz = util_tar_gz(&block)
+    util_tar do |tar|
+      if spec
+        tar.add_file "metadata.gz", 0444 do |io|
+          io.write util_gzip(spec.to_yaml)
+        end
+      end
+      tar.add_file "data.tar.gz", 0644 do |io|
+        io.write data_tgz.string
+      end
+    end
   end
 end

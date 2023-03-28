@@ -206,7 +206,6 @@ RSpec.describe "The library itself" do
       lib/bundler/deployment.rb
       lib/bundler/gem_tasks.rb
       lib/bundler/vlad.rb
-      lib/bundler/templates/gems.rb
     ]
     files_to_require = lib_tracked_files.grep(/\.rb$/) - exclusions
     files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }

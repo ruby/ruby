@@ -173,6 +173,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   ##
+  # Checks that the gem does not depend on itself.
   # Checks that dependencies use requirements as we recommend.  Warnings are
   # issued when dependencies are open-ended or overly strict for semantic
   # versioning.
@@ -180,6 +181,10 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_dependencies # :nodoc:
     warning_messages = []
     @specification.dependencies.each do |dep|
+      if dep.name == @specification.name # warn on self reference
+        warning_messages << "Self referencing dependency is unnecessary and strongly discouraged."
+      end
+
       prerelease_dep = dep.requirements_list.any? do |req|
         Gem::Requirement.new(req).prerelease?
       end

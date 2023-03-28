@@ -28,7 +28,7 @@ require "rubygems/package"
 class TestGemRemoteFetcher < Gem::TestCase
   include Gem::DefaultUserInteraction
 
-  SERVER_DATA = <<-EOY.freeze
+  SERVER_DATA = <<-EOY
 --- !ruby/object:Gem::Cache
 gems:
   rake-0.4.11: !ruby/object:Gem::Specification

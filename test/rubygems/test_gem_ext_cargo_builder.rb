@@ -87,7 +87,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
       end
     end
 
-    assert_match /cargo\s.*\sfailed/, error.message
+    assert_match(/cargo\s.*\sfailed/, error.message)
   end
 
   def test_full_integration

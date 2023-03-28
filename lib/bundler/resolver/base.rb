@@ -49,10 +49,18 @@ module Bundler
       end
 
       def unlock_names(names)
-        names.each do |name|
-          @base.delete_by_name(name)
+        indirect_pins = indirect_pins(names)
 
-          @base_requirements.delete(name)
+        if indirect_pins.any?
+          loosen_names(indirect_pins)
+        else
+          pins = pins(names)
+
+          if pins.any?
+            loosen_names(pins)
+          else
+            unrestrict_names(names)
+          end
         end
       end
 
@@ -63,6 +71,30 @@ module Bundler
       end
 
       private
+
+      def indirect_pins(names)
+        names.select {|name| @base_requirements[name].exact? && @requirements.none? {|dep| dep.name == name } }
+      end
+
+      def pins(names)
+        names.select {|name| @base_requirements[name].exact? }
+      end
+
+      def loosen_names(names)
+        names.each do |name|
+          version = @base_requirements[name].requirements.first[1]
+
+          @base_requirements[name] = Gem::Requirement.new(">= #{version}")
+
+          @base.delete_by_name(name)
+        end
+      end
+
+      def unrestrict_names(names)
+        names.each do |name|
+          @base_requirements.delete(name)
+        end
+      end
 
       def build_base_requirements
         base_requirements = {}

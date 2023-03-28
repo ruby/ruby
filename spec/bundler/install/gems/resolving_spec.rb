@@ -190,7 +190,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(out).to include(" net_b").
           and include("Resolving dependencies...").
           and include("Solution found after 1 attempts:").
-          and include("selecting net_b 1.0")
+          and include("selected net_b 1.0")
       end
     end
   end

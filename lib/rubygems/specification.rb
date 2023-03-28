@@ -338,7 +338,7 @@ class Gem::Specification < Gem::BasicSpecification
   # The simplest way is to specify the standard SPDX ID
   # https://spdx.org/licenses/ for the license.
   # Ideally, you should pick one that is OSI (Open Source Initiative)
-  # http://opensource.org/licenses/alphabetical approved.
+  # https://opensource.org/licenses/ approved.
   #
   # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.
@@ -1022,6 +1022,12 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Find the best specification matching a +full_name+.
+  def self.find_by_full_name(full_name)
+    stubs.find {|s| s.full_name == full_name }&.to_spec
+  end
+
+  ##
   # Return the best specification that contains the file matching +path+.
 
   def self.find_by_path(path)
@@ -1606,6 +1612,8 @@ class Gem::Specification < Gem::BasicSpecification
   def build_extensions # :nodoc:
     return if extensions.empty?
     return if default_gem?
+    # we need to fresh build when same name and version of default gems
+    return if self.class.find_by_full_name(full_name)&.default_gem?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, "extensions"))

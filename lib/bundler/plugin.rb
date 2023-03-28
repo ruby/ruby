@@ -15,7 +15,7 @@ module Bundler
     class UnknownSourceError < PluginError; end
     class PluginInstallError < PluginError; end
 
-    PLUGIN_FILE_NAME = "plugins.rb".freeze
+    PLUGIN_FILE_NAME = "plugins.rb"
 
     module_function
 

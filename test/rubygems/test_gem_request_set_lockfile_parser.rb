@@ -257,7 +257,7 @@ DEPENDENCIES
     write_lockfile <<-LOCKFILE
 GIT
   remote: git://example/a.git
-  revision: master
+  revision: abranch
   specs:
     a (2)
       b (>= 3)
@@ -289,7 +289,7 @@ DEPENDENCIES
                  git_set.specs.values.first.dependencies
 
     expected = {
-      "a" => %w[git://example/a.git master],
+      "a" => %w[git://example/a.git abranch],
     }
 
     assert_equal expected, git_set.repositories

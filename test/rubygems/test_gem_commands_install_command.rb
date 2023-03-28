@@ -7,6 +7,7 @@ require "rubygems/rdoc"
 
 class TestGemCommandsInstallCommand < Gem::TestCase
   def setup
+    @orig_args = Gem::Command.build_args
     super
     common_installer_setup
 
@@ -14,7 +15,6 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     @cmd.options[:document] = []
 
     @gemdeps = "tmp_install_gemdeps"
-    @orig_args = Gem::Command.build_args
 
     common_installer_setup
   end

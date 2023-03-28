@@ -6,10 +6,10 @@
 
 class Gem::StubSpecification < Gem::BasicSpecification
   # :nodoc:
-  PREFIX = "# stub: ".freeze
+  PREFIX = "# stub: "
 
   # :nodoc:
-  OPEN_MODE = "r:UTF-8:-".freeze
+  OPEN_MODE = "r:UTF-8:-"
 
   class StubLine # :nodoc: all
     attr_reader :name, :version, :platform, :require_paths, :extensions,
@@ -19,9 +19,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     # These are common require paths.
     REQUIRE_PATHS = { # :nodoc:
-      "lib" => "lib".freeze,
-      "test" => "test".freeze,
-      "ext" => "ext".freeze,
+      "lib" => "lib",
+      "test" => "test",
+      "ext" => "ext",
     }.freeze
 
     # These are common require path lists.  This hash is used to optimize
@@ -33,7 +33,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
     }.freeze
 
     def initialize(data, extensions)
-      parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
+      parts          = data[PREFIX.length..-1].split(" ", 4)
       @name          = parts[0].freeze
       @version       = if Gem::Version.correct?(parts[1])
         Gem::Version.new(parts[1])
@@ -50,7 +50,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
       end
 
       path_list = parts.last
-      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! do |x|
+      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0").map! do |x|
         REQUIRE_PATHS[x] || x
       end
     end

@@ -432,7 +432,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       Because every version of sorbet depends on sorbet-static = 0.5.6433
         and sorbet-static = 0.5.6433 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally for any resolution platforms (arm64-darwin-21),
-        every version of sorbet is forbidden.
+        sorbet cannot be used.
       So, because Gemfile depends on sorbet = 0.5.6433,
         version solving has failed.
 
@@ -514,7 +514,7 @@ RSpec.describe "bundle install with specific platforms" do
             sorbet-runtime (= 0.5.10160)
 
       PLATFORMS
-        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+        #{lockfile_platforms("ruby")}
 
       DEPENDENCIES
         sorbet-static-and-runtime
@@ -769,7 +769,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri (1.13.8-#{Gem::Platform.local})
 
       PLATFORMS
-        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+        #{lockfile_platforms("ruby")}
 
       DEPENDENCIES
         nokogiri
@@ -784,6 +784,56 @@ RSpec.describe "bundle install with specific platforms" do
     bundle "lock --update"
 
     expect(lockfile).to eq(original_lockfile)
+  end
+
+  it "does not remove ruby when adding a new gem to the Gemfile" do
+    build_repo4 do
+      build_gem "concurrent-ruby", "1.2.2"
+      build_gem "rack", "3.0.7"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "concurrent-ruby"
+      gem "rack"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          concurrent-ruby (1.2.2)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        concurrent-ruby
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          concurrent-ruby (1.2.2)
+          rack (3.0.7)
+
+      PLATFORMS
+        #{formatted_lockfile_platforms(*["ruby", generic_local_platform].uniq)}
+
+      DEPENDENCIES
+        concurrent-ruby
+        rack
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
   end
 
   it "can fallback to a source gem when platform gems are incompatible with current ruby version" do

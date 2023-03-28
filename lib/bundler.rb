@@ -39,8 +39,8 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
-  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
-  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed.".freeze
+  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash, Gem::Version, Gem::Specification].freeze
+  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed."
   SAFE_MARSHAL_PROC = proc do |object|
     object.tap do
       unless SAFE_MARSHAL_CLASSES.include?(object.class)
@@ -85,6 +85,7 @@ module Bundler
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
+  autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
 
   class << self
     def configure
@@ -506,7 +507,7 @@ EOF
       if File.file?(executable) && File.executable?(executable)
         executable
       elsif paths = ENV["PATH"]
-        quote = '"'.freeze
+        quote = '"'
         paths.split(File::PATH_SEPARATOR).find do |path|
           path = path[1..-2] if path.start_with?(quote) && path.end_with?(quote)
           executable_path = File.expand_path(executable, path)
@@ -523,12 +524,6 @@ EOF
 
     def safe_load_marshal(data)
       load_marshal(data, :marshal_proc => SAFE_MARSHAL_PROC)
-    end
-
-    def load_marshal(data, marshal_proc: nil)
-      Marshal.load(data, marshal_proc)
-    rescue TypeError => e
-      raise MarshalError, "#{e.class}: #{e.message}"
     end
 
     def load_gemspec(file, validate = false)
@@ -618,6 +613,12 @@ EOF
     end
 
     private
+
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
+    rescue TypeError => e
+      raise MarshalError, "#{e.class}: #{e.message}"
+    end
 
     def eval_yaml_gemspec(path, contents)
       Kernel.require "psych"

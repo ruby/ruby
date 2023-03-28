@@ -22,9 +22,9 @@ RSpec.describe Bundler::ParallelInstaller do
     it "prints a warning" do
       expect(Bundler.ui).to receive(:warn).with(<<-W.strip)
 Your lockfile doesn't include a valid resolution.
-You can fix this by regenerating your lockfile or trying to manually editing the bad locked gems to a version that satisfies all dependencies.
+You can fix this by regenerating your lockfile or manually editing the bad locked gems to a version that satisfies all dependencies.
 The unmet dependencies are:
-* diff-lcs (< 1.4), depended upon cucumber-4.1.0, unsatisfied by diff-lcs-1.4.4
+* diff-lcs (< 1.4), dependency of cucumber-4.1.0, unsatisfied by diff-lcs-1.4.4
       W
       subject.check_for_unmet_dependencies
     end

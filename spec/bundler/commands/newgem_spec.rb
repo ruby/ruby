@@ -633,7 +633,7 @@ RSpec.describe "bundle gem" do
     it "does not include the gemspec file in files" do
       bundle "gem #{gem_name}"
 
-      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
+      bundler_gemspec = Bundler::GemHelper.new(bundled_app(gem_name), gem_name).gemspec
 
       expect(bundler_gemspec.files).not_to include("#{gem_name}.gemspec")
     end
@@ -1473,11 +1473,11 @@ RSpec.describe "bundle gem" do
           # frozen_string_literal: true
 
           require "bundler/gem_tasks"
-          require "rake/extensiontask"
+          require "rb_sys/extensiontask"
 
           task build: :compile
 
-          Rake::ExtensionTask.new("#{gem_name}") do |ext|
+          RbSys::ExtensionTask.new("#{gem_name}") do |ext|
             ext.lib_dir = "lib/#{gem_name}"
           end
 

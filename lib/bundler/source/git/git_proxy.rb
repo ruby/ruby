@@ -28,8 +28,9 @@ module Bundler
         def initialize(command, path, extra_info = nil)
           @command = command
 
-          msg = String.new
-          msg << "Git error: command `#{command}` in directory #{path} has failed."
+          msg = String.new("Git error: command `#{command}`")
+          msg << " in directory #{path}" if path
+          msg << " has failed."
           msg << "\n#{extra_info}" if extra_info
           super msg
         end
@@ -139,8 +140,8 @@ module Bundler
             out, err, status = capture(command, path)
             return out if status.success?
 
-            if err.include?("couldn't find remote ref")
-              raise MissingGitRevisionError.new(command_with_no_credentials, path, explicit_ref, credential_filtered_uri)
+            if err.include?("couldn't find remote ref") || err.include?("not our ref")
+              raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
             else
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
@@ -153,9 +154,20 @@ module Bundler
           SharedHelpers.filesystem_access(path.dirname) do |p|
             FileUtils.mkdir_p(p)
           end
-          git_retry "clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s
 
-          extra_ref
+          command = ["clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s]
+          command_with_no_credentials = check_allowed(command)
+
+          Bundler::Retry.new("`#{command_with_no_credentials}`", [MissingGitRevisionError]).attempts do
+            _, err, status = capture(command, nil)
+            return extra_ref if status.success?
+
+            if err.include?("Could not find remote branch")
+              raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
+            else
+              raise GitCommandError.new(command_with_no_credentials, path, err)
+            end
+          end
         end
 
         def clone_needs_unshallow?
@@ -186,8 +198,6 @@ module Bundler
         end
 
         def refspec
-          commit = pinned_to_full_sha? ? ref : @revision
-
           if commit
             @commit_ref = "refs/#{commit}-sha"
             return "#{commit}:#{@commit_ref}"
@@ -204,6 +214,10 @@ module Bundler
           end
 
           "#{reference}:#{reference}"
+        end
+
+        def commit
+          @commit ||= pinned_to_full_sha? ? ref : @revision
         end
 
         def fully_qualified_ref
@@ -351,6 +365,11 @@ module Bundler
 
           args += ["--single-branch"]
           args.unshift("--no-tags") if supports_cloning_with_no_tags?
+
+          # If there's a locked revision, no need to clone any specific branch
+          # or tag, since we will end up checking out that locked revision
+          # anyways.
+          return args if @revision
 
           args += ["--branch", branch || tag] if branch || tag
           args

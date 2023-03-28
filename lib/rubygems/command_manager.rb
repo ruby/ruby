@@ -43,6 +43,7 @@ class Gem::CommandManager
     :contents,
     :dependency,
     :environment,
+    :exec,
     :fetch,
     :generate_index,
     :help,
