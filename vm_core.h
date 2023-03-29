@@ -1876,15 +1876,21 @@ rb_current_thread(void)
 }
 
 static inline rb_ractor_t *
-rb_current_ractor(void)
+rb_current_ractor_raw(bool expect)
 {
     if (ruby_single_main_ractor) {
         return ruby_single_main_ractor;
     }
     else {
-        const rb_execution_context_t *ec = GET_EC();
-        return rb_ec_ractor_ptr(ec);
+        const rb_execution_context_t *ec = rb_current_execution_context(expect);
+        return (expect || ec) ? rb_ec_ractor_ptr(ec) : NULL;
     }
+}
+
+static inline rb_ractor_t *
+rb_current_ractor(void)
+{
+    return rb_current_ractor_raw(true);
 }
 
 static inline rb_vm_t *
