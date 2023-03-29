@@ -5095,7 +5095,11 @@ fn gen_send_cfunc(
         cme,
         recv,
         sp,
-        pc: Some(0),
+        pc: if cfg!(debug_assertions) {
+            Some(!0) // Poison value. Helps to fast fast.
+        } else {
+            None     // Leave PC uninitialized as cfuncs shouldn't read it
+        },
         iseq: None,
         local_size: 0,
     });
