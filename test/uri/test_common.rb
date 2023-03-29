@@ -116,7 +116,7 @@ class TestCommon < Test::Unit::TestCase
     pre = ->(n) {
       'https://example.com/dir/' + 'a' * (n * 100) + '/##.jpg'
     }
-    assert_linear_performance((1..10).map {|i| i * 100}, pre: pre) do |uri|
+    assert_linear_performance((1..10).map {|i| i * 100}, rehearsal: 1000, pre: pre) do |uri|
       assert_raise(URI::InvalidURIError) do
         URI.parse(uri)
       end
