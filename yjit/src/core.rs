@@ -371,6 +371,45 @@ impl From<Opnd> for YARVOpnd {
     }
 }
 
+/// Maximum index of stack temps that could be in a register
+pub const MAX_REG_TEMPS: u8 = 8;
+
+/// Bitmap of which stack temps are in a register
+#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
+pub struct RegTemps(u8);
+
+impl RegTemps {
+    pub fn get(&self, index: u8) -> bool {
+        assert!(index < MAX_REG_TEMPS);
+        (self.0 >> index) & 1 == 1
+    }
+
+    pub fn set(&mut self, index: u8, value: bool) {
+        assert!(index < MAX_REG_TEMPS);
+        if value {
+            self.0 = self.0 | (1 << index);
+        } else {
+            self.0 = self.0 & !(1 << index);
+        }
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        self.0
+    }
+
+    /// Return true if there's a register that conflicts with a given stack_idx.
+    pub fn conflicts_with(&self, stack_idx: u8) -> bool {
+        let mut other_idx = stack_idx as isize - get_option!(num_temp_regs) as isize;
+        while other_idx >= 0 {
+            if self.get(other_idx as u8) {
+                return true;
+            }
+            other_idx -= get_option!(num_temp_regs) as isize;
+        }
+        false
+    }
+}
+
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
@@ -382,6 +421,9 @@ pub struct Context {
     // Offset of the JIT SP relative to the interpreter SP
     // This represents how far the JIT's SP is from the "real" SP
     sp_offset: i8,
+
+    /// Bitmap of which stack temps are in a register
+    reg_temps: RegTemps,
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
@@ -698,7 +740,7 @@ impl PendingBranch {
         // The branch struct is uninitialized right now but as a stable address.
         // We make sure the stub runs after the branch is initialized.
         let branch_struct_addr = self.uninit_branch.as_ptr() as usize;
-        let stub_addr = gen_branch_stub(ocb, branch_struct_addr, target_idx);
+        let stub_addr = gen_branch_stub(ctx, ocb, branch_struct_addr, target_idx);
 
         if let Some(stub_addr) = stub_addr {
             // Fill the branch target with a stub
@@ -1333,6 +1375,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         let mut generic_ctx = Context::default();
         generic_ctx.stack_size = ctx.stack_size;
         generic_ctx.sp_offset = ctx.sp_offset;
+        generic_ctx.reg_temps = ctx.reg_temps;
 
         debug_assert_ne!(
             TypeDiff::Incompatible,
@@ -1534,6 +1577,14 @@ impl Context {
         self.sp_offset = offset;
     }
 
+    pub fn get_reg_temps(&self) -> RegTemps {
+        self.reg_temps
+    }
+
+    pub fn set_reg_temps(&mut self, reg_temps: RegTemps) {
+        self.reg_temps = reg_temps;
+    }
+
     pub fn get_chain_depth(&self) -> u8 {
         self.chain_depth
     }
@@ -1553,12 +1604,19 @@ impl Context {
         return Opnd::mem(64, SP, offset);
     }
 
+    /// Stop using a register for a given stack temp.
+    pub fn dealloc_temp_reg(&mut self, stack_idx: u8) {
+        let mut reg_temps = self.get_reg_temps();
+        reg_temps.set(stack_idx, false);
+        self.set_reg_temps(reg_temps);
+    }
+
     /// Push one new value on the temp stack with an explicit mapping
     /// Return a pointer to the new stack top
-    pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
+    pub fn stack_push_mapping(&mut self, asm: &mut Assembler, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
         // If type propagation is disabled, store no types
         if get_option!(no_type_prop) {
-            return self.stack_push_mapping((mapping, Type::Unknown));
+            return self.stack_push_mapping(asm, (mapping, Type::Unknown));
         }
 
         let stack_size: usize = self.stack_size.into();
@@ -1573,6 +1631,12 @@ impl Context {
             }
         }
 
+        // Allocate a register to the stack operand
+        assert_eq!(self.reg_temps, asm.get_reg_temps());
+        if self.stack_size < MAX_REG_TEMPS {
+            asm.alloc_temp_reg(self, self.stack_size);
+        }
+
         self.stack_size += 1;
         self.sp_offset += 1;
 
@@ -1581,22 +1645,22 @@ impl Context {
 
     /// Push one new value on the temp stack
     /// Return a pointer to the new stack top
-    pub fn stack_push(&mut self, val_type: Type) -> Opnd {
-        return self.stack_push_mapping((MapToStack, val_type));
+    pub fn stack_push(&mut self, asm: &mut Assembler, val_type: Type) -> Opnd {
+        return self.stack_push_mapping(asm, (MapToStack, val_type));
     }
 
     /// Push the self value on the stack
-    pub fn stack_push_self(&mut self) -> Opnd {
-        return self.stack_push_mapping((MapToSelf, Type::Unknown));
+    pub fn stack_push_self(&mut self, asm: &mut Assembler) -> Opnd {
+        return self.stack_push_mapping(asm, (MapToSelf, Type::Unknown));
     }
 
     /// Push a local variable on the stack
-    pub fn stack_push_local(&mut self, local_idx: usize) -> Opnd {
+    pub fn stack_push_local(&mut self, asm: &mut Assembler, local_idx: usize) -> Opnd {
         if local_idx >= MAX_LOCAL_TYPES {
-            return self.stack_push(Type::Unknown);
+            return self.stack_push(asm, Type::Unknown);
         }
 
-        return self.stack_push_mapping((MapToLocal((local_idx as u8).into()), Type::Unknown));
+        return self.stack_push_mapping(asm, (MapToLocal((local_idx as u8).into()), Type::Unknown));
     }
 
     // Pop N values off the stack
@@ -1639,7 +1703,7 @@ impl Context {
 
     /// Get an operand pointing to a slot on the temp stack
     pub fn stack_opnd(&self, idx: i32) -> Opnd {
-        Opnd::Stack { idx, sp_offset: self.sp_offset, num_bits: 64 }
+        Opnd::Stack { idx, stack_size: self.stack_size, sp_offset: self.sp_offset, num_bits: 64 }
     }
 
     /// Get the type of an instruction operand
@@ -1835,6 +1899,10 @@ impl Context {
         }
 
         if dst.sp_offset != src.sp_offset {
+            return TypeDiff::Incompatible;
+        }
+
+        if dst.reg_temps != src.reg_temps {
             return TypeDiff::Incompatible;
         }
 
@@ -2466,6 +2534,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 /// Generate a "stub", a piece of code that calls the compiler back when run.
 /// A piece of code that redeems for more code; a thunk for code.
 fn gen_branch_stub(
+    ctx: &Context,
     ocb: &mut OutlinedCb,
     branch_struct_address: usize,
     target_idx: u32,
@@ -2476,7 +2545,17 @@ fn gen_branch_stub(
     let stub_addr = ocb.get_write_ptr();
 
     let mut asm = Assembler::new();
+    asm.set_reg_temps(ctx.reg_temps);
     asm.comment("branch stub hit");
+
+    // Save caller-saved registers before C_ARG_OPNDS get clobbered.
+    // Spill all registers for consistency with the trampoline.
+    for &reg in caller_saved_temp_regs().iter() {
+        asm.cpush(reg);
+    }
+
+    // Spill temps to the VM stack as well for jit.peek_at_stack()
+    asm.spill_temps(&mut ctx.clone());
 
     // Set up the arguments unique to this stub for:
     //
@@ -2522,12 +2601,27 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
         ]
     );
 
+    // Restore caller-saved registers for stack temps
+    for &reg in caller_saved_temp_regs().iter().rev() {
+        asm.cpop_into(reg);
+    }
+
     // Jump to the address returned by the branch_stub_hit() call
     asm.jmp_opnd(jump_addr);
 
     asm.compile(ocb);
 
     code_ptr
+}
+
+/// Return registers to be pushed and popped on branch_stub_hit.
+/// The return value may include an extra register for x86 alignment.
+fn caller_saved_temp_regs() -> Vec<Opnd> {
+    let mut regs = Assembler::get_temp_regs();
+    if regs.len() % 2 == 1 {
+        regs.push(*regs.last().unwrap()); // x86 alignment
+    }
+    regs.iter().map(|&reg| Opnd::Reg(reg)).collect()
 }
 
 impl Assembler
@@ -2888,7 +2982,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Create a stub for this branch target
-        let stub_addr = gen_branch_stub(ocb, branchref.as_ptr() as usize, target_idx as u32);
+        let stub_addr = gen_branch_stub(&block.ctx, ocb, branchref.as_ptr() as usize, target_idx as u32);
 
         // In case we were unable to generate a stub (e.g. OOM). Use the block's
         // exit instead of a stub for the block. It's important that we
@@ -3032,13 +3126,40 @@ mod tests {
     }
 
     #[test]
+    fn reg_temps() {
+        let mut reg_temps = RegTemps(0);
+
+        // 0 means every slot is not spilled
+        for stack_idx in 0..MAX_REG_TEMPS {
+            assert_eq!(reg_temps.get(stack_idx), false);
+        }
+
+        // Set 0, 2, 7
+        reg_temps.set(0, true);
+        reg_temps.set(2, true);
+        reg_temps.set(3, true);
+        reg_temps.set(3, false);
+        reg_temps.set(7, true);
+
+        // Get 0..8
+        assert_eq!(reg_temps.get(0), true);
+        assert_eq!(reg_temps.get(1), false);
+        assert_eq!(reg_temps.get(2), true);
+        assert_eq!(reg_temps.get(3), false);
+        assert_eq!(reg_temps.get(4), false);
+        assert_eq!(reg_temps.get(5), false);
+        assert_eq!(reg_temps.get(6), false);
+        assert_eq!(reg_temps.get(7), true);
+    }
+
+    #[test]
     fn context() {
         // Valid src => dst
         assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
         let mut ctx = Context::default();
-        ctx.stack_push(Type::Fixnum);
+        ctx.stack_push(&mut Assembler::new(), Type::Fixnum);
         let top_type = ctx.get_opnd_type(StackOpnd(0));
         assert!(top_type == Type::Fixnum);
 

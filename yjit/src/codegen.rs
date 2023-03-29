@@ -40,6 +40,13 @@ type InsnGenFn = fn(
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus;
 
+/// Subset of Context that matters for generating a side exit.
+#[derive(Eq, Hash, PartialEq)]
+struct SideExitContext {
+    sp_offset: i8,
+    reg_temps: RegTemps,
+}
+
 /// Ephemeral code generation state.
 /// Represents a [core::Block] while we build it.
 pub struct JITState {
@@ -68,8 +75,8 @@ pub struct JITState {
     stack_size_for_pc: u8,
 
     /// Side exit to the instruction being compiled. See :side-exit:.
-    /// For the current PC, CodePtr is cached for each sp_offset key.
-    side_exit_for_pc: HashMap<i8, CodePtr>,
+    /// For the current PC, it's cached for each (sp_offset, reg_temps).
+    side_exit_for_pc: HashMap<SideExitContext, CodePtr>,
 
     /// Execution context when compilation started
     /// This allows us to peek at run-time values
@@ -314,6 +321,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 /// Note: this will change the current value of REG_SP,
 ///       which could invalidate memory operands
 fn gen_save_sp(asm: &mut Assembler, ctx: &mut Context) {
+    asm.spill_temps(ctx);
     if ctx.get_sp_offset() != 0 {
         asm.comment("save SP to CFP");
         let stack_pointer = ctx.sp_opnd(0);
@@ -470,6 +478,9 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
         asm.comment(&format!("exit to interpreter on {}", insn_name(opcode as usize)));
     }
 
+    // Spill stack temps before returning to the interpreter
+    asm.spill_temps(&mut ctx.clone());
+
     // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
     if ctx.get_sp_offset() != 0 {
@@ -517,6 +528,7 @@ fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -
     let mut cb = ocb.unwrap();
     let exit_code = cb.get_write_ptr();
     let mut asm = Assembler::new();
+    asm.set_reg_temps(ctx.get_reg_temps());
 
     gen_exit(exit_pc, ctx, &mut asm);
 
@@ -544,10 +556,12 @@ fn side_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb) -> Target 
     // sp_offset because gen_outlined_exit uses ctx.sp_offset to move SP.
     let ctx = ctx.with_stack_size(jit.stack_size_for_pc);
 
-    match jit.side_exit_for_pc.get(&ctx.get_sp_offset()) {
+    // Cache a side exit for each (sp_offset, reg_temps).
+    let exit_ctx = SideExitContext { sp_offset: ctx.get_sp_offset(), reg_temps: ctx.get_reg_temps() };
+    match jit.side_exit_for_pc.get(&exit_ctx) {
         None => {
             let exit_code = gen_outlined_exit(jit.pc, &ctx, ocb);
-            jit.side_exit_for_pc.insert(ctx.get_sp_offset(), exit_code);
+            jit.side_exit_for_pc.insert(exit_ctx, exit_code);
             exit_code.as_side_exit()
         }
         Some(code_ptr) => code_ptr.as_side_exit()
@@ -857,6 +871,7 @@ pub fn gen_single_block(
         let chain_depth = if ctx.get_chain_depth() > 0 { format!(", chain_depth: {}", ctx.get_chain_depth()) } else { "".to_string() };
         asm.comment(&format!("Block: {} (ISEQ offset: {}{})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx, chain_depth));
     }
+    asm.set_reg_temps(ctx.get_reg_temps());
 
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
@@ -883,6 +898,14 @@ pub fn gen_single_block(
         jit.stack_size_for_pc = ctx.get_stack_size();
         jit.side_exit_for_pc.clear();
 
+        // stack_pop doesn't immediately deallocate a register for stack temps,
+        // but it's safe to do so at this instruction boundary.
+        assert_eq!(asm.get_reg_temps(), ctx.get_reg_temps());
+        for stack_idx in ctx.get_stack_size()..MAX_REG_TEMPS {
+            ctx.dealloc_temp_reg(stack_idx);
+        }
+        asm.set_reg_temps(ctx.get_reg_temps());
+
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
             // Generate an exit to this instruction and record it
@@ -905,7 +928,7 @@ pub fn gen_single_block(
             gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            asm.comment(&format!("Insn: {}", insn_name(opcode)));
+            asm.comment(&format!("Insn: {} (stack_size: {})", insn_name(opcode), ctx.get_stack_size()));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
@@ -1003,7 +1026,7 @@ fn gen_dup(
     let dup_val = ctx.stack_opnd(0);
     let (mapping, tmp_type) = ctx.get_opnd_mapping(dup_val.into());
 
-    let loc0 = ctx.stack_push_mapping((mapping, tmp_type));
+    let loc0 = ctx.stack_push_mapping(asm, (mapping, tmp_type));
     asm.mov(loc0, dup_val);
 
     KeepCompiling
@@ -1029,10 +1052,10 @@ fn gen_dupn(
     let mapping1 = ctx.get_opnd_mapping(opnd1.into());
     let mapping0 = ctx.get_opnd_mapping(opnd0.into());
 
-    let dst1: Opnd = ctx.stack_push_mapping(mapping1);
+    let dst1: Opnd = ctx.stack_push_mapping(asm, mapping1);
     asm.mov(dst1, opnd1);
 
-    let dst0: Opnd = ctx.stack_push_mapping(mapping0);
+    let dst0: Opnd = ctx.stack_push_mapping(asm, mapping0);
     asm.mov(dst0, opnd0);
 
     KeepCompiling
@@ -1083,7 +1106,7 @@ fn gen_putnil(
 
 fn jit_putobject(_jit: &mut JITState, ctx: &mut Context, asm: &mut Assembler, arg: VALUE) {
     let val_type: Type = Type::from(arg);
-    let stack_top = ctx.stack_push(val_type);
+    let stack_top = ctx.stack_push(asm, val_type);
     asm.mov(stack_top, arg.into());
 }
 
@@ -1124,7 +1147,7 @@ fn gen_putself(
 ) -> CodegenStatus {
 
     // Write it on the stack
-    let stack_top = ctx.stack_push_self();
+    let stack_top = ctx.stack_push_self(asm);
     asm.mov(
         stack_top,
         Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF)
@@ -1142,7 +1165,7 @@ fn gen_putspecialobject(
     let object_type = jit.get_arg(0).as_usize();
 
     if object_type == VM_SPECIAL_OBJECT_VMCORE.as_usize() {
-        let stack_top = ctx.stack_push(Type::UnknownHeap);
+        let stack_top = ctx.stack_push(asm, Type::UnknownHeap);
         let frozen_core = unsafe { rb_mRubyVMFrozenCore };
         asm.mov(stack_top, frozen_core.into());
         KeepCompiling
@@ -1186,7 +1209,7 @@ fn gen_topn(
 
     let top_n_val = ctx.stack_opnd(n.try_into().unwrap());
     let mapping = ctx.get_opnd_mapping(top_n_val.into());
-    let loc0 = ctx.stack_push_mapping(mapping);
+    let loc0 = ctx.stack_push_mapping(asm, mapping);
     asm.mov(loc0, top_n_val);
 
     KeepCompiling
@@ -1236,7 +1259,7 @@ fn gen_opt_plus(
         asm.jo(side_exit(jit, ctx, ocb));
 
         // Push the output on the stack
-        let dst = ctx.stack_push(Type::Fixnum);
+        let dst = ctx.stack_push(asm, Type::Fixnum);
         asm.mov(dst, out_val);
 
         KeepCompiling
@@ -1278,7 +1301,7 @@ fn gen_newarray(
     );
 
     ctx.stack_pop(n.as_usize());
-    let stack_ret = ctx.stack_push(Type::CArray);
+    let stack_ret = ctx.stack_push(asm, Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     KeepCompiling
@@ -1302,7 +1325,7 @@ fn gen_duparray(
         vec![ary.into()],
     );
 
-    let stack_ret = ctx.stack_push(Type::CArray);
+    let stack_ret = ctx.stack_push(asm, Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     KeepCompiling
@@ -1323,7 +1346,7 @@ fn gen_duphash(
     // call rb_hash_resurrect(VALUE hash);
     let hash = asm.ccall(rb_hash_resurrect as *const u8, vec![hash.into()]);
 
-    let stack_ret = ctx.stack_push(Type::Hash);
+    let stack_ret = ctx.stack_push(asm, Type::Hash);
     asm.mov(stack_ret, hash);
 
     KeepCompiling
@@ -1348,7 +1371,7 @@ fn gen_splatarray(
     // Call rb_vm_splat_array(flag, ary)
     let ary = asm.ccall(rb_vm_splat_array as *const u8, vec![flag.into(), ary_opnd]);
 
-    let stack_ret = ctx.stack_push(Type::TArray);
+    let stack_ret = ctx.stack_push(asm, Type::TArray);
     asm.mov(stack_ret, ary);
 
     KeepCompiling
@@ -1372,7 +1395,7 @@ fn gen_concatarray(
     // Call rb_vm_concat_array(ary1, ary2st)
     let ary = asm.ccall(rb_vm_concat_array as *const u8, vec![ary1_opnd, ary2st_opnd]);
 
-    let stack_ret = ctx.stack_push(Type::TArray);
+    let stack_ret = ctx.stack_push(asm, Type::TArray);
     asm.mov(stack_ret, ary);
 
     KeepCompiling
@@ -1401,7 +1424,7 @@ fn gen_newrange(
     );
 
     ctx.stack_pop(2);
-    let stack_ret = ctx.stack_push(Type::UnknownHeap);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownHeap);
     asm.mov(stack_ret, range_opnd);
 
     KeepCompiling
@@ -1572,7 +1595,7 @@ fn gen_expandarray(
         // special case for a, b = nil pattern
         // push N nils onto the stack
         for _ in 0..num {
-            let push_opnd = ctx.stack_push(Type::Nil);
+            let push_opnd = ctx.stack_push(asm, Type::Nil);
             asm.mov(push_opnd, Qnil.into());
         }
         return KeepCompiling;
@@ -1621,7 +1644,7 @@ fn gen_expandarray(
 
     // Loop backward through the array and push each element onto the stack.
     for i in (0..num).rev() {
-        let top = ctx.stack_push(Type::Unknown);
+        let top = ctx.stack_push(asm, Type::Unknown);
         let offset = i32::try_from(i * SIZEOF_VALUE).unwrap();
         asm.mov(top, Opnd::mem(64, ary_opnd, offset));
     }
@@ -1707,9 +1730,9 @@ fn gen_getlocal_generic(
     // Write the local at SP
     let stack_top = if level == 0 {
         let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset);
-        ctx.stack_push_local(local_idx.as_usize())
+        ctx.stack_push_local(asm, local_idx.as_usize())
     } else {
-        ctx.stack_push(Type::Unknown)
+        ctx.stack_push(asm, Type::Unknown)
     };
 
     asm.mov(stack_top, local_opnd);
@@ -1863,12 +1886,12 @@ fn gen_newhash(
         asm.cpop_into(new_hash); // x86 alignment
 
         ctx.stack_pop(num.try_into().unwrap());
-        let stack_ret = ctx.stack_push(Type::Hash);
+        let stack_ret = ctx.stack_push(asm, Type::Hash);
         asm.mov(stack_ret, new_hash);
     } else {
         // val = rb_hash_new();
         let new_hash = asm.ccall(rb_hash_new as *const u8, vec![]);
-        let stack_ret = ctx.stack_push(Type::Hash);
+        let stack_ret = ctx.stack_push(asm, Type::Hash);
         asm.mov(stack_ret, new_hash);
     }
 
@@ -1891,7 +1914,7 @@ fn gen_putstring(
         vec![EC, put_val.into()]
     );
 
-    let stack_top = ctx.stack_push(Type::CString);
+    let stack_top = ctx.stack_push(asm, Type::CString);
     asm.mov(stack_top, str_opnd);
 
     KeepCompiling
@@ -1931,7 +1954,7 @@ fn gen_checkkeyword(
     asm.test(bits_opnd, Opnd::Imm(bit_test));
     let ret_opnd = asm.csel_z(Qtrue.into(), Qfalse.into());
 
-    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownImm);
     asm.mov(stack_ret, ret_opnd);
 
     KeepCompiling
@@ -2023,7 +2046,7 @@ fn gen_set_ivar(
         ],
     );
 
-    let out_opnd = ctx.stack_push(Type::Unknown);
+    let out_opnd = ctx.stack_push(asm, Type::Unknown);
     asm.mov(out_opnd, val);
 
     KeepCompiling
@@ -2090,7 +2113,7 @@ fn gen_get_ivar(
         }
 
         // Push the ivar on the stack
-        let out_opnd = ctx.stack_push(Type::Unknown);
+        let out_opnd = ctx.stack_push(asm, Type::Unknown);
         asm.mov(out_opnd, ivar_val);
 
         // Jump to next instruction. This allows guard chains to share the same successor.
@@ -2141,7 +2164,7 @@ fn gen_get_ivar(
         // when we entered the compiler.  That means we can just return
         // nil for this shape + iv name
         None => {
-            let out_opnd = ctx.stack_push(Type::Nil);
+            let out_opnd = ctx.stack_push(asm, Type::Nil);
             asm.mov(out_opnd, Qnil.into());
         }
         Some(ivar_index) => {
@@ -2153,7 +2176,7 @@ fn gen_get_ivar(
                 let ivar_opnd = Opnd::mem(64, recv, offs);
 
                 // Push the ivar on the stack
-                let out_opnd = ctx.stack_push(Type::Unknown);
+                let out_opnd = ctx.stack_push(asm, Type::Unknown);
                 asm.mov(out_opnd, ivar_opnd);
             } else {
                 // Compile time value is *not* embedded.
@@ -2164,7 +2187,7 @@ fn gen_get_ivar(
                 // Read the ivar from the extended table
                 let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
 
-                let out_opnd = ctx.stack_push(Type::Unknown);
+                let out_opnd = ctx.stack_push(asm, Type::Unknown);
                 asm.mov(out_opnd, ivar_opnd);
             }
         }
@@ -2344,6 +2367,7 @@ fn gen_setinstancevariable(
             exit_counter!(setivar_megamorphic),
         );
 
+        asm.spill_temps(ctx); // for ccall (must be done before write_val is popped)
         let write_val;
 
         match ivar_index {
@@ -2386,6 +2410,7 @@ fn gen_setinstancevariable(
                 if needs_extension {
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
+                    asm.spill_temps(ctx); // for ccall
                     asm.ccall(rb_ensure_iv_list_size as *const u8,
                               vec![
                                   recv,
@@ -2481,7 +2506,7 @@ fn gen_defined(
     } else {
         Type::Unknown
     };
-    let stack_ret = ctx.stack_push(out_type);
+    let stack_ret = ctx.stack_push(asm, out_type);
     asm.mov(stack_ret, out_value);
 
     KeepCompiling
@@ -2528,7 +2553,7 @@ fn gen_definedivar(
 
         // Push the return value onto the stack
         let out_type = if pushval.special_const_p() { Type::UnknownImm } else { Type::Unknown };
-        let stack_ret = ctx.stack_push(out_type);
+        let stack_ret = ctx.stack_push(asm, out_type);
         asm.mov(stack_ret, out_value);
 
         return KeepCompiling
@@ -2614,7 +2639,7 @@ fn gen_checktype(
         let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
 
         asm.write_label(ret);
-        let stack_ret = ctx.stack_push(Type::UnknownImm);
+        let stack_ret = ctx.stack_push(asm, Type::UnknownImm);
         asm.mov(stack_ret, ret_opnd);
 
         KeepCompiling
@@ -2643,7 +2668,7 @@ fn gen_concatstrings(
     );
 
     ctx.stack_pop(n);
-    let stack_ret = ctx.stack_push(Type::CString);
+    let stack_ret = ctx.stack_push(asm, Type::CString);
     asm.mov(stack_ret, return_value);
 
     KeepCompiling
@@ -2758,7 +2783,7 @@ fn gen_fixnum_cmp(
         let bool_opnd = cmov_op(asm, Qtrue.into(), Qfalse.into());
 
         // Push the output on the stack
-        let dst = ctx.stack_push(Type::UnknownImm);
+        let dst = ctx.stack_push(asm, Type::UnknownImm);
         asm.mov(dst, bool_opnd);
 
         KeepCompiling
@@ -2838,7 +2863,7 @@ fn gen_equality_specialized(
 
         // Push the output on the stack
         ctx.stack_pop(2);
-        let dst = ctx.stack_push(Type::UnknownImm);
+        let dst = ctx.stack_push(asm, Type::UnknownImm);
         asm.mov(dst, val);
 
         return Some(true);
@@ -2873,6 +2898,9 @@ fn gen_equality_specialized(
         let equal = asm.new_label("equal");
         let ret = asm.new_label("ret");
 
+        // Spill for ccall. For safety, unconditionally spill temps before branching.
+        asm.spill_temps(ctx);
+
         // If they are equal by identity, return true
         asm.cmp(a_opnd, b_opnd);
         asm.je(equal);
@@ -2904,7 +2932,7 @@ fn gen_equality_specialized(
 
         // Push the output on the stack
         ctx.stack_pop(2);
-        let dst = ctx.stack_push(Type::UnknownImm);
+        let dst = ctx.stack_push(asm, Type::UnknownImm);
         asm.mov(dst, val);
         asm.jmp(ret);
 
@@ -3011,6 +3039,7 @@ fn gen_opt_aref(
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
         {
+            asm.spill_temps(ctx); // for ccall
             let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
             let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
 
@@ -3018,7 +3047,7 @@ fn gen_opt_aref(
             ctx.stack_pop(2);
 
             // Push the return value onto the stack
-            let stack_ret = ctx.stack_push(Type::Unknown);
+            let stack_ret = ctx.stack_push(asm, Type::Unknown);
             asm.mov(stack_ret, val);
         }
 
@@ -3058,7 +3087,7 @@ fn gen_opt_aref(
         ctx.stack_pop(2);
 
         // Push the return value onto the stack
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        let stack_ret = ctx.stack_push(asm, Type::Unknown);
         asm.mov(stack_ret, val);
 
         // Jump to next instruction. This allows guard chains to share the same successor.
@@ -3135,7 +3164,7 @@ fn gen_opt_aset(
 
         // Push the return value onto the stack
         ctx.stack_pop(3);
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        let stack_ret = ctx.stack_push(asm, Type::Unknown);
         asm.mov(stack_ret, val);
 
         jump_to_next_insn(jit, ctx, asm, ocb);
@@ -3166,7 +3195,7 @@ fn gen_opt_aset(
 
         // Push the return value onto the stack
         ctx.stack_pop(3);
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        let stack_ret = ctx.stack_push(asm, Type::Unknown);
         asm.mov(stack_ret, ret);
 
         jump_to_next_insn(jit, ctx, asm, ocb);
@@ -3207,7 +3236,7 @@ fn gen_opt_and(
         let val = asm.and(arg0, arg1);
 
         // Push the output on the stack
-        let dst = ctx.stack_push(Type::Fixnum);
+        let dst = ctx.stack_push(asm, Type::Fixnum);
         asm.store(dst, val);
 
         KeepCompiling
@@ -3248,7 +3277,7 @@ fn gen_opt_or(
         let val = asm.or(arg0, arg1);
 
         // Push the output on the stack
-        let dst = ctx.stack_push(Type::Fixnum);
+        let dst = ctx.stack_push(asm, Type::Fixnum);
         asm.store(dst, val);
 
         KeepCompiling
@@ -3291,7 +3320,7 @@ fn gen_opt_minus(
         let val = asm.add(val_untag, Opnd::Imm(1));
 
         // Push the output on the stack
-        let dst = ctx.stack_push(Type::Fixnum);
+        let dst = ctx.stack_push(asm, Type::Fixnum);
         asm.store(dst, val);
 
         KeepCompiling
@@ -3345,6 +3374,7 @@ fn gen_opt_mod(
         guard_two_fixnums(jit, ctx, asm, ocb);
 
         // Get the operands and destination from the stack
+        asm.spill_temps(ctx); // for ccall (must be done before stack_pop)
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
@@ -3357,7 +3387,7 @@ fn gen_opt_mod(
 
         // Push the return value onto the stack
         // When the two arguments are fixnums, the modulo output is always a fixnum
-        let stack_ret = ctx.stack_push(Type::Fixnum);
+        let stack_ret = ctx.stack_push(asm, Type::Fixnum);
         asm.mov(stack_ret, ret);
 
         KeepCompiling
@@ -3420,7 +3450,7 @@ fn gen_opt_str_freeze(
     let str = jit.get_arg(0);
 
     // Push the return value onto the stack
-    let stack_ret = ctx.stack_push(Type::CString);
+    let stack_ret = ctx.stack_push(asm, Type::CString);
     asm.mov(stack_ret, str.into());
 
     KeepCompiling
@@ -3439,7 +3469,7 @@ fn gen_opt_str_uminus(
     let str = jit.get_arg(0);
 
     // Push the return value onto the stack
-    let stack_ret = ctx.stack_push(Type::CString);
+    let stack_ret = ctx.stack_push(asm, Type::CString);
     asm.mov(stack_ret, str.into());
 
     KeepCompiling
@@ -3474,7 +3504,7 @@ fn gen_opt_newarray_max(
     );
 
     ctx.stack_pop(num.as_usize());
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(stack_ret, val_opnd);
 
     KeepCompiling
@@ -3510,7 +3540,7 @@ fn gen_opt_newarray_min(
     );
 
     ctx.stack_pop(num.as_usize());
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(stack_ret, val_opnd);
 
     KeepCompiling
@@ -4009,7 +4039,7 @@ fn jit_guard_known_klass(
 // Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
 fn jit_protected_callee_ancestry_guard(
     jit: &mut JITState,
-    ctx: &Context,
+    ctx: &mut Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cme: *const rb_callable_method_entry_t,
@@ -4019,6 +4049,7 @@ fn jit_protected_callee_ancestry_guard(
     // Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
 
+    asm.spill_temps(ctx); // for ccall
     let val = asm.ccall(
         rb_obj_is_kind_of as *mut u8,
         vec![
@@ -4050,14 +4081,14 @@ fn jit_rb_obj_not(
         Some(false) => {
             asm.comment("rb_obj_not(nil_or_false)");
             ctx.stack_pop(1);
-            let out_opnd = ctx.stack_push(Type::True);
+            let out_opnd = ctx.stack_push(asm, Type::True);
             asm.mov(out_opnd, Qtrue.into());
         },
         Some(true) => {
             // Note: recv_opnd != Type::Nil && recv_opnd != Type::False.
             asm.comment("rb_obj_not(truthy)");
             ctx.stack_pop(1);
-            let out_opnd = ctx.stack_push(Type::False);
+            let out_opnd = ctx.stack_push(asm, Type::False);
             asm.mov(out_opnd, Qfalse.into());
         },
         _ => {
@@ -4082,7 +4113,7 @@ fn jit_rb_true(
 ) -> bool {
     asm.comment("nil? == true");
     ctx.stack_pop(1);
-    let stack_ret = ctx.stack_push(Type::True);
+    let stack_ret = ctx.stack_push(asm, Type::True);
     asm.mov(stack_ret, Qtrue.into());
     true
 }
@@ -4101,7 +4132,7 @@ fn jit_rb_false(
 ) -> bool {
     asm.comment("nil? == false");
     ctx.stack_pop(1);
-    let stack_ret = ctx.stack_push(Type::False);
+    let stack_ret = ctx.stack_push(asm, Type::False);
     asm.mov(stack_ret, Qfalse.into());
     true
 }
@@ -4151,10 +4182,10 @@ fn jit_rb_kernel_is_a(
     ctx.stack_pop(2);
 
     if sample_is_a {
-        let stack_ret = ctx.stack_push(Type::True);
+        let stack_ret = ctx.stack_push(asm, Type::True);
         asm.mov(stack_ret, Qtrue.into());
     } else {
-        let stack_ret = ctx.stack_push(Type::False);
+        let stack_ret = ctx.stack_push(asm, Type::False);
         asm.mov(stack_ret, Qfalse.into());
     }
     return true;
@@ -4211,10 +4242,10 @@ fn jit_rb_kernel_instance_of(
     ctx.stack_pop(2);
 
     if sample_instance_of {
-        let stack_ret = ctx.stack_push(Type::True);
+        let stack_ret = ctx.stack_push(asm, Type::True);
         asm.mov(stack_ret, Qtrue.into());
     } else {
-        let stack_ret = ctx.stack_push(Type::False);
+        let stack_ret = ctx.stack_push(asm, Type::False);
         asm.mov(stack_ret, Qfalse.into());
     }
     return true;
@@ -4236,6 +4267,7 @@ fn jit_rb_mod_eqq(
     }
 
     asm.comment("Module#===");
+    asm.spill_temps(ctx); // for ccall
     // By being here, we know that the receiver is a T_MODULE or a T_CLASS, because Module#=== can
     // only live on these objects. With that, we can call rb_obj_is_kind_of() without
     // jit_prepare_routine_call() or a control frame push because it can't raise, allocate, or call
@@ -4248,7 +4280,7 @@ fn jit_rb_mod_eqq(
 
     // Return the result
     ctx.stack_pop(2);
-    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownImm);
     asm.mov(stack_ret, ret);
 
     return true;
@@ -4274,7 +4306,7 @@ fn jit_rb_obj_equal(
     asm.cmp(obj1, obj2);
     let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
 
-    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownImm);
     asm.mov(stack_ret, ret_opnd);
     true
 }
@@ -4317,7 +4349,7 @@ fn jit_rb_int_equal(
     asm.cmp(arg0, arg1);
     let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
 
-    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownImm);
     asm.mov(stack_ret, ret_opnd);
     true
 }
@@ -4350,13 +4382,14 @@ fn jit_rb_str_uplus(
     let ret_label = asm.new_label("stack_ret");
 
     // String#+@ can only exist on T_STRING
-    let stack_ret = ctx.stack_push(Type::TString);
+    let stack_ret = ctx.stack_push(asm, Type::TString);
 
     // If the string isn't frozen, we just return it.
     asm.mov(stack_ret, recv_opnd);
     asm.jz(ret_label);
 
     // Str is frozen - duplicate it
+    asm.spill_temps(ctx); // for ccall
     let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
     asm.mov(stack_ret, ret_opnd);
 
@@ -4378,10 +4411,11 @@ fn jit_rb_str_bytesize(
 ) -> bool {
     asm.comment("String#bytesize");
 
+    asm.spill_temps(ctx); // for ccall (must be done before stack_pop)
     let recv = ctx.stack_pop(1);
     let ret_opnd = asm.ccall(rb_str_bytesize as *const u8, vec![recv]);
 
-    let out_opnd = ctx.stack_push(Type::Fixnum);
+    let out_opnd = ctx.stack_push(asm, Type::Fixnum);
     asm.mov(out_opnd, ret_opnd);
 
     true
@@ -4429,7 +4463,6 @@ fn jit_rb_str_empty_p(
     );
 
     let recv_opnd = ctx.stack_pop(1);
-    let out_opnd = ctx.stack_push(Type::UnknownImm);
 
     asm.comment("get string length");
     let str_len_opnd = Opnd::mem(
@@ -4440,6 +4473,7 @@ fn jit_rb_str_empty_p(
 
     asm.cmp(str_len_opnd, Opnd::UImm(0));
     let string_empty = asm.csel_e(Qtrue.into(), Qfalse.into());
+    let out_opnd = ctx.stack_push(asm, Type::UnknownImm);
     asm.mov(out_opnd, string_empty);
 
     return true;
@@ -4494,21 +4528,23 @@ fn jit_rb_str_concat(
     );
     asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
 
-    // Push once, use the resulting operand in both branches below.
-    let stack_ret = ctx.stack_push(Type::CString);
-
     let enc_mismatch = asm.new_label("enc_mismatch");
     asm.jnz(enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
+    asm.spill_temps(ctx); // for ccall
     let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, vec![recv, concat_arg]);
     let ret_label = asm.new_label("func_return");
+    let stack_ret = ctx.stack_push(asm, Type::CString);
     asm.mov(stack_ret, ret_opnd);
+    ctx.stack_pop(1); // forget stack_ret to re-push after ccall
     asm.jmp(ret_label);
 
     // If encodings are different, use a slower encoding-aware concatenate
     asm.write_label(enc_mismatch);
+    asm.spill_temps(ctx); // for ccall
     let ret_opnd = asm.ccall(rb_str_buf_append as *const u8, vec![recv, concat_arg]);
+    let stack_ret = ctx.stack_push(asm, Type::CString);
     asm.mov(stack_ret, ret_opnd);
     // Drop through to return
 
@@ -4536,7 +4572,7 @@ fn jit_rb_ary_empty_p(
     asm.test(len_opnd, len_opnd);
     let bool_val = asm.csel_z(Qtrue.into(), Qfalse.into());
 
-    let out_opnd = ctx.stack_push(Type::UnknownImm);
+    let out_opnd = ctx.stack_push(asm, Type::UnknownImm);
     asm.store(out_opnd, bool_val);
 
     return true;
@@ -4562,7 +4598,7 @@ fn jit_rb_ary_push(
     let ary_opnd = ctx.stack_pop(1);
     let ret = asm.ccall(rb_ary_push as *const u8, vec![ary_opnd, item_opnd]);
 
-    let ret_opnd = ctx.stack_push(Type::TArray);
+    let ret_opnd = ctx.stack_push(asm, Type::TArray);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -4680,7 +4716,7 @@ fn jit_rb_f_block_given_p(
     );
 
     ctx.stack_pop(1);
-    let out_opnd = ctx.stack_push(Type::UnknownImm);
+    let out_opnd = ctx.stack_push(asm, Type::UnknownImm);
 
     // Return `block_handler != VM_BLOCK_HANDLER_NONE`
     asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
@@ -4710,7 +4746,7 @@ fn jit_thread_s_current(
     // thread->self
     let thread_self = Opnd::mem(64, ec_thread_opnd, RUBY_OFFSET_THREAD_SELF);
 
-    let stack_ret = ctx.stack_push(Type::UnknownHeap);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownHeap);
     asm.mov(stack_ret, thread_self);
     true
 }
@@ -5126,6 +5162,7 @@ fn gen_send_cfunc(
         assert_ne!(0, unsafe { rb_IMEMO_TYPE_P(imemo_ci, imemo_callinfo) },
             "we assume all callinfos with kwargs are on the GC heap");
         let sp = asm.lea(ctx.sp_opnd(0));
+        asm.spill_temps(ctx); // for ccall
         let kwargs = asm.ccall(build_kwhash as *const u8, vec![imemo_ci.into(), sp]);
 
         // Replace the stack location at the start of kwargs with the new hash
@@ -5135,6 +5172,9 @@ fn gen_send_cfunc(
 
     // Copy SP because REG_SP will get overwritten
     let sp = asm.lea(ctx.sp_opnd(0));
+
+    // Arguments must be spilled before popped from ctx
+    asm.spill_temps(ctx);
 
     // Pop the C function arguments from the stack (in the caller)
     ctx.stack_pop((argc + 1).try_into().unwrap());
@@ -5176,7 +5216,7 @@ fn gen_send_cfunc(
     record_global_inval_patch(asm, CodegenGlobals::get_outline_full_cfunc_return_pos());
 
     // Push the return value on the Ruby stack
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(stack_ret, ret);
 
     // Pop the stack frame (ec->cfp++)
@@ -5280,7 +5320,7 @@ fn move_rest_args_to_stack(array: Opnd, num_args: u32, jit: &mut JITState, ctx: 
     let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
     for i in 0..num_args {
-        let top = ctx.stack_push(Type::Unknown);
+        let top = ctx.stack_push(asm, Type::Unknown);
         asm.mov(top, Opnd::mem(64, ary_opnd, i as i32 * SIZEOF_VALUE_I32));
     }
 }
@@ -5370,7 +5410,7 @@ fn push_splat_args(required_args: u32, jit: &mut JITState, ctx: &mut Context, as
         let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
         for i in 0..required_args {
-            let top = ctx.stack_push(Type::Unknown);
+            let top = ctx.stack_push(asm, Type::Unknown);
             asm.mov(top, Opnd::mem(64, ary_opnd, i as i32 * SIZEOF_VALUE_I32));
         }
 
@@ -5764,7 +5804,7 @@ fn gen_send_iseq(
             let val = asm.ccall(unsafe { (*builtin_info).func_ptr as *const u8 }, args);
 
             // Push the return value
-            let stack_ret = ctx.stack_push(Type::Unknown);
+            let stack_ret = ctx.stack_push(asm, Type::Unknown);
             asm.mov(stack_ret, val);
 
             // Note: assuming that the leaf builtin doesn't change local variables here.
@@ -5809,7 +5849,7 @@ fn gen_send_iseq(
 
         for _ in 0..remaining_opt {
             // We need to push nil for the optional arguments
-            let stack_ret = ctx.stack_push(Type::Unknown);
+            let stack_ret = ctx.stack_push(asm, Type::Unknown);
             asm.mov(stack_ret, Qnil.into());
         }
     }
@@ -5851,7 +5891,7 @@ fn gen_send_iseq(
                 );
                 ctx.stack_pop(diff as usize);
 
-                let stack_ret = ctx.stack_push(Type::TArray);
+                let stack_ret = ctx.stack_push(asm, Type::TArray);
                 asm.mov(stack_ret, array);
                 // We now should have the required arguments
                 // and an array of all the rest arguments
@@ -5864,8 +5904,9 @@ fn gen_send_iseq(
                 move_rest_args_to_stack(array, diff, jit, ctx, asm, ocb);
 
                 // We will now slice the array to give us a new array of the correct size
+                asm.spill_temps(ctx); // for ccall
                 let ret = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
-                let stack_ret = ctx.stack_push(Type::TArray);
+                let stack_ret = ctx.stack_push(asm, Type::TArray);
                 asm.mov(stack_ret, ret);
 
                 // We now should have the required arguments
@@ -5874,7 +5915,7 @@ fn gen_send_iseq(
             } else {
                 // The arguments are equal so we can just push to the stack
                 assert!(non_rest_arg_count == required_num);
-                let stack_ret = ctx.stack_push(Type::TArray);
+                let stack_ret = ctx.stack_push(asm, Type::TArray);
                 asm.mov(stack_ret, array);
             }
         } else {
@@ -5900,7 +5941,7 @@ fn gen_send_iseq(
                 ]
             );
             ctx.stack_pop(n.as_usize());
-            let stack_ret = ctx.stack_push(Type::CArray);
+            let stack_ret = ctx.stack_push(asm, Type::CArray);
             asm.mov(stack_ret, new_ary);
         }
     }
@@ -5967,7 +6008,7 @@ fn gen_send_iseq(
                 // filling in (which is done in the next loop). Also increments
                 // argc so that the callee's SP is recorded correctly.
                 argc += 1;
-                let default_arg = ctx.stack_push(Type::Unknown);
+                let default_arg = ctx.stack_push(asm, Type::Unknown);
 
                 // callee_idx - keyword->required_num is used in a couple of places below.
                 let req_num: isize = unsafe { (*keyword).required_num }.try_into().unwrap();
@@ -6065,13 +6106,14 @@ fn gen_send_iseq(
         asm.comment("push splat arg0 onto the stack");
         ctx.stack_pop(argc.try_into().unwrap());
         for i in 0..lead_num {
-            let stack_opnd = ctx.stack_push(Type::Unknown);
+            let stack_opnd = ctx.stack_push(asm, Type::Unknown);
             asm.mov(stack_opnd, Opnd::mem(64, array_opnd, SIZEOF_VALUE_I32 * i));
         }
         argc = lead_num;
     }
 
-
+    // Spill stack temps to let the callee use them
+    asm.spill_temps(ctx);
 
     // Points to the receiver operand on the stack unless a captured environment is used
     let recv = match captured_opnd {
@@ -6157,7 +6199,11 @@ fn gen_send_iseq(
     // the return value in case of JIT-to-JIT return.
     let mut return_ctx = ctx.clone();
     return_ctx.stack_pop(sp_offset.try_into().unwrap());
-    return_ctx.stack_push(Type::Unknown);
+    let return_val = return_ctx.stack_push(asm, Type::Unknown);
+    if return_val.stack_idx() < MAX_REG_TEMPS {
+        // The callee writes a return value on stack. Update reg_temps accordingly.
+        return_ctx.dealloc_temp_reg(return_val.stack_idx());
+    }
     return_ctx.set_sp_offset(1);
     return_ctx.reset_chain_depth();
 
@@ -6242,7 +6288,7 @@ fn gen_struct_aref(
         Opnd::mem(64, rstruct_ptr, SIZEOF_VALUE_I32 * off)
     };
 
-    let ret = ctx.stack_push(Type::Unknown);
+    let ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(ret, val);
 
     jump_to_next_insn(jit, ctx, asm, ocb);
@@ -6279,12 +6325,13 @@ fn gen_struct_aset(
 
     asm.comment("struct aset");
 
+    asm.spill_temps(ctx); // for ccall (must be done before stack_pop)
     let val = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
 
     let val = asm.ccall(RSTRUCT_SET as *const u8, vec![recv, (off as i64).into(), val]);
 
-    let ret = ctx.stack_push(Type::Unknown);
+    let ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(ret, val);
 
     jump_to_next_insn(jit, ctx, asm, ocb);
@@ -6605,6 +6652,7 @@ fn gen_send_general(
                         // values for the register allocator.
                         let name_opnd = asm.load(name_opnd);
 
+                        asm.spill_temps(ctx); // for ccall
                         let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
                         asm.comment("chain_guard_send");
@@ -6675,7 +6723,7 @@ fn gen_send_general(
 
                         ctx.stack_pop(argc as usize + 1);
 
-                        let stack_ret = ctx.stack_push(Type::Unknown);
+                        let stack_ret = ctx.stack_push(asm, Type::Unknown);
                         asm.mov(stack_ret, ret);
                         return KeepCompiling;
 
@@ -6921,7 +6969,7 @@ fn gen_invokeblock(
         );
 
         ctx.stack_pop(argc.try_into().unwrap());
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        let stack_ret = ctx.stack_push(asm, Type::Unknown);
         asm.mov(stack_ret, ret);
 
         // cfunc calls may corrupt types
@@ -7132,7 +7180,7 @@ fn gen_getglobal(
         vec![ gid.into() ]
     );
 
-    let top = ctx.stack_push(Type::Unknown);
+    let top = ctx.stack_push(asm, Type::Unknown);
     asm.mov(top, val_opnd);
 
     KeepCompiling
@@ -7176,7 +7224,7 @@ fn gen_anytostring(
     let val = asm.ccall(rb_obj_as_string_result as *const u8, vec![str, val]);
 
     // Push the return value
-    let stack_ret = ctx.stack_push(Type::TString);
+    let stack_ret = ctx.stack_push(asm, Type::TString);
     asm.mov(stack_ret, val);
 
     KeepCompiling
@@ -7231,7 +7279,7 @@ fn gen_intern(
     let sym = asm.ccall(rb_str_intern as *const u8, vec![str]);
 
     // Push the return value
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(stack_ret, sym);
 
     KeepCompiling
@@ -7280,10 +7328,11 @@ fn gen_toregexp(
     asm.cpop_into(ary);
 
     // The value we want to push on the stack is in RAX right now
-    let stack_ret = ctx.stack_push(Type::UnknownHeap);
+    let stack_ret = ctx.stack_push(asm, Type::UnknownHeap);
     asm.mov(stack_ret, val);
 
     // Clear the temp array.
+    asm.spill_temps(ctx); // for ccall
     asm.ccall(rb_ary_clear as *const u8, vec![ary]);
 
     KeepCompiling
@@ -7335,7 +7384,7 @@ fn gen_getspecial(
             _ => panic!("invalid back-ref"),
         };
 
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        let stack_ret = ctx.stack_push(asm, Type::Unknown);
         asm.mov(stack_ret, val);
 
         KeepCompiling
@@ -7359,7 +7408,7 @@ fn gen_getspecial(
             ]
         );
 
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        let stack_ret = ctx.stack_push(asm, Type::Unknown);
         asm.mov(stack_ret, val);
 
         KeepCompiling
@@ -7385,7 +7434,7 @@ fn gen_getclassvariable(
         ],
     );
 
-    let top = ctx.stack_push(Type::Unknown);
+    let top = ctx.stack_push(asm, Type::Unknown);
     asm.mov(top, val_opnd);
 
     KeepCompiling
@@ -7443,7 +7492,7 @@ fn gen_getconstant(
         ],
     );
 
-    let top = ctx.stack_push(Type::Unknown);
+    let top = ctx.stack_push(asm, Type::Unknown);
     asm.mov(top, val_opnd);
 
     KeepCompiling
@@ -7476,6 +7525,7 @@ fn gen_opt_getconstant_path(
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
         // Call function to verify the cache. It doesn't allocate or call methods.
+        asm.spill_temps(ctx); // for ccall
         let ret_val = asm.ccall(
             rb_vm_ic_hit_p as *const u8,
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
@@ -7501,7 +7551,7 @@ fn gen_opt_getconstant_path(
         ));
 
         // Push ic->entry->value
-        let stack_top = ctx.stack_push(Type::Unknown);
+        let stack_top = ctx.stack_push(asm, Type::Unknown);
         asm.store(stack_top, ic_entry_val);
     } else {
         // Optimize for single ractor mode.
@@ -7603,7 +7653,7 @@ fn gen_getblockparamproxy(
         // Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
         assert!(!unsafe { rb_block_param_proxy }.special_const_p());
 
-        let top = ctx.stack_push(Type::BlockParamProxy);
+        let top = ctx.stack_push(asm, Type::BlockParamProxy);
         asm.mov(top, Opnd::const_ptr(unsafe { rb_block_param_proxy }.as_ptr()));
     }
 
@@ -7687,7 +7737,7 @@ fn gen_getblockparam(
     asm.write_label(frame_flag_modified);
 
     // Push the proc on the stack
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     let ep_opnd = gen_get_ep(asm, level);
     asm.mov(stack_ret, Opnd::mem(64, ep_opnd, offs));
 
@@ -7724,7 +7774,7 @@ fn gen_invokebuiltin(
 
     // Push the return value
     ctx.stack_pop(bf_argc);
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(stack_ret, val);
 
     KeepCompiling
@@ -7769,7 +7819,7 @@ fn gen_opt_invokebuiltin_delegate(
     let val = asm.ccall(unsafe { (*bf).func_ptr } as *const u8, args);
 
     // Push the return value
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(asm, Type::Unknown);
     asm.mov(stack_ret, val);
 
     KeepCompiling
@@ -8252,7 +8302,7 @@ mod tests {
     fn test_gen_pop() {
         let (mut jit, _, mut asm, _cb, mut ocb) = setup_codegen();
         let mut context = Context::default();
-        context.stack_push(Type::Fixnum);
+        context.stack_push(&mut asm, Type::Fixnum);
         let status = gen_pop(&mut jit, &mut context, &mut asm, &mut ocb);
 
         assert_eq!(status, KeepCompiling);
@@ -8262,7 +8312,7 @@ mod tests {
     #[test]
     fn test_gen_dup() {
         let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
-        context.stack_push(Type::Fixnum);
+        context.stack_push(&mut asm, Type::Fixnum);
         let status = gen_dup(&mut jit, &mut context, &mut asm, &mut ocb);
 
         assert_eq!(status, KeepCompiling);
@@ -8278,8 +8328,8 @@ mod tests {
     #[test]
     fn test_gen_dupn() {
         let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
-        context.stack_push(Type::Fixnum);
-        context.stack_push(Type::Flonum);
+        context.stack_push(&mut asm, Type::Fixnum);
+        context.stack_push(&mut asm, Type::Flonum);
 
         let mut value_array: [u64; 2] = [0, 2]; // We only compile for n == 2
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
@@ -8302,8 +8352,8 @@ mod tests {
     #[test]
     fn test_gen_swap() {
         let (mut jit, mut context, mut asm, _cb, mut ocb) = setup_codegen();
-        context.stack_push(Type::Fixnum);
-        context.stack_push(Type::Flonum);
+        context.stack_push(&mut asm, Type::Fixnum);
+        context.stack_push(&mut asm, Type::Flonum);
 
         let status = gen_swap(&mut jit, &mut context, &mut asm, &mut ocb);
 
@@ -8393,9 +8443,9 @@ mod tests {
     #[test]
     fn test_gen_setn() {
         let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
-        context.stack_push(Type::Fixnum);
-        context.stack_push(Type::Flonum);
-        context.stack_push(Type::CString);
+        context.stack_push(&mut asm, Type::Fixnum);
+        context.stack_push(&mut asm, Type::Flonum);
+        context.stack_push(&mut asm, Type::CString);
 
         let mut value_array: [u64; 2] = [0, 2];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
@@ -8416,8 +8466,8 @@ mod tests {
     #[test]
     fn test_gen_topn() {
         let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
-        context.stack_push(Type::Flonum);
-        context.stack_push(Type::CString);
+        context.stack_push(&mut asm, Type::Flonum);
+        context.stack_push(&mut asm, Type::CString);
 
         let mut value_array: [u64; 2] = [0, 1];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
@@ -8438,9 +8488,9 @@ mod tests {
     #[test]
     fn test_gen_adjuststack() {
         let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
-        context.stack_push(Type::Flonum);
-        context.stack_push(Type::CString);
-        context.stack_push(Type::Fixnum);
+        context.stack_push(&mut asm, Type::Flonum);
+        context.stack_push(&mut asm, Type::CString);
+        context.stack_push(&mut asm, Type::Fixnum);
 
         let mut value_array: [u64; 3] = [0, 2, 0];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
@@ -8460,7 +8510,7 @@ mod tests {
     fn test_gen_leave() {
         let (mut jit, mut context, mut asm, _cb, mut ocb) = setup_codegen();
         // Push return value
-        context.stack_push(Type::Fixnum);
+        context.stack_push(&mut asm, Type::Fixnum);
         gen_leave(&mut jit, &mut context, &mut asm, &mut ocb);
     }
 }
