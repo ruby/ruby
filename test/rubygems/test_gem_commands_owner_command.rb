@@ -417,6 +417,8 @@ EOF
     end
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
+
+    assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @stub_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output

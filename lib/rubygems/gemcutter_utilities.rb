@@ -287,10 +287,10 @@ module Gem::GemcutterUtilities
 
   def webauthn_verification_url(credentials)
     response = rubygems_api_request(:post, "api/v1/webauthn_verification") do |request|
-      if credentials
-        request.basic_auth credentials[:email], credentials[:password]
-      else
+      if credentials.empty?
         request.add_field "Authorization", api_key
+      else
+        request.basic_auth credentials[:email], credentials[:password]
       end
     end
     response.is_a?(Net::HTTPSuccess) ? response.body : nil

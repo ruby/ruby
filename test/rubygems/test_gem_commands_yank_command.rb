@@ -185,6 +185,8 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal 1, error.exit_code
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
+
+    assert_match @fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match %r{Yanking gem from http://example}, @ui.output
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @ui.error
