@@ -58,6 +58,7 @@ The following bundled gems are updated.
 * minitest 5.18.0
 * rbs 3.0.4
 * typeprof 0.21.7
+* debug 1.7.2
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
