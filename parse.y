@@ -5432,24 +5432,10 @@ string_dend	: tSTRING_DEND
                 | END_OF_INPUT
                 ;
 
-string_dvar	: tGVAR
+string_dvar	: nonlocal_var
                     {
                     /*%%%*/
-                        $$ = NEW_GVAR($1, &@$);
-                    /*% %*/
-                    /*% ripper: var_ref!($1) %*/
-                    }
-                | tIVAR
-                    {
-                    /*%%%*/
-                        $$ = NEW_IVAR($1, &@$);
-                    /*% %*/
-                    /*% ripper: var_ref!($1) %*/
-                    }
-                | tCVAR
-                    {
-                    /*%%%*/
-                        $$ = NEW_CVAR($1, &@$);
+                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
                     /*% %*/
                     /*% ripper: var_ref!($1) %*/
                     }

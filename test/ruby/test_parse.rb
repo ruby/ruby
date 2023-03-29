@@ -1443,6 +1443,11 @@ x = __ENCODING__
     assert_equal(expected, obj.arg)
   end
 
+  def test_ungettable_gvar
+    assert_syntax_error('$01234', /not valid to get/)
+    assert_syntax_error('"#$01234"', /not valid to get/)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
