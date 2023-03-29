@@ -18,6 +18,17 @@ class Reline::Unicode::Test < Reline::TestCase
     assert_equal 2, Reline::Unicode.calculate_width('√', true)
   end
 
+  def test_csi_regexp
+    csi_sequences = ["\e[m", "\e[1m", "\e[12;34m", "\e[12;34H"]
+    assert_equal(csi_sequences, "text#{csi_sequences.join('text')}text".scan(Reline::Unicode::CSI_REGEXP))
+  end
+
+  def test_osc_regexp
+    osc_sequences = ["\e]1\a", "\e]0;OSC\a", "\e]1\e\\", "\e]0;OSC\e\\"]
+    separator = "text\atext"
+    assert_equal(osc_sequences, "#{separator}#{osc_sequences.join(separator)}#{separator}".scan(Reline::Unicode::OSC_REGEXP))
+  end
+
   def test_split_by_width
     assert_equal [['abc', nil, 'de'], 2], Reline::Unicode.split_by_width('abcde', 3)
     assert_equal [['abc', nil, 'def', nil, ''], 3], Reline::Unicode.split_by_width('abcdef', 3)
