@@ -192,8 +192,8 @@ class Reline::Unicode
   end
 
   # Take a chunk of a String cut by width with escape sequences.
-  def self.take_range(str, start_col, max_width, encoding = str.encoding)
-    chunk = String.new(encoding: encoding)
+  def self.take_range(str, start_col, max_width)
+    chunk = String.new(encoding: str.encoding)
     total_width = 0
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
