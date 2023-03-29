@@ -232,6 +232,8 @@ bool rb_gc_is_ptr_to_obj(void *ptr);
 VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
 VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
 
+void rb_reset_age(VALUE obj);
+
 void rb_gc_mark_and_move(VALUE *ptr);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \

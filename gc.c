@@ -939,6 +939,9 @@ static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
 static bool heap_page_alloc_use_mmap;
 #endif
 
+#define RVALUE_AGE_BIT_COUNT 2
+#define HEAP_PAGE_AGE_BITMAP_LIMIT HEAP_PAGE_BITMAP_LIMIT * RVALUE_AGE_BIT_COUNT
+
 struct heap_page {
     short slot_size;
     short total_slots;
@@ -968,7 +971,53 @@ struct heap_page {
 
     /* If set, the object is not movable */
     bits_t pinned_bits[HEAP_PAGE_BITMAP_LIMIT];
+    bits_t age_bits[HEAP_PAGE_BITMAP_LIMIT * RVALUE_AGE_BIT_COUNT];
 };
+
+#define BITMAP_INDEX_RAW(n)  ((n) / (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT))
+#define BITMAP_OFFSET_RAW(n) ((n) % (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT) << 1)
+#define BITMAP_BIT_RAW(n)    ((bits_t)1 << (n))
+
+static inline bits_t
+RVALUE_AGE_MASK_BITS(int obj_index)
+{
+    bits_t mask = 0;
+    bits_t start = BITMAP_OFFSET_RAW(obj_index);
+    for (int i = 0; i < RVALUE_AGE_BIT_COUNT; i++) {
+        mask |= BITMAP_BIT_RAW(start + i);
+    }
+    return mask;
+}
+
+static bits_t
+RVALUE_GET_AGE_BITS(bits_t *bits, int obj_index)
+{
+    bits_t new_mask = RVALUE_AGE_MASK_BITS(obj_index);
+    return (bits[BITMAP_INDEX_RAW(obj_index)] & new_mask) >> BITMAP_OFFSET_RAW(obj_index);
+}
+#define RVALUE_GET_AGE(obj) ((int)RVALUE_GET_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj)))
+
+static void
+RVALUE_CLEAR_AGE_BITS(bits_t *bits, int obj_index)
+{
+    bits[BITMAP_INDEX_RAW(obj_index)] &= ~RVALUE_AGE_MASK_BITS(obj_index);
+}
+
+static void
+RVALUE_SET_AGE_BITS(bits_t *bits, int obj_index, int age)
+{
+    RVALUE_CLEAR_AGE_BITS(bits, obj_index);
+    bits[BITMAP_INDEX_RAW(obj_index)] |= ((bits_t)age << BITMAP_OFFSET_RAW(obj_index));
+}
+#define RVALUE_SET_AGE(obj, age) (RVALUE_SET_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj), age));
+
+static void
+RVALUE_INC_AGE_BITS(bits_t *bits, int obj_index)
+{
+    bits_t age = RVALUE_GET_AGE_BITS(bits, obj_index);
+    age++;
+    RVALUE_SET_AGE_BITS(bits, obj_index, (int)age);
+}
 
 /*
  * When asan is enabled, this will prohibit writing to the freelist until it is unlocked
@@ -1010,6 +1059,12 @@ asan_unlock_freelist(struct heap_page *page)
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 
 #define GC_SWEEP_PAGES_FREEABLE_PER_STEP 3
+
+void
+rb_reset_age(VALUE obj)
+{
+    RVALUE_SET_AGE(obj, 0);
+}
 
 /* Aliases */
 #define rb_objspace (*rb_objspace_of(GET_VM()))
@@ -1484,19 +1539,12 @@ asan_poison_object_restore(VALUE obj, void *ptr)
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
 
 #define RVALUE_OLD_AGE   3
-#define RVALUE_AGE_SHIFT 5 /* FL_PROMOTED0 bit */
 
 static int rgengc_remembered(rb_objspace_t *objspace, VALUE obj);
 static int rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj);
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
-
-static inline int
-RVALUE_FLAGS_AGE(VALUE flags)
-{
-    return (int)((flags & (FL_PROMOTED0 | FL_PROMOTED1)) >> RVALUE_AGE_SHIFT);
-}
 
 static int
 check_rvalue_consistency_force(const VALUE obj, int terminate)
@@ -1537,7 +1585,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
             const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0;
             const int remembered_bit = MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->remembered_bits, obj) != 0;
-            const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+            const int age = (int)RVALUE_GET_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj));
 
             if (GET_HEAP_PAGE(obj)->flags.in_tomb) {
                 fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
@@ -1683,8 +1731,7 @@ RVALUE_UNCOLLECTIBLE(VALUE obj)
 static inline int
 RVALUE_OLD_P_RAW(VALUE obj)
 {
-    const VALUE promoted = FL_PROMOTED0 | FL_PROMOTED1;
-    return (RBASIC(obj)->flags & promoted) == promoted;
+    return RVALUE_GET_AGE(obj) == RVALUE_OLD_AGE;
 }
 
 static inline int
@@ -1699,7 +1746,7 @@ static inline int
 RVALUE_AGE(VALUE obj)
 {
     check_rvalue_consistency(obj);
-    return RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+    return (int)RVALUE_GET_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj));
 }
 #endif
 
@@ -1723,39 +1770,38 @@ RVALUE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, VALUE obj)
     RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(objspace, GET_HEAP_PAGE(obj), obj);
 }
 
-static inline VALUE
-RVALUE_FLAGS_AGE_SET(VALUE flags, int age)
-{
-    flags &= ~(FL_PROMOTED0 | FL_PROMOTED1);
-    flags |= (age << RVALUE_AGE_SHIFT);
-    return flags;
-}
-
 /* set age to age+1 */
 static inline void
 RVALUE_AGE_INC(rb_objspace_t *objspace, VALUE obj)
 {
-    VALUE flags = RBASIC(obj)->flags;
-    int age = RVALUE_FLAGS_AGE(flags);
+    int age = (int)RVALUE_GET_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj));
+    RVALUE_INC_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj));
 
     if (RGENGC_CHECK_MODE && age == RVALUE_OLD_AGE) {
         rb_bug("RVALUE_AGE_INC: can not increment age of OLD object %s.", obj_info(obj));
     }
-
-    age++;
-    RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(flags, age);
-
-    if (age == RVALUE_OLD_AGE) {
+    if (++age == RVALUE_OLD_AGE) {
+        FL_SET(obj, FL_PROMOTED);
         RVALUE_OLD_UNCOLLECTIBLE_SET(objspace, obj);
     }
+
+    check_rvalue_consistency(obj);
+}
+
+static inline void
+RVALUE_AGE_SET_CANDIDATE(rb_objspace_t *objspace, VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    GC_ASSERT(!RVALUE_OLD_P(obj));
+    RVALUE_SET_AGE(obj, RVALUE_OLD_AGE - 1);
     check_rvalue_consistency(obj);
 }
 
 static inline void
 RVALUE_DEMOTE_RAW(rb_objspace_t *objspace, VALUE obj)
 {
-    RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, 0);
     CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), obj);
+    RVALUE_SET_AGE(obj, 0);
 }
 
 static inline void
@@ -1780,15 +1826,14 @@ RVALUE_DEMOTE(rb_objspace_t *objspace, VALUE obj)
 static inline void
 RVALUE_AGE_RESET_RAW(VALUE obj)
 {
-    RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, 0);
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    RVALUE_CLEAR_AGE_BITS(page->age_bits, NUM_IN_PAGE(obj));
 }
 
 static inline void
 RVALUE_AGE_RESET(VALUE obj)
 {
     check_rvalue_consistency(obj);
-    GC_ASSERT(!RVALUE_OLD_P(obj));
-
     RVALUE_AGE_RESET_RAW(obj);
     check_rvalue_consistency(obj);
 }
@@ -1961,6 +2006,8 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     p->as.free.next = page->freelist;
     page->freelist = p;
     asan_lock_freelist(page);
+
+    RVALUE_CLEAR_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj));
 
     if (RGENGC_CHECK_MODE &&
         /* obj should belong to page */
@@ -2505,6 +2552,13 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     p->as.basic.flags = flags;
     *((VALUE *)&p->as.basic.klass) = klass;
 
+    int t = flags & RUBY_T_MASK;
+    if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
+        RVALUE_AGE_SET_CANDIDATE(objspace, obj);
+    } else {
+        RVALUE_SET_AGE(obj, 0);
+    }
+
 #if RACTOR_CHECK_MODE
     rb_ractor_setup_belonging(obj);
 #endif
@@ -2521,12 +2575,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         GC_ASSERT(RVALUE_OLD_P(obj) == FALSE);
         GC_ASSERT(RVALUE_WB_UNPROTECTED(obj) == FALSE);
 
-        if (flags & FL_PROMOTED1) {
-            if (RVALUE_AGE(obj) != 2) rb_bug("newobj: %s of age (%d) != 2.", obj_info(obj), RVALUE_AGE(obj));
-        }
-        else {
-            if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
-        }
         if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
     }
     RB_VM_LOCK_LEAVE_NO_BARRIER();
@@ -2951,10 +2999,15 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
-    if ((flags & RUBY_T_MASK) == T_OBJECT) {
+    switch(flags & RUBY_T_MASK) {
+      case T_OBJECT:
         return rb_class_instance_allocate_internal(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED, flags & FL_WB_PROTECTED);
-    }
-    else {
+        break;
+      case T_MODULE:
+      case T_ICLASS:
+      case T_CLASS:
+        if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
+      default:
         return newobj_of(GET_RACTOR(), klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, RVALUE_SIZE);
     }
 }
@@ -3442,6 +3495,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       default:
         break;
     }
+
+    RVALUE_AGE_RESET(obj);
 
     if (FL_TEST(obj, FL_EXIVAR)) {
         rb_free_generic_ivar((VALUE)obj);
@@ -9795,6 +9850,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     int marked;
     int wb_unprotected;
     int uncollectible;
+    int age;
     RVALUE *dest = (RVALUE *)free;
     RVALUE *src = (RVALUE *)scan;
 
@@ -9810,6 +9866,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     wb_unprotected = RVALUE_WB_UNPROTECTED((VALUE)src);
     uncollectible = RVALUE_UNCOLLECTIBLE((VALUE)src);
     bool remembered = RVALUE_REMEMBERED((VALUE)src);
+    age = (int)RVALUE_GET_AGE_BITS(GET_HEAP_PAGE(src)->age_bits, NUM_IN_PAGE(src));
 
     /* Clear bits for eventual T_MOVED */
     CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)src), (VALUE)src);
@@ -9852,6 +9909,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     }
 
     memset(src, 0, src_slot_size);
+    RVALUE_CLEAR_AGE_BITS(GET_HEAP_PAGE(src)->age_bits, NUM_IN_PAGE(src));
 
     /* Set bits for object in new location */
     if (remembered) {
@@ -9881,6 +9939,8 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     else {
         CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS((VALUE)dest), (VALUE)dest);
     }
+
+    RVALUE_SET_AGE_BITS(GET_HEAP_PAGE(dest)->age_bits, NUM_IN_PAGE(dest), age);
 
     /* Assign forwarding address */
     src->as.moved.flags = T_MOVED;
@@ -13447,7 +13507,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         }
     }
     else {
-        const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+        const int age = (int)RVALUE_GET_AGE_BITS(GET_HEAP_PAGE(obj)->age_bits, NUM_IN_PAGE(obj));
 
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
             APPEND_F("%p [%d%s%s%s%s%s%s] %s ",

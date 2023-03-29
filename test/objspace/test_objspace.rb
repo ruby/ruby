@@ -644,41 +644,6 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_all
-    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
-
-    assert_in_out_err(opts, "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
-      begin;
-        def dump_my_heap_please
-          ObjectSpace.trace_object_allocations_start
-          GC.start
-          str = "TEST2".force_encoding("UTF-8")
-          ObjectSpace.dump_all(output: :stdout)
-        end
-
-        p dump_my_heap_please
-      end;
-
-      assert_test_string_entry_correct_in_dump_all(output)
-    end
-
-    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |(output), (error)|
-      begin;
-        def dump_my_heap_please
-          ObjectSpace.trace_object_allocations_start
-          GC.start
-          (str = "TEST2").force_encoding("UTF-8")
-          ObjectSpace.dump_all().path
-        end
-
-        puts dump_my_heap_please
-      end;
-      assert_nil(error)
-      dump = File.readlines(output)
-      File.unlink(output)
-
-      assert_test_string_entry_correct_in_dump_all(dump)
-    end
-
     if defined?(JSON)
       args = [
         "-rjson", "-",

@@ -70,7 +70,7 @@ CLONESETUP(VALUE clone, VALUE obj)
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
 
-    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
+    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_FINALIZE;
     rb_obj_setup(clone, rb_singleton_class_clone(obj),
                  RB_FL_TEST_RAW(obj, ~flags));
     rb_singleton_class_attached(RBASIC_CLASS(clone), clone);

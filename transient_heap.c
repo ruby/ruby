@@ -422,6 +422,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
 
             /* ptr is set up; OK to unpoison. */
             asan_unpoison_memory_region(ptr, size - sizeof *header, true);
+
             ret = ptr;
         }
         else {

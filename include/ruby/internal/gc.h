@@ -733,7 +733,7 @@ static inline bool
 RB_OBJ_PROMOTED_RAW(VALUE obj)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
-    return RB_FL_ANY_RAW(obj,  RUBY_FL_PROMOTED);
+    return RB_FL_ANY_RAW(obj,  RUBY_FL_PROMOTED0);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

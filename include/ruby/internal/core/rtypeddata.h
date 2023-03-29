@@ -176,7 +176,7 @@ rbimpl_typeddata_flags {
      * This flag  is mysterious.  It seems  nobody is currently using  it.  The
      * intention of this flag is also unclear.  We need further investigations.
      */
-    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1,     /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_UNUSED        = RUBY_FL_UNUSED,     /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
      * This flag determines whether marking and compaction should be carried out
