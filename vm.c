@@ -1609,7 +1609,7 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 VALUE *
 rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    while (cfp->pc == 0) {
+    while (cfp->pc == 0 || cfp->iseq == 0) {
         if (VM_FRAME_TYPE(cfp) ==  VM_FRAME_MAGIC_IFUNC) {
             struct vm_ifunc *ifunc = (struct vm_ifunc *)cfp->iseq;
             return ifunc->svar_lep;
