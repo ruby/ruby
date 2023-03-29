@@ -5801,7 +5801,6 @@ fn gen_send_iseq(
     }
 
     if iseq_has_rest {
-
         // We are going to allocate so setting pc and sp.
         jit_save_pc(jit, asm);
         gen_save_sp(asm, ctx);
