@@ -586,7 +586,7 @@ class Reline::LineEditor
 
   class Dialog
     attr_reader :name, :contents, :width
-    attr_accessor :scroll_top, :scrollbar_pos, :pointer, :column, :vertical_offset, :lines_backup, :trap_key
+    attr_accessor :scroll_top, :pointer, :column, :vertical_offset, :lines_backup, :trap_key
 
     def initialize(name, config, proc_scope)
       @name = name
@@ -709,13 +709,13 @@ class Reline::LineEditor
       position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
       bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
       bar_height = MINIMUM_SCROLLBAR_HEIGHT if bar_height < MINIMUM_SCROLLBAR_HEIGHT
-      dialog.scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
+      scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
     else
-      dialog.scrollbar_pos = nil
+      scrollbar_pos = nil
     end
     upper_space = @first_line_started_from - @started_from
     dialog.column = dialog_render_info.pos.x
-    dialog.width += @block_elem_width if dialog.scrollbar_pos
+    dialog.width += @block_elem_width if scrollbar_pos
     diff = (dialog.column + dialog.width) - (@screen_size.last)
     if diff > 0
       dialog.column -= diff
@@ -747,16 +747,16 @@ class Reline::LineEditor
         fg_color = dialog_render_info.fg_color
         bg_color = dialog_render_info.bg_color
       end
-      str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
+      str_width = dialog.width - (scrollbar_pos.nil? ? 0 : @block_elem_width)
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
       @output.write "\e[#{bg_color}m\e[#{fg_color}m#{str}"
-      if dialog.scrollbar_pos
+      if scrollbar_pos
         @output.write "\e[37m"
-        if dialog.scrollbar_pos <= (i * 2) and (i * 2 + 1) < (dialog.scrollbar_pos + bar_height)
+        if scrollbar_pos <= (i * 2) and (i * 2 + 1) < (scrollbar_pos + bar_height)
           @output.write @full_block
-        elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
+        elsif scrollbar_pos <= (i * 2) and (i * 2) < (scrollbar_pos + bar_height)
           @output.write @upper_half_block
-        elsif dialog.scrollbar_pos <= (i * 2 + 1) and (i * 2) < (dialog.scrollbar_pos + bar_height)
+        elsif scrollbar_pos <= (i * 2 + 1) and (i * 2) < (scrollbar_pos + bar_height)
           @output.write @lower_half_block
         else
           @output.write ' ' * @block_elem_width
