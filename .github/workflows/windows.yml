@@ -78,6 +78,7 @@ jobs:
       - name: Install libraries with scoop
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
           scoop install winflexbison
         shell: pwsh
       - name: git config
