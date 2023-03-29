@@ -342,19 +342,23 @@ unblock_function_clear(rb_thread_t *th)
 static void
 rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 {
-    rb_native_mutex_lock(&th->interrupt_lock);
+    RUBY_DEBUG_LOG("th:%u trap:%d", rb_th_serial(th), trap);
 
-    if (trap) {
-        RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
-    }
-    else {
-        RUBY_VM_SET_INTERRUPT(th->ec);
-    }
-    if (th->unblock.func != NULL) {
-        (th->unblock.func)(th->unblock.arg);
-    }
-    else {
-        /* none */
+    rb_native_mutex_lock(&th->interrupt_lock);
+    {
+        if (trap) {
+            RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
+        }
+        else {
+            RUBY_VM_SET_INTERRUPT(th->ec);
+        }
+
+        if (th->unblock.func != NULL) {
+            (th->unblock.func)(th->unblock.arg);
+        }
+        else {
+            /* none */
+        }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
@@ -362,6 +366,7 @@ rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 void
 rb_threadptr_interrupt(rb_thread_t *th)
 {
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     rb_threadptr_interrupt_common(th, 0);
 }
 
