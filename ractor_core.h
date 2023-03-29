@@ -209,7 +209,7 @@ void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE
 VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // defined in thread.c
 
 int rb_ractor_living_thread_num(const rb_ractor_t *);
-VALUE rb_ractor_thread_list(rb_ractor_t *r);
+VALUE rb_ractor_thread_list(void);
 bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);

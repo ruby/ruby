@@ -2723,7 +2723,7 @@ VALUE
 rb_thread_list(void)
 {
     // TODO
-    return rb_ractor_thread_list(GET_RACTOR());
+    return rb_ractor_thread_list();
 }
 
 /*
