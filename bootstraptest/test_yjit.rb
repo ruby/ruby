@@ -3800,3 +3800,18 @@ assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
 
   post "/a" => "b", as: :c
 }
+
+# Test rest and kw_args
+assert_equal '[[["test"], nil, true], [["test"], :base, true]]', %q{
+  def my_func(*args, base: nil, sort: true)
+    [args, base, sort]
+  end
+
+  def calling_my_func
+    result = []
+    result << my_func("test")
+    result << my_func("test", base: :base)
+  end
+
+  calling_my_func
+}

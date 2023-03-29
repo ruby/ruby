@@ -5468,8 +5468,8 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_kw);
+    if iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } && supplying_kws {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_kw_supplying);
         return CantCompile;
     }
 
@@ -5800,6 +5800,92 @@ fn gen_send_iseq(
         handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
+    if iseq_has_rest {
+        // We are going to allocate so setting pc and sp.
+        jit_save_pc(jit, asm);
+        gen_save_sp(asm, ctx);
+
+        if flags & VM_CALL_ARGS_SPLAT != 0 {
+            let non_rest_arg_count = argc - 1;
+            // We start by dupping the array because someone else might have
+            // a reference to it.
+            let array = ctx.stack_pop(1);
+            let array = asm.ccall(
+                rb_ary_dup as *const u8,
+                vec![array],
+            );
+            if non_rest_arg_count > required_num {
+                // If we have more arguments than required, we need to prepend
+                // the items from the stack onto the array.
+                let diff = (non_rest_arg_count - required_num) as u32;
+
+                // diff is >0 so no need to worry about null pointer
+                asm.comment("load pointer to array elements");
+                let offset_magnitude = SIZEOF_VALUE as u32 * diff;
+                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_ptr = asm.lea(values_opnd);
+
+                asm.comment("prepend stack values to rest array");
+                let array = asm.ccall(
+                    rb_yjit_rb_ary_unshift_m as *const u8,
+                    vec![Opnd::UImm(diff as u64), values_ptr, array],
+                );
+                ctx.stack_pop(diff as usize);
+
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
+                // We now should have the required arguments
+                // and an array of all the rest arguments
+                argc = required_num + 1;
+            } else if non_rest_arg_count < required_num {
+                // If we have fewer arguments than required, we need to take some
+                // from the array and move them to the stack.
+                let diff = (required_num - non_rest_arg_count) as u32;
+                // This moves the arguments onto the stack. But it doesn't modify the array.
+                move_rest_args_to_stack(array, diff, ctx, asm, ocb, side_exit);
+
+                // We will now slice the array to give us a new array of the correct size
+                let ret = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, ret);
+
+                // We now should have the required arguments
+                // and an array of all the rest arguments
+                argc = required_num + 1;
+            } else {
+                // The arguments are equal so we can just push to the stack
+                assert!(non_rest_arg_count == required_num);
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
+            }
+        } else {
+            assert!(argc >= required_num);
+            let n = (argc - required_num) as u32;
+            argc = required_num + 1;
+            // If n is 0, then elts is never going to be read, so we can just pass null
+            let values_ptr = if n == 0 {
+                Opnd::UImm(0)
+            } else {
+                asm.comment("load pointer to array elements");
+                let offset_magnitude = SIZEOF_VALUE as u32 * n;
+                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+                asm.lea(values_opnd)
+            };
+
+            let new_ary = asm.ccall(
+                rb_ec_ary_new_from_values as *const u8,
+                vec![
+                    EC,
+                    Opnd::UImm(n.into()),
+                    values_ptr
+                ]
+            );
+            ctx.stack_pop(n.as_usize());
+            let stack_ret = ctx.stack_push(Type::CArray);
+            asm.mov(stack_ret, new_ary);
+        }
+    }
+
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
         // keyword arguments at this call site.
@@ -5966,93 +6052,7 @@ fn gen_send_iseq(
         argc = lead_num;
     }
 
-    if iseq_has_rest {
 
-        // We are going to allocate so setting pc and sp.
-        jit_save_pc(jit, asm);
-        gen_save_sp(asm, ctx);
-
-        if flags & VM_CALL_ARGS_SPLAT != 0 {
-            let non_rest_arg_count = argc - 1;
-            // We start by dupping the array because someone else might have
-            // a reference to it.
-            let array = ctx.stack_pop(1);
-            let array = asm.ccall(
-                rb_ary_dup as *const u8,
-                vec![array],
-            );
-            if non_rest_arg_count > required_num {
-                // If we have more arguments than required, we need to prepend
-                // the items from the stack onto the array.
-                let diff = (non_rest_arg_count - required_num) as u32;
-
-                // diff is >0 so no need to worry about null pointer
-                asm.comment("load pointer to array elements");
-                let offset_magnitude = SIZEOF_VALUE as u32 * diff;
-                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
-                let values_ptr = asm.lea(values_opnd);
-
-                asm.comment("prepend stack values to rest array");
-                let array = asm.ccall(
-                    rb_yjit_rb_ary_unshift_m as *const u8,
-                    vec![Opnd::UImm(diff as u64), values_ptr, array],
-                );
-                ctx.stack_pop(diff as usize);
-
-                let stack_ret = ctx.stack_push(Type::TArray);
-                asm.mov(stack_ret, array);
-                // We now should have the required arguments
-                // and an array of all the rest arguments
-                argc = required_num + 1;
-            } else if non_rest_arg_count < required_num {
-                // If we have fewer arguments than required, we need to take some
-                // from the array and move them to the stack.
-                let diff = (required_num - non_rest_arg_count) as u32;
-                // This moves the arguments onto the stack. But it doesn't modify the array.
-                move_rest_args_to_stack(array, diff, ctx, asm, ocb, side_exit);
-
-                // We will now slice the array to give us a new array of the correct size
-                let ret = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
-                let stack_ret = ctx.stack_push(Type::TArray);
-                asm.mov(stack_ret, ret);
-
-                // We now should have the required arguments
-                // and an array of all the rest arguments
-                argc = required_num + 1;
-            } else {
-                // The arguments are equal so we can just push to the stack
-                assert!(non_rest_arg_count == required_num);
-                let stack_ret = ctx.stack_push(Type::TArray);
-                asm.mov(stack_ret, array);
-            }
-        } else {
-            assert!(argc >= required_num);
-            let n = (argc - required_num) as u32;
-            argc = required_num + 1;
-            // If n is 0, then elts is never going to be read, so we can just pass null
-            let values_ptr = if n == 0 {
-                Opnd::UImm(0)
-            } else {
-                asm.comment("load pointer to array elements");
-                let offset_magnitude = SIZEOF_VALUE as u32 * n;
-                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
-                asm.lea(values_opnd)
-            };
-
-            let new_ary = asm.ccall(
-                rb_ec_ary_new_from_values as *const u8,
-                vec![
-                    EC,
-                    Opnd::UImm(n.into()),
-                    values_ptr
-                ]
-            );
-
-            ctx.stack_pop(n.as_usize());
-            let stack_ret = ctx.stack_push(Type::CArray);
-            asm.mov(stack_ret, new_ary);
-        }
-    }
 
     // Points to the receiver operand on the stack unless a captured environment is used
     let recv = match captured_opnd {
