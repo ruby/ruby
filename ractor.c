@@ -2321,6 +2321,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
         rb_ractor_t *r = 0;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
+                RUBY_DEBUG_LOG("r:%d", rb_ractor_id(r));
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
         }
@@ -2337,7 +2338,9 @@ rb_ractor_terminate_all(void)
 
     if (vm->ractor.cnt > 1) {
         RB_VM_LOCK();
-        ractor_terminal_interrupt_all(vm); // kill all ractors
+        {
+            ractor_terminal_interrupt_all(vm); // kill all ractors
+        }
         RB_VM_UNLOCK();
     }
     rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
