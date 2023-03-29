@@ -15,7 +15,7 @@
 
 #define RUBY_RELEASE_YEAR 2023
 #define RUBY_RELEASE_MONTH 3
-#define RUBY_RELEASE_DAY 27
+#define RUBY_RELEASE_DAY 29
 
 #include "ruby/version.h"
 
