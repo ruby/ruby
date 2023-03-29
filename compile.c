@@ -856,6 +856,20 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
+#include "yarp_compiler.inc"
+
+VALUE
+rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer)
+{
+    DECL_ANCHOR(ret);
+    INIT_ANCHOR(ret);
+
+    CHECK(rb_translate_yarp(iseq, yarp_pointer, ret));
+
+    CHECK(iseq_setup_insn(iseq, ret));
+    return iseq_setup(iseq, ret);
+}
+
 static int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {

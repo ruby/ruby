@@ -1334,6 +1334,19 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
 }
 
+static VALUE
+iseqw_s_compile_yarp(VALUE self, VALUE source)
+{
+  rb_iseq_t *iseq = iseq_alloc();
+
+  // parse source and get
+  const yp_node *yarp_pointer; // = yarp_parsed_source(source);
+
+  CHECK(rb_iseq_comple_yarp_node(iseq, yarp_pointer));
+
+  return iseq;
+}
+
 /*
  *  call-seq:
  *      InstructionSequence.compile_file(file[, options]) -> iseq
@@ -3915,6 +3928,7 @@ Init_ISeq(void)
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_yarp", iseqw_s_compile_yarp, 1);
     rb_define_singleton_method(rb_cISeq, "new", iseqw_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_file", iseqw_s_compile_file, -1);
     rb_define_singleton_method(rb_cISeq, "compile_option", iseqw_s_compile_option_get, 0);
