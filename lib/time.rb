@@ -509,8 +509,8 @@ class Time
           (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+
           (\d{2,})\s+
           (\d{2})\s*
-          :\s*(\d{2})\s*
-          (?::\s*(\d{2}))?\s+
+          :\s*(\d{2})
+          (?:\s*:\s*(\d\d))?\s+
           ([+-]\d{4}|
            UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Z])/ix =~ date
         # Since RFC 2822 permit comments, the regexp has no right anchor.
@@ -701,7 +701,7 @@ class Time
   #
   # If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
   #
-  # +fractional_digits+ specifies a number of digits to use for fractional
+  # +fraction_digits+ specifies a number of digits to use for fractional
   # seconds.  Its default value is 0.
   #
   #     require 'time'
