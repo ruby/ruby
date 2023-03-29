@@ -75,18 +75,10 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-
-            ${{ runner.os }}-chocolatey-
-      - name: Install libraries with chocolatey
+      - name: Install libraries with scoop
         run: |
-          # Using Choco-Install for retries, but it doesn't detect failures properly
-          # if you pass multiple package names in a single command.
-          Choco-Install -PackageName winflexbison3
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          scoop install winflexbison
         shell: pwsh
       - name: git config
         run: |
