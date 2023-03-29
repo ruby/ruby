@@ -128,8 +128,6 @@ jobs:
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake
-        env:
-          YACC: win_bison
       - run: nmake test
         timeout-minutes: 5
       - run: nmake test-spec
