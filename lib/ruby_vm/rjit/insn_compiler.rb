@@ -1,7 +1,9 @@
 module RubyVM::RJIT
   class InsnCompiler
     # struct rb_calling_info. Storing flags instead of ci.
-    CallingInfo = Struct.new(:argc, :flags)
+    CallingInfo = Struct.new(:argc, :flags, :send_shift, :block_handler) do
+      def kw_splat = flags & C::VM_CALL_KW_SPLAT != 0
+    end
 
     # @param ocb [CodeBlock]
     # @param exit_compiler [RubyVM::RJIT::ExitCompiler]
@@ -1371,15 +1373,14 @@ module RubyVM::RJIT
 
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
-      argc = C.vm_ci_argc(cd.ci)
-      flags = C.vm_ci_flag(cd.ci)
+      calling = build_calling(ci: cd.ci, block_handler:)
 
       # vm_sendish
-      cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, argc, flags)
+      cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
         return CantCompile
       end
-      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, comptime_recv_klass)
+      jit_call_general(jit, ctx, asm, mid, calling, cme, comptime_recv_klass)
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -1394,15 +1395,14 @@ module RubyVM::RJIT
 
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
-      argc = C.vm_ci_argc(cd.ci)
-      flags = C.vm_ci_flag(cd.ci)
+      calling = build_calling(ci: cd.ci, block_handler: C::VM_BLOCK_HANDLER_NONE)
 
       # vm_sendish
-      cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, argc, flags)
+      cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
         return CantCompile
       end
-      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, C::VM_BLOCK_HANDLER_NONE, comptime_recv_klass)
+      jit_call_general(jit, ctx, asm, mid, calling, cme, comptime_recv_klass)
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -1502,15 +1502,14 @@ module RubyVM::RJIT
 
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
-      argc = C.vm_ci_argc(cd.ci)
-      flags = C.vm_ci_flag(cd.ci)
+      calling = build_calling(ci: cd.ci, block_handler:)
 
       # vm_sendish
-      cme = jit_search_super_method(jit, ctx, asm, mid, argc, flags)
+      cme = jit_search_super_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
         return CantCompile
       end
-      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, nil)
+      jit_call_general(jit, ctx, asm, mid, calling, cme, nil)
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -1524,11 +1523,7 @@ module RubyVM::RJIT
 
       # Get call info
       cd = C.rb_call_data.new(jit.operand(0))
-      ci = cd.ci
-      calling = CallingInfo.new(
-        argc: C.vm_ci_argc(ci),
-        flags: C.vm_ci_flag(ci),
-      )
+      calling = build_calling(ci: cd.ci, block_handler: :captured)
 
       # Get block_handler
       cfp = jit.cfp
@@ -1570,8 +1565,8 @@ module RubyVM::RJIT
         end
 
         jit_call_iseq_setup_normal(
-          jit, ctx, asm, nil, calling.flags, calling.argc, comptime_iseq, :captured, opt_pc,
-          send_shift: 0, frame_type: C::VM_FRAME_MAGIC_BLOCK,
+          jit, ctx, asm, nil, calling, comptime_iseq, opt_pc,
+          frame_type: C::VM_FRAME_MAGIC_BLOCK,
         )
       elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
         # We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
@@ -3878,21 +3873,21 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_search_method(jit, ctx, asm, mid, argc, flags, send_shift: 0)
+    def jit_search_method(jit, ctx, asm, mid, calling)
       assert_equal(true, jit.at_current_insn?)
 
       # Generate a side exit
       side_exit = side_exit(jit, ctx)
 
       # kw_splat is not supported yet
-      if flags & C::VM_CALL_KW_SPLAT != 0
+      if calling.flags & C::VM_CALL_KW_SPLAT != 0
         asm.incr_counter(:send_kw_splat)
         return CantCompile
       end
 
       # Get a compile-time receiver and its class
-      recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
-      recv_idx += send_shift
+      recv_idx = calling.argc + (calling.flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
+      recv_idx += calling.send_shift
       comptime_recv = jit.peek_at_stack(recv_idx)
       comptime_recv_klass = C.rb_class_of(comptime_recv)
 
@@ -3914,7 +3909,7 @@ module RubyVM::RJIT
       return cme, comptime_recv_klass
     end
 
-    def jit_search_super_method(jit, ctx, asm, mid, argc, flags)
+    def jit_search_super_method(jit, ctx, asm, mid, calling)
       assert_equal(true, jit.at_current_insn?)
 
       me = C.rb_vm_frame_method_entry(jit.cfp)
@@ -3944,11 +3939,11 @@ module RubyVM::RJIT
       # Don't JIT calls that aren't simple
       # Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
 
-      if flags & C::VM_CALL_KWARG != 0
+      if calling.flags & C::VM_CALL_KWARG != 0
         asm.incr_counter(:send_kwarg)
         return CantCompile
       end
-      if flags & C::VM_CALL_KW_SPLAT != 0
+      if calling.flags & C::VM_CALL_KW_SPLAT != 0
         asm.incr_counter(:send_kw_splat)
         return CantCompile
       end
@@ -3958,7 +3953,7 @@ module RubyVM::RJIT
       # cheaper calculations first, but since we specialize on the method entry
       # and so only have to do this once at compile time this is fine to always
       # check and side exit.
-      comptime_recv = jit.peek_at_stack(argc)
+      comptime_recv = jit.peek_at_stack(calling.argc)
       unless C.obj_is_kind_of(comptime_recv, current_defined_class)
         return CantCompile
       end
@@ -3999,8 +3994,8 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class)
-      jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class)
+    def jit_call_general(jit, ctx, asm, mid, calling, cme, known_recv_class)
+      jit_call_method(jit, ctx, asm, mid, calling, cme, known_recv_class)
     end
 
     # vm_call_method
@@ -4008,32 +4003,32 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     # @param send_shift [Integer] The number of shifts needed for VM_CALL_OPT_SEND
-    def jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class, send_shift: 0)
+    def jit_call_method(jit, ctx, asm, mid, calling, cme, known_recv_class)
       # The main check of vm_call_method before vm_call_method_each_type
       case C::METHOD_ENTRY_VISI(cme)
       in C::METHOD_VISI_PUBLIC
         # You can always call public methods
       in C::METHOD_VISI_PRIVATE
         # Allow only callsites without a receiver
-        if flags & C::VM_CALL_FCALL == 0
+        if calling.flags & C::VM_CALL_FCALL == 0
           asm.incr_counter(:send_private)
           return CantCompile
         end
       in C::METHOD_VISI_PROTECTED
         # If the method call is an FCALL, it is always valid
-        if flags & C::VM_CALL_FCALL == 0
+        if calling.flags & C::VM_CALL_FCALL == 0
           # otherwise we need an ancestry check to ensure the receiver is valid to be called as protected
           jit_protected_callee_ancestry_guard(asm, cme, side_exit(jit, ctx))
         end
       end
 
       # Get a compile-time receiver
-      recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
-      recv_idx += send_shift
+      recv_idx = calling.argc + (calling.flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
+      recv_idx += calling.send_shift
       comptime_recv = jit.peek_at_stack(recv_idx)
       recv_opnd = ctx.stack_opnd(recv_idx)
 
-      jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+      jit_call_method_each_type(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
     end
 
     # Generate ancestry guard for protected callee.
@@ -4055,29 +4050,29 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+    def jit_call_method_each_type(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
       case cme.def.type
       in C::VM_METHOD_TYPE_ISEQ
         iseq = def_iseq_ptr(cme.def)
-        jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:)
+        jit_call_iseq_setup(jit, ctx, asm, cme, calling, iseq)
       in C::VM_METHOD_TYPE_NOTIMPLEMENTED
         asm.incr_counter(:send_notimplemented)
         return CantCompile
       in C::VM_METHOD_TYPE_CFUNC
-        jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+        jit_call_cfunc(jit, ctx, asm, cme, calling, known_recv_class)
       in C::VM_METHOD_TYPE_ATTRSET
-        jit_call_attrset(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
+        jit_call_attrset(jit, ctx, asm, cme, calling, comptime_recv, recv_opnd)
       in C::VM_METHOD_TYPE_IVAR
-        jit_call_ivar(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
+        jit_call_ivar(jit, ctx, asm, cme, calling, comptime_recv, recv_opnd)
       in C::VM_METHOD_TYPE_MISSING
         asm.incr_counter(:send_missing)
         return CantCompile
       in C::VM_METHOD_TYPE_BMETHOD
-        jit_call_bmethod(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+        jit_call_bmethod(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
       in C::VM_METHOD_TYPE_ALIAS
-        jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+        jit_call_alias(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
       in C::VM_METHOD_TYPE_OPTIMIZED
-        jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+        jit_call_optimized(jit, ctx, asm, cme, calling, known_recv_class)
       in C::VM_METHOD_TYPE_UNDEF
         asm.incr_counter(:send_undef)
         return CantCompile
@@ -4094,25 +4089,30 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:, frame_type: nil, prev_ep: nil)
-      opt_pc = jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
+    def jit_call_iseq_setup(jit, ctx, asm, cme, calling, iseq, frame_type: nil, prev_ep: nil)
+      opt_pc = jit_callee_setup_arg(jit, ctx, asm, calling.flags, calling.argc, iseq)
       if opt_pc == CantCompile
         return CantCompile
       end
 
-      if flags & C::VM_CALL_TAILCALL != 0
+      if calling.flags & C::VM_CALL_TAILCALL != 0
         # We don't support vm_call_iseq_setup_tailcall
         asm.incr_counter(:send_tailcall)
         return CantCompile
       end
-      jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep:)
+      jit_call_iseq_setup_normal(jit, ctx, asm, cme, calling, iseq, opt_pc, frame_type:, prev_ep:)
     end
 
     # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep: nil)
+    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, calling, iseq, opt_pc, frame_type:, prev_ep: nil)
+      argc = calling.argc
+      flags = calling.flags
+      send_shift = calling.send_shift
+      block_handler = calling.block_handler
+
       # Push splat args, which was skipped in jit_caller_setup_arg.
       if flags & C::VM_CALL_ARGS_SPLAT != 0
         lead_num = iseq.body.param.lead_num
@@ -4211,7 +4211,12 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+    def jit_call_cfunc(jit, ctx, asm, cme, calling, known_recv_class)
+      argc = calling.argc
+      flags = calling.flags
+      send_shift = calling.send_shift
+      block_handler = calling.block_handler
+
       if jit_caller_setup_arg(jit, ctx, asm, flags, splat: true) == CantCompile
         return CantCompile
       end
@@ -4334,7 +4339,11 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_attrset(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
+    def jit_call_attrset(jit, ctx, asm, cme, calling, comptime_recv, recv_opnd)
+      argc = calling.argc
+      flags = calling.flags
+      send_shift = calling.send_shift
+
       if flags & C::VM_CALL_ARGS_SPLAT != 0
         asm.incr_counter(:send_attrset_splat)
         return CantCompile
@@ -4386,7 +4395,10 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_ivar(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
+    def jit_call_ivar(jit, ctx, asm, cme, calling, comptime_recv, recv_opnd)
+      argc = calling.argc
+      flags = calling.flags
+
       if flags & C::VM_CALL_ARGS_SPLAT != 0
         asm.incr_counter(:send_ivar_splat)
         return CantCompile
@@ -4418,7 +4430,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_bmethod(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+    def jit_call_bmethod(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
       proc_addr = cme.def.body.bmethod.proc
 
       proc_t = C.rb_yjit_get_proc_ptr(proc_addr)
@@ -4441,31 +4453,31 @@ module RubyVM::RJIT
 
       # Passing a block to a block needs logic different from passing
       # a block to a method and sometimes requires allocation. Bail for now.
-      if block_handler != C::VM_BLOCK_HANDLER_NONE
+      if calling.block_handler != C::VM_BLOCK_HANDLER_NONE
         asm.incr_counter(:send_bmethod_blockarg)
         return CantCompile
       end
 
       frame_type = C::VM_FRAME_MAGIC_BLOCK | C::VM_FRAME_FLAG_BMETHOD | C::VM_FRAME_FLAG_LAMBDA
       prev_ep = capture.ep
-      jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:, frame_type:, prev_ep:)
+      jit_call_iseq_setup(jit, ctx, asm, cme, calling, iseq, frame_type:, prev_ep:)
     end
 
     # vm_call_alias
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+    def jit_call_alias(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
       cme = C.rb_aliased_callable_method_entry(cme)
-      jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+      jit_call_method_each_type(jit, ctx, asm, calling, cme, comptime_recv, recv_opnd, known_recv_class)
     end
 
     # vm_call_optimized
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      if flags & C::VM_CALL_ARGS_BLOCKARG != 0
+    def jit_call_optimized(jit, ctx, asm, cme, calling, known_recv_class)
+      if calling.flags & C::VM_CALL_ARGS_BLOCKARG != 0
         # Not working yet
         asm.incr_counter(:send_optimized_blockarg)
         return CantCompile
@@ -4473,14 +4485,14 @@ module RubyVM::RJIT
 
       case cme.def.body.optimized.type
       in C::OPTIMIZED_METHOD_TYPE_SEND
-        jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+        jit_call_opt_send(jit, ctx, asm, cme, calling, known_recv_class)
       in C::OPTIMIZED_METHOD_TYPE_CALL
-        jit_call_opt_call(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+        jit_call_opt_call(jit, ctx, asm, cme, calling.flags, calling.argc, calling.block_handler, known_recv_class, send_shift: calling.send_shift)
       in C::OPTIMIZED_METHOD_TYPE_BLOCK_CALL
         asm.incr_counter(:send_optimized_block_call)
         return CantCompile
       in C::OPTIMIZED_METHOD_TYPE_STRUCT_AREF
-        jit_call_opt_struct_aref(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+        jit_call_opt_struct_aref(jit, ctx, asm, cme, calling.flags, calling.argc, calling.block_handler, known_recv_class, send_shift: calling.send_shift)
       in C::OPTIMIZED_METHOD_TYPE_STRUCT_ASET
         asm.incr_counter(:send_optimized_struct_aset)
         return CantCompile
@@ -4491,27 +4503,26 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+    def jit_call_opt_send(jit, ctx, asm, cme, calling, known_recv_class)
+      if jit_caller_setup_arg(jit, ctx, asm, calling.flags) == CantCompile
         return CantCompile
       end
 
-      if argc == 0
+      if calling.argc == 0
         asm.incr_counter(:send_optimized_send_no_args)
         return CantCompile
       end
 
-      argc -= 1
+      calling.argc -= 1
       # We aren't handling `send(:send, ...)` yet. This might work, but not tested yet.
-      if send_shift > 0
+      if calling.send_shift > 0
         asm.incr_counter(:send_optimized_send_send)
         return CantCompile
       end
       # Lazily handle stack shift in jit_call_iseq_setup_normal
-      send_shift += 1
+      calling.send_shift += 1
 
-      kw_splat = flags & C::VM_CALL_KW_SPLAT != 0
-      jit_call_symbol(jit, ctx, asm, cme, C::VM_CALL_FCALL, argc, kw_splat, block_handler, known_recv_class, send_shift:)
+      jit_call_symbol(jit, ctx, asm, cme, calling, known_recv_class, C::VM_CALL_FCALL)
     end
 
     # vm_call_opt_call
@@ -4638,10 +4649,10 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_symbol(jit, ctx, asm, cme, flags, argc, kw_splat, block_handler, known_recv_class, send_shift:)
-      flags |= C::VM_CALL_OPT_SEND | (kw_splat ? C::VM_CALL_KW_SPLAT : 0)
+    def jit_call_symbol(jit, ctx, asm, cme, calling, known_recv_class, flags)
+      flags |= C::VM_CALL_OPT_SEND | (calling.kw_splat ? C::VM_CALL_KW_SPLAT : 0)
 
-      comptime_symbol = jit.peek_at_stack(argc)
+      comptime_symbol = jit.peek_at_stack(calling.argc)
       if comptime_symbol.class != String && !static_symbol?(comptime_symbol)
         asm.incr_counter(:send_optimized_send_not_sym_or_str)
         return CantCompile
@@ -4655,21 +4666,22 @@ module RubyVM::RJIT
 
       asm.comment("Guard #{comptime_symbol.inspect} is on stack")
       class_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_class_changed)
-      jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_symbol), ctx.stack_opnd(argc), comptime_symbol, class_changed_exit)
-      asm.mov(C_ARGS[0], ctx.stack_opnd(argc))
+      jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_symbol), ctx.stack_opnd(calling.argc), comptime_symbol, class_changed_exit)
+      asm.mov(C_ARGS[0], ctx.stack_opnd(calling.argc))
       asm.call(C.rb_get_symbol_id)
       asm.cmp(C_RET, mid)
       id_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_id_changed)
       jit_chain_guard(:jne, jit, ctx, asm, id_changed_exit)
 
       # rb_callable_method_entry_with_refinements
-      cme, _ = jit_search_method(jit, ctx, asm, mid, argc, flags, send_shift:)
+      calling.flags = flags
+      cme, _ = jit_search_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
         return CantCompile
       end
 
       if flags & C::VM_CALL_FCALL != 0
-        return jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class, send_shift:)
+        return jit_call_method(jit, ctx, asm, mid, calling, cme, known_recv_class)
       end
 
       raise NotImplementedError # unreachable for now
@@ -5261,6 +5273,15 @@ module RubyVM::RJIT
           C.rb_vm_insn_decode(iseq.body.iseq_encoded[opt_invokebuiltin_delegate_leave.len]) == leave.bin
         C.rb_builtin_function.new(iseq.body.iseq_encoded[1])
       end
+    end
+
+    def build_calling(ci:, block_handler:)
+      CallingInfo.new(
+        argc: C.vm_ci_argc(ci),
+        flags: C.vm_ci_flag(ci),
+        send_shift: 0,
+        block_handler:,
+      )
     end
   end
 end
