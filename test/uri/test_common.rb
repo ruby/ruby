@@ -56,6 +56,17 @@ class TestCommon < Test::Unit::TestCase
     assert_raise(NoMethodError) { Object.new.URI("http://www.ruby-lang.org/") }
   end
 
+  def test_parse_timeout
+    pre = ->(n) {
+      'https://example.com/dir/' + 'a' * (n * 100) + '/##.jpg'
+    }
+    assert_linear_performance((1..10).map {|i| i * 100}, pre: pre) do |uri|
+      assert_raise(URI::InvalidURIError) do
+        URI.parse(uri)
+      end
+    end
+  end
+
   def test_encode_www_form_component
     assert_equal("%00+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
                  "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E",
