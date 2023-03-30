@@ -5463,7 +5463,7 @@ fn gen_send_iseq(
     }
 
     if iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } && supplying_kws {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_kw_supplying);
+        gen_counter_incr!(asm, send_iseq_has_rest_and_kw_supplied);
         return CantCompile;
     }
 
