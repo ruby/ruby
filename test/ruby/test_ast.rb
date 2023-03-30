@@ -645,6 +645,12 @@ dummy
     assert_equal(expected, node.all_tokens.map { [_2, _3]})
   end
 
+  def test_keep_tokens_unexpected_backslash
+    assert_raise_with_message(SyntaxError, /unexpected backslash/) do
+      RubyVM::AbstractSyntaxTree.parse("\\", keep_tokens: true)
+    end
+  end
+
   def test_encoding_with_keep_script_lines
     # Stop a warning "possibly useless use of a literal in void context"
     verbose_bak, $VERBOSE = $VERBOSE, nil
@@ -1069,10 +1075,17 @@ dummy
     EXP
   end
 
-  def assert_error_tolerant(src, expected)
+  def test_error_tolerant_unexpected_backslash
+    node = assert_error_tolerant("\\", <<~EXP, keep_tokens: true)
+      (SCOPE@1:0-1:1 tbl: [] args: nil body: (ERROR@1:0-1:1))
+    EXP
+    assert_equal([[0, :backslash, "\\", [1, 0, 1, 1]]], node.children.last.tokens)
+  end
+
+  def assert_error_tolerant(src, expected, keep_tokens: false)
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false
-      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true, keep_tokens: keep_tokens)
     ensure
       $VERBOSE = verbose_bak
     end
@@ -1080,5 +1093,6 @@ dummy
     str = ""
     PP.pp(node, str, 80)
     assert_equal(expected, str)
+    node
   end
 end

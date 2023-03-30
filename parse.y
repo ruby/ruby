@@ -495,6 +495,7 @@ parser_token2id(enum yytokentype tok)
       TOKEN2ID2(']', "]");
       TOKEN2ID2('(', "(");
       TOKEN2ID2(')', ")");
+      TOKEN2ID2('\\', "backslash");
       TOKEN2ID(keyword_class);
       TOKEN2ID(keyword_module);
       TOKEN2ID(keyword_def);
