@@ -256,7 +256,7 @@ module IRB # :nodoc:
       end
 
       if load_file
-        kwargs = ", **kwargs" if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
+        kwargs = ", **kwargs" if RUBY_VERSION >= "2.7.0"
         line = __LINE__; eval %[
           def #{cmd_name}(*opts#{kwargs}, &b)
             Kernel.require_relative "#{load_file}"

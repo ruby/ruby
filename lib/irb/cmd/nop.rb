@@ -30,7 +30,7 @@ module IRB
         end
       end
 
-      if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
+      if RUBY_VERSION >= "2.7.0"
         def self.execute(conf, *opts, **kwargs, &block)
           command = new(conf)
           command.execute(*opts, **kwargs, &block)
