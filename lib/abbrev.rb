@@ -48,6 +48,8 @@
 
 module Abbrev
 
+  VERSION = "0.1.1"
+
   # Given a set of strings, calculate the set of unambiguous abbreviations for
   # those strings, and return a hash where the keys are all the possible
   # abbreviations and the values are the full strings.
