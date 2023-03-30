@@ -542,7 +542,7 @@ fn side_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb) -> Target 
     // We also need to use the latest ctx when we implement stack temp register allocation in the future.
     // However, we want to simulate an old stack_size when we take a side exit. We do that by adjusting the
     // sp_offset because gen_outlined_exit uses ctx.sp_offset to move SP.
-    let ctx = ctx.for_stack_size(jit.stack_size_for_pc);
+    let ctx = ctx.with_stack_size(jit.stack_size_for_pc);
 
     match jit.side_exit_for_pc.get(&ctx.get_sp_offset()) {
         None => {
@@ -926,7 +926,7 @@ pub fn gen_single_block(
 
             // Rewind stack_size using ctx.with_stack_size to allow stack_size changes
             // before you return CantCompile.
-            gen_exit(jit.pc, &ctx.for_stack_size(jit.stack_size_for_pc), &mut asm);
+            gen_exit(jit.pc, &ctx.with_stack_size(jit.stack_size_for_pc), &mut asm);
 
             // If this is the first instruction in the block, then
             // the entry address is the address for block_entry_exit
