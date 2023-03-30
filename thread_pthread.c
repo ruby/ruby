@@ -1157,6 +1157,11 @@ static void *
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
+
+#if USE_RUBY_DEBUG_LOG && defined(RUBY_NT_SERIAL)
+    ruby_nt_serial = th->nt->serial;
+#endif
+
     RB_ALTSTACK_INIT(void *altstack, th->nt->altstack);
 #if USE_THREAD_CACHE
   thread_start:
@@ -1298,13 +1303,24 @@ clear_thread_cache_altstack(void)
 }
 #endif
 
+static struct rb_native_thread *
+native_thread_alloc(void)
+{
+    struct rb_native_thread *nt = ZALLOC(struct rb_native_thread);
+#if USE_RUBY_DEBUG_LOG
+    static rb_atomic_t nt_serial = 1;
+    nt->serial = RUBY_ATOMIC_FETCH_ADD(nt_serial, 1);
+#endif
+    return nt;
+}
+
 static int
 native_thread_create(rb_thread_t *th)
 {
     int err = 0;
 
     VM_ASSERT(th->nt == 0);
-    th->nt = ZALLOC(struct rb_native_thread);
+    th->nt = native_thread_alloc();
 
     if (use_cached_thread(th)) {
         RUBY_DEBUG_LOG("use cached nt. th:%u", rb_th_serial(th));
