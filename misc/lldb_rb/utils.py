@@ -249,7 +249,7 @@ class RbInspector(LLDBInterface):
                 rbNodeTypeMask = self.ruby_globals["RUBY_NODE_TYPEMASK"]
                 rbNodeTypeShift = self.ruby_globals["RUBY_NODE_TYPESHIFT"]
 
-                nd_type = (flags & rbNodeTypeMask) >> rbNodeTypeShift
+                nd_type = (rval.flags & rbNodeTypeMask) >> rbNodeTypeShift
                 val = val.Cast(tRNode)
 
                 self._append_command_output("p (node_type) %d" % nd_type)
