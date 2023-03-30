@@ -259,7 +259,7 @@ struct ExitCounter {
 }
 
 /// Macro to get an ExitCounter for helpers with side exits.
-macro_rules! get_counter {
+macro_rules! exit_counter {
     ($counter_name:ident) => {
         if (get_option!(gen_stats)) {
             let counter = ExitCounter {
@@ -292,7 +292,7 @@ macro_rules! gen_counter_incr {
 
 macro_rules! counted_exit {
     ($jit:tt, $ctx:tt, $ocb:tt, $counter_name:ident) => {
-        counted_exit($jit, $ctx, $ocb, get_counter!($counter_name))
+        counted_exit($jit, $ctx, $ocb, exit_counter!($counter_name))
     };
 }
 
@@ -1586,7 +1586,7 @@ fn gen_expandarray(
         ocb,
         array_opnd,
         array_opnd.into(),
-        get_counter!(expandarray_not_array),
+        exit_counter!(expandarray_not_array),
     );
     let array_opnd = ctx.stack_pop(1); // pop after using the type info
 
@@ -2128,7 +2128,7 @@ fn gen_get_ivar(
         asm,
         ocb,
         max_chain_depth,
-        get_counter!(getivar_megamorphic),
+        exit_counter!(getivar_megamorphic),
     );
 
     // Pop receiver if it's on the temp stack
@@ -2341,7 +2341,7 @@ fn gen_setinstancevariable(
             asm,
             ocb,
             SET_IVAR_MAX_DEPTH,
-            get_counter!(setivar_megamorphic),
+            exit_counter!(setivar_megamorphic),
         );
 
         let write_val;
@@ -5276,7 +5276,7 @@ fn push_splat_args(required_args: u32, jit: &mut JITState, ctx: &mut Context, as
         ocb,
         array_reg,
         array_opnd.into(),
-        get_counter!(send_splat_not_array),
+        exit_counter!(send_splat_not_array),
     );
 
     asm.comment("Get array length for embedded or heap");
@@ -6026,7 +6026,7 @@ fn gen_send_iseq(
         let arg0_opnd = ctx.stack_opnd(0);
 
         // Only handle the case that you don't need to_ary conversion
-        let not_array_counter = get_counter!(invokeblock_iseq_arg0_not_array);
+        let not_array_counter = exit_counter!(invokeblock_iseq_arg0_not_array);
         guard_object_is_array(jit, ctx, asm, ocb, arg0_opnd, arg0_opnd.into(), not_array_counter);
 
         // Only handle the same that the array length == ISEQ's lead_num (most common)
@@ -6341,7 +6341,7 @@ fn gen_send_general(
         recv_opnd,
         comptime_recv,
         SEND_MAX_DEPTH,
-        get_counter!(send_klass_megamorphic),
+        exit_counter!(send_klass_megamorphic),
     );
 
     // Do method lookup
@@ -6551,13 +6551,13 @@ fn gen_send_general(
                             if compile_time_name.string_p() {
                                 (
                                     unsafe { rb_cString },
-                                    get_counter!(send_send_chain_not_string),
+                                    exit_counter!(send_send_chain_not_string),
 
                                 )
                             } else {
                                 (
                                     unsafe { rb_cSymbol },
-                                    get_counter!(send_send_chain_not_sym),
+                                    exit_counter!(send_send_chain_not_sym),
                                 )
                             }
                         };
@@ -6591,7 +6591,7 @@ fn gen_send_general(
                             asm,
                             ocb,
                             SEND_MAX_CHAIN_DEPTH,
-                            get_counter!(send_send_chain),
+                            exit_counter!(send_send_chain),
                         );
 
                         // We have changed the argc, flags, mid, and cme, so we need to re-enter the match
@@ -6816,7 +6816,7 @@ fn gen_invokeblock(
             asm,
             ocb,
             SEND_MAX_CHAIN_DEPTH,
-            get_counter!(invokeblock_tag_changed),
+            exit_counter!(invokeblock_tag_changed),
         );
 
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
@@ -6833,7 +6833,7 @@ fn gen_invokeblock(
             asm,
             ocb,
             SEND_MAX_CHAIN_DEPTH,
-            get_counter!(invokeblock_iseq_block_changed),
+            exit_counter!(invokeblock_iseq_block_changed),
         );
 
         gen_send_iseq(
@@ -6878,7 +6878,7 @@ fn gen_invokeblock(
             asm,
             ocb,
             SEND_MAX_CHAIN_DEPTH,
-            get_counter!(invokeblock_tag_changed),
+            exit_counter!(invokeblock_tag_changed),
         );
 
         // The cfunc may not be leaf
@@ -7062,7 +7062,7 @@ fn gen_leave(
     let ocb_asm = Assembler::new();
 
     // Check for interrupts
-    gen_check_ints(jit, ctx, asm, ocb, get_counter!(leave_se_interrupt));
+    gen_check_ints(jit, ctx, asm, ocb, exit_counter!(leave_se_interrupt));
     ocb_asm.compile(ocb.unwrap());
 
     // Pop the current frame (ec->cfp++)
