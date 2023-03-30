@@ -21,10 +21,10 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
-        if key.bytesize > MAX_KEY_LENGTH
+        if key.to_s.bytesize > MAX_KEY_LENGTH
           raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
         end
-        if value.bytesize > MAX_FIELD_LENGTH
+        if value.to_s.bytesize > MAX_FIELD_LENGTH
           raise ArgumentError, "header #{key} has too long field vallue: #{value.bytesize}"
         end
         if value.count("\r\n") > 0
