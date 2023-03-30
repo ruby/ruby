@@ -13,6 +13,7 @@
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
+#include <yarp/yarp.h>
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
@@ -183,6 +184,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
 VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
+VALUE rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer);
 VALUE rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,

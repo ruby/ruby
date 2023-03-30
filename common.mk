@@ -45,7 +45,7 @@ RUN_OPTS      = --disable-gems
 
 # GITPULLOPTIONS = --no-tags
 
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR) -Iyarp/include -Iyarp
 
 GEM_HOME =
 GEM_PATH =
@@ -153,6 +153,28 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
+		yarp/diagnostic.$(OBJEXT) \
+		yarp/token_type.$(OBJEXT) \
+		yarp/prettyprint.$(OBJEXT) \
+		yarp/util/yp_state_stack.$(OBJEXT) \
+		yarp/util/yp_string_list.$(OBJEXT) \
+		yarp/util/yp_strpbrk.$(OBJEXT) \
+		yarp/util/yp_string.$(OBJEXT) \
+		yarp/util/yp_list.$(OBJEXT) \
+		yarp/util/yp_strspn.$(OBJEXT) \
+		yarp/util/yp_buffer.$(OBJEXT) \
+		yarp/serialize.$(OBJEXT) \
+		yarp/regexp.$(OBJEXT) \
+		yarp/pack.$(OBJEXT) \
+		yarp/enc/unicode.$(OBJEXT) \
+		yarp/enc/big5.$(OBJEXT) \
+		yarp/enc/ascii.$(OBJEXT) \
+		yarp/enc/windows_1252.$(OBJEXT) \
+		yarp/enc/iso_8859_15.$(OBJEXT) \
+		yarp/enc/iso_8859_9.$(OBJEXT) \
+		yarp/unescape.$(OBJEXT) \
+		yarp/node.$(OBJEXT) \
+		yarp/yarp.$(OBJEXT) \
 		$(YJIT_OBJ) \
 		$(YJIT_LIBOBJ) \
 		$(COROUTINE_OBJ) \
@@ -1010,7 +1032,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.c
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 # dependencies for optional sources.
-compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
+compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc {$(VPATH)}yarp_compiler.inc
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
   {$(VPATH)}dln.h {$(VPATH)}dln_find.c {$(VPATH)}encindex.h \

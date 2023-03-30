@@ -1335,16 +1335,36 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-iseqw_s_compile_yarp(VALUE self, VALUE source)
+iseqw_s_compile_yarp(VALUE self, VALUE string)
 {
-  rb_iseq_t *iseq = iseq_alloc();
+    rb_iseq_t *iseq = iseq_alloc();
+    yp_parser_t parser;
+    size_t length = RSTRING_LEN(string);
+    yp_parser_init(&parser, RSTRING_PTR(string), length);
 
-  // parse source and get
-  const yp_node *yarp_pointer; // = yarp_parsed_source(source);
+    yp_node_t *node = yp_parse(&parser);
 
-  CHECK(rb_iseq_comple_yarp_node(iseq, yarp_pointer));
+    // All dummy values
+    VALUE name = rb_fstring_lit("iseq name");
+    VALUE path = rb_fstring_lit("dummy path");
+    VALUE realpath = rb_fstring_lit("dummy realpath");
+    int first_lineno = 0;
+    rb_code_location_t tmp_loc = { {0, 0}, {-1, -1} };
+    int node_id = 0;
+    rb_iseq_t *parent = NULL;
+    enum rb_iseq_type iseq_type = ISEQ_TYPE_TOP;
+    rb_compile_option_t option;
+    make_compile_option(&option, Qnil);
 
-  return iseq;
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &tmp_loc, node_id,
+                       parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
+
+    rb_iseq_compile_yarp_node(iseq, node);
+
+    yp_node_destroy(&parser, node);
+    yp_parser_free(&parser);
+
+    return iseqw_new(iseq);
 }
 
 /*
