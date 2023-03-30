@@ -1001,17 +1001,23 @@ rb_io_buffer_lock(VALUE self)
     return self;
 }
 
+static void
+io_buffer_unlock(struct rb_io_buffer *data)
+{
+    if (!(data->flags & RB_IO_BUFFER_LOCKED)) {
+        rb_raise(rb_eIOBufferLockedError, "Buffer not locked!");
+    }
+
+    data->flags &= ~RB_IO_BUFFER_LOCKED;
+}
+
 VALUE
 rb_io_buffer_unlock(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    if (!(data->flags & RB_IO_BUFFER_LOCKED)) {
-        rb_raise(rb_eIOBufferLockedError, "Buffer not locked!");
-    }
-
-    data->flags &= ~RB_IO_BUFFER_LOCKED;
+    io_buffer_unlock(data);
 
     return self;
 }
@@ -1118,6 +1124,17 @@ rb_io_buffer_free(VALUE self)
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
+    io_buffer_free(data);
+
+    return self;
+}
+
+VALUE rb_io_buffer_free_locked(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_unlock(data);
     io_buffer_free(data);
 
     return self;
