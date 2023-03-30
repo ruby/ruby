@@ -348,6 +348,14 @@ AS_IF([test "$GCC" = yes -a "$gcc_major" -lt 3 ], [
     AC_MSG_ERROR([too old GCC])
 ])
 
+
+AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
+    [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
+        [rb_cv_tls_supported=yes],
+        [rb_cv_tls_supported=no])])
+AS_IF([test x"$rb_cv_tls_supported" != xyes],
+    [AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
+
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
 
