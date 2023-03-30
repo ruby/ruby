@@ -829,6 +829,8 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 #else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
 #define NEW_RIPPER(a,b,c,loc) (VALUE)NEW_CDECL(a,b,c,loc)
+#define NODE_RIPPER2 NODE_OP_CDECL
+#define NEW_RIPPER2(a,b,c,loc) (VALUE)NEW_OP_CDECL(a,c,b,loc)
 
 static inline int ripper_is_node_yylval(VALUE n);
 
@@ -839,6 +841,15 @@ ripper_new_yylval(struct parser_params *p, ID a, VALUE b, VALUE c)
     add_mark_object(p, b);
     add_mark_object(p, c);
     return NEW_RIPPER(a, b, c, &NULL_LOC);
+}
+
+static inline VALUE
+ripper_new_yylval2(struct parser_params *p, VALUE a, VALUE b, VALUE c)
+{
+    add_mark_object(p, a);
+    add_mark_object(p, b);
+    add_mark_object(p, c);
+    return NEW_RIPPER2(a, b, c, &NULL_LOC);
 }
 
 static inline int
@@ -1114,14 +1125,7 @@ new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE 
 static VALUE
 new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, VALUE rest_arg, VALUE post_args, const YYLTYPE *loc)
 {
-    NODE *t;
-
-
-    t = rb_node_newnode(NODE_ARYPTN, pre_args, rest_arg, post_args, &NULL_LOC);
-    add_mark_object(p, pre_args);
-    add_mark_object(p, rest_arg);
-    add_mark_object(p, post_args);
-    return (VALUE)t;
+    return ripper_new_yylval2(p, pre_args, rest_arg, post_args);
 }
 
 static VALUE
@@ -1136,13 +1140,7 @@ new_find_pattern(struct parser_params *p, VALUE constant, VALUE fndptn, const YY
 static VALUE
 new_find_pattern_tail(struct parser_params *p, VALUE pre_rest_arg, VALUE args, VALUE post_rest_arg, const YYLTYPE *loc)
 {
-    NODE *t;
-
-    t = rb_node_newnode(NODE_FNDPTN, pre_rest_arg, args, post_rest_arg, &NULL_LOC);
-    add_mark_object(p, pre_rest_arg);
-    add_mark_object(p, args);
-    add_mark_object(p, post_rest_arg);
-    return (VALUE)t;
+    return ripper_new_yylval2(p, pre_rest_arg, args, post_rest_arg);
 }
 
 #define new_hash(p,h,l) rb_ary_new_from_args(0)
@@ -1164,18 +1162,13 @@ new_hash_pattern(struct parser_params *p, VALUE constant, VALUE hshptn, const YY
 static VALUE
 new_hash_pattern_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, const YYLTYPE *loc)
 {
-    NODE *t;
     if (kw_rest_arg) {
         kw_rest_arg = dispatch1(var_field, kw_rest_arg);
     }
     else {
         kw_rest_arg = Qnil;
     }
-    t = rb_node_newnode(NODE_HSHPTN, kw_args, kw_rest_arg, 0, &NULL_LOC);
-
-    add_mark_object(p, kw_args);
-    add_mark_object(p, kw_rest_arg);
-    return (VALUE)t;
+    return ripper_new_yylval2(p, kw_args, kw_rest_arg, Qnil);
 }
 
 #define new_defined(p,expr,loc) dispatch1(defined, (expr))
