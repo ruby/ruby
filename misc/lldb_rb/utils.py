@@ -148,14 +148,14 @@ class RbInspector(LLDBInterface):
 
             elif rval.is_type("RUBY_T_ARRAY"):
                 tRArray = self.target.FindFirstType("struct RArray").GetPointerType()
-                len = rval.ary_len()
-                ptr = rval.ary_ptr()
+                len = rval.ary_len().GetValueAsUnsigned();
+                ptr = rval.ary_ptr().GetValueAsUnsigned();
 
                 self.result.write("T_ARRAY: %slen=%d" % (flaginfo, len))
 
                 if rval.flags & self.ruby_globals["RUBY_FL_USER1"]:
                     self.result.write(" (embed)")
-                elif rval.flags & self.ruby_globasl["RUBY_FL_USER2"]:
+                elif rval.flags & self.ruby_globals["RUBY_FL_USER2"]:
                     shared = val.GetValueForExpressionPath("->as.heap.aux.shared").GetValueAsUnsigned()
                     self.result.write(" (shared) shared=%016x" % shared)
                 else:
