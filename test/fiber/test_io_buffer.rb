@@ -156,8 +156,18 @@ class TestFiberIOBuffer < Test::Unit::TestCase
     o&.close
   end
 
+  def nonblockable?(io)
+    io.nonblock{}
+    true
+  rescue
+    false
+  end
+
   def test_io_buffer_pread_pwrite
     file = Tempfile.new("test_io_buffer_pread_pwrite")
+
+    omit "Non-blocking file IO is not supported" unless nonblockable?(file)
+
     source_buffer = IO::Buffer.for("Hello World!")
     destination_buffer = IO::Buffer.new(source_buffer.size)
 
