@@ -7576,16 +7576,18 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
         }
         break;
       case 'x':
-        if (*utf8) {
-            rb_raise(rb_eRuntimeError, "hex escape and Unicode escape are mixed");
-        }
-        *binary = true;
         if (++s >= s_end) {
             rb_raise(rb_eRuntimeError, "invalid hex escape");
         }
         *buf = scan_hex(s, 2, &hexlen);
         if (hexlen != 2) {
             rb_raise(rb_eRuntimeError, "invalid hex escape");
+        }
+        if (!ISASCII(*buf)) {
+            if (*utf8) {
+                rb_raise(rb_eRuntimeError, "hex escape and Unicode escape are mixed");
+            }
+            *binary = true;
         }
         rb_str_cat(undumped, (char *)buf, 1);
         s += hexlen;
