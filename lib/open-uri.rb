@@ -89,6 +89,9 @@ end
 # Author:: Tanaka Akira <akr@m17n.org>
 
 module OpenURI
+
+  VERSION = "0.3.0"
+
   Options = {
     :proxy => true,
     :proxy_http_basic_authentication => true,
