@@ -515,6 +515,31 @@ wmap_aref(VALUE self, VALUE key)
     return !UNDEF_P(obj) ? obj : Qnil;
 }
 
+/* Delete the given key from the map */
+static VALUE
+wmap_delete(VALUE self, VALUE key)
+{
+    assert(wmap_live_p(key));
+
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+
+    VALUE old_value = Qnil;
+    if (st_delete(w->wmap2obj, (st_data_t *)&key, (st_data_t *)&old_value)) {
+        if (FL_ABLE(old_value)) {
+            // That key existed and had an inverse reference, we need to clear the outdated inverse reference.
+            st_update(w->obj2wmap, (st_data_t)old_value, wmap_remove_inverse_ref, key);
+        }
+        return old_value;
+    }
+    else if (rb_block_given_p()) {
+        return rb_yield(key);
+    }
+    else {
+        return Qnil;
+    }
+}
+
 /* Returns +true+ if +key+ is registered */
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
@@ -753,6 +778,61 @@ wkmap_aset(VALUE self, VALUE key, VALUE value)
 
 /*
  *  call-seq:
+ *    map.delete(key) -> value or nil
+ *    map.delete(key) {|key| ... } -> object
+ *
+ *  Deletes the entry for the given +key+ and returns its associated value.
+ *
+ *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    m["foo"] = 1
+ *    m.delete("foo") # => 1
+ *    m["foo"] # => nil
+ *
+ *  If no block given and +key+ is not found, returns +nil+.
+ *
+ *  If a block is given and +key+ is found, ignores the block,
+ *  deletes the entry, and returns the associated value:
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    m["foo"] = 2
+ *    h.delete("foo") { |key| raise 'Will never happen'} # => 2
+ *
+ *  If a block is given and +key+ is not found,
+ *  calls the block and returns the block's return value:
+ *    m = ObjectSpace::WeakKeyMap.new
+ *    h.delete("nosuch") { |key| "Key #{key} not found" } # => "Key nosuch not found"
+ */
+
+static VALUE
+wkmap_delete(VALUE self, VALUE key)
+{
+    struct weakkeymap *w;
+    TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
+
+    st_index_t hash = rb_any_hash(key);
+    weakkeymap_entry_t lookup_entry = {key, hash};
+    weakkeymap_entry_t *deleted_entry = NULL;
+    if (st_get_key(w->map, (st_data_t)&lookup_entry, (st_data_t *)&deleted_entry)) {
+        st_data_t deleted_value;
+        if (st_delete(w->map, (st_data_t *)&deleted_entry, &deleted_value)) {
+            xfree(deleted_entry);
+            st_delete(w->obj2hash, (st_data_t *)key, &hash);
+            return (VALUE)deleted_value;
+        }
+        else {
+            rb_bug("WeakKeyMap: miss on delete, corrupted memory?");
+        }
+    }
+    else if (rb_block_given_p()) {
+        return rb_yield(key);
+    }
+    else {
+        return Qnil;
+    }
+}
+
+/*
+ *  call-seq:
  *    map.getkey(key) -> existing_key or nil
  *
  *  Returns the existing equal key if it exists, otherwise returns +nil+.
@@ -870,6 +950,7 @@ Init_WeakMap(void)
     rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
     rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
     rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
+    rb_define_method(rb_cWeakMap, "delete", wmap_delete, 1);
     rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
     rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);
     rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 1);
@@ -888,6 +969,7 @@ Init_WeakMap(void)
     rb_define_alloc_func(rb_cWeakKeyMap, wkmap_allocate);
     rb_define_method(rb_cWeakKeyMap, "[]=", wkmap_aset, 2);
     rb_define_method(rb_cWeakKeyMap, "[]", wkmap_aref, 1);
+    rb_define_method(rb_cWeakKeyMap, "delete", wkmap_delete, 1);
     rb_define_method(rb_cWeakKeyMap, "getkey", wkmap_getkey, 1);
     rb_define_method(rb_cWeakKeyMap, "key?", wkmap_has_key, 1);
     rb_define_method(rb_cWeakKeyMap, "clear", wkmap_clear, 0);

@@ -82,6 +82,22 @@ class TestWeakMap < Test::Unit::TestCase
                  @wm.inspect)
   end
 
+  def test_delete
+    k1 = "foo"
+    x1 = Object.new
+    @wm[k1] = x1
+    assert_equal x1, @wm[k1]
+    assert_equal x1, @wm.delete(k1)
+    assert_nil @wm[k1]
+    assert_nil @wm.delete(k1)
+
+    fallback =  @wm.delete(k1) do |key|
+      assert_equal k1, key
+      42
+    end
+    assert_equal 42, fallback
+  end
+
   def test_each
     m = __callee__[/test_(.*)/, 1]
     x1 = Object.new
