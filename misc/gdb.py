@@ -1,3 +1,5 @@
+import textwrap
+
 # Usage:
 #   cfp: Dump the current cfp
 #   cfp + 1: Dump the caller cfp
@@ -66,13 +68,24 @@ class CFP(gdb.Command):
         print(f'Stack (size={stack_size}):')
         for i in range(0, stack_size):
             self.print_stack(cfp, i, self.rp(cfp, i))
+        print(self.regs(cfp, stack_size))
 
     def print_stack(self, cfp, bp_index, content):
         address = self.get_int(f'{cfp}->__bp__ + {bp_index}')
         value = self.get_value(cfp, bp_index)
+        regs = self.regs(cfp, bp_index)
         if content:
+            content = textwrap.indent(content, ' ' * 3).lstrip() # Leave the regs column empty
             content = f'{content} '
-        print('0x{:x} [{}] {}(0x{:x})'.format(address, bp_index, content, value))
+        print('{:2} 0x{:x} [{}] {}(0x{:x})'.format(regs, address, bp_index, content, value))
+
+    def regs(self, cfp, bp_index):
+        address = self.get_int(f'{cfp}->__bp__ + {bp_index}')
+        regs = []
+        for reg, field in { 'EP': 'ep', 'BP': '__bp__', 'SP': 'sp' }.items():
+            if address == self.get_int(f'{cfp}->{field}'):
+                regs.append(reg)
+        return ' '.join(regs)
 
     def rp(self, cfp, bp_index):
         value = self.get_value(cfp, bp_index)
