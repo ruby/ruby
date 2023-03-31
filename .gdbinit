@@ -1348,3 +1348,5 @@ define print_flags
   printf "RUBY_FL_USER17      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER17 ? "1" : "0"
   printf "RUBY_FL_USER18      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER18 ? "1" : "0"
 end
+
+source misc/gdb.py
