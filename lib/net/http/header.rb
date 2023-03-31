@@ -195,7 +195,7 @@ module Net::HTTPHeader
           raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
         end
         if value.to_s.bytesize > MAX_FIELD_LENGTH
-          raise ArgumentError, "header #{key} has too long field vallue: #{value.bytesize}"
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
         end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
