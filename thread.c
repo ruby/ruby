@@ -2321,7 +2321,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         /* exception from another thread */
         if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
             VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
-            RUBY_DEBUG_LOG("err:%"PRIdVALUE"\n", err);
+            RUBY_DEBUG_LOG("err:%"PRIdVALUE, err);
             ret = TRUE;
 
             if (UNDEF_P(err)) {
