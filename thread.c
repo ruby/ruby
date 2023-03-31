@@ -134,7 +134,9 @@ enum SLEEP_FLAGS {
     SLEEP_SPURIOUS_CHECK = 0x02,
 };
 
+static void sleep_forever(rb_thread_t *th, unsigned int fl);
 static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
+
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_ractor_t *r);
@@ -1051,11 +1053,7 @@ thread_join_sleep(VALUE arg)
             rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
         }
         else if (!limit) {
-            th->status = THREAD_STOPPED_FOREVER;
-            rb_ractor_sleeper_threads_inc(th->ractor);
-            rb_check_deadlock(th->ractor);
-            native_sleep(th, 0);
-            rb_ractor_sleeper_threads_dec(th->ractor);
+            sleep_forever(th, SLEEP_DEADLOCKABLE);
         }
         else {
             if (hrtime_update_expire(limit, end)) {
@@ -1346,13 +1344,18 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
             rb_ractor_sleeper_threads_inc(th->ractor);
             rb_check_deadlock(th->ractor);
         }
-        native_sleep(th, 0);
+        {
+            native_sleep(th, 0);
+        }
         if (fl & SLEEP_DEADLOCKABLE) {
             rb_ractor_sleeper_threads_dec(th->ractor);
         }
+
         woke = vm_check_ints_blocking(th->ec);
-        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
+
+        if (woke && !(fl & SLEEP_SPURIOUS_CHECK)) {
             break;
+        }
     }
     th->status = prev_status;
 }
