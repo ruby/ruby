@@ -280,6 +280,10 @@ rb_ractor_sleeper_thread_num(rb_ractor_t *r)
 static inline void
 rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 {
+    RUBY_DEBUG_LOG("th:%d->%u%s",
+                   cr->threads.running_ec ? (int)rb_th_serial(cr->threads.running_ec->thread_ptr) : -1,
+                   rb_th_serial(th), cr->threads.running_ec == th->ec ? " (same)" : "");
+
     if (cr->threads.running_ec != th->ec) {
         if (0) {
             ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n",
