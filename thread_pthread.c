@@ -51,6 +51,202 @@
 #  define USE_EVENTFD (0)
 #endif
 
+#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && \
+    defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
+    defined(HAVE_CLOCK_GETTIME)
+static pthread_condattr_t condattr_mono;
+static pthread_condattr_t *condattr_monotonic = &condattr_mono;
+#else
+static const void *const condattr_monotonic = NULL;
+#endif
+
+// native thread wrappers
+
+#define NATIVE_MUTEX_LOCK_DEBUG 0
+
+static void
+mutex_debug(const char *msg, void *lock)
+{
+    if (NATIVE_MUTEX_LOCK_DEBUG) {
+        int r;
+        static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
+
+        if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
+        fprintf(stdout, "%s: %p\n", msg, lock);
+        if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
+    }
+}
+
+void
+rb_native_mutex_lock(pthread_mutex_t *lock)
+{
+    int r;
+    mutex_debug("lock", lock);
+    if ((r = pthread_mutex_lock(lock)) != 0) {
+        rb_bug_errno("pthread_mutex_lock", r);
+    }
+}
+
+void
+rb_native_mutex_unlock(pthread_mutex_t *lock)
+{
+    int r;
+    mutex_debug("unlock", lock);
+    if ((r = pthread_mutex_unlock(lock)) != 0) {
+        rb_bug_errno("pthread_mutex_unlock", r);
+    }
+}
+
+int
+rb_native_mutex_trylock(pthread_mutex_t *lock)
+{
+    int r;
+    mutex_debug("trylock", lock);
+    if ((r = pthread_mutex_trylock(lock)) != 0) {
+        if (r == EBUSY) {
+            return EBUSY;
+        }
+        else {
+            rb_bug_errno("pthread_mutex_trylock", r);
+        }
+    }
+    return 0;
+}
+
+void
+rb_native_mutex_initialize(pthread_mutex_t *lock)
+{
+    int r = pthread_mutex_init(lock, 0);
+    mutex_debug("init", lock);
+    if (r != 0) {
+        rb_bug_errno("pthread_mutex_init", r);
+    }
+}
+
+void
+rb_native_mutex_destroy(pthread_mutex_t *lock)
+{
+    int r = pthread_mutex_destroy(lock);
+    mutex_debug("destroy", lock);
+    if (r != 0) {
+        rb_bug_errno("pthread_mutex_destroy", r);
+    }
+}
+
+void
+rb_native_cond_initialize(rb_nativethread_cond_t *cond)
+{
+    int r = pthread_cond_init(cond, condattr_monotonic);
+    if (r != 0) {
+        rb_bug_errno("pthread_cond_init", r);
+    }
+}
+
+void
+rb_native_cond_destroy(rb_nativethread_cond_t *cond)
+{
+    int r = pthread_cond_destroy(cond);
+    if (r != 0) {
+        rb_bug_errno("pthread_cond_destroy", r);
+    }
+}
+
+/*
+ * In OS X 10.7 (Lion), pthread_cond_signal and pthread_cond_broadcast return
+ * EAGAIN after retrying 8192 times.  You can see them in the following page:
+ *
+ * http://www.opensource.apple.com/source/Libc/Libc-763.11/pthreads/pthread_cond.c
+ *
+ * The following rb_native_cond_signal and rb_native_cond_broadcast functions
+ * need to retrying until pthread functions don't return EAGAIN.
+ */
+
+void
+rb_native_cond_signal(rb_nativethread_cond_t *cond)
+{
+    int r;
+    do {
+        r = pthread_cond_signal(cond);
+    } while (r == EAGAIN);
+    if (r != 0) {
+        rb_bug_errno("pthread_cond_signal", r);
+    }
+}
+
+void
+rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
+{
+    int r;
+    do {
+        r = pthread_cond_broadcast(cond);
+    } while (r == EAGAIN);
+    if (r != 0) {
+        rb_bug_errno("rb_native_cond_broadcast", r);
+    }
+}
+
+void
+rb_native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
+{
+    int r = pthread_cond_wait(cond, mutex);
+    if (r != 0) {
+        rb_bug_errno("pthread_cond_wait", r);
+    }
+}
+
+static int
+native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const rb_hrtime_t *abs)
+{
+    int r;
+    struct timespec ts;
+
+    /*
+     * An old Linux may return EINTR. Even though POSIX says
+     *   "These functions shall not return an error code of [EINTR]".
+     *   http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_cond_timedwait.html
+     * Let's hide it from arch generic code.
+     */
+    do {
+        rb_hrtime2timespec(&ts, abs);
+        r = pthread_cond_timedwait(cond, mutex, &ts);
+    } while (r == EINTR);
+
+    if (r != 0 && r != ETIMEDOUT) {
+        rb_bug_errno("pthread_cond_timedwait", r);
+    }
+
+    return r;
+}
+
+static rb_hrtime_t
+native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
+{
+    if (condattr_monotonic) {
+        return rb_hrtime_add(rb_hrtime_now(), rel);
+    }
+    else {
+        struct timespec ts;
+
+        rb_timespec_now(&ts);
+        return rb_hrtime_add(rb_timespec2hrtime(&ts), rel);
+    }
+}
+
+void
+rb_native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, unsigned long msec)
+{
+    rb_hrtime_t hrmsec = native_cond_timeout(cond, RB_HRTIME_PER_MSEC * msec);
+    native_cond_timedwait(cond, mutex, &hrmsec);
+}
+
+// thread scheduling
+
+static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
+static void rb_thread_execute_hooks(rb_event_flag_t event);
+#define RB_INTERNAL_THREAD_HOOK(event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event); }
+
+static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
+
 #if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
 #endif
@@ -97,100 +293,6 @@
 #    define UBF_TIMER UBF_TIMER_NONE
 #  endif
 #endif
-
-struct rb_internal_thread_event_hook {
-    rb_internal_thread_event_callback callback;
-    rb_event_flag_t event;
-    void *user_data;
-
-    struct rb_internal_thread_event_hook *next;
-};
-
-static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
-static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
-
-static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
-
-#define RB_INTERNAL_THREAD_HOOK(event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event); }
-
-rb_internal_thread_event_hook_t *
-rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
-{
-    rb_internal_thread_event_hook_t *hook = ALLOC_N(rb_internal_thread_event_hook_t, 1);
-    hook->callback = callback;
-    hook->user_data = user_data;
-    hook->event = internal_event;
-
-    int r;
-    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_wrlock", r);
-    }
-
-    hook->next = rb_internal_thread_event_hooks;
-    ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook);
-
-    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_unlock", r);
-    }
-    return hook;
-}
-
-bool
-rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
-{
-    int r;
-    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_wrlock", r);
-    }
-
-    bool success = FALSE;
-
-    if (rb_internal_thread_event_hooks == hook) {
-        ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook->next);
-        success = TRUE;
-    }
-    else {
-        rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
-
-        do {
-            if (h->next == hook) {
-                h->next = hook->next;
-                success = TRUE;
-                break;
-            }
-        } while ((h = h->next));
-    }
-
-    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_unlock", r);
-    }
-
-    if (success) {
-        ruby_xfree(hook);
-    }
-    return success;
-}
-
-static void
-rb_thread_execute_hooks(rb_event_flag_t event)
-{
-    int r;
-    if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_rdlock", r);
-    }
-
-    if (rb_internal_thread_event_hooks) {
-        rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
-        do {
-            if (h->event & event) {
-                (*h->callback)(event, NULL, h->user_data);
-            }
-        } while((h = h->next));
-    }
-    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_unlock", r);
-    }
-}
 
 enum rtimer_state {
     /* alive, after timer_create: */
@@ -290,24 +392,12 @@ static const rb_thread_t *sigwait_th;
 #define native_thread_yield() ((void)0)
 #endif
 
-#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && \
-    defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
-    defined(HAVE_CLOCK_GETTIME)
-static pthread_condattr_t condattr_mono;
-static pthread_condattr_t *condattr_monotonic = &condattr_mono;
-#else
-static const void *const condattr_monotonic = NULL;
-#endif
-
 /* 100ms.  10ms is too small for user level thread scheduling
  * on recent Linux (tested on 2.6.35)
  */
 #define TIME_QUANTUM_MSEC (100)
 #define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
 #define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
-
-static rb_hrtime_t native_cond_timeout(rb_nativethread_cond_t *, rb_hrtime_t);
-static int native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const rb_hrtime_t *abs);
 
 /*
  * Designate the next sched.timer thread, favor the last thread in
@@ -541,186 +631,6 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     thread_sched_to_running(sched, GET_THREAD());
 }
 #endif
-
-#define NATIVE_MUTEX_LOCK_DEBUG 0
-
-static void
-mutex_debug(const char *msg, void *lock)
-{
-    if (NATIVE_MUTEX_LOCK_DEBUG) {
-        int r;
-        static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
-
-        if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
-        fprintf(stdout, "%s: %p\n", msg, lock);
-        if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
-    }
-}
-
-void
-rb_native_mutex_lock(pthread_mutex_t *lock)
-{
-    int r;
-    mutex_debug("lock", lock);
-    if ((r = pthread_mutex_lock(lock)) != 0) {
-        rb_bug_errno("pthread_mutex_lock", r);
-    }
-}
-
-void
-rb_native_mutex_unlock(pthread_mutex_t *lock)
-{
-    int r;
-    mutex_debug("unlock", lock);
-    if ((r = pthread_mutex_unlock(lock)) != 0) {
-        rb_bug_errno("pthread_mutex_unlock", r);
-    }
-}
-
-int
-rb_native_mutex_trylock(pthread_mutex_t *lock)
-{
-    int r;
-    mutex_debug("trylock", lock);
-    if ((r = pthread_mutex_trylock(lock)) != 0) {
-        if (r == EBUSY) {
-            return EBUSY;
-        }
-        else {
-            rb_bug_errno("pthread_mutex_trylock", r);
-        }
-    }
-    return 0;
-}
-
-void
-rb_native_mutex_initialize(pthread_mutex_t *lock)
-{
-    int r = pthread_mutex_init(lock, 0);
-    mutex_debug("init", lock);
-    if (r != 0) {
-        rb_bug_errno("pthread_mutex_init", r);
-    }
-}
-
-void
-rb_native_mutex_destroy(pthread_mutex_t *lock)
-{
-    int r = pthread_mutex_destroy(lock);
-    mutex_debug("destroy", lock);
-    if (r != 0) {
-        rb_bug_errno("pthread_mutex_destroy", r);
-    }
-}
-
-void
-rb_native_cond_initialize(rb_nativethread_cond_t *cond)
-{
-    int r = pthread_cond_init(cond, condattr_monotonic);
-    if (r != 0) {
-        rb_bug_errno("pthread_cond_init", r);
-    }
-}
-
-void
-rb_native_cond_destroy(rb_nativethread_cond_t *cond)
-{
-    int r = pthread_cond_destroy(cond);
-    if (r != 0) {
-        rb_bug_errno("pthread_cond_destroy", r);
-    }
-}
-
-/*
- * In OS X 10.7 (Lion), pthread_cond_signal and pthread_cond_broadcast return
- * EAGAIN after retrying 8192 times.  You can see them in the following page:
- *
- * http://www.opensource.apple.com/source/Libc/Libc-763.11/pthreads/pthread_cond.c
- *
- * The following rb_native_cond_signal and rb_native_cond_broadcast functions
- * need to retrying until pthread functions don't return EAGAIN.
- */
-
-void
-rb_native_cond_signal(rb_nativethread_cond_t *cond)
-{
-    int r;
-    do {
-        r = pthread_cond_signal(cond);
-    } while (r == EAGAIN);
-    if (r != 0) {
-        rb_bug_errno("pthread_cond_signal", r);
-    }
-}
-
-void
-rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
-{
-    int r;
-    do {
-        r = pthread_cond_broadcast(cond);
-    } while (r == EAGAIN);
-    if (r != 0) {
-        rb_bug_errno("rb_native_cond_broadcast", r);
-    }
-}
-
-void
-rb_native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
-{
-    int r = pthread_cond_wait(cond, mutex);
-    if (r != 0) {
-        rb_bug_errno("pthread_cond_wait", r);
-    }
-}
-
-static int
-native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const rb_hrtime_t *abs)
-{
-    int r;
-    struct timespec ts;
-
-    /*
-     * An old Linux may return EINTR. Even though POSIX says
-     *   "These functions shall not return an error code of [EINTR]".
-     *   http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_cond_timedwait.html
-     * Let's hide it from arch generic code.
-     */
-    do {
-        rb_hrtime2timespec(&ts, abs);
-        r = pthread_cond_timedwait(cond, mutex, &ts);
-    } while (r == EINTR);
-
-    if (r != 0 && r != ETIMEDOUT) {
-        rb_bug_errno("pthread_cond_timedwait", r);
-    }
-
-    return r;
-}
-
-void
-rb_native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, unsigned long msec)
-{
-    rb_hrtime_t hrmsec = native_cond_timeout(cond, RB_HRTIME_PER_MSEC * msec);
-    native_cond_timedwait(cond, mutex, &hrmsec);
-}
-
-static rb_hrtime_t
-native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
-{
-    if (condattr_monotonic) {
-        return rb_hrtime_add(rb_hrtime_now(), rel);
-    }
-    else {
-        struct timespec ts;
-
-        rb_timespec_now(&ts);
-        return rb_hrtime_add(rb_timespec2hrtime(&ts), rel);
-    }
-}
-
-#define native_cleanup_push pthread_cleanup_push
-#define native_cleanup_pop  pthread_cleanup_pop
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 static RB_THREAD_LOCAL_SPECIFIER rb_thread_t *ruby_native_thread;
@@ -2443,4 +2353,96 @@ rb_thread_start_unblock_thread(void)
 {
     return rb_thread_create(ubf_caller, 0);
 }
+
+// thread internal event hooks (only for pthread)
+
+struct rb_internal_thread_event_hook {
+    rb_internal_thread_event_callback callback;
+    rb_event_flag_t event;
+    void *user_data;
+
+    struct rb_internal_thread_event_hook *next;
+};
+
+static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+rb_internal_thread_event_hook_t *
+rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
+{
+    rb_internal_thread_event_hook_t *hook = ALLOC_N(rb_internal_thread_event_hook_t, 1);
+    hook->callback = callback;
+    hook->user_data = user_data;
+    hook->event = internal_event;
+
+    int r;
+    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_wrlock", r);
+    }
+
+    hook->next = rb_internal_thread_event_hooks;
+    ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook);
+
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+    return hook;
+}
+
+bool
+rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
+{
+    int r;
+    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_wrlock", r);
+    }
+
+    bool success = FALSE;
+
+    if (rb_internal_thread_event_hooks == hook) {
+        ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook->next);
+        success = TRUE;
+    }
+    else {
+        rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
+
+        do {
+            if (h->next == hook) {
+                h->next = hook->next;
+                success = TRUE;
+                break;
+            }
+        } while ((h = h->next));
+    }
+
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+
+    if (success) {
+        ruby_xfree(hook);
+    }
+    return success;
+}
+
+static void
+rb_thread_execute_hooks(rb_event_flag_t event)
+{
+    int r;
+    if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_rdlock", r);
+    }
+
+    if (rb_internal_thread_event_hooks) {
+        rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
+        do {
+            if (h->event & event) {
+                (*h->callback)(event, NULL, h->user_data);
+            }
+        } while((h = h->next));
+    }
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
