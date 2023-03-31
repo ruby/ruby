@@ -521,7 +521,7 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static rb_thread_t *
-thread_sched_to_waiting_common(struct rb_thread_sched *sched)
+thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     rb_thread_t *next;
     sched->running = NULL;
@@ -532,19 +532,19 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
     rb_native_mutex_lock(&sched->lock);
-    thread_sched_to_waiting_common(sched);
+    thread_sched_to_waiting_common(sched, th);
     rb_native_mutex_unlock(&sched->lock);
 }
 
 static void
-thread_sched_to_dead(struct rb_thread_sched *sched)
+thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
-    thread_sched_to_waiting(sched);
+    thread_sched_to_waiting(sched, th);
 }
 
 static void
@@ -558,7 +558,7 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
      */
     ubf_wakeup_all_threads();
     rb_native_mutex_lock(&sched->lock);
-    next = thread_sched_to_waiting_common(sched);
+    next = thread_sched_to_waiting_common(sched, th);
 
     /* An another thread is processing GVL yield. */
     if (UNLIKELY(sched->wait_yield)) {
@@ -2209,7 +2209,7 @@ ubf_ppoll_sleep(void *ignore)
     struct rb_thread_sched *sched = TH_SCHED(th); \
     RB_VM_SAVE_MACHINE_CONTEXT(th); \
     rb_native_mutex_lock(&sched->lock); \
-    next = thread_sched_to_waiting_common(sched); \
+    next = thread_sched_to_waiting_common((sched), (th)); \
     rb_native_mutex_unlock(&sched->lock); \
     if (!next && rb_ractor_living_thread_num(th->ractor) > 1) { \
         native_thread_yield(); \
