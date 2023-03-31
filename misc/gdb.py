@@ -69,7 +69,10 @@ class CFP(gdb.Command):
 
     def print_stack(self, cfp, bp_index, content):
         address = self.get_int(f'{cfp}->__bp__ + {bp_index}')
-        print('0x{:x} [{}] {}'.format(address, bp_index, content))
+        value = self.get_value(cfp, bp_index)
+        if content:
+            content = f'{content} '
+        print('0x{:x} [{}] {}(0x{:x})'.format(address, bp_index, content, value))
 
     def rp(self, cfp, bp_index):
         value = self.get_value(cfp, bp_index)
@@ -78,11 +81,10 @@ class CFP(gdb.Command):
     # specval: block_handler or previous EP
     def specval(self, cfp, bp_index):
         value = self.get_value(cfp, bp_index)
-        specval = '0x{:x}'.format(value)
         for block_handler in ['VM_BLOCK_HANDLER_NONE', 'rb_block_param_proxy']:
             if value == self.get_int(block_handler):
-                return f'{specval} ({block_handler})'
-        return specval
+                return block_handler
+        return ''
 
     def frame_types(self, cfp, bp_index):
         types = []
@@ -99,7 +101,7 @@ class CFP(gdb.Command):
             if value & flag_value:
                 types.append(flag)
 
-        return '0x{:x} ({})'.format(self.get_value(cfp, bp_index), ' | '.join(types))
+        return ' | '.join(types)
 
     def get_value(self, cfp, bp_index):
         return self.get_int(f'{cfp}->__bp__[{bp_index}]')
