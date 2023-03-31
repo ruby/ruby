@@ -116,11 +116,6 @@ static VALUE sym_immediate;
 static VALUE sym_on_blocking;
 static VALUE sym_never;
 
-enum SLEEP_FLAGS {
-    SLEEP_DEADLOCKABLE = 0x1,
-    SLEEP_SPURIOUS_CHECK = 0x2
-};
-
 #define THREAD_LOCAL_STORAGE_INITIALISED FL_USER13
 #define THREAD_LOCAL_STORAGE_INITIALISED_P(th) RB_FL_TEST_RAW((th), THREAD_LOCAL_STORAGE_INITIALISED)
 
@@ -134,8 +129,12 @@ rb_thread_local_storage(VALUE thread)
     return rb_ivar_get(thread, idLocals);
 }
 
+enum SLEEP_FLAGS {
+    SLEEP_DEADLOCKABLE   = 0x01,
+    SLEEP_SPURIOUS_CHECK = 0x02,
+};
+
 static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
-static void sleep_forever(rb_thread_t *th, unsigned int fl);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_ractor_t *r);
@@ -1258,32 +1257,6 @@ rb_hrtime_now(void)
     return rb_timespec2hrtime(&ts);
 }
 
-static void
-sleep_forever(rb_thread_t *th, unsigned int fl)
-{
-    enum rb_thread_status prev_status = th->status;
-    enum rb_thread_status status;
-    int woke;
-
-    status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
-    th->status = status;
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    while (th->status == status) {
-        if (fl & SLEEP_DEADLOCKABLE) {
-            rb_ractor_sleeper_threads_inc(th->ractor);
-            rb_check_deadlock(th->ractor);
-        }
-        native_sleep(th, 0);
-        if (fl & SLEEP_DEADLOCKABLE) {
-            rb_ractor_sleeper_threads_dec(th->ractor);
-        }
-        woke = vm_check_ints_blocking(th->ec);
-        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
-            break;
-    }
-    th->status = prev_status;
-}
-
 /*
  * at least gcc 7.2 and 7.3 complains about "rb_hrtime_t end"
  * being uninitialized, maybe other versions, too.
@@ -1356,6 +1329,32 @@ sleep_hrtime_until(rb_thread_t *th, rb_hrtime_t end, unsigned int fl)
     }
     th->status = prev_status;
     return woke;
+}
+
+static void
+sleep_forever(rb_thread_t *th, unsigned int fl)
+{
+    enum rb_thread_status prev_status = th->status;
+    enum rb_thread_status status;
+    int woke;
+
+    status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
+    th->status = status;
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    while (th->status == status) {
+        if (fl & SLEEP_DEADLOCKABLE) {
+            rb_ractor_sleeper_threads_inc(th->ractor);
+            rb_check_deadlock(th->ractor);
+        }
+        native_sleep(th, 0);
+        if (fl & SLEEP_DEADLOCKABLE) {
+            rb_ractor_sleeper_threads_dec(th->ractor);
+        }
+        woke = vm_check_ints_blocking(th->ec);
+        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
+            break;
+    }
+    th->status = prev_status;
 }
 
 void
