@@ -4836,7 +4836,7 @@ fn gen_push_frame(
 
     // For an iseq call PC may be None, in which case we will not set PC and will allow jitted code
     // to set it as necessary.
-    let _pc = if let Some(pc) = frame.pc {
+    if let Some(pc) = frame.pc {
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), pc.into());
     };
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BP), sp);
