@@ -40,9 +40,20 @@ class CFP(gdb.Command):
 
         end_cfp = self.get_int('ruby_current_ec->vm_stack + ruby_current_ec->vm_stack_size')
         cfp_count = int((end_cfp - self.get_int('ruby_current_ec->cfp')) / self.get_int('sizeof(rb_control_frame_t)'))
-
         print('CFP (count={}, addr=0x{:x}):'.format(cfp_count, self.get_int(cfp)))
         gdb.execute(f'p *({cfp})')
+        print()
+
+        local_size = self.get_int(f'{cfp}->iseq->body->local_table_size - {cfp}->iseq->body->param.size')
+        param_size = self.get_int(f'{cfp}->iseq->body->param.size')
+        print(f'Params (size={param_size}):')
+        for i in range(-3 - local_size - param_size, -3 - local_size):
+            self.print_stack(cfp, i, self.rp(cfp, i))
+        print()
+
+        print(f'Locals (size={local_size}):')
+        for i in range(-3 - local_size, -3):
+            self.print_stack(cfp, i, self.rp(cfp, i))
         print()
 
         print('Env:')
