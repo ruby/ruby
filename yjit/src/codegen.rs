@@ -279,13 +279,9 @@ macro_rules! gen_counter_incr {
             // Get a pointer to the counter variable
             let ptr = ptr_to_counter!($counter_name);
 
-            // Load the pointer into a register
+            // Load and increment the pointer
             $asm.comment(&format!("increment counter {}", stringify!($counter_name)));
-            let ptr_reg = $asm.load(Opnd::const_ptr(ptr as *const u8));
-            let counter_opnd = Opnd::mem(64, ptr_reg, 0);
-
-            // Increment and store the updated value
-            $asm.incr_counter(counter_opnd, Opnd::UImm(1));
+            $asm.incr_counter(Opnd::const_ptr(ptr as *const u8), Opnd::UImm(1));
         }
     };
 }
@@ -572,13 +568,9 @@ fn counted_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb, counter
 
     let mut asm = Assembler::new();
 
-    // Load the pointer into a register
+    // Load and increment the pointer
     asm.comment(&format!("increment counter {}", counter.name));
-    let ptr_reg = asm.load(Opnd::const_ptr(counter.ptr));
-    let counter_opnd = Opnd::mem(64, ptr_reg, 0);
-
-    // Increment and store the updated value
-    asm.incr_counter(counter_opnd, Opnd::UImm(1));
+    asm.incr_counter(Opnd::const_ptr(counter.ptr), Opnd::UImm(1));
 
     // Jump to the existing side exit
     asm.jmp(side_exit);

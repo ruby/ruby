@@ -85,6 +85,7 @@ impl Assembler
     // A special scratch register for intermediate processing.
     // Note: right now this is only used by LeaLabel because label_ref accepts
     // a closure and we don't want it to have to capture anything.
+    const SCRATCH0_REG: Reg = R11_REG;
     const SCRATCH0: X86Opnd = X86Opnd::Reg(R11_REG);
 
     /// Get the list of registers from which we can allocate on this platform
@@ -357,6 +358,12 @@ impl Assembler
                         _ => asm.push_insn(insn),
                     }
                 },
+                Insn::IncrCounter { mem, value } => {
+                    // Load the pointer without consuming a register for InsnOut
+                    let ptr_reg = Opnd::Reg(Self::SCRATCH0_REG);
+                    asm.mov(ptr_reg, *mem);
+                    asm.push_insn(Insn::IncrCounter { mem: Opnd::mem(64, ptr_reg, 0), value: *value });
+                }
                 _ => {
                     if insn.out_opnd().is_some() {
                         let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());

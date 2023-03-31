@@ -164,6 +164,7 @@ impl Assembler
 {
     // A special scratch register for intermediate processing.
     // This register is caller-saved (so we don't have to save it before using it)
+    const SCRATCH0_REG: Reg = X16_REG;
     const SCRATCH0: A64Opnd = A64Opnd::Reg(X16_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
 
@@ -500,11 +501,11 @@ impl Assembler
                     asm.csel_ge(opnd0, opnd1);
                 },
                 Insn::IncrCounter { mem, value } => {
-                    let counter_addr = match mem {
-                        Opnd::Mem(_) => split_lea_operand(asm, mem),
-                        _ => mem
-                    };
+                    // Load the pointer without consuming a register for InsnOut
+                    let ptr_reg = Opnd::Reg(Self::SCRATCH0_REG);
+                    asm.push_insn(Insn::Load { opnd: mem, out: ptr_reg });
 
+                    let counter_addr = split_lea_operand(asm, Opnd::mem(64, ptr_reg, 0));
                     asm.incr_counter(counter_addr, value);
                 },
                 Insn::JmpOpnd(opnd) => {
@@ -1076,7 +1077,9 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.lower_stack().arm64_split().alloc_regs(regs);
+        let asm = self.lower_stack();
+        let asm = asm.arm64_split();
+        let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
