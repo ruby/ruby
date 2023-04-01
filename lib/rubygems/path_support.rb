@@ -32,6 +32,19 @@ class Gem::PathSupport
 
     @home = expand(@home)
 
+    # If @home (aka Gem.paths.home) exists, but we can't write to it,
+    # fall back to Gem.user_dir (the directory used for user installs).
+    if File.exist?(@home) && !File.writable?(@home)
+      warn "The default GEM_HOME (#{@home}) is not" \
+            " writable, so rubygems is falling back to installing" \
+            " under your home folder. To get rid of this warning" \
+            " permanently either fix your GEM_HOME folder permissions" \
+            " or add the following to your ~/.gemrc file:\n" \
+            "    gem: --install-dir #{Gem.user_dir}"
+
+      @home = Gem.user_dir
+    end
+
     @path = split_gem_path env["GEM_PATH"], @home
 
     @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
