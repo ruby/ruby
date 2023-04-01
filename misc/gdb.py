@@ -46,17 +46,18 @@ class CFP(gdb.Command):
         gdb.execute(f'p *({cfp})')
         print()
 
-        local_size = self.get_int(f'{cfp}->iseq->body->local_table_size - {cfp}->iseq->body->param.size')
-        param_size = self.get_int(f'{cfp}->iseq->body->param.size')
-        print(f'Params (size={param_size}):')
-        for i in range(-3 - local_size - param_size, -3 - local_size):
-            self.print_stack(cfp, i, self.rp(cfp, i))
-        print()
+        if self.get_int(f'{cfp}->iseq'):
+            local_size = self.get_int(f'{cfp}->iseq->body->local_table_size - {cfp}->iseq->body->param.size')
+            param_size = self.get_int(f'{cfp}->iseq->body->param.size')
+            print(f'Params (size={param_size}):')
+            for i in range(-3 - local_size - param_size, -3 - local_size):
+                self.print_stack(cfp, i, self.rp(cfp, i))
+            print()
 
-        print(f'Locals (size={local_size}):')
-        for i in range(-3 - local_size, -3):
-            self.print_stack(cfp, i, self.rp(cfp, i))
-        print()
+            print(f'Locals (size={local_size}):')
+            for i in range(-3 - local_size, -3):
+                self.print_stack(cfp, i, self.rp(cfp, i))
+            print()
 
         print('Env:')
         self.print_stack(cfp, -3, self.rp(cfp, -3))
