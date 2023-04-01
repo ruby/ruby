@@ -5025,7 +5025,11 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     }
                 ;
 
-words		: tWORDS_BEG ' ' word_list tSTRING_END
+words_sep	: ' ' {}
+                | words_sep ' '
+                ;
+
+words		: tWORDS_BEG words_sep word_list tSTRING_END
                     {
                     /*%%%*/
                         $$ = make_list($3, &@$);
@@ -5041,7 +5045,7 @@ word_list	: /* none */
                     /*% %*/
                     /*% ripper: words_new! %*/
                     }
-                | word_list word ' '
+                | word_list word words_sep
                     {
                     /*%%%*/
                         $$ = list_append(p, $1, evstr2dstr(p, $2));
@@ -5061,7 +5065,7 @@ word		: string_content
                     }
                 ;
 
-symbols 	: tSYMBOLS_BEG ' ' symbol_list tSTRING_END
+symbols 	: tSYMBOLS_BEG words_sep symbol_list tSTRING_END
                     {
                     /*%%%*/
                         $$ = make_list($3, &@$);
@@ -5077,7 +5081,7 @@ symbol_list	: /* none */
                     /*% %*/
                     /*% ripper: symbols_new! %*/
                     }
-                | symbol_list word ' '
+                | symbol_list word words_sep
                     {
                     /*%%%*/
                         $$ = symbol_append(p, $1, evstr2dstr(p, $2));
@@ -5086,7 +5090,7 @@ symbol_list	: /* none */
                     }
                 ;
 
-qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
+qwords		: tQWORDS_BEG words_sep qword_list tSTRING_END
                     {
                     /*%%%*/
                         $$ = make_list($3, &@$);
@@ -5095,7 +5099,7 @@ qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
                     }
                 ;
 
-qsymbols	: tQSYMBOLS_BEG ' ' qsym_list tSTRING_END
+qsymbols	: tQSYMBOLS_BEG words_sep qsym_list tSTRING_END
                     {
                     /*%%%*/
                         $$ = make_list($3, &@$);
@@ -5111,7 +5115,7 @@ qword_list	: /* none */
                     /*% %*/
                     /*% ripper: qwords_new! %*/
                     }
-                | qword_list tSTRING_CONTENT ' '
+                | qword_list tSTRING_CONTENT words_sep
                     {
                     /*%%%*/
                         $$ = list_append(p, $1, $2);
@@ -5127,7 +5131,7 @@ qsym_list	: /* none */
                     /*% %*/
                     /*% ripper: qsymbols_new! %*/
                     }
-                | qsym_list tSTRING_CONTENT ' '
+                | qsym_list tSTRING_CONTENT words_sep
                     {
                     /*%%%*/
                         $$ = symbol_append(p, $1, $2);
@@ -7909,7 +7913,8 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
     }
     c = nextc(p);
     if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
-        do {c = nextc(p);} while (ISSPACE(c));
+        ruby_debug_breakpoint();
+        while (c != '\n' && ISSPACE(c = nextc(p)));
         space = 1;
     }
     if (func & STR_FUNC_LIST) {
@@ -7926,7 +7931,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
         return parser_string_term(p, func);
     }
     if (space) {
-        pushback(p, c);
+        if (!ISSPACE(c)) pushback(p, c);
         add_delayed_token(p, p->lex.ptok, p->lex.pcur, __LINE__);
         return ' ';
     }

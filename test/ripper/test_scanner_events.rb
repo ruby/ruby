@@ -712,7 +712,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('words_sep', '%w( w w w )')
     assert_equal [' ', "\n", ' ', ' '],
                  scan('words_sep', "%w( w\nw w )")
-    assert_equal ["\n\n", "\n ", ' ', ' '],
+    assert_equal ["\n", "\n", "\n", ' ', ' ', ' '],
                  scan('words_sep', "%w(\n\nw\n w w )")
   end
 
