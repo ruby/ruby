@@ -3462,10 +3462,10 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 }
 
 static VALUE
-vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+vm_call_cfunc_other(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
     const struct rb_callinfo *ci = calling->ci;
-    RB_DEBUG_COUNTER_INC(ccf_cfunc);
+    RB_DEBUG_COUNTER_INC(ccf_cfunc_other);
 
     CALLER_SETUP_ARG(reg_cfp, calling, ci, ALLOW_HEAP_ARGV_KEEP_KWSPLAT);
     VALUE argv_ary;
@@ -3486,6 +3486,87 @@ vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb
 
         return vm_call_cfunc_with_frame(ec, reg_cfp, calling);
     }
+}
+
+static inline VALUE
+vm_call_cfunc_array_argv(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, int stack_offset, int argc_offset)
+{
+    VALUE argv_ary = reg_cfp->sp[-1 - stack_offset];
+    int argc = RARRAY_LENINT(argv_ary) - argc_offset;
+
+    if (UNLIKELY(argc > VM_ARGC_STACK_MAX)) {
+        return vm_call_cfunc_other(ec, reg_cfp, calling);
+    }
+
+    VALUE *argv = (VALUE *)RARRAY_CONST_PTR(argv_ary);
+    calling->kw_splat = 0;
+    int i;
+    VALUE *stack_bottom = reg_cfp->sp - 2 - stack_offset;
+    VALUE *sp = stack_bottom;
+    CHECK_VM_STACK_OVERFLOW(reg_cfp, argc);
+    for(i = 0; i < argc; i++) {
+        *++sp = argv[i];
+    }
+    reg_cfp->sp = sp+1;
+
+    return vm_call_cfunc_with_frame_(ec, reg_cfp, calling, argc, stack_bottom+1, stack_bottom);
+}
+
+static inline VALUE
+vm_call_cfunc_only_splat(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    RB_DEBUG_COUNTER_INC(ccf_cfunc_only_splat);
+    VALUE argv_ary = reg_cfp->sp[-1];
+    int argc = RARRAY_LENINT(argv_ary);
+    VALUE *argv = (VALUE *)RARRAY_CONST_PTR(argv_ary);
+    VALUE last_hash;
+    int argc_offset = 0;
+
+    if (UNLIKELY(argc > 0 &&
+        RB_TYPE_P((last_hash = argv[argc-1]), T_HASH) &&
+        (((struct RHash *)last_hash)->basic.flags & RHASH_PASS_AS_KEYWORDS))) {
+        if (!RHASH_EMPTY_P(last_hash)) {
+            return vm_call_cfunc_other(ec, reg_cfp, calling);
+        }
+        argc_offset++;
+    }
+    return vm_call_cfunc_array_argv(ec, reg_cfp, calling, 0, argc_offset);
+}
+
+static inline VALUE
+vm_call_cfunc_only_splat_kw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    RB_DEBUG_COUNTER_INC(ccf_cfunc_only_splat_kw);
+    VALUE keyword_hash = reg_cfp->sp[-1];
+
+    if (RB_TYPE_P(keyword_hash, T_HASH) && RHASH_EMPTY_P(keyword_hash)) {
+        return vm_call_cfunc_array_argv(ec, reg_cfp, calling, 1, 0);
+    }
+
+    return vm_call_cfunc_other(ec, reg_cfp, calling);
+}
+
+static VALUE
+vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    const struct rb_callinfo *ci = calling->ci;
+    RB_DEBUG_COUNTER_INC(ccf_cfunc);
+
+    if (IS_ARGS_SPLAT(ci)) {
+        if (!IS_ARGS_KW_SPLAT(ci) && vm_ci_argc(ci) == 1) {
+            // f(*a)
+            CC_SET_FASTPATH(calling->cc, vm_call_cfunc_only_splat, TRUE);
+            return vm_call_cfunc_only_splat(ec, reg_cfp, calling);
+        }
+        if (IS_ARGS_KW_SPLAT(ci) && vm_ci_argc(ci) == 2) {
+            // f(*a, **kw)
+            CC_SET_FASTPATH(calling->cc, vm_call_cfunc_only_splat_kw, TRUE);
+            return vm_call_cfunc_only_splat_kw(ec, reg_cfp, calling);
+        }
+    }
+
+    CC_SET_FASTPATH(calling->cc, vm_call_cfunc_other, TRUE);
+    return vm_call_cfunc_other(ec, reg_cfp, calling);
 }
 
 static VALUE
