@@ -2,7 +2,7 @@ import textwrap
 
 # Usage:
 #   cfp: Dump the current cfp
-#   cfp + 1: Dump the caller cfp
+#   cfp 1: Dump the caller cfp
 class CFP(gdb.Command):
     FRAME_MAGICS = [
         # frame types
