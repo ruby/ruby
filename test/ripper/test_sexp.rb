@@ -229,7 +229,7 @@ eot
     [__LINE__, %q{ case 0; in *; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
-      [:in, [:aryptn, nil, nil, nil, nil], [[:void_stmt]], nil]],
+      [:in, [:aryptn, nil, nil, [:var_field, nil], nil], [[:void_stmt]], nil]],
 
     [__LINE__, %q{ case 0; in *,a; end }] =>
     [:case,
@@ -238,7 +238,7 @@ eot
         [:aryptn,
           nil,
           nil,
-          nil,
+          [:var_field, nil],
           [[:var_field, [:@ident, "a", [1, 13]]]]],
         [[:void_stmt]],
         nil]],
@@ -426,9 +426,9 @@ eot
       [:in,
         [:fndptn,
           nil,
-          nil,
+          [:var_field, nil],
           [[:var_field, [:@ident, "a", [1, 9]]]],
-          nil],
+          [:var_field, nil]],
         nil,
         nil]],
 

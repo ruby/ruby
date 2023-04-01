@@ -4656,7 +4656,7 @@ p_rest		: tSTAR tIDENTIFIER
                     /*%%%*/
                         $$ = 0;
                     /*% %*/
-                    /*% ripper: Qnil %*/
+                    /*% ripper: var_field(p, Qnil) %*/
                     }
                 ;
 
