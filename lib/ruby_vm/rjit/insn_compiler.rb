@@ -4309,24 +4309,6 @@ module RubyVM::RJIT
       EndBlock
     end
 
-    # vm_call_iseq_setup (ISEQ only)
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_iseq_setup(jit, ctx, asm, cme, calling, iseq, frame_type: nil, prev_ep: nil)
-      opt_pc = jit_callee_setup_arg(jit, ctx, asm, calling.flags, calling.argc, iseq)
-      if opt_pc == CantCompile
-        return CantCompile
-      end
-
-      if calling.flags & C::VM_CALL_TAILCALL != 0
-        # We don't support vm_call_iseq_setup_tailcall
-        asm.incr_counter(:send_tailcall)
-        return CantCompile
-      end
-      jit_call_iseq_setup_normal(jit, ctx, asm, cme, calling, iseq, opt_pc, frame_type:, prev_ep:)
-    end
-
     # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -4683,9 +4665,11 @@ module RubyVM::RJIT
         return CantCompile
       end
 
-      frame_type = C::VM_FRAME_MAGIC_BLOCK | C::VM_FRAME_FLAG_BMETHOD | C::VM_FRAME_FLAG_LAMBDA
-      prev_ep = capture.ep
-      jit_call_iseq_setup(jit, ctx, asm, cme, calling, iseq, frame_type:, prev_ep:)
+      jit_call_iseq(
+        jit, ctx, asm, cme, calling, iseq,
+        frame_type: C::VM_FRAME_MAGIC_BLOCK | C::VM_FRAME_FLAG_BMETHOD | C::VM_FRAME_FLAG_LAMBDA,
+        prev_ep: capture.ep,
+      )
     end
 
     # vm_call_alias
