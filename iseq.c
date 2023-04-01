@@ -2104,7 +2104,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
                 CALL_FLAG(FCALL);
                 CALL_FLAG(VCALL);
                 CALL_FLAG(ARGS_SIMPLE);
-                CALL_FLAG(BLOCKISEQ);
                 CALL_FLAG(TAILCALL);
                 CALL_FLAG(SUPER);
                 CALL_FLAG(ZSUPER);
