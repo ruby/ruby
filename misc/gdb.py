@@ -95,9 +95,10 @@ class CFP(gdb.Command):
     # specval: block_handler or previous EP
     def specval(self, cfp, bp_index):
         value = self.get_value(cfp, bp_index)
-        for block_handler in ['VM_BLOCK_HANDLER_NONE', 'rb_block_param_proxy']:
-            if value == self.get_int(block_handler):
-                return block_handler
+        if value == 0:
+            return 'VM_BLOCK_HANDLER_NONE'
+        if value == self.get_int('rb_block_param_proxy'):
+            return 'rb_block_param_proxy'
         return ''
 
     def frame_types(self, cfp, bp_index):
