@@ -1359,14 +1359,14 @@ module RubyVM::RJIT
       cd = C.rb_call_data.new(jit.operand(0))
       blockiseq = jit.operand(1)
 
-      block_handler = jit_caller_setup_arg_block(jit, ctx, asm, cd.ci, blockiseq, false)
+      block_handler = jit_caller_setup_arg_block(jit, ctx, asm, cd.ci, blockiseq)
       if block_handler == CantCompile
         return CantCompile
       end
 
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
-      calling = build_calling(ci: cd.ci, block_handler: blockiseq)
+      calling = build_calling(ci: cd.ci, block_handler:)
 
       # vm_sendish
       cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
@@ -3918,7 +3918,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_caller_setup_arg_block(jit, ctx, asm, ci, blockiseq, is_super)
+    def jit_caller_setup_arg_block(jit, ctx, asm, ci, blockiseq)
       side_exit = side_exit(jit, ctx)
       if C.vm_ci_flag(ci) & C::VM_CALL_ARGS_BLOCKARG != 0
         # TODO: Skip cmp + jne using Context?
@@ -3940,12 +3940,9 @@ module RubyVM::RJIT
       elsif blockiseq != 0
         return blockiseq
       else
-        if is_super
-        else
-          # Not implemented yet. Is this even necessary?
-          asm.incr_counter(:send_block_setup)
-          return CantCompile
-        end
+        # Not implemented yet. Is this even necessary?
+        asm.incr_counter(:send_block_setup)
+        return CantCompile
       end
     end
 
