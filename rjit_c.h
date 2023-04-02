@@ -60,7 +60,7 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_has_kwrest,
     send_iseq_ruby2_keywords,
     send_iseq_has_rest_and_captured,
-    send_iseq_has_rest_and_kw,
+    send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_no_kw,
     send_iseq_zsuper,
     send_iseq_materialized_block,

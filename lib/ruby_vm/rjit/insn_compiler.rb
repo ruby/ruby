@@ -4130,8 +4130,8 @@ module RubyVM::RJIT
         return CantCompile
       end
 
-      if iseq_has_rest && iseq.body.param.flags.has_kw
-        asm.incr_counter(:send_iseq_has_rest_and_kw)
+      if iseq_has_rest && iseq.body.param.flags.has_kw && supplying_kws
+        asm.incr_counter(:send_iseq_has_rest_and_kw_supplied)
         return CantCompile
       end
 
@@ -4286,6 +4286,11 @@ module RubyVM::RJIT
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
       end
 
+      if iseq_has_rest
+        asm.incr_counter(:send_iseq_has_rest)
+        return CantCompile
+      end
+
       if doing_kw_call
         asm.incr_counter(:send_iseq_kw_call)
         return CantCompile
@@ -4298,11 +4303,6 @@ module RubyVM::RJIT
       # Note that you can't have side exits after this arg0 splat.
       if block_arg0_splat
         asm.incr_counter(:send_iseq_block_arg0_splat)
-        return CantCompile
-      end
-
-      if iseq_has_rest
-        asm.incr_counter(:send_iseq_has_rest)
         return CantCompile
       end
 
