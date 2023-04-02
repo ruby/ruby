@@ -127,8 +127,6 @@ jobs:
         run: |
           make
 
-      - run: make leaked-globals
-
       - name: make install
         run: |
           make DESTDIR=../install install-nodoc

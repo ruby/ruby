@@ -77,8 +77,6 @@ jobs:
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
       - run: make
-      - run: make leaked-globals
-        if: ${{ matrix.test_task == 'check' }}
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
