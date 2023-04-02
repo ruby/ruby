@@ -72,6 +72,8 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_has_rest_and_optional,
     send_iseq_arity_error,
     send_iseq_missing_optional_kw,
+    send_iseq_too_many_kwargs,
+    send_iseq_kwargs_mismatch,
 
     send_cfunc_variadic,
     send_cfunc_too_many_args,
@@ -115,6 +117,8 @@ RJIT_RUNTIME_COUNTERS(
     invokeblock_iseq_arg0_splat,
     invokeblock_ifunc_args_splat,
     invokeblock_ifunc_kw_splat,
+    invokeblock_iseq_arg0_args_splat,
+    invokeblock_iseq_arg0_has_kw,
 
     getivar_megamorphic,
     getivar_not_heap,

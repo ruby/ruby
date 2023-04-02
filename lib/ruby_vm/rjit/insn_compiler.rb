@@ -1150,14 +1150,7 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def swap(jit, ctx, asm)
-      stack0_mem = ctx.stack_opnd(0)
-      stack1_mem = ctx.stack_opnd(1)
-
-      asm.mov(:rax, stack0_mem)
-      asm.mov(:rcx, stack1_mem)
-      asm.mov(stack0_mem, :rcx)
-      asm.mov(stack1_mem, :rax)
-
+      stack_swap(jit, ctx, asm, 0, 1)
       KeepCompiling
     end
 
@@ -3243,6 +3236,16 @@ module RubyVM::RJIT
       @cfunc_codegen_table[cme_def.method_serial]
     end
 
+    def stack_swap(_jit, ctx, asm, offset0, offset1)
+      stack0_mem = ctx.stack_opnd(offset0)
+      stack1_mem = ctx.stack_opnd(offset1)
+
+      asm.mov(:rax, stack0_mem)
+      asm.mov(:rcx, stack1_mem)
+      asm.mov(stack0_mem, :rcx)
+      asm.mov(stack1_mem, :rax)
+    end
+
     def jit_getlocal_generic(jit, ctx, asm, idx:, level:)
       # Load environment pointer EP at level
       ep_reg = :rax
@@ -4232,8 +4235,68 @@ module RubyVM::RJIT
       end
 
       if doing_kw_call
-        asm.incr_counter(:send_iseq_kw_call)
-        return CantCompile
+        # Here we're calling a method with keyword arguments and specifying
+        # keyword arguments at this call site.
+
+        # This struct represents the metadata about the callee-specified
+        # keyword parameters.
+        keyword = iseq.body.param.keyword
+        keyword_num = keyword.num
+        keyword_required_num = keyword.required_num
+
+        required_kwargs_filled = 0
+
+        if keyword_num > 30
+          # We have so many keywords that (1 << num) encoded as a FIXNUM
+          # (which shifts it left one more) no longer fits inside a 32-bit
+          # immediate.
+          asm.incr_counter(:send_iseq_too_many_kwargs)
+          return CantCompile
+        end
+
+        # Check that the kwargs being passed are valid
+        if supplying_kws
+          # This is the list of keyword arguments that the callee specified
+          # in its initial declaration.
+          # SAFETY: see compile.c for sizing of this slice.
+          callee_kwargs = keyword_num.times.map { |i| keyword.table[i] }
+
+          # Here we're going to build up a list of the IDs that correspond to
+          # the caller-specified keyword arguments. If they're not in the
+          # same order as the order specified in the callee declaration, then
+          # we're going to need to generate some code to swap values around
+          # on the stack.
+          caller_kwargs = []
+          kw_arg.keyword_len.times do |kwarg_idx|
+            sym = C.to_ruby(kw_arg[:keywords][kwarg_idx])
+            caller_kwargs << C.rb_sym2id(sym)
+          end
+
+          # First, we're going to be sure that the names of every
+          # caller-specified keyword argument correspond to a name in the
+          # list of callee-specified keyword parameters.
+          caller_kwargs.each do |caller_kwarg|
+            search_result = callee_kwargs.map.with_index.find { |kwarg, _| kwarg == caller_kwarg }
+
+            case search_result
+            in nil
+              # If the keyword was never found, then we know we have a
+              # mismatch in the names of the keyword arguments, so we need to
+              # bail.
+              asm.incr_counter(:send_iseq_kwargs_mismatch)
+              return CantCompile
+            in _, callee_idx if callee_idx < keyword_required_num
+              # Keep a count to ensure all required kwargs are specified
+              required_kwargs_filled += 1
+            else
+            end
+          end
+        end
+        assert_equal(true, required_kwargs_filled <= keyword_required_num)
+        if required_kwargs_filled != keyword_required_num
+          asm.incr_counter(:send_iseq_kwargs_mismatch)
+          return CantCompile
+        end
       end
 
       # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
@@ -4241,8 +4304,18 @@ module RubyVM::RJIT
       block_arg0_splat = arg_setup_block && argc == 1 &&
         iseq.body.param.flags.has_lead && !iseq.body.param.flags.ambiguous_param0
       if block_arg0_splat
-        asm.incr_counter(:send_iseq_block_arg0_splat)
-        return CantCompile
+        # If block_arg0_splat, we still need side exits after splat, but
+        # doing push_splat_args here disallows it. So bail out.
+        if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
+          asm.incr_counter(:invokeblock_iseq_arg0_args_splat)
+          return CantCompile
+        end
+        # The block_arg0_splat implementation is for the rb_simple_iseq_p case,
+        # but doing_kw_call means it's not a simple ISEQ.
+        if doing_kw_call
+          asm.incr_counter(:invokeblock_iseq_arg0_has_kw)
+          return CantCompile
+        end
       end
       if flags & C::VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
         splat_array_length = false
@@ -4373,8 +4446,131 @@ module RubyVM::RJIT
       end
 
       if doing_kw_call
-        asm.incr_counter(:send_iseq_kw_call)
-        return CantCompile
+        # Here we're calling a method with keyword arguments and specifying
+        # keyword arguments at this call site.
+
+        # Number of positional arguments the callee expects before the first
+        # keyword argument
+        args_before_kw = required_num + opt_num
+
+        # This struct represents the metadata about the caller-specified
+        # keyword arguments.
+        ci_kwarg = calling.kwarg
+        caller_keyword_len = if ci_kwarg.nil?
+          0
+        else
+          ci_kwarg.keyword_len
+        end
+
+        # This struct represents the metadata about the callee-specified
+        # keyword parameters.
+        keyword = iseq.body.param.keyword
+
+        asm.comment('keyword args')
+
+        # This is the list of keyword arguments that the callee specified
+        # in its initial declaration.
+        callee_kwargs = keyword.table
+        total_kwargs = keyword.num
+
+        # Here we're going to build up a list of the IDs that correspond to
+        # the caller-specified keyword arguments. If they're not in the
+        # same order as the order specified in the callee declaration, then
+        # we're going to need to generate some code to swap values around
+        # on the stack.
+        caller_kwargs = []
+
+        caller_keyword_len.times do |kwarg_idx|
+          sym = C.to_ruby(ci_kwarg[:keywords][kwarg_idx])
+          caller_kwargs << C.rb_sym2id(sym)
+        end
+        kwarg_idx = caller_keyword_len
+
+        unspecified_bits = 0
+
+        keyword_required_num = keyword.required_num
+        (keyword_required_num...total_kwargs).each do |callee_idx|
+          already_passed = false
+          callee_kwarg = callee_kwargs[callee_idx]
+
+          caller_keyword_len.times do |caller_idx|
+            if caller_kwargs[caller_idx] == callee_kwarg
+              already_passed = true
+              break
+            end
+          end
+
+          unless already_passed
+            # Reserve space on the stack for each default value we'll be
+            # filling in (which is done in the next loop). Also increments
+            # argc so that the callee's SP is recorded correctly.
+            argc += 1
+            default_arg = ctx.stack_push
+
+            # callee_idx - keyword->required_num is used in a couple of places below.
+            req_num = keyword.required_num
+            extra_args = callee_idx - req_num
+
+            # VALUE default_value = keyword->default_values[callee_idx - keyword->required_num];
+            default_value = keyword.default_values[extra_args]
+
+            if default_value == Qundef
+              # Qundef means that this value is not constant and must be
+              # recalculated at runtime, so we record it in unspecified_bits
+              # (Qnil is then used as a placeholder instead of Qundef).
+              unspecified_bits |= 0x01 << extra_args
+              default_value = Qnil
+            end
+
+            asm.mov(:rax, default_value)
+            asm.mov(default_arg, :rax)
+
+            caller_kwargs[kwarg_idx] = callee_kwarg
+            kwarg_idx += 1
+          end
+        end
+
+        assert_equal(kwarg_idx, total_kwargs)
+
+        # Next, we're going to loop through every keyword that was
+        # specified by the caller and make sure that it's in the correct
+        # place. If it's not we're going to swap it around with another one.
+        total_kwargs.times do |kwarg_idx|
+          callee_kwarg = callee_kwargs[kwarg_idx]
+
+          # If the argument is already in the right order, then we don't
+          # need to generate any code since the expected value is already
+          # in the right place on the stack.
+          if callee_kwarg == caller_kwargs[kwarg_idx]
+            next
+          end
+
+          # In this case the argument is not in the right place, so we
+          # need to find its position where it _should_ be and swap with
+          # that location.
+          ((kwarg_idx + 1)...total_kwargs).each do |swap_idx|
+            if callee_kwarg == caller_kwargs[swap_idx]
+              # First we're going to generate the code that is going
+              # to perform the actual swapping at runtime.
+              offset0 = argc - 1 - swap_idx - args_before_kw
+              offset1 = argc - 1 - kwarg_idx - args_before_kw
+              stack_swap(jit, ctx, asm, offset0, offset1)
+
+              # Next we're going to do some bookkeeping on our end so
+              # that we know the order that the arguments are
+              # actually in now.
+              caller_kwargs[kwarg_idx], caller_kwargs[swap_idx] =
+                caller_kwargs[swap_idx], caller_kwargs[kwarg_idx]
+
+              break
+            end
+          end
+        end
+
+        # Keyword arguments cause a special extra local variable to be
+        # pushed onto the stack that represents the parameters that weren't
+        # explicitly given a value and have a non-constant default.
+        asm.mov(ctx.stack_opnd(-1), C.to_value(unspecified_bits))
       end
 
       # Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
@@ -4395,6 +4591,7 @@ module RubyVM::RJIT
         local_size: num_locals,
         stack_max:  iseq.body.stack_max,
         prev_ep:,
+        doing_kw_call:,
       )
 
       # Create a context for the callee
@@ -4953,12 +5150,11 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
+    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil, doing_kw_call: nil)
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
       recv_idx = argc # blockarg is already popped
       recv_idx += (block_handler == :captured) ? 0 : 1 # receiver is not on stack when captured->self is used
-      # TODO: consider doing_kw_call
       if iseq
         # Skip setting this to SP register. This cfp->sp will be copied to SP on leave insn.
         asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -recv_idx)) # Pop receiver and arguments to prepare for side exits
@@ -4977,7 +5173,8 @@ module RubyVM::RJIT
       end
 
       asm.comment('set up EP with managing data')
-      ep_offset = ctx.sp_offset + local_size + 2
+      sp_offset = ctx.sp_offset + 3 + local_size + (doing_kw_call ? 1 : 0)
+      ep_offset = sp_offset - 1
       # ep[-2]: cref_or_me
       asm.mov(:rax, cme.to_i)
       asm.mov([SP, C.VALUE.size * (ep_offset - 2)], :rax)
@@ -5032,7 +5229,7 @@ module RubyVM::RJIT
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:block_code)], 0)
       # Update SP register only for ISEQ calls. SP-relative operations should be done above this.
       sp_reg = iseq ? SP : :rax
-      asm.lea(sp_reg, [SP, C.VALUE.size * (ctx.sp_offset + local_size + 3)])
+      asm.lea(sp_reg, [SP, C.VALUE.size * sp_offset])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:sp)], sp_reg)
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:__bp__)], sp_reg) # TODO: get rid of this!!
 
