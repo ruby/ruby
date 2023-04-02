@@ -220,6 +220,8 @@ module RubyVM::RJIT
       while index < iseq.body.iseq_size
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
+        jit.stack_size_for_pc = ctx.stack_size
+        jit.side_exit_for_pc.clear
 
         # If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point
@@ -243,7 +245,9 @@ module RubyVM::RJIT
           # TODO: pad nops if entry exit exists (not needed for x86_64?)
           break
         when CantCompile
-          @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
+          # Rewind stack_size using ctx.with_stack_size to allow stack_size changes
+          # before you return CantCompile.
+          @exit_compiler.compile_side_exit(jit.pc, ctx.with_stack_size(jit.stack_size_for_pc), asm)
 
           # If this is the first instruction, this block never needs to be invalidated.
           if block.pc == iseq.body.iseq_encoded.to_i + index * C.VALUE.size

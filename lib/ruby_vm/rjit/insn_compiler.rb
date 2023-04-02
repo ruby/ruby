@@ -4237,7 +4237,10 @@ module RubyVM::RJIT
       # Number of locals that are not parameters
       num_locals = iseq.body.local_table_size - num_params
 
-      # blockarg is currently popped later
+      # Pop blockarg after all side exits
+      if flags & C::VM_CALL_ARGS_BLOCKARG != 0
+        ctx.stack_pop(1)
+      end
 
       if block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
         if jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
@@ -4288,11 +4291,6 @@ module RubyVM::RJIT
       if iseq_has_rest
         asm.incr_counter(:send_iseq_has_rest)
         return CantCompile
-      end
-
-      # Pop blockarg after all side exits
-      if flags & C::VM_CALL_ARGS_BLOCKARG != 0
-        ctx.stack_pop(1)
       end
 
       # Setup the new frame
@@ -5187,12 +5185,15 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     def side_exit(jit, ctx)
-      if side_exit = jit.side_exits[jit.pc]
-        return side_exit
+      # We use the latest ctx.sp_offset to generate a side exit to tolerate sp_offset changes by jit_save_sp.
+      # However, we want to simulate an old stack_size when we take a side exit. We do that by adjusting the
+      # sp_offset because gen_outlined_exit uses ctx.sp_offset to move SP.
+      ctx = ctx.with_stack_size(jit.stack_size_for_pc)
+
+      jit.side_exit_for_pc[ctx.sp_offset] ||= Assembler.new.then do |asm|
+        @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
+        @ocb.write(asm)
       end
-      asm = Assembler.new
-      @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
-      jit.side_exits[jit.pc] = @ocb.write(asm)
     end
 
     def counted_exit(side_exit, name)

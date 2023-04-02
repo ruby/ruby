@@ -26,5 +26,15 @@ module RubyVM::RJIT
     def sp_opnd(offset_bytes = 0)
       [SP, (C.VALUE.size * self.sp_offset) + offset_bytes]
     end
+
+    # Create a new Context instance with a given stack_size and sp_offset adjusted
+    # accordingly. This is useful when you want to virtually rewind a stack_size for
+    # generating a side exit while considering past sp_offset changes on gen_save_sp.
+    def with_stack_size(stack_size)
+      ctx = self.dup
+      ctx.sp_offset -= ctx.stack_size - stack_size
+      ctx.stack_size = stack_size
+      ctx
+    end
   end
 end

@@ -4,10 +4,11 @@ module RubyVM::RJIT
     :pc,                          # @param [Integer] The JIT target PC
     :cfp,                         # @param `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t` The JIT source CFP (before RJIT is called)
     :block,                       # @param [RubyVM::RJIT::Block]
-    :side_exits,                  # @param [Hash{ Integer => Integer }] { PC => address }
+    :stack_size_for_pc,           # @param [Integer]
+    :side_exit_for_pc,            # @param [Hash{ Integer => Integer }] { sp_offset => address }
     :record_boundary_patch_point, # @param [TrueClass,FalseClass]
   )
-    def initialize(side_exits: {}, record_boundary_patch_point: false, **) = super
+    def initialize(side_exit_for_pc: {}, record_boundary_patch_point: false, **) = super
 
     def insn
       Compiler.decode_insn(C.VALUE.new(pc).*)
