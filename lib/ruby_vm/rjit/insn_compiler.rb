@@ -4237,7 +4237,7 @@ module RubyVM::RJIT
       # Number of locals that are not parameters
       num_locals = iseq.body.local_table_size - num_params
 
-      # blockarg is currently popped in jit_push_frame
+      # blockarg is currently popped later
 
       if block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
         if jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
@@ -4288,6 +4288,11 @@ module RubyVM::RJIT
       if iseq_has_rest
         asm.incr_counter(:send_iseq_has_rest)
         return CantCompile
+      end
+
+      # Pop blockarg after all side exits
+      if flags & C::VM_CALL_ARGS_BLOCKARG != 0
+        ctx.stack_pop(1)
       end
 
       # Setup the new frame
@@ -4454,6 +4459,11 @@ module RubyVM::RJIT
       asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * 4 + 2 * C.rb_control_frame_t.size))
       asm.cmp(CFP, :rax)
       asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
+
+      # Pop blockarg after all side exits
+      if flags & C::VM_CALL_ARGS_BLOCKARG != 0
+        ctx.stack_pop(1)
+      end
 
       # Push a callee frame. SP register and ctx are not modified inside this.
       jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler)
@@ -4854,7 +4864,7 @@ module RubyVM::RJIT
     def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
-      recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
+      recv_idx = argc # blockarg is already popped
       recv_idx += (block_handler == :captured) ? 0 : 1 # receiver is not on stack when captured->self is used
       # TODO: consider doing_kw_call
       if iseq
@@ -4867,11 +4877,6 @@ module RubyVM::RJIT
         ctx.sp_offset = recv_idx
       end
       jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
-
-      # Pop blockarg after all side exits
-      if flags & C::VM_CALL_ARGS_BLOCKARG != 0
-        ctx.stack_pop(1)
-      end
 
       local_size.times do |i|
         asm.comment('set local variables') if i == 0
