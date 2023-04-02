@@ -1502,7 +1502,7 @@ module RubyVM::RJIT
       # vm_search_normal_superclass
       rbasic_klass = C.to_ruby(C.RBasic.new(C.to_value(current_defined_class)).klass)
       if C::BUILTIN_TYPE(current_defined_class) == C::RUBY_T_ICLASS && C::BUILTIN_TYPE(rbasic_klass) == C::RUBY_T_MODULE && \
-          C::FL_TEST_RAW(rbasic_klass, C::RMODULE_IS_REFINEMENT) != 0
+          C::FL_TEST_RAW(rbasic_klass, C::RMODULE_IS_REFINEMENT)
         return CantCompile
       end
       comptime_superclass = C.rb_class_get_superclass(C.RCLASS_ORIGIN(current_defined_class))
