@@ -4217,7 +4217,7 @@ module RubyVM::RJIT
         return CantCompile
       end
 
-      # block_arg = flags & C::VM_CALL_ARGS_BLOCKARG != 0
+      block_arg = flags & C::VM_CALL_ARGS_BLOCKARG != 0
       # jit_caller_setup_arg_block already handled send_blockarg_not_nil_or_proxy
 
       # If we have unfilled optional arguments and keyword arguments then we
@@ -4318,9 +4318,17 @@ module RubyVM::RJIT
         end
       end
       if flags & C::VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
-        splat_array_length = false
-        asm.incr_counter(:send_iseq_splat)
-        return CantCompile
+        array = jit.peek_at_stack(block_arg ? 1 : 0)
+        splat_array_length = if array.nil?
+          0
+        else
+          array.length
+        end
+
+        if opt_num == 0 && required_num != splat_array_length + argc - 1
+          asm.incr_counter(:send_iseq_splat_arity_error)
+          return CantCompile
+        end
       end
 
       # We will not have CantCompile from here.
@@ -4350,8 +4358,25 @@ module RubyVM::RJIT
 
       # push_splat_args does stack manipulation so we can no longer side exit
       if splat_array_length
-        asm.incr_counter(:send_iseq_splat)
-        return CantCompile
+        remaining_opt = (opt_num + required_num) - (splat_array_length + (argc - 1))
+
+        if opt_num > 0
+          # We are going to jump to the correct offset based on how many optional
+          # params are remaining.
+          offset = opt_num - remaining_opt
+          start_pc_offset = iseq.body.param.opt_table[offset]
+        end
+        # We are going to assume that the splat fills
+        # all the remaining arguments. In the generated code
+        # we test if this is true and if not side exit.
+        argc = argc - 1 + splat_array_length + remaining_opt
+        push_splat_args(splat_array_length, jit, ctx, asm)
+
+        remaining_opt.times do
+          # We need to push nil for the optional arguments
+          stack_ret = ctx.stack_push
+          asm.mov(stack_ret, Qnil)
+        end
       end
 
       # This is a .send call and we need to adjust the stack
@@ -4730,7 +4755,7 @@ module RubyVM::RJIT
         # So the number of args should just equal the number of args the cfunc takes.
         # In the generated code we test if this is true and if not side exit.
         argc = cfunc.argc
-        jit_caller_setup_arg_splat(jit, ctx, asm, required_args)
+        push_splat_args(required_args, jit, ctx, asm)
       end
 
       # We will not have side exits from here. Adjust the stack, which was skipped in jit_call_opt_send.
@@ -5344,7 +5369,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_caller_setup_arg_splat(jit, ctx, asm, required_args)
+    def push_splat_args(required_args, jit, ctx, asm)
       side_exit = side_exit(jit, ctx)
 
       asm.comment('push_splat_args')

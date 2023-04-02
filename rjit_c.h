@@ -64,7 +64,6 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_has_no_kw,
     send_iseq_zsuper,
     send_iseq_materialized_block,
-    send_iseq_splat_with_kw,
     send_iseq_has_rest,
     send_iseq_block_arg0_splat,
     send_iseq_kw_call,
@@ -74,6 +73,8 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_missing_optional_kw,
     send_iseq_too_many_kwargs,
     send_iseq_kwargs_mismatch,
+    send_iseq_splat_with_kw,
+    send_iseq_splat_arity_error,
 
     send_cfunc_variadic,
     send_cfunc_too_many_args,
