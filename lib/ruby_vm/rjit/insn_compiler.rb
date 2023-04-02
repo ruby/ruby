@@ -1559,15 +1559,7 @@ module RubyVM::RJIT
         block_changed_exit = counted_exit(side_exit, :invokeblock_iseq_block_changed)
         jit_chain_guard(:jne, jit, ctx, asm, block_changed_exit)
 
-        opt_pc = jit_callee_setup_block_arg(jit, ctx, asm, calling, comptime_iseq, arg_setup_type: :arg_setup_block)
-        if opt_pc == CantCompile
-          return CantCompile
-        end
-
-        jit_call_iseq_setup_normal(
-          jit, ctx, asm, nil, calling, comptime_iseq, opt_pc,
-          frame_type: C::VM_FRAME_MAGIC_BLOCK,
-        )
+        jit_call_iseq(jit, ctx, asm, nil, calling, comptime_iseq, frame_type: C::VM_FRAME_MAGIC_BLOCK)
       elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
         # We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if calling.flags & C::VM_CALL_ARGS_SPLAT != 0
@@ -4309,68 +4301,6 @@ module RubyVM::RJIT
       EndBlock
     end
 
-    # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, calling, iseq, opt_pc, frame_type:, prev_ep: nil)
-      argc = calling.argc
-      flags = calling.flags
-      send_shift = calling.send_shift
-      block_handler = calling.block_handler
-
-      # Push splat args, which was skipped in jit_caller_setup_arg.
-      if flags & C::VM_CALL_ARGS_SPLAT != 0
-        lead_num = iseq.body.param.lead_num
-        opt_num = iseq.body.param.opt_num
-
-        array_length = jit.peek_at_stack(flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)&.length || 0 # blockarg is not popped yet
-        if opt_num == 0 && lead_num != array_length + argc - 1
-          asm.incr_counter(:send_args_splat_arity_error)
-          return CantCompile
-        end
-
-        remaining_opt = (opt_num + lead_num) - (array_length + argc - 1)
-        if opt_num > 0
-          # We are going to jump to the correct offset based on how many optional params are remaining.
-          opt_pc = iseq.body.param.opt_table[opt_num - remaining_opt]
-        end
-
-        # We are going to assume that the splat fills all the remaining arguments.
-        # In the generated code we test if this is true and if not side exit.
-        argc = argc - 1 + array_length
-        jit_caller_setup_arg_splat(jit, ctx, asm, array_length)
-      end
-
-      # We will not have side exits from here. Adjust the stack, which was skipped in jit_call_opt_send.
-      if flags & C::VM_CALL_OPT_SEND != 0
-        jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
-      end
-
-      if block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
-        if jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
-          return KeepCompiling
-        end
-      end
-
-      frame_type ||= C::VM_FRAME_MAGIC_METHOD | C::VM_ENV_FLAG_LOCAL
-      jit_push_frame(
-        jit, ctx, asm, cme, flags, argc, frame_type, block_handler,
-        iseq:       iseq,
-        local_size: iseq.body.local_table_size - iseq.body.param.size,
-        stack_max:  iseq.body.stack_max,
-        prev_ep:,
-        push_opts: true,
-      )
-
-      # Jump to a stub for the callee ISEQ
-      callee_ctx = Context.new
-      pc = (iseq.body.iseq_encoded + opt_pc).to_i
-      jit_direct_jump(iseq, pc, callee_ctx, asm)
-
-      EndBlock
-    end
-
     def jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
       builtin_func = builtin_function(iseq)
       if builtin_func.nil?
@@ -4728,7 +4658,7 @@ module RubyVM::RJIT
         asm.incr_counter(:send_optimized_send_send)
         return CantCompile
       end
-      # Lazily handle stack shift in jit_call_iseq_setup_normal
+      # Lazily handle stack shift in jit_call_opt_send_shift_stack
       calling.send_shift += 1
 
       jit_call_symbol(jit, ctx, asm, cme, calling, known_recv_class, C::VM_CALL_FCALL)
@@ -4904,7 +4834,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil, push_opts: false)
+    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
       # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max)
       asm.comment('stack overflow check')
       asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
@@ -4932,12 +4862,6 @@ module RubyVM::RJIT
         ctx.stack_pop(1)
       end
 
-      if iseq && push_opts
-        # This was not handled in jit_callee_setup_arg
-        opts_filled = argc - iseq.body.param.lead_num # TODO: kwarg
-        opts_missing = iseq.body.param.opt_num - opts_filled
-        local_size += opts_missing
-      end
       local_size.times do |i|
         asm.comment('set local variables') if i == 0
         local_index = ctx.sp_offset + i
@@ -5041,198 +4965,6 @@ module RubyVM::RJIT
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], cfp_reg)
     end
 
-    # vm_callee_setup_arg (ISEQ only): Set up args and return opt_pc (or CantCompile)
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
-      if flags & C::VM_CALL_KW_SPLAT == 0
-        if C.rb_simple_iseq_p(iseq)
-          if jit_caller_setup_arg(jit, ctx, asm, flags, splat: true) == CantCompile
-            return CantCompile
-          end
-          if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
-            return CantCompile
-          end
-
-          if argc != iseq.body.param.lead_num
-            # argument_arity_error
-            return CantCompile
-          end
-
-          return 0
-        elsif C.rb_iseq_only_optparam_p(iseq)
-          if jit_caller_setup_arg(jit, ctx, asm, flags, splat: true) == CantCompile
-            return CantCompile
-          end
-          if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
-            return CantCompile
-          end
-
-          lead_num = iseq.body.param.lead_num
-          opt_num = iseq.body.param.opt_num
-          opt = argc - lead_num
-
-          if opt < 0 || opt > opt_num
-            asm.incr_counter(:send_arity)
-            return CantCompile
-          end
-
-          # Qnil push is handled in jit_push_frame
-
-          return iseq.body.param.opt_table[opt]
-        elsif C.rb_iseq_only_kwparam_p(iseq) && (flags & C::VM_CALL_ARGS_SPLAT) == 0
-          asm.incr_counter(:send_iseq_kwparam)
-          return CantCompile
-        end
-      end
-
-      return jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
-    end
-
-    # vm_callee_setup_block_arg (ISEQ only): Set up args and return opt_pc (or CantCompile)
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def jit_callee_setup_block_arg(jit, ctx, asm, calling, iseq, arg_setup_type:)
-      if C.rb_simple_iseq_p(iseq)
-        if jit_caller_setup_arg(jit, ctx, asm, calling.flags, splat: true) == CantCompile
-          return CantCompile
-        end
-
-        if arg_setup_type == :arg_setup_block &&
-            calling.argc == 1 &&
-            iseq.body.param.flags.has_lead &&
-            !iseq.body.param.flags.ambiguous_param0
-          asm.incr_counter(:invokeblock_iseq_arg0_splat)
-          return CantCompile
-        end
-
-        if calling.argc != iseq.body.param.lead_num
-          if arg_setup_type == :arg_setup_block
-            if calling.argc < iseq.body.param.lead_num
-              (iseq.body.param.lead_num - calling.argc).times do
-                asm.mov(ctx.stack_push, Qnil)
-              end
-              calling.argc = iseq.body.param.lead_num # fill rest parameters
-            elsif calling.argc > iseq.body.param.lead_num
-              ctx.stack_pop(calling.argc - iseq.body.param.lead_num)
-              calling.argc = iseq.body.param.lead_num # simply truncate arguments
-            end
-          else # not used yet
-            asm.incr_counter(:invokeblock_iseq_arity)
-            return CantCompile
-          end
-        end
-
-        return 0
-      else
-        return jit_setup_parameters_complex(jit, ctx, asm, calling.flags, calling.argc, iseq, arg_setup_type:)
-      end
-    end
-
-    # setup_parameters_complex (ISEQ only)
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq, arg_setup_type: nil)
-      min_argc = iseq.body.param.lead_num + iseq.body.param.post_num
-      max_argc = (iseq.body.param.flags.has_rest == false) ? min_argc + iseq.body.param.opt_num : C::UNLIMITED_ARGUMENTS
-      kw_flag = flags & (C::VM_CALL_KWARG | C::VM_CALL_KW_SPLAT | C::VM_CALL_KW_SPLAT_MUT)
-      opt_pc = 0
-      keyword_hash = nil
-      flag_keyword_hash = nil
-      given_argc = argc
-
-      if kw_flag & C::VM_CALL_KWARG != 0
-        asm.incr_counter(:send_iseq_complex_kwarg)
-        return CantCompile
-      end
-
-      if flags & C::VM_CALL_ARGS_SPLAT != 0 && flags & C::VM_CALL_KW_SPLAT != 0
-        asm.incr_counter(:send_iseq_complex_kw_splat)
-        return CantCompile
-      elsif flags & C::VM_CALL_ARGS_SPLAT != 0
-        # Lazily handle splat in jit_call_iseq_setup_normal
-      else
-        if argc > 0 && kw_flag & C::VM_CALL_KW_SPLAT != 0
-          asm.incr_counter(:send_iseq_complex_kw_splat)
-          return CantCompile
-        end
-      end
-
-      if flag_keyword_hash && C.RB_TYPE_P(flag_keyword_hash, C::RUBY_T_HASH)
-        raise NotImplementedError # unreachable
-      end
-
-      if kw_flag != 0 && iseq.body.param.flags.accepts_no_kwarg
-        asm.incr_counter(:send_iseq_complex_accepts_no_kwarg)
-        return CantCompile
-      end
-
-      case arg_setup_type
-      when :arg_setup_block
-        asm.incr_counter(:send_iseq_complex_arg_setup_block)
-        return CantCompile
-      end
-
-      if given_argc < min_argc
-        asm.incr_counter(:send_iseq_complex_arity)
-        return CantCompile
-      end
-
-      if given_argc > max_argc && max_argc != C::UNLIMITED_ARGUMENTS
-        asm.incr_counter(:send_iseq_complex_arity)
-        return CantCompile
-      end
-
-      if iseq.body.param.flags.has_lead
-        asm.incr_counter(:send_iseq_complex_has_lead)
-        return CantCompile
-      end
-
-      if iseq.body.param.flags.has_rest || iseq.body.param.flags.has_post
-        asm.incr_counter(iseq.body.param.flags.has_rest ? :send_iseq_complex_has_rest : :send_iseq_complex_has_post)
-        return CantCompile
-      end
-
-      if iseq.body.param.flags.has_post
-        asm.incr_counter(:send_iseq_complex_has_post)
-        return CantCompile
-      end
-
-      if iseq.body.param.flags.has_opt
-        asm.incr_counter(:send_iseq_complex_has_opt)
-        return CantCompile
-      end
-
-      if iseq.body.param.flags.has_rest
-        asm.incr_counter(:send_iseq_complex_has_rest)
-        return CantCompile
-      end
-
-      if iseq.body.param.flags.has_kw
-        asm.incr_counter(:send_iseq_complex_has_kw)
-        return CantCompile
-      elsif iseq.body.param.flags.has_kwrest
-        asm.incr_counter(:send_iseq_complex_has_kwrest)
-        return CantCompile
-      elsif !keyword_hash.nil? && keyword_hash.size > 0 # && arg_setup_type == :arg_setup_method
-        raise NotImplementedError # unreachable
-      end
-
-      if iseq.body.param.flags.has_block
-        if iseq.body.local_iseq.to_i == iseq.to_i
-          # Do nothing
-        else
-          asm.incr_counter(:send_iseq_complex_has_block)
-          return CantCompile
-        end
-      end
-
-      return opt_pc
-    end
-
     # CALLER_SETUP_ARG: Return CantCompile if not supported
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -5243,7 +4975,7 @@ module RubyVM::RJIT
         return CantCompile
       elsif flags & C::VM_CALL_ARGS_SPLAT != 0
         if splat
-          # Lazily handle splat in jit_call_iseq_setup_normal, jit_call_cfunc_with_frame
+          # Lazily handle splat in jit_call_cfunc_with_frame
         else
           # splat is not supported in this path
           asm.incr_counter(:send_args_splat)
