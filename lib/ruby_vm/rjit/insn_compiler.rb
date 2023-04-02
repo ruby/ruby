@@ -157,10 +157,42 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def getlocal_WC_0(jit, ctx, asm)
+      idx = jit.operand(0)
+      jit_getlocal_generic(jit, ctx, asm, idx:, level: 0)
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def getlocal_WC_1(jit, ctx, asm)
+      idx = jit.operand(0)
+      jit_getlocal_generic(jit, ctx, asm, idx:, level: 1)
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def setlocal(jit, ctx, asm)
       idx = jit.operand(0)
       level = jit.operand(1)
       jit_setlocal_generic(jit, ctx, asm, idx:, level:)
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def setlocal_WC_0(jit, ctx, asm)
+      idx = jit.operand(0)
+      jit_setlocal_generic(jit, ctx, asm, idx:, level: 0)
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def setlocal_WC_1(jit, ctx, asm)
+      idx = jit.operand(0)
+      jit_setlocal_generic(jit, ctx, asm, idx:, level: 1)
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -2531,75 +2563,6 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def getlocal_WC_0(jit, ctx, asm)
-      # Get operands
-      idx = jit.operand(0)
-
-      # Get EP
-      asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:ep)])
-
-      # Get a local variable
-      asm.mov(:rax, [:rax, -idx * C.VALUE.size])
-
-      # Push it to the stack
-      stack_top = ctx.stack_push
-      asm.mov(stack_top, :rax)
-      KeepCompiling
-    end
-
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def getlocal_WC_1(jit, ctx, asm)
-      idx = jit.operand(0)
-      jit_getlocal_generic(jit, ctx, asm, idx:, level: 1)
-    end
-
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def setlocal_WC_0(jit, ctx, asm)
-      slot_idx = jit.operand(0)
-
-      # Load environment pointer EP (level 0) from CFP
-      ep_reg = :rax
-      jit_get_ep(asm, 0, reg: ep_reg)
-
-      # Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
-      # only affect heap objects being written. If we know an immediate value is being written we
-      # can skip this check.
-
-      # flags & VM_ENV_FLAG_WB_REQUIRED
-      flags_opnd = [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_FLAGS]
-      asm.test(flags_opnd, C::VM_ENV_FLAG_WB_REQUIRED)
-
-      # Create a side-exit to fall back to the interpreter
-      side_exit = side_exit(jit, ctx)
-
-      # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-      asm.jnz(side_exit)
-
-      # Pop the value to write from the stack
-      stack_top = ctx.stack_pop(1)
-
-      # Write the value at the environment pointer
-      asm.mov(:rcx, stack_top)
-      asm.mov([ep_reg, -8 * slot_idx], :rcx)
-
-      KeepCompiling
-    end
-
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
-    def setlocal_WC_1(jit, ctx, asm)
-      idx = jit.operand(0)
-      jit_setlocal_generic(jit, ctx, asm, idx:, level: 1)
-    end
-
-    # @param jit [RubyVM::RJIT::JITState]
-    # @param ctx [RubyVM::RJIT::Context]
-    # @param asm [RubyVM::RJIT::Assembler]
     def putobject_INT2FIX_0_(jit, ctx, asm)
       putobject(jit, ctx, asm, val: C.to_value(0))
     end
@@ -3332,15 +3295,17 @@ module RubyVM::RJIT
     end
 
     def jit_getlocal_generic(jit, ctx, asm, idx:, level:)
-      # Load environment pointer EP at level
+      # Load environment pointer EP (level 0) from CFP
       ep_reg = :rax
       jit_get_ep(asm, level, reg: ep_reg)
 
-      # Get a local variable
+      # Load the local from the block
+      # val = *(vm_get_ep(GET_EP(), level) - idx);
       asm.mov(:rax, [ep_reg, -idx * C.VALUE.size])
 
-      # Push it to the stack
+      # Write the local at SP
       stack_top = ctx.stack_push
+
       asm.mov(stack_top, :rax)
       KeepCompiling
     end
@@ -3358,11 +3323,8 @@ module RubyVM::RJIT
       flags_opnd = [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_FLAGS]
       asm.test(flags_opnd, C::VM_ENV_FLAG_WB_REQUIRED)
 
-      # Create a side-exit to fall back to the interpreter
-      side_exit = side_exit(jit, ctx)
-
       # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-      asm.jnz(side_exit)
+      asm.jnz(side_exit(jit, ctx))
 
       # Pop the value to write from the stack
       stack_top = ctx.stack_pop(1)
