@@ -1,0 +1,83 @@
+prelude: |
+  def self.a0; end
+  def self.a1(a) a; end
+  def self.s(*a) a; end
+  def self.b(kw: 1) kw end
+  def self.sb(*a, kw: 1) kw end
+
+  t0 = 0.times.to_a
+  t1 = 1.times.to_a
+  t10 = 10.times.to_a
+  t200 = 200.times.to_a
+
+  a0_t0 = [self, *t0]
+  a1_t1 = [self, *t1]
+  s_t0 = [self, *t0]
+  s_t1 = [self, *t1]
+  s_t10 = [self, *t10]
+  s_t200 = [self, *t200]
+  sb_t0 = [self, *t0]
+  sb_t1 = [self, *t1]
+  sb_t10 = [self, *t10]
+  sb_t200 = [self, *t200]
+  kw = {kw: 2}
+
+  a0 = :a0.to_proc
+  a1 = :a1.to_proc
+  s = :s.to_proc
+  b = :b.to_proc
+  sb = :sb.to_proc
+benchmark:
+  symproc_simple_0: |
+    a0.(self)
+  symproc_simple_1: |
+    a1.(self, 1)
+  symproc_simple_0_splat: |
+    a0.(self, *t0)
+  symproc_simple_1_splat: |
+    a1.(self, *t1)
+  symproc_simple_0_splat_comb: |
+    a0.(*a0_t0)
+  symproc_simple_1_splat_comb: |
+    a1.(*a1_t1)
+  symproc_no_splat: |
+    s.(self)
+  symproc_0_splat: |
+    s.(self, *t0)
+  symproc_1_splat: |
+    s.(self, *t1)
+  symproc_10_splat: |
+    s.(self, *t10)
+  symproc_200_splat: |
+    s.(self, *t200)
+  symproc_0_splat_comb: |
+    s.(*s_t0)
+  symproc_1_splat_comb: |
+    s.(*s_t1)
+  symproc_10_splat_comb: |
+    s.(*s_t10)
+  symproc_200_splat_comb: |
+    s.(*s_t200)
+  symproc_kw: |
+    b.(self, kw: 1)
+  symproc_no_kw: |
+    b.(self)
+  symproc_kw_splat: |
+    b.(self, **kw)
+  symproc_0_splat_kw: |
+    sb.(self, *t0, **kw)
+  symproc_1_splat_kw: |
+    sb.(self, *t1, **kw)
+  symproc_10_splat_kw: |
+    sb.(self, *t10, **kw)
+  symproc_200_splat_kw: |
+    sb.(self, *t200, **kw)
+  symproc_0_splat_comb_kw: |
+    sb.(*sb_t0, **kw)
+  symproc_1_splat_comb_kw: |
+    sb.(*sb_t1, **kw)
+  symproc_10_splat_comb_kw: |
+    sb.(*sb_t10, **kw)
+  symproc_200_splat_comb_kw: |
+    sb.(*sb_t200, **kw)
+loop_count: 1000000

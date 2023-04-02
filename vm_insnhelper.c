@@ -4836,20 +4836,37 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                        MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
     VALUE symbol = VM_BH_TO_SYMBOL(block_handler);
-    CALLER_SETUP_ARG(reg_cfp, calling, ci, ALLOW_HEAP_ARGV);
-    int flags = 0;
-    if (UNLIKELY(calling->heap_argv)) {
+    int flags = vm_ci_flag(ci);
+
+    if (UNLIKELY(!(flags & VM_CALL_ARGS_SIMPLE) &&
+        ((calling->argc == 0) ||
+         (calling->argc == 1 && (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT))) ||
+         (calling->argc == 2 && (flags & VM_CALL_ARGS_SPLAT) && (flags & VM_CALL_KW_SPLAT)) ||
+         ((flags & VM_CALL_KWARG) && (vm_ci_kwarg(ci)->keyword_len == calling->argc))))) {
+        CALLER_SETUP_ARG(reg_cfp, calling, ci, ALLOW_HEAP_ARGV);
+        flags = 0;
+        if (UNLIKELY(calling->heap_argv)) {
 #if VM_ARGC_STACK_MAX < 0
-        if (RARRAY_LEN(calling->heap_argv) < 1) {
-            rb_raise(rb_eArgError, "no receiver given");
-        }
+            if (RARRAY_LEN(calling->heap_argv) < 1) {
+                rb_raise(rb_eArgError, "no receiver given");
+            }
 #endif
-        calling->recv = rb_ary_shift(calling->heap_argv);
-        // Modify stack to avoid cfp consistency error
-        reg_cfp->sp++;
-        reg_cfp->sp[-1] = reg_cfp->sp[-2];
-        reg_cfp->sp[-2] = calling->recv;
-        flags |= VM_CALL_ARGS_SPLAT;
+            calling->recv = rb_ary_shift(calling->heap_argv);
+            // Modify stack to avoid cfp consistency error
+            reg_cfp->sp++;
+            reg_cfp->sp[-1] = reg_cfp->sp[-2];
+            reg_cfp->sp[-2] = calling->recv;
+            flags |= VM_CALL_ARGS_SPLAT;
+        }
+        else {
+            if (calling->argc < 1) {
+                rb_raise(rb_eArgError, "no receiver given");
+            }
+            calling->recv = TOPN(--calling->argc);
+        }
+        if (calling->kw_splat) {
+            flags |= VM_CALL_KW_SPLAT;
+        }
     }
     else {
         if (calling->argc < 1) {
@@ -4857,9 +4874,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         }
         calling->recv = TOPN(--calling->argc);
     }
-    if (calling->kw_splat) {
-        flags |= VM_CALL_KW_SPLAT;
-    }
+
     return vm_call_symbol(ec, reg_cfp, calling, ci, symbol, flags);
 }
 
