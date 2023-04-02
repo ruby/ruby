@@ -257,7 +257,7 @@ module RubyVM::RJIT
       asm.write_label(frame_flag_modified)
 
       # Push the proc on the stack
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       ep_reg = :rax
       jit_get_ep(asm, level, reg: ep_reg)
       asm.mov(:rax, [ep_reg, offs])
@@ -328,7 +328,7 @@ module RubyVM::RJIT
         jit_chain_guard(:jnz, jit, starting_context, asm, counted_exit(side_exit, :getblockpp_not_iseq_block))
 
         # Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
-        top = ctx.stack_push
+        top = ctx.stack_push(Type::BlockParamProxy)
         asm.mov(:rax, C.rb_block_param_proxy)
         asm.mov(top, :rax)
       end
@@ -377,7 +377,7 @@ module RubyVM::RJIT
           asm.call(C.rb_reg_match_last)
         end
 
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(stack_ret, C_RET)
 
         KeepCompiling
@@ -397,7 +397,7 @@ module RubyVM::RJIT
         asm.mov(C_ARGS[1], C_RET) # backref
         asm.call(C.rb_reg_nth_match)
 
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(stack_ret, C_RET)
 
         KeepCompiling
@@ -587,7 +587,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[3], jit.operand(1))
       asm.call(C.rb_vm_getclassvariable)
 
-      top = ctx.stack_push
+      top = ctx.stack_push(Type::Unknown)
       asm.mov(top, C_RET)
 
       KeepCompiling
@@ -656,7 +656,7 @@ module RubyVM::RJIT
         asm.mov(:rax, [:rax, C.iseq_inline_constant_cache_entry.offsetof(:value)]) # ic_entry_val
 
         # Push ic->entry->value
-        stack_top = ctx.stack_push
+        stack_top = ctx.stack_push(Type::Unknown)
         asm.mov(stack_top, :rax)
       else # without cref
         # TODO: implement this
@@ -694,7 +694,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[3], allow_nil_opnd)
       asm.call(C.rb_vm_get_ev_const)
 
-      top = ctx.stack_push
+      top = ctx.stack_push(Type::Unknown)
       asm.mov(top, C_RET)
 
       KeepCompiling
@@ -714,7 +714,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[0], gid)
       asm.call(C.rb_gvar_get)
 
-      top = ctx.stack_push
+      top = ctx.stack_push(Type::Unknown)
       asm.mov(top, C_RET)
 
       KeepCompiling
@@ -733,7 +733,7 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def putself(jit, ctx, asm)
-      stack_top = ctx.stack_push
+      stack_top = ctx.stack_push_self
       asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
       asm.mov(stack_top, :rax)
       KeepCompiling
@@ -744,14 +744,14 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def putobject(jit, ctx, asm, val: jit.operand(0))
       # Push it to the stack
-      stack_top = ctx.stack_push
+      val_type = Type.from(C.to_ruby(val))
+      stack_top = ctx.stack_push(val_type)
       if asm.imm32?(val)
         asm.mov(stack_top, val)
       else # 64-bit immediates can't be directly written to memory
         asm.mov(:rax, val)
         asm.mov(stack_top, :rax)
       end
-      # TODO: GC offsets?
 
       KeepCompiling
     end
@@ -762,7 +762,7 @@ module RubyVM::RJIT
     def putspecialobject(jit, ctx, asm)
       object_type = jit.operand(0)
       if object_type == C::VM_SPECIAL_OBJECT_VMCORE
-        stack_top = ctx.stack_push
+        stack_top = ctx.stack_push(Type::UnknownHeap)
         asm.mov(:rax, C.rb_mRubyVMFrozenCore)
         asm.mov(stack_top, :rax)
         KeepCompiling
@@ -786,7 +786,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], to_value(put_val))
       asm.call(C.rb_ec_str_resurrect)
 
-      stack_top = ctx.stack_push
+      stack_top = ctx.stack_push(Type::CString)
       asm.mov(stack_top, C_RET)
 
       KeepCompiling
@@ -809,7 +809,7 @@ module RubyVM::RJIT
       asm.call(C.rb_str_concat_literals)
 
       ctx.stack_pop(n)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::CString)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -830,7 +830,7 @@ module RubyVM::RJIT
       asm.call(C.rb_obj_as_string_result)
 
       # Push the return value
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::TString)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -869,7 +869,7 @@ module RubyVM::RJIT
       asm.pop(:rcx) # ary
 
       # The value we want to push on the stack is in RAX right now
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownHeap)
       asm.mov(stack_ret, C_RET)
 
       # Clear the temp array.
@@ -891,7 +891,7 @@ module RubyVM::RJIT
       asm.call(C.rb_str_intern)
 
       # Push the return value
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -924,7 +924,7 @@ module RubyVM::RJIT
       asm.call(C.rb_ec_ary_new_from_values)
 
       ctx.stack_pop(n)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::CArray)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -946,7 +946,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[0], ary)
       asm.call(C.rb_ary_resurrect)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::CArray)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -976,16 +976,26 @@ module RubyVM::RJIT
 
       side_exit = side_exit(jit, ctx)
 
-      array_opnd = ctx.stack_pop(1)
+      array_opnd = ctx.stack_opnd(0)
 
       # num is the number of requested values. If there aren't enough in the
       # array then we're going to push on nils.
-      # TODO: implement this
+      if ctx.get_opnd_type(StackOpnd[0]) == Type::Nil
+        ctx.stack_pop(1) # pop after using the type info
+        # special case for a, b = nil pattern
+        # push N nils onto the stack
+        num.times do
+          push_opnd = ctx.stack_push(Type::Nil)
+          asm.mov(push_opnd, Qnil)
+        end
+        return KeepCompiling
+      end
 
       # Move the array from the stack and check that it's an array.
       asm.mov(:rax, array_opnd)
       guard_object_is_heap(asm, :rax, counted_exit(side_exit, :expandarray_not_array))
       guard_object_is_array(asm, :rax, :rcx, counted_exit(side_exit, :expandarray_not_array))
+      ctx.stack_pop(1) # pop after using the type info
 
       # If we don't actually want any values, then just return.
       if num == 0
@@ -1014,7 +1024,7 @@ module RubyVM::RJIT
 
       # Loop backward through the array and push each element onto the stack.
       (num - 1).downto(0).each do |i|
-        top = ctx.stack_push
+        top = ctx.stack_push(Type::Unknown)
         asm.mov(:rax, [:rcx, i * C.VALUE.size])
         asm.mov(top, :rax)
       end
@@ -1039,7 +1049,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], ary2st_opnd)
       asm.call(C.rb_vm_concat_array)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::TArray)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -1063,7 +1073,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], ary_opnd)
       asm.call(C.rb_vm_splat_array)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::TArray)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -1100,12 +1110,12 @@ module RubyVM::RJIT
         asm.pop(:rax)
 
         ctx.stack_pop(num)
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Hash)
         asm.mov(stack_ret, :rax)
       else
         # val = rb_hash_new();
         asm.call(C.rb_hash_new)
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Hash)
         asm.mov(stack_ret, C_RET)
       end
 
@@ -1128,7 +1138,7 @@ module RubyVM::RJIT
       asm.call(C.rb_range_new)
 
       ctx.stack_pop(2)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownHeap)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -1146,10 +1156,13 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def dup(jit, ctx, asm)
-      val1 = ctx.stack_opnd(0)
-      val2 = ctx.stack_push
-      asm.mov(:rax, val1)
-      asm.mov(val2, :rax)
+      dup_val = ctx.stack_opnd(0)
+      mapping, tmp_type = ctx.get_opnd_mapping(StackOpnd[0])
+
+      loc0 = ctx.stack_push_mapping([mapping, tmp_type])
+      asm.mov(:rax, dup_val)
+      asm.mov(loc0, :rax)
+
       KeepCompiling
     end
 
@@ -1167,11 +1180,14 @@ module RubyVM::RJIT
       opnd1 = ctx.stack_opnd(1)
       opnd0 = ctx.stack_opnd(0)
 
-      dst1 = ctx.stack_push
+      mapping1 = ctx.get_opnd_mapping(StackOpnd[1])
+      mapping0 = ctx.get_opnd_mapping(StackOpnd[0])
+
+      dst1 = ctx.stack_push_mapping(mapping1)
       asm.mov(:rax, opnd1)
       asm.mov(dst1, :rax)
 
-      dst0 = ctx.stack_push
+      dst0 = ctx.stack_push_mapping(mapping0)
       asm.mov(:rax, opnd0)
       asm.mov(dst0, :rax)
 
@@ -1195,7 +1211,8 @@ module RubyVM::RJIT
       n = jit.operand(0)
 
       top_n_val = ctx.stack_opnd(n)
-      loc0 = ctx.stack_push
+      mapping = ctx.get_opnd_mapping(StackOpnd[n])
+      loc0 = ctx.stack_push_mapping(mapping)
       asm.mov(:rax, top_n_val)
       asm.mov(loc0, :rax)
 
@@ -1254,7 +1271,12 @@ module RubyVM::RJIT
       asm.cmovnz(:rax, :rcx)
 
       # Push the return value onto the stack
-      stack_ret = ctx.stack_push
+      out_type = if C::SPECIAL_CONST_P(pushval)
+        Type::UnknownImm
+      else
+        Type::Unknown
+      end
+      stack_ret = ctx.stack_push(out_type)
       asm.mov(stack_ret, :rax)
 
       KeepCompiling
@@ -1303,7 +1325,8 @@ module RubyVM::RJIT
         asm.cmovnz(:rax, :rcx)
 
         # Push the return value onto the stack
-        stack_ret = ctx.stack_push
+        out_type = C::SPECIAL_CONST_P(pushval) ? Type::UnknownImm : Type::Unknown
+        stack_ret = ctx.stack_push(out_type)
         asm.mov(stack_ret, :rax)
 
         return KeepCompiling
@@ -1367,7 +1390,7 @@ module RubyVM::RJIT
       asm.mov(:rcx, Qtrue)
       asm.cmovz(:rax, :rcx)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownImm)
       asm.mov(stack_ret, :rax)
 
       KeepCompiling
@@ -1460,7 +1483,7 @@ module RubyVM::RJIT
       str = jit.operand(0, ruby: true)
 
       # Push the return value onto the stack
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::CString)
       asm.mov(:rax, to_value(str))
       asm.mov(stack_ret, :rax)
 
@@ -1496,7 +1519,7 @@ module RubyVM::RJIT
       asm.call(C.rb_vm_opt_newarray_min)
 
       ctx.stack_pop(num)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -1611,6 +1634,9 @@ module RubyVM::RJIT
       Invariants.assume_method_lookup_stable(jit, me)
       Invariants.assume_method_lookup_stable(jit, cme)
 
+      # Method calls may corrupt types
+      ctx.clear_local_types
+
       calling = build_calling(ci:, block_handler: block)
       case cme_def_type
       in C::VM_METHOD_TYPE_ISEQ
@@ -1706,8 +1732,11 @@ module RubyVM::RJIT
         asm.call(C.rb_vm_yield_with_cfunc)
 
         ctx.stack_pop(calling.argc)
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(stack_ret, C_RET)
+
+        # cfunc calls may corrupt types
+        ctx.clear_local_types
 
         # Share the successor with other chains
         jump_to_next_insn(jit, ctx, asm)
@@ -2040,7 +2069,7 @@ module RubyVM::RJIT
         asm.add(:rax, :rcx)
         asm.jo(side_exit)
 
-        dst_opnd = ctx.stack_push
+        dst_opnd = ctx.stack_push(Type::Fixnum)
         asm.mov(dst_opnd, :rax)
 
         KeepCompiling
@@ -2086,7 +2115,7 @@ module RubyVM::RJIT
         asm.jo(side_exit)
         asm.add(:rax, 1) # re-tag
 
-        dst_opnd = ctx.stack_push
+        dst_opnd = ctx.stack_push(Type::Fixnum)
         asm.mov(dst_opnd, :rax)
 
         KeepCompiling
@@ -2144,7 +2173,7 @@ module RubyVM::RJIT
         asm.call(C.rb_fix_mod_fix)
 
         # Push the return value onto the stack
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Fixnum)
         asm.mov(stack_ret, C_RET)
 
         KeepCompiling
@@ -2245,7 +2274,7 @@ module RubyVM::RJIT
         asm.and(:rax, arg1)
 
         # Push the return value onto the stack
-        dst = ctx.stack_push
+        dst = ctx.stack_push(Type::Fixnum)
         asm.mov(dst, :rax)
 
         KeepCompiling
@@ -2285,7 +2314,7 @@ module RubyVM::RJIT
         asm.or(:rax, arg1)
 
         # Push the return value onto the stack
-        dst = ctx.stack_push
+        dst = ctx.stack_push(Type::Fixnum)
         asm.mov(dst, :rax)
 
         KeepCompiling
@@ -2343,7 +2372,7 @@ module RubyVM::RJIT
         ctx.stack_pop(2)
 
         # Push the return value onto the stack
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(stack_ret, C_RET)
 
         # Let guard chains share the same successor
@@ -2373,7 +2402,7 @@ module RubyVM::RJIT
         # Pop the key and the receiver
         ctx.stack_pop(2)
 
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(stack_ret, C_RET)
 
         # Let guard chains share the same successor
@@ -2431,7 +2460,7 @@ module RubyVM::RJIT
 
         # Push the return value onto the stack
         ctx.stack_pop(3)
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(:rax, val)
         asm.mov(stack_ret, :rax)
 
@@ -2457,7 +2486,7 @@ module RubyVM::RJIT
 
         # Push the return value onto the stack
         ctx.stack_pop(3)
-        stack_ret = ctx.stack_push
+        stack_ret = ctx.stack_push(Type::Unknown)
         asm.mov(stack_ret, C_RET)
 
         jump_to_next_insn(jit, ctx, asm)
@@ -2514,6 +2543,9 @@ module RubyVM::RJIT
 
     # invokebuiltin
 
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_invokebuiltin_delegate(jit, ctx, asm)
       bf = C.rb_builtin_function.new(jit.operand(0))
       bf_argc = bf.argc
@@ -2546,7 +2578,7 @@ module RubyVM::RJIT
       asm.call(bf.func_ptr)
 
       # Push the return value
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -2583,9 +2615,9 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_true(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
-      asm.comment('nil? == true');
+      asm.comment('nil? == true')
       ctx.stack_pop(1)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::True)
       asm.mov(stack_ret, Qtrue)
       true
     end
@@ -2595,9 +2627,9 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_false(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
-      asm.comment('nil? == false');
+      asm.comment('nil? == false')
       ctx.stack_pop(1)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::False)
       asm.mov(stack_ret, Qfalse)
       true
     end
@@ -2640,10 +2672,11 @@ module RubyVM::RJIT
 
       ctx.stack_pop(2)
 
-      stack_ret = ctx.stack_push
       if sample_is_a
+        stack_ret = ctx.stack_push(Type::True)
         asm.mov(stack_ret, Qtrue)
       else
+        stack_ret = ctx.stack_push(Type::False)
         asm.mov(stack_ret, Qfalse)
       end
       return true
@@ -2693,10 +2726,11 @@ module RubyVM::RJIT
 
       ctx.stack_pop(2)
 
-      stack_ret = ctx.stack_push
       if sample_instance_of
+        stack_ret = ctx.stack_push(Type::True)
         asm.mov(stack_ret, Qtrue)
       else
+        stack_ret = ctx.stack_push(Type::False)
         asm.mov(stack_ret, Qfalse)
       end
       return true;
@@ -2707,17 +2741,33 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_obj_not(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
-      asm.comment('rb_obj_not')
+      recv_type = ctx.get_opnd_type(StackOpnd[0])
 
-      recv = ctx.stack_pop
-      # This `test` sets ZF only for Qnil and Qfalse, which let cmovz set.
-      asm.test(recv, ~Qnil)
-      asm.mov(:rax, Qfalse)
-      asm.mov(:rcx, Qtrue)
-      asm.cmovz(:rax, :rcx)
+      case recv_type.known_truthy
+      in false
+        asm.comment('rb_obj_not(nil_or_false)')
+        ctx.stack_pop(1)
+        out_opnd = ctx.stack_push(Type::True)
+        asm.mov(out_opnd, Qtrue)
+      in true
+        # Note: recv_type != Type::Nil && recv_type != Type::False.
+        asm.comment('rb_obj_not(truthy)')
+        ctx.stack_pop(1)
+        out_opnd = ctx.stack_push(Type::False)
+        asm.mov(out_opnd, Qfalse)
+      in nil
+        asm.comment('rb_obj_not')
 
-      stack_ret = ctx.stack_push
-      asm.mov(stack_ret, :rax)
+        recv = ctx.stack_pop
+        # This `test` sets ZF only for Qnil and Qfalse, which let cmovz set.
+        asm.test(recv, ~Qnil)
+        asm.mov(:rax, Qfalse)
+        asm.mov(:rcx, Qtrue)
+        asm.cmovz(:rax, :rcx)
+
+        stack_ret = ctx.stack_push(Type::UnknownImm)
+        asm.mov(stack_ret, :rax)
+      end
       true
     end
 
@@ -2737,7 +2787,7 @@ module RubyVM::RJIT
       asm.mov(:rcx, Qtrue)
       asm.cmove(:rax, :rcx)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownImm)
       asm.mov(stack_ret, :rax)
       true
     end
@@ -2771,7 +2821,7 @@ module RubyVM::RJIT
 
       # Return the result
       ctx.stack_pop(2)
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownImm)
       asm.mov(stack_ret, C_RET)
 
       return true
@@ -2797,7 +2847,7 @@ module RubyVM::RJIT
       asm.mov(:rcx, Qtrue)
       asm.cmove(:rax, :rcx)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownImm)
       asm.mov(stack_ret, :rax)
       true
     end
@@ -2819,7 +2869,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], y_opnd)
       asm.call(C.rb_fix_mul_fix)
 
-      ret_opnd = ctx.stack_push
+      ret_opnd = ctx.stack_push(Type::Unknown)
       asm.mov(ret_opnd, C_RET)
       true
     end
@@ -2842,7 +2892,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], :rax)
       asm.call(C.rb_fix_div_fix)
 
-      ret_opnd = ctx.stack_push
+      ret_opnd = ctx.stack_push(Type::Unknown)
       asm.mov(ret_opnd, C_RET)
       true
     end
@@ -2865,7 +2915,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], y_opnd)
       asm.call(C.rb_fix_aref)
 
-      ret_opnd = ctx.stack_push
+      ret_opnd = ctx.stack_push(Type::UnknownImm)
       asm.mov(ret_opnd, C_RET)
       true
     end
@@ -2879,7 +2929,7 @@ module RubyVM::RJIT
       # `C.RString.offsetof(:as, :embed, :len)` doesn't work because of USE_RVARGC=0 CI
 
       recv_opnd = ctx.stack_pop(1)
-      out_opnd = ctx.stack_push
+      out_opnd = ctx.stack_push(Type::UnknownImm)
 
       asm.comment('get string length')
       asm.mov(:rax, recv_opnd)
@@ -2918,7 +2968,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[0], recv)
       asm.call(C.rb_str_bytesize)
 
-      out_opnd = ctx.stack_push
+      out_opnd = ctx.stack_push(Type::Fixnum)
       asm.mov(out_opnd, C_RET)
 
       true
@@ -2945,7 +2995,7 @@ module RubyVM::RJIT
       guard_object_is_string(asm, :rax, :rcx, side_exit)
 
       # Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
-      # other Ractors may trigger global invalidation, so we need record_boundary_patch_point.
+      # other Ractors may trigger global invalidation, so we need ctx.clear_local_types.
       # PC is used on errors like Encoding::CompatibilityError raised by rb_str_buf_append.
       jit_prepare_routine_call(jit, ctx, asm)
 
@@ -2969,7 +3019,7 @@ module RubyVM::RJIT
       asm.test(recv_reg, C::RUBY_ENCODING_MASK)
 
       # Push once, use the resulting operand in both branches below.
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::CString)
 
       enc_mismatch = asm.new_label('enc_mismatch')
       asm.jnz(enc_mismatch)
@@ -3014,7 +3064,7 @@ module RubyVM::RJIT
       ret_label = asm.new_label('stack_ret')
 
       # String#+@ can only exist on T_STRING
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::TString)
 
       # If the string isn't frozen, we just return it.
       asm.mov(stack_ret, :rax) # recv_opnd
@@ -3043,7 +3093,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], index_opnd)
       asm.call(C.rb_str_getbyte)
 
-      ret_opnd = ctx.stack_push
+      ret_opnd = ctx.stack_push(Type::Fixnum)
       asm.mov(ret_opnd, C_RET)
       true
     end
@@ -3061,7 +3111,7 @@ module RubyVM::RJIT
       asm.mov(:rcx, Qtrue)
       asm.cmovz(:rax, :rcx)
 
-      out_opnd = ctx.stack_push
+      out_opnd = ctx.stack_push(Type::UnknownImm)
       asm.mov(out_opnd, :rax)
 
       return true
@@ -3082,7 +3132,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], item_opnd)
       asm.call(C.rb_ary_push)
 
-      ret_opnd = ctx.stack_push
+      ret_opnd = ctx.stack_push(Type::TArray)
       asm.mov(ret_opnd, C_RET)
       true
     end
@@ -3187,7 +3237,7 @@ module RubyVM::RJIT
       asm.mov(:rax, [:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # block_handler
 
       ctx.stack_pop(1)
-      out_opnd = ctx.stack_push
+      out_opnd = ctx.stack_push(Type::UnknownImm)
 
       # Return `block_handler != VM_BLOCK_HANDLER_NONE`
       asm.cmp(:rax, C::VM_BLOCK_HANDLER_NONE)
@@ -3213,7 +3263,7 @@ module RubyVM::RJIT
       # thread->self
       asm.mov(:rax, [:rax, C.rb_thread_struct.offsetof(:self)])
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::UnknownHeap)
       asm.mov(stack_ret, :rax)
       true
     end
@@ -3304,7 +3354,12 @@ module RubyVM::RJIT
       asm.mov(:rax, [ep_reg, -idx * C.VALUE.size])
 
       # Write the local at SP
-      stack_top = ctx.stack_push
+      stack_top = if level == 0
+        local_idx = ep_offset_to_local_idx(jit.iseq, idx)
+        ctx.stack_push_local(local_idx)
+      else
+        ctx.stack_push(Type::Unknown)
+      end
 
       asm.mov(stack_top, :rax)
       KeepCompiling
@@ -3334,6 +3389,30 @@ module RubyVM::RJIT
       asm.mov([ep_reg, -(C.VALUE.size * idx)], :rcx)
 
       KeepCompiling
+    end
+
+    # Compute the index of a local variable from its slot index
+    def ep_offset_to_local_idx(iseq, ep_offset)
+      # Layout illustration
+      # This is an array of VALUE
+      #                                           | VM_ENV_DATA_SIZE |
+      #                                           v                  v
+      # low addr <+-------+-------+-------+-------+------------------+
+      #           |local 0|local 1|  ...  |local n|       ....       |
+      #           +-------+-------+-------+-------+------------------+
+      #           ^       ^                       ^                  ^
+      #           +-------+---local_table_size----+         cfp->ep--+
+      #                   |                                          |
+      #                   +------------------ep_offset---------------+
+      #
+      # See usages of local_var_name() from iseq.c for similar calculation.
+
+      # Equivalent of iseq->body->local_table_size
+      local_table_size = iseq.body.local_table_size
+      op = ep_offset - C::VM_ENV_DATA_SIZE
+      local_idx = local_table_size - op - 1
+      assert_equal(true, local_idx >= 0 && local_idx < local_table_size)
+      local_idx
     end
 
     # Compute the index of a local variable from its slot index
@@ -3582,7 +3661,7 @@ module RubyVM::RJIT
         asm.mov(:rcx, Qtrue)
         asm.public_send(opcode, :rax, :rcx)
 
-        dst_opnd = ctx.stack_push
+        dst_opnd = ctx.stack_push(Type::UnknownImm)
         asm.mov(dst_opnd, :rax)
 
         KeepCompiling
@@ -3621,7 +3700,7 @@ module RubyVM::RJIT
 
         # Push the output on the stack
         ctx.stack_pop(2)
-        dst = ctx.stack_push
+        dst = ctx.stack_push(Type::UnknownImm)
         asm.mov(dst, :rax)
 
         true
@@ -3655,7 +3734,7 @@ module RubyVM::RJIT
 
         # Push the output on the stack
         ctx.stack_pop(2)
-        dst = ctx.stack_push
+        dst = ctx.stack_push(Type::UnknownImm)
         asm.mov(dst, C_RET)
         asm.jmp(ret_label)
 
@@ -3678,6 +3757,10 @@ module RubyVM::RJIT
       jit.record_boundary_patch_point = true
       jit_save_pc(jit, asm)
       jit_save_sp(ctx, asm)
+
+      # In case the routine calls Ruby methods, it can set local variables
+      # through Kernel#binding and other means.
+      ctx.clear_local_types
     end
 
     # NOTE: This clobbers :rax
@@ -3797,7 +3880,7 @@ module RubyVM::RJIT
         end
 
         # Push the ivar on the stack
-        out_opnd = ctx.stack_push
+        out_opnd = ctx.stack_push(Type::Unknown)
         asm.mov(out_opnd, C_RET)
 
         # Jump to next instruction. This allows guard chains to share the same successor.
@@ -3818,8 +3901,18 @@ module RubyVM::RJIT
       asm.cmp(DwordPtr[:rax, C.rb_shape_id_offset], shape_id)
       jit_chain_guard(:jne, jit, starting_ctx, asm, counted_exit(side_exit, :getivar_megamorphic))
 
+      if obj_opnd
+        ctx.stack_pop # pop receiver for attr_reader
+      end
+
       index = C.rb_shape_get_iv_index(shape_id, ivar_id)
-      if index
+      # If there is no IVAR index, then the ivar was undefined
+      # when we entered the compiler.  That means we can just return
+      # nil for this shape + iv name
+      if index.nil?
+        stack_opnd = ctx.stack_push(Type::Nil)
+        val_opnd = Qnil
+      else
         asm.comment('ROBJECT_IVPTR')
         if C::FL_TEST_RAW(comptime_obj, C::ROBJECT_EMBED)
           # Access embedded array
@@ -3830,15 +3923,9 @@ module RubyVM::RJIT
           # Read the table
           asm.mov(:rax, [:rax, index * C.VALUE.size])
         end
+        stack_opnd = ctx.stack_push(Type::Unknown)
         val_opnd = :rax
-      else
-        val_opnd = Qnil
       end
-
-      if obj_opnd
-        ctx.stack_pop # pop receiver for attr_reader
-      end
-      stack_opnd = ctx.stack_push
       asm.mov(stack_opnd, val_opnd)
 
       # Let guard chains share the same successor
@@ -4325,7 +4412,7 @@ module RubyVM::RJIT
 
         remaining_opt.times do
           # We need to push nil for the optional arguments
-          stack_ret = ctx.stack_push
+          stack_ret = ctx.stack_push(Type::Unknown)
           asm.mov(stack_ret, Qnil)
         end
       end
@@ -4367,7 +4454,7 @@ module RubyVM::RJIT
             asm.call(C.rb_ary_unshift_m)
             ctx.stack_pop(diff)
 
-            stack_ret = ctx.stack_push
+            stack_ret = ctx.stack_push(Type::TArray)
             asm.mov(stack_ret, C_RET)
             # We now should have the required arguments
             # and an array of all the rest arguments
@@ -4383,7 +4470,7 @@ module RubyVM::RJIT
             asm.mov(C_ARGS[0], array)
             asm.mov(C_ARGS[1], diff)
             asm.call(C.rjit_rb_ary_subseq_length)
-            stack_ret = ctx.stack_push
+            stack_ret = ctx.stack_push(Type::TArray)
             asm.mov(stack_ret, C_RET)
 
             # We now should have the required arguments
@@ -4392,7 +4479,7 @@ module RubyVM::RJIT
           else
             # The arguments are equal so we can just push to the stack
             assert_equal(non_rest_arg_count, required_num)
-            stack_ret = ctx.stack_push
+            stack_ret = ctx.stack_push(Type::TArray)
             asm.mov(stack_ret, array)
           end
         else
@@ -4416,7 +4503,7 @@ module RubyVM::RJIT
           asm.call(C.rb_ec_ary_new_from_values)
 
           ctx.stack_pop(n)
-          stack_ret = ctx.stack_push
+          stack_ret = ctx.stack_push(Type::CArray)
           asm.mov(stack_ret, C_RET)
         end
       end
@@ -4481,7 +4568,7 @@ module RubyVM::RJIT
             # filling in (which is done in the next loop). Also increments
             # argc so that the callee's SP is recorded correctly.
             argc += 1
-            default_arg = ctx.stack_push
+            default_arg = ctx.stack_push(Type::Unknown)
 
             # callee_idx - keyword->required_num is used in a couple of places below.
             req_num = keyword.required_num
@@ -4618,7 +4705,7 @@ module RubyVM::RJIT
       asm.call(builtin_func.func_ptr)
 
       # Push the return value
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       asm.mov(stack_ret, C_RET)
       return true
     end
@@ -4830,7 +4917,7 @@ module RubyVM::RJIT
       Invariants.record_global_inval_patch(asm, full_cfunc_return)
 
       # Push the return value on the Ruby stack
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       asm.mov(stack_ret, C_RET)
 
       # Pop the stack frame (ec->cfp++)
@@ -4838,7 +4925,10 @@ module RubyVM::RJIT
       # register
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
 
-      # Note: the return block of gen_send_iseq() has ctx->sp_offset == 1
+      # cfunc calls may corrupt types
+      ctx.clear_local_types
+
+      # Note: the return block of jit_call_iseq has ctx->sp_offset == 1
       # which allows for sharing the same successor.
 
       # Jump (fall through) to the call continuation block
@@ -4898,7 +4988,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[2], val_opnd)
       asm.call(C.rb_vm_set_ivar_id)
 
-      out_opnd = ctx.stack_push
+      out_opnd = ctx.stack_push(Type::Unknown)
       asm.mov(out_opnd, C_RET)
 
       KeepCompiling
@@ -5093,7 +5183,7 @@ module RubyVM::RJIT
 
       ctx.stack_pop(argc + 1)
 
-      stack_ret = ctx.stack_push
+      stack_ret = ctx.stack_push(Type::Unknown)
       asm.mov(stack_ret, C_RET)
       return KeepCompiling
     end
@@ -5135,7 +5225,7 @@ module RubyVM::RJIT
         asm.mov(:rax, [:rax, C.VALUE.size * off])
       end
 
-      ret = ctx.stack_push
+      ret = ctx.stack_push(Type::Unknown)
       asm.mov(ret, :rax)
 
       jump_to_next_insn(jit, ctx, asm)
@@ -5157,7 +5247,7 @@ module RubyVM::RJIT
         asm.mov(opnd2, :rax)
       end
 
-      ctx.stack_pop(1)
+      ctx.shift_stack(1)
     end
 
     # vm_call_symbol
@@ -5295,10 +5385,13 @@ module RubyVM::RJIT
 
       # cfp->jit_return is used only for ISEQs
       if iseq
+        # The callee might change locals through Kernel#binding and other means.
+        ctx.clear_local_types
+
         # Stub cfp->jit_return
         return_ctx = ctx.dup
-        return_ctx.stack_size -= argc + ((block_handler == :captured) ? 0 : 1) # Pop args and receiver. blockarg has been popped
-        return_ctx.stack_size += 1 # push callee's return value
+        return_ctx.stack_pop(argc + ((block_handler == :captured) ? 0 : 1)) # Pop args and receiver. blockarg has been popped
+        return_ctx.stack_push(Type::Unknown) # push callee's return value
         return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
         return_ctx.chain_depth = 0
         branch_stub = BranchStub.new(
@@ -5388,7 +5481,7 @@ module RubyVM::RJIT
       asm.cmovnz(ary_opnd, :rcx)
 
       num_args.times do |i|
-        top = ctx.stack_push
+        top = ctx.stack_push(Type::Unknown)
         asm.mov(:rcx, [ary_opnd, i * C.VALUE.size])
         asm.mov(top, :rcx)
       end
@@ -5452,7 +5545,7 @@ module RubyVM::RJIT
         ary_opnd = :rax
 
         (0...required_args).each do |i|
-          top = ctx.stack_push
+          top = ctx.stack_push(Type::Unknown)
           asm.mov(:rcx, [ary_opnd, i * C.VALUE.size])
           asm.mov(top, :rcx)
         end

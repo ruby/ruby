@@ -9,6 +9,7 @@ require 'ruby_vm/rjit/insn_compiler'
 require 'ruby_vm/rjit/instruction'
 require 'ruby_vm/rjit/invariants'
 require 'ruby_vm/rjit/jit_state'
+require 'ruby_vm/rjit/type'
 
 module RubyVM::RJIT
   # Compilation status

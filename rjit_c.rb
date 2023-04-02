@@ -480,6 +480,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM(rb_block_param_proxy) }
   end
 
+  def C.rb_cArray
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cArray) }
+  end
+
   def C.rb_cFalseClass
     Primitive.cexpr! %q{ SIZET2NUM(rb_cFalseClass) }
   end
@@ -494,6 +498,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_cNilClass
     Primitive.cexpr! %q{ SIZET2NUM(rb_cNilClass) }
+  end
+
+  def C.rb_cString
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cString) }
   end
 
   def C.rb_cSymbol

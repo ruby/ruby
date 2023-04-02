@@ -494,10 +494,12 @@ generator = BindingGenerator.new(
       imemo_iseq
       imemo_callinfo
       rb_block_param_proxy
+      rb_cArray
       rb_cFalseClass
       rb_cFloat
       rb_cInteger
       rb_cNilClass
+      rb_cString
       rb_cSymbol
       rb_cTrueClass
       rb_rjit_global_events
