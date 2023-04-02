@@ -4236,8 +4236,21 @@ module RubyVM::RJIT
         return CantCompile
       end
 
-      # Number of locals that are not parameters
-      num_locals = iseq.body.local_table_size - num_params
+      # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+      arg_setup_block = (block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
+      block_arg0_splat = arg_setup_block && argc == 1 &&
+        iseq.body.param.flags.has_lead && !iseq.body.param.flags.ambiguous_param0
+      if block_arg0_splat
+        asm.incr_counter(:send_iseq_block_arg0_splat)
+        return CantCompile
+      end
+      if flags & C::VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
+        splat_array_length = false
+        asm.incr_counter(:send_iseq_splat)
+        return CantCompile
+      end
+
+      # We will not have CantCompile from here.
 
       # Pop blockarg after all side exits
       if flags & C::VM_CALL_ARGS_BLOCKARG != 0
@@ -4250,6 +4263,9 @@ module RubyVM::RJIT
         end
       end
 
+      # Number of locals that are not parameters
+      num_locals = iseq.body.local_table_size - num_params
+
       # Stack overflow check
       # Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
       # #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
@@ -4259,13 +4275,8 @@ module RubyVM::RJIT
       asm.cmp(CFP, :rax)
       asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
 
-      # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
-      arg_setup_block = (block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
-      block_arg0_splat = arg_setup_block && argc == 1 &&
-        iseq.body.param.flags.has_lead && !iseq.body.param.flags.ambiguous_param0
-
       # push_splat_args does stack manipulation so we can no longer side exit
-      if flags & C::VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
+      if splat_array_length
         asm.incr_counter(:send_iseq_splat)
         return CantCompile
       end
