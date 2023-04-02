@@ -39,7 +39,7 @@ end
 missing = File.dirname(config) + "/missing/"
 ARGV.reject! do |n|
   unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
-    puts "Ignore #{n} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
+    puts "Ignore #{col.skip(n)} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
     true
   end
 end
