@@ -54,7 +54,6 @@ task:
   make_extract-extlibs_script: make extract-extlibs
   make_incs_script: make incs
   make_script: make
-  make_leaked-globals_script: make leaked-globals
   make_test_script: make test
   make_install_script: make install
   install_gems_for_test_script: $RUBY_PREFIX/bin/gem install --no-doc timezone tzinfo

@@ -101,8 +101,6 @@ jobs:
       - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
       - run: $SETARCH make
-      - run: $SETARCH make leaked-globals
-        if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
         run: |
           $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'

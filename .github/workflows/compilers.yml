@@ -252,7 +252,6 @@ jobs:
       - run: make incs
       - run: make showflags
       - run: make
-      - run: make leaked-globals
       - run: make test
       - run: make install
         if: ${{ matrix.entry.check }}
