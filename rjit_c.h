@@ -47,12 +47,12 @@ RJIT_RUNTIME_COUNTERS(
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
 
-    send_blockarg_not_nil_or_proxy,
     send_blockiseq,
     send_block_handler,
     send_block_setup,
     send_block_not_nil,
     send_block_not_proxy,
+    send_block_arg,
 
     send_iseq_kwparam,
     send_iseq_accepts_no_kwarg,
@@ -83,11 +83,9 @@ RJIT_RUNTIME_COUNTERS(
     send_attrset_splat,
     send_attrset_kwarg,
     send_attrset_method,
-    send_attrset_blockarg,
 
     send_ivar_splat,
     send_ivar_opt_send,
-    send_ivar_blockarg,
 
     send_optimized_send_no_args,
     send_optimized_send_not_sym_or_str,
@@ -100,7 +98,6 @@ RJIT_RUNTIME_COUNTERS(
     send_optimized_call_splat,
     send_optimized_struct_aref_error,
 
-    send_optimized_blockarg,
     send_optimized_block_call,
     send_optimized_struct_aset,
 

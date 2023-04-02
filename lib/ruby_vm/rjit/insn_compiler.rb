@@ -3844,7 +3844,7 @@ module RubyVM::RJIT
           jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit, :send_block_not_proxy))
           return C.rb_block_param_proxy
         else
-          asm.incr_counter(:send_blockarg_not_nil_or_proxy)
+          asm.incr_counter(:send_block_arg)
           return CantCompile
         end
       elsif blockiseq != 0
@@ -4838,7 +4838,7 @@ module RubyVM::RJIT
         asm.incr_counter(:send_c_tracingg)
         return CantCompile
       elsif flags & C::VM_CALL_ARGS_BLOCKARG != 0
-        asm.incr_counter(:send_attrset_blockarg)
+        asm.incr_counter(:send_block_arg)
         return CantCompile
       end
 
@@ -4897,7 +4897,7 @@ module RubyVM::RJIT
 
       # Not handling block_handler
       if flags & C::VM_CALL_ARGS_BLOCKARG != 0
-        asm.incr_counter(:send_ivar_blockarg)
+        asm.incr_counter(:send_block_arg)
         return CantCompile
       end
 
@@ -4959,7 +4959,7 @@ module RubyVM::RJIT
     def jit_call_optimized(jit, ctx, asm, cme, calling, known_recv_class)
       if calling.flags & C::VM_CALL_ARGS_BLOCKARG != 0
         # Not working yet
-        asm.incr_counter(:send_optimized_blockarg)
+        asm.incr_counter(:send_block_arg)
         return CantCompile
       end
 
