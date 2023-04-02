@@ -46,6 +46,7 @@ RJIT_RUNTIME_COUNTERS(
     send_c_tracing,
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
+    send_keywords,
 
     send_blockiseq,
     send_block_handler,
@@ -105,6 +106,7 @@ RJIT_RUNTIME_COUNTERS(
     send_bmethod_blockarg,
 
     invokesuper_me_changed,
+    invokesuper_block,
 
     invokeblock_none,
     invokeblock_symbol,
