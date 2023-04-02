@@ -183,6 +183,21 @@ rjit_rb_ary_subseq_length(VALUE ary, long beg)
     return rb_ary_subseq(ary, beg, len);
 }
 
+static VALUE
+rjit_build_kwhash(const struct rb_callinfo *ci, VALUE *sp)
+{
+    const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
+    int kw_len = kw_arg->keyword_len;
+    VALUE hash = rb_hash_new_with_size(kw_len);
+
+    for (int i = 0; i < kw_len; i++) {
+        VALUE key = kw_arg->keywords[i];
+        VALUE val = *(sp - kw_len + i);
+        rb_hash_aset(hash, key, val);
+    }
+    return hash;
+}
+
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
 // like the interpreter. When tracing for c_return is enabled, we patch the code after
 // the C method return to call into this to fire the event.

@@ -492,6 +492,7 @@ generator = BindingGenerator.new(
     SIZET: %w[
       block_type_iseq
       imemo_iseq
+      imemo_callinfo
       rb_block_param_proxy
       rb_cFalseClass
       rb_cFloat
@@ -566,6 +567,7 @@ generator = BindingGenerator.new(
     rb_ary_dup
     rjit_rb_ary_subseq_length
     rb_ary_unshift_m
+    rjit_build_kwhash
   ],
   types: %w[
     CALL_DATA
