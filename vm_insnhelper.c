@@ -4006,27 +4006,17 @@ vm_call_method_missing_body(rb_execution_context_t *ec, rb_control_frame_t *reg_
     VALUE *argv = STACK_ADDR_FROM_TOP(calling->argc);
     unsigned int argc, flag;
 
-    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, ALLOW_HEAP_ARGV);
-    if (UNLIKELY(calling->heap_argv)) {
-        flag = VM_CALL_ARGS_SPLAT | VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
-        argc = 1;
-        rb_ary_unshift(calling->heap_argv, ID2SYM(vm_ci_mid(orig_ci)));
-    }
-    else {
-        argc = calling->argc + 1;
+    flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | vm_ci_flag(orig_ci);
+    argc = ++calling->argc;
 
-        flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
-        calling->argc = argc;
-
-        /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
-        CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
-        vm_check_canary(ec, reg_cfp->sp);
-        if (argc > 1) {
-            MEMMOVE(argv+1, argv, VALUE, argc-1);
-        }
-        argv[0] = ID2SYM(vm_ci_mid(orig_ci));
-        INC_SP(1);
+    /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
+    CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
+    vm_check_canary(ec, reg_cfp->sp);
+    if (argc > 1) {
+        MEMMOVE(argv+1, argv, VALUE, argc-1);
     }
+    argv[0] = ID2SYM(vm_ci_mid(orig_ci));
+    INC_SP(1);
 
     ec->method_missing_reason = reason;
     calling->ci = &VM_CI_ON_STACK(idMethodMissing, flag, argc, vm_ci_kwarg(orig_ci));
