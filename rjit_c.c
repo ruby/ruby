@@ -176,7 +176,7 @@ rjit_str_simple_append(VALUE str1, VALUE str2)
     return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
-VALUE
+static VALUE
 rjit_rb_ary_subseq_length(VALUE ary, long beg)
 {
     long len = RARRAY_LEN(ary);
