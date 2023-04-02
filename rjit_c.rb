@@ -519,6 +519,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_clear) }
   end
 
+  def C.rb_ary_dup
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_dup) }
+  end
+
   def C.rb_ary_entry_internal
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_entry_internal) }
   end
@@ -727,12 +731,20 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_yield_with_cfunc) }
   end
 
+  def C.rb_yjit_rb_ary_unshift_m
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_yjit_rb_ary_unshift_m) }
+  end
+
   def C.rjit_full_cfunc_return
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_full_cfunc_return) }
   end
 
   def C.rjit_optimized_call
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_optimized_call) }
+  end
+
+  def C.rjit_rb_ary_subseq_length
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_rb_ary_subseq_length) }
   end
 
   def C.rjit_record_exit_stack

@@ -176,6 +176,13 @@ rjit_str_simple_append(VALUE str1, VALUE str2)
     return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
+VALUE
+rjit_rb_ary_subseq_length(VALUE ary, long beg)
+{
+    long len = RARRAY_LEN(ary);
+    return rb_ary_subseq(ary, beg, len);
+}
+
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
 // like the interpreter. When tracing for c_return is enabled, we patch the code after
 // the C method return to call into this to fire the event.
@@ -507,6 +514,7 @@ extern VALUE rb_str_bytesize(VALUE str);
 extern const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID mid);
 extern VALUE rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv);
 extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
+extern VALUE rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 #include "rjit_c.rbinc"
 

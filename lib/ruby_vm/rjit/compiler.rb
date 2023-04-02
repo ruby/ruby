@@ -27,7 +27,7 @@ module RubyVM::RJIT
   CFP = :r15
   SP  = :rbx
 
-  # Scratch registers: rax, rcx
+  # Scratch registers: rax, rcx, rdx
 
   # Mark objects in this Array during GC
   GC_REFS = []

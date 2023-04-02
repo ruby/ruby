@@ -4287,8 +4287,89 @@ module RubyVM::RJIT
       end
 
       if iseq_has_rest
-        asm.incr_counter(:send_iseq_has_rest)
-        return CantCompile
+        # We are going to allocate so setting pc and sp.
+        jit_save_pc(jit, asm) # clobbers rax
+        jit_save_sp(ctx, asm)
+
+        if flags & C::VM_CALL_ARGS_SPLAT != 0
+          non_rest_arg_count = argc - 1
+          # We start by dupping the array because someone else might have
+          # a reference to it.
+          array = ctx.stack_pop(1)
+          asm.mov(C_ARGS[0], array)
+          asm.call(C.rb_ary_dup)
+          array = C_RET
+          if non_rest_arg_count > required_num
+            # If we have more arguments than required, we need to prepend
+            # the items from the stack onto the array.
+            diff = (non_rest_arg_count - required_num)
+
+            # diff is >0 so no need to worry about null pointer
+            asm.comment('load pointer to array elements')
+            offset_magnitude = C.VALUE.size * diff
+            values_opnd = ctx.sp_opnd(-offset_magnitude)
+            values_ptr = :rcx
+            asm.lea(values_ptr, values_opnd)
+
+            asm.comment('prepend stack values to rest array')
+            asm.mov(C_ARGS[0], diff)
+            asm.mov(C_ARGS[1], values_ptr)
+            asm.mov(C_ARGS[2], array)
+            asm.call(C.rb_yjit_rb_ary_unshift_m)
+            ctx.stack_pop(diff)
+
+            stack_ret = ctx.stack_push
+            asm.mov(stack_ret, C_RET)
+            # We now should have the required arguments
+            # and an array of all the rest arguments
+            argc = required_num + 1
+          elsif non_rest_arg_count < required_num
+            # If we have fewer arguments than required, we need to take some
+            # from the array and move them to the stack.
+            diff = (required_num - non_rest_arg_count)
+            # This moves the arguments onto the stack. But it doesn't modify the array.
+            move_rest_args_to_stack(array, diff, jit, ctx, asm)
+
+            # We will now slice the array to give us a new array of the correct size
+            asm.mov(C_ARGS[0], array)
+            asm.mov(C_ARGS[1], diff)
+            asm.call(C.rjit_rb_ary_subseq_length)
+            stack_ret = ctx.stack_push
+            asm.mov(stack_ret, C_RET)
+
+            # We now should have the required arguments
+            # and an array of all the rest arguments
+            argc = required_num + 1
+          else
+            # The arguments are equal so we can just push to the stack
+            assert_equal(non_rest_arg_count, required_num)
+            stack_ret = ctx.stack_push
+            asm.mov(stack_ret, array)
+          end
+        else
+          assert_equal(true, argc >= required_num)
+          n = (argc - required_num)
+          argc = required_num + 1
+          # If n is 0, then elts is never going to be read, so we can just pass null
+          if n == 0
+            values_ptr = 0
+          else
+            asm.comment('load pointer to array elements')
+            offset_magnitude = C.VALUE.size * n
+            values_opnd = ctx.sp_opnd(-offset_magnitude)
+            values_ptr = :rcx
+            asm.lea(values_ptr, values_opnd)
+          end
+
+          asm.mov(C_ARGS[0], EC)
+          asm.mov(C_ARGS[1], n)
+          asm.mov(C_ARGS[2], values_ptr)
+          asm.call(C.rb_ec_ary_new_from_values)
+
+          ctx.stack_pop(n)
+          stack_ret = ctx.stack_push
+          asm.mov(stack_ret, C_RET)
+        end
       end
 
       if doing_kw_call
@@ -5014,6 +5095,49 @@ module RubyVM::RJIT
       elsif flags & C::VM_CALL_KWARG != 0
         asm.incr_counter(:send_kwarg)
         return CantCompile
+      end
+    end
+
+    # Pushes arguments from an array to the stack. Differs from push splat because
+    # the array can have items left over.
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def move_rest_args_to_stack(array, num_args, jit, ctx, asm)
+      side_exit = side_exit(jit, ctx)
+
+      asm.comment('move_rest_args_to_stack')
+
+      # array is :rax
+      array_len_opnd = :rcx
+      jit_array_len(asm, array, array_len_opnd)
+
+      asm.comment('Side exit if length is less than required')
+      asm.cmp(array_len_opnd, num_args)
+      asm.jl(counted_exit(side_exit, :send_iseq_has_rest_and_splat_not_equal))
+
+      asm.comment('Push arguments from array')
+
+      # Load the address of the embedded array
+      # (struct RArray *)(obj)->as.ary
+      array_reg = array
+
+      # Conditionally load the address of the heap array
+      # (struct RArray *)(obj)->as.heap.ptr
+      flags_opnd = [array_reg, C.RBasic.offsetof(:flags)]
+      asm.test(flags_opnd, C::RARRAY_EMBED_FLAG)
+      heap_ptr_opnd = [array_reg, C.RArray.offsetof(:as, :heap, :ptr)]
+      # Load the address of the embedded array
+      # (struct RArray *)(obj)->as.ary
+      ary_opnd = :rdx # NOTE: array :rax is used after move_rest_args_to_stack too
+      asm.lea(:rcx, [array_reg, C.RArray.offsetof(:as, :ary)])
+      asm.mov(ary_opnd, heap_ptr_opnd)
+      asm.cmovnz(ary_opnd, :rcx)
+
+      num_args.times do |i|
+        top = ctx.stack_push
+        asm.mov(:rcx, [ary_opnd, i * C.VALUE.size])
+        asm.mov(top, :rcx)
       end
     end
 
