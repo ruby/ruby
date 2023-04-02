@@ -2903,8 +2903,10 @@ module RubyVM::RJIT
       asm.mov(:rax, ctx.stack_opnd(0))
       guard_object_is_string(asm, :rax, :rcx, side_exit)
 
-      # Guard buffers from GC since rb_str_buf_append may allocate.
-      jit_save_sp(ctx, asm)
+      # Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
+      # other Ractors may trigger global invalidation, so we need record_boundary_patch_point.
+      # PC is used on errors like Encoding::CompatibilityError raised by rb_str_buf_append.
+      jit_prepare_routine_call(jit, ctx, asm)
 
       concat_arg = ctx.stack_pop(1)
       recv = ctx.stack_pop(1)
