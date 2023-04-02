@@ -1359,14 +1359,9 @@ module RubyVM::RJIT
       cd = C.rb_call_data.new(jit.operand(0))
       blockiseq = jit.operand(1)
 
-      block_handler = jit_caller_setup_arg_block(jit, ctx, asm, cd.ci, blockiseq)
-      if block_handler == CantCompile
-        return CantCompile
-      end
-
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
-      calling = build_calling(ci: cd.ci, block_handler:)
+      calling = build_calling(ci: cd.ci, block_handler: blockiseq)
 
       # vm_sendish
       cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
@@ -3914,35 +3909,28 @@ module RubyVM::RJIT
       end
     end
 
-    # vm_caller_setup_arg_block
+    # vm_caller_setup_arg_block: Handle VM_CALL_ARGS_BLOCKARG cases.
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_caller_setup_arg_block(jit, ctx, asm, ci, blockiseq)
-      side_exit = side_exit(jit, ctx)
-      if C.vm_ci_flag(ci) & C::VM_CALL_ARGS_BLOCKARG != 0
-        # TODO: Skip cmp + jne using Context?
+    def guard_block_arg(jit, ctx, asm, calling)
+      if calling.flags & C::VM_CALL_ARGS_BLOCKARG != 0
+        # TODO: Skip cmp + jne using Context
         block_code = jit.peek_at_stack(0)
         block_opnd = ctx.stack_opnd(0) # to be popped after eliminating side exit possibility
         if block_code.nil?
           asm.cmp(block_opnd, Qnil)
-          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit, :send_block_not_nil))
-          return C::VM_BLOCK_HANDLER_NONE
+          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit(jit, ctx), :send_block_not_nil))
+          calling.block_handler = C::VM_BLOCK_HANDLER_NONE
         elsif C.to_value(block_code) == C.rb_block_param_proxy
           asm.mov(:rax, C.rb_block_param_proxy)
           asm.cmp(block_opnd, :rax)
-          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit, :send_block_not_proxy))
-          return C.rb_block_param_proxy
+          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit(jit, ctx), :send_block_not_proxy))
+          calling.block_handler = C.rb_block_param_proxy
         else
           asm.incr_counter(:send_block_arg)
           return CantCompile
         end
-      elsif blockiseq != 0
-        return blockiseq
-      else
-        # Not implemented yet. Is this even necessary?
-        asm.incr_counter(:send_block_setup)
-        return CantCompile
       end
     end
 
@@ -4089,7 +4077,6 @@ module RubyVM::RJIT
       argc = calling.argc
       flags = calling.flags
       send_shift = calling.send_shift
-      block_handler = calling.block_handler
 
       # When you have keyword arguments, there is an extra object that gets
       # placed on the stack the represents a bitmap of the keywords that were not
@@ -4127,7 +4114,7 @@ module RubyVM::RJIT
       end
 
       iseq_has_rest = iseq.body.param.flags.has_rest
-      if iseq_has_rest && block_handler == :captured
+      if iseq_has_rest && calling.block_handler == :captured
         asm.incr_counter(:send_iseq_has_rest_and_captured)
         return CantCompile
       end
@@ -4217,7 +4204,11 @@ module RubyVM::RJIT
       end
 
       block_arg = flags & C::VM_CALL_ARGS_BLOCKARG != 0
-      # jit_caller_setup_arg_block already handled send_block_arg
+
+      # Guard block_arg_type
+      if guard_block_arg(jit, ctx, asm, calling) == CantCompile
+        return CantCompile
+      end
 
       # If we have unfilled optional arguments and keyword arguments then we
       # would need to adjust the arguments location to account for that.
@@ -4299,7 +4290,7 @@ module RubyVM::RJIT
       end
 
       # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
-      arg_setup_block = (block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
+      arg_setup_block = (calling.block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
       block_arg0_splat = arg_setup_block && argc == 1 &&
         iseq.body.param.flags.has_lead && !iseq.body.param.flags.ambiguous_param0
       if block_arg0_splat
@@ -4336,7 +4327,7 @@ module RubyVM::RJIT
         ctx.stack_pop(1)
       end
 
-      if block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
+      if calling.block_handler == C::VM_BLOCK_HANDLER_NONE && iseq.body.builtin_attrs & C::BUILTIN_ATTR_LEAF != 0
         if jit_leaf_builtin_func(jit, ctx, asm, flags, iseq)
           return KeepCompiling
         end
@@ -4609,7 +4600,7 @@ module RubyVM::RJIT
       # Setup the new frame
       frame_type ||= C::VM_FRAME_MAGIC_METHOD | C::VM_ENV_FLAG_LOCAL
       jit_push_frame(
-        jit, ctx, asm, cme, flags, argc, frame_type, block_handler,
+        jit, ctx, asm, cme, flags, argc, frame_type, calling.block_handler,
         iseq:       iseq,
         local_size: num_locals,
         stack_max:  iseq.body.stack_max,
@@ -4773,7 +4764,11 @@ module RubyVM::RJIT
       end
 
       block_arg = flags & C::VM_CALL_ARGS_BLOCKARG != 0
-      # jit_caller_setup_arg_block already handled send_block_arg
+
+      # Guard block_arg_type
+      if guard_block_arg(jit, ctx, asm, calling) == CantCompile
+        return CantCompile
+      end
 
       if block_arg
         ctx.stack_pop(1)
