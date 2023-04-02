@@ -1366,7 +1366,7 @@ module RubyVM::RJIT
 
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
-      calling = build_calling(ci: cd.ci, block_handler:)
+      calling = build_calling(ci: cd.ci, block_handler: blockiseq)
 
       # vm_sendish
       cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
@@ -3941,13 +3941,6 @@ module RubyVM::RJIT
         return blockiseq
       else
         if is_super
-          # GET_BLOCK_HANDLER();
-          # Guard no block passed. Only handle that case for now.
-          asm.comment('guard no block given')
-          jit_get_lep(jit, asm, reg: :rax)
-          asm.cmp([:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL], C::VM_BLOCK_HANDLER_NONE)
-          asm.jne(counted_exit(side_exit, :send_block_handler))
-          return C::VM_BLOCK_HANDLER_NONE
         else
           # Not implemented yet. Is this even necessary?
           asm.incr_counter(:send_block_setup)
