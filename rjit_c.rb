@@ -1372,6 +1372,7 @@ module RubyVM::RJIT # :nodoc: all
       send_iseq_kwargs_mismatch: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_kwargs_mismatch)")],
       send_iseq_splat_with_kw: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_splat_with_kw)")],
       send_iseq_splat_arity_error: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_splat_arity_error)")],
+      send_iseq_has_rest_and_splat_not_equal: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_has_rest_and_splat_not_equal)")],
       send_cfunc_variadic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_cfunc_variadic)")],
       send_cfunc_too_many_args: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_cfunc_too_many_args)")],
       send_cfunc_ruby_array_varg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_cfunc_ruby_array_varg)")],
@@ -1435,6 +1436,7 @@ module RubyVM::RJIT # :nodoc: all
       getblockpp_block_handler_none: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_block_handler_none)")],
       getblockpp_not_gc_guarded: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_not_gc_guarded)")],
       getblockpp_not_iseq_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_not_iseq_block)")],
+      leave_start_pc_non_zero: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), leave_start_pc_non_zero)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end

@@ -78,6 +78,7 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_kwargs_mismatch,
     send_iseq_splat_with_kw,
     send_iseq_splat_arity_error,
+    send_iseq_has_rest_and_splat_not_equal,
 
     send_cfunc_variadic,
     send_cfunc_too_many_args,
@@ -155,6 +156,8 @@ RJIT_RUNTIME_COUNTERS(
     getblockpp_block_handler_none,
     getblockpp_not_gc_guarded,
     getblockpp_not_iseq_block,
+
+    leave_start_pc_non_zero,
 
     compiled_block_count
 )

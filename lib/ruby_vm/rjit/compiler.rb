@@ -53,13 +53,11 @@ module RubyVM::RJIT
     # @param iseq `RubyVM::RJIT::CPointer::Struct_rb_iseq_t`
     # @param cfp `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t`
     def compile(iseq, cfp)
-      # TODO: Support has_opt
-      return if iseq.body.param.flags.has_opt
-
+      pc = cfp.pc.to_i
       jit = JITState.new(iseq:, cfp:)
       asm = Assembler.new
-      compile_prologue(asm)
-      compile_block(asm, jit:)
+      compile_prologue(asm, iseq, pc)
+      compile_block(asm, jit:, pc:)
       iseq.body.jit_func = @cb.write(asm)
     rescue Exception => e
       $stderr.puts e.full_message
@@ -186,7 +184,7 @@ module RubyVM::RJIT
     # Caller-saved: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
     #
     # @param asm [RubyVM::RJIT::Assembler]
-    def compile_prologue(asm)
+    def compile_prologue(asm, iseq, pc)
       asm.comment('RJIT entry point')
 
       # Save callee-saved registers used by JITed code
@@ -204,10 +202,42 @@ module RubyVM::RJIT
       # Setup cfp->jit_return
       asm.mov(:rax, leave_exit)
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+
+      # We're compiling iseqs that we *expect* to start at `insn_idx`. But in
+      # the case of optional parameters, the interpreter can set the pc to a
+      # different location depending on the optional parameters.  If an iseq
+      # has optional parameters, we'll add a runtime check that the PC we've
+      # compiled for is the same PC that the interpreter wants us to run with.
+      # If they don't match, then we'll take a side exit.
+      if iseq.body.param.flags.has_opt
+        compile_pc_guard(asm, iseq, pc)
+      end
+    end
+
+    def compile_pc_guard(asm, iseq, pc)
+      asm.comment('guard expected PC')
+      asm.mov(:rax, pc)
+      asm.cmp([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
+
+      pc_match = asm.new_label('pc_match')
+      asm.je(pc_match)
+
+      # We're not starting at the first PC, so we need to exit.
+      asm.incr_counter(:leave_start_pc_non_zero)
+
+      asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
+
+      asm.mov(:rax, Qundef)
+      asm.ret
+
+      # PC should match the expected insn_idx
+      asm.write_label(pc_match)
     end
 
     # @param asm [RubyVM::RJIT::Assembler]
-    def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
+    def compile_block(asm, jit:, pc:, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
       block = Block.new(iseq: jit.iseq, pc:, ctx: ctx.dup)
       jit.block = block

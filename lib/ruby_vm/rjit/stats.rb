@@ -40,6 +40,7 @@ module RubyVM::RJIT
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
       print_counters(stats, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons')
       print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons')
+      print_counters(stats, prefix: 'leave_', prompt: 'leave exit reasons')
       print_counters(stats, prefix: 'getblockpp_', prompt: 'getblockparamproxy exit reasons')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')
       print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons')
