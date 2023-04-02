@@ -58,7 +58,6 @@ module RubyVM::RJIT
 
       jit = JITState.new(iseq:, cfp:)
       asm = Assembler.new
-      asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, jit:)
       iseq.body.jit_func = @cb.write(asm)
@@ -214,8 +213,10 @@ module RubyVM::RJIT
       jit.block = block
       asm.block(block)
 
-      # Compile each insn
       iseq = jit.iseq
+      asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq_lineno(iseq, pc)}")
+
+      # Compile each insn
       index = (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size
       while index < iseq.body.iseq_size
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
@@ -329,6 +330,12 @@ module RubyVM::RJIT
         GC_REFS << iseq.body.rjit_blocks
       end
       iseq.body.rjit_blocks
+    end
+
+    def iseq_lineno(iseq, pc)
+      C.rb_iseq_line_no(iseq, (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size)
+    rescue RangeError # bignum too big to convert into `unsigned long long' (RangeError)
+      -1
     end
   end
 end
