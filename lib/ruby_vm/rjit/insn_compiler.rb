@@ -4306,7 +4306,7 @@ module RubyVM::RJIT
       if block_arg0_splat
         # If block_arg0_splat, we still need side exits after splat, but
         # doing push_splat_args here disallows it. So bail out.
-        if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
+        if flags & C::VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest
           asm.incr_counter(:invokeblock_iseq_arg0_args_splat)
           return CantCompile
         end
