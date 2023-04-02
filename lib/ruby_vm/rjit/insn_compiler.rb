@@ -4104,11 +4104,11 @@ module RubyVM::RJIT
       # No support for callees with these parameters yet as they require allocation
       # or complex handling.
       if iseq.body.param.flags.has_post
-        asm.incr_counter(:send_iseq_complex_has_opt)
+        asm.incr_counter(:send_iseq_has_opt)
         return CantCompile
       end
       if iseq.body.param.flags.has_kwrest
-        asm.incr_counter(:send_iseq_complex_has_kwrest)
+        asm.incr_counter(:send_iseq_has_kwrest)
         return CantCompile
       end
 
@@ -4144,7 +4144,7 @@ module RubyVM::RJIT
       # If we have a method accepting no kwargs (**nil), exit if we have passed
       # it any kwargs.
       if supplying_kws && iseq.body.param.flags.accepts_no_kwarg
-        asm.incr_counter(:send_iseq_complex_accepts_no_kwarg)
+        asm.incr_counter(:send_iseq_accepts_no_kwarg)
         return CantCompile
       end
 
