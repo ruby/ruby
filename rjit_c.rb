@@ -25,13 +25,6 @@ module RubyVM::RJIT # :nodoc: all
       CType::Immediate.parse("size_t").new(addr)
     end
 
-    def rb_rjit_branch_stub_hit
-      Primitive.cstmt! %{
-        extern void *rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
-        return SIZET2NUM((size_t)rb_rjit_branch_stub_hit);
-      }
-    end
-
     def rb_rjit_counters
       addr = Primitive.cexpr! 'SIZET2NUM((size_t)&rb_rjit_counters)'
       rb_rjit_runtime_counters.new(addr)
@@ -657,6 +650,14 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_reg_nth_match
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_nth_match) }
+  end
+
+  def C.rb_rjit_branch_stub_hit
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_rjit_branch_stub_hit) }
+  end
+
+  def C.rb_rjit_entry_stub_hit
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_rjit_entry_stub_hit) }
   end
 
   def C.rb_str_buf_append
@@ -1436,7 +1437,6 @@ module RubyVM::RJIT # :nodoc: all
       getblockpp_block_handler_none: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_block_handler_none)")],
       getblockpp_not_gc_guarded: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_not_gc_guarded)")],
       getblockpp_not_iseq_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_not_iseq_block)")],
-      leave_start_pc_non_zero: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), leave_start_pc_non_zero)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end

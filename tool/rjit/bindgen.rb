@@ -568,6 +568,8 @@ generator = BindingGenerator.new(
     rjit_rb_ary_subseq_length
     rb_ary_unshift_m
     rjit_build_kwhash
+    rb_rjit_entry_stub_hit
+    rb_rjit_branch_stub_hit
   ],
   types: %w[
     CALL_DATA

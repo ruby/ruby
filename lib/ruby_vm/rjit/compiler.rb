@@ -3,6 +3,7 @@ require 'ruby_vm/rjit/block'
 require 'ruby_vm/rjit/branch_stub'
 require 'ruby_vm/rjit/code_block'
 require 'ruby_vm/rjit/context'
+require 'ruby_vm/rjit/entry_stub'
 require 'ruby_vm/rjit/exit_compiler'
 require 'ruby_vm/rjit/insn_compiler'
 require 'ruby_vm/rjit/instruction'
@@ -59,6 +60,48 @@ module RubyVM::RJIT
       compile_prologue(asm, iseq, pc)
       compile_block(asm, jit:, pc:)
       iseq.body.jit_func = @cb.write(asm)
+    rescue Exception => e
+      $stderr.puts e.full_message
+      exit 1
+    end
+
+    # Compile an entry.
+    # @param entry [RubyVM::RJIT::EntryStub]
+    def entry_stub_hit(entry_stub, cfp)
+      # Compile a new entry guard as a next entry
+      pc = cfp.pc.to_i
+      next_entry = Assembler.new.then do |asm|
+        compile_entry_chain_guard(asm, cfp.iseq, pc)
+        @cb.write(asm)
+      end
+
+      # Try to find an existing compiled version of this block
+      ctx = Context.new
+      block = find_block(cfp.iseq, pc, ctx)
+      if block
+        # If an existing block is found, generate a jump to the block.
+        asm = Assembler.new
+        asm.jmp(block.start_addr)
+        @cb.write(asm)
+      else
+        # If this block hasn't yet been compiled, generate blocks after the entry guard.
+        asm = Assembler.new
+        jit = JITState.new(iseq: cfp.iseq, cfp:)
+        compile_block(asm, jit:, pc:, ctx:)
+        @cb.write(asm)
+
+        block = jit.block
+      end
+
+      # Regenerate the previous entry
+      @cb.with_write_addr(entry_stub.start_addr) do
+        # The last instruction of compile_entry_chain_guard is jne
+        asm = Assembler.new
+        asm.jne(next_entry)
+        @cb.write(asm)
+      end
+
+      return block.start_addr
     rescue Exception => e
       $stderr.puts e.full_message
       exit 1
@@ -210,30 +253,24 @@ module RubyVM::RJIT
       # compiled for is the same PC that the interpreter wants us to run with.
       # If they don't match, then we'll take a side exit.
       if iseq.body.param.flags.has_opt
-        compile_pc_guard(asm, iseq, pc)
+        compile_entry_chain_guard(asm, iseq, pc)
       end
     end
 
-    def compile_pc_guard(asm, iseq, pc)
+    def compile_entry_chain_guard(asm, iseq, pc)
+      entry_stub = EntryStub.new
+      stub_addr = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_entry_stub(ocb_asm, entry_stub)
+        @ocb.write(ocb_asm)
+      end
+
       asm.comment('guard expected PC')
       asm.mov(:rax, pc)
       asm.cmp([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
 
-      pc_match = asm.new_label('pc_match')
-      asm.je(pc_match)
-
-      # We're not starting at the first PC, so we need to exit.
-      asm.incr_counter(:leave_start_pc_non_zero)
-
-      asm.pop(SP)
-      asm.pop(EC)
-      asm.pop(CFP)
-
-      asm.mov(:rax, Qundef)
-      asm.ret
-
-      # PC should match the expected insn_idx
-      asm.write_label(pc_match)
+      asm.stub(entry_stub) do
+        asm.jne(stub_addr)
+      end
     end
 
     # @param asm [RubyVM::RJIT::Assembler]

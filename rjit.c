@@ -361,6 +361,26 @@ rb_rjit_compile(const rb_iseq_t *iseq)
 }
 
 void *
+rb_rjit_entry_stub_hit(VALUE branch_stub)
+{
+    VALUE result;
+
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+
+    WITH_RJIT_ISOLATED({
+        VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
+        result = rb_funcall(rb_RJITCompiler, rb_intern("entry_stub_hit"), 2, branch_stub, cfp_ptr);
+    });
+
+    RB_VM_LOCK_LEAVE();
+
+    return (void *)NUM2SIZET(result);
+}
+
+void *
 rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 {
     VALUE result;

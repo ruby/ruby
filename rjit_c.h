@@ -157,8 +157,6 @@ RJIT_RUNTIME_COUNTERS(
     getblockpp_not_gc_guarded,
     getblockpp_not_iseq_block,
 
-    leave_start_pc_non_zero,
-
     compiled_block_count
 )
 #undef RJIT_RUNTIME_COUNTERS
