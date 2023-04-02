@@ -4245,6 +4245,15 @@ module RubyVM::RJIT
         end
       end
 
+      # Stack overflow check
+      # Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
+      # #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
+      asm.comment('stack overflow check')
+      locals_offs = C.VALUE.size * (num_locals + iseq.body.stack_max) + 2 * C.rb_control_frame_t.size
+      asm.lea(:rax, ctx.sp_opnd(locals_offs))
+      asm.cmp(CFP, :rax)
+      asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
+
       # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
       arg_setup_block = (block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
       block_arg0_splat = arg_setup_block && argc == 1 &&
@@ -4437,6 +4446,14 @@ module RubyVM::RJIT
 
       # Check interrupts before SP motion to safely side-exit with the original SP.
       jit_check_ints(jit, ctx, asm)
+
+      # Stack overflow check
+      # #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
+      # REG_CFP <= REG_SP + 4 * SIZEOF_VALUE + sizeof(rb_control_frame_t)
+      asm.comment('stack overflow check')
+      asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * 4 + 2 * C.rb_control_frame_t.size))
+      asm.cmp(CFP, :rax)
+      asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
 
       # Push a callee frame. SP register and ctx are not modified inside this.
       jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler)
@@ -4835,12 +4852,6 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
-      # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max)
-      asm.comment('stack overflow check')
-      asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
-      asm.cmp(CFP, :rax)
-      asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
-
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
       recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
