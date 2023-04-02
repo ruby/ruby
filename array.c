@@ -1787,7 +1787,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *  Related: #push, #pop, #shift.
  */
 
-static VALUE
+VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
     long len = RARRAY_LEN(ary);
@@ -1804,17 +1804,10 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-/* non-static for yjit */
-VALUE
-rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
-{
-    return rb_ary_unshift_m(argc, argv, ary);
-}
-
 VALUE
 rb_ary_unshift(VALUE ary, VALUE item)
 {
-    return rb_ary_unshift_m(1,&item,ary);
+    return rb_ary_unshift_m(1, &item, ary);
 }
 
 /* faster version - use this if you don't need to treat negative offset */

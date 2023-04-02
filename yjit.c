@@ -845,8 +845,7 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
     return rb_ary_entry_internal(ary, offset);
 }
 
-VALUE
-rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
+extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
 rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)

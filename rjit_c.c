@@ -514,7 +514,7 @@ extern VALUE rb_str_bytesize(VALUE str);
 extern const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID mid);
 extern VALUE rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv);
 extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
-extern VALUE rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
+extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 #include "rjit_c.rbinc"
 

@@ -1296,11 +1296,7 @@ extern "C" {
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_yjit_rb_ary_unshift_m(
-        argc: ::std::os::raw::c_int,
-        argv: *mut VALUE,
-        ary: VALUE,
-    ) -> VALUE;
+    pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_yarv_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);

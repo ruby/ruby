@@ -543,6 +543,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_tmp_new_from_values) }
   end
 
+  def C.rb_ary_unshift_m
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_unshift_m) }
+  end
+
   def C.rb_backref_get
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_backref_get) }
   end
@@ -729,10 +733,6 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_vm_yield_with_cfunc
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_yield_with_cfunc) }
-  end
-
-  def C.rb_yjit_rb_ary_unshift_m
-    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_yjit_rb_ary_unshift_m) }
   end
 
   def C.rjit_full_cfunc_return

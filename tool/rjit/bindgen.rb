@@ -565,7 +565,7 @@ generator = BindingGenerator.new(
     rb_vm_set_ivar_id
     rb_ary_dup
     rjit_rb_ary_subseq_length
-    rb_yjit_rb_ary_unshift_m
+    rb_ary_unshift_m
   ],
   types: %w[
     CALL_DATA

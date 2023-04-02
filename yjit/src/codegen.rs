@@ -5821,7 +5821,7 @@ fn gen_send_iseq(
 
                 asm.comment("prepend stack values to rest array");
                 let array = asm.ccall(
-                    rb_yjit_rb_ary_unshift_m as *const u8,
+                    rb_ary_unshift_m as *const u8,
                     vec![Opnd::UImm(diff as u64), values_ptr, array],
                 );
                 ctx.stack_pop(diff as usize);

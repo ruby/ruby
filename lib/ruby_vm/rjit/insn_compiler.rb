@@ -4315,7 +4315,7 @@ module RubyVM::RJIT
             asm.mov(C_ARGS[0], diff)
             asm.mov(C_ARGS[1], values_ptr)
             asm.mov(C_ARGS[2], array)
-            asm.call(C.rb_yjit_rb_ary_unshift_m)
+            asm.call(C.rb_ary_unshift_m)
             ctx.stack_pop(diff)
 
             stack_ret = ctx.stack_push
