@@ -39,6 +39,15 @@ module RubyVM::RJIT
       end
     end
 
+    # Check if it's a T_STRING object (both TString and CString are T_STRING)
+    def string?
+      case self
+      in Type::TString then true
+      in Type::CString then true
+      else false
+      end
+    end
+
     # Returns a boolean representing whether the value is truthy if known, otherwise nil
     def known_truthy
       case self

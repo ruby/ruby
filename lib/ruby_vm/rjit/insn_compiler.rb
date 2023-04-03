@@ -2995,7 +2995,7 @@ module RubyVM::RJIT
 
       # Guard that the concat argument is a string
       asm.mov(:rax, ctx.stack_opnd(0))
-      guard_object_is_string(asm, :rax, :rcx, side_exit)
+      guard_object_is_string(jit, ctx, asm, :rax, :rcx, StackOpnd[0])
 
       # Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
       # other Ractors may trigger global invalidation, so we need ctx.clear_local_types.
@@ -3499,7 +3499,20 @@ module RubyVM::RJIT
       end
     end
 
-    def guard_object_is_string(asm, object_reg, flags_reg, side_exit)
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def guard_object_is_string(jit, ctx, asm, object_reg, flags_reg, object_opnd, counter = nil)
+      object_type = ctx.get_opnd_type(object_opnd)
+      if object_type.string?
+        return
+      end
+
+      guard_object_is_heap(jit, ctx, asm, object_reg, object_opnd, counter)
+
+      side_exit = side_exit(jit, ctx)
+      side_exit = counted_exit(side_exit, counter) if counter
+
       asm.comment('guard object is string')
       # Pull out the type mask
       asm.mov(flags_reg, [object_reg, C.RBasic.offsetof(:flags)])
@@ -3508,6 +3521,10 @@ module RubyVM::RJIT
       # Compare the result with T_STRING
       asm.cmp(flags_reg, C::RUBY_T_STRING)
       asm.jne(side_exit)
+
+      if object_type.diff(Type::TString) != TypeDiff::Incompatible
+        ctx.upgrade_opnd_type(object_opnd, Type::TString)
+      end
     end
 
     # clobbers object_reg
