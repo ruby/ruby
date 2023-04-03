@@ -4542,6 +4542,31 @@ fn jit_rb_ary_empty_p(
     return true;
 }
 
+fn jit_rb_ary_push(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    asm.comment("Array#<<");
+
+    // rb_ary_push allocates memory for buffer extension
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    let item_opnd = ctx.stack_pop(1);
+    let ary_opnd = ctx.stack_pop(1);
+    let ret = asm.ccall(rb_ary_push as *const u8, vec![ary_opnd, item_opnd]);
+
+    let ret_opnd = ctx.stack_push(Type::TArray);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
 fn jit_obj_respond_to(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -8071,6 +8096,7 @@ impl CodegenGlobals {
 
             // rb_ary_empty_p() method in array.c
             self.yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
+            self.yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
 
             self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
             self.yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
