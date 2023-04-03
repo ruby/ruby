@@ -1,25 +1,78 @@
 module RubyVM::RJIT
   # Represent the type of a value (local/stack/self) in RJIT
   Type = Data.define(:type) do
+    # Check if the type is an immediate
+    def imm?
+      case self
+      in Type::UnknownImm then true
+      in Type::Nil then true
+      in Type::True then true
+      in Type::False then true
+      in Type::Fixnum then true
+      in Type::Flonum then true
+      in Type::ImmSymbol then true
+      else false
+      end
+    end
+
+    # Check if the type is a heap object
+    def heap?
+      case self
+      in Type::UnknownHeap then true
+      in Type::TArray then true
+      in Type::CArray then true
+      in Type::Hash then true
+      in Type::HeapSymbol then true
+      in Type::TString then true
+      in Type::CString then true
+      in Type::BlockParamProxy then true
+      else false
+      end
+    end
+
     # Returns a boolean representing whether the value is truthy if known, otherwise nil
     def known_truthy
       case self
-      in Type::Nil | Type::False
-        false
-      in Type::UnknownHeap
-        true
-      in Type::Unknown | Type::UnknownImm
-        nil
-      else
-        true
+      in Type::Nil then false
+      in Type::False then false
+      in Type::UnknownHeap then false
+      in Type::Unknown | Type::UnknownImm then nil
+      else true
       end
     end
 
     def diff(dst)
+      # Perfect match, difference is zero
       if self == dst
         return TypeDiff::Compatible[0]
       end
 
+      # Any type can flow into an unknown type
+      if dst == Type::Unknown
+        return TypeDiff::Compatible[1]
+      end
+
+      # A CString is also a TString.
+      if self == Type::CString && dst == Type::TString
+        return TypeDiff::Compatible[1]
+      end
+
+      # A CArray is also a TArray.
+      if self == Type::CArray && dst == Type::TArray
+        return TypeDiff::Compatible[1]
+      end
+
+      # Specific heap type into unknown heap type is imperfect but valid
+      if self.heap? && dst == Type::UnknownHeap
+        return TypeDiff::Compatible[1]
+      end
+
+      # Specific immediate type into unknown immediate type is imperfect but valid
+      if self.imm? && dst == Type::UnknownImm
+        return TypeDiff::Compatible[1]
+      end
+
+      # Incompatible types
       return TypeDiff::Incompatible
     end
 

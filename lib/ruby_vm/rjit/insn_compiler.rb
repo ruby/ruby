@@ -419,7 +419,7 @@ module RubyVM::RJIT
       id = jit.operand(0)
       comptime_obj = jit.peek_at_self
 
-      jit_getivar(jit, ctx, asm, comptime_obj, id)
+      jit_getivar(jit, ctx, asm, comptime_obj, id, nil, SelfOpnd)
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -481,7 +481,7 @@ module RubyVM::RJIT
         side_exit = side_exit(jit, ctx)
 
         # Upgrade type
-        guard_object_is_heap(asm, :rax, counted_exit(side_exit, :setivar_not_heap))
+        guard_object_is_heap(jit, ctx, asm, :rax, SelfOpnd, :setivar_not_heap)
 
         asm.comment('guard shape')
         asm.cmp(DwordPtr[:rax, C.rb_shape_id_offset], shape_id)
@@ -977,10 +977,11 @@ module RubyVM::RJIT
       side_exit = side_exit(jit, ctx)
 
       array_opnd = ctx.stack_opnd(0)
+      array_stack_opnd = StackOpnd[0]
 
       # num is the number of requested values. If there aren't enough in the
       # array then we're going to push on nils.
-      if ctx.get_opnd_type(StackOpnd[0]) == Type::Nil
+      if ctx.get_opnd_type(array_stack_opnd) == Type::Nil
         ctx.stack_pop(1) # pop after using the type info
         # special case for a, b = nil pattern
         # push N nils onto the stack
@@ -993,7 +994,7 @@ module RubyVM::RJIT
 
       # Move the array from the stack and check that it's an array.
       asm.mov(:rax, array_opnd)
-      guard_object_is_heap(asm, :rax, counted_exit(side_exit, :expandarray_not_array))
+      guard_object_is_heap(jit, ctx, asm, :rax, array_stack_opnd, :expandarray_not_array)
       guard_object_is_array(asm, :rax, :rcx, counted_exit(side_exit, :expandarray_not_array))
       ctx.stack_pop(1) # pop after using the type info
 
@@ -1341,7 +1342,7 @@ module RubyVM::RJIT
       side_exit = side_exit(jit, ctx)
 
       # Guard heap object (recv_opnd must be used before stack_pop)
-      guard_object_is_heap(asm, recv, side_exit)
+      guard_object_is_heap(jit, ctx, asm, recv, SelfOpnd)
 
       shape_opnd = DwordPtr[recv, C.rb_shape_id_offset]
 
@@ -3445,16 +3446,30 @@ module RubyVM::RJIT
       local_table_size - op - 1
     end
 
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def guard_object_is_heap(asm, object_opnd, side_exit)
+    def guard_object_is_heap(jit, ctx, asm, object, object_opnd, counter = nil)
+      object_type = ctx.get_opnd_type(object_opnd)
+      if object_type.heap?
+        return
+      end
+
+      side_exit = side_exit(jit, ctx)
+      side_exit = counted_exit(side_exit, counter) if counter
+
       asm.comment('guard object is heap')
       # Test that the object is not an immediate
-      asm.test(object_opnd, C::RUBY_IMMEDIATE_MASK)
+      asm.test(object, C::RUBY_IMMEDIATE_MASK)
       asm.jnz(side_exit)
 
       # Test that the object is not false
-      asm.cmp(object_opnd, Qfalse)
+      asm.cmp(object, Qfalse)
       asm.je(side_exit)
+
+      if object_type.diff(Type::UnknownHeap) != TypeDiff::Incompatible
+        ctx.upgrade_opnd_type(object_opnd, Type::UnknownHeap)
+      end
     end
 
     # @param asm [RubyVM::RJIT::Assembler]
@@ -3859,7 +3874,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id, obj_opnd = nil)
+    def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id, obj_opnd, obj_yarv_opnd)
       side_exit = side_exit(jit, ctx)
       starting_ctx = ctx.dup # copy for jit_chain_guard
 
@@ -3898,7 +3913,7 @@ module RubyVM::RJIT
       end
 
       asm.mov(:rax, obj_opnd ? obj_opnd : [CFP, C.rb_control_frame_t.offsetof(:self)])
-      guard_object_is_heap(asm, :rax, counted_exit(side_exit, :getivar_not_heap))
+      guard_object_is_heap(jit, ctx, asm, :rax, obj_yarv_opnd, :getivar_not_heap)
 
       shape_id = C.rb_shape_get_shape_id(comptime_obj)
       if shape_id == C::OBJ_TOO_COMPLEX_SHAPE_ID
@@ -5035,7 +5050,7 @@ module RubyVM::RJIT
         return CantCompile
       end
 
-      jit_getivar(jit, ctx, asm, comptime_recv, ivar_id, recv_opnd)
+      jit_getivar(jit, ctx, asm, comptime_recv, ivar_id, recv_opnd, StackOpnd[0])
     end
 
     # vm_call_bmethod
@@ -5508,10 +5523,11 @@ module RubyVM::RJIT
       asm.comment('push_splat_args')
 
       array_opnd = ctx.stack_opnd(0)
+      array_stack_opnd = StackOpnd[0]
       array_reg = :rax
       asm.mov(array_reg, array_opnd)
 
-      guard_object_is_heap(asm, array_reg, counted_exit(side_exit, :send_args_splat_not_array))
+      guard_object_is_heap(jit, ctx, asm, array_reg, array_stack_opnd, :send_args_splat_not_array)
       guard_object_is_array(asm, array_reg, :rcx, counted_exit(side_exit, :send_args_splat_not_array))
 
       array_len_opnd = :rcx
