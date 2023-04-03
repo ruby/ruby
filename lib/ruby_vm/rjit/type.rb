@@ -63,6 +63,21 @@ module RubyVM::RJIT
       end
     end
 
+    # Returns the class if it is known, otherwise nil
+    def known_class
+      case self
+      in Type::Nil then C.rb_cNilClass
+      in Type::True then C.rb_cTrueClass
+      in Type::False then C.rb_cFalseClass
+      in Type::Fixnum then C.rb_cInteger
+      in Type::Flonum then C.rb_cFloat
+      in Type::ImmSymbol | Type::HeapSymbol then C.rb_cSymbol
+      in Type::CString then C.rb_cString
+      in Type::CArray then C.rb_cArray
+      else nil
+      end
+    end
+
     # Returns a boolean representing whether the value is truthy if known, otherwise nil
     def known_truthy
       case self

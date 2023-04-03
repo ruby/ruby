@@ -33,6 +33,15 @@ module RubyVM::RJIT
       temp_mapping: [MapToStack] * MAX_TEMP_TYPES
     ) = super
 
+    # Deep dup by default for safety
+    def dup
+      ctx = super
+      ctx.local_types = ctx.local_types.dup
+      ctx.temp_types = ctx.temp_types.dup
+      ctx.temp_mapping = ctx.temp_mapping.dup
+      ctx
+    end
+
     # Create a new Context instance with a given stack_size and sp_offset adjusted
     # accordingly. This is useful when you want to virtually rewind a stack_size for
     # generating a side exit while considering past sp_offset changes on gen_save_sp.
