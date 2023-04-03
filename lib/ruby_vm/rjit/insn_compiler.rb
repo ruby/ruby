@@ -1230,6 +1230,9 @@ module RubyVM::RJIT
       asm.mov(:rax, top_val)
       asm.mov(dst_opnd, :rax)
 
+      mapping = ctx.get_opnd_mapping(StackOpnd[0])
+      ctx.set_opnd_mapping(StackOpnd[n], mapping)
+
       KeepCompiling
     end
 
