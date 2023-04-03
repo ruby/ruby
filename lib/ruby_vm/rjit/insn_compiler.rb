@@ -3667,15 +3667,48 @@ module RubyVM::RJIT
       arg1 = ctx.stack_opnd(0)
       arg0 = ctx.stack_opnd(1)
 
-      asm.comment('guard arg0 fixnum')
-      asm.test(arg0, C::RUBY_FIXNUM_FLAG)
-      jit_chain_guard(:jz, jit, ctx, asm, side_exit)
-      # TODO: upgrade type, and skip the check when possible
+      # Get the stack operand types
+      arg1_type = ctx.get_opnd_type(StackOpnd[0])
+      arg0_type = ctx.get_opnd_type(StackOpnd[1])
 
-      asm.comment('guard arg1 fixnum')
-      asm.test(arg1, C::RUBY_FIXNUM_FLAG)
-      jit_chain_guard(:jz, jit, ctx, asm, side_exit)
-      # TODO: upgrade type, and skip the check when possible
+      if arg0_type.heap? || arg1_type.heap?
+        asm.comment('arg is heap object')
+        asm.jmp(side_exit)
+        return
+      end
+
+      if arg0_type != Type::Fixnum && arg0_type.specific?
+        asm.comment('arg0 not fixnum')
+        asm.jmp(side_exit)
+        return
+      end
+
+      if arg1_type != Type::Fixnum && arg1_type.specific?
+        asm.comment('arg1 not fixnum')
+        asm.jmp(side_exit)
+        return
+      end
+
+      assert(!arg0_type.heap?)
+      assert(!arg1_type.heap?)
+      assert(arg0_type == Type::Fixnum || arg0_type.unknown?)
+      assert(arg1_type == Type::Fixnum || arg1_type.unknown?)
+
+      # If not fixnums at run-time, fall back
+      if arg0_type != Type::Fixnum
+        asm.comment('guard arg0 fixnum')
+        asm.test(arg0, C::RUBY_FIXNUM_FLAG)
+        jit_chain_guard(:jz, jit, ctx, asm, side_exit)
+      end
+      if arg1_type != Type::Fixnum
+        asm.comment('guard arg1 fixnum')
+        asm.test(arg1, C::RUBY_FIXNUM_FLAG)
+        jit_chain_guard(:jz, jit, ctx, asm, side_exit)
+      end
+
+      # Set stack types in context
+      ctx.upgrade_opnd_type(StackOpnd[0], Type::Fixnum)
+      ctx.upgrade_opnd_type(StackOpnd[1], Type::Fixnum)
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -5640,6 +5673,10 @@ module RubyVM::RJIT
       asm.mov(ary_opnd, [array_reg, C.RArray.offsetof(:as, :heap, :ptr)])
       asm.lea(array_reg, [array_reg, C.RArray.offsetof(:as, :ary)]) # clobbers array_reg
       asm.cmovnz(ary_opnd, array_reg)
+    end
+
+    def assert(cond)
+      assert_equal(cond, true)
     end
 
     def assert_equal(left, right)

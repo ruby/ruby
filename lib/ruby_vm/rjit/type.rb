@@ -15,6 +15,21 @@ module RubyVM::RJIT
       end
     end
 
+    # Returns true when the type is not specific.
+    def unknown?
+      case self
+      in Type::Unknown | Type::UnknownImm | Type::UnknownHeap then true
+      else false
+      end
+    end
+
+    # Returns true when we know the VALUE is a specific handle type,
+    # such as a static symbol ([Type::ImmSymbol], i.e. true from RB_STATIC_SYM_P()).
+    # Opposite of [Self::is_unknown].
+    def specific?
+      !self.unknown?
+    end
+
     # Check if the type is a heap object
     def heap?
       case self
