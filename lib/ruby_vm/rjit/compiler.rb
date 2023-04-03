@@ -402,24 +402,6 @@ module RubyVM::RJIT
       end
 
       return best_version
-
-      versions.find do |block|
-        dst = block.ctx
-
-        # Can only lookup the first version in the chain
-        if dst.chain_depth != 0
-          next false
-        end
-
-        # Blocks with depth > 0 always produce new versions
-        # Sidechains cannot overlap
-        if src.chain_depth != 0
-          next false
-        end
-
-        src.stack_size == dst.stack_size &&
-          src.sp_offset == dst.sp_offset
-      end
     end
 
     # @param [RubyVM::RJIT::Block] block

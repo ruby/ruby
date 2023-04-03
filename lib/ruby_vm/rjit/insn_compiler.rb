@@ -2990,9 +2990,6 @@ module RubyVM::RJIT
         return false
       end
 
-      # Generate a side exit
-      side_exit = side_exit(jit, ctx)
-
       # Guard that the concat argument is a string
       asm.mov(:rax, ctx.stack_opnd(0))
       guard_object_is_string(jit, ctx, asm, :rax, :rcx, StackOpnd[0])
