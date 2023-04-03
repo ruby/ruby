@@ -758,14 +758,14 @@ eom
         end
         times.compact!
         tmin, tmax = times.minmax
-        tmax *= tmax / tmin
-        tmax = 10**Math.log10(tmax).ceil
+        tbase = 10 ** Math.log10(tmax * ([(tmax / tmin), 2].max ** 2)).ceil
+        info = "(tmin: #{tmin}, tmax: #{tmax}, tbase: #{tbase})"
 
         seq.each do |i|
           next if i == first
-          t = tmax * i.fdiv(first)
+          t = tbase * i.fdiv(first)
           *arg = pre.call(i)
-          message = "[#{i}]: in #{t}s"
+          message = "[#{i}]: in #{t}s #{info}"
           Timeout.timeout(t, Timeout::Error, message) do
             st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             yield(*arg)
