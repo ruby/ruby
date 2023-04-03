@@ -289,6 +289,74 @@ module RubyVM::RJIT
       self.local_types = [Type::Unknown] * MAX_LOCAL_TYPES
     end
 
+    # Compute a difference score for two context objects
+    def diff(dst)
+      # Self is the source context (at the end of the predecessor)
+      src = self
+
+      # Can only lookup the first version in the chain
+      if dst.chain_depth != 0
+        return TypeDiff::Incompatible
+      end
+
+      # Blocks with depth > 0 always produce new versions
+      # Sidechains cannot overlap
+      if src.chain_depth != 0
+        return TypeDiff::Incompatible
+      end
+
+      if dst.stack_size != src.stack_size
+        return TypeDiff::Incompatible
+      end
+
+      if dst.sp_offset != src.sp_offset
+        return TypeDiff::Incompatible
+      end
+
+      # Difference sum
+      diff = 0
+
+      # Check the type of self
+      diff += case src.self_type.diff(dst.self_type)
+      in TypeDiff::Compatible[diff] then diff
+      in TypeDiff::Incompatible then return TypeDiff::Incompatible
+      end
+
+      # For each local type we track
+      src.local_types.size.times do |i|
+        t_src = src.local_types[i]
+        t_dst = dst.local_types[i]
+        diff += case t_src.diff(t_dst)
+        in TypeDiff::Compatible[diff] then diff
+        in TypeDiff::Incompatible then return TypeDiff::Incompatible
+        end
+      end
+
+      # For each value on the temp stack
+      src.stack_size.times do |i|
+        src_mapping, src_type = src.get_opnd_mapping(StackOpnd[i])
+        dst_mapping, dst_type = dst.get_opnd_mapping(StackOpnd[i])
+
+        # If the two mappings aren't the same
+        if src_mapping != dst_mapping
+          if dst_mapping == MapToStack
+            # We can safely drop information about the source of the temp
+            # stack operand.
+            diff += 1
+          else
+            return TypeDiff::Incompatible
+          end
+        end
+
+        diff += case src_type.diff(dst_type)
+        in TypeDiff::Compatible[diff] then diff
+        in TypeDiff::Incompatible then return TypeDiff::Incompatible
+        end
+      end
+
+      return TypeDiff::Compatible[diff]
+    end
+
     private
 
     def assert(cond)

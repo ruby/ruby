@@ -354,8 +354,25 @@ module RubyVM::RJIT
     # @param [RubyVM::RJIT::Context] ctx
     # @return [RubyVM::RJIT::Block,NilClass]
     def find_block(iseq, pc, ctx)
-      src = ctx
-      rjit_blocks(iseq)[pc].find do |block|
+      versions = rjit_blocks(iseq)[pc]
+
+      best_version = nil
+      best_diff = Float::INFINITY
+
+      versions.each do |block|
+        # Note that we always prefer the first matching
+        # version found because of inline-cache chains
+        case ctx.diff(block.ctx)
+        in TypeDiff::Compatible[diff] if diff < best_diff
+          best_version = block
+          best_diff = diff
+        else
+        end
+      end
+
+      return best_version
+
+      versions.find do |block|
         dst = block.ctx
 
         # Can only lookup the first version in the chain
