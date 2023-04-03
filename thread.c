@@ -132,6 +132,8 @@ rb_thread_local_storage(VALUE thread)
 enum SLEEP_FLAGS {
     SLEEP_DEADLOCKABLE   = 0x01,
     SLEEP_SPURIOUS_CHECK = 0x02,
+    SLEEP_ALLOW_SPURIOUS = 0x04,
+    SLEEP_NO_CHECKINTS   = 0x08,
 };
 
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
@@ -418,6 +420,7 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
                 case THREAD_STOPPED:
                 case THREAD_STOPPED_FOREVER:
                     target_thread->status = THREAD_RUNNABLE;
+                    break;
                 default:
                     break;
             }
@@ -1053,7 +1056,7 @@ thread_join_sleep(VALUE arg)
             rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
         }
         else if (!limit) {
-            sleep_forever(th, SLEEP_DEADLOCKABLE);
+            sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
         }
         else {
             if (hrtime_update_expire(limit, end)) {
@@ -1338,7 +1341,9 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
 
     status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
     th->status = status;
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+
+    if (!(fl & SLEEP_NO_CHECKINTS)) RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+
     while (th->status == status) {
         if (fl & SLEEP_DEADLOCKABLE) {
             rb_ractor_sleeper_threads_inc(th->ractor);
@@ -1349,6 +1354,9 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
         }
         if (fl & SLEEP_DEADLOCKABLE) {
             rb_ractor_sleeper_threads_dec(th->ractor);
+        }
+        if (fl & SLEEP_ALLOW_SPURIOUS) {
+            break;
         }
 
         woke = vm_check_ints_blocking(th->ec);
