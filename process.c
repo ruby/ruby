@@ -7960,6 +7960,11 @@ ruby_real_ms_time(void)
 # define NUM2CLOCKID(x) 0
 #endif
 
+#define clock_failed(name, err, arg) do { \
+        int clock_error = (err); \
+        rb_syserr_fail_str(clock_error, rb_sprintf("clock_" name "(%+"PRIsVALUE")", (arg))); \
+    } while (0)
+
 /*
  *  call-seq:
  *     Process.clock_gettime(clock_id [, unit])   -> number
@@ -8260,15 +8265,17 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
       gettime:
         ret = clock_gettime(c, &ts);
         if (ret == -1)
-            rb_sys_fail("clock_gettime");
+            clock_failed("gettime", errno, clk_id);
         tt.count = (int32_t)ts.tv_nsec;
         tt.giga_count = ts.tv_sec;
         denominators[num_denominators++] = 1000000000;
         goto success;
 #endif
     }
-    /* EINVAL emulates clock_gettime behavior when clock_id is invalid. */
-    rb_syserr_fail(EINVAL, 0);
+    else {
+        rb_unexpected_type(clk_id, T_SYMBOL);
+    }
+    clock_failed("gettime", EINVAL, clk_id);
 
   success:
     return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
@@ -8433,15 +8440,17 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
       getres:
         ret = clock_getres(c, &ts);
         if (ret == -1)
-            rb_sys_fail("clock_getres");
+            clock_failed("getres", errno, clk_id);
         tt.count = (int32_t)ts.tv_nsec;
         tt.giga_count = ts.tv_sec;
         denominators[num_denominators++] = 1000000000;
         goto success;
 #endif
     }
-    /* EINVAL emulates clock_getres behavior when clock_id is invalid. */
-    rb_syserr_fail(EINVAL, 0);
+    else {
+        rb_unexpected_type(clk_id, T_SYMBOL);
+    }
+    clock_failed("getres", EINVAL, clk_id);
 
   success:
     if (unit == ID2SYM(id_hertz)) {
