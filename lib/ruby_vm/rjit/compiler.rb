@@ -34,6 +34,10 @@ module RubyVM::RJIT
   # Mark objects in this Array during GC
   GC_REFS = []
 
+  # Maximum number of versions per block
+  # 1 means always create generic versions
+  MAX_VERSIONS = 4
+
   class Compiler
     attr_accessor :write_pos
 
@@ -277,6 +281,7 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def compile_block(asm, jit:, pc:, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
+      ctx = limit_block_versions(jit.iseq, pc, ctx)
       block = Block.new(iseq: jit.iseq, pc:, ctx: ctx.dup)
       jit.block = block
       asm.block(block)
@@ -344,6 +349,32 @@ module RubyVM::RJIT
       if C.rjit_opts.stats
         C.rb_rjit_counters[name][0] += 1
       end
+    end
+
+    # Produce a generic context when the block version limit is hit for the block
+    def limit_block_versions(iseq, pc, ctx)
+      # Guard chains implement limits separately, do nothing
+      if ctx.chain_depth > 0
+        return ctx.dup
+      end
+
+      # If this block version we're about to add will hit the version limit
+      if list_blocks(iseq, pc).size + 1 >= MAX_VERSIONS
+        # Produce a generic context that stores no type information,
+        # but still respects the stack_size and sp_offset constraints.
+        # This new context will then match all future requests.
+        generic_ctx = Context.new
+        generic_ctx.stack_size = ctx.stack_size
+        generic_ctx.sp_offset = ctx.sp_offset
+
+        if ctx.diff(generic_ctx) == TypeDiff::Incompatible
+          raise 'should substitute a compatible context'
+        end
+
+        return generic_ctx
+      end
+
+      return ctx.dup
     end
 
     def list_blocks(iseq, pc)
