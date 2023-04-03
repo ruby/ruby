@@ -291,6 +291,9 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #ifndef GC_HEAP_GROWTH_MAX_SLOTS
 #define GC_HEAP_GROWTH_MAX_SLOTS 0 /* 0 is disable */
 #endif
+#ifndef GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO
+# define GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO 0.01
+#endif
 #ifndef GC_HEAP_OLDOBJECT_LIMIT_FACTOR
 #define GC_HEAP_OLDOBJECT_LIMIT_FACTOR 2.0
 #endif
@@ -347,6 +350,7 @@ typedef struct {
     double heap_free_slots_min_ratio;
     double heap_free_slots_goal_ratio;
     double heap_free_slots_max_ratio;
+    double uncollectible_wb_unprotected_objects_limit_ratio;
     double oldobject_limit_factor;
 
     size_t malloc_limit_min;
@@ -369,6 +373,7 @@ static ruby_gc_params_t gc_params = {
     GC_HEAP_FREE_SLOTS_MIN_RATIO,
     GC_HEAP_FREE_SLOTS_GOAL_RATIO,
     GC_HEAP_FREE_SLOTS_MAX_RATIO,
+    GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO,
     GC_HEAP_OLDOBJECT_LIMIT_FACTOR,
 
     GC_MALLOC_LIMIT_MIN,
@@ -8363,7 +8368,10 @@ gc_marks_finish(rb_objspace_t *objspace)
         if (full_marking) {
             /* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
             const double r = gc_params.oldobject_limit_factor;
-            objspace->rgengc.uncollectible_wb_unprotected_objects_limit = (size_t)(objspace->rgengc.uncollectible_wb_unprotected_objects * r);
+            objspace->rgengc.uncollectible_wb_unprotected_objects_limit = MAX(
+                (size_t)(objspace->rgengc.uncollectible_wb_unprotected_objects * r),
+                (size_t)(objspace->rgengc.old_objects * gc_params.uncollectible_wb_unprotected_objects_limit_ratio)
+            );
             objspace->rgengc.old_objects_limit = (size_t)(objspace->rgengc.old_objects * r);
         }
 
@@ -11762,6 +11770,7 @@ ruby_gc_set_params(void)
     get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO", &gc_params.heap_free_slots_goal_ratio,
                         gc_params.heap_free_slots_min_ratio, gc_params.heap_free_slots_max_ratio, TRUE);
     get_envparam_double("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", &gc_params.oldobject_limit_factor, 0.0, 0.0, TRUE);
+    get_envparam_double("RUBY_GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO", &gc_params.uncollectible_wb_unprotected_objects_limit_ratio, 0.0, 0.0, TRUE);
 
     if (get_envparam_size("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0)) {
         malloc_limit = gc_params.malloc_limit_min;

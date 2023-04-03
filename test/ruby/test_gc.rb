@@ -383,6 +383,15 @@ class TestGc < Test::Unit::TestCase
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_MAX=16000000/, "")
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
     end
+
+    ["0.01", "0.1", "1.0"].each do |i|
+      env = {"RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0", "RUBY_GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO" => i}
+      assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+        GC.disable
+        GC.start
+        assert_equal((GC.stat[:old_objects] * #{i}).to_i, GC.stat[:remembered_wb_unprotected_objects_limit])
+      RUBY
+    end
   end
 
   def test_profiler_enabled
