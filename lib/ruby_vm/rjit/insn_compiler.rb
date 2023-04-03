@@ -4815,6 +4815,13 @@ module RubyVM::RJIT
       # Create a context for the callee
       callee_ctx = Context.new
 
+      # Set the argument types in the callee's context
+      argc.times do |arg_idx|
+        stack_offs = argc - arg_idx - 1
+        arg_type = ctx.get_opnd_type(StackOpnd[stack_offs])
+        callee_ctx.set_local_type(arg_idx, arg_type)
+      end
+
       recv_type = if calling.block_handler == :captured
         Type::Unknown # we don't track the type information of captured->self for now
       else
