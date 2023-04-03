@@ -738,18 +738,36 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
+      %w[
+        CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
+        CLOCK_MONOTONIC
+      ].find do |clk|
+        if Process.const_defined?(clk)
+          clk = clk.to_sym
+          begin
+            Process.clock_gettime(clk)
+          rescue
+            # Constants may be defined but not implemented, e.g., mingw.
+          else
+            PERFORMANCE_CLOCK = clk
+          end
+        end
+      end
+
       # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
       # Array, Range, Enumerator::ArithmeticSequence and other
       # Enumerable-s, and each elements should be size factors.
       #
       # :yield: each elements of +seq+.
       def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        pend "No PERFORMANCE_CLOCK found" unless defined?(PERFORMANCE_CLOCK)
+
         # Timeout testing generally doesn't work when RJIT compilation happens.
         rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
         measure = proc do |arg, message|
-          st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          st = Process.clock_gettime(PERFORMANCE_CLOCK)
           yield(*arg)
-          t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
+          t = (Process.clock_gettime(PERFORMANCE_CLOCK) - st)
           assert_operator 0, :<=, t, message unless rjit_enabled
           t
         end
