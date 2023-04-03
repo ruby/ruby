@@ -4799,6 +4799,16 @@ module RubyVM::RJIT
         return CantCompile
       end
 
+      # Create a context for the callee
+      callee_ctx = Context.new
+
+      recv_type = if calling.block_handler == :captured
+        Type::Unknown # we don't track the type information of captured->self for now
+      else
+        ctx.get_opnd_type(StackOpnd[argc])
+      end
+      callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type)
+
       # Setup the new frame
       frame_type ||= C::VM_FRAME_MAGIC_METHOD | C::VM_ENV_FLAG_LOCAL
       jit_push_frame(
@@ -4809,9 +4819,6 @@ module RubyVM::RJIT
         prev_ep:,
         doing_kw_call:,
       )
-
-      # Create a context for the callee
-      callee_ctx = Context.new
 
       # Directly jump to the entry point of the callee
       pc = (iseq.body.iseq_encoded + start_pc_offset).to_i
