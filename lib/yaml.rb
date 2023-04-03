@@ -66,5 +66,5 @@ YAML = Psych # :nodoc:
 #
 # Syck can also be found on github: https://github.com/ruby/syck
 module YAML
-  VERSION = "0.2.1"
+  LOADER_VERSION = "0.2.1"
 end
