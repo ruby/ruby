@@ -148,7 +148,7 @@ module RubyVM::RJIT
 
         mapping = self.temp_mapping[stack_idx]
 
-        case mapping 
+        case mapping
         in MapToSelf
           self.self_type
         in MapToStack
