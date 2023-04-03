@@ -30,6 +30,15 @@ module RubyVM::RJIT
       end
     end
 
+    # Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
+    def array?
+      case self
+      in Type::TArray then true
+      in Type::CArray then true
+      else false
+      end
+    end
+
     # Returns a boolean representing whether the value is truthy if known, otherwise nil
     def known_truthy
       case self

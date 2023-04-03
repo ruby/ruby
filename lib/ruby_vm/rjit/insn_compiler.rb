@@ -994,8 +994,7 @@ module RubyVM::RJIT
 
       # Move the array from the stack and check that it's an array.
       asm.mov(:rax, array_opnd)
-      guard_object_is_heap(jit, ctx, asm, :rax, array_stack_opnd, :expandarray_not_array)
-      guard_object_is_array(asm, :rax, :rcx, counted_exit(side_exit, :expandarray_not_array))
+      guard_object_is_array(jit, ctx, asm, :rax, :rcx, array_stack_opnd, :expandarray_not_array)
       ctx.stack_pop(1) # pop after using the type info
 
       # If we don't actually want any values, then just return.
@@ -3472,8 +3471,20 @@ module RubyVM::RJIT
       end
     end
 
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def guard_object_is_array(asm, object_reg, flags_reg, side_exit)
+    def guard_object_is_array(jit, ctx, asm, object_reg, flags_reg, object_opnd, counter = nil)
+      object_type = ctx.get_opnd_type(object_opnd)
+      if object_type.array?
+        return
+      end
+
+      guard_object_is_heap(jit, ctx, asm, object_reg, object_opnd, counter)
+
+      side_exit = side_exit(jit, ctx)
+      side_exit = counted_exit(side_exit, counter) if counter
+
       asm.comment('guard object is array')
       # Pull out the type mask
       asm.mov(flags_reg, [object_reg, C.RBasic.offsetof(:flags)])
@@ -3482,6 +3493,10 @@ module RubyVM::RJIT
       # Compare the result with T_ARRAY
       asm.cmp(flags_reg, C::RUBY_T_ARRAY)
       asm.jne(side_exit)
+
+      if object_type.diff(Type::TArray) != TypeDiff::Incompatible
+        ctx.upgrade_opnd_type(object_opnd, Type::TArray)
+      end
     end
 
     def guard_object_is_string(asm, object_reg, flags_reg, side_exit)
@@ -5527,8 +5542,7 @@ module RubyVM::RJIT
       array_reg = :rax
       asm.mov(array_reg, array_opnd)
 
-      guard_object_is_heap(jit, ctx, asm, array_reg, array_stack_opnd, :send_args_splat_not_array)
-      guard_object_is_array(asm, array_reg, :rcx, counted_exit(side_exit, :send_args_splat_not_array))
+      guard_object_is_array(jit, ctx, asm, array_reg, :rcx, array_stack_opnd, :send_args_splat_not_array)
 
       array_len_opnd = :rcx
       jit_array_len(asm, array_reg, array_len_opnd)
