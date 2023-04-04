@@ -154,26 +154,46 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
 		yarp/diagnostic.$(OBJEXT) \
-		yarp/token_type.$(OBJEXT) \
+		yarp/enc/ascii.$(OBJEXT) \
+		yarp/enc/big5.$(OBJEXT) \
+		yarp/enc/euc_jp.$(OBJEXT) \
+		yarp/enc/iso_8859_1.$(OBJEXT) \
+		yarp/enc/iso_8859_10.$(OBJEXT) \
+		yarp/enc/iso_8859_11.$(OBJEXT) \
+		yarp/enc/iso_8859_13.$(OBJEXT) \
+		yarp/enc/iso_8859_14.$(OBJEXT) \
+		yarp/enc/iso_8859_15.$(OBJEXT) \
+		yarp/enc/iso_8859_16.$(OBJEXT) \
+		yarp/enc/iso_8859_2.$(OBJEXT) \
+		yarp/enc/iso_8859_3.$(OBJEXT) \
+		yarp/enc/iso_8859_4.$(OBJEXT) \
+		yarp/enc/iso_8859_5.$(OBJEXT) \
+		yarp/enc/iso_8859_6.$(OBJEXT) \
+		yarp/enc/iso_8859_7.$(OBJEXT) \
+		yarp/enc/iso_8859_8.$(OBJEXT) \
+		yarp/enc/iso_8859_9.$(OBJEXT) \
+		yarp/enc/shared.$(OBJEXT) \
+		yarp/enc/shift_jis.$(OBJEXT) \
+		yarp/enc/unicode.$(OBJEXT) \
+		yarp/enc/windows_1251.$(OBJEXT) \
+		yarp/enc/windows_1252.$(OBJEXT) \
+		yarp/enc/windows_31j.$(OBJEXT) \
+		yarp/missing.$(OBJEXT) \
+		yarp/node.$(OBJEXT) \
+		yarp/pack.$(OBJEXT) \
 		yarp/prettyprint.$(OBJEXT) \
+		yarp/regexp.$(OBJEXT) \
+		yarp/serialize.$(OBJEXT) \
+		yarp/token_type.$(OBJEXT) \
+		yarp/unescape.$(OBJEXT) \
+		yarp/util/yp_buffer.$(OBJEXT) \
+		yarp/util/yp_char.$(OBJEXT) \
+		yarp/util/yp_conversion.$(OBJEXT) \
+		yarp/util/yp_list.$(OBJEXT) \
 		yarp/util/yp_state_stack.$(OBJEXT) \
+		yarp/util/yp_string.$(OBJEXT) \
 		yarp/util/yp_string_list.$(OBJEXT) \
 		yarp/util/yp_strpbrk.$(OBJEXT) \
-		yarp/util/yp_string.$(OBJEXT) \
-		yarp/util/yp_list.$(OBJEXT) \
-		yarp/util/yp_strspn.$(OBJEXT) \
-		yarp/util/yp_buffer.$(OBJEXT) \
-		yarp/serialize.$(OBJEXT) \
-		yarp/regexp.$(OBJEXT) \
-		yarp/pack.$(OBJEXT) \
-		yarp/enc/unicode.$(OBJEXT) \
-		yarp/enc/big5.$(OBJEXT) \
-		yarp/enc/ascii.$(OBJEXT) \
-		yarp/enc/windows_1252.$(OBJEXT) \
-		yarp/enc/iso_8859_15.$(OBJEXT) \
-		yarp/enc/iso_8859_9.$(OBJEXT) \
-		yarp/unescape.$(OBJEXT) \
-		yarp/node.$(OBJEXT) \
 		yarp/yarp.$(OBJEXT) \
 		$(YJIT_OBJ) \
 		$(YJIT_LIBOBJ) \

@@ -9,16 +9,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util/yp_buffer.h"
-#include "util/yp_strpbrk.h"
-#include "util/yp_strspn.h"
-#include "ast.h"
-#include "diagnostic.h"
-#include "pack.h"
-#include "parser.h"
-#include "regexp.h"
-#include "node.h"
-#include "unescape.h"
+#include "yarp/missing.h"
+#include "yarp/ast.h"
+#include "yarp/diagnostic.h"
+#include "yarp/node.h"
+#include "yarp/pack.h"
+#include "yarp/parser.h"
+#include "yarp/regexp.h"
+#include "yarp/unescape.h"
+#include "yarp/util/yp_buffer.h"
+#include "yarp/util/yp_char.h"
+#include "yarp/util/yp_strpbrk.h"
 
 #define YP_VERSION_MAJOR 0
 #define YP_VERSION_MINOR 4
@@ -31,12 +32,12 @@ void
 yp_print_node(yp_parser_t *parser, yp_node_t *node);
 
 // Returns the YARP version and notably the serialization format
-__attribute__((__visibility__("default"))) extern char*
+__attribute__((__visibility__("default"))) extern const char *
 yp_version(void);
 
 // Initialize a parser with the given start and end pointers.
 __attribute__((__visibility__("default"))) extern void
-yp_parser_init(yp_parser_t *parser, const char *source, size_t size);
+yp_parser_init(yp_parser_t *parser, const char *source, size_t size, const char *filepath);
 
 // Register a callback that will be called whenever YARP changes the encoding it
 // is using to parse based on the magic comment.

@@ -1,4 +1,4 @@
-#include "yp_string.h"
+#include "yarp/util/yp_string.h"
 
 // Allocate a new yp_string_t.
 yp_string_t *
@@ -52,11 +52,24 @@ yp_string_memsize(const yp_string_t *string) {
   return size;
 }
 
+// Ensure the string is owned. If it is not, then reinitialize it as owned and
+// copy over the previous source.
+void
+yp_string_ensure_owned(yp_string_t *string) {
+  if (string->type == YP_STRING_OWNED) return;
+
+  size_t length = yp_string_length(string);
+  const char *source = yp_string_source(string);
+
+  yp_string_owned_init(string, malloc(length), length);
+  memcpy(string->as.owned.source, source, length);
+}
+
 // Returns the length associated with the string.
 __attribute__ ((__visibility__("default"))) extern size_t
 yp_string_length(const yp_string_t *string) {
   if (string->type == YP_STRING_SHARED) {
-    return string->as.shared.end - string->as.shared.start;
+    return (size_t) (string->as.shared.end - string->as.shared.start);
   } else {
     return string->as.owned.length;
   }

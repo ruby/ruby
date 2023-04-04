@@ -1,4 +1,4 @@
-#include "regexp.h"
+#include "yarp/regexp.h"
 
 // This is the parser that is going to handle parsing regular expressions.
 typedef struct {
@@ -57,7 +57,7 @@ yp_regexp_char_expect(yp_regexp_parser_t *parser, char value) {
 // This advances the current token to the next instance of the given character.
 static bool
 yp_regexp_char_find(yp_regexp_parser_t *parser, char value) {
-  const char *end = (const char *) memchr(parser->cursor, value, parser->end - parser->cursor);
+  const char *end = (const char *) memchr(parser->cursor, value, (size_t) (parser->end - parser->cursor));
   if (end == NULL) {
     return false;
   }
@@ -67,7 +67,7 @@ yp_regexp_char_find(yp_regexp_parser_t *parser, char value) {
 }
 
 // Range quantifiers are a special class of quantifiers that look like
-// 
+//
 // * {digit}
 // * {digit,}
 // * {digit,digit}
@@ -388,7 +388,7 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
         break;
       case 'i': case 'm': case 'x': case 'd': case 'a': case 'u': // options
         while (!yp_regexp_char_is_eof(parser) && *parser->cursor != '-' && *parser->cursor != ':' && *parser->cursor != ')') {
-          if (!yp_regexp_options_add(&options, *parser->cursor)) {
+          if (!yp_regexp_options_add(&options, (unsigned char) *parser->cursor)) {
             return false;
           }
           parser->cursor++;
@@ -398,16 +398,15 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
           return false;
         }
 
-        if (*parser->cursor == '-') {
-          // in this case, fall through to the next switch case
-        } else {
-          // otherwise, we're done parsing options
-          break;
-        }
+        // If we hit a -, then we're done parsing options.
+        if (*parser->cursor != '-') break;
+
+        // Otherwise, fallthrough to the - case.
+        __attribute__((fallthrough));
       case '-':
         parser->cursor++;
         while (!yp_regexp_char_is_eof(parser) && *parser->cursor != ':' && *parser->cursor != ')') {
-          if (!yp_regexp_options_remove(&options, *parser->cursor)) {
+          if (!yp_regexp_options_remove(&options, (unsigned char) *parser->cursor)) {
             return false;
           }
           parser->cursor++;

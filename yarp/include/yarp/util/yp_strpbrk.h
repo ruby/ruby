@@ -17,6 +17,6 @@
 // within strings, comments, regular expressions, etc. So we need to be able to
 // skip past them.
 const char *
-yp_strpbrk(const char *source, const char *charset, int maximum);
+yp_strpbrk(const char *source, const char *charset, long length);
 
 #endif

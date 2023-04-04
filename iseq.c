@@ -1340,7 +1340,7 @@ iseqw_s_compile_yarp(VALUE self, VALUE string)
     rb_iseq_t *iseq = iseq_alloc();
     yp_parser_t parser;
     size_t length = RSTRING_LEN(string);
-    yp_parser_init(&parser, RSTRING_PTR(string), length);
+    yp_parser_init(&parser, RSTRING_PTR(string), length, NULL);
 
     yp_node_t *node = yp_parse(&parser);
 

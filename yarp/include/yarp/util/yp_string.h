@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 // This struct represents a string value.
 typedef struct {
@@ -45,6 +46,11 @@ yp_string_constant_init(yp_string_t *string, const char *source, size_t length);
 // Returns the memory size associated with the string.
 size_t
 yp_string_memsize(const yp_string_t *string);
+
+// Ensure the string is owned. If it is not, then reinitialize it as owned and
+// copy over the previous source.
+void
+yp_string_ensure_owned(yp_string_t *string);
 
 // Returns the length associated with the string.
 __attribute__ ((__visibility__("default"))) extern size_t

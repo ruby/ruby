@@ -120,17 +120,18 @@ typedef enum yp_pack_result {
 //   Consult Ruby documentation for the meaning of directives.
 __attribute__((__visibility__("default"))) extern yp_pack_result
 yp_pack_parse(
-    yp_pack_version version,
-    yp_pack_variant variant,
-    const char **format,
-    const char *format_end,
-    yp_pack_type *type,
-    yp_pack_signed *signed_type,
-    yp_pack_endian *endian,
-    yp_pack_size *size,
-    yp_pack_length_type *length_type,
-    uint64_t *length,
-    yp_pack_encoding *encoding);
+  __attribute__((unused)) yp_pack_version version,
+  yp_pack_variant variant,
+  const char **format,
+  const char *format_end,
+  yp_pack_type *type,
+  yp_pack_signed *signed_type,
+  yp_pack_endian *endian,
+  yp_pack_size *size,
+  yp_pack_length_type *length_type,
+  uint64_t *length,
+  yp_pack_encoding *encoding
+);
 
 // YARP abstracts sizes away from the native system - this converts an abstract
 // size to a native size.

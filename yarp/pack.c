@@ -1,4 +1,4 @@
-#include "pack.h"
+#include "yarp/pack.h"
 
 #include <stdbool.h>
 #include <errno.h>
@@ -7,7 +7,7 @@ static uintmax_t
 strtoumaxc(const char **format);
 
 __attribute__((__visibility__("default"))) extern yp_pack_result
-yp_pack_parse(yp_pack_version version, yp_pack_variant variant, const char **format, const char *format_end,
+yp_pack_parse(__attribute__((unused)) yp_pack_version version, yp_pack_variant variant, const char **format, const char *format_end,
               yp_pack_type *type, yp_pack_signed *signed_type, yp_pack_endian *endian, yp_pack_size *size,
               yp_pack_length_type *length_type, uint64_t *length, yp_pack_encoding *encoding) {
 
@@ -486,7 +486,7 @@ strtoumaxc(const char **format) {
     if (value > UINTMAX_MAX / 10) {
       errno = ERANGE;
     }
-    value = value * 10 + (**format - '0');
+    value = value * 10 + ((uintmax_t) (**format - '0'));
     (*format)++;
   }
   return value;

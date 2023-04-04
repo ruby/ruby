@@ -1,4 +1,4 @@
-#include "yp_buffer.h"
+#include "yarp/util/yp_buffer.h"
 
 #define YP_BUFFER_INITIAL_SIZE 1024
 
@@ -19,10 +19,16 @@ yp_buffer_init(yp_buffer_t *buffer) {
 // Append a generic pointer to memory to the buffer.
 static inline void
 yp_buffer_append(yp_buffer_t *buffer, const void *source, size_t length) {
-  if (buffer->length + length > buffer->capacity) {
-    buffer->capacity = buffer->capacity * 2;
+  size_t next_length = buffer->length + length;
+
+  if (next_length > buffer->capacity) {
+    do {
+      buffer->capacity *= 2;
+    } while (next_length > buffer->capacity);
+
     buffer->value = realloc(buffer->value, buffer->capacity);
   }
+
   memcpy(buffer->value + buffer->length, source, length);
   buffer->length += length;
 }

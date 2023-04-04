@@ -1,4 +1,4 @@
-#include "yp_string_list.h"
+#include "yarp/util/yp_string_list.h"
 
 // Allocate a new yp_string_list_t.
 yp_string_list_t *
@@ -18,7 +18,7 @@ yp_string_list_init(yp_string_list_t *string_list) {
 void
 yp_string_list_append(yp_string_list_t *string_list, yp_string_t *string) {
   if (string_list->length + 1 > string_list->capacity) {
-    string_list->capacity = string_list->capacity * 2;
+    string_list->capacity *= 2;
     string_list->strings = realloc(string_list->strings, string_list->capacity * sizeof(yp_string_t));
   }
 

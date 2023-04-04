@@ -2,10 +2,11 @@
 #define YARP_PARSER_H
 
 #include <stdbool.h>
-#include "enc/yp_encoding.h"
-#include "util/yp_list.h"
-#include "util/yp_state_stack.h"
-#include "ast.h"
+
+#include "yarp/ast.h"
+#include "yarp/enc/yp_encoding.h"
+#include "yarp/util/yp_list.h"
+#include "yarp/util/yp_state_stack.h"
 
 // This enum provides various bits that represent different kinds of states that
 // the lexer can track. This is used to determine which kind of token to return
@@ -147,7 +148,7 @@ typedef struct yp_lex_mode {
       // These pointers point to the beginning and end of the heredoc
       // identifier.
       const char *ident_start;
-      uint32_t ident_length;
+      size_t ident_length;
 
       yp_heredoc_quote_t quote;
       yp_heredoc_indent_t indent;
@@ -179,6 +180,7 @@ typedef enum {
   YP_CONTEXT_BLOCK_BRACES,   // expressions in block arguments using braces
   YP_CONTEXT_BLOCK_KEYWORDS, // expressions in block arguments using do..end
   YP_CONTEXT_CASE_WHEN,      // a case when statements
+  YP_CONTEXT_CASE_IN,        // a case in statements
   YP_CONTEXT_CLASS,          // a class declaration
   YP_CONTEXT_DEF,            // a method definition
   YP_CONTEXT_DEF_PARAMS,     // a method definition's parameters
@@ -231,6 +233,7 @@ typedef struct yp_comment {
 // invalid for the encoding and type.
 typedef struct {
   const char *name;
+  size_t (*char_width)(const char *c);
   size_t (*alpha_char)(const char *c);
   size_t (*alnum_char)(const char *c);
   bool (*isupper_char)(const char *c);
@@ -268,7 +271,7 @@ typedef struct {
 typedef struct yp_scope {
   // A pointer to the node that holds the tokens that correspond to the locals
   // in the given scope.
-  yp_node_t *node;
+  yp_scope_node_t *node;
 
   // A boolean indicating whether or not this scope can see into its parent. If
   // top is true, then the scope cannot see into its parent.
@@ -347,14 +350,24 @@ struct yp_parser {
   // our encoding and use it to parse identifiers.
   yp_encoding_decode_callback_t encoding_decode_callback;
 
+  // This pointer indicates where a comment must start if it is to be considered
+  // an encoding comment.
+  const char *encoding_comment_start;
+
   // This is an optional callback that can be attached to the parser that will
   // be called whenever a new token is lexed by the parser.
   yp_lex_callback_t *lex_callback;
 
-  // A boolean that tracks whether or not we should potentially consider comment
-  // tokens to be magic comments. This becomes false after anything other than
-  // comment tokens have been seen.
-  bool consider_magic_comments;
+  // This flag indicates that we are currently parsing a pattern matching
+  // expression and impacts that calculation of newlines.
+  bool pattern_matching_newlines;
+
+  // This flag indicates that we are currently parsing a keyword argument.
+  bool in_keyword_arg;
+
+  // This is the path of the file being parsed
+  // We use the filepath when constructing SourceFileNodes
+  yp_string_t filepath_string;
 };
 
 #endif // YARP_PARSER_H

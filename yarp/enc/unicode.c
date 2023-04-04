@@ -1,17 +1,35 @@
-#include "yp_encoding.h"
+#include "yarp/enc/yp_encoding.h"
 
 typedef uint32_t unicode_codepoint_t;
 
-#define UNICODE_ALPHA_CODEPOINTS_LENGTH 1464
+// Each element of the following table contains a bitfield that indicates a
+// piece of information about the corresponding unicode codepoint. Note that
+// this table is different from other encodings where we used a lookup table
+// because the indices of those tables are the byte representations, not the
+// codepoints themselves.
+static unsigned char yp_encoding_unicode_table[256] = {
+//0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
+  0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
+  7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
+  0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Ax
+  0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Bx
+  7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
+  7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
+  3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+};
+
+#define UNICODE_ALPHA_CODEPOINTS_LENGTH 1450
 unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
-  0x41, 0x5A,
-  0x61, 0x7A,
-  0xAA, 0xAA,
-  0xB5, 0xB5,
-  0xBA, 0xBA,
-  0xC0, 0xD6,
-  0xD8, 0xF6,
-  0xF8, 0x2C1,
+  0x100, 0x2C1,
   0x2C6, 0x2D1,
   0x2E0, 0x2E4,
   0x2EC, 0x2EC,
@@ -738,17 +756,9 @@ unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = 
   0x31350, 0x323AF,
 };
 
-#define UNICODE_ALNUM_CODEPOINTS_LENGTH 1544
+#define UNICODE_ALNUM_CODEPOINTS_LENGTH 1528
 unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
-  0x30, 0x39,
-  0x41, 0x5A,
-  0x61, 0x7A,
-  0xAA, 0xAA,
-  0xB5, 0xB5,
-  0xBA, 0xBA,
-  0xC0, 0xD6,
-  0xD8, 0xF6,
-  0xF8, 0x2C1,
+  0x100, 0x2C1,
   0x2C6, 0x2D1,
   0x2E0, 0x2E4,
   0x2EC, 0x2EC,
@@ -1514,11 +1524,8 @@ unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = 
   0x31350, 0x323AF,
 };
 
-#define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1302
+#define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1296
 unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
-  0x41, 0x5A,
-  0xC0, 0xD6,
-  0xD8, 0xDE,
   0x100, 0x100,
   0x102, 0x102,
   0x104, 0x104,
@@ -2171,63 +2178,95 @@ unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH
 
 static bool
 unicode_codepoint_match(unicode_codepoint_t codepoint, unicode_codepoint_t *codepoints, size_t size) {
-  for (size_t index = 0; index < size; index += 2) {
-    if (codepoint >= codepoints[index] && codepoint <= codepoints[index + 1])
+  size_t start = 0;
+  size_t end = size;
+
+  while (start < end) {
+    size_t middle = start + (end - start) / 2;
+    if ((middle % 2) != 0) middle--;
+
+    if (codepoint >= codepoints[middle] && codepoint <= codepoints[middle + 1]) {
       return true;
+    }
+
+    if (codepoint < codepoints[middle]) {
+      end = middle;
+    } else {
+      start = middle + 2;
+    }
   }
+
   return false;
 }
 
 static unicode_codepoint_t
 utf_8_codepoint(const unsigned char *c, size_t *width) {
-  if ((c[0] >> 7) == 0b0) {
+  if ((c[0] >> 7) == 0) {
     // 0xxxxxxx
     *width = 1;
-    return c[0];
+    return (unicode_codepoint_t) c[0];
   }
-  if (((c[0] >> 5) == 0b110) && ((c[1] >> 6) == 0b10)) {
+  if (((c[0] >> 5) == 0x6) && ((c[1] >> 6) == 0x2)) {
     // 110xxxxx 10xxxxxx
     *width = 2;
-    return ((c[0] & 0b11111) << 6) | (c[1] & 0b111111);
+    return (unicode_codepoint_t) (((c[0] & 0x1F) << 6) | (c[1] & 0x3F));
   }
-  if (((c[0] >> 4) == 0b1110) && ((c[1] >> 6) == 0b10) && ((c[2] >> 6) == 0b10)) {
+  if (((c[0] >> 4) == 0xE) && ((c[1] >> 6) == 0x2) && ((c[2] >> 6) == 0x2)) {
     // 1110xxxx 10xxxxxx 10xxxxxx
     *width = 3;
-    return ((c[0] & 0b1111) << 12) | ((c[1] & 0b111111) << 6) | (c[2] & 0b11111);
+    return (unicode_codepoint_t) (((c[0] & 0x0F) << 12) | ((c[1] & 0x3F) << 6) | (c[2] & 0x3F));
   }
-  if (((c[0] >> 3) == 0b11110) && ((c[1] >> 6) == 0b10) && ((c[2] >> 6) == 0b10) && ((c[3] >> 6) == 0b10)) {
+  if (((c[0] >> 3) == 0x1E) && ((c[1] >> 6) == 0x2) && ((c[2] >> 6) == 0x2) && ((c[3] >> 6) == 0x2)) {
     // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
     *width = 4;
-    return ((c[0] & 0b111) << 18) | ((c[1] & 0b111111) << 12) | ((c[2] & 0b11111) << 6) | (c[3] & 0b11111);
+    return (unicode_codepoint_t) (((c[0] & 0x07) << 18) | ((c[1] & 0x3F) << 12) | ((c[2] & 0x3F) << 6) | (c[3] & 0x3F));
   }
   return 0;
 }
 
-__attribute__((__visibility__("default"))) extern size_t
+size_t
+yp_encoding_utf_8_char_width(const char *c) {
+  size_t width;
+  const unsigned char *uc = (const unsigned char *) c;
+
+  utf_8_codepoint(uc, &width);
+  return width;
+}
+
+size_t
 yp_encoding_utf_8_alpha_char(const char *c) {
   size_t width;
-  const unsigned char *uc = (const unsigned char *) c;
+  unicode_codepoint_t codepoint = utf_8_codepoint((const unsigned char *) c, &width);
 
-  unicode_codepoint_t codepoint = utf_8_codepoint(uc, &width);
-  return (codepoint && unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH)) ? width : 0;
+  if (codepoint <= 0xFF) {
+    return (yp_encoding_unicode_table[(unsigned char) codepoint] & YP_ENCODING_ALPHABETIC_BIT) ? width : 0;
+  } else {
+    return unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
+  }
 }
 
-__attribute__((__visibility__("default"))) extern size_t
+size_t
 yp_encoding_utf_8_alnum_char(const char *c) {
   size_t width;
-  const unsigned char *uc = (const unsigned char *) c;
+  unicode_codepoint_t codepoint = utf_8_codepoint((const unsigned char *) c, &width);
 
-  unicode_codepoint_t codepoint = utf_8_codepoint(uc, &width);
-  return (codepoint && unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH)) ? width : 0;
+  if (codepoint <= 0xFF) {
+    return (yp_encoding_unicode_table[(unsigned char) codepoint] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
+  } else {
+    return unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
+  }
 }
 
-__attribute__((__visibility__("default"))) extern bool
+bool
 yp_encoding_utf_8_isupper_char(const char *c) {
   size_t width;
-  const unsigned char *uc = (const unsigned char *) c;
+  unicode_codepoint_t codepoint = utf_8_codepoint((const unsigned char *) c, &width);
 
-  unicode_codepoint_t codepoint = utf_8_codepoint(uc, &width);
-  return (codepoint && unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH)) ? width : 0;
+  if (codepoint <= 0xFF) {
+    return (yp_encoding_unicode_table[(unsigned char) codepoint] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
+  } else {
+    return unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
+  }
 }
 
 #undef UNICODE_ALPHA_CODEPOINTS_LENGTH

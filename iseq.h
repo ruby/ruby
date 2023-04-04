@@ -13,7 +13,7 @@
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
-#include <yarp/yarp.h>
+#include <yarp/include/yarp.h>
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
