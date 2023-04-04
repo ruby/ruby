@@ -1,4 +1,8 @@
 //! Code versioning, retained live control flow graph mutations, type tracking, etc.
+
+// So we can comment on individual uses of `unsafe` in `unsafe` functions
+#![warn(unsafe_op_in_unsafe_fn)]
+
 use crate::asm::*;
 use crate::backend::ir::*;
 use crate::codegen::*;
@@ -1007,7 +1011,8 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
 /// Iterate over all existing ISEQs
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = std::mem::transmute(&mut *data);
+        // SAFETY: points to the local below
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
         callback(iseq);
     }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
@@ -1026,7 +1031,8 @@ pub fn for_each_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
 /// Iterate over all on-stack ISEQs
 pub fn for_each_on_stack_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = std::mem::transmute(&mut *data);
+        // SAFETY: points to the local below
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
         callback(iseq);
     }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
