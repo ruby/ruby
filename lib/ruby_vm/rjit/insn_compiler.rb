@@ -1283,7 +1283,7 @@ module RubyVM::RJIT
       asm.cmovnz(:rax, :rcx)
 
       # Push the return value onto the stack
-      out_type = if C::SPECIAL_CONST_P(pushval)
+      out_type = if C::SPECIAL_CONST_P(C.to_ruby(pushval))
         Type::UnknownImm
       else
         Type::Unknown
@@ -1337,7 +1337,7 @@ module RubyVM::RJIT
         asm.cmovnz(:rax, :rcx)
 
         # Push the return value onto the stack
-        out_type = C::SPECIAL_CONST_P(pushval) ? Type::UnknownImm : Type::Unknown
+        out_type = C::SPECIAL_CONST_P(C.to_ruby(pushval)) ? Type::UnknownImm : Type::Unknown
         stack_ret = ctx.stack_push(out_type)
         asm.mov(stack_ret, :rax)
 
