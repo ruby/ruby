@@ -21,16 +21,16 @@ module RubyVM::RJIT
     # @param insn `RubyVM::RJIT::Instruction`
     def compile(jit, ctx, asm, insn)
       asm.incr_counter(:rjit_insns_count)
-      insn_idx = format('%04d', (jit.pc.to_i - jit.iseq.body.iseq_encoded.to_i) / C.VALUE.size)
-      asm.comment("Insn: #{insn_idx} #{insn.name}")
 
-      # stack = ctx.stack_size.times.map do |stack_idx|
-      #   ctx.get_opnd_type(StackOpnd[ctx.stack_size - stack_idx - 1]).type
-      # end
-      # locals = jit.iseq.body.local_table_size.times.map do |local_idx|
-      #   (ctx.local_types[local_idx] || Type::Unknown).type
-      # end
-      # asm.comment("Insn: #{insn_idx} #{insn.name} (stack: [#{stack.join(', ')}], locals: [#{locals.join(', ')}])")
+      stack = ctx.stack_size.times.map do |stack_idx|
+        ctx.get_opnd_type(StackOpnd[ctx.stack_size - stack_idx - 1]).type
+      end
+      locals = jit.iseq.body.local_table_size.times.map do |local_idx|
+        (ctx.local_types[local_idx] || Type::Unknown).type
+      end
+
+      insn_idx = format('%04d', (jit.pc.to_i - jit.iseq.body.iseq_encoded.to_i) / C.VALUE.size)
+      asm.comment("Insn: #{insn_idx} #{insn.name} (stack: [#{stack.join(', ')}], locals: [#{locals.join(', ')}])")
 
       # 83/102
       case insn.name

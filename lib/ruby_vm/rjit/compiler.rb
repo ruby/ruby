@@ -279,6 +279,8 @@ module RubyVM::RJIT
     end
 
     # @param asm [RubyVM::RJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
     def compile_block(asm, jit:, pc:, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
       ctx = limit_block_versions(jit.iseq, pc, ctx)
@@ -292,6 +294,7 @@ module RubyVM::RJIT
       # Compile each insn
       index = (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size
       while index < iseq.body.iseq_size
+        # Set the current instruction
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
         jit.stack_size_for_pc = ctx.stack_size
@@ -306,6 +309,11 @@ module RubyVM::RJIT
           end
           Invariants.record_global_inval_patch(asm, exit_pos)
           jit.record_boundary_patch_point = false
+        end
+
+        # In debug mode, verify our existing assumption
+        if C.rjit_opts.verify_ctx && jit.at_current_insn?
+          verify_ctx(jit, ctx)
         end
 
         case status = @insn_compiler.compile(jit, ctx, asm, insn)
@@ -434,6 +442,68 @@ module RubyVM::RJIT
       C.rb_iseq_line_no(iseq, (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size)
     rescue RangeError # bignum too big to convert into `unsigned long long' (RangeError)
       -1
+    end
+
+    # Verify the ctx's types and mappings against the compile-time stack, self, and locals.
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    def verify_ctx(jit, ctx)
+      # Only able to check types when at current insn
+      assert(jit.at_current_insn?)
+
+      self_val = jit.peek_at_self
+      self_val_type = Type.from(self_val)
+
+      # Verify self operand type
+      assert_compatible(self_val_type, ctx.get_opnd_type(SelfOpnd))
+
+      # Verify stack operand types
+      [ctx.stack_size, MAX_TEMP_TYPES].min.times do |i|
+        learned_mapping, learned_type = ctx.get_opnd_mapping(StackOpnd[i])
+        stack_val = jit.peek_at_stack(i)
+        val_type = Type.from(stack_val)
+
+        case learned_mapping
+        in MapToSelf
+          if C.to_value(self_val) != C.to_value(stack_val)
+            raise "verify_ctx: stack value was mapped to self, but values did not match:\n"\
+              "stack: #{stack_val.inspect}, self: #{self_val.inspect}"
+          end
+        in MapToLocal[local_idx]
+          local_val = jit.peek_at_local(local_idx)
+          if C.to_value(local_val) != C.to_value(stack_val)
+            raise "verify_ctx: stack value was mapped to local, but values did not match:\n"\
+              "stack: #{stack_val.inspect}, local: #{local_val.inspect}"
+          end
+        in MapToStack
+          # noop
+        end
+
+        # If the actual type differs from the learned type
+        assert_compatible(val_type, learned_type)
+      end
+
+      # Verify local variable types
+      local_table_size = jit.iseq.body.local_table_size
+      [local_table_size, MAX_TEMP_TYPES].min.times do |i|
+        learned_type = ctx.get_local_type(i)
+        local_val = jit.peek_at_local(i)
+        local_type = Type.from(local_val)
+
+        assert_compatible(local_type, learned_type)
+      end
+    end
+
+    def assert_compatible(actual_type, ctx_type)
+      if actual_type.diff(ctx_type) == TypeDiff::Incompatible
+        raise "verify_ctx: ctx type (#{ctx_type.type.inspect}) is incompatible with actual type (#{actual_type.type.inspect})"
+      end
+    end
+
+    def assert(cond)
+      unless cond
+        raise "'#{cond.inspect}' was not true"
+      end
     end
   end
 end

@@ -36,6 +36,8 @@ struct rb_rjit_options {
     bool trace_exits;
     // Enable disasm of all JIT code
     bool dump_disasm;
+    // Verify context objects
+    bool verify_ctx;
     // [experimental] Do not start RJIT until RJIT.resume is called.
     bool pause;
 };

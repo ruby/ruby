@@ -27,6 +27,13 @@ module RubyVM::RJIT
       pc == cfp.pc.to_i
     end
 
+    def peek_at_local(n)
+      local_table_size = iseq.body.local_table_size
+      offset = -C::VM_ENV_DATA_SIZE - local_table_size + n + 1
+      value = (cfp.ep + offset).*
+      C.to_ruby(value)
+    end
+
     def peek_at_stack(depth_from_top)
       raise 'not at current insn' unless at_current_insn?
       offset = -(1 + depth_from_top)
