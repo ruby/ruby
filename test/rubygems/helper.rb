@@ -1139,10 +1139,10 @@ Also, a list:
   end
 
   ##
-  # Is this test being run on a Windows platform?
+  # see ::win_platform?
 
   def win_platform?
-    Gem.win_platform?
+    self.class.win_platform?
   end
 
   ##
@@ -1153,10 +1153,10 @@ Also, a list:
   end
 
   ##
-  # Is this test being run on a Java platform?
+  # see ::java_platform?
 
   def java_platform?
-    Gem.java_platform?
+    self.class.java_platform?
   end
 
   ##
@@ -1168,11 +1168,10 @@ Also, a list:
   end
 
   ##
-  # Returns whether or not we're on a version of Ruby built with VC++ (or
-  # Borland) versus Cygwin, Mingw, etc.
+  # see ::vc_windows?
 
   def vc_windows?
-    RUBY_PLATFORM.match("mswin")
+    self.class.vc_windows?
   end
 
   ##
@@ -1183,10 +1182,10 @@ Also, a list:
   end
 
   ##
-  # Is this test being run on a version of Ruby built with mingw?
+  # see ::mingw_windows?
 
   def mingw_windows?
-    RUBY_PLATFORM.match("mingw")
+    self.class.mingw_windows?
   end
 
   ##
@@ -1207,12 +1206,10 @@ Also, a list:
   end
 
   ##
-  # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
-  # other platforms, including Cygwin, it will return 'make'.
+  # See ::make_command
 
   def make_command
-    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
+    self.class.make_command
   end
 
   ##
