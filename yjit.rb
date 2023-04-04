@@ -275,7 +275,11 @@ module RubyVM::YJIT
       $stderr.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       $stderr.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
       $stderr.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
+      $stderr.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
       $stderr.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
+      if stats[:compiled_blockid_count] != 0
+        $stderr.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
+      end
       $stderr.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
       $stderr.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
       $stderr.puts "defer_count:           " + format_number(13, stats[:defer_count])
