@@ -58,6 +58,7 @@ pub extern "C" fn rb_yjit_init_rust() {
         Invariants::init();
         CodegenGlobals::init();
         YjitExitLocations::init();
+        ids::init();
 
         rb_bug_panic_hook();
 
