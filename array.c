@@ -47,13 +47,8 @@ VALUE rb_cArray;
  * 2:   RARRAY_SHARED_FLAG (equal to ELTS_SHARED)
  *          The array is shared. The buffer this array points to is owned by
  *          another array (the shared root).
- * if USE_RVARGC
  * 3-9: RARRAY_EMBED_LEN
  *          The length of the array when RARRAY_EMBED_FLAG is set.
- * else
- * 3-4: RARRAY_EMBED_LEN
- *          The length of the array when RARRAY_EMBED_FLAG is set.
- * endif
  * 12:  RARRAY_SHARED_ROOT_FLAG
  *          The array is a shared root that does reference counting. The buffer
  *          this array points to is owned by this array but may be pointed to
@@ -188,13 +183,9 @@ ARY_SET(VALUE a, long i, VALUE v)
 static long
 ary_embed_capa(VALUE ary)
 {
-#if USE_RVARGC
     size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
     assert(size % sizeof(VALUE) == 0);
     return size / sizeof(VALUE);
-#else
-    return RARRAY_EMBED_LEN_MAX;
-#endif
 }
 
 static size_t
@@ -206,11 +197,7 @@ ary_embed_size(long capa)
 static bool
 ary_embeddable_p(long capa)
 {
-#if USE_RVARGC
     return rb_gc_size_allocatable_p(ary_embed_size(capa));
-#else
-    return capa <= RARRAY_EMBED_LEN_MAX;
-#endif
 }
 
 bool
@@ -791,9 +778,6 @@ ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
-    assert(size <= sizeof(struct RArray));
-#endif
     RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
                      size);
@@ -906,9 +890,6 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
-    assert(size <= sizeof(struct RArray));
-#endif
     RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
                            T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
                            size);
@@ -1033,7 +1014,6 @@ rb_ary_memsize(VALUE ary)
 static VALUE
 ary_make_shared(VALUE ary)
 {
-    assert(USE_RVARGC || !ARY_EMBED_P(ary));
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
@@ -4741,7 +4721,6 @@ rb_ary_replace(VALUE copy, VALUE orig)
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
         ARY_SET_EMBED_LEN(copy, RARRAY_LEN(orig));
     }
-#if USE_RVARGC
     /* orig is embedded but copy does not have enough space to embed the
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
@@ -4757,7 +4736,6 @@ rb_ary_replace(VALUE copy, VALUE orig)
         // bad state from the edits above.
         ary_memcpy(copy, 0, len, RARRAY_CONST_PTR_TRANSIENT(orig));
     }
-#endif
     /* Otherwise, orig is on heap and copy does not have enough space to embed
      * the contents of orig. */
     else {

@@ -53,14 +53,8 @@ const union {
     rb_econv_result_t           econv_result;
     enum ruby_preserved_encindex encoding_index;
     enum ruby_robject_flags     robject_flags;
-#if !USE_RVARGC
-    enum ruby_robject_consts    robject_consts;
-#endif
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
-#if !USE_RVARGC
-    enum ruby_rstring_consts    rstring_consts;
-#endif
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
     enum {

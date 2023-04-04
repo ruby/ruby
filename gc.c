@@ -706,11 +706,9 @@ typedef struct rb_size_pool_struct {
     size_t total_freed_pages;
     size_t force_major_gc_count;
 
-#if USE_RVARGC
     /* Sweeping statistics */
     size_t freed_slots;
     size_t empty_slots;
-#endif
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap;
@@ -1233,9 +1231,7 @@ static bool gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool
 
 static void gc_sweep(rb_objspace_t *objspace);
 static void gc_sweep_start(rb_objspace_t *objspace);
-#if USE_RVARGC
 static void gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool);
-#endif
 static void gc_sweep_finish(rb_objspace_t *objspace);
 static int  gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 static void gc_sweep_rest(rb_objspace_t *objspace);
@@ -2657,11 +2653,7 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
         VALUE obj = (VALUE)p;
         MAYBE_UNUSED(const size_t) stride = size_pool_slot_size(size_pool_idx);
         size_pool_cache->freelist = p->as.free.next;
-#if USE_RVARGC
         asan_unpoison_memory_region(p, stride, true);
-#else
-        asan_unpoison_object(obj, true);
-#endif
 #if RGENGC_CHECK_MODE
         GC_ASSERT(rb_gc_obj_slot_size(obj) == stride);
         // zero clear
@@ -2731,7 +2723,6 @@ newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
 static inline size_t
 size_pool_idx_for_size(size_t size)
 {
-#if USE_RVARGC
     size += RVALUE_OVERHEAD;
 
     size_t slot_count = CEILDIV(size, BASE_SLOT_SIZE);
@@ -2750,10 +2741,6 @@ size_pool_idx_for_size(size_t size)
 #endif
 
     return size_pool_idx;
-#else
-    GC_ASSERT(size <= sizeof(RVALUE));
-    return 0;
-#endif
 }
 
 static VALUE
@@ -2963,16 +2950,12 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     GC_ASSERT(flags & ROBJECT_EMBED);
 
     size_t size;
-#if USE_RVARGC
     uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
 
     size = rb_obj_embedded_size(index_tbl_num_entries);
     if (!rb_gc_size_allocatable_p(size)) {
         size = sizeof(struct RObject);
     }
-#else
-    size = sizeof(struct RObject);
-#endif
 
     VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
     RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT ||
@@ -5742,23 +5725,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     gc_report(2, objspace, "page_sweep: end.\n");
 }
 
-#if !USE_RVARGC
-/* allocate additional minimum page to work */
-static void
-gc_heap_prepare_minimum_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
-{
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        if (!heap->free_pages && heap_increment(objspace, size_pool, heap) == FALSE) {
-            /* there is no free after page_sweep() */
-            size_pool_allocatable_pages_set(objspace, size_pool, 1);
-            if (!heap_increment(objspace, size_pool, heap)) { /* can't allocate additional free objects */
-                rb_memerror();
-            }
-        }
-    }
-}
-#endif
-
 static const char *
 gc_mode_name(enum gc_mode mode)
 {
@@ -5841,14 +5807,12 @@ gc_sweep_start(rb_objspace_t *objspace)
 
         gc_sweep_start_heap(objspace, heap);
 
-#if USE_RVARGC
         /* We should call gc_sweep_finish_size_pool for size pools with no pages. */
         if (heap->sweeping_page == NULL) {
             GC_ASSERT(heap->total_pages == 0);
             GC_ASSERT(heap->total_slots == 0);
             gc_sweep_finish_size_pool(objspace, size_pool);
         }
-#endif
     }
 
     rb_ractor_t *r = NULL;
@@ -5857,7 +5821,6 @@ gc_sweep_start(rb_objspace_t *objspace)
     }
 }
 
-#if USE_RVARGC
 static void
 gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
 {
@@ -5920,7 +5883,6 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         }
     }
 }
-#endif
 
 static void
 gc_sweep_finish(rb_objspace_t *objspace)
@@ -5939,7 +5901,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
             size_pool->allocatable_pages = tomb_pages;
         }
 
-#if USE_RVARGC
         size_pool->freed_slots = 0;
         size_pool->empty_slots = 0;
 
@@ -5956,7 +5917,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
             eden_heap->pooled_pages = NULL;
             objspace->rincgc.pooled_slots = 0;
         }
-#endif
     }
     heap_pages_expand_sorted(objspace);
 
@@ -5974,11 +5934,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     struct heap_page *sweep_page = heap->sweeping_page;
     int unlink_limit = GC_SWEEP_PAGES_FREEABLE_PER_STEP;
     int swept_slots = 0;
-#if USE_RVARGC
     bool need_pool = TRUE;
-#else
-    int need_pool = will_be_incremental_marking(objspace) ? TRUE : FALSE;
-#endif
 
     gc_report(2, objspace, "gc_sweep_step (need_pool: %d)\n", need_pool);
 
@@ -6012,10 +5968,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
             heap_add_page(objspace, size_pool, SIZE_POOL_TOMB_HEAP(size_pool), sweep_page);
         }
         else if (free_slots > 0) {
-#if USE_RVARGC
             size_pool->freed_slots += ctx.freed_slots;
             size_pool->empty_slots += ctx.empty_slots;
-#endif
 
             if (need_pool) {
                 heap_add_poolpage(objspace, heap, sweep_page);
@@ -6035,9 +5989,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
     } while ((sweep_page = heap->sweeping_page));
 
     if (!heap->sweeping_page) {
-#if USE_RVARGC
         gc_sweep_finish_size_pool(objspace, size_pool);
-#endif
 
         if (!has_sweeping_pages(objspace)) {
             gc_sweep_finish(objspace);
@@ -6074,7 +6026,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         if (!gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool))) {
-#if USE_RVARGC
             /* sweep_size_pool requires a free slot but sweeping did not yield any. */
             if (size_pool == sweep_size_pool) {
                 if (size_pool->allocatable_pages > 0) {
@@ -6086,7 +6037,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
                     break;
                 }
             }
-#endif
         }
     }
 
@@ -6229,11 +6179,6 @@ gc_sweep(rb_objspace_t *objspace)
             gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
         }
     }
-
-#if !USE_RVARGC
-    rb_size_pool_t *size_pool = &size_pools[0];
-    gc_heap_prepare_minimum_pages(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
-#endif
 
     gc_sweeping_exit(objspace);
 }
@@ -8438,17 +8383,6 @@ gc_marks_finish(rb_objspace_t *objspace)
                     objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_NOFREE;
                 }
             }
-
-#if !USE_RVARGC
-            if (full_marking) {
-              /* increment: */
-                gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
-                rb_size_pool_t *size_pool = &size_pools[0];
-                size_pool_allocatable_pages_set(objspace, size_pool, heap_extend_pages(objspace, size_pool, sweep_slots, total_slots, heap_allocated_pages + heap_allocatable_pages(objspace)));
-
-                heap_increment(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
-            }
-#endif
         }
 
         if (full_marking) {
@@ -10082,13 +10016,10 @@ static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 {
     if (ARY_SHARED_P(v)) {
-#if USE_RVARGC
         VALUE old_root = RARRAY(v)->as.heap.aux.shared_root;
-#endif
 
         UPDATE_IF_MOVED(objspace, RARRAY(v)->as.heap.aux.shared_root);
 
-#if USE_RVARGC
         VALUE new_root = RARRAY(v)->as.heap.aux.shared_root;
         // If the root is embedded and its location has changed
         if (ARY_EMBED_P(new_root) && new_root != old_root) {
@@ -10096,7 +10027,6 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
             GC_ASSERT(RARRAY(v)->as.heap.ptr >= RARRAY(old_root)->as.ary);
             RARRAY(v)->as.heap.ptr = RARRAY(new_root)->as.ary + offset;
         }
-#endif
     }
     else {
         long len = RARRAY_LEN(v);
@@ -10108,13 +10038,11 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
             }
         }
 
-#if USE_RVARGC
         if (rb_gc_obj_slot_size(v) >= rb_ary_size_as_embedded(v)) {
             if (rb_ary_embeddable_p(v)) {
                 rb_ary_make_embedded(v);
             }
         }
-#endif
     }
 }
 
@@ -10128,7 +10056,6 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
         return;
     }
 
-#if USE_RVARGC
     size_t slot_size = rb_gc_obj_slot_size(v);
     size_t embed_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(v));
     if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
@@ -10143,7 +10070,6 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
         }
         ptr = ROBJECT(v)->as.ary;
     }
-#endif
 
     for (uint32_t i = 0; i < ROBJECT_IV_COUNT(v); i++) {
         UPDATE_IF_MOVED(objspace, ptr[i]);
@@ -10616,17 +10542,12 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
       case T_STRING:
         {
             if (STR_SHARED_P(obj)) {
-#if USE_RVARGC
                 VALUE old_root = any->as.string.as.heap.aux.shared;
-#endif
                 UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
-#if USE_RVARGC
                 VALUE new_root = any->as.string.as.heap.aux.shared;
                 rb_str_update_shared_ary(obj, old_root, new_root);
-#endif
             }
 
-#if USE_RVARGC
             /* If, after move the string is not embedded, and can fit in the
              * slot it's been placed in, then re-embed it. */
             if (rb_gc_obj_slot_size(obj) >= rb_str_size_as_embedded(obj)) {
@@ -10634,7 +10555,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
                     rb_str_make_embedded(obj);
                 }
             }
-#endif
 
             break;
         }
@@ -14020,22 +13940,6 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  */
 
 #include "gc.rbinc"
-/*
- *  call-seq:
- *      GC.using_rvargc? -> true or false
- *
- *  Returns true if using experimental feature Variable Width Allocation, false
- *  otherwise.
- */
-static VALUE
-gc_using_rvargc_p(VALUE mod)
-{
-#if USE_RVARGC
-    return Qtrue;
-#else
-    return Qfalse;
-#endif
-}
 
 void
 Init_GC(void)
@@ -14097,8 +14001,6 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
-
-    rb_define_singleton_method(rb_mGC, "using_rvargc?", gc_using_rvargc_p, 0);
 
     if (GC_COMPACTION_SUPPORTED) {
         rb_define_singleton_method(rb_mGC, "compact", gc_compact, 0);
