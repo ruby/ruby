@@ -126,4 +126,14 @@ class TestEncoding < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_ractor_load_encoding
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ractor.new{}.take
+      $-w = nil
+      Encoding.default_external = Encoding::ISO8859_2
+      assert "[Bug #19562]"
+    end;
+  end
 end
