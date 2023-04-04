@@ -913,6 +913,13 @@ impl Assembler
         }
     }
 
+    /// Get the list of registers that can be used for stack temps.
+    pub fn get_temp_regs() -> Vec<Reg> {
+        let num_regs = get_option!(num_temp_regs);
+        let mut regs = Self::TEMP_REGS.to_vec();
+        regs.drain(0..num_regs).collect()
+    }
+
     /// Build an Opnd::InsnOut from the current index of the assembler and the
     /// given number of bits.
     pub(super) fn next_opnd_out(&self, num_bits: u8) -> Opnd {
@@ -1493,8 +1500,11 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self) {
+    pub fn cpop_all(&mut self, ctx: &Context) {
         self.push_insn(Insn::CPopAll);
+
+        // Re-enable ccall's assertion disabled by cpush_all
+        self.set_reg_temps(ctx.get_reg_temps());
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
@@ -1507,6 +1517,9 @@ impl Assembler {
 
     pub fn cpush_all(&mut self) {
         self.push_insn(Insn::CPushAll);
+
+        // Disable ccall's assertion. This will be re-enabled by cpop_all.
+        self.set_reg_temps(RegTemps::default());
     }
 
     pub fn cret(&mut self, opnd: Opnd) {

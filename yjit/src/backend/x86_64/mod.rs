@@ -88,6 +88,9 @@ impl Assembler
     // a closure and we don't want it to have to capture anything.
     const SCRATCH0: X86Opnd = X86Opnd::Reg(R11_REG);
 
+    /// List of registers that can be used for stack temps.
+    pub const TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
+
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg>
     {
@@ -96,13 +99,6 @@ impl Assembler
             RCX_REG,
             RDX_REG,
         ]
-    }
-
-    /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs() -> Vec<Reg> {
-        let num_regs = get_option!(num_temp_regs);
-        let mut regs = vec![RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
-        regs.drain(0..num_regs).collect()
     }
 
     /// Get a list of all of the caller-save registers
