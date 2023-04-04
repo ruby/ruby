@@ -21,7 +21,16 @@ module RubyVM::RJIT
     # @param insn `RubyVM::RJIT::Instruction`
     def compile(jit, ctx, asm, insn)
       asm.incr_counter(:rjit_insns_count)
-      asm.comment("Insn: #{insn.name}")
+      insn_idx = format('%04d', (jit.pc.to_i - jit.iseq.body.iseq_encoded.to_i) / C.VALUE.size)
+      asm.comment("Insn: #{insn_idx} #{insn.name}")
+
+      # stack = ctx.stack_size.times.map do |stack_idx|
+      #   ctx.get_opnd_type(StackOpnd[ctx.stack_size - stack_idx - 1]).type
+      # end
+      # locals = jit.iseq.body.local_table_size.times.map do |local_idx|
+      #   (ctx.local_types[local_idx] || Type::Unknown).type
+      # end
+      # asm.comment("Insn: #{insn_idx} #{insn.name} (stack: [#{stack.join(', ')}], locals: [#{locals.join(', ')}])")
 
       # 83/102
       case insn.name
@@ -3372,6 +3381,8 @@ module RubyVM::RJIT
     end
 
     def jit_setlocal_generic(jit, ctx, asm, idx:, level:)
+      value_type = ctx.get_opnd_type(StackOpnd[0])
+
       # Load environment pointer EP at level
       ep_reg = :rax
       jit_get_ep(asm, level, reg: ep_reg)
@@ -3379,13 +3390,19 @@ module RubyVM::RJIT
       # Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
       # only affect heap objects being written. If we know an immediate value is being written we
       # can skip this check.
+      unless value_type.imm?
+        # flags & VM_ENV_FLAG_WB_REQUIRED
+        flags_opnd = [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_FLAGS]
+        asm.test(flags_opnd, C::VM_ENV_FLAG_WB_REQUIRED)
 
-      # flags & VM_ENV_FLAG_WB_REQUIRED
-      flags_opnd = [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_FLAGS]
-      asm.test(flags_opnd, C::VM_ENV_FLAG_WB_REQUIRED)
+        # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+        asm.jnz(side_exit(jit, ctx))
+      end
 
-      # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-      asm.jnz(side_exit(jit, ctx))
+      if level == 0
+        local_idx = ep_offset_to_local_idx(jit.iseq, idx)
+        ctx.set_local_type(local_idx, value_type)
+      end
 
       # Pop the value to write from the stack
       stack_top = ctx.stack_pop(1)
