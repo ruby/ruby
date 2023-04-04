@@ -1078,7 +1078,7 @@ typedef struct rb_thread_struct {
 static inline unsigned int
 rb_th_serial(const rb_thread_t *th)
 {
-    return (unsigned int)th->serial;
+    return th ? (unsigned int)th->serial : 0;
 }
 
 typedef enum {
