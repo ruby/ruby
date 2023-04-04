@@ -12,7 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "yarp/util/yp_string.h"
+#include "yarp/include/yarp/util/yp_string.h"
 
 // This enum represents every type of token in the Ruby source.
 typedef enum yp_token_type {

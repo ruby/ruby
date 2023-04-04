@@ -1,4 +1,4 @@
-#include "yarp/util/yp_conversion.h"
+#include "yarp/include/yarp/util/yp_conversion.h"
 
 uint32_t
 yp_long_to_u32(long value) {

@@ -6,8 +6,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "yarp/util/yp_string_list.h"
-#include "yarp/util/yp_string.h"
+#include "yarp/include/yarp/util/yp_string_list.h"
+#include "yarp/include/yarp/util/yp_string.h"
 
 // Parse a regular expression and extract the names of all of the named capture
 // groups.

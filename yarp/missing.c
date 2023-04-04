@@ -1,4 +1,4 @@
-#include "yarp/missing.h"
+#include "yarp/include/yarp/missing.h"
 
 size_t
 yp_strnlen(const char *string, size_t length) {

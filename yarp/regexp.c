@@ -1,4 +1,4 @@
-#include "yarp/regexp.h"
+#include "yarp/include/yarp/regexp.h"
 
 // This is the parser that is going to handle parsing regular expressions.
 typedef struct {

@@ -3,10 +3,10 @@
 
 #include <stdbool.h>
 
-#include "yarp/ast.h"
-#include "yarp/enc/yp_encoding.h"
-#include "yarp/util/yp_list.h"
-#include "yarp/util/yp_state_stack.h"
+#include "yarp/include/yarp/ast.h"
+#include "yarp/include/yarp/enc/yp_encoding.h"
+#include "yarp/include/yarp/util/yp_list.h"
+#include "yarp/include/yarp/util/yp_state_stack.h"
 
 // This enum provides various bits that represent different kinds of states that
 // the lexer can track. This is used to determine which kind of token to return

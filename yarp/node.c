@@ -5,7 +5,7 @@
 /* if you are looking to modify the                                           */
 /* template                                                                   */
 /******************************************************************************/
-#include "yarp/node.h"
+#include "yarp/include/yarp/node.h"
 
 // Clear the node but preserves the location.
 void yp_node_clear(yp_node_t *node) {

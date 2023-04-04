@@ -1,4 +1,4 @@
-#include "yarp/enc/yp_encoding.h"
+#include "yarp/include/yarp/enc/yp_encoding.h"
 
 typedef uint32_t windows_31j_codepoint_t;
 

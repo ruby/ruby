@@ -8,8 +8,8 @@
 #ifndef YARP_NODE_H
 #define YARP_NODE_H
 
-#include "yarp.h"
-#include "yarp/parser.h"
+#include "yarp/include/yarp.h"
+#include "yarp/include/yarp/parser.h"
 
 // Initialize a yp_token_list_t with its default values.
 void
