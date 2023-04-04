@@ -1,16 +1,30 @@
-assert_equal 'true', %q{
-  def nil_nil = nil == nil
-  nil_nil
+# VM_CALL_OPT_SEND + VM_METHOD_TYPE_ATTRSET
+assert_equal '1', %q{
+  class Foo
+    attr_writer :foo
+
+    def bar
+      send(:foo=, 1)
+    end
+  end
+
+  Foo.new.bar
 }
 
-assert_equal 'true', %q{
-  def lt(a, b) = a < b
-  lt(1, 2)
-  lt('a', 'b')
+# VM_CALL_OPT_SEND + OPTIMIZED_METHOD_TYPE_CALL
+assert_equal 'foo', %q{
+  def bar(&foo)
+    foo.send(:call)
+  end
+
+  bar { :foo }
 }
 
-assert_equal '3', %q{
-  def foo = 2
-  def bar = 1 + foo + nil.to_i
-  bar
+# VM_CALL_OPT_SEND + OPTIMIZED_METHOD_TYPE_STRUCT_AREF
+assert_equal 'bar', %q{
+  def bar(foo)
+    foo.send(:bar)
+  end
+
+  bar(Struct.new(:bar).new(:bar))
 }

@@ -5128,7 +5128,7 @@ module RubyVM::RJIT
 
       # This is a .send call and we need to adjust the stack
       if flags & C::VM_CALL_OPT_SEND != 0
-        handle_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+        handle_opt_send_shift_stack(asm, argc, ctx, send_shift:)
       end
 
       # Save the PC and SP because the callee may allocate
@@ -5316,7 +5316,7 @@ module RubyVM::RJIT
 
       # If this is a .send call we need to adjust the stack
       if flags & C::VM_CALL_OPT_SEND != 0
-        handle_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+        handle_opt_send_shift_stack(asm, argc, ctx, send_shift:)
       end
 
       # About to reset the SP, need to load this here
@@ -5363,7 +5363,7 @@ module RubyVM::RJIT
 
       # This is a .send call and we need to adjust the stack
       if flags & C::VM_CALL_OPT_SEND != 0
-        handle_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+        handle_opt_send_shift_stack(asm, argc, ctx, send_shift:)
       end
 
       # All structs from the same Struct class should have the same
