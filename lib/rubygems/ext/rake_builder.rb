@@ -8,7 +8,7 @@
 
 class Gem::Ext::RakeBuilder < Gem::Ext::Builder
   def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
-    if File.basename(extension) =~ /mkrf_conf/i
+    if /mkrf_conf/i.match?(File.basename(extension))
       run([Gem.ruby, File.basename(extension), *args], results, class_name, extension_dir)
     end
 

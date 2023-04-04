@@ -151,7 +151,7 @@ command help for an example.
   # source directories?
 
   def get_path(dependency)
-    return dependency.name if dependency.name =~ /\.gem$/i
+    return dependency.name if /\.gem$/i.match?(dependency.name)
 
     specs = dependency.matching_specs
 
@@ -160,7 +160,7 @@ command help for an example.
     return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
       selected
 
-    return unless dependency.name =~ /^#{selected.name}$/i
+    return unless /^#{selected.name}$/i.match?(dependency.name)
 
     # We expect to find (basename).gem in the 'cache' directory.  Furthermore,
     # the name match must be exact (ignoring case).

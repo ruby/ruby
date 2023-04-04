@@ -1337,7 +1337,7 @@ Also, a list:
 
     def escape_path(*path)
       path = File.join(*path)
-      if %r{\A[-+:/=@,.\w]+\z} =~ path
+      if %r{\A[-+:/=@,.\w]+\z}.match?(path)
         path
       else
         "\"#{path.gsub(/[`$"]/, '\\&')}\""

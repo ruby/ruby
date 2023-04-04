@@ -230,7 +230,7 @@ class Gem::Installer
         end
       end
 
-      next unless line =~ shebang
+      next unless line&.match?(shebang)
 
       io.gets # blankline
 
@@ -714,7 +714,7 @@ class Gem::Installer
   end
 
   def verify_spec
-    unless spec.name =~ Gem::Specification::VALID_NAME_PATTERN
+    unless Gem::Specification::VALID_NAME_PATTERN.match?(spec.name)
       raise Gem::InstallError, "#{spec} has an invalid name"
     end
 
@@ -726,11 +726,11 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid extensions"
     end
 
-    if spec.platform.to_s =~ /\R/
+    if /\R/.match?(spec.platform.to_s)
       raise Gem::InstallError, "#{spec.platform} is an invalid platform"
     end
 
-    unless spec.specification_version.to_s =~ /\A\d+\z/
+    unless /\A\d+\z/.match?(spec.specification_version.to_s)
       raise Gem::InstallError, "#{spec} has an invalid specification_version"
     end
 

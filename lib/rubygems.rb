@@ -795,7 +795,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if @ruby.nil?
       @ruby = RbConfig.ruby
 
-      @ruby = "\"#{@ruby}\"" if @ruby =~ /\s/
+      @ruby = "\"#{@ruby}\"" if /\s/.match?(@ruby)
     end
 
     @ruby
@@ -1008,7 +1008,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       # Skip older versions of the GemCutter plugin: Its commands are in
       # RubyGems proper now.
 
-      next if plugin =~ /gemcutter-0\.[0-3]/
+      next if /gemcutter-0\.[0-3]/.match?(plugin)
 
       begin
         load plugin

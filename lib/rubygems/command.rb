@@ -457,7 +457,7 @@ class Gem::Command
     until extra.empty? do
       ex = []
       ex << extra.shift
-      ex << extra.shift if extra.first.to_s =~ /^[^-]/
+      ex << extra.shift if /^[^-]/.match?(extra.first.to_s)
       result << ex if handles?(ex)
     end
 

@@ -483,7 +483,7 @@ if you believe they were disclosed to a third party.
 
     @hash.each do |key, value|
       key = key.to_s
-      next if key =~ re
+      next if key&.match?(re)
       yaml_hash[key.to_s] = value
     end
 
@@ -534,7 +534,7 @@ if you believe they were disclosed to a third party.
         need_config_file_name = false
       elsif arg =~ /^--config-file=(.*)/
         @config_file_name = $1
-      elsif arg =~ /^--config-file$/
+      elsif /^--config-file$/.match?(arg)
         need_config_file_name = true
       end
     end

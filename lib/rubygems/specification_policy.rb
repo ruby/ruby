@@ -144,7 +144,7 @@ class Gem::SpecificationPolicy
       end
 
       next unless METADATA_LINK_KEYS.include? key
-      if value !~ VALID_URI_PATTERN
+      if !VALID_URI_PATTERN.match?(value)
         error "#{entry} has invalid link: #{value.inspect}"
       end
     end
@@ -279,11 +279,11 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     if !name.is_a?(String)
       error "invalid value for attribute name: \"#{name.inspect}\" must be a string"
-    elsif name !~ /[a-zA-Z]/
+    elsif !/[a-zA-Z]/.match?(name)
       error "invalid value for attribute name: #{name.dump} must include at least one letter"
-    elsif name !~ VALID_NAME_PATTERN
+    elsif !VALID_NAME_PATTERN.match?(name)
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
-    elsif name =~ SPECIAL_CHARACTERS
+    elsif SPECIAL_CHARACTERS.match?(name)
       error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
     end
   end
@@ -397,11 +397,11 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       error "#{LAZY} is not an email"
     end
 
-    if @specification.description =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.description)
       error "#{LAZY} is not a description"
     end
 
-    if @specification.summary =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.summary)
       error "#{LAZY} is not a summary"
     end
 
