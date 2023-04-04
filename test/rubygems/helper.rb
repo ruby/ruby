@@ -1176,6 +1176,20 @@ Also, a list:
   end
 
   ##
+  # Is this test being run on a version of Ruby built with mingw?
+
+  def self.mingw_windows?
+    RUBY_PLATFORM.match("mingw")
+  end
+
+  ##
+  # Is this test being run on a version of Ruby built with mingw?
+
+  def mingw_windows?
+    RUBY_PLATFORM.match("mingw")
+  end
+
+  ##
   # Is this test being run on a ruby/ruby repository?
   #
 
