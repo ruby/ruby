@@ -1277,9 +1277,8 @@ dir_chdir(VALUE dir)
 #if defined(HAVE_FCHDIR) && defined(HAVE_DIRFD) && HAVE_FCHDIR && HAVE_DIRFD
     dir_s_fchdir(rb_cDir, dir_fileno(dir));
 #else
-    struct dir_data *dirp;
-    dirp = dir_get(dir);
-    dir_s_chdir(1, &dirp->path, rb_cDir);
+    VALUE path = dir_get(dir)->path;
+    dir_s_chdir(1, &path, rb_cDir);
 #endif
 
     return Qnil;
