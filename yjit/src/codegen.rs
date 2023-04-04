@@ -3640,13 +3640,13 @@ fn gen_opt_newarray_send(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
-    let method = jit.get_arg(1).as_u32();
+    let method = jit.get_arg(1).as_u64();
 
-    if method == idMin {
+    if method == ID!(min) {
         gen_opt_newarray_min(jit, asm, _ocb)
-    } else if method == idMax {
+    } else if method == ID!(max) {
         gen_opt_newarray_max(jit, asm, _ocb)
-    } else if method == idHash {
+    } else if method == ID!(hash) {
         gen_opt_newarray_hash(jit, asm, _ocb)
     } else {
         None
@@ -4984,7 +4984,7 @@ fn jit_obj_respond_to(
         (METHOD_VISI_UNDEF, _) => {
             // No method, we can return false given respond_to_missing? hasn't been overridden.
             // In the future, we might want to jit the call to respond_to_missing?
-            if !assume_method_basic_definition(jit, asm, ocb, recv_class, idRespond_to_missing.into()) {
+            if !assume_method_basic_definition(jit, asm, ocb, recv_class, ID!(respond_to_missing).into()) {
                 return false;
             }
             Qfalse
