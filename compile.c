@@ -856,7 +856,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-#include "yarp_compiler.inc"
+#include "yarp_compiler.c"
 
 VALUE
 rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer)

@@ -1052,7 +1052,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.c
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 # dependencies for optional sources.
-compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc {$(VPATH)}yarp_compiler.inc
+compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
   {$(VPATH)}dln.h {$(VPATH)}dln_find.c {$(VPATH)}encindex.h \
