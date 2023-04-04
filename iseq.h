@@ -126,6 +126,7 @@ struct iseq_compile_data {
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;
     const NODE *root_node;
+    bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
 #if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif
