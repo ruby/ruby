@@ -144,7 +144,7 @@ class Gem::SpecificationPolicy
       end
 
       next unless METADATA_LINK_KEYS.include? key
-      if !VALID_URI_PATTERN.match?(value)
+      unless VALID_URI_PATTERN.match?(value)
         error "#{entry} has invalid link: #{value.inspect}"
       end
     end

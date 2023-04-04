@@ -52,7 +52,7 @@ install:
     assert_match %r{DESTDIR\\=#{ENV['DESTDIR']}$},         results
     assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} install$}, results
 
-    if !/nmake/.match?(results)
+    unless /nmake/.match?(results)
       assert_match %r{^clean: destination$},   results
       assert_match %r{^all: destination$},     results
       assert_match %r{^install: destination$}, results
