@@ -1409,7 +1409,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
 /// the potential to run blocks which are not ready.
 unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     // SAFETY: caller ensures initialization
-    let block = blockref.as_ref();
+    let block = unsafe { blockref.as_ref() };
 
     // Function entry blocks must have stack size 0
     assert!(!(block.iseq_range.start == 0 && block.ctx.stack_size > 0));
@@ -1437,7 +1437,7 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
         // Creating an unaligned pointer is well defined unlike in C.
         let value_address: *const VALUE = value_address.cast();
 
-        let object = value_address.read_unaligned();
+        let object = unsafe { value_address.read_unaligned() };
         obj_written!(iseq, object);
     }
 
@@ -2795,17 +2795,17 @@ pub fn defer_compilation(
 /// Block must be initialized and incoming/outgoing edges
 /// must also point to initialized blocks.
 unsafe fn remove_from_graph(blockref: BlockRef) {
-    let block = blockref.as_ref();
+    let block = unsafe { blockref.as_ref() };
 
     // Remove this block from the predecessor's targets
     for pred_branchref in block.incoming.0.take().iter() {
         // Branch from the predecessor to us
-        let pred_branch = pred_branchref.as_ref();
+        let pred_branch = unsafe { pred_branchref.as_ref() };
 
         // If this is us, nullify the target block
         for target_idx in 0..pred_branch.targets.len() {
             // SAFETY: no mutation inside unsafe
-            let target_is_us = {
+            let target_is_us = unsafe {
                 pred_branch.targets[target_idx]
                     .ref_unchecked()
                     .as_ref()
@@ -2822,18 +2822,18 @@ unsafe fn remove_from_graph(blockref: BlockRef) {
 
     // For each outgoing branch
     for out_branchref in block.outgoing.iter() {
-        let out_branch = out_branchref.as_ref();
+        let out_branch = unsafe { out_branchref.as_ref() };
         // For each successor block
         for out_target in out_branch.targets.iter() {
             // SAFETY: copying out an Option<BlockRef>. No mutation.
-            let succ_block: Option<BlockRef> = {
+            let succ_block: Option<BlockRef> = unsafe {
                 out_target.ref_unchecked().as_ref().and_then(|target| target.get_block())
             };
 
             if let Some(succ_block) = succ_block {
                 // Remove outgoing branch from the successor's incoming list
                 // SAFETY: caller promises the block has valid outgoing edges.
-                let succ_block = succ_block.as_ref();
+                let succ_block = unsafe { succ_block.as_ref() };
                 // Temporarily move out of succ_block.incoming.
                 let succ_incoming = succ_block.incoming.0.take();
                 let mut succ_incoming = succ_incoming.into_vec();
@@ -2859,7 +2859,7 @@ unsafe fn remove_from_graph(blockref: BlockRef) {
 pub unsafe fn free_block(blockref: BlockRef, graph_intact: bool) {
     // Careful with order here.
     // First, remove all pointers to the referent block
-    {
+    unsafe {
         block_assumptions_free(blockref);
 
         if graph_intact {
@@ -2868,13 +2868,13 @@ pub unsafe fn free_block(blockref: BlockRef, graph_intact: bool) {
     }
 
     // SAFETY: we should now have a unique pointer to the block
-    dealloc_block(blockref)
+    unsafe { dealloc_block(blockref) }
 }
 
 /// Deallocate a block and its outgoing branches. Blocks own their outgoing branches.
 /// Caller must ensure that we have unique ownership for the referent block
 unsafe fn dealloc_block(blockref: BlockRef) {
-    {
+    unsafe {
         for outgoing in blockref.as_ref().outgoing.iter() {
             // this Box::from_raw matches the Box::into_raw from PendingBranch::into_branch
             mem::drop(Box::from_raw(outgoing.as_ptr()));
@@ -2882,7 +2882,7 @@ unsafe fn dealloc_block(blockref: BlockRef) {
     }
 
     // Deallocate the referent Block
-    {
+    unsafe {
         // this Box::from_raw matches the Box::into_raw from JITState::into_block
         mem::drop(Box::from_raw(blockref.as_ptr()));
     }
@@ -3107,7 +3107,7 @@ impl<T> RefUnchecked for Cell<T> {
         // SAFETY: pointer is dereferenceable because it's from a &Cell.
         // It's up to the caller to follow aliasing rules with the output
         // reference.
-        self.as_ptr().as_ref().unwrap()
+        unsafe { self.as_ptr().as_ref().unwrap() }
     }
 }
 

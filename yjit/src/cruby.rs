@@ -614,7 +614,7 @@ macro_rules! obj_written {
     ($old: expr, $young: expr) => {
         let (old, young): (VALUE, VALUE) = ($old, $young);
         let src_loc = $crate::cruby::src_loc!();
-        rb_yjit_obj_written(old, young, src_loc.file.as_ptr(), src_loc.line);
+        unsafe { rb_yjit_obj_written(old, young, src_loc.file.as_ptr(), src_loc.line) };
     };
 }
 pub(crate) use obj_written;
