@@ -1,4 +1,4 @@
-#include "yarp/util/yp_list.h"
+#include "yarp/include/yarp/util/yp_list.h"
 
 // Allocate a new list.
 yp_list_t *

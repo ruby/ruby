@@ -1,4 +1,4 @@
-#include "yarp.h"
+#include "yarp/include/yarp.h"
 
 #define YP_STRINGIZE0(expr) #expr
 #define YP_STRINGIZE(expr) YP_STRINGIZE0(expr)
