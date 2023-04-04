@@ -190,7 +190,7 @@ struct rb_objspace; /* in vm_core.h */
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shape ID will be the SPECIAL_CONST_SHAPE_ID
 #ifndef SIZE_POOL_COUNT
-# if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+# if (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #  define SIZE_POOL_COUNT 5
 # else
 #  define SIZE_POOL_COUNT 1

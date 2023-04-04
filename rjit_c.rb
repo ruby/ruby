@@ -857,6 +857,11 @@ module RubyVM::RJIT # :nodoc: all
             shared: self.VALUE,
           ), Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.heap, aux)")],
         ),
+        embed: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as.embed)"),
+          len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, len)")],
+          ary: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, ary)")],
+        ),
       ), Primitive.cexpr!("OFFSETOF((*((struct RString *)NULL)), as)")],
     )
   end

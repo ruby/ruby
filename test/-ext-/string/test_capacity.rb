@@ -66,11 +66,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def embed_header_size
-    if GC.using_rvargc?
-      2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
-    else
-      2 * RbConfig::SIZEOF['void*']
-    end
+    2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
   end
 
   def max_embed_len

@@ -178,7 +178,6 @@ fn main() {
 
         // From include/ruby/internal/core/robject.h
         .allowlist_type("ruby_robject_flags")
-        // .allowlist_type("ruby_robject_consts") // Removed when USE_RVARGC
         .allowlist_var("ROBJECT_OFFSET_.*")
 
         // From include/ruby/internal/core/rarray.h

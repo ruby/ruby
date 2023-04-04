@@ -148,8 +148,4 @@
 # undef RBIMPL_TEST3
 #endif /* HAVE_VA_ARGS_MACRO */
 
-#ifndef USE_RVARGC
-# define USE_RVARGC 1
-#endif
-
 #endif /* RBIMPL_CONFIG_H */

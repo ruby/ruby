@@ -3768,11 +3768,8 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_modify(output);
 
     if (NIL_P(output_bytesize_v)) {
-#if USE_RVARGC
         output_bytesize = rb_str_capacity(output);
-#else
-        output_bytesize = RSTRING_EMBED_LEN_MAX;
-#endif
+
         if (!NIL_P(input) && output_bytesize < RSTRING_LEN(input))
             output_bytesize = RSTRING_LEN(input);
     }
