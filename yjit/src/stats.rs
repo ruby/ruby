@@ -316,6 +316,7 @@ make_counters! {
 
     vm_insns_count,
     compiled_iseq_count,
+    compiled_blockid_count,
     compiled_block_count,
     compiled_branch_count,
     compilation_failure,
