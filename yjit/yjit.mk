@@ -90,7 +90,7 @@ update-yjit-bench:
 .PHONY: yjit-smoke-test
 yjit-smoke-test:
 ifneq ($(strip $(CARGO)),)
-	$(CARGO) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
+	$(CARGO) +1.58.0 test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
 endif
 	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1' BTESTS=-j
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_yjit.rb'
