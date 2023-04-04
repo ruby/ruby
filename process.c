@@ -506,11 +506,13 @@ get_pid(void)
     return PIDT2NUM(cached_pid);
 }
 
+#if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
 static void
 clear_pid_cache(void)
 {
     cached_pid = 0;
 }
+#endif
 
 /*
  *  call-seq:
