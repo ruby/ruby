@@ -9884,10 +9884,26 @@ rb_gc_prepare_heap(void)
 {
     gc_start_internal(NULL, Qtrue, Qtrue, Qtrue, Qtrue, Qtrue);
 
-    /* The transient heap need to be evacuated before we promote objects */
+    /* Flush any postponed jobs.
+     * Transient heap uses postponed jobs to mark things, so we need to
+     * give it a chance to finish what it was doing. */
+    rb_postponed_job_flush(GET_VM());
+
+    /* The transient heap need to be evacuated before we promote objects.
+     * First put the transient heap in marking mode so that we can 
+     * evacuate everything.  Then evacuate everything. Then finish up
+     * marking mode so that the transient heap is in the right mode
+     * for the next GC. */
     rb_transient_heap_start_marking(true);
     rb_transient_heap_evacuate();
+    rb_transient_heap_finish_marking();
+
+    /* Finally, promote everyone to old gen, but don't let the GC run
+     * while we iterate over the heap. */
+    VALUE gc_disabled = rb_gc_disable_no_rest();
     rb_objspace_each_objects(gc_promote_object_i, NULL);
+    if (gc_disabled != Qtrue) rb_gc_enable();
+    rb_transient_heap_verify();
 }
 
 static int
