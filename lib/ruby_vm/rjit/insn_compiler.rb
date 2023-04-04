@@ -1283,7 +1283,7 @@ module RubyVM::RJIT
       asm.cmovnz(:rax, :rcx)
 
       # Push the return value onto the stack
-      out_type = if C::SPECIAL_CONST_P(C.to_ruby(pushval))
+      out_type = if C::SPECIAL_CONST_P(pushval)
         Type::UnknownImm
       else
         Type::Unknown
@@ -1307,7 +1307,7 @@ module RubyVM::RJIT
       ivar_name = jit.operand(0)
       # Value that will be pushed on the stack if the ivar is defined. In practice this is always the
       # string "instance-variable". If the ivar is not defined, nil will be pushed instead.
-      pushval = jit.operand(2)
+      pushval = jit.operand(2, ruby: true)
 
       # Get the receiver
       recv = :rcx
@@ -1333,11 +1333,11 @@ module RubyVM::RJIT
         # }
         asm.test(C_RET, 255)
         asm.mov(:rax, Qnil)
-        asm.mov(:rcx, pushval)
+        asm.mov(:rcx, to_value(pushval))
         asm.cmovnz(:rax, :rcx)
 
         # Push the return value onto the stack
-        out_type = C::SPECIAL_CONST_P(C.to_ruby(pushval)) ? Type::UnknownImm : Type::Unknown
+        out_type = C::SPECIAL_CONST_P(pushval) ? Type::UnknownImm : Type::Unknown
         stack_ret = ctx.stack_push(out_type)
         asm.mov(stack_ret, :rax)
 
@@ -1358,7 +1358,7 @@ module RubyVM::RJIT
       asm.cmp(shape_opnd, shape_id)
       jit_chain_guard(:jne, jit, ctx, asm, side_exit)
 
-      result = ivar_exists ? pushval : Qnil
+      result = ivar_exists ? C.to_value(pushval) : Qnil
       putobject(jit, ctx, asm, val: result)
 
       # Jump to next instruction. This allows guard chains to share the same successor.
