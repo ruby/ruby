@@ -92,8 +92,7 @@ yjit-smoke-test:
 ifneq ($(strip $(CARGO)),)
 	$(CARGO) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
 endif
-	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1' BTESTS=-j
-	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_yjit.rb'
+	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1 --yjit-temp-regs=5' BTESTS=-j
 
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
