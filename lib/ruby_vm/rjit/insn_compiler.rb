@@ -5421,7 +5421,7 @@ module RubyVM::RJIT
         asm.mov(opnd2, :rax)
       end
 
-      ctx.shift_stack(1)
+      ctx.shift_stack(argc)
     end
 
     # vm_call_symbol
