@@ -480,6 +480,8 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         #[cfg(feature="stats")]
         hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
 
+        // `context` is true at RubyVM::YJIT._print_stats for --yjit-stats. It's false by default
+        // for RubyVM::YJIT.runtime_stats because counting all Contexts could be expensive.
         if context {
             let live_context_count = get_live_context_count();
             let context_size = std::mem::size_of::<Context>();
