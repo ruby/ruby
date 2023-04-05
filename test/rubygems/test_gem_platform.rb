@@ -212,7 +212,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_to_s
-    if win_platform?
+    if Gem.win_platform?
       assert_equal "x86-mswin32-60", Gem::Platform.local.to_s
     else
       assert_equal "x86-darwin-8", Gem::Platform.local.to_s

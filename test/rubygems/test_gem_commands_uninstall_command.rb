@@ -114,7 +114,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   def test_execute_removes_executable
     initial_install
 
-    if win_platform?
+    if Gem.win_platform?
       assert File.exist?(@executable)
     else
       assert File.symlink?(@executable)

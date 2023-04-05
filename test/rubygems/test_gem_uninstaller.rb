@@ -252,12 +252,12 @@ class TestGemUninstaller < Gem::InstallerTestCase
     gem_dir = File.join @gemhome, "gems", @spec.full_name
 
     Gem.pre_uninstall do
-      sleep(0.1) if win_platform?
+      sleep(0.1) if Gem.win_platform?
       assert File.exist?(gem_dir), "gem_dir should exist"
     end
 
     Gem.post_uninstall do
-      sleep(0.1) if win_platform?
+      sleep(0.1) if Gem.win_platform?
       refute File.exist?(gem_dir), "gem_dir should not exist"
     end
 

@@ -36,7 +36,7 @@ class TestGemUtil < Gem::TestCase
   end
 
   def test_traverse_parents_does_not_crash_on_permissions_error
-    pend "skipped on MS Windows (chmod has no effect)" if win_platform? || Gem.java_platform?
+    pend "skipped on MS Windows (chmod has no effect)" if Gem.win_platform? || Gem.java_platform?
 
     FileUtils.mkdir_p "d/e/f"
     # remove 'execute' permission from "e" directory and make it
@@ -53,7 +53,7 @@ class TestGemUtil < Gem::TestCase
     assert_equal File.realpath("../..", @tempdir), paths[3]
   ensure
     # restore default permissions, allow the directory to be removed
-    FileUtils.chmod(0775, "d/e") unless win_platform? || Gem.java_platform?
+    FileUtils.chmod(0775, "d/e") unless Gem.win_platform? || Gem.java_platform?
   end
 
   def test_glob_files_in_dir

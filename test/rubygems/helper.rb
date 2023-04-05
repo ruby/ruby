@@ -414,7 +414,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @orig_arch = RbConfig::CONFIG["arch"]
 
-    if win_platform?
+    if Gem.win_platform?
       util_set_arch "i386-mswin32"
     else
       util_set_arch "i686-darwin8.10.1"
@@ -1129,20 +1129,6 @@ Also, a list:
     Object.send :remove_const, :RUBY_DESCRIPTION
     Object.send :remove_const, :RUBY_ENGINE
     Object.send :remove_const, :RUBY_ENGINE_VERSION
-  end
-
-  ##
-  # Is this test being run on a Windows platform?
-
-  def self.win_platform?
-    Gem.win_platform?
-  end
-
-  ##
-  # see ::win_platform?
-
-  def win_platform?
-    self.class.win_platform?
   end
 
   ##

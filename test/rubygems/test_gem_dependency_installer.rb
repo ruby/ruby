@@ -895,7 +895,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   # Wrappers don't work on mswin
-  unless win_platform?
+  unless Gem.win_platform?
     def test_install_no_wrappers
       util_setup_gems
 

@@ -189,7 +189,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
   end
 
   def test_execute_no_user_install
-    pend "skipped on MS Windows (chmod has no effect)" if win_platform?
+    pend "skipped on MS Windows (chmod has no effect)" if Gem.win_platform?
     pend "skipped in root privilege" if Process.uid.zero?
 
     specs = spec_fetcher do |fetcher|

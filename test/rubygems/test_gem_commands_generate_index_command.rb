@@ -35,7 +35,7 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
   end
 
   def test_handle_options_directory
-    return if win_platform?
+    return if Gem.win_platform?
     refute_equal "/nonexistent", @cmd.options[:directory]
 
     @cmd.handle_options %w[--directory /nonexistent]
@@ -44,7 +44,7 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
   end
 
   def test_handle_options_directory_windows
-    return unless win_platform?
+    return unless Gem.win_platform?
 
     refute_equal "/nonexistent", @cmd.options[:directory]
 

@@ -679,7 +679,7 @@ end
   end
 
   def test_platform_mswin
-    if win_platform?
+    if Gem.win_platform?
       util_set_arch "x86-mswin32-60" do
         @gda.platform :mswin do
           @gda.gem "a"
@@ -740,7 +740,7 @@ end
   end
 
   def test_platforms
-    unless win_platform?
+    unless Gem.win_platform?
       util_set_arch "i686-darwin8.10.1" do
         @gda.platforms :ruby do
           @gda.gem "a"

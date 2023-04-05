@@ -41,7 +41,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
 
       mask = 0100644 & (~File.umask)
 
-      assert_equal mask, File.stat(extracted).mode unless win_platform?
+      assert_equal mask, File.stat(extracted).mode unless Gem.win_platform?
     end
 
     def test_extract_files_security_policy

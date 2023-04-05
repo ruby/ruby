@@ -1451,7 +1451,7 @@ dependencies: []
     @ext.build_extensions
     assert_path_not_exist @ext.extension_dir
   ensure
-    unless $DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?
+    unless $DEBUG || Gem.win_platform? || Process.uid.zero? || Gem.java_platform?
       FileUtils.chmod 0755, File.join(@ext.base_dir, "extensions")
       FileUtils.chmod 0755, @ext.base_dir
     end
@@ -1858,7 +1858,7 @@ dependencies: []
     @a1.instance_variable_set :@new_platform, "mswin32"
     assert_equal "a-1-mswin32", @a1.full_name, "legacy"
 
-    return if win_platform?
+    return if Gem.win_platform?
 
     @a1 = Gem::Specification.new "a", 1
     @a1.platform = "current"
@@ -2380,7 +2380,7 @@ end
 
     expected = <<-SPEC
 # -*- encoding: utf-8 -*-
-# stub: a 1 #{win_platform? ? "x86-mswin32-60" : "x86-darwin-8"} #{stub_require_paths}
+# stub: a 1 #{Gem.win_platform? ? "x86-mswin32-60" : "x86-darwin-8"} #{stub_require_paths}
 # stub: #{extensions}
 
 Gem::Specification.new do |s|
@@ -2897,7 +2897,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_empty_require_paths
-    if win_platform?
+    if Gem.win_platform?
       pend "test_validate_empty_require_paths skipped on MS Windows (symlink)"
     else
       util_setup_validate
@@ -2913,7 +2913,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_files
-    pend "test_validate_files skipped on MS Windows (symlink)" if win_platform?
+    pend "test_validate_files skipped on MS Windows (symlink)" if Gem.win_platform?
     util_setup_validate
 
     @a1.files += ["lib", "lib2"]

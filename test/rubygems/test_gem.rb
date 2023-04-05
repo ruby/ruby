@@ -152,10 +152,10 @@ class TestGem < Gem::TestCase
   end
 
   def assert_self_install_permissions(format_executable: false)
-    mask = win_platform? ? 0700 : 0777
+    mask = Gem.win_platform? ? 0700 : 0777
     options = {
       :dir_mode => 0500,
-      :prog_mode => win_platform? ? 0410 : 0510,
+      :prog_mode => Gem.win_platform? ? 0410 : 0510,
       :data_mode => 0640,
       :wrappers => true,
       :format_executable => format_executable,
@@ -192,7 +192,7 @@ class TestGem < Gem::TestCase
       "gems/foo-1/data/foo.txt" => data_mode,
     }
     # add Windows script
-    expected["bin/#{prog_name}.bat"] = mask.to_s(8) if win_platform?
+    expected["bin/#{prog_name}.bat"] = mask.to_s(8) if Gem.win_platform?
     result = {}
     Dir.chdir @gemhome do
       expected.each_key do |n|
@@ -645,7 +645,7 @@ class TestGem < Gem::TestCase
 
     assert_equal 0750, File::Stat.new(@gemhome).mode & 0777
     assert_equal 0750, File::Stat.new(File.join(@gemhome, "cache")).mode & 0777
-  end unless win_platform?
+  end unless Gem.win_platform?
 
   def test_self_ensure_gem_directories_safe_permissions
     FileUtils.rm_r @gemhome
@@ -659,7 +659,7 @@ class TestGem < Gem::TestCase
     assert_equal 0, File::Stat.new(File.join(@gemhome, "cache")).mode & 002
   ensure
     File.umask old_umask
-  end unless win_platform?
+  end unless Gem.win_platform?
 
   def test_self_ensure_gem_directories_missing_parents
     gemdir = File.join @tempdir, "a/b/c/gemdir"
@@ -677,7 +677,7 @@ class TestGem < Gem::TestCase
     assert_directory_exists util_cache_dir
   end
 
-  unless win_platform? || Process.uid.zero? # only for FS that support write protection
+  unless Gem.win_platform? || Process.uid.zero? # only for FS that support write protection
     def test_self_ensure_gem_directories_write_protected
       gemdir = File.join @tempdir, "egd"
       begin

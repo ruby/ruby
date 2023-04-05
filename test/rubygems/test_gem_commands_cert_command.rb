@@ -500,7 +500,7 @@ Removed '/CN=alternate/DC=example'
 
     mask = 0100600 & (~File.umask)
 
-    assert_equal mask, File.stat(path).mode unless win_platform?
+    assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
 
   def test_execute_sign_encrypted_key
@@ -529,7 +529,7 @@ Removed '/CN=alternate/DC=example'
 
     mask = 0100600 & (~File.umask)
 
-    assert_equal mask, File.stat(path).mode unless win_platform?
+    assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
 
   def test_execute_sign_default
@@ -561,7 +561,7 @@ Removed '/CN=alternate/DC=example'
 
     mask = 0100600 & (~File.umask)
 
-    assert_equal mask, File.stat(path).mode unless win_platform?
+    assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
 
   def test_execute_sign_default_encrypted_key
@@ -593,7 +593,7 @@ Removed '/CN=alternate/DC=example'
 
     mask = 0100600 & (~File.umask)
 
-    assert_equal mask, File.stat(path).mode unless win_platform?
+    assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
 
   def test_execute_sign_no_cert
