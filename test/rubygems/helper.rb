@@ -11,8 +11,6 @@ require "test/unit"
 
 ENV["JARS_SKIP"] = "true" if Gem.java_platform? # avoid unnecessary and noisy `jar-dependencies` post install hook
 
-require "rubygems/deprecate"
-
 require "fileutils"
 require "pathname"
 require "pp"
@@ -72,8 +70,6 @@ end
 # your normal set of gems is not affected.
 
 class Gem::TestCase < Test::Unit::TestCase
-  extend Gem::Deprecate
-
   attr_accessor :fetcher # :nodoc:
 
   attr_accessor :gem_repo # :nodoc:
