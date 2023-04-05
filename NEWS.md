@@ -49,6 +49,13 @@ Note: We're only listing outstanding class updates.
 
     * `Module#set_temporary_name` added for setting a temporary name for a module. [[Feature #19521]]
 
+* Process.warmup
+
+    * Notify the Ruby virtual machine that the boot sequence is finished,
+      and that now is a good time to optimize the application. This is useful
+      for long running applications. The actual optimizations performed are entirely
+      implementation specific and may change in the future without notice. [[Feature #18885]
+
 ## Stdlib updates
 
 The following default gems are updated.

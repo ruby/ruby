@@ -116,6 +116,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "ruby/ractor.h"
 
 /* define system APIs */
@@ -8534,6 +8535,37 @@ static VALUE rb_mProcUID;
 static VALUE rb_mProcGID;
 static VALUE rb_mProcID_Syscall;
 
+/*
+ *  call-seq:
+ *     Process.warmup    -> true
+ *
+ *  Notify the Ruby virtual machine that the boot sequence is finished,
+ *  and that now is a good time to optimize the application. This is useful
+ *  for long running applications.
+ *
+ *  This method is expected to be called at the end of the application boot.
+ *  If the application is deployed using a pre-forking model, +Process.warmup+
+ *  should be called in the original process before the first fork.
+ *
+ *  The actual optimizations performed are entirely implementation specific
+ *  and may change in the future without notice.
+ *
+ *  On CRuby, +Process.warmup+:
+ *
+ *  * Perform a major GC.
+ *  * Compacts the heap.
+ *  * Promotes all surviving objects to the old generation.
+ */
+
+static VALUE
+proc_warmup(VALUE _)
+{
+    RB_VM_LOCK_ENTER();
+    rb_gc_prepare_heap();
+    RB_VM_LOCK_LEAVE();
+    return Qtrue;
+}
+
 
 /*
  * Document-module: Process
@@ -8650,6 +8682,8 @@ InitVM_process(void)
 
     rb_define_module_function(rb_mProcess, "getpriority", proc_getpriority, 2);
     rb_define_module_function(rb_mProcess, "setpriority", proc_setpriority, 3);
+
+    rb_define_module_function(rb_mProcess, "warmup", proc_warmup, 0);
 
 #ifdef HAVE_GETPRIORITY
     /* see Process.setpriority */
