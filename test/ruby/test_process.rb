@@ -4,6 +4,7 @@ require 'test/unit'
 require 'tempfile'
 require 'timeout'
 require 'rbconfig'
+require 'objspace'
 
 class TestProcess < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -2686,4 +2687,20 @@ EOS
       end
     end;
   end if Process.respond_to?(:_fork)
+
+  def test_warmup_promote_all_objects_to_oldgen
+    obj = Object.new
+
+    refute_includes(ObjectSpace.dump(obj), '"old":true')
+    Process.warmup
+    assert_includes(ObjectSpace.dump(obj), '"old":true')
+  end
+
+  def test_warmup_run_major_gc_and_compact
+    major_gc_count = GC.stat(:major_gc_count)
+    compact_count = GC.stat(:compact_count)
+    Process.warmup
+    assert_equal major_gc_count + 1, GC.stat(:major_gc_count)
+    assert_equal compact_count + 1, GC.stat(:compact_count)
+  end
 end
