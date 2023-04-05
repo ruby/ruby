@@ -1186,22 +1186,6 @@ Also, a list:
   end
 
   ##
-  # Allows tests to use a random (but controlled) port number instead of
-  # a hardcoded one. This helps CI tools when running parallels builds on
-  # the same builder slave.
-
-  def self.process_based_port
-    @@process_based_port ||= 8000 + $$ % 1000
-  end
-
-  ##
-  # See ::process_based_port
-
-  def process_based_port
-    self.class.process_based_port
-  end
-
-  ##
   # Allows the proper version of +rake+ to be used for the test.
 
   def build_rake_in(good=true)
