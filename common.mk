@@ -18201,6 +18201,8 @@ yjit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 yjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/array.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/class.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -18209,6 +18211,7 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
