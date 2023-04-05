@@ -385,13 +385,6 @@ AS_IF([test "$GCC" = yes], [
     AS_IF([test "$gcc_major" -lt 4], [
         AC_MSG_ERROR([too old GCC: $gcc_major.$gcc_minor])
     ])
-
-    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
-        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
-            [rb_cv_tls_supported=yes],
-            [rb_cv_tls_supported=no])])
-    AS_IF([test x"$rb_cv_tls_supported" != xyes],
-        [AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ], [
     linker_flag=
 ])
@@ -2750,6 +2743,22 @@ AS_IF([test "$THREAD_MODEL" = pthread], [
 		AC_DEFINE_UNQUOTED(SET_ANOTHER_THREAD_NAME(thid,name), $set_another_thread_name)
 	    ])
     ])
+
+    AC_CACHE_CHECK([for thread-local storage sepcifier], [rb_cv_tls_specifier],
+        rb_cv_tls_specifier=none
+        RUBY_WERROR_FLAG([
+            for attr in \
+                _Thread_local \
+                __thread \
+                ; do
+                AC_LINK_IFELSE([AC_LANG_PROGRAM([[$attr int conftest;]])],
+                    [rb_cv_tls_specifier=$attr; break])
+            done
+        ])
+    )
+    AS_IF([test x"${rb_cv_tls_specifier}" != xnone],
+        [AC_DEFINE_UNQUOTED(RB_THREAD_LOCAL_SPECIFIER, ${rb_cv_tls_specifier})]
+    )
 ])
 
 AS_IF([test x"$ac_cv_header_ucontext_h" = xno], [
