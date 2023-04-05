@@ -90,15 +90,6 @@ struct rb_thread_sched {
     int wait_yield;
 };
 
-#ifndef RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED
-# if __STDC_VERSION__ >= 201112
-#   define RB_THREAD_LOCAL_SPECIFIER _Thread_local
-# elif defined(__GNUC__)
-  /* note that ICC (linux) and Clang are covered by __GNUC__ */
-#   define RB_THREAD_LOCAL_SPECIFIER __thread
-# endif
-#endif
-
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   # ifdef __APPLE__
