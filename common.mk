@@ -153,7 +153,16 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
-		yarp/diagnostic.$(OBJEXT) \
+		$(YARP_FILES) \
+		$(YJIT_OBJ) \
+		$(YJIT_LIBOBJ) \
+		$(COROUTINE_OBJ) \
+		$(DTRACE_OBJ) \
+		$(BUILTIN_ENCOBJS) \
+		$(BUILTIN_TRANSOBJS) \
+		$(MISSING)
+
+YARP_FILES = yarp/diagnostic.$(OBJEXT) \
 		yarp/enc/ascii.$(OBJEXT) \
 		yarp/enc/big5.$(OBJEXT) \
 		yarp/enc/euc_jp.$(OBJEXT) \
@@ -194,14 +203,12 @@ COMMONOBJS    = array.$(OBJEXT) \
 		yarp/util/yp_string.$(OBJEXT) \
 		yarp/util/yp_string_list.$(OBJEXT) \
 		yarp/util/yp_strpbrk.$(OBJEXT) \
-		yarp/yarp.$(OBJEXT) \
-		$(YJIT_OBJ) \
-		$(YJIT_LIBOBJ) \
-		$(COROUTINE_OBJ) \
-		$(DTRACE_OBJ) \
-		$(BUILTIN_ENCOBJS) \
-		$(BUILTIN_TRANSOBJS) \
-		$(MISSING)
+		yarp/yarp.$(OBJEXT)
+
+$(YARP_FILES): $(YARP_BUILD_DIR) $(YARP_BUILD_DIR)/enc $(YARP_BUILD_DIR)/util
+
+$(YARP_BUILD_DIR) $(YARP_BUILD_DIR)/enc $(YARP_BUILD_DIR)/util:
+	$(MAKEDIRS) $@
 
 EXPORTOBJS    = $(DLNOBJ) \
 		localeinit.$(OBJEXT) \
@@ -1064,7 +1071,7 @@ win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h \
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(tooldir)/transcode-tblgen.rb
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) "$(tooldir)/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
-enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
+enc/tranj/newline.$(OBJEXT): $(NEWLINE_C)
 
 verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb $(RBCONFIG)
 	$(ECHO) creating $@
