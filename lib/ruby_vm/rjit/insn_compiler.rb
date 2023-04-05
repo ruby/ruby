@@ -2273,10 +2273,6 @@ module RubyVM::RJIT
       end
 
       if two_fixnums_on_stack?(jit)
-        # Create a side-exit to fall back to the interpreter
-        # Note: we generate the side-exit before popping operands from the stack
-        side_exit = side_exit(jit, ctx)
-
         unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, C::BOP_AND)
           return CantCompile
         end
@@ -2312,10 +2308,6 @@ module RubyVM::RJIT
       end
 
       if two_fixnums_on_stack?(jit)
-        # Create a side-exit to fall back to the interpreter
-        # Note: we generate the side-exit before popping operands from the stack
-        side_exit = side_exit(jit, ctx)
-
         unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, C::BOP_OR)
           return CantCompile
         end
