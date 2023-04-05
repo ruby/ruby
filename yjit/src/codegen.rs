@@ -4354,6 +4354,95 @@ fn jit_rb_int_equal(
     true
 }
 
+fn jit_rb_int_mul(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if ctx.two_fixnums_on_stack(jit) != Some(true) {
+        return false;
+    }
+    guard_two_fixnums(jit, ctx, asm, ocb);
+
+    // rb_fix_mul_fix may allocate memory for Bignum
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    asm.comment("Integer#*");
+    let obj = ctx.stack_pop(1);
+    let recv = ctx.stack_pop(1);
+    let ret = asm.ccall(rb_fix_mul_fix as *const u8, vec![recv, obj]);
+
+    let ret_opnd = ctx.stack_push(asm, Type::Unknown);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_int_div(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if ctx.two_fixnums_on_stack(jit) != Some(true) {
+        return false;
+    }
+    guard_two_fixnums(jit, ctx, asm, ocb);
+
+    asm.comment("Integer#/");
+    asm.spill_temps(ctx); // for ccall (must be done before stack_pop)
+    let obj = ctx.stack_pop(1);
+    let recv = ctx.stack_pop(1);
+
+    // Check for arg0 % 0
+    asm.cmp(obj, VALUE::fixnum_from_usize(0).as_i64().into());
+    asm.je(side_exit(jit, ctx, ocb));
+
+    let ret = asm.ccall(rb_fix_div_fix as *const u8, vec![recv, obj]);
+
+    let ret_opnd = ctx.stack_push(asm, Type::Fixnum);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_int_aref(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if ctx.two_fixnums_on_stack(jit) != Some(true) {
+        return false;
+    }
+    guard_two_fixnums(jit, ctx, asm, ocb);
+
+    asm.comment("Integer#[]");
+    asm.spill_temps(ctx); // for ccall (must be done before stack_pop)
+    let obj = ctx.stack_pop(1);
+    let recv = ctx.stack_pop(1);
+
+    let ret = asm.ccall(rb_fix_aref as *const u8, vec![recv, obj]);
+
+    let ret_opnd = ctx.stack_push(asm, Type::Fixnum);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
 /// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
 fn jit_rb_str_uplus(
     jit: &mut JITState,
@@ -8135,6 +8224,10 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
             self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
+
+            self.yjit_reg_method(rb_cInteger, "*", jit_rb_int_mul);
+            self.yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
+            self.yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
 
             // rb_str_to_s() methods in string.c
             self.yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);

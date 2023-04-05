@@ -18378,6 +18378,7 @@ yjit.$(OBJEXT): {$(VPATH)}internal/memory.h
 yjit.$(OBJEXT): {$(VPATH)}internal/method.h
 yjit.$(OBJEXT): {$(VPATH)}internal/module.h
 yjit.$(OBJEXT): {$(VPATH)}internal/newobj.h
+yjit.$(OBJEXT): {$(VPATH)}internal/numeric.h
 yjit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 yjit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 yjit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
