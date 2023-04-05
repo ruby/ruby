@@ -94,7 +94,7 @@ prefix or only the files that are requireable.
     gem_path  = spec.full_gem_path
     extra     = "/{#{spec.require_paths.join ","}}" if options[:lib_only]
     glob      = "#{gem_path}#{extra}/**/*"
-    prefix_re = /#{Regexp.escape(gem_path)}\//
+    prefix_re = %r{#{Regexp.escape(gem_path)}/}
 
     Dir[glob].map do |file|
       [gem_path, file.sub(prefix_re, "")]
@@ -104,7 +104,7 @@ prefix or only the files that are requireable.
   def files_in_default_gem(spec)
     spec.files.map do |file|
       case file
-      when /\A#{spec.bindir}\//
+      when %r{\A#{spec.bindir}/}
         # $' is POSTMATCH
         [RbConfig::CONFIG["bindir"], $']
       when /\.so\z/

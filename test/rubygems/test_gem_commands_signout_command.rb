@@ -17,7 +17,7 @@ class TestGemCommandsSignoutCommand < Gem::TestCase
     @sign_out_ui = Gem::MockGemUi.new
     use_ui(@sign_out_ui) { @cmd.execute }
 
-    assert_match %r{You have successfully signed out}, @sign_out_ui.output
+    assert_match(/You have successfully signed out/, @sign_out_ui.output)
     assert_equal false, File.exist?(Gem.configuration.credentials_path)
   end
 
@@ -25,6 +25,6 @@ class TestGemCommandsSignoutCommand < Gem::TestCase
     @sign_out_ui = Gem::MockGemUi.new
     use_ui(@sign_out_ui) { @cmd.execute }
 
-    assert_match %r{You are not currently signed in}, @sign_out_ui.error
+    assert_match(/You are not currently signed in/, @sign_out_ui.error)
   end
 end

@@ -48,14 +48,14 @@ install:
 
     results = results.join("\n").b
 
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} clean$},   results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']}$},         results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} install$}, results
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
 
     unless /nmake/.match?(results)
-      assert_match %r{^clean: destination$},   results
-      assert_match %r{^all: destination$},     results
-      assert_match %r{^install: destination$}, results
+      assert_match(/^clean: destination$/,   results)
+      assert_match(/^all: destination$/,     results)
+      assert_match(/^install: destination$/, results)
     end
   end
 
@@ -77,9 +77,9 @@ install:
 
     results = results.join("\n").b
 
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} clean$},   results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']}$},         results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} install$}, results
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
   end
 
   def test_custom_make_with_options
@@ -99,9 +99,9 @@ install:
     end
     Gem::Ext::Builder.make @dest_path, results, @ext
     results = results.join("\n").b
-    assert_match %r{clean: OK}, results
-    assert_match %r{all: OK}, results
-    assert_match %r{install: OK}, results
+    assert_match(/clean: OK/, results)
+    assert_match(/all: OK/, results)
+    assert_match(/install: OK/, results)
   end
 
   def test_build_extensions
@@ -251,7 +251,7 @@ install:
     cmd_make_out = File.read(gem_make_out)
 
     assert_match %r{#{Regexp.escape Gem.ruby} .* extconf\.rb}, cmd_make_out
-    assert_match %r{: No such file}, cmd_make_out
+    assert_match(/: No such file/, cmd_make_out)
 
     assert_path_not_exist @spec.gem_build_complete_path
 

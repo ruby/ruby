@@ -46,11 +46,11 @@ EOF
     assert_equal Net::HTTP::Get, @stub_fetcher.last_request.class
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
 
-    assert_match %r{Owners for gem: freewill}, @stub_ui.output
-    assert_match %r{- user1@example.com}, @stub_ui.output
-    assert_match %r{- user2@example.com}, @stub_ui.output
-    assert_match %r{- user3}, @stub_ui.output
-    assert_match %r{- 4}, @stub_ui.output
+    assert_match(/Owners for gem: freewill/, @stub_ui.output)
+    assert_match(/- user1@example.com/, @stub_ui.output)
+    assert_match(/- user2@example.com/, @stub_ui.output)
+    assert_match(/- user3/, @stub_ui.output)
+    assert_match(/- 4/, @stub_ui.output)
   end
 
   def test_show_owners_dont_load_objects
@@ -87,8 +87,8 @@ EOF
       @cmd.show_owners("freewill")
     end
 
-    assert_match %r{Owners for gem: freewill}, @stub_ui.output
-    assert_match %r{- user1@example.com}, @stub_ui.output
+    assert_match(/Owners for gem: freewill/, @stub_ui.output)
+    assert_match(/- user1@example.com/, @stub_ui.output)
   end
 
   def test_show_owners_setting_up_host
@@ -102,8 +102,8 @@ EOF
       @cmd.show_owners("freewill")
     end
 
-    assert_match %r{Owners for gem: freewill}, @stub_ui.output
-    assert_match %r{- user1@example.com}, @stub_ui.output
+    assert_match(/Owners for gem: freewill/, @stub_ui.output)
+    assert_match(/- user1@example.com/, @stub_ui.output)
   end
 
   def test_show_owners_denied
@@ -217,8 +217,8 @@ EOF
     end
 
     assert_match add_owner_response, @stub_ui.output
-    assert_match %r{Owners for gem: freewill}, @stub_ui.output
-    assert_match %r{- user1@example.com}, @stub_ui.output
+    assert_match(/Owners for gem: freewill/, @stub_ui.output)
+    assert_match(/- user1@example.com/, @stub_ui.output)
   end
 
   def test_add_owners_key

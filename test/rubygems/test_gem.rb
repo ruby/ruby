@@ -1254,8 +1254,8 @@ class TestGem < Gem::TestCase
       Gem.try_activate "a_file"
     end
 
-    assert_match %r{Could not find 'b' }, e.message
-    assert_match %r{at: #{a.spec_file}}, e.message
+    assert_match(/Could not find 'b' /, e.message)
+    assert_match(/at: #{a.spec_file}/, e.message)
   end
 
   def test_self_try_activate_missing_prerelease
@@ -1275,7 +1275,7 @@ class TestGem < Gem::TestCase
       Gem.try_activate "a_file"
     end
 
-    assert_match %r{Could not find 'b' \(= 1.0rc1\)}, e.message
+    assert_match(/Could not find 'b' \(= 1.0rc1\)/, e.message)
   end
 
   def test_self_try_activate_missing_extensions

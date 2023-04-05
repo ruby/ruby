@@ -23,9 +23,9 @@ class TestGemExtRakeBuilder < Gem::TestCase
 
       output = output.join "\n"
 
-      refute_match %r{^rake failed:}, output
-      assert_match %r{^#{Regexp.escape Gem.ruby} mkrf_conf\.rb}, output
-      assert_match %r{^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path}}, output
+      refute_match(/^rake failed:/, output)
+      assert_match(/^#{Regexp.escape Gem.ruby} mkrf_conf\.rb/, output)
+      assert_match(/^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path}/, output)
     end
   end
 
@@ -42,9 +42,9 @@ class TestGemExtRakeBuilder < Gem::TestCase
 
       output = output.join "\n"
 
-      refute_match %r{^rake failed:}, output
-      assert_match %r{^#{Regexp.escape Gem.ruby} mkrf_conf\.rb}, output
-      assert_match %r{^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path}}, output
+      refute_match(/^rake failed:/, output)
+      assert_match(/^#{Regexp.escape Gem.ruby} mkrf_conf\.rb/, output)
+      assert_match(/^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path}/, output)
     end
   end
 
@@ -72,7 +72,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
     output = output.join "\n"
 
     assert_match "OpenSSL", output
-    assert_match %r{^#{Regexp.escape Gem.ruby} mkrf_conf\.rb}, output
+    assert_match(/^#{Regexp.escape Gem.ruby} mkrf_conf\.rb/, output)
   end
 
   def test_class_build_no_mkrf_passes_args
@@ -83,8 +83,8 @@ class TestGemExtRakeBuilder < Gem::TestCase
 
       output = output.join "\n"
 
-      refute_match %r{^rake failed:}, output
-      assert_match %r{^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path} test1 test2}, output
+      refute_match(/^rake failed:/, output)
+      assert_match(/^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path} test1 test2/, output)
     end
   end
 
@@ -97,7 +97,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
         Gem::Ext::RakeBuilder.build "mkrf_conf.rb", @dest_path, output, [], nil, @ext
       end
 
-      assert_match %r{^rake failed}, error.message
+      assert_match(/^rake failed/, error.message)
     end
   end
 

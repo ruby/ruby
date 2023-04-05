@@ -56,7 +56,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       @cmd.send_gem(@path)
     end
 
-    assert_match %r{Pushing gem to #{@host}...}, @ui.output
+    assert_match(/Pushing gem to #{@host}.../, @ui.output)
 
     assert_equal Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
@@ -315,7 +315,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     # do not set @host
     use_ui(@ui) { @cmd.send_gem(@path) }
 
-    assert_match %r{Pushing gem to #{host}...}, @ui.output
+    assert_match(/Pushing gem to #{host}.../, @ui.output)
 
     assert_equal Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body

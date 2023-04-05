@@ -538,8 +538,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -557,8 +557,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{Timeout::Error: timed out \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -576,8 +576,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 

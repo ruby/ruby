@@ -136,7 +136,7 @@ class Gem::S3URISigner
   end
 
   def base64_uri_escape(str)
-    str.gsub(/[\+\/=\n]/, BASE64_URI_TRANSLATE)
+    str.gsub(%r{[\+/=\n]}, BASE64_URI_TRANSLATE)
   end
 
   def ec2_metadata_credentials_json

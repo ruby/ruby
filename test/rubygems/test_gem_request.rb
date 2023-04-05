@@ -281,7 +281,7 @@ class TestGemRequest < Gem::TestCase
     assert_match %r{RubyGems/#{Regexp.escape Gem::VERSION}},      ua
     assert_match %r{ #{Regexp.escape Gem::Platform.local.to_s} }, ua
     assert_match %r{Ruby/#{Regexp.escape RUBY_VERSION}},          ua
-    assert_match %r{\(#{Regexp.escape RUBY_RELEASE_DATE} },       ua
+    assert_match(/\(#{Regexp.escape RUBY_RELEASE_DATE} /, ua)
   end
 
   def test_user_agent_engine
@@ -292,7 +292,7 @@ class TestGemRequest < Gem::TestCase
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
-    assert_match %r{\) vroom}, ua
+    assert_match(/\) vroom/, ua)
   ensure
     util_restore_version
   end
@@ -305,7 +305,7 @@ class TestGemRequest < Gem::TestCase
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
-    assert_match %r{\)}, ua
+    assert_match(/\)/, ua)
   ensure
     util_restore_version
   end

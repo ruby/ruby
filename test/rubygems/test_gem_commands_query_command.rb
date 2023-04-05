@@ -552,8 +552,8 @@ pl (1 i386-linux)
       @cmd.execute
     end
 
-    assert_match %r{^a }, @stub_ui.output
-    assert_match %r{^pl }, @stub_ui.output
+    assert_match(/^a /, @stub_ui.output)
+    assert_match(/^pl /, @stub_ui.output)
     assert_equal "", @stub_ui.error
   end
 
@@ -565,8 +565,8 @@ pl (1 i386-linux)
       @cmd.send :show_gems, /a/i
     end
 
-    assert_match %r{^a },  @stub_ui.output
-    refute_match %r{^pl }, @stub_ui.output
+    assert_match(/^a /,  @stub_ui.output)
+    refute_match(/^pl /, @stub_ui.output)
     assert_empty @stub_ui.error
   end
 

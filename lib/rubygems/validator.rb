@@ -25,7 +25,7 @@ class Gem::Validator
     installed_files = []
 
     Find.find gem_directory do |file_name|
-      fn = file_name[gem_directory.size..file_name.size - 1].sub(/^\//, "")
+      fn = file_name[gem_directory.size..file_name.size - 1].sub(%r{^/}, "")
       installed_files << fn unless
         fn.empty? || fn.include?("CVS") || File.directory?(file_name)
     end

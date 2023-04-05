@@ -309,7 +309,7 @@ class Gem::Indexer
     end
 
     files = files.map do |path|
-      path.sub(/^#{Regexp.escape @directory}\/?/, "") # HACK?
+      path.sub(%r{^#{Regexp.escape @directory}/?}, "") # HACK?
     end
 
     files.each do |file|
@@ -390,7 +390,7 @@ class Gem::Indexer
     files << "#{@prerelease_specs_index}.gz"
 
     files = files.map do |path|
-      path.sub(/^#{Regexp.escape @directory}\/?/, "") # HACK?
+      path.sub(%r{^#{Regexp.escape @directory}/?}, "") # HACK?
     end
 
     files.each do |file|

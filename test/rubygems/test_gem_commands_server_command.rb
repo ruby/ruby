@@ -15,6 +15,6 @@ class TestGemCommandsServerCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Install the rubygems-server}i, @ui.error
+    assert_match(/Install the rubygems-server/i, @ui.error)
   end
 end

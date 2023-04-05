@@ -1840,7 +1840,7 @@ dependencies: []
   end
 
   def test_full_gem_path_double_slash
-    gemhome = @gemhome.to_s.sub(/\w\//, '\&/')
+    gemhome = @gemhome.to_s.sub(%r{\w/}, '\&/')
     @a1.loaded_from = File.join gemhome, "specifications", @a1.spec_name
 
     expected = File.join @gemhome, "gems", @a1.full_name
@@ -2445,7 +2445,7 @@ end
 
     ruby = @a2.to_ruby
 
-    assert_match %r%^  s\.metadata = \{ "%, ruby
+    assert_match(/^  s\.metadata = \{ "/, ruby)
   end
 
   def test_to_ruby_platform
@@ -2462,7 +2462,7 @@ end
   def test_to_yaml
     yaml_str = @a1.to_yaml
 
-    refute_match %r{!!null}, yaml_str
+    refute_match(/!!null/, yaml_str)
 
     same_spec = Gem::Specification.from_yaml(yaml_str)
 
@@ -2483,7 +2483,7 @@ end
   def test_to_yaml_platform_empty_string
     @a1.instance_variable_set :@original_platform, ""
 
-    assert_match %r{^platform: ruby$}, @a1.to_yaml
+    assert_match(/^platform: ruby$/, @a1.to_yaml)
   end
 
   def test_to_yaml_platform_legacy
@@ -2501,7 +2501,7 @@ end
   def test_to_yaml_platform_nil
     @a1.instance_variable_set :@original_platform, nil
 
-    assert_match %r{^platform: ruby$}, @a1.to_yaml
+    assert_match(/^platform: ruby$/, @a1.to_yaml)
   end
 
   def test_validate
@@ -3306,7 +3306,7 @@ Did you mean 'Ruby'?
           spec.validate
         end
 
-        assert_match %r{^#{name}}, e.message
+        assert_match(/^#{name}/, e.message)
       end
     end
   end

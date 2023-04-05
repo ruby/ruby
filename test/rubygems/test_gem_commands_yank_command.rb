@@ -55,7 +55,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     end
 
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match %r{Successfully yanked}, @ui.output
+    assert_match(/Successfully yanked/, @ui.output)
 
     platform = Gem.platforms[1]
     body = @fetcher.last_request.body.split("&").sort
@@ -86,7 +86,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @otp_ui.output
     assert_match "Code: ", @otp_ui.output
     assert_match %r{Yanking gem from http://example}, @otp_ui.output
-    assert_match %r{Successfully yanked}, @otp_ui.output
+    assert_match(/Successfully yanked/, @otp_ui.output)
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
@@ -141,7 +141,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     end
 
     assert_match %r{Yanking gem from https://other.example}, @ui.output
-    assert_match %r{Successfully yanked}, @ui.output
+    assert_match(/Successfully yanked/, @ui.output)
 
     body = @fetcher.last_request.body.split("&").sort
     assert_equal %w[gem_name=a version=1.0], body

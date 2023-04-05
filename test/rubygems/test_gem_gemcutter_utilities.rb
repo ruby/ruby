@@ -96,9 +96,9 @@ class TestGemGemcutterUtilities < Gem::TestCase
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
-    assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
+    assert_match(/Enter your RubyGems.org credentials./, @sign_in_ui.output)
     assert @fetcher.last_request["authorization"]
-    assert_match %r{Signed in.}, @sign_in_ui.output
+    assert_match(/Signed in./, @sign_in_ui.output)
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
@@ -112,7 +112,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match "Enter your http://example.com credentials.",
                  @sign_in_ui.output
     assert @fetcher.last_request["authorization"]
-    assert_match %r{Signed in.}, @sign_in_ui.output
+    assert_match(/Signed in./, @sign_in_ui.output)
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials["http://example.com"]
@@ -126,7 +126,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match "Enter your RubyGems.org credentials.",
                  @sign_in_ui.output
     assert @fetcher.last_request["authorization"]
-    assert_match %r{Signed in.}, @sign_in_ui.output
+    assert_match(/Signed in./, @sign_in_ui.output)
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
@@ -139,7 +139,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match "Enter your http://example.com credentials.",
                  @sign_in_ui.output
     assert @fetcher.last_request["authorization"]
-    assert_match %r{Signed in.}, @sign_in_ui.output
+    assert_match(/Signed in./, @sign_in_ui.output)
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials["http://example.com"]
@@ -172,8 +172,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
     end
     util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
-    assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
-    assert_match %r{Signed in.}, @sign_in_ui.output
+    assert_match(/Enter your RubyGems.org credentials./, @sign_in_ui.output)
+    assert_match(/Signed in./, @sign_in_ui.output)
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
@@ -185,8 +185,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
       util_sign_in HTTPResponseFactory.create(body: "Access Denied.", code: 403, msg: "Forbidden")
     end
 
-    assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
-    assert_match %r{Access Denied.}, @sign_in_ui.output
+    assert_match(/Enter your RubyGems.org credentials./, @sign_in_ui.output)
+    assert_match(/Access Denied./, @sign_in_ui.output)
   end
 
   def test_signin_with_env_otp_code

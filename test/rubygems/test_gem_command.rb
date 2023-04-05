@@ -102,7 +102,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke
     end
 
-    assert_match %r{Usage: gem doit}, @ui.output
+    assert_match(/Usage: gem doit/, @ui.output)
   end
 
   def test_invoke
@@ -188,7 +188,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke "-h"
     end
 
-    assert_match %r{Usage: gem doit}, @ui.output
+    assert_match(/Usage: gem doit/, @ui.output)
   end
 
   def test_add_option

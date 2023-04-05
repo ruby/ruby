@@ -1067,7 +1067,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     assert_equal 2, e.exit_code
-    assert_match %r{Could not find a valid gem 'a' \(= 10.0\)}, @ui.error
+    assert_match(/Could not find a valid gem 'a' \(= 10.0\)/, @ui.error)
   end
 
   def test_show_errors_on_failure

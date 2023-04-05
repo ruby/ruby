@@ -496,7 +496,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
+    assert_match(/Error: unable to successfully uninstall '#{@spec.name}'/, @ui.error)
   end
 
   private

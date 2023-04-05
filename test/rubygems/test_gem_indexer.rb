@@ -49,7 +49,7 @@ class TestGemIndexer < Gem::TestCase
   def test_initialize
     assert_equal @indexerdir, @indexer.dest_directory
     Dir.mktmpdir("gem_generate_index") do |tmpdir|
-      assert_match %r{#{tmpdir.match(/.*-/)}}, @indexer.directory
+      assert_match(%r{#{tmpdir.match(/.*-/)}}, @indexer.directory) # rubocop:disable Style/RegexpLiteral
     end
 
     with_indexer(@indexerdir) do |indexer|
@@ -206,15 +206,14 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    assert_match %r{^\.\.\.\.\.\.\.\.\.\.\.\.$}, @ui.output
-    assert_match %r{^Generating Marshal quick index gemspecs for 12 gems$},
-                 @ui.output
-    assert_match %r{^Complete$}, @ui.output
-    assert_match %r{^Generating specs index$}, @ui.output
-    assert_match %r{^Generating latest specs index$}, @ui.output
-    assert_match %r{^Generating prerelease specs index$}, @ui.output
-    assert_match %r{^Complete$}, @ui.output
-    assert_match %r{^Compressing indices$}, @ui.output
+    assert_match(/^\.\.\.\.\.\.\.\.\.\.\.\.$/, @ui.output)
+    assert_match(/^Generating Marshal quick index gemspecs for 12 gems$/, @ui.output)
+    assert_match(/^Complete$/, @ui.output)
+    assert_match(/^Generating specs index$/, @ui.output)
+    assert_match(/^Generating latest specs index$/, @ui.output)
+    assert_match(/^Generating prerelease specs index$/, @ui.output)
+    assert_match(/^Complete$/, @ui.output)
+    assert_match(/^Compressing indices$/, @ui.output)
 
     assert_equal "", @ui.error
   end
