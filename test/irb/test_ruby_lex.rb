@@ -613,9 +613,6 @@ module TestIRB
     end
 
     def test_broken_heredoc
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
-      end
       input_with_correct_indents = [
         Row.new(%q(def foo), nil, 2, 1),
         Row.new(%q(  <<~Q), 2, 2, 1),
@@ -721,10 +718,6 @@ module TestIRB
     end
 
     def test_broken_percent_literal
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
-      end
-
       tokens = RubyLex.ripper_lex_without_warning('%wwww')
       pos_to_index = {}
       tokens.each_with_index { |t, i|
@@ -734,10 +727,6 @@ module TestIRB
     end
 
     def test_broken_percent_literal_in_method
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
-      end
-
       tokens = RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
         def foo
           %wwww
@@ -751,10 +740,6 @@ module TestIRB
     end
 
     def test_unterminated_code
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
-      end
-
       ['do', '<<A'].each do |code|
         tokens = RubyLex.ripper_lex_without_warning(code)
         assert_equal(code, tokens.map(&:tok).join, "Cannot reconstruct code from tokens")

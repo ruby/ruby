@@ -855,9 +855,6 @@ module TestIRB
     end
 
     def test_edit_with_constant
-      # const_source_location is supported after Ruby 2.7
-      omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-
       out, err = execute_lines(
         "edit IRB::Irb"
       )

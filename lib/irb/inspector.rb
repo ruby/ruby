@@ -98,8 +98,7 @@ module IRB # :nodoc:
       puts "An error occurred when inspecting the object: #{e.inspect}"
 
       begin
-        # TODO: change this to bind_call when we drop support for Ruby 2.6
-        puts "Result of Kernel#inspect: #{KERNEL_INSPECT.bind(v).call}"
+        puts "Result of Kernel#inspect: #{KERNEL_INSPECT.bind_call(v)}"
         ''
       rescue => e
         puts "An error occurred when running Kernel#inspect: #{e.inspect}"

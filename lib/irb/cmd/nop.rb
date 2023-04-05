@@ -30,20 +30,11 @@ module IRB
         end
       end
 
-      if RUBY_VERSION >= "2.7.0"
-        def self.execute(conf, *opts, **kwargs, &block)
-          command = new(conf)
-          command.execute(*opts, **kwargs, &block)
-        rescue CommandArgumentError => e
-          puts e.message
-        end
-      else
-        def self.execute(conf, *opts, &block)
-          command = new(conf)
-          command.execute(*opts, &block)
-        rescue CommandArgumentError => e
-          puts e.message
-        end
+      def self.execute(conf, *opts, **kwargs, &block)
+        command = new(conf)
+        command.execute(*opts, **kwargs, &block)
+      rescue CommandArgumentError => e
+        puts e.message
       end
 
       def initialize(conf)
