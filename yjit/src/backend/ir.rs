@@ -1519,7 +1519,8 @@ impl Assembler {
     pub fn cpush_all(&mut self) {
         self.push_insn(Insn::CPushAll);
 
-        // Disable ccall's RegTemps assertion. This will be re-enabled by cpop_all.
+        // Mark all temps as not being in registers.
+        // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
         // that don't require spill_temps for GC.
         self.set_reg_temps(RegTemps::default());
