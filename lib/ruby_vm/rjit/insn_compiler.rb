@@ -4157,17 +4157,11 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def guard_block_arg(jit, ctx, asm, calling)
       if calling.flags & C::VM_CALL_ARGS_BLOCKARG != 0
-        # TODO: Skip cmp + jne using Context
-        block_code = jit.peek_at_stack(0)
-        block_opnd = ctx.stack_opnd(0) # to be popped after eliminating side exit possibility
-        if block_code.nil?
-          asm.cmp(block_opnd, Qnil)
-          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit(jit, ctx), :send_block_not_nil))
+        block_arg_type = ctx.get_opnd_type(StackOpnd[0])
+        case block_arg_type
+        in Type::Nil
           calling.block_handler = C::VM_BLOCK_HANDLER_NONE
-        elsif C.to_value(block_code) == C.rb_block_param_proxy
-          asm.mov(:rax, C.rb_block_param_proxy)
-          asm.cmp(block_opnd, :rax)
-          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit(jit, ctx), :send_block_not_proxy))
+        in Type::BlockParamProxy
           calling.block_handler = C.rb_block_param_proxy
         else
           asm.incr_counter(:send_block_arg)
