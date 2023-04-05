@@ -3346,16 +3346,16 @@ module RubyVM::RJIT
       stack0_mem = ctx.stack_opnd(offset0)
       stack1_mem = ctx.stack_opnd(offset1)
 
-      mapping0 = ctx.get_opnd_mapping(StackOpnd[0])
-      mapping1 = ctx.get_opnd_mapping(StackOpnd[1])
+      mapping0 = ctx.get_opnd_mapping(StackOpnd[offset0])
+      mapping1 = ctx.get_opnd_mapping(StackOpnd[offset1])
 
       asm.mov(:rax, stack0_mem)
       asm.mov(:rcx, stack1_mem)
       asm.mov(stack0_mem, :rcx)
       asm.mov(stack1_mem, :rax)
 
-      ctx.set_opnd_mapping(StackOpnd[0], mapping1);
-      ctx.set_opnd_mapping(StackOpnd[1], mapping0);
+      ctx.set_opnd_mapping(StackOpnd[offset0], mapping1)
+      ctx.set_opnd_mapping(StackOpnd[offset1], mapping0)
     end
 
     def jit_getlocal_generic(jit, ctx, asm, idx:, level:)
