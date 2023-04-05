@@ -3162,17 +3162,21 @@ module RubyVM::RJIT
       end
       mid = C.rb_sym2id(mid_sym)
 
+      # This represents the value of the "include_all" argument and whether it's known
+      allow_priv = if argc == 1
+        # Default is false
+        false
+      else
+        # Get value from type information (may or may not be known)
+        ctx.get_opnd_type(StackOpnd[0]).known_truthy
+      end
+
       target_cme = C.rb_callable_method_entry_or_negative(recv_class, mid)
 
       # Should never be null, as in that case we will be returned a "negative CME"
       assert_equal(false, target_cme.nil?)
 
-      cme_def_type =
-        if C.UNDEFINED_METHOD_ENTRY_P(target_cme)
-          C::VM_METHOD_TYPE_UNDEF
-        else
-          target_cme.def.type
-        end
+      cme_def_type = C.UNDEFINED_METHOD_ENTRY_P(target_cme) ? C::VM_METHOD_TYPE_UNDEF : target_cme.def.type
 
       if cme_def_type == C::VM_METHOD_TYPE_REFINED
         return false
@@ -3185,13 +3189,11 @@ module RubyVM::RJIT
       end
 
       result =
-        case visibility
-        in C::METHOD_VISI_UNDEF
-          Qfalse # No method => false
-        in C::METHOD_VISI_PUBLIC
-          Qtrue # Public method => true regardless of include_all
-        else
-          return false # not public and include_all not known, can't compile
+        case [visibility, allow_priv]
+        in C::METHOD_VISI_UNDEF, _ then Qfalse # No method => false
+        in C::METHOD_VISI_PUBLIC, _ then Qtrue # Public method => true regardless of include_all
+        in _, true then Qtrue # include_all => always true
+        else return false # not public and include_all not known, can't compile
         end
 
       if result != Qtrue
