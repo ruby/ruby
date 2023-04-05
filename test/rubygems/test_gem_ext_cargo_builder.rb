@@ -140,7 +140,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
   private
 
   def skip_unsupported_platforms!
-    pend "jruby not supported" if java_platform?
+    pend "jruby not supported" if Gem.java_platform?
     pend "truffleruby not supported (yet)" if RUBY_ENGINE == "truffleruby"
     system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
     pend "cargo not present" unless $?.success?

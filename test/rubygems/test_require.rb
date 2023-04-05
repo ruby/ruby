@@ -225,7 +225,7 @@ class TestGemRequire < Gem::TestCase
     pend "Not sure what's going on. If another spec creates a 'a' gem before
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
-      spaceship_specific_file test before this one" if java_platform?
+      spaceship_specific_file test before this one" if Gem.java_platform?
 
     pend "not installed yet" unless RbConfig::TOPDIR
 

@@ -1146,20 +1146,6 @@ Also, a list:
   end
 
   ##
-  # Is this test being run on a Java platform?
-
-  def self.java_platform?
-    Gem.java_platform?
-  end
-
-  ##
-  # see ::java_platform?
-
-  def java_platform?
-    self.class.java_platform?
-  end
-
-  ##
   # Returns whether or not we're on a version of Ruby built with VC++ (or
   # Borland) versus Cygwin, Mingw, etc.
 
