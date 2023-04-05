@@ -4365,7 +4365,8 @@ NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
  *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
- *  to STDERR prior to terminating.
+ *  to STDERR prior to terminating. Otherwise, if an exception was raised,
+ *  print its message and backtrace.
  */
 
 static VALUE
