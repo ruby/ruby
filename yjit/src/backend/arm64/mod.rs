@@ -170,6 +170,7 @@ impl Assembler
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
 
     /// List of registers that can be used for stack temps.
+    /// These are caller-saved registers.
     pub const TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     /// Get the list of registers from which we will allocate on this platform
