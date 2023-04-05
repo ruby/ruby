@@ -1503,7 +1503,8 @@ impl Assembler {
     pub fn cpop_all(&mut self, ctx: &Context) {
         self.push_insn(Insn::CPopAll);
 
-        // Re-enable ccall's assertion disabled by cpush_all
+        // Re-enable ccall's RegTemps assertion disabled by cpush_all.
+        // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
         self.set_reg_temps(ctx.get_reg_temps());
     }
 
@@ -1518,7 +1519,9 @@ impl Assembler {
     pub fn cpush_all(&mut self) {
         self.push_insn(Insn::CPushAll);
 
-        // Disable ccall's assertion. This will be re-enabled by cpop_all.
+        // Disable ccall's RegTemps assertion. This will be re-enabled by cpop_all.
+        // We assume that cpush_all + cpop_all are used for C functions in utils.rs
+        // that don't require spill_temps for GC.
         self.set_reg_temps(RegTemps::default());
     }
 
