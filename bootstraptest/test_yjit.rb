@@ -3817,3 +3817,8 @@ assert_equal '[true, true, true, true]', %q{
   end
   calling_my_func
 }
+
+# Test Integer#[] with 2 args
+assert_equal '0', %q{
+  3[0, 0]
+}

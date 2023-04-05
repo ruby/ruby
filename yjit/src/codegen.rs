@@ -4423,9 +4423,12 @@ fn jit_rb_int_aref(
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
     _block: Option<IseqPtr>,
-    _argc: i32,
+    argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
+    if argc != 1 {
+        return false;
+    }
     if ctx.two_fixnums_on_stack(jit) != Some(true) {
         return false;
     }
