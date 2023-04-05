@@ -1177,15 +1177,8 @@ Also, a list:
   ##
   # Is this test being run on a version of Ruby built with mingw?
 
-  def self.mingw_windows?
-    RUBY_PLATFORM.match("mingw")
-  end
-
-  ##
-  # see ::mingw_windows?
-
   def mingw_windows?
-    self.class.mingw_windows?
+    RUBY_PLATFORM.match("mingw")
   end
 
   ##
