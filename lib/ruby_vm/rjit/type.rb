@@ -89,6 +89,16 @@ module RubyVM::RJIT
       end
     end
 
+    # Returns a boolean representing whether the value is equal to nil if known, otherwise nil
+    def known_nil
+      case [self, self.known_truthy]
+      in Type::Nil, _ then true
+      in Type::False, _ then false # Qfalse is not nil
+      in _, true then false # if truthy, can't be nil
+      in _, _ then nil # otherwise unknown
+      end
+    end
+
     def diff(dst)
       # Perfect match, difference is zero
       if self == dst
