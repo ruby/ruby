@@ -3878,9 +3878,12 @@ module RubyVM::RJIT
         asm.je(equal_label)
 
         # Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
-        # Note: any T_STRING is valid here, but we check for a ::String for simplicity
-        # To pass a mutable static variable (rb_cString) requires an unsafe block
-        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_b), b_opnd, StackOpnd[0], comptime_b, side_exit)
+        btype = ctx.get_opnd_type(StackOpnd[0])
+        unless btype.string?
+          # Note: any T_STRING is valid here, but we check for a ::String for simplicity
+          # To pass a mutable static variable (rb_cString) requires an unsafe block
+          jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_b), b_opnd, StackOpnd[0], comptime_b, side_exit)
+        end
 
         asm.comment('call rb_str_eql_internal')
         asm.mov(C_ARGS[0], a_opnd)
