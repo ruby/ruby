@@ -14,6 +14,7 @@
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "internal/fixnum.h"
+#include "internal/numeric.h"
 #include "internal/gc.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -855,9 +856,21 @@ rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
 }
 
 VALUE
-rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)
+rb_yjit_fix_div_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_div_fix(recv, obj);
+}
+
+VALUE
+rb_yjit_fix_mod_fix(VALUE recv, VALUE obj)
 {
     return rb_fix_mod_fix(recv, obj);
+}
+
+VALUE
+rb_yjit_fix_mul_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mul_fix(recv, obj);
 }
 
 // Print the Ruby source location of some ISEQ for debugging purposes
