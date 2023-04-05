@@ -2084,29 +2084,21 @@ module RubyVM::RJIT
       comptime_obj  = jit.peek_at_stack(0)
 
       if fixnum?(comptime_recv) && fixnum?(comptime_obj)
-        # Generate a side exit before popping operands
-        side_exit = side_exit(jit, ctx)
-
         unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, C::BOP_PLUS)
           return CantCompile
         end
 
+        # Check that both operands are fixnums
+        guard_two_fixnums(jit, ctx, asm)
+
         obj_opnd  = ctx.stack_pop
         recv_opnd = ctx.stack_pop
-
-        asm.comment('guard recv is fixnum') # TODO: skip this with type information
-        asm.test(recv_opnd, C::RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
-
-        asm.comment('guard obj is fixnum') # TODO: skip this with type information
-        asm.test(obj_opnd, C::RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
 
         asm.mov(:rax, recv_opnd)
         asm.sub(:rax, 1) # untag
         asm.mov(:rcx, obj_opnd)
         asm.add(:rax, :rcx)
-        asm.jo(side_exit)
+        asm.jo(side_exit(jit, ctx))
 
         dst_opnd = ctx.stack_push(Type::Fixnum)
         asm.mov(dst_opnd, :rax)
@@ -2130,28 +2122,20 @@ module RubyVM::RJIT
       comptime_obj  = jit.peek_at_stack(0)
 
       if fixnum?(comptime_recv) && fixnum?(comptime_obj)
-        # Generate a side exit before popping operands
-        side_exit = side_exit(jit, ctx)
-
         unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, C::BOP_MINUS)
           return CantCompile
         end
 
+        # Check that both operands are fixnums
+        guard_two_fixnums(jit, ctx, asm)
+
         obj_opnd  = ctx.stack_pop
         recv_opnd = ctx.stack_pop
-
-        asm.comment('guard recv is fixnum') # TODO: skip this with type information
-        asm.test(recv_opnd, C::RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
-
-        asm.comment('guard obj is fixnum') # TODO: skip this with type information
-        asm.test(obj_opnd, C::RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
 
         asm.mov(:rax, recv_opnd)
         asm.mov(:rcx, obj_opnd)
         asm.sub(:rax, :rcx)
-        asm.jo(side_exit)
+        asm.jo(side_exit(jit, ctx))
         asm.add(:rax, 1) # re-tag
 
         dst_opnd = ctx.stack_push(Type::Fixnum)
@@ -2187,16 +2171,12 @@ module RubyVM::RJIT
       end
 
       if two_fixnums_on_stack?(jit)
-        # Create a side-exit to fall back to the interpreter
-        # Note: we generate the side-exit before popping operands from the stack
-        side_exit = side_exit(jit, ctx)
-
         unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, C::BOP_MOD)
           return CantCompile
         end
 
         # Check that both operands are fixnums
-        guard_two_fixnums(jit, ctx, asm, side_exit)
+        guard_two_fixnums(jit, ctx, asm)
 
         # Get the operands and destination from the stack
         arg1 = ctx.stack_pop(1)
@@ -2204,7 +2184,7 @@ module RubyVM::RJIT
 
         # Check for arg0 % 0
         asm.cmp(arg1, 0)
-        asm.je(side_exit)
+        asm.je(side_exit(jit, ctx))
 
         # Call rb_fix_mod_fix(VALUE recv, VALUE obj)
         asm.mov(C_ARGS[0], arg0)
@@ -2302,7 +2282,7 @@ module RubyVM::RJIT
         end
 
         # Check that both operands are fixnums
-        guard_two_fixnums(jit, ctx, asm, side_exit)
+        guard_two_fixnums(jit, ctx, asm)
 
         # Get the operands and destination from the stack
         arg1 = ctx.stack_pop(1)
@@ -2341,7 +2321,7 @@ module RubyVM::RJIT
         end
 
         # Check that both operands are fixnums
-        guard_two_fixnums(jit, ctx, asm, side_exit)
+        guard_two_fixnums(jit, ctx, asm)
 
         # Get the operands and destination from the stack
         asm.comment('bitwise or')
@@ -2873,8 +2853,7 @@ module RubyVM::RJIT
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
-      side_exit = side_exit(jit, ctx)
-      guard_two_fixnums(jit, ctx, asm, side_exit)
+      guard_two_fixnums(jit, ctx, asm)
 
       # Compare the arguments
       asm.comment('rb_int_equal')
@@ -2898,8 +2877,7 @@ module RubyVM::RJIT
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
-      side_exit = side_exit(jit, ctx)
-      guard_two_fixnums(jit, ctx, asm, side_exit)
+      guard_two_fixnums(jit, ctx, asm)
 
       asm.comment('rb_int_mul')
       y_opnd = ctx.stack_pop
@@ -2917,15 +2895,14 @@ module RubyVM::RJIT
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
-      side_exit = side_exit(jit, ctx)
-      guard_two_fixnums(jit, ctx, asm, side_exit)
+      guard_two_fixnums(jit, ctx, asm)
 
       asm.comment('rb_int_div')
       y_opnd = ctx.stack_pop
       x_opnd = ctx.stack_pop
       asm.mov(:rax, y_opnd)
       asm.cmp(:rax, C.to_value(0))
-      asm.je(side_exit)
+      asm.je(side_exit(jit, ctx))
 
       asm.mov(C_ARGS[0], x_opnd)
       asm.mov(C_ARGS[1], :rax)
@@ -2943,8 +2920,7 @@ module RubyVM::RJIT
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
-      side_exit = side_exit(jit, ctx)
-      guard_two_fixnums(jit, ctx, asm, side_exit)
+      guard_two_fixnums(jit, ctx, asm)
 
       asm.comment('rb_int_aref')
       y_opnd = ctx.stack_pop
@@ -3766,7 +3742,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def guard_two_fixnums(jit, ctx, asm, side_exit)
+    def guard_two_fixnums(jit, ctx, asm)
       # Get stack operands without popping them
       arg1 = ctx.stack_opnd(0)
       arg0 = ctx.stack_opnd(1)
@@ -3777,19 +3753,19 @@ module RubyVM::RJIT
 
       if arg0_type.heap? || arg1_type.heap?
         asm.comment('arg is heap object')
-        asm.jmp(side_exit)
+        asm.jmp(side_exit(jit, ctx))
         return
       end
 
       if arg0_type != Type::Fixnum && arg0_type.specific?
         asm.comment('arg0 not fixnum')
-        asm.jmp(side_exit)
+        asm.jmp(side_exit(jit, ctx))
         return
       end
 
       if arg1_type != Type::Fixnum && arg1_type.specific?
         asm.comment('arg1 not fixnum')
-        asm.jmp(side_exit)
+        asm.jmp(side_exit(jit, ctx))
         return
       end
 
@@ -3802,12 +3778,12 @@ module RubyVM::RJIT
       if arg0_type != Type::Fixnum
         asm.comment('guard arg0 fixnum')
         asm.test(arg0, C::RUBY_FIXNUM_FLAG)
-        jit_chain_guard(:jz, jit, ctx, asm, side_exit)
+        jit_chain_guard(:jz, jit, ctx, asm, side_exit(jit, ctx))
       end
       if arg1_type != Type::Fixnum
         asm.comment('guard arg1 fixnum')
         asm.test(arg1, C::RUBY_FIXNUM_FLAG)
-        jit_chain_guard(:jz, jit, ctx, asm, side_exit)
+        jit_chain_guard(:jz, jit, ctx, asm, side_exit(jit, ctx))
       end
 
       # Set stack types in context
@@ -3830,23 +3806,15 @@ module RubyVM::RJIT
       comptime_obj  = jit.peek_at_stack(0)
 
       if fixnum?(comptime_recv) && fixnum?(comptime_obj)
-        # Generate a side exit before popping operands
-        side_exit = side_exit(jit, ctx)
-
         unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, bop)
           return CantCompile
         end
 
+        # Check that both operands are fixnums
+        guard_two_fixnums(jit, ctx, asm)
+
         obj_opnd  = ctx.stack_pop
         recv_opnd = ctx.stack_pop
-
-        asm.comment('guard recv is fixnum') # TODO: skip this with type information
-        asm.test(recv_opnd, C::RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
-
-        asm.comment('guard obj is fixnum') # TODO: skip this with type information
-        asm.test(obj_opnd, C::RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
 
         asm.mov(:rax, obj_opnd)
         asm.cmp(recv_opnd, :rax)
@@ -3881,7 +3849,7 @@ module RubyVM::RJIT
           return false
         end
 
-        guard_two_fixnums(jit, ctx, asm, side_exit)
+        guard_two_fixnums(jit, ctx, asm)
 
         asm.comment('check fixnum equality')
         asm.mov(:rax, a_opnd)
