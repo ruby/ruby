@@ -1166,15 +1166,8 @@ Also, a list:
   # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
   # other platforms, including Cygwin, it will return 'make'.
 
-  def self.make_command
-    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
-  end
-
-  ##
-  # See ::make_command
-
   def make_command
-    self.class.make_command
+    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
   end
 
   ##
