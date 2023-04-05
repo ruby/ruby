@@ -1269,21 +1269,17 @@ Also, a list:
     $VERBOSE = old_verbose
   end
 
-  class << self
-    # :nodoc:
-    ##
-    # Return the join path, with escaping backticks, dollars, and
-    # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
+  # :nodoc:
+  ##
+  # Return the join path, with escaping backticks, dollars, and
+  # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
 
-    private
-
-    def escape_path(*path)
-      path = File.join(*path)
-      if %r{\A[-+:/=@,.\w]+\z}.match?(path)
-        path
-      else
-        "\"#{path.gsub(/[`$"]/, '\\&')}\""
-      end
+  def self.escape_path(*path)
+    path = File.join(*path)
+    if %r{\A[-+:/=@,.\w]+\z}.match?(path)
+      path
+    else
+      "\"#{path.gsub(/[`$"]/, '\\&')}\""
     end
   end
 
