@@ -58,7 +58,7 @@ module SyntaxSuggest
         EOM
         script.write(contents)
 
-        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest/version #{script} 2>&1`
 
         expect(out).to include("suggest_version is #{SyntaxSuggest::VERSION}").once
       end
