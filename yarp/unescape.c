@@ -224,7 +224,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
 
       if ((backslash + 3) < end && backslash[2] == '{') {
         const char *unicode_cursor = backslash + 3;
-        const char *extra_codepoints_start;
+        const char *extra_codepoints_start = NULL;
         int codepoints_count = 0;
 
         unicode_cursor += yp_strspn_whitespace(unicode_cursor, end - unicode_cursor);
