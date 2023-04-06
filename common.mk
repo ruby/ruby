@@ -1071,7 +1071,7 @@ win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h \
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(tooldir)/transcode-tblgen.rb
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) "$(tooldir)/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
-enc/tranj/newline.$(OBJEXT): $(NEWLINE_C)
+enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
 verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb $(RBCONFIG)
 	$(ECHO) creating $@

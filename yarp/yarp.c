@@ -4502,12 +4502,13 @@ lex_embdoc(yp_parser_t *parser) {
 
   // Now, loop until we find the end of the embedded documentation or the end of
   // the file.
-  while (parser->current.end + 5 < parser->end) {
+  while (parser->current.end + 4 < parser->end) {
     parser->current.start = parser->current.end;
 
     // If we've hit the end of the embedded documentation then we'll return that
     // token here.
-    if (strncmp(parser->current.end, "=end", 4) == 0 && yp_char_is_whitespace(parser->current.end[4])) {
+    if (strncmp(parser->current.end, "=end", 4) == 0 &&
+	(yp_char_is_whitespace(parser->current.end[4]) || parser->current.end + 4 == parser->end)) {
       const char *newline = memchr(parser->current.end, '\n', (size_t) (parser->end - parser->current.end));
       parser->current.end = newline == NULL ? parser->end : newline + 1;
       parser->current.type = YP_TOKEN_EMBDOC_END;
@@ -7312,7 +7313,7 @@ typedef enum {
 } yp_parameters_order_t;
 
 // This matches parameters tokens with parameters state.
-yp_parameters_order_t parameters_ordering[YP_TOKEN_MAXIMUM] = {
+yp_parameters_order_t yp_parameters_ordering[YP_TOKEN_MAXIMUM] = {
   [0] = YP_PARAMETERS_NO_CHANGE,
   [YP_TOKEN_AMPERSAND] = YP_PARAMETERS_ORDER_NOTHING_AFTER,
   [YP_TOKEN_UDOT_DOT_DOT] = YP_PARAMETERS_ORDER_NOTHING_AFTER,
@@ -7331,7 +7332,7 @@ yp_parameters_order_t parameters_ordering[YP_TOKEN_MAXIMUM] = {
 // to the one corresponding to the current parameter.
 static void
 update_parameter_state(yp_parser_t *parser, yp_token_t *token, yp_parameters_order_t *current) {
-  yp_parameters_order_t state = parameters_ordering[token->type];
+  yp_parameters_order_t state = yp_parameters_ordering[token->type];
   if (state == YP_PARAMETERS_NO_CHANGE) return;
 
   // If we see another ordered argument after a optional argument
