@@ -5,9 +5,11 @@
 use crate::asm::{CodeBlock};
 use crate::asm::arm64::*;
 use crate::codegen::{JITState, CodegenGlobals};
+use crate::core::Context;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::virtualmem::CodePtr;
+use crate::options::*;
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -167,6 +169,10 @@ impl Assembler
     const SCRATCH0: A64Opnd = A64Opnd::Reg(X16_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
 
+    /// List of registers that can be used for stack temps.
+    /// These are caller-saved registers.
+    pub const TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
+
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
     /// Note: we intentionally exclude C_RET_REG (X0) from this list
@@ -175,16 +181,9 @@ impl Assembler
         vec![X11_REG, X12_REG, X13_REG]
     }
 
-    /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs() -> Vec<Reg> {
-        // FIXME: arm64 is not supported yet. Insn::Store doesn't support registers
-        // in its dest operand. Currently crashing at split_memory_address.
-        vec![]
-    }
-
     /// Get a list of all of the caller-saved registers
     pub fn get_caller_save_regs() -> Vec<Reg> {
-        vec![X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
+        vec![X1_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
     /// Split platform-specific instructions
@@ -595,11 +594,6 @@ impl Assembler
                     asm.not(opnd0);
                 },
                 Insn::Store { dest, src } => {
-                    // The displacement for the STUR instruction can't be more
-                    // than 9 bits long. If it's longer, we need to load the
-                    // memory address into a register first.
-                    let opnd0 = split_memory_address(asm, dest);
-
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.
                     let opnd1 = match src {
@@ -610,7 +604,19 @@ impl Assembler
                         _ => split_load_operand(asm, src)
                     };
 
-                    asm.store(opnd0, opnd1);
+                    match dest {
+                        Opnd::Reg(_) => {
+                            // Store does not support a register as a dest operand.
+                            asm.mov(dest, opnd1);
+                        }
+                        _ => {
+                            // The displacement for the STUR instruction can't be more
+                            // than 9 bits long. If it's longer, we need to load the
+                            // memory address into a register first.
+                            let opnd0 = split_memory_address(asm, dest);
+                            asm.store(opnd0, opnd1);
+                        }
+                    }
                 },
                 Insn::Sub { left, right, .. } => {
                     let opnd0 = split_load_operand(asm, left);
@@ -1085,7 +1091,9 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.lower_stack().arm64_split().alloc_regs(regs);
+        let asm = self.lower_stack();
+        let asm = asm.arm64_split();
+        let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -1170,7 +1178,7 @@ mod tests {
     fn test_emit_cpop_all() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.cpop_all();
+        asm.cpop_all(&Context::default());
         asm.compile_with_num_regs(&mut cb, 0);
     }
 

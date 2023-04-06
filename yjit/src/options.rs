@@ -1,4 +1,5 @@
 use std::ffi::CStr;
+use crate::backend::ir::Assembler;
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -55,7 +56,7 @@ pub static mut OPTIONS: Options = Options {
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
-    num_temp_regs: 0,
+    num_temp_regs: 5,
     gen_stats: false,
     gen_trace_exits: false,
     pause: false,
@@ -146,7 +147,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("temp-regs", _) => match opt_val.parse() {
-            Ok(n) => unsafe { OPTIONS.num_temp_regs = n },
+            Ok(n) => {
+                assert!(n <= Assembler::TEMP_REGS.len(), "--yjit-temp-regs must be <= {}", Assembler::TEMP_REGS.len());
+                unsafe { OPTIONS.num_temp_regs = n }
+            }
             Err(_) => {
                 return None;
             }

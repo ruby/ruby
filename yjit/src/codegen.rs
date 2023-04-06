@@ -933,7 +933,7 @@ pub fn gen_single_block(
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
                 println!("compiling {}", insn_name(opcode));
-                print_str(&mut asm, &format!("executing {}", insn_name(opcode)));
+                print_str(&mut asm, &ctx, &format!("executing {}", insn_name(opcode)));
             }
 
             // Call the code generation function
@@ -8402,7 +8402,9 @@ mod tests {
         let status = gen_pop(&mut jit, &mut context, &mut asm, &mut ocb);
 
         assert_eq!(status, KeepCompiling);
-        assert_eq!(context.diff(&Context::default()), TypeDiff::Compatible(0));
+        let mut default = Context::default();
+        default.set_reg_temps(context.get_reg_temps());
+        assert_eq!(context.diff(&default), TypeDiff::Compatible(0));
     }
 
     #[test]
