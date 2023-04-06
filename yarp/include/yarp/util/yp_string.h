@@ -53,15 +53,18 @@ void
 yp_string_ensure_owned(yp_string_t *string);
 
 // Returns the length associated with the string.
-__attribute__ ((__visibility__("default"))) extern size_t
+// __attribute__ ((__visibility__("default"))) extern size_t
+size_t
 yp_string_length(const yp_string_t *string);
 
 // Returns the start pointer associated with the string.
-__attribute__ ((__visibility__("default"))) extern const char *
+// __attribute__ ((__visibility__("default"))) extern const char *
+const char *
 yp_string_source(const yp_string_t *string);
 
 // Free the associated memory of the given string.
-__attribute__((__visibility__("default"))) extern void
+// __attribute__((__visibility__("default"))) extern void
+void
 yp_string_free(yp_string_t *string);
 
 #endif // YARP_STRING_H
