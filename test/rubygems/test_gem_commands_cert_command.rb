@@ -778,7 +778,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--certificate #{bad}]
     end
 
-    assert_equal "invalid argument: " +
+    assert_equal "invalid argument: " \
                  "--certificate #{bad}: invalid X509 certificate",
                  e.message
   end
@@ -789,7 +789,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{nonexistent}]
     end
 
-    assert_equal "invalid argument: " +
+    assert_equal "invalid argument: " \
                  "--private-key #{nonexistent}: does not exist",
                  e.message
 
@@ -807,7 +807,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{PUBLIC_KEY_FILE}]
     end
 
-    assert_equal "invalid argument: " +
+    assert_equal "invalid argument: " \
                  "--private-key #{PUBLIC_KEY_FILE}: private key not found",
                  e.message
   end

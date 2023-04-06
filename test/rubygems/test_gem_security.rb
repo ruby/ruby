@@ -172,7 +172,7 @@ class TestGemSecurity < Gem::TestCase
       extension.oid == "subjectAltName"
     end
 
-    assert_equal "#{child_alt_name.value} is not self-signed, contact " +
+    assert_equal "#{child_alt_name.value} is not self-signed, contact " \
                  "#{ALTERNATE_CERT.issuer} to obtain a valid certificate",
                  e.message
   end

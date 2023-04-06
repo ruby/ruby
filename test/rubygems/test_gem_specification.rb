@@ -1540,7 +1540,7 @@ dependencies: []
       refute @ext.contains_requirable_file? "nonexistent"
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " +
+    expected = "Ignoring ext-1 because its extensions are not built. " \
                "Try: gem pristine ext --version 1\n"
 
     assert_equal expected, err

@@ -153,7 +153,7 @@ module Gem::GemcutterUtilities
     pretty_host = pretty_host(sign_in_host)
 
     say "Enter your #{pretty_host} credentials."
-    say "Don't have an account yet? " +
+    say "Don't have an account yet? " \
         "Create one at #{sign_in_host}/sign_up"
 
     email = ask "   Email: "

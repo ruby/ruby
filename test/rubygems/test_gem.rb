@@ -1294,7 +1294,7 @@ class TestGem < Gem::TestCase
       refute Gem.try_activate "nonexistent"
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " +
+    expected = "Ignoring ext-1 because its extensions are not built. " \
                "Try: gem pristine ext --version 1\n"
 
     assert_equal expected, err
@@ -1403,7 +1403,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_gunzip
-    input = "\x1F\x8B\b\0\xED\xA3\x1AQ\0\x03\xCBH" +
+    input = "\x1F\x8B\b\0\xED\xA3\x1AQ\0\x03\xCBH" \
             "\xCD\xC9\xC9\a\0\x86\xA6\x106\x05\0\0\0"
 
     output = Gem::Util.gunzip input

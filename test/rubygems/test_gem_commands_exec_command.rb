@@ -767,7 +767,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_raise Gem::MockGemUi::TermError do
         invoke "a"
       end
-      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" +
+      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" \
                    "ERROR:  Possible alternatives: a\n", @ui.error
       assert_empty @ui.output
       assert_empty @installed_specs

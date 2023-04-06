@@ -135,7 +135,7 @@ class Gem::Security::Policy
     raise Gem::Security::Exception, "missing root certificate" unless root
 
     raise Gem::Security::Exception,
-          "root certificate #{root.subject} is not self-signed " +
+          "root certificate #{root.subject} is not self-signed " \
           "(issuer #{root.issuer})" if
       root.issuer != root.subject
 
@@ -171,7 +171,7 @@ class Gem::Security::Policy
     cert_dgst = digester.digest pkey_str
 
     raise Gem::Security::Exception,
-          "trusted root certificate #{root.subject} checksum " +
+          "trusted root certificate #{root.subject} checksum " \
           "does not match signing root certificate checksum" unless
       save_dgst == cert_dgst
 
@@ -192,8 +192,8 @@ class Gem::Security::Policy
   end
 
   def inspect # :nodoc:
-    ("[Policy: %s - data: %p signer: %p chain: %p root: %p " +
-     "signed-only: %p trusted-only: %p]") % [
+    "[Policy: %s - data: %p signer: %p chain: %p root: %p " \
+     "signed-only: %p trusted-only: %p]" % [
        @name, @verify_chain, @verify_data, @verify_root, @verify_signer,
        @only_signed, @only_trusted
      ]

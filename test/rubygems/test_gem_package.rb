@@ -539,7 +539,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.extract_tar_gz tgz_io, @destination
     end
 
-    assert_equal("installing into parent path /absolute.rb of " +
+    assert_equal("installing into parent path /absolute.rb of " \
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -620,7 +620,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " +
+    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " \
                 "#{destination_subdir} is not allowed", e.message)
 
     assert_path_not_exist File.join(@destination, "outside.txt")
@@ -655,7 +655,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
-    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " +
+    assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " \
                 "#{destination_subdir} is not allowed", e.message)
 
     assert_path_exist destination_user_subdir
@@ -749,7 +749,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.install_location "/absolute.rb", @destination
     end
 
-    assert_equal("installing into parent path /absolute.rb of " +
+    assert_equal("installing into parent path /absolute.rb of " \
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -790,7 +790,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     parent = File.expand_path File.join @destination, "../relative.rb"
 
-    assert_equal("installing into parent path #{parent} of " +
+    assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -805,7 +805,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     parent = File.expand_path File.join @destination, filename
 
-    assert_equal("installing into parent path #{parent} of " +
+    assert_equal("installing into parent path #{parent} of " \
                  "#{@destination} is not allowed", e.message)
   end
 

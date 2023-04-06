@@ -83,7 +83,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
         @package.verify
       end
 
-      assert_equal "old format gems do not contain signatures " +
+      assert_equal "old format gems do not contain signatures " \
                    "and cannot be verified",
                    e.message
     end

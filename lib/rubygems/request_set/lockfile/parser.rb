@@ -48,7 +48,7 @@ class Gem::RequestSet::Lockfile::Parser
     if expected_types && !Array(expected_types).include?(token.type)
       unget token
 
-      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
+      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " \
                 "expected #{expected_types.inspect}"
 
       raise Gem::RequestSet::Lockfile::ParseError.new message, token.column, token.line, @filename
@@ -57,8 +57,8 @@ class Gem::RequestSet::Lockfile::Parser
     if expected_value && expected_value != token.value
       unget token
 
-      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
-                "expected [#{expected_types.inspect}, " +
+      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " \
+                "expected [#{expected_types.inspect}, " \
                 "#{expected_value.inspect}]"
 
       raise Gem::RequestSet::Lockfile::ParseError.new message, token.column, token.line, @filename

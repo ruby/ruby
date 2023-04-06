@@ -287,7 +287,7 @@ gem 'other', version
       installer.ensure_loadable_spec
     end
 
-    assert_equal "The specification for #{a.full_name} is corrupt " +
+    assert_equal "The specification for #{a.full_name} is corrupt " \
                  "(SyntaxError)", e.message
   end
 

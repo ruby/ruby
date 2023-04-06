@@ -49,7 +49,7 @@ class Gem::Dependency
     requirements = requirements.first if requirements.length == 1 # unpack
 
     unless TYPES.include? type
-      raise ArgumentError, "Valid types are #{TYPES.inspect}, " +
+      raise ArgumentError, "Valid types are #{TYPES.inspect}, " \
                            "not #{type.inspect}"
     end
 
