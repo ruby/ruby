@@ -9202,10 +9202,17 @@ rb_gc_register_address(VALUE *addr)
     rb_objspace_t *objspace = &rb_objspace;
     struct gc_list *tmp;
 
+    VALUE obj = *addr;
+
     tmp = ALLOC(struct gc_list);
     tmp->next = global_list;
     tmp->varptr = addr;
     global_list = tmp;
+
+    /* obj has to be guarded here because the allocation above could trigger a
+     * GC. However, C extensions could pass a pointer to a global variable
+     * which does not exist on the stack and thus could get swept. */
+    RB_GC_GUARD(obj);
 }
 
 void
