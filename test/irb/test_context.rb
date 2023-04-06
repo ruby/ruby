@@ -185,7 +185,6 @@ module TestIRB
     end
 
     def test_object_inspection_prints_useful_info_when_kernel_inspect_also_errored
-      omit if RUBY_VERSION < '2.7'
       verbose, $VERBOSE = $VERBOSE, nil
       main = Object.new
       main.singleton_class.module_eval <<~RUBY

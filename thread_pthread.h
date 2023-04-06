@@ -26,7 +26,7 @@ struct rb_thread_sched_item {
 };
 
 struct rb_native_thread {
-    int id;
+    rb_atomic_t serial;
 
     rb_nativethread_id_t thread_id;
 
@@ -101,13 +101,17 @@ struct rb_thread_sched {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-# ifdef __APPLE__
-// on Darwin, TLS can not be accessed across .so
-struct rb_execution_context_struct *rb_current_ec(void);
-void rb_current_ec_set(struct rb_execution_context_struct *);
-# else
-RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
-# endif
+  # ifdef __APPLE__
+    // on Darwin, TLS can not be accessed across .so
+    struct rb_execution_context_struct *rb_current_ec(void);
+    void rb_current_ec_set(struct rb_execution_context_struct *);
+  # else
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
+
+    // for RUBY_DEBUG_LOG()
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
+    #define RUBY_NT_SERIAL 1
+  # endif
 #else
 typedef pthread_key_t native_tls_key_t;
 

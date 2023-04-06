@@ -1259,7 +1259,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
         if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
-            if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+            if (!st_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
                 val = default_value;
             }
         }
@@ -1821,6 +1821,12 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     else {
         return vm_throw_continue(ec, throwobj);
     }
+}
+
+VALUE
+rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+{
+    return vm_throw(ec, reg_cfp, throw_state, throwobj);
 }
 
 static inline void
@@ -2783,6 +2789,17 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
     return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local);
 }
 
+static VALUE builtin_invoker0(rb_execution_context_t *ec, VALUE self, const VALUE *argv, rb_insn_func_t funcptr);
+
+static VALUE
+vm_call_single_noarg_inline_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+                                    struct rb_calling_info *calling)
+{
+    const struct rb_builtin_function *bf = calling->cc->aux_.bf;
+    cfp->sp -= (calling->argc + 1);
+    return builtin_invoker0(ec, calling->recv, NULL, (rb_insn_func_t)bf->func_ptr);
+}
+
 static inline int
 vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
@@ -2802,7 +2819,18 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 
             VM_ASSERT(ci == calling->ci);
             VM_ASSERT(cc == calling->cc);
-            CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), cacheable_ci && vm_call_iseq_optimizable_p(ci, cc));
+
+            if (cacheable_ci && vm_call_iseq_optimizable_p(ci, cc)) {
+                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) &&
+                    !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
+                    VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
+                    vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
+                    CC_SET_FASTPATH(cc, vm_call_single_noarg_inline_builtin, true);
+                }
+                else {
+                    CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), true);
+                }
+            }
             return 0;
         }
         else if (rb_iseq_only_optparam_p(iseq)) {
@@ -3499,12 +3527,6 @@ static VALUE
 vm_call_attrset(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     return vm_call_attrset_direct(ec, cfp, calling->cc, calling->recv);
-}
-
-bool
-rb_vm_call_ivar_attrset_p(const vm_call_handler ch)
-{
-    return (ch == vm_call_ivar || ch == vm_call_attrset);
 }
 
 static inline VALUE
@@ -5211,15 +5233,7 @@ vm_sendish(
         val = vm_invokeblock_i(ec, GET_CFP(), &calling);
         break;
     }
-
-    if (!UNDEF_P(val)) {
-        return val;             /* CFUNC normal return */
-    }
-    else {
-        RESTORE_REGS();         /* CFP pushed in cc->call() */
-    }
-
-    return jit_exec(ec);
+    return val;
 }
 
 /* object.c */

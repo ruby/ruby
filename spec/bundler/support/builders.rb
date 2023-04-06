@@ -635,7 +635,7 @@ module Spec
       end
     end
 
-    TEST_CERT = <<-CERT.gsub(/^\s*/, "")
+    TEST_CERT = <<~CERT
       -----BEGIN CERTIFICATE-----
       MIIDMjCCAhqgAwIBAgIBATANBgkqhkiG9w0BAQUFADAnMQwwCgYDVQQDDAN5b3Ux
       FzAVBgoJkiaJk/IsZAEZFgdleGFtcGxlMB4XDTE1MDIwODAwMTIyM1oXDTQyMDYy
@@ -658,7 +658,7 @@ module Spec
       -----END CERTIFICATE-----
     CERT
 
-    TEST_PKEY = <<-PKEY.gsub(/^\s*/, "")
+    TEST_PKEY = <<~PKEY
       -----BEGIN RSA PRIVATE KEY-----
       MIIEowIBAAKCAQEA2W8V2k3jdzgMxL0mjTqbRruTdtDcdZDXKtiFkyLvsXUXvc2k
       GSdgcjMOS1CkafqGz/hAUlPibjM0QEXjtQuMdTmdMrmuORLeeIZhSO+HdkTNV6j3

@@ -93,7 +93,7 @@ module Bundler
       locked_version = package.locked_version
 
       result = specs.sort do |a, b|
-        unless locked_version && (package.prerelease_specified? || pre?)
+        unless package.prerelease_specified? || pre?
           a_pre = a.prerelease?
           b_pre = b.prerelease?
 

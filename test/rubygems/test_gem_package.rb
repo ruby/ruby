@@ -189,7 +189,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       File.symlink("code.rb", "lib/code_sym.rb")
       File.symlink("../lib/code.rb", "lib/code_sym2.rb")
     rescue Errno::EACCES => e
-      if win_platform?
+      if Gem.win_platform?
         pend "symlink - must be admin with no UAC on Windows"
       else
         raise e
@@ -205,7 +205,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     tar.rewind
 
-    files, symlinks = [], []
+    files = []
+    symlinks = []
 
     Gem::Package::TarReader.new tar do |tar_io|
       tar_io.each_entry do |entry|
@@ -286,8 +287,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -329,8 +330,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -392,8 +393,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -429,8 +430,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -481,7 +482,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     mask = 0100666 & (~File.umask)
 
     assert_equal mask.to_s(8), File.stat(extracted).mode.to_s(8) unless
-      win_platform?
+      Gem.win_platform?
   end
 
   def test_extract_files_empty
@@ -511,7 +512,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_file_permissions
-    pend "chmod not supported" if win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     gem_with_long_permissions = File.expand_path("packages/Bluebie-legs-0.6.2.gem", __dir__)
 
@@ -558,7 +559,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     begin
       package.extract_tar_gz tgz_io, @destination
     rescue Errno::EACCES => e
-      if win_platform?
+      if Gem.win_platform?
         pend "symlink - must be admin with no UAC on Windows"
       else
         raise e
@@ -611,7 +612,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, "subdir"
     FileUtils.mkdir_p destination_subdir
 
-    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
 
     e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
@@ -642,11 +643,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     pend "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_symlink "link", destination_user_dir, 16877
-      tar.add_symlink "link/dir", ".", 16877
+      tar.add_symlink "link", destination_user_dir, 16_877
+      tar.add_symlink "link/dir", ".", 16_877
     end
 
-    expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
+    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
 
     e = assert_raise(*expected_exceptions) do
       package.extract_tar_gz tgz_io, destination_subdir
@@ -810,7 +811,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_load_spec
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name() "metadata.gz" end
+    def entry.full_name
+      "metadata.gz"
+    end
 
     package = Gem::Package.new "nonexistent.gem"
 
@@ -962,8 +965,8 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_match %r{^No such file or directory}, e.message
-    assert_match %r{nonexistent.gem$},           e.message
+    assert_match(/^No such file or directory/, e.message)
+    assert_match(/nonexistent.gem$/,           e.message)
   end
 
   def test_verify_duplicate_file
@@ -1050,10 +1053,21 @@ class TestGemPackage < Gem::Package::TarTestCase
         # write bogus data.tar.gz to foil signature
         bogus_data = Gem::Util.gzip "hello"
         fake_signer = Class.new do
-          def digest_name; "SHA512"; end
-          def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
-          def key; "key"; end
-          def sign(*); "fake_sig"; end
+          def digest_name
+            "SHA512"
+          end
+
+          def digest_algorithm
+            OpenSSL::Digest(:SHA512).new
+          end
+
+          def key
+            "key"
+          end
+
+          def sign(*)
+            "fake_sig"
+          end
         end
         gem.add_file_signed "data2.tar.gz", 0444, fake_signer.new do |io|
           io.write bogus_data
@@ -1097,7 +1111,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_entry
     entry = Object.new
-    def entry.full_name() raise ArgumentError, "whatever" end
+    def entry.full_name
+      raise ArgumentError, "whatever"
+    end
 
     package = Gem::Package.new @gem
 
@@ -1124,11 +1140,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $good_name = vm
 
       entry = Object.new
-      def entry.full_name() $good_name end
+      def entry.full_name
+        $good_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 
@@ -1141,11 +1161,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $bad_name = vm
 
       entry = Object.new
-      def entry.full_name() $bad_name end
+      def entry.full_name
+        $bad_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 

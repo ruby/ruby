@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/cleanup_command"
 require "rubygems/installer"
@@ -183,7 +184,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exist @a_1_1.gem_dir
   ensure
     FileUtils.chmod 0755, @gemhome
-  end unless win_platform? || Process.uid.zero?
+  end unless Gem.win_platform? || Process.uid.zero?
 
   def test_execute_dry_run
     @cmd.options[:args] = %w[a]
@@ -230,7 +231,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{^Skipped default gems: b-2}, @ui.output
+    assert_match(/^Skipped default gems: b-2/, @ui.output)
     assert_empty @ui.error
   end
 

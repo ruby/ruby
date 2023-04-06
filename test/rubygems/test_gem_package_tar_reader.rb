@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "package/tar_test_case"
 require "rubygems/package"
 
@@ -77,7 +78,7 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     io = TempIO.new tar
 
     Gem::Package::TarReader.new io do |tar_reader|
-      tar_reader.seek "nonexistent" do |entry|
+      tar_reader.seek "nonexistent" do |_entry|
         flunk "entry missing but entry-found block was run"
       end
 

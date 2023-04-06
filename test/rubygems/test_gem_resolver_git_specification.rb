@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/installer"
 
@@ -28,7 +29,8 @@ class TestGemResolverGitSpecification < Gem::TestCase
     i_set  = Gem::Resolver::IndexSet.new
     source = Gem::Source.new @gem_repo
     i_spec = Gem::Resolver::IndexSpecification.new(
-      i_set, "a", v(1), source, Gem::Platform::RUBY)
+      i_set, "a", v(1), source, Gem::Platform::RUBY
+    )
 
     refute_equal g_spec_a, i_spec
   end
@@ -63,7 +65,7 @@ class TestGemResolverGitSpecification < Gem::TestCase
 
   def test_install_extension
     pend if Gem.java_platform?
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
     name, _, repository, = git_gem "a", 1 do |s|
       s.extensions << "ext/extconf.rb"
     end

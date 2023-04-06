@@ -33,6 +33,20 @@ class Reline::ANSI::TestWithTerminfo < Reline::TestCase
     omit e.message
   end
 
+  # PgUp key
+  def test_kpp
+    assert_key_binding(Reline::Terminfo.tigetstr('kpp'), :ed_search_prev_history)
+  rescue Reline::Terminfo::TerminfoError => e
+    omit e.message
+  end
+
+  # PgDn key
+  def test_knp
+    assert_key_binding(Reline::Terminfo.tigetstr('knp'), :ed_search_next_history)
+  rescue Reline::Terminfo::TerminfoError => e
+    omit e.message
+  end
+
   # Up arrow key
   def test_kcuu1
     assert_key_binding(Reline::Terminfo.tigetstr('kcuu1'), :ed_prev_history)

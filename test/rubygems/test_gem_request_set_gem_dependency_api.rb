@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/request_set"
 
@@ -48,7 +49,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       s.add_runtime_dependency "bar", ">= 1.6.0", "< 1.6.4"
     end
     @gda.gemspec
-    assert_equal %w[ foo bar ].sort, @set.dependencies.map(&:name).sort
+    assert_equal %w[foo bar].sort, @set.dependencies.map(&:name).sort
     bar = @set.dependencies.find {|d| d.name == "bar" }
     assert_equal [["<", Gem::Version.create("1.6.4")],
                   [">=", Gem::Version.create("1.6.0")]], bar.requirement.requirements.sort
@@ -245,7 +246,8 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
       @gda.gem "a", :platforms => :ruby
@@ -257,7 +259,8 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms_bundler_ruby
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
       set = Gem::RequestSet.new
@@ -319,7 +322,8 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms_maglev
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     with_engine_version "maglev", "1.0.0" do
       set = Gem::RequestSet.new
@@ -355,20 +359,21 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms_multiple
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
       @gda.gem "a", :platforms => [:mswin, :jruby]
 
       assert_empty @set.dependencies
     end
-
   ensure
     Gem.win_platform = win_platform
   end
 
   def test_gem_platforms_platform
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
       @gda.gem "a", :platforms => :jruby, :platform => :ruby
@@ -489,7 +494,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       groups = @gda.send :gem_group, "a", :group => :b, :groups => [:c, :d]
     end
 
-    assert_equal [:a, :b, :c, :d], groups.sort_by {|group| group.to_s }
+    assert_equal [:a, :b, :c, :d], groups.sort_by(&:to_s)
   end
 
   def test_gemspec
@@ -674,7 +679,7 @@ end
   end
 
   def test_platform_mswin
-    if win_platform?
+    if Gem.win_platform?
       util_set_arch "x86-mswin32-60" do
         @gda.platform :mswin do
           @gda.gem "a"
@@ -695,7 +700,8 @@ end
   end
 
   def test_platform_multiple
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     gda = @GDA.new @set, nil
 
@@ -721,7 +727,8 @@ end
   end
 
   def test_platform_ruby
-    win_platform, Gem.win_platform = Gem.win_platform?, false
+    win_platform = Gem.win_platform?
+    Gem.win_platform = false
 
     @gda.platform :ruby do
       @gda.gem "a"
@@ -733,7 +740,7 @@ end
   end
 
   def test_platforms
-    unless win_platform?
+    unless Gem.win_platform?
       util_set_arch "i686-darwin8.10.1" do
         @gda.platforms :ruby do
           @gda.gem "a"

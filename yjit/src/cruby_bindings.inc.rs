@@ -662,6 +662,10 @@ pub struct iseq_inline_iv_cache_entry {
 pub struct iseq_inline_cvar_cache_entry {
     pub entry: *mut rb_cvar_class_tbl_entry,
 }
+pub const BUILTIN_ATTR_LEAF: rb_builtin_attr = 1;
+pub const BUILTIN_ATTR_NO_GC: rb_builtin_attr = 2;
+pub const BUILTIN_ATTR_SINGLE_NOARG_INLINE: rb_builtin_attr = 4;
+pub type rb_builtin_attr = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword {
@@ -806,15 +810,14 @@ pub const VM_CALL_ARGS_BLOCKARG_bit: vm_call_flag_bits = 1;
 pub const VM_CALL_FCALL_bit: vm_call_flag_bits = 2;
 pub const VM_CALL_VCALL_bit: vm_call_flag_bits = 3;
 pub const VM_CALL_ARGS_SIMPLE_bit: vm_call_flag_bits = 4;
-pub const VM_CALL_BLOCKISEQ_bit: vm_call_flag_bits = 5;
-pub const VM_CALL_KWARG_bit: vm_call_flag_bits = 6;
-pub const VM_CALL_KW_SPLAT_bit: vm_call_flag_bits = 7;
-pub const VM_CALL_TAILCALL_bit: vm_call_flag_bits = 8;
-pub const VM_CALL_SUPER_bit: vm_call_flag_bits = 9;
-pub const VM_CALL_ZSUPER_bit: vm_call_flag_bits = 10;
-pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 11;
-pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 12;
-pub const VM_CALL__END: vm_call_flag_bits = 13;
+pub const VM_CALL_KWARG_bit: vm_call_flag_bits = 5;
+pub const VM_CALL_KW_SPLAT_bit: vm_call_flag_bits = 6;
+pub const VM_CALL_TAILCALL_bit: vm_call_flag_bits = 7;
+pub const VM_CALL_SUPER_bit: vm_call_flag_bits = 8;
+pub const VM_CALL_ZSUPER_bit: vm_call_flag_bits = 9;
+pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 10;
+pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 11;
+pub const VM_CALL__END: vm_call_flag_bits = 12;
 pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo {
@@ -1091,6 +1094,7 @@ extern "C" {
     pub fn rb_ary_store(ary: VALUE, key: ::std::os::raw::c_long, val: VALUE);
     pub fn rb_ary_dup(ary: VALUE) -> VALUE;
     pub fn rb_ary_resurrect(ary: VALUE) -> VALUE;
+    pub fn rb_ary_push(ary: VALUE, elem: VALUE) -> VALUE;
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
@@ -1179,6 +1183,7 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
     pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
+    pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
@@ -1206,7 +1211,7 @@ extern "C" {
     ) -> VALUE;
     pub fn rb_yjit_get_page_size() -> u32;
     pub fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
-    pub fn rb_c_method_tracing_currently_enabled(ec: *mut rb_execution_context_t) -> bool;
+    pub fn rb_c_method_tracing_currently_enabled(ec: *const rb_execution_context_t) -> bool;
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_get_yjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
@@ -1276,10 +1281,11 @@ extern "C" {
         kw_splat: ::std::os::raw::c_int,
         block_handler: VALUE,
     ) -> VALUE;
-    pub fn rb_leaf_invokebuiltin_iseq_p(iseq: *const rb_iseq_t) -> bool;
-    pub fn rb_leaf_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
+    pub fn rb_yjit_iseq_builtin_attrs(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+    pub fn rb_yjit_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
     pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_get_ec_cfp(ec: *const rb_execution_context_t) -> *mut rb_control_frame_struct;
+    pub fn rb_get_cfp_iseq(cfp: *mut rb_control_frame_struct) -> *const rb_iseq_t;
     pub fn rb_get_cfp_pc(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_get_cfp_sp(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
@@ -1292,13 +1298,11 @@ extern "C" {
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_yjit_rb_ary_unshift_m(
-        argc: ::std::os::raw::c_int,
-        argv: *mut VALUE,
-        ary: VALUE,
-    ) -> VALUE;
+    pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_yarv_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_fix_mul_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
@@ -1330,4 +1334,5 @@ extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_yjit_assert_holding_vm_lock();
 }

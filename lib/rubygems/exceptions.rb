@@ -172,6 +172,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
 end
 
 class Gem::InstallError < Gem::Exception; end
+
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError
   attr_accessor :suggestion
   def message
@@ -221,7 +222,7 @@ class Gem::SystemExitException < SystemExit
   ##
   # The exit code for the process
 
-  alias exit_code status
+  alias_method :exit_code, :status
 
   ##
   # Creates a new SystemExitException with the given +exit_code+
@@ -254,7 +255,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   def initialize(dep, platform_mismatch=nil)
     if platform_mismatch && !platform_mismatch.empty?
       plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
-      super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"
+      super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(", ")}"
     else
       if dep.explicit?
         super "Unable to resolve dependency: user requested '#{dep}'"

@@ -120,11 +120,6 @@ static VALUE sym_immediate;
 static VALUE sym_on_blocking;
 static VALUE sym_never;
 
-enum SLEEP_FLAGS {
-    SLEEP_DEADLOCKABLE = 0x1,
-    SLEEP_SPURIOUS_CHECK = 0x2
-};
-
 #define THREAD_LOCAL_STORAGE_INITIALISED FL_USER13
 #define THREAD_LOCAL_STORAGE_INITIALISED_P(th) RB_FL_TEST_RAW((th), THREAD_LOCAL_STORAGE_INITIALISED)
 
@@ -138,8 +133,16 @@ rb_thread_local_storage(VALUE thread)
     return rb_ivar_get(thread, idLocals);
 }
 
-static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
+enum SLEEP_FLAGS {
+    SLEEP_DEADLOCKABLE   = 0x01,
+    SLEEP_SPURIOUS_CHECK = 0x02,
+    SLEEP_ALLOW_SPURIOUS = 0x04,
+    SLEEP_NO_CHECKINTS   = 0x08,
+};
+
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
+static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
+
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_ractor_t *r);
@@ -177,11 +180,11 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
-  RB_GC_SAVE_MACHINE_CONTEXT(th); \
-  thread_sched_to_waiting(sched);
+  RB_VM_SAVE_MACHINE_CONTEXT(th); \
+  thread_sched_to_waiting((sched), (th));
 
 #define THREAD_BLOCKING_END(th) \
-  thread_sched_to_running(sched, th); \
+  thread_sched_to_running((sched), (th)); \
   rb_ractor_thread_switch(th->ractor, th); \
 } while(0)
 
@@ -346,19 +349,23 @@ unblock_function_clear(rb_thread_t *th)
 static void
 rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 {
-    rb_native_mutex_lock(&th->interrupt_lock);
+    RUBY_DEBUG_LOG("th:%u trap:%d", rb_th_serial(th), trap);
 
-    if (trap) {
-        RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
-    }
-    else {
-        RUBY_VM_SET_INTERRUPT(th->ec);
-    }
-    if (th->unblock.func != NULL) {
-        (th->unblock.func)(th->unblock.arg);
-    }
-    else {
-        /* none */
+    rb_native_mutex_lock(&th->interrupt_lock);
+    {
+        if (trap) {
+            RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
+        }
+        else {
+            RUBY_VM_SET_INTERRUPT(th->ec);
+        }
+
+        if (th->unblock.func != NULL) {
+            (th->unblock.func)(th->unblock.arg);
+        }
+        else {
+            /* none */
+        }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
@@ -366,6 +373,7 @@ rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 void
 rb_threadptr_interrupt(rb_thread_t *th)
 {
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     rb_threadptr_interrupt_common(th, 0);
 }
 
@@ -416,6 +424,7 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
                 case THREAD_STOPPED:
                 case THREAD_STOPPED_FOREVER:
                     target_thread->status = THREAD_RUNNABLE;
+                    break;
                 default:
                     break;
             }
@@ -784,12 +793,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
         // So gvl_release() should be before it.
-        thread_sched_to_dead(TH_SCHED(th));
+        thread_sched_to_dead(TH_SCHED(th), th);
         rb_ractor_living_threads_remove(th->ractor, th);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
-        thread_sched_to_dead(TH_SCHED(th));
+        thread_sched_to_dead(TH_SCHED(th), th);
     }
 
     return 0;
@@ -1058,11 +1067,7 @@ thread_join_sleep(VALUE arg)
             rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
         }
         else if (!limit) {
-            th->status = THREAD_STOPPED_FOREVER;
-            rb_ractor_sleeper_threads_inc(th->ractor);
-            rb_check_deadlock(th->ractor);
-            native_sleep(th, 0);
-            rb_ractor_sleeper_threads_dec(th->ractor);
+            sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
         }
         else {
             if (hrtime_update_expire(limit, end)) {
@@ -1264,32 +1269,6 @@ rb_hrtime_now(void)
     return rb_timespec2hrtime(&ts);
 }
 
-static void
-sleep_forever(rb_thread_t *th, unsigned int fl)
-{
-    enum rb_thread_status prev_status = th->status;
-    enum rb_thread_status status;
-    int woke;
-
-    status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
-    th->status = status;
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    while (th->status == status) {
-        if (fl & SLEEP_DEADLOCKABLE) {
-            rb_ractor_sleeper_threads_inc(th->ractor);
-            rb_check_deadlock(th->ractor);
-        }
-        native_sleep(th, 0);
-        if (fl & SLEEP_DEADLOCKABLE) {
-            rb_ractor_sleeper_threads_dec(th->ractor);
-        }
-        woke = vm_check_ints_blocking(th->ec);
-        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
-            break;
-    }
-    th->status = prev_status;
-}
-
 /*
  * at least gcc 7.2 and 7.3 complains about "rb_hrtime_t end"
  * being uninitialized, maybe other versions, too.
@@ -1362,6 +1341,42 @@ sleep_hrtime_until(rb_thread_t *th, rb_hrtime_t end, unsigned int fl)
     }
     th->status = prev_status;
     return woke;
+}
+
+static void
+sleep_forever(rb_thread_t *th, unsigned int fl)
+{
+    enum rb_thread_status prev_status = th->status;
+    enum rb_thread_status status;
+    int woke;
+
+    status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
+    th->status = status;
+
+    if (!(fl & SLEEP_NO_CHECKINTS)) RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+
+    while (th->status == status) {
+        if (fl & SLEEP_DEADLOCKABLE) {
+            rb_ractor_sleeper_threads_inc(th->ractor);
+            rb_check_deadlock(th->ractor);
+        }
+        {
+            native_sleep(th, 0);
+        }
+        if (fl & SLEEP_DEADLOCKABLE) {
+            rb_ractor_sleeper_threads_dec(th->ractor);
+        }
+        if (fl & SLEEP_ALLOW_SPURIOUS) {
+            break;
+        }
+
+        woke = vm_check_ints_blocking(th->ec);
+
+        if (woke && !(fl & SLEEP_SPURIOUS_CHECK)) {
+            break;
+        }
+    }
+    th->status = prev_status;
 }
 
 void
@@ -1450,7 +1465,7 @@ rb_thread_schedule_limits(uint32_t limits_us)
         if (th->running_time_us >= limits_us) {
             RUBY_DEBUG_LOG("switch %s", "start");
 
-            RB_GC_SAVE_MACHINE_CONTEXT(th);
+            RB_VM_SAVE_MACHINE_CONTEXT(th);
             thread_sched_yield(TH_SCHED(th), th);
             rb_ractor_thread_switch(th->ractor, th);
 
@@ -1485,8 +1500,8 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 
         RUBY_DEBUG_LOG("");
 
-        RB_GC_SAVE_MACHINE_CONTEXT(th);
-        thread_sched_to_waiting(TH_SCHED(th));
+        RB_VM_SAVE_MACHINE_CONTEXT(th);
+        thread_sched_to_waiting(TH_SCHED(th), th);
         return TRUE;
     }
     else {
@@ -2327,7 +2342,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         /* exception from another thread */
         if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
             VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
-            RUBY_DEBUG_LOG("err:%"PRIdVALUE"\n", err);
+            RUBY_DEBUG_LOG("err:%"PRIdVALUE, err);
             ret = TRUE;
 
             if (UNDEF_P(err)) {
@@ -2734,7 +2749,7 @@ VALUE
 rb_thread_list(void)
 {
     // TODO
-    return rb_ractor_thread_list(GET_RACTOR());
+    return rb_ractor_thread_list();
 }
 
 /*

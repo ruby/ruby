@@ -359,6 +359,8 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
 
+static rb_pid_t cached_pid;
+
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
 #define execv(path, argv) (rb_async_bug_errno("unreachable: async-signal-unsafe execv() is called", 0))
@@ -497,8 +499,20 @@ parent_redirect_close(int fd)
 static VALUE
 get_pid(void)
 {
-    return PIDT2NUM(getpid());
+    if (UNLIKELY(!cached_pid)) { /* 0 is not a valid pid */
+        cached_pid = getpid();
+    }
+    /* pid should be likely POSFIXABLE() */
+    return PIDT2NUM(cached_pid);
 }
+
+#if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
+static void
+clear_pid_cache(void)
+{
+    cached_pid = 0;
+}
+#endif
 
 /*
  *  call-seq:
@@ -1546,9 +1560,13 @@ before_fork_ruby(void)
 }
 
 static void
-after_fork_ruby(void)
+after_fork_ruby(rb_pid_t pid)
 {
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
+    if (pid == 0) {
+        clear_pid_cache();
+        rb_thread_atfork();
+    }
     after_exec();
 }
 #endif
@@ -4055,11 +4073,10 @@ rb_fork_ruby2(struct rb_process_status *status)
             status->pid = pid;
             status->error = err;
         }
-        after_fork_ruby();
+        after_fork_ruby(pid);
         disable_child_handler_fork_parent(&old); /* yes, bad name */
 
         if (pid >= 0) { /* fork succeed */
-            if (pid == 0) rb_thread_atfork();
             return pid;
         }
 
@@ -4348,7 +4365,8 @@ NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
  *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
- *  to STDERR prior to terminating.
+ *  to STDERR prior to terminating. Otherwise, if an exception was raised,
+ *  print its message and backtrace.
  */
 
 static VALUE
@@ -6831,8 +6849,7 @@ rb_daemon(int nochdir, int noclose)
 #ifdef HAVE_DAEMON
     before_fork_ruby();
     err = daemon(nochdir, noclose);
-    after_fork_ruby();
-    rb_thread_atfork();
+    after_fork_ruby(0);
 #else
     int n;
 

@@ -3,7 +3,7 @@
 
 #include "internal/gc.h"
 
-#if (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
 #define SIZEOF_SHAPE_T 4
 #define SHAPE_IN_BASIC_FLAGS 1
 typedef uint32_t attr_index_t;
@@ -18,9 +18,11 @@ typedef uint16_t attr_index_t;
 #if SIZEOF_SHAPE_T == 4
 typedef uint32_t shape_id_t;
 # define SHAPE_ID_NUM_BITS 32
+# define SHAPE_BUFFER_SIZE 0x80000
 #else
 typedef uint16_t shape_id_t;
 # define SHAPE_ID_NUM_BITS 16
+# define SHAPE_BUFFER_SIZE 0x8000
 #endif
 
 # define SHAPE_MASK (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
@@ -28,12 +30,10 @@ typedef uint16_t shape_id_t;
 
 # define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
-# define SHAPE_BITMAP_SIZE 16384
-
 # define SHAPE_MAX_VARIATIONS 8
 # define SHAPE_MAX_NUM_IVS 80
 
-# define MAX_SHAPE_ID (SHAPE_MASK - 1)
+# define MAX_SHAPE_ID SHAPE_BUFFER_SIZE
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
 
@@ -156,12 +156,12 @@ ROBJECT_IV_CAPACITY(VALUE obj)
     return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->capacity;
 }
 
-static inline struct rb_id_table *
+static inline st_table *
 ROBJECT_IV_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
-    return (struct rb_id_table *)ROBJECT(obj)->as.heap.ivptr;
+    return (st_table *)ROBJECT(obj)->as.heap.ivptr;
 }
 
 static inline void
@@ -178,7 +178,7 @@ static inline uint32_t
 ROBJECT_IV_COUNT(VALUE obj)
 {
     if (ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID) {
-        return (uint32_t)rb_id_table_size(ROBJECT_IV_HASH(obj));
+        return (uint32_t)rb_st_table_size(ROBJECT_IV_HASH(obj));
     }
     else {
         RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
@@ -200,10 +200,6 @@ RCLASS_IV_COUNT(VALUE obj)
     uint32_t ivc = rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(obj))->next_iv_index;
     return ivc;
 }
-
-rb_shape_t * rb_shape_alloc(ID edge_name, rb_shape_t * parent);
-rb_shape_t * rb_shape_alloc_with_size_pool_index(ID edge_name, rb_shape_t * parent, uint8_t size_pool_index);
-rb_shape_t * rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id);
 
 rb_shape_t *rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *orig_shape);
 

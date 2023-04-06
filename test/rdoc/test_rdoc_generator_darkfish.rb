@@ -107,14 +107,13 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
 
     encoding = Regexp.escape Encoding::UTF_8.name
 
-    assert_match %r%<meta charset="#{encoding}">%, File.read('index.html')
-    assert_match %r%<meta charset="#{encoding}">%, File.read('Object.html')
+    assert_match %r%<meta charset="#{encoding}">%, File.binread('index.html')
+    assert_match %r%<meta charset="#{encoding}">%, File.binread('Object.html')
 
-    refute_match(/Ignored/, File.read('index.html'))
-    summary = File.read('index.html')[%r[<summary.*Klass\.html.*</summary>.*</details>]m]
+    refute_match(/Ignored/, File.binread('index.html'))
+    summary = File.binread('index.html')[%r[<summary.*Klass\.html.*</summary>.*</details>]m]
     assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
-    omit 'The following line crashes with "invalid byte sequence in US-ASCII" on ci.rvm.jp and some RubyCIs'
-    klassnav = File.read('Klass.html')[%r[<div class="nav-section">.*<div id="class-metadata">]m]
+    klassnav = File.binread('Klass.html')[%r[<div class="nav-section">.*<div id="class-metadata">]m]
     assert_match(
       %r[<li>\s*<details open>\s*<summary>\s*<a href=\S+>Heading 1</a>\s*</summary>\s*<ul]m,
       klassnav
@@ -131,15 +130,15 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.generate
     assert_file 'outer_rdoc.html'
     assert_file 'outer/inner_rdoc.html'
-    index = File.read('index.html')
+    index = File.binread('index.html')
     re = %r[<summary><a href="\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
     assert_match(re, index)
     summary = index[re]
     assert_match %r[<a href="\./outer/inner_rdoc.html">inner</a>], summary
     re = %r[<details open><summary><a href="\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
-    assert_match(re, File.read('outer_rdoc.html'))
+    assert_match(re, File.binread('outer_rdoc.html'))
     re = %r[<details open><summary><a href="\.\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
-    assert_match(re, File.read('outer/inner_rdoc.html'))
+    assert_match(re, File.binread('outer/inner_rdoc.html'))
   end
 
   def test_generate_dry_run
@@ -276,7 +275,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.generate
 
     Dir.glob("*.html", base: @tmpdir) do |html|
-      File.read(File.join(@tmpdir, html)).scan(/.*should be escaped.*/) do |line|
+      File.binread(File.join(@tmpdir, html)).scan(/.*should be escaped.*/) do |line|
         assert_not_include line, "<em>", html
       end
     end
@@ -294,7 +293,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.generate
 
     assert_file base
-    assert_include File.read('index.html'), %Q[href="./#{base}"]
+    assert_include File.binread('index.html'), %Q[href="./#{base}"]
   end
 
   def test_title
@@ -302,7 +301,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @options.title = title
     @g.generate
 
-    assert_main_title(File.read('index.html'), title)
+    assert_main_title(File.binread('index.html'), title)
   end
 
   def test_title_escape
@@ -310,7 +309,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @options.title = title
     @g.generate
 
-    assert_main_title(File.read('index.html'), title)
+    assert_main_title(File.binread('index.html'), title)
   end
 
   ##

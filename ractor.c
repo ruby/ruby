@@ -61,18 +61,19 @@ ASSERT_ractor_locking(rb_ractor_t *r)
 static void
 ractor_lock(rb_ractor_t *r, const char *file, int line)
 {
-    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->pub.id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
     if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an RJIT worker
-        r->sync.locked_by = rb_ractor_self(GET_RACTOR());
+        rb_ractor_t *cr = rb_current_ractor_raw(false);
+        r->sync.locked_by = cr ? rb_ractor_self(cr) : Qundef;
     }
 #endif
 
-    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->pub.id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
@@ -94,7 +95,7 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 #endif
     rb_native_mutex_unlock(&r->sync.lock);
 
-    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
@@ -887,7 +888,7 @@ static VALUE ractor_move(VALUE obj); // in this file
 static VALUE ractor_copy(VALUE obj); // in this file
 
 static void
-ractor_basket_prepare_contents(VALUE obj, VALUE move, VALUE *pobj, enum rb_ractor_basket_type *ptype)
+ractor_basket_prepare_contents(VALUE obj, VALUE move, volatile VALUE *pobj, enum rb_ractor_basket_type *ptype)
 {
     VALUE v;
     enum rb_ractor_basket_type type;
@@ -1248,7 +1249,7 @@ ractor_deq_take_basket(rb_ractor_t *cr, struct rb_ractor_queue *rs, struct rb_ra
 }
 
 static bool
-ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *ts, VALUE obj, VALUE move, bool exc, bool is_will)
+ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *ts, volatile VALUE obj, VALUE move, bool exc, bool is_will)
 {
     ASSERT_ractor_unlocking(cr);
 
@@ -2119,34 +2120,23 @@ rb_ractor_living_thread_num(const rb_ractor_t *r)
     return r->threads.cnt;
 }
 
+// only for current ractor
 VALUE
-rb_ractor_thread_list(rb_ractor_t *r)
+rb_ractor_thread_list(void)
 {
+    rb_ractor_t *r = GET_RACTOR();
     rb_thread_t *th = 0;
-    VALUE *ts;
-    int ts_cnt;
-
-    RACTOR_LOCK(r);
-    {
-        ts = ALLOCA_N(VALUE, r->threads.cnt);
-        ts_cnt = 0;
-
-        ccan_list_for_each(&r->threads.set, th, lt_node) {
-            switch (th->status) {
-              case THREAD_RUNNABLE:
-              case THREAD_STOPPED:
-              case THREAD_STOPPED_FOREVER:
-                ts[ts_cnt++] = th->self;
-              default:
-                break;
-            }
-        }
-    }
-    RACTOR_UNLOCK(r);
-
     VALUE ary = rb_ary_new();
-    for (int i=0; i<ts_cnt; i++) {
-        rb_ary_push(ary, ts[i]);
+
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
+        switch (th->status) {
+          case THREAD_RUNNABLE:
+          case THREAD_STOPPED:
+          case THREAD_STOPPED_FOREVER:
+            rb_ary_push(ary, th->self);
+          default:
+            break;
+        }
     }
 
     return ary;
@@ -2332,6 +2322,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
         rb_ractor_t *r = 0;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
+                RUBY_DEBUG_LOG("r:%d", rb_ractor_id(r));
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
         }
@@ -2348,7 +2339,9 @@ rb_ractor_terminate_all(void)
 
     if (vm->ractor.cnt > 1) {
         RB_VM_LOCK();
-        ractor_terminal_interrupt_all(vm); // kill all ractors
+        {
+            ractor_terminal_interrupt_all(vm); // kill all ractors
+        }
         RB_VM_UNLOCK();
     }
     rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait
@@ -2649,17 +2642,17 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
-static enum rb_id_table_iterator_result
-obj_hash_iv_traverse_i(VALUE val, void *ptr)
+static int
+obj_hash_iv_traverse_i(st_data_t key, st_data_t val, st_data_t ptr)
 {
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
-    if (obj_traverse_i(val, d->data)) {
+    if (obj_traverse_i((VALUE)val, d->data)) {
         d->stop = true;
-        return ID_TABLE_STOP;
+        return ST_STOP;
     }
 
-    return ID_TABLE_CONTINUE;
+    return ST_CONTINUE;
 }
 
 static void
@@ -2725,7 +2718,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                     .stop = false,
                     .data = data,
                 };
-                rb_id_table_foreach_values(ROBJECT_IV_HASH(obj), obj_hash_iv_traverse_i, &d);
+                rb_st_foreach(ROBJECT_IV_HASH(obj), obj_hash_iv_traverse_i, (st_data_t)&d);
                 if (d.stop) return 1;
             }
             else {
@@ -3080,28 +3073,28 @@ obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int e
     return ST_CONTINUE;
 }
 
-static enum rb_id_table_iterator_result
-obj_iv_hash_traverse_replace_foreach_i(VALUE val, void *data)
+static int
+obj_iv_hash_traverse_replace_foreach_i(st_data_t _key, st_data_t _val, st_data_t _data, int _x)
 {
-    return ID_TABLE_REPLACE;
+    return ST_REPLACE;
 }
 
-static enum rb_id_table_iterator_result
-obj_iv_hash_traverse_replace_i(VALUE *val, void *ptr, int exists)
+static int
+obj_iv_hash_traverse_replace_i(st_data_t * _key, st_data_t * val, st_data_t ptr, int exists)
 {
     struct obj_traverse_replace_callback_data *d = (struct obj_traverse_replace_callback_data *)ptr;
     struct obj_traverse_replace_data *data = d->data;
 
-    if (obj_traverse_replace_i(*val, data)) {
+    if (obj_traverse_replace_i(*(VALUE *)val, data)) {
         d->stop = true;
-        return ID_TABLE_STOP;
+        return ST_STOP;
     }
-    else if (*val != data->replacement) {
-        VALUE v = *val = data->replacement;
+    else if (*(VALUE *)val != data->replacement) {
+        VALUE v = *(VALUE *)val = data->replacement;
         RB_OBJ_WRITTEN(d->src, Qundef, v);
     }
 
-    return ID_TABLE_CONTINUE;
+    return ST_CONTINUE;
 }
 
 static struct st_table *
@@ -3127,7 +3120,7 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
     int *pcnt = (int *)ptr;
 
     if (!rb_ractor_shareable_p(obj)) {
-        *pcnt++;
+        ++*pcnt;
     }
 }
 
@@ -3205,16 +3198,17 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_OBJECT:
         {
             if (rb_shape_obj_too_complex(obj)) {
-                struct rb_id_table * table = ROBJECT_IV_HASH(obj);
+                st_table * table = ROBJECT_IV_HASH(obj);
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,
                     .src = obj,
                 };
-                rb_id_table_foreach_values_with_replace(table,
-                                                        obj_iv_hash_traverse_replace_foreach_i,
-                                                        obj_iv_hash_traverse_replace_i,
-                                                        (void *)&d);
+                rb_st_foreach_with_replace(
+                        table,
+                        obj_iv_hash_traverse_replace_foreach_i,
+                        obj_iv_hash_traverse_replace_i,
+                        (st_data_t)&d);
             }
             else {
 #if USE_TRANSIENT_HEAP

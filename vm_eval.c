@@ -21,7 +21,7 @@ static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, con
 static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat);
 static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat);
 static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
-VALUE vm_exec(rb_execution_context_t *ec, bool jit_enable_p);
+VALUE vm_exec(rb_execution_context_t *ec);
 static void vm_set_eval_stack(rb_execution_context_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(const VALUE *dfp, const struct local_var_list *vars);
 
@@ -201,7 +201,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 
             vm_call_iseq_setup(ec, reg_cfp, calling);
             VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-            return vm_exec(ec, true); /* CHECK_INTS in this function */
+            return vm_exec(ec); // CHECK_INTS in this function
         }
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
@@ -1698,7 +1698,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     vm_set_eval_stack(ec, iseq, cref, &block);
 
     /* kick */
-    return vm_exec(ec, true);
+    return vm_exec(ec);
 }
 
 static VALUE
@@ -1719,7 +1719,7 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
     }
 
     /* kick */
-    return vm_exec(ec, true);
+    return vm_exec(ec);
 }
 
 /*

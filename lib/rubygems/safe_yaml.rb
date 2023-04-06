@@ -1,5 +1,6 @@
-module Gem
+# frozen_string_literal: true
 
+module Gem
   ###
   # This module is used for safely loading YAML specs from a gem.  The
   # `safe_load` method defined on this module is specifically designed for

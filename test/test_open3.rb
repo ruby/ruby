@@ -3,10 +3,6 @@
 require 'test/unit'
 require 'open3'
 
-if RUBY_ENGINE == 'ruby'
-  require_relative 'lib/jit_support'
-end
-
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 

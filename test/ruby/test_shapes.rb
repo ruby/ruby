@@ -1,8 +1,21 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'objspace'
+require 'json'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
+  class IVOrder
+    def expected_ivs
+      %w{ @a @b @c @d @e @f @g @h @i @j @k }
+    end
+
+    def set_ivs
+      expected_ivs.each { instance_variable_set(_1, 1) }
+      self
+    end
+  end
+
   class ShapeOrder
     def initialize
       @b = :b # 5 => 6
@@ -14,6 +27,14 @@ class TestShapes < Test::Unit::TestCase
 
     def set_c
       @c = :c # 5 => 7
+    end
+  end
+
+  class OrderedAlloc
+    def add_ivars
+      10.times do |i|
+        instance_variable_set("@foo" + i.to_s, 0)
+      end
     end
   end
 
@@ -80,12 +101,28 @@ class TestShapes < Test::Unit::TestCase
     refute_equal(shape1.id, shape2.id)
   end
 
+  def test_iv_order_correct_on_complex_objects
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS + 1).times {
+      IVOrder.new.instance_variable_set("@a#{_1}", 1)
+    }
+
+    obj = IVOrder.new
+    iv_list = obj.set_ivs.instance_variables
+    assert_equal obj.expected_ivs, iv_list.map(&:to_s)
+  end
+
   def test_too_complex
     ensure_complex
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
     assert_predicate RubyVM::Shape.of(tc), :too_complex?
+  end
+
+  def test_ordered_alloc_is_not_complex
+    5.times { OrderedAlloc.new.add_ivars }
+    obj = JSON.parse(ObjectSpace.dump(OrderedAlloc))
+    assert_operator obj["variation_count"], :<, RubyVM::Shape::SHAPE_MAX_VARIATIONS
   end
 
   def test_too_many_ivs_on_obj

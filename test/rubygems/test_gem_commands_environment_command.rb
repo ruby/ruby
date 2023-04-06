@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/environment_command"
 
@@ -11,7 +12,8 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
 
   def test_execute
     orig_sources = Gem.sources.dup
-    orig_path, ENV["PATH"] = ENV["PATH"], %w[/usr/local/bin /usr/bin /bin].join(File::PATH_SEPARATOR)
+    orig_path = ENV["PATH"]
+    ENV["PATH"] = %w[/usr/local/bin /usr/bin /bin].join(File::PATH_SEPARATOR)
     Gem.sources.replace %w[http://gems.example.com]
     Gem.configuration["gemcutter_key"] = "blah"
 
@@ -21,34 +23,33 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{RUBYGEMS VERSION: (\d\.)+\d}, @ui.output
-    assert_match %r{RUBY VERSION: \d+\.\d+\.\d+ \(.*\) \[.*\]}, @ui.output
-    assert_match %r{INSTALLATION DIRECTORY: #{Regexp.escape @gemhome}},
-                 @ui.output
-    assert_match %r{USER INSTALLATION DIRECTORY: #{Regexp.escape Gem.user_dir}},
-                 @ui.output
-    assert_match %r{RUBYGEMS PREFIX: }, @ui.output
-    assert_match %r{RUBY EXECUTABLE:.*#{RbConfig::CONFIG['ruby_install_name']}},
-                 @ui.output
-    assert_match %r{GIT EXECUTABLE: #{@cmd.send(:git_path)}}, @ui.output
-    assert_match %r{SYSTEM CONFIGURATION DIRECTORY:}, @ui.output
-    assert_match %r{EXECUTABLE DIRECTORY:}, @ui.output
-    assert_match %r{RUBYGEMS PLATFORMS:}, @ui.output
-    assert_match %r{- #{Gem::Platform.local}}, @ui.output
-    assert_match %r{GEM PATHS:}, @ui.output
-    assert_match %r{- #{Regexp.escape @gemhome}}, @ui.output
-    assert_match %r{GEM CONFIGURATION:}, @ui.output
-    assert_match %r{"gemcutter_key" => "\*\*\*\*"}, @ui.output
-    assert_match %r{:verbose => }, @ui.output
-    assert_match %r{REMOTE SOURCES:}, @ui.output
+    assert_match(/RUBYGEMS VERSION: (\d\.)+\d/, @ui.output)
+    assert_match(/RUBY VERSION: \d+\.\d+\.\d+ \(.*\) \[.*\]/, @ui.output)
+    assert_match(/INSTALLATION DIRECTORY: #{Regexp.escape @gemhome}/,
+                 @ui.output)
+    assert_match(/USER INSTALLATION DIRECTORY: #{Regexp.escape Gem.user_dir}/,
+                 @ui.output)
+    assert_match(/RUBYGEMS PREFIX: /, @ui.output)
+    assert_match(/RUBY EXECUTABLE:.*#{RbConfig::CONFIG['ruby_install_name']}/,
+                 @ui.output)
+    assert_match(/GIT EXECUTABLE: #{@cmd.send(:git_path)}/, @ui.output)
+    assert_match(/SYSTEM CONFIGURATION DIRECTORY:/, @ui.output)
+    assert_match(/EXECUTABLE DIRECTORY:/, @ui.output)
+    assert_match(/RUBYGEMS PLATFORMS:/, @ui.output)
+    assert_match(/- #{Gem::Platform.local}/, @ui.output)
+    assert_match(/GEM PATHS:/, @ui.output)
+    assert_match(/- #{Regexp.escape @gemhome}/, @ui.output)
+    assert_match(/GEM CONFIGURATION:/, @ui.output)
+    assert_match(/"gemcutter_key" => "\*\*\*\*"/, @ui.output)
+    assert_match(/:verbose => /, @ui.output)
+    assert_match(/REMOTE SOURCES:/, @ui.output)
 
-    assert_match %r{- SHELL PATH:},     @ui.output
+    assert_match(/- SHELL PATH:/, @ui.output)
     assert_match %r{- /usr/local/bin$}, @ui.output
     assert_match %r{- /usr/bin$},       @ui.output
     assert_match %r{- /bin$},           @ui.output
 
     assert_empty @ui.error
-
   ensure
     Gem.sources.replace orig_sources
     ENV["PATH"] = orig_path
@@ -125,7 +126,6 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
 
     assert_equal "http://gems.example.com\n", @ui.output
     assert_equal "", @ui.error
-
   ensure
     Gem.sources.replace orig_sources
   end

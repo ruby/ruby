@@ -197,15 +197,9 @@ module IRB # :nodoc:
             end
           end
 
-          if lexer.respond_to?(:scan) # Ruby 2.7+
-            lexer.scan.each do |elem|
-              next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
-              on_scan.call(elem)
-            end
-          else
-            lexer.parse.sort_by(&:pos).each do |elem|
-              on_scan.call(elem)
-            end
+          lexer.scan.each do |elem|
+            next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
+            on_scan.call(elem)
           end
           # yield uncolorable DATA section
           yield(nil, inner_code.byteslice(byte_pos...inner_code.bytesize), nil) if byte_pos < inner_code.bytesize

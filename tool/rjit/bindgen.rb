@@ -156,8 +156,8 @@ class BindingGenerator
       println
     end
 
-    # TODO: Support nested declarations
-    nodes_index = nodes.group_by(&:spelling).transform_values do |values|
+    # Build a hash table for type lookup by name
+    nodes_index = flatten_nodes(nodes).group_by(&:spelling).transform_values do |values|
       # Try to search a declaration with definitions
       node_with_children = values.find { |v| !v.children.empty? }
       next node_with_children if node_with_children
@@ -169,7 +169,7 @@ class BindingGenerator
     # Define types
     @types.each do |type|
       unless definition = generate_node(nodes_index[type])
-        raise "Failed to generate type: #{type}"
+        raise "Failed to find or generate type: #{type}"
       end
       println "  def C.#{type}"
       println "@#{type} ||= #{definition}".gsub(/^/, "    ").chomp
@@ -200,6 +200,18 @@ class BindingGenerator
   end
 
   private
+
+  # Make an array that includes all top-level and nested nodes
+  def flatten_nodes(nodes)
+    result = []
+    nodes.each do |node|
+      unless node.children.empty?
+        result.concat(flatten_nodes(node.children))
+      end
+    end
+    result.concat(nodes) # prioritize top-level nodes
+    result
+  end
 
   # Return code before BINDGEN_BEG and code after BINDGEN_END
   def split_ambles(src_path)
@@ -365,6 +377,7 @@ generator = BindingGenerator.new(
   src_path: src_path,
   consts: {
     LONG: %w[
+      UNLIMITED_ARGUMENTS
       VM_ENV_DATA_INDEX_ME_CREF
       VM_ENV_DATA_INDEX_SPECVAL
     ],
@@ -373,6 +386,7 @@ generator = BindingGenerator.new(
       BOP_AND
       BOP_AREF
       BOP_EQ
+      BOP_EQQ
       BOP_FREEZE
       BOP_GE
       BOP_GT
@@ -382,12 +396,15 @@ generator = BindingGenerator.new(
       BOP_MOD
       BOP_OR
       BOP_PLUS
+      BUILTIN_ATTR_LEAF
+      BUILTIN_ATTR_NO_GC
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
       INVALID_SHAPE_ID
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC
+      METHOD_VISI_UNDEF
       OBJ_TOO_COMPLEX_SHAPE_ID
       OPTIMIZED_METHOD_TYPE_BLOCK_CALL
       OPTIMIZED_METHOD_TYPE_CALL
@@ -411,11 +428,14 @@ generator = BindingGenerator.new(
       RUBY_SPECIAL_SHIFT
       RUBY_SYMBOL_FLAG
       RUBY_T_ARRAY
+      RUBY_T_CLASS
       RUBY_T_ICLASS
+      RUBY_T_HASH
       RUBY_T_MASK
       RUBY_T_MODULE
       RUBY_T_STRING
       RUBY_T_SYMBOL
+      RUBY_T_OBJECT
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
@@ -432,10 +452,12 @@ generator = BindingGenerator.new(
       VM_CALL_FCALL
       VM_CALL_KWARG
       VM_CALL_KW_SPLAT
+      VM_CALL_KW_SPLAT_MUT
       VM_CALL_KW_SPLAT_bit
       VM_CALL_OPT_SEND
       VM_CALL_TAILCALL
       VM_CALL_TAILCALL_bit
+      VM_CALL_ZSUPER
       VM_ENV_DATA_INDEX_FLAGS
       VM_ENV_DATA_SIZE
       VM_ENV_FLAG_LOCAL
@@ -460,20 +482,29 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_REFINED
       VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
+      VM_SPECIAL_OBJECT_VMCORE
+      RUBY_ENCODING_MASK
+      RUBY_FL_FREEZE
+      RHASH_PASS_AS_KEYWORDS
     ],
   },
   values: {
     SIZET: %w[
       block_type_iseq
       imemo_iseq
+      imemo_callinfo
       rb_block_param_proxy
+      rb_cArray
       rb_cFalseClass
       rb_cFloat
       rb_cInteger
       rb_cNilClass
+      rb_cString
       rb_cSymbol
       rb_cTrueClass
       rb_rjit_global_events
+      rb_mRubyVMFrozenCore
+      idRespond_to_missing
     ],
   },
   funcs: %w[
@@ -515,6 +546,32 @@ generator = BindingGenerator.new(
     rjit_str_neq_internal
     rjit_record_exit_stack
     rb_ivar_defined
+    rb_vm_throw
+    rb_backref_get
+    rb_reg_last_match
+    rb_reg_match_pre
+    rb_reg_match_post
+    rb_reg_match_last
+    rb_reg_nth_match
+    rb_gvar_get
+    rb_range_new
+    rb_ary_tmp_new_from_values
+    rb_reg_new_ary
+    rb_ary_clear
+    rb_str_intern
+    rb_vm_setclassvariable
+    rb_str_bytesize
+    rjit_str_simple_append
+    rb_str_buf_append
+    rb_str_dup
+    rb_vm_yield_with_cfunc
+    rb_vm_set_ivar_id
+    rb_ary_dup
+    rjit_rb_ary_subseq_length
+    rb_ary_unshift_m
+    rjit_build_kwhash
+    rb_rjit_entry_stub_hit
+    rb_rjit_branch_stub_hit
   ],
   types: %w[
     CALL_DATA
@@ -526,6 +583,7 @@ generator = BindingGenerator.new(
     RBasic
     RObject
     RStruct
+    RString
     attr_index_t
     iseq_inline_constant_cache
     iseq_inline_constant_cache_entry
@@ -563,7 +621,10 @@ generator = BindingGenerator.new(
     rb_shape
     rb_shape_t
     rb_thread_struct
-    rjit_options
+    rb_jit_func_t
+    rb_iseq_param_keyword
+    rb_rjit_options
+    rb_callinfo_kwarg
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[
@@ -574,7 +635,7 @@ generator = BindingGenerator.new(
     'rb_execution_context_struct.machine': %w[regs], # differs between macOS and Linux
     rb_execution_context_struct: %w[method_missing_reason], # non-leading bit fields not supported
     rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
-    rb_thread_struct: %w[status locking_native_thread to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
+    rb_thread_struct: %w[status has_dedicated_nt to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
     :'' => %w[is_from_method is_lambda is_isolated], # rb_proc_t
   },
   ruby_fields: {

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Used internally to indicate that a dependency conflicted
 # with a spec that would be activated.
@@ -54,7 +55,7 @@ class Gem::Resolver::Conflict
     activated   = @activated.spec.full_name
     dependency  = @failed_dep.dependency
     requirement = dependency.requirement
-    alternates  = dependency.matching_specs.map {|spec| spec.full_name }
+    alternates  = dependency.matching_specs.map(&:full_name)
 
     unless alternates.empty?
       matching = <<-MATCHING.chomp
@@ -131,7 +132,7 @@ class Gem::Resolver::Conflict
 
         current = current.parent
       when Gem::Resolver::DependencyRequest then
-        path << "#{current.dependency}"
+        path << current.dependency.to_s
 
         current = current.requester
       else

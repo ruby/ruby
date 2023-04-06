@@ -38,6 +38,17 @@ module RubyVM::RJIT
         @cme_blocks[cme.to_i] << jit.block
       end
 
+      # @param jit [RubyVM::RJIT::JITState]
+      def assume_method_basic_definition(jit, klass, mid)
+        if C.rb_method_basic_definition_p(klass, mid)
+          cme = C.rb_callable_method_entry(klass, mid)
+          assume_method_lookup_stable(jit, cme)
+          true
+        else
+          false
+        end
+      end
+
       def assume_stable_constant_names(jit, idlist)
         (0..).each do |i|
           break if (id = idlist[i]) == 0

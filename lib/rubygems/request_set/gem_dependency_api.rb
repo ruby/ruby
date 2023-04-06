@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A semi-compatible DSL for the Bundler Gemfile and Isolate gem dependencies
 # files.
@@ -356,7 +357,7 @@ class Gem::RequestSet::GemDependencyAPI
   #   Use the given tag for git:, gist: and github: dependencies.
 
   def gem(name, *requirements)
-    options = requirements.pop if requirements.last.kind_of?(Hash)
+    options = requirements.pop if requirements.last.is_a?(Hash)
     options ||= {}
 
     options[:git] = @current_repository if @current_repository
@@ -532,8 +533,8 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # platform matches the current platform.
 
   def gem_platforms(name, options) # :nodoc:
-    platform_names = Array(options.delete :platform)
-    platform_names.concat Array(options.delete :platforms)
+    platform_names = Array(options.delete(:platform))
+    platform_names.concat Array(options.delete(:platforms))
     platform_names.concat @current_platforms if @current_platforms
 
     return true if platform_names.empty?
@@ -592,7 +593,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_repository = repository
 
     yield
-
   ensure
     @current_repository = nil
   end
@@ -684,7 +684,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_groups = groups
 
     yield
-
   ensure
     @current_groups = nil
   end
@@ -759,7 +758,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_platforms = platforms
 
     yield
-
   ensure
     @current_platforms = nil
   end
@@ -770,7 +768,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # Block form for restricting gems to a particular set of platforms.  See
   # #platform.
 
-  alias :platforms :platform
+  alias_method :platforms, :platform
 
   ##
   # :category: Gem Dependencies DSL
@@ -816,7 +814,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
       end
     end
 
-    return true
+    true
   end
 
   ##

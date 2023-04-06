@@ -66,12 +66,32 @@ module Gem
 
     alias_method :rg_extension_dir, :extension_dir
     def extension_dir
-      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
+      # following instance variable is already used in original method
+      # and that is the reason to prefix it with bundler_ and add rubocop exception
+      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name) # rubocop:disable Naming/MemoizedInstanceVariableName
         unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
         File.expand_path(File.join(extensions_dir, unique_extension_dir))
       else
         rg_extension_dir
       end
+    end
+
+    alias_method :rg_missing_extensions?, :missing_extensions?
+    def missing_extensions?
+      # When we use this methods with local gemspec, we don't handle
+      # build status of extension correctly. So We need to find extension
+      # files in require_paths.
+      # TODO: Gem::Specification couldn't access extension name from extconf.rb
+      #       so we find them with heuristic way. We should improve it.
+      if source.respond_to?(:root)
+        return false if raw_require_paths.any? do |path|
+          ext_dir = File.join(full_gem_path, path)
+          File.exist?(File.join(ext_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
+          !Dir.glob(File.join(ext_dir, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
+        end
+      end
+
+      rg_missing_extensions?
     end
 
     remove_method :gem_dir if instance_methods(false).include?(:gem_dir)
@@ -203,9 +223,9 @@ module Gem
         protected
 
         def _requirements_sorted?
-          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          return @_requirements_sorted if defined?(@_requirements_sorted)
           strings = as_list
-          @_are_requirements_sorted = strings == strings.sort
+          @_requirements_sorted = strings == strings.sort
         end
 
         def _with_sorted_requirements

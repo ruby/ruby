@@ -256,13 +256,12 @@ module IRB # :nodoc:
       end
 
       if load_file
-        kwargs = ", **kwargs" if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
         line = __LINE__; eval %[
-          def #{cmd_name}(*opts#{kwargs}, &b)
+          def #{cmd_name}(*opts, **kwargs, &b)
             Kernel.require_relative "#{load_file}"
             arity = ::IRB::ExtendCommand::#{cmd_class}.instance_method(:execute).arity
             args = (1..(arity < 0 ? ~arity : arity)).map {|i| "arg" + i.to_s }
-            args << "*opts#{kwargs}" if arity < 0
+            args << "*opts, **kwargs" if arity < 0
             args << "&block"
             args = args.join(", ")
             line = __LINE__; eval %[
@@ -273,7 +272,7 @@ module IRB # :nodoc:
                 end
               end
             ], nil, __FILE__, line
-            __send__ :#{cmd_name}_, *opts#{kwargs}, &b
+            __send__ :#{cmd_name}_, *opts, **kwargs, &b
           end
         ], nil, __FILE__, line
       else
@@ -370,59 +369,5 @@ module IRB # :nodoc:
     end
 
     CE.install_extend_commands
-  end
-
-  # A convenience module for extending Ruby methods.
-  module MethodExtender
-    # Extends the given +base_method+ with a prefix call to the given
-    # +extend_method+.
-    def def_pre_proc(base_method, extend_method)
-      base_method = base_method.to_s
-      extend_method = extend_method.to_s
-
-      alias_name = new_alias_name(base_method)
-      module_eval %[
-        alias_method alias_name, base_method
-        def #{base_method}(*opts)
-          __send__ :#{extend_method}, *opts
-          __send__ :#{alias_name}, *opts
-        end
-      ]
-    end
-
-    # Extends the given +base_method+ with a postfix call to the given
-    # +extend_method+.
-    def def_post_proc(base_method, extend_method)
-      base_method = base_method.to_s
-      extend_method = extend_method.to_s
-
-      alias_name = new_alias_name(base_method)
-      module_eval %[
-        alias_method alias_name, base_method
-        def #{base_method}(*opts)
-          __send__ :#{alias_name}, *opts
-          __send__ :#{extend_method}, *opts
-        end
-      ]
-    end
-
-    # Returns a unique method name to use as an alias for the given +name+.
-    #
-    # Usually returns <code>#{prefix}#{name}#{postfix}<num></code>, example:
-    #
-    #     new_alias_name('foo') #=> __alias_of__foo__
-    #     def bar; end
-    #     new_alias_name('bar') #=> __alias_of__bar__2
-    def new_alias_name(name, prefix = "__alias_of__", postfix = "__")
-      base_name = "#{prefix}#{name}#{postfix}"
-      all_methods = instance_methods(true) + private_instance_methods(true)
-      same_methods = all_methods.grep(/^#{Regexp.quote(base_name)}[0-9]*$/)
-      return base_name if same_methods.empty?
-      no = same_methods.size
-      while !same_methods.include?(alias_name = base_name + no)
-        no += 1
-      end
-      alias_name
-    end
   end
 end

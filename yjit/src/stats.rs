@@ -253,11 +253,10 @@ make_counters! {
     send_send_getter,
     send_send_builtin,
     send_iseq_has_rest_and_captured,
-    send_iseq_has_rest_and_splat_fewer,
     send_iseq_has_rest_and_send,
-    send_iseq_has_rest_and_block,
-    send_iseq_has_rest_and_kw,
+    send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_rest_and_optional,
+    send_iseq_has_rest_and_splat_not_equal,
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
 
@@ -283,7 +282,6 @@ make_counters! {
 
     leave_se_interrupt,
     leave_interp_return,
-    leave_start_pc_non_zero,
 
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
@@ -318,12 +316,16 @@ make_counters! {
 
     vm_insns_count,
     compiled_iseq_count,
+    compiled_blockid_count,
     compiled_block_count,
     compiled_branch_count,
     compilation_failure,
     block_next_count,
     defer_count,
     defer_empty_count,
+    branch_insn_count,
+    branch_known_count,
+
     freed_iseq_count,
 
     exit_from_branch_stub,
@@ -351,6 +353,10 @@ make_counters! {
 
     iseq_stack_too_large,
     iseq_too_long,
+
+    temp_reg_opnd,
+    temp_mem_opnd,
+    temp_spill,
 }
 
 //===========================================================================
@@ -474,6 +480,8 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         #[cfg(feature="stats")]
         hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
 
+        // `context` is true at RubyVM::YJIT._print_stats for --yjit-stats. It's false by default
+        // for RubyVM::YJIT.runtime_stats because counting all Contexts could be expensive.
         if context {
             let live_context_count = get_live_context_count();
             let context_size = std::mem::size_of::<Context>();
@@ -531,11 +539,11 @@ fn get_live_context_count() -> usize {
     for_each_iseq_payload(|iseq_payload| {
         for blocks in iseq_payload.version_map.iter() {
             for block in blocks.iter() {
-                count += block.borrow().get_ctx_count();
+                count += unsafe { block.as_ref() }.get_ctx_count();
             }
         }
         for block in iseq_payload.dead_blocks.iter() {
-            count += block.borrow().get_ctx_count();
+            count += unsafe { block.as_ref() }.get_ctx_count();
         }
     });
     count

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemDependencyResolutionError < Gem::TestCase
@@ -20,7 +21,7 @@ class TestGemDependencyResolutionError < Gem::TestCase
   end
 
   def test_message
-    assert_match %r{^conflicting dependencies a \(= 1\) and a \(= 2\)$},
-                 @error.message
+    assert_match(/^conflicting dependencies a \(= 1\) and a \(= 2\)$/,
+                 @error.message)
   end
 end

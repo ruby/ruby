@@ -5,7 +5,6 @@ use crate::asm::OutlinedCb;
 use crate::codegen::*;
 use crate::core::*;
 use crate::cruby::*;
-use crate::options::*;
 use crate::stats::*;
 use crate::utils::IntoUsize;
 use crate::yjit::yjit_enabled_p;
@@ -16,8 +15,8 @@ use std::mem;
 // Invariants to track:
 // assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
 // assume_method_lookup_stable(comptime_recv_klass, cme, jit);
-// assume_single_ractor_mode(jit)
-// assume_stable_global_constant_state(jit);
+// assume_single_ractor_mode()
+// track_stable_constant_names_assumption()
 
 /// Used to track all of the various block references that contain assumptions
 /// about the state of the virtual machine.
@@ -78,9 +77,9 @@ impl Invariants {
     }
 }
 
-/// A public function that can be called from within the code generation
-/// functions to ensure that the block being generated is invalidated when the
-/// basic operator is redefined.
+/// Mark the pending block as assuming that certain basic operators (e.g. Integer#==)
+/// have not been redefined.
+#[must_use]
 pub fn assume_bop_not_redefined(
     jit: &mut JITState,
     ocb: &mut OutlinedCb,
@@ -89,18 +88,7 @@ pub fn assume_bop_not_redefined(
 ) -> bool {
     if unsafe { BASIC_OP_UNREDEFINED_P(bop, klass) } {
         jit_ensure_block_entry_exit(jit, ocb);
-
-        let invariants = Invariants::get_instance();
-        invariants
-            .basic_operator_blocks
-            .entry((klass, bop))
-            .or_default()
-            .insert(jit.get_block());
-        invariants
-            .block_basic_operators
-            .entry(jit.get_block())
-            .or_default()
-            .insert((klass, bop));
+        jit.bop_assumptions.push((klass, bop));
 
         return true;
     } else {
@@ -108,28 +96,33 @@ pub fn assume_bop_not_redefined(
     }
 }
 
-// Remember that a block assumes that
-// `rb_callable_method_entry(receiver_klass, cme->called_id) == cme` and that
-// `cme` is valid.
-// When either of these assumptions becomes invalid, rb_yjit_method_lookup_change() or
-// rb_yjit_cme_invalidate() invalidates the block.
-//
-// @raise NoMemoryError
-pub fn assume_method_lookup_stable(
-    jit: &mut JITState,
-    ocb: &mut OutlinedCb,
+/// Track that a block is only valid when a certain basic operator has not been redefined
+/// since the block's inception.
+pub fn track_bop_assumption(uninit_block: BlockRef, bop: (RedefinitionFlag, ruby_basic_operators)) {
+    let invariants = Invariants::get_instance();
+    invariants
+        .basic_operator_blocks
+        .entry(bop)
+        .or_default()
+        .insert(uninit_block);
+    invariants
+        .block_basic_operators
+        .entry(uninit_block)
+        .or_default()
+        .insert(bop);
+}
+
+/// Track that a block will assume that `cme` is valid (false == METHOD_ENTRY_INVALIDATED(cme)).
+/// [rb_yjit_cme_invalidate] invalidates the block when `cme` is invalidated.
+pub fn track_method_lookup_stability_assumption(
+    uninit_block: BlockRef,
     callee_cme: *const rb_callable_method_entry_t,
 ) {
-    jit_ensure_block_entry_exit(jit, ocb);
-
-    let block = jit.get_block();
-    jit.push_cme_dependency(callee_cme);
-
     Invariants::get_instance()
         .cme_validity
         .entry(callee_cme)
         .or_default()
-        .insert(block);
+        .insert(uninit_block);
 }
 
 // Checks rb_method_basic_definition_p and registers the current block for invalidation if method
@@ -141,10 +134,10 @@ pub fn assume_method_basic_definition(
     ocb: &mut OutlinedCb,
     klass: VALUE,
     mid: ID
-    ) -> bool {
+) -> bool {
     if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
         let cme = unsafe { rb_callable_method_entry(klass, mid) };
-        assume_method_lookup_stable(jit, ocb, cme);
+        jit.assume_method_lookup_stable(ocb, cme);
         true
     } else {
         false
@@ -158,22 +151,24 @@ pub fn assume_single_ractor_mode(jit: &mut JITState, ocb: &mut OutlinedCb) -> bo
         false
     } else {
         jit_ensure_block_entry_exit(jit, ocb);
-        Invariants::get_instance()
-            .single_ractor
-            .insert(jit.get_block());
+        jit.block_assumes_single_ractor = true;
+
         true
     }
 }
 
-/// Walk through the ISEQ to go from the current opt_getinlinecache to the
-/// subsequent opt_setinlinecache and find all of the name components that are
-/// associated with this constant (which correspond to the getconstant
-/// arguments).
-pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb, idlist: *const ID) {
-    /// Tracks that a block is assuming that the name component of a constant
-    /// has not changed since the last call to this function.
+/// Track that the block will assume single ractor mode.
+pub fn track_single_ractor_assumption(uninit_block: BlockRef) {
+    Invariants::get_instance()
+        .single_ractor
+        .insert(uninit_block);
+}
+
+/// Track that a block will assume that the name components of a constant path expression
+/// has not changed since the block's full initialization.
+pub fn track_stable_constant_names_assumption(uninit_block: BlockRef, idlist: *const ID) {
     fn assume_stable_constant_name(
-        jit: &mut JITState,
+        uninit_block: BlockRef,
         id: ID,
     ) {
         if id == idNULL as u64 {
@@ -186,10 +181,10 @@ pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb, id
             .constant_state_blocks
             .entry(id)
             .or_default()
-            .insert(jit.get_block());
+            .insert(uninit_block);
         invariants
             .block_constant_states
-            .entry(jit.get_block())
+            .entry(uninit_block)
             .or_default()
             .insert(id);
     }
@@ -198,12 +193,9 @@ pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb, id
     for i in 0.. {
         match unsafe { *idlist.offset(i) } {
             0 => break, // End of NULL terminated list
-            id => assume_stable_constant_name(jit, id),
+            id => assume_stable_constant_name(uninit_block, id),
         }
     }
-
-    jit_ensure_block_entry_exit(jit, ocb);
-
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming
@@ -280,32 +272,11 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
     }
 
     with_vm_lock(src_loc!(), || {
-        if get_option!(global_constant_state) {
-            // If the global-constant-state option is set, then we're going to
-            // invalidate every block that depends on any constant.
-
-            Invariants::get_instance()
-                .constant_state_blocks
-                .keys()
-                .for_each(|id| {
-                    if let Some(blocks) =
-                        Invariants::get_instance().constant_state_blocks.remove(&id)
-                    {
-                        for block in &blocks {
-                            invalidate_block_version(block);
-                            incr_counter!(invalidate_constant_state_bump);
-                        }
-                    }
-                });
-        } else {
-            // If the global-constant-state option is not set, then we're only going
-            // to invalidate the blocks that are associated with the given ID.
-
-            if let Some(blocks) = Invariants::get_instance().constant_state_blocks.remove(&id) {
-                for block in &blocks {
-                    invalidate_block_version(block);
-                    incr_counter!(invalidate_constant_state_bump);
-                }
+        // Invalidate the blocks that are associated with the given ID.
+        if let Some(blocks) = Invariants::get_instance().constant_state_blocks.remove(&id) {
+            for block in &blocks {
+                invalidate_block_version(block);
+                incr_counter!(invalidate_constant_state_bump);
             }
         }
     });
@@ -344,19 +315,22 @@ pub extern "C" fn rb_yjit_root_mark() {
 
 /// Remove all invariant assumptions made by the block by removing the block as
 /// as a key in all of the relevant tables.
-pub fn block_assumptions_free(blockref: &BlockRef) {
+/// For safety, the block has to be initialized and the vm lock must be held.
+/// However, outgoing/incoming references to the block does _not_ need to be valid.
+pub fn block_assumptions_free(blockref: BlockRef) {
     let invariants = Invariants::get_instance();
 
     {
-        let block = blockref.borrow();
+        // SAFETY: caller ensures that this reference is valid
+        let block = unsafe { blockref.as_ref() };
 
         // For each method lookup dependency
         for dep in block.iter_cme_deps() {
             // Remove tracking for cme validity
-            if let Some(blockset) = invariants.cme_validity.get_mut(dep) {
-                blockset.remove(blockref);
+            if let Some(blockset) = invariants.cme_validity.get_mut(&dep) {
+                blockset.remove(&blockref);
                 if blockset.is_empty() {
-                    invariants.cme_validity.remove(dep);
+                    invariants.cme_validity.remove(&dep);
                 }
             }
         }
@@ -415,11 +389,20 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
 /// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 /// using the new value in the constant cache.
 #[no_mangle]
-pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: u32) {
+pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: std::os::raw::c_uint) {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
     }
+
+    // Try to downcast the iseq index
+    let insn_idx: IseqIdx = if let Ok(idx) = insn_idx.try_into() {
+        idx
+    } else {
+        // The index is too large, YJIT can't possibily have code for it,
+        // so there is nothing to invalidate.
+        return;
+    };
 
     if !unsafe { (*(*ic).entry).ic_cref }.is_null() || unsafe { rb_yjit_multi_ractor_p() } {
         // We can't generate code in these situations, so no need to invalidate.
@@ -433,7 +416,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
         // This should come from a running iseq, so direct threading translation
         // should have been done
         assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED)) } != VALUE(0));
-        assert!(insn_idx < unsafe { get_iseq_encoded_size(iseq) });
+        assert!(u32::from(insn_idx) < unsafe { get_iseq_encoded_size(iseq) });
 
         // Ensure that the instruction the insn_idx is pointing to is in
         // fact a opt_getconstant_path instruction.
@@ -506,17 +489,18 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
                 if on_stack_iseqs.contains(&iseq) {
                     // This ISEQ is running, so we can't free blocks immediately
                     for block in blocks {
-                        delayed_deallocation(&block);
+                        delayed_deallocation(block);
                     }
                     payload.dead_blocks.shrink_to_fit();
                 } else {
                     // Safe to free dead blocks since the ISEQ isn't running
+                    // Since we're freeing _all_ blocks, we don't need to keep the graph well formed
                     for block in blocks {
-                        free_block(&block);
+                        unsafe { free_block(block, false) };
                     }
                     mem::take(&mut payload.dead_blocks)
-                        .iter()
-                        .for_each(free_block);
+                        .into_iter()
+                        .for_each(|block| unsafe { free_block(block, false) });
                 }
             }
 

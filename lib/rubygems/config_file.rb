@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -189,8 +190,8 @@ class Gem::ConfigFile
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name.dup.tap(&Gem::UNTAINT)
 
-    environment_config = (ENV["GEMRC"] || "")
-      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+    environment_config = (ENV["GEMRC"] || "").
+      split(File::PATH_SEPARATOR).inject({}) do |result, file|
         result.merge load_file file
       end
 
@@ -201,7 +202,7 @@ class Gem::ConfigFile
       @hash = @hash.merge environment_config
     end
 
-    # HACK these override command-line args, which is bad
+    # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
@@ -352,7 +353,7 @@ if you believe they were disclosed to a third party.
 
     begin
       content = Gem::SafeYAML.load(File.read(filename))
-      unless content.kind_of? Hash
+      unless content.is_a? Hash
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       end
@@ -476,13 +477,13 @@ if you believe they were disclosed to a third party.
     yaml_hash[:ssl_client_cert] =
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
-    keys = yaml_hash.keys.map {|key| key.to_s }
+    keys = yaml_hash.keys.map(&:to_s)
     keys << "debug"
     re = Regexp.union(*keys)
 
     @hash.each do |key, value|
       key = key.to_s
-      next if key =~ re
+      next if key&.match?(re)
       yaml_hash[key.to_s] = value
     end
 
@@ -533,7 +534,7 @@ if you believe they were disclosed to a third party.
         need_config_file_name = false
       elsif arg =~ /^--config-file=(.*)/
         @config_file_name = $1
-      elsif arg =~ /^--config-file$/
+      elsif /^--config-file$/.match?(arg)
         need_config_file_name = true
       end
     end

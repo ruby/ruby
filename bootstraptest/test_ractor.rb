@@ -1496,8 +1496,9 @@ assert_equal "#{n}#{n}", %Q{
 
 # NameError
 assert_equal "ok", %q{
+  obj = "".freeze # NameError refers the receiver indirectly
   begin
-    bar
+    obj.bar
   rescue => err
   end
   begin

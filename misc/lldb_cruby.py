@@ -727,13 +727,13 @@ def __lldb_init_module(debugger, internal_dict):
     # Register all classes that subclass RbBaseCommand
 
     for memname, mem in inspect.getmembers(sys.modules["lldb_rb.rb_base_command"]):
-        if inspect.isclass(mem):
+        if memname == "RbBaseCommand":
             for sclass in mem.__subclasses__():
                 sclass.register_lldb_command(debugger, f"{__name__}.{sclass.__module__}")
 
 
     ## FUNCTION INITS - These should be removed when converted to class commands
-    debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
+    debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp old_rp")
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
     debugger.HandleCommand("command script add -f lldb_cruby.stack_dump_raw SDR")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_node dump_node")
@@ -741,7 +741,7 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.rb_backtrace rbbt")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page dump_page")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page_rvalue dump_page_rvalue")
-    debugger.HandleCommand("command script add -f lldb_cruby.rb_id2str rb_id2str")
+    debugger.HandleCommand("command script add -f lldb_cruby.rb_id2str old_rb_id2str")
 
     lldb_rb.rb_base_command.RbBaseCommand.lldb_init(debugger)
 

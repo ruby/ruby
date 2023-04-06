@@ -175,6 +175,13 @@ impl Assembler
         vec![X11_REG, X12_REG, X13_REG]
     }
 
+    /// Get the list of registers that can be used for stack temps.
+    pub fn get_temp_regs() -> Vec<Reg> {
+        // FIXME: arm64 is not supported yet. Insn::Store doesn't support registers
+        // in its dest operand. Currently crashing at split_memory_address.
+        vec![]
+    }
+
     /// Get a list of all of the caller-saved registers
     pub fn get_caller_save_regs() -> Vec<Reg> {
         vec![X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
@@ -1046,7 +1053,9 @@ impl Assembler
                 Insn::CSelGE { truthy, falsy, out } => {
                     csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GE);
                 }
-                Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
+                Insn::LiveReg { .. } |
+                Insn::RegTemps(_) |
+                Insn::SpillTemp(_) => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
                     while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < JMP_PTR_BYTES && !cb.has_dropped_bytes() {
                         nop(cb);
@@ -1119,6 +1128,7 @@ impl Assembler
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::disasm::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
         (Assembler::new(), CodeBlock::new_dummy(1024))
@@ -1467,6 +1477,11 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
 
         asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "0b0001ca4b0000f8", "
+            0x0: eor x11, x0, x1
+            0x4: stur x11, [x2]
+        ");
     }
 
     #[test]

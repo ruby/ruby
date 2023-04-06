@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../package"
 require_relative "../installer"
@@ -113,9 +114,7 @@ extensions will be restored.
         spec.extensions && !spec.extensions.empty?
       end
     elsif options[:only_missing_extensions]
-      Gem::Specification.select do |spec|
-        spec.missing_extensions?
-      end
+      Gem::Specification.select(&:missing_extensions?)
     else
       get_all_gem_names.sort.map do |gem_name|
         Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
@@ -137,7 +136,7 @@ extensions will be restored.
         next
       end
 
-      if options.has_key? :skip
+      if options.key? :skip
         if options[:skip].include? spec.name
           say "Skipped #{spec.full_name}, it was given through options"
           next

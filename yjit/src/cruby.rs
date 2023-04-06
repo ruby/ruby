@@ -143,6 +143,7 @@ pub use rb_insn_name as raw_insn_name;
 pub use rb_insn_len as raw_insn_len;
 pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
+pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
 pub use rb_get_cfp_self as get_cfp_self;
@@ -183,7 +184,9 @@ pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
 pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
 pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
-pub use rb_yarv_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_yjit_fix_div_fix as rb_fix_div_fix;
+pub use rb_yjit_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_yjit_fix_mul_fix as rb_fix_mul_fix;
 pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
@@ -242,6 +245,12 @@ pub struct VALUE(pub usize);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+// Given an ISEQ pointer, convert PC to insn_idx
+pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
+    let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    unsafe { pc.offset_from(pc_zero) }.try_into().ok()
+}
 
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]

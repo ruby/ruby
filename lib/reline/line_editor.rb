@@ -586,7 +586,7 @@ class Reline::LineEditor
 
   class Dialog
     attr_reader :name, :contents, :width
-    attr_accessor :scroll_top, :scrollbar_pos, :pointer, :column, :vertical_offset, :lines_backup, :trap_key
+    attr_accessor :scroll_top, :pointer, :column, :vertical_offset, :lines_backup, :trap_key
 
     def initialize(name, config, proc_scope)
       @name = name
@@ -709,13 +709,13 @@ class Reline::LineEditor
       position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
       bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
       bar_height = MINIMUM_SCROLLBAR_HEIGHT if bar_height < MINIMUM_SCROLLBAR_HEIGHT
-      dialog.scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
+      scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
     else
-      dialog.scrollbar_pos = nil
+      scrollbar_pos = nil
     end
     upper_space = @first_line_started_from - @started_from
     dialog.column = dialog_render_info.pos.x
-    dialog.width += @block_elem_width if dialog.scrollbar_pos
+    dialog.width += @block_elem_width if scrollbar_pos
     diff = (dialog.column + dialog.width) - (@screen_size.last)
     if diff > 0
       dialog.column -= diff
@@ -747,16 +747,16 @@ class Reline::LineEditor
         fg_color = dialog_render_info.fg_color
         bg_color = dialog_render_info.bg_color
       end
-      str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
+      str_width = dialog.width - (scrollbar_pos.nil? ? 0 : @block_elem_width)
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
       @output.write "\e[#{bg_color}m\e[#{fg_color}m#{str}"
-      if dialog.scrollbar_pos
+      if scrollbar_pos
         @output.write "\e[37m"
-        if dialog.scrollbar_pos <= (i * 2) and (i * 2 + 1) < (dialog.scrollbar_pos + bar_height)
+        if scrollbar_pos <= (i * 2) and (i * 2 + 1) < (scrollbar_pos + bar_height)
           @output.write @full_block
-        elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
+        elsif scrollbar_pos <= (i * 2) and (i * 2) < (scrollbar_pos + bar_height)
           @output.write @upper_half_block
-        elsif dialog.scrollbar_pos <= (i * 2 + 1) and (i * 2) < (dialog.scrollbar_pos + bar_height)
+        elsif scrollbar_pos <= (i * 2 + 1) and (i * 2) < (scrollbar_pos + bar_height)
           @output.write @lower_half_block
         else
           @output.write ' ' * @block_elem_width
@@ -972,6 +972,7 @@ class Reline::LineEditor
       prev_line_prompt = @prompt_proc ? prompt_list[@line_index - 1] : prompt
       prev_line_prompt_width = @prompt_proc ? calculate_width(prev_line_prompt, true) : prompt_width
       prev_line = modify_lines(lines)[@line_index - 1]
+      move_cursor_up(@started_from)
       render_partial(prev_line_prompt, prev_line_prompt_width, prev_line, @first_line_started_from + @started_from, with_control: false)
       scroll_down(1)
       render_partial(prompt, prompt_width, @line, @first_line_started_from + @started_from + 1, with_control: false)
@@ -994,22 +995,18 @@ class Reline::LineEditor
         calculate_height_by_lines(@buffer_of_lines[0..(@line_index - 1)], prompt_list || prompt)
       end
     first_line_diff = new_first_line_started_from - @first_line_started_from
-    new_cursor, new_cursor_max, new_started_from, new_byte_pointer = calculate_nearest_cursor(@buffer_of_lines[@line_index], @cursor, @started_from, @byte_pointer, false)
-    new_started_from = calculate_height_by_width(prompt_width + new_cursor) - 1
+    @cursor, @cursor_max, _, @byte_pointer = calculate_nearest_cursor(@buffer_of_lines[@line_index], @cursor, @started_from, @byte_pointer, false)
+    new_started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     calculate_scroll_partial_screen(@highest_in_all, new_first_line_started_from + new_started_from)
     @previous_line_index = nil
+    @line = @buffer_of_lines[@line_index]
     if @rerender_all
-      @line = @buffer_of_lines[@line_index]
       rerender_all_lines
       @rerender_all = false
       true
     else
-      @line = @buffer_of_lines[@line_index]
       @first_line_started_from = new_first_line_started_from
       @started_from = new_started_from
-      @cursor = new_cursor
-      @cursor_max = new_cursor_max
-      @byte_pointer = new_byte_pointer
       move_cursor_down(first_line_diff + @started_from)
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       false
@@ -1943,8 +1940,10 @@ class Reline::LineEditor
   end
 
   private def key_delete(key)
-    if @config.editing_mode_is?(:vi_insert, :emacs)
+    if @config.editing_mode_is?(:vi_insert)
       ed_delete_next_char(key)
+    elsif @config.editing_mode_is?(:emacs)
+      em_delete(key)
     end
   end
 
@@ -2650,7 +2649,7 @@ class Reline::LineEditor
   alias_method :kill_whole_line, :em_kill_line
 
   private def em_delete(key)
-    if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
+    if @line.empty? and (not @is_multiline or @buffer_of_lines.size == 1) and key == "\C-d".ord
       @line = nil
       if @buffer_of_lines.size > 1
         scroll_down(@highest_in_all - @first_line_started_from)

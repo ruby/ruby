@@ -148,19 +148,15 @@ class RubyLex
 
     compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
-      if lexer.respond_to?(:scan) # Ruby 2.7+
-        lexer.scan.each_with_object([]) do |t, tokens|
-          next if t.pos.first == 0
-          prev_tk = tokens.last
-          position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
-          if position_overlapped
-            tokens[-1] = t if ERROR_TOKENS.include?(prev_tk.event) && !ERROR_TOKENS.include?(t.event)
-          else
-            tokens << t
-          end
+      lexer.scan.each_with_object([]) do |t, tokens|
+        next if t.pos.first == 0
+        prev_tk = tokens.last
+        position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
+        if position_overlapped
+          tokens[-1] = t if ERROR_TOKENS.include?(prev_tk.event) && !ERROR_TOKENS.include?(t.event)
+        else
+          tokens << t
         end
-      else
-        lexer.parse.reject { |it| it.pos.first == 0 }.sort_by(&:pos)
       end
     end
   ensure

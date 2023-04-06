@@ -371,9 +371,15 @@ enum rb_iseq_type {
 
 // Attributes specified by Primitive.attr!
 enum rb_builtin_attr {
-    // If true, this ISeq does not call methods.
+    // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
+    // The iseq does not allocate objects.
+    BUILTIN_ATTR_NO_GC = 0x02,
+    // This iseq only contains single `opt_invokebuiltin_delegate_leave` instruction with 0 arguments.
+    BUILTIN_ATTR_SINGLE_NOARG_INLINE = 0x04,
 };
+
+typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
@@ -507,7 +513,7 @@ struct rb_iseq_constant_body {
 
 #if USE_RJIT || USE_YJIT
     // Function pointer for JIT code
-    VALUE (*jit_func)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+    rb_jit_func_t jit_func;
     // Number of total calls with jit_exec()
     long unsigned total_calls;
 #endif
@@ -522,8 +528,6 @@ struct rb_iseq_constant_body {
     void *yjit_payload;
 #endif
 };
-
-typedef VALUE (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
@@ -1011,7 +1015,7 @@ typedef struct rb_thread_struct {
 
     BITFIELD(enum rb_thread_status, status, 2);
     /* bit flags */
-    unsigned int locking_native_thread : 1;
+    unsigned int has_dedicated_nt : 1;
     unsigned int to_kill : 1;
     unsigned int abort_on_exception: 1;
     unsigned int report_on_exception: 1;
@@ -1082,7 +1086,7 @@ typedef struct rb_thread_struct {
 static inline unsigned int
 rb_th_serial(const rb_thread_t *th)
 {
-    return (unsigned int)th->serial;
+    return th ? (unsigned int)th->serial : 0;
 }
 
 typedef enum {
@@ -1900,15 +1904,21 @@ rb_current_thread(void)
 }
 
 static inline rb_ractor_t *
-rb_current_ractor(void)
+rb_current_ractor_raw(bool expect)
 {
     if (ruby_single_main_ractor) {
         return ruby_single_main_ractor;
     }
     else {
-        const rb_execution_context_t *ec = GET_EC();
-        return rb_ec_ractor_ptr(ec);
+        const rb_execution_context_t *ec = rb_current_execution_context(expect);
+        return (expect || ec) ? rb_ec_ractor_ptr(ec) : NULL;
     }
+}
+
+static inline rb_ractor_t *
+rb_current_ractor(void)
+{
+    return rb_current_ractor_raw(true);
 }
 
 static inline rb_vm_t *

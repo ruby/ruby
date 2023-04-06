@@ -93,6 +93,7 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 /* ruby_vm_event_flags management */
 
 void rb_clear_attr_ccs(void);
+void rb_clear_bf_ccs(void);
 
 static void
 update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events)
@@ -102,6 +103,8 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     bool first_time_iseq_events_p = new_iseq_events & ~enabled_iseq_events;
     bool enable_c_call   = (prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL);
     bool enable_c_return = (prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN);
+    bool enable_call     = (prev_events & RUBY_EVENT_CALL)     == 0 && (new_events & RUBY_EVENT_CALL);
+    bool enable_return   = (prev_events & RUBY_EVENT_RETURN)   == 0 && (new_events & RUBY_EVENT_RETURN);
 
     // Modify ISEQs or CCs to enable tracing
     if (first_time_iseq_events_p) {
@@ -111,6 +114,9 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     // if c_call or c_return is activated
     else if (enable_c_call || enable_c_return) {
         rb_clear_attr_ccs();
+    }
+    else if (enable_call || enable_return) {
+        rb_clear_bf_ccs();
     }
 
     ruby_vm_event_flags = new_events;
@@ -1258,6 +1264,10 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     n += rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval, line, target_bmethod);
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
+    if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
+        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) {
+        rb_clear_bf_ccs();
+    }
 
     if (n == 0) {
         rb_raise(rb_eArgError, "can not enable any hooks");

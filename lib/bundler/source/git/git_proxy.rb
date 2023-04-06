@@ -366,6 +366,11 @@ module Bundler
           args += ["--single-branch"]
           args.unshift("--no-tags") if supports_cloning_with_no_tags?
 
+          # If there's a locked revision, no need to clone any specific branch
+          # or tag, since we will end up checking out that locked revision
+          # anyways.
+          return args if @revision
+
           args += ["--branch", branch || tag] if branch || tag
           args
         end

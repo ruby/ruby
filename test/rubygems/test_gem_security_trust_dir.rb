@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 unless Gem::HAVE_OPENSSL
@@ -57,7 +58,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     mask = 0100600 & (~File.umask)
 
-    assert_equal mask, File.stat(trusted).mode unless win_platform?
+    assert_equal mask, File.stat(trusted).mode unless Gem.win_platform?
 
     assert_equal PUBLIC_CERT.to_pem, File.read(trusted)
   end
@@ -72,7 +73,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
     mask = 040700 & (~File.umask)
     mask |= 0200000 if RUBY_PLATFORM.include?("aix")
 
-    assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
+    assert_equal mask, File.stat(@dest_dir).mode unless Gem.win_platform?
   end
 
   def test_verify_file
@@ -93,6 +94,6 @@ class TestGemSecurityTrustDir < Gem::TestCase
     mask = 040700 & (~File.umask)
     mask |= 0200000 if RUBY_PLATFORM.include?("aix")
 
-    assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
+    assert_equal mask, File.stat(@dest_dir).mode unless Gem.win_platform?
   end
 end if Gem::HAVE_OPENSSL

@@ -22,7 +22,7 @@
 #include "vm_core.h"
 
 // RJIT options which can be defined on the MRI command line.
-struct rjit_options {
+struct rb_rjit_options {
     // Converted from "rjit" feature flag to tell the enablement
     // information to ruby_show_version().
     bool on;
@@ -36,12 +36,14 @@ struct rjit_options {
     bool trace_exits;
     // Enable disasm of all JIT code
     bool dump_disasm;
+    // Verify context objects
+    bool verify_ctx;
     // [experimental] Do not start RJIT until RJIT.resume is called.
     bool pause;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
-RUBY_EXTERN struct rjit_options rb_rjit_opts;
+RUBY_EXTERN struct rb_rjit_options rb_rjit_opts;
 RUBY_EXTERN bool rb_rjit_call_p;
 
 #define rb_rjit_call_threshold() rb_rjit_opts.call_threshold
@@ -50,7 +52,7 @@ extern void rb_rjit_compile(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
 extern void rb_rjit_cancel_all(const char *reason);
-extern void rb_rjit_init(const struct rjit_options *opts);
+extern void rb_rjit_init(const struct rb_rjit_options *opts);
 extern void rb_rjit_free_iseq(const rb_iseq_t *iseq);
 extern void rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body);
 extern void rb_rjit_mark(void);

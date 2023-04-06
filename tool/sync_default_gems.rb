@@ -520,8 +520,6 @@ module SyncDefaultGems
 
     failed_commits = []
 
-    ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
-
     require 'shellwords'
     filter = [
       ENV.fetch('RUBY', 'ruby').shellescape,
@@ -585,6 +583,22 @@ module SyncDefaultGems
         next
       end
 
+      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/")
+      unless tools.empty?
+        system(*%W"git checkout HEAD~ --", *tools)
+        if system(*%W"git diff --quiet HEAD~")
+          `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
+          puts "Skip commit #{sha} only for tools"
+          next
+        end
+        unless system(*%W"git commit --amend --no-edit --", *tools)
+          failed_commits << sha
+          `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
+          puts "Failed to pick #{sha}"
+          next
+        end
+      end
+
       head = `git log --format=%H -1 HEAD`.chomp
       system(*%w"git reset --quiet HEAD~ --")
       amend = replace_rdoc_ref_all
@@ -595,7 +609,9 @@ module SyncDefaultGems
 
       puts "Update commit message: #{sha}"
 
-      IO.popen(%W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD], &:read)
+      IO.popen({"FILTER_BRANCH_SQUELCH_WARNING" => "1"},
+               %W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD],
+               &:read)
       unless $?.success?
         puts "Failed to modify commit message of #{sha}"
         break

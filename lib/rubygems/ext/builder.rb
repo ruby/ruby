@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -25,13 +26,11 @@ class Gem::Ext::Builder
     # try to find make program from Ruby configure arguments first
     RbConfig::CONFIG["configure_args"] =~ /with-make-prog\=(\w+)/
     make_program_name = ENV["MAKE"] || ENV["make"] || $1
-    unless make_program_name
-      make_program_name = (RUBY_PLATFORM.include?("mswin")) ? "nmake" : "make"
-    end
+    make_program_name ||= RUBY_PLATFORM.include?("mswin") ? "nmake" : "make"
     make_program = Shellwords.split(make_program_name)
 
     # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = (/\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "") ? "DESTDIR=%s" % ENV["DESTDIR"] : ""
+    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? "DESTDIR=%s" % ENV["DESTDIR"] : ""
 
     env = [destdir]
 
@@ -55,11 +54,29 @@ class Gem::Ext::Builder
     end
   end
 
+  def self.ruby
+    require "shellwords"
+    # Gem.ruby is quoted if it contains whitespace
+    cmd = Gem.ruby.shellsplit
+
+    # This load_path is only needed when running rubygems test without a proper installation.
+    # Prepending it in a normal installation will cause problem with order of $LOAD_PATH.
+    # Therefore only add load_path if it is not present in the default $LOAD_PATH.
+    load_path = File.expand_path("../..", __dir__)
+    case load_path
+    when RbConfig::CONFIG["sitelibdir"], RbConfig::CONFIG["vendorlibdir"], RbConfig::CONFIG["rubylibdir"]
+      cmd
+    else
+      cmd << "-I#{load_path}"
+    end
+  end
+
   def self.run(command, results, command_name = nil, dir = Dir.pwd, env = {})
     verbose = Gem.configuration.really_verbose
 
     begin
-      rubygems_gemdeps, ENV["RUBYGEMS_GEMDEPS"] = ENV["RUBYGEMS_GEMDEPS"], nil
+      rubygems_gemdeps = ENV["RUBYGEMS_GEMDEPS"]
+      ENV["RUBYGEMS_GEMDEPS"] = nil
       if verbose
         puts("current directory: #{dir}")
         p(command)
@@ -73,7 +90,7 @@ class Gem::Ext::Builder
       build_env = { "SOURCE_DATE_EPOCH" => Gem.source_date_epoch_string }.merge(env)
       output, status = begin
                          Open3.capture2e(build_env, *command, :chdir => dir)
-                       rescue => error
+                       rescue StandardError => error
                          raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
                        end
       if verbose
@@ -173,7 +190,7 @@ EOF
       verbose { results.join("\n") }
 
       write_gem_make_out results.join "\n"
-    rescue => e
+    rescue StandardError => e
       results << e.message
       build_error(results.join("\n"), $@)
     end
@@ -189,7 +206,7 @@ EOF
     if @build_args.empty?
       say "Building native extensions. This could take a while..."
     else
-      say "Building native extensions with: '#{@build_args.join ' '}'"
+      say "Building native extensions with: '#{@build_args.join " "}'"
       say "This could take a while..."
     end
 

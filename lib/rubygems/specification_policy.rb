@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "user_interaction"
 
 class Gem::SpecificationPolicy
@@ -125,7 +127,7 @@ class Gem::SpecificationPolicy
 
     metadata.each do |key, value|
       entry = "metadata['#{key}']"
-      if !key.kind_of?(String)
+      unless key.is_a?(String)
         error "metadata keys must be a String"
       end
 
@@ -133,7 +135,7 @@ class Gem::SpecificationPolicy
         error "metadata key is too large (#{key.size} > 128)"
       end
 
-      if !value.kind_of?(String)
+      unless value.is_a?(String)
         error "#{entry} value must be a String"
       end
 
@@ -141,10 +143,9 @@ class Gem::SpecificationPolicy
         error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
-      if METADATA_LINK_KEYS.include? key
-        if value !~ VALID_URI_PATTERN
-          error "#{entry} has invalid link: #{value.inspect}"
-        end
+      next unless METADATA_LINK_KEYS.include? key
+      unless VALID_URI_PATTERN.match?(value)
+        error "#{entry} has invalid link: #{value.inspect}"
       end
     end
   end
@@ -161,7 +162,7 @@ class Gem::SpecificationPolicy
       if prev = seen[dep.type][dep.name]
         error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
-    add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
+    add_#{dep.type}_dependency \"#{dep.name}\", \"#{dep.requirement}\", \"#{prev.requirement}\"
         MESSAGE
       end
 
@@ -193,31 +194,30 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        !version.prerelease? && (op == ">" || op == ">=")
+        !version.prerelease? && [">", ">="].include?(op)
       end
 
-      if open_ended
-        op, dep_version = dep.requirement.requirements.first
+      next unless open_ended
+      op, dep_version = dep.requirement.requirements.first
 
-        segments = dep_version.segments
+      segments = dep_version.segments
 
-        base = segments.first 2
+      base = segments.first 2
 
-        recommendation = if (op == ">" || op == ">=") && segments == [0]
-          "  use a bounded requirement, such as '~> x.y'"
-        else
-          bugfix = if op == ">"
-            ", '> #{dep_version}'"
-          elsif op == ">=" && base != segments
-            ", '>= #{dep_version}'"
-          end
-
-          "  if #{dep.name} is semantically versioned, use:\n" \
-          "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+      recommendation = if [">", ">="].include?(op) && segments == [0]
+        "  use a bounded requirement, such as \"~> x.y\""
+      else
+        bugfix = if op == ">"
+          ", \"> #{dep_version}\""
+        elsif op == ">=" && base != segments
+          ", \">= #{dep_version}\""
         end
 
-        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
+        "  if #{dep.name} is semantically versioned, use:\n" \
+        "    add_#{dep.type}_dependency \"#{dep.name}\", \"~> #{base.join "."}\"#{bugfix}"
       end
+
+      warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }
@@ -253,7 +253,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       @specification.instance_variable_get("@#{attrname}").nil?
     end
     return if nil_attributes.empty?
-    error "#{nil_attributes.join ', '} must not be nil"
+    error "#{nil_attributes.join ", "} must not be nil"
   end
 
   def validate_rubygems_version
@@ -279,11 +279,11 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     if !name.is_a?(String)
       error "invalid value for attribute name: \"#{name.inspect}\" must be a string"
-    elsif name !~ /[a-zA-Z]/
+    elsif !/[a-zA-Z]/.match?(name)
       error "invalid value for attribute name: #{name.dump} must include at least one letter"
-    elsif name !~ VALID_NAME_PATTERN
+    elsif !VALID_NAME_PATTERN.match?(name)
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
-    elsif name =~ SPECIAL_CHARACTERS
+    elsif SPECIAL_CHARACTERS.match?(name)
       error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
     end
   end
@@ -337,13 +337,13 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_array_attribute(field)
     val = @specification.send(field)
     klass = case field
-    when :dependencies then
-      Gem::Dependency
-    else
-      String
+            when :dependencies then
+              Gem::Dependency
+            else
+              String
     end
 
-    unless Array === val && val.all? {|x| x.kind_of?(klass) }
+    unless Array === val && val.all? {|x| x.is_a?(klass) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -368,15 +368,14 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
-      if !Gem::Licenses.match?(license)
-        suggestions = Gem::Licenses.suggestions(license)
-        message = <<-WARNING
+      next if Gem::Licenses.match?(license)
+      suggestions = Gem::Licenses.suggestions(license)
+      message = <<-WARNING
 license value '#{license}' is invalid.  Use a license identifier from
 http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-        WARNING
-        message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(', ')}?\n" unless suggestions.nil?
-        warning(message)
-      end
+      WARNING
+      message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(", ")}?\n" unless suggestions.nil?
+      warning(message)
     end
 
     warning <<-WARNING if licenses.empty?
@@ -398,11 +397,11 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       error "#{LAZY} is not an email"
     end
 
-    if @specification.description =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.description)
       error "#{LAZY} is not a description"
     end
 
-    if @specification.summary =~ LAZY_PATTERN
+    if LAZY_PATTERN.match?(@specification.summary)
       error "#{LAZY} is not a summary"
     end
 

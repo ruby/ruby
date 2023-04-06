@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 #
 # Gem::PathSupport facilitates the GEM_HOME and GEM_PATH environment settings
@@ -52,7 +53,7 @@ class Gem::PathSupport
       gem_path = gpaths.split(Gem.path_separator)
       # Handle the path_separator being set to a regexp, which will cause
       # end_with? to error
-      if gpaths =~ /#{Gem.path_separator}\z/
+      if /#{Gem.path_separator}\z/.match?(gpaths)
         gem_path += default_path
       end
 

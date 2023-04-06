@@ -4,7 +4,8 @@ Just a list of acronyms I've run across in the Ruby source code and their meanin
 
 | Term | Definition |
 | ---  | -----------|
-| `bop` | Basic Operator. Relates to methods like `Integer` plus and minus which can be optimized as long as they haven't been redefined.
+| `BIN` | Basic Instruction Name. Used as a macro to reference the YARV instruction. Converts pop into YARVINSN_pop. |
+| `bop` | Basic Operator. Relates to methods like `Integer` plus and minus which can be optimized as long as they haven't been redefined. |
 | `cc` | Call Cache.  An inline cache structure for the call site. Stored in the `cd` |
 | `cd` | Call Data. A data structure that points at the `ci` and the `cc`.  `iseq` objects points at the `cd`, and access call information and call caches via this structure |
 | `cfp`| Control Frame Pointer. Represents a Ruby stack frame.  Calling a method pushes a new frame (cfp), returning pops a frame. Points at  the `pc`, `sp`, `ep`, and the corresponding `iseq`|

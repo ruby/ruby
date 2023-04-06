@@ -495,7 +495,7 @@ module Bundler
         uri = $2
         suffix = $3
       end
-      uri = "#{uri}/" unless uri.end_with?("/")
+      uri = URINormalizer.normalize_suffix(uri)
       require_relative "vendored_uri"
       uri = Bundler::URI(uri)
       unless uri.absolute?

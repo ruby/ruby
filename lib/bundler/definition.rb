@@ -726,6 +726,8 @@ module Bundler
           dep.source = sources.get(dep.source)
         end
 
+        next if unlocking?
+
         unless locked_dep = @locked_deps[dep.name]
           changes = true
           next
@@ -886,8 +888,9 @@ module Bundler
     end
 
     def additional_base_requirements_for_resolve(resolution_packages, last_resolve)
-      return resolution_packages unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
+      return resolution_packages unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
       converge_specs(@originally_locked_specs - last_resolve).each do |locked_spec|
+        next if locked_spec.source.is_a?(Source::Path)
         resolution_packages.base_requirements[locked_spec.name] = Gem::Requirement.new(">= #{locked_spec.version}")
       end
       resolution_packages
@@ -898,6 +901,7 @@ module Bundler
                 Bundler.local_platform == Gem::Platform::RUBY ||
                 !platforms.include?(Gem::Platform::RUBY) ||
                 (@new_platform && platforms.last == Gem::Platform::RUBY) ||
+                @dependency_changes ||
                 !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
 
       remove_platform(Gem::Platform::RUBY)

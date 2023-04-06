@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # This file contains all the various exceptions and other errors that are used
 # inside of RubyGems.
@@ -60,7 +61,7 @@ module Gem
 
     def build_message
       names = specs.map(&:full_name)
-      "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
+      "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ","}]\n"
     end
   end
 
@@ -174,6 +175,6 @@ module Gem
     ##
     # The "exception" alias allows you to call raise on a SourceFetchProblem.
 
-    alias exception error
+    alias_method :exception, :error
   end
 end

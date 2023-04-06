@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/bundler_version_finder"
 
@@ -78,7 +79,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
   end
 
   def test_deleted_directory
-    pend "Cannot perform this test on windows" if win_platform?
+    pend "Cannot perform this test on windows" if Gem.win_platform?
     pend "Cannot perform this test on Solaris" if RUBY_PLATFORM.include?("solaris")
     require "tmpdir"
 

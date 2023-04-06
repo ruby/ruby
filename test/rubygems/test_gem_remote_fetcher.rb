@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 require "webrick"
@@ -205,12 +206,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.instance_variable_set :@test_data, data
 
-    unless blow
-      def fetcher.fetch_path(arg, *rest)
-        @test_arg = arg
-        @test_data
-      end
-    else
+    if blow
       def fetcher.fetch_path(arg, *rest)
         # OMG I'm such an ass
         class << self; remove_method :fetch_path; end
@@ -220,6 +216,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         end
 
         raise Gem::RemoteFetcher::FetchError.new("haha!", "")
+      end
+    else
+      def fetcher.fetch_path(arg, *rest)
+        @test_arg = arg
+        @test_data
       end
     end
 
@@ -336,9 +337,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_download_install_dir
-    a1_data = File.open @a1_gem, "rb" do |fp|
-      fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
 
     fetcher = util_fuck_with_fetcher a1_data
 
@@ -355,13 +354,17 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert File.exist?(a1_cache_gem)
   end
 
-  unless win_platform? || Process.uid.zero? # File.chmod doesn't work
+  unless Gem.win_platform? || Process.uid.zero? # File.chmod doesn't work
     def test_download_local_read_only
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
       FileUtils.chmod 0555, @a1.cache_dir
-      FileUtils.mkdir_p File.join(Gem.user_dir, "cache") rescue nil
+      begin
+        FileUtils.mkdir_p File.join(Gem.user_dir, "cache")
+      rescue StandardError
+        nil
+      end
       FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do
@@ -535,8 +538,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -554,8 +557,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{Timeout::Error: timed out \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -573,8 +576,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -649,16 +652,17 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     def fetcher.request(uri, request_class, last_modified = nil)
       url = "http://gems.example.com/redirect"
-      unless defined? @requested
+      if defined? @requested
+        res = Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      else
         @requested = true
         res = Net::HTTPMovedPermanently.new nil, 301, nil
         res.add_field "Location", url
-        res
-      else
-        res = Net::HTTPOK.new nil, 200, nil
-        def res.body() "real_path" end
-        res
       end
+      res
     end
 
     data = fetcher.fetch_http URI.parse(url)
@@ -704,7 +708,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_http_with_additional_headers
     ENV["http_proxy"] = @proxy_uri
-    ENV["no_proxy"] = URI::parse(@server_uri).host
+    ENV["no_proxy"] = URI.parse(@server_uri).host
     fetcher = Gem::RemoteFetcher.new nil, nil, { "X-Captain" => "murphy" }
     @fetcher = fetcher
     assert_equal "murphy", fetcher.fetch_path(@server_uri)
@@ -719,7 +723,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def fetcher.request(uri, request_class, last_modified = nil)
       $fetched_uri = uri
       res = Net::HTTPOK.new nil, 200, nil
-      def res.body() "success" end
+      def res.body
+        "success"
+      end
       res
     end
 
@@ -748,7 +754,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "my-bucket" => { :id => "testuser", :secret => "testpass" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b"
     end
   ensure
@@ -760,7 +766,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "my-bucket" => { :id => "testuser", :secret => "testpass", :region => "us-west-2" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9", nil, "us-west-2"
     end
   ensure
@@ -772,7 +778,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "my-bucket" => { :id => "testuser", :secret => "testpass", :security_token => "testtoken" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c", "testtoken"
     end
   ensure
@@ -787,7 +793,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "my-bucket" => { :provider => "env" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b"
     end
   ensure
@@ -803,7 +809,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "my-bucket" => { :provider => "env", :region => "us-west-2" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9", nil, "us-west-2"
     end
   ensure
@@ -819,7 +825,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       "my-bucket" => { :provider => "env" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c", "testtoken"
     end
   ensure
@@ -829,7 +835,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_url_creds
     url = "s3://testuser:testpass@my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b"
     end
   end
@@ -840,7 +846,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b", nil, "us-east-1",
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
     end
@@ -854,7 +860,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9", nil, "us-west-2",
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
     end
@@ -868,7 +874,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
-    Time.stub :now, Time.at(1561353581) do
+    Time.stub :now, Time.at(1_561_353_581) do
       assert_fetch_s3 url, "935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c", "testtoken", "us-east-1",
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass", "Token": "testtoken"}'
     end
@@ -924,7 +930,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_observe_no_proxy_env_single_host
     use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
-      ENV["no_proxy"] = URI::parse(@server_uri).host
+      ENV["no_proxy"] = URI.parse(@server_uri).host
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
@@ -934,7 +940,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_observe_no_proxy_env_list
     use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
-      ENV["no_proxy"] = "fakeurl.com, #{URI::parse(@server_uri).host}"
+      ENV["no_proxy"] = "fakeurl.com, #{URI.parse(@server_uri).host}"
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
@@ -971,31 +977,33 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_client_cert_auth_connection
-    ssl_server = start_ssl_server({
-      :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT })
+    ssl_server = start_ssl_server(
+      { :SSLVerifyClient => OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+    )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     temp_client_cert = File.join(__dir__, "client.pem")
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" +
-      ":ssl_client_cert: #{temp_client_cert}\n") do |fetcher|
+      ":ssl_client_cert: #{temp_client_cert}\n"
+    ) do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
     end
   end
 
   def test_do_not_allow_invalid_client_cert_auth_connection
-    ssl_server = start_ssl_server({
-      :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT })
+    ssl_server = start_ssl_server(
+      { :SSLVerifyClient => OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+    )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     temp_client_cert = File.join(__dir__, "invalid_client.pem")
 
     with_configured_fetcher(
       ":ssl_ca_cert: #{temp_ca_cert}\n" +
-      ":ssl_client_cert: #{temp_client_cert}\n") do |fetcher|
+      ":ssl_client_cert: #{temp_client_cert}\n"
+    ) do |fetcher|
       assert_raise Gem::RemoteFetcher::FetchError do
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
       end
@@ -1080,7 +1088,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   class NilLog < WEBrick::Log
-    def log(level, data) #Do nothing
+    def log(level, data) # Do nothing
     end
   end
 
@@ -1142,7 +1150,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       :SSLVerifyClient => nil,
       :SSLCertName => nil,
     }.merge(config))
-    server.mount_proc("/yaml") do |req, res|
+    server.mount_proc("/yaml") do |_req, res|
       res.body = "--- true\n"
     end
     server.mount_proc("/insecure_redirect") do |req, res|
@@ -1150,14 +1158,12 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
     server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
     t = Thread.new do
-      begin
-        server.start
-      rescue Exception => ex
-        puts "ERROR during server thread: #{ex.message}"
-        raise
-      ensure
-        server.shutdown
-      end
+      server.start
+    rescue StandardError => ex
+      puts "ERROR during server thread: #{ex.message}"
+      raise
+    ensure
+      server.shutdown
     end
     while server.status != :Running
       sleep 0.1
@@ -1179,7 +1185,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       :Logger => null_logger,
       :AccessLog => null_logger
     )
-    s.mount_proc("/kill") {|req, res| s.shutdown }
+    s.mount_proc("/kill") {|_req, _res| s.shutdown }
     s.mount_proc("/yaml") do |req, res|
       if req["X-Captain"]
         res.body = req["X-Captain"]
@@ -1193,7 +1199,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         res["Content-Type"] = "text/html"
       end
     end
-    s.mount_proc("/yaml.Z") do |req, res|
+    s.mount_proc("/yaml.Z") do |_req, res|
       if @enable_zip
         res.body = Zlib::Deflate.deflate(data)
         res["Content-Type"] = "text/plain"
@@ -1204,13 +1210,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       end
     end
     th = Thread.new do
-      begin
-        s.start
-      rescue Exception => ex
-        abort "ERROR during server thread: #{ex.message}"
-      ensure
-        s.shutdown
-      end
+      s.start
+    rescue StandardError => ex
+      abort "ERROR during server thread: #{ex.message}"
+    ensure
+      s.shutdown
     end
     th[:server] = s
     th

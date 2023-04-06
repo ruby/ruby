@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "tempfile"
 require "rubygems"
 require "rubygems/remote_fetcher"
@@ -39,7 +40,7 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path && "file" == path.scheme
+    return Gem.read_binary path.path if URI === path && path.scheme == "file"
 
     if URI === path && "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
@@ -54,7 +55,7 @@ class Gem::FakeFetcher
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
-    if @data[path].kind_of?(Array)
+    if @data[path].is_a?(Array)
       @data[path].shift
     else
       @data[path]
@@ -64,7 +65,7 @@ class Gem::FakeFetcher
   def create_response(uri)
     data = find_data(uri)
     response = data.respond_to?(:call) ? data.call : data
-    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.kind_of?(Net::HTTPResponse)
+    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.is_a?(Net::HTTPResponse)
 
     response
   end
@@ -119,7 +120,7 @@ class Gem::FakeFetcher
     path = path.to_s
     @paths << path
 
-    raise ArgumentError, "need full URI" unless path =~ %r{^http://}
+    raise ArgumentError, "need full URI" unless %r{^http://}.match?(path)
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -140,7 +141,7 @@ class Gem::FakeFetcher
 
     path = File.join path, name
 
-    if source_uri =~ /^http/
+    if /^http/.match?(source_uri)
       File.open(path, "wb") do |f|
         f.write fetch_path(File.join(source_uri, "gems", name))
       end
@@ -167,7 +168,7 @@ end
 #
 # Example:
 #
-#   HTTPResponseFactory.create(
+#   Gem::HTTPResponseFactory.create(
 #     body: "",
 #     code: 301,
 #     msg: "Moved Permanently",
@@ -175,7 +176,7 @@ end
 #   )
 #
 
-class HTTPResponseFactory
+class Gem::HTTPResponseFactory
   def self.create(body:, code:, msg:, headers: {})
     response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
     response.instance_variable_set(:@body, body)
@@ -329,7 +330,8 @@ class Gem::TestCase::SpecFetcherSetup
     Gem::Specification.reset
 
     begin
-      gem_repo, @test.gem_repo = @test.gem_repo, @repository
+      gem_repo = @test.gem_repo
+      @test.gem_repo = @repository
       @test.uri = URI @repository
 
       @test.util_setup_spec_fetcher(*@downloaded)
@@ -372,7 +374,7 @@ end
 #
 # This class was added to flush out problems in Rubinius' IO implementation.
 
-class TempIO < Tempfile
+class Gem::TempIO < Tempfile
   ##
   # Creates a new TempIO that will be initialized to contain +string+.
 
@@ -390,4 +392,9 @@ class TempIO < Tempfile
     flush
     Gem.read_binary path
   end
+end
+
+class Gem::TestCase
+  TempIO = Gem::TempIO
+  HTTPResponseFactory = Gem::HTTPResponseFactory
 end

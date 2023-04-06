@@ -2019,6 +2019,7 @@ AC_CHECK_FUNCS(execv)
 AC_CHECK_FUNCS(execve)
 AC_CHECK_FUNCS(explicit_memset)
 AC_CHECK_FUNCS(fcopyfile)
+AC_CHECK_FUNCS(fchdir)
 AC_CHECK_FUNCS(fchmod)
 AC_CHECK_FUNCS(fchown)
 AC_CHECK_FUNCS(fcntl)
@@ -3401,6 +3402,9 @@ AS_CASE(["$target_os"],
 AC_ARG_ENABLE(multiarch,
 	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
 	      [multiarch=], [unset multiarch])
+AS_IF([test ${multiarch+set}], [
+   AC_DEFINE(ENABLE_MULTIARCH)
+])
 
 archlibdir='${libdir}/${arch}'
 sitearchlibdir='${libdir}/${sitearch}'
@@ -3803,6 +3807,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
     [dev_nodebug], [
 	rb_rust_target_subdir=dev_nodebug
 	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm'
+	AC_DEFINE(YJIT_STATS, 1)
     ],
     [stats], [
 	rb_rust_target_subdir=stats
@@ -3875,8 +3880,8 @@ AS_CASE(["$RJIT_SUPPORT"],
 
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
-        # Enable RJIT_STATS (vm_insns_count of --rjit-stats)
-        AC_DEFINE(RUBY_DEBUG, 1)
+        # Enable extra stats (vm_insns_count, ratio_in_rjit)
+        AC_DEFINE(RJIT_STATS, 1)
     ])
 
     AC_DEFINE(USE_RJIT, 1)

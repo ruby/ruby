@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 #
 # Represents a gem of name +name+ at +version+ of +platform+. These
@@ -9,7 +10,7 @@ class Gem::NameTuple
     @name = name
     @version = version
 
-    unless platform.kind_of? Gem::Platform
+    unless platform.is_a? Gem::Platform
       platform = "ruby" if !platform || platform.empty?
     end
 
@@ -31,7 +32,7 @@ class Gem::NameTuple
   # [name, version, platform] tuples.
 
   def self.to_basic(list)
-    list.map {|t| t.to_a }
+    list.map(&:to_a)
   end
 
   ##
@@ -86,7 +87,7 @@ class Gem::NameTuple
     "#<Gem::NameTuple #{@name}, #{@version}, #{@platform}>"
   end
 
-  alias to_s inspect # :nodoc:
+  alias_method :to_s, :inspect # :nodoc:
 
   def <=>(other)
     [@name, @version, Gem::Platform.sort_priority(@platform)] <=>

@@ -274,11 +274,12 @@ add them to `yjit/cruby.rs` instead.
 
 ### Coding & Debugging Protips
 
-There are 3 test suites:
+There are multiple test suites:
 - `make btest` (see `/bootstraptest`)
 - `make test-all`
 - `make test-spec`
 - `make check` runs all of the above
+- `make yjit-smoke-test` runs quick checks to see that YJIT is working correctly
 
 The tests can be run in parallel like this:
 

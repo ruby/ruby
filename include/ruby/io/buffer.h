@@ -75,7 +75,9 @@ VALUE rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer
 VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
 int rb_io_buffer_try_unlock(VALUE self);
+
 VALUE rb_io_buffer_free(VALUE self);
+VALUE rb_io_buffer_free_locked(VALUE self);
 
 int rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size);

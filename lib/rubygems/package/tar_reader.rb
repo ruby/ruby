@@ -1,8 +1,11 @@
 # frozen_string_literal: true
-#--
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#++
+
+# rubocop:enable Style/AsciiComments
 
 ##
 # TarReader reads tar files and allows iteration over their items
@@ -62,7 +65,7 @@ class Gem::Package::TarReader
     end
   end
 
-  alias each_entry each
+  alias_method :each_entry, :each
 
   ##
   # NOTE: Do not call #rewind during #each
@@ -87,7 +90,7 @@ class Gem::Package::TarReader
 
     return unless found
 
-    return yield found
+    yield found
   ensure
     rewind
   end

@@ -141,7 +141,7 @@ RSpec.describe "install in deployment or frozen mode" do
             rack (1.0.0)
 
         PLATFORMS
-          #{local}
+          #{generic_local_platform}
 
         DEPENDENCIES
           rack

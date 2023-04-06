@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The TrustDir manages the trusted certificates for gem signature
 # verification.
@@ -44,13 +45,11 @@ class Gem::Security::TrustDir
     glob = File.join @dir, "*.pem"
 
     Dir[glob].each do |certificate_file|
-      begin
-        certificate = load_certificate certificate_file
+      certificate = load_certificate certificate_file
 
-        yield certificate, certificate_file
-      rescue OpenSSL::X509::CertificateError
-        next # HACK warn
-      end
+      yield certificate, certificate_file
+    rescue OpenSSL::X509::CertificateError
+      next # HACK: warn
     end
   end
 

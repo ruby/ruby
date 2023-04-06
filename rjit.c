@@ -63,7 +63,7 @@
 // A copy of RJIT portion of MRI options since RJIT initialization.  We
 // need them as RJIT threads still can work when the most MRI data were
 // freed.
-struct rjit_options rb_rjit_opts;
+struct rb_rjit_options rb_rjit_opts;
 
 // true if RJIT is enabled.
 bool rb_rjit_enabled = false;
@@ -112,17 +112,11 @@ VALUE rb_rjit_line_samples = 0;
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--rjit-" name " needs an argument"), 0))
 
 void
-rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
+rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
 {
     const size_t l = strlen(s);
     if (l == 0) {
         return;
-    }
-    else if (opt_match_noarg(s, l, "stats")) {
-        rjit_opt->stats = true;
-    }
-    else if (opt_match_noarg(s, l, "trace-exits")) {
-        rjit_opt->trace_exits = true;
     }
     else if (opt_match_arg(s, l, "call-threshold")) {
         rjit_opt->call_threshold = atoi(s + 1);
@@ -130,12 +124,21 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
     else if (opt_match_arg(s, l, "exec-mem-size")) {
         rjit_opt->exec_mem_size = atoi(s + 1);
     }
-    // --rjit=pause is an undocumented feature for experiments
-    else if (opt_match_noarg(s, l, "pause")) {
-        rjit_opt->pause = true;
+    else if (opt_match_noarg(s, l, "stats")) {
+        rjit_opt->stats = true;
+    }
+    else if (opt_match_noarg(s, l, "trace-exits")) {
+        rjit_opt->trace_exits = true;
     }
     else if (opt_match_noarg(s, l, "dump-disasm")) {
         rjit_opt->dump_disasm = true;
+    }
+    else if (opt_match_noarg(s, l, "verify-ctx")) {
+        rjit_opt->verify_ctx = true;
+    }
+    // --rjit=pause is an undocumented feature for experiments
+    else if (opt_match_noarg(s, l, "pause")) {
+        rjit_opt->pause = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -145,8 +148,8 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
-#if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+#if RJIT_STATS
     M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #endif
     M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
@@ -158,9 +161,9 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
 };
 #undef M
 
-#if RJIT_STATS
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
+#if RJIT_STATS
 void
 rb_rjit_collect_vm_usage_insn(int insn)
 {
@@ -361,6 +364,26 @@ rb_rjit_compile(const rb_iseq_t *iseq)
 }
 
 void *
+rb_rjit_entry_stub_hit(VALUE branch_stub)
+{
+    VALUE result;
+
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+
+    WITH_RJIT_ISOLATED({
+        VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
+        result = rb_funcall(rb_RJITCompiler, rb_intern("entry_stub_hit"), 2, branch_stub, cfp_ptr);
+    });
+
+    RB_VM_LOCK_LEAVE();
+
+    return (void *)NUM2SIZET(result);
+}
+
+void *
 rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 {
     VALUE result;
@@ -384,7 +407,7 @@ rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 }
 
 void
-rb_rjit_init(const struct rjit_options *opts)
+rb_rjit_init(const struct rb_rjit_options *opts)
 {
     VM_ASSERT(rb_rjit_enabled);
 

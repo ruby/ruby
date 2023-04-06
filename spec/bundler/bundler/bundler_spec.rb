@@ -71,7 +71,7 @@ RSpec.describe Bundler do
         $VERBOSE = verbose
 
         File.open(app_gemspec_path, "wb") do |file|
-          file.puts <<-GEMSPEC.gsub(/^\s+/, "")
+          file.puts <<~GEMSPEC
             # -*- encoding: utf-8 -*-
             Gem::Specification.new do |gem|
               gem.author = "André the Giant"

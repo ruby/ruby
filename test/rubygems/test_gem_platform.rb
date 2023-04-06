@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/platform"
 require "rbconfig"
@@ -27,7 +28,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match_spec?
-    make_spec = -> platform do
+    make_spec = ->(platform) do
       util_spec "mygem-for-platform-match_spec", "1" do |s|
         s.platform = platform
       end
@@ -40,7 +41,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match_spec_with_match_gem_override
-    make_spec = -> name, platform do
+    make_spec = ->(name, platform) do
       util_spec name, "1" do |s|
         s.platform = platform
       end
@@ -211,7 +212,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_to_s
-    if win_platform?
+    if Gem.win_platform?
       assert_equal "x86-mswin32-60", Gem::Platform.local.to_s
     else
       assert_equal "x86-darwin-8", Gem::Platform.local.to_s
@@ -231,7 +232,7 @@ class TestGemPlatform < Gem::TestCase
     my = Gem::Platform.new %w[cpu my_platform 1]
     other = Gem::Platform.new %w[cpu other_platform 1]
 
-    assert(my === my)
+    assert(my === my) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     refute(other === my)
     refute(my === other)
   end

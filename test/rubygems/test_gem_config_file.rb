@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/config_file"
 
@@ -195,7 +196,7 @@ class TestGemConfigFile < Gem::TestCase
   end
 
   def test_check_credentials_permissions
-    pend "chmod not supported" if win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     @cfg.rubygems_api_key = "x"
 
@@ -334,7 +335,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_load_api_keys_bad_permission
-    pend "chmod not supported" if win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     @cfg.rubygems_api_key = "x"
 
@@ -368,7 +369,7 @@ if you believe they were disclosed to a third party.
 
     assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
-    unless win_platform?
+    unless Gem.win_platform?
       stat = File.stat @cfg.credentials_path
 
       assert_equal 0600, stat.mode & 0600
@@ -376,7 +377,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_rubygems_api_key_equals_bad_permission
-    pend "chmod not supported" if win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     @cfg.rubygems_api_key = "x"
 
@@ -470,7 +471,8 @@ if you believe they were disclosed to a third party.
     end
 
     begin
-      verbose, $VERBOSE = $VERBOSE, nil
+      verbose = $VERBOSE
+      $VERBOSE = nil
 
       util_config_file
     ensure

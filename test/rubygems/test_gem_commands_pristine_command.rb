@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/pristine_command"
 
@@ -159,9 +160,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     ruby_exec = sprintf Gem.default_exec_format, "ruby"
 
-    bin_env = win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
+    bin_env = Gem.win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
 
-    assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(gem_exec)
+    assert_match(/\A#!\s*#{bin_env}#{ruby_exec}/, File.read(gem_exec))
   end
 
   def test_execute_extensions_explicit
@@ -503,7 +504,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{at least one gem name}, e.message
+    assert_match(/at least one gem name/, e.message)
   end
 
   def test_execute_only_executables
@@ -595,7 +596,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     FileUtils.rm gem_exec
     FileUtils.rm gem_bindir
 
-    @cmd.handle_options ["--all", "--only-executables", "--bindir", "#{gem_bindir}"]
+    @cmd.handle_options ["--all", "--only-executables", "--bindir", gem_bindir.to_s]
 
     use_ui @ui do
       @cmd.execute

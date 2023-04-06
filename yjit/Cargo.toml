@@ -30,10 +30,11 @@ debug = true
 debug-assertions = true
 overflow-checks = true
 
-[profile.stats]
-inherits = "release"
-
 [profile.dev_nodebug]
+inherits = "dev"
+debug = false
+
+[profile.stats]
 inherits = "release"
 
 [profile.release]

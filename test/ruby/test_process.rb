@@ -1543,6 +1543,7 @@ class TestProcess < Test::Unit::TestCase
       end
       t1 = Time.now
       diff = t1 - t0
+      sec = RUBY_PLATFORM =~ /freebsd/ ? sec * 2 : sec
       assert_operator(diff, :<, sec,
                   ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
@@ -2574,6 +2575,26 @@ EOS
       begin
         r.close
         w << "ok: #$$"
+        w.close
+      ensure
+        exit!
+      end
+    else
+      w.close
+      assert_equal("ok: #{pid}", r.read)
+      r.close
+      Process.waitpid(pid)
+    end
+  end if Process.respond_to?(:_fork)
+
+  def test__fork_pid_cache
+    parent_pid = Process.pid
+    r, w = IO.pipe
+    pid = Process._fork
+    if pid == 0
+      begin
+        r.close
+        w << "ok: #{Process.pid}"
         w.close
       ensure
         exit!

@@ -38,9 +38,6 @@ module TestIRB
     IRBTestColorPrinter = Struct.new(:a)
 
     def test_color_printer
-      unless ripper_lexer_scan_supported?
-        pend 'Ripper::Lexer#scan is supported in Ruby 2.7+'
-      end
       {
         1 => "#{BLUE}#{BOLD}1#{CLEAR}\n",
         "a\nb" => %[#{RED}#{BOLD}"#{CLEAR}#{RED}a\\nb#{CLEAR}#{RED}#{BOLD}"#{CLEAR}\n],
@@ -54,10 +51,6 @@ module TestIRB
     end
 
     private
-
-    def ripper_lexer_scan_supported?
-      Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
-    end
 
     def with_term
       stdout = $stdout

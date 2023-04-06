@@ -170,6 +170,34 @@ rjit_str_neq_internal(VALUE str1, VALUE str2)
     return rb_str_eql_internal(str1, str2) == Qtrue ? Qfalse : Qtrue;
 }
 
+static VALUE
+rjit_str_simple_append(VALUE str1, VALUE str2)
+{
+    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
+}
+
+static VALUE
+rjit_rb_ary_subseq_length(VALUE ary, long beg)
+{
+    long len = RARRAY_LEN(ary);
+    return rb_ary_subseq(ary, beg, len);
+}
+
+static VALUE
+rjit_build_kwhash(const struct rb_callinfo *ci, VALUE *sp)
+{
+    const struct rb_callinfo_kwarg *kw_arg = vm_ci_kwarg(ci);
+    int kw_len = kw_arg->keyword_len;
+    VALUE hash = rb_hash_new_with_size(kw_len);
+
+    for (int i = 0; i < kw_len; i++) {
+        VALUE key = kw_arg->keywords[i];
+        VALUE val = *(sp - kw_len + i);
+        rb_hash_aset(hash, key, val);
+    }
+    return hash;
+}
+
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
 // like the interpreter. When tracing for c_return is enabled, we patch the code after
 // the C method return to call into this to fire the event.
@@ -406,10 +434,8 @@ rjit_exit_traces(void)
 #define SIZEOF(type) RB_SIZE2NUM(sizeof(type))
 #define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(1))
 
-#if RJIT_STATS
 // Insn side exit counters
 static size_t rjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
-#endif // YJIT_STATS
 
 // macOS: brew install capstone
 // Ubuntu/Debian: apt-get install libcapstone-dev
@@ -420,7 +446,7 @@ static size_t rjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
 
 // Return an array of [address, mnemonic, op_str]
 static VALUE
-dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
+dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to, VALUE test)
 {
     VALUE result = rb_ary_new();
 #ifdef HAVE_LIBCAPSTONE
@@ -434,7 +460,8 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
 
     // Call cs_disasm and convert results to a Ruby array
     cs_insn *insns;
-    size_t count = cs_disasm(handle, (const uint8_t *)from_addr, to_addr - from_addr, from_addr, 0, &insns);
+    size_t base_addr = RTEST(test) ? 0 : from_addr; // On tests, start from 0 for output stability.
+    size_t count = cs_disasm(handle, (const uint8_t *)from_addr, to_addr - from_addr, base_addr, 0, &insns);
     for (size_t i = 0; i < count; i++) {
         VALUE vals = rb_ary_new_from_args(3, LONG2NUM(insns[i].address), rb_str_new2(insns[i].mnemonic), rb_str_new2(insns[i].op_str));
         rb_ary_push(result, vals);
@@ -495,6 +522,16 @@ extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
 extern bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
 extern rb_event_flag_t rb_rjit_global_events;
 extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
+extern VALUE rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj);
+extern VALUE rb_reg_new_ary(VALUE ary, int opt);
+extern void rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic);
+extern VALUE rb_str_bytesize(VALUE str);
+extern const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID mid);
+extern VALUE rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv);
+extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
+extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
+extern void* rb_rjit_entry_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
+extern void* rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
 
 #include "rjit_c.rbinc"
 

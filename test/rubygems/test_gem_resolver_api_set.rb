@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemResolverAPISet < Gem::TestCase
@@ -29,7 +30,7 @@ class TestGemResolverAPISet < Gem::TestCase
     set = @DR::APISet.new @dep_uri
 
     assert_equal URI("#{@gem_repo}info/"), set.dep_uri
-    assert_equal URI("#{@gem_repo}"), set.uri
+    assert_equal URI(@gem_repo.to_s), set.uri
   end
 
   def test_find_all
@@ -149,7 +150,7 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set.prefetch [a_dep, b_dep]
 
-    assert_equal %w[a-1], set.find_all(a_dep).map {|s| s.full_name }
+    assert_equal %w[a-1], set.find_all(a_dep).map(&:full_name)
     assert_empty          set.find_all(b_dep)
   end
 

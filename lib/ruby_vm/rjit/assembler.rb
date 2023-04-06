@@ -243,6 +243,20 @@ module RubyVM::RJIT
       end
     end
 
+    def cmovne(dst, src)
+      case [dst, src]
+      # CMOVNE r64, r/m64 (Mod 11: reg)
+      in [R64 => dst_reg, R64 => src_reg]
+        # REX.W + 0F 45 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x45],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      end
+    end
+
     def cmovnz(dst, src)
       case [dst, src]
       # CMOVNZ r64, r/m64 (Mod 11: reg)
@@ -435,6 +449,10 @@ module RubyVM::RJIT
 
     def jne(dst)
       case dst
+      # JNE rel8
+      in Label => dst_label
+        # 75 cb
+        insn(opcode: 0x75, imm: dst_label)
       # JNE rel32
       in Integer => dst_addr
         # 0F 85 cd
@@ -834,6 +852,20 @@ module RubyVM::RJIT
           prefix: REX_W,
           opcode: 0x85,
           mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
+        )
+      end
+    end
+
+    def xor(dst, src)
+      case [dst, src]
+      # XOR r/m64, r64 (Mod 11: reg)
+      in [R64 => dst_reg, R64 => src_reg]
+        # REX.W + 31 /r
+        # MR: Operand 1: ModRM:r/m (r, w), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x31,
+          mod_rm: ModRM[mod: Mod11, reg: src_reg, rm: dst_reg],
         )
       end
     end

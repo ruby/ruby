@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The global rubygems pool, available via the rubygems.org API.
 # Returns instances of APISpecification.
@@ -75,7 +76,8 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   end
 
   def prefetch_now # :nodoc:
-    needed, @to_fetch = @to_fetch, []
+    needed = @to_fetch
+    @to_fetch = []
 
     needed.sort.each do |name|
       versions(name)

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class Gem::AvailableSet
   include Enumerable
 
@@ -26,7 +27,7 @@ class Gem::AvailableSet
       s = o.set
     when Array
       s = o.map do |sp,so|
-        if !sp.kind_of?(Gem::Specification) || !so.kind_of?(Gem::Source)
+        if !sp.is_a?(Gem::Specification) || !so.is_a?(Gem::Source)
           raise TypeError, "Array must be in [[spec, source], ...] form"
         end
 
@@ -69,7 +70,7 @@ class Gem::AvailableSet
   end
 
   def all_specs
-    @set.map {|t| t.spec }
+    @set.map(&:spec)
   end
 
   def match_platform!
@@ -104,14 +105,14 @@ class Gem::AvailableSet
 
   def to_request_set(development = :none)
     request_set = Gem::RequestSet.new
-    request_set.development = :all == development
+    request_set.development = development == :all
 
     each_spec do |spec|
       request_set.always_install << spec
 
       request_set.gem spec.name, spec.version
       request_set.import spec.development_dependencies if
-        :shallow == development
+        development == :shallow
     end
 
     request_set
@@ -146,7 +147,7 @@ class Gem::AvailableSet
   end
 
   def remove_installed!(dep)
-    @set.reject! do |t|
+    @set.reject! do |_t|
       # already locally installed
       Gem::Specification.any? do |installed_spec|
         dep.name == installed_spec.name &&

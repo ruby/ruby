@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../install_update_options"
 require_relative "../dependency_installer"
@@ -262,7 +263,7 @@ You can use `i` command instead of `install`.
     return unless errors
 
     errors.each do |x|
-      return unless Gem::SourceFetchProblem === x
+      next unless Gem::SourceFetchProblem === x
 
       require_relative "../uri"
       msg = "Unable to pull data from '#{Gem::Uri.redact(x.source.uri)}': #{x.error.message}"

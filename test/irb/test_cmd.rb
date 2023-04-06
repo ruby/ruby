@@ -733,7 +733,6 @@ module TestIRB
     end
 
     def test_ls_grep
-      pend if RUBY_ENGINE == 'truffleruby'
       out, err = execute_lines("ls 42\n")
       assert_empty err
       assert_match(/times/, out)
@@ -752,7 +751,6 @@ module TestIRB
     end
 
     def test_ls_grep_empty
-      pend if RUBY_ENGINE == 'truffleruby'
       out, err = execute_lines("ls\n")
       assert_empty err
       assert_match(/whereami/, out)
@@ -857,9 +855,6 @@ module TestIRB
     end
 
     def test_edit_with_constant
-      # const_source_location is supported after Ruby 2.7
-      omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0') || RUBY_ENGINE == 'truffleruby'
-
       out, err = execute_lines(
         "edit IRB::Irb"
       )

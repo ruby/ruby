@@ -62,6 +62,9 @@ pub struct CodeBlock {
     // Current writing position
     write_pos: usize,
 
+    // Total number of bytes written to past pages
+    past_page_bytes: usize,
+
     // Size reserved for writing a jump to the next page
     page_end_reserve: usize,
 
@@ -119,6 +122,7 @@ impl CodeBlock {
             mem_size,
             page_size,
             write_pos: 0,
+            past_page_bytes: 0,
             page_end_reserve: JMP_PTR_BYTES,
             label_addrs: Vec::new(),
             label_names: Vec::new(),
@@ -154,8 +158,9 @@ impl CodeBlock {
         }
 
         // Move the other CodeBlock to the same page if it's on the furthest page
-        #[cfg(not(test))]
-        self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &jmp_ptr);
+        if cfg!(not(test)) {
+            self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &jmp_ptr);
+        }
 
         return !self.dropped_bytes;
     }
@@ -199,6 +204,9 @@ impl CodeBlock {
                 jmp_ptr(cb, dst_ptr);
                 assert!(!cb.has_dropped_bytes());
             });
+
+            // Update past_page_bytes for code_size()
+            self.past_page_bytes += self.current_page_bytes();
 
             // Start the next code from dst_pos
             self.write_pos = dst_pos;
@@ -326,20 +334,14 @@ impl CodeBlock {
         addrs
     }
 
-    /// Return the code size that has been used by this CodeBlock.
+    /// Return the number of bytes written by this CodeBlock.
     pub fn code_size(&self) -> usize {
-        let mut size = 0;
-        let current_page_idx = self.write_pos / self.page_size;
-        for page_idx in 0..self.num_mapped_pages() {
-            if page_idx == current_page_idx {
-                // Count only actually used bytes for the current page.
-                size += (self.write_pos % self.page_size).saturating_sub(self.page_start());
-            } else if !self.has_freed_page(page_idx) {
-                // Count an entire range for any non-freed pages that have been used.
-                size += self.page_end() - self.page_start() + self.page_end_reserve;
-            }
-        }
-        size
+        self.current_page_bytes() + self.past_page_bytes
+    }
+
+    /// Return the number of bytes written to the current page.
+    fn current_page_bytes(&self) -> usize {
+        (self.write_pos % self.page_size).saturating_sub(self.page_start())
     }
 
     /// Check if this code block has sufficient remaining capacity
@@ -583,7 +585,9 @@ impl CodeBlock {
     }
 
     /// Code GC. Free code pages that are not on stack and reuse them.
-    pub fn code_gc(&mut self) {
+    pub fn code_gc(&mut self, ocb: &mut OutlinedCb) {
+        assert!(self.inline(), "must use on inline code block");
+
         // The previous code GC failed to free any pages. Give up.
         if self.freed_pages.as_ref() == &Some(vec![]) {
             return;
@@ -631,21 +635,18 @@ impl CodeBlock {
         freed_pages.append(&mut virtual_pages);
 
         if let Some(&first_page) = freed_pages.first() {
-            let mut cb = CodegenGlobals::get_inline_cb();
-            cb.write_pos = cb.get_page_pos(first_page);
-            cb.dropped_bytes = false;
-            cb.clear_comments();
-
-            let mut ocb = CodegenGlobals::get_outlined_cb().unwrap();
-            ocb.write_pos = ocb.get_page_pos(first_page);
-            ocb.dropped_bytes = false;
-            ocb.clear_comments();
+            for cb in [&mut *self, ocb.unwrap()] {
+                cb.write_pos = cb.get_page_pos(first_page);
+                cb.past_page_bytes = 0;
+                cb.dropped_bytes = false;
+                cb.clear_comments();
+            }
         }
 
         // Track which pages are free.
         let new_freed_pages = Rc::new(Some(freed_pages));
         let old_freed_pages = mem::replace(&mut self.freed_pages, Rc::clone(&new_freed_pages));
-        self.other_cb().unwrap().freed_pages = new_freed_pages;
+        ocb.unwrap().freed_pages = new_freed_pages;
         assert_eq!(1, Rc::strong_count(&old_freed_pages)); // will deallocate
 
         CodegenGlobals::incr_code_gc_count();
@@ -796,5 +797,19 @@ mod tests
 
         assert_eq!(uimm_num_bits((u32::MAX as u64) + 1), 64);
         assert_eq!(uimm_num_bits(u64::MAX), 64);
+    }
+
+    #[test]
+    fn test_code_size() {
+        let mut cb = CodeBlock::new_dummy(CodeBlock::PREFERRED_CODE_PAGE_SIZE * 2);
+        cb.write_bytes(&[0, 0, 0, 0]);
+        assert_eq!(cb.code_size(), 4);
+
+        // Moving to the next page should not increase code_size
+        cb.next_page(cb.get_write_ptr(), |_, _| {});
+        assert_eq!(cb.code_size(), 4);
+
+        cb.write_bytes(&[0, 0, 0, 0]);
+        assert_eq!(cb.code_size(), 8);
     }
 }

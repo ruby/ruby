@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "installer_test_case"
 require "rubygems/install_update_options"
 require "rubygems/command"
@@ -136,7 +137,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     util_build_gem @spec
     @gem = @spec.cache_file
 
-    if win_platform?
+    if Gem.win_platform?
       pend("test_user_install_disabled_read_only test skipped on MS Windows")
     elsif Process.uid.zero?
       pend("test_user_install_disabled_read_only test skipped in root privilege")

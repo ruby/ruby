@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -325,7 +326,6 @@ require_relative "openssl"
 # http://pablotron.org/
 
 module Gem::Security
-
   ##
   # Gem::Security default exception type
 
@@ -360,7 +360,7 @@ module Gem::Security
   ##
   # One day in seconds
 
-  ONE_DAY = 86400
+  ONE_DAY = 86_400
 
   ##
   # One year in seconds
@@ -398,8 +398,7 @@ module Gem::Security
   #
   # The +extensions+ restrict the key to the indicated uses.
 
-  def self.create_cert(subject, key, age = ONE_YEAR, extensions = EXTENSIONS,
-                       serial = 1)
+  def self.create_cert(subject, key, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     cert = OpenSSL::X509::Certificate.new
 
     cert.public_key = get_public_key(key)
@@ -450,8 +449,7 @@ module Gem::Security
   # Creates a self-signed certificate with an issuer and subject of +subject+
   # and the given +extensions+ for the +key+.
 
-  def self.create_cert_self_signed(subject, key, age = ONE_YEAR,
-                                   extensions = EXTENSIONS, serial = 1)
+  def self.create_cert_self_signed(subject, key, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     certificate = create_cert subject, key, age, extensions
 
     sign certificate, key, certificate, age, extensions, serial
@@ -461,16 +459,8 @@ module Gem::Security
   # Creates a new digest instance using the specified +algorithm+. The default
   # is SHA256.
 
-  if defined?(OpenSSL::Digest)
-    def self.create_digest(algorithm = DIGEST_NAME)
-      OpenSSL::Digest.new(algorithm)
-    end
-  else
-    require "digest"
-
-    def self.create_digest(algorithm = DIGEST_NAME)
-      Digest.const_get(algorithm).new
-    end
+  def self.create_digest(algorithm = DIGEST_NAME)
+    OpenSSL::Digest.new(algorithm)
   end
 
   ##
@@ -515,11 +505,10 @@ module Gem::Security
   #--
   # TODO increment serial
 
-  def self.re_sign(expired_certificate, private_key, age = ONE_YEAR,
-                   extensions = EXTENSIONS)
+  def self.re_sign(expired_certificate, private_key, age = ONE_YEAR, extensions = EXTENSIONS)
     raise Gem::Security::Exception,
           "incorrect signing key for re-signing " +
-          "#{expired_certificate.subject}" unless
+          expired_certificate.subject.to_s unless
       expired_certificate.check_private_key(private_key)
 
     unless expired_certificate.subject.to_s ==
@@ -552,8 +541,7 @@ module Gem::Security
   #
   # Returns the newly signed certificate.
 
-  def self.sign(certificate, signing_key, signing_cert,
-                age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
+  def self.sign(certificate, signing_key, signing_cert, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     signee_subject = certificate.subject
     signee_key     = certificate.public_key
 
@@ -616,7 +604,6 @@ module Gem::Security
   end
 
   reset
-
 end
 
 if Gem::HAVE_OPENSSL

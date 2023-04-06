@@ -10,6 +10,7 @@ use crate::codegen::{JITState};
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::codegen::CodegenGlobals;
+use crate::options::*;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -95,6 +96,13 @@ impl Assembler
             RCX_REG,
             RDX_REG,
         ]
+    }
+
+    /// Get the list of registers that can be used for stack temps.
+    pub fn get_temp_regs() -> Vec<Reg> {
+        let num_regs = get_option!(num_temp_regs);
+        let mut regs = vec![RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
+        regs.drain(0..num_regs).collect()
     }
 
     /// Get a list of all of the caller-save registers
@@ -709,7 +717,9 @@ impl Assembler
                 Insn::CSelGE { truthy, falsy, out } => {
                     emit_csel(cb, *truthy, *falsy, *out, cmovl);
                 }
-                Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
+                Insn::LiveReg { .. } |
+                Insn::RegTemps(_) |
+                Insn::SpillTemp(_) => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
                     let code_size = cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()));
                     if code_size < JMP_PTR_BYTES {
@@ -765,6 +775,10 @@ impl Assembler
 
 #[cfg(test)]
 mod tests {
+    use crate::disasm::{assert_disasm};
+    #[cfg(feature = "disasm")]
+    use crate::disasm::{unindent, disasm_addr_range};
+
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
@@ -938,19 +952,28 @@ mod tests {
     #[test]
     fn test_merge_lea_reg() {
         let (mut asm, mut cb) = setup_asm();
+
         let sp = asm.lea(Opnd::mem(64, SP, 8));
         asm.mov(SP, sp); // should be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_eq!(format!("{:x}", cb), "488d5b08");
+
+        assert_disasm!(cb, "488d5b08", {"
+            0x0: lea rbx, [rbx + 8]
+        "});
     }
 
     #[test]
     fn test_merge_lea_mem() {
         let (mut asm, mut cb) = setup_asm();
+
         let sp = asm.lea(Opnd::mem(64, SP, 8));
         asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_eq!(format!("{:x}", cb), "488d4308488903");
+
+        assert_disasm!(cb, "488d4308488903", {"
+            0x0: lea rax, [rbx + 8]
+            0x4: mov qword ptr [rbx], rax
+        "});
     }
 
     #[test]

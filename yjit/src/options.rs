@@ -22,11 +22,18 @@ pub struct Options {
     // 1 means always create generic versions
     pub max_versions: usize,
 
+    // The number of registers allocated for stack temps
+    pub num_temp_regs: usize,
+
     // Capture and print out stats
     pub gen_stats: bool,
 
     // Trace locations of exits
     pub gen_trace_exits: bool,
+
+    // Whether to start YJIT in paused state (initialize YJIT but don't
+    // compile anything)
+    pub pause: bool,
 
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
@@ -39,12 +46,6 @@ pub struct Options {
 
     /// Verify context objects (debug mode only)
     pub verify_ctx: bool,
-
-    /// Whether or not to assume a global constant state (and therefore
-    /// invalidating code whenever any constant changes) versus assuming
-    /// constant name components (and therefore invalidating code whenever a
-    /// matching name component changes)
-    pub global_constant_state: bool,
 }
 
 // Initialize the options to default values
@@ -54,12 +55,13 @@ pub static mut OPTIONS: Options = Options {
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
+    num_temp_regs: 0,
     gen_stats: false,
     gen_trace_exits: false,
+    pause: false,
     dump_insns: false,
     dump_disasm: None,
     verify_ctx: false,
-    global_constant_state: false,
     dump_iseq_disasm: None,
 };
 
@@ -139,6 +141,17 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         },
 
+        ("pause", "") => unsafe {
+            OPTIONS.pause = true;
+        },
+
+        ("temp-regs", _) => match opt_val.parse() {
+            Ok(n) => unsafe { OPTIONS.num_temp_regs = n },
+            Err(_) => {
+                return None;
+            }
+        },
+
         ("dump-disasm", _) => match opt_val.to_string().as_str() {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
             directory => {
@@ -159,7 +172,6 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },
-        ("global-constant-state", "") => unsafe { OPTIONS.global_constant_state = true },
 
         // Option name not recognized
         _ => {

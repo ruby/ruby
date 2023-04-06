@@ -152,14 +152,14 @@
 # OptionParser supports the ability to coerce command line arguments
 # into objects for us.
 #
-# OptionParser comes with a few ready-to-use kinds of  type
+# OptionParser comes with a few ready-to-use kinds of type
 # coercion. They are:
 #
-# - Date  -- Anything accepted by +Date.parse+
-# - DateTime -- Anything accepted by +DateTime.parse+
-# - Time -- Anything accepted by +Time.httpdate+ or +Time.parse+
-# - URI  -- Anything accepted by +URI.parse+
-# - Shellwords -- Anything accepted by +Shellwords.shellwords+
+# - Date  -- Anything accepted by +Date.parse+ (need to require +optparse/date+)
+# - DateTime -- Anything accepted by +DateTime.parse+ (need to require +optparse/date+)
+# - Time -- Anything accepted by +Time.httpdate+ or +Time.parse+ (need to require +optparse/time+)
+# - URI  -- Anything accepted by +URI.parse+ (need to require +optparse/uri+)
+# - Shellwords -- Anything accepted by +Shellwords.shellwords+ (need to require +optparse/shellwords+)
 # - String -- Any non-empty string
 # - Integer -- Any integer. Will convert octal. (e.g. 124, -3, 040)
 # - Float -- Any float. (e.g. 10, 3.14, -100E+13)

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../user_interaction"
 
 ##
@@ -205,8 +206,7 @@ class Gem::Security::Policy
   #
   # If +key+ is given it is used to validate the signing certificate.
 
-  def verify(chain, key = nil, digests = {}, signatures = {},
-             full_name = "(unknown)")
+  def verify(chain, key = nil, digests = {}, signatures = {}, full_name = "(unknown)")
     if signatures.empty?
       if @only_signed
         raise Gem::Security::Exception,
@@ -225,7 +225,7 @@ class Gem::Security::Policy
     trust_dir = opt[:trust_dir]
     time      = Time.now
 
-    _, signer_digests = digests.find do |algorithm, file_digests|
+    _, signer_digests = digests.find do |_algorithm, file_digests|
       file_digests.values.first.name == Gem::Security::DIGEST_NAME
     end
 
@@ -287,5 +287,5 @@ class Gem::Security::Policy
     true
   end
 
-  alias to_s name # :nodoc:
+  alias_method :to_s, :name # :nodoc:
 end

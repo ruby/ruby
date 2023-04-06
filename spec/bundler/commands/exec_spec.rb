@@ -697,7 +697,7 @@ RSpec.describe "bundle exec" do
   context "`load`ing a ruby file instead of `exec`ing" do
     let(:path) { bundled_app("ruby_executable") }
     let(:shebang) { "#!/usr/bin/env ruby" }
-    let(:executable) { <<-RUBY.gsub(/^ */, "").strip }
+    let(:executable) { <<~RUBY.strip }
       #{shebang}
 
       require "rack"

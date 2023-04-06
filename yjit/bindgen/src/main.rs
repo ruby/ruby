@@ -136,7 +136,8 @@ fn main() {
         .allowlist_function("rb_ary_resurrect")
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
-        .allowlist_function("rb_yjit_rb_ary_unshift_m")
+        .allowlist_function("rb_ary_push")
+        .allowlist_function("rb_ary_unshift_m")
         .allowlist_function("rb_yjit_rb_ary_subseq_length")
 
         // From internal/array.h
@@ -177,7 +178,6 @@ fn main() {
 
         // From include/ruby/internal/core/robject.h
         .allowlist_type("ruby_robject_flags")
-        // .allowlist_type("ruby_robject_consts") // Removed when USE_RVARGC
         .allowlist_var("ROBJECT_OFFSET_.*")
 
         // From include/ruby/internal/core/rarray.h
@@ -212,6 +212,9 @@ fn main() {
         .allowlist_function("rb_id2name")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
+
+        // From internal/numeric.h
+        .allowlist_function("rb_fix_aref")
 
         // From internal/string.h
         .allowlist_function("rb_ec_str_resurrect")
@@ -286,6 +289,7 @@ fn main() {
         .allowlist_var("VM_ENV_DATA_INDEX_FLAGS")
         .allowlist_var("VM_ENV_DATA_SIZE")
         .allowlist_function("rb_iseq_path")
+        .allowlist_type("rb_builtin_attr")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
@@ -296,8 +300,8 @@ fn main() {
         .allowlist_function("rb_yjit_mark_executable")
         .allowlist_function("rb_yjit_mark_unused")
         .allowlist_function("rb_yjit_get_page_size")
-        .allowlist_function("rb_leaf_invokebuiltin_iseq_p")
-        .allowlist_function("rb_leaf_builtin_function")
+        .allowlist_function("rb_yjit_iseq_builtin_attrs")
+        .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_cfp_get_iseq")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -319,6 +323,8 @@ fn main() {
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_yjit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
+        .allowlist_function("rb_yjit_assert_holding_vm_lock")
+
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
 
@@ -365,6 +371,7 @@ fn main() {
         .allowlist_function("rb_insn_len")
         .allowlist_function("rb_yarv_class_of")
         .allowlist_function("rb_get_ec_cfp")
+        .allowlist_function("rb_get_cfp_iseq")
         .allowlist_function("rb_get_cfp_pc")
         .allowlist_function("rb_get_cfp_sp")
         .allowlist_function("rb_get_cfp_self")
@@ -409,7 +416,9 @@ fn main() {
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
-        .allowlist_function("rb_yarv_fix_mod_fix")
+        .allowlist_function("rb_yjit_fix_div_fix")
+        .allowlist_function("rb_yjit_fix_mod_fix")
+        .allowlist_function("rb_yjit_fix_mul_fix")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")

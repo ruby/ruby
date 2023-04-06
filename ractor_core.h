@@ -209,7 +209,7 @@ void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE
 VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // defined in thread.c
 
 int rb_ractor_living_thread_num(const rb_ractor_t *);
-VALUE rb_ractor_thread_list(rb_ractor_t *r);
+VALUE rb_ractor_thread_list(void);
 bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);
@@ -280,6 +280,10 @@ rb_ractor_sleeper_thread_num(rb_ractor_t *r)
 static inline void
 rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 {
+    RUBY_DEBUG_LOG("th:%d->%u%s",
+                   cr->threads.running_ec ? (int)rb_th_serial(cr->threads.running_ec->thread_ptr) : -1,
+                   rb_th_serial(th), cr->threads.running_ec == th->ec ? " (same)" : "");
+
     if (cr->threads.running_ec != th->ec) {
         if (0) {
             ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n",
@@ -314,7 +318,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
     native_tls_set(ruby_current_ec_key, ec);
 #endif
     RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", (void *)cr->threads.running_ec, (void *)ec);
-    VM_ASSERT(cr->threads.running_ec != ec);
+    VM_ASSERT(ec == NULL || cr->threads.running_ec != ec);
     cr->threads.running_ec = ec;
 }
 
