@@ -812,7 +812,7 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
     rb_mmtk_assert_mutator();
 
     rb_thread_t *th = GET_THREAD();
-    RB_GC_SAVE_MACHINE_CONTEXT(th);
+    RB_VM_SAVE_MACHINE_CONTEXT(th);
     rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
 
 #if USE_MMTK
