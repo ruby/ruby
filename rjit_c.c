@@ -19,6 +19,7 @@
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
 #include "internal/gc.h"
+#include "internal/proc.h"
 #include "yjit.h"
 #include "vm_insnhelper.h"
 #include "probes.h"

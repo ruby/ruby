@@ -696,6 +696,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_intern) }
   end
 
+  def C.rb_sym_to_proc
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_sym_to_proc) }
+  end
+
   def C.rb_vm_bh_to_procval
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_bh_to_procval) }
   end

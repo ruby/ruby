@@ -13416,6 +13416,7 @@ rjit_c.$(OBJEXT): $(top_srcdir)/internal/gc.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/hash.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/object.h
+rjit_c.$(OBJEXT): $(top_srcdir)/internal/proc.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/serial.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
