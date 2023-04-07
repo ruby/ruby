@@ -399,10 +399,15 @@ VALUE rb_gc_latest_gc_info(VALUE key_or_buf);
 void rb_gc_adjust_memory_usage(ssize_t diff);
 
 /**
- * Inform the garbage collector that `valptr` points to a live Ruby object that
- * should not be moved. Note that extensions should use this API on global
- * constants instead of assuming constants defined in Ruby are always alive.
- * Ruby code can remove global constants.
+ * Inform the garbage  collector that the global or static  variable pointed by
+ * `valptr` stores  a live  Ruby object  that should not  be moved.   Note that
+ * extensions  should use  this API  on  global constants  instead of  assuming
+ * constants defined  in Ruby are  always alive.   Ruby code can  remove global
+ * constants.
+ *
+ * Because this  registration itself has  a possibility  to trigger a  GC, this
+ * function  must be  called  before any  GC-able objects  is  assigned to  the
+ * address pointed by `valptr`.
  */
 void rb_gc_register_address(VALUE *valptr);
 

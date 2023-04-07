@@ -9209,10 +9209,16 @@ rb_gc_register_address(VALUE *addr)
     tmp->varptr = addr;
     global_list = tmp;
 
-    /* obj has to be guarded here because the allocation above could trigger a
-     * GC. However, C extensions could pass a pointer to a global variable
-     * which does not exist on the stack and thus could get swept. */
+    /*
+     * Because some C extensions have assignment-then-register bugs,
+     * we guard `obj` here so that it would not get swept defensively.
+     */
     RB_GC_GUARD(obj);
+    if (0 && !SPECIAL_CONST_P(obj)) {
+	rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
+		rb_obj_class(obj));
+	rb_print_backtrace();
+    }
 }
 
 void
