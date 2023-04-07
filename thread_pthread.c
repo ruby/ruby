@@ -777,8 +777,20 @@ size_t pthread_get_stacksize_np(pthread_t);
 #   define MAINSTACKADDR_AVAILABLE 0
 # endif
 #endif
-#if MAINSTACKADDR_AVAILABLE && !defined(get_main_stack)
-# define get_main_stack(addr, size) get_stack(addr, size)
+#if MAINSTACKADDR_AVAILABLE
+static int get_stack(void **, size_t *);
+static int
+get_main_stack(void **addr, size_t *size)
+{
+    int ret = get_stack(addr, size);
+
+    /* On some architectures, the initial stack size may be too small, but fortunately,
+       it's growable. Bump it up to the minimum needed if it is too small. */
+    if (*size < RUBY_VM_THREAD_VM_STACK_SIZE)
+        *size = RUBY_VM_THREAD_VM_STACK_SIZE;
+
+    return ret;
+}
 #endif
 
 #ifdef STACKADDR_AVAILABLE
