@@ -572,6 +572,7 @@ generator = BindingGenerator.new(
     rjit_build_kwhash
     rb_rjit_entry_stub_hit
     rb_rjit_branch_stub_hit
+    rb_sym_to_proc
   ],
   types: %w[
     CALL_DATA
