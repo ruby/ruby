@@ -9215,9 +9215,9 @@ rb_gc_register_address(VALUE *addr)
      */
     RB_GC_GUARD(obj);
     if (0 && !SPECIAL_CONST_P(obj)) {
-	rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
-		rb_obj_class(obj));
-	rb_print_backtrace();
+        rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
+                rb_obj_class(obj));
+        rb_print_backtrace();
     }
 }
 
