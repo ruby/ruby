@@ -229,9 +229,9 @@ module TestIRB
       input_with_prompt = [
         PromptRow.new('001:0:":* ', %q(<<A+%W[#{<<B)),
         PromptRow.new('002:0:":* ', %q(#{<<C+%W[)),
-        PromptRow.new('003:0:":* ', %q()),
-        PromptRow.new('004:0:":* ', %q(C)),
-        PromptRow.new('005:0:]:* ', %q()),
+        PromptRow.new('003:0:":* ', %q(a)),
+        PromptRow.new('004:0:]:* ', %q(C)),
+        PromptRow.new('005:0:]:* ', %q(a)),
         PromptRow.new('006:0:":* ', %q(]})),
         PromptRow.new('007:0:":* ', %q(})),
         PromptRow.new('008:0:":* ', %q(A)),
