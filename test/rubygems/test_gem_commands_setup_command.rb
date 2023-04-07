@@ -138,7 +138,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:env_shebang] = true
     @cmd.execute
 
-    ruby_exec = sprintf Gem.default_exec_format, "ruby"
+    ruby_exec = format Gem.default_exec_format, "ruby"
 
     bin_env = Gem.win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
     assert_match(/\A#!\s*#{bin_env}#{ruby_exec}/, File.read(default_gem_bin_path))

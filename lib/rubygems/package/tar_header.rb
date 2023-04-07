@@ -241,6 +241,6 @@ class Gem::Package::TarHeader
   end
 
   def oct(num, len)
-    "%0#{len}o" % num
+    format("%0#{len}o", num)
   end
 end

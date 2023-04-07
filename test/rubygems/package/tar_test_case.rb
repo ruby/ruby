@@ -124,7 +124,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def to_oct(n, pad_size)
-    "%0#{pad_size}o" % n
+    format("%0#{pad_size}o", n)
   end
 
   def util_entry(tar)

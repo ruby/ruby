@@ -92,9 +92,7 @@ class Gem::Resolver::ActivationRequest
   end
 
   def inspect # :nodoc:
-    "#<%s for %p from %s>" % [
-      self.class, @spec, @request
-    ]
+    format("#<%s for %p from %s>", self.class, @spec, @request)
   end
 
   ##

@@ -29,7 +29,7 @@ class Gem::Source::Local < Gem::Source
 
   def inspect # :nodoc:
     keys = @specs ? @specs.keys.sort : "NOT LOADED"
-    "#<%s specs: %p>" % [self.class, keys]
+    format("#<%s specs: %p>", self.class, keys)
   end
 
   def load_specs(type) # :nodoc:

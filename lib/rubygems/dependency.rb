@@ -74,11 +74,9 @@ class Gem::Dependency
 
   def inspect # :nodoc:
     if prerelease?
-      "<%s type=%p name=%p requirements=%p prerelease=ok>" %
-        [self.class, type, name, requirement.to_s]
+      format("<%s type=%p name=%p requirements=%p prerelease=ok>", self.class, type, name, requirement.to_s)
     else
-      "<%s type=%p name=%p requirements=%p>" %
-        [self.class, type, name, requirement.to_s]
+      format("<%s type=%p name=%p requirements=%p>", self.class, type, name, requirement.to_s)
     end
   end
 

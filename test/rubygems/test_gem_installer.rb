@@ -987,7 +987,7 @@ gem 'other', version
     assert_path_exist exe
 
     exe_mode = File.stat(exe).mode & 0111
-    assert_equal 0111, exe_mode, "0%o" % exe_mode unless Gem.win_platform?
+    assert_equal 0111, exe_mode, format("0%o", exe_mode) unless Gem.win_platform?
 
     assert_path_exist File.join gemdir, "lib", "code.rb"
 

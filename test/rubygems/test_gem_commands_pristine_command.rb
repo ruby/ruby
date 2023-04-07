@@ -158,7 +158,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     assert_path_exist gem_exec
 
-    ruby_exec = sprintf Gem.default_exec_format, "ruby"
+    ruby_exec = format Gem.default_exec_format, "ruby"
 
     bin_env = Gem.win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
 

@@ -252,16 +252,10 @@ class Gem::TestCase < Test::Unit::TestCase
   def assert_contains_make_command(target, output, msg = nil)
     if output.include?("\n")
       msg = build_message(msg,
-        "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
-          ("%s %s" % [make_command, target]).rstrip,
-          output,
-        ])
+        format("Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT", format("%s %s", make_command, target).rstrip, output))
     else
       msg = build_message(msg,
-        'Expected make command "%s", but was "%s"' % [
-          ("%s %s" % [make_command, target]).rstrip,
-          output,
-        ])
+        format('Expected make command "%s", but was "%s"', format("%s %s", make_command, target).rstrip, output))
     end
 
     assert scan_make_command_lines(output).any? {|line|

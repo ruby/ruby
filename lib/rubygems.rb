@@ -948,7 +948,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     elapsed = Time.now - now
 
-    ui.say "%2$*1$s: %3$3.3fs" % [-width, msg, elapsed] if display
+    ui.say format("%2$*1$s: %3$3.3fs", -width, msg, elapsed) if display
 
     value
   end
