@@ -258,6 +258,10 @@ AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy], [:])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
+# nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
+# In case we're working with llvm-nm, tell it to not worry about the bitcode.
+AS_IF([${NM} --help | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
+
 AS_IF([test ! $rb_test_CFLAGS], [AS_UNSET(CFLAGS)]); AS_UNSET(rb_test_CFLAGS)
 AS_IF([test ! $rb_test_CXXFLAGS], [AS_UNSET(CXXFLAGS)]); AS_UNSET(rb_save_CXXFLAGS)
 
