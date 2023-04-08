@@ -513,9 +513,9 @@ module Net::HTTPHeader
     # byte-range-set = *( "," OWS ) ( byte-range-spec / suffix-byte-range-spec )
     #   *( OWS "," [ OWS ( byte-range-spec / suffix-byte-range-spec ) ] )
     # corrected collected ABNF
-    # http://tools.ietf.org/html/draft-ietf-httpbis-p5-range-19#section-5.4.1
-    # http://tools.ietf.org/html/draft-ietf-httpbis-p5-range-19#appendix-C
-    # http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-19#section-3.2.5
+    # https://tools.ietf.org/html/draft-ietf-httpbis-p5-range-19#section-5.4.1
+    # https://tools.ietf.org/html/draft-ietf-httpbis-p5-range-19#appendix-C
+    # https://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-19#section-3.2.5
     unless /\Abytes=((?:,[ \t]*)*(?:\d+-\d*|-\d+)(?:[ \t]*,(?:[ \t]*\d+-\d*|-\d+)?)*)\z/ =~ value
       raise Net::HTTPHeaderSyntaxError, "invalid syntax for byte-ranges-specifier: '#{value}'"
     end

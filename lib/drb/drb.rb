@@ -35,7 +35,7 @@
 # [http://www2a.biglobe.ne.jp/~seki/ruby/druby.en.html]
 #    The English version of the dRuby home page.
 #
-# [http://pragprog.com/book/sidruby/the-druby-book]
+# [https://www.druby.org/sidruby/the-druby-book.html]
 #    The dRuby Book: Distributed and Parallel Computing with Ruby
 #    by Masatoshi Seki and Makoto Inoue
 #

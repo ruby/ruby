@@ -432,7 +432,7 @@ class Net::HTTPResponse
   # :nodoc:
   def sniff_encoding(str, encoding=nil)
     # the encoding sniffing algorithm
-    # http://www.w3.org/TR/html5/parsing.html#determining-the-character-encoding
+    # https://www.w3.org/TR/html5/parsing.html#determining-the-character-encoding
     if enc = scanning_meta(str)
       enc
     # 6. last visited page or something
@@ -537,7 +537,7 @@ class Net::HTTPResponse
   end
 
   def extracting_encodings_from_meta_elements(value)
-    # http://dev.w3.org/html5/spec/fetching-resources.html#algorithm-for-extracting-an-encoding-from-a-meta-element
+    # https://dev.w3.org/html5/spec/fetching-resources.html#algorithm-for-extracting-an-encoding-from-a-meta-element
     if /charset[\t\n\f\r ]*=(?:"([^"]*)"|'([^']*)'|["']|\z|([^\t\n\f\r ;]+))/i =~ value
       return $1 || $2 || $3
     end

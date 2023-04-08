@@ -65,7 +65,7 @@
 #
 # === Resources
 #
-# 1: {IEEE Std 1003.1-2008, 2016 Edition, the Shell & Utilities volume}[http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
+# 1: {IEEE Std 1003.1-2008, 2016 Edition, the Shell & Utilities volume}[https://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
 
 module Shellwords
   # Splits a string into an array of tokens in the same way the UNIX

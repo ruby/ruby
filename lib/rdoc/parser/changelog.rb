@@ -9,7 +9,7 @@
 #
 # This parser is meant to parse the MRI ChangeLog, but can be used to parse any
 # {GNU style Change
-# Log}[http://www.gnu.org/prep/standards/html_node/Style-of-Change-Logs.html].
+# Log}[https://www.gnu.org/prep/standards/html_node/Style-of-Change-Logs.html].
 
 class RDoc::Parser::ChangeLog < RDoc::Parser
 

@@ -291,7 +291,7 @@ module Net   #:nodoc:
   # == Basic Authentication
   #
   # Basic authentication is performed according to
-  # {RFC2617}[http://www.ietf.org/rfc/rfc2617.txt]:
+  # {RFC2617}[https://www.ietf.org/rfc/rfc2617.txt]:
   #
   #   req = Net::HTTP::Get.new(uri)
   #   req.basic_auth('user', 'pass')

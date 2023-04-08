@@ -37,7 +37,7 @@ class RDoc::I18n::Locale
   # +[language[_territory][.codeset][@modifier]]+.
   #
   # See also {BCP 47 - Tags for Identifying
-  # Languages}[http://tools.ietf.org/rfc/bcp/bcp47.txt].
+  # Languages}[https://tools.ietf.org/html/bcp47].
 
   attr_reader :name
 
