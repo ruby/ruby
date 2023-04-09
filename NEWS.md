@@ -45,7 +45,7 @@ The following default gems are updated.
 * csv 3.2.7
 * fiddle 1.1.2
 * fileutils 1.7.1
-* irb 1.6.3
+* irb 1.6.4
 * optparse 0.4.0.pre.1
 * psych 5.1.0
 * reline 0.3.3
