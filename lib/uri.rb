@@ -48,13 +48,13 @@
 #
 # Here is a list of all related RFC's:
 # - RFC822[https://www.rfc-editor.org/rfc/rfc822]
-#  RFC1738[https://www.rfc-editor.org/rfc/rfc1738]
-#  RFC2255[https://www.rfc-editor.org/rfc/rfc2255]
-#  RFC2368[https://www.rfc-editor.org/rfc/rfc2368]
-#  RFC2373[https://www.rfc-editor.org/rfc/rfc2373]
-#  RFC2396[https://www.rfc-editor.org/rfc/rfc2396]
-#  RFC2732[https://www.rfc-editor.org/rfc/rfc2732]
-#  RFC3986[https://www.rfc-editor.org/rfc/rfc3986]
+# - RFC1738[https://www.rfc-editor.org/rfc/rfc1738]
+# - RFC2255[https://www.rfc-editor.org/rfc/rfc2255]
+# - RFC2368[https://www.rfc-editor.org/rfc/rfc2368]
+# - RFC2373[https://www.rfc-editor.org/rfc/rfc2373]
+# - RFC2396[https://www.rfc-editor.org/rfc/rfc2396]
+# - RFC2732[https://www.rfc-editor.org/rfc/rfc2732]
+# - RFC3986[https://www.rfc-editor.org/rfc/rfc3986]
 #
 # == Class tree
 #
