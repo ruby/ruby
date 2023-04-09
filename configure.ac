@@ -233,6 +233,12 @@ AS_CASE(["${build_os}"],
 ],
 [aix*], [
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
+],
+[darwin*], [
+    # For Apple clang version 14.0.3 (clang-1403.0.22.14.1)
+    ac_cv_prog_ac_ct_AR=`$CC -print-prog-name=ar`
+    ac_cv_prog_ac_ct_LD=`$CC -print-prog-name=ld`
+    ac_cv_prog_ac_ct_NM=`$CC -print-prog-name=nm`
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|msys*|mingw*|darwin*], [
