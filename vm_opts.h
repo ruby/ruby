@@ -32,14 +32,16 @@
  * 0: direct (using labeled goto using GCC special)
  * 1: token (switch/case)
  * 2: call (function call for each insn dispatch)
+ * 3: call continuation (musttail attribute)
  */
 #ifndef OPT_THREADED_CODE
-#define OPT_THREADED_CODE 0
+#define OPT_THREADED_CODE 3
 #endif
 
-#define OPT_DIRECT_THREADED_CODE (OPT_THREADED_CODE == 0)
-#define OPT_TOKEN_THREADED_CODE  (OPT_THREADED_CODE == 1)
-#define OPT_CALL_THREADED_CODE   (OPT_THREADED_CODE == 2)
+#define OPT_DIRECT_THREADED_CODE   (OPT_THREADED_CODE == 0)
+#define OPT_TOKEN_THREADED_CODE    (OPT_THREADED_CODE == 1)
+#define OPT_CALL_THREADED_CODE     (OPT_THREADED_CODE == 2)
+#define OPT_TAILCALL_THREADED_CODE (OPT_THREADED_CODE == 3)
 
 /* VM running option */
 #define OPT_CHECKED_RUN              1
