@@ -58,6 +58,60 @@ error !
 #define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
 
 /************************************************/
+#elif OPT_TAILCALL_THREADED_CODE
+
+// https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html
+// https://sillycross.github.io/2022/11/22/2022-11-22/
+// https://github.com/wasm3/wasm3/blob/main/docs/Interpreter.md#m3-massey-meta-machine
+
+// TODO: move elsewhere
+#define MUSTTAIL __attribute__((musttail))
+
+#define LABEL(x)  insn_func_##x
+#define ELABEL(x)
+#define LABEL_PTR(x) &LABEL(x)
+
+#if defined __has_attribute
+#if __has_attribute (preserve_none)
+#define HAS_PRESERVE_NONE 1
+#endif
+#endif
+#ifndef HAS_PRESERVE_NONE
+#define HAS_PRESERVE_NONE 0
+#endif
+
+#if HAS_PRESERVE_NONE
+#define INSN_FUNC_CONV __attribute__((preserve_none))
+#else
+#define INSN_FUNC_CONV
+#endif
+
+#define INSN_FUNC_RET rb_control_frame_t *
+#define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *reg_pc
+#define INSN_FUNC_ARGS ec, reg_cfp, reg_pc
+
+typedef INSN_FUNC_CONV INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
+
+#define INSN_FUNC_ATTRIBUTES \
+    __attribute__((no_stack_protector))
+
+#define INSN_ENTRY(insn) \
+  static INSN_FUNC_CONV INSN_FUNC_RET \
+    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) INSN_FUNC_ATTRIBUTES {
+
+#define TC_DISPATCH(insn) \
+  MUSTTAIL return (*(rb_insn_tailcall_func_t *)GET_CURRENT_INSN())(INSN_FUNC_ARGS);
+
+//#define END_INSN(insn) return reg_cfp;}
+#define END_INSN(insn) TC_DISPATCH(__NEXT_INSN__);}
+
+//#define NEXT_INSN() return reg_cfp;
+#define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
+
+#define START_OF_ORIGINAL_INSN(x) /* ignore */
+#define DISPATCH_ORIGINAL_INSN(x) MUSTTAIL return LABEL(x)(INSN_FUNC_ARGS);
+
+/************************************************/
 #elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 /* threaded code with gcc */
 
@@ -156,7 +210,7 @@ default:                        \
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
-#if OPT_CALL_THREADED_CODE
+#if OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
     return 0; \
