@@ -40,7 +40,7 @@ typedef rb_iseq_t *ISEQ;
 #if defined(DISPATCH_XXX)
 error !
 /************************************************/
-#elif OPT_CALL_THREADED_CODE
+#elif OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
 
 #define LABEL(x)  insn_func_##x
 #define ELABEL(x)
@@ -156,7 +156,7 @@ default:                        \
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
-#if OPT_CALL_THREADED_CODE
+#if OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
     return 0; \

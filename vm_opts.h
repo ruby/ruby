@@ -34,9 +34,9 @@
  * 2: call (function call for each insn dispatch)
  * 3: call continuation (musttail attribute)
  */
-#ifndef OPT_THREADED_CODE
+//#ifndef OPT_THREADED_CODE
 #define OPT_THREADED_CODE 3
-#endif
+//#endif
 
 #define OPT_DIRECT_THREADED_CODE   (OPT_THREADED_CODE == 0)
 #define OPT_TOKEN_THREADED_CODE    (OPT_THREADED_CODE == 1)
