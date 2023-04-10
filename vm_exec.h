@@ -72,8 +72,8 @@ error !
 #define LABEL_PTR(x) &LABEL(x)
 
 #define INSN_FUNC_RET rb_control_frame_t *
-#define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
-#define INSN_FUNC_ARGS ec, reg_cfp
+#define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *reg_pc
+#define INSN_FUNC_ARGS ec, reg_cfp, reg_pc
 
 typedef INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
 
@@ -91,7 +91,7 @@ typedef INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
 #define START_OF_ORIGINAL_INSN(x) /* ignore */
-#define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
+#define DISPATCH_ORIGINAL_INSN(x) MUSTTAIL return LABEL(x)(INSN_FUNC_ARGS);
 
 /************************************************/
 #elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
