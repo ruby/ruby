@@ -841,26 +841,6 @@ rb_reserved_fd_p(int fd)
     return 0;
 }
 
-int
-rb_sigwait_fd_get(rb_thread_t *th)
-{
-    return -1; /* TODO */
-}
-
-NORETURN(void rb_sigwait_fd_put(rb_thread_t *, int));
-void
-rb_sigwait_fd_put(rb_thread_t *th, int fd)
-{
-    rb_bug("not implemented, should not be called");
-}
-
-NORETURN(void rb_sigwait_sleep(const rb_thread_t *, int, const rb_hrtime_t *));
-void
-rb_sigwait_sleep(const rb_thread_t *th, int fd, const rb_hrtime_t *rel)
-{
-    rb_bug("not implemented, should not be called");
-}
-
 rb_nativethread_id_t
 rb_nativethread_self(void)
 {

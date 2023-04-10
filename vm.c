@@ -3289,11 +3289,15 @@ thread_mark(void *ptr)
     RUBY_MARK_LEAVE("thread");
 }
 
+void rb_threadptr_sched_free(rb_thread_t *th); // thread_*.c
+
 static void
 thread_free(void *ptr)
 {
     rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
+
+    rb_threadptr_sched_free(th);
 
     if (th->locking_mutex != Qfalse) {
         rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
@@ -3308,7 +3312,8 @@ thread_free(void *ptr)
         RUBY_GC_INFO("MRI main thread\n");
     }
     else {
-        ruby_xfree(th->nt); // TODO
+        // ruby_xfree(th->nt);
+        // TODO: MN system collect nt, but without MN system it should be freed here.
         ruby_xfree(th);
     }
 
@@ -3429,7 +3434,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
 #if USE_RUBY_DEBUG_LOG
-    static rb_atomic_t thread_serial = 0;
+    static rb_atomic_t thread_serial = 1;
     th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
 #endif
 }

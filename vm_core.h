@@ -643,6 +643,23 @@ typedef struct rb_vm_struct {
             rb_nativethread_cond_t terminate_cond;
             bool terminate_waiting;
         } sync;
+
+        // ractor scheduling
+        struct {
+            rb_nativethread_lock_t lock;
+            rb_nativethread_cond_t cond; // GRQ
+            unsigned int snt_cnt; // count of shared NTs
+            unsigned int dnt_cnt; // count of dedicated NTs
+            unsigned int max_proc;
+            struct ccan_list_head grq; // // Global Ready Queue
+            unsigned int grq_cnt;
+
+            // threads which switch context by timeslice
+            struct ccan_list_head timeslice_threads;
+
+            // true if timeslice timer is not enable
+            bool timeslice_wait_inf;
+        } sched;
     } ractor;
 
 #ifdef USE_SIGALTSTACK
