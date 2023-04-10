@@ -58,6 +58,42 @@ error !
 #define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
 
 /************************************************/
+#elif OPT_TAILCALL_THREADED_CODE
+
+#if !RBIMPL_HAS_ATTRIBUTE(musttail)
+#error support for musttail attribute is required for tailcall threading
+#endif
+
+/* Pass arguments in the registers normally saved by callees, so calls from
+ * instructions into C helpers spill less. */
+#if RBIMPL_HAS_ATTRIBUTE(preserve_none)
+#define INSN_FUNC_CONV __attribute__((preserve_none))
+#else
+#define INSN_FUNC_CONV
+#endif
+
+#define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *reg_pc
+#define INSN_FUNC_ARGS ec, reg_cfp, reg_pc
+
+typedef INSN_FUNC_CONV VALUE rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
+
+#define LABEL(x)  insn_func_##x
+#define ELABEL(x)
+#define LABEL_PTR(x) (const void *)&LABEL(x)
+
+#define INSN_ENTRY(insn) \
+  static INSN_FUNC_CONV __attribute__((no_stack_protector)) VALUE \
+    LABEL(insn)(INSN_FUNC_PARAMS) {
+
+#define NEXT_INSN() \
+  __attribute__((musttail)) return ((rb_insn_tailcall_func_t *)GET_CURRENT_INSN())(INSN_FUNC_ARGS);
+
+#define END_INSN(insn) NEXT_INSN() }
+
+#define START_OF_ORIGINAL_INSN(x) /* ignore */
+#define DISPATCH_ORIGINAL_INSN(x) __attribute__((musttail)) return LABEL(x)(INSN_FUNC_ARGS);
+
+/************************************************/
 #elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 /* threaded code with gcc */
 
