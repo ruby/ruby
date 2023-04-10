@@ -634,15 +634,51 @@ typedef struct rb_vm_struct {
             struct rb_ractor_struct *lock_owner;
             unsigned int lock_rec;
 
-            // barrier
-            bool barrier_waiting;
-            unsigned int barrier_cnt;
-            rb_nativethread_cond_t barrier_cond;
-
             // join at exit
             rb_nativethread_cond_t terminate_cond;
             bool terminate_waiting;
+
+#ifndef RUBY_THREAD_PTHREAD_H
+            bool barrier_waiting;
+            unsigned int barrier_cnt;
+            rb_nativethread_cond_t barrier_cond;
+#endif
         } sync;
+
+        // ractor scheduling
+        struct {
+            rb_nativethread_lock_t lock;
+            struct rb_ractor_struct *lock_owner;
+            bool locked;
+
+            rb_nativethread_cond_t cond; // GRQ
+            unsigned int snt_cnt; // count of shared NTs
+            unsigned int dnt_cnt; // count of dedicated NTs
+
+            unsigned int running_cnt;
+
+            unsigned int max_cpu;
+            struct ccan_list_head grq; // // Global Ready Queue
+            unsigned int grq_cnt;
+
+            // running threads
+            struct ccan_list_head running_threads;
+
+            // threads which switch context by timeslice
+            struct ccan_list_head timeslice_threads;
+
+            struct ccan_list_head zombie_threads;
+
+            // true if timeslice timer is not enable
+            bool timeslice_wait_inf;
+
+            // barrier
+            rb_nativethread_cond_t barrier_complete_cond;
+            rb_nativethread_cond_t barrier_release_cond;
+            bool barrier_waiting;
+            unsigned int barrier_waiting_cnt;
+            unsigned int barrier_serial;
+        } sched;
     } ractor;
 
 #ifdef USE_SIGALTSTACK
@@ -1739,6 +1775,7 @@ rb_vm_living_threads_init(rb_vm_t *vm)
     ccan_list_head_init(&vm->waiting_fds);
     ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
+    ccan_list_head_init(&vm->ractor.sched.zombie_threads);
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
@@ -1839,6 +1876,20 @@ rb_current_execution_context(bool expect_ec)
   #else
     rb_execution_context_t *ec = ruby_current_ec;
   #endif
+
+    /* On the shared objects, `__tls_get_addr()` is used to access the TLS
+     * and the address of the `ruby_current_ec` can be stored on a function
+     * frame. However, this address can be mis-used after native thread
+     * migration of a coroutine.
+     *   1) Get `ptr =&ruby_current_ec` op NT1 and store it on the frame.
+     *   2) Context switch and resume it on the NT2.
+     *   3) `ptr` is used on NT2 but it accesses to the TLS on NT1.
+     * This assertion checks such misusage.
+     *
+     * To avoid accidents, `GET_EC()` should be called once on the frame.
+     * Note that inlining can produce the problem.
+     */
+    VM_ASSERT(ec == rb_current_ec_noinline());
 #else
     rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
 #endif

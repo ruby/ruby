@@ -53,6 +53,7 @@
 #include "internal/loadpath.h"
 #include "internal/missing.h"
 #include "internal/object.h"
+#include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
@@ -2148,6 +2149,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 
     ruby_gc_set_params();
+    ruby_mn_threads_params();
     ruby_init_loadpath();
 
     Init_enc();

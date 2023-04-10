@@ -12,3 +12,7 @@ if /freebsd13/ =~ RUBY_PLATFORM
   #     /usr/home/chkbuild/chkbuild/tmp/build/20220216T143001Z/ruby/test/ruby/test_thread.rb:1390:in `test_signal_at_join'
   exclude(:test_signal_at_join, 'gets stuck somewhere')
 end
+if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS')
+  # to avoid "`failed to allocate memory (NoMemoryError)" error
+  exclude(:test_thread_interrupt_for_killed_thread, 'TODO')
+end
