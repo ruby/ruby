@@ -7913,7 +7913,6 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
     }
     c = nextc(p);
     if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
-        ruby_debug_breakpoint();
         while (c != '\n' && ISSPACE(c = nextc(p)));
         space = 1;
     }
