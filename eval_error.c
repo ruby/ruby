@@ -105,7 +105,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
         if (highlight) write_warn(str, underline);
         write_warn(str, "unhandled exception");
         if (highlight) write_warn(str, reset);
-        write_warn2(str, "\n", 1);
+        write_warn(str, "\n");
     }
     else {
         VALUE epath;
@@ -176,18 +176,18 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
                     write_warn(str, reset);
                     write_warn(str, bold);
                 }
-                write_warn2(str, ")", 1);
+                write_warn(str, ")");
                 if (highlight) write_warn(str, reset);
             }
             if (tail && einfo+elen > tail) {
                 if (!highlight) {
-                    write_warn2(str, "\n", 1);
+                    write_warn(str, "\n");
                     write_warn_enc(str, tail, einfo+elen-tail, eenc);
                 }
                 else {
                     elen -= tail - einfo;
                     einfo = tail;
-                    write_warn2(str, "\n", 1);
+                    write_warn(str, "\n");
                     while (elen > 0) {
                         tail = memchr(einfo, '\n', elen);
                         if (!tail || tail > einfo) {
