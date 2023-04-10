@@ -2,10 +2,6 @@ use std::cell::RefCell;
 use std::fmt;
 use std::mem;
 use std::rc::Rc;
-#[cfg(target_arch = "x86_64")]
-use crate::backend::x86_64::jmp_ptr_bytes;
-#[cfg(target_arch = "aarch64")]
-use crate::backend::arm64::jmp_ptr_bytes;
 use crate::core::IseqPayload;
 use crate::core::for_each_off_stack_iseq_payload;
 use crate::core::for_each_on_stack_iseq_payload;
@@ -123,7 +119,7 @@ impl CodeBlock {
             page_size,
             write_pos: 0,
             past_page_bytes: 0,
-            page_end_reserve: jmp_ptr_bytes(),
+            page_end_reserve: 0,
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
@@ -133,6 +129,7 @@ impl CodeBlock {
             dropped_bytes: false,
             freed_pages,
         };
+        cb.page_end_reserve = cb.jmp_ptr_bytes();
         cb.write_pos = cb.page_start();
         cb
     }
@@ -196,7 +193,7 @@ impl CodeBlock {
             self.write_pos = dst_pos;
             let dst_ptr = self.get_write_ptr();
             self.write_pos = src_pos;
-            self.without_page_end_reserve(|cb| assert!(cb.has_capacity(jmp_ptr_bytes())));
+            self.without_page_end_reserve(|cb| assert!(cb.has_capacity(cb.jmp_ptr_bytes())));
 
             // Generate jmp_ptr from src_pos to dst_pos
             self.without_page_end_reserve(|cb| {
@@ -240,6 +237,11 @@ impl CodeBlock {
 
     pub fn mapped_region_size(&self) -> usize {
         self.mem_block.borrow().mapped_region_size()
+    }
+
+    /// Size of the region in bytes where writes could be attempted.
+    pub fn virtual_region_size(&self) -> usize {
+        self.mem_block.borrow().virtual_region_size()
     }
 
     /// Return the number of code pages that have been mapped by the VirtualMemory.
@@ -287,7 +289,7 @@ impl CodeBlock {
         if cfg!(debug_assertions) && !cfg!(test) {
             // Leave illegal instructions at the beginning of each page to assert
             // we're not accidentally crossing page boundaries.
-            start += jmp_ptr_bytes();
+            start += self.jmp_ptr_bytes();
         }
         start
     }
