@@ -132,6 +132,11 @@ vm_exec_core(rb_execution_context_t *ec)
     register rb_control_frame_t *reg_cfp = ec->cfp;
     rb_thread_t *th;
 
+#ifdef OPT_TAILCALL_THREADED_CODE
+    reg_cfp = ((rb_insn_tailcall_func_t *) (*GET_PC()))(INSN_FUNC_ARGS);
+
+    RUBY_ASSERT_ALWAYS(reg_cfp == 0);
+#else
     while (1) {
         reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
 
@@ -139,6 +144,7 @@ vm_exec_core(rb_execution_context_t *ec)
             break;
         }
     }
+#endif
 
     if (!UNDEF_P((th = rb_ec_thread_ptr(ec))->retval)) {
         VALUE ret = th->retval;

@@ -40,7 +40,7 @@ typedef rb_iseq_t *ISEQ;
 #if defined(DISPATCH_XXX)
 error !
 /************************************************/
-#elif OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
+#elif OPT_CALL_THREADED_CODE
 
 #define LABEL(x)  insn_func_##x
 #define ELABEL(x)
@@ -53,6 +53,42 @@ error !
 #define END_INSN(insn) return reg_cfp;}
 
 #define NEXT_INSN() return reg_cfp;
+
+#define START_OF_ORIGINAL_INSN(x) /* ignore */
+#define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
+
+/************************************************/
+#elif OPT_TAILCALL_THREADED_CODE
+
+// https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html
+// https://sillycross.github.io/2022/11/22/2022-11-22/
+// https://github.com/wasm3/wasm3/blob/main/docs/Interpreter.md#m3-massey-meta-machine
+
+// TODO: move elsewhere
+#define MUSTTAIL __attribute__((musttail))
+
+#define LABEL(x)  insn_func_##x
+#define ELABEL(x)
+#define LABEL_PTR(x) &LABEL(x)
+
+#define INSN_FUNC_RET rb_control_frame_t *
+#define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
+#define INSN_FUNC_ARGS ec, reg_cfp
+
+typedef INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
+
+#define INSN_ENTRY(insn) \
+  static INSN_FUNC_RET \
+    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) {
+
+#define TC_DISPATCH(insn) \
+  MUSTTAIL return (*(rb_insn_tailcall_func_t *)GET_CURRENT_INSN())(INSN_FUNC_ARGS);
+
+//#define END_INSN(insn) return reg_cfp;}
+#define END_INSN(insn) TC_DISPATCH(__NEXT_INSN__);}
+
+//#define NEXT_INSN() return reg_cfp;
+#define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
 #define START_OF_ORIGINAL_INSN(x) /* ignore */
 #define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
