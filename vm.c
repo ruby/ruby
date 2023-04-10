@@ -489,13 +489,14 @@ bool ruby_vm_keep_script_lines;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+
 #ifdef RUBY_NT_SERIAL
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
 
-#ifdef __APPLE__
+// no-inline decl on thread_pthread.h
 rb_execution_context_t *
-rb_current_ec(void)
+rb_current_ec_noinline(void)
 {
     return ruby_current_ec;
 }
@@ -505,8 +506,16 @@ rb_current_ec_set(rb_execution_context_t *ec)
 {
     ruby_current_ec = ec;
 }
-#endif
 
+
+#ifdef __APPLE__
+rb_execution_context_t *
+rb_current_ec(void)
+{
+    return ruby_current_ec;
+}
+
+#endif
 #else
 native_tls_key_t ruby_current_ec_key;
 #endif
@@ -2805,6 +2814,8 @@ vm_mark_negative_cme(VALUE val, void *dmy)
     return ID_TABLE_CONTINUE;
 }
 
+void rb_thread_sched_mark_zombies(rb_vm_t *vm);
+
 void
 rb_vm_mark(void *ptr)
 {
@@ -2876,6 +2887,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
+        rb_thread_sched_mark_zombies(vm);
         rb_rjit_mark();
     }
 
@@ -3289,11 +3301,15 @@ thread_mark(void *ptr)
     RUBY_MARK_LEAVE("thread");
 }
 
+void rb_threadptr_sched_free(rb_thread_t *th); // thread_*.c
+
 static void
 thread_free(void *ptr)
 {
     rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
+
+    rb_threadptr_sched_free(th);
 
     if (th->locking_mutex != Qfalse) {
         rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
@@ -3308,7 +3324,8 @@ thread_free(void *ptr)
         RUBY_GC_INFO("MRI main thread\n");
     }
     else {
-        ruby_xfree(th->nt); // TODO
+        // ruby_xfree(th->nt);
+        // TODO: MN system collect nt, but without MN system it should be freed here.
         ruby_xfree(th);
     }
 
@@ -3429,8 +3446,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
 #if USE_RUBY_DEBUG_LOG
-    static rb_atomic_t thread_serial = 0;
+    static rb_atomic_t thread_serial = 1;
     th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
+
+    RUBY_DEBUG_LOG("th:%u", th->serial);
 #endif
 }
 
@@ -4058,8 +4077,11 @@ Init_BareVM(void)
 
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
+
+#ifdef RUBY_THREAD_WIN32_H
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+#endif
 }
 
 #ifndef _WIN32
