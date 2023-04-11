@@ -1622,61 +1622,9 @@ impl Context {
         self.set_reg_temps(reg_temps);
     }
 
-    /// Push one new value on the temp stack with an explicit mapping
-    /// Return a pointer to the new stack top
-    pub fn stack_push_mapping(&mut self, asm: &mut Assembler, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
-        // If type propagation is disabled, store no types
-        if get_option!(no_type_prop) {
-            return self.stack_push_mapping(asm, (mapping, Type::Unknown));
-        }
-
-        let stack_size: usize = self.stack_size.into();
-
-        // Keep track of the type and mapping of the value
-        if stack_size < MAX_TEMP_TYPES {
-            self.temp_mapping[stack_size] = mapping;
-            self.temp_types[stack_size] = temp_type;
-
-            if let MapToLocal(idx) = mapping {
-                assert!((idx as usize) < MAX_LOCAL_TYPES);
-            }
-        }
-
-        // Allocate a register to the stack operand
-        assert_eq!(self.reg_temps, asm.get_reg_temps());
-        if self.stack_size < MAX_REG_TEMPS {
-            asm.alloc_temp_reg(self, self.stack_size);
-        }
-
-        self.stack_size += 1;
-        self.sp_offset += 1;
-
-        return self.stack_opnd(0);
-    }
-
-    /// Push one new value on the temp stack
-    /// Return a pointer to the new stack top
-    pub fn stack_push(&mut self, asm: &mut Assembler, val_type: Type) -> Opnd {
-        return self.stack_push_mapping(asm, (MapToStack, val_type));
-    }
-
-    /// Push the self value on the stack
-    pub fn stack_push_self(&mut self, asm: &mut Assembler) -> Opnd {
-        return self.stack_push_mapping(asm, (MapToSelf, Type::Unknown));
-    }
-
-    /// Push a local variable on the stack
-    pub fn stack_push_local(&mut self, asm: &mut Assembler, local_idx: usize) -> Opnd {
-        if local_idx >= MAX_LOCAL_TYPES {
-            return self.stack_push(asm, Type::Unknown);
-        }
-
-        return self.stack_push_mapping(asm, (MapToLocal((local_idx as u8).into()), Type::Unknown));
-    }
-
     // Pop N values off the stack
     // Return a pointer to the stack top before the pop operation
-    pub fn stack_pop(&mut self, n: usize) -> Opnd {
+    fn stack_pop(&mut self, n: usize) -> Opnd {
         assert!(n <= self.stack_size.into());
 
         let top = self.stack_opnd(0);
@@ -1975,6 +1923,66 @@ impl Context {
             (Type::Unknown | Type::UnknownImm, Type::Unknown | Type::UnknownImm) => None,
             _ => Some(false),
         }
+    }
+}
+
+impl Assembler {
+    /// Push one new value on the temp stack with an explicit mapping
+    /// Return a pointer to the new stack top
+    pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
+        // If type propagation is disabled, store no types
+        if get_option!(no_type_prop) {
+            return self.stack_push_mapping((mapping, Type::Unknown));
+        }
+
+        let stack_size: usize = self.ctx.stack_size.into();
+
+        // Keep track of the type and mapping of the value
+        if stack_size < MAX_TEMP_TYPES {
+            self.ctx.temp_mapping[stack_size] = mapping;
+            self.ctx.temp_types[stack_size] = temp_type;
+
+            if let MapToLocal(idx) = mapping {
+                assert!((idx as usize) < MAX_LOCAL_TYPES);
+            }
+        }
+
+        // Allocate a register to the stack operand
+        assert_eq!(self.ctx.reg_temps, self.get_reg_temps());
+        if self.ctx.stack_size < MAX_REG_TEMPS {
+            self.alloc_temp_reg(self.ctx.stack_size);
+        }
+
+        self.ctx.stack_size += 1;
+        self.ctx.sp_offset += 1;
+
+        return self.ctx.stack_opnd(0);
+    }
+
+    /// Push one new value on the temp stack
+    /// Return a pointer to the new stack top
+    pub fn stack_push(&mut self, val_type: Type) -> Opnd {
+        return self.stack_push_mapping((MapToStack, val_type));
+    }
+
+    /// Push the self value on the stack
+    pub fn stack_push_self(&mut self) -> Opnd {
+        return self.stack_push_mapping((MapToSelf, Type::Unknown));
+    }
+
+    /// Push a local variable on the stack
+    pub fn stack_push_local(&mut self, local_idx: usize) -> Opnd {
+        if local_idx >= MAX_LOCAL_TYPES {
+            return self.stack_push(Type::Unknown);
+        }
+
+        return self.stack_push_mapping((MapToLocal((local_idx as u8).into()), Type::Unknown));
+    }
+
+    // Pop N values off the stack
+    // Return a pointer to the stack top before the pop operation
+    pub fn stack_pop(&mut self, n: usize) -> Opnd {
+        self.ctx.stack_pop(n)
     }
 }
 
@@ -2556,6 +2564,7 @@ fn gen_branch_stub(
     let stub_addr = ocb.get_write_ptr();
 
     let mut asm = Assembler::new();
+    asm.ctx = ctx.clone();
     asm.set_reg_temps(ctx.reg_temps);
     asm.comment("branch stub hit");
 
@@ -2566,7 +2575,7 @@ fn gen_branch_stub(
     }
 
     // Spill temps to the VM stack as well for jit.peek_at_stack()
-    asm.spill_temps(&mut ctx.clone());
+    asm.spill_temps();
 
     // Set up the arguments unique to this stub for:
     //
@@ -2756,15 +2765,14 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
 /// Create a stub to force the code up to this point to be executed
 pub fn defer_compilation(
     jit: &mut JITState,
-    cur_ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
-    if cur_ctx.chain_depth != 0 {
+    if asm.ctx.chain_depth != 0 {
         panic!("Double defer!");
     }
 
-    let mut next_ctx = cur_ctx.clone();
+    let mut next_ctx = asm.ctx.clone();
 
     if next_ctx.chain_depth == u8::MAX {
         panic!("max block version chain depth reached!");
@@ -3169,9 +3177,9 @@ mod tests {
         assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
-        let mut ctx = Context::default();
-        ctx.stack_push(&mut Assembler::new(), Type::Fixnum);
-        let top_type = ctx.get_opnd_type(StackOpnd(0));
+        let mut asm = Assembler::new();
+        asm.stack_push(Type::Fixnum);
+        let top_type = asm.ctx.get_opnd_type(StackOpnd(0));
         assert!(top_type == Type::Fixnum);
 
         // TODO: write more tests for Context type diff
