@@ -186,14 +186,11 @@ struct rb_objspace; /* in vm_core.h */
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shape ID will be the SPECIAL_CONST_SHAPE_ID
 #ifndef SIZE_POOL_COUNT
-# if (SIZEOF_UINT64_T == SIZEOF_VALUE)
-#  define SIZE_POOL_COUNT 5
-# else
-#  define SIZE_POOL_COUNT 1
-# endif
+# define SIZE_POOL_COUNT 5
 #endif
 
-#define RCLASS_EXT_EMBEDDED (SIZE_POOL_COUNT > 1)
+// TODO: Make rb_classext_t small enough to fit in 80 bytes on 32 bit
+#define RCLASS_EXT_EMBEDDED (SIZEOF_UINT64_T == SIZEOF_VALUE)
 
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;

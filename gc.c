@@ -2824,9 +2824,6 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
         }
 
         obj = newobj_alloc(objspace, cr, size_pool_idx, true);
-#if SHAPE_IN_BASIC_FLAGS
-        flags |= (VALUE)(size_pool_idx) << SHAPE_FLAG_SHIFT;
-#endif
         newobj_init(klass, flags, wb_protected, objspace, obj);
 
         gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_zero_slot(obj));
@@ -2873,14 +2870,15 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
 
     size_t size_pool_idx = size_pool_idx_for_size(alloc_size);
 
+    if (SHAPE_IN_BASIC_FLAGS || (flags & RUBY_T_MASK) == T_OBJECT) {
+        flags |= (VALUE)size_pool_idx << SHAPE_FLAG_SHIFT;
+    }
+
     if (!UNLIKELY(during_gc ||
                   ruby_gc_stressful ||
                   gc_event_hook_available_p(objspace)) &&
             wb_protected) {
         obj = newobj_alloc(objspace, cr, size_pool_idx, false);
-#if SHAPE_IN_BASIC_FLAGS
-        flags |= (VALUE)size_pool_idx << SHAPE_FLAG_SHIFT;
-#endif
         newobj_init(klass, flags, wb_protected, objspace, obj);
     }
     else {
