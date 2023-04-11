@@ -132,7 +132,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_install_permissions_umask_077
-    umask = File.umask(077)
+    umask = File.umask(0o077)
     assert_self_install_permissions
   ensure
     File.umask(umask)
@@ -152,11 +152,11 @@ class TestGem < Gem::TestCase
   end
 
   def assert_self_install_permissions(format_executable: false)
-    mask = Gem.win_platform? ? 0700 : 0777
+    mask = Gem.win_platform? ? 0o700 : 0o777
     options = {
-      :dir_mode => 0500,
-      :prog_mode => Gem.win_platform? ? 0410 : 0510,
-      :data_mode => 0640,
+      :dir_mode => 0o500,
+      :prog_mode => Gem.win_platform? ? 0o410 : 0o510,
+      :data_mode => 0o640,
       :wrappers => true,
       :format_executable => format_executable,
     }
@@ -165,7 +165,7 @@ class TestGem < Gem::TestCase
       Dir.mkdir "data"
 
       File.write "bin/foo", "#!/usr/bin/env ruby\n"
-      File.chmod 0755, "bin/foo"
+      File.chmod 0o755, "bin/foo"
 
       File.write "data/foo.txt", "blah\n"
 
@@ -201,7 +201,7 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0755, *Dir.glob(@gemhome + "/gems/**/").map {|path| path.tap(&Gem::UNTAINT) })
+    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/").map {|path| path.tap(&Gem::UNTAINT) })
   end
 
   def test_require_missing
@@ -639,12 +639,12 @@ class TestGem < Gem::TestCase
     FileUtils.rm_r @gemhome
     Gem.use_paths @gemhome
 
-    Gem.ensure_gem_subdirectories @gemhome, 0750
+    Gem.ensure_gem_subdirectories @gemhome, 0o750
 
     assert_directory_exists File.join(@gemhome, "cache")
 
-    assert_equal 0750, File::Stat.new(@gemhome).mode & 0777
-    assert_equal 0750, File::Stat.new(File.join(@gemhome, "cache")).mode & 0777
+    assert_equal 0o750, File::Stat.new(@gemhome).mode & 0o777
+    assert_equal 0o750, File::Stat.new(File.join(@gemhome, "cache")).mode & 0o777
   end unless Gem.win_platform?
 
   def test_self_ensure_gem_directories_safe_permissions
@@ -655,8 +655,8 @@ class TestGem < Gem::TestCase
     File.umask 0
     Gem.ensure_gem_subdirectories @gemhome
 
-    assert_equal 0, File::Stat.new(@gemhome).mode & 002
-    assert_equal 0, File::Stat.new(File.join(@gemhome, "cache")).mode & 002
+    assert_equal 0, File::Stat.new(@gemhome).mode & 0o002
+    assert_equal 0, File::Stat.new(File.join(@gemhome, "cache")).mode & 0o002
   ensure
     File.umask old_umask
   end unless Gem.win_platform?
@@ -687,14 +687,14 @@ class TestGem < Gem::TestCase
       end
       refute File.exist?(gemdir), "manually remove #{gemdir}, tests are broken"
       FileUtils.mkdir_p gemdir
-      FileUtils.chmod 0400, gemdir
+      FileUtils.chmod 0o400, gemdir
       Gem.use_paths gemdir
 
       Gem.ensure_gem_subdirectories gemdir
 
       refute File.exist?(util_cache_dir)
     ensure
-      FileUtils.chmod 0600, gemdir
+      FileUtils.chmod 0o600, gemdir
     end
 
     def test_self_ensure_gem_directories_write_protected_parents
@@ -708,14 +708,14 @@ class TestGem < Gem::TestCase
       end
       refute File.exist?(parent), "manually remove #{parent}, tests are broken"
       FileUtils.mkdir_p parent
-      FileUtils.chmod 0400, parent
+      FileUtils.chmod 0o400, parent
       Gem.use_paths(gemdir)
 
       Gem.ensure_gem_subdirectories gemdir
 
       refute File.exist? File.join(gemdir, "gems")
     ensure
-      FileUtils.chmod 0600, parent
+      FileUtils.chmod 0o600, parent
     end
 
     def test_self_ensure_gem_directories_non_existent_paths
@@ -977,11 +977,11 @@ class TestGem < Gem::TestCase
     pend "chmod not supported" if Gem.win_platform?
 
     begin
-      File.chmod 0444, "test"
+      File.chmod 0o444, "test"
 
       assert_equal ["\xCF", "\x80"], Gem.read_binary("test").chars.to_a
     ensure
-      File.chmod 0644, "test"
+      File.chmod 0o644, "test"
     end
   end
 

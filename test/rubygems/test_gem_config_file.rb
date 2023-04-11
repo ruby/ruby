@@ -185,7 +185,7 @@ class TestGemConfigFile < Gem::TestCase
 
     temp_cred = File.join Gem.user_home, ".gem", "credentials"
     FileUtils.mkdir_p File.dirname(temp_cred)
-    File.open temp_cred, "w", 0600 do |fp|
+    File.open temp_cred, "w", 0o600 do |fp|
       fp.puts ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
     end
 
@@ -200,7 +200,7 @@ class TestGemConfigFile < Gem::TestCase
 
     @cfg.rubygems_api_key = "x"
 
-    File.chmod 0644, @cfg.credentials_path
+    File.chmod 0o644, @cfg.credentials_path
 
     use_ui @ui do
       assert_raise Gem::MockGemUi::TermError do
@@ -323,7 +323,7 @@ if you believe they were disclosed to a third party.
   def test_load_api_keys
     temp_cred = File.join Gem.user_home, ".gem", "credentials"
     FileUtils.mkdir_p File.dirname(temp_cred)
-    File.open temp_cred, "w", 0600 do |fp|
+    File.open temp_cred, "w", 0o600 do |fp|
       fp.puts ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
       fp.puts ":other: a5fdbb6ba150cbb83aad2bb2fede64c"
     end
@@ -339,7 +339,7 @@ if you believe they were disclosed to a third party.
 
     @cfg.rubygems_api_key = "x"
 
-    File.chmod 0644, @cfg.credentials_path
+    File.chmod 0o644, @cfg.credentials_path
 
     assert_raise Gem::MockGemUi::TermError do
       @cfg.load_api_keys
@@ -372,7 +372,7 @@ if you believe they were disclosed to a third party.
     unless Gem.win_platform?
       stat = File.stat @cfg.credentials_path
 
-      assert_equal 0600, stat.mode & 0600
+      assert_equal 0o600, stat.mode & 0o600
     end
   end
 
@@ -381,7 +381,7 @@ if you believe they were disclosed to a third party.
 
     @cfg.rubygems_api_key = "x"
 
-    File.chmod 0644, @cfg.credentials_path
+    File.chmod 0o644, @cfg.credentials_path
 
     assert_raise Gem::MockGemUi::TermError do
       @cfg.rubygems_api_key = "y"
@@ -395,7 +395,7 @@ if you believe they were disclosed to a third party.
 
     stat = File.stat @cfg.credentials_path
 
-    assert_equal 0644, stat.mode & 0644
+    assert_equal 0o644, stat.mode & 0o644
   end
 
   def test_write

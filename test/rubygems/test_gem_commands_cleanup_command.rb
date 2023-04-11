@@ -166,7 +166,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_all_user_no_sudo
-    FileUtils.chmod 0555, @gemhome
+    FileUtils.chmod 0o555, @gemhome
 
     @a_1_1, = util_gem "a", "1.1"
     @a_1_1 = install_gem @a_1_1, :user_install => true # pick up user install path
@@ -183,7 +183,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exist @a_1.gem_dir
     assert_path_exist @a_1_1.gem_dir
   ensure
-    FileUtils.chmod 0755, @gemhome
+    FileUtils.chmod 0o755, @gemhome
   end unless Gem.win_platform? || Process.uid.zero?
 
   def test_execute_dry_run

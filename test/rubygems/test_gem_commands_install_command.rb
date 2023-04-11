@@ -205,8 +205,8 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     use_ui @ui do
       orig_dir = Dir.pwd
       begin
-        FileUtils.chmod 0755, @userhome
-        FileUtils.chmod 0555, @gemhome
+        FileUtils.chmod 0o755, @userhome
+        FileUtils.chmod 0o555, @gemhome
 
         Dir.chdir @tempdir
         assert_raise Gem::FilePermissionError do
@@ -214,7 +214,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
         end
       ensure
         Dir.chdir orig_dir
-        FileUtils.chmod 0755, @gemhome
+        FileUtils.chmod 0o755, @gemhome
       end
     end
   end

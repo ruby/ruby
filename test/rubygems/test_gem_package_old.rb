@@ -39,7 +39,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
       extracted = File.join @destination, "lib/foo.rb"
       assert_path_exist extracted
 
-      mask = 0100644 & (~File.umask)
+      mask = 0o100644 & (~File.umask)
 
       assert_equal mask, File.stat(extracted).mode unless Gem.win_platform?
     end

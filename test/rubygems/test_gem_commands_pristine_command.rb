@@ -54,7 +54,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_user_install
-    FileUtils.chmod 0555, @gemhome
+    FileUtils.chmod 0o555, @gemhome
 
     a = util_spec "a" do |s|
       s.executables = %w[foo]
@@ -99,7 +99,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal "Restored #{a.full_name}", out.shift
     assert_empty out, out.inspect
   ensure
-    FileUtils.chmod(0755, @gemhome)
+    FileUtils.chmod(0o755, @gemhome)
   end
 
   def test_execute_all

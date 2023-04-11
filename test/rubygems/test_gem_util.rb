@@ -41,7 +41,7 @@ class TestGemUtil < Gem::TestCase
     FileUtils.mkdir_p "d/e/f"
     # remove 'execute' permission from "e" directory and make it
     # impossible to cd into it and its children
-    FileUtils.chmod(0666, "d/e")
+    FileUtils.chmod(0o666, "d/e")
 
     pend "skipped in root privilege" if Process.uid.zero?
 
@@ -53,7 +53,7 @@ class TestGemUtil < Gem::TestCase
     assert_equal File.realpath("../..", @tempdir), paths[3]
   ensure
     # restore default permissions, allow the directory to be removed
-    FileUtils.chmod(0775, "d/e") unless Gem.win_platform? || Gem.java_platform?
+    FileUtils.chmod(0o775, "d/e") unless Gem.win_platform? || Gem.java_platform?
   end
 
   def test_glob_files_in_dir

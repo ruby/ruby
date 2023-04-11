@@ -359,13 +359,13 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
-      FileUtils.chmod 0555, @a1.cache_dir
+      FileUtils.chmod 0o555, @a1.cache_dir
       begin
         FileUtils.mkdir_p File.join(Gem.user_dir, "cache")
       rescue StandardError
         nil
       end
-      FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
+      FileUtils.chmod 0o555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do
         inst = Gem::RemoteFetcher.fetcher
@@ -374,21 +374,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_equal(File.join(@tempdir, @a1.file_name),
                    inst.download(@a1, local_path))
     ensure
-      FileUtils.chmod 0755, File.join(Gem.user_dir, "cache")
-      FileUtils.chmod 0755, @a1.cache_dir
+      FileUtils.chmod 0o755, File.join(Gem.user_dir, "cache")
+      FileUtils.chmod 0o755, @a1.cache_dir
     end
 
     def test_download_read_only
-      FileUtils.chmod 0555, @a1.cache_dir
-      FileUtils.chmod 0555, @gemhome
+      FileUtils.chmod 0o555, @a1.cache_dir
+      FileUtils.chmod 0o555, @gemhome
 
       fetcher = util_fuck_with_fetcher File.read(@a1_gem)
       fetcher.download(@a1, "http://gems.example.com")
       a1_cache_gem = File.join Gem.user_dir, "cache", @a1.file_name
       assert File.exist? a1_cache_gem
     ensure
-      FileUtils.chmod 0755, @gemhome
-      FileUtils.chmod 0755, @a1.cache_dir
+      FileUtils.chmod 0o755, @gemhome
+      FileUtils.chmod 0o755, @a1.cache_dir
     end
   end
 

@@ -316,7 +316,7 @@ class Gem::Installer
     FileUtils.rm_rf spec.extension_dir
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0755
+    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0o755
 
     if @options[:install_as_default]
       extract_bin
@@ -495,7 +495,7 @@ class Gem::Installer
       next unless File.exist? bin_path
 
       mode = File.stat(bin_path).mode
-      dir_mode = options[:prog_mode] || (mode | 0111)
+      dir_mode = options[:prog_mode] || (mode | 0o111)
 
       unless dir_mode == mode
         require "fileutils"
@@ -540,9 +540,9 @@ class Gem::Installer
     require "fileutils"
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, "wb", 0755 do |file|
+    File.open bin_script_path, "wb", 0o755 do |file|
       file.print app_script_text(filename)
-      file.chmod(options[:prog_mode] || 0755)
+      file.chmod(options[:prog_mode] || 0o755)
     end
 
     verbose bin_script_path
@@ -712,7 +712,7 @@ class Gem::Installer
   end
 
   def verify_gem_home # :nodoc:
-    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0755
+    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0o755
     raise Gem::FilePermissionError, gem_home unless File.writable?(gem_home)
   end
 
@@ -934,7 +934,7 @@ TEXT
     build_info_dir = File.join gem_home, "build_info"
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0755
+    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0o755
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
@@ -957,7 +957,7 @@ TEXT
 
   def ensure_writable_dir(dir) # :nodoc:
     begin
-      Dir.mkdir dir, *[options[:dir_mode] && 0755].compact
+      Dir.mkdir dir, *[options[:dir_mode] && 0o755].compact
     rescue SystemCallError
       raise unless File.directory? dir
     end

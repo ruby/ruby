@@ -163,11 +163,11 @@ class Gem::Package::TarTestCase < Gem::TestCase
     data_tgz = util_tar_gz(&block)
     util_tar do |tar|
       if spec
-        tar.add_file "metadata.gz", 0444 do |io|
+        tar.add_file "metadata.gz", 0o444 do |io|
           io.write util_gzip(spec.to_yaml)
         end
       end
-      tar.add_file "data.tar.gz", 0644 do |io|
+      tar.add_file "data.tar.gz", 0o644 do |io|
         io.write data_tgz.string
       end
     end

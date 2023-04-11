@@ -442,11 +442,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = util_tar_gz {}
 
     gem = util_tar do |tar|
-      tar.add_file "data.tar.gz", 0644 do |io|
+      tar.add_file "data.tar.gz", 0o644 do |io|
         io.write data_tgz.string
       end
 
-      tar.add_file "metadata.gz", 0644 do |io|
+      tar.add_file "metadata.gz", 0o644 do |io|
         Zlib::GzipWriter.wrap io do |gzio|
           gzio.write @spec.to_yaml
         end
@@ -479,7 +479,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     extracted = File.join @destination, "lib/code.rb"
     assert_path_exist extracted
 
-    mask = 0100666 & (~File.umask)
+    mask = 0o100666 & (~File.umask)
 
     assert_equal mask.to_s(8), File.stat(extracted).mode.to_s(8) unless
       Gem.win_platform?
@@ -489,11 +489,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = util_tar_gz {}
 
     gem = util_tar do |tar|
-      tar.add_file "data.tar.gz", 0644 do |io|
+      tar.add_file "data.tar.gz", 0o644 do |io|
         io.write data_tgz.string
       end
 
-      tar.add_file "metadata.gz", 0644 do |io|
+      tar.add_file "metadata.gz", 0o644 do |io|
         Zlib::GzipWriter.wrap io do |gzio|
           gzio.write @spec.to_yaml
         end
@@ -523,14 +523,14 @@ class TestGemPackage < Gem::Package::TarTestCase
     filepath = File.join @destination, "README.rdoc"
     assert_path_exist filepath
 
-    assert_equal 0104444, File.stat(filepath).mode
+    assert_equal 0o104444, File.stat(filepath).mode
   end
 
   def test_extract_tar_gz_absolute
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file "/absolute.rb", 0644 do |io|
+      tar.add_file "/absolute.rb", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -548,12 +548,12 @@ class TestGemPackage < Gem::Package::TarTestCase
     package.verify
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file "relative.rb", 0644 do |io|
+      tar.add_file "relative.rb", 0o644 do |io|
         io.write "hi"
       end
 
-      tar.mkdir       "lib", 0755
-      tar.add_symlink "lib/foo.rb", "../relative.rb", 0644
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/foo.rb", "../relative.rb", 0o644
     end
 
     begin
@@ -579,8 +579,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     package.verify
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir       "lib", 0755
-      tar.add_symlink "lib/foo.rb", "../broken.rb", 0644
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/foo.rb", "../broken.rb", 0o644
     end
 
     ui = Gem::MockGemUi.new
@@ -599,9 +599,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir       "lib",               0755
-      tar.add_symlink "lib/link", "../..", 0644
-      tar.add_file    "lib/link/outside.txt", 0644 do |io|
+      tar.mkdir       "lib",               0o755
+      tar.add_symlink "lib/link", "../..", 0o644
+      tar.add_file    "lib/link/outside.txt", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -667,11 +667,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir    "lib",        0755
-      tar.add_file "lib/foo.rb", 0644 do |io|
+      tar.mkdir    "lib",        0o755
+      tar.add_file "lib/foo.rb", 0o644 do |io|
         io.write "hi"
       end
-      tar.mkdir    "lib/foo", 0755
+      tar.mkdir    "lib/foo", 0o755
     end
 
     package.extract_tar_gz tgz_io, @destination
@@ -687,7 +687,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file "./dot_slash.rb", 0644 do |io|
+      tar.add_file "./dot_slash.rb", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -702,7 +702,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file ".dot_file.rb", 0644 do |io|
+      tar.add_file ".dot_file.rb", 0o644 do |io|
         io.write "hi"
       end
     end
@@ -718,7 +718,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package = Gem::Package.new @gem
 
       tgz_io = util_tar_gz do |tar|
-        tar.add_file "foo/file.rb", 0644 do |io|
+        tar.add_file "foo/file.rb", 0o644 do |io|
           io.write "hi"
         end
       end
@@ -834,7 +834,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_checksum_bad
     data_tgz = util_tar_gz do |tar|
-      tar.add_file "lib/code.rb", 0444 do |io|
+      tar.add_file "lib/code.rb", 0o444 do |io|
         io.write "# lib/code.rb"
       end
     end
@@ -844,11 +844,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     gem = util_tar do |tar|
       metadata_gz = Gem::Util.gzip @spec.to_yaml
 
-      tar.add_file "metadata.gz", 0444 do |io|
+      tar.add_file "metadata.gz", 0o444 do |io|
         io.write metadata_gz
       end
 
-      tar.add_file "data.tar.gz", 0444 do |io|
+      tar.add_file "data.tar.gz", 0o444 do |io|
         io.write data_tgz
       end
 
@@ -858,7 +858,7 @@ class TestGemPackage < Gem::Package::TarTestCase
           "metadata.gz" => "bogus",
         },
       }
-      tar.add_file "checksums.yaml.gz", 0444 do |io|
+      tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
           gz_io.write Psych.dump bogus_checksums
         end
@@ -881,7 +881,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_checksum_missing
     data_tgz = util_tar_gz do |tar|
-      tar.add_file "lib/code.rb", 0444 do |io|
+      tar.add_file "lib/code.rb", 0o444 do |io|
         io.write "# lib/code.rb"
       end
     end
@@ -891,7 +891,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     gem = util_tar do |tar|
       metadata_gz = Gem::Util.gzip @spec.to_yaml
 
-      tar.add_file "metadata.gz", 0444 do |io|
+      tar.add_file "metadata.gz", 0o444 do |io|
         io.write metadata_gz
       end
 
@@ -904,13 +904,13 @@ class TestGemPackage < Gem::Package::TarTestCase
         },
       }
 
-      tar.add_file "checksums.yaml.gz", 0444 do |io|
+      tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
           gz_io.write Psych.dump checksums
         end
       end
 
-      tar.add_file "data.tar.gz", 0444 do |io|
+      tar.add_file "data.tar.gz", 0o444 do |io|
         io.write data_tgz
       end
     end
@@ -929,7 +929,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     tf = Tempfile.open "corrupt" do |io|
       data = Gem::Util.gzip "a" * 10
       io.write \
-        tar_file_header("metadata.gz", "\000x", 0644, data.length, Time.now)
+        tar_file_header("metadata.gz", "\000x", 0o644, data.length, Time.now)
       io.write data
       io.rewind
 
@@ -981,8 +981,8 @@ class TestGemPackage < Gem::Package::TarTestCase
         build.add_metadata gem
         build.add_contents gem
 
-        gem.add_file_simple "a.sig", 0444, 0
-        gem.add_file_simple "a.sig", 0444, 0
+        gem.add_file_simple "a.sig", 0o444, 0
+        gem.add_file_simple "a.sig", 0o444, 0
       end
     end
 
@@ -1069,7 +1069,7 @@ class TestGemPackage < Gem::Package::TarTestCase
             "fake_sig"
           end
         end
-        gem.add_file_signed "data2.tar.gz", 0444, fake_signer.new do |io|
+        gem.add_file_signed "data2.tar.gz", 0o444, fake_signer.new do |io|
           io.write bogus_data
         end
 

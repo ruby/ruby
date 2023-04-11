@@ -56,7 +56,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_path_exist trusted
 
-    mask = 0100600 & (~File.umask)
+    mask = 0o100600 & (~File.umask)
 
     assert_equal mask, File.stat(trusted).mode unless Gem.win_platform?
 
@@ -70,8 +70,8 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_path_exist @dest_dir
 
-    mask = 040700 & (~File.umask)
-    mask |= 0200000 if RUBY_PLATFORM.include?("aix")
+    mask = 0o040700 & (~File.umask)
+    mask |= 0o200000 if RUBY_PLATFORM.include?("aix")
 
     assert_equal mask, File.stat(@dest_dir).mode unless Gem.win_platform?
   end
@@ -87,12 +87,12 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_verify_wrong_permissions
-    FileUtils.mkdir_p @dest_dir, :mode => 0777
+    FileUtils.mkdir_p @dest_dir, :mode => 0o777
 
     @trust_dir.verify
 
-    mask = 040700 & (~File.umask)
-    mask |= 0200000 if RUBY_PLATFORM.include?("aix")
+    mask = 0o40700 & (~File.umask)
+    mask |= 0o200000 if RUBY_PLATFORM.include?("aix")
 
     assert_equal mask, File.stat(@dest_dir).mode unless Gem.win_platform?
   end

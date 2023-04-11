@@ -230,7 +230,7 @@ class Gem::Package
       end
     end
 
-    tar.add_file_signed "checksums.yaml.gz", 0444, @signer do |io|
+    tar.add_file_signed "checksums.yaml.gz", 0o444, @signer do |io|
       gzip_to io do |gz_io|
         Psych.dump checksums_by_algorithm, gz_io
       end
@@ -242,7 +242,7 @@ class Gem::Package
   # and adds this file to the +tar+.
 
   def add_contents(tar) # :nodoc:
-    digests = tar.add_file_signed "data.tar.gz", 0444, @signer do |io|
+    digests = tar.add_file_signed "data.tar.gz", 0o444, @signer do |io|
       gzip_to io do |gz_io|
         Gem::Package::TarWriter.new gz_io do |data_tar|
           add_files data_tar
@@ -278,7 +278,7 @@ class Gem::Package
   # Adds the package's Gem::Specification to the +tar+ file
 
   def add_metadata(tar) # :nodoc:
-    digests = tar.add_file_signed "metadata.gz", 0444, @signer do |io|
+    digests = tar.add_file_signed "metadata.gz", 0o444, @signer do |io|
       gzip_to io do |gz_io|
         gz_io.write @spec.to_yaml
       end
@@ -382,7 +382,7 @@ EOM
   def extract_files(destination_dir, pattern = "*")
     verify unless @spec
 
-    FileUtils.mkdir_p destination_dir, :mode => dir_mode && 0755
+    FileUtils.mkdir_p destination_dir, :mode => dir_mode && 0o755
 
     @gem.with_read_io do |io|
       reader = Gem::Package::TarReader.new io
@@ -432,7 +432,7 @@ EOM
         FileUtils.rm_rf destination
 
         mkdir_options = {}
-        mkdir_options[:mode] = dir_mode ? 0755 : (entry.header.mode if entry.directory?)
+        mkdir_options[:mode] = dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
         mkdir =
           if entry.directory?
             destination
@@ -468,7 +468,7 @@ EOM
   end
 
   def file_mode(mode) # :nodoc:
-    ((mode & 0111).zero? ? data_mode : prog_mode) ||
+    ((mode & 0o111).zero? ? data_mode : prog_mode) ||
       # If we're not using one of the default modes, then we're going to fall
       # back to the mode from the tarball. In this case we need to mask it down
       # to fit into 2^16 bits (the maximum value for a mode in CRuby since it

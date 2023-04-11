@@ -192,7 +192,7 @@ class Gem::Package::TarWriter
     if signer.key
       signature = signer.sign signature_digest.digest
 
-      add_file_simple "#{name}.sig", 0444, signature.length do |io|
+      add_file_simple "#{name}.sig", 0o444, signature.length do |io|
         io.write signature
       end
     end

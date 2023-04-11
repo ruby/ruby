@@ -477,7 +477,7 @@ class Gem::TestCase < Test::Unit::TestCase
     @temp_cred = File.join(@userhome, ".gem", "credentials")
     FileUtils.mkdir_p File.dirname(@temp_cred)
     File.write @temp_cred, ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
-    File.chmod 0600, @temp_cred
+    File.chmod 0o600, @temp_cred
   end
 
   def credential_teardown

@@ -241,9 +241,9 @@ class Gem::ConfigFile
     return if Gem.win_platform? # windows doesn't write 0600 as 0600
     return unless File.exist? credentials_path
 
-    existing_permissions = File.stat(credentials_path).mode & 0777
+    existing_permissions = File.stat(credentials_path).mode & 0o777
 
-    return if existing_permissions == 0600
+    return if existing_permissions == 0o600
 
     alert_error <<-ERROR
 Your gem push credentials file located at:
@@ -326,7 +326,7 @@ if you believe they were disclosed to a third party.
 
     Gem.load_yaml
 
-    permissions = 0600 & (~File.umask)
+    permissions = 0o600 & (~File.umask)
     File.open(credentials_path, "w", permissions) do |f|
       f.write config.to_yaml
     end

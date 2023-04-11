@@ -327,7 +327,7 @@ class Gem::Indexer
 
   def make_temp_directories
     FileUtils.rm_rf @directory
-    FileUtils.mkdir_p @directory, :mode => 0700
+    FileUtils.mkdir_p @directory, :mode => 0o700
     FileUtils.mkdir_p @quick_marshal_dir
   end
 

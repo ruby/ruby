@@ -29,7 +29,7 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     content = ("a".."z").to_a.join(" ")
 
     str =
-      tar_file_header("lib/foo", "", 010644, content.size, Time.now) +
+      tar_file_header("lib/foo", "", 0o10644, content.size, Time.now) +
       content + "\0" * (512 - content.size)
     str << "\0" * 1024
 
@@ -90,7 +90,7 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
 
   def test_read_in_gem_data
     gem_tar = util_gem_data_tar do |tar|
-      tar.add_file "lib/code.rb", 0444 do |io|
+      tar.add_file "lib/code.rb", 0o444 do |io|
         io.write "# lib/code.rb"
       end
     end
@@ -112,10 +112,10 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
 
   def test_seek_in_gem_data
     gem_tar = util_gem_data_tar do |tar|
-      tar.add_file "lib/code.rb", 0444 do |io|
+      tar.add_file "lib/code.rb", 0o444 do |io|
         io.write "# lib/code.rb"
       end
-      tar.add_file "lib/foo.rb", 0444 do |io|
+      tar.add_file "lib/foo.rb", 0o444 do |io|
         io.write "# lib/foo.rb"
       end
     end

@@ -156,7 +156,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     util_make_gems
 
-    FileUtils.chmod 0555, @gemhome
+    FileUtils.chmod 0o555, @gemhome
 
     @cmd.options[:args] = %w[b]
 
@@ -168,7 +168,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     assert File.exist?(File.join(@tempdir, "b-2")), "b should be unpacked"
   ensure
-    FileUtils.chmod 0755, @gemhome
+    FileUtils.chmod 0o755, @gemhome
   end
 
   def test_execute_with_target_option
