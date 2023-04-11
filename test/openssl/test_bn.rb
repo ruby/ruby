@@ -175,7 +175,9 @@ class OpenSSL::TestBN < OpenSSL::TestCase
   end
 
   def test_mod_sqrt
-    assert_equal(3, 4.to_bn.mod_sqrt(5))
+    assert_equal(4, 4.to_bn.mod_sqrt(5).mod_sqr(5))
+    # One of 189484 or 326277 is returned as a square root of 2 (mod 515761).
+    assert_equal(2, 2.to_bn.mod_sqrt(515761).mod_sqr(515761))
     assert_equal(0, 5.to_bn.mod_sqrt(5))
     assert_raise(OpenSSL::BNError) { 3.to_bn.mod_sqrt(5) }
   end
