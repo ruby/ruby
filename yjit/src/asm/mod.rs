@@ -240,6 +240,7 @@ impl CodeBlock {
     }
 
     /// Size of the region in bytes where writes could be attempted.
+    #[cfg(target = "aarch64")]
     pub fn virtual_region_size(&self) -> usize {
         self.mem_block.borrow().virtual_region_size()
     }
