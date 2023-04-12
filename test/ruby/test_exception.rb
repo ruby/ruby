@@ -1470,6 +1470,19 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal({ highlight: Exception.to_tty? }, opt_)
   end
 
+  def test_full_message_with_encoding
+    message = "\u{dc}bersicht"
+    begin
+      begin
+        raise message
+      rescue => e
+        raise "\n#{e.message}"
+      end
+    rescue => e
+    end
+    assert_include(e.full_message, message)
+  end
+
   def test_syntax_error_detailed_message
     Dir.mktmpdir do |dir|
       File.write(File.join(dir, "detail.rb"), "#{<<~"begin;"}\n#{<<~'end;'}")

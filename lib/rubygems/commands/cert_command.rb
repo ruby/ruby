@@ -178,7 +178,7 @@ class Gem::Commands::CertCommand < Gem::Command
 
     algorithm = options[:key_algorithm] || Gem::Security::DEFAULT_KEY_ALGORITHM
     key = Gem::Security.create_key(algorithm)
-    key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
+    key_path = Gem::Security.write key, "gem-private_key.pem", 0o600, passphrase
 
     [key, key_path]
   end
@@ -291,7 +291,7 @@ For further reading on signing gems see `ri Gem::Security`.
     cert = File.read cert_file
     cert = OpenSSL::X509::Certificate.new cert
 
-    permissions = File.stat(cert_file).mode & 0777
+    permissions = File.stat(cert_file).mode & 0o777
 
     issuer_cert = options[:issuer_cert]
     issuer_key = options[:key]

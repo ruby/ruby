@@ -34,12 +34,8 @@ module Bundler
         @base[name]
       end
 
-      def delete(incomplete_specs)
-        incomplete_specs.each do |incomplete_spec|
-          incomplete_spec.partially_complete_specs.each do |spec|
-            @base.delete(spec)
-          end
-        end
+      def delete(specs)
+        @base.delete(specs)
       end
 
       def get_package(name)

@@ -1170,8 +1170,8 @@ Init_openssl(void)
     /*
      * Init main module
      */
-    mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
+    mOSSL = rb_define_module("OpenSSL");
     rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
@@ -1208,12 +1208,12 @@ Init_openssl(void)
     rb_define_module_function(mOSSL, "fips_mode", ossl_fips_mode_get, 0);
     rb_define_module_function(mOSSL, "fips_mode=", ossl_fips_mode_set, 1);
 
+    rb_global_variable(&eOSSLError);
     /*
      * Generic error,
      * common for all classes under OpenSSL module
      */
     eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
-    rb_global_variable(&eOSSLError);
 
     /*
      * Init debug core

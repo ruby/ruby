@@ -19,10 +19,6 @@ config = ARGV.shift
 count = 0
 col = Colorize.new
 
-# nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
-# In case we're working with llvm-nm, tell it to not worry about the bitcode.
-no_llvm = "--no-llvm-bc" if `#{NM} --version` =~ /llvm/i
-
 config_code = File.read(config)
 REPLACE = config_code.scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\((\w+)/).flatten
 # REPLACE << 'memcmp' if /\bAC_FUNC_MEMCMP\b/ =~ config_code
@@ -54,7 +50,7 @@ REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
 
 print "Checking leaked global symbols..."
 STDOUT.flush
-IO.foreach("|#{NM} #{no_llvm} #{ARGV.join(' ')}") do |line|
+IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   n, t, = line.split
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")

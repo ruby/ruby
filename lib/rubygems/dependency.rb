@@ -49,7 +49,7 @@ class Gem::Dependency
     requirements = requirements.first if requirements.length == 1 # unpack
 
     unless TYPES.include? type
-      raise ArgumentError, "Valid types are #{TYPES.inspect}, " +
+      raise ArgumentError, "Valid types are #{TYPES.inspect}, " \
                            "not #{type.inspect}"
     end
 
@@ -74,11 +74,9 @@ class Gem::Dependency
 
   def inspect # :nodoc:
     if prerelease?
-      "<%s type=%p name=%p requirements=%p prerelease=ok>" %
-        [self.class, type, name, requirement.to_s]
+      format("<%s type=%p name=%p requirements=%p prerelease=ok>", self.class, type, name, requirement.to_s)
     else
-      "<%s type=%p name=%p requirements=%p>" %
-        [self.class, type, name, requirement.to_s]
+      format("<%s type=%p name=%p requirements=%p>", self.class, type, name, requirement.to_s)
     end
   end
 

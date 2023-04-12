@@ -252,16 +252,10 @@ class Gem::TestCase < Test::Unit::TestCase
   def assert_contains_make_command(target, output, msg = nil)
     if output.include?("\n")
       msg = build_message(msg,
-        "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
-          ("%s %s" % [make_command, target]).rstrip,
-          output,
-        ])
+        format("Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT", format("%s %s", make_command, target).rstrip, output))
     else
       msg = build_message(msg,
-        'Expected make command "%s", but was "%s"' % [
-          ("%s %s" % [make_command, target]).rstrip,
-          output,
-        ])
+        format('Expected make command "%s", but was "%s"', format("%s %s", make_command, target).rstrip, output))
     end
 
     assert scan_make_command_lines(output).any? {|line|
@@ -483,7 +477,7 @@ class Gem::TestCase < Test::Unit::TestCase
     @temp_cred = File.join(@userhome, ".gem", "credentials")
     FileUtils.mkdir_p File.dirname(@temp_cred)
     File.write @temp_cred, ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
-    File.chmod 0600, @temp_cred
+    File.chmod 0o600, @temp_cred
   end
 
   def credential_teardown

@@ -41,12 +41,12 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_initialize_unwritable_home_dir
     pend "chmod not supported" if Gem.win_platform?
 
-    FileUtils.chmod 0000, Gem.user_home
+    FileUtils.chmod 0o000, Gem.user_home
 
     begin
       assert Gem::SpecFetcher.new
     ensure
-      FileUtils.chmod 0755, Gem.user_home
+      FileUtils.chmod 0o755, Gem.user_home
     end
   end
 

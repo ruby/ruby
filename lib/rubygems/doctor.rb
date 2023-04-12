@@ -75,7 +75,7 @@ class Gem::Doctor
     Gem.use_paths @gem_repository.to_s
 
     unless gem_repository?
-      say "This directory does not appear to be a RubyGems repository, " +
+      say "This directory does not appear to be a RubyGems repository, " \
           "skipping"
       say
       return

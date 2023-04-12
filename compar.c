@@ -289,8 +289,8 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *  - #<: Returns whether +self+ is less than the given object.
  *  - #<=: Returns whether +self+ is less than or equal to the given object.
  *  - #==: Returns whether +self+ is equal to the given object.
- *  - #>: Returns whether +self+ is greater than or equal to the given object.
- *  - #>=: Returns whether +self+ is greater than the given object.
+ *  - #>: Returns whether +self+ is greater than the given object.
+ *  - #>=: Returns whether +self+ is greater than or equal to the given object.
  *  - #between?: Returns +true+ if +self+ is between two given objects.
  *  - #clamp: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
  *

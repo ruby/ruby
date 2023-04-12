@@ -199,8 +199,8 @@ class Gem::Uninstaller
     executables = executables.map {|exec| formatted_program_filename exec }
 
     remove = if @force_executables.nil?
-      ask_yes_no("Remove executables:\n" +
-                 "\t#{executables.join ", "}\n\n" +
+      ask_yes_no("Remove executables:\n" \
+                 "\t#{executables.join ", "}\n\n" \
                  "in addition to the gem?",
                  true)
     else

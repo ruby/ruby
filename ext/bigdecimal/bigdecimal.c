@@ -3722,7 +3722,7 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
  *  - Other type:
  *
  *    - Raises an exception if keyword argument +exception+ is +true+.
- *    - Returns +nil+ if keyword argument +exception+ is +true+.
+ *    - Returns +nil+ if keyword argument +exception+ is +false+.
  *
  *  Raises an exception if +value+ evaluates to a Float
  *  and +digits+ is larger than Float::DIG + 1.
@@ -7171,7 +7171,6 @@ VpSqrt(Real *y, Real *x)
     Real *r = NULL;
     size_t y_prec;
     SIGNED_VALUE n, e;
-    SIGNED_VALUE prec;
     ssize_t nr;
     double val;
 
@@ -7209,12 +7208,6 @@ VpSqrt(Real *y, Real *x)
 
     nr = 0;
     y_prec = y->MaxPrec;
-
-    prec = x->exponent - (ssize_t)y_prec;
-    if (x->exponent > 0)
-	++prec;
-    else
-	--prec;
 
     VpVtoD(&val, &e, x);    /* val <- x  */
     e /= (SIGNED_VALUE)BASE_FIG;

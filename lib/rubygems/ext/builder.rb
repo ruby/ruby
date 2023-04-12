@@ -30,13 +30,13 @@ class Gem::Ext::Builder
     make_program = Shellwords.split(make_program_name)
 
     # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? "DESTDIR=%s" % ENV["DESTDIR"] : ""
+    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
 
     env = [destdir]
 
     if sitedir
-      env << "sitearchdir=%s" % sitedir
-      env << "sitelibdir=%s" % sitedir
+      env << format("sitearchdir=%s", sitedir)
+      env << format("sitelibdir=%s", sitedir)
     end
 
     targets.each do |target|

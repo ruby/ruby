@@ -53,6 +53,8 @@
 
 #include "ruby_assert.h"
 
+#define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
+
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
@@ -100,7 +102,6 @@ extern int ruby_assert_critical_section_entered;
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
-#include "shape.h"
 
 #include "ruby/thread_native.h"
 
@@ -499,7 +500,6 @@ struct rb_iseq_constant_body {
     unsigned int ci_size;
     unsigned int stack_max; /* for stack overflow check */
 
-    bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     union {
@@ -670,11 +670,6 @@ typedef struct rb_vm_struct {
     /* object management */
     VALUE mark_object_ary;
     const VALUE special_exceptions[ruby_special_error_count];
-
-    /* object shapes */
-    rb_shape_t *shape_list;
-    rb_shape_t *root_shape;
-    shape_id_t next_shape_id;
 
     /* load */
     VALUE top_self;
@@ -1135,7 +1130,6 @@ rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_call
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
-attr_index_t rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq);
 
 VALUE rb_iseq_coverage(const rb_iseq_t *iseq);
 

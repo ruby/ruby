@@ -14,6 +14,7 @@
 
 #include "internal/compilers.h" /* for __has_attribute */
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
+#include "vm_core.h"            /* for GET_EC() */
 
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
@@ -132,25 +133,20 @@ struct rb_objspace; /* in vm_core.h */
 # undef RB_NEWOBJ_OF
 #endif
 
-#define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
+#define NEWOBJ_OF_0(var, T, c, f, s, ec) \
+    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+            rb_wb_protected_newobj_of(GET_EC(), (c), (f) & ~FL_WB_PROTECTED, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), s))
+#define NEWOBJ_OF_ec(var, T, c, f, s, ec) \
+    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
+            rb_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), s))
 
-#define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
-  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) : \
-                   rb_wb_unprotected_newobj_of((c), (f), s))
+#define NEWOBJ_OF(var, T, c, f, s, ec) \
+        NEWOBJ_OF_HELPER(ec)(var, T, c, f, s, ec)
 
-#define RB_RVARGC_EC_NEWOBJ_OF(ec, var, T, c, f, s) \
-  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
-                   rb_wb_unprotected_newobj_of((c), (f), s))
+#define NEWOBJ_OF_HELPER(ec) NEWOBJ_OF_ ## ec
 
-/* optimized version of NEWOBJ() */
-#define RB_NEWOBJ_OF(var, T, c, f) RB_RVARGC_NEWOBJ_OF(var, T, c, f, RVALUE_SIZE)
-
-#define RB_EC_NEWOBJ_OF(ec, var, T, c, f) RB_RVARGC_EC_NEWOBJ_OF(ec, var, T, c, f, RVALUE_SIZE)
-
-#define NEWOBJ_OF(var, T, c, f) RB_NEWOBJ_OF((var), T, (c), (f))
-#define RVARGC_NEWOBJ_OF(var, T, c, f, s) RB_RVARGC_NEWOBJ_OF((var), T, (c), (f), (s))
 #define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
@@ -190,14 +186,11 @@ struct rb_objspace; /* in vm_core.h */
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shape ID will be the SPECIAL_CONST_SHAPE_ID
 #ifndef SIZE_POOL_COUNT
-# if (SIZEOF_UINT64_T == SIZEOF_VALUE)
-#  define SIZE_POOL_COUNT 5
-# else
-#  define SIZE_POOL_COUNT 1
-# endif
+# define SIZE_POOL_COUNT 5
 #endif
 
-#define RCLASS_EXT_EMBEDDED (SIZE_POOL_COUNT > 1)
+// TODO: Make rb_classext_t small enough to fit in 80 bytes on 32 bit
+#define RCLASS_EXT_EMBEDDED (SIZEOF_UINT64_T == SIZEOF_VALUE)
 
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;
@@ -282,9 +275,8 @@ VALUE rb_gc_disable_no_rest(void);
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
-VALUE rb_ec_wb_protected_newobj_of(struct rb_execution_context_struct *ec, VALUE klass, VALUE flags, size_t);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);

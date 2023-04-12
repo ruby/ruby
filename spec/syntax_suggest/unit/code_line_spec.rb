@@ -48,6 +48,7 @@ module SyntaxSuggest
       # Indicates line 1 can join 2, 2 can join 3, but 3 won't join it's next line
       expect(code_lines.map(&:ignore_newline_not_beg?)).to eq([true, true, false, false])
     end
+
     it "trailing if" do
       code_lines = CodeLine.from_source(<<~'EOM')
         puts "lol" if foo

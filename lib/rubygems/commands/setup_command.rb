@@ -243,7 +243,7 @@ By default, this RubyGems will install gem as:
   end
 
   def install_executables(bin_dir)
-    prog_mode = options[:prog_mode] || 0755
+    prog_mode = options[:prog_mode] || 0o755
 
     executables = { "gem" => "bin" }
     executables.each do |tool, path|
@@ -369,7 +369,7 @@ By default, this RubyGems will install gem as:
       File.dirname(loaded_from)
     else
       target_specs_dir = File.join(default_dir, "specifications", "default")
-      mkdir_p target_specs_dir, :mode => 0755
+      mkdir_p target_specs_dir, :mode => 0o755
       target_specs_dir
     end
 
@@ -393,7 +393,7 @@ By default, this RubyGems will install gem as:
     end
 
     bundler_bin_dir = bundler_spec.bin_dir
-    mkdir_p bundler_bin_dir, :mode => 0755
+    mkdir_p bundler_bin_dir, :mode => 0o755
     bundler_spec.executables.each do |e|
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
@@ -430,8 +430,8 @@ By default, this RubyGems will install gem as:
       lib_dir, bin_dir = generate_default_dirs
     end
 
-    mkdir_p lib_dir, :mode => 0755
-    mkdir_p bin_dir, :mode => 0755
+    mkdir_p lib_dir, :mode => 0o755
+    mkdir_p bin_dir, :mode => 0o755
 
     [lib_dir, bin_dir]
   end
@@ -639,10 +639,10 @@ abort "#{deprecation_message}"
     dest_file = File.join dest_dir, file
     dest_dir = File.dirname dest_file
     unless File.directory? dest_dir
-      mkdir_p dest_dir, :mode => 0755
+      mkdir_p dest_dir, :mode => 0o755
     end
 
-    install file, dest_file, :mode => options[:data_mode] || 0644
+    install file, dest_file, :mode => options[:data_mode] || 0o644
   end
 
   def remove_file_list(files, dir)

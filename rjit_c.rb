@@ -696,6 +696,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_intern) }
   end
 
+  def C.rb_sym_to_proc
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_sym_to_proc) }
+  end
+
   def C.rb_vm_bh_to_procval
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_bh_to_procval) }
   end
@@ -1155,7 +1159,6 @@ module RubyVM::RJIT # :nodoc: all
       icvarc_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), icvarc_size)")],
       ci_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ci_size)")],
       stack_max: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), stack_max)")],
-      catch_except_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), catch_except_p)")],
       builtin_attrs: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), builtin_attrs)")],
       mark_bits: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->mark_bits)"),
@@ -1595,10 +1598,6 @@ module RubyVM::RJIT # :nodoc: all
     CType::Stub.new(:rb_snum_t)
   end
 
-  def C._Bool
-    CType::Bool.new
-  end
-
   def C.iseq_bits_t
     CType::Stub.new(:iseq_bits_t)
   end
@@ -1625,6 +1624,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_method_refined_t
     CType::Stub.new(:rb_method_refined_t)
+  end
+
+  def C._Bool
+    CType::Bool.new
   end
 
   def C.ccan_list_node

@@ -1008,6 +1008,29 @@ RSpec.describe "bundle lock" do
           So, because Gemfile depends on rails >= 7.0.2.3,
             version solving has failed.
     ERR
+
+    lockfile lockfile.gsub(/PLATFORMS\n  #{lockfile_platforms}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
+
+    bundle "lock", :raise_on_error => false
+
+    expect(err).to eq <<~ERR.strip
+      Could not find compatible versions
+
+      Because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
+        and rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
+        rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 OR = 7.0.3.1.
+      And because every version of activemodel depends on activesupport = 6.0.4,
+        rails >= 7.0.2.3, < 7.0.4 requires activesupport = 6.0.4.
+      Because rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1
+        and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
+        rails >= 7.0.2.3, < 7.0.4 requires activesupport = 7.0.2.3 OR = 7.0.3.1.
+      Thus, rails >= 7.0.2.3, < 7.0.4 cannot be used.
+      And because rails >= 7.0.4 depends on activemodel = 7.0.4,
+        rails >= 7.0.2.3 requires activemodel = 7.0.4.
+      So, because activemodel = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally
+        and Gemfile depends on rails >= 7.0.2.3,
+        version solving has failed.
+    ERR
   end
 
   it "does not accidentally resolves to prereleases" do

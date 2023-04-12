@@ -172,7 +172,7 @@ class TestGemSecurity < Gem::TestCase
       extension.oid == "subjectAltName"
     end
 
-    assert_equal "#{child_alt_name.value} is not self-signed, contact " +
+    assert_equal "#{child_alt_name.value} is not self-signed, contact " \
                  "#{ALTERNATE_CERT.issuer} to obtain a valid certificate",
                  e.message
   end
@@ -308,7 +308,7 @@ class TestGemSecurity < Gem::TestCase
 
     passphrase = "It should be long."
 
-    @SEC.write key, path, 0600, passphrase
+    @SEC.write key, path, 0o600, passphrase
 
     assert_path_exist path
 
@@ -326,7 +326,7 @@ class TestGemSecurity < Gem::TestCase
 
     cipher = OpenSSL::Cipher.new "AES-192-CBC"
 
-    @SEC.write key, path, 0600, passphrase, cipher
+    @SEC.write key, path, 0o600, passphrase, cipher
 
     assert_path_exist path
 

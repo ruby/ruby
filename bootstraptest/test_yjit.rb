@@ -3824,3 +3824,22 @@ assert_equal '[true, true, true, true]', %q{
 assert_equal '0', %q{
   3[0, 0]
 }
+
+# unspecified_bits + checkkeyword
+assert_equal '2', %q{
+  def callee = 1
+
+  # checkkeyword should see unspecified_bits=0 (use bar), not Integer 1 (set bar = foo).
+  def foo(foo, bar: foo) = bar
+
+  def entry(&block)
+    # write 1 at stack[3]. Calling #callee spills stack[3].
+    1 + (1 + (1 + (1 + callee)))
+    # &block is written to a register instead of stack[3]. When &block is popped and
+    # unspecified_bits is pushed, it must be written to stack[3], not to a register.
+    foo(1, bar: 2, &block)
+  end
+
+  entry # call branch_stub_hit (spill temps)
+  entry # doesn't call branch_stub_hit (not spill temps)
+}

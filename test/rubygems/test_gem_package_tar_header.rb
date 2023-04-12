@@ -9,7 +9,7 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
 
     header = {
       :name => "x",
-      :mode => 0644,
+      :mode => 0o644,
       :uid => 1000,
       :gid => 10_000,
       :size => 100,
@@ -44,7 +44,7 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     assert_equal "group", @tar_header.gname,    "gname"
     assert_equal "link",  @tar_header.linkname, "linkname"
     assert_equal "ustar", @tar_header.magic,    "magic"
-    assert_equal 0644,    @tar_header.mode,     "mode"
+    assert_equal 0o644, @tar_header.mode, "mode"
     assert_equal 12_345, @tar_header.mtime, "mtime"
     assert_equal "x",     @tar_header.name,     "name"
     assert_equal "y",     @tar_header.prefix,   "prefix"
@@ -200,7 +200,7 @@ tjmather\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
     assert_equal 1_991_400_094, tar_header.gid
 
     assert_equal "GeoIP2-City_20190528/", tar_header.name
-    assert_equal 0755, tar_header.mode
+    assert_equal 0o755, tar_header.mode
     assert_equal 0, tar_header.size
     assert_equal 1_559_064_640, tar_header.mtime
     assert_equal 6932, tar_header.checksum

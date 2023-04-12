@@ -9,8 +9,8 @@ class Gem::Security::TrustDir
   # Default permissions for the trust directory and its contents
 
   DEFAULT_PERMISSIONS = {
-    :trust_dir => 0700,
-    :trusted_cert => 0600,
+    :trust_dir => 0o700,
+    :trusted_cert => 0o600,
   }.freeze
 
   ##
@@ -91,7 +91,7 @@ class Gem::Security::TrustDir
 
     destination = cert_path certificate
 
-    File.open destination, "wb", 0600 do |io|
+    File.open destination, "wb", 0o600 do |io|
       io.write certificate.to_pem
       io.chmod(@permissions[:trusted_cert])
     end
@@ -109,7 +109,7 @@ class Gem::Security::TrustDir
         "trust directory #{@dir} is not a directory" unless
           File.directory? @dir
 
-      FileUtils.chmod 0700, @dir
+      FileUtils.chmod 0o700, @dir
     else
       FileUtils.mkdir_p @dir, :mode => @permissions[:trust_dir]
     end

@@ -234,6 +234,12 @@ AS_CASE(["${build_os}"],
 ],
 [aix*], [
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
+],
+[darwin*], [
+    # For Apple clang version 14.0.3 (clang-1403.0.22.14.1)
+    ac_cv_prog_ac_ct_AR=`$CC -print-prog-name=ar`
+    ac_cv_prog_ac_ct_LD=`$CC -print-prog-name=ld`
+    ac_cv_prog_ac_ct_NM=`$CC -print-prog-name=nm`
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|msys*|mingw*|darwin*], [
@@ -258,6 +264,10 @@ AC_CHECK_TOOLS([NM],      [gnm nm])
 AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy], [:])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
+
+# nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
+# In case we're working with llvm-nm, tell it to not worry about the bitcode.
+AS_IF([${NM} --help | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
 
 AS_IF([test ! $rb_test_CFLAGS], [AS_UNSET(CFLAGS)]); AS_UNSET(rb_test_CFLAGS)
 AS_IF([test ! $rb_test_CXXFLAGS], [AS_UNSET(CXXFLAGS)]); AS_UNSET(rb_save_CXXFLAGS)
@@ -386,13 +396,6 @@ AS_IF([test "$GCC" = yes], [
     AS_IF([test "$gcc_major" -lt 4], [
         AC_MSG_ERROR([too old GCC: $gcc_major.$gcc_minor])
     ])
-
-    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
-        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
-            [rb_cv_tls_supported=yes],
-            [rb_cv_tls_supported=no])])
-    AS_IF([test x"$rb_cv_tls_supported" != xyes],
-        [AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ], [
     linker_flag=
 ])
@@ -2751,6 +2754,22 @@ AS_IF([test "$THREAD_MODEL" = pthread], [
 		AC_DEFINE_UNQUOTED(SET_ANOTHER_THREAD_NAME(thid,name), $set_another_thread_name)
 	    ])
     ])
+
+    AC_CACHE_CHECK([for thread-local storage sepcifier], [rb_cv_tls_specifier],
+        rb_cv_tls_specifier=none
+        RUBY_WERROR_FLAG([
+            for attr in \
+                _Thread_local \
+                __thread \
+                ; do
+                AC_LINK_IFELSE([AC_LANG_PROGRAM([[$attr int conftest;]])],
+                    [rb_cv_tls_specifier=$attr; break])
+            done
+        ])
+    )
+    AS_IF([test x"${rb_cv_tls_specifier}" != xnone],
+        [AC_DEFINE_UNQUOTED(RB_THREAD_LOCAL_SPECIFIER, ${rb_cv_tls_specifier})]
+    )
 ])
 
 AS_IF([test x"$ac_cv_header_ucontext_h" = xno], [

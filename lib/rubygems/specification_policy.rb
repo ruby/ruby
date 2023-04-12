@@ -234,7 +234,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
     @specification.files.each do |file|
       next unless File.file?(file)
-      next if File.stat(file).mode & 0444 == 0444
+      next if File.stat(file).mode & 0o444 == 0o444
       warning "#{file} is not world-readable"
     end
 

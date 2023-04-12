@@ -262,7 +262,7 @@ class Gem::RequestSet::GemDependencyAPI
       raise ArgumentError, "no gemspecs found at #{Dir.pwd}"
     else
       raise ArgumentError,
-        "found multiple gemspecs at #{Dir.pwd}, " +
+        "found multiple gemspecs at #{Dir.pwd}, " \
         "use the name: option to specify the one you want"
     end
   end
@@ -791,14 +791,14 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     return true if @installing
 
     unless RUBY_VERSION == version
-      message = "Your Ruby version is #{RUBY_VERSION}, " +
+      message = "Your Ruby version is #{RUBY_VERSION}, " \
                 "but your #{gem_deps_file} requires #{version}"
 
       raise Gem::RubyVersionMismatch, message
     end
 
     if engine && engine != Gem.ruby_engine
-      message = "Your Ruby engine is #{Gem.ruby_engine}, " +
+      message = "Your Ruby engine is #{Gem.ruby_engine}, " \
                 "but your #{gem_deps_file} requires #{engine}"
 
       raise Gem::RubyVersionMismatch, message
@@ -807,7 +807,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     if engine_version
       if engine_version != RUBY_ENGINE_VERSION
         message =
-          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " \
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message

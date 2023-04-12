@@ -476,7 +476,7 @@ Removed '/CN=alternate/DC=example'
 
   def test_execute_sign
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0600
+    Gem::Security.write ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -498,14 +498,14 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0100600 & (~File.umask)
+    mask = 0o100600 & (~File.umask)
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
 
   def test_execute_sign_encrypted_key
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0600
+    Gem::Security.write ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -527,7 +527,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0100600 & (~File.umask)
+    mask = 0o100600 & (~File.umask)
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -542,7 +542,7 @@ Removed '/CN=alternate/DC=example'
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0600
+    Gem::Security.write ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -559,7 +559,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0100600 & (~File.umask)
+    mask = 0o100600 & (~File.umask)
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -568,13 +568,13 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write ENCRYPTED_PRIVATE_KEY, private_key_path, 0600, PRIVATE_KEY_PASSPHRASE
+    Gem::Security.write ENCRYPTED_PRIVATE_KEY, private_key_path, 0o600, PRIVATE_KEY_PASSPHRASE
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0600
+    Gem::Security.write ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -591,7 +591,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0100600 & (~File.umask)
+    mask = 0o100600 & (~File.umask)
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -603,7 +603,7 @@ Removed '/CN=alternate/DC=example'
     Gem::Security.write PRIVATE_KEY, private_key_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0600
+    Gem::Security.write ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -631,7 +631,7 @@ ERROR:  --certificate not specified and ~/.gem/gem-public_cert.pem does not exis
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0600
+    Gem::Security.write ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -657,7 +657,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0600
+    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0o600
 
     assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
 
@@ -689,7 +689,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0600
+    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0o600
 
     assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
 
@@ -778,7 +778,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--certificate #{bad}]
     end
 
-    assert_equal "invalid argument: " +
+    assert_equal "invalid argument: " \
                  "--certificate #{bad}: invalid X509 certificate",
                  e.message
   end
@@ -789,7 +789,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{nonexistent}]
     end
 
-    assert_equal "invalid argument: " +
+    assert_equal "invalid argument: " \
                  "--private-key #{nonexistent}: does not exist",
                  e.message
 
@@ -807,7 +807,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{PUBLIC_KEY_FILE}]
     end
 
-    assert_equal "invalid argument: " +
+    assert_equal "invalid argument: " \
                  "--private-key #{PUBLIC_KEY_FILE}: private key not found",
                  e.message
   end

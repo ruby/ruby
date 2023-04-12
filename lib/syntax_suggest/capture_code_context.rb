@@ -76,7 +76,6 @@ module SyntaxSuggest
     #     end
     #   end
     #
-    #
     def capture_falling_indent(block)
       AroundBlockScan.new(
         block: block,

@@ -517,7 +517,7 @@ module Gem::Security
       issuer  = alt_name_or_x509_entry expired_certificate, :issuer
 
       raise Gem::Security::Exception,
-            "#{subject} is not self-signed, contact #{issuer} " +
+            "#{subject} is not self-signed, contact #{issuer} " \
             "to obtain a valid certificate"
     end
 
@@ -589,7 +589,7 @@ module Gem::Security
   # +permissions+. If passed +cipher+ and +passphrase+ those arguments will be
   # passed to +to_pem+.
 
-  def self.write(pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER)
+  def self.write(pemmable, path, permissions = 0o600, passphrase = nil, cipher = KEY_CIPHER)
     path = File.expand_path path
 
     File.open path, "wb", permissions do |io|

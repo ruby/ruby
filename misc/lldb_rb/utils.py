@@ -148,8 +148,8 @@ class RbInspector(LLDBInterface):
 
             elif rval.is_type("RUBY_T_ARRAY"):
                 tRArray = self.target.FindFirstType("struct RArray").GetPointerType()
-                len = rval.ary_len().GetValueAsUnsigned();
-                ptr = rval.ary_ptr().GetValueAsUnsigned();
+                len = rval.ary_len()
+                ptr = rval.ary_ptr()
 
                 self.result.write("T_ARRAY: %slen=%d" % (flaginfo, len))
 
