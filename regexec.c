@@ -1213,14 +1213,9 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 } while (0)
 
 static long
-find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, long num_cache_table, UChar* p)
+bsearch_cache_index(const OnigCacheIndex *table, long num_cache_table, const UChar* p)
 {
   long l = 0, r = num_cache_table - 1, m = 0;
-  OnigCacheIndex* item;
-  OnigRepeatRange* range;
-  OnigStackType *stkp;
-  int count = 0;
-  int is_inc = *p == OP_REPEAT_INC || *p == OP_REPEAT_INC_NG;
 
   while (l <= r) {
     m = (l + r) / 2;
@@ -1228,6 +1223,20 @@ find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_
     if (table[m].addr < p) l = m + 1;
     else r = m - 1;
   }
+  return m;
+}
+
+static long
+find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, long num_cache_table, UChar* p)
+{
+  long m;
+  OnigCacheIndex* item;
+  OnigRepeatRange* range;
+  OnigStackType *stkp;
+  int count = 0;
+  int is_inc = *p == OP_REPEAT_INC || *p == OP_REPEAT_INC_NG;
+
+  m = bsearch_cache_index(table, num_cache_table, p);
 
   if (!(0 <= m && m < num_cache_table && table[m].addr == p)) {
     return -1;
@@ -1257,25 +1266,13 @@ find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_
 static void
 reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* match_cache, OnigCacheIndex *table, long num_cache_size, long num_cache_table)
 {
-  long l = 0, r = num_cache_table - 1, m1 = 0, m2 = 0;
+  long m1 = 0, m2 = 0;
   int is_inc = *pend == OP_REPEAT_INC || *pend == OP_REPEAT_INC_NG;
   OnigCacheIndex *item1, *item2;
   long k1, k2, base;
 
-  while (l <= r) {
-    m1 = (l + r) / 2;
-    if (table[m1].addr == pbegin) break;
-    if (table[m1].addr < pbegin) l = m1 + 1;
-    else r = m1 - 1;
-  }
-
-  l = 0, r = num_cache_table - 1;
-  while (l <= r) {
-    m2 = (l + r) / 2;
-    if (table[m2].addr == pend) break;
-    if (table[m2].addr < pend) l = m2 + 1;
-    else r = m2 - 1;
-  }
+  m1 = bsearch_cache_index(table, num_cache_table, pbegin);
+  m2 = bsearch_cache_index(table, num_cache_table, pend);
 
   if (table[m1].addr < pbegin && m1 + 1 < num_cache_table) m1++;
   if (table[m2].addr > pend && m2 - 1 > 0) m2--;
