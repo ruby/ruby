@@ -10,6 +10,12 @@ class WebauthnListenerTest < Gem::TestCase
     @port = @server.addr[1].to_s
   end
 
+  def teardown
+    @thread.kill.join if @thread
+    @server&.close
+    super
+  end
+
   def test_wait_for_otp_code_get_follows_options
     wait_for_otp_code
     assert Gem::MockBrowser.options(URI("http://localhost:#{@port}?code=xyz")).is_a? Net::HTTPNoContent
