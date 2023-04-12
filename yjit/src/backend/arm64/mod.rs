@@ -1210,7 +1210,7 @@ mod tests {
     fn test_emit_cpop_all() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.cpop_all(&Context::default());
+        asm.cpop_all();
         asm.compile_with_num_regs(&mut cb, 0);
     }
 

@@ -896,6 +896,9 @@ pub struct Assembler
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
+
+    /// Context for generating the current insn
+    pub ctx: Context,
 }
 
 impl Assembler
@@ -909,7 +912,8 @@ impl Assembler
             insns: Vec::default(),
             live_ranges: Vec::default(),
             reg_temps: Vec::default(),
-            label_names
+            label_names,
+            ctx: Context::default(),
         }
     }
 
@@ -1054,12 +1058,12 @@ impl Assembler
     }
 
     /// Allocate a register to a stack temp if available.
-    pub fn alloc_temp_reg(&mut self, ctx: &mut Context, stack_idx: u8) {
+    pub fn alloc_temp_reg(&mut self, stack_idx: u8) {
         if get_option!(num_temp_regs) == 0 {
             return;
         }
 
-        assert_eq!(self.get_reg_temps(), ctx.get_reg_temps());
+        assert_eq!(self.get_reg_temps(), self.ctx.get_reg_temps());
         let mut reg_temps = self.get_reg_temps();
 
         // Allocate a register if there's no conflict.
@@ -1068,17 +1072,17 @@ impl Assembler
         } else {
             reg_temps.set(stack_idx, true);
             self.set_reg_temps(reg_temps);
-            ctx.set_reg_temps(reg_temps);
+            self.ctx.set_reg_temps(reg_temps);
         }
     }
 
     /// Spill all live stack temps from registers to the stack
-    pub fn spill_temps(&mut self, ctx: &mut Context) {
-        assert_eq!(self.get_reg_temps(), ctx.get_reg_temps());
+    pub fn spill_temps(&mut self) {
+        assert_eq!(self.get_reg_temps(), self.ctx.get_reg_temps());
 
         // Forget registers above the stack top
         let mut reg_temps = self.get_reg_temps();
-        for stack_idx in ctx.get_stack_size()..MAX_REG_TEMPS {
+        for stack_idx in self.ctx.get_stack_size()..MAX_REG_TEMPS {
             reg_temps.set(stack_idx, false);
         }
         self.set_reg_temps(reg_temps);
@@ -1086,17 +1090,17 @@ impl Assembler
         // Spill live stack temps
         if self.get_reg_temps() != RegTemps::default() {
             self.comment(&format!("spill_temps: {:08b} -> {:08b}", self.get_reg_temps().as_u8(), RegTemps::default().as_u8()));
-            for stack_idx in 0..u8::min(MAX_REG_TEMPS, ctx.get_stack_size()) {
+            for stack_idx in 0..u8::min(MAX_REG_TEMPS, self.ctx.get_stack_size()) {
                 if self.get_reg_temps().get(stack_idx) {
-                    let idx = ctx.get_stack_size() - 1 - stack_idx;
-                    self.spill_temp(ctx.stack_opnd(idx.into()));
+                    let idx = self.ctx.get_stack_size() - 1 - stack_idx;
+                    self.spill_temp(self.ctx.stack_opnd(idx.into()));
                 }
             }
         }
 
         // Every stack temp should have been spilled
         assert_eq!(self.get_reg_temps(), RegTemps::default());
-        ctx.set_reg_temps(self.get_reg_temps());
+        self.ctx.set_reg_temps(self.get_reg_temps());
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -1500,12 +1504,12 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self, ctx: &Context) {
+    pub fn cpop_all(&mut self) {
         self.push_insn(Insn::CPopAll);
 
         // Re-enable ccall's RegTemps assertion disabled by cpush_all.
         // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
-        self.set_reg_temps(ctx.get_reg_temps());
+        self.set_reg_temps(self.ctx.get_reg_temps());
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
