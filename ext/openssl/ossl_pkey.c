@@ -101,10 +101,9 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
         goto out;
     OSSL_BIO_reset(bio);
 
-    /* Then check PEM; multiple OSSL_DECODER_from_bio() calls may be needed */
-    if (OSSL_DECODER_CTX_set_input_type(dctx, "PEM") != 1)
-        goto out;
     /*
+     * Then check PEM; multiple OSSL_DECODER_from_bio() calls may be needed.
+     *
      * First check for private key formats. This is to keep compatibility with
      * ruby/openssl < 3.0 which decoded the following as a private key.
      *
@@ -124,8 +123,19 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
      *
      * Note that normally, the input is supposed to contain a single decodable
      * PEM block only, so this special handling should not create a new problem.
+     *
+     * Note that we need to create the OSSL_DECODER_CTX variable each time when
+     * we use the different selection as a workaround.
+     * https://github.com/openssl/openssl/issues/20657
      */
-    OSSL_DECODER_CTX_set_selection(dctx, EVP_PKEY_KEYPAIR);
+    OSSL_DECODER_CTX_free(dctx);
+    dctx = NULL;
+    dctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, "PEM", NULL, NULL,
+                                         EVP_PKEY_KEYPAIR, NULL, NULL);
+    if (!dctx)
+        goto out;
+    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb, ppass) != 1)
+        goto out;
     while (1) {
         if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
@@ -139,7 +149,13 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
     }
 
     OSSL_BIO_reset(bio);
-    OSSL_DECODER_CTX_set_selection(dctx, 0);
+    OSSL_DECODER_CTX_free(dctx);
+    dctx = NULL;
+    dctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, "PEM", NULL, NULL, 0, NULL, NULL);
+    if (!dctx)
+        goto out;
+    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb, ppass) != 1)
+        goto out;
     while (1) {
         if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
