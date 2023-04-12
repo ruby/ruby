@@ -531,7 +531,7 @@ extern const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VA
 extern VALUE rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv);
 extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
-extern void* rb_rjit_entry_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
+extern void* rb_rjit_entry_stub_hit(VALUE branch_stub);
 extern void* rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
 
 #include "rjit_c.rbinc"
