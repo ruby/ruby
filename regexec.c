@@ -1227,12 +1227,12 @@ bsearch_cache_index(const OnigCacheIndex *table, long num_cache_table, const UCh
 }
 
 static long
-find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, long num_cache_table, UChar* p)
+find_cache_index_table(regex_t* reg, const OnigStackType *stk, const OnigStackIndex *repeat_stk, const OnigCacheIndex* table, long num_cache_table, const UChar* p)
 {
   long m;
-  OnigCacheIndex* item;
-  OnigRepeatRange* range;
-  OnigStackType *stkp;
+  const OnigCacheIndex* item;
+  const OnigRepeatRange* range;
+  const OnigStackType *stkp;
   int count = 0;
   int is_inc = *p == OP_REPEAT_INC || *p == OP_REPEAT_INC_NG;
 
@@ -1264,11 +1264,11 @@ find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_
 }
 
 static void
-reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* match_cache, OnigCacheIndex *table, long num_cache_size, long num_cache_table)
+reset_match_cache(regex_t* reg, const UChar* pbegin, const UChar* pend, long pos, uint8_t* match_cache, const OnigCacheIndex *table, long num_cache_size, long num_cache_table)
 {
   long m1 = 0, m2 = 0;
   int is_inc = *pend == OP_REPEAT_INC || *pend == OP_REPEAT_INC_NG;
-  OnigCacheIndex *item1, *item2;
+  const OnigCacheIndex *item1, *item2;
   long k1, k2, base;
 
   m1 = bsearch_cache_index(table, num_cache_table, pbegin);
