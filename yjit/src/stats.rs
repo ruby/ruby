@@ -125,6 +125,20 @@ macro_rules! make_counters {
         #[derive(Default, Debug)]
         pub struct Counters { $(pub $counter_name: u64),+ }
 
+        /// Enum to represent a counter
+        #[allow(non_camel_case_types)]
+        #[derive(Clone, Copy)]
+        pub enum Counter { $($counter_name),+ }
+
+        impl Counter {
+            /// Get a counter name string
+            pub fn get_name(&self) -> String {
+                match self {
+                    $( Counter::$counter_name => stringify!($counter_name).to_string() ),+
+                }
+            }
+        }
+
         /// Global counters instance, initialized to zero
         pub static mut COUNTERS: Counters = Counters { $($counter_name: 0),+ };
 
@@ -132,7 +146,7 @@ macro_rules! make_counters {
         const COUNTER_NAMES: &'static [&'static str] = &[ $(stringify!($counter_name)),+ ];
 
         /// Map a counter name string to a counter pointer
-        fn get_counter_ptr(name: &str) -> *mut u64 {
+        pub fn get_counter_ptr(name: &str) -> *mut u64 {
             match name {
                 $( stringify!($counter_name) => { ptr_to_counter!($counter_name) } ),+
                 _ => panic!()
