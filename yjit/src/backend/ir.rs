@@ -897,7 +897,7 @@ pub struct Assembler
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
-    /// Context for generating the next insn
+    /// Context for generating the current insn
     pub ctx: Context,
 }
 
