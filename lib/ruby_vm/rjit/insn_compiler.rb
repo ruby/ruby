@@ -4937,7 +4937,7 @@ module RubyVM::RJIT
       end
 
       # Delegate to codegen for C methods if we have it.
-      if kw_arg.nil? && flags & C::VM_CALL_OPT_SEND == 0
+      if kw_arg.nil? && flags & C::VM_CALL_OPT_SEND == 0 && flags & C::VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc)
         known_cfunc_codegen = lookup_cfunc_codegen(cme.def)
         if known_cfunc_codegen&.call(jit, ctx, asm, argc, known_recv_class)
           # cfunc codegen generated code. Terminate the block so
