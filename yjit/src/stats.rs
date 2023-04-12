@@ -26,7 +26,9 @@ pub struct YjitExitLocations {
     raw_samples: Vec<VALUE>,
     /// Vec to hold line_samples which represent line numbers of
     /// the iseq caller.
-    line_samples: Vec<i32>
+    line_samples: Vec<i32>,
+    /// Number of samples skipped when sampling
+    skipped_samples: usize
 }
 
 /// Private singleton instance of yjit exit locations
@@ -47,7 +49,8 @@ impl YjitExitLocations {
 
         let yjit_exit_locations = YjitExitLocations {
             raw_samples: Vec::new(),
-            line_samples: Vec::new()
+            line_samples: Vec::new(),
+            skipped_samples: 0
         };
 
         // Initialize the yjit exit locations instance
@@ -69,6 +72,11 @@ impl YjitExitLocations {
     /// Get a mutable reference to yjit the line samples Vec.
     pub fn get_line_samples() -> &'static mut Vec<i32> {
         &mut YjitExitLocations::get_instance().line_samples
+    }
+
+    /// Get the number of samples skipped
+    pub fn get_skipped_samples() -> &'static mut usize {
+        &mut YjitExitLocations::get_instance().skipped_samples
     }
 
     /// Mark the data stored in YjitExitLocations::get_raw_samples that needs to be used by
@@ -571,6 +579,15 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
     // Return if --yjit-trace-exits isn't enabled
     if !get_option!(gen_trace_exits) {
         return;
+    }
+
+    if get_option!(trace_exits_sample_rate) > 0 {
+        if get_option!(trace_exits_sample_rate) <= *YjitExitLocations::get_skipped_samples() {
+            YjitExitLocations::get_instance().skipped_samples = 0;
+        } else {
+            YjitExitLocations::get_instance().skipped_samples += 1;
+            return;
+        }
     }
 
     // rb_vm_insn_addr2opcode won't work in cargo test --all-features

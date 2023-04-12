@@ -334,11 +334,13 @@ usage(const char *name, int help, int highlight, int columns)
     };
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
-        M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
-        M("--yjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: 64)"),
-        M("--yjit-call-threshold=num", "", "Number of calls to trigger JIT (default: 30)"),
-        M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
-        M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
+        M("--yjit-stats",                    "", "Enable collecting YJIT statistics"),
+        M("--yjit-trace-exits",              "", "Record Ruby source location when exiting from generated code"),
+        M("--yjit-trace-exits-sample-rate",  "", "Trace exit locations only every Nth occurrence"),
+        M("--yjit-exec-mem-size=num",        "", "Size of executable memory block in MiB (default: 64)"),
+        M("--yjit-call-threshold=num",       "", "Number of calls to trigger JIT (default: 30)"),
+        M("--yjit-max-versions=num",         "", "Maximum number of versions per basic block (default: 4)"),
+        M("--yjit-greedy-versioning",        "", "Greedy versioning mode (default: disabled)"),
     };
 #endif
 #if USE_RJIT
