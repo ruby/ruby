@@ -52,6 +52,7 @@ The following default gems are updated.
 * stringio 3.0.6
 * strscan 3.0.7
 * syntax_suggest 1.0.4
+* time 0.2.2
 * timeout 0.3.2
 * uri 0.12.1
 
