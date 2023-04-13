@@ -2,8 +2,10 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
+use std::mem::take;
+
 use crate::asm::x86_64::jmp_ptr;
-use crate::asm::{CodeBlock};
+use crate::asm::{CodeBlock, OutlinedCb};
 use crate::asm::arm64::*;
 use crate::codegen::{JITState, CodegenGlobals};
 use crate::core::Context;
@@ -374,11 +376,13 @@ impl Assembler
             }
         }
 
-        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names));
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let insn_ctx = take(&mut self.insn_ctx);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_mapped() {
+            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             // Here we're going to map the operands of the instruction to load
             // any Opnd::Value operands into registers if they are heap objects
             // such that only the Op::Load instruction needs to handle that
@@ -675,7 +679,7 @@ impl Assembler
 
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
-    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<u32>, ()> {
+    fn arm64_emit(&mut self, cb: &mut CodeBlock, ocb: &mut Option<&mut OutlinedCb>) -> Result<Vec<u32>, ()> {
         /// Determine how many instructions it will take to represent moving
         /// this value into a register. Note that the return value of this
         /// function must correspond to how many instructions are used to
@@ -765,6 +769,9 @@ impl Assembler
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
+                Target::SideExit(_) => {
+                    unreachable!("Target::SideExit should have been compiled by compile_side_exit")
+                },
             };
         }
 
@@ -780,15 +787,35 @@ impl Assembler
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
+        /// Compile a side exit if Target::SideExit is given.
+        fn compile_side_exit(
+            asm: &mut Assembler,
+            ocb: &mut Option<&mut OutlinedCb>,
+            target: Target,
+            side_exit_context: &SideExitContext,
+        ) -> Target {
+            if let Target::SideExit(counter) = target {
+                let side_exit = asm.get_side_exit(side_exit_context, counter, ocb.as_mut().unwrap());
+                Target::SideExitPtr(side_exit)
+            } else {
+                target
+            }
+        }
+
         // dbg!(&self.insns);
 
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
+        // Side exit contexts
+        let mut side_exit_context = SideExitContext { pc: 0 as _, ctx: Context::default() };
+        let mut side_exit_stack_size = 0;
+
         // For each instruction
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
+            side_exit_context.ctx = self.insn_ctx[insn_idx].with_stack_size(side_exit_stack_size);
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -1020,6 +1047,10 @@ impl Assembler
                         Target::CodePtr(dst_ptr) => {
                             emit_jmp_ptr(cb, *dst_ptr, true);
                         },
+                        Target::SideExit(counter) => {
+                            let dst_ptr = self.get_side_exit(&side_exit_context, *counter, *ocb.as_mut().unwrap());
+                            emit_jmp_ptr(cb, dst_ptr, false);
+                        },
                         Target::SideExitPtr(dst_ptr) => {
                             emit_jmp_ptr(cb, *dst_ptr, false);
                         },
@@ -1037,19 +1068,19 @@ impl Assembler
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, *target);
+                    emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
                 },
                 Insn::Jne(target) | Insn::Jnz(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, *target);
+                    emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, *target);
+                    emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
                 },
                 Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
@@ -1099,6 +1130,10 @@ impl Assembler
                         nop(cb);
                     }
                 }
+                Insn::SideExitContext { pc, stack_size } => {
+                    side_exit_context.pc = *pc;
+                    side_exit_stack_size = *stack_size;
+                }
             };
 
             // On failure, jump to the next page and retry the current insn
@@ -1121,7 +1156,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Vec<u32>
     {
         let asm = self.lower_stack();
         let asm = asm.arm64_split();
@@ -1135,14 +1170,15 @@ impl Assembler
 
         let start_ptr = cb.get_write_ptr();
         let starting_label_state = cb.get_label_state();
-        let gc_offsets = asm.arm64_emit(cb)
+        let mut ocb = ocb; // for &mut
+        let gc_offsets = asm.arm64_emit(cb, &mut ocb)
             .unwrap_or_else(|_err| {
                 // we want to lower jumps to labels to b.cond instructions, which have a 1 MiB
                 // range limit. We can easily exceed the limit in case the jump straddles two pages.
                 // In this case, we retry with a fresh page.
                 cb.set_label_state(starting_label_state);
                 cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation);
-                asm.arm64_emit(cb).expect("should not fail when writing to a fresh code page")
+                asm.arm64_emit(cb, &mut ocb).expect("should not fail when writing to a fresh code page")
             });
 
         if cb.has_dropped_bytes() {
@@ -1180,7 +1216,7 @@ mod tests {
 
         let opnd = asm.add(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
-        asm.compile_with_regs(&mut cb, vec![X3_REG]);
+        asm.compile_with_regs(&mut cb, None, vec![X3_REG]);
 
         // Assert that only 2 instructions were written.
         assert_eq!(8, cb.get_write_pos());

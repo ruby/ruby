@@ -7,6 +7,7 @@ use std::mem::take;
 use crate::asm::*;
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
+use crate::core::Context;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::codegen::CodegenGlobals;
@@ -115,10 +116,12 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let insn_ctx = take(&mut self.insn_ctx);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
+            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             // When we're iterating through the instructions with x86_split, we
             // need to know the previous live ranges in order to tell if a
             // register lasts beyond the current instruction. So instead of
@@ -381,7 +384,7 @@ impl Assembler
     }
 
     /// Emit platform-specific machine code
-    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock, ocb: &mut Option<&mut OutlinedCb>) -> Vec<u32>
     {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
@@ -424,10 +427,15 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
+        // Side exit contexts
+        let mut side_exit_context = SideExitContext { pc: 0 as _, ctx: Context::default() };
+        let mut side_exit_stack_size = 0;
+
         // For each instruction
         let start_write_pos = cb.get_write_pos();
         let mut insns_idx: usize = 0;
         while let Some(insn) = self.insns.get(insns_idx) {
+            side_exit_context.ctx = self.insn_ctx[insns_idx].with_stack_size(side_exit_stack_size);
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -627,6 +635,7 @@ impl Assembler
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
                     match *target {
+                        Target::SideExit(counter) => jmp_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
                     }
@@ -634,6 +643,7 @@ impl Assembler
 
                 Insn::Je(target) => {
                     match *target {
+                        Target::SideExit(counter) => je_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
                     }
@@ -641,6 +651,7 @@ impl Assembler
 
                 Insn::Jne(target) => {
                     match *target {
+                        Target::SideExit(counter) => jne_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
                     }
@@ -648,6 +659,7 @@ impl Assembler
 
                 Insn::Jl(target) => {
                     match *target {
+                        Target::SideExit(counter) => jl_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
                     }
@@ -655,6 +667,7 @@ impl Assembler
 
                 Insn::Jbe(target) => {
                     match *target {
+                        Target::SideExit(counter) => jbe_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
                     }
@@ -662,6 +675,7 @@ impl Assembler
 
                 Insn::Jz(target) => {
                     match *target {
+                        Target::SideExit(counter) => jz_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
                     }
@@ -669,6 +683,7 @@ impl Assembler
 
                 Insn::Jnz(target) => {
                     match *target {
+                        Target::SideExit(counter) => jnz_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
                     }
@@ -676,6 +691,7 @@ impl Assembler
 
                 Insn::Jo(target) => {
                     match *target {
+                        Target::SideExit(counter) => jo_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
                     }
@@ -724,13 +740,10 @@ impl Assembler
                         nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
                     }
                 }
-
-                // We want to keep the panic here because some instructions that
-                // we feed to the backend could get lowered into other
-                // instructions. So it's possible that some of our backend
-                // instructions can never make it to the emit stage.
-                #[allow(unreachable_patterns)]
-                _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn)
+                Insn::SideExitContext { pc, stack_size } => {
+                    side_exit_context.pc = *pc;
+                    side_exit_stack_size = *stack_size;
+                }
             };
 
             // On failure, jump to the next page and retry the current insn
@@ -747,8 +760,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
-    {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Vec<u32> {
         let asm = self.lower_stack();
         let asm = asm.x86_split();
         let mut asm = asm.alloc_regs(regs);
@@ -759,7 +771,8 @@ impl Assembler
             assert!(label_idx == idx);
         }
 
-        let gc_offsets = asm.x86_emit(cb);
+        let mut ocb = ocb; // for &mut
+        let gc_offsets = asm.x86_emit(cb, &mut ocb);
 
         if cb.has_dropped_bytes() {
             cb.clear_labels();

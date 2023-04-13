@@ -3,13 +3,15 @@
 #![allow(unused_imports)]
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::fmt;
 use std::convert::From;
 use std::io::Write;
 use std::mem::take;
+use crate::codegen::{gen_outlined_exit, gen_counted_exit};
 use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
 use crate::virtualmem::{CodePtr};
-use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
+use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits, OutlinedCb};
 use crate::core::{Context, Type, TempMapping, RegTemps, MAX_REG_TEMPS, MAX_TEMP_TYPES};
 use crate::options::*;
 use crate::stats::*;
@@ -280,9 +282,10 @@ impl From<VALUE> for Opnd {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target
 {
-    CodePtr(CodePtr),     // Pointer to a piece of YJIT-generated code
-    SideExitPtr(CodePtr), // Pointer to a side exit code
-    Label(usize),         // A label within the generated code
+    CodePtr(CodePtr),          // Pointer to a piece of YJIT-generated code
+    SideExit(Option<Counter>), // Side exit with a counter
+    SideExitPtr(CodePtr),      // Pointer to a side exit code
+    Label(usize),              // A label within the generated code
 }
 
 impl Target
@@ -467,6 +470,9 @@ pub enum Insn {
     /// Shift a value right by a certain amount (signed).
     RShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
+    /// Set a side exit context for subsequent instructions.
+    SideExitContext { pc: *mut VALUE, stack_size: u8 },
+
     /// Spill a stack temp from a register into memory
     SpillTemp(Opnd),
 
@@ -552,6 +558,7 @@ impl Insn {
             Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
+            Insn::SideExitContext { .. } => "SideExitContext",
             Insn::SpillTemp(_) => "SpillTemp",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
@@ -689,7 +696,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LeaLabel { .. } |
             Insn::RegTemps(_) |
             Insn::PadInvalPatch |
-            Insn::PosMarker(_) => None,
+            Insn::PosMarker(_) |
+            Insn::SideExitContext { .. } => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -788,7 +796,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LeaLabel { .. } |
             Insn::RegTemps(_) |
             Insn::PadInvalPatch |
-            Insn::PosMarker(_) => None,
+            Insn::PosMarker(_) |
+            Insn::SideExitContext { .. } => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -880,10 +889,19 @@ impl fmt::Debug for Insn {
     }
 }
 
+/// Set of variables used for generating side exits
+#[derive(Clone, Eq, Hash, PartialEq)]
+pub struct SideExitContext {
+    /// PC of the instruction being compiled
+    pub pc: *mut VALUE,
+
+    /// Context when it started to compile the instruction
+    pub ctx: Context,
+}
+
 /// Object into which we assemble instructions to be
 /// optimized and lowered
-pub struct Assembler
-{
+pub struct Assembler {
     pub(super) insns: Vec<Insn>,
 
     /// Parallel vec with insns
@@ -899,21 +917,30 @@ pub struct Assembler
 
     /// Context for generating the current insn
     pub ctx: Context,
+
+    /// Parallel vec with insns
+    /// Past Context for this insn
+    pub(super) insn_ctx: Vec<Context>,
+
+    /// Side exit caches for each SideExitContext
+    pub(super) side_exits: HashMap<SideExitContext, CodePtr>,
 }
 
 impl Assembler
 {
     pub fn new() -> Self {
-        Self::new_with_label_names(Vec::default())
+        Self::new_with_label_names(Vec::default(), HashMap::default())
     }
 
-    pub fn new_with_label_names(label_names: Vec<String>) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>, side_exits: HashMap<SideExitContext, CodePtr>) -> Self {
         Self {
             insns: Vec::default(),
             live_ranges: Vec::default(),
             reg_temps: Vec::default(),
             label_names,
             ctx: Context::default(),
+            insn_ctx: Vec::default(),
+            side_exits,
         }
     }
 
@@ -976,11 +1003,32 @@ impl Assembler
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
         self.reg_temps.push(reg_temps);
+        self.insn_ctx.push(self.ctx.clone());
     }
 
     /// Get stack temps that are currently in a register
     pub fn get_reg_temps(&self) -> RegTemps {
         *self.reg_temps.last().unwrap_or(&RegTemps::default())
+    }
+
+    /// Get a cached side exit, wrapping a counter if specified
+    pub fn get_side_exit(&mut self, side_exit_context: &SideExitContext, counter: Option<Counter>, ocb: &mut OutlinedCb) -> CodePtr {
+        // Drop type information from a cache key
+        let mut side_exit_context = side_exit_context.clone();
+        side_exit_context.ctx = side_exit_context.ctx.get_generic_ctx();
+
+        // Get a cached side exit
+        let side_exit = match self.side_exits.get(&side_exit_context) {
+            None => {
+                let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.ctx, ocb);
+                self.side_exits.insert(side_exit_context.clone(), exit_code);
+                exit_code
+            }
+            Some(code_ptr) => *code_ptr,
+        };
+
+        // Wrap a counter if needed
+        gen_counted_exit(side_exit, ocb, counter)
     }
 
     /// Create a new label instance that we can jump to
@@ -1016,12 +1064,14 @@ impl Assembler
             }
         }
 
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let insn_ctx = take(&mut self.insn_ctx);
         let regs = Assembler::get_temp_regs();
         let reg_temps = take(&mut self.reg_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_mapped() {
+            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             match &insn {
                 // The original insn is pushed to the new asm to satisfy ccall's reg_temps assertion.
                 Insn::RegTemps(_) => {} // noop
@@ -1172,10 +1222,12 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let insn_ctx = take(&mut self.insn_ctx);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
+            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
@@ -1305,13 +1357,13 @@ impl Assembler
     /// Compile the instructions down to machine code
     /// NOTE: should compile return a list of block labels to enable
     ///       compiling multiple blocks at a time?
-    pub fn compile(self, cb: &mut CodeBlock) -> Vec<u32>
+    pub fn compile(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>) -> Vec<u32>
     {
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
 
         let alloc_regs = Self::get_alloc_regs();
-        let gc_offsets = self.compile_with_regs(cb, alloc_regs);
+        let gc_offsets = self.compile_with_regs(cb, ocb, alloc_regs);
 
         #[cfg(feature = "disasm")]
         if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
@@ -1327,7 +1379,7 @@ impl Assembler
     {
         let mut alloc_regs = Self::get_alloc_regs();
         let alloc_regs = alloc_regs.drain(0..num_regs).collect();
-        self.compile_with_regs(cb, alloc_regs)
+        self.compile_with_regs(cb, None, alloc_regs)
     }
 
     /// Consume the assembler by creating a new draining iterator.
@@ -1727,6 +1779,11 @@ impl Assembler {
             self.comment(&format!("reg_temps: {:08b} -> {:08b}", self.get_reg_temps().as_u8(), reg_temps.as_u8()));
             self.push_insn(Insn::RegTemps(reg_temps));
         }
+    }
+
+    /// Set a context for generating side exits
+    pub fn side_exit_context(&mut self, pc: *mut VALUE, stack_size: u8) {
+        self.push_insn(Insn::SideExitContext { pc, stack_size })
     }
 
     /// Spill a stack temp from a register to the stack

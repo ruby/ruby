@@ -135,7 +135,7 @@ macro_rules! make_counters {
 
         /// Enum to represent a counter
         #[allow(non_camel_case_types)]
-        #[derive(Clone, Copy)]
+        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
         pub enum Counter { $($counter_name),+ }
 
         impl Counter {
