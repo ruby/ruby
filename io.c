@@ -11654,9 +11654,9 @@ pipe_pair_close(VALUE rw)
  *    IO.pipe(**opts) -> [read_io, write_io]
  *    IO.pipe(enc, **opts) -> [read_io, write_io]
  *    IO.pipe(ext_enc, int_enc, **opts) -> [read_io, write_io]
- *    IO.pipe(**opts) {|read_io, write_io] ...} -> object
- *    IO.pipe(enc, **opts) {|read_io, write_io] ...} -> object
- *    IO.pipe(ext_enc, int_enc, **opts) {|read_io, write_io] ...} -> object
+ *    IO.pipe(**opts) {|read_io, write_io| ...} -> object
+ *    IO.pipe(enc, **opts) {|read_io, write_io| ...} -> object
+ *    IO.pipe(ext_enc, int_enc, **opts) {|read_io, write_io| ...} -> object
  *
  *  Creates a pair of pipe endpoints, +read_io+ and +write_io+,
  *  connected to each other.
