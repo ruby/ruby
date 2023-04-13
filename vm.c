@@ -3979,7 +3979,8 @@ rb_vm_set_progname(VALUE filename)
     rb_control_frame_t *cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
     --cfp;
 
-    rb_iseq_pathobj_set(cfp->iseq, rb_str_dup(filename), rb_iseq_realpath(cfp->iseq));
+    filename = rb_str_new_frozen(filename);
+    rb_iseq_pathobj_set(cfp->iseq, filename, rb_iseq_realpath(cfp->iseq));
 }
 
 extern const struct st_hash_type rb_fstring_hash_type;
