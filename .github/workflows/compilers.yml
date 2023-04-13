@@ -81,7 +81,7 @@ jobs:
           - name: 'gcc-11 LTO'
             container: gcc-11
             env:
-              default_cc: 'gcc-11 -flto=auto -ffat-lto-objects'
+              default_cc: 'gcc-11 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
               optflags: '-O2'
             shared: disable
             # check: true
