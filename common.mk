@@ -14227,10 +14227,12 @@ shape.$(OBJEXT): $(top_srcdir)/internal/array.h
 shape.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 shape.$(OBJEXT): $(top_srcdir)/internal/class.h
 shape.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+shape.$(OBJEXT): $(top_srcdir)/internal/error.h
 shape.$(OBJEXT): $(top_srcdir)/internal/gc.h
 shape.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 shape.$(OBJEXT): $(top_srcdir)/internal/serial.h
 shape.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+shape.$(OBJEXT): $(top_srcdir)/internal/string.h
 shape.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 shape.$(OBJEXT): $(top_srcdir)/internal/variable.h
 shape.$(OBJEXT): $(top_srcdir)/internal/vm.h
