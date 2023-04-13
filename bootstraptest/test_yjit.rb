@@ -3873,3 +3873,43 @@ assert_equal '2', %q{
   entry # call branch_stub_hit (spill temps)
   entry # doesn't call branch_stub_hit (not spill temps)
 }
+
+# Test rest and optional_params
+assert_equal '[true, true, true, true]', %q{
+  def my_func(stuff, base=nil, sort=true, *args)
+    [stuff, base, sort, args]
+  end
+
+  def calling_my_func
+    results = []
+    results << (my_func("test") == ["test", nil, true, []])
+    results << (my_func("test", :base) == ["test", :base, true, []])
+    results << (my_func("test", :base, false) == ["test", :base, false, []])
+    results << (my_func("test", :base, false, "other", "other") == ["test", :base, false, ["other", "other"]])
+    results
+  end
+  calling_my_func
+}
+
+# Test rest and optional_params and splat
+assert_equal '[true, true, true, true, true]', %q{
+  def my_func(stuff, base=nil, sort=true, *args)
+    [stuff, base, sort, args]
+  end
+
+  def calling_my_func
+    results = []
+    splat = ["test"]
+    results << (my_func(*splat) == ["test", nil, true, []])
+    splat = [:base]
+    results << (my_func("test", *splat) == ["test", :base, true, []])
+    splat = [:base, false]
+    results << (my_func("test", *splat) == ["test", :base, false, []])
+    splat = [:base, false, "other", "other"]
+    results << (my_func("test", *splat) == ["test", :base, false, ["other", "other"]])
+    splat = ["test", :base, false, "other", "other"]
+    results << (my_func(*splat) == ["test", :base, false, ["other", "other"]])
+    results
+  end
+  calling_my_func
+}

@@ -14,6 +14,7 @@ use YARVOpnd::*;
 
 use std::cell::Cell;
 use std::cmp;
+use std::cmp::min;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem;
@@ -4780,6 +4781,7 @@ fn gen_push_frame(
     asm: &mut Assembler,
     set_sp_cfp: bool, // if true CFP and SP will be switched to the callee
     frame: ControlFrame,
+    rest_arg: Option<(i32, Opnd)>,
 ) {
     assert!(frame.local_size >= 0);
 
@@ -4878,6 +4880,13 @@ fn gen_push_frame(
             let offs = SIZEOF_VALUE_I32 * (i - num_locals - 3);
             asm.store(Opnd::mem(64, sp, offs), Qnil.into());
         }
+    }
+
+    if let Some((opts_missing, rest_arg)) = rest_arg {
+        // We want to set the rest_param just after the optional arguments
+        let index = opts_missing - num_locals - 3;
+        let offset = SIZEOF_VALUE_I32 * index;
+        asm.store(Opnd::mem(64, sp, offset), rest_arg);
     }
 
     if set_sp_cfp {
@@ -5109,7 +5118,7 @@ fn gen_send_cfunc(
         },
         iseq: None,
         local_size: 0,
-    });
+    }, None);
 
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
@@ -5475,8 +5484,14 @@ fn gen_send_iseq(
     }
 
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
+
     if iseq_has_rest && captured_opnd.is_some() {
         gen_counter_incr!(asm, send_iseq_has_rest_and_captured);
+        return CantCompile;
+    }
+
+    if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_send);
         return CantCompile;
     }
 
@@ -5538,17 +5553,18 @@ fn gen_send_iseq(
     };
 
     // Arity handling and optional parameter setup
-    let opts_filled = argc - required_num - kw_arg_num;
+    let mut opts_filled = argc - required_num - kw_arg_num;
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-    let opts_missing: i32 = opt_num - opts_filled;
+    // We have a rest argument so there could be more args
+    // than are required + optional. Those will go in rest.
+    // So we cap ops_filled at opt_num.
+    if iseq_has_rest {
+        opts_filled = min(opts_filled, opt_num);
+    }
+    let mut opts_missing: i32 = opt_num - opts_filled;
 
     if doing_kw_call && flags & VM_CALL_ARGS_SPLAT != 0 {
         gen_counter_incr!(asm, send_iseq_splat_with_kw);
-        return CantCompile;
-    }
-
-    if iseq_has_rest && opt_num != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_optional);
         return CantCompile;
     }
 
@@ -5570,6 +5586,11 @@ fn gen_send_iseq(
     } else {
         None
     };
+
+    if iseq_has_rest && opt_num != 0 && (unsafe { get_iseq_flags_has_block(iseq) } || block_arg) {
+        gen_counter_incr!(asm, send_iseq_has_rest_opt_and_block);
+        return CantCompile;
+    }
 
     match block_arg_type {
         Some(Type::Nil | Type::BlockParamProxy) => {
@@ -5692,7 +5713,8 @@ fn gen_send_iseq(
             return CantCompile;
         }
     }
-    let splat_array_length = if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
+
+    let splat_array_length = if flags & VM_CALL_ARGS_SPLAT != 0 {
         let array = jit.peek_at_stack(&asm.ctx, if block_arg { 1 } else { 0 }) ;
         let array_length = if array == Qnil {
             0
@@ -5700,14 +5722,66 @@ fn gen_send_iseq(
             unsafe { rb_yjit_array_len(array) as u32}
         };
 
-        if opt_num == 0 && required_num != array_length as i32 + argc - 1 {
+        if opt_num == 0 && required_num != array_length as i32 + argc - 1 && !iseq_has_rest {
             gen_counter_incr!(asm, send_iseq_splat_arity_error);
             return CantCompile;
         }
+
+        if iseq_has_rest && opt_num > 0 {
+            // If we have a rest and option arugments
+            // we are going to set the pc_offset for where
+            // to jump in the called method.
+            // If the number of args change, that would need to
+            // change and we don't change that dynmically so we side exit.
+            // On a normal splat without rest and option args this is handled
+            // elsewhere depending on the case
+            asm.comment("Side exit if length doesn't not equal compile time length");
+            let array_len_opnd = get_array_len(asm, asm.stack_opnd(if block_arg { 1 } else { 0 }));
+            asm.cmp(array_len_opnd, array_length.into());
+            let exit = counted_exit!(jit, &mut asm.ctx, ocb, send_splatarray_length_not_equal);
+            asm.jne(exit);
+        }
+
         Some(array_length)
     } else {
         None
     };
+
+    // If we have a rest, optional arguments, and a splat
+    // some of those splatted args will end up filling the
+    // optional arguments and some will potentially end up
+    // in the rest. This calculates how many are filled
+    // by the splat.
+    let opts_filled_with_splat: Option<i32> = {
+        if iseq_has_rest && opt_num > 0 {
+            splat_array_length.map(|len| {
+                let num_args = (argc - 1) + len as i32;
+                if num_args >= required_num {
+                    min(num_args - required_num, opt_num)
+                } else {
+                    0
+                }
+            })
+        } else {
+            None
+        }
+    };
+
+    // If we have optional arguments filled by the splat (see comment above)
+    // we need to set a few variables concerning optional arguments
+    // to their correct values, as well as set the pc_offset.
+    if let Some(filled) = opts_filled_with_splat {
+        opts_missing = opt_num - filled;
+        opts_filled = filled;
+        num_params -= opts_missing as u32;
+
+        // We are going to jump to the correct offset based on how many optional
+        // params are remaining.
+        unsafe {
+            let opt_table = get_iseq_body_param_opt_table(iseq);
+            start_pc_offset = (*opt_table.offset(filled as isize)).try_into().unwrap();
+        };
+    }
 
     // We will not have CantCompile from here. You can use stack_pop / stack_pop.
 
@@ -5768,7 +5842,7 @@ fn gen_send_iseq(
     }
 
     // Number of locals that are not parameters
-    let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
+    let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32) + if iseq_has_rest && opt_num != 0 { 1 } else { 0 };
 
     // Stack overflow check
     // Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
@@ -5785,25 +5859,28 @@ fn gen_send_iseq(
     if let Some(array_length) = splat_array_length {
         let remaining_opt = (opt_num as u32 + required_num as u32).saturating_sub(array_length + (argc as u32 - 1));
 
-        if opt_num > 0 {
-            // We are going to jump to the correct offset based on how many optional
-            // params are remaining.
-            unsafe {
-                let opt_table = get_iseq_body_param_opt_table(iseq);
-                let offset = (opt_num - remaining_opt as i32) as isize;
-                start_pc_offset = (*opt_table.offset(offset)).try_into().unwrap();
-            };
-        }
-        // We are going to assume that the splat fills
-        // all the remaining arguments. In the generated code
-        // we test if this is true and if not side exit.
-        argc = argc - 1 + array_length as i32 + remaining_opt as i32;
-        push_splat_args(array_length, jit, asm, ocb);
+        if !iseq_has_rest {
+            if opt_num > 0 {
+                // We are going to jump to the correct offset based on how many optional
+                // params are remaining.
+                unsafe {
+                    let opt_table = get_iseq_body_param_opt_table(iseq);
+                    let offset = (opt_num - remaining_opt as i32) as isize;
+                    start_pc_offset = (*opt_table.offset(offset)).try_into().unwrap();
+                };
+            }
 
-        for _ in 0..remaining_opt {
-            // We need to push nil for the optional arguments
-            let stack_ret = asm.stack_push(Type::Unknown);
-            asm.mov(stack_ret, Qnil.into());
+            // We are going to assume that the splat fills
+            // all the remaining arguments. In the generated code
+            // we test if this is true and if not side exit.
+            argc = argc - 1 + array_length as i32 + remaining_opt as i32;
+            push_splat_args(array_length, jit, asm, ocb);
+
+            for _ in 0..remaining_opt {
+                // We need to push nil for the optional arguments
+                let stack_ret = asm.stack_push(Type::Unknown);
+                asm.mov(stack_ret, Qnil.into());
+            }
         }
     }
 
@@ -5826,10 +5903,11 @@ fn gen_send_iseq(
                 rb_ary_dup as *const u8,
                 vec![array],
             );
-            if non_rest_arg_count > required_num {
+            if non_rest_arg_count > required_num + opt_num {
+
                 // If we have more arguments than required, we need to prepend
                 // the items from the stack onto the array.
-                let diff = (non_rest_arg_count - required_num) as u32;
+                let diff = (non_rest_arg_count - required_num + opts_filled_with_splat.unwrap_or(0)) as u32;
 
                 // diff is >0 so no need to worry about null pointer
                 asm.comment("load pointer to array elements");
@@ -5848,11 +5926,12 @@ fn gen_send_iseq(
                 asm.mov(stack_ret, array);
                 // We now should have the required arguments
                 // and an array of all the rest arguments
-                argc = required_num + 1;
-            } else if non_rest_arg_count < required_num {
+                argc = required_num + opts_filled_with_splat.unwrap_or(0) + 1;
+            } else if non_rest_arg_count < required_num + opt_num {
                 // If we have fewer arguments than required, we need to take some
                 // from the array and move them to the stack.
-                let diff = (required_num - non_rest_arg_count) as u32;
+
+                let diff = (required_num - non_rest_arg_count + opts_filled_with_splat.unwrap_or(0)) as u32;
                 // This moves the arguments onto the stack. But it doesn't modify the array.
                 move_rest_args_to_stack(array, diff, jit, asm, ocb);
 
@@ -5864,17 +5943,17 @@ fn gen_send_iseq(
 
                 // We now should have the required arguments
                 // and an array of all the rest arguments
-                argc = required_num + 1;
+                argc = required_num + opts_filled_with_splat.unwrap_or(0) + 1;
             } else {
                 // The arguments are equal so we can just push to the stack
-                assert!(non_rest_arg_count == required_num);
+                assert!(non_rest_arg_count == required_num + opt_num);
                 let stack_ret = asm.stack_push(Type::TArray);
                 asm.mov(stack_ret, array);
             }
         } else {
             assert!(argc >= required_num);
-            let n = (argc - required_num) as u32;
-            argc = required_num + 1;
+            let n = (argc - required_num - opts_filled) as u32;
+            argc = required_num + opts_filled + 1;
             // If n is 0, then elts is never going to be read, so we can just pass null
             let values_ptr = if n == 0 {
                 Opnd::UImm(0)
@@ -6069,6 +6148,17 @@ fn gen_send_iseq(
     // Spill stack temps to let the callee use them
     asm.spill_temps();
 
+    // If we have a rest param and optional parameters,
+    // we don't actually pass the rest parameter as an argument,
+    // instead we set its value in the callee's locals
+    let rest_param = if iseq_has_rest && opt_num != 0 {
+        argc -= 1;
+        let top = asm.stack_pop(1);
+        Some((opts_missing as i32, asm.load(top)))
+    } else {
+        None
+    };
+
     // Points to the receiver operand on the stack unless a captured environment is used
     let recv = match captured_opnd {
         Some(captured_opnd) => asm.load(Opnd::mem(64, captured_opnd, 0)), // captured->self
@@ -6115,7 +6205,7 @@ fn gen_send_iseq(
         iseq: Some(iseq),
         pc: None, // We are calling into jitted code, which will set the PC as necessary
         local_size: num_locals
-    });
+    }, rest_param);
 
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
