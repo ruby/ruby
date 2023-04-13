@@ -50,6 +50,9 @@ typedef enum {
     /** Warning is for experimental features. */
     RB_WARN_CATEGORY_EXPERIMENTAL,
 
+    /** Warning is for performance. */
+    RB_WARN_CATEGORY_PERFORMANCE,
+
     RB_WARN_CATEGORY_ALL_BITS = (
         (1U << RB_WARN_CATEGORY_DEPRECATED) |
         (1U << RB_WARN_CATEGORY_EXPERIMENTAL) |

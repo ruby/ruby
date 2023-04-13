@@ -99,19 +99,22 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W:no-deprecated -e) + ['p Warning[:deprecated]'], "", %w(false), [])
     assert_in_out_err(%w(-W:experimental -e) + ['p Warning[:experimental]'], "", %w(true), [])
     assert_in_out_err(%w(-W:no-experimental -e) + ['p Warning[:experimental]'], "", %w(false), [])
+    assert_in_out_err(%w(-W:performance -e) + ['p Warning[:performance]'], "", %w(true), [])
+    assert_in_out_err(%w(-W:no-performance -e) + ['p Warning[:performance]'], "", %w(false), [])
     assert_in_out_err(%w(-W:qux), "", [], /unknown warning category: `qux'/)
     assert_in_out_err(%w(-w -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-W -e) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-We) + ['p Warning[:deprecated]'], "", %w(true), [])
     assert_in_out_err(%w(-e) + ['p Warning[:deprecated]'], "", %w(false), [])
-    code = 'puts "#{$VERBOSE}:#{Warning[:deprecated]}:#{Warning[:experimental]}"'
+    code = 'puts "#{$VERBOSE}:#{Warning[:deprecated]}:#{Warning[:experimental]}:#{Warning[:performance]}"'
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) do |t|
       t.puts code
       t.close
-      assert_in_out_err(["-r#{t.path}", '-e', code], "", %w(false:false:true false:false:true), [])
-      assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", %w(true:true:true true:true:true), [])
-      assert_in_out_err(["-r#{t.path}", '-W:deprecated', '-e', code], "", %w(false:true:true false:true:true), [])
-      assert_in_out_err(["-r#{t.path}", '-W:no-experimental', '-e', code], "", %w(false:false:false false:false:false), [])
+      assert_in_out_err(["-r#{t.path}", '-e', code], "", %w(false:false:true:false false:false:true:false), [])
+      assert_in_out_err(["-r#{t.path}", '-w', '-e', code], "", %w(true:true:true:false true:true:true:false), [])
+      assert_in_out_err(["-r#{t.path}", '-W:deprecated', '-e', code], "", %w(false:true:true:false false:true:true:false), [])
+      assert_in_out_err(["-r#{t.path}", '-W:no-experimental', '-e', code], "", %w(false:false:false:false false:false:false:false), [])
+      assert_in_out_err(["-r#{t.path}", '-W:performance', '-e', code], "", %w(false:false:true:true false:false:true:true), [])
     end
   ensure
     ENV['RUBYOPT'] = save_rubyopt
@@ -398,6 +401,10 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(), "p Warning[:experimental]", ["true"])
     ENV['RUBYOPT'] = '-W:no-experimental'
     assert_in_out_err(%w(), "p Warning[:experimental]", ["false"])
+    ENV['RUBYOPT'] = '-W:performance'
+    assert_in_out_err(%w(), "p Warning[:performance]", ["true"])
+    ENV['RUBYOPT'] = '-W:no-performance'
+    assert_in_out_err(%w(), "p Warning[:performance]", ["false"])
     ENV['RUBYOPT'] = '-W:qux'
     assert_in_out_err(%w(), "", [], /unknown warning category: `qux'/)
   ensure
