@@ -70,6 +70,8 @@ module RubyVM::YJIT
       stack_length = raw_samples[i] + 1
       i += 1 # consume the stack length
 
+      sample_count = raw_samples[i + stack_length]
+
       prev_frame_id = nil
       stack_length.times do |idx|
         idx += i
@@ -78,14 +80,14 @@ module RubyVM::YJIT
         if prev_frame_id
           prev_frame = frames[prev_frame_id]
           prev_frame[:edges][frame_id] ||= 0
-          prev_frame[:edges][frame_id] += 1
+          prev_frame[:edges][frame_id] += sample_count
         end
 
         frame_info = frames[frame_id]
-        frame_info[:total_samples] += 1
+        frame_info[:total_samples] += sample_count
 
         frame_info[:lines][line_samples[idx]] ||= [0, 0]
-        frame_info[:lines][line_samples[idx]][0] += 1
+        frame_info[:lines][line_samples[idx]][0] += sample_count
 
         prev_frame_id = frame_id
       end
@@ -94,8 +96,6 @@ module RubyVM::YJIT
 
       top_frame_id = prev_frame_id
       top_frame_line = 1
-
-      sample_count = raw_samples[i]
 
       frames[top_frame_id][:samples] += sample_count
       frames[top_frame_id][:lines] ||= {}
