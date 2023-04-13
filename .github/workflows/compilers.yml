@@ -97,10 +97,10 @@ jobs:
           - { name: clang-8,   env: { default_cc: clang-8 } }
           - { name: clang-7,   env: { default_cc: clang-7 } }
           - { name: clang-6.0, env: { default_cc: clang-6.0 } }
-          - name: 'clang-14 LTO'
-            container: clang-14
+          - name: 'clang-16 LTO'
+            container: clang-16
             env:
-              default_cc: 'clang-14 -flto=auto'
+              default_cc: 'clang-16 -flto=auto'
               optflags: '-O2'
             shared: disable
             # check: true
