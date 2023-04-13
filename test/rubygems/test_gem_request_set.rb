@@ -8,8 +8,6 @@ class TestGemRequestSet < Gem::TestCase
     super
 
     Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
-
-    @DR = Gem::Resolver
   end
 
   def test_gem
@@ -415,7 +413,7 @@ ruby "0"
 
     assert_equal %w[a-1], names
 
-    assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
+    assert_equal [Gem::Resolver::BestSet, Gem::Resolver::GitSet, Gem::Resolver::VendorSet, Gem::Resolver::SourceSet],
                  rs.sets.map(&:class)
   end
 
@@ -479,7 +477,7 @@ ruby "0"
 
     assert_equal ["a-1", "b-2"], names
 
-    assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
+    assert_equal [Gem::Resolver::BestSet, Gem::Resolver::GitSet, Gem::Resolver::VendorSet, Gem::Resolver::SourceSet],
                  rs.sets.map(&:class)
   end
 

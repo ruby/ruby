@@ -19,17 +19,11 @@ class TestGemSecurity < Gem::TestCase
   CHILD_CERT     = load_cert "child"
   EXPIRED_CERT   = load_cert "expired"
 
-  def setup
-    super
-
-    @SEC = Gem::Security
-  end
-
   def test_class_create_cert
     name = PUBLIC_CERT.subject
     key = PRIVATE_KEY
 
-    cert = @SEC.create_cert name, key, 60, Gem::Security::EXTENSIONS, 5
+    cert = Gem::Security.create_cert name, key, 60, Gem::Security::EXTENSIONS, 5
 
     assert_kind_of OpenSSL::X509::Certificate, cert
 
@@ -62,7 +56,7 @@ class TestGemSecurity < Gem::TestCase
   def test_class_create_cert_self_signed
     subject = PUBLIC_CERT.subject
 
-    cert = @SEC.create_cert_self_signed subject, PRIVATE_KEY, 60
+    cert = Gem::Security.create_cert_self_signed subject, PRIVATE_KEY, 60
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
     assert_equal "sha256WithRSAEncryption", cert.signature_algorithm
@@ -73,7 +67,7 @@ class TestGemSecurity < Gem::TestCase
     name = PUBLIC_CERT.subject
     key = PRIVATE_KEY
 
-    cert = @SEC.create_cert_email email, key, 60
+    cert = Gem::Security.create_cert_email email, key, 60
 
     assert_kind_of OpenSSL::X509::Certificate, cert
 
@@ -105,20 +99,20 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_create_key
-    key = @SEC.create_key "rsa"
+    key = Gem::Security.create_key "rsa"
 
     assert_kind_of OpenSSL::PKey::RSA, key
   end
 
   def test_class_create_key_downcases
-    key = @SEC.create_key "DSA"
+    key = Gem::Security.create_key "DSA"
 
     assert_kind_of OpenSSL::PKey::DSA, key
   end
 
   def test_class_create_key_raises_unknown_algorithm
     e = assert_raise Gem::Security::Exception do
-      @SEC.create_key "NOT_RSA"
+      Gem::Security.create_key "NOT_RSA"
     end
 
     assert_equal "NOT_RSA algorithm not found. RSA, DSA, and EC algorithms are supported.",
@@ -128,27 +122,27 @@ class TestGemSecurity < Gem::TestCase
   def test_class_get_public_key_rsa
     pkey_pem = PRIVATE_KEY.public_key.to_pem
 
-    assert_equal pkey_pem, @SEC.get_public_key(PRIVATE_KEY).to_pem
+    assert_equal pkey_pem, Gem::Security.get_public_key(PRIVATE_KEY).to_pem
   end
 
   def test_class_get_public_key_ec
-    pkey = @SEC.get_public_key(EC_KEY)
+    pkey = Gem::Security.get_public_key(EC_KEY)
 
     assert_respond_to pkey, :to_pem
   end
 
   def test_class_email_to_name
     assert_equal "/CN=nobody/DC=example",
-                 @SEC.email_to_name("nobody@example").to_s
+                 Gem::Security.email_to_name("nobody@example").to_s
 
     assert_equal "/CN=nobody/DC=example/DC=com",
-                 @SEC.email_to_name("nobody@example.com").to_s
+                 Gem::Security.email_to_name("nobody@example.com").to_s
 
     assert_equal "/CN=no.body/DC=example",
-                 @SEC.email_to_name("no.body@example").to_s
+                 Gem::Security.email_to_name("no.body@example").to_s
 
     assert_equal "/CN=no_body/DC=example",
-                 @SEC.email_to_name("no+body@example").to_s
+                 Gem::Security.email_to_name("no+body@example").to_s
   end
 
   def test_class_re_sign
@@ -188,11 +182,11 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_reset
-    trust_dir = @SEC.trust_dir
+    trust_dir = Gem::Security.trust_dir
 
-    @SEC.reset
+    Gem::Security.reset
 
-    refute_equal trust_dir, @SEC.trust_dir
+    refute_equal trust_dir, Gem::Security.trust_dir
   end
 
   def test_class_sign
@@ -206,7 +200,7 @@ class TestGemSecurity < Gem::TestCase
     cert.subject    = signee
     cert.public_key = key.public_key
 
-    signed = @SEC.sign cert, key, PUBLIC_CERT, 60
+    signed = Gem::Security.sign cert, key, PUBLIC_CERT, 60
 
     assert_equal    key.public_key.to_pem, signed.public_key.to_pem
     assert_equal    signee.to_s,           signed.subject.to_s
@@ -241,9 +235,9 @@ class TestGemSecurity < Gem::TestCase
     issuer = PUBLIC_CERT.subject
     signee = OpenSSL::X509::Name.parse "/CN=signee/DC=example"
 
-    cert = @SEC.create_cert_email "signee@example", PRIVATE_KEY
+    cert = Gem::Security.create_cert_email "signee@example", PRIVATE_KEY
 
-    signed = @SEC.sign cert, PRIVATE_KEY, PUBLIC_CERT, 60
+    signed = Gem::Security.sign cert, PRIVATE_KEY, PUBLIC_CERT, 60
 
     assert_equal    PUBLIC_KEY.to_pem, signed.public_key.to_pem
     assert_equal    signee.to_s,       signed.subject.to_s
@@ -280,7 +274,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_trust_dir
-    trust_dir = @SEC.trust_dir
+    trust_dir = Gem::Security.trust_dir
 
     expected = File.join Gem.user_home, ".gem/trust"
 
@@ -288,11 +282,11 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write
-    key = @SEC.create_key "rsa"
+    key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_key.pem"
 
-    @SEC.write key, path
+    Gem::Security.write key, path
 
     assert_path_exist path
 
@@ -302,13 +296,13 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_encrypted
-    key = @SEC.create_key "rsa"
+    key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_encrypted_key.pem"
 
     passphrase = "It should be long."
 
-    @SEC.write key, path, 0o600, passphrase
+    Gem::Security.write key, path, 0o600, passphrase
 
     assert_path_exist path
 
@@ -318,7 +312,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_encrypted_cipher
-    key = @SEC.create_key "rsa"
+    key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_encrypted__with_non_default_cipher_key.pem"
 
@@ -326,7 +320,7 @@ class TestGemSecurity < Gem::TestCase
 
     cipher = OpenSSL::Cipher.new "AES-192-CBC"
 
-    @SEC.write key, path, 0o600, passphrase, cipher
+    Gem::Security.write key, path, 0o600, passphrase, cipher
 
     assert_path_exist path
 

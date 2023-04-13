@@ -3,12 +3,6 @@
 require_relative "helper"
 
 class TestGemResolver < Gem::TestCase
-  def setup
-    super
-
-    @DR = Gem::Resolver
-  end
-
   def make_dep(name, *req)
     Gem::Dependency.new(name, *req)
   end
@@ -37,18 +31,18 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_best_set
-    best_set = @DR::BestSet.new
+    best_set = Gem::Resolver::BestSet.new
 
-    composed = @DR.compose_sets best_set
+    composed = Gem::Resolver.compose_sets best_set
 
     assert_equal best_set, composed
   end
 
   def test_self_compose_sets_multiple
-    index_set  = @DR::IndexSet.new
-    vendor_set = @DR::VendorSet.new
+    index_set  = Gem::Resolver::IndexSet.new
+    vendor_set = Gem::Resolver::VendorSet.new
 
-    composed = @DR.compose_sets index_set, vendor_set
+    composed = Gem::Resolver.compose_sets index_set, vendor_set
 
     assert_kind_of Gem::Resolver::ComposedSet, composed
 
@@ -56,14 +50,14 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_nest
-    index_set  = @DR::IndexSet.new
-    vendor_set = @DR::VendorSet.new
+    index_set  = Gem::Resolver::IndexSet.new
+    vendor_set = Gem::Resolver::VendorSet.new
 
-    inner = @DR.compose_sets index_set, vendor_set
+    inner = Gem::Resolver.compose_sets index_set, vendor_set
 
-    current_set = @DR::CurrentSet.new
+    current_set = Gem::Resolver::CurrentSet.new
 
-    composed = @DR.compose_sets inner, current_set
+    composed = Gem::Resolver.compose_sets inner, current_set
 
     assert_kind_of Gem::Resolver::ComposedSet, composed
 
@@ -71,23 +65,23 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_nil
-    index_set = @DR::IndexSet.new
+    index_set = Gem::Resolver::IndexSet.new
 
-    composed = @DR.compose_sets index_set, nil
+    composed = Gem::Resolver.compose_sets index_set, nil
 
     assert_same index_set, composed
 
     e = assert_raise ArgumentError do
-      @DR.compose_sets nil
+      Gem::Resolver.compose_sets nil
     end
 
     assert_equal "one set in the composition must be non-nil", e.message
   end
 
   def test_self_compose_sets_single
-    index_set = @DR::IndexSet.new
+    index_set = Gem::Resolver::IndexSet.new
 
-    composed = @DR.compose_sets index_set
+    composed = Gem::Resolver.compose_sets index_set
 
     assert_same index_set, composed
   end

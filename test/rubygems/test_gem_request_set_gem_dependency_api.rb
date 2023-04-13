@@ -7,14 +7,12 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def setup
     super
 
-    @GDA = Gem::RequestSet::GemDependencyAPI
-
     @set = Gem::RequestSet.new
 
     @git_set    = Gem::Resolver::GitSet.new
     @vendor_set = Gem::Resolver::VendorSet.new
 
-    @gda = @GDA.new @set, "gem.deps.rb"
+    @gda = Gem::RequestSet::GemDependencyAPI.new @set, "gem.deps.rb"
     @gda.instance_variable_set :@git_set,    @git_set
     @gda.instance_variable_set :@vendor_set, @vendor_set
   end
@@ -264,7 +262,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     with_engine_version "ruby", "2.0.0" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :ruby
 
       refute_empty set.dependencies
@@ -272,7 +270,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     with_engine_version "rbx", "2.0.0" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :ruby
 
       refute_empty set.dependencies
@@ -280,7 +278,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     with_engine_version "truffleruby", "2.0.0" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :ruby
 
       refute_empty set.dependencies
@@ -288,7 +286,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     with_engine_version "jruby", "1.7.6" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :ruby
 
       assert_empty set.dependencies
@@ -298,7 +296,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     with_engine_version "ruby", "2.0.0" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :ruby
 
       assert_empty set.dependencies
@@ -327,13 +325,13 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     with_engine_version "maglev", "1.0.0" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :ruby
 
       refute_empty set.dependencies
 
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :maglev
 
       refute_empty set.dependencies
@@ -345,13 +343,13 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gem_platforms_truffleruby
     with_engine_version "truffleruby", "1.0.0" do
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :truffleruby
 
       refute_empty set.dependencies
 
       set = Gem::RequestSet.new
-      gda = @GDA.new set, "gem.deps.rb"
+      gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
       gda.gem "a", :platforms => :maglev
 
       assert_empty set.dependencies
@@ -457,7 +455,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gem_source_mismatch
     name, _, directory = vendor_gem
 
-    gda = @GDA.new @set, nil
+    gda = Gem::RequestSet::GemDependencyAPI.new @set, nil
     gda.gem name
 
     e = assert_raise ArgumentError do
@@ -467,7 +465,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal "duplicate source path: #{directory} for gem #{name}",
                  e.message
 
-    gda = @GDA.new @set, nil
+    gda = Gem::RequestSet::GemDependencyAPI.new @set, nil
     gda.instance_variable_set :@vendor_set, @vendor_set
     gda.gem name, :path => directory
 
@@ -482,7 +480,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gem_deps_file
     assert_equal "gem.deps.rb", @gda.gem_deps_file
 
-    gda = @GDA.new @set, "foo/Gemfile"
+    gda = Gem::RequestSet::GemDependencyAPI.new @set, "foo/Gemfile"
 
     assert_equal "Gemfile", gda.gem_deps_file
   end
@@ -647,7 +645,7 @@ end
       GEM_DEPS
       io.flush
 
-      gda = @GDA.new @set, io.path
+      gda = Gem::RequestSet::GemDependencyAPI.new @set, io.path
 
       assert_equal gda, gda.load
 
@@ -658,7 +656,7 @@ end
   end
 
   def test_pin_gem_source
-    gda = @GDA.new @set, nil
+    gda = Gem::RequestSet::GemDependencyAPI.new @set, nil
 
     gda.send :pin_gem_source, "a"
     gda.send :pin_gem_source, "a"
@@ -703,7 +701,7 @@ end
     win_platform = Gem.win_platform?
     Gem.win_platform = false
 
-    gda = @GDA.new @set, nil
+    gda = Gem::RequestSet::GemDependencyAPI.new @set, nil
 
     with_engine_version "ruby", "1.8.7" do
       gda.platform :mri_19, :mri_20 do
@@ -713,7 +711,7 @@ end
 
     assert_empty @set.dependencies
 
-    gda = @GDA.new @set, nil
+    gda = Gem::RequestSet::GemDependencyAPI.new @set, nil
 
     with_engine_version "ruby", "2.0.0" do
       gda.platform :mri_19, :mri_20 do

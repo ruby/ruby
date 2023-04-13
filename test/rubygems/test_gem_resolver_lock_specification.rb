@@ -8,14 +8,12 @@ class TestGemResolverLockSpecification < Gem::TestCase
   def setup
     super
 
-    @LS = Gem::Resolver::LockSpecification
-
     @source = Gem::Source.new @gem_repo
     @set    = Gem::Resolver::LockSet.new [@source]
   end
 
   def test_initialize
-    spec = @LS.new @set, "a", v(2), [@source], Gem::Platform::RUBY
+    spec = Gem::Resolver::LockSpecification.new @set, "a", v(2), [@source], Gem::Platform::RUBY
 
     assert_equal "a",                 spec.name
     assert_equal v(2),                spec.version
@@ -25,7 +23,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
   end
 
   def test_add_dependency
-    l_spec = @LS.new @set, "a", v(2), [@source], Gem::Platform::RUBY
+    l_spec = Gem::Resolver::LockSpecification.new @set, "a", v(2), [@source], Gem::Platform::RUBY
 
     b_dep = dep("b", ">= 0")
 
@@ -39,7 +37,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
       fetcher.download "a", 2
     end
 
-    spec = @LS.new @set, "a", v(2), [@source], Gem::Platform::RUBY
+    spec = Gem::Resolver::LockSpecification.new @set, "a", v(2), [@source], Gem::Platform::RUBY
 
     called = false
 
@@ -51,7 +49,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
   end
 
   def test_install_installed
-    spec = @LS.new @set, "a", v(2), [@source], Gem::Platform::RUBY
+    spec = Gem::Resolver::LockSpecification.new @set, "a", v(2), [@source], Gem::Platform::RUBY
 
     FileUtils.touch File.join(@gemhome, "specifications", spec.spec.spec_name)
 
@@ -67,7 +65,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
   def test_spec
     version = v(2)
 
-    l_spec = @LS.new @set, "a", version, [@source], Gem::Platform::RUBY
+    l_spec = Gem::Resolver::LockSpecification.new @set, "a", version, [@source], Gem::Platform::RUBY
 
     b_dep = dep "b", ">= 0"
     c_dep = dep "c", "~> 1"
@@ -91,7 +89,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
 
     version = v(2)
 
-    l_spec = @LS.new @set, "a", version, [@source], Gem::Platform::RUBY
+    l_spec = Gem::Resolver::LockSpecification.new @set, "a", version, [@source], Gem::Platform::RUBY
 
     assert_same real_spec, l_spec.spec
   end
