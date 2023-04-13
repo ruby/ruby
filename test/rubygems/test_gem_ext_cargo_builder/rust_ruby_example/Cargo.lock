@@ -126,9 +126,9 @@ checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.47"
+version = "1.0.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ea3d908b0e36316caf9e9e2c4625cdde190a7e6f440d794667ed17a1855e725"
+checksum = "2b63bdb0cd06f1f4dedf69b254734f9b45af66e4a031e42a7480257d9898b435"
 dependencies = [
  "unicode-ident",
 ]
@@ -144,21 +144,22 @@ dependencies = [
 
 [[package]]
 name = "rb-sys"
-version = "0.9.67"
+version = "0.9.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ef80f0a12d987db9c920c70ddf0bc2d9b59f921fc4d7998a68e48e59d179069"
+checksum = "156bfedced1e236600bcaad538477097ff2ed5c6b474e411d15b791e1d24c0f1"
 dependencies = [
  "rb-sys-build",
 ]
 
 [[package]]
 name = "rb-sys-build"
-version = "0.9.67"
+version = "0.9.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbf55ef2409a2a05ede80b5fc88ce1c3bbe6f39960126a3d9c163670c7c60c98"
+checksum = "5cb2e4a32cbc290b543a74567072ad24b708aff7bb5dde5a68d5690379cd7938"
 dependencies = [
  "bindgen",
  "lazy_static",
+ "proc-macro2",
  "quote",
  "regex",
  "shell-words",

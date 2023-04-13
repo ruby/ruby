@@ -1,5 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'objspace'
+require 'json'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
@@ -25,6 +27,14 @@ class TestShapes < Test::Unit::TestCase
 
     def set_c
       @c = :c # 5 => 7
+    end
+  end
+
+  class OrderedAlloc
+    def add_ivars
+      10.times do |i|
+        instance_variable_set("@foo" + i.to_s, 0)
+      end
     end
   end
 
@@ -107,6 +117,12 @@ class TestShapes < Test::Unit::TestCase
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
     assert_predicate RubyVM::Shape.of(tc), :too_complex?
+  end
+
+  def test_ordered_alloc_is_not_complex
+    5.times { OrderedAlloc.new.add_ivars }
+    obj = JSON.parse(ObjectSpace.dump(OrderedAlloc))
+    assert_operator obj["variation_count"], :<, RubyVM::Shape::SHAPE_MAX_VARIATIONS
   end
 
   def test_too_many_ivs_on_obj

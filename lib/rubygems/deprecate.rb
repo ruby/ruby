@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Provides 3 methods for declaring when something is going away.
 #
@@ -108,7 +109,7 @@ module Gem::Deprecate
         msg = [
           "NOTE: #{target}#{name} is deprecated",
           repl == :none ? " with no replacement" : "; use #{repl} instead",
-          ". It will be removed on or after %4d-%02d." % [year, month],
+          format(". It will be removed on or after %4d-%02d.", year, month),
           "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
         ]
         warn "#{msg.join}." unless Gem::Deprecate.skip

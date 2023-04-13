@@ -254,7 +254,7 @@ make_counters! {
     send_send_builtin,
     send_iseq_has_rest_and_captured,
     send_iseq_has_rest_and_send,
-    send_iseq_has_rest_and_kw,
+    send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_rest_and_optional,
     send_iseq_has_rest_and_splat_not_equal,
     send_is_a_class_mismatch,
@@ -316,6 +316,7 @@ make_counters! {
 
     vm_insns_count,
     compiled_iseq_count,
+    compiled_blockid_count,
     compiled_block_count,
     compiled_branch_count,
     compilation_failure,
@@ -352,6 +353,10 @@ make_counters! {
 
     iseq_stack_too_large,
     iseq_too_long,
+
+    temp_reg_opnd,
+    temp_mem_opnd,
+    temp_spill,
 }
 
 //===========================================================================
@@ -475,6 +480,8 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         #[cfg(feature="stats")]
         hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
 
+        // `context` is true at RubyVM::YJIT._print_stats for --yjit-stats. It's false by default
+        // for RubyVM::YJIT.runtime_stats because counting all Contexts could be expensive.
         if context {
             let live_context_count = get_live_context_count();
             let context_size = std::mem::size_of::<Context>();

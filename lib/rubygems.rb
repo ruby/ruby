@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -210,7 +211,7 @@ module Gem
       end
     end
 
-    return true
+    true
   end
 
   def self.needs
@@ -428,7 +429,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.ensure_subdirectories(dir, mode, subdirs) # :nodoc:
     old_umask = File.umask
-    File.umask old_umask | 002
+    File.umask old_umask | 0o002
 
     options = {}
 
@@ -488,7 +489,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # the spec dirs directly, so we prune.
     files.uniq! if check_load_path
 
-    return files
+    files
   end
 
   def self.find_files_from_load_path(glob) # :nodoc:
@@ -523,7 +524,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # the spec dirs directly, so we prune.
     files.uniq! if check_load_path
 
-    return files
+    files
   end
 
   ##
@@ -794,7 +795,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if @ruby.nil?
       @ruby = RbConfig.ruby
 
-      @ruby = "\"#{@ruby}\"" if @ruby =~ /\s/
+      @ruby = "\"#{@ruby}\"" if /\s/.match?(@ruby)
     end
 
     @ruby
@@ -947,7 +948,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     elapsed = Time.now - now
 
-    ui.say "%2$*1$s: %3$3.3fs" % [-width, msg, elapsed] if display
+    ui.say format("%2$*1$s: %3$3.3fs", -width, msg, elapsed) if display
 
     value
   end
@@ -1007,11 +1008,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       # Skip older versions of the GemCutter plugin: Its commands are in
       # RubyGems proper now.
 
-      next if plugin =~ /gemcutter-0\.[0-3]/
+      next if /gemcutter-0\.[0-3]/.match?(plugin)
 
       begin
         load plugin
-      rescue ::Exception => e
+      rescue ScriptError, StandardError => e
         details = "#{plugin.inspect}: #{e.message} (#{e.class})"
         warn "Error loading RubyGems plugin #{details}"
       end

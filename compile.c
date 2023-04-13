@@ -1355,11 +1355,14 @@ new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_call
 }
 
 static void
-set_catch_except_p(struct rb_iseq_constant_body *body)
+set_catch_except_p(rb_iseq_t *iseq)
 {
-    body->catch_except_p = true;
-    if (body->parent_iseq != NULL) {
-        set_catch_except_p(ISEQ_BODY(body->parent_iseq));
+    RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
+    ISEQ_COMPILE_DATA(iseq)->catch_except_p = true;
+    if (ISEQ_BODY(iseq)->parent_iseq != NULL) {
+        if (ISEQ_COMPILE_DATA(ISEQ_BODY(iseq)->parent_iseq)) {
+          set_catch_except_p((rb_iseq_t *) ISEQ_BODY(iseq)->parent_iseq);
+        }
     }
 }
 
@@ -1371,7 +1374,7 @@ set_catch_except_p(struct rb_iseq_constant_body *body)
    So this function sets true for limited ISeqs with break/next/redo catch table entries
    whose child ISeq would really raise an exception. */
 static void
-update_catch_except_flags(struct rb_iseq_constant_body *body)
+update_catch_except_flags(rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
     unsigned int pos;
     size_t i;
@@ -1384,7 +1387,7 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
     while (pos < body->iseq_size) {
         insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         if (insn == BIN(throw)) {
-            set_catch_except_p(body);
+            set_catch_except_p(iseq);
             break;
         }
         pos += insn_len(insn);
@@ -1399,7 +1402,8 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
         if (entry->type != CATCH_TYPE_BREAK
             && entry->type != CATCH_TYPE_NEXT
             && entry->type != CATCH_TYPE_REDO) {
-            body->catch_except_p = true;
+            RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
+            ISEQ_COMPILE_DATA(iseq)->catch_except_p = true;
             break;
         }
     }
@@ -1496,10 +1500,12 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     if (!rb_iseq_translate_threaded_code(iseq)) return COMPILE_NG;
 
     debugs("[compile step 6 (update_catch_except_flags)] \n");
-    update_catch_except_flags(ISEQ_BODY(iseq));
+    RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
+    update_catch_except_flags(iseq, ISEQ_BODY(iseq));
 
     debugs("[compile step 6.1 (remove unused catch tables)] \n");
-    if (!ISEQ_BODY(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
+    RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
+    if (!ISEQ_COMPILE_DATA(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
         xfree(ISEQ_BODY(iseq)->catch_table);
         ISEQ_BODY(iseq)->catch_table = NULL;
     }
@@ -3646,6 +3652,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         if (IS_TRACE(iobj->link.next)) {
             if (IS_NEXT_INSN_ID(iobj->link.next, leave)) {
                 iobj->insn_id = BIN(opt_invokebuiltin_delegate_leave);
+                const struct rb_builtin_function *bf = (const struct rb_builtin_function *)iobj->operands[0];
+                if (iobj == (INSN *)list && bf->argc == 0 && (iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF)) {
+                    iseq->body->builtin_attrs |= BUILTIN_ATTR_SINGLE_NOARG_INLINE;
+                }
             }
         }
     }
@@ -3798,7 +3808,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     int do_block_optimization = 0;
 
-    if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK && !ISEQ_BODY(iseq)->catch_except_p) {
+    if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK && !ISEQ_COMPILE_DATA(iseq)->catch_except_p) {
         do_block_optimization = 1;
     }
 
@@ -8348,15 +8358,12 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
         .script_lines = ISEQ_BODY(iseq)->variable.script_lines,
     };
 
-    int prev_inline_index = GET_VM()->builtin_inline_index;
-
     ISEQ_BODY(iseq)->mandatory_only_iseq =
       rb_iseq_new_with_opt(&ast, rb_iseq_base_label(iseq),
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                            nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option);
 
-    GET_VM()->builtin_inline_index = prev_inline_index;
     ALLOCV_END(idtmp);
     return COMPILE_OK;
 }
@@ -12174,7 +12181,6 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->ic_size);
     ibf_dump_write_small_value(dump, body->ci_size);
     ibf_dump_write_small_value(dump, body->stack_max);
-    ibf_dump_write_small_value(dump, body->catch_except_p);
     ibf_dump_write_small_value(dump, body->builtin_attrs);
 
 #undef IBF_BODY_OFFSET
@@ -12287,7 +12293,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 
     const unsigned int ci_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
-    const char catch_except_p = (char)ibf_load_small_value(load, &reading_pos);
     const unsigned int builtin_attrs = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
     // setup fname and dummy frame
@@ -12360,7 +12365,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->location.code_location.beg_pos.column = location_code_location_beg_pos_column;
     load_body->location.code_location.end_pos.lineno = location_code_location_end_pos_lineno;
     load_body->location.code_location.end_pos.column = location_code_location_end_pos_column;
-    load_body->catch_except_p = catch_except_p;
     load_body->builtin_attrs = builtin_attrs;
 
     load_body->ivc_size             = ivc_size;

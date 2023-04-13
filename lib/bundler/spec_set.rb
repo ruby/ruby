@@ -63,8 +63,8 @@ module Bundler
       @sorted = nil
     end
 
-    def delete(spec)
-      @specs.delete(spec)
+    def delete(specs)
+      specs.each {|spec| @specs.delete(spec) }
       @lookup = nil
       @sorted = nil
     end
@@ -101,6 +101,10 @@ module Bundler
     end
 
     def incomplete_ruby_specs?(deps)
+      return false if @specs.empty?
+
+      @incomplete_specs = []
+
       self.for(deps, true, [Gem::Platform::RUBY])
 
       @incomplete_specs.any?

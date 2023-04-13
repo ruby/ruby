@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../command_manager"
 require_relative "../dependency_installer"
@@ -36,10 +37,10 @@ class Gem::Commands::UpdateCommand < Gem::Command
     end
 
     add_option("--system [VERSION]", Gem::Version,
-               "Update the RubyGems system software") do |value, options|
+               "Update the RubyGems system software") do |value, opts|
       value ||= true
 
-      options[:system] = value
+      opts[:system] = value
     end
 
     add_local_remote_options
@@ -232,7 +233,7 @@ command to remove old versions.
     highest_remote_tup = highest_remote_name_tuple(rubygems_update)
     target = highest_remote_tup ? highest_remote_tup.version : version
 
-    return target, requirement
+    [target, requirement]
   end
 
   def update_gem(name, version = Gem::Requirement.default)

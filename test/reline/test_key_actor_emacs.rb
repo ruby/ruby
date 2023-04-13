@@ -428,6 +428,12 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line("き\u3099")
   end
 
+  def test_em_delete_ends_editing
+    input_keys("\C-d") # quit from inputing
+    assert_line(nil)
+    assert(@line_editor.finished?)
+  end
+
   def test_ed_clear_screen
     refute(@line_editor.instance_variable_get(:@cleared))
     input_keys("\C-l", false)
@@ -449,7 +455,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('abc')
   end
 
-  def test_ed_delete_next_char
+  def test_key_delete
     input_keys('abc')
     assert_cursor(3)
     assert_cursor_max(3)
@@ -457,6 +463,25 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(3)
     assert_cursor_max(3)
     assert_line('abc')
+  end
+
+  def test_key_delete_does_not_end_editing
+    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    refute(@line_editor.finished?)
+  end
+
+  def test_key_delete_preserves_cursor
+    input_keys('abc')
+    input_keys("\C-b", false)
+    assert_cursor(2)
+    assert_cursor_max(3)
+    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    assert_cursor(2)
+    assert_cursor_max(2)
+    assert_line('ab')
   end
 
   def test_em_next_word

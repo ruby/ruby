@@ -66,4 +66,30 @@ class Array
       Primitive.ary_sample(random, n, ary)
     end
   end
+
+  def first n = unspecified = true
+    if Primitive.mandatory_only?
+      Primitive.attr! :leaf
+      Primitive.cexpr! %q{ ary_first(self) }
+    else
+      if unspecified
+        Primitive.cexpr! %q{ ary_first(self) }
+      else
+        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST) }
+      end
+    end
+  end
+
+  def last n = unspecified = true
+    if Primitive.mandatory_only?
+      Primitive.attr! :leaf
+      Primitive.cexpr! %q{ ary_last(self) }
+    else
+      if unspecified
+        Primitive.cexpr! %q{ ary_last(self) }
+      else
+        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
+      end
+    end
+  end
 end

@@ -786,6 +786,56 @@ RSpec.describe "bundle install with specific platforms" do
     expect(lockfile).to eq(original_lockfile)
   end
 
+  it "does not remove ruby when adding a new gem to the Gemfile" do
+    build_repo4 do
+      build_gem "concurrent-ruby", "1.2.2"
+      build_gem "rack", "3.0.7"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "concurrent-ruby"
+      gem "rack"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          concurrent-ruby (1.2.2)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        concurrent-ruby
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          concurrent-ruby (1.2.2)
+          rack (3.0.7)
+
+      PLATFORMS
+        #{formatted_lockfile_platforms(*["ruby", generic_local_platform].uniq)}
+
+      DEPENDENCIES
+        concurrent-ruby
+        rack
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "can fallback to a source gem when platform gems are incompatible with current ruby version" do
     setup_multiplatform_gem_with_source_gem
 

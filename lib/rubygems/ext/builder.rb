@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -29,13 +30,13 @@ class Gem::Ext::Builder
     make_program = Shellwords.split(make_program_name)
 
     # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? "DESTDIR=%s" % ENV["DESTDIR"] : ""
+    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
 
     env = [destdir]
 
     if sitedir
-      env << "sitearchdir=%s" % sitedir
-      env << "sitelibdir=%s" % sitedir
+      env << format("sitearchdir=%s", sitedir)
+      env << format("sitelibdir=%s", sitedir)
     end
 
     targets.each do |target|
@@ -50,6 +51,23 @@ class Gem::Ext::Builder
       rescue Gem::InstallError
         raise unless target == "clean" # ignore clean failure
       end
+    end
+  end
+
+  def self.ruby
+    require "shellwords"
+    # Gem.ruby is quoted if it contains whitespace
+    cmd = Gem.ruby.shellsplit
+
+    # This load_path is only needed when running rubygems test without a proper installation.
+    # Prepending it in a normal installation will cause problem with order of $LOAD_PATH.
+    # Therefore only add load_path if it is not present in the default $LOAD_PATH.
+    load_path = File.expand_path("../..", __dir__)
+    case load_path
+    when RbConfig::CONFIG["sitelibdir"], RbConfig::CONFIG["vendorlibdir"], RbConfig::CONFIG["rubylibdir"]
+      cmd
+    else
+      cmd << "-I#{load_path}"
     end
   end
 

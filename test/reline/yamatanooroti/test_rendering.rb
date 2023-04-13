@@ -661,6 +661,30 @@ begin
       EOC
     end
 
+    def test_longer_than_screen_height_nearest_cursor_with_scroll_back
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write(<<~EOC.chomp)
+        if 1
+          if 2
+            if 3
+              if 4
+                puts
+              end
+            end
+          end
+        end
+      EOC
+      write("\C-p" * 4 + "\C-e" + "\C-p" * 4)
+      write("2")
+      assert_screen(<<~EOC)
+        prompt> if 12
+        prompt>   if 2
+        prompt>     if 3
+        prompt>       if 4
+        prompt>         puts
+      EOC
+    end
+
     def test_update_cursor_correctly_when_just_cursor_moving
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\n  01234678")

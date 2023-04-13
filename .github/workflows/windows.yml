@@ -14,6 +14,13 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -68,18 +75,11 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-
-            ${{ runner.os }}-chocolatey-
-      - name: Install libraries with chocolatey
+      - name: Install libraries with scoop
         run: |
-          # Using Choco-Install for retries, but it doesn't detect failures properly
-          # if you pass multiple package names in a single command.
-          Choco-Install -PackageName winflexbison3
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+          scoop install winflexbison
         shell: pwsh
       - name: git config
         run: |
@@ -87,7 +87,7 @@ jobs:
           git config --global core.eol lf
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           path: src
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
@@ -129,8 +129,6 @@ jobs:
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake
-        env:
-          YACC: win_bison
       - run: nmake test
         timeout-minutes: 5
       - run: nmake test-spec

@@ -416,11 +416,6 @@ module IRB
     irb.run(@CONF)
   end
 
-  # Calls each event hook of <code>IRB.conf[:AT_EXIT]</code> when the current session quits.
-  def IRB.irb_at_exit
-    @CONF[:AT_EXIT].each{|hook| hook.call}
-  end
-
   # Quits irb
   def IRB.irb_exit(irb, ret)
     throw :IRB_EXIT, ret
@@ -565,7 +560,6 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
-            line.untaint if RUBY_VERSION < '2.7'
             if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
               IRB.set_measure_callback
             end
@@ -897,11 +891,6 @@ module IRB
     ensure
       $VERBOSE = verbose
     end
-
-    ATTR_TTY = "\e[%sm"
-    def ATTR_TTY.[](*a) self % a.join(";"); end
-    ATTR_PLAIN = ""
-    def ATTR_PLAIN.[](*) self; end
   end
 
   def @CONF.inspect

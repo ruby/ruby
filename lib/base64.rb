@@ -22,6 +22,9 @@
 # binary data into purely printable characters.
 
 module Base64
+
+  VERSION = "0.1.1"
+
   module_function
 
   # Returns the Base64-encoded version of +bin+.

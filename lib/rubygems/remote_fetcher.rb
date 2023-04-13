@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../rubygems"
 require_relative "request"
 require_relative "request/connection_pools"
@@ -135,7 +136,7 @@ class Gem::RemoteFetcher
     scheme = source_uri.scheme
 
     # URI.parse gets confused by MS Windows paths with forward slashes.
-    scheme = nil if scheme =~ /^[a-z]$/i
+    scheme = nil if /^[a-z]$/i.match?(scheme)
 
     # REFACTOR: split this up and dispatch on scheme (eg download_http)
     # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner

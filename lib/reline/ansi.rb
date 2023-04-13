@@ -8,6 +8,8 @@ class Reline::ANSI
     'khome' => :ed_move_to_beg,
     'kend'  => :ed_move_to_end,
     'kdch1' => :key_delete,
+    'kpp' => :ed_search_prev_history,
+    'knp' => :ed_search_next_history,
     'kcuu1' => :ed_prev_history,
     'kcud1' => :ed_next_history,
     'kcuf1' => :ed_next_char,

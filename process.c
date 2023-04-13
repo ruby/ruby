@@ -359,7 +359,7 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
 
-static VALUE cached_pid = Qnil;
+static rb_pid_t cached_pid;
 
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
@@ -499,24 +499,20 @@ parent_redirect_close(int fd)
 static VALUE
 get_pid(void)
 {
-    if (UNLIKELY(NIL_P(cached_pid))) {
-        cached_pid = PIDT2NUM(getpid());
+    if (UNLIKELY(!cached_pid)) { /* 0 is not a valid pid */
+        cached_pid = getpid();
     }
-    return cached_pid;
+    /* pid should be likely POSFIXABLE() */
+    return PIDT2NUM(cached_pid);
 }
 
+#if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
 static void
 clear_pid_cache(void)
 {
-    cached_pid = Qnil;
+    cached_pid = 0;
 }
-
-static inline void
-rb_process_atfork(void)
-{
-    clear_pid_cache();
-    rb_thread_atfork(); /* calls mjit_resume() */
-}
+#endif
 
 /*
  *  call-seq:
@@ -1564,9 +1560,13 @@ before_fork_ruby(void)
 }
 
 static void
-after_fork_ruby(void)
+after_fork_ruby(rb_pid_t pid)
 {
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
+    if (pid == 0) {
+        clear_pid_cache();
+        rb_thread_atfork();
+    }
     after_exec();
 }
 #endif
@@ -4073,11 +4073,10 @@ rb_fork_ruby2(struct rb_process_status *status)
             status->pid = pid;
             status->error = err;
         }
-        after_fork_ruby();
+        after_fork_ruby(pid);
         disable_child_handler_fork_parent(&old); /* yes, bad name */
 
         if (pid >= 0) { /* fork succeed */
-            if (pid == 0) rb_process_atfork();
             return pid;
         }
 
@@ -4366,7 +4365,8 @@ NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
  *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
- *  to STDERR prior to terminating.
+ *  to STDERR prior to terminating. Otherwise, if an exception was raised,
+ *  print its message and backtrace.
  */
 
 static VALUE
@@ -6849,8 +6849,7 @@ rb_daemon(int nochdir, int noclose)
 #ifdef HAVE_DAEMON
     before_fork_ruby();
     err = daemon(nochdir, noclose);
-    after_fork_ruby();
-    rb_process_atfork();
+    after_fork_ruby(0);
 #else
     int n;
 
@@ -7961,6 +7960,11 @@ ruby_real_ms_time(void)
 # define NUM2CLOCKID(x) 0
 #endif
 
+#define clock_failed(name, err, arg) do { \
+        int clock_error = (err); \
+        rb_syserr_fail_str(clock_error, rb_sprintf("clock_" name "(%+"PRIsVALUE")", (arg))); \
+    } while (0)
+
 /*
  *  call-seq:
  *     Process.clock_gettime(clock_id [, unit])   -> number
@@ -8261,15 +8265,17 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
       gettime:
         ret = clock_gettime(c, &ts);
         if (ret == -1)
-            rb_sys_fail("clock_gettime");
+            clock_failed("gettime", errno, clk_id);
         tt.count = (int32_t)ts.tv_nsec;
         tt.giga_count = ts.tv_sec;
         denominators[num_denominators++] = 1000000000;
         goto success;
 #endif
     }
-    /* EINVAL emulates clock_gettime behavior when clock_id is invalid. */
-    rb_syserr_fail(EINVAL, 0);
+    else {
+        rb_unexpected_type(clk_id, T_SYMBOL);
+    }
+    clock_failed("gettime", EINVAL, clk_id);
 
   success:
     return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
@@ -8434,15 +8440,17 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
       getres:
         ret = clock_getres(c, &ts);
         if (ret == -1)
-            rb_sys_fail("clock_getres");
+            clock_failed("getres", errno, clk_id);
         tt.count = (int32_t)ts.tv_nsec;
         tt.giga_count = ts.tv_sec;
         denominators[num_denominators++] = 1000000000;
         goto success;
 #endif
     }
-    /* EINVAL emulates clock_getres behavior when clock_id is invalid. */
-    rb_syserr_fail(EINVAL, 0);
+    else {
+        rb_unexpected_type(clk_id, T_SYMBOL);
+    }
+    clock_failed("getres", EINVAL, clk_id);
 
   success:
     if (unit == ID2SYM(id_hertz)) {
@@ -9054,11 +9062,6 @@ Init_process(void)
     define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
     define_id(hertz);
-
-    /* pid_t must be signed, since fork() can return -1 */
-    const rb_pid_t half_max_pidt = (rb_pid_t)1 << (sizeof(rb_pid_t) * CHAR_BIT - 2);
-    const rb_pid_t max_pidt = 2 * (half_max_pidt - 1) + 1;
-    if (!POSFIXABLE(max_pidt)) rb_gc_register_address(&cached_pid);
 
     InitVM(process);
 }

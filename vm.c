@@ -40,6 +40,7 @@
 #include "vm_insnhelper.h"
 #include "ractor_core.h"
 #include "vm_sync.h"
+#include "shape.h"
 
 #include "builtin.h"
 
@@ -376,7 +377,7 @@ jit_compile(rb_execution_context_t *ec)
     // Increment the ISEQ's call counter
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    bool yjit_enabled = rb_yjit_enabled_p();
+    bool yjit_enabled = rb_yjit_compile_new_iseqs();
     if (yjit_enabled || rb_rjit_call_p) {
         body->total_calls++;
     }
@@ -440,6 +441,9 @@ bool ruby_vm_keep_script_lines;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+#ifdef RUBY_NT_SERIAL
+RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
+#endif
 
 #ifdef __APPLE__
   rb_execution_context_t *
@@ -589,7 +593,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
-    SET(next_shape_id, (rb_serial_t)GET_VM()->next_shape_id);
+    SET(next_shape_id, (rb_serial_t)GET_SHAPE_TREE()->next_shape_id);
 #undef SET
 
 #if USE_DEBUG_COUNTER
@@ -1609,7 +1613,7 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 VALUE *
 rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    while (cfp->pc == 0) {
+    while (cfp->pc == 0 || cfp->iseq == 0) {
         if (VM_FRAME_TYPE(cfp) ==  VM_FRAME_MAGIC_IFUNC) {
             struct vm_ifunc *ifunc = (struct vm_ifunc *)cfp->iseq;
             return ifunc->svar_lep;
@@ -4020,20 +4024,6 @@ Init_vm_objects(void)
 #if EXTSTATIC
     vm->static_ext_inits = st_init_strtable();
 #endif
-
-#ifdef HAVE_MMAP
-    vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t), rb_eRuntimeError),
-                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (vm->shape_list == MAP_FAILED) {
-        vm->shape_list = 0;
-    }
-#else
-    vm->shape_list = xcalloc(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t));
-#endif
-
-    if (!vm->shape_list) {
-        rb_memerror();
-    }
 }
 
 /* Stub for builtin function when not building YJIT units*/

@@ -118,24 +118,27 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
     if (l == 0) {
         return;
     }
-    else if (opt_match_noarg(s, l, "stats")) {
-        rjit_opt->stats = true;
-    }
-    else if (opt_match_noarg(s, l, "trace-exits")) {
-        rjit_opt->trace_exits = true;
-    }
     else if (opt_match_arg(s, l, "call-threshold")) {
         rjit_opt->call_threshold = atoi(s + 1);
     }
     else if (opt_match_arg(s, l, "exec-mem-size")) {
         rjit_opt->exec_mem_size = atoi(s + 1);
     }
-    // --rjit=pause is an undocumented feature for experiments
-    else if (opt_match_noarg(s, l, "pause")) {
-        rjit_opt->pause = true;
+    else if (opt_match_noarg(s, l, "stats")) {
+        rjit_opt->stats = true;
+    }
+    else if (opt_match_noarg(s, l, "trace-exits")) {
+        rjit_opt->trace_exits = true;
     }
     else if (opt_match_noarg(s, l, "dump-disasm")) {
         rjit_opt->dump_disasm = true;
+    }
+    else if (opt_match_noarg(s, l, "verify-ctx")) {
+        rjit_opt->verify_ctx = true;
+    }
+    // --rjit=pause is an undocumented feature for experiments
+    else if (opt_match_noarg(s, l, "pause")) {
+        rjit_opt->pause = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -358,6 +361,26 @@ rb_rjit_compile(const rb_iseq_t *iseq)
     });
 
     RB_VM_LOCK_LEAVE();
+}
+
+void *
+rb_rjit_entry_stub_hit(VALUE branch_stub)
+{
+    VALUE result;
+
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+
+    WITH_RJIT_ISOLATED({
+        VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
+        result = rb_funcall(rb_RJITCompiler, rb_intern("entry_stub_hit"), 2, branch_stub, cfp_ptr);
+    });
+
+    RB_VM_LOCK_LEAVE();
+
+    return (void *)NUM2SIZET(result);
 }
 
 void *

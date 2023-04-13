@@ -1,15 +1,10 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemResolverBestSet < Gem::TestCase
-  def setup
-    super
-
-    @DR = Gem::Resolver
-  end
-
   def test_initialize
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     assert_empty set.sets
   end
@@ -21,11 +16,11 @@ class TestGemResolverBestSet < Gem::TestCase
       fetcher.spec "b", 1
     end
 
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     dependency = dep "a", "~> 1"
 
-    req = @DR::DependencyRequest.new dependency, nil
+    req = Gem::Resolver::DependencyRequest.new dependency, nil
 
     found = set.find_all req
 
@@ -37,7 +32,7 @@ class TestGemResolverBestSet < Gem::TestCase
       fetcher.spec "a", 1
     end
 
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     api_uri = URI(@gem_repo)
 
@@ -45,7 +40,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     dependency = dep "a", "~> 1"
 
-    req = @DR::DependencyRequest.new dependency, nil
+    req = Gem::Resolver::DependencyRequest.new dependency, nil
 
     found = set.find_all req
 
@@ -59,12 +54,12 @@ class TestGemResolverBestSet < Gem::TestCase
       fetcher.spec "b", 1
     end
 
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
     set.remote = false
 
     dependency = dep "a", "~> 1"
 
-    req = @DR::DependencyRequest.new dependency, nil
+    req = Gem::Resolver::DependencyRequest.new dependency, nil
 
     found = set.find_all req
 
@@ -76,7 +71,7 @@ class TestGemResolverBestSet < Gem::TestCase
       fetcher.spec "a", 1
     end
 
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     set.prefetch []
 
@@ -88,7 +83,7 @@ class TestGemResolverBestSet < Gem::TestCase
       fetcher.spec "a", 1
     end
 
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
     set.remote = false
 
     set.prefetch []
@@ -97,7 +92,7 @@ class TestGemResolverBestSet < Gem::TestCase
   end
 
   def test_replace_failed_api_set
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     api_uri = URI(@gem_repo) + "./info/"
     api_set = Gem::Resolver::APISet.new api_uri
@@ -118,7 +113,7 @@ class TestGemResolverBestSet < Gem::TestCase
   end
 
   def test_replace_failed_api_set_no_api_set
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     index_set = Gem::Resolver::IndexSet.new Gem::Source.new @gem_repo
 
@@ -134,7 +129,7 @@ class TestGemResolverBestSet < Gem::TestCase
   end
 
   def test_replace_failed_api_set_uri_with_credentials
-    set = @DR::BestSet.new
+    set = Gem::Resolver::BestSet.new
 
     api_uri = URI(@gem_repo) + "./info/"
     api_uri.user = "user"

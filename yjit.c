@@ -14,6 +14,7 @@
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "internal/fixnum.h"
+#include "internal/numeric.h"
 #include "internal/gc.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -335,7 +336,7 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
 
 // Is anyone listening for :c_call and :c_return event currently?
 bool
-rb_c_method_tracing_currently_enabled(rb_execution_context_t *ec)
+rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
 {
     rb_event_flag_t tracing_events;
     if (rb_multi_ractor_p()) {
@@ -845,8 +846,7 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
     return rb_ary_entry_internal(ary, offset);
 }
 
-VALUE
-rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
+extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
 rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
@@ -856,9 +856,21 @@ rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
 }
 
 VALUE
-rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)
+rb_yjit_fix_div_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_div_fix(recv, obj);
+}
+
+VALUE
+rb_yjit_fix_mod_fix(VALUE recv, VALUE obj)
 {
     return rb_fix_mod_fix(recv, obj);
+}
+
+VALUE
+rb_yjit_fix_mul_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mul_fix(recv, obj);
 }
 
 // Print the Ruby source location of some ISEQ for debugging purposes
@@ -1093,7 +1105,7 @@ static VALUE
 object_shape_count(rb_execution_context_t *ec, VALUE self)
 {
     // next_shape_id starts from 0, so it's the same as the count
-    return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
+    return ULONG2NUM((unsigned long)GET_SHAPE_TREE()->next_shape_id);
 }
 
 // Assert that we have the VM lock. Relevant mostly for multi ractor situations.
@@ -1114,6 +1126,7 @@ VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq)
 VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
+VALUE rb_yjit_resume(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"

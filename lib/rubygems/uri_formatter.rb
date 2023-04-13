@@ -34,7 +34,7 @@ class Gem::UriFormatter
   # Normalize the URI by adding "http://" if it is missing.
 
   def normalize
-    @uri =~ /^(https?|ftp|file):/i ? @uri : "http://#{@uri}"
+    /^(https?|ftp|file):/i.match?(@uri) ? @uri : "http://#{@uri}"
   end
 
   ##

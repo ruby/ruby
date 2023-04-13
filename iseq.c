@@ -2104,7 +2104,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
                 CALL_FLAG(FCALL);
                 CALL_FLAG(VCALL);
                 CALL_FLAG(ARGS_SIMPLE);
-                CALL_FLAG(BLOCKISEQ);
                 CALL_FLAG(TAILCALL);
                 CALL_FLAG(SUPER);
                 CALL_FLAG(ZSUPER);
@@ -2307,7 +2306,6 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     rb_str_cat2(str, "== disasm: ");
 
     rb_str_append(str, iseq_inspect(iseq));
-    rb_str_catf(str, " (catch: %s)", body->catch_except_p ? "true" : "false");
     if ((l = RSTRING_LEN(str) - indent_len) < header_minlen) {
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);
@@ -3550,8 +3548,31 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
     }
 }
 
-bool rb_vm_call_ivar_attrset_p(const vm_call_handler ch);
 void rb_vm_cc_general(const struct rb_callcache *cc);
+
+static bool
+clear_attr_cc(VALUE v)
+{
+    if (imemo_type_p(v, imemo_callcache) && vm_cc_ivar_p((const struct rb_callcache *)v)) {
+        rb_vm_cc_general((struct rb_callcache *)v);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+static bool
+clear_bf_cc(VALUE v)
+{
+    if (imemo_type_p(v, imemo_callcache) && vm_cc_bf_p((const struct rb_callcache *)v)) {
+        rb_vm_cc_general((struct rb_callcache *)v);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 static int
 clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
@@ -3560,11 +3581,7 @@ clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
-
-        if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
-            rb_vm_cc_general((struct rb_callcache *)v);
-        }
-
+        clear_attr_cc(v);
         asan_poison_object_if(ptr, v);
     }
     return 0;
@@ -3574,6 +3591,25 @@ void
 rb_clear_attr_ccs(void)
 {
     rb_objspace_each_objects(clear_attr_ccs_i, NULL);
+}
+
+static int
+clear_bf_ccs_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+        clear_bf_cc(v);
+        asan_poison_object_if(ptr, v);
+    }
+    return 0;
+}
+
+void
+rb_clear_bf_ccs(void)
+{
+    rb_objspace_each_objects(clear_bf_ccs_i, NULL);
 }
 
 static int
@@ -3589,8 +3625,9 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
         if (rb_obj_is_iseq(v)) {
             rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
         }
-        else if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
-            rb_vm_cc_general((struct rb_callcache *)v);
+        else if (clear_attr_cc(v)) {
+        }
+        else if (clear_bf_cc(v)) {
         }
 
         asan_poison_object_if(ptr, v);

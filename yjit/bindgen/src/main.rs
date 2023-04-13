@@ -136,7 +136,8 @@ fn main() {
         .allowlist_function("rb_ary_resurrect")
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
-        .allowlist_function("rb_yjit_rb_ary_unshift_m")
+        .allowlist_function("rb_ary_push")
+        .allowlist_function("rb_ary_unshift_m")
         .allowlist_function("rb_yjit_rb_ary_subseq_length")
 
         // From internal/array.h
@@ -177,7 +178,6 @@ fn main() {
 
         // From include/ruby/internal/core/robject.h
         .allowlist_type("ruby_robject_flags")
-        // .allowlist_type("ruby_robject_consts") // Removed when USE_RVARGC
         .allowlist_var("ROBJECT_OFFSET_.*")
 
         // From include/ruby/internal/core/rarray.h
@@ -212,6 +212,9 @@ fn main() {
         .allowlist_function("rb_id2name")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
+
+        // From internal/numeric.h
+        .allowlist_function("rb_fix_aref")
 
         // From internal/string.h
         .allowlist_function("rb_ec_str_resurrect")
@@ -413,7 +416,9 @@ fn main() {
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
-        .allowlist_function("rb_yarv_fix_mod_fix")
+        .allowlist_function("rb_yjit_fix_div_fix")
+        .allowlist_function("rb_yjit_fix_mod_fix")
+        .allowlist_function("rb_yjit_fix_mul_fix")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")

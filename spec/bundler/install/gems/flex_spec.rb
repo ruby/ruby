@@ -193,7 +193,7 @@ RSpec.describe "bundle flex_install" do
     it "discards the locked gems when the Gemfile requires different versions than the lock" do
       bundle "config set force_ruby_platform true"
 
-      nice_error = <<-E.strip.gsub(/^ {8}/, "")
+      nice_error = <<~E.strip
         Could not find compatible versions
 
         Because rack-obama >= 2.0 depends on rack = 1.2
@@ -210,7 +210,7 @@ RSpec.describe "bundle flex_install" do
     it "does not include conflicts with a single requirement tree, because that can't possibly be a conflict" do
       bundle "config set force_ruby_platform true"
 
-      bad_error = <<-E.strip.gsub(/^ {8}/, "")
+      bad_error = <<~E.strip
         Bundler could not find compatible versions for gem "rack-obama":
           In Gemfile:
             rack-obama (= 2.0)

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../version_option"
 require_relative "../uninstaller"
@@ -94,7 +95,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--version '#{Gem::Requirement.default}' --no-force " +
+    "--version '#{Gem::Requirement.default}' --no-force " \
       "--user-install"
   end
 
@@ -167,15 +168,14 @@ that is a dependency of an existing gem.  You can use the
     gems_to_uninstall = {}
 
     deps.each do |dep|
-      unless gems_to_uninstall[dep.name]
-        gems_to_uninstall[dep.name] = true
+      next if gems_to_uninstall[dep.name]
+      gems_to_uninstall[dep.name] = true
 
-        unless original_gem_version[dep.name] == Gem::Requirement.default
-          options[:version] = dep.version
-        end
-
-        uninstall_gem(dep.name)
+      unless original_gem_version[dep.name] == Gem::Requirement.default
+        options[:version] = dep.version
       end
+
+      uninstall_gem(dep.name)
     end
   end
 
@@ -183,12 +183,12 @@ that is a dependency of an existing gem.  You can use the
     uninstall(gem_name)
   rescue Gem::GemNotInHomeException => e
     spec = e.spec
-    alert("In order to remove #{spec.name}, please execute:\n" +
+    alert("In order to remove #{spec.name}, please execute:\n" \
           "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
   rescue Gem::UninstallError => e
     spec = e.spec
-    alert_error("Error: unable to successfully uninstall '#{spec.name}' which is " +
-          "located at '#{spec.full_gem_path}'. This is most likely because" +
+    alert_error("Error: unable to successfully uninstall '#{spec.name}' which is " \
+          "located at '#{spec.full_gem_path}'. This is most likely because" \
           "the current user does not have the appropriate permissions")
     terminate_interaction 1
   end

@@ -46,6 +46,24 @@ module SyntaxSuggest
       end
     end
 
+    # Since Ruby 3.2 includes syntax_suggest as a default gem, we might accidentally
+    # be requiring the default gem instead of this library under test. Assert that's
+    # not the case
+    it "tests current version of syntax_suggest" do
+      Dir.mktmpdir do |dir|
+        tmpdir = Pathname(dir)
+        script = tmpdir.join("script.rb")
+        contents = <<~'EOM'
+          puts "suggest_version is #{SyntaxSuggest::VERSION}"
+        EOM
+        script.write(contents)
+
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest/version #{script} 2>&1`
+
+        expect(out).to include("suggest_version is #{SyntaxSuggest::VERSION}").once
+      end
+    end
+
     it "detects require error and adds a message with auto mode" do
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)

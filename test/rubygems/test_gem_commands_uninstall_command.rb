@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "installer_test_case"
 require "rubygems/commands/uninstall_command"
 
@@ -113,7 +114,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   def test_execute_removes_executable
     initial_install
 
-    if win_platform?
+    if Gem.win_platform?
       assert File.exist?(@executable)
     else
       assert File.symlink?(@executable)
@@ -495,7 +496,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
+    assert_match(/Error: unable to successfully uninstall '#{@spec.name}'/, @ui.error)
   end
 
   private

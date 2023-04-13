@@ -1091,7 +1091,7 @@ ruby_dup(int orig)
 static VALUE
 io_alloc(VALUE klass)
 {
-    NEWOBJ_OF(io, struct RFile, klass, T_FILE);
+    NEWOBJ_OF(io, struct RFile, klass, T_FILE, sizeof(struct RFile), 0);
 
     io->fptr = 0;
 
@@ -6066,6 +6066,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
 #if defined(HAVE_PREAD) || defined(HAVE_PWRITE)
 struct prdwr_internal_arg {
+    VALUE io;
     int fd;
     void *buf;
     size_t count;
@@ -6075,17 +6076,28 @@ struct prdwr_internal_arg {
 
 #if defined(HAVE_PREAD)
 static VALUE
-internal_pread_func(void *arg)
+internal_pread_func(void *_arg)
 {
-    struct prdwr_internal_arg *p = arg;
-    return (VALUE)pread(p->fd, p->buf, p->count, p->offset);
+    struct prdwr_internal_arg *arg = _arg;
+
+    return (VALUE)pread(arg->fd, arg->buf, arg->count, arg->offset);
 }
 
 static VALUE
-pread_internal_call(VALUE arg)
+pread_internal_call(VALUE _arg)
 {
-    struct prdwr_internal_arg *p = (struct prdwr_internal_arg *)arg;
-    return rb_thread_io_blocking_region(internal_pread_func, p, p->fd);
+    struct prdwr_internal_arg *arg = (struct prdwr_internal_arg *)_arg;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_pread_memory(scheduler, arg->io, arg->offset, arg->buf, arg->count, 0);
+
+        if (!UNDEF_P(result)) {
+            return rb_fiber_scheduler_io_result_apply(result);
+        }
+    }
+
+    return rb_thread_io_blocking_region(internal_pread_func, arg, arg->fd);
 }
 
 /*
@@ -6122,7 +6134,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     VALUE len, offset, str;
     rb_io_t *fptr;
     ssize_t n;
-    struct prdwr_internal_arg arg;
+    struct prdwr_internal_arg arg = {.io = io};
     int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
@@ -6158,9 +6170,19 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
 
 #if defined(HAVE_PWRITE)
 static VALUE
-internal_pwrite_func(void *ptr)
+internal_pwrite_func(void *_arg)
 {
-    struct prdwr_internal_arg *arg = ptr;
+    struct prdwr_internal_arg *arg = _arg;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_pwrite_memory(scheduler, arg->io, arg->offset, arg->buf, arg->count, 0);
+
+        if (!UNDEF_P(result)) {
+            return rb_fiber_scheduler_io_result_apply(result);
+        }
+    }
+
 
     return (VALUE)pwrite(arg->fd, arg->buf, arg->count, arg->offset);
 }
@@ -6195,7 +6217,7 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
 {
     rb_io_t *fptr;
     ssize_t n;
-    struct prdwr_internal_arg arg;
+    struct prdwr_internal_arg arg = {.io = io};
     VALUE tmp;
 
     if (!RB_TYPE_P(str, T_STRING))
@@ -11632,9 +11654,9 @@ pipe_pair_close(VALUE rw)
  *    IO.pipe(**opts) -> [read_io, write_io]
  *    IO.pipe(enc, **opts) -> [read_io, write_io]
  *    IO.pipe(ext_enc, int_enc, **opts) -> [read_io, write_io]
- *    IO.pipe(**opts) {|read_io, write_io] ...} -> object
- *    IO.pipe(enc, **opts) {|read_io, write_io] ...} -> object
- *    IO.pipe(ext_enc, int_enc, **opts) {|read_io, write_io] ...} -> object
+ *    IO.pipe(**opts) {|read_io, write_io| ...} -> object
+ *    IO.pipe(enc, **opts) {|read_io, write_io| ...} -> object
+ *    IO.pipe(ext_enc, int_enc, **opts) {|read_io, write_io| ...} -> object
  *
  *  Creates a pair of pipe endpoints, +read_io+ and +write_io+,
  *  connected to each other.
@@ -12125,9 +12147,13 @@ static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
     VALUE opt, offset;
+    long off;
     struct foreach_arg arg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
+    if (!NIL_P(offset) && (off = NUM2LONG(offset)) < 0) {
+        rb_raise(rb_eArgError, "negative offset %ld given", off);
+    }
     open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
@@ -15507,13 +15533,12 @@ Init_IO(void)
     rb_gvar_ractor_local("$>");
     rb_gvar_ractor_local("$stderr");
 
-    rb_stdin  = rb_io_prep_stdin();
-    rb_stdout = rb_io_prep_stdout();
-    rb_stderr = rb_io_prep_stderr();
-
     rb_global_variable(&rb_stdin);
+    rb_stdin  = rb_io_prep_stdin();
     rb_global_variable(&rb_stdout);
+    rb_stdout = rb_io_prep_stdout();
     rb_global_variable(&rb_stderr);
+    rb_stderr = rb_io_prep_stderr();
 
     orig_stdout = rb_stdout;
     orig_stderr = rb_stderr;

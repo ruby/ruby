@@ -13,19 +13,18 @@
 #include "shape.h"
 
 enum vm_call_flag_bits {
-    VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
-    VM_CALL_ARGS_BLOCKARG_bit,  /* m(&block) */
-    VM_CALL_FCALL_bit,          /* m(...) */
-    VM_CALL_VCALL_bit,          /* m */
-    VM_CALL_ARGS_SIMPLE_bit,    /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
-    VM_CALL_BLOCKISEQ_bit,      /* has blockiseq */
-    VM_CALL_KWARG_bit,          /* has kwarg */
-    VM_CALL_KW_SPLAT_bit,       /* m(**opts) */
-    VM_CALL_TAILCALL_bit,       /* located at tail position */
-    VM_CALL_SUPER_bit,          /* super */
-    VM_CALL_ZSUPER_bit,         /* zsuper */
-    VM_CALL_OPT_SEND_bit,       /* internal flag */
-    VM_CALL_KW_SPLAT_MUT_bit,   /* kw splat hash can be modified (to avoid allocating a new one) */
+    VM_CALL_ARGS_SPLAT_bit,     // m(*args)
+    VM_CALL_ARGS_BLOCKARG_bit,  // m(&block)
+    VM_CALL_FCALL_bit,          // m(args)   # receiver is self
+    VM_CALL_VCALL_bit,          // m         # method call that looks like a local variable
+    VM_CALL_ARGS_SIMPLE_bit,    // (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL
+    VM_CALL_KWARG_bit,          // has kwarg
+    VM_CALL_KW_SPLAT_bit,       // m(**opts)
+    VM_CALL_TAILCALL_bit,       // located at tail position
+    VM_CALL_SUPER_bit,          // super
+    VM_CALL_ZSUPER_bit,         // zsuper
+    VM_CALL_OPT_SEND_bit,       // internal flag
+    VM_CALL_KW_SPLAT_MUT_bit,   // kw splat hash can be modified (to avoid allocating a new one)
     VM_CALL__END
 };
 
@@ -34,7 +33,6 @@ enum vm_call_flag_bits {
 #define VM_CALL_FCALL           (0x01 << VM_CALL_FCALL_bit)
 #define VM_CALL_VCALL           (0x01 << VM_CALL_VCALL_bit)
 #define VM_CALL_ARGS_SIMPLE     (0x01 << VM_CALL_ARGS_SIMPLE_bit)
-#define VM_CALL_BLOCKISEQ       (0x01 << VM_CALL_BLOCKISEQ_bit)
 #define VM_CALL_KWARG           (0x01 << VM_CALL_KWARG_bit)
 #define VM_CALL_KW_SPLAT        (0x01 << VM_CALL_KW_SPLAT_bit)
 #define VM_CALL_TAILCALL        (0x01 << VM_CALL_TAILCALL_bit)
@@ -290,6 +288,7 @@ struct rb_callcache {
         } attr;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
         VALUE v;
+        const struct rb_builtin_function *bf;
     } aux_;
 };
 
@@ -439,6 +438,9 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
 
 /* callcache: mutate */
 
+#define VM_CALLCACH_IVAR IMEMO_FL_USER0
+#define VM_CALLCACH_BF IMEMO_FL_USER1
+
 static inline void
 vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
 {
@@ -458,6 +460,13 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
     *attr_value = (attr_index_t)(index + 1) | ((uintptr_t)(dest_shape_id) << SHAPE_FLAG_SHIFT);
+    *(VALUE *)&cc->flags |= VM_CALLCACH_IVAR;
+}
+
+static inline bool
+vm_cc_ivar_p(const struct rb_callcache *cc)
+{
+    return (cc->flags & VM_CALLCACH_IVAR) != 0;
 }
 
 static inline void
@@ -478,6 +487,21 @@ vm_cc_method_missing_reason_set(const struct rb_callcache *cc, enum method_missi
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
     *(enum method_missing_reason *)&cc->aux_.method_missing_reason = reason;
+}
+
+static inline void
+vm_cc_bf_set(const struct rb_callcache *cc, const struct rb_builtin_function *bf)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+    *(const struct rb_builtin_function **)&cc->aux_.bf = bf;
+    *(VALUE *)&cc->flags |= VM_CALLCACH_BF;
+}
+
+static inline bool
+vm_cc_bf_p(const struct rb_callcache *cc)
+{
+    return (cc->flags & VM_CALLCACH_BF) != 0;
 }
 
 static inline void

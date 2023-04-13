@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "deprecate"
 
 ##
@@ -13,7 +14,7 @@ class Gem::Platform
 
   def self.local
     arch = RbConfig::CONFIG["arch"]
-    arch = "#{arch}_60" if arch =~ /mswin(?:32|64)$/
+    arch = "#{arch}_60" if /mswin(?:32|64)$/.match?(arch)
     @local ||= new(arch)
   end
 

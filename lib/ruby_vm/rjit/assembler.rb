@@ -449,6 +449,10 @@ module RubyVM::RJIT
 
     def jne(dst)
       case dst
+      # JNE rel8
+      in Label => dst_label
+        # 75 cb
+        insn(opcode: 0x75, imm: dst_label)
       # JNE rel32
       in Integer => dst_addr
         # 0F 85 cd

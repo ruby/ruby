@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The local source finds gems in the current directory for fulfilling
 # dependencies.
@@ -28,7 +29,7 @@ class Gem::Source::Local < Gem::Source
 
   def inspect # :nodoc:
     keys = @specs ? @specs.keys.sort : "NOT LOADED"
-    "#<%s specs: %p>" % [self.class, keys]
+    format("#<%s specs: %p>", self.class, keys)
   end
 
   def load_specs(type) # :nodoc:
@@ -79,15 +80,14 @@ class Gem::Source::Local < Gem::Source
     found = []
 
     @specs.each do |n, data|
-      if n.name == gem_name
-        s = data[1].spec
+      next unless n.name == gem_name
+      s = data[1].spec
 
-        if version.satisfied_by?(s.version)
-          if prerelease
-            found << s
-          elsif !s.version.prerelease? || version.prerelease?
-            found << s
-          end
+      if version.satisfied_by?(s.version)
+        if prerelease
+          found << s
+        elsif !s.version.prerelease? || version.prerelease?
+          found << s
         end
       end
     end

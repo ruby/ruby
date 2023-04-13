@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "openssl"
 
 ##
@@ -134,7 +136,7 @@ class Gem::S3URISigner
   end
 
   def base64_uri_escape(str)
-    str.gsub(/[\+\/=\n]/, BASE64_URI_TRANSLATE)
+    str.gsub(%r{[\+/=\n]}, BASE64_URI_TRANSLATE)
   end
 
   def ec2_metadata_credentials_json
@@ -170,6 +172,6 @@ class Gem::S3URISigner
   end
 
   BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D", "\n" => "" }.freeze
-  EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info".freeze
-  EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/".freeze
+  EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info"
+  EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/"
 end

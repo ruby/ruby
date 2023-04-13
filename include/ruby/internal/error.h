@@ -50,7 +50,10 @@ typedef enum {
     /** Warning is for experimental features. */
     RB_WARN_CATEGORY_EXPERIMENTAL,
 
-    RB_WARN_CATEGORY_ALL_BITS = 0x6 /* no RB_WARN_CATEGORY_NONE bit */
+    RB_WARN_CATEGORY_ALL_BITS = (
+        (1U << RB_WARN_CATEGORY_DEPRECATED) |
+        (1U << RB_WARN_CATEGORY_EXPERIMENTAL) |
+        0)
 } rb_warning_category_t;
 
 /** for rb_readwrite_sys_fail first argument */

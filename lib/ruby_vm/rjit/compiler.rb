@@ -3,11 +3,13 @@ require 'ruby_vm/rjit/block'
 require 'ruby_vm/rjit/branch_stub'
 require 'ruby_vm/rjit/code_block'
 require 'ruby_vm/rjit/context'
+require 'ruby_vm/rjit/entry_stub'
 require 'ruby_vm/rjit/exit_compiler'
 require 'ruby_vm/rjit/insn_compiler'
 require 'ruby_vm/rjit/instruction'
 require 'ruby_vm/rjit/invariants'
 require 'ruby_vm/rjit/jit_state'
+require 'ruby_vm/rjit/type'
 
 module RubyVM::RJIT
   # Compilation status
@@ -27,10 +29,14 @@ module RubyVM::RJIT
   CFP = :r15
   SP  = :rbx
 
-  # Scratch registers: rax, rcx
+  # Scratch registers: rax, rcx, rdx
 
   # Mark objects in this Array during GC
   GC_REFS = []
+
+  # Maximum number of versions per block
+  # 1 means always create generic versions
+  MAX_VERSIONS = 4
 
   class Compiler
     attr_accessor :write_pos
@@ -53,15 +59,54 @@ module RubyVM::RJIT
     # @param iseq `RubyVM::RJIT::CPointer::Struct_rb_iseq_t`
     # @param cfp `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t`
     def compile(iseq, cfp)
-      # TODO: Support has_opt
-      return if iseq.body.param.flags.has_opt
-
+      pc = cfp.pc.to_i
       jit = JITState.new(iseq:, cfp:)
       asm = Assembler.new
-      asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq.body.location.first_lineno}")
-      compile_prologue(asm)
-      compile_block(asm, jit:)
+      compile_prologue(asm, iseq, pc)
+      compile_block(asm, jit:, pc:)
       iseq.body.jit_func = @cb.write(asm)
+    rescue Exception => e
+      $stderr.puts e.full_message
+      exit 1
+    end
+
+    # Compile an entry.
+    # @param entry [RubyVM::RJIT::EntryStub]
+    def entry_stub_hit(entry_stub, cfp)
+      # Compile a new entry guard as a next entry
+      pc = cfp.pc.to_i
+      next_entry = Assembler.new.then do |asm|
+        compile_entry_chain_guard(asm, cfp.iseq, pc)
+        @cb.write(asm)
+      end
+
+      # Try to find an existing compiled version of this block
+      ctx = Context.new
+      block = find_block(cfp.iseq, pc, ctx)
+      if block
+        # If an existing block is found, generate a jump to the block.
+        asm = Assembler.new
+        asm.jmp(block.start_addr)
+        @cb.write(asm)
+      else
+        # If this block hasn't yet been compiled, generate blocks after the entry guard.
+        asm = Assembler.new
+        jit = JITState.new(iseq: cfp.iseq, cfp:)
+        compile_block(asm, jit:, pc:, ctx:)
+        @cb.write(asm)
+
+        block = jit.block
+      end
+
+      # Regenerate the previous entry
+      @cb.with_write_addr(entry_stub.start_addr) do
+        # The last instruction of compile_entry_chain_guard is jne
+        asm = Assembler.new
+        asm.jne(next_entry)
+        @cb.write(asm)
+      end
+
+      return block.start_addr
     rescue Exception => e
       $stderr.puts e.full_message
       exit 1
@@ -187,7 +232,7 @@ module RubyVM::RJIT
     # Caller-saved: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
     #
     # @param asm [RubyVM::RJIT::Assembler]
-    def compile_prologue(asm)
+    def compile_prologue(asm, iseq, pc)
       asm.comment('RJIT entry point')
 
       # Save callee-saved registers used by JITed code
@@ -205,21 +250,55 @@ module RubyVM::RJIT
       # Setup cfp->jit_return
       asm.mov(:rax, leave_exit)
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+
+      # We're compiling iseqs that we *expect* to start at `insn_idx`. But in
+      # the case of optional parameters, the interpreter can set the pc to a
+      # different location depending on the optional parameters.  If an iseq
+      # has optional parameters, we'll add a runtime check that the PC we've
+      # compiled for is the same PC that the interpreter wants us to run with.
+      # If they don't match, then we'll take a side exit.
+      if iseq.body.param.flags.has_opt
+        compile_entry_chain_guard(asm, iseq, pc)
+      end
+    end
+
+    def compile_entry_chain_guard(asm, iseq, pc)
+      entry_stub = EntryStub.new
+      stub_addr = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_entry_stub(ocb_asm, entry_stub)
+        @ocb.write(ocb_asm)
+      end
+
+      asm.comment('guard expected PC')
+      asm.mov(:rax, pc)
+      asm.cmp([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
+
+      asm.stub(entry_stub) do
+        asm.jne(stub_addr)
+      end
     end
 
     # @param asm [RubyVM::RJIT::Assembler]
-    def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    def compile_block(asm, jit:, pc:, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
+      ctx = limit_block_versions(jit.iseq, pc, ctx)
       block = Block.new(iseq: jit.iseq, pc:, ctx: ctx.dup)
       jit.block = block
       asm.block(block)
 
-      # Compile each insn
       iseq = jit.iseq
+      asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq_lineno(iseq, pc)}")
+
+      # Compile each insn
       index = (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size
       while index < iseq.body.iseq_size
+        # Set the current instruction
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
+        jit.stack_size_for_pc = ctx.stack_size
+        jit.side_exit_for_pc.clear
 
         # If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point
@@ -230,6 +309,11 @@ module RubyVM::RJIT
           end
           Invariants.record_global_inval_patch(asm, exit_pos)
           jit.record_boundary_patch_point = false
+        end
+
+        # In debug mode, verify our existing assumption
+        if C.rjit_opts.verify_ctx && jit.at_current_insn?
+          verify_ctx(jit, ctx)
         end
 
         case status = @insn_compiler.compile(jit, ctx, asm, insn)
@@ -243,7 +327,9 @@ module RubyVM::RJIT
           # TODO: pad nops if entry exit exists (not needed for x86_64?)
           break
         when CantCompile
-          @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
+          # Rewind stack_size using ctx.with_stack_size to allow stack_size changes
+          # before you return CantCompile.
+          @exit_compiler.compile_side_exit(jit.pc, ctx.with_stack_size(jit.stack_size_for_pc), asm)
 
           # If this is the first instruction, this block never needs to be invalidated.
           if block.pc == iseq.body.iseq_encoded.to_i + index * C.VALUE.size
@@ -273,6 +359,32 @@ module RubyVM::RJIT
       end
     end
 
+    # Produce a generic context when the block version limit is hit for the block
+    def limit_block_versions(iseq, pc, ctx)
+      # Guard chains implement limits separately, do nothing
+      if ctx.chain_depth > 0
+        return ctx.dup
+      end
+
+      # If this block version we're about to add will hit the version limit
+      if list_blocks(iseq, pc).size + 1 >= MAX_VERSIONS
+        # Produce a generic context that stores no type information,
+        # but still respects the stack_size and sp_offset constraints.
+        # This new context will then match all future requests.
+        generic_ctx = Context.new
+        generic_ctx.stack_size = ctx.stack_size
+        generic_ctx.sp_offset = ctx.sp_offset
+
+        if ctx.diff(generic_ctx) == TypeDiff::Incompatible
+          raise 'should substitute a compatible context'
+        end
+
+        return generic_ctx
+      end
+
+      return ctx.dup
+    end
+
     def list_blocks(iseq, pc)
       rjit_blocks(iseq)[pc]
     end
@@ -281,24 +393,23 @@ module RubyVM::RJIT
     # @param [RubyVM::RJIT::Context] ctx
     # @return [RubyVM::RJIT::Block,NilClass]
     def find_block(iseq, pc, ctx)
-      src = ctx
-      rjit_blocks(iseq)[pc].find do |block|
-        dst = block.ctx
+      versions = rjit_blocks(iseq)[pc]
 
-        # Can only lookup the first version in the chain
-        if dst.chain_depth != 0
-          next false
+      best_version = nil
+      best_diff = Float::INFINITY
+
+      versions.each do |block|
+        # Note that we always prefer the first matching
+        # version found because of inline-cache chains
+        case ctx.diff(block.ctx)
+        in TypeDiff::Compatible[diff] if diff < best_diff
+          best_version = block
+          best_diff = diff
+        else
         end
-
-        # Blocks with depth > 0 always produce new versions
-        # Sidechains cannot overlap
-        if src.chain_depth != 0
-          next false
-        end
-
-        src.stack_size == dst.stack_size &&
-          src.sp_offset == dst.sp_offset
       end
+
+      return best_version
     end
 
     # @param [RubyVM::RJIT::Block] block
@@ -325,6 +436,74 @@ module RubyVM::RJIT
         GC_REFS << iseq.body.rjit_blocks
       end
       iseq.body.rjit_blocks
+    end
+
+    def iseq_lineno(iseq, pc)
+      C.rb_iseq_line_no(iseq, (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size)
+    rescue RangeError # bignum too big to convert into `unsigned long long' (RangeError)
+      -1
+    end
+
+    # Verify the ctx's types and mappings against the compile-time stack, self, and locals.
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    def verify_ctx(jit, ctx)
+      # Only able to check types when at current insn
+      assert(jit.at_current_insn?)
+
+      self_val = jit.peek_at_self
+      self_val_type = Type.from(self_val)
+
+      # Verify self operand type
+      assert_compatible(self_val_type, ctx.get_opnd_type(SelfOpnd))
+
+      # Verify stack operand types
+      [ctx.stack_size, MAX_TEMP_TYPES].min.times do |i|
+        learned_mapping, learned_type = ctx.get_opnd_mapping(StackOpnd[i])
+        stack_val = jit.peek_at_stack(i)
+        val_type = Type.from(stack_val)
+
+        case learned_mapping
+        in MapToSelf
+          if C.to_value(self_val) != C.to_value(stack_val)
+            raise "verify_ctx: stack value was mapped to self, but values did not match:\n"\
+              "stack: #{stack_val.inspect}, self: #{self_val.inspect}"
+          end
+        in MapToLocal[local_idx]
+          local_val = jit.peek_at_local(local_idx)
+          if C.to_value(local_val) != C.to_value(stack_val)
+            raise "verify_ctx: stack value was mapped to local, but values did not match:\n"\
+              "stack: #{stack_val.inspect}, local: #{local_val.inspect}"
+          end
+        in MapToStack
+          # noop
+        end
+
+        # If the actual type differs from the learned type
+        assert_compatible(val_type, learned_type)
+      end
+
+      # Verify local variable types
+      local_table_size = jit.iseq.body.local_table_size
+      [local_table_size, MAX_TEMP_TYPES].min.times do |i|
+        learned_type = ctx.get_local_type(i)
+        local_val = jit.peek_at_local(i)
+        local_type = Type.from(local_val)
+
+        assert_compatible(local_type, learned_type)
+      end
+    end
+
+    def assert_compatible(actual_type, ctx_type)
+      if actual_type.diff(ctx_type) == TypeDiff::Incompatible
+        raise "verify_ctx: ctx type (#{ctx_type.type.inspect}) is incompatible with actual type (#{actual_type.type.inspect})"
+      end
+    end
+
+    def assert(cond)
+      unless cond
+        raise "'#{cond.inspect}' was not true"
+      end
     end
   end
 end

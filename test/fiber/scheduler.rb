@@ -366,6 +366,64 @@ class IOBufferScheduler < Scheduler
     return total
   end
 
+  def io_pread(io, buffer, from, length, offset)
+    total = 0
+    io.nonblock = true
+
+    while true
+      maximum_size = buffer.size - offset
+      result = blocking{buffer.pread(io, from, maximum_size, offset)}
+
+      if result > 0
+        total += result
+        offset += result
+        from += result
+        break if total >= length
+      elsif result == 0
+        break
+      elsif result == EAGAIN
+        if length > 0
+          self.io_wait(io, IO::READABLE, nil)
+        else
+          return result
+        end
+      elsif result < 0
+        return result
+      end
+    end
+
+    return total
+  end
+
+  def io_pwrite(io, buffer, from, length, offset)
+    total = 0
+    io.nonblock = true
+
+    while true
+      maximum_size = buffer.size - offset
+      result = blocking{buffer.pwrite(io, from, maximum_size, offset)}
+
+      if result > 0
+        total += result
+        offset += result
+        from += result
+        break if total >= length
+      elsif result == 0
+        break
+      elsif result == EAGAIN
+        if length > 0
+          self.io_wait(io, IO::WRITABLE, nil)
+        else
+          return result
+        end
+      elsif result < 0
+        return result
+      end
+    end
+
+    return total
+  end
+
   def blocking(&block)
     Fiber.blocking(&block)
   end

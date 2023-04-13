@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A set of gems for installation sourced from remote sources and local .gem
 # files
@@ -186,9 +187,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   def inspect # :nodoc:
     always_install = @always_install.map(&:full_name)
 
-    "#<%s domain: %s specs: %p always install: %p>" % [
-      self.class, @domain, @specs.keys, always_install
-    ]
+    format("#<%s domain: %s specs: %p always install: %p>", self.class, @domain, @specs.keys, always_install)
   end
 
   ##
@@ -262,7 +261,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       unless rrgv.satisfied_by? Gem.rubygems_version
         rg_version = Gem::VERSION
         raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.full_name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " +
+          "#{spec.full_name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " \
           "Try 'gem update --system' to update RubyGems itself."
       end
     end

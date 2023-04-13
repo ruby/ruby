@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
@@ -167,8 +168,6 @@ class Gem::Specification < Gem::BasicSpecification
                                         v.inspect
                                       when String
                                         v.dump
-                                      when Numeric
-                                        "default_value(:#{k})"
                                       else
                                         "default_value(:#{k}).dup"
     end
@@ -503,8 +502,6 @@ class Gem::Specification < Gem::BasicSpecification
     @platform = @new_platform.to_s
 
     invalidate_memoized_attributes
-
-    @new_platform
   end
 
   ##
@@ -578,7 +575,7 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # Executables included in the gem.
   #
-  # For example, the rake gem has rake as an executable. You don’t specify the
+  # For example, the rake gem has rake as an executable. You don't specify the
   # full path (as in bin/rake); all application-style files are expected to be
   # found in bindir.  These files must be executable Ruby files.  Files that
   # use bash or other interpreters will not work.
@@ -599,7 +596,7 @@ class Gem::Specification < Gem::BasicSpecification
   # extconf.rb-style files used to compile extensions.
   #
   # These files will be run when the gem is installed, causing the C (or
-  # whatever) code to be compiled on the user’s machine.
+  # whatever) code to be compiled on the user's machine.
   #
   # Usage:
   #
@@ -1033,9 +1030,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_path(path)
     path = path.dup.freeze
-    spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
+    spec = @@spec_with_requirable_file[path] ||= stubs.find do |s|
       s.contains_requirable_file? path
-    end || NOT_FOUND)
+    end || NOT_FOUND
+
     spec.to_spec
   end
 
@@ -1052,9 +1050,10 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.find_active_stub_by_path(path)
-    stub = @@active_stub_with_requirable_file[path] ||= (stubs.find do |s|
+    stub = @@active_stub_with_requirable_file[path] ||= stubs.find do |s|
       s.activated? && s.contains_requirable_file?(path)
-    end || NOT_FOUND)
+    end || NOT_FOUND
+
     stub.this
   end
 
@@ -1152,8 +1151,8 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = @load_cache_mutex.synchronize { @load_cache[file] }
-    return _spec if _spec
+    spec = @load_cache_mutex.synchronize { @load_cache[file] }
+    return spec if spec
 
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
@@ -1163,25 +1162,25 @@ class Gem::Specification < Gem::BasicSpecification
     code.tap(&Gem::UNTAINT)
 
     begin
-      _spec = eval code, binding, file
+      spec = eval code, binding, file
 
-      if Gem::Specification === _spec
-        _spec.loaded_from = File.expand_path file.to_s
+      if Gem::Specification === spec
+        spec.loaded_from = File.expand_path file.to_s
         @load_cache_mutex.synchronize do
           prev = @load_cache[file]
           if prev
-            _spec = prev
+            spec = prev
           else
-            @load_cache[file] = _spec
+            @load_cache[file] = spec
           end
         end
-        return _spec
+        return spec
       end
 
-      warn "[#{file}] isn't a Gem::Specification (#{_spec.class} instead)."
+      warn "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
     rescue SignalException, SystemExit
       raise
-    rescue SyntaxError, Exception => e
+    rescue SyntaxError, StandardError => e
       warn "Invalid gemspec in [#{file}]: #{e}"
     end
 
@@ -1433,7 +1432,7 @@ class Gem::Specification < Gem::BasicSpecification
     @activated = true
     @loaded = true
 
-    return true
+    true
   end
 
   ##
@@ -1523,7 +1522,7 @@ class Gem::Specification < Gem::BasicSpecification
       executables
     end
   rescue StandardError
-    return nil
+    nil
   end
 
   ##
@@ -1808,13 +1807,12 @@ class Gem::Specification < Gem::BasicSpecification
     Gem::Specification.each do |spec|
       deps = check_dev ? spec.dependencies : spec.runtime_dependencies
       deps.each do |dep|
-        if satisfies_requirement?(dep)
-          sats = []
-          find_all_satisfiers(dep) do |sat|
-            sats << sat
-          end
-          out << [spec, dep, sats]
+        next unless satisfies_requirement?(dep)
+        sats = []
+        find_all_satisfiers(dep) do |sat|
+          sats << sat
         end
+        out << [spec, dep, sats]
       end
     end
     out
@@ -2238,7 +2236,7 @@ class Gem::Specification < Gem::BasicSpecification
   # The platform this gem runs on.  See Gem::Platform for details.
 
   def platform
-    @new_platform ||= Gem::Platform::RUBY
+    @new_platform ||= Gem::Platform::RUBY # rubocop:disable Naming/MemoizedInstanceVariableName
   end
 
   def pretty_print(q) # :nodoc:
@@ -2253,21 +2251,20 @@ class Gem::Specification < Gem::BasicSpecification
       attributes.each do |attr_name|
         current_value = send attr_name
         current_value = current_value.sort if [:files, :test_files].include? attr_name
-        if current_value != default_value(attr_name) ||
-           self.class.required_attribute?(attr_name)
+        next unless current_value != default_value(attr_name) ||
+                    self.class.required_attribute?(attr_name)
 
-          q.text "s.#{attr_name} = "
+        q.text "s.#{attr_name} = "
 
-          if attr_name == :date
-            current_value = current_value.utc
+        if attr_name == :date
+          current_value = current_value.utc
 
-            q.text "Time.utc(#{current_value.year}, #{current_value.month}, #{current_value.day})"
-          else
-            q.pp current_value
-          end
-
-          q.breakable
+          q.text "Time.utc(#{current_value.year}, #{current_value.month}, #{current_value.day})"
+        else
+          q.pp current_value
         end
+
+        q.breakable
       end
     end
   end
@@ -2386,8 +2383,8 @@ class Gem::Specification < Gem::BasicSpecification
   # Checks if this specification meets the requirement of +dependency+.
 
   def satisfies_requirement?(dependency)
-    return @name == dependency.name &&
-           dependency.requirement.satisfied_by?(@version)
+    @name == dependency.name &&
+      dependency.requirement.satisfied_by?(@version)
   end
 
   ##
@@ -2609,11 +2606,10 @@ class Gem::Specification < Gem::BasicSpecification
           ensure
             trail.pop
           end
-          unless result == :next
-            spec_name = dep_spec.name
-            dep_spec.traverse(trail, visited, &block) unless
-              trail.any? {|s| s.name == spec_name }
-          end
+          next if result == :next
+          spec_name = dep_spec.name
+          dep_spec.traverse(trail, visited, &block) unless
+            trail.any? {|s| s.name == spec_name }
         end
       end
     ensure
@@ -2674,8 +2670,6 @@ class Gem::Specification < Gem::BasicSpecification
       self.required_rubygems_version = "> 1.3.1"
     end
     invalidate_memoized_attributes
-
-    return @version
   end
 
   def stubbed?
@@ -2717,6 +2711,8 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @installed_by_version ||= nil
+
+    nil
   end
 
   def flatten_require_paths # :nodoc:

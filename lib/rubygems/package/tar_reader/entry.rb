@@ -1,8 +1,11 @@
 # frozen_string_literal: true
-#++
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#--
+
+# rubocop:enable Style/AsciiComments
 
 ##
 # Class for reading entries out of a tar file
@@ -144,7 +147,6 @@ class Gem::Package::TarReader::Entry
 
   def pos=(new_pos)
     seek(new_pos, IO::SEEK_SET)
-    new_pos
   end
 
   def size

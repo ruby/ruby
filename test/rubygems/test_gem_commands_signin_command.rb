@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/signin_command"
 require "rubygems/installer"
@@ -23,14 +24,14 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   def test_execute_when_not_already_signed_in
     sign_in_ui = util_capture { @cmd.execute }
-    assert_match %r{Signed in.}, sign_in_ui.output
+    assert_match(/Signed in./, sign_in_ui.output)
   end
 
   def test_execute_when_not_already_signed_in_and_not_preexisting_credentials_folder
     FileUtils.rm Gem.configuration.credentials_path
 
     sign_in_ui = util_capture { @cmd.execute }
-    assert_match %r{Signed in.}, sign_in_ui.output
+    assert_match(/Signed in./, sign_in_ui.output)
   end
 
   def test_execute_when_already_signed_in_with_same_host
@@ -63,8 +64,8 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     host = "http://some-gemcutter-compatible-host.org"
 
     sign_in_ui = util_capture(nil, host) { @cmd.execute }
-    assert_match %r{Enter your #{host} credentials.}, sign_in_ui.output
-    assert_match %r{Signed in.}, sign_in_ui.output
+    assert_match(/Enter your #{host} credentials./, sign_in_ui.output)
+    assert_match(/Signed in./, sign_in_ui.output)
 
     api_key     = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     credentials = load_yaml_file Gem.configuration.credentials_path

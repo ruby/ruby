@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/source"
 
@@ -215,7 +216,7 @@ class TestGemSourceGit < Gem::TestCase
     installed = Gem::Source::Installed.new
     vendor    = Gem::Source::Vendor.new "vendor/foo"
 
-    assert_equal(0, git.<=>(git),       "git <=> git")
+    assert_equal(0, git.<=>(git),       "git <=> git") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(1, git.<=>(remote),    "git <=> remote")
     assert_equal(-1, remote.<=>(git), "remote <=> git")

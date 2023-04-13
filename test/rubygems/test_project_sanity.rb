@@ -3,7 +3,7 @@
 require_relative "helper"
 require "open3"
 
-class TestProjectSanity < Gem::TestCase
+class TestGemProjectSanity < Gem::TestCase
   def setup
   end
 

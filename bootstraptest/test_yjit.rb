@@ -79,6 +79,53 @@ assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
   end
 }
 
+assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
+  # Tests defined? on non-heap objects
+  [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
+    klass.class_eval("def foo = defined?(@foo)")
+  end
+
+  [nil, true, false, 0xFABCAFE, 0.42, :cake].map do |instance|
+    instance.foo
+    instance.foo
+  end
+}
+
+assert_equal '[nil, "instance-variable", nil, "instance-variable"]', %q{
+  # defined? on object that changes shape between calls
+  class Foo
+    def foo
+      defined?(@foo)
+    end
+
+    def add
+      @foo = 1
+    end
+
+    def remove
+      self.remove_instance_variable(:@foo)
+    end
+  end
+
+  obj = Foo.new
+  [obj.foo, (obj.add; obj.foo), (obj.remove; obj.foo), (obj.add; obj.foo)]
+}
+
+assert_equal '["instance-variable", 5]', %q{
+  # defined? on object too complex for shape information
+  class Foo
+    def initialize
+      100.times { |i| instance_variable_set("@foo#{i}", i) }
+    end
+
+    def foo
+      [defined?(@foo5), @foo5]
+    end
+  end
+
+  Foo.new.foo
+}
+
 assert_equal '0', %q{
   # This is a regression test for incomplete invalidation from
   # opt_setinlinecache. This test might be brittle, so
@@ -1178,6 +1225,38 @@ assert_equal '42', %q{
 
   run
   run
+}
+
+# splatting an empty array on a specialized method
+assert_equal 'ok', %q{
+  def run
+    "ok".to_s(*[])
+  end
+
+  run
+  run
+}
+
+# splatting an single element array on a specialized method
+assert_equal '[1]', %q{
+  def run
+    [].<<(*[1])
+  end
+
+  run
+  run
+}
+
+# specialized method with wrong args
+assert_equal 'ok', %q{
+  def run(x)
+    "bad".to_s(123) if x
+  rescue
+    :ok
+  end
+
+  run(false)
+  run(true)
 }
 
 # getinstancevariable on Symbol
@@ -3663,6 +3742,76 @@ assert_equal '[1, 2, 3]', %q{
   send(:bar, 1, 2, 3)
 }
 
+# Fix splat block arg bad compilation
+assert_equal "foo", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    sql << v
+  end
+
+  literal("foo")
+}
+
+# regression test for accidentally having a parameter truncated
+# due to Rust/C signature mismatch. Used to crash with
+# > [BUG] rb_vm_insn_addr2insn: invalid insn address ...
+# or
+# > ... `Err` value: TryFromIntError(())'
+assert_normal_exit %q{
+  n = 16384
+  eval(
+    "def foo(arg); " + "_=arg;" * n + '_=1;' + "Object; end"
+  )
+  foo 1
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_normal_exit %q{
+  class Integer
+    def ===(other)
+      false
+    end
+  end
+
+  def my_func(x)
+    case x
+    when 1
+      1
+    when 2
+      2
+    else
+      3
+    end
+  end
+
+  my_func(1)
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_equal "ArgumentError", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    args = [1, 2, 3]
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    [sql.inspect, v.inspect]
+  end
+
+  begin
+    literal("foo")
+  rescue ArgumentError
+    "ArgumentError"
+  end
+}
+
 # Rest with block
 # Simplified code from railsbench
 assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
@@ -3682,4 +3831,45 @@ assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
   end
 
   post "/a" => "b", as: :c
+}
+
+# Test rest and kw_args
+assert_equal '[true, true, true, true]', %q{
+  def my_func(*args, base: nil, sort: true)
+    [args, base, sort]
+  end
+
+  def calling_my_func
+    results = []
+    results << (my_func("test") == [["test"], nil, true])
+    results << (my_func("test", base: :base) == [["test"], :base, true])
+    results << (my_func("test", sort: false) == [["test"], nil, false])
+    results << (my_func("test", "other", base: :base) == [["test", "other"], :base, true])
+    results
+  end
+  calling_my_func
+}
+
+# Test Integer#[] with 2 args
+assert_equal '0', %q{
+  3[0, 0]
+}
+
+# unspecified_bits + checkkeyword
+assert_equal '2', %q{
+  def callee = 1
+
+  # checkkeyword should see unspecified_bits=0 (use bar), not Integer 1 (set bar = foo).
+  def foo(foo, bar: foo) = bar
+
+  def entry(&block)
+    # write 1 at stack[3]. Calling #callee spills stack[3].
+    1 + (1 + (1 + (1 + callee)))
+    # &block is written to a register instead of stack[3]. When &block is popped and
+    # unspecified_bits is pushed, it must be written to stack[3], not to a register.
+    foo(1, bar: 2, &block)
+  end
+
+  entry # call branch_stub_hit (spill temps)
+  entry # doesn't call branch_stub_hit (not spill temps)
 }

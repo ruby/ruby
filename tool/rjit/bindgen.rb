@@ -396,6 +396,8 @@ generator = BindingGenerator.new(
       BOP_MOD
       BOP_OR
       BOP_PLUS
+      BUILTIN_ATTR_LEAF
+      BUILTIN_ATTR_NO_GC
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
       INVALID_SHAPE_ID
@@ -428,10 +430,12 @@ generator = BindingGenerator.new(
       RUBY_T_ARRAY
       RUBY_T_CLASS
       RUBY_T_ICLASS
+      RUBY_T_HASH
       RUBY_T_MASK
       RUBY_T_MODULE
       RUBY_T_STRING
       RUBY_T_SYMBOL
+      RUBY_T_OBJECT
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
@@ -453,6 +457,7 @@ generator = BindingGenerator.new(
       VM_CALL_OPT_SEND
       VM_CALL_TAILCALL
       VM_CALL_TAILCALL_bit
+      VM_CALL_ZSUPER
       VM_ENV_DATA_INDEX_FLAGS
       VM_ENV_DATA_SIZE
       VM_ENV_FLAG_LOCAL
@@ -480,17 +485,21 @@ generator = BindingGenerator.new(
       VM_SPECIAL_OBJECT_VMCORE
       RUBY_ENCODING_MASK
       RUBY_FL_FREEZE
+      RHASH_PASS_AS_KEYWORDS
     ],
   },
   values: {
     SIZET: %w[
       block_type_iseq
       imemo_iseq
+      imemo_callinfo
       rb_block_param_proxy
+      rb_cArray
       rb_cFalseClass
       rb_cFloat
       rb_cInteger
       rb_cNilClass
+      rb_cString
       rb_cSymbol
       rb_cTrueClass
       rb_rjit_global_events
@@ -556,6 +565,14 @@ generator = BindingGenerator.new(
     rb_str_buf_append
     rb_str_dup
     rb_vm_yield_with_cfunc
+    rb_vm_set_ivar_id
+    rb_ary_dup
+    rjit_rb_ary_subseq_length
+    rb_ary_unshift_m
+    rjit_build_kwhash
+    rb_rjit_entry_stub_hit
+    rb_rjit_branch_stub_hit
+    rb_sym_to_proc
   ],
   types: %w[
     CALL_DATA
@@ -608,6 +625,7 @@ generator = BindingGenerator.new(
     rb_jit_func_t
     rb_iseq_param_keyword
     rb_rjit_options
+    rb_callinfo_kwarg
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[
@@ -616,10 +634,9 @@ generator = BindingGenerator.new(
   ],
   skip_fields: {
     'rb_execution_context_struct.machine': %w[regs], # differs between macOS and Linux
-    'RString.as': %w[embed], # doesn't compile on USE_RVARGC=0 CI
     rb_execution_context_struct: %w[method_missing_reason], # non-leading bit fields not supported
     rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
-    rb_thread_struct: %w[status locking_native_thread to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
+    rb_thread_struct: %w[status has_dedicated_nt to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
     :'' => %w[is_from_method is_lambda is_isolated], # rb_proc_t
   },
   ruby_fields: {

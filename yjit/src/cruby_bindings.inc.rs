@@ -123,8 +123,6 @@ impl<T> ::std::cmp::PartialEq for __BindgenUnionField<T> {
     }
 }
 impl<T> ::std::cmp::Eq for __BindgenUnionField<T> {}
-pub const SHAPE_ID_NUM_BITS: u32 = 32;
-pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 11;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -142,6 +140,8 @@ pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
 pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
+pub const SHAPE_ID_NUM_BITS: u32 = 32;
+pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 11;
 pub type ID = ::std::os::raw::c_ulong;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
@@ -285,20 +285,6 @@ pub const RUBY_ENCINDEX_EUC_JP: ruby_preserved_encindex = 10;
 pub const RUBY_ENCINDEX_Windows_31J: ruby_preserved_encindex = 11;
 pub const RUBY_ENCINDEX_BUILTIN_MAX: ruby_preserved_encindex = 12;
 pub type ruby_preserved_encindex = u32;
-pub type attr_index_t = u32;
-pub type shape_id_t = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_shape {
-    pub edges: *mut rb_id_table,
-    pub edge_name: ID,
-    pub next_iv_index: attr_index_t,
-    pub capacity: u32,
-    pub type_: u8,
-    pub size_pool_index: u8,
-    pub parent_id: shape_id_t,
-}
-pub type rb_shape_t = rb_shape;
 pub const idDot2: ruby_method_ids = 128;
 pub const idDot3: ruby_method_ids = 129;
 pub const idUPlus: ruby_method_ids = 132;
@@ -664,6 +650,7 @@ pub struct iseq_inline_cvar_cache_entry {
 }
 pub const BUILTIN_ATTR_LEAF: rb_builtin_attr = 1;
 pub const BUILTIN_ATTR_NO_GC: rb_builtin_attr = 2;
+pub const BUILTIN_ATTR_SINGLE_NOARG_INLINE: rb_builtin_attr = 4;
 pub type rb_builtin_attr = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -798,6 +785,20 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
+pub type attr_index_t = u32;
+pub type shape_id_t = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_shape {
+    pub edges: *mut rb_id_table,
+    pub edge_name: ID,
+    pub next_iv_index: attr_index_t,
+    pub capacity: u32,
+    pub type_: u8,
+    pub size_pool_index: u8,
+    pub parent_id: shape_id_t,
+}
+pub type rb_shape_t = rb_shape;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -809,15 +810,14 @@ pub const VM_CALL_ARGS_BLOCKARG_bit: vm_call_flag_bits = 1;
 pub const VM_CALL_FCALL_bit: vm_call_flag_bits = 2;
 pub const VM_CALL_VCALL_bit: vm_call_flag_bits = 3;
 pub const VM_CALL_ARGS_SIMPLE_bit: vm_call_flag_bits = 4;
-pub const VM_CALL_BLOCKISEQ_bit: vm_call_flag_bits = 5;
-pub const VM_CALL_KWARG_bit: vm_call_flag_bits = 6;
-pub const VM_CALL_KW_SPLAT_bit: vm_call_flag_bits = 7;
-pub const VM_CALL_TAILCALL_bit: vm_call_flag_bits = 8;
-pub const VM_CALL_SUPER_bit: vm_call_flag_bits = 9;
-pub const VM_CALL_ZSUPER_bit: vm_call_flag_bits = 10;
-pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 11;
-pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 12;
-pub const VM_CALL__END: vm_call_flag_bits = 13;
+pub const VM_CALL_KWARG_bit: vm_call_flag_bits = 5;
+pub const VM_CALL_KW_SPLAT_bit: vm_call_flag_bits = 6;
+pub const VM_CALL_TAILCALL_bit: vm_call_flag_bits = 7;
+pub const VM_CALL_SUPER_bit: vm_call_flag_bits = 8;
+pub const VM_CALL_ZSUPER_bit: vm_call_flag_bits = 9;
+pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 10;
+pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 11;
+pub const VM_CALL__END: vm_call_flag_bits = 12;
 pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo {
@@ -1094,6 +1094,7 @@ extern "C" {
     pub fn rb_ary_store(ary: VALUE, key: ::std::os::raw::c_long, val: VALUE);
     pub fn rb_ary_dup(ary: VALUE) -> VALUE;
     pub fn rb_ary_resurrect(ary: VALUE) -> VALUE;
+    pub fn rb_ary_push(ary: VALUE, elem: VALUE) -> VALUE;
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
@@ -1125,19 +1126,6 @@ extern "C" {
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
-    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
-    pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
-    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
-    pub fn rb_shape_transition_shape_capa(
-        shape: *mut rb_shape_t,
-        new_capacity: u32,
-    ) -> *mut rb_shape_t;
-    pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
-    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -1162,6 +1150,19 @@ extern "C" {
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
+    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
+    pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
+    pub fn rb_shape_id_offset() -> i32;
+    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
+    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
+    pub fn rb_shape_transition_shape_capa(
+        shape: *mut rb_shape_t,
+        new_capacity: u32,
+    ) -> *mut rb_shape_t;
+    pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
+    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
@@ -1182,6 +1183,7 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
     pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
+    pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
@@ -1209,7 +1211,7 @@ extern "C" {
     ) -> VALUE;
     pub fn rb_yjit_get_page_size() -> u32;
     pub fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
-    pub fn rb_c_method_tracing_currently_enabled(ec: *mut rb_execution_context_t) -> bool;
+    pub fn rb_c_method_tracing_currently_enabled(ec: *const rb_execution_context_t) -> bool;
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_get_yjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
@@ -1296,13 +1298,11 @@ extern "C" {
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_yjit_rb_ary_unshift_m(
-        argc: ::std::os::raw::c_int,
-        argv: *mut VALUE,
-        ary: VALUE,
-    ) -> VALUE;
+    pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_yarv_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yjit_fix_mul_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;

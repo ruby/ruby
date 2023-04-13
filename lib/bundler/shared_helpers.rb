@@ -160,7 +160,7 @@ module Bundler
         " (was expecting #{old_deps.map(&:to_s)}, but the real spec has #{new_deps.map(&:to_s)})"
       raise APIResponseMismatchError,
         "Downloading #{spec.full_name} revealed dependencies not in the API or the lockfile (#{extra_deps.join(", ")})." \
-        "\nEither installing with `--full-index` or running `bundle update #{spec.name}` should fix the problem."
+        "\nRunning `bundle update #{spec.name}` should fix the problem."
     end
 
     def pretty_dependency(dep)

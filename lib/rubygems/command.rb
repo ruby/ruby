@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -395,22 +396,21 @@ class Gem::Command
 
   def check_deprecated_options(options)
     options.each do |option|
-      if option_is_deprecated?(option)
-        deprecation = @deprecated_options[command][option]
-        version_to_expire = deprecation["rg_version_to_expire"]
+      next unless option_is_deprecated?(option)
+      deprecation = @deprecated_options[command][option]
+      version_to_expire = deprecation["rg_version_to_expire"]
 
-        deprecate_option_msg = if version_to_expire
-          "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
-        else
-          "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
-        end
-
-        extra_msg = deprecation["extra_msg"]
-
-        deprecate_option_msg += " #{extra_msg}" if extra_msg
-
-        alert_warning(deprecate_option_msg)
+      deprecate_option_msg = if version_to_expire
+        "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
+      else
+        "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
       end
+
+      extra_msg = deprecation["extra_msg"]
+
+      deprecate_option_msg += " #{extra_msg}" if extra_msg
+
+      alert_warning(deprecate_option_msg)
     end
   end
 
@@ -428,9 +428,9 @@ class Gem::Command
 
   def handles?(args)
     parser.parse!(args.dup)
-    return true
+    true
   rescue StandardError
-    return false
+    false
   end
 
   ##
@@ -457,7 +457,7 @@ class Gem::Command
     until extra.empty? do
       ex = []
       ex << extra.shift
-      ex << extra.shift if extra.first.to_s =~ /^[^-]/
+      ex << extra.shift if /^[^-]/.match?(extra.first.to_s)
       result << ex if handles?(ex)
     end
 

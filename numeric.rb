@@ -210,8 +210,6 @@ class Integer
     self
   end
 
-  #
-  #  Document-method: Integer#size
   #  call-seq:
   #     int.size  ->  int
   #

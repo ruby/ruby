@@ -78,7 +78,7 @@ define archcmd
 %.i: %.$(1).i
 endef
 
-$(foreach arch,$(arch_flags),\
+$(foreach arch,$(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
 	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
 endif
 

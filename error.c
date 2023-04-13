@@ -148,8 +148,8 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 }
 
 static unsigned int warning_disabled_categories = (
-    1U << RB_WARN_CATEGORY_DEPRECATED |
-    0);
+    (1U << RB_WARN_CATEGORY_DEPRECATED) |
+    ~RB_WARN_CATEGORY_ALL_BITS);
 
 static unsigned int
 rb_warning_category_mask(VALUE category)

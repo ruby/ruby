@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Used internally to indicate that a dependency conflicted
 # with a spec that would be activated.
@@ -63,10 +64,7 @@ class Gem::Resolver::Conflict
     %s
       MATCHING
 
-      matching = matching % [
-        dependency,
-        alternates.join(", "),
-      ]
+      matching = format(matching, dependency, alternates.join(", "))
     end
 
     explanation = <<-EXPLANATION
@@ -81,12 +79,7 @@ class Gem::Resolver::Conflict
 %s
     EXPLANATION
 
-    explanation % [
-      activated, requirement,
-      request_path(@activated).reverse.join(", depends on\n    "),
-      request_path(@failed_dep).reverse.join(", depends on\n    "),
-      matching
-    ]
+    format(explanation, activated, requirement, request_path(@activated).reverse.join(", depends on\n    "), request_path(@failed_dep).reverse.join(", depends on\n    "), matching)
   end
 
   ##

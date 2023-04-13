@@ -27,7 +27,7 @@ module IRB
           when /\A[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
             eval(str, irb_context.workspace.binding) # trigger autoload
             base = irb_context.workspace.binding.receiver.yield_self { |r| r.is_a?(Module) ? r : Object }
-            file, line = base.const_source_location(str) if base.respond_to?(:const_source_location) # Ruby 2.7+
+            file, line = base.const_source_location(str)
           when /\A(?<owner>[A-Z]\w*(::[A-Z]\w*)*)#(?<method>[^ :.]+)\z/ # Class#method
             owner = eval(Regexp.last_match[:owner], irb_context.workspace.binding)
             method = Regexp.last_match[:method]

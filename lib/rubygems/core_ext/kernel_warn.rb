@@ -35,11 +35,10 @@ module Kernel
 
         start += 1
 
-        if path = loc.path
-          unless path.start_with?(rubygems_path, "<internal:")
-            # Non-rubygems frames
-            uplevel -= 1
-          end
+        next unless path = loc.path
+        unless path.start_with?(rubygems_path, "<internal:")
+          # Non-rubygems frames
+          uplevel -= 1
         end
       end
       kw[:uplevel] = start

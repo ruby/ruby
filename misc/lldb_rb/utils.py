@@ -155,7 +155,7 @@ class RbInspector(LLDBInterface):
 
                 if rval.flags & self.ruby_globals["RUBY_FL_USER1"]:
                     self.result.write(" (embed)")
-                elif rval.flags & self.ruby_globasl["RUBY_FL_USER2"]:
+                elif rval.flags & self.ruby_globals["RUBY_FL_USER2"]:
                     shared = val.GetValueForExpressionPath("->as.heap.aux.shared").GetValueAsUnsigned()
                     self.result.write(" (shared) shared=%016x" % shared)
                 else:
@@ -249,7 +249,7 @@ class RbInspector(LLDBInterface):
                 rbNodeTypeMask = self.ruby_globals["RUBY_NODE_TYPEMASK"]
                 rbNodeTypeShift = self.ruby_globals["RUBY_NODE_TYPESHIFT"]
 
-                nd_type = (flags & rbNodeTypeMask) >> rbNodeTypeShift
+                nd_type = (rval.flags & rbNodeTypeMask) >> rbNodeTypeShift
                 val = val.Cast(tRNode)
 
                 self._append_command_output("p (node_type) %d" % nd_type)

@@ -1750,6 +1750,14 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_cache_index_initialize
+    str = 'test1-test2-test3-test4-test_5'
+    re = '^([0-9a-zA-Z\-/]*){1,256}$'
+    100.times do
+      assert !Regexp.new(re).match?(str)
+    end
+  end
+
   def test_bug_19273 # [Bug #19273]
     pattern = /(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))(?::(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))){0,3}/
     assert_equal("10:0:0".match(pattern)[0], "10:0:0")

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rubygems"
 require_relative "helper"
 require "rubygems/commands/help_command"
@@ -55,7 +56,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
       if Gem::HAVE_OPENSSL
         assert_empty err
 
-        refute_match %r{No command found for }, out
+        refute_match(/No command found for /, out)
       end
     end
   end

@@ -1001,17 +1001,23 @@ rb_io_buffer_lock(VALUE self)
     return self;
 }
 
+static void
+io_buffer_unlock(struct rb_io_buffer *data)
+{
+    if (!(data->flags & RB_IO_BUFFER_LOCKED)) {
+        rb_raise(rb_eIOBufferLockedError, "Buffer not locked!");
+    }
+
+    data->flags &= ~RB_IO_BUFFER_LOCKED;
+}
+
 VALUE
 rb_io_buffer_unlock(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    if (!(data->flags & RB_IO_BUFFER_LOCKED)) {
-        rb_raise(rb_eIOBufferLockedError, "Buffer not locked!");
-    }
-
-    data->flags &= ~RB_IO_BUFFER_LOCKED;
+    io_buffer_unlock(data);
 
     return self;
 }
@@ -1118,6 +1124,17 @@ rb_io_buffer_free(VALUE self)
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
+    io_buffer_free(data);
+
+    return self;
+}
+
+VALUE rb_io_buffer_free_locked(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    io_buffer_unlock(data);
     io_buffer_free(data);
 
     return self;
@@ -1422,6 +1439,11 @@ rb_io_buffer_resize(VALUE self, size_t size)
 #endif
 
     if (data->flags & RB_IO_BUFFER_INTERNAL) {
+        if (size == 0) {
+            io_buffer_free(data);
+            return;
+        }
+
         void *base = realloc(data->base, size);
 
         if (!base) {
@@ -2425,7 +2447,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
@@ -2539,7 +2561,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, OFFT2NUM(from), self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
@@ -2644,7 +2666,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;
@@ -2748,7 +2770,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, OFFT2NUM(from), self, SIZET2NUM(length), SIZET2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, self, length, offset);
 
         if (!UNDEF_P(result)) {
             return result;

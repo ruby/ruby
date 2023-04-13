@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # BasicSpecification is an abstract class which implements some common code
 # used by both Specification and StubSpecification.
@@ -76,7 +77,7 @@ class Gem::BasicSpecification
       @ignored = true
 
       if Gem::Platform::RUBY == platform || Gem::Platform.local === platform
-        warn "Ignoring #{full_name} because its extensions are not built. " +
+        warn "Ignoring #{full_name} because its extensions are not built. " \
              "Try: gem pristine #{name} --version #{version}"
       end
 
@@ -170,16 +171,14 @@ class Gem::BasicSpecification
   def to_fullpath(path)
     if activated?
       @paths_map ||= {}
-      @paths_map[path] ||=
-        begin
-          fullpath = nil
-          suffixes = Gem.suffixes
-          suffixes.find do |suf|
-            full_require_paths.find do |dir|
-              File.file?(fullpath = "#{dir}/#{path}#{suf}")
-            end
-          end ? fullpath : nil
+      Gem.suffixes.each do |suf|
+        full_require_paths.each do |dir|
+          fullpath = "#{dir}/#{path}#{suf}"
+          next unless File.file?(fullpath)
+          @paths_map[path] ||= fullpath
         end
+      end
+      @paths_map[path]
     end
   end
 

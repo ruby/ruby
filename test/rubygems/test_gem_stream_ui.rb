@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/user_interaction"
 require "timeout"
@@ -13,7 +14,7 @@ class TestGemStreamUI < Gem::TestCase
 
     def tty?
       @tty = true unless defined? @tty
-      return @tty
+      @tty
     end
 
     alias_method :isatty, :tty?

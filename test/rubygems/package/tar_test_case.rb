@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../helper"
 require "rubygems/package"
 
@@ -67,7 +68,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def calc_checksum(header)
-    sum = header.bytes.sum
+    sum = header.sum(0)
     SP(Z(to_oct(sum, 6)))
   end
 
@@ -123,7 +124,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def to_oct(n, pad_size)
-    "%0#{pad_size}o" % n
+    format("%0#{pad_size}o", n)
   end
 
   def util_entry(tar)
@@ -162,11 +163,11 @@ class Gem::Package::TarTestCase < Gem::TestCase
     data_tgz = util_tar_gz(&block)
     util_tar do |tar|
       if spec
-        tar.add_file "metadata.gz", 0444 do |io|
+        tar.add_file "metadata.gz", 0o444 do |io|
           io.write util_gzip(spec.to_yaml)
         end
       end
-      tar.add_file "data.tar.gz", 0644 do |io|
+      tar.add_file "data.tar.gz", 0o644 do |io|
         io.write data_tgz.string
       end
     end

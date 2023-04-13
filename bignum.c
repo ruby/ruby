@@ -3023,7 +3023,8 @@ rb_big_resize(VALUE big, size_t len)
 static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
-    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
+    NEWOBJ_OF(big, struct RBignum, klass,
+            T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0), sizeof(struct RBignum), 0);
     VALUE bigv = (VALUE)big;
     BIGNUM_SET_SIGN(bigv, sign);
     if (len <= BIGNUM_EMBED_LEN_MAX) {

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -236,7 +237,7 @@ class Gem::StreamUI
     return nil, nil unless result
 
     result = result.strip.to_i - 1
-    return list[result], result
+    [list[result], result]
   end
 
   ##
@@ -273,7 +274,7 @@ class Gem::StreamUI
       end
     end
 
-    return result
+    result
   end
 
   ##

@@ -233,9 +233,12 @@ class LeakChecker
     old_env = @env_info
     new_env = find_env
     return false if old_env == new_env
+    if defined?(Bundler::EnvironmentPreserver)
+      bundler_prefix = Bundler::EnvironmentPreserver::BUNDLER_PREFIX
+    end
     (old_env.keys | new_env.keys).sort.each {|k|
       # Don't report changed environment variables caused by Bundler's backups
-      next if k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX)
+      next if bundler_prefix and k.start_with?(bundler_prefix)
 
       if old_env.has_key?(k)
         if new_env.has_key?(k)

@@ -65,7 +65,7 @@ endif
 # we rely.
 ifneq ($(findstring darwin,$(target_os)),)
 $(YJIT_LIB_SYMBOLS): $(YJIT_LIBS)
-	$(Q) $(tooldir)/darwin-ar $(NM) --no-llvm-bc --defined-only --extern-only $(YJIT_LIBS) | \
+	$(Q) $(tooldir)/darwin-ar $(NM) --defined-only --extern-only $(YJIT_LIBS) | \
 	sed -n -e 's/.* //' -e '/^$(SYMBOL_PREFIX)rb_/p' \
 	-e '/^$(SYMBOL_PREFIX)rust_eh_personality/p' \
 	> $@
@@ -90,7 +90,7 @@ update-yjit-bench:
 .PHONY: yjit-smoke-test
 yjit-smoke-test:
 ifneq ($(strip $(CARGO)),)
-	$(CARGO) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
+	$(CARGO) +1.58.0 test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
 endif
 	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1' BTESTS=-j
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_yjit.rb'

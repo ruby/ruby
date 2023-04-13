@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 class Gem::Commands::HelpCommand < Gem::Command
@@ -342,7 +343,7 @@ platform.
         end
 
       summary = wrap(summary, summary_width).split "\n"
-      out << sprintf(format, cmd_name, summary.shift)
+      out << format(format, cmd_name, summary.shift)
       until summary.empty? do
         out << "#{wrap_indent}#{summary.shift}"
       end

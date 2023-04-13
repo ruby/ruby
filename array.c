@@ -47,13 +47,8 @@ VALUE rb_cArray;
  * 2:   RARRAY_SHARED_FLAG (equal to ELTS_SHARED)
  *          The array is shared. The buffer this array points to is owned by
  *          another array (the shared root).
- * if USE_RVARGC
  * 3-9: RARRAY_EMBED_LEN
  *          The length of the array when RARRAY_EMBED_FLAG is set.
- * else
- * 3-4: RARRAY_EMBED_LEN
- *          The length of the array when RARRAY_EMBED_FLAG is set.
- * endif
  * 12:  RARRAY_SHARED_ROOT_FLAG
  *          The array is a shared root that does reference counting. The buffer
  *          this array points to is owned by this array but may be pointed to
@@ -188,13 +183,9 @@ ARY_SET(VALUE a, long i, VALUE v)
 static long
 ary_embed_capa(VALUE ary)
 {
-#if USE_RVARGC
     size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
     assert(size % sizeof(VALUE) == 0);
     return size / sizeof(VALUE);
-#else
-    return RARRAY_EMBED_LEN_MAX;
-#endif
 }
 
 static size_t
@@ -206,11 +197,7 @@ ary_embed_size(long capa)
 static bool
 ary_embeddable_p(long capa)
 {
-#if USE_RVARGC
     return rb_gc_size_allocatable_p(ary_embed_size(capa));
-#else
-    return capa <= RARRAY_EMBED_LEN_MAX;
-#endif
 }
 
 bool
@@ -791,12 +778,9 @@ ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
-    assert(size <= sizeof(struct RArray));
-#endif
-    RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
+    NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     size);
+                     size, 0);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
@@ -807,9 +791,9 @@ ary_alloc_embed(VALUE klass, long capa)
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
-    RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
+    NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     sizeof(struct RArray));
+                     sizeof(struct RArray), 0);
     return (VALUE)ary;
 }
 
@@ -906,12 +890,9 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-#if !USE_RVARGC
-    assert(size <= sizeof(struct RArray));
-#endif
-    RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
-                           T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                           size);
+    NEWOBJ_OF(ary, struct RArray, klass,
+            T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+            size, ec);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
@@ -922,9 +903,9 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
-                           T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                           sizeof(struct RArray));
+    NEWOBJ_OF(ary, struct RArray, klass,
+            T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+            sizeof(struct RArray), ec);
     return (VALUE)ary;
 }
 
@@ -1033,7 +1014,6 @@ rb_ary_memsize(VALUE ary)
 static VALUE
 ary_make_shared(VALUE ary)
 {
-    assert(USE_RVARGC || !ARY_EMBED_P(ary));
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
@@ -1428,20 +1408,11 @@ enum ary_take_pos_flags
 };
 
 static VALUE
-ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
+ary_take_first_or_last_n(VALUE ary, long n, enum ary_take_pos_flags last)
 {
-    long n;
-    long len;
+    long len = RARRAY_LEN(ary);
     long offset = 0;
 
-    argc = rb_check_arity(argc, 0, 1);
-    /* the case optional argument is omitted should be handled in
-     * callers of this function.  if another arity case is added,
-     * this arity check needs to rewrite. */
-    RUBY_ASSERT_ALWAYS(argc == 1);
-
-    n = NUM2LONG(argv[0]);
-    len = RARRAY_LEN(ary);
     if (n > len) {
         n = len;
     }
@@ -1452,6 +1423,17 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
         offset = len - n;
     }
     return ary_make_partial(ary, rb_cArray, offset, n);
+}
+
+static VALUE
+ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
+{
+    argc = rb_check_arity(argc, 0, 1);
+    /* the case optional argument is omitted should be handled in
+     * callers of this function.  if another arity case is added,
+     * this arity check needs to rewrite. */
+    RUBY_ASSERT_ALWAYS(argc == 1);
+    return ary_take_first_or_last_n(ary, NUM2LONG(argv[0]), last);
 }
 
 /*
@@ -1785,7 +1767,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *  Related: #push, #pop, #shift.
  */
 
-static VALUE
+VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
     long len = RARRAY_LEN(ary);
@@ -1802,17 +1784,10 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-/* non-static for yjit */
-VALUE
-rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
-{
-    return rb_ary_unshift_m(argc, argv, ary);
-}
-
 VALUE
 rb_ary_unshift(VALUE ary, VALUE item)
 {
-    return rb_ary_unshift_m(1,&item,ary);
+    return rb_ary_unshift_m(1, &item, ary);
 }
 
 /* faster version - use this if you don't need to treat negative offset */
@@ -2027,6 +2002,7 @@ rb_ary_at(VALUE ary, VALUE pos)
     return rb_ary_entry(ary, NUM2LONG(pos));
 }
 
+#if 0
 /*
  *  call-seq:
  *    array.first -> object or nil
@@ -2071,6 +2047,20 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
         return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     }
 }
+#endif
+
+static VALUE
+ary_first(VALUE self)
+{
+    return (RARRAY_LEN(self) == 0) ? Qnil : RARRAY_AREF(self, 0);
+}
+
+static VALUE
+ary_last(VALUE self)
+{
+    long len = RARRAY_LEN(self);
+    return (len == 0) ? Qnil : RARRAY_AREF(self, len-1);
+}
 
 /*
  *  call-seq:
@@ -2107,12 +2097,10 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  */
 
 VALUE
-rb_ary_last(int argc, const VALUE *argv, VALUE ary)
+rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
 {
     if (argc == 0) {
-        long len = RARRAY_LEN(ary);
-        if (len == 0) return Qnil;
-        return RARRAY_AREF(ary, len-1);
+        return ary_last(ary);
     }
     else {
         return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
@@ -4733,7 +4721,6 @@ rb_ary_replace(VALUE copy, VALUE orig)
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
         ARY_SET_EMBED_LEN(copy, RARRAY_LEN(orig));
     }
-#if USE_RVARGC
     /* orig is embedded but copy does not have enough space to embed the
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
@@ -4749,7 +4736,6 @@ rb_ary_replace(VALUE copy, VALUE orig)
         // bad state from the edits above.
         ary_memcpy(copy, 0, len, RARRAY_CONST_PTR_TRANSIENT(orig));
     }
-#endif
     /* Otherwise, orig is on heap and copy does not have enough space to embed
      * the contents of orig. */
     else {
@@ -8809,8 +8795,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);
     rb_define_method(rb_cArray, "at", rb_ary_at, 1);
     rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
-    rb_define_method(rb_cArray, "first", rb_ary_first, -1);
-    rb_define_method(rb_cArray, "last", rb_ary_last, -1);
     rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);

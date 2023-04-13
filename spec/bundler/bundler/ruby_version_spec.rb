@@ -400,19 +400,19 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       let(:bundler_system_ruby_version) { subject }
 
       around do |example|
-        if Bundler::RubyVersion.instance_variable_defined?("@ruby_version")
+        if Bundler::RubyVersion.instance_variable_defined?("@system")
           begin
-            old_ruby_version = Bundler::RubyVersion.instance_variable_get("@ruby_version")
-            Bundler::RubyVersion.remove_instance_variable("@ruby_version")
+            old_ruby_version = Bundler::RubyVersion.instance_variable_get("@system")
+            Bundler::RubyVersion.remove_instance_variable("@system")
             example.run
           ensure
-            Bundler::RubyVersion.instance_variable_set("@ruby_version", old_ruby_version)
+            Bundler::RubyVersion.instance_variable_set("@system", old_ruby_version)
           end
         else
           begin
             example.run
           ensure
-            Bundler::RubyVersion.remove_instance_variable("@ruby_version")
+            Bundler::RubyVersion.remove_instance_variable("@system")
           end
         end
       end

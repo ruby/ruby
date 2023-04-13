@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 require "webrick"
@@ -353,18 +354,18 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert File.exist?(a1_cache_gem)
   end
 
-  unless win_platform? || Process.uid.zero? # File.chmod doesn't work
+  unless Gem.win_platform? || Process.uid.zero? # File.chmod doesn't work
     def test_download_local_read_only
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
-      FileUtils.chmod 0555, @a1.cache_dir
+      FileUtils.chmod 0o555, @a1.cache_dir
       begin
         FileUtils.mkdir_p File.join(Gem.user_dir, "cache")
       rescue StandardError
         nil
       end
-      FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
+      FileUtils.chmod 0o555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do
         inst = Gem::RemoteFetcher.fetcher
@@ -373,21 +374,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_equal(File.join(@tempdir, @a1.file_name),
                    inst.download(@a1, local_path))
     ensure
-      FileUtils.chmod 0755, File.join(Gem.user_dir, "cache")
-      FileUtils.chmod 0755, @a1.cache_dir
+      FileUtils.chmod 0o755, File.join(Gem.user_dir, "cache")
+      FileUtils.chmod 0o755, @a1.cache_dir
     end
 
     def test_download_read_only
-      FileUtils.chmod 0555, @a1.cache_dir
-      FileUtils.chmod 0555, @gemhome
+      FileUtils.chmod 0o555, @a1.cache_dir
+      FileUtils.chmod 0o555, @gemhome
 
       fetcher = util_fuck_with_fetcher File.read(@a1_gem)
       fetcher.download(@a1, "http://gems.example.com")
       a1_cache_gem = File.join Gem.user_dir, "cache", @a1.file_name
       assert File.exist? a1_cache_gem
     ensure
-      FileUtils.chmod 0755, @gemhome
-      FileUtils.chmod 0755, @a1.cache_dir
+      FileUtils.chmod 0o755, @gemhome
+      FileUtils.chmod 0o755, @a1.cache_dir
     end
   end
 
@@ -537,8 +538,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/ECONNREFUSED:.*connect\(2\) \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -556,8 +557,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{Timeout::Error: timed out \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -575,8 +576,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match %r{SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z},
-                 e.message
+    assert_match(/SocketError: getaddrinfo: nodename nor servname provided \(#{Regexp.escape url}\)\z/,
+                 e.message)
     assert_equal url, e.uri
   end
 
@@ -984,7 +985,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     temp_client_cert = File.join(__dir__, "client.pem")
 
     with_configured_fetcher(
-      ":ssl_ca_cert: #{temp_ca_cert}\n" +
+      ":ssl_ca_cert: #{temp_ca_cert}\n" \
       ":ssl_client_cert: #{temp_client_cert}\n"
     ) do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
@@ -1000,7 +1001,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     temp_client_cert = File.join(__dir__, "invalid_client.pem")
 
     with_configured_fetcher(
-      ":ssl_ca_cert: #{temp_ca_cert}\n" +
+      ":ssl_ca_cert: #{temp_ca_cert}\n" \
       ":ssl_client_cert: #{temp_client_cert}\n"
     ) do |fetcher|
       assert_raise Gem::RemoteFetcher::FetchError do
@@ -1158,7 +1159,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
     t = Thread.new do
       server.start
-    rescue Exception => ex
+    rescue StandardError => ex
       puts "ERROR during server thread: #{ex.message}"
       raise
     ensure
@@ -1210,7 +1211,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
     th = Thread.new do
       s.start
-    rescue Exception => ex
+    rescue StandardError => ex
       abort "ERROR during server thread: #{ex.message}"
     ensure
       s.shutdown

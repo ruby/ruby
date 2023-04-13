@@ -1,8 +1,11 @@
 # frozen_string_literal: true
-#--
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#++
+
+# rubocop:enable Style/AsciiComments
 
 ##
 #--
@@ -124,7 +127,7 @@ class Gem::Package::TarHeader
   end
 
   def self.strict_oct(str)
-    return str.strip.oct if str.strip =~ /\A[0-7]*\z/
+    return str.strip.oct if /\A[0-7]*\z/.match?(str.strip)
 
     raise ArgumentError, "#{str.inspect} is not an octal string"
   end
@@ -134,7 +137,7 @@ class Gem::Package::TarHeader
     # \ff flags a negative 256-based number
     # In case we have a match, parse it as a signed binary value
     # in big-endian order, except that the high-order bit is ignored.
-    return str.unpack("N2").last if str =~ /\A[\x80\xff]/n
+    return str.unpack("N2").last if /\A[\x80\xff]/n.match?(str)
     strict_oct(str)
   end
 
@@ -208,7 +211,7 @@ class Gem::Package::TarHeader
   private
 
   def calculate_checksum(header)
-    header.bytes.sum
+    header.sum(0)
   end
 
   def header(checksum = @checksum)
@@ -238,6 +241,6 @@ class Gem::Package::TarHeader
   end
 
   def oct(num, len)
-    "%0#{len}o" % num
+    format("%0#{len}o", num)
   end
 end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/request"
 require "ostruct"
@@ -280,7 +281,7 @@ class TestGemRequest < Gem::TestCase
     assert_match %r{RubyGems/#{Regexp.escape Gem::VERSION}},      ua
     assert_match %r{ #{Regexp.escape Gem::Platform.local.to_s} }, ua
     assert_match %r{Ruby/#{Regexp.escape RUBY_VERSION}},          ua
-    assert_match %r{\(#{Regexp.escape RUBY_RELEASE_DATE} },       ua
+    assert_match(/\(#{Regexp.escape RUBY_RELEASE_DATE} /, ua)
   end
 
   def test_user_agent_engine
@@ -291,7 +292,7 @@ class TestGemRequest < Gem::TestCase
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
-    assert_match %r{\) vroom}, ua
+    assert_match(/\) vroom/, ua)
   ensure
     util_restore_version
   end
@@ -304,7 +305,7 @@ class TestGemRequest < Gem::TestCase
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
-    assert_match %r{\)}, ua
+    assert_match(/\)/, ua)
   ensure
     util_restore_version
   end
@@ -327,27 +328,13 @@ class TestGemRequest < Gem::TestCase
 
     Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
+    Object.send :remove_const, :RUBY_REVISION
     Object.send :const_set,    :RUBY_REVISION, 6
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
     assert_match %r{ revision 6\)}, ua
     assert_match %r{Ruby/#{Regexp.escape RUBY_VERSION}dev}, ua
-  ensure
-    util_restore_version
-  end
-
-  def test_user_agent_revision_missing
-    util_save_version
-
-    Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
-
-    ua = make_request(@uri, nil, nil, nil).user_agent
-
-    assert_match %r{\(#{Regexp.escape RUBY_RELEASE_DATE}\)}, ua
   ensure
     util_restore_version
   end
@@ -492,21 +479,19 @@ ERROR:  Certificate  is an invalid CA certificate
 
   def util_restore_version
     Object.send :remove_const, :RUBY_ENGINE
-    Object.send :const_set,    :RUBY_ENGINE, @orig_RUBY_ENGINE if
-      defined?(@orig_RUBY_ENGINE)
+    Object.send :const_set,    :RUBY_ENGINE, @orig_ruby_engine
 
     Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, @orig_RUBY_PATCHLEVEL
+    Object.send :const_set,    :RUBY_PATCHLEVEL, @orig_ruby_patchlevel
 
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
-    Object.send :const_set,    :RUBY_REVISION, @orig_RUBY_REVISION if
-      defined?(@orig_RUBY_REVISION)
+    Object.send :remove_const, :RUBY_REVISION
+    Object.send :const_set,    :RUBY_REVISION, @orig_ruby_revision
   end
 
   def util_save_version
-    @orig_RUBY_ENGINE     = RUBY_ENGINE
-    @orig_RUBY_PATCHLEVEL = RUBY_PATCHLEVEL
-    @orig_RUBY_REVISION   = RUBY_REVISION if defined? RUBY_REVISION
+    @orig_ruby_engine     = RUBY_ENGINE
+    @orig_ruby_patchlevel = RUBY_PATCHLEVEL
+    @orig_ruby_revision   = RUBY_REVISION
   end
 
   def util_stub_net_http(hash)

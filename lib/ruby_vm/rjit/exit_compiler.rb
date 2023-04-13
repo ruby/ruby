@@ -78,6 +78,18 @@ module RubyVM::RJIT
       asm.ret
     end
 
+    # @param asm [RubyVM::RJIT::Assembler]
+    # @param entry_stub [RubyVM::RJIT::EntryStub]
+    def compile_entry_stub(asm, entry_stub)
+      # Call rb_rjit_entry_stub_hit
+      asm.comment('entry stub hit')
+      asm.mov(C_ARGS[0], to_value(entry_stub))
+      asm.call(C.rb_rjit_entry_stub_hit)
+
+      # Jump to the address returned by rb_rjit_entry_stub_hit
+      asm.jmp(:rax)
+    end
+
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     # @param branch_stub [RubyVM::RJIT::BranchStub]
@@ -93,7 +105,7 @@ module RubyVM::RJIT
       asm.mov(:edx, target0_p ? 1 : 0)
       asm.call(C.rb_rjit_branch_stub_hit)
 
-      # Jump to the address returned by rb_rjit_stub_hit
+      # Jump to the address returned by rb_rjit_branch_stub_hit
       asm.jmp(:rax)
     end
 

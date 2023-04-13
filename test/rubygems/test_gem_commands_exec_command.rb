@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/exec_command"
 
@@ -215,7 +216,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
   def test_gem_with_platform_and_platform_dependencies
     pend "extensions don't quite work on jruby" if Gem.java_platform?
-    pend "terminates on mswin" if Gem.win_platform?
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     spec_fetcher do |fetcher|
       fetcher.download "a", 2 do |s|
@@ -766,7 +767,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_raise Gem::MockGemUi::TermError do
         invoke "a"
       end
-      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" +
+      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" \
                    "ERROR:  Possible alternatives: a\n", @ui.error
       assert_empty @ui.output
       assert_empty @installed_specs

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../rubygems"
 require_relative "user_interaction"
 
@@ -74,7 +75,7 @@ class Gem::Doctor
     Gem.use_paths @gem_repository.to_s
 
     unless gem_repository?
-      say "This directory does not appear to be a RubyGems repository, " +
+      say "This directory does not appear to be a RubyGems repository, " \
           "skipping"
       say
       return
@@ -110,7 +111,7 @@ class Gem::Doctor
 
       basename = File.basename(child, extension)
       next if installed_specs.include? basename
-      next if /^rubygems-\d/ =~ basename
+      next if /^rubygems-\d/.match?(basename)
       next if sub_directory == "specifications" && basename == "default"
       next if sub_directory == "plugins" && Gem.plugin_suffix_regexp =~ (basename)
 

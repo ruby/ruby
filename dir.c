@@ -588,6 +588,44 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
     return dir_close(dir);
 }
 
+# if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+/*
+ *  call-seq:
+ *     Dir.for_fd(integer) -> aDir
+ *
+ *  Returns a Dir representing the directory specified by the given
+ *  directory file descriptor. Note that the returned Dir will not
+ *  have an associated path.
+ *
+ *     d1 = Dir.new('..')
+ *     d2 = Dir.for_fd(d1.fileno)
+ *     d1.path # => '..'
+ *     d2.path # => nil
+ *     d1.chdir{Dir.pwd} == d2.chdir{Dir.pwd} # => true
+ *
+ *  This method uses fdopendir() function defined by POSIX 2008.
+ *  NotImplementedError is raised on other platforms, such as Windows,
+ *  which doesn't provide the function.
+ *
+ */
+static VALUE
+dir_s_for_fd(VALUE klass, VALUE fd)
+{
+    struct dir_data *dp;
+    VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
+
+    if (!(dp->dir = fdopendir(NUM2INT(fd)))) {
+        rb_sys_fail("fdopendir");
+        UNREACHABLE_RETURN(Qnil);
+    }
+
+    RB_OBJ_WRITE(dir, &dp->path, Qnil);
+    return dir;
+}
+#else
+#define dir_s_for_fd rb_f_notimplement
+#endif
+
 NORETURN(static void dir_closed(void));
 
 static void
@@ -972,7 +1010,7 @@ nogvl_chdir(void *ptr)
 }
 
 static void
-dir_chdir(VALUE path)
+dir_chdir0(VALUE path)
 {
     if (chdir(RSTRING_PTR(path)) < 0)
         rb_sys_fail_path(path);
@@ -990,7 +1028,7 @@ static VALUE
 chdir_yield(VALUE v)
 {
     struct chdir_data *args = (void *)v;
-    dir_chdir(args->new_path);
+    dir_chdir0(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
     if (NIL_P(chdir_thread))
@@ -1006,7 +1044,7 @@ chdir_restore(VALUE v)
         chdir_blocking--;
         if (chdir_blocking == 0)
             chdir_thread = Qnil;
-        dir_chdir(args->old_path);
+        dir_chdir0(args->old_path);
     }
     return Qnil;
 }
@@ -1092,6 +1130,158 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
     }
 
     return INT2FIX(0);
+}
+
+#if defined(HAVE_FCHDIR) && defined(HAVE_DIRFD) && HAVE_FCHDIR && HAVE_DIRFD
+static void *
+nogvl_fchdir(void *ptr)
+{
+    const int *fd = ptr;
+
+    return (void *)(VALUE)fchdir(*fd);
+}
+
+static void
+dir_fchdir(int fd)
+{
+    if (fchdir(fd) < 0)
+        rb_sys_fail("fchdir");
+}
+
+struct fchdir_data {
+    VALUE old_dir;
+    int fd;
+    int done;
+};
+
+static VALUE
+fchdir_yield(VALUE v)
+{
+    struct fchdir_data *args = (void *)v;
+    dir_fchdir(args->fd);
+    args->done = TRUE;
+    chdir_blocking++;
+    if (NIL_P(chdir_thread))
+        chdir_thread = rb_thread_current();
+    return rb_yield_values(0);
+}
+
+static VALUE
+fchdir_restore(VALUE v)
+{
+    struct fchdir_data *args = (void *)v;
+    if (args->done) {
+        chdir_blocking--;
+        if (chdir_blocking == 0)
+            chdir_thread = Qnil;
+        dir_fchdir(RB_NUM2INT(dir_fileno(args->old_dir)));
+    }
+    dir_close(args->old_dir);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     Dir.fchdir( integer ) -> 0
+ *     Dir.fchdir( integer ) { block }  -> anObject
+ *
+ *  Changes the current working directory of the process to the directory
+ *  specified by the given file descriptor integer. If the file descriptor
+ *  is not valid, raises SystemCallError.  One reason to use
+ *  <code>fchdir</code> instead of <code>chdir</code> is when passing
+ *  directory file descriptors over a UNIX socket or to child processes,
+ *  to avoid TOCTOU (time-of-check to time-of-use) vulnerabilities.
+ *
+ *  If a block is given, the current working directory is changed for the
+ *  duration of the block, and the original working directory is restored
+ *  when the block exits. The return value of <code>fchdir</code> is the
+ *  value of the block. <code>fchdir</code> and <code>chdir</code> blocks
+ *  can be nested, but in a multi-threaded program an error will be raised
+ *  if a thread attempts to open a <code>fchdir</code> or <code>chdir</code>
+ *  block while another thread has one open or a call to <code>fchdir</code>
+ *  or <code>chdir</code> without a block occurs inside a block passed to
+ *  <code>fchdir</code> or <code>chdir</code> (even in the same thread).
+ *
+ *  When generating directory file descriptors from a +Dir+ instance,
+ *  make sure the +Dir+ instance is not garbage collected before the
+ *  directory file descriptor is passed to another process.  Otherwise,
+ *  the directory file descriptor will be closed before it is passed.
+ *
+ *     dir  = Dir.new("/var/spool/mail")
+ *     dir2  = Dir.new("/usr")
+ *     fd  = dir.fileno
+ *     fd2  = dir2.fileno
+ *     Dir.fchdir(fd) do
+ *       puts Dir.pwd
+ *       Dir.fchdir(fd2) do
+ *         puts Dir.pwd
+ *       end
+ *       puts Dir.pwd
+ *     end
+ *     puts Dir.pwd
+ *
+ *  <em>produces:</em>
+ *
+ *     /var/spool/mail
+ *     /tmp
+ *     /usr
+ *     /tmp
+ *     /var/spool/mail
+ */
+static VALUE
+dir_s_fchdir(VALUE klass, VALUE fd_value)
+{
+    int fd = RB_NUM2INT(fd_value);
+
+    if (chdir_blocking > 0) {
+        if (rb_thread_current() != chdir_thread)
+            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
+        if (!rb_block_given_p())
+            rb_warn("conflicting chdir during another chdir block");
+    }
+
+    if (rb_block_given_p()) {
+        struct fchdir_data args;
+        args.old_dir = dir_s_alloc(klass);
+        dir_initialize(NULL, args.old_dir, rb_fstring_cstr("."), Qnil);
+        args.fd = fd;
+        args.done = FALSE;
+        return rb_ensure(fchdir_yield, (VALUE)&args, fchdir_restore, (VALUE)&args);
+    }
+    else {
+        int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_fchdir, &fd,
+                                                       RUBY_UBF_IO, 0);
+        if (r < 0)
+            rb_sys_fail("fchdir");
+    }
+
+    return INT2FIX(0);
+}
+#else
+#define dir_s_fchdir rb_f_notimplement
+#endif
+
+/*
+ *  call-seq:
+ *     dir.chdir -> nil
+ *
+ *  Changes the current working directory to the receiver.
+ *
+ *     # Assume current directory is /path
+ *     Dir.new("testdir").chdir
+ *     Dir.pwd # => '/path/testdir'
+ */
+static VALUE
+dir_chdir(VALUE dir)
+{
+#if defined(HAVE_FCHDIR) && defined(HAVE_DIRFD) && HAVE_FCHDIR && HAVE_DIRFD
+    dir_s_fchdir(rb_cDir, dir_fileno(dir));
+#else
+    VALUE path = dir_get(dir)->path;
+    dir_s_chdir(1, &path, rb_cDir);
+#endif
+
+    return Qnil;
 }
 
 #ifndef _WIN32
@@ -3354,6 +3544,7 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
+    rb_define_singleton_method(rb_cDir,"for_fd", dir_s_for_fd, 1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, -1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
     rb_define_singleton_method(rb_cDir, "each_child", dir_s_each_child, -1);
@@ -3373,7 +3564,9 @@ Init_Dir(void)
     rb_define_method(rb_cDir,"pos", dir_tell, 0);
     rb_define_method(rb_cDir,"pos=", dir_set_pos, 1);
     rb_define_method(rb_cDir,"close", dir_close, 0);
+    rb_define_method(rb_cDir,"chdir", dir_chdir, 0);
 
+    rb_define_singleton_method(rb_cDir,"fchdir", dir_s_fchdir, 1);
     rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);
     rb_define_singleton_method(rb_cDir,"getwd", dir_s_getwd, 0);
     rb_define_singleton_method(rb_cDir,"pwd", dir_s_getwd, 0);

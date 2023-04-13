@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "installer_test_case"
 require "rubygems/uninstaller"
 
@@ -251,12 +252,12 @@ class TestGemUninstaller < Gem::InstallerTestCase
     gem_dir = File.join @gemhome, "gems", @spec.full_name
 
     Gem.pre_uninstall do
-      sleep(0.1) if win_platform?
+      sleep(0.1) if Gem.win_platform?
       assert File.exist?(gem_dir), "gem_dir should exist"
     end
 
     Gem.post_uninstall do
-      sleep(0.1) if win_platform?
+      sleep(0.1) if Gem.win_platform?
       refute File.exist?(gem_dir), "gem_dir should not exist"
     end
 
@@ -466,12 +467,12 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r{You have requested to uninstall the gem:}, lines.shift
+    assert_match(/You have requested to uninstall the gem:/, lines.shift)
     lines.shift
     lines.shift
 
-    assert_match %r{r-1 depends on q \(= 1\)}, lines.shift
-    assert_match %r{Successfully uninstalled q-1}, lines.last
+    assert_match(/r-1 depends on q \(= 1\)/, lines.shift)
+    assert_match(/Successfully uninstalled q-1/, lines.last)
   end
 
   def test_uninstall_only_lists_unsatisfied_deps
@@ -496,12 +497,12 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r{You have requested to uninstall the gem:}, lines.shift
+    assert_match(/You have requested to uninstall the gem:/, lines.shift)
     lines.shift
     lines.shift
 
-    assert_match %r{x-1 depends on q \(= 1.0\)}, lines.shift
-    assert_match %r{Successfully uninstalled q-1.0}, lines.last
+    assert_match(/x-1 depends on q \(= 1.0\)/, lines.shift)
+    assert_match(/Successfully uninstalled q-1.0/, lines.last)
   end
 
   def test_uninstall_doesnt_prompt_when_other_gem_satisfies_requirement
@@ -577,12 +578,12 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r{You have requested to uninstall the gem:}, lines.shift
+    assert_match(/You have requested to uninstall the gem:/, lines.shift)
     lines.shift
     lines.shift
 
-    assert_match %r{r-1 depends on q \(= 1, development\)}, lines.shift
-    assert_match %r{Successfully uninstalled q-1}, lines.last
+    assert_match(/r-1 depends on q \(= 1, development\)/, lines.shift)
+    assert_match(/Successfully uninstalled q-1/, lines.last)
   end
 
   def test_uninstall_prompt_only_lists_the_dependents_that_prevented_uninstallation
@@ -606,12 +607,12 @@ create_makefile '#{@spec.name}'
     lines = ui.output.split("\n")
     lines.shift
 
-    assert_match %r{You have requested to uninstall the gem:}, lines.shift
+    assert_match(/You have requested to uninstall the gem:/, lines.shift)
     lines.shift
     lines.shift
 
-    assert_match %r{s-1 depends on q \(= 1\)}, lines.shift
-    assert_match %r{Successfully uninstalled q-1}, lines.last
+    assert_match(/s-1 depends on q \(= 1\)/, lines.shift)
+    assert_match(/Successfully uninstalled q-1/, lines.last)
   end
 
   def test_uninstall_no_permission

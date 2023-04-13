@@ -51,6 +51,29 @@ class TestYJIT < Test::Unit::TestCase
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
+  def test_starting_paused
+    program = <<~RUBY
+      def not_compiled = nil
+      def will_compile = nil
+      def compiled_counts = RubyVM::YJIT.runtime_stats[:compiled_iseq_count]
+      counts = []
+      not_compiled
+      counts << compiled_counts
+
+      RubyVM::YJIT.resume
+
+      will_compile
+      counts << compiled_counts
+
+      if counts[0] == 0 && counts[1] > 0
+        p :ok
+      end
+    RUBY
+    assert_in_out_err(%w[--yjit-pause --yjit-stats --yjit-call-threshold=1], program, success: true) do |stdout, stderr|
+      assert_equal([":ok"], stdout)
+    end
+  end
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = EnvUtil.invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
@@ -1216,6 +1239,25 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_str_concat_encoding_mismatch
+    assert_compiles(<<~'RUBY', result: "incompatible character encodings: ASCII-8BIT and EUC-JP")
+      def bar(a, b)
+        a << b
+      rescue => e
+        e.message
+      end
+
+      def foo(a, b, h)
+        h[nil]
+        bar(a, b) # Ruby call, not set cfp->pc
+      end
+
+      h = Hash.new { nil }
+      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
@@ -1336,13 +1378,24 @@ class TestYJIT < Test::Unit::TestCase
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
+    # Separate thread so we don't deadlock when
+    # the child ruby blocks writing the stats to fd 3
+    stats = ''
+    stats_reader = Thread.new do
+      stats = stats_r.read
+      stats_r.close
+    end
     out, err, status = EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout, ios: {3 => stats_w}
     )
     stats_w.close
-    stats = stats_r.read
+    stats_reader.join(timeout)
     stats = Marshal.load(stats) if !stats.empty?
-    stats_r.close
     [status, out, err, stats]
+  ensure
+    stats_reader&.kill
+    stats_reader&.join(timeout)
+    stats_r&.close
+    stats_w&.close
   end
 end

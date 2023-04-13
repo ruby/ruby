@@ -1,4 +1,5 @@
 use std::ffi::CStr;
+use crate::backend::ir::Assembler;
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -22,11 +23,18 @@ pub struct Options {
     // 1 means always create generic versions
     pub max_versions: usize,
 
+    // The number of registers allocated for stack temps
+    pub num_temp_regs: usize,
+
     // Capture and print out stats
     pub gen_stats: bool,
 
     // Trace locations of exits
     pub gen_trace_exits: bool,
+
+    // Whether to start YJIT in paused state (initialize YJIT but don't
+    // compile anything)
+    pub pause: bool,
 
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
@@ -48,8 +56,10 @@ pub static mut OPTIONS: Options = Options {
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
+    num_temp_regs: 5,
     gen_stats: false,
     gen_trace_exits: false,
+    pause: false,
     dump_insns: false,
     dump_disasm: None,
     verify_ctx: false,
@@ -127,6 +137,20 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("max-versions", _) => match opt_val.parse() {
             Ok(n) => unsafe { OPTIONS.max_versions = n },
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("pause", "") => unsafe {
+            OPTIONS.pause = true;
+        },
+
+        ("temp-regs", _) => match opt_val.parse() {
+            Ok(n) => {
+                assert!(n <= Assembler::TEMP_REGS.len(), "--yjit-temp-regs must be <= {}", Assembler::TEMP_REGS.len());
+                unsafe { OPTIONS.num_temp_regs = n }
+            }
             Err(_) => {
                 return None;
             }

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Represents a possible Specification object returned from IndexSet.  Used to
 # delay needed to download full Specification objects when only the +name+
@@ -67,7 +68,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   end
 
   def inspect # :nodoc:
-    "#<%s %s source %s>" % [self.class, full_name, @source]
+    format("#<%s %s source %s>", self.class, full_name, @source)
   end
 
   def pretty_print(q) # :nodoc:

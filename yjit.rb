@@ -29,6 +29,11 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
+  # Resume YJIT compilation after paused on startup with --yjit-pause
+  def self.resume
+    Primitive.rb_yjit_resume
+  end
+
   # If --yjit-trace-exits is enabled parse the hashes from
   # Primitive.rb_yjit_get_exit_locations into a format readable
   # by Stackprof. This will allow us to find the exact location of a
@@ -263,11 +268,18 @@ module RubyVM::YJIT
 
       $stderr.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
       $stderr.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
+      $stderr.puts "temp_reg_opnd:         " + format_number(13, stats[:temp_reg_opnd])
+      $stderr.puts "temp_mem_opnd:         " + format_number(13, stats[:temp_mem_opnd])
+      $stderr.puts "temp_spill:            " + format_number(13, stats[:temp_spill])
       $stderr.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
       $stderr.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       $stderr.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
       $stderr.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
+      $stderr.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
       $stderr.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
+      if stats[:compiled_blockid_count] != 0
+        $stderr.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
+      end
       $stderr.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
       $stderr.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
       $stderr.puts "defer_count:           " + format_number(13, stats[:defer_count])
@@ -282,8 +294,8 @@ module RubyVM::YJIT
       $stderr.puts "get_ivar_max_depth:    " + format_number(13, stats[:get_ivar_max_depth])
       $stderr.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
-      $stderr.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
       $stderr.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
+      $stderr.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
       $stderr.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
       $stderr.puts "live_context_size:     " + format_number(13, stats[:live_context_size])
       $stderr.puts "live_context_count:    " + format_number(13, stats[:live_context_count])

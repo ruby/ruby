@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/stub_specification"
 
@@ -71,7 +72,7 @@ class TestStubSpecification < Gem::TestCase
         refute stub.contains_requirable_file? "nonexistent"
       end
 
-      expected = "Ignoring stub_e-2 because its extensions are not built. " +
+      expected = "Ignoring stub_e-2 because its extensions are not built. " \
                  "Try: gem pristine stub_e --version 2\n"
 
       assert_equal expected, err

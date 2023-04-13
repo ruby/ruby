@@ -1367,11 +1367,17 @@ iter_lev_in_ivar_set(VALUE hash, int lev)
     rb_ivar_set_internal(hash, id_hash_iter_lev, INT2FIX(lev));
 }
 
-static int
+static inline int
 iter_lev_in_flags(VALUE hash)
 {
     unsigned int u = (unsigned int)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
     return (int)u;
+}
+
+static inline void
+iter_lev_in_flags_set(VALUE hash, int lev)
+{
+    RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
 }
 
 static int
@@ -1397,7 +1403,7 @@ hash_iter_lev_inc(VALUE hash)
     }
     else {
         lev += 1;
-        RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
+        iter_lev_in_flags_set(hash, lev);
         if (lev == RHASH_LEV_MAX) {
             iter_lev_in_ivar_set(hash, lev);
         }
@@ -1415,7 +1421,7 @@ hash_iter_lev_dec(VALUE hash)
     }
     else {
         HASH_ASSERT(lev > 0);
-        RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((lev-1) << RHASH_LEV_SHIFT));
+        iter_lev_in_flags_set(hash, lev - 1);
     }
 }
 
@@ -1498,7 +1504,7 @@ static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone)
 {
     const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags);
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, sizeof(struct RHash), 0);
 
     RHASH_SET_IFNONE((VALUE)hash, ifnone);
 
@@ -1801,6 +1807,8 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
     return hash;
 }
 
+static VALUE rb_hash_to_a(VALUE hash);
+
 /*
  *  call-seq:
  *    Hash[] -> new_empty_hash
@@ -1844,12 +1852,22 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
-            hash = hash_alloc(klass);
-            hash_copy(hash, tmp);
-            return hash;
+            if (!RHASH_EMPTY_P(tmp)  && rb_hash_compare_by_id_p(tmp)) {
+                /* hash_copy for non-empty hash will copy compare_by_identity
+                   flag, but we don't want it copied. Work around by
+                   converting hash to flattened array and using that. */
+                tmp = rb_hash_to_a(tmp);
+            }
+            else {
+                hash = hash_alloc(klass);
+                hash_copy(hash, tmp);
+                return hash;
+            }
+        }
+        else {
+            tmp = rb_check_array_type(argv[0]);
         }
 
-        tmp = rb_check_array_type(argv[0]);
         if (!NIL_P(tmp)) {
             long i;
 
@@ -1960,9 +1978,12 @@ static VALUE
 rb_hash_s_ruby2_keywords_hash(VALUE dummy, VALUE hash)
 {
     Check_Type(hash, T_HASH);
-    hash = rb_hash_dup(hash);
-    RHASH(hash)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
-    return hash;
+    VALUE tmp = rb_hash_dup(hash);
+    if (RHASH_EMPTY_P(hash) && rb_hash_compare_by_id_p(hash)) {
+        rb_hash_compare_by_id(tmp);
+    }
+    RHASH(tmp)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+    return tmp;
 }
 
 struct rehash_arg {
@@ -4292,15 +4313,6 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
-static int
-set_if_not_nil(VALUE key, VALUE value, VALUE hash)
-{
-    if (!NIL_P(value)) {
-        rb_hash_aset(hash, key, value);
-    }
-    return ST_CONTINUE;
-}
-
 /*
  *  call-seq:
  *    hash.compact -> new_hash
@@ -4314,9 +4326,12 @@ set_if_not_nil(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_compact(VALUE hash)
 {
-    VALUE result = rb_hash_new();
+    VALUE result = rb_hash_dup(hash);
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_foreach(hash, set_if_not_nil, result);
+        rb_hash_foreach(result, delete_if_nil, result);
+    }
+    else if (rb_hash_compare_by_id_p(hash)) {
+        result = rb_hash_compare_by_id(result);
     }
     return result;
 }

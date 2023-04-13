@@ -61,18 +61,19 @@ ASSERT_ractor_locking(rb_ractor_t *r)
 static void
 ractor_lock(rb_ractor_t *r, const char *file, int line)
 {
-    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->pub.id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
     if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an RJIT worker
-        r->sync.locked_by = rb_ractor_self(GET_RACTOR());
+        rb_ractor_t *cr = rb_current_ractor_raw(false);
+        r->sync.locked_by = cr ? rb_ractor_self(cr) : Qundef;
     }
 #endif
 
-    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->pub.id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
@@ -94,7 +95,7 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 #endif
     rb_native_mutex_unlock(&r->sync.lock);
 
-    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, GET_RACTOR() == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
@@ -2119,34 +2120,23 @@ rb_ractor_living_thread_num(const rb_ractor_t *r)
     return r->threads.cnt;
 }
 
+// only for current ractor
 VALUE
-rb_ractor_thread_list(rb_ractor_t *r)
+rb_ractor_thread_list(void)
 {
+    rb_ractor_t *r = GET_RACTOR();
     rb_thread_t *th = 0;
-    VALUE *ts;
-    int ts_cnt;
-
-    RACTOR_LOCK(r);
-    {
-        ts = ALLOCA_N(VALUE, r->threads.cnt);
-        ts_cnt = 0;
-
-        ccan_list_for_each(&r->threads.set, th, lt_node) {
-            switch (th->status) {
-              case THREAD_RUNNABLE:
-              case THREAD_STOPPED:
-              case THREAD_STOPPED_FOREVER:
-                ts[ts_cnt++] = th->self;
-              default:
-                break;
-            }
-        }
-    }
-    RACTOR_UNLOCK(r);
-
     VALUE ary = rb_ary_new();
-    for (int i=0; i<ts_cnt; i++) {
-        rb_ary_push(ary, ts[i]);
+
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
+        switch (th->status) {
+          case THREAD_RUNNABLE:
+          case THREAD_STOPPED:
+          case THREAD_STOPPED_FOREVER:
+            rb_ary_push(ary, th->self);
+          default:
+            break;
+        }
     }
 
     return ary;
@@ -2332,6 +2322,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
         rb_ractor_t *r = 0;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
+                RUBY_DEBUG_LOG("r:%d", rb_ractor_id(r));
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
         }
@@ -2348,7 +2339,9 @@ rb_ractor_terminate_all(void)
 
     if (vm->ractor.cnt > 1) {
         RB_VM_LOCK();
-        ractor_terminal_interrupt_all(vm); // kill all ractors
+        {
+            ractor_terminal_interrupt_all(vm); // kill all ractors
+        }
         RB_VM_UNLOCK();
     }
     rb_thread_terminate_all(GET_THREAD()); // kill other threads in main-ractor and wait

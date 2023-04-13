@@ -15,6 +15,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// See [rb_yjit_enabled_p]
 static YJIT_ENABLED: AtomicBool = AtomicBool::new(false);
 
+/// When false, we don't compile new iseqs, but might still service existing branch stubs.
+static COMPILE_NEW_ISEQS: AtomicBool = AtomicBool::new(false);
+
 /// Parse one command-line option.
 /// This is called from ruby.c
 #[no_mangle]
@@ -30,6 +33,11 @@ pub extern "C" fn rb_yjit_enabled_p() -> raw::c_int {
     // Note that we might want to call this function from signal handlers so
     // might need to ensure signal-safety(7).
     YJIT_ENABLED.load(Ordering::Acquire).into()
+}
+
+#[no_mangle]
+pub extern "C" fn rb_yjit_compile_new_iseqs() -> bool {
+    COMPILE_NEW_ISEQS.load(Ordering::Acquire).into()
 }
 
 /// Like rb_yjit_enabled_p, but for Rust code.
@@ -60,6 +68,8 @@ pub extern "C" fn rb_yjit_init_rust() {
 
         // YJIT enabled and initialized successfully
         YJIT_ENABLED.store(true, Ordering::Release);
+
+        COMPILE_NEW_ISEQS.store(!get_option!(pause), Ordering::Release);
     });
 
     if let Err(_) = result {
@@ -129,8 +139,21 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
         return Qnil;
     }
 
-    let cb = CodegenGlobals::get_inline_cb();
-    cb.code_gc();
+    with_vm_lock(src_loc!(), || {
+        let cb = CodegenGlobals::get_inline_cb();
+        let ocb = CodegenGlobals::get_outlined_cb();
+        cb.code_gc(ocb);
+    });
+
+    Qnil
+}
+
+#[no_mangle]
+pub extern "C" fn rb_yjit_resume(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if yjit_enabled_p() {
+        COMPILE_NEW_ISEQS.store(true, Ordering::Release);
+    }
+
     Qnil
 }
 

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../install_update_options"
 require_relative "../dependency_installer"
@@ -47,7 +48,7 @@ class Gem::Commands::InstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--both --version '#{Gem::Requirement.default}' --no-force\n" +
+    "--both --version '#{Gem::Requirement.default}' --no-force\n" \
       "--install-dir #{Gem.dir} --lock\n" +
       install_update_defaults_str
   end
@@ -262,7 +263,7 @@ You can use `i` command instead of `install`.
     return unless errors
 
     errors.each do |x|
-      return unless Gem::SourceFetchProblem === x
+      next unless Gem::SourceFetchProblem === x
 
       require_relative "../uri"
       msg = "Unable to pull data from '#{Gem::Uri.redact(x.source.uri)}': #{x.error.message}"
