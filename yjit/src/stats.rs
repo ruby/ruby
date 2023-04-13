@@ -691,10 +691,8 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         // Push the insn value into the yjit_raw_samples Vec.
         yjit_raw_samples.push(VALUE(insn as usize));
 
-        // Push the current line onto the yjit_line_samples Vec. This
-        // points to the line in insns.def.
-        let line = yjit_line_samples.len() - 1;
-        yjit_line_samples.push(line as i32);
+        // We don't know the line
+        yjit_line_samples.push(0);
 
         // Push number of times seen onto the stack, which is 1
         // because it's the first time we've seen it.

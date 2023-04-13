@@ -67,7 +67,7 @@ module RubyVM::YJIT
     # [ length, line_1, line_2, line_n, ..., dummy value, count
     i = 0
     while i < raw_samples.length
-      stack_length = raw_samples[i] + 1
+      stack_length = raw_samples[i]
       i += 1 # consume the stack length
 
       sample_count = raw_samples[i + stack_length]
