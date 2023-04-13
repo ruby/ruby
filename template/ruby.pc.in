@@ -52,7 +52,7 @@ DLDFLAGS=@DLDFLAGS@
 
 Name: Ruby
 Description: Object Oriented Script Language
-Version: ${ruby_version}
+Version: ${RUBY_PROGRAM_VERSION}
 URL: https://www.ruby-lang.org
 Cflags: -I${rubyarchhdrdir} -I${rubyhdrdir}
 Libs: ${DLDFLAGS} ${LIBRUBYARG_SHARED} ${LIBS}
