@@ -308,7 +308,7 @@ class Gem::TestCase < Test::Unit::TestCase
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
+    @orig_system_wide_config_file = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
                          File.join(@tempdir, "system-gemrc")
@@ -329,7 +329,7 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem.ensure_gem_subdirectories @gemhome
     Gem.ensure_default_gem_subdirectories @gemhome
 
-    @orig_LOAD_PATH = $LOAD_PATH.dup
+    @orig_load_path = $LOAD_PATH.dup
     $LOAD_PATH.map! do |s|
       expand_path = begin
                       File.realpath(s)
@@ -415,7 +415,7 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
-    @orig_LOADED_FEATURES = $LOADED_FEATURES.dup
+    @orig_loaded_features = $LOADED_FEATURES.dup
   end
 
   ##
@@ -423,14 +423,14 @@ class Gem::TestCase < Test::Unit::TestCase
   # tempdir
 
   def teardown
-    $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
-    if @orig_LOADED_FEATURES
-      if @orig_LOAD_PATH
-        ($LOADED_FEATURES - @orig_LOADED_FEATURES).each do |feat|
+    $LOAD_PATH.replace @orig_load_path if @orig_load_path
+    if @orig_loaded_features
+      if @orig_load_path
+        ($LOADED_FEATURES - @orig_loaded_features).each do |feat|
           $LOADED_FEATURES.delete(feat) if feat.start_with?(@tmp)
         end
       else
-        $LOADED_FEATURES.replace @orig_LOADED_FEATURES
+        $LOADED_FEATURES.replace @orig_loaded_features
       end
     end
 
@@ -448,7 +448,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
-                         @orig_SYSTEM_WIDE_CONFIG_FILE
+                         @orig_system_wide_config_file
 
     Gem.ruby = @orig_ruby if @orig_ruby
 
@@ -1084,12 +1084,12 @@ Also, a list:
       Gem.send :remove_instance_variable, :@ruby_version
     end
 
-    @RUBY_VERSION        = RUBY_VERSION
-    @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL
-    @RUBY_REVISION       = RUBY_REVISION
-    @RUBY_DESCRIPTION    = RUBY_DESCRIPTION
-    @RUBY_ENGINE         = RUBY_ENGINE
-    @RUBY_ENGINE_VERSION = RUBY_ENGINE_VERSION
+    @ruby_version        = RUBY_VERSION
+    @ruby_patchlevel     = RUBY_PATCHLEVEL
+    @ruby_revision       = RUBY_REVISION
+    @ruby_description    = RUBY_DESCRIPTION
+    @ruby_engine         = RUBY_ENGINE
+    @ruby_engine_version = RUBY_ENGINE_VERSION
 
     util_clear_RUBY_VERSION
 
@@ -1104,12 +1104,12 @@ Also, a list:
   def util_restore_RUBY_VERSION
     util_clear_RUBY_VERSION
 
-    Object.const_set :RUBY_VERSION,        @RUBY_VERSION
-    Object.const_set :RUBY_PATCHLEVEL,     @RUBY_PATCHLEVEL
-    Object.const_set :RUBY_REVISION,       @RUBY_REVISION
-    Object.const_set :RUBY_DESCRIPTION,    @RUBY_DESCRIPTION
-    Object.const_set :RUBY_ENGINE,         @RUBY_ENGINE
-    Object.const_set :RUBY_ENGINE_VERSION, @RUBY_ENGINE_VERSION
+    Object.const_set :RUBY_VERSION,        @ruby_version
+    Object.const_set :RUBY_PATCHLEVEL,     @ruby_patchlevel
+    Object.const_set :RUBY_REVISION,       @ruby_revision
+    Object.const_set :RUBY_DESCRIPTION,    @ruby_description
+    Object.const_set :RUBY_ENGINE,         @ruby_engine
+    Object.const_set :RUBY_ENGINE_VERSION, @ruby_engine_version
   end
 
   def util_clear_RUBY_VERSION

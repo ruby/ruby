@@ -6,7 +6,7 @@ require "rubygems/installer"
 
 class TestGemExtBuilder < Gem::TestCase
   def setup
-    @orig_DESTDIR = ENV["DESTDIR"]
+    @orig_destdir = ENV["DESTDIR"]
     @orig_make = ENV["make"]
     super
 
@@ -23,7 +23,7 @@ class TestGemExtBuilder < Gem::TestCase
 
   def teardown
     super
-    ENV["DESTDIR"] = @orig_DESTDIR
+    ENV["DESTDIR"] = @orig_destdir
     ENV["make"] = @orig_make
   end
 

@@ -204,7 +204,7 @@ gem 'other', version
       bin_dir = bin_dir.downcase
     end
 
-    orig_PATH = ENV["PATH"]
+    orig_path = ENV["PATH"]
     ENV["PATH"] = [ENV["PATH"], bin_dir].join(File::PATH_SEPARATOR)
 
     use_ui @ui do
@@ -215,7 +215,7 @@ gem 'other', version
 
     return unless Gem.win_platform?
 
-    ENV["PATH"] = [orig_PATH, bin_dir.tr(File::SEPARATOR, File::ALT_SEPARATOR)].join(File::PATH_SEPARATOR)
+    ENV["PATH"] = [orig_path, bin_dir.tr(File::SEPARATOR, File::ALT_SEPARATOR)].join(File::PATH_SEPARATOR)
 
     use_ui @ui do
       installer.check_that_user_bin_dir_is_in_path
@@ -223,13 +223,13 @@ gem 'other', version
 
     assert_empty @ui.error
   ensure
-    ENV["PATH"] = orig_PATH
+    ENV["PATH"] = orig_path
   end
 
   def test_check_that_user_bin_dir_is_in_path_tilde
     pend "Tilde is PATH is not supported under MS Windows" if Gem.win_platform?
 
-    orig_PATH = ENV["PATH"]
+    orig_path = ENV["PATH"]
     ENV["PATH"] = [ENV["PATH"], "~/bin"].join(File::PATH_SEPARATOR)
 
     installer = setup_base_installer
@@ -241,7 +241,7 @@ gem 'other', version
 
     assert_empty @ui.error
   ensure
-    ENV["PATH"] = orig_PATH unless Gem.win_platform?
+    ENV["PATH"] = orig_path unless Gem.win_platform?
   end
 
   def test_check_that_user_bin_dir_is_in_path_not_in_path
@@ -2462,11 +2462,11 @@ gem 'other', version
   end
 
   def load_relative(value)
-    orig_LIBRUBY_RELATIVE = RbConfig::CONFIG["LIBRUBY_RELATIVE"]
+    orig_libruby_relative = RbConfig::CONFIG["LIBRUBY_RELATIVE"]
     RbConfig::CONFIG["LIBRUBY_RELATIVE"] = value
 
     yield
   ensure
-    RbConfig::CONFIG["LIBRUBY_RELATIVE"] = orig_LIBRUBY_RELATIVE
+    RbConfig::CONFIG["LIBRUBY_RELATIVE"] = orig_libruby_relative
   end
 end

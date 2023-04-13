@@ -1713,14 +1713,14 @@ class TestGem < Gem::TestCase
 
   def ruby_install_name(name)
     with_clean_path_to_ruby do
-      orig_RUBY_INSTALL_NAME = RbConfig::CONFIG["ruby_install_name"]
+      orig_ruby_install_name = RbConfig::CONFIG["ruby_install_name"]
       RbConfig::CONFIG["ruby_install_name"] = name
 
       begin
         yield
       ensure
-        if orig_RUBY_INSTALL_NAME
-          RbConfig::CONFIG["ruby_install_name"] = orig_RUBY_INSTALL_NAME
+        if orig_ruby_install_name
+          RbConfig::CONFIG["ruby_install_name"] = orig_ruby_install_name
         else
           RbConfig::CONFIG.delete "ruby_install_name"
         end

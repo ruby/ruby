@@ -779,29 +779,29 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_sorts_by_source_then_version
-    sourceA = Gem::Source.new "http://example.com/a"
-    sourceB = Gem::Source.new "http://example.com/b"
-    sourceC = Gem::Source.new "http://example.com/c"
+    source_a = Gem::Source.new "http://example.com/a"
+    source_b = Gem::Source.new "http://example.com/b"
+    source_c = Gem::Source.new "http://example.com/c"
 
-    spec_A_1 = util_spec "some-dep", "0.0.1"
-    spec_A_2 = util_spec "some-dep", "1.0.0"
-    spec_B_1 = util_spec "some-dep", "0.0.1"
-    spec_B_2 = util_spec "some-dep", "0.0.2"
-    spec_C_1 = util_spec "some-dep", "0.1.0"
+    spec_a_1 = util_spec "some-dep", "0.0.1"
+    spec_a_2 = util_spec "some-dep", "1.0.0"
+    spec_b_1 = util_spec "some-dep", "0.0.1"
+    spec_b_2 = util_spec "some-dep", "0.0.2"
+    spec_c_1 = util_spec "some-dep", "0.1.0"
 
     set = StaticSet.new [
-      Gem::Resolver::SpecSpecification.new(nil, spec_B_1, sourceB),
-      Gem::Resolver::SpecSpecification.new(nil, spec_B_2, sourceB),
-      Gem::Resolver::SpecSpecification.new(nil, spec_C_1, sourceC),
-      Gem::Resolver::SpecSpecification.new(nil, spec_A_2, sourceA),
-      Gem::Resolver::SpecSpecification.new(nil, spec_A_1, sourceA),
+      Gem::Resolver::SpecSpecification.new(nil, spec_b_1, source_b),
+      Gem::Resolver::SpecSpecification.new(nil, spec_b_2, source_b),
+      Gem::Resolver::SpecSpecification.new(nil, spec_c_1, source_c),
+      Gem::Resolver::SpecSpecification.new(nil, spec_a_2, source_a),
+      Gem::Resolver::SpecSpecification.new(nil, spec_a_1, source_a),
     ]
 
     dependency = make_dep "some-dep", "> 0"
 
     resolver = Gem::Resolver.new [dependency], set
 
-    assert_resolves_to [spec_B_2], resolver
+    assert_resolves_to [spec_b_2], resolver
   end
 
   def test_select_local_platforms
