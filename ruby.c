@@ -331,6 +331,7 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
         M("experimental", "",     "experimental features"),
+        M("performance", "",      "performance issues"),
     };
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
@@ -1189,6 +1190,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 }
                 else if (NAME_MATCH_P("experimental", s, len)) {
                     bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+                }
+                else if (NAME_MATCH_P("performance", s, len)) {
+                    bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
                 }
                 else {
                     rb_warn("unknown warning category: `%s'", s);

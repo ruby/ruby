@@ -7,6 +7,7 @@
 #include "internal/gc.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "internal/error.h"
 #include "variable.h"
 #include <stdbool.h>
 
@@ -407,6 +408,16 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 
         if (variation_created) {
             RCLASS_EXT(klass)->variation_count++;
+            if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
+                if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
+                    rb_category_warning(
+                        RB_WARN_CATEGORY_PERFORMANCE,
+                        "Maximum shapes variations (%d) reached by %"PRIsVALUE", instance variables accesses will be slower.",
+                        SHAPE_MAX_VARIATIONS,
+                        rb_class_path(klass)
+                    );
+                }
+            }
         }
     }
 

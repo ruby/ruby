@@ -77,6 +77,7 @@ static ID id_warn;
 static ID id_category;
 static ID id_deprecated;
 static ID id_experimental;
+static ID id_performance;
 static VALUE sym_category;
 static VALUE sym_highlight;
 static struct {
@@ -3147,6 +3148,7 @@ Init_Exception(void)
     id_category = rb_intern_const("category");
     id_deprecated = rb_intern_const("deprecated");
     id_experimental = rb_intern_const("experimental");
+    id_performance = rb_intern_const("performance");
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
@@ -3158,11 +3160,13 @@ Init_Exception(void)
     warning_categories.id2enum = rb_init_identtable();
     st_add_direct(warning_categories.id2enum, id_deprecated, RB_WARN_CATEGORY_DEPRECATED);
     st_add_direct(warning_categories.id2enum, id_experimental, RB_WARN_CATEGORY_EXPERIMENTAL);
+    st_add_direct(warning_categories.id2enum, id_performance, RB_WARN_CATEGORY_PERFORMANCE);
 
     warning_categories.enum2id = rb_init_identtable();
     st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_NONE, 0);
     st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_DEPRECATED, id_deprecated);
     st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_EXPERIMENTAL, id_experimental);
+    st_add_direct(warning_categories.enum2id, RB_WARN_CATEGORY_PERFORMANCE, id_performance);
 }
 
 void
