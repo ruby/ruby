@@ -257,28 +257,6 @@ pub enum JCCKinds {
     JCC_JNA,
 }
 
-/// Counter used by get_counted_exit to count the number of exits with --yjit-stats.
-#[derive(Clone)]
-struct ExitCounter {
-    ptr: *const u8,
-    name: String,
-}
-
-/// Macro to get an ExitCounter for helpers with side exits.
-macro_rules! exit_counter {
-    ($counter_name:ident) => {
-        if (get_option!(gen_stats)) {
-            let counter = ExitCounter {
-                ptr: ptr_to_counter!($counter_name) as *const u8,
-                name: stringify!($counter_name).to_string(),
-            };
-            Some(counter)
-        } else {
-            None
-        }
-    };
-}
-
 macro_rules! gen_counter_incr {
     ($asm:tt, $counter_name:ident) => {
         if (get_option!(gen_stats)) {
@@ -298,7 +276,7 @@ macro_rules! gen_counter_incr {
 
 macro_rules! counted_exit {
     ($jit:tt, $ctx:expr, $ocb:tt, $counter_name:ident) => {
-        counted_exit($jit, $ctx, $ocb, exit_counter!($counter_name))
+        counted_exit($jit, $ctx, $ocb, Some(Counter::$counter_name))
     };
 }
 
@@ -568,7 +546,7 @@ fn side_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb) -> Target 
 }
 
 /// Get a side exit. Increment a counter in it if --yjit-stats is enabled.
-fn counted_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb, counter: Option<ExitCounter>) -> Target {
+fn counted_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb, counter: Option<Counter>) -> Target {
     let side_exit = side_exit(jit, ctx, ocb);
 
     // The counter is only incremented when stats are enabled
@@ -586,8 +564,8 @@ fn counted_exit(jit: &mut JITState, ctx: &Context, ocb: &mut OutlinedCb, counter
     let mut asm = Assembler::new();
 
     // Load the pointer into a register
-    asm.comment(&format!("increment counter {}", counter.name));
-    let ptr_reg = asm.load(Opnd::const_ptr(counter.ptr));
+    asm.comment(&format!("increment counter {}", counter.get_name()));
+    let ptr_reg = asm.load(Opnd::const_ptr(get_counter_ptr(&counter.get_name()) as *const u8));
     let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
     // Increment and store the updated value
@@ -780,7 +758,7 @@ fn gen_check_ints(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-    counter: Option<ExitCounter>,
+    counter: Option<Counter>,
 ) {
     // Check for interrupts
     // see RUBY_VM_CHECK_INTS(ec) macro
@@ -1413,7 +1391,7 @@ fn guard_object_is_heap(
     ocb: &mut OutlinedCb,
     object: Opnd,
     object_opnd: YARVOpnd,
-    counter: Option<ExitCounter>,
+    counter: Option<Counter>,
 ) {
     let object_type = asm.ctx.get_opnd_type(object_opnd);
     if object_type.is_heap() {
@@ -1424,7 +1402,7 @@ fn guard_object_is_heap(
 
     // Test that the object is not an immediate
     asm.test(object, (RUBY_IMMEDIATE_MASK as u64).into());
-    asm.jnz(counted_exit(jit, &asm.ctx, ocb, counter.clone()));
+    asm.jnz(counted_exit(jit, &asm.ctx, ocb, counter));
 
     // Test that the object is not false
     asm.cmp(object, Qfalse.into());
@@ -1441,7 +1419,7 @@ fn guard_object_is_array(
     ocb: &mut OutlinedCb,
     object: Opnd,
     object_opnd: YARVOpnd,
-    counter: Option<ExitCounter>,
+    counter: Option<Counter>,
 ) {
     let object_type = asm.ctx.get_opnd_type(object_opnd);
     if object_type.is_array() {
@@ -1452,7 +1430,7 @@ fn guard_object_is_array(
         Opnd::Reg(_) => object,
         _ => asm.load(object),
     };
-    guard_object_is_heap(jit, asm, ocb, object_reg, object_opnd, counter.clone());
+    guard_object_is_heap(jit, asm, ocb, object_reg, object_opnd, counter);
 
     asm.comment("guard object is array");
 
@@ -1475,7 +1453,7 @@ fn guard_object_is_string(
     ocb: &mut OutlinedCb,
     object: Opnd,
     object_opnd: YARVOpnd,
-    counter: Option<ExitCounter>,
+    counter: Option<Counter>,
 ) {
     let object_type = asm.ctx.get_opnd_type(object_opnd);
     if object_type.is_string() {
@@ -1486,7 +1464,7 @@ fn guard_object_is_string(
         Opnd::Reg(_) => object,
         _ => asm.load(object),
     };
-    guard_object_is_heap(jit, asm, ocb, object_reg, object_opnd, counter.clone());
+    guard_object_is_heap(jit, asm, ocb, object_reg, object_opnd, counter);
 
     asm.comment("guard object is string");
 
@@ -1581,7 +1559,7 @@ fn gen_expandarray(
         ocb,
         array_opnd,
         array_opnd.into(),
-        exit_counter!(expandarray_not_array),
+        Some(Counter::expandarray_not_array),
     );
     let array_opnd = asm.stack_pop(1); // pop after using the type info
 
@@ -1929,7 +1907,7 @@ fn jit_chain_guard(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     depth_limit: i32,
-    counter: Option<ExitCounter>,
+    counter: Option<Counter>,
 ) {
     let target0_gen_fn = match jcc {
         JCC_JNE | JCC_JNZ => BranchGenFn::JNZToTarget0,
@@ -2108,7 +2086,7 @@ fn gen_get_ivar(
         asm,
         ocb,
         max_chain_depth,
-        exit_counter!(getivar_megamorphic),
+        Some(Counter::getivar_megamorphic),
     );
 
     // Pop receiver if it's on the temp stack
@@ -2317,7 +2295,7 @@ fn gen_setinstancevariable(
             asm,
             ocb,
             SET_IVAR_MAX_DEPTH,
-            exit_counter!(setivar_megamorphic),
+            Some(Counter::setivar_megamorphic),
         );
 
         asm.spill_temps(); // for ccall (must be done before write_val is popped)
@@ -3813,7 +3791,7 @@ fn jit_guard_known_klass(
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
     max_chain_depth: i32,
-    counter: Option<ExitCounter>,
+    counter: Option<Counter>,
 ) {
     let val_type = asm.ctx.get_opnd_type(insn_opnd);
 
@@ -3914,9 +3892,9 @@ fn jit_guard_known_klass(
         if !val_type.is_heap() {
             asm.comment("guard not immediate");
             asm.test(obj_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
-            jit_chain_guard(JCC_JNZ, jit, asm, ocb, max_chain_depth, counter.clone());
+            jit_chain_guard(JCC_JNZ, jit, asm, ocb, max_chain_depth, counter);
             asm.cmp(obj_opnd, Qfalse.into());
-            jit_chain_guard(JCC_JE, jit, asm, ocb, max_chain_depth, counter.clone());
+            jit_chain_guard(JCC_JE, jit, asm, ocb, max_chain_depth, counter);
 
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
         }
@@ -5318,7 +5296,7 @@ fn push_splat_args(required_args: u32, jit: &mut JITState, asm: &mut Assembler, 
         ocb,
         array_reg,
         array_opnd.into(),
-        exit_counter!(send_splat_not_array),
+        Some(Counter::send_splat_not_array),
     );
 
     asm.comment("Get array length for embedded or heap");
@@ -6068,7 +6046,7 @@ fn gen_send_iseq(
         let arg0_opnd = asm.stack_opnd(0);
 
         // Only handle the case that you don't need to_ary conversion
-        let not_array_counter = exit_counter!(invokeblock_iseq_arg0_not_array);
+        let not_array_counter = Some(Counter::invokeblock_iseq_arg0_not_array);
         guard_object_is_array(jit, asm, ocb, arg0_opnd, arg0_opnd.into(), not_array_counter);
 
         // Only handle the same that the array length == ISEQ's lead_num (most common)
@@ -6387,7 +6365,7 @@ fn gen_send_general(
         recv_opnd,
         comptime_recv,
         SEND_MAX_DEPTH,
-        exit_counter!(send_klass_megamorphic),
+        Some(Counter::send_klass_megamorphic),
     );
 
     // Do method lookup
@@ -6595,13 +6573,12 @@ fn gen_send_general(
                             if compile_time_name.string_p() {
                                 (
                                     unsafe { rb_cString },
-                                    exit_counter!(send_send_chain_not_string),
-
+                                    Some(Counter::send_send_chain_not_string),
                                 )
                             } else {
                                 (
                                     unsafe { rb_cSymbol },
-                                    exit_counter!(send_send_chain_not_sym),
+                                    Some(Counter::send_send_chain_not_sym),
                                 )
                             }
                         };
@@ -6634,7 +6611,7 @@ fn gen_send_general(
                             asm,
                             ocb,
                             SEND_MAX_CHAIN_DEPTH,
-                            exit_counter!(send_send_chain),
+                            Some(Counter::send_send_chain),
                         );
 
                         // We have changed the argc, flags, mid, and cme, so we need to re-enter the match
@@ -6853,7 +6830,7 @@ fn gen_invokeblock(
             asm,
             ocb,
             SEND_MAX_CHAIN_DEPTH,
-            exit_counter!(invokeblock_tag_changed),
+            Some(Counter::invokeblock_tag_changed),
         );
 
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
@@ -6869,7 +6846,7 @@ fn gen_invokeblock(
             asm,
             ocb,
             SEND_MAX_CHAIN_DEPTH,
-            exit_counter!(invokeblock_iseq_block_changed),
+            Some(Counter::invokeblock_iseq_block_changed),
         );
 
         gen_send_iseq(
@@ -6912,7 +6889,7 @@ fn gen_invokeblock(
             asm,
             ocb,
             SEND_MAX_CHAIN_DEPTH,
-            exit_counter!(invokeblock_tag_changed),
+            Some(Counter::invokeblock_tag_changed),
         );
 
         // The cfunc may not be leaf
@@ -7094,7 +7071,7 @@ fn gen_leave(
     let ocb_asm = Assembler::new();
 
     // Check for interrupts
-    gen_check_ints(jit, asm, ocb, exit_counter!(leave_se_interrupt));
+    gen_check_ints(jit, asm, ocb, Some(Counter::leave_se_interrupt));
     ocb_asm.compile(ocb.unwrap());
 
     // Pop the current frame (ec->cfp++)
