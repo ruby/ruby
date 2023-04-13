@@ -1622,49 +1622,6 @@ impl Context {
         self.set_reg_temps(reg_temps);
     }
 
-    // Pop N values off the stack
-    // Return a pointer to the stack top before the pop operation
-    fn stack_pop(&mut self, n: usize) -> Opnd {
-        assert!(n <= self.stack_size.into());
-
-        let top = self.stack_opnd(0);
-
-        // Clear the types of the popped values
-        for i in 0..n {
-            let idx: usize = (self.stack_size as usize) - i - 1;
-
-            if idx < MAX_TEMP_TYPES {
-                self.temp_types[idx] = Type::Unknown;
-                self.temp_mapping[idx] = MapToStack;
-            }
-        }
-
-        self.stack_size -= n as u8;
-        self.sp_offset -= n as i8;
-
-        return top;
-    }
-
-    pub fn shift_stack(&mut self, argc: usize) {
-        assert!(argc < self.stack_size.into());
-
-        let method_name_index = (self.stack_size as usize) - (argc as usize) - 1;
-
-        for i in method_name_index..(self.stack_size - 1) as usize {
-
-            if i + 1 < MAX_TEMP_TYPES {
-                self.temp_types[i] = self.temp_types[i + 1];
-                self.temp_mapping[i] = self.temp_mapping[i + 1];
-            }
-        }
-        self.stack_pop(1);
-    }
-
-    /// Get an operand pointing to a slot on the temp stack
-    pub fn stack_opnd(&self, idx: i32) -> Opnd {
-        Opnd::Stack { idx, stack_size: self.stack_size, sp_offset: self.sp_offset, num_bits: 64 }
-    }
-
     /// Get the type of an instruction operand
     pub fn get_opnd_type(&self, opnd: YARVOpnd) -> Type {
         match opnd {
@@ -1956,7 +1913,7 @@ impl Assembler {
         self.ctx.stack_size += 1;
         self.ctx.sp_offset += 1;
 
-        return self.ctx.stack_opnd(0);
+        return self.stack_opnd(0);
     }
 
     /// Push one new value on the temp stack
@@ -1982,7 +1939,44 @@ impl Assembler {
     // Pop N values off the stack
     // Return a pointer to the stack top before the pop operation
     pub fn stack_pop(&mut self, n: usize) -> Opnd {
-        self.ctx.stack_pop(n)
+        assert!(n <= self.ctx.stack_size.into());
+
+        let top = self.stack_opnd(0);
+
+        // Clear the types of the popped values
+        for i in 0..n {
+            let idx: usize = (self.ctx.stack_size as usize) - i - 1;
+
+            if idx < MAX_TEMP_TYPES {
+                self.ctx.temp_types[idx] = Type::Unknown;
+                self.ctx.temp_mapping[idx] = MapToStack;
+            }
+        }
+
+        self.ctx.stack_size -= n as u8;
+        self.ctx.sp_offset -= n as i8;
+
+        return top;
+    }
+
+    /// Shift stack temps to remove a Symbol for #send.
+    pub fn shift_stack(&mut self, argc: usize) {
+        assert!(argc < self.ctx.stack_size.into());
+
+        let method_name_index = (self.ctx.stack_size as usize) - (argc as usize) - 1;
+
+        for i in method_name_index..(self.ctx.stack_size - 1) as usize {
+            if i + 1 < MAX_TEMP_TYPES {
+                self.ctx.temp_types[i] = self.ctx.temp_types[i + 1];
+                self.ctx.temp_mapping[i] = self.ctx.temp_mapping[i + 1];
+            }
+        }
+        self.stack_pop(1);
+    }
+
+    /// Get an operand pointing to a slot on the temp stack
+    pub fn stack_opnd(&self, idx: i32) -> Opnd {
+        Opnd::Stack { idx, stack_size: self.ctx.stack_size, sp_offset: self.ctx.sp_offset, num_bits: 64 }
     }
 }
 

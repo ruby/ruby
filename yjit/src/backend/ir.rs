@@ -1093,7 +1093,7 @@ impl Assembler
             for stack_idx in 0..u8::min(MAX_REG_TEMPS, self.ctx.get_stack_size()) {
                 if self.get_reg_temps().get(stack_idx) {
                     let idx = self.ctx.get_stack_size() - 1 - stack_idx;
-                    self.spill_temp(self.ctx.stack_opnd(idx.into()));
+                    self.spill_temp(self.stack_opnd(idx.into()));
                 }
             }
         }

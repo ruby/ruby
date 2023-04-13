@@ -1019,7 +1019,7 @@ fn gen_dup(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let dup_val = asm.ctx.stack_opnd(0);
+    let dup_val = asm.stack_opnd(0);
     let (mapping, tmp_type) = asm.ctx.get_opnd_mapping(dup_val.into());
 
     let loc0 = asm.stack_push_mapping((mapping, tmp_type));
@@ -1041,8 +1041,8 @@ fn gen_dupn(
         return CantCompile;
     }
 
-    let opnd1: Opnd = asm.ctx.stack_opnd(1);
-    let opnd0: Opnd = asm.ctx.stack_opnd(0);
+    let opnd1: Opnd = asm.stack_opnd(1);
+    let opnd0: Opnd = asm.stack_opnd(0);
 
     let mapping1 = asm.ctx.get_opnd_mapping(opnd1.into());
     let mapping0 = asm.ctx.get_opnd_mapping(opnd0.into());
@@ -1071,8 +1071,8 @@ fn stack_swap(
     offset0: u16,
     offset1: u16,
 ) {
-    let stack0_mem = asm.ctx.stack_opnd(offset0 as i32);
-    let stack1_mem = asm.ctx.stack_opnd(offset1 as i32);
+    let stack0_mem = asm.stack_opnd(offset0 as i32);
+    let stack1_mem = asm.stack_opnd(offset1 as i32);
 
     let mapping0 = asm.ctx.get_opnd_mapping(stack0_mem.into());
     let mapping1 = asm.ctx.get_opnd_mapping(stack1_mem.into());
@@ -1171,8 +1171,8 @@ fn gen_setn(
 ) -> CodegenStatus {
     let n = jit.get_arg(0).as_usize();
 
-    let top_val = asm.ctx.stack_opnd(0);
-    let dst_opnd = asm.ctx.stack_opnd(n.try_into().unwrap());
+    let top_val = asm.stack_opnd(0);
+    let dst_opnd = asm.stack_opnd(n.try_into().unwrap());
     asm.mov(
         dst_opnd,
         top_val
@@ -1192,7 +1192,7 @@ fn gen_topn(
 ) -> CodegenStatus {
     let n = jit.get_arg(0).as_usize();
 
-    let top_n_val = asm.ctx.stack_opnd(n.try_into().unwrap());
+    let top_n_val = asm.stack_opnd(n.try_into().unwrap());
     let mapping = asm.ctx.get_opnd_mapping(top_n_val.into());
     let loc0 = asm.stack_push_mapping(mapping);
     asm.mov(loc0, top_n_val);
@@ -1394,8 +1394,8 @@ fn gen_newrange(
     let range_opnd = asm.ccall(
         rb_range_new as *const u8,
         vec![
-            asm.ctx.stack_opnd(1),
-            asm.ctx.stack_opnd(0),
+            asm.stack_opnd(1),
+            asm.stack_opnd(0),
             flag.into()
         ]
     );
@@ -1559,7 +1559,7 @@ fn gen_expandarray(
         return CantCompile;
     }
 
-    let array_opnd = asm.ctx.stack_opnd(0);
+    let array_opnd = asm.stack_opnd(0);
 
     // num is the number of requested values. If there aren't enough in the
     // array then we're going to push on nils.
@@ -1833,7 +1833,7 @@ fn gen_newhash(
         asm.cpush(new_hash); // x86 alignment
 
         // Get a pointer to the values to insert into the hash
-        let stack_addr_from_top = asm.lea(asm.ctx.stack_opnd((num - 1) as i32));
+        let stack_addr_from_top = asm.lea(asm.stack_opnd((num - 1) as i32));
 
         // rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
         asm.ccall(
@@ -2629,8 +2629,8 @@ fn guard_two_fixnums(
     ocb: &mut OutlinedCb,
 ) {
     // Get stack operands without popping them
-    let arg1 = asm.ctx.stack_opnd(0);
-    let arg0 = asm.ctx.stack_opnd(1);
+    let arg1 = asm.stack_opnd(0);
+    let arg0 = asm.stack_opnd(1);
 
     // Get the stack operand types
     let arg1_type = asm.ctx.get_opnd_type(arg1.into());
@@ -2778,8 +2778,8 @@ fn gen_equality_specialized(
     ocb: &mut OutlinedCb,
     gen_eq: bool,
 ) -> Option<bool> {
-    let a_opnd = asm.ctx.stack_opnd(1);
-    let b_opnd = asm.ctx.stack_opnd(0);
+    let a_opnd = asm.stack_opnd(1);
+    let b_opnd = asm.stack_opnd(0);
 
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
@@ -2948,8 +2948,8 @@ fn gen_opt_aref(
         }
 
         // Get the stack operands
-        let idx_opnd = asm.ctx.stack_opnd(0);
-        let recv_opnd = asm.ctx.stack_opnd(1);
+        let idx_opnd = asm.stack_opnd(0);
+        let recv_opnd = asm.stack_opnd(1);
 
         // Guard that the receiver is an ::Array
         // BOP_AREF check above is only good for ::Array.
@@ -2993,7 +2993,7 @@ fn gen_opt_aref(
             return CantCompile;
         }
 
-        let recv_opnd = asm.ctx.stack_opnd(1);
+        let recv_opnd = asm.stack_opnd(1);
 
         // Guard that the receiver is a hash
         jit_guard_known_klass(
@@ -3012,8 +3012,8 @@ fn gen_opt_aref(
         jit_prepare_routine_call(jit, asm);
 
         // Call rb_hash_aref
-        let key_opnd = asm.ctx.stack_opnd(0);
-        let recv_opnd = asm.ctx.stack_opnd(1);
+        let key_opnd = asm.stack_opnd(0);
+        let recv_opnd = asm.stack_opnd(1);
         let val = asm.ccall(rb_hash_aref as *const u8, vec![recv_opnd, key_opnd]);
 
         // Pop the key and the receiver
@@ -3047,9 +3047,9 @@ fn gen_opt_aset(
     let comptime_key = jit.peek_at_stack(&asm.ctx, 1);
 
     // Get the operands from the stack
-    let recv = asm.ctx.stack_opnd(2);
-    let key = asm.ctx.stack_opnd(1);
-    let _val = asm.ctx.stack_opnd(0);
+    let recv = asm.stack_opnd(2);
+    let key = asm.stack_opnd(1);
+    let _val = asm.stack_opnd(0);
 
     if comptime_recv.class_of() == unsafe { rb_cArray } && comptime_key.fixnum_p() {
         // Guard receiver is an Array
@@ -3082,15 +3082,15 @@ fn gen_opt_aset(
         jit_prepare_routine_call(jit, asm);
 
         // Call rb_ary_store
-        let recv = asm.ctx.stack_opnd(2);
-        let key = asm.load(asm.ctx.stack_opnd(1));
+        let recv = asm.stack_opnd(2);
+        let key = asm.load(asm.stack_opnd(1));
         let key = asm.rshift(key, Opnd::UImm(1)); // FIX2LONG(key)
-        let val = asm.ctx.stack_opnd(0);
+        let val = asm.stack_opnd(0);
         asm.ccall(rb_ary_store as *const u8, vec![recv, key, val]);
 
         // rb_ary_store returns void
         // stored value should still be on stack
-        let val = asm.load(asm.ctx.stack_opnd(0));
+        let val = asm.load(asm.stack_opnd(0));
 
         // Push the return value onto the stack
         asm.stack_pop(3);
@@ -3117,9 +3117,9 @@ fn gen_opt_aset(
         jit_prepare_routine_call(jit, asm);
 
         // Call rb_hash_aset
-        let recv = asm.ctx.stack_opnd(2);
-        let key = asm.ctx.stack_opnd(1);
-        let val = asm.ctx.stack_opnd(0);
+        let recv = asm.stack_opnd(2);
+        let key = asm.stack_opnd(1);
+        let val = asm.stack_opnd(0);
         let ret = asm.ccall(rb_hash_aset as *const u8, vec![recv, key, val]);
 
         // Push the return value onto the stack
@@ -3515,7 +3515,7 @@ fn gen_opt_case_dispatch(
 
     // Try to reorder case/else branches so that ones that are actually used come first.
     // Supporting only Fixnum for now so that the implementation can be an equality check.
-    let key_opnd = asm.ctx.stack_opnd(0);
+    let key_opnd = asm.stack_opnd(0);
     let comptime_key = jit.peek_at_stack(&asm.ctx, 0);
 
     // Check that all cases are fixnums to avoid having to register BOP assumptions on
@@ -4078,7 +4078,7 @@ fn jit_rb_kernel_is_a(
     let sample_is_a = unsafe { rb_obj_is_kind_of(sample_lhs, sample_rhs) == Qtrue };
 
     asm.comment("Kernel#is_a?");
-    asm.cmp(asm.ctx.stack_opnd(0), sample_rhs.into());
+    asm.cmp(asm.stack_opnd(0), sample_rhs.into());
     asm.jne(counted_exit!(jit, &asm.ctx, ocb, send_is_a_class_mismatch));
 
     asm.stack_pop(2);
@@ -4137,7 +4137,7 @@ fn jit_rb_kernel_instance_of(
     let sample_instance_of = sample_lhs_real_class == sample_rhs;
 
     asm.comment("Kernel#instance_of?");
-    asm.cmp(asm.ctx.stack_opnd(0), sample_rhs.into());
+    asm.cmp(asm.stack_opnd(0), sample_rhs.into());
     asm.jne(counted_exit!(jit, &asm.ctx, ocb, send_instance_of_class_mismatch));
 
     asm.stack_pop(2);
@@ -4174,8 +4174,8 @@ fn jit_rb_mod_eqq(
     // Ruby methods with these inputs.
     // Note the difference in approach from Kernel#is_a? because we don't get a free guard for the
     // right hand side.
-    let lhs = asm.ctx.stack_opnd(1); // the module
-    let rhs = asm.ctx.stack_opnd(0);
+    let lhs = asm.stack_opnd(1); // the module
+    let rhs = asm.stack_opnd(0);
     let ret = asm.ccall(rb_obj_is_kind_of as *const u8, vec![rhs, lhs]);
 
     // Return the result
@@ -4485,7 +4485,7 @@ fn jit_rb_str_concat(
     }
 
     // Guard that the concat argument is a string
-    guard_object_is_string(jit, asm, ocb, asm.ctx.stack_opnd(0), StackOpnd(0), None);
+    guard_object_is_string(jit, asm, ocb, asm.stack_opnd(0), StackOpnd(0), None);
 
     // Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
     // other Ractors may trigger global invalidation, so we need ctx.clear_local_types().
@@ -5096,7 +5096,7 @@ fn gen_send_cfunc(
     }
 
     // Points to the receiver operand on the stack
-    let recv = asm.ctx.stack_opnd(argc);
+    let recv = asm.stack_opnd(argc);
 
     // Store incremented PC into current control frame in case callee raises.
     jit_save_pc(jit, asm);
@@ -5144,7 +5144,7 @@ fn gen_send_cfunc(
         let kwargs = asm.ccall(build_kwhash as *const u8, vec![imemo_ci.into(), sp]);
 
         // Replace the stack location at the start of kwargs with the new hash
-        let stack_opnd = asm.ctx.stack_opnd(argc - passed_argc);
+        let stack_opnd = asm.stack_opnd(argc - passed_argc);
         asm.mov(stack_opnd, kwargs);
     }
 
@@ -5309,7 +5309,7 @@ fn move_rest_args_to_stack(array: Opnd, num_args: u32, jit: &mut JITState, asm: 
 fn push_splat_args(required_args: u32, jit: &mut JITState, asm: &mut Assembler, ocb: &mut OutlinedCb) {
     asm.comment("push_splat_args");
 
-    let array_opnd = asm.ctx.stack_opnd(0);
+    let array_opnd = asm.stack_opnd(0);
     let array_reg = asm.load(array_opnd);
 
     guard_object_is_array(
@@ -5335,7 +5335,7 @@ fn push_splat_args(required_args: u32, jit: &mut JITState, asm: &mut Assembler, 
     asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
 
     // Need to repeat this here to deal with register allocation
-    let array_opnd = asm.ctx.stack_opnd(0);
+    let array_opnd = asm.stack_opnd(0);
     let array_reg = asm.load(array_opnd);
 
     let array_len_opnd = Opnd::mem(
@@ -5352,7 +5352,7 @@ fn push_splat_args(required_args: u32, jit: &mut JITState, asm: &mut Assembler, 
     asm.comment("Check last argument is not ruby2keyword hash");
 
     // Need to repeat this here to deal with register allocation
-    let array_reg = asm.load(asm.ctx.stack_opnd(0));
+    let array_reg = asm.load(asm.stack_opnd(0));
 
     let ary_opnd = get_array_ptr(asm, array_reg);
 
@@ -5772,7 +5772,7 @@ fn gen_send_iseq(
 
             // Copy self and arguments
             for i in 0..=builtin_argc {
-                let stack_opnd = asm.ctx.stack_opnd(builtin_argc - i);
+                let stack_opnd = asm.stack_opnd(builtin_argc - i);
                 args.push(stack_opnd);
             }
             asm.stack_pop((builtin_argc + 1).try_into().unwrap());
@@ -6056,7 +6056,7 @@ fn gen_send_iseq(
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
         asm.spill_temps(); // avoid using a register for unspecified_bits
-        asm.mov(asm.ctx.stack_opnd(-1), unspec_opnd.into());
+        asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
     }
 
     // Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
@@ -6065,7 +6065,7 @@ fn gen_send_iseq(
     // side exits, so you still need to allow side exits here if block_arg0_splat is true.
     // Note that you can't have side exits after this arg0 splat.
     if block_arg0_splat {
-        let arg0_opnd = asm.ctx.stack_opnd(0);
+        let arg0_opnd = asm.stack_opnd(0);
 
         // Only handle the case that you don't need to_ary conversion
         let not_array_counter = exit_counter!(invokeblock_iseq_arg0_not_array);
@@ -6094,7 +6094,7 @@ fn gen_send_iseq(
     // Points to the receiver operand on the stack unless a captured environment is used
     let recv = match captured_opnd {
         Some(captured_opnd) => asm.load(Opnd::mem(64, captured_opnd, 0)), // captured->self
-        _ => asm.ctx.stack_opnd(argc),
+        _ => asm.stack_opnd(argc),
     };
     let captured_self = captured_opnd.is_some();
     let sp_offset = (argc as isize) + if captured_self { 0 } else { 1 };
@@ -6353,7 +6353,7 @@ fn gen_send_general(
     let comptime_recv_klass = comptime_recv.class_of();
 
     // Points to the receiver operand on the stack
-    let recv = asm.ctx.stack_opnd(recv_idx);
+    let recv = asm.stack_opnd(recv_idx);
     let recv_opnd: YARVOpnd = recv.into();
 
     // Log the name of the method we're calling to
@@ -6606,7 +6606,7 @@ fn gen_send_general(
                             }
                         };
 
-                        let name_opnd = asm.ctx.stack_opnd(argc);
+                        let name_opnd = asm.stack_opnd(argc);
                         jit_guard_known_klass(
                             jit,
                             asm,
@@ -6785,11 +6785,11 @@ fn gen_send_general(
 fn handle_opt_send_shift_stack(asm: &mut Assembler, argc: i32) {
     asm.comment("shift_stack");
     for j in (0..argc).rev() {
-        let opnd = asm.ctx.stack_opnd(j);
-        let opnd2 = asm.ctx.stack_opnd(j + 1);
+        let opnd = asm.stack_opnd(j);
+        let opnd2 = asm.stack_opnd(j + 1);
         asm.mov(opnd2, opnd);
     }
-    asm.ctx.shift_stack(argc as usize);
+    asm.shift_stack(argc as usize);
 }
 
 fn gen_opt_send_without_block(
@@ -7197,7 +7197,7 @@ fn gen_objtostring(
         return EndBlock;
     }
 
-    let recv = asm.ctx.stack_opnd(0);
+    let recv = asm.stack_opnd(0);
     let comptime_recv = jit.peek_at_stack(&asm.ctx, 0);
 
     if unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRING) } {
@@ -7710,7 +7710,7 @@ fn gen_invokebuiltin(
 
     // Copy arguments from locals
     for i in 0..bf_argc {
-        let stack_opnd = asm.ctx.stack_opnd((bf_argc - i - 1) as i32);
+        let stack_opnd = asm.stack_opnd((bf_argc - i - 1) as i32);
         args.push(stack_opnd);
     }
 
