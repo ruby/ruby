@@ -414,6 +414,24 @@ impl Assembler
             }
         }
 
+        /// Compile a side exit if Target::SideExit is given.
+        fn compile_side_exit(
+            target: Target,
+            asm: &mut Assembler,
+            ocb: &mut Option<&mut OutlinedCb>,
+            insn_idx: usize,
+        ) -> Target {
+            if let Target::SideExit { counter, pc, stack_size } = target {
+                let side_exit_context = SideExitContext {
+                    pc: pc.unwrap(),
+                    ctx: asm.insn_ctx[insn_idx].with_stack_size(stack_size.unwrap()),
+                };
+                let side_exit = asm.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap());
+                Target::SideExitPtr(side_exit)
+            } else {
+                target
+            }
+        }
 
         fn emit_csel(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd)) {
             if out != truthy {
@@ -427,15 +445,10 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
-        // Side exit contexts
-        let mut side_exit_context = SideExitContext { pc: 0 as _, ctx: Context::default() };
-        let mut side_exit_stack_size = 0;
-
         // For each instruction
         let start_write_pos = cb.get_write_pos();
-        let mut insns_idx: usize = 0;
-        while let Some(insn) = self.insns.get(insns_idx) {
-            side_exit_context.ctx = self.insn_ctx[insns_idx].with_stack_size(side_exit_stack_size);
+        let mut insn_idx: usize = 0;
+        while let Some(insn) = self.insns.get(insn_idx) {
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -634,66 +647,66 @@ impl Assembler
 
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jmp_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Je(target) => {
-                    match *target {
-                        Target::SideExit(counter) => je_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jne(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jne_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jl(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jl_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jbe(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jbe_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jz(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jz_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jnz(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jnz_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jo(target) => {
-                    match *target {
-                        Target::SideExit(counter) => jo_ptr(cb, self.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap())),
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
@@ -740,10 +753,6 @@ impl Assembler
                         nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
                     }
                 }
-                Insn::SideExitContext { pc, stack_size } => {
-                    side_exit_context.pc = *pc;
-                    side_exit_stack_size = *stack_size;
-                }
             };
 
             // On failure, jump to the next page and retry the current insn
@@ -751,7 +760,7 @@ impl Assembler
                 // Reset cb states before retrying the current Insn
                 cb.set_label_state(old_label_state);
             } else {
-                insns_idx += 1;
+                insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }

@@ -728,7 +728,7 @@ fn gen_check_ints(
     let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
     asm.test(interrupt_flag, interrupt_flag);
 
-    asm.jnz(Target::SideExit(counter));
+    asm.jnz(Target::side_exit(counter));
 }
 
 // Generate a stubbed unconditional jump to the next bytecode instruction.
@@ -831,7 +831,7 @@ pub fn gen_single_block(
         jit.opcode = opcode;
         jit.pc = pc;
         jit.stack_size_for_pc = asm.ctx.get_stack_size();
-        asm.side_exit_context(pc, asm.ctx.get_stack_size());
+        asm.set_side_exit_context(pc, asm.ctx.get_stack_size());
 
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
@@ -1176,7 +1176,7 @@ fn gen_opt_plus(
         // Add arg0 + arg1 and test for overflow
         let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
         let out_val = asm.add(arg0_untag, arg1);
-        asm.jo(Target::SideExit(None));
+        asm.jo(Target::side_exit(None));
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -1359,11 +1359,11 @@ fn guard_object_is_heap(
 
     // Test that the object is not an immediate
     asm.test(object, (RUBY_IMMEDIATE_MASK as u64).into());
-    asm.jnz(Target::SideExit(counter));
+    asm.jnz(Target::side_exit(counter));
 
     // Test that the object is not false
     asm.cmp(object, Qfalse.into());
-    asm.je(Target::SideExit(counter));
+    asm.je(Target::side_exit(counter));
 
     if object_type.diff(Type::UnknownHeap) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::UnknownHeap);
@@ -1395,7 +1395,7 @@ fn guard_object_is_array(
 
     // Compare the result with T_ARRAY
     asm.cmp(flags_opnd, (RUBY_T_ARRAY as u64).into());
-    asm.jne(Target::SideExit(counter));
+    asm.jne(Target::side_exit(counter));
 
     if object_type.diff(Type::TArray) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TArray);
@@ -1427,7 +1427,7 @@ fn guard_object_is_string(
 
     // Compare the result with T_STRING
     asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
-    asm.jne(Target::SideExit(counter));
+    asm.jne(Target::side_exit(counter));
 
     if object_type.diff(Type::TString) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TString);
@@ -1463,7 +1463,7 @@ fn guard_object_is_not_ruby2_keyword_hash(
     asm.jne(not_ruby2_keyword);
 
     asm.test(flags_opnd, (RHASH_PASS_AS_KEYWORDS as u64).into());
-    asm.jnz(Target::SideExit(counter));
+    asm.jnz(Target::side_exit(counter));
 
     asm.write_label(not_ruby2_keyword);
 }
@@ -1525,7 +1525,7 @@ fn gen_expandarray(
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
     asm.cmp(array_len_opnd, num.into());
-    asm.jl(Target::SideExit(Some(Counter::expandarray_rhs_too_small)));
+    asm.jl(Target::side_exit(Some(Counter::expandarray_rhs_too_small)));
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
@@ -1692,7 +1692,7 @@ fn gen_setlocal_generic(
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
         // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-        asm.jnz(Target::SideExit(None));
+        asm.jnz(Target::side_exit(None));
     }
 
     if level == 0 {
@@ -1875,7 +1875,7 @@ fn jit_chain_guard(
 
         gen_branch(jit, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
     } else {
-        target0_gen_fn.call(asm, Target::SideExit(counter), None);
+        target0_gen_fn.call(asm, Target::side_exit(counter), None);
     }
 }
 
@@ -2566,19 +2566,19 @@ fn guard_two_fixnums(
 
     if arg0_type.is_heap() || arg1_type.is_heap() {
         asm.comment("arg is heap object");
-        asm.jmp(Target::SideExit(None));
+        asm.jmp(Target::side_exit(None));
         return;
     }
 
     if arg0_type != Type::Fixnum && arg0_type.is_specific() {
         asm.comment("arg0 not fixnum");
-        asm.jmp(Target::SideExit(None));
+        asm.jmp(Target::side_exit(None));
         return;
     }
 
     if arg1_type != Type::Fixnum && arg1_type.is_specific() {
         asm.comment("arg1 not fixnum");
-        asm.jmp(Target::SideExit(None));
+        asm.jmp(Target::side_exit(None));
         return;
     }
 
@@ -2896,7 +2896,7 @@ fn gen_opt_aref(
         // Bail if idx is not a FIXNUM
         let idx_reg = asm.load(idx_opnd);
         asm.test(idx_reg, (RUBY_FIXNUM_FLAG as u64).into());
-        asm.jz(Target::SideExit(Some(Counter::oaref_arg_not_fixnum)));
+        asm.jz(Target::side_exit(Some(Counter::oaref_arg_not_fixnum)));
 
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
@@ -3170,7 +3170,7 @@ fn gen_opt_minus(
 
         // Subtract arg0 - arg1 and test for overflow
         let val_untag = asm.sub(arg0, arg1);
-        asm.jo(Target::SideExit(None));
+        asm.jo(Target::side_exit(None));
         let val = asm.add(val_untag, Opnd::Imm(1));
 
         // Push the output on the stack
@@ -3231,7 +3231,7 @@ fn gen_opt_mod(
 
         // Check for arg0 % 0
         asm.cmp(arg1, Opnd::Imm(VALUE::fixnum_from_usize(0).as_i64()));
-        asm.je(Target::SideExit(None));
+        asm.je(Target::side_exit(None));
 
         // Call rb_fix_mod_fix(VALUE recv, VALUE obj)
         let ret = asm.ccall(rb_fix_mod_fix as *const u8, vec![arg0, arg1]);
@@ -3890,7 +3890,7 @@ fn jit_protected_callee_ancestry_guard(
         ],
     );
     asm.test(val, val);
-    asm.jz(Target::SideExit(Some(Counter::send_se_protected_check_failed)))
+    asm.jz(Target::side_exit(Some(Counter::send_se_protected_check_failed)))
 }
 
 // Codegen for rb_obj_not().
@@ -4005,7 +4005,7 @@ fn jit_rb_kernel_is_a(
 
     asm.comment("Kernel#is_a?");
     asm.cmp(asm.stack_opnd(0), sample_rhs.into());
-    asm.jne(Target::SideExit(Some(Counter::send_is_a_class_mismatch)));
+    asm.jne(Target::side_exit(Some(Counter::send_is_a_class_mismatch)));
 
     asm.stack_pop(2);
 
@@ -4064,7 +4064,7 @@ fn jit_rb_kernel_instance_of(
 
     asm.comment("Kernel#instance_of?");
     asm.cmp(asm.stack_opnd(0), sample_rhs.into());
-    asm.jne(Target::SideExit(Some(Counter::send_instance_of_class_mismatch)));
+    asm.jne(Target::side_exit(Some(Counter::send_instance_of_class_mismatch)));
 
     asm.stack_pop(2);
 
@@ -4227,7 +4227,7 @@ fn jit_rb_int_div(
 
     // Check for arg0 % 0
     asm.cmp(obj, VALUE::fixnum_from_usize(0).as_i64().into());
-    asm.je(Target::SideExit(None));
+    asm.je(Target::side_exit(None));
 
     let ret = asm.ccall(rb_fix_div_fix as *const u8, vec![recv, obj]);
 
@@ -4594,7 +4594,7 @@ fn jit_obj_respond_to(
     // This is necessary because we have no guarantee that sym_opnd is a constant
     asm.comment("guard known mid");
     asm.cmp(sym_opnd, mid_sym.into());
-    asm.jne(Target::SideExit(None));
+    asm.jne(Target::side_exit(None));
 
     jit_putobject(asm, result);
 
@@ -4944,7 +4944,7 @@ fn gen_send_cfunc(
     asm.comment("stack overflow check");
     let stack_limit = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as isize));
     asm.cmp(CFP, stack_limit);
-    asm.jbe(Target::SideExit(Some(Counter::send_se_cf_overflow)));
+    asm.jbe(Target::side_exit(Some(Counter::send_se_cf_overflow)));
 
     // Number of args which will be passed through to the callee
     // This is adjusted by the kwargs being combined into a hash.
@@ -5209,7 +5209,7 @@ fn move_rest_args_to_stack(array: Opnd, num_args: u32, asm: &mut Assembler) {
 
     asm.comment("Side exit if length is less than required");
     asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(Target::SideExit(Some(Counter::send_iseq_has_rest_and_splat_not_equal)));
+    asm.jl(Target::side_exit(Some(Counter::send_iseq_has_rest_and_splat_not_equal)));
 
     asm.comment("Push arguments from array");
 
@@ -5279,7 +5279,7 @@ fn push_splat_args(required_args: u32, asm: &mut Assembler) {
 
     asm.comment("Side exit if length doesn't not equal remaining args");
     asm.cmp(array_len_opnd, required_args.into());
-    asm.jne(Target::SideExit(Some(Counter::send_splatarray_length_not_equal)));
+    asm.jne(Target::side_exit(Some(Counter::send_splatarray_length_not_equal)));
 
     asm.comment("Check last argument is not ruby2keyword hash");
 
@@ -5683,7 +5683,7 @@ fn gen_send_iseq(
             asm.comment("Side exit if length doesn't not equal compile time length");
             let array_len_opnd = get_array_len(asm, asm.stack_opnd(if block_arg { 1 } else { 0 }));
             asm.cmp(array_len_opnd, array_length.into());
-            asm.jne(Target::SideExit(Some(Counter::send_splatarray_length_not_equal)));
+            asm.jne(Target::side_exit(Some(Counter::send_splatarray_length_not_equal)));
         }
 
         Some(array_length)
@@ -5797,7 +5797,7 @@ fn gen_send_iseq(
         SIZEOF_VALUE_I32 * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
-    asm.jbe(Target::SideExit(Some(Counter::send_se_cf_overflow)));
+    asm.jbe(Target::side_exit(Some(Counter::send_se_cf_overflow)));
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if let Some(array_length) = splat_array_length {
@@ -6076,7 +6076,7 @@ fn gen_send_iseq(
         let arg0_len_opnd = get_array_len(asm, arg0_opnd);
         let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) };
         asm.cmp(arg0_len_opnd, lead_num.into());
-        asm.jne(Target::SideExit(Some(Counter::invokeblock_iseq_arg0_wrong_len)));
+        asm.jne(Target::side_exit(Some(Counter::invokeblock_iseq_arg0_wrong_len)));
 
         let arg0_reg = asm.load(arg0_opnd);
         let array_opnd = get_array_ptr(asm, arg0_reg);
@@ -7054,7 +7054,7 @@ fn gen_invokesuper(
 
     let me_as_value = VALUE(me as usize);
     asm.cmp(ep_me_opnd, me_as_value.into());
-    asm.jne(Target::SideExit(Some(Counter::invokesuper_me_changed)));
+    asm.jne(Target::side_exit(Some(Counter::invokesuper_me_changed)));
 
     if block.is_none() {
         // Guard no block passed
@@ -7070,7 +7070,7 @@ fn gen_invokesuper(
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
-        asm.jne(Target::SideExit(Some(Counter::invokesuper_block)));
+        asm.jne(Target::side_exit(Some(Counter::invokesuper_block)));
     }
 
     // We need to assume that both our current method entry and the super
@@ -7494,7 +7494,7 @@ fn gen_opt_getconstant_path(
         // Check the result. SysV only specifies one byte for _Bool return values,
         // so it's important we only check one bit to ignore the higher bits in the register.
         asm.test(ret_val, 1.into());
-        asm.jz(Target::SideExit(Some(Counter::opt_getinlinecache_miss)));
+        asm.jz(Target::side_exit(Some(Counter::opt_getinlinecache_miss)));
 
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
@@ -7568,7 +7568,7 @@ fn gen_getblockparamproxy(
         SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
     );
     asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
-    asm.jnz(Target::SideExit(Some(Counter::gbpp_block_param_modified)));
+    asm.jnz(Target::side_exit(Some(Counter::gbpp_block_param_modified)));
 
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
@@ -7659,7 +7659,7 @@ fn gen_getblockparam(
     asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    asm.jnz(Target::SideExit(None));
+    asm.jnz(Target::side_exit(None));
 
     // Convert the block handler in to a proc
     // call rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)

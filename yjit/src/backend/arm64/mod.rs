@@ -769,7 +769,7 @@ impl Assembler
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
-                Target::SideExit(_) => {
+                Target::SideExit { .. } => {
                     unreachable!("Target::SideExit should have been compiled by compile_side_exit")
                 },
             };
@@ -789,13 +789,17 @@ impl Assembler
 
         /// Compile a side exit if Target::SideExit is given.
         fn compile_side_exit(
+            target: Target,
             asm: &mut Assembler,
             ocb: &mut Option<&mut OutlinedCb>,
-            target: Target,
-            side_exit_context: &SideExitContext,
+            insn_idx: usize,
         ) -> Target {
-            if let Target::SideExit(counter) = target {
-                let side_exit = asm.get_side_exit(side_exit_context, counter, ocb.as_mut().unwrap());
+            if let Target::SideExit { counter, pc, stack_size } = target {
+                let side_exit_context = SideExitContext {
+                    pc: pc.unwrap(),
+                    ctx: asm.insn_ctx[insn_idx].with_stack_size(stack_size.unwrap()),
+                };
+                let side_exit = asm.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap());
                 Target::SideExitPtr(side_exit)
             } else {
                 target
@@ -807,15 +811,10 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
-        // Side exit contexts
-        let mut side_exit_context = SideExitContext { pc: 0 as _, ctx: Context::default() };
-        let mut side_exit_stack_size = 0;
-
         // For each instruction
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            side_exit_context.ctx = self.insn_ctx[insn_idx].with_stack_size(side_exit_stack_size);
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -1043,16 +1042,12 @@ impl Assembler
                     br(cb, opnd.into());
                 },
                 Insn::Jmp(target) => {
-                    match target {
+                    match compile_side_exit(*target, self, ocb, insn_idx) {
                         Target::CodePtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, *dst_ptr, true);
-                        },
-                        Target::SideExit(counter) => {
-                            let dst_ptr = self.get_side_exit(&side_exit_context, *counter, *ocb.as_mut().unwrap());
-                            emit_jmp_ptr(cb, dst_ptr, false);
+                            emit_jmp_ptr(cb, dst_ptr, true);
                         },
                         Target::SideExitPtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, *dst_ptr, false);
+                            emit_jmp_ptr(cb, dst_ptr, false);
                         },
                         Target::Label(label_idx) => {
                             // Here we're going to save enough space for
@@ -1060,27 +1055,30 @@ impl Assembler
                             // instruction once we know the offset. We're going
                             // to assume we can fit into a single b instruction.
                             // It will panic otherwise.
-                            cb.label_ref(*label_idx, 4, |cb, src_addr, dst_addr| {
+                            cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
                                 let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
                                 b(cb, InstructionOffset::from_bytes(bytes));
                             });
                         },
+                        Target::SideExit { .. } => {
+                            unreachable!("Target::SideExit should have been compiled by compile_side_exit")
+                        },
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
+                    emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
                 },
                 Insn::Jne(target) | Insn::Jnz(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
+                    emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
+                    emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
+                    emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(self, ocb, *target, &side_exit_context));
+                    emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
                 },
                 Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
@@ -1129,10 +1127,6 @@ impl Assembler
                     while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < cb.jmp_ptr_bytes() && !cb.has_dropped_bytes() {
                         nop(cb);
                     }
-                }
-                Insn::SideExitContext { pc, stack_size } => {
-                    side_exit_context.pc = *pc;
-                    side_exit_stack_size = *stack_size;
                 }
             };
 

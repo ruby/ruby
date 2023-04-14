@@ -282,14 +282,22 @@ impl From<VALUE> for Opnd {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target
 {
-    CodePtr(CodePtr),          // Pointer to a piece of YJIT-generated code
-    SideExit(Option<Counter>), // Side exit with a counter
-    SideExitPtr(CodePtr),      // Pointer to a side exit code
-    Label(usize),              // A label within the generated code
+    /// Pointer to a piece of YJIT-generated code
+    CodePtr(CodePtr),
+    /// Side exit with a counter
+    SideExit { counter: Option<Counter>, pc: Option<*mut VALUE>, stack_size: Option<u8> },
+    /// Pointer to a side exit code
+    SideExitPtr(CodePtr),
+    /// A label within the generated code
+    Label(usize),
 }
 
 impl Target
 {
+    pub fn side_exit(counter: Option<Counter>) -> Target {
+        Target::SideExit { counter, pc: None, stack_size: None }
+    }
+
     pub fn unwrap_label_idx(&self) -> usize {
         match self {
             Target::Label(idx) => *idx,
@@ -470,9 +478,6 @@ pub enum Insn {
     /// Shift a value right by a certain amount (signed).
     RShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
-    /// Set a side exit context for subsequent instructions.
-    SideExitContext { pc: *mut VALUE, stack_size: u8 },
-
     /// Spill a stack temp from a register into memory
     SpillTemp(Opnd),
 
@@ -504,6 +509,25 @@ impl Insn {
     /// in turn for this instruction.
     pub(super) fn opnd_iter_mut(&mut self) -> InsnOpndMutIterator {
         InsnOpndMutIterator::new(self)
+    }
+
+    /// Get a mutable reference to a Target if it exists.
+    pub(super) fn target_mut(&mut self) -> Option<&mut Target> {
+        match self {
+            Insn::Jbe(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaLabel { target, .. } => {
+                Some(target)
+            }
+            _ => None,
+        }
     }
 
     /// Returns a string that describes which operation this instruction is
@@ -558,7 +582,6 @@ impl Insn {
             Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
-            Insn::SideExitContext { .. } => "SideExitContext",
             Insn::SpillTemp(_) => "SpillTemp",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
@@ -696,8 +719,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LeaLabel { .. } |
             Insn::RegTemps(_) |
             Insn::PadInvalPatch |
-            Insn::PosMarker(_) |
-            Insn::SideExitContext { .. } => None,
+            Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -796,8 +818,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LeaLabel { .. } |
             Insn::RegTemps(_) |
             Insn::PadInvalPatch |
-            Insn::PosMarker(_) |
-            Insn::SideExitContext { .. } => None,
+            Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -924,6 +945,12 @@ pub struct Assembler {
 
     /// Side exit caches for each SideExitContext
     pub(super) side_exits: HashMap<SideExitContext, CodePtr>,
+
+    /// PC for Target::SideExit
+    side_exit_pc: Option<*mut VALUE>,
+
+    /// Stack size for Target::SideExit
+    side_exit_stack_size: Option<u8>,
 }
 
 impl Assembler
@@ -941,6 +968,8 @@ impl Assembler
             ctx: Context::default(),
             insn_ctx: Vec::default(),
             side_exits,
+            side_exit_pc: None,
+            side_exit_stack_size: None,
         }
     }
 
@@ -949,6 +978,12 @@ impl Assembler
         let num_regs = get_option!(num_temp_regs);
         let mut regs = Self::TEMP_REGS.to_vec();
         regs.drain(0..num_regs).collect()
+    }
+
+    /// Set a context for generating side exits
+    pub fn set_side_exit_context(&mut self, pc: *mut VALUE, stack_size: u8) {
+        self.side_exit_pc = Some(pc);
+        self.side_exit_stack_size = Some(stack_size);
     }
 
     /// Build an Opnd::InsnOut from the current index of the assembler and the
@@ -997,6 +1032,16 @@ impl Assembler
         for stack_idx in 0..MAX_REG_TEMPS {
             if reg_temps.get(stack_idx) {
                 assert!(!reg_temps.conflicts_with(stack_idx));
+            }
+        }
+
+        // Set a side exit context to Target::SideExit
+        let mut insn = insn;
+        if let Some(Target::SideExit { pc, stack_size, .. }) = insn.target_mut() {
+            // We should skip this when this instruction is being copied from another Assembler.
+            if let (None, None) = (&pc, &stack_size) {
+                *pc = self.side_exit_pc;
+                *stack_size = self.side_exit_stack_size;
             }
         }
 
@@ -1779,11 +1824,6 @@ impl Assembler {
             self.comment(&format!("reg_temps: {:08b} -> {:08b}", self.get_reg_temps().as_u8(), reg_temps.as_u8()));
             self.push_insn(Insn::RegTemps(reg_temps));
         }
-    }
-
-    /// Set a context for generating side exits
-    pub fn side_exit_context(&mut self, pc: *mut VALUE, stack_size: u8) {
-        self.push_insn(Insn::SideExitContext { pc, stack_size })
     }
 
     /// Spill a stack temp from a register to the stack
