@@ -15,6 +15,8 @@
 
 ************************************************/
 
+#define READLINE_VERSION "0.1.5"
+
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
@@ -2118,6 +2120,8 @@ Init_readline(void)
 #endif
     /* Version string of GNU Readline or libedit. */
     rb_define_const(mReadline, "VERSION", version);
+
+    rb_define_const(mReadline, "GEM_VERSION", rb_str_new_cstr(READLINE_VERSION));
 
     rl_attempted_completion_function = readline_attempted_completion_function;
 #if defined(HAVE_RL_PRE_INPUT_HOOK)

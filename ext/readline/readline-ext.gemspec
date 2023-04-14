@@ -1,6 +1,16 @@
+source_version = ["", "ext/readline/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}readline.c")) {|f|
+      f.gets("\n#define READLINE_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "readline-ext"
-  spec.version       = "0.1.5"
+  spec.version       = source_version
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
