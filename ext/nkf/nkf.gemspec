@@ -1,6 +1,16 @@
+source_version = ["", "ext/nkf/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}nkf.c")) {|f|
+      f.gets("\n#define NKF_GEM_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "nkf"
-  spec.version       = "0.1.2"
+  spec.version       = source_version
   spec.authors       = ["NARUSE Yui"]
   spec.email         = ["naruse@airemix.jp"]
 
