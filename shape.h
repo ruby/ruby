@@ -77,16 +77,15 @@ rb_current_shape_tree(void)
 }
 #define GET_SHAPE_TREE() rb_current_shape_tree()
 
-#if SHAPE_IN_BASIC_FLAGS
 static inline shape_id_t
-RBASIC_SHAPE_ID(VALUE obj)
+get_shape_id_from_flags(VALUE obj)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     return (shape_id_t)(SHAPE_MASK & ((RBASIC(obj)->flags) >> SHAPE_FLAG_SHIFT));
 }
 
 static inline void
-RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+set_shape_id_in_flags(VALUE obj, shape_id_t shape_id)
 {
     // Ractors are occupying the upper 32 bits of flags, but only in debug mode
     // Object shapes are occupying top bits
@@ -94,51 +93,48 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
 }
 
+
+#if SHAPE_IN_BASIC_FLAGS
+static inline shape_id_t
+RBASIC_SHAPE_ID(VALUE obj)
+{
+    return get_shape_id_from_flags(obj);
+}
+
+static inline void
+RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+{
+    set_shape_id_in_flags(obj, shape_id);
+}
+#endif
+
 static inline shape_id_t
 ROBJECT_SHAPE_ID(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    return RBASIC_SHAPE_ID(obj);
+    return get_shape_id_from_flags(obj);
 }
 
 static inline void
 ROBJECT_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RBASIC_SET_SHAPE_ID(obj, shape_id);
+    set_shape_id_in_flags(obj, shape_id);
 }
 
 static inline shape_id_t
 RCLASS_SHAPE_ID(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    return RBASIC_SHAPE_ID(obj);
-}
-
-#else
-
-static inline shape_id_t
-ROBJECT_SHAPE_ID(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    return (shape_id_t)(SHAPE_MASK & (RBASIC(obj)->flags >> SHAPE_FLAG_SHIFT));
+    return get_shape_id_from_flags(obj);
 }
 
 static inline void
-ROBJECT_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+RCLASS_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
-    RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
-    RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
+    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
+    set_shape_id_in_flags(obj, shape_id);
 }
-
-shape_id_t rb_rclass_shape_id(VALUE obj);
-
-static inline shape_id_t RCLASS_SHAPE_ID(VALUE obj)
-{
-    return rb_rclass_shape_id(obj);
-}
-
-#endif
 
 rb_shape_t * rb_shape_get_root_shape(void);
 int32_t rb_shape_id_offset(void);
