@@ -76,21 +76,12 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     struct rb_id_table *m_tbl;
-#if !RCLASS_EXT_EMBEDDED
-    struct rb_classext_struct *ptr;
-#endif
 };
 
-#if RCLASS_EXT_EMBEDDED
 // Assert that classes can be embedded in size_pools[2] (which has 160B slot size)
 STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
-#endif
 
-#if RCLASS_EXT_EMBEDDED
-#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
-#else
-#  define RCLASS_EXT(c) (RCLASS(c)->ptr)
-#endif
+#define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_IVPTR(c) (RCLASS_EXT(c)->iv_ptr)
