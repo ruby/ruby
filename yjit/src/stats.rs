@@ -365,6 +365,8 @@ make_counters! {
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
 
+    outlined_page_jump,
+
     num_gc_obj_refs,
 
     num_send,

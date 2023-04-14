@@ -292,6 +292,7 @@ module RubyVM::YJIT
       $stderr.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
       $stderr.puts "get_ivar_max_depth:    " + format_number(13, stats[:get_ivar_max_depth])
+      $stderr.puts "outlined_page_jump:    " + format_number(13, stats[:outlined_page_jump])
       $stderr.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
       $stderr.puts "code_region_size:      " + format_number(13, stats[:code_region_size])

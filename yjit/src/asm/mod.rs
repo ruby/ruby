@@ -6,6 +6,7 @@ use crate::core::IseqPayload;
 use crate::core::for_each_off_stack_iseq_payload;
 use crate::core::for_each_on_stack_iseq_payload;
 use crate::invariants::rb_yjit_tracing_invalidate_all;
+use crate::stats::incr_counter;
 use crate::virtualmem::WriteError;
 
 #[cfg(feature = "disasm")]
@@ -152,6 +153,9 @@ impl CodeBlock {
         if next_page_idx.is_none() || !self.set_page(next_page_idx.unwrap(), &jmp_ptr) {
             self.set_write_ptr(old_write_ptr); // rollback if there are no more pages
             return false;
+        }
+        if self.outlined {
+            incr_counter!(outlined_page_jump);
         }
 
         // Move the other CodeBlock to the same page if it's on the furthest page

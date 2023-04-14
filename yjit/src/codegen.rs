@@ -7914,8 +7914,9 @@ pub struct CodegenGlobals {
     // Filled by gen_code_for_exit_from_stub().
     stub_exit_code: CodePtr,
 
-    // For servicing branch stubs
-    branch_stub_hit_trampoline: CodePtr,
+    // For servicing branch stubs. The key is the number of registers returned by
+    // caller_saved_temp_regs(), which is always an even number for x86 alignment.
+    branch_stub_hit_trampolines: HashMap<usize, CodePtr>,
 
     // For servicing entry stubs
     entry_stub_hit_trampoline: CodePtr,
@@ -8003,7 +8004,7 @@ impl CodegenGlobals {
 
         let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
-        let branch_stub_hit_trampoline = gen_branch_stub_hit_trampoline(&mut ocb);
+        let branch_stub_hit_trampolines = gen_branch_stub_hit_trampolines(&mut ocb);
         let entry_stub_hit_trampoline = gen_entry_stub_hit_trampoline(&mut ocb);
 
         // Generate full exit code for C func
@@ -8022,7 +8023,7 @@ impl CodegenGlobals {
             leave_exit_code,
             stub_exit_code: stub_exit_code,
             outline_full_cfunc_return_pos: cfunc_exit_code,
-            branch_stub_hit_trampoline,
+            branch_stub_hit_trampolines,
             entry_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
             method_codegen_table: HashMap::new(),
@@ -8163,8 +8164,8 @@ impl CodegenGlobals {
         CodegenGlobals::get_instance().outline_full_cfunc_return_pos
     }
 
-    pub fn get_branch_stub_hit_trampoline() -> CodePtr {
-        CodegenGlobals::get_instance().branch_stub_hit_trampoline
+    pub fn get_branch_stub_hit_trampoline(num_regs: usize) -> CodePtr {
+        CodegenGlobals::get_instance().branch_stub_hit_trampolines[&num_regs]
     }
 
     pub fn get_entry_stub_hit_trampoline() -> CodePtr {

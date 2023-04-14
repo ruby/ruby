@@ -15,6 +15,7 @@ use crate::utils::*;
 use crate::disasm::*;
 use core::ffi::c_void;
 use std::cell::*;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 use std::mem;
@@ -2570,7 +2571,8 @@ fn gen_branch_stub(
 
     // Save caller-saved registers before C_ARG_OPNDS get clobbered.
     // Spill all registers for consistency with the trampoline.
-    for &reg in caller_saved_temp_regs().iter() {
+    let saved_regs = caller_saved_temp_regs(ctx.reg_temps);
+    for &reg in saved_regs.iter() {
         asm.cpush(reg);
     }
 
@@ -2588,7 +2590,7 @@ fn gen_branch_stub(
 
     // Jump to trampoline to call branch_stub_hit()
     // Not really a side exit, just don't need a padded jump here.
-    asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline().as_side_exit());
+    asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline(saved_regs.len()).as_side_exit());
 
     asm.compile(ocb, None);
 
@@ -2600,7 +2602,8 @@ fn gen_branch_stub(
     }
 }
 
-pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
+/// Generate a branch_stub_hit trampoline for given reg_temps.
+fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb, reg_temps: RegTemps) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
@@ -2622,7 +2625,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     );
 
     // Restore caller-saved registers for stack temps
-    for &reg in caller_saved_temp_regs().iter().rev() {
+    for &reg in caller_saved_temp_regs(reg_temps).iter().rev() {
         asm.cpop_into(reg);
     }
 
@@ -2634,14 +2637,61 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     code_ptr
 }
 
+/// Generate branch_stub_hit trampolines. The key of the HashMap is the number of registers
+/// returned by caller_saved_temp_regs(), which is always an even number for x86 alignment.
+pub fn gen_branch_stub_hit_trampolines(ocb: &mut OutlinedCb) -> HashMap<usize, CodePtr> {
+    let mut trampolines = HashMap::new();
+
+    // Add a trampoline for no registers.
+    let mut reg_temps = RegTemps::default();
+    trampolines.insert(0, gen_branch_stub_hit_trampoline(ocb, reg_temps));
+
+    // Add trampolines for the first 2, 4, and 6 registers.
+    let regs = Assembler::get_temp_regs();
+    for reg_idx in 0..regs.len() as u8 {
+        reg_temps.set(reg_idx, true);
+        let num_regs = caller_saved_temp_regs(reg_temps).len();
+        if !trampolines.contains_key(&num_regs) {
+            trampolines.insert(num_regs, gen_branch_stub_hit_trampoline(ocb, reg_temps));
+        }
+    }
+
+    trampolines
+}
+
 /// Return registers to be pushed and popped on branch_stub_hit.
 /// The return value may include an extra register for x86 alignment.
-fn caller_saved_temp_regs() -> Vec<Opnd> {
-    let mut regs = Assembler::get_temp_regs();
-    if regs.len() % 2 == 1 {
-        regs.push(*regs.last().unwrap()); // x86 alignment
+fn caller_saved_temp_regs(reg_temps: RegTemps) -> Vec<Opnd> {
+    let regs = Assembler::get_temp_regs();
+    if regs.is_empty() {
+        return vec![]
     }
-    regs.iter().map(|&reg| Opnd::Reg(reg)).collect()
+
+    // Find the largest register index that needs to be saved.
+    let mut max_reg_idx = None;
+    for stack_idx in 0..MAX_REG_TEMPS {
+        if reg_temps.get(stack_idx) {
+            let reg_idx = stack_idx % regs.len() as u8;
+            max_reg_idx = Some(u8::max(max_reg_idx.unwrap_or(0), reg_idx));
+        }
+    }
+
+    // Decide how many registers should be spilled
+    let mut num_regs = match max_reg_idx {
+        Some(reg_idx) => reg_idx + 1,
+        None => return vec![],
+    };
+    if num_regs % 2 == 1 {
+        num_regs += 1; // x86 alignment
+    }
+
+    // Return the first num_regs registers
+    let mut saved_regs = vec![];
+    for reg_idx in 0..num_regs {
+        // The last one may repeat the previous register for x86 alignment
+        saved_regs.push(Opnd::Reg(regs[usize::min(reg_idx as usize, regs.len() - 1)]))
+    }
+    saved_regs
 }
 
 impl Assembler
