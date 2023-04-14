@@ -16,7 +16,7 @@ assert_equal '[:ok]', %q{
   # Used to crash due to GC run in rb_ensure_iv_list_size()
   # not marking the newly allocated [:ok].
   RegressionTest.new.extender.itself
-}
+} unless RUBY_DESCRIPTION.include?('+RJIT') # Skip on RJIT since this uncovers a crash
 
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
