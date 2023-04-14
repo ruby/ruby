@@ -419,7 +419,7 @@ impl Assembler
             ocb: &mut Option<&mut OutlinedCb>,
         ) -> Target {
             if let Target::SideExit { counter, context } = target {
-                let side_exit = asm.get_side_exit(&context.unwrap(), counter, ocb.as_mut().unwrap());
+                let side_exit = asm.get_side_exit(&context.unwrap(), Some(counter), ocb.as_mut().unwrap());
                 Target::SideExitPtr(side_exit)
             } else {
                 target

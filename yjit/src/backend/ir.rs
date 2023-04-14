@@ -285,7 +285,7 @@ pub enum Target
     /// Pointer to a piece of YJIT-generated code
     CodePtr(CodePtr),
     /// Side exit with a counter
-    SideExit { counter: Option<Counter>, context: Option<SideExitContext> },
+    SideExit { counter: Counter, context: Option<SideExitContext> },
     /// Pointer to a side exit code
     SideExitPtr(CodePtr),
     /// A label within the generated code
@@ -294,7 +294,7 @@ pub enum Target
 
 impl Target
 {
-    pub fn side_exit(counter: Option<Counter>) -> Target {
+    pub fn side_exit(counter: Counter) -> Target {
         Target::SideExit { counter, context: None }
     }
 

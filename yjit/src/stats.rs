@@ -281,6 +281,10 @@ make_counters! {
     send_iseq_has_rest_and_splat_not_equal,
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
+    send_interrupted,
+    send_not_fixnums,
+    send_not_string,
+    send_mid_mismatch,
 
     send_bmethod_ractor,
     send_bmethod_block_arg,
@@ -308,20 +312,37 @@ make_counters! {
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
     getivar_megamorphic,
+    getivar_not_heap,
 
     setivar_se_self_not_heap,
     setivar_idx_out_of_range,
     setivar_val_heapobject,
     setivar_name_not_mapped,
-    setivar_not_object,
+    setivar_not_heap,
     setivar_frozen,
     setivar_megamorphic,
 
-    // Not using "getivar_" to exclude this from exit reasons
-    get_ivar_max_depth,
+    definedivar_not_heap,
+    definedivar_megamorphic,
 
-    oaref_argc_not_one,
-    oaref_arg_not_fixnum,
+    setlocal_wb_required,
+
+    opt_plus_overflow,
+    opt_minus_overflow,
+
+    opt_mod_zero,
+    opt_div_zero,
+
+    opt_aref_argc_not_one,
+    opt_aref_arg_not_fixnum,
+    opt_aref_not_array,
+    opt_aref_not_hash,
+
+    opt_aset_not_array,
+    opt_aset_not_fixnum,
+    opt_aset_not_hash,
+
+    opt_case_dispatch_megamorphic,
 
     opt_getinlinecache_miss,
 
@@ -330,8 +351,17 @@ make_counters! {
     expandarray_not_array,
     expandarray_rhs_too_small,
 
+    gbp_wb_required,
     gbpp_block_param_modified,
+    gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
+
+    branchif_interrupted,
+    branchunless_interrupted,
+    branchnil_interrupted,
+    jump_interrupted,
+
+    objtostring_not_string,
 
     binding_allocations,
     binding_set,
@@ -360,6 +390,9 @@ make_counters! {
     invalidate_constant_ic_fill,
 
     constant_state_bumps,
+
+    // Not using "getivar_" to exclude this from exit reasons
+    get_ivar_max_depth,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
