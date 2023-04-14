@@ -199,7 +199,7 @@ fn test_alloc_ccall_regs() {
     let out2 = asm.ccall(0 as *const u8, vec![out1]);
     asm.mov(EC, out2);
     let mut cb = CodeBlock::new_dummy(1024);
-    asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs());
+    asm.compile_with_regs(&mut cb, None, Assembler::get_alloc_regs());
 }
 
 #[test]

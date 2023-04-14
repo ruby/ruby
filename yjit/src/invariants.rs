@@ -2,6 +2,7 @@
 //! generated code if and when these assumptions are invalidated.
 
 use crate::asm::OutlinedCb;
+use crate::backend::ir::Assembler;
 use crate::codegen::*;
 use crate::core::*;
 use crate::cruby::*;
@@ -82,12 +83,13 @@ impl Invariants {
 #[must_use]
 pub fn assume_bop_not_redefined(
     jit: &mut JITState,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     klass: RedefinitionFlag,
     bop: ruby_basic_operators,
 ) -> bool {
     if unsafe { BASIC_OP_UNREDEFINED_P(bop, klass) } {
-        jit_ensure_block_entry_exit(jit, ocb);
+        jit_ensure_block_entry_exit(jit, asm, ocb);
         jit.bop_assumptions.push((klass, bop));
 
         return true;
@@ -131,13 +133,14 @@ pub fn track_method_lookup_stability_assumption(
 // default behavior.
 pub fn assume_method_basic_definition(
     jit: &mut JITState,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     klass: VALUE,
     mid: ID
 ) -> bool {
     if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
         let cme = unsafe { rb_callable_method_entry(klass, mid) };
-        jit.assume_method_lookup_stable(ocb, cme);
+        jit.assume_method_lookup_stable(asm, ocb, cme);
         true
     } else {
         false
@@ -146,11 +149,11 @@ pub fn assume_method_basic_definition(
 
 /// Tracks that a block is assuming it is operating in single-ractor mode.
 #[must_use]
-pub fn assume_single_ractor_mode(jit: &mut JITState, ocb: &mut OutlinedCb) -> bool {
+pub fn assume_single_ractor_mode(jit: &mut JITState, asm: &mut Assembler, ocb: &mut OutlinedCb) -> bool {
     if unsafe { rb_yjit_multi_ractor_p() } {
         false
     } else {
-        jit_ensure_block_entry_exit(jit, ocb);
+        jit_ensure_block_entry_exit(jit, asm, ocb);
         jit.block_assumes_single_ractor = true;
 
         true
@@ -524,7 +527,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
 
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
-            asm.compile(cb);
+            asm.compile(cb, None);
             last_patch_end = cb.get_write_ptr().raw_ptr();
         }
         cb.set_pos(old_pos);

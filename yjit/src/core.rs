@@ -38,7 +38,7 @@ const MAX_LOCAL_TYPES: usize = 8;
 pub type IseqIdx = u16;
 
 // Represent the type of a value (local/stack/self) in YJIT
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub enum Type {
     Unknown,
     UnknownImm,
@@ -298,7 +298,7 @@ pub enum TypeDiff {
 
 // Potential mapping of a value on the temporary stack to
 // self, a local variable or constant so that we can track its type
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TempMapping {
     MapToStack, // Normal stack value
     MapToSelf,  // Temp maps to the self operand
@@ -307,7 +307,7 @@ pub enum TempMapping {
 }
 
 // Index used by MapToLocal. Using this instead of u8 makes TempMapping 1 byte.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum LocalIndex {
     Local0,
     Local1,
@@ -417,7 +417,7 @@ impl RegTemps {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Clone, Default, PartialEq, Debug)]
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u8,
@@ -478,12 +478,12 @@ pub enum BranchGenFn {
 }
 
 impl BranchGenFn {
-    pub fn call(&self, asm: &mut Assembler, target0: CodePtr, target1: Option<CodePtr>) {
+    pub fn call(&self, asm: &mut Assembler, target0: Target, target1: Option<Target>) {
         match self {
             BranchGenFn::BranchIf(shape) => {
                 match shape.get() {
-                    BranchShape::Next0 => asm.jz(target1.unwrap().into()),
-                    BranchShape::Next1 => asm.jnz(target0.into()),
+                    BranchShape::Next0 => asm.jz(target1.unwrap()),
+                    BranchShape::Next1 => asm.jnz(target0),
                     BranchShape::Default => {
                         asm.jnz(target0.into());
                         asm.jmp(target1.unwrap().into());
@@ -492,21 +492,21 @@ impl BranchGenFn {
             }
             BranchGenFn::BranchNil(shape) => {
                 match shape.get() {
-                    BranchShape::Next0 => asm.jne(target1.unwrap().into()),
-                    BranchShape::Next1 => asm.je(target0.into()),
+                    BranchShape::Next0 => asm.jne(target1.unwrap()),
+                    BranchShape::Next1 => asm.je(target0),
                     BranchShape::Default => {
-                        asm.je(target0.into());
-                        asm.jmp(target1.unwrap().into());
+                        asm.je(target0);
+                        asm.jmp(target1.unwrap());
                     }
                 }
             }
             BranchGenFn::BranchUnless(shape) => {
                 match shape.get() {
-                    BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
-                    BranchShape::Next1 => asm.jz(target0.into()),
+                    BranchShape::Next0 => asm.jnz(target1.unwrap()),
+                    BranchShape::Next1 => asm.jz(target0),
                     BranchShape::Default => {
-                        asm.jz(target0.into());
-                        asm.jmp(target1.unwrap().into());
+                        asm.jz(target0);
+                        asm.jmp(target1.unwrap());
                     }
                 }
             }
@@ -522,14 +522,14 @@ impl BranchGenFn {
                 asm.jnz(target0.into())
             }
             BranchGenFn::JZToTarget0 => {
-                asm.jz(Target::CodePtr(target0))
+                asm.jz(target0)
             }
             BranchGenFn::JBEToTarget0 => {
-                asm.jbe(Target::CodePtr(target0))
+                asm.jbe(target0)
             }
             BranchGenFn::JITReturn => {
                 asm.comment("update cfp->jit_return");
-                asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
+                asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.unwrap_code_ptr().raw_ptr()));
             }
         }
     }
@@ -1378,10 +1378,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         // Produce a generic context that stores no type information,
         // but still respects the stack_size and sp_offset constraints.
         // This new context will then match all future requests.
-        let mut generic_ctx = Context::default();
-        generic_ctx.stack_size = ctx.stack_size;
-        generic_ctx.sp_offset = ctx.sp_offset;
-        generic_ctx.reg_temps = ctx.reg_temps;
+        let generic_ctx = ctx.get_generic_ctx();
 
         debug_assert_ne!(
             TypeDiff::Incompatible,
@@ -1568,6 +1565,15 @@ impl Block {
 impl Context {
     pub fn get_stack_size(&self) -> u8 {
         self.stack_size
+    }
+
+    /// Create a new Context that is compatible with self but doesn't have type information.
+    pub fn get_generic_ctx(&self) -> Context {
+        let mut generic_ctx = Context::default();
+        generic_ctx.stack_size = self.stack_size;
+        generic_ctx.sp_offset = self.sp_offset;
+        generic_ctx.reg_temps = self.reg_temps;
+        generic_ctx
     }
 
     /// Create a new Context instance with a given stack_size and sp_offset adjusted
@@ -2170,7 +2176,7 @@ pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: Cod
     let old_dropped_bytes = cb.has_dropped_bytes();
     cb.set_write_ptr(unsafe { entryref.as_ref() }.start_addr);
     cb.set_dropped_bytes(false);
-    asm.compile(cb);
+    asm.compile(cb, None);
 
     // Rewind write_pos to the original one
     assert_eq!(cb.get_write_ptr(), unsafe { entryref.as_ref() }.end_addr);
@@ -2219,7 +2225,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     let next_entry = cb.get_write_ptr();
     let mut asm = Assembler::new();
     let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
-    asm.compile(cb);
+    asm.compile(cb, Some(ocb));
 
     // Try to find an existing compiled version of this block
     let blockid = BlockId { iseq, idx: insn_idx };
@@ -2229,7 +2235,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
         Some(blockref) => {
             let mut asm = Assembler::new();
             asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
-            asm.compile(cb);
+            asm.compile(cb, Some(ocb));
             blockref
         }
         // If this block hasn't yet been compiled, generate blocks after the entry guard.
@@ -2273,7 +2279,7 @@ pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<Code
     // Not really a side exit, just don't need a padded jump here.
     asm.jmp(CodegenGlobals::get_entry_stub_hit_trampoline().as_side_exit());
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     if ocb.has_dropped_bytes() {
         return None; // No space
@@ -2296,7 +2302,7 @@ pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Jump to the address returned by the entry_stub_hit() call
     asm.jmp_opnd(jump_addr);
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     code_ptr
 }
@@ -2316,8 +2322,8 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     asm.comment("regenerate_branch");
     branch.gen_fn.call(
         &mut asm,
-        branch.get_target_address(0).unwrap(),
-        branch.get_target_address(1),
+        Target::CodePtr(branch.get_target_address(0).unwrap()),
+        branch.get_target_address(1).map(|addr| Target::CodePtr(addr)),
     );
 
     // Rewrite the branch
@@ -2325,7 +2331,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     let old_dropped_bytes = cb.has_dropped_bytes();
     cb.set_write_ptr(branch.start_addr);
     cb.set_dropped_bytes(false);
-    asm.compile(cb);
+    asm.compile(cb, None);
     let new_end_addr = cb.get_write_ptr();
 
     branch.end_addr.set(new_end_addr);
@@ -2584,7 +2590,7 @@ fn gen_branch_stub(
     // Not really a side exit, just don't need a padded jump here.
     asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline().as_side_exit());
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     if ocb.has_dropped_bytes() {
         // No space
@@ -2623,7 +2629,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Jump to the address returned by the branch_stub_hit() call
     asm.jmp_opnd(jump_addr);
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     code_ptr
 }
@@ -2715,7 +2721,7 @@ pub fn gen_branch(
     // Call the branch generation function
     asm.mark_branch_start(&branch);
     if let Some(dst_addr) = target0_addr {
-        branch.gen_fn.call(asm, dst_addr, target1_addr);
+        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), target1_addr.map(|addr| Target::CodePtr(addr)));
     }
     asm.mark_branch_end(&branch);
 }
@@ -2732,7 +2738,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
         // Call the branch generation function
         asm.comment("gen_direct_jmp: existing block");
         asm.mark_branch_start(&branch);
-        branch.gen_fn.call(asm, block_addr, None);
+        branch.gen_fn.call(asm, Target::CodePtr(block_addr), None);
         asm.mark_branch_end(&branch);
 
         BranchTarget::Block(blockref)
@@ -2787,7 +2793,7 @@ pub fn defer_compilation(
     asm.comment("defer_compilation");
     asm.mark_branch_start(&branch);
     if let Some(dst_addr) = target0_address {
-        branch.gen_fn.call(asm, dst_addr, None);
+        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);
     }
     asm.mark_branch_end(&branch);
 
@@ -2962,7 +2968,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             let mut asm = Assembler::new();
             asm.jmp(block_entry_exit.as_side_exit());
             cb.set_dropped_bytes(false);
-            asm.compile(&mut cb);
+            asm.compile(&mut cb, Some(ocb));
 
             assert!(
                 cb.get_write_ptr() <= block_end,

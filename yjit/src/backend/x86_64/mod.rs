@@ -7,6 +7,7 @@ use std::mem::take;
 use crate::asm::*;
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
+use crate::core::Context;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::codegen::CodegenGlobals;
@@ -115,7 +116,7 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -381,7 +382,7 @@ impl Assembler
     }
 
     /// Emit platform-specific machine code
-    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock, ocb: &mut Option<&mut OutlinedCb>) -> Vec<u32>
     {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
@@ -411,6 +412,19 @@ impl Assembler
             }
         }
 
+        /// Compile a side exit if Target::SideExit is given.
+        fn compile_side_exit(
+            target: Target,
+            asm: &mut Assembler,
+            ocb: &mut Option<&mut OutlinedCb>,
+        ) -> Target {
+            if let Target::SideExit { counter, context } = target {
+                let side_exit = asm.get_side_exit(&context.unwrap(), counter, ocb.as_mut().unwrap());
+                Target::SideExitPtr(side_exit)
+            } else {
+                target
+            }
+        }
 
         fn emit_csel(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd)) {
             if out != truthy {
@@ -426,8 +440,8 @@ impl Assembler
 
         // For each instruction
         let start_write_pos = cb.get_write_pos();
-        let mut insns_idx: usize = 0;
-        while let Some(insn) = self.insns.get(insns_idx) {
+        let mut insn_idx: usize = 0;
+        while let Some(insn) = self.insns.get(insn_idx) {
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -626,58 +640,66 @@ impl Assembler
 
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Je(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jne(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jl(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jbe(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jz(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jnz(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jo(target) => {
-                    match *target {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
@@ -724,13 +746,6 @@ impl Assembler
                         nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
                     }
                 }
-
-                // We want to keep the panic here because some instructions that
-                // we feed to the backend could get lowered into other
-                // instructions. So it's possible that some of our backend
-                // instructions can never make it to the emit stage.
-                #[allow(unreachable_patterns)]
-                _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn)
             };
 
             // On failure, jump to the next page and retry the current insn
@@ -738,7 +753,7 @@ impl Assembler
                 // Reset cb states before retrying the current Insn
                 cb.set_label_state(old_label_state);
             } else {
-                insns_idx += 1;
+                insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
@@ -747,8 +762,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
-    {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Vec<u32> {
         let asm = self.lower_stack();
         let asm = asm.x86_split();
         let mut asm = asm.alloc_regs(regs);
@@ -759,7 +773,8 @@ impl Assembler
             assert!(label_idx == idx);
         }
 
-        let gc_offsets = asm.x86_emit(cb);
+        let mut ocb = ocb; // for &mut
+        let gc_offsets = asm.x86_emit(cb, &mut ocb);
 
         if cb.has_dropped_bytes() {
             cb.clear_labels();

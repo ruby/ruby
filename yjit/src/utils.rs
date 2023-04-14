@@ -263,7 +263,7 @@ mod tests {
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_int(&mut asm, Opnd::Imm(42));
-        asm.compile(&mut cb);
+        asm.compile(&mut cb, None);
     }
 
     #[test]
@@ -272,6 +272,6 @@ mod tests {
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_str(&mut asm, "Hello, world!");
-        asm.compile(&mut cb);
+        asm.compile(&mut cb, None);
     }
 }
