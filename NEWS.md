@@ -7,6 +7,12 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+## Command line options
+
+* A new `performance` warning category was introduced.
+  They are not displayed by default even in verbose mode.
+  Turn them on with `-W:performance` or `Warning[:performance] = true`. [[Feature #19538]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -79,5 +85,7 @@ changelog for details of the default gems or bundled gems.
 ## JIT
 
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
+[Feature #19538]: https://bugs.ruby-lang.org/issues/19538
