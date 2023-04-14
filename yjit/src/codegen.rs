@@ -2295,7 +2295,6 @@ fn gen_setinstancevariable(
                     // It allocates so can trigger GC, which takes the VM lock
                     // so could yield to a different ractor.
                     jit_prepare_routine_call(jit, asm);
-                    asm.spill_temps(); // for ccall
                     asm.ccall(rb_ensure_iv_list_size as *const u8,
                               vec![
                                   recv,
