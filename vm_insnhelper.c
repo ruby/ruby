@@ -895,7 +895,7 @@ vm_get_const_key_cref(const VALUE *ep)
 
     while (cref) {
         if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
-            FL_TEST(CREF_CLASS(cref), RCLASS_CLONED)) {
+                RCLASS_EXT(CREF_CLASS(cref))->cloned) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);

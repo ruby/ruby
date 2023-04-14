@@ -508,8 +508,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
-    FL_SET(clone, RCLASS_CLONED);
-    FL_SET(orig , RCLASS_CLONED);
+    RCLASS_EXT(clone)->cloned = true;
+    RCLASS_EXT(orig)->cloned = true;
 
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));

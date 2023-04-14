@@ -67,7 +67,8 @@ struct rb_classext_struct {
 #endif
     attr_index_t max_iv_count;
     unsigned char variation_count;
-    bool permanent_classpath;
+    bool permanent_classpath : 1;
+    bool cloned : 1;
     VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;
@@ -110,7 +111,6 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT(c)->as.singleton_class.attached_object)
 
 #define RICLASS_IS_ORIGIN FL_USER0
-#define RCLASS_CLONED     FL_USER1
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
 
