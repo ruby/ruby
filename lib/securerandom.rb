@@ -39,6 +39,9 @@ require 'random/formatter'
 # +NotImplementedError+ is raised.
 
 module SecureRandom
+
+  VERSION = "0.2.2"
+
   class << self
     def bytes(n)
       return gen_random(n)
