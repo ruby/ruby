@@ -2290,6 +2290,11 @@ fn gen_setinstancevariable(
                 if needs_extension {
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
+                    asm.comment("call rb_ensure_iv_list_size");
+
+                    // It allocates so can trigger GC, which takes the VM lock
+                    // so could yield to a different ractor.
+                    jit_prepare_routine_call(jit, asm);
                     asm.spill_temps(); // for ccall
                     asm.ccall(rb_ensure_iv_list_size as *const u8,
                               vec![
