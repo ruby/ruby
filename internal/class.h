@@ -62,9 +62,6 @@ struct rb_classext_struct {
         } singleton_class;
     } as;
     const VALUE includer;
-#if !SHAPE_IN_BASIC_FLAGS
-    shape_id_t shape_id;
-#endif
     attr_index_t max_iv_count;
     unsigned char variation_count;
     bool permanent_classpath : 1;

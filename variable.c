@@ -1527,7 +1527,7 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
         break;
       case T_CLASS:
       case T_MODULE:
-        RCLASS_EXT(obj)->shape_id = shape_id;
+        RCLASS_SET_SHAPE_ID(obj, shape_id);
         break;
       default:
         if (shape_id != SPECIAL_CONST_SHAPE_ID) {
