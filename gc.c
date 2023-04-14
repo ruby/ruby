@@ -14088,6 +14088,14 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                APPEND_F("%p [MMTk heap object] %s ",
+                     (void *)obj,
+                     obj_type_name(obj));
+
+            } else {
+#endif
             APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
@@ -14097,6 +14105,9 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
                      C(rb_objspace_garbage_object_p(obj), "G"),
                      obj_type_name(obj));
+#if USE_MMTK
+            }
+#endif
         }
         else {
             /* fake */
