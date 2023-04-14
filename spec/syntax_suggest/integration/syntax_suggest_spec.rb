@@ -21,9 +21,10 @@ module SyntaxSuggest
             filename: file
           )
         end
-        debug_display(io.string)
-        debug_display(benchmark)
       end
+
+      debug_display(io.string)
+      debug_display(benchmark)
 
       expect(io.string).to include(<<~'EOM')
              6  class SyntaxTree < Ripper

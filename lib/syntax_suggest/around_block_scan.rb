@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "scan_history"
+
 module SyntaxSuggest
   # This class is useful for exploring contents before and after
   # a block
@@ -24,22 +26,17 @@ module SyntaxSuggest
   #   puts scan.before_index # => 0
   #   puts scan.after_index  # => 3
   #
-  # Contents can also be filtered using AroundBlockScan#skip
-  #
-  # To grab the next surrounding indentation use AroundBlockScan#scan_adjacent_indent
   class AroundBlockScan
     def initialize(code_lines:, block:)
       @code_lines = code_lines
-      @orig_before_index = block.lines.first.index
-      @orig_after_index = block.lines.last.index
       @orig_indent = block.current_indent
-      @skip_array = []
-      @after_array = []
-      @before_array = []
-      @stop_after_kw = false
 
-      @force_add_hidden = false
+      @stop_after_kw = false
       @force_add_empty = false
+      @force_add_hidden = false
+      @target_indent = nil
+
+      @scanner = ScanHistory.new(code_lines: code_lines, block: block)
     end
 
     # When using this flag, `scan_while` will
@@ -89,47 +86,34 @@ module SyntaxSuggest
     # stopping if we've found a keyword/end mis-match in one direction
     # or the other.
     def scan_while
-      stop_next = false
-      kw_count = 0
-      end_count = 0
-      index = before_lines.reverse_each.take_while do |line|
-        next false if stop_next
-        next true if @force_add_hidden && line.hidden?
-        next true if @force_add_empty && line.empty?
+      stop_next_up = false
+      stop_next_down = false
 
-        kw_count += 1 if line.is_kw?
-        end_count += 1 if line.is_end?
-        if @stop_after_kw && kw_count > end_count
-          stop_next = true
-        end
+      @scanner.scan(
+        up: ->(line, kw_count, end_count) {
+          next false if stop_next_up
+          next true if @force_add_hidden && line.hidden?
+          next true if @force_add_empty && line.empty?
 
-        yield line
-      end.last&.index
+          if @stop_after_kw && kw_count > end_count
+            stop_next_up = true
+          end
 
-      if index && index < before_index
-        @before_index = index
-      end
+          yield line
+        },
+        down: ->(line, kw_count, end_count) {
+          next false if stop_next_down
+          next true if @force_add_hidden && line.hidden?
+          next true if @force_add_empty && line.empty?
 
-      stop_next = false
-      kw_count = 0
-      end_count = 0
-      index = after_lines.take_while do |line|
-        next false if stop_next
-        next true if @force_add_hidden && line.hidden?
-        next true if @force_add_empty && line.empty?
+          if @stop_after_kw && end_count > kw_count
+            stop_next_down = true
+          end
 
-        kw_count += 1 if line.is_kw?
-        end_count += 1 if line.is_end?
-        if @stop_after_kw && end_count > kw_count
-          stop_next = true
-        end
+          yield line
+        }
+      )
 
-        yield line
-      end.last&.index
-
-      if index && index > after_index
-        @after_index = index
-      end
       self
     end
 
@@ -160,54 +144,51 @@ module SyntaxSuggest
     #     4    def eat
     #     5    end
     #
-    def capture_neighbor_context
+    def capture_before_after_kws
       lines = []
-      kw_count = 0
-      end_count = 0
-      before_lines.reverse_each do |line|
-        next if line.empty?
-        break if line.indent < @orig_indent
-        next if line.indent != @orig_indent
+      up_stop_next = false
+      down_stop_next = false
+      @scanner.commit_if_changed
 
-        kw_count += 1 if line.is_kw?
-        end_count += 1 if line.is_end?
-        if kw_count != 0 && kw_count == end_count
-          lines << line
-          break
-        end
+      lines = []
+      @scanner.scan(
+        up: ->(line, kw_count, end_count) {
+          break if up_stop_next
+          next true if line.empty?
+          break if line.indent < @orig_indent
+          next true if line.indent != @orig_indent
 
-        lines << line if line.is_kw? || line.is_end?
-      end
+          # If we're going up and have one complete kw/end pair, stop
+          if kw_count != 0 && kw_count == end_count
+            lines << line
+            break
+          end
 
-      lines.reverse!
+          lines << line if line.is_kw? || line.is_end?
+        },
+        down: ->(line, kw_count, end_count) {
+          break if down_stop_next
+          next true if line.empty?
+          break if line.indent < @orig_indent
+          next true if line.indent != @orig_indent
 
-      kw_count = 0
-      end_count = 0
-      after_lines.each do |line|
-        next if line.empty?
-        break if line.indent < @orig_indent
-        next if line.indent != @orig_indent
+          # if we're going down and have one complete kw/end pair,stop
+          if kw_count != 0 && kw_count == end_count
+            lines << line
+            break
+          end
 
-        kw_count += 1 if line.is_kw?
-        end_count += 1 if line.is_end?
-        if kw_count != 0 && kw_count == end_count
-          lines << line
-          break
-        end
-
-        lines << line if line.is_kw? || line.is_end?
-      end
-
+          lines << line if line.is_kw? || line.is_end?
+        }
+      )
+      @scanner.try_rollback
       lines
     end
 
     # Shows the context around code provided by "falling" indentation
     #
-    # Converts:
     #
-    #       it "foo" do
-    #
-    # into:
+    # If this is the original code lines:
     #
     #   class OH
     #     def hello
@@ -215,24 +196,52 @@ module SyntaxSuggest
     #     end
     #   end
     #
+    # And this is the line that is captured
+    #
+    #       it "foo" do
+    #
+    # It will yield its surrounding context:
+    #
+    #   class OH
+    #     def hello
+    #     end
+    #   end
+    #
+    # Example:
+    #
+    #   AroundBlockScan.new(
+    #       block: block,
+    #       code_lines: @code_lines
+    #   ).on_falling_indent do |line|
+    #     @lines_to_output << line
+    #   end
+    #
     def on_falling_indent
-      last_indent = @orig_indent
-      before_lines.reverse_each do |line|
-        next if line.empty?
-        if line.indent < last_indent
-          yield line
-          last_indent = line.indent
-        end
-      end
+      last_indent_up = @orig_indent
+      last_indent_down = @orig_indent
 
-      last_indent = @orig_indent
-      after_lines.each do |line|
-        next if line.empty?
-        if line.indent < last_indent
-          yield line
-          last_indent = line.indent
-        end
-      end
+      @scanner.commit_if_changed
+      @scanner.scan(
+        up: ->(line, _, _) {
+          next true if line.empty?
+
+          if line.indent < last_indent_up
+            yield line
+            last_indent_up = line.indent
+          end
+          true
+        },
+        down: ->(line, _, _) {
+          next true if line.empty?
+          if line.indent < last_indent_down
+            yield line
+            last_indent_down = line.indent
+          end
+          true
+        }
+      )
+      @scanner.try_rollback
+      self
     end
 
     # Scanning is intentionally conservative because
@@ -267,18 +276,24 @@ module SyntaxSuggest
       return self if kw_count == end_count # nothing to balance
 
       # More ends than keywords, check if we can balance expanding up
+      next_up = @scanner.next_up
+      next_down = @scanner.next_down
       if (end_count - kw_count) == 1 && next_up
-        return self unless next_up.is_kw?
-        return self unless next_up.indent >= @orig_indent
-
-        @before_index = next_up.index
+        if next_up.is_kw? && next_up.indent >= @orig_indent
+          @scanner.scan(
+            up: ->(line, _, _) { line == next_up },
+            down: ->(line, _, _) { false }
+          )
+        end
 
       # More keywords than ends, check if we can balance by expanding down
       elsif (kw_count - end_count) == 1 && next_down
-        return self unless next_down.is_end?
-        return self unless next_down.indent >= @orig_indent
-
-        @after_index = next_down.index
+        if next_down.is_end? && next_down.indent >= @orig_indent
+          @scanner.scan(
+            up: ->(line, _, _) { false },
+            down: ->(line) { line == next_down }
+          )
+        end
       end
       self
     end
@@ -286,19 +301,8 @@ module SyntaxSuggest
     # Finds code lines at the same or greater indentation and adds them
     # to the block
     def scan_neighbors_not_empty
-      scan_while { |line| line.not_empty? && line.indent >= @orig_indent }
-    end
-
-    # Returns the next line to be scanned above the current block.
-    # Returns `nil` if at the top of the document already
-    def next_up
-      @code_lines[before_index.pred]
-    end
-
-    # Returns the next line to be scanned below the current block.
-    # Returns `nil` if at the bottom of the document already
-    def next_down
-      @code_lines[after_index.next]
+      @target_indent = @orig_indent
+      scan_while { |line| line.not_empty? && line.indent >= @target_indent }
     end
 
     # Scan blocks based on indentation of next line above/below block
@@ -310,11 +314,12 @@ module SyntaxSuggest
     # the `def/end` lines surrounding a method.
     def scan_adjacent_indent
       before_after_indent = []
-      before_after_indent << (next_up&.indent || 0)
-      before_after_indent << (next_down&.indent || 0)
 
-      indent = before_after_indent.min
-      scan_while { |line| line.not_empty? && line.indent >= indent }
+      before_after_indent << (@scanner.next_up&.indent || 0)
+      before_after_indent << (@scanner.next_down&.indent || 0)
+
+      @target_indent = before_after_indent.min
+      scan_while { |line| line.not_empty? && line.indent >= @target_indent }
 
       self
     end
@@ -331,29 +336,12 @@ module SyntaxSuggest
     # Returns the lines matched by the current scan as an
     # array of CodeLines
     def lines
-      @code_lines[before_index..after_index]
+      @scanner.lines
     end
 
-    # Gives the index of the first line currently scanned
-    def before_index
-      @before_index ||= @orig_before_index
-    end
-
-    # Gives the index of the last line currently scanned
-    def after_index
-      @after_index ||= @orig_after_index
-    end
-
-    # Returns an array of all the CodeLines that exist before
-    # the currently scanned block
-    private def before_lines
-      @code_lines[0...before_index] || []
-    end
-
-    # Returns an array of all the CodeLines that exist after
-    # the currently scanned block
-    private def after_lines
-      @code_lines[after_index.next..-1] || []
+    # Managable rspec errors
+    def inspect
+      "#<#{self.class}:0x0000123843lol >"
     end
   end
 end

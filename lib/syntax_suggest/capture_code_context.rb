@@ -55,6 +55,10 @@ module SyntaxSuggest
         capture_falling_indent(block)
       end
 
+      sorted_lines
+    end
+
+    def sorted_lines
       @lines_to_output.select!(&:not_empty?)
       @lines_to_output.uniq!
       @lines_to_output.sort!
@@ -116,7 +120,7 @@ module SyntaxSuggest
       return unless block.visible_lines.count == 1
 
       around_lines = AroundBlockScan.new(code_lines: @code_lines, block: block)
-        .capture_neighbor_context
+        .capture_before_after_kws
 
       around_lines -= block.lines
 

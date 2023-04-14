@@ -4,6 +4,43 @@ require_relative "../spec_helper"
 
 module SyntaxSuggest
   RSpec.describe AroundBlockScan do
+    it "on_falling_indent" do
+      source = <<~'EOM'
+        class OH
+          def lol
+            print 'lol
+          end
+
+          def hello
+            it "foo" do
+          end
+
+          def yolo
+            print 'haha'
+          end
+        end
+      EOM
+
+      code_lines = CleanDocument.new(source: source).call.lines
+      block = CodeBlock.new(lines: code_lines[6])
+
+      lines = []
+      AroundBlockScan.new(
+        block: block,
+        code_lines: code_lines
+      ).on_falling_indent do |line|
+        lines << line
+      end
+      lines.sort!
+
+      expect(lines.join).to eq(<<~'EOM')
+        class OH
+          def hello
+          end
+        end
+      EOM
+    end
+
     it "continues scan from last location even if scan is false" do
       source = <<~'EOM'
         print 'omg'
@@ -104,8 +141,8 @@ module SyntaxSuggest
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
       expand.scan_while { true }
 
-      expect(expand.before_index).to eq(0)
-      expect(expand.after_index).to eq(6)
+      expect(expand.lines.first.index).to eq(0)
+      expect(expand.lines.last.index).to eq(6)
       expect(expand.code_block.to_s).to eq(source_string)
     end
 
