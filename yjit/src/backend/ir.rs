@@ -285,7 +285,7 @@ pub enum Target
     /// Pointer to a piece of YJIT-generated code
     CodePtr(CodePtr),
     /// Side exit with a counter
-    SideExit { counter: Option<Counter>, pc: Option<*mut VALUE>, stack_size: Option<u8> },
+    SideExit { counter: Option<Counter>, context: Option<SideExitContext> },
     /// Pointer to a side exit code
     SideExitPtr(CodePtr),
     /// A label within the generated code
@@ -295,7 +295,7 @@ pub enum Target
 impl Target
 {
     pub fn side_exit(counter: Option<Counter>) -> Target {
-        Target::SideExit { counter, pc: None, stack_size: None }
+        Target::SideExit { counter, context: None }
     }
 
     pub fn unwrap_label_idx(&self) -> usize {
@@ -911,7 +911,7 @@ impl fmt::Debug for Insn {
 }
 
 /// Set of variables used for generating side exits
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitContext {
     /// PC of the instruction being compiled
     pub pc: *mut VALUE,
@@ -939,10 +939,6 @@ pub struct Assembler {
     /// Context for generating the current insn
     pub ctx: Context,
 
-    /// Parallel vec with insns
-    /// Past Context for this insn
-    pub(super) insn_ctx: Vec<Context>,
-
     /// Side exit caches for each SideExitContext
     pub(super) side_exits: HashMap<SideExitContext, CodePtr>,
 
@@ -966,7 +962,6 @@ impl Assembler
             reg_temps: Vec::default(),
             label_names,
             ctx: Context::default(),
-            insn_ctx: Vec::default(),
             side_exits,
             side_exit_pc: None,
             side_exit_stack_size: None,
@@ -1037,18 +1032,19 @@ impl Assembler
 
         // Set a side exit context to Target::SideExit
         let mut insn = insn;
-        if let Some(Target::SideExit { pc, stack_size, .. }) = insn.target_mut() {
+        if let Some(Target::SideExit { context, .. }) = insn.target_mut() {
             // We should skip this when this instruction is being copied from another Assembler.
-            if let (None, None) = (&pc, &stack_size) {
-                *pc = self.side_exit_pc;
-                *stack_size = self.side_exit_stack_size;
+            if context.is_none() {
+                *context = Some(SideExitContext {
+                    pc: self.side_exit_pc.unwrap(),
+                    ctx: self.ctx.with_stack_size(self.side_exit_stack_size.unwrap()),
+                });
             }
         }
 
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
         self.reg_temps.push(reg_temps);
-        self.insn_ctx.push(self.ctx.clone());
     }
 
     /// Get stack temps that are currently in a register
@@ -1110,13 +1106,11 @@ impl Assembler
         }
 
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
-        let insn_ctx = take(&mut self.insn_ctx);
         let regs = Assembler::get_temp_regs();
         let reg_temps = take(&mut self.reg_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_mapped() {
-            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             match &insn {
                 // The original insn is pushed to the new asm to satisfy ccall's reg_temps assertion.
                 Insn::RegTemps(_) => {} // noop
@@ -1268,11 +1262,9 @@ impl Assembler
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
-        let insn_ctx = take(&mut self.insn_ctx);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
-            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.

@@ -417,7 +417,7 @@ impl RegTemps {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Clone, Default, Eq, Hash, PartialEq, Debug)]
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u8,

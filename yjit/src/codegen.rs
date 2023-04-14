@@ -8241,6 +8241,7 @@ mod tests {
     #[test]
     fn test_gen_check_ints() {
         let (_jit, _ctx, mut asm, _cb, _ocb) = setup_codegen();
+        asm.set_side_exit_context(0 as _, 0);
         gen_check_ints(&mut asm, None);
     }
 
@@ -8470,6 +8471,7 @@ mod tests {
         let (mut jit, _context, mut asm, _cb, mut ocb) = setup_codegen();
         // Push return value
         asm.stack_push(Type::Fixnum);
+        asm.set_side_exit_context(0 as _, 0);
         gen_leave(&mut jit, &mut asm, &mut ocb);
     }
 }

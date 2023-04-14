@@ -377,12 +377,10 @@ impl Assembler
         }
 
         let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
-        let insn_ctx = take(&mut self.insn_ctx);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_mapped() {
-            asm.ctx = insn_ctx[index].clone(); // propagate insn_ctx
             // Here we're going to map the operands of the instruction to load
             // any Opnd::Value operands into registers if they are heap objects
             // such that only the Op::Load instruction needs to handle that
@@ -792,14 +790,9 @@ impl Assembler
             target: Target,
             asm: &mut Assembler,
             ocb: &mut Option<&mut OutlinedCb>,
-            insn_idx: usize,
         ) -> Target {
-            if let Target::SideExit { counter, pc, stack_size } = target {
-                let side_exit_context = SideExitContext {
-                    pc: pc.unwrap(),
-                    ctx: asm.insn_ctx[insn_idx].with_stack_size(stack_size.unwrap()),
-                };
-                let side_exit = asm.get_side_exit(&side_exit_context, counter, ocb.as_mut().unwrap());
+            if let Target::SideExit { counter, context } = target {
+                let side_exit = asm.get_side_exit(&context.unwrap(), counter, ocb.as_mut().unwrap());
                 Target::SideExitPtr(side_exit)
             } else {
                 target
@@ -1042,7 +1035,7 @@ impl Assembler
                     br(cb, opnd.into());
                 },
                 Insn::Jmp(target) => {
-                    match compile_side_exit(*target, self, ocb, insn_idx) {
+                    match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(dst_ptr) => {
                             emit_jmp_ptr(cb, dst_ptr, true);
                         },
@@ -1066,19 +1059,19 @@ impl Assembler
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
+                    emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jne(target) | Insn::Jnz(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
+                    emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
+                    emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
+                    emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb, insn_idx));
+                    emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
