@@ -14774,6 +14774,14 @@ rb_mmtk_on_fstring_table_delete(st_data_t key, st_data_t value, void *arg)
 #endif
 }
 
+static void
+rb_mmtk_on_overloaded_cme_delete(st_data_t key, st_data_t value, void *arg)
+{
+#if USE_RUBY_DEBUG_LOG
+    RUBY_DEBUG_LOG("Deleting from overloaded_cme_table: %p -> %p", (void*)key, (void*)value);
+#endif
+}
+
 // This function is called after transitive closure, but before calling obj_free.
 void
 rb_mmtk_update_global_weak_tables_early(void)
@@ -14824,6 +14832,13 @@ rb_mmtk_update_global_weak_tables(void)
     // so the hash will not change if the key (String) is moved.
     // We can update keys and values in place.
     gc_update_table_refs(objspace, global_symbols.str_sym);
+
+    // The overloaded CME table.  It has both weak keys and weak values.
+    rb_mmtk_update_weak_table(GET_VM()->overloaded_cme_table,
+                              true,
+                              true, // Currently values are pinned.
+                              rb_mmtk_on_overloaded_cme_delete,
+                              NULL);
 }
 
 // Workaround private functions
