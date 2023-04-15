@@ -109,7 +109,7 @@ for one element in the input or output array.
     s = [0, 1, -1].pack('c*') # => "\x00\x01\xFF"
     s.unpack('c*') # => [0, 1, -1]
 
-- <tt>'C'</tt> - 8-bit signed integer
+- <tt>'C'</tt> - 8-bit unsigned integer
   (like C <tt>unsigned char</tt>):
 
     [0, 1, 255].pack('C*')    # => "\x00\x01\xFF"
@@ -233,7 +233,7 @@ for one element in the input or output array.
     # => [67305985, 4244504319]
 
 ==== Other \Integer Directives
-:
+
 - <tt>'U'</tt> - UTF-8 character:
 
     s = [4194304].pack('U*')
