@@ -2291,7 +2291,8 @@ struct rb_vm_exec_context {
 
 static void
 vm_exec_enter_vm_loop(rb_execution_context_t *ec, struct rb_vm_exec_context *ctx,
-                      struct rb_vm_tag *_tag, bool skip_first_ex_handle) {
+                      struct rb_vm_tag *_tag, bool skip_first_ex_handle)
+{
     if (skip_first_ex_handle) {
         goto vm_loop_start;
     }
