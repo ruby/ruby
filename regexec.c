@@ -3464,7 +3464,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	if (ischanged && msa->enable_cache_match_opt) {
 	  RelAddrType rel;
 	  OnigUChar *addr;
-	  int mem;
+	  MemNumType mem;
 	  UChar* tmp = p;
 	  switch (*tmp++) {
 	  case OP_JUMP:

@@ -319,9 +319,13 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 #define ONIG_LAST_CODE_POINT    (~((OnigCodePoint )0))
 
+#define PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type) \
+  ((void)sizeof(char[2 * (sizeof(val) == sizeof(type)) - 1]))
+
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
 
 # define PLATFORM_GET_INC(val,p,type) do{\
+  PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type);\
   val  = *(type* )p;\
   (p) += sizeof(type);\
 } while(0)
@@ -329,7 +333,10 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #else
 
 # define PLATFORM_GET_INC(val,p,type) do{\
-  xmemcpy(&val, (p), sizeof(type));\
+  PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type);\
+  type platform_get_value;\
+  xmemcpy(&platform_get_value, (p), sizeof(type));\
+  val = platform_get_value;\
   (p) += sizeof(type);\
 } while(0)
 
