@@ -486,6 +486,7 @@ if you believe they were disclosed to a third party.
       yaml_hash[key.to_s] = value
     end
 
+    require "bundler/yaml_serializer"
     Bundler::YAMLSerializer.dump(yaml_hash)
   end
 
