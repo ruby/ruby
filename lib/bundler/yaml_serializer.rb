@@ -82,7 +82,7 @@ module Bundler
 
     def convert_to_ruby_value(val)
       if val.match?(/\A:(.*)\Z/)
-        $1.to_sym
+        val[1..-1].to_sym
       elsif val.match?(/\A[+-]?\d+\Z/)
         val.to_i
       elsif val.match?(/\Atrue|false\Z/)
