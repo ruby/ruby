@@ -77,7 +77,22 @@ module Bundler
           last_hash[last_empty_key].push(convert_to_ruby_value(val))
         end
       end
+      deep_transform_values_with_empty_hash!(res)
       res
+    end
+
+    def deep_transform_values_with_empty_hash!(hash)
+      hash.transform_values! do |v|
+        if v.is_a?(Hash)
+          if v.empty?
+            nil
+          else
+            deep_transform_values_with_empty_hash!(v)
+          end
+        else
+          v
+        end
+      end
     end
 
     def convert_to_ruby_value(val)
