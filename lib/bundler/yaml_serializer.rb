@@ -58,7 +58,7 @@ module Bundler
       str.split(/\r?\n/).each do |line|
         if match = HASH_REGEX.match(line)
           indent, key, quote, val = match.captures
-          key = convert_to_backward_compatible_key(key)
+          key = convert_to_backward_compatible_key(key) if key.match?(/__/)
           key = key[1..-1].to_sym if key.start_with?(":")
           depth = indent.scan(/  /).length
           if quote.empty? && val.empty?
