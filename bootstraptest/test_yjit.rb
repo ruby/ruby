@@ -3933,3 +3933,17 @@ assert_equal '[true, true, true, true, true]', %q{
   end
   calling_my_func
 }
+
+# Regresssion test: rest and optional and splat
+assert_equal 'true', %q{
+  def my_func(base=nil, *args)
+    [base, args]
+  end
+
+  def calling_my_func
+    array = []
+    my_func(:base, :rest1, *array) == [:base, [:rest1]]
+  end
+
+  calling_my_func
+}
