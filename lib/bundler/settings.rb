@@ -461,7 +461,7 @@ module Bundler
             new_k = k.gsub("-", "___")
           end
 
-          config[new_k] = v
+          config[new_k] = v.to_s
           config
         end
       end
