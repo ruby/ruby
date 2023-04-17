@@ -332,6 +332,8 @@ module Gem::GemcutterUtilities
       request.basic_auth email, password
     end
 
+    Gem.load_yaml
+
     with_response response do |resp|
       Gem::SafeYAML.load clean_text(resp.body)
     end
