@@ -536,11 +536,11 @@ if you believe they were disclosed to a third party.
     content.transform_keys! do |k|
       if k.match?(/\A:(.*)\Z/)
         k[1..-1].to_sym
-      elsif k.match?(/__/)
+      elsif k.include?("__")
         if k.is_a?(Symbol)
-          k.to_s.gsub(/__/,".").to_sym
+          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
         else
-          k.dup.gsub(/__/,".")
+          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
         end
       else
         k
