@@ -107,6 +107,8 @@ jobs:
             shared: disable
             # check: true
 
+          - { name: ext/Setup }
+
 #         - { name: aarch64-linux-gnu,     crosshost: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
 #         - { name: arm-linux-gnueabi,     crosshost: arm-linux-gnueabi }
 #         - { name: arm-linux-gnueabihf,   crosshost: arm-linux-gnueabihf }
@@ -246,6 +248,9 @@ jobs:
             matrix.entry.crosshost || '"${default_cc}${append_cc:+ $append_cc}"'
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
+      - name: Add to ext/Setup # statically link just the etc extension
+        run: mkdir ext && echo etc >> ext/Setup
+        if: ${{ matrix.entry.name == 'ext/Setup' }}
       - run: make extract-extlibs
       - run: make incs
       - run: make showflags
