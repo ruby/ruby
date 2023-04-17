@@ -4841,6 +4841,9 @@ fn gen_push_frame(
         asm.store(Opnd::mem(64, sp, offset), rest_arg);
     }
 
+    // Spill stack temps to let the callee use them (must be done before changing SP)
+    asm.spill_temps();
+
     if set_sp_cfp {
         // Saving SP before calculating ep avoids a dependency on a register
         // However this must be done after referencing frame.recv, which may be SP-relative
@@ -5079,7 +5082,6 @@ fn gen_send_cfunc(
         assert_ne!(0, unsafe { rb_IMEMO_TYPE_P(imemo_ci, imemo_callinfo) },
             "we assume all callinfos with kwargs are on the GC heap");
         let sp = asm.lea(asm.ctx.sp_opnd(0));
-        asm.spill_temps(); // for ccall
         let kwargs = asm.ccall(build_kwhash as *const u8, vec![imemo_ci.into(), sp]);
 
         // Replace the stack location at the start of kwargs with the new hash
@@ -5089,9 +5091,6 @@ fn gen_send_cfunc(
 
     // Copy SP because REG_SP will get overwritten
     let sp = asm.lea(asm.ctx.sp_opnd(0));
-
-    // Arguments must be spilled before popped from ctx
-    asm.spill_temps();
 
     // Pop the C function arguments from the stack (in the caller)
     asm.stack_pop((argc + 1).try_into().unwrap());
@@ -6061,7 +6060,7 @@ fn gen_send_iseq(
         // pushed onto the stack that represents the parameters that weren't
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
-        asm.spill_temps(); // avoid using a register for unspecified_bits
+        asm.spill_temp(asm.stack_opnd(-1)); // avoid using a register for unspecified_bits
         asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
     }
 
@@ -6093,9 +6092,6 @@ fn gen_send_iseq(
         }
         argc = lead_num;
     }
-
-    // Spill stack temps to let the callee use them
-    asm.spill_temps();
 
     // If we have a rest param and optional parameters,
     // we don't actually pass the rest parameter as an argument,

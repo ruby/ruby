@@ -1189,7 +1189,7 @@ impl Assembler
 
         // Every stack temp should have been spilled
         assert_eq!(self.get_reg_temps(), RegTemps::default());
-        self.ctx.set_reg_temps(self.get_reg_temps());
+        assert_eq!(self.ctx.get_reg_temps(), RegTemps::default());
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -1815,13 +1815,18 @@ impl Assembler {
         if self.get_reg_temps() != reg_temps {
             self.comment(&format!("reg_temps: {:08b} -> {:08b}", self.get_reg_temps().as_u8(), reg_temps.as_u8()));
             self.push_insn(Insn::RegTemps(reg_temps));
+            self.ctx.set_reg_temps(self.get_reg_temps());
         }
     }
 
     /// Spill a stack temp from a register to the stack
     pub fn spill_temp(&mut self, opnd: Opnd) {
-        assert!(self.get_reg_temps().get(opnd.stack_idx()));
-        self.push_insn(Insn::SpillTemp(opnd));
+        assert_eq!(self.get_reg_temps(), self.ctx.get_reg_temps());
+
+        if opnd.stack_idx() < MAX_REG_TEMPS && self.get_reg_temps().get(opnd.stack_idx()) {
+            self.push_insn(Insn::SpillTemp(opnd));
+            self.ctx.set_reg_temps(self.get_reg_temps());
+        }
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
