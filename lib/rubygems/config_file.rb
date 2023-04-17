@@ -324,11 +324,11 @@ if you believe they were disclosed to a third party.
     require "fileutils"
     FileUtils.mkdir_p(dirname)
 
-    Gem.load_yaml
+    require "bundler/yaml_serializer"
 
     permissions = 0o600 & (~File.umask)
     File.open(credentials_path, "w", permissions) do |f|
-      f.write config.to_yaml
+      f.write Bundler::YAMLSerializer.dump(config)
     end
 
     load_api_keys # reload
@@ -344,15 +344,14 @@ if you believe they were disclosed to a third party.
   end
 
   def load_file(filename)
-    Gem.load_yaml
+    require "bundler/yaml_serializer"
 
     yaml_errors = [ArgumentError]
-    yaml_errors << Psych::SyntaxError if defined?(Psych::SyntaxError)
 
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      content = Gem::SafeYAML.load(File.read(filename))
+      content = Bundler::YAMLSerializer.load(File.read(filename))
       unless content.is_a? Hash
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
@@ -487,7 +486,7 @@ if you believe they were disclosed to a third party.
       yaml_hash[key.to_s] = value
     end
 
-    yaml_hash.to_yaml
+    Bundler::YAMLSerializer.dump(yaml_hash)
   end
 
   # Writes out this config file, replacing its source.
