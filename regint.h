@@ -42,7 +42,7 @@
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
-/* enable matching optimization by using cache. */
+/* enable the match optimization by using a cache. */
 #define USE_MATCH_CACHE
 
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
@@ -918,10 +918,8 @@ typedef struct {
 #endif
 } OnigMatchArg;
 
-#ifdef USE_MATCH_CACHE
-#  define NUM_CACHE_OPCODES_IMPOSSIBLE -1
-#  define NUM_CACHE_OPCODES_UNINIT     -2
-#endif
+#define NUM_CACHE_OPCODES_IMPOSSIBLE -1
+#define NUM_CACHE_OPCODES_UNINIT     -2
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))

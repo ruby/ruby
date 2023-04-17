@@ -233,7 +233,35 @@ onig_get_capture_tree(OnigRegion* region)
 
 #ifdef USE_MATCH_CACHE
 
-/* count the number of cache opcodes (jump-like opcodes) for allocating a `match_cache_buf`. */
+/*
+Glossary for "match cache"
+
+"match cache" or "match cache optimization"
+The `Regexp#match` optimization by using a cache.
+
+"cache opcode"
+A cachable opcode (e.g. `OP_PUSH`, `OP_REPEAT`, etc).
+It is corresponding to some cache points.
+`OP_NULL_CHECK_START` and `OP_NULL_CHECK_END_MEMST` are exceptions.
+They are counted as cache opcodes, but they have no corresponding cache points.
+They are used for resetting a match cache buffer when a null loop is detected.
+
+"cache point"
+A cachable point on matching.
+Usually, one-to-one corresponding between a cache opcode and a cache point exists,
+but cache opcodes between `OP_REPEAT` and `OP_REPEAT_INC` have some corresponding
+cache points depending on repetition counts.
+
+"match cache point"
+A pair of a cache point and a position on an input string.
+We encode a match cache point to an integer value by the following equation:
+"match cache point" = "position on input string" * "total number of cache points" + "cache point"
+
+"match cache buffer"
+A bit-array for recording (caching) match cache points once arrived.
+*/
+
+/* count the total number of cache opcodes for allocating a match cache buffer. */
 static OnigPosition
 count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 {
@@ -463,6 +491,7 @@ bytecode_error:
   return ONIGERR_UNDEFINED_BYTECODE;
 }
 
+/* collect cache opcodes from the given regex program, and compute the total number of cache points. */
 static OnigPosition
 init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num_cache_points_ptr)
 {
@@ -723,11 +752,11 @@ unexpected_bytecode_error:
 bytecode_error:
   return ONIGERR_UNDEFINED_BYTECODE;
 }
-#else /* USE_MATCH_CACHE */
+#else
 static OnigPosition
-count_num_cache_opcodes(regex_t* reg, long* num, long* table_size)
+count_num_cache_opcodes(regex_t* reg, long* num_cache_opcodes)
 {
-  *num = NUM_CACHE_OPCODE_FAIL;
+  *num_cache_opcodes = NUM_CACHE_OPCODES_IMPOSSIBLE;
   return 0;
 }
 #endif /* USE_MATCH_CACHE */
