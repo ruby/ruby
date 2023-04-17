@@ -351,20 +351,8 @@ if you believe they were disclosed to a third party.
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      content = Bundler::YAMLSerializer.load(File.read(filename))
+      content = Bundler::YAMLSerializer.load(File.read(filename), is_rubygems: true)
       if content.is_a? Hash
-        content.transform_keys! do |k|
-          if k.match?(/__/)
-            if k.is_a?(Symbol)
-              k.to_s.gsub(/__/,".").to_sym
-            else
-              k.dup.gsub(/__/,".")
-            end
-          else
-            k
-          end
-        end
-
         content.transform_values! do |v|
           if (v.is_a?(Hash) || v.is_a?(String)) && v.empty?
             nil
