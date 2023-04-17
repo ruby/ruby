@@ -680,7 +680,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def load_yaml_file(file)
     require "bundler/yaml_serializer"
-    Bundler::YAMLSerializer.load(File.read(file), is_rubygems: true)
+    Bundler::YAMLSerializer.load(File.read(file))
   end
 
   def all_spec_names

@@ -320,6 +320,10 @@ if you believe they were disclosed to a third party.
 
     config = load_file(credentials_path).merge(host => api_key)
 
+    config.transform_keys! do |k|
+      k.is_a?(Symbol) ? ":#{k}" : k
+    end
+
     dirname = File.dirname credentials_path
     require "fileutils"
     FileUtils.mkdir_p(dirname)
@@ -351,10 +355,36 @@ if you believe they were disclosed to a third party.
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      content = Bundler::YAMLSerializer.load(File.read(filename), is_rubygems: true)
+      content = Bundler::YAMLSerializer.load(File.read(filename))
       if content.is_a? Hash
+        content.transform_keys! do |k|
+          if k.match?(/\A:(.*)\Z/)
+            k[1..-1].to_sym
+          elsif k.match?(/__/)
+            if k.is_a?(Symbol)
+              k.to_s.gsub(/__/,".").to_sym
+            else
+              k.dup.gsub(/__/,".")
+            end
+          else
+            k
+          end
+        end
+
         content.transform_values! do |v|
-          if (v.is_a?(Hash) || v.is_a?(String)) && v.empty?
+          if v.is_a?(String)
+            if v.match?(/\A:(.*)\Z/)
+              v[1..-1].to_sym
+            elsif v.match?(/\A[+-]?\d+\Z/)
+              v.to_i
+            elsif v.match?(/\Atrue|false\Z/)
+              v == "true"
+            elsif v.empty?
+              nil
+            else
+              v
+            end
+          elsif v.is_a?(Hash) && v.empty?
             nil
           else
             v
@@ -492,6 +522,10 @@ if you believe they were disclosed to a third party.
       key = key.to_s
       next if key&.match?(re)
       yaml_hash[key.to_s] = value
+    end
+
+    yaml_hash.transform_keys! do |k|
+      k.is_a?(Symbol) ? ":#{k}" : k
     end
 
     require "bundler/yaml_serializer"
