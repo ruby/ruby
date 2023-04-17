@@ -87,6 +87,8 @@ module Bundler
         val.to_i
       elsif val.match?(/\Atrue|false\Z/)
         val == "true"
+      elsif val.empty?
+        nil
       else
         val
       end
