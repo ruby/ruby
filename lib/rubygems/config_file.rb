@@ -357,39 +357,7 @@ if you believe they were disclosed to a third party.
     begin
       content = Bundler::YAMLSerializer.load(File.read(filename))
       if content.is_a? Hash
-        content.transform_keys! do |k|
-          if k.match?(/\A:(.*)\Z/)
-            k[1..-1].to_sym
-          elsif k.match?(/__/)
-            if k.is_a?(Symbol)
-              k.to_s.gsub(/__/,".").to_sym
-            else
-              k.dup.gsub(/__/,".")
-            end
-          else
-            k
-          end
-        end
-
-        content.transform_values! do |v|
-          if v.is_a?(String)
-            if v.match?(/\A:(.*)\Z/)
-              v[1..-1].to_sym
-            elsif v.match?(/\A[+-]?\d+\Z/)
-              v.to_i
-            elsif v.match?(/\Atrue|false\Z/)
-              v == "true"
-            elsif v.empty?
-              nil
-            else
-              v
-            end
-          elsif v.is_a?(Hash) && v.empty?
-            nil
-          else
-            v
-          end
-        end
+        content = self.class.convert_rubygems_config_hash(content)
       else
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
@@ -563,6 +531,44 @@ if you believe they were disclosed to a third party.
 
   attr_reader :hash
   protected :hash
+
+  def self.convert_rubygems_config_hash(content)
+    content.transform_keys! do |k|
+      if k.match?(/\A:(.*)\Z/)
+        k[1..-1].to_sym
+      elsif k.match?(/__/)
+        if k.is_a?(Symbol)
+          k.to_s.gsub(/__/,".").to_sym
+        else
+          k.dup.gsub(/__/,".")
+        end
+      else
+        k
+      end
+    end
+
+    content.transform_values! do |v|
+      if v.is_a?(String)
+        if v.match?(/\A:(.*)\Z/)
+          v[1..-1].to_sym
+        elsif v.match?(/\A[+-]?\d+\Z/)
+          v.to_i
+        elsif v.match?(/\Atrue|false\Z/)
+          v == "true"
+        elsif v.empty?
+          nil
+        else
+          v
+        end
+      elsif v.is_a?(Hash) && v.empty?
+        nil
+      else
+        v
+      end
+    end
+
+    content
+  end
 
   private
 

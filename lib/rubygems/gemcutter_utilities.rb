@@ -334,7 +334,8 @@ module Gem::GemcutterUtilities
 
     require "bundler/yaml_serializer"
     with_response response do |resp|
-      Bundler::YAMLSerializer.load clean_text(resp.body)
+      profile = Bundler::YAMLSerializer.load clean_text(resp.body)
+      Gem::ConfigFile.convert_rubygems_config_hash profile
     end
   end
 
