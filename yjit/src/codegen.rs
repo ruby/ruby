@@ -5856,7 +5856,7 @@ fn gen_send_iseq(
 
                 // If we have more arguments than required, we need to prepend
                 // the items from the stack onto the array.
-                let diff = (non_rest_arg_count - required_num + opts_filled_with_splat.unwrap_or(0)) as u32;
+                let diff = (non_rest_arg_count - (required_num + opts_filled_with_splat.unwrap_or(0))) as u32;
 
                 // diff is >0 so no need to worry about null pointer
                 asm.comment("load pointer to array elements");
