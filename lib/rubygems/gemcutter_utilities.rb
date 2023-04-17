@@ -332,10 +332,9 @@ module Gem::GemcutterUtilities
       request.basic_auth email, password
     end
 
-    Gem.load_yaml
-
+    require "bundler/yaml_serializer"
     with_response response do |resp|
-      Gem::SafeYAML.load clean_text(resp.body)
+      Bundler::YAMLSerializer.load clean_text(resp.body)
     end
   end
 
