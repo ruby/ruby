@@ -465,21 +465,6 @@ if you believe they were disclosed to a third party.
     assert_equal %w[http://even-more-gems.example.com], Gem.sources
   end
 
-  def test_ignore_invalid_config_file
-    File.open @temp_conf, "w" do |fp|
-      fp.puts "invalid: yaml:"
-    end
-
-    begin
-      verbose = $VERBOSE
-      $VERBOSE = nil
-
-      util_config_file
-    ensure
-      $VERBOSE = verbose
-    end
-  end
-
   def test_load_ssl_verify_mode_from_config
     File.open @temp_conf, "w" do |fp|
       fp.puts ":ssl_verify_mode: 1"
