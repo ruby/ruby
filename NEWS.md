@@ -30,6 +30,10 @@ Note: We're only listing outstanding class updates.
     * `Dir#chdir` added for changing the directory to the directory specified
       by the provided `Dir` object. [[Feature #19347]]
 
+* MatchData
+
+    * MatchData#named_captures now accepts optional `symbolize_names` keyword. [[Feature #19591]]
+
 * String
 
     * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
