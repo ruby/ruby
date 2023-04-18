@@ -1585,6 +1585,13 @@ eom
     assert_syntax_error('def obj.foo=() = 42', error)
     assert_syntax_error('def foo=() = 42 rescue nil', error)
     assert_syntax_error('def obj.foo=() = 42 rescue nil', error)
+
+    assert_warn(/accross newline/) do
+      assert_valid_syntax("def foo =\n""  42", verbose: false)
+    end
+    assert_warn(/accross newline/) do
+      assert_valid_syntax("def obj.foo =\n""  42", verbose: false)
+    end
   end
 
   def test_methoddef_endless_command
@@ -1610,6 +1617,13 @@ eom
     assert_syntax_error('private def obj.foo = puts "Hello"', error)
     assert_syntax_error('private def obj.foo() = puts "Hello"', error)
     assert_syntax_error('private def obj.foo(x) = puts x', error2)
+
+    assert_warn(/accross newline/) do
+      assert_valid_syntax("def foo =\n""  puts 'Hello'", verbose: false)
+    end
+    assert_warn(/accross newline/) do
+      assert_valid_syntax("def obj.foo =\n""  puts 'Hello'", verbose: false)
+    end
   end
 
   def test_methoddef_in_cond
