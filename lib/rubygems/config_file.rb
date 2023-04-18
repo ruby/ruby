@@ -320,19 +320,13 @@ if you believe they were disclosed to a third party.
 
     config = load_file(credentials_path).merge(host => api_key)
 
-    config.transform_keys! do |k|
-      k.is_a?(Symbol) ? ":#{k}" : k
-    end
-
     dirname = File.dirname credentials_path
     require "fileutils"
     FileUtils.mkdir_p(dirname)
 
-    require "bundler/yaml_serializer"
-
     permissions = 0o600 & (~File.umask)
     File.open(credentials_path, "w", permissions) do |f|
-      f.write Bundler::YAMLSerializer.dump(config)
+      f.write self.class.dump_with_rubygems_yaml(config)
     end
 
     load_api_keys # reload
@@ -492,12 +486,7 @@ if you believe they were disclosed to a third party.
       yaml_hash[key.to_s] = value
     end
 
-    yaml_hash.transform_keys! do |k|
-      k.is_a?(Symbol) ? ":#{k}" : k
-    end
-
-    require "bundler/yaml_serializer"
-    Bundler::YAMLSerializer.dump(yaml_hash)
+    self.class.dump_with_rubygems_yaml(yaml_hash)
   end
 
   # Writes out this config file, replacing its source.
@@ -531,6 +520,15 @@ if you believe they were disclosed to a third party.
 
   attr_reader :hash
   protected :hash
+
+  def self.dump_with_rubygems_yaml(content)
+    content.transform_keys! do |k|
+      k.is_a?(Symbol) ? ":#{k}" : k
+    end
+
+    require "bundler/yaml_serializer"
+    Bundler::YAMLSerializer.dump(content)
+  end
 
   def self.convert_rubygems_config_hash(content)
     content.transform_keys! do |k|
