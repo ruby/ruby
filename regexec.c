@@ -2074,19 +2074,28 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
 static void
 reset_match_cache_on_null_check(regex_t* reg, const UChar* pstart, const UChar* pend, long pos, uint8_t* match_cache_buf, const OnigCacheOpcode* cache_opcodes, long num_cache_opcodes, long num_cache_points, const OnigStackType *stk, const OnigStackIndex *repeat_stk)
 {
+  long cache_point_start, cache_point_end;
+  long match_cache_point_start, match_cache_point_end;
+  long match_cache_point_start_index, match_cache_point_end_index;
+  uint8_t match_cache_point_start_bit, match_cache_point_end_bit;
+
 #ifdef ONIG_DEBUG_MATCH_CACHE
   fprintf(stderr, "MATCH CACHE: reset start=%p end=%p pos=%ld cache_opcodes=%p num_cache_opcodes=%ld\n", pstart, pend, pos, cache_opcodes, num_cache_opcodes);
 #endif
 
-  long cache_point_start = find_cache_point(reg, cache_opcodes, num_cache_opcodes, pstart, stk, repeat_stk);
-  long cache_point_end = find_cache_point(reg, cache_opcodes, num_cache_opcodes, pend, stk, repeat_stk);
+  cache_point_start = find_cache_point(reg, cache_opcodes, num_cache_opcodes, pstart, stk, repeat_stk);
+  cache_point_end = find_cache_point(reg, cache_opcodes, num_cache_opcodes, pend, stk, repeat_stk);
+  // Skip to reset if `pstart` or `pend` is not found.
+  // This situation occurs when there is no cache point
+  // between OP_NULL_CHECK_START and OP_NULL_CHECK_END_MEMST.
+  if (cache_point_start == -1 || cache_point_end == -1) return;
 
-  long match_cache_point_start = pos * num_cache_points + cache_point_start;
-  long match_cache_point_end = pos * num_cache_points + cache_point_end;
-  long match_cache_point_start_index = match_cache_point_start >> 3;
-  long match_cache_point_end_index = match_cache_point_end >> 3;
-  uint8_t match_cache_point_start_bits = match_cache_point_start & 7;
-  uint8_t match_cache_point_end_bits = match_cache_point_end & 7;
+  match_cache_point_start = pos * num_cache_points + cache_point_start;
+  match_cache_point_end = pos * num_cache_points + cache_point_end;
+  match_cache_point_start_index = match_cache_point_start >> 3;
+  match_cache_point_end_index = match_cache_point_end >> 3;
+  match_cache_point_start_bit = match_cache_point_start & 7;
+  match_cache_point_end_bit = match_cache_point_end & 7;
 
 #ifdef ONIG_DEBUG_MATCH_CACHE
   fprintf(stderr, "MATCH CACHE: reset start %ld (%ld index=%ld bits=%d)\n", match_cache_point_start, cache_point_start, match_cache_point_start_index, match_cache_point_start_bits);
@@ -2095,17 +2104,17 @@ reset_match_cache_on_null_check(regex_t* reg, const UChar* pstart, const UChar* 
 
   if (match_cache_point_start_index == match_cache_point_end_index) {
     match_cache_buf[match_cache_point_start_index] &=
-      (((1 << (8 - match_cache_point_end_bits - 1)) - 1) << (match_cache_point_end_bits + 1)) |
-      ((1 << match_cache_point_start_bits) - 1);
+      (((1 << (8 - match_cache_point_end_bit - 1)) - 1) << (match_cache_point_end_bit + 1)) |
+      ((1 << match_cache_point_start_bit) - 1);
   } else {
-    if (match_cache_point_start_bits) {
-      match_cache_buf[match_cache_point_start_index] &= (1 << (match_cache_point_start_bits - 1)) - 1;
+    if (match_cache_point_start_bit) {
+      match_cache_buf[match_cache_point_start_index] &= (1 << (match_cache_point_start_bit - 1)) - 1;
       match_cache_point_start_index++;
     }
     if (match_cache_point_start_index < match_cache_point_end_index) {
       xmemset(&match_cache_buf[match_cache_point_start_index], 0, match_cache_point_end_index - match_cache_point_start_index);
-      if (match_cache_point_end_bits) {
-	match_cache_buf[match_cache_point_end_index] &= (((1 << (8 - match_cache_point_end_bits - 1)) - 1) << (match_cache_point_end_bits + 1));
+      if (match_cache_point_end_bit) {
+	match_cache_buf[match_cache_point_end_index] &= (((1 << (8 - match_cache_point_end_bit - 1)) - 1) << (match_cache_point_end_bit + 1));
       }
     }
   }
