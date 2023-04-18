@@ -500,4 +500,32 @@ if you believe they were disclosed to a third party.
     util_config_file
     assert_equal(true, @cfg.disable_default_gem_server)
   end
+
+  def test_load_with_rubygems_config_hash
+    yaml = <<~YAML
+      ---
+      :foo: bar
+      bar: 100
+      buzz: true
+      alpha: :bravo
+      charlie: ""
+      delta:
+    YAML
+    actual = Gem::ConfigFile.load_with_rubygems_config_hash(yaml)
+
+    assert_equal "bar", actual[:foo]
+    assert_equal 100, actual["bar"]
+    assert_equal true, actual["buzz"]
+    assert_equal :bravo, actual["alpha"]
+    assert_equal nil, actual["charlie"]
+    assert_equal nil, actual["delta"]
+  end
+
+  def test_dump_with_rubygems_yaml
+    symbol_key_hash = { :foo => "bar" }
+
+    actual = Gem::ConfigFile.dump_with_rubygems_yaml(symbol_key_hash)
+
+    assert_equal("---\n:foo: \"bar\"\n", actual)
+  end
 end
