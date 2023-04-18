@@ -60,20 +60,20 @@ https://www.ruby-lang.org/
 
 ## メーリングリスト
 
-Rubyのメーリングリストがあります．参加希望の方は [ruby-list-request@ruby-lang.org] まで本文に
+Rubyのメーリングリストがあります．参加希望の方は [ruby-list-request@ml.ruby-lang.org] まで件名に
 
-    subscribe
+    join
 
 と書いて送って下さい．
 
 Ruby開発者向けメーリングリストもあります．こちらではrubyのバグ，将来の仕様拡張など実装上の問題について議論されています．
-参加希望の方は [ruby-dev-request@ruby-lang.org] までruby-listと同様の方法でメールしてください．
+参加希望の方は [ruby-dev-request@ml.ruby-lang.org] までruby-listと同様の方法でメールしてください．
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと数学関係の話題について話し合うruby-mathメーリングリストと
 英語でrubyについて話し合うruby-talkメーリングリストもあります．参加方法はどれも同じです．
 
-[ruby-list-request@ruby-lang.org]: mailto:ruby-list-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
-[ruby-dev-request@ruby-lang.org]: mailto:ruby-dev-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
+[ruby-list-request@ml.ruby-lang.org]: mailto:ruby-list-request@ml.ruby-lang.org?subject=join
+[ruby-dev-request@ml.ruby-lang.org]: mailto:ruby-dev-request@ml.ruby-lang.org?subject=join
 
 ## コンパイル・インストール
 
