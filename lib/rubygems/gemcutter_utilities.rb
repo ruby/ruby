@@ -332,10 +332,8 @@ module Gem::GemcutterUtilities
       request.basic_auth email, password
     end
 
-    require "bundler/yaml_serializer"
     with_response response do |resp|
-      profile = Bundler::YAMLSerializer.load clean_text(resp.body)
-      Gem::ConfigFile.convert_rubygems_config_hash profile
+      Gem::ConfigFile.load_with_rubygems_config_hash(clean_text(resp.body))
     end
   end
 

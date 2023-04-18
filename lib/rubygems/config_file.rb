@@ -342,21 +342,12 @@ if you believe they were disclosed to a third party.
   end
 
   def load_file(filename)
-    require "bundler/yaml_serializer"
-
     yaml_errors = [ArgumentError]
 
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      content = Bundler::YAMLSerializer.load(File.read(filename))
-      if content.is_a? Hash
-        content = self.class.convert_rubygems_config_hash(content)
-      else
-        warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
-        return {}
-      end
-      return content
+      return self.class.load_with_rubygems_config_hash(File.read(filename))
     rescue *yaml_errors => e
       warn "Failed to load #{filename}, #{e}"
     rescue Errno::EACCES
@@ -530,42 +521,51 @@ if you believe they were disclosed to a third party.
     Bundler::YAMLSerializer.dump(content)
   end
 
-  def self.convert_rubygems_config_hash(content)
-    content.transform_keys! do |k|
-      if k.match?(/\A:(.*)\Z/)
-        k[1..-1].to_sym
-      elsif k.include?("__")
-        if k.is_a?(Symbol)
-          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
-        else
-          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
-        end
-      else
-        k
-      end
-    end
+  def self.load_with_rubygems_config_hash(hash)
+    require "bundler/yaml_serializer"
 
-    content.transform_values! do |v|
-      if v.is_a?(String)
-        if v.match?(/\A:(.*)\Z/)
-          v[1..-1].to_sym
-        elsif v.match?(/\A[+-]?\d+\Z/)
-          v.to_i
-        elsif v.match?(/\Atrue|false\Z/)
-          v == "true"
-        elsif v.empty?
+    content = Bundler::YAMLSerializer.load(hash)
+
+    if content.is_a? Hash
+      content.transform_keys! do |k|
+        if k.match?(/\A:(.*)\Z/)
+          k[1..-1].to_sym
+        elsif k.include?("__")
+          if k.is_a?(Symbol)
+            k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+          else
+            k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+          end
+        else
+          k
+        end
+      end
+
+      content.transform_values! do |v|
+        if v.is_a?(String)
+          if v.match?(/\A:(.*)\Z/)
+            v[1..-1].to_sym
+          elsif v.match?(/\A[+-]?\d+\Z/)
+            v.to_i
+          elsif v.match?(/\Atrue|false\Z/)
+            v == "true"
+          elsif v.empty?
+            nil
+          else
+            v
+          end
+        elsif v.is_a?(Hash) && v.empty?
           nil
         else
           v
         end
-      elsif v.is_a?(Hash) && v.empty?
-        nil
-      else
-        v
       end
-    end
 
-    content
+      content
+    else
+      warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
+      {}
+    end
   end
 
   private

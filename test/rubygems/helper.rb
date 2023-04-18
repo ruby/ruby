@@ -679,10 +679,8 @@ class Gem::TestCase < Test::Unit::TestCase
   # Load a YAML file, the psych 3 way
 
   def load_yaml_file(file)
-    require "bundler/yaml_serializer"
     require "rubygems/config_file"
-    yaml = Bundler::YAMLSerializer.load(File.read(file))
-    Gem::ConfigFile.convert_rubygems_config_hash(yaml)
+    Gem::ConfigFile.load_with_rubygems_config_hash(File.read(file))
   end
 
   def all_spec_names
