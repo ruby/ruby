@@ -2,6 +2,7 @@
 
 require_relative "helper"
 require "rubygems/commands/push_command"
+require "rubygems/config_file"
 
 class TestGemCommandsPushCommand < Gem::TestCase
   def setup
@@ -157,7 +158,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     File.open Gem.configuration.credentials_path, "w" do |f|
-      f.write keys.to_yaml
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
     end
     Gem.configuration.load_api_keys
 
@@ -191,7 +192,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     File.open Gem.configuration.credentials_path, "w" do |f|
-      f.write keys.to_yaml
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
     end
     Gem.configuration.load_api_keys
 
@@ -232,7 +233,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     File.open Gem.configuration.credentials_path, "w" do |f|
-      f.write keys.to_yaml
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
     end
     Gem.configuration.load_api_keys
 
@@ -273,7 +274,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     File.open Gem.configuration.credentials_path, "w" do |f|
-      f.write keys.to_yaml
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
     end
     Gem.configuration.load_api_keys
 
@@ -303,7 +304,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     File.open Gem.configuration.credentials_path, "w" do |f|
-      f.write keys.to_yaml
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
     end
     Gem.configuration.load_api_keys
 
