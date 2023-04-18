@@ -517,14 +517,14 @@ if you believe they were disclosed to a third party.
       k.is_a?(Symbol) ? ":#{k}" : k
     end
 
-    require "bundler/yaml_serializer"
-    Bundler::YAMLSerializer.dump(content)
+    require_relative "yaml_serializer"
+    Gem::YAMLSerializer.dump(content)
   end
 
   def self.load_with_rubygems_config_hash(yaml)
-    require "bundler/yaml_serializer"
+    require_relative "yaml_serializer"
 
-    content = Bundler::YAMLSerializer.load(yaml)
+    content = Gem::YAMLSerializer.load(yaml)
 
     content.transform_keys! do |k|
       if k.match?(/\A:(.*)\Z/)
