@@ -3359,6 +3359,59 @@ fn gen_opt_newarray_max(
     Some(KeepCompiling)
 }
 
+fn gen_opt_newarray_send(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    let method = jit.get_arg(1).as_u32();
+
+    if method == idMin {
+        gen_opt_newarray_min(jit, asm, _ocb)
+    } else if method == idMax {
+        gen_opt_newarray_max(jit, asm, _ocb)
+    } else if method == idHash {
+        gen_opt_newarray_hash(jit, asm, _ocb)
+    } else {
+        None
+    }
+}
+
+fn gen_opt_newarray_hash(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+
+    let num = jit.get_arg(0).as_u32();
+
+    // Save the PC and SP because we may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    extern "C" {
+        fn rb_vm_opt_newarray_hash(ec: EcPtr, num: u32, elts: *const VALUE) -> VALUE;
+    }
+
+    let offset_magnitude = (SIZEOF_VALUE as u32) * num;
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_ptr = asm.lea(values_opnd);
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_newarray_hash as *const u8,
+        vec![
+            EC,
+            num.into(),
+            values_ptr
+        ],
+    );
+
+    asm.stack_pop(num.as_usize());
+    let stack_ret = asm.stack_push(Type::Unknown);
+    asm.mov(stack_ret, val_opnd);
+
+    Some(KeepCompiling)
+}
+
 fn gen_opt_newarray_min(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -7824,8 +7877,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_mod => Some(gen_opt_mod),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
-        YARVINSN_opt_newarray_max => Some(gen_opt_newarray_max),
-        YARVINSN_opt_newarray_min => Some(gen_opt_newarray_min),
+        YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_concatarray => Some(gen_concatarray),
         YARVINSN_newrange => Some(gen_newrange),
