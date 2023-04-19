@@ -30,7 +30,7 @@ describe "Process.times" do
 
       found = (max * 100).times.find do
         time = Process.times.utime
-        ('%.6f' % time).end_with?('000')
+        !('%.6f' % time).end_with?('000')
       end
 
       found.should_not == nil
