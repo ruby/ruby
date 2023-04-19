@@ -1786,7 +1786,7 @@ class TestRegexp < Test::Unit::TestCase
     re = '^([ab]{1,3})(a?)*$'
     100.times do
       assert !Regexp.new(re).match?(str)
-    end    
+    end
   end
 
   def test_linear_time_p
