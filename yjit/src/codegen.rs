@@ -7034,13 +7034,6 @@ fn gen_invokesuper(
     let current_defined_class = unsafe { (*me).defined_class };
     let mid = unsafe { get_def_original_id((*me).def) };
 
-    if me != unsafe { rb_callable_method_entry(current_defined_class, (*me).called_id) } {
-        // Though we likely could generate this call, as we are only concerned
-        // with the method entry remaining valid, assume_method_lookup_stable
-        // below requires that the method lookup matches as well
-        return None;
-    }
-
     // vm_search_normal_superclass
     let rbasic_ptr: *const RBasic = current_defined_class.as_ptr();
     if current_defined_class.builtin_type() == RUBY_T_ICLASS
