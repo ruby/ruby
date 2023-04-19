@@ -3112,7 +3112,6 @@ obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
 #if USE_TRANSIENT_HEAP
 void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
 void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
-void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #endif
 
@@ -3249,12 +3248,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             RB_GC_GUARD(obj);
         }
         break;
-
       case T_HASH:
         {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_hash_transient_heap_evacuate(obj, TRUE);
-#endif
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,

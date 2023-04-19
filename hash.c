@@ -388,10 +388,15 @@ typedef struct ar_table_struct {
     ar_table_pair pairs[RHASH_AR_TABLE_MAX_SIZE];
 } ar_table;
 
+#define RHASH_EMBED_SIZE (offsetof(struct RHash, as.st) + sizeof(ar_table))
+
 size_t
-rb_hash_ar_table_size(void)
+rb_hash_size_as_embedded(VALUE hash)
 {
-    return sizeof(ar_table);
+    if (RHASH_AR_TABLE_P(hash)) {
+        return RHASH_EMBED_SIZE;
+    }
+    return sizeof(struct RHash);
 }
 
 static inline st_hash_t
@@ -534,14 +539,6 @@ hash_verify_(VALUE hash, const char *file, int line)
         HASH_ASSERT(RHASH_AR_TABLE_SIZE_RAW(hash) == 0);
         HASH_ASSERT(RHASH_AR_TABLE_BOUND_RAW(hash) == 0);
     }
-
-#if USE_TRANSIENT_HEAP
-    if (RHASH_TRANSIENT_P(hash)) {
-        volatile st_data_t MAYBE_UNUSED(key) = RHASH_AR_TABLE_REF(hash, 0)->key; /* read */
-        HASH_ASSERT(RHASH_AR_TABLE(hash) != NULL);
-        HASH_ASSERT(rb_transient_heap_managed_ptr_p(RHASH_AR_TABLE(hash)));
-    }
-#endif
     return hash;
 }
 
@@ -552,7 +549,7 @@ hash_verify_(VALUE hash, const char *file, int line)
 static inline int
 RHASH_TABLE_NULL_P(VALUE hash)
 {
-    if (RHASH(hash)->as.ar == NULL) {
+    if (RHASH_AR_TABLE(hash) == NULL) {
         HASH_ASSERT(RHASH_AR_TABLE_P(hash));
         return TRUE;
     }
@@ -579,8 +576,7 @@ static void
 hash_ar_table_set(VALUE hash, ar_table *ar)
 {
     HASH_ASSERT(RHASH_AR_TABLE_P(hash));
-    HASH_ASSERT((RHASH_TRANSIENT_P(hash) && ar == NULL) ? FALSE : TRUE);
-    RHASH(hash)->as.ar = ar;
+    *(RHASH_AR_TABLE(hash)) = *ar;
     hash_verify(hash);
 }
 
@@ -641,25 +637,20 @@ RHASH_AR_TABLE_CLEAR(VALUE h)
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK;
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK;
 
-    hash_ar_table_set(h, NULL);
+    memset(RHASH_AR_TABLE(h), 0, sizeof(ar_table));
 }
 
 static ar_table*
 ar_alloc_table(VALUE hash)
 {
-    ar_table *tab = (ar_table*)rb_transient_heap_alloc(hash, sizeof(ar_table));
+    ar_table *tab = RHASH_AR_TABLE(hash);
+    memset(tab, 0, sizeof(ar_table));
 
-    if (tab != NULL) {
-        RHASH_SET_TRANSIENT_FLAG(hash);
-    }
-    else {
-        RHASH_UNSET_TRANSIENT_FLAG(hash);
-        tab = (ar_table*)ruby_xmalloc(sizeof(ar_table));
-    }
+    // RHASH_UNSET_ST_FLAG(hash);
+    // hash_ar_table_set(hash, tab);
 
     RHASH_AR_TABLE_SIZE_SET(hash, 0);
     RHASH_AR_TABLE_BOUND_SET(hash, 0);
-    hash_ar_table_set(hash, tab);
 
     return tab;
 }
@@ -722,23 +713,14 @@ ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
     return ar_find_entry_hint(hash, hint, key);
 }
 
+//old one
 static inline void
 ar_free_and_clear_table(VALUE hash)
 {
-    ar_table *tab = RHASH_AR_TABLE(hash);
+    RHASH_AR_TABLE_CLEAR(hash);
 
-    if (tab) {
-        if (RHASH_TRANSIENT_P(hash)) {
-            RHASH_UNSET_TRANSIENT_FLAG(hash);
-        }
-        else {
-            ruby_xfree(RHASH_AR_TABLE(hash));
-        }
-        RHASH_AR_TABLE_CLEAR(hash);
-    }
     HASH_ASSERT(RHASH_AR_TABLE_SIZE(hash) == 0);
     HASH_ASSERT(RHASH_AR_TABLE_BOUND(hash) == 0);
-    HASH_ASSERT(RHASH_TRANSIENT_P(hash) == 0);
 }
 
 static void
@@ -1055,6 +1037,7 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         return -1;
     }
 
+    HASH_ASSERT(RHASH_AR_TABLE(hash));
     hash_ar_table(hash); /* prepare ltbl */
 
     bin = ar_find_entry(hash, hash_value, key);
@@ -1064,6 +1047,7 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         }
         else if (bin >= RHASH_AR_TABLE_MAX_BOUND) {
             bin = ar_compact_table(hash);
+            HASH_ASSERT(RHASH_AR_TABLE(hash));
             hash_ar_table(hash);
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
@@ -1202,17 +1186,10 @@ ar_copy(VALUE hash1, VALUE hash2)
     ar_table *new_tab = RHASH_AR_TABLE(hash1);
 
     if (new_tab == NULL) {
-        new_tab = (ar_table*) rb_transient_heap_alloc(hash1, sizeof(ar_table));
-        if (new_tab != NULL) {
-            RHASH_SET_TRANSIENT_FLAG(hash1);
-        }
-        else {
-            RHASH_UNSET_TRANSIENT_FLAG(hash1);
-            new_tab = (ar_table*)ruby_xmalloc(sizeof(ar_table));
-        }
+        new_tab = ar_alloc_table(hash1);
     }
 
-    *new_tab = *old_tab;
+    memcpy(new_tab, old_tab, sizeof(ar_table));
     RHASH(hash1)->ar_hint.word = RHASH(hash2)->ar_hint.word;
     RHASH_AR_TABLE_BOUND_SET(hash1, RHASH_AR_TABLE_BOUND(hash2));
     RHASH_AR_TABLE_SIZE_SET(hash1, RHASH_AR_TABLE_SIZE(hash2));
@@ -1235,33 +1212,6 @@ ar_clear(VALUE hash)
         HASH_ASSERT(RHASH_AR_TABLE_BOUND(hash) == 0);
     }
 }
-
-#if USE_TRANSIENT_HEAP
-void
-rb_hash_transient_heap_evacuate(VALUE hash, int promote)
-{
-    if (RHASH_TRANSIENT_P(hash)) {
-        ar_table *new_tab;
-        ar_table *old_tab = RHASH_AR_TABLE(hash);
-
-        if (UNLIKELY(old_tab == NULL)) {
-            return;
-        }
-        HASH_ASSERT(old_tab != NULL);
-        if (! promote) {
-            new_tab = rb_transient_heap_alloc(hash, sizeof(ar_table));
-            if (new_tab == NULL) promote = true;
-        }
-        if (promote) {
-            new_tab = ruby_xmalloc(sizeof(ar_table));
-            RHASH_UNSET_TRANSIENT_FLAG(hash);
-        }
-        *new_tab = *old_tab;
-        hash_ar_table_set(hash, new_tab);
-    }
-    hash_verify(hash);
-}
-#endif
 
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
@@ -1504,7 +1454,7 @@ static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone)
 {
     const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, sizeof(struct RHash), 0);
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, RHASH_EMBED_SIZE, 0);
 
     RHASH_SET_IFNONE((VALUE)hash, ifnone);
 
@@ -1547,10 +1497,7 @@ rb_hash_new_with_size(st_index_t size)
     if (size == 0) {
         /* do nothing */
     }
-    else if (size <= RHASH_AR_TABLE_MAX_SIZE) {
-        ar_alloc_table(ret);
-    }
-    else {
+    else if (size > RHASH_AR_TABLE_MAX_SIZE) {
         RHASH_ST_TABLE_SET(ret, st_init_table_with_size(&objhash, size));
     }
     return ret;
@@ -2027,11 +1974,9 @@ rb_hash_rehash(VALUE hash)
     rb_hash_modify_check(hash);
     if (RHASH_AR_TABLE_P(hash)) {
         tmp = hash_alloc(0);
-        ar_alloc_table(tmp);
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
         ar_free_and_clear_table(hash);
         ar_copy(hash, tmp);
-        ar_free_and_clear_table(tmp);
     }
     else if (RHASH_ST_TABLE_P(hash)) {
         st_table *old_tab = RHASH_ST_TABLE(hash);

@@ -16475,7 +16475,6 @@ transient_heap.$(OBJEXT): $(top_srcdir)/internal/array.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/gc.h
-transient_heap.$(OBJEXT): $(top_srcdir)/internal/hash.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/serial.h

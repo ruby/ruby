@@ -372,8 +372,10 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
   end
 
-  def test_hash_has_root_shape
-    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of({}))
+  def test_hash_has_correct_pool_shape
+    # All hashes are now allocated their own ar_table, so start in a
+    # larger pool, and have already transitioned once.
+    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of({}).parent)
   end
 
   def test_true_has_special_const_shape_id
