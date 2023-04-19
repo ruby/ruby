@@ -737,15 +737,14 @@ impl Assembler
                 Insn::CSelGE { truthy, falsy, out } => {
                     emit_csel(cb, *truthy, *falsy, *out, cmovl);
                 }
-                Insn::LiveReg { .. } |
-                Insn::RegTemps(_) |
-                Insn::SpillTemp(_) => (), // just a reg alloc signal, no code
+                Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
                     let code_size = cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()));
                     if code_size < cb.jmp_ptr_bytes() {
                         nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
                     }
                 }
+                Insn::SpillTemp(_) => unreachable!("Insn::SpillTemp should have been lowered by lower_stack"),
             };
 
             // On failure, jump to the next page and retry the current insn
