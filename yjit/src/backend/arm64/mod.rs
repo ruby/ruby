@@ -575,30 +575,37 @@ impl Assembler
                     };
                 },
                 Insn::Mov { dest, src } => {
-                    let value: Opnd = match (dest, src) {
-                        // If the first operand is zero, then we can just use
-                        // the zero register.
-                        (Opnd::Mem(_), Opnd::UImm(0) | Opnd::Imm(0)) => Opnd::Reg(XZR_REG),
-                        // If the first operand is a memory operand, we're going
-                        // to transform this into a store instruction, so we'll
-                        // need to load this anyway.
-                        (Opnd::Mem(_), Opnd::UImm(_)) => asm.load(src),
-                        // The value that is being moved must be either a
-                        // register or an immediate that can be encoded as a
-                        // bitmask immediate. Otherwise, we'll need to split the
-                        // move into multiple instructions.
-                        _ => split_bitmask_immediate(asm, src, dest.rm_num_bits())
-                    };
+                    match (dest, src) {
+                        // If we're attempting to load into a memory operand, then
+                        // we'll switch over to the store instruction.
+                        (Opnd::Mem(_), _) => {
+                            let value = match src {
+                                // If the first operand is zero, then we can just use
+                                // the zero register.
+                                Opnd::UImm(0) | Opnd::Imm(0) => Opnd::Reg(XZR_REG),
+                                // If the first operand is a memory operand, we're going
+                                // to transform this into a store instruction, so we'll
+                                // need to load this anyway.
+                                Opnd::UImm(_) => asm.load(src),
+                                // The value that is being moved must be either a
+                                // register or an immediate that can be encoded as a
+                                // bitmask immediate. Otherwise, we'll need to split the
+                                // move into multiple instructions.
+                                _ => split_bitmask_immediate(asm, src, dest.rm_num_bits())
+                            };
 
-                    // If we're attempting to load into a memory operand, then
-                    // we'll switch over to the store instruction. Otherwise
-                    // we'll use the normal mov instruction.
-                    match dest {
-                        Opnd::Mem(_) => {
                             let opnd0 = split_memory_address(asm, dest);
                             asm.store(opnd0, value);
                         },
-                        Opnd::Reg(_) => {
+                        // If we're load a memory operand into a register, then
+                        // we'll switch over to the load instruction.
+                        (Opnd::Reg(_), Opnd::Mem(_)) => {
+                            let value = split_memory_address(asm, src);
+                            asm.load_into(dest, value);
+                        },
+                        // Otherwise we'll use the normal mov instruction.
+                        (Opnd::Reg(_), _) => {
+                            let value = split_bitmask_immediate(asm, src, dest.rm_num_bits());
                             asm.mov(dest, value);
                         },
                         _ => unreachable!()
