@@ -918,8 +918,9 @@ typedef struct {
 #endif
 } OnigMatchArg;
 
-#define NUM_CACHE_OPCODES_IMPOSSIBLE -1
-#define NUM_CACHE_OPCODES_UNINIT     -2
+#define NUM_CACHE_OPCODES_UNNECESSARY  0
+#define NUM_CACHE_OPCODES_IMPOSSIBLE  -1
+#define NUM_CACHE_OPCODES_UNINIT      -2
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))

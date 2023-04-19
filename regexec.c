@@ -270,9 +270,11 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
   LengthType len;
   MemNumType repeat_mem;
   OnigEncoding enc = reg->enc;
+  RelAddrType addr;
   MemNumType current_repeat_mem = -1;
   long num_cache_opcodes = 0;
   long num_cache_opcodes_at_null_check_start = -1;
+  int has_loop = 0;
 
   while (p < pend) {
     switch (*p++) {
@@ -326,10 +328,10 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	break;
       case OP_ANYCHAR_STAR:
       case OP_ANYCHAR_ML_STAR:
-	num_cache_opcodes++;break;
+	has_loop = 1; num_cache_opcodes++;break;
       case OP_ANYCHAR_STAR_PEEK_NEXT:
       case OP_ANYCHAR_ML_STAR_PEEK_NEXT:
-	p++; num_cache_opcodes++; break;
+	p++; has_loop = 1; num_cache_opcodes++; break;
 
       case OP_WORD:
       case OP_NOT_WORD:
@@ -378,17 +380,23 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
       case OP_FAIL:
 	break;
       case OP_JUMP:
-	p += SIZE_RELADDR;
+	GET_RELADDR_INC(addr, p);
+	if (addr < 0) has_loop = 1;
 	break;
       case OP_PUSH:
-	p += SIZE_RELADDR;
+	GET_RELADDR_INC(addr, p);
+	if (addr < 0) has_loop = 1;
 	num_cache_opcodes++;
 	break;
       case OP_POP:
 	break;
       case OP_PUSH_OR_JUMP_EXACT1:
       case OP_PUSH_IF_PEEK_NEXT:
-	p += SIZE_RELADDR + 1; num_cache_opcodes++; break;
+	GET_RELADDR_INC(addr, p);
+	p += 1;
+	if (addr < 0) has_loop = 1;
+	num_cache_opcodes++;
+	break;
       case OP_REPEAT:
       case OP_REPEAT_NG:
 	if (current_repeat_mem != -1) {
@@ -405,6 +413,7 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
       case OP_REPEAT_INC:
       case OP_REPEAT_INC_NG:
 	GET_MEMNUM_INC(repeat_mem, p);
+	has_loop = 1;
 	if (repeat_mem != current_repeat_mem) {
 	  // A lone or invalid OP_REPEAT_INC is found.
 	  goto impossible;
@@ -480,7 +489,7 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
     }
   }
 
-  *num_cache_opcodes_ptr = num_cache_opcodes;
+  *num_cache_opcodes_ptr = has_loop ? num_cache_opcodes : NUM_CACHE_OPCODES_UNNECESSARY;
   return 0;
 
 impossible:
@@ -3967,7 +3976,10 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  OnigPosition r = count_num_cache_opcodes(reg, &msa->num_cache_opcodes);
 	  if (r < 0) goto bytecode_error;
 	}
-	if (msa->num_cache_opcodes == NUM_CACHE_OPCODES_IMPOSSIBLE || msa->num_cache_opcodes == 0) {
+	if (
+	    msa->num_cache_opcodes == NUM_CACHE_OPCODES_IMPOSSIBLE ||
+	    msa->num_cache_opcodes == NUM_CACHE_OPCODES_UNNECESSARY
+	) {
 	  msa->enable_match_cache = 0;
 	  goto fail_match_cache_opt;
 	}
