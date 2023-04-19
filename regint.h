@@ -35,19 +35,15 @@
 /* #define ONIG_DEBUG_COMPILE */
 /* #define ONIG_DEBUG_SEARCH */
 /* #define ONIG_DEBUG_MATCH */
+/* #define ONIG_DEBUG_MATCH_CACHE */
 /* #define ONIG_DEBUG_MEMLEAK */
 /* #define ONIG_DONT_OPTIMIZE */
 
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
-/* enable matching optimization by using cache. */
-#define USE_CACHE_MATCH_OPT
-
-#ifdef USE_CACHE_MATCH_OPT
-#  define NUM_CACHE_OPCODE_FAIL -1
-#  define NUM_CACHE_OPCODE_UNINIT -2
-#endif
+/* enable the match optimization by using a cache. */
+#define USE_MATCH_CACHE
 
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
@@ -880,12 +876,14 @@ typedef struct _OnigStackType {
   } u;
 } OnigStackType;
 
-#ifdef USE_CACHE_MATCH_OPT
+#ifdef USE_MATCH_CACHE
 typedef struct {
   UChar *addr;
-  long num;
-  int outer_repeat;
-} OnigCacheIndex;
+  long cache_point;
+  int outer_repeat_mem;
+  long num_cache_points_at_outer_repeat;
+  long num_cache_points_in_outer_repeat;
+} OnigCacheOpcode;
 #endif
 
 typedef struct {
@@ -910,16 +908,18 @@ typedef struct {
 #else
   uint64_t end_time;
 #endif
-#ifdef USE_CACHE_MATCH_OPT
-  long            num_fail;
-  int             enable_cache_match_opt;
-  long            num_cache_opcode;
-  long            num_cache_table;
-  OnigCacheIndex* cache_index_table;
-  uint8_t*        match_cache;
+#ifdef USE_MATCH_CACHE
+  int              enable_match_cache;
+  long             num_fails;
+  long             num_cache_opcodes;
+  OnigCacheOpcode* cache_opcodes;
+  long             num_cache_points;
+  uint8_t*         match_cache_buf;
 #endif
 } OnigMatchArg;
 
+#define NUM_CACHE_OPCODES_IMPOSSIBLE -1
+#define NUM_CACHE_OPCODES_UNINIT     -2
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))
