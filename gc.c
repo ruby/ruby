@@ -8404,11 +8404,11 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
         break;
 
       case T_HASH:
-        obj_size = RHASH_SLOT_SIZE;
+        obj_size = sizeof(struct RHash) + (RHASH_ST_TABLE_P(src) ? sizeof(st_table) : sizeof(ar_table));
         break;
 
-        default:
-            return src_pool;
+      default:
+        return src_pool;
     }
 
     if (rb_gc_size_allocatable_p(obj_size)){

@@ -393,13 +393,13 @@ ar_do_hash_hint(st_hash_t hash_value)
 static inline ar_hint_t
 ar_hint(VALUE hash, unsigned int index)
 {
-    return RHASH(hash)->ar_hint.ary[index];
+    return RHASH_AR_TABLE(hash)->ar_hint.ary[index];
 }
 
 static inline void
 ar_hint_set_hint(VALUE hash, unsigned int index, ar_hint_t hint)
 {
-    RHASH(hash)->ar_hint.ary[index] = hint;
+    RHASH_AR_TABLE(hash)->ar_hint.ary[index] = hint;
 }
 
 static inline void
@@ -644,7 +644,7 @@ static unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
     unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
-    const ar_hint_t *hints = RHASH(hash)->ar_hint.ary;
+    const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
 
     /* if table is NULL, then bound also should be 0 */
 
@@ -1164,8 +1164,8 @@ ar_copy(VALUE hash1, VALUE hash2)
         new_tab = ar_alloc_table(hash1);
     }
 
-    memcpy(new_tab, old_tab, sizeof(ar_table));
-    RHASH(hash1)->ar_hint.word = RHASH(hash2)->ar_hint.word;
+    *new_tab = *old_tab;
+    RHASH_AR_TABLE(hash1)->ar_hint.word = RHASH_AR_TABLE(hash2)->ar_hint.word;
     RHASH_AR_TABLE_BOUND_SET(hash1, RHASH_AR_TABLE_BOUND(hash2));
     RHASH_AR_TABLE_SIZE_SET(hash1, RHASH_AR_TABLE_SIZE(hash2));
 
@@ -1425,10 +1425,12 @@ rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 }
 
 static VALUE
-hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone)
+hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone, bool st)
 {
     const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, RHASH_SLOT_SIZE, 0);
+    const size_t size = sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
+
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, size, 0);
 
     RHASH_SET_IFNONE((VALUE)hash, ifnone);
 
@@ -1438,7 +1440,8 @@ hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone)
 static VALUE
 hash_alloc(VALUE klass)
 {
-    return hash_alloc_flags(klass, 0, Qnil);
+    /* Allocate to be able to fit both st_table and ar_table. */
+    return hash_alloc_flags(klass, 0, Qnil, sizeof(st_table) > sizeof(ar_table));
 }
 
 static VALUE
@@ -1467,13 +1470,13 @@ copy_compare_by_id(VALUE hash, VALUE basis)
 VALUE
 rb_hash_new_with_size(st_index_t size)
 {
-    VALUE ret = rb_hash_new();
-    if (size == 0) {
-        /* do nothing */
-    }
-    else if (size > RHASH_AR_TABLE_MAX_SIZE) {
+    bool st = size > RHASH_AR_TABLE_MAX_SIZE;
+    VALUE ret = hash_alloc_flags(rb_cHash, 0, Qnil, st);
+
+    if (st) {
         hash_st_table_init(ret, &objhash, size);
     }
+
     return ret;
 }
 
@@ -1506,7 +1509,7 @@ hash_dup_with_compare_by_id(VALUE hash)
 static VALUE
 hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
-    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash)),
+    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash), !RHASH_EMPTY_P(hash) && RHASH_ST_TABLE_P(hash)),
                      hash);
 }
 
