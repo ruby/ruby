@@ -2073,11 +2073,12 @@ rb_const_missing(VALUE klass, VALUE name)
 VALUE
 rb_mod_const_missing(VALUE klass, VALUE name)
 {
-    VALUE ref = GET_EC()->private_const_reference;
+    rb_execution_context_t *ec = GET_EC();
+    VALUE ref = ec->private_const_reference;
     rb_vm_pop_cfunc_frame();
     if (ref) {
-        rb_name_err_raise("private constant %2$s::%1$s referenced",
-                          ref, name);
+        ec->private_const_reference = 0;
+        rb_name_err_raise("private constant %2$s::%1$s referenced", ref, name);
     }
     uninitialized_constant(klass, name);
 
