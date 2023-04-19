@@ -5,6 +5,29 @@ require "bundler/friendly_errors"
 require "cgi"
 
 RSpec.describe Bundler, "friendly errors" do
+  context "with invalid YAML in .gemrc" do
+    before do
+      File.open(home(".gemrc"), "w") do |f|
+        f.write "invalid: yaml: hah"
+      end
+    end
+
+    after do
+      FileUtils.rm(home(".gemrc"))
+    end
+
+    it "reports a relevant friendly error message" do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      bundle :install, :env => { "DEBUG" => "true" }
+
+      expect(err).to include("Failed to load #{home(".gemrc")}")
+    end
+  end
+
   it "calls log_error in case of exception" do
     exception = Exception.new
     expect(Bundler::FriendlyErrors).to receive(:exit_status).with(exception).and_return(1)
