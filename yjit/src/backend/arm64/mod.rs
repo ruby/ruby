@@ -597,7 +597,7 @@ impl Assembler
                             let opnd0 = split_memory_address(asm, dest);
                             asm.store(opnd0, value);
                         },
-                        // If we're load a memory operand into a register, then
+                        // If we're loading a memory operand into a register, then
                         // we'll switch over to the load instruction.
                         (Opnd::Reg(_), Opnd::Mem(_)) => {
                             let value = split_memory_address(asm, src);
@@ -1575,5 +1575,17 @@ mod tests {
                 "expected to disassemble to movk",
             )),
         }
+    }
+
+    #[test]
+    fn test_replace_mov_with_ldur() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::mem(64, CFP, 8));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "618240f8", {"
+            0x0: ldur x1, [x19, #8]
+        "});
     }
 }
