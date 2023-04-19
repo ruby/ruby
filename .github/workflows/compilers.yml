@@ -12,12 +12,14 @@ on:
     paths-ignore:
       - 'doc/**'
       - '**/man'
+      - '**.md'
       - '**.rdoc'
       - '**/.document'
   merge_group:
     paths-ignore:
       - 'doc/**'
       - '**/man'
+      - '**.md'
       - '**.rdoc'
       - '**/.document'
 
