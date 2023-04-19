@@ -17,16 +17,13 @@ describe "Process.times" do
     end
   end
 
-  platform_is_not :windows do
+  guard -> do
+    Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+  rescue Errno::EINVAL
+    false
+  end do
     it "uses getrusage when available to improve precision beyond milliseconds" do
       max = 10_000
-      has_getrusage = max.times.find do
-        time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-        ('%.6f' % time).end_with?('000')
-      end
-      unless has_getrusage
-        skip "getrusage is not supported on this environment"
-      end
 
       found = (max * 100).times.find do
         time = Process.times.utime
