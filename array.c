@@ -5360,8 +5360,8 @@ rb_ary_hash_values(long len, const VALUE *elements)
     h = rb_hash_start(len);
     h = rb_hash_uint(h, (st_index_t)rb_ary_hash_values);
     for (i=0; i<len; i++) {
-	n = rb_hash(elements[i]);
-	h = rb_hash_uint(h, NUM2LONG(n));
+        n = rb_hash(elements[i]);
+        h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
     return ST2FIX(h);

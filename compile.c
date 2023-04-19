@@ -3706,10 +3706,10 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         if (IS_INSN_ID(niobj, send)) {
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(niobj, 0);
             if ((vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE) && vm_ci_argc(ci) == 0) {
-		switch (vm_ci_mid(ci)) {
-		  case idMax:
-		  case idMin:
-		  case idHash:
+                switch (vm_ci_mid(ci)) {
+                  case idMax:
+                  case idMin:
+                  case idHash:
                       {
                           rb_num_t num = (rb_num_t)iobj->operands[0];
                           iobj->insn_id = BIN(opt_newarray_send);
@@ -3720,9 +3720,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                           ELEM_REMOVE(&niobj->link);
                           return COMPILE_OK;
                       }
-		}
-	    }
-	}
+                }
+            }
+        }
     }
 
     if (IS_INSN_ID(iobj, send)) {
