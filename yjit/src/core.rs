@@ -1622,10 +1622,14 @@ impl Context {
     }
 
     /// Stop using a register for a given stack temp.
+    /// This allows us to reuse the register for a value that we know is dead
+    /// and will no longer be used (e.g. popped stack temp).
     pub fn dealloc_temp_reg(&mut self, stack_idx: u8) {
-        let mut reg_temps = self.get_reg_temps();
-        reg_temps.set(stack_idx, false);
-        self.set_reg_temps(reg_temps);
+        if stack_idx < MAX_REG_TEMPS {
+            let mut reg_temps = self.get_reg_temps();
+            reg_temps.set(stack_idx, false);
+            self.set_reg_temps(reg_temps);
+        }
     }
 
     /// Get the type of an instruction operand
@@ -1911,7 +1915,6 @@ impl Assembler {
         }
 
         // Allocate a register to the stack operand
-        assert_eq!(self.ctx.reg_temps, self.get_reg_temps());
         if self.ctx.stack_size < MAX_REG_TEMPS {
             self.alloc_temp_reg(self.ctx.stack_size);
         }
@@ -1982,7 +1985,13 @@ impl Assembler {
 
     /// Get an operand pointing to a slot on the temp stack
     pub fn stack_opnd(&self, idx: i32) -> Opnd {
-        Opnd::Stack { idx, stack_size: self.ctx.stack_size, sp_offset: self.ctx.sp_offset, num_bits: 64 }
+        Opnd::Stack {
+            idx,
+            num_bits: 64,
+            stack_size: self.ctx.stack_size,
+            sp_offset: self.ctx.sp_offset,
+            reg_temps: None, // push_insn will set this
+        }
     }
 }
 

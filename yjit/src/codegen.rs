@@ -805,7 +805,6 @@ pub fn gen_single_block(
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!(", chain_depth: {}", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm.comment(&format!("Block: {} (ISEQ offset: {}{})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx, chain_depth));
     }
-    asm.set_reg_temps(asm.ctx.get_reg_temps());
 
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
@@ -834,11 +833,9 @@ pub fn gen_single_block(
 
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
-        assert_eq!(asm.get_reg_temps(), asm.ctx.get_reg_temps());
         for stack_idx in asm.ctx.get_stack_size()..MAX_REG_TEMPS {
             asm.ctx.dealloc_temp_reg(stack_idx);
         }
-        asm.set_reg_temps(asm.ctx.get_reg_temps());
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
@@ -6113,7 +6110,7 @@ fn gen_send_iseq(
         // pushed onto the stack that represents the parameters that weren't
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
-        asm.spill_temp(asm.stack_opnd(-1)); // avoid using a register for unspecified_bits
+        asm.ctx.dealloc_temp_reg(asm.stack_opnd(-1).stack_idx()); // avoid using a register for unspecified_bits
         asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
     }
 
@@ -6243,10 +6240,8 @@ fn gen_send_iseq(
     return_asm.ctx = asm.ctx.clone();
     return_asm.stack_pop(sp_offset.try_into().unwrap());
     let return_val = return_asm.stack_push(Type::Unknown);
-    if return_val.stack_idx() < MAX_REG_TEMPS {
-        // The callee writes a return value on stack. Update reg_temps accordingly.
-        return_asm.ctx.dealloc_temp_reg(return_val.stack_idx());
-    }
+    // The callee writes a return value on stack. Update reg_temps accordingly.
+    return_asm.ctx.dealloc_temp_reg(return_val.stack_idx());
     return_asm.ctx.set_sp_offset(1);
     return_asm.ctx.reset_chain_depth();
 
