@@ -953,7 +953,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 
 #ifdef USE_MATCH_CACHE
 #define MATCH_ARG_INIT_MATCH_CACHE(msa) do {\
-  (msa).enable_match_cache = 0;\
+  (msa).match_cache_status = MATCH_CACHE_STATUS_UNINIT;\
   (msa).num_fails = 0;\
   (msa).num_cache_opcodes = NUM_CACHE_OPCODES_UNINIT;\
   (msa).cache_opcodes = (OnigCacheOpcode*)NULL;\
@@ -2438,7 +2438,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 
 #  define CHECK_MATCH_CACHE do {\
-  if (msa->enable_match_cache) {\
+  if (msa->match_cache_status == MATCH_CACHE_STATUS_ENABLED) {\
     long cache_point = find_cache_point(reg, msa->cache_opcodes, msa->num_cache_opcodes, pbegin, stk_base, repeat_stk);\
     if (cache_point >= 0) {\
       long match_cache_point = msa->num_cache_points * (long)(s - str) + cache_point;\
@@ -3543,7 +3543,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  goto null_check_found;
 	}
 # ifdef USE_MATCH_CACHE
-	if (ischanged && msa->enable_match_cache) {
+	if (ischanged && msa->match_cache_status == MATCH_CACHE_STATUS_ENABLED) {
 	  RelAddrType rel;
 	  OnigUChar *null_check_start;
 	  OnigUChar *null_check_end = pbegin;
@@ -3961,17 +3961,24 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       pkeep = stk->u.state.pkeep;
 
 #ifdef USE_MATCH_CACHE
-      if (++msa->num_fails >= (long)(end - str) + 1 && msa->num_cache_opcodes == NUM_CACHE_OPCODES_UNINIT) {
-	msa->enable_match_cache = 1;
-	if (msa->num_cache_opcodes == NUM_CACHE_OPCODES_UNINIT) {
+      if (
+	  msa->match_cache_status != MATCH_CACHE_STATUS_DISABLED &&
+	  ++msa->num_fails >= (long)(end - str) * msa->num_cache_opcodes
+      ) {
+	if (msa->match_cache_status == MATCH_CACHE_STATUS_UNINIT) {
+	  msa->match_cache_status = MATCH_CACHE_STATUS_INIT;
 	  OnigPosition r = count_num_cache_opcodes(reg, &msa->num_cache_opcodes);
 	  if (r < 0) goto bytecode_error;
 	}
 	if (msa->num_cache_opcodes == NUM_CACHE_OPCODES_IMPOSSIBLE || msa->num_cache_opcodes == 0) {
-	  msa->enable_match_cache = 0;
-	  goto fail_match_cache_opt;
+	  msa->match_cache_status = MATCH_CACHE_STATUS_DISABLED;
+	  goto fail_match_cache;
+	}
+	if (msa->num_fails < (long)(end - str) * msa->num_cache_opcodes) {
+	  goto fail_match_cache;
 	}
 	if (msa->cache_opcodes == NULL) {
+	  msa->match_cache_status = MATCH_CACHE_STATUS_ENABLED;
 	  OnigCacheOpcode* cache_opcodes = (OnigCacheOpcode*)xmalloc(msa->num_cache_opcodes * sizeof(OnigCacheOpcode));
 	  if (cache_opcodes == NULL) {
 	    return ONIGERR_MEMORY;
@@ -4013,7 +4020,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  msa->match_cache_buf = match_cache_buf;
 	}
       }
-      fail_match_cache_opt:
+      fail_match_cache:
 #endif
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
