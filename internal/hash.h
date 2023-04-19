@@ -40,6 +40,16 @@ enum ruby_rhash_flags {
     RHASH_LEV_MAX = 127, /* 7 bits */
 };
 
+typedef struct ar_table_pair_struct {
+    VALUE key;
+    VALUE val;
+} ar_table_pair;
+
+typedef struct ar_table_struct {
+    /* 64bit CPU: 8B * 2 * 8 = 128B */
+    ar_table_pair pairs[RHASH_AR_TABLE_MAX_SIZE];
+} ar_table;
+
 struct RHash {
     struct RBasic basic;
     const VALUE ifnone;
@@ -47,12 +57,15 @@ struct RHash {
         ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
         VALUE word;
     } ar_hint;
-    union {
-        st_table *st;
-    } as;
 };
 
 #define RHASH(obj) ((struct RHash *)(obj))
+
+#ifndef MAX
+# define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#define RHASH_SLOT_SIZE (sizeof(struct RHash) + MAX(sizeof(ar_table), sizeof(st_table)))
 
 #ifdef RHASH_IFNONE
 # undef RHASH_IFNONE
@@ -84,8 +97,6 @@ int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 VALUE rb_ident_hash_new_with_size(st_index_t size);
-
-size_t rb_hash_size_as_embedded(VALUE hash);
 
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);
@@ -126,13 +137,13 @@ RHASH_AR_TABLE_P(VALUE h)
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
-    return (struct ar_table_struct *)((uintptr_t)h + offsetof(struct RHash, as.st));
+    return (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
 }
 
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    return RHASH(h)->as.st;
+    return (st_table *)((uintptr_t)h + sizeof(struct RHash));
 }
 
 static inline VALUE
@@ -173,7 +184,7 @@ RHASH_ST_SIZE(VALUE h)
 static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
-    RHASH(h)->as.st = NULL;
+    memset(RHASH_ST_TABLE(h), 0, sizeof(st_table));
     FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG);
 }
 

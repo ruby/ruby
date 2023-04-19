@@ -3568,9 +3568,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_hash_st);
         }
 #endif
-        if (!RHASH_AR_TABLE_P(obj)) {
-            GC_ASSERT(RHASH_ST_TABLE_P(obj));
-            st_free_table(RHASH(obj)->as.st);
+
+        if (RHASH_ST_TABLE_P(obj)) {
+            st_table *tab = RHASH_ST_TABLE(obj);
+
+            if (tab->bins != NULL) free(tab->bins);
+            free(tab->entries);
         }
         break;
       case T_REGEXP:
@@ -4909,11 +4912,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
         size += rb_ary_memsize(obj);
         break;
       case T_HASH:
-        if (RHASH_AR_TABLE_P(obj)) {
-        }
-        else {
+        if (RHASH_ST_TABLE_P(obj)) {
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
-            size += st_memsize(RHASH_ST_TABLE(obj));
+            /* st_table is in the slot */
+            size += st_memsize(RHASH_ST_TABLE(obj)) - sizeof(st_table);
         }
         break;
       case T_REGEXP:
@@ -8402,7 +8404,7 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
         break;
 
       case T_HASH:
-        obj_size = rb_hash_size_as_embedded(src);
+        obj_size = RHASH_SLOT_SIZE;
         break;
 
         default:
