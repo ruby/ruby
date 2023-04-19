@@ -417,6 +417,26 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
+  def test_moving_hashes_down_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      HASH_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      base_hash = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }
+      ary = HASH_COUNT.times.map { base_hash.dup }
+      ary.each { |h| h[:i] = 9 }
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT)
+      assert_include(ObjectSpace.dump(ary[0]), '"slot_size":' + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE].to_s)
+    end;
+  end
+
   def test_moving_objects_between_size_pools_keeps_shape_frozen_status
     # [Bug #19536]
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
