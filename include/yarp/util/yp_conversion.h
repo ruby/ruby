@@ -4,6 +4,8 @@
 // This file is responsible for defining functions that we use internally to
 // convert between various widths safely without overflow.
 
+#include "yarp/defines.h"
+
 #include <assert.h>
 #include <stdint.h>
 

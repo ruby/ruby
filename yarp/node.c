@@ -5,7 +5,7 @@
 /* if you are looking to modify the                                           */
 /* template                                                                   */
 /******************************************************************************/
-#include "yarp/include/yarp/node.h"
+#include "yarp/node.h"
 
 // Clear the node but preserves the location.
 void yp_node_clear(yp_node_t *node) {
@@ -17,7 +17,7 @@ void yp_node_clear(yp_node_t *node) {
 // Initialize a yp_token_list_t with its default values.
 void
 yp_token_list_init(yp_token_list_t *token_list) {
-  *token_list = (yp_token_list_t) { .tokens = NULL, .size = 0, .capacity = 0 };
+  *token_list = (yp_token_list_t) YP_EMPTY_TOKEN_LIST;
 }
 
 // Calculate the size of the token list in bytes.
@@ -66,7 +66,7 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize);
 // Initiailize a list of nodes.
 void
 yp_node_list_init(yp_node_list_t *node_list) {
-  *node_list = (yp_node_list_t) { .nodes = NULL, .size = 0, .capacity = 0 };
+  *node_list = (yp_node_list_t) YP_EMPTY_NODE_LIST;
 }
 
 // Calculate the size of the node list in bytes.
@@ -332,6 +332,7 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
       }
       break;
     case YP_NODE_IMAGINARY_NODE:
+      yp_node_destroy(parser, (yp_node_t *)((yp_imaginary_node_t *)node)->numeric);
       break;
     case YP_NODE_IN_NODE:
       yp_node_destroy(parser, (yp_node_t *)((yp_in_node_t *)node)->pattern);
@@ -479,6 +480,7 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
       }
       break;
     case YP_NODE_RATIONAL_NODE:
+      yp_node_destroy(parser, (yp_node_t *)((yp_rational_node_t *)node)->numeric);
       break;
     case YP_NODE_REDO_NODE:
       break;
@@ -947,6 +949,7 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
     }
     case YP_NODE_IMAGINARY_NODE: {
       memsize->memsize += sizeof(yp_node_t);
+      yp_node_memsize_node((yp_node_t *)((yp_imaginary_node_t *)node)->numeric, memsize);
       break;
     }
     case YP_NODE_IN_NODE: {
@@ -1195,6 +1198,7 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
     }
     case YP_NODE_RATIONAL_NODE: {
       memsize->memsize += sizeof(yp_node_t);
+      yp_node_memsize_node((yp_node_t *)((yp_rational_node_t *)node)->numeric, memsize);
       break;
     }
     case YP_NODE_REDO_NODE: {

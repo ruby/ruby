@@ -7,7 +7,7 @@
 /******************************************************************************/
 #include <string.h>
 
-#include "yarp/include/yarp/ast.h"
+#include "yarp/ast.h"
 
 // Returns a string representation of the given token type.
 __attribute__((__visibility__("default"))) const char *

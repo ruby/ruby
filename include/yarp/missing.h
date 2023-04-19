@@ -1,16 +1,11 @@
 #ifndef YARP_MISSING_H
 #define YARP_MISSING_H
 
+#include "yarp/defines.h"
+
 #include <ctype.h>
 #include <stddef.h>
 #include <string.h>
-
-size_t
-yp_strnlen(const char *string, size_t length);
-
-#ifndef HAVE_STRNLEN
-#define strnlen yp_strnlen
-#endif
 
 const char *
 yp_strnstr(const char *haystack, const char *needle, size_t length);

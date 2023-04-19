@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/enc/yp_encoding.h"
+#include "yarp/enc/yp_encoding.h"
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-6 character.

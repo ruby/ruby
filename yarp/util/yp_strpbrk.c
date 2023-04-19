@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/util/yp_strpbrk.h"
+#include "yarp/util/yp_strpbrk.h"
 
 // Here we have rolled our own version of strpbrk. The standard library strpbrk
 // has undefined behavior when the source string is not null-terminated. We want

@@ -7,9 +7,9 @@
 /******************************************************************************/
 #include <stdio.h>
 
-#include "yarp/include/yarp/ast.h"
-#include "yarp/include/yarp/parser.h"
-#include "yarp/include/yarp/util/yp_buffer.h"
+#include "yarp/ast.h"
+#include "yarp/parser.h"
+#include "yarp/util/yp_buffer.h"
 
 static void
 prettyprint_token(yp_buffer_t *buffer, yp_token_t *token) {
@@ -663,6 +663,7 @@ prettyprint_node(yp_buffer_t *buffer, yp_parser_t *parser, yp_node_t *node) {
     }
     case YP_NODE_IMAGINARY_NODE: {
       yp_buffer_append_str(buffer, "ImaginaryNode(", 14);
+            prettyprint_node(buffer, parser, (yp_node_t *)((yp_imaginary_node_t *)node)->numeric);
       yp_buffer_append_str(buffer, ")", 1);
       break;
     }
@@ -1075,6 +1076,7 @@ prettyprint_node(yp_buffer_t *buffer, yp_parser_t *parser, yp_node_t *node) {
     }
     case YP_NODE_RATIONAL_NODE: {
       yp_buffer_append_str(buffer, "RationalNode(", 13);
+            prettyprint_node(buffer, parser, (yp_node_t *)((yp_rational_node_t *)node)->numeric);
       yp_buffer_append_str(buffer, ")", 1);
       break;
     }

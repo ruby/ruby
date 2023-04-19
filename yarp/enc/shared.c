@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/enc/yp_encoding.h"
+#include "yarp/enc/yp_encoding.h"
 
 // The function is shared between all of the encodings that use single bytes to
 // represent characters. They don't have need of a dynamic function to determine

@@ -1,6 +1,8 @@
 #ifndef YARP_PACK_H
 #define YARP_PACK_H
 
+#include "yarp/defines.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 

@@ -1,12 +1,14 @@
 #ifndef YARP_PARSER_H
 #define YARP_PARSER_H
 
+#include "yarp/defines.h"
+
 #include <stdbool.h>
 
-#include "yarp/include/yarp/ast.h"
-#include "yarp/include/yarp/enc/yp_encoding.h"
-#include "yarp/include/yarp/util/yp_list.h"
-#include "yarp/include/yarp/util/yp_state_stack.h"
+#include "yarp/ast.h"
+#include "yarp/enc/yp_encoding.h"
+#include "yarp/util/yp_list.h"
+#include "yarp/util/yp_state_stack.h"
 
 // This enum provides various bits that represent different kinds of states that
 // the lexer can track. This is used to determine which kind of token to return
@@ -93,7 +95,10 @@ typedef struct yp_lex_mode {
 
     // This state is used when we are lexing a string or a string-like token, as
     // in string content with either quote or an xstring.
-    YP_LEX_STRING
+    YP_LEX_STRING,
+
+    // you lexed a number with extra information attached
+    YP_LEX_NUMERIC,
   } mode;
 
   union {
@@ -145,6 +150,12 @@ typedef struct yp_lex_mode {
     } string;
 
     struct {
+      yp_token_type_t type;
+      const char *start;
+      const char *end;
+    } numeric;
+    
+    struct {
       // These pointers point to the beginning and end of the heredoc
       // identifier.
       const char *ident_start;
@@ -184,6 +195,7 @@ typedef enum {
   YP_CONTEXT_CLASS,          // a class declaration
   YP_CONTEXT_DEF,            // a method definition
   YP_CONTEXT_DEF_PARAMS,     // a method definition's parameters
+  YP_CONTEXT_DEFAULT_PARAMS, // a method definition's default parameter
   YP_CONTEXT_ELSE,           // an else clause
   YP_CONTEXT_ELSIF,          // an elsif clause
   YP_CONTEXT_EMBEXPR,        // an interpolated expression

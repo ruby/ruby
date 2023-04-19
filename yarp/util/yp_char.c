@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/util/yp_char.h"
+#include "yarp/util/yp_char.h"
 
 #define YP_CHAR_BIT_WHITESPACE (1 << 0)
 #define YP_CHAR_BIT_INLINE_WHITESPACE (1 << 1)

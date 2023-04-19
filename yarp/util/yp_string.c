@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/util/yp_string.h"
+#include "yarp/util/yp_string.h"
 
 // Allocate a new yp_string_t.
 yp_string_t *

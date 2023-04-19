@@ -5,10 +5,10 @@
 /* if you are looking to modify the                                           */
 /* template                                                                   */
 /******************************************************************************/
-#include "yarp/include/yarp/ast.h"
-#include "yarp/include/yarp/parser.h"
-#include "yarp/include/yarp/util/yp_buffer.h"
-#include "yarp/include/yarp/util/yp_conversion.h"
+#include "yarp/ast.h"
+#include "yarp/parser.h"
+#include "yarp/util/yp_buffer.h"
+#include "yarp/util/yp_conversion.h"
 
 static void
 serialize_token(yp_parser_t *parser, yp_token_t *token, yp_buffer_t *buffer) {
@@ -623,6 +623,7 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
       break;
     }
     case YP_NODE_IMAGINARY_NODE: {
+      yp_serialize_node(parser, (yp_node_t *)((yp_imaginary_node_t *)node)->numeric, buffer);
       break;
     }
     case YP_NODE_IN_NODE: {
@@ -969,6 +970,7 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
       break;
     }
     case YP_NODE_RATIONAL_NODE: {
+      yp_serialize_node(parser, (yp_node_t *)((yp_rational_node_t *)node)->numeric, buffer);
       break;
     }
     case YP_NODE_REDO_NODE: {

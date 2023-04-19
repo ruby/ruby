@@ -1,9 +1,11 @@
 #ifndef YARP_DIAGNOSTIC_H
 #define YARP_DIAGNOSTIC_H
 
+#include "yarp/defines.h"
+
 #include <stdlib.h>
 
-#include "yarp/include/yarp/util/yp_list.h"
+#include "yarp/util/yp_list.h"
 
 // This struct represents a diagnostic found during parsing.
 typedef struct {

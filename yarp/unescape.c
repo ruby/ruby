@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/unescape.h"
+#include "yarp/unescape.h"
 
 /******************************************************************************/
 /* Character checks                                                           */
@@ -180,6 +180,20 @@ static const char *
 unescape(char *dest, size_t *dest_length, const char *backslash, const char *end, yp_list_t *error_list, const unsigned char flags, bool write_to_str) {
   switch (backslash[1]) {
     // \a \b \e \f \n \r \s \t \v
+    case '\r': {
+      // if this is an \r\n we need to escape both
+      if (write_to_str) {
+        dest[(*dest_length)++] = (char) unescape_char(unescape_chars[(unsigned char) backslash[1]], flags);
+      }
+
+      if (backslash[2] == '\n') {
+        if (write_to_str) {
+          dest[(*dest_length)++] = (char) unescape_char(unescape_chars[(unsigned char) backslash[1]], flags);
+        }
+        return backslash + 3;
+      }
+      return backslash + 2;
+    }
     case 'a':
     case 'b':
     case 'e':

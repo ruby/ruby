@@ -1,4 +1,4 @@
-#include "yarp/include/yarp/regexp.h"
+#include "yarp/regexp.h"
 
 // This is the parser that is going to handle parsing regular expressions.
 typedef struct {
@@ -342,8 +342,14 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
     yp_regexp_options_init(&options);
 
     switch (*parser->cursor) {
-      case '#': // inline comments
-        return yp_regexp_char_find(parser, ')');
+      case '#': { // inline comments
+        bool found = yp_regexp_char_find(parser, ')');
+        // the close paren we found is escaped, we need to find another
+        while (parser->start <= parser->cursor - 2 && *(parser->cursor - 2) == '\\') {
+          found = yp_regexp_char_find(parser, ')');
+        }
+        return found;
+      }
       case ':': // non-capturing group
       case '=': // positive lookahead
       case '!': // negative lookahead
@@ -402,7 +408,7 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
         if (*parser->cursor != '-') break;
 
         // Otherwise, fallthrough to the - case.
-        __attribute__((fallthrough));
+        /* fallthrough */
       case '-':
         parser->cursor++;
         while (!yp_regexp_char_is_eof(parser) && *parser->cursor != ':' && *parser->cursor != ')') {

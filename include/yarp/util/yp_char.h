@@ -1,6 +1,8 @@
 #ifndef YP_CHAR_H
 #define YP_CHAR_H
 
+#include "yarp/defines.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 
