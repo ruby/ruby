@@ -802,8 +802,9 @@ pub fn gen_single_block(
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
-        let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!(", chain_depth: {}", asm.ctx.get_chain_depth()) } else { "".to_string() };
-        asm.comment(&format!("Block: {} (ISEQ offset: {}{})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx, chain_depth));
+        let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
+        asm.comment(&format!("Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth));
+        asm.comment(&format!("reg_temps: {:08b}", ctx.get_reg_temps().as_u8()));
     }
 
     // For each instruction to compile
@@ -859,7 +860,7 @@ pub fn gen_single_block(
             gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            asm.comment(&format!("Insn: {} (stack_size: {})", insn_name(opcode), asm.ctx.get_stack_size()));
+            asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
