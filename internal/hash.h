@@ -46,6 +46,10 @@ typedef struct ar_table_pair_struct {
 } ar_table_pair;
 
 typedef struct ar_table_struct {
+    union {
+        ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
+        VALUE word;
+    } ar_hint;
     /* 64bit CPU: 8B * 2 * 8 = 128B */
     ar_table_pair pairs[RHASH_AR_TABLE_MAX_SIZE];
 } ar_table;
@@ -53,19 +57,9 @@ typedef struct ar_table_struct {
 struct RHash {
     struct RBasic basic;
     const VALUE ifnone;
-    union {
-        ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
-        VALUE word;
-    } ar_hint;
 };
 
 #define RHASH(obj) ((struct RHash *)(obj))
-
-#ifndef MAX
-# define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-
-#define RHASH_SLOT_SIZE (sizeof(struct RHash) + MAX(sizeof(ar_table), sizeof(st_table)))
 
 #ifdef RHASH_IFNONE
 # undef RHASH_IFNONE
