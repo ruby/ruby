@@ -347,7 +347,13 @@ if you believe they were disclosed to a third party.
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      return self.class.load_with_rubygems_config_hash(File.read(filename))
+      config = self.class.load_with_rubygems_config_hash(File.read(filename))
+      if config.keys.any? { |k| k.include?(":") }
+        warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
+        return {}
+      else
+        return config
+      end
     rescue *yaml_errors => e
       warn "Failed to load #{filename}, #{e}"
     rescue Errno::EACCES
