@@ -376,6 +376,7 @@ impl Assembler
             }
         }
 
+        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
@@ -490,18 +491,30 @@ impl Assembler
                     }
                     asm.cret(C_RET_OPND);
                 },
-                Insn::CSelZ { truthy, falsy, .. } |
-                Insn::CSelNZ { truthy, falsy, .. } |
-                Insn::CSelE { truthy, falsy, .. } |
-                Insn::CSelNE { truthy, falsy, .. } |
-                Insn::CSelL { truthy, falsy, .. } |
-                Insn::CSelLE { truthy, falsy, .. } |
-                Insn::CSelG { truthy, falsy, .. } |
-                Insn::CSelGE { truthy, falsy, .. } => {
+                Insn::CSelZ { truthy, falsy, out } |
+                Insn::CSelNZ { truthy, falsy, out } |
+                Insn::CSelE { truthy, falsy, out } |
+                Insn::CSelNE { truthy, falsy, out } |
+                Insn::CSelL { truthy, falsy, out } |
+                Insn::CSelLE { truthy, falsy, out } |
+                Insn::CSelG { truthy, falsy, out } |
+                Insn::CSelGE { truthy, falsy, out } => {
                     let (opnd0, opnd1) = split_csel_operands(asm, *truthy, *falsy);
                     *truthy = opnd0;
                     *falsy = opnd1;
-                    asm.push_insn(insn);
+                    // Merge `csel` and `mov` into a single `csel` when possible
+                    match iterator.peek() {
+                        Some(Insn::Mov { dest: Opnd::Reg(reg), src })
+                        if matches!(out, Opnd::InsnOut { .. }) && *out == *src && live_ranges[index] == index + 1 => {
+                            *out = Opnd::Reg(*reg);
+                            asm.push_insn(insn);
+                            iterator.map_insn_index(asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        _ => {
+                            asm.push_insn(insn);
+                        }
+                    }
                 },
                 Insn::IncrCounter { mem, value } => {
                     let counter_addr = match mem {
@@ -1584,6 +1597,21 @@ mod tests {
         assert_disasm!(cb, "e1ff9fd2e10370b2", {"
             0x0: mov x1, #0xffff
             0x4: orr x1, xzr, #0x10000
+        "});
+    }
+
+    #[test]
+    fn test_merge_csel_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.csel_l(Qtrue.into(), Qfalse.into());
+        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "8b0280d20c0080d261b18c9a", {"
+            0x0: mov x11, #0x14
+            0x4: mov x12, #0
+            0x8: csel x1, x11, x12, lt
         "});
     }
 }
