@@ -1608,11 +1608,13 @@ mod tests {
     fn test_not_split_mov() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(5));
+        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(0xffff));
+        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(0x10000));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "a10080d2", {"
-            0x0: mov x1, #5
+        assert_disasm!(cb, "e1ff9fd2e10370b2", {"
+            0x0: mov x1, #0xffff
+            0x4: orr x1, xzr, #0x10000
         "});
     }
 }
