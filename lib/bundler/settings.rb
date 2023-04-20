@@ -386,8 +386,7 @@ module Bundler
       return unless file
       SharedHelpers.filesystem_access(file) do |p|
         FileUtils.mkdir_p(p.dirname)
-        require_relative "yaml_serializer"
-        p.open("w") {|f| f.write(YAMLSerializer.dump(hash)) }
+        p.open("w") {|f| f.write(serializer_class.dump(hash)) }
       end
     end
 
@@ -449,8 +448,7 @@ module Bundler
       SharedHelpers.filesystem_access(config_file, :read) do |file|
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
-        require_relative "yaml_serializer"
-        YAMLSerializer.load(file.read).inject({}) do |config, (k, v)|
+        serializer_class.load(file.read).inject({}) do |config, (k, v)|
           new_k = k
 
           if k.include?("-")
@@ -465,6 +463,15 @@ module Bundler
           config
         end
       end
+    end
+
+    def serializer_class
+      require "rubygems/yaml_serializer"
+      Gem::YAMLSerializer
+    rescue LoadError
+      # TODO: Remove this when RubyGems 3.4 is EOL
+      require_relative "yaml_serializer"
+      YAMLSerializer
     end
 
     PER_URI_OPTIONS = %w[

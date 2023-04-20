@@ -497,6 +497,9 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
             if (child->edge_name == dest_shape->edge_name) {
                 return child;
             }
+            else {
+                return NULL;
+            }
         }
         else {
             if (rb_id_table_lookup(next_shape->edges, dest_shape->edge_name, &lookup_result)) {

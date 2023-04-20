@@ -539,6 +539,8 @@ generator = BindingGenerator.new(
     rb_vm_getclassvariable
     rb_vm_ic_hit_p
     rb_vm_opt_newarray_min
+    rb_vm_opt_newarray_max
+    rb_vm_opt_newarray_hash
     rb_vm_setinstancevariable
     rb_vm_splat_array
     rjit_full_cfunc_return

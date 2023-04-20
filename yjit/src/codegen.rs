@@ -802,10 +802,10 @@ pub fn gen_single_block(
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
-        let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!(", chain_depth: {}", asm.ctx.get_chain_depth()) } else { "".to_string() };
-        asm.comment(&format!("Block: {} (ISEQ offset: {}{})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx, chain_depth));
+        let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
+        asm.comment(&format!("Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth));
+        asm.comment(&format!("reg_temps: {:08b}", ctx.get_reg_temps().as_u8()));
     }
-    asm.set_reg_temps(asm.ctx.get_reg_temps());
 
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
@@ -834,11 +834,9 @@ pub fn gen_single_block(
 
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
-        assert_eq!(asm.get_reg_temps(), asm.ctx.get_reg_temps());
         for stack_idx in asm.ctx.get_stack_size()..MAX_REG_TEMPS {
             asm.ctx.dealloc_temp_reg(stack_idx);
         }
-        asm.set_reg_temps(asm.ctx.get_reg_temps());
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
@@ -862,7 +860,7 @@ pub fn gen_single_block(
             gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            asm.comment(&format!("Insn: {} (stack_size: {})", insn_name(opcode), asm.ctx.get_stack_size()));
+            asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
@@ -3359,6 +3357,59 @@ fn gen_opt_newarray_max(
     Some(KeepCompiling)
 }
 
+fn gen_opt_newarray_send(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    let method = jit.get_arg(1).as_u32();
+
+    if method == idMin {
+        gen_opt_newarray_min(jit, asm, _ocb)
+    } else if method == idMax {
+        gen_opt_newarray_max(jit, asm, _ocb)
+    } else if method == idHash {
+        gen_opt_newarray_hash(jit, asm, _ocb)
+    } else {
+        None
+    }
+}
+
+fn gen_opt_newarray_hash(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+
+    let num = jit.get_arg(0).as_u32();
+
+    // Save the PC and SP because we may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    extern "C" {
+        fn rb_vm_opt_newarray_hash(ec: EcPtr, num: u32, elts: *const VALUE) -> VALUE;
+    }
+
+    let offset_magnitude = (SIZEOF_VALUE as u32) * num;
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_ptr = asm.lea(values_opnd);
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_newarray_hash as *const u8,
+        vec![
+            EC,
+            num.into(),
+            values_ptr
+        ],
+    );
+
+    asm.stack_pop(num.as_usize());
+    let stack_ret = asm.stack_push(Type::Unknown);
+    asm.mov(stack_ret, val_opnd);
+
+    Some(KeepCompiling)
+}
+
 fn gen_opt_newarray_min(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -4841,6 +4892,9 @@ fn gen_push_frame(
         asm.store(Opnd::mem(64, sp, offset), rest_arg);
     }
 
+    // Spill stack temps to let the callee use them (must be done before changing SP)
+    asm.spill_temps();
+
     if set_sp_cfp {
         // Saving SP before calculating ep avoids a dependency on a register
         // However this must be done after referencing frame.recv, which may be SP-relative
@@ -5079,7 +5133,6 @@ fn gen_send_cfunc(
         assert_ne!(0, unsafe { rb_IMEMO_TYPE_P(imemo_ci, imemo_callinfo) },
             "we assume all callinfos with kwargs are on the GC heap");
         let sp = asm.lea(asm.ctx.sp_opnd(0));
-        asm.spill_temps(); // for ccall
         let kwargs = asm.ccall(build_kwhash as *const u8, vec![imemo_ci.into(), sp]);
 
         // Replace the stack location at the start of kwargs with the new hash
@@ -5089,9 +5142,6 @@ fn gen_send_cfunc(
 
     // Copy SP because REG_SP will get overwritten
     let sp = asm.lea(asm.ctx.sp_opnd(0));
-
-    // Arguments must be spilled before popped from ctx
-    asm.spill_temps();
 
     // Pop the C function arguments from the stack (in the caller)
     asm.stack_pop((argc + 1).try_into().unwrap());
@@ -5856,7 +5906,7 @@ fn gen_send_iseq(
 
                 // If we have more arguments than required, we need to prepend
                 // the items from the stack onto the array.
-                let diff = (non_rest_arg_count - required_num + opts_filled_with_splat.unwrap_or(0)) as u32;
+                let diff = (non_rest_arg_count - (required_num + opts_filled_with_splat.unwrap_or(0))) as u32;
 
                 // diff is >0 so no need to worry about null pointer
                 asm.comment("load pointer to array elements");
@@ -6061,7 +6111,7 @@ fn gen_send_iseq(
         // pushed onto the stack that represents the parameters that weren't
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
-        asm.spill_temps(); // avoid using a register for unspecified_bits
+        asm.ctx.dealloc_temp_reg(asm.stack_opnd(-1).stack_idx()); // avoid using a register for unspecified_bits
         asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
     }
 
@@ -6093,9 +6143,6 @@ fn gen_send_iseq(
         }
         argc = lead_num;
     }
-
-    // Spill stack temps to let the callee use them
-    asm.spill_temps();
 
     // If we have a rest param and optional parameters,
     // we don't actually pass the rest parameter as an argument,
@@ -6194,10 +6241,8 @@ fn gen_send_iseq(
     return_asm.ctx = asm.ctx.clone();
     return_asm.stack_pop(sp_offset.try_into().unwrap());
     let return_val = return_asm.stack_push(Type::Unknown);
-    if return_val.stack_idx() < MAX_REG_TEMPS {
-        // The callee writes a return value on stack. Update reg_temps accordingly.
-        return_asm.ctx.dealloc_temp_reg(return_val.stack_idx());
-    }
+    // The callee writes a return value on stack. Update reg_temps accordingly.
+    return_asm.ctx.dealloc_temp_reg(return_val.stack_idx());
     return_asm.ctx.set_sp_offset(1);
     return_asm.ctx.reset_chain_depth();
 
@@ -7828,8 +7873,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_mod => Some(gen_opt_mod),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
-        YARVINSN_opt_newarray_max => Some(gen_opt_newarray_max),
-        YARVINSN_opt_newarray_min => Some(gen_opt_newarray_min),
+        YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_concatarray => Some(gen_concatarray),
         YARVINSN_newrange => Some(gen_newrange),

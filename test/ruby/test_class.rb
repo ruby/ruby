@@ -355,6 +355,17 @@ class TestClass < Test::Unit::TestCase
     assert_equal(42, PrivateClass.new.foo)
   end
 
+  def test_private_const_access
+    assert_raise_with_message NameError, /uninitialized/ do
+      begin
+        eval('class ::TestClass::PrivateClass; end')
+      rescue NameError => e
+      end
+
+      Object.const_get "NOT_AVAILABLE_CONST_NAME_#{__LINE__}"
+    end
+  end
+
   StrClone = String.clone
   Class.new(StrClone)
 

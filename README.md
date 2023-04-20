@@ -69,11 +69,11 @@ https://www.ruby-lang.org/
 There is a mailing list to discuss Ruby. To subscribe to this list, please
 send the following phrase:
 
-    subscribe
+    join
 
-in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
+in the mail subject (not body) to the address [ruby-talk-request@ml.ruby-lang.org].
 
-[ruby-talk-request@ruby-lang.org]: mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
+[ruby-talk-request@ml.ruby-lang.org]: mailto:ruby-talk-request@ml.ruby-lang.org?subject=join
 
 ## Copying
 

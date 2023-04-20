@@ -30,6 +30,10 @@ Note: We're only listing outstanding class updates.
     * `Dir#chdir` added for changing the directory to the directory specified
       by the provided `Dir` object. [[Feature #19347]]
 
+* MatchData
+
+    * MatchData#named_captures now accepts optional `symbolize_names` keyword. [[Feature #19591]]
+
 * String
 
     * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
@@ -84,8 +88,8 @@ changelog for details of the default gems or bundled gems.
 
 ## JIT
 
-[Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
+[Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538

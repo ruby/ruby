@@ -1,11 +1,5 @@
 name: Miscellaneous checks
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-  merge_group:
-    branches: [ "master" ]
+on: [push, pull_request, merge_group]
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -23,20 +17,28 @@ jobs:
       - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
       - name: Check if C-sources are US-ASCII
         run: |
-          ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
+          grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs'
-          ! git grep -n '^[	 ][	 ]*$' -- '*.md'
+          git grep -I -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs' && exit 1 || :
+          git grep -n '^[	 ][	 ]*$' -- '*.md' && exit 1 || :
       - name: Check for bash specific substitution in configure.ac
         run: |
-          ! git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac
+          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
       - name: Check for header macros
         run: |
-          ! for header in ruby/*.h; do \
-            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null || echo $header
-          done | grep -F .
+          fail=
+          for header in ruby/*.h; do
+            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null && continue
+            fail=1
+            echo $header
+          done
+          exit $fail
         working-directory: include
+
+      - id: gems
+        run: true
+        if: ${{ github.ref == 'refs/heads/master' }}
 
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
@@ -44,6 +46,7 @@ jobs:
           key: downloaded-cache-${{ github.sha }}
           restore-keys: |
             downloaded-cache
+        if: steps.gems.outcome == 'success'
 
       - name: Download previous gems list
         run: |
@@ -51,6 +54,7 @@ jobs:
           mkdir -p .downloaded-cache
           ln -s .downloaded-cache/$data .
           curl -O -R -z ./$data https://stdgems.org/$data
+        if: steps.gems.outcome == 'success'
 
       - name: Make default gems list
         run: |
@@ -69,16 +73,19 @@ jobs:
             f.puts gems
           end
         shell: ruby --disable=gems {0}
+        if: steps.gems.outcome == 'success'
 
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb default
+        if: steps.gems.outcome == 'success'
 
       - name: Check diffs
         id: diff
         run: |
           git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
         continue-on-error: true
+        if: steps.gems.outcome == 'success'
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}

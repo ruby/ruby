@@ -724,6 +724,14 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_ic_hit_p) }
   end
 
+  def C.rb_vm_opt_newarray_hash
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_hash) }
+  end
+
+  def C.rb_vm_opt_newarray_max
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_max) }
+  end
+
   def C.rb_vm_opt_newarray_min
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_min) }
   end
