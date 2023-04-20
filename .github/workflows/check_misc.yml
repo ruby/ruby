@@ -17,19 +17,23 @@ jobs:
       - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
       - name: Check if C-sources are US-ASCII
         run: |
-          ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
+          grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs'
-          ! git grep -n '^[	 ][	 ]*$' -- '*.md'
+          git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs' && exit 1 || :
+          git grep -n '^[	 ][	 ]*$' -- '*.md' && exit 1 || :
       - name: Check for bash specific substitution in configure.ac
         run: |
-          ! git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac
+          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
       - name: Check for header macros
         run: |
-          ! for header in ruby/*.h; do \
-            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null || echo $header
-          done | grep -F .
+          fail=
+          for header in ruby/*.h; do
+            git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null && continue
+            fail=1
+            echo $header
+          done
+          exit $fail
         working-directory: include
 
       - id: gems
