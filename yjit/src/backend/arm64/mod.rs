@@ -963,7 +963,7 @@ impl Assembler
                     // This supports the following two kinds of immediates:
                     //   * The value fits into a single movz instruction
                     //   * It can be encoded with the special bitmask immediate encoding
-                    // arm64_splat should have split other immediates that require multiple instructions.
+                    // arm64_split() should have split other immediates that require multiple instructions.
                     match src {
                         Opnd::UImm(uimm) if *uimm <= 0xffff => {
                             movz(cb, dest.into(), A64Opnd::new_uimm(*uimm), 0);
