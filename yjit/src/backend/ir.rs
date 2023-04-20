@@ -486,9 +486,6 @@ pub enum Insn {
     /// Shift a value right by a certain amount (signed).
     RShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
-    /// Spill a stack temp from a register into memory
-    SpillTemp(Opnd),
-
     // Low-level instruction to store a value to memory.
     Store { dest: Opnd, src: Opnd },
 
@@ -589,7 +586,6 @@ impl Insn {
             Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
-            Insn::SpillTemp(_) => "SpillTemp",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
             Insn::Test { .. } => "Test",
@@ -734,8 +730,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } |
-            Insn::SpillTemp(opnd) => {
+            Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
@@ -832,8 +827,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } |
-            Insn::SpillTemp(opnd) => {
+            Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
@@ -1068,8 +1062,8 @@ impl Assembler
         Target::Label(label_idx)
     }
 
-    /// Convert Stack operands to memory operands
-    pub fn lower_stack(mut self) -> Assembler {
+    /// Convert Opnd::Stack to Opnd::Mem or Opnd::Reg
+    pub fn lower_stack_opnd(&self, opnd: &Opnd) -> Opnd {
         // Convert Opnd::Stack to Opnd::Mem
         fn mem_opnd(opnd: &Opnd) -> Opnd {
             if let Opnd::Stack { idx, sp_offset, num_bits, .. } = *opnd {
@@ -1081,7 +1075,8 @@ impl Assembler
         }
 
         // Convert Opnd::Stack to Opnd::Reg
-        fn reg_opnd(opnd: &Opnd, regs: &Vec<Reg>) -> Opnd {
+        fn reg_opnd(opnd: &Opnd) -> Opnd {
+            let regs = Assembler::get_temp_regs();
             if let Opnd::Stack { num_bits, .. } = *opnd {
                 incr_counter!(temp_reg_opnd);
                 Opnd::Reg(regs[opnd.reg_idx()]).with_num_bits(num_bits).unwrap()
@@ -1090,43 +1085,16 @@ impl Assembler
             }
         }
 
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
-        let regs = Assembler::get_temp_regs();
-        let mut iterator = self.into_draining_iter();
-
-        while let Some((index, mut insn)) = iterator.next_mapped() {
-            match &insn {
-                // The original insn is pushed to the new asm to satisfy ccall's reg_temps assertion.
-                Insn::SpillTemp(opnd) => {
-                    incr_counter!(temp_spill);
-                    asm.mov(mem_opnd(opnd), reg_opnd(opnd, &regs));
-                }
-                _ => {
-                    // next_mapped() doesn't map out_opnd. So we need to map it here.
-                    if insn.out_opnd().is_some() {
-                        let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
-                        let out = insn.out_opnd_mut().unwrap();
-                        *out = asm.next_opnd_out(out_num_bits);
-                    }
-
-                    // Lower Opnd::Stack to Opnd::Reg or Opnd::Mem
-                    let mut opnd_iter = insn.opnd_iter_mut();
-                    while let Some(opnd) = opnd_iter.next() {
-                        if let Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps } = *opnd {
-                            *opnd = if opnd.stack_idx() < MAX_REG_TEMPS && reg_temps.unwrap().get(opnd.stack_idx()) {
-                                reg_opnd(opnd, &regs)
-                            } else {
-                                mem_opnd(opnd)
-                            };
-                        }
-                    }
-                    asm.push_insn(insn);
+        match opnd {
+            Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps } => {
+                if opnd.stack_idx() < MAX_REG_TEMPS && reg_temps.unwrap().get(opnd.stack_idx()) {
+                    reg_opnd(opnd)
+                } else {
+                    mem_opnd(opnd)
                 }
             }
-            iterator.map_insn_index(&mut asm);
+            _ => unreachable!(),
         }
-
-        asm
     }
 
     /// Allocate a register to a stack temp if available.
@@ -1169,6 +1137,28 @@ impl Assembler
 
         // Every stack temp should have been spilled
         assert_eq!(self.ctx.get_reg_temps(), RegTemps::default());
+    }
+
+    /// Spill a stack temp from a register to the stack
+    fn spill_temp(&mut self, opnd: Opnd) {
+        assert!(self.ctx.get_reg_temps().get(opnd.stack_idx()));
+
+        // Use different RegTemps for dest and src operands
+        let reg_temps = self.ctx.get_reg_temps();
+        let mut mem_temps = reg_temps;
+        mem_temps.set(opnd.stack_idx(), false);
+
+        // Move the stack operand from a register to memory
+        match opnd {
+            Opnd::Stack { idx, num_bits, stack_size, sp_offset, .. } => {
+                self.mov(
+                    Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps: Some(mem_temps) },
+                    Opnd::Stack { idx, num_bits, stack_size, sp_offset, reg_temps: Some(reg_temps) },
+                );
+            }
+            _ => unreachable!(),
+        }
+        incr_counter!(temp_spill);
     }
 
     /// Update which stack temps are in a register
@@ -1805,12 +1795,6 @@ impl Assembler {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::RShift { opnd, shift, out });
         out
-    }
-
-    /// Spill a stack temp from a register to the stack
-    fn spill_temp(&mut self, opnd: Opnd) {
-        assert!(self.ctx.get_reg_temps().get(opnd.stack_idx()));
-        self.push_insn(Insn::SpillTemp(opnd));
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
