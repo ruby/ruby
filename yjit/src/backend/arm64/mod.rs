@@ -399,6 +399,9 @@ impl Assembler
                             *opnd = asm.load(*opnd);
                         }
                     },
+                    Opnd::Stack { .. } => {
+                        *opnd = asm.lower_stack_opnd(opnd);
+                    }
                     _ => {}
                 };
             }
@@ -1123,7 +1126,6 @@ impl Assembler
                         nop(cb);
                     }
                 }
-                Insn::SpillTemp(_) => unreachable!("Insn::SpillTemp should have been lowered by lower_stack"),
             };
 
             // On failure, jump to the next page and retry the current insn
@@ -1146,10 +1148,8 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Vec<u32>
-    {
-        let asm = self.lower_stack();
-        let asm = asm.arm64_split();
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Vec<u32> {
+        let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
