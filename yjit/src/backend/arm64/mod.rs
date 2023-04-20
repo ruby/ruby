@@ -605,7 +605,11 @@ impl Assembler
                         },
                         // Otherwise we'll use the normal mov instruction.
                         (Opnd::Reg(_), _) => {
-                            let value = split_bitmask_immediate(asm, src, dest.rm_num_bits());
+                            let value = match src {
+                                // Unlike other instructions, we can avoid splitting this case, using movz.
+                                Opnd::UImm(uimm) if uimm <= 0xffff => src,
+                                _ => split_bitmask_immediate(asm, src, dest.rm_num_bits()),
+                            };
                             asm.mov(dest, value);
                         },
                         _ => unreachable!()
@@ -956,7 +960,18 @@ impl Assembler
                     };
                 },
                 Insn::Mov { dest, src } => {
-                    mov(cb, dest.into(), src.into());
+                    // This supports the following two kinds of immediates:
+                    //   * The value fits into a single movz instruction
+                    //   * It can be encoded with the special bitmask immediate encoding
+                    // arm64_splat should have split other immediates that require multiple instructions.
+                    match src {
+                        Opnd::UImm(uimm) if *uimm <= 0xffff => {
+                            movz(cb, dest.into(), A64Opnd::new_uimm(*uimm), 0);
+                        },
+                        _ => {
+                            mov(cb, dest.into(), src.into());
+                        }
+                    }
                 },
                 Insn::Lea { opnd, out } => {
                     let opnd: A64Opnd = opnd.into();
@@ -1586,6 +1601,18 @@ mod tests {
 
         assert_disasm!(cb, "618240f8", {"
             0x0: ldur x1, [x19, #8]
+        "});
+    }
+
+    #[test]
+    fn test_not_split_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.mov(Opnd::Reg(Assembler::TEMP_REGS[0]), Opnd::UImm(5));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "a10080d2", {"
+            0x0: mov x1, #5
         "});
     }
 }
