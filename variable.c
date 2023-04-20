@@ -1239,11 +1239,6 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         RB_VM_LOCK_LEAVE();
 
         break;
-      case T_OBJECT: {
-        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
-
-        break;
-      }
       default: {
         rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
 
