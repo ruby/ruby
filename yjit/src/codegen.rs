@@ -1465,7 +1465,9 @@ fn guard_object_is_not_ruby2_keyword_hash(
     asm.write_label(not_ruby2_keyword);
 }
 
-// push enough nils onto the stack to fill out an array
+/// This instruction pops a single value off the stack, converts it to an
+/// arrayif it isn’t already one using the #to_ary method, and then pushes
+/// the values from the array back onto the stack.
 fn gen_expandarray(
     jit: &mut JITState,
     asm: &mut Assembler,
