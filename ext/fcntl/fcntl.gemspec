@@ -1,9 +1,19 @@
 # coding: utf-8
 # frozen_string_literal: true
 
+source_version = ["", "ext/fcntl/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}fcntl.c")) {|f|
+      f.gets("\n#define FCNTL_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "fcntl"
-  spec.version       = "1.0.2"
+  spec.version       = source_version
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
