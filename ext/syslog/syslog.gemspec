@@ -1,6 +1,17 @@
+
+source_version = ["", "ext/syslog/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}syslog.c")) {|f|
+      f.gets("\n#define SYSLOG_VERSION ")
+      f.gets[/\s*"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "syslog"
-  spec.version       = "0.1.1"
+  spec.version       = source_version
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 
