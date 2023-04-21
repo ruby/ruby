@@ -181,7 +181,7 @@ module SyntaxSuggest
           lines << line if line.is_kw? || line.is_end?
         }
       )
-      @scanner.try_rollback
+      @scanner.stash_changes
       lines
     end
 
@@ -240,7 +240,7 @@ module SyntaxSuggest
           true
         }
       )
-      @scanner.try_rollback
+      @scanner.stash_changes
       self
     end
 
@@ -275,26 +275,34 @@ module SyntaxSuggest
 
       return self if kw_count == end_count # nothing to balance
 
+      @scanner.commit_if_changed
+      scan_while { |line| line.empty? }
+
       # More ends than keywords, check if we can balance expanding up
       next_up = @scanner.next_up
       next_down = @scanner.next_down
       if (end_count - kw_count) == 1 && next_up
-        if next_up.is_kw? && next_up.indent >= @orig_indent
+        if next_up.is_kw? && next_up.indent >= @target_indent
           @scanner.scan(
             up: ->(line, _, _) { line == next_up },
             down: ->(line, _, _) { false }
           )
+          @scanner.commit_if_changed
         end
 
       # More keywords than ends, check if we can balance by expanding down
       elsif (kw_count - end_count) == 1 && next_down
-        if next_down.is_end? && next_down.indent >= @orig_indent
+        if next_down.is_end? && next_down.indent >= @target_indent
           @scanner.scan(
             up: ->(line, _, _) { false },
-            down: ->(line) { line == next_down }
+            down: ->(line, _, _) { line == next_down }
           )
+          @scanner.commit_if_changed
         end
       end
+
+      @scanner.stash_changes
+
       self
     end
 

@@ -204,5 +204,36 @@ module SyntaxSuggest
         > 4  end
       EOM
     end
+
+    it "empty else" do
+      source = <<~'EOM'
+        class Foo
+          def foo
+            if cond?
+              foo
+            else
+
+            end
+          end
+
+          # ...
+
+          def bar
+            if @recv
+            end_is_missing_here
+          end
+        end
+      EOM
+
+      io = StringIO.new
+      SyntaxSuggest.call(
+        io: io,
+        source: source
+      )
+      out = io.string
+      expect(out).to include(<<~EOM)
+        end_is_missing_here
+      EOM
+    end
   end
 end

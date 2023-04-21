@@ -17,13 +17,20 @@ module SyntaxSuggest
     def commit_if_changed
       if changed?
         @history << CodeBlock.new(lines: @code_lines[before_index..after_index])
-        refresh_index
       end
 
       self
     end
 
-    def try_rollback
+    # Discards any changes that have not been committed
+    def stash_changes
+      refresh_index
+    end
+
+    # Discard changes that have not been committed and revert the last commit
+    #
+    # Cannot revert the first commit
+    def revert_last_commit
       if @history.length > 1
         @history.pop
         refresh_index

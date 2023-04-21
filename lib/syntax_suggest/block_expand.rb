@@ -61,11 +61,14 @@ module SyntaxSuggest
     # they can expand to capture more code up and down). It does this conservatively
     # as there's no undo (currently).
     def expand_indent(block)
-      AroundBlockScan.new(code_lines: @code_lines, block: block)
+      now = AroundBlockScan.new(code_lines: @code_lines, block: block)
         .force_add_hidden
         .stop_after_kw
         .scan_adjacent_indent
-        .code_block
+
+      now.lookahead_balance_one_line
+
+      now.code_block
     end
 
     # A neighbor is code that is at or above the current indent line.
