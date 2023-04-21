@@ -89,6 +89,20 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
       }
       return;
+    case YP_NODE_CONSTANT_PATH_NODE: {
+      yp_constant_path_node_t *constant_path_node = (yp_constant_path_node_t*) node;
+      yp_compile_node(iseq, constant_path_node->parent, ret, src, popped);
+      ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+      ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(parse_node_symbol((yp_node_t *)constant_path_node->child)));
+      return;
+    }
+    case YP_NODE_CONSTANT_READ_NODE: {
+      yp_constant_read_node_t *constant_read_node = (yp_constant_read_node_t *) node;
+      ADD_INSN(ret, &dummy_line_node, putnil);
+      ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+      ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(parse_node_symbol((yp_node_t *)constant_read_node)));
+      return;
+    }
     case YP_NODE_HASH_NODE: {
       yp_hash_node_t *hash_node = (yp_hash_node_t *) node;
       yp_node_list_t elements = hash_node->elements;
