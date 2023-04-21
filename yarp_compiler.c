@@ -21,36 +21,135 @@ parse_number(const char *start, const char *end) {
   return number;
 }
 
+static inline VALUE
+parse_string(yp_string_t *string) {
+  return rb_str_new(yp_string_source(string), yp_string_length(string));
+}
+
+static inline ID
+parse_symbol(const char *start, const char *end) {
+  return rb_intern2(start, end - start);
+}
+
+static inline ID
+parse_node_symbol(yp_node_t *node) {
+  return parse_symbol(node->location.start, node->location.end);
+}
+
+static inline ID
+parse_string_symbol(yp_string_t *string) {
+  const char *start = yp_string_source(string);
+  return parse_symbol(start, start + yp_string_length(string));
+}
+
+
 static void
-yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret) {
+yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src) {
+  int lineno = node->location.start - src;
+  NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
   switch (node->type) {
+    case YP_NODE_ARGUMENTS_NODE: {
+      yp_arguments_node_t *arguments_node = (yp_arguments_node_t *) node;
+      yp_node_list_t node_list = arguments_node->arguments;
+      for (size_t index = 0; index < node_list.size; index++) {
+        yp_compile_node(iseq, node_list.nodes[index], ret, src);
+      }
+      return;
+    }
+    case YP_NODE_ARRAY_NODE: {
+      yp_array_node_t *array_node = (yp_array_node_t *) node;
+      yp_node_list_t elements = array_node->elements;
+      for (size_t index = 0; index < elements.size; index++) {
+        yp_compile_node(iseq, elements.nodes[index], ret, src);
+      }
+      ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(elements.size));
+      // push_newarray(compiler, sizet2int(elements.size));
+      return;
+    }
+    case YP_NODE_ASSOC_NODE: {
+      yp_assoc_node_t *assoc_node = (yp_assoc_node_t *) node;
+      yp_compile_node(iseq, assoc_node->key, ret, src);
+      yp_compile_node(iseq, assoc_node->value, ret, src);
+      return;
+    }
+    case YP_NODE_FALSE_NODE:
+      // push_putobject(compiler, Qfalse);
+      ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+      return;
+    case YP_NODE_HASH_NODE: {
+      yp_hash_node_t *hash_node = (yp_hash_node_t *) node;
+      yp_node_list_t elements = hash_node->elements;
+
+      for (size_t index = 0; index < elements.size; index++) {
+        yp_compile_node(iseq, elements.nodes[index], ret, src);
+      }
+
+      ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
+      return;
+    }
+    case YP_NODE_INTEGER_NODE: {
+      ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node->location.start, node->location.end));
+      return;
+    }
+    case YP_NODE_NIL_NODE:
+      //  push_putnil(compiler);
+      ADD_INSN(ret, &dummy_line_node, putnil);
+      return;
+    case YP_NODE_PARENTHESES_NODE: {
+      yp_parentheses_node_t *parentheses_node = (yp_parentheses_node_t *) node;
+
+      if (parentheses_node->statements == NULL) {
+      //  push_putnil(compiler);
+        ADD_INSN(ret, &dummy_line_node, putnil);
+      } else {
+        yp_compile_node(iseq, parentheses_node->statements, ret, src);
+      }
+
+      return;
+    }
     case YP_NODE_PROGRAM_NODE: {
       yp_program_node_t *program_node = (yp_program_node_t *) node;
 
       if (program_node->statements->body.size == 0) {
-      //  push_putnil(iseq);
+        ADD_INSN(ret, &dummy_line_node, putnil);
       } else {
-        yp_compile_node(iseq, (yp_node_t *) program_node->statements, ret);
+        yp_compile_node(iseq, (yp_node_t *) program_node->statements, ret, src);
       }
 
-      NODE dummy_line_node = generate_dummy_line_node(ISEQ_COMPILE_DATA(iseq)->last_line, -1);
       ADD_INSN(ret, &dummy_line_node, leave);
       return;
     }
+    case YP_NODE_SELF_NODE:
+      ADD_INSN(ret, &dummy_line_node, putself);
+      return;
     case YP_NODE_STATEMENTS_NODE: {
       yp_statements_node_t *statements_node = (yp_statements_node_t *) node;
       yp_node_list_t node_list = statements_node->body;
       for (size_t index = 0; index < node_list.size; index++) {
-        yp_compile_node(iseq, node_list.nodes[index], ret);
-        // if (index < node_list.size - 1) push_pop(iseq);
+        yp_compile_node(iseq, node_list.nodes[index], ret, src);
+        if (index < node_list.size - 1) ADD_INSN(ret, &dummy_line_node, pop);
       }
       return;
     }
-    case YP_NODE_INTEGER_NODE: {
-      //push_putobject(iseq, parse_number(node->location.start, node->location.end));
-      NODE dummy_line_node = generate_dummy_line_node(ISEQ_COMPILE_DATA(iseq)->last_line, -1);
-      ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node->location.start, node->location.end));
+    case YP_NODE_STRING_NODE: {
+      yp_string_node_t *string_node = (yp_string_node_t *) node;
+      ADD_INSN1(ret, &dummy_line_node, putstring, parse_string(&string_node->unescaped));
+      return;
     }
+    case YP_NODE_STRING_INTERPOLATED_NODE: {
+      yp_string_interpolated_node_t *string_interpolated_node = (yp_string_interpolated_node_t *) node;
+      yp_compile_node(iseq, (yp_node_t *) string_interpolated_node->statements, ret, src);
+      return;
+    }
+    case YP_NODE_SYMBOL_NODE: {
+      yp_symbol_node_t *symbol_node = (yp_symbol_node_t *) node;
+      ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_string_symbol(&symbol_node->unescaped)));
+      //push_putobject(compiler, ID2SYM(parse_string_symbol(&node->unescaped)));
+      return;
+    }
+    case YP_NODE_TRUE_NODE:
+      // push_putobject(compiler, Qtrue);
+      ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
       return;
     default:
       rb_raise(rb_eNotImpError, "node type %d not implemented", node->type);
@@ -62,9 +161,9 @@ static VALUE
 rb_translate_yarp(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret)
 {
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
-    assert(node->type == YP_NODE_PROGRAM_NODE);
+    RUBY_ASSERT(node->type == YP_NODE_PROGRAM_NODE);
 
-    yp_compile_node(iseq, node, ret);
+    yp_compile_node(iseq, node, ret, node->location.start);
     iseq_set_sequence(iseq, ret);
     // Call YARP specific compiler
     return Qnil;
