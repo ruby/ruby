@@ -1472,27 +1472,6 @@ opt_regexpmatch2
     }
 }
 
-/* call native compiled method */
-DEFINE_INSN_IF(SUPPORT_CALL_C_FUNCTION)
-opt_call_c_function
-(rb_insn_func_t funcptr)
-()
-()
-// attr bool leaf = false; /* anything can happen inside */
-// attr bool handles_sp = true;
-{
-    reg_cfp = (funcptr)(ec, reg_cfp);
-
-    if (reg_cfp == 0) {
-        VALUE err = ec->errinfo;
-        ec->errinfo = Qnil;
-        THROW_EXCEPTION(err);
-    }
-
-    RESTORE_REGS();
-    NEXT_INSN();
-}
-
 /* call specific function with args */
 DEFINE_INSN
 invokebuiltin
