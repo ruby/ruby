@@ -87,4 +87,16 @@ class URI::TestParser < Test::Unit::TestCase
       URI.parse("foo@example:foo")
     end
   end
+
+  def test_rfc2822_parse_relative_uri
+    pre = ->(length) {
+      " " * length + "\0"
+    }
+    parser = URI::RFC2396_Parser.new
+    assert_linear_performance((1..5).map {|i| 10**i}, pre: pre) do |uri|
+      assert_raise(URI::InvalidURIError) do
+        parser.split(uri)
+      end
+    end
+  end
 end
