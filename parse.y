@@ -1100,12 +1100,6 @@ new_args_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, VALUE b
     return (VALUE)t;
 }
 
-static inline VALUE
-args_with_numbered(struct parser_params *p, VALUE args, int max_numparam)
-{
-    return args;
-}
-
 static VALUE
 new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE aryptn, const YYLTYPE *loc)
 {
