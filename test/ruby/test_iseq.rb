@@ -763,4 +763,17 @@ class TestISeq < Test::Unit::TestCase
   def test_ever_condition_loop
     assert_ruby_status([], "BEGIN {exit}; while true && true; end")
   end
+
+  def test_unreachable_syntax_error
+    mesg = /Invalid break/
+    assert_syntax_error("#{<<-"begin;"}\n#{<<-'end;'}", mesg)
+    begin;
+      false and break
+    end;
+    assert_syntax_error("#{<<-"begin;"}\n#{<<-'end;'}", mesg)
+    begin;
+      if false and break
+      end
+    end;
+  end
 end

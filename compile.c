@@ -4255,6 +4255,15 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 enum {ever_true = COMPILE_OK + 1, ever_false};
 
 static int
+compile_never(rb_iseq_t *iseq, const NODE *cond)
+{
+    DECL_ANCHOR(false_seq);
+    INIT_ANCHOR(false_seq);
+    CHECK(iseq_compile_each(iseq, false_seq, cond, TRUE));
+    return COMPILE_OK;
+}
+
+static int
 compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
                 LABEL *then_label, LABEL *else_label)
 {
@@ -4267,7 +4276,10 @@ compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
             LABEL *label = NEW_LABEL(nd_line(cond));
             cc = compile_logical(iseq, ret, cond->nd_1st, label, else_label);
             CHECK(cc >= COMPILE_OK);
-            if (cc == ever_false) return cc;
+            if (cc == ever_false) {
+                CHECK(compile_never(iseq, cond->nd_2nd));
+                return cc;
+            }
             if (cc != ever_true && !label->refcnt) {
                 ADD_INSN(ret, cond, putnil);
                 break;
@@ -4281,7 +4293,10 @@ compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
             LABEL *label = NEW_LABEL(nd_line(cond));
             cc = compile_logical(iseq, ret, cond->nd_1st, then_label, label);
             CHECK(cc >= COMPILE_OK);
-            if (cc == ever_true) return cc;
+            if (cc == ever_true) {
+                CHECK(compile_never(iseq, cond->nd_2nd));
+                return cc;
+            }
             if (cc != ever_false && !label->refcnt) {
                 ADD_INSN(ret, cond, putnil);
                 break;
