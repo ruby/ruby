@@ -759,4 +759,8 @@ class TestISeq < Test::Unit::TestCase
       assert_equal :new, r.take
     RUBY
   end
+
+  def test_ever_condition_loop
+    assert_ruby_status([], "BEGIN {exit}; while true && true; end")
+  end
 end

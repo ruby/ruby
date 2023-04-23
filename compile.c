@@ -4252,18 +4252,23 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
     return COMPILE_OK;
 }
 
+enum {ever_true = COMPILE_OK + 1, ever_false};
+
 static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
-                         LABEL *then_label, LABEL *else_label)
+compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+                LABEL *then_label, LABEL *else_label)
 {
+    int cc;
+
   again:
     switch (nd_type(cond)) {
       case NODE_AND:
         {
             LABEL *label = NEW_LABEL(nd_line(cond));
-            CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
-                                           else_label));
-            if (!label->refcnt) {
+            cc = compile_logical(iseq, ret, cond->nd_1st, label, else_label);
+            CHECK(cc >= COMPILE_OK);
+            if (cc == ever_false) return cc;
+            if (cc != ever_true && !label->refcnt) {
                 ADD_INSN(ret, cond, putnil);
                 break;
             }
@@ -4274,9 +4279,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_OR:
         {
             LABEL *label = NEW_LABEL(nd_line(cond));
-            CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
-                                           label));
-            if (!label->refcnt) {
+            cc = compile_logical(iseq, ret, cond->nd_1st, then_label, label);
+            CHECK(cc >= COMPILE_OK);
+            if (cc == ever_true) return cc;
+            if (cc != ever_false && !label->refcnt) {
                 ADD_INSN(ret, cond, putnil);
                 break;
             }
@@ -4290,20 +4296,17 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_ZLIST:
       case NODE_LAMBDA:
         /* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
-        ADD_INSNL(ret, cond, jump, then_label);
-        return COMPILE_OK;
+        return ever_true;
       case NODE_FALSE:
       case NODE_NIL:
         /* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
-        ADD_INSNL(ret, cond, jump, else_label);
-        return COMPILE_OK;
+        return ever_false;
       case NODE_LIST:
       case NODE_ARGSCAT:
       case NODE_DREGX:
       case NODE_DSTR:
         CHECK(COMPILE_POPPED(ret, "branch condition", cond));
-        ADD_INSNL(ret, cond, jump, then_label);
-        return COMPILE_OK;
+        return ever_true;
       case NODE_FLIP2:
         CHECK(compile_flip_flop(iseq, ret, cond, TRUE, then_label, else_label));
         return COMPILE_OK;
@@ -4324,13 +4327,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
                 INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
                 if (insn->insn_id == BIN(putobject)) {
                     if (RTEST(insn->operands[0])) {
-                        ADD_INSNL(ret, cond, jump, then_label);
-                        // maybe unreachable
-                        return COMPILE_OK;
+                        return ever_true;
                     }
                     else {
-                        ADD_INSNL(ret, cond, jump, else_label);
-                        return COMPILE_OK;
+                        return ever_false;
                     }
                 }
             }
@@ -4341,6 +4341,24 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 
     ADD_INSNL(ret, cond, branchunless, else_label);
     ADD_INSNL(ret, cond, jump, then_label);
+    return COMPILE_OK;
+}
+
+static int
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+                         LABEL *then_label, LABEL *else_label)
+{
+    int cc = compile_logical(iseq, ret, cond, then_label, else_label);
+    switch (cc) {
+      case ever_true:
+        ADD_INSNL(ret, cond, jump, then_label);
+        break;
+      case ever_false:
+        ADD_INSNL(ret, cond, jump, else_label);
+        break;
+      default:
+        CHECK(cc);
+    }
     return COMPILE_OK;
 }
 
