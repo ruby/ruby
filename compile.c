@@ -4254,36 +4254,49 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 
 static int
 compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+                         LABEL *then_label, LABEL *else_label);
+
+static int
+compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+                LABEL *then_label, LABEL *else_label)
+{
+    DECL_ANCHOR(seq);
+    INIT_ANCHOR(seq);
+    LABEL *label = NEW_LABEL(nd_line(cond));
+    if (!then_label) then_label = label;
+    else if (!else_label) else_label = label;
+
+    CHECK(compile_branch_condition(iseq, seq, cond, then_label, else_label));
+
+    if (LIST_INSN_SIZE_ONE(seq)) {
+        INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(seq));
+        if (insn->insn_id == BIN(jump) && (LABEL *)(insn->operands[0]) == label)
+            return COMPILE_OK;
+    }
+    if (!label->refcnt) {
+        ADD_INSN(seq, cond, putnil);
+    }
+    else {
+        ADD_LABEL(seq, label);
+    }
+    ADD_SEQ(ret, seq);
+    return COMPILE_OK;
+}
+
+static int
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
 {
   again:
     switch (nd_type(cond)) {
       case NODE_AND:
-        {
-            LABEL *label = NEW_LABEL(nd_line(cond));
-            CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
-                                           else_label));
-            if (!label->refcnt) {
-                ADD_INSN(ret, cond, putnil);
-                break;
-            }
-            ADD_LABEL(ret, label);
-            cond = cond->nd_2nd;
-            goto again;
-        }
+        CHECK(compile_logical(iseq, ret, cond->nd_1st, NULL, else_label));
+        cond = cond->nd_2nd;
+        goto again;
       case NODE_OR:
-        {
-            LABEL *label = NEW_LABEL(nd_line(cond));
-            CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
-                                           label));
-            if (!label->refcnt) {
-                ADD_INSN(ret, cond, putnil);
-                break;
-            }
-            ADD_LABEL(ret, label);
-            cond = cond->nd_2nd;
-            goto again;
-        }
+        CHECK(compile_logical(iseq, ret, cond->nd_1st, then_label, NULL));
+        cond = cond->nd_2nd;
+        goto again;
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
       case NODE_STR:
