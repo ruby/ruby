@@ -785,7 +785,7 @@ module TestIRB
   class ShowDocTest < CommandTestCase
     def test_help_and_show_doc
       ["help", "show_doc"].each do |cmd|
-        out, _ = execute_lines(
+        out, err = execute_lines(
           "#{cmd} String#gsub\n",
           "\n",
         )
@@ -793,6 +793,7 @@ module TestIRB
         # the former is what we'd get without document content installed, like on CI
         # the latter is what we may get locally
         possible_rdoc_output = [/Nothing known about String#gsub/, /gsub\(pattern\)/]
+        assert_empty err
         assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `#{cmd}` command to match one of the possible outputs. Got:\n#{out}")
       end
     ensure
@@ -801,7 +802,7 @@ module TestIRB
     end
 
     def test_show_doc_without_rdoc
-      out, _ = without_rdoc do
+      out, err = without_rdoc do
         execute_lines(
           "show_doc String#gsub\n",
           "\n",
@@ -809,7 +810,8 @@ module TestIRB
       end
 
       # if it fails to require rdoc, it only returns the command object
-      assert_match(/=> IRB::ExtendCommand::Help\n/, out)
+      assert_match(/=> nil\n/, out)
+      assert_include(err, "Can't display document because `rdoc` is not installed.\n")
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
       EnvUtil.suppress_warning { load "irb/cmd/help.rb" }

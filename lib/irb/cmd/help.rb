@@ -26,17 +26,15 @@ module IRB
 
       def execute(*names)
         require 'rdoc/ri/driver'
-        opts = RDoc::RI::Driver.process_args([])
-        IRB::ExtendCommand::Help.const_set(:Ri, RDoc::RI::Driver.new(opts))
-      rescue LoadError, SystemExit
-        IRB::ExtendCommand::Help.remove_method(:execute)
-        # raise NoMethodError in ensure
-      else
-        def execute(*names)
-          if names.empty?
-            Ri.interactive
-            return
-          end
+
+        unless self.class.const_defined?(:Ri)
+          opts = RDoc::RI::Driver.process_args([])
+          self.class.const_set(:Ri, RDoc::RI::Driver.new(opts))
+        end
+
+        if names.empty?
+          Ri.interactive
+        else
           names.each do |name|
             begin
               Ri.display_name(name.to_s)
@@ -44,11 +42,11 @@ module IRB
               puts $!.message
             end
           end
-          nil
         end
+
         nil
-      ensure
-        execute(*names)
+      rescue LoadError, SystemExit
+        warn "Can't display document because `rdoc` is not installed."
       end
     end
   end
