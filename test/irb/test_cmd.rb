@@ -697,6 +697,8 @@ module TestIRB
       assert_empty err
       assert_match(/C2.methods:\s+m3\s+m5\n/, out)
       assert_match(/C2#methods:\s+m3\s+m4\n.*M1#methods:\s+m2\n.*C1#methods:\s+m1\n/, out)
+      assert_not_match(/Module#methods/, out)
+      assert_not_match(/Class#methods/, out)
     end
 
     def test_ls_module
@@ -716,8 +718,9 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/M2\.methods:\s+m4\nModule#methods:/, out)
+      assert_match(/M2\.methods:\s+m4\n/, out)
       assert_match(/M2#methods:\s+m1\s+m3\n.*M1#methods:\s+m2\n/, out)
+      assert_not_match(/Module#methods/, out)
     end
 
     def test_ls_instance
