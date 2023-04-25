@@ -47,7 +47,6 @@
 #     "w"       => "winter" }
 
 module Abbrev
-
   VERSION = "0.1.1"
 
   # Given a set of strings, calculate the set of unambiguous abbreviations for
