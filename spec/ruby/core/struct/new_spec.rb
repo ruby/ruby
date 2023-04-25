@@ -47,6 +47,11 @@ describe "Struct.new" do
     Struct.const_defined?("Animal2").should be_false
   end
 
+  it "allows non-ASCII member name" do
+    name = "r\xe9sum\xe9".force_encoding(Encoding::ISO_8859_1).to_sym
+    struct = Struct.new(name)
+    struct.new("foo").send(name).should == "foo"
+  end
 
   it "fails with invalid constant name as first argument" do
     -> { Struct.new('animal', :name, :legs, :eyeballs) }.should raise_error(NameError)

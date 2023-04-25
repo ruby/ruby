@@ -14,10 +14,23 @@ describe "Array#+" do
     (ary + ary).should == [1, 2, 3, 1, 2, 3]
   end
 
-  it "tries to convert the passed argument to an Array using #to_ary" do
-    obj = mock('["x", "y"]')
-    obj.should_receive(:to_ary).and_return(["x", "y"])
-    ([1, 2, 3] + obj).should == [1, 2, 3, "x", "y"]
+  describe "converts the passed argument to an Array using #to_ary" do
+    it "successfully concatenates the resulting array from the #to_ary call" do
+      obj = mock('["x", "y"]')
+      obj.should_receive(:to_ary).and_return(["x", "y"])
+      ([1, 2, 3] + obj).should == [1, 2, 3, "x", "y"]
+    end
+
+    it "raises a Typeerror if the given argument can't be converted to an array" do
+      -> { [1, 2, 3] + nil }.should raise_error(TypeError)
+      -> { [1, 2, 3] + "abc" }.should raise_error(TypeError)
+    end
+
+    it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to an Array" do
+      obj = mock("hello")
+      obj.should_receive(:to_ary).and_raise(NoMethodError)
+      -> { [1, 2, 3] + obj }.should raise_error(NoMethodError)
+    end
   end
 
   it "properly handles recursive arrays" do

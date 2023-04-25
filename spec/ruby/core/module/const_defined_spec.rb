@@ -80,10 +80,23 @@ describe "Module#const_defined?" do
     ConstantSpecs::ClassA.const_defined?(:CS_CONSTX).should == false
   end
 
-  it "calls #to_str to convert the given name to a String" do
-    name = mock("ClassA")
-    name.should_receive(:to_str).and_return("ClassA")
-    ConstantSpecs.const_defined?(name).should == true
+  describe "converts the given name to a String using #to_str" do
+    it "calls #to_str to convert the given name to a String" do
+      name = mock("ClassA")
+      name.should_receive(:to_str).and_return("ClassA")
+      ConstantSpecs.const_defined?(name).should == true
+    end
+
+    it "raises a TypeError if the given name can't be converted to a String" do
+      -> { ConstantSpecs.const_defined?(nil) }.should raise_error(TypeError)
+      -> { ConstantSpecs.const_defined?([])  }.should raise_error(TypeError)
+    end
+
+    it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to a String" do
+      name = mock("classA")
+      name.should_receive(:to_str).and_raise(NoMethodError)
+      -> { ConstantSpecs.const_defined?(name) }.should raise_error(NoMethodError)
+    end
   end
 
   it "special cases Object and checks it's included Modules" do

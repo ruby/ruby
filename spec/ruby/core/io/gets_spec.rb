@@ -113,6 +113,35 @@ describe "IO#gets" do
         $..should == @count += 1
       end
     end
+
+    describe "that consists of multiple bytes" do
+      platform_is_not :windows do
+        it "should match the separator even if the buffer is filled over successive reads" do
+          IO.pipe do |read, write|
+
+            # Write part of the string with the separator split between two write calls. We want
+            # the read to intertwine such that when the read starts the full data isn't yet
+            # available in the buffer.
+            write.write("Aquí está la línea tres\r\n")
+
+            t = Thread.new do
+              # Continue reading until the separator is encountered or the pipe is closed.
+              read.gets("\r\n\r\n")
+            end
+
+            # Write the other half of the separator, which should cause the `gets` call to now
+            # match. Explicitly close the pipe for good measure so a bug in `gets` doesn't block forever.
+            Thread.pass until t.stop?
+
+            write.write("\r\nelse\r\n\r\n")
+            write.close
+
+            t.value.bytes.should == "Aquí está la línea tres\r\n\r\n".bytes
+            read.read(8).bytes.should == "else\r\n\r\n".bytes
+          end
+        end
+      end
+    end
   end
 
   describe "when passed chomp" do

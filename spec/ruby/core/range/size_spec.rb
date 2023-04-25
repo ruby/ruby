@@ -44,12 +44,12 @@ describe "Range#size" do
   end
 
   ruby_version_is "3.2" do
-    it 'returns Float::INFINITY for all beginless ranges if the start is numeric' do
+    it 'returns Float::INFINITY for all beginless ranges if the end is numeric' do
       (..1).size.should == Float::INFINITY
       (...0.5).size.should == Float::INFINITY
     end
 
-    it 'returns nil for all beginless ranges if the start is numeric' do
+    it 'returns nil for all beginless ranges if the end is not numeric' do
       (...'o').size.should == nil
     end
 

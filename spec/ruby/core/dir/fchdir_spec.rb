@@ -6,15 +6,13 @@ ruby_version_is '3.3' do
     dir = Dir.new('.')
     Dir.fchdir(dir.fileno)
     true
-  rescue NotImplementedError
+  rescue NotImplementedError, NoMethodError
     false
-  rescue Exception
-    true
   ensure
     dir.close
   end
 
-  if has_fchdir
+  guard -> { has_fchdir } do
     describe "Dir.fchdir" do
       before :all do
         DirSpecs.create_mock_dirs
@@ -58,7 +56,7 @@ ruby_version_is '3.3' do
       end
 
       it "raises a SystemCallError if the file descriptor given is not valid" do
-        -> { Dir.fchdir -1 }.should raise_error(SystemCallError)
+        -> { Dir.fchdir(-1) }.should raise_error(SystemCallError)
         -> { Dir.fchdir(-1) { } }.should raise_error(SystemCallError)
       end
 
@@ -67,7 +65,9 @@ ruby_version_is '3.3' do
         -> { Dir.fchdir($stdout.fileno) { } }.should raise_error(SystemCallError)
       end
     end
-  else
+  end
+
+  guard_not -> { has_fchdir } do
     describe "Dir.fchdir" do
       it "raises NotImplementedError" do
         -> { Dir.fchdir 1 }.should raise_error(NotImplementedError)

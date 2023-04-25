@@ -25,4 +25,16 @@ describe :struct_inspect, shared: true do
 
     m::Foo.new("").send(@method).should == '#<struct a="">'
   end
+
+  it "does not call #name method" do
+    struct = StructClasses::StructWithOverriddenName.new("")
+    struct.send(@method).should == '#<struct StructClasses::StructWithOverriddenName a="">'
+  end
+
+  it "does not call #name method when struct is anonymous" do
+    struct = Struct.new(:a)
+    def struct.name; "A"; end
+
+    struct.new("").send(@method).should == '#<struct a="">'
+  end
 end

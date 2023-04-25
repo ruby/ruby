@@ -37,7 +37,9 @@ describe :string_unpack_8bit, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "abc".unpack(unpack_format("\000", 2)).should == [97, 98]
+      suppress_warning do
+        "abc".unpack(unpack_format("\000", 2)).should == [97, 98]
+      end
     end
   end
 

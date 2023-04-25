@@ -26,7 +26,9 @@ describe "Array#pack with format 'w'" do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      [1, 2, 3].pack("w\x00w").should == "\x01\x02"
+      suppress_warning do
+        [1, 2, 3].pack("w\x00w").should == "\x01\x02"
+      end
     end
   end
 
