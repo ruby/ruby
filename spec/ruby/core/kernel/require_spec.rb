@@ -24,7 +24,11 @@ describe "Kernel#require" do
   it "#{provided.join(', ')} are already required" do
     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
     features = out.lines.map { |line| File.basename(line.chomp, '.*') }
-    features -= %w[encdb transdb] # Ignore CRuby internals
+
+    # Ignore CRuby internals
+    features -= %w[encdb transdb]
+    features.reject! { |feature| feature.end_with?('-fake') }
+
     features.sort.should == provided.sort
 
     code = provided.map { |f| "puts require #{f.inspect}\n" }.join
