@@ -1,12 +1,6 @@
-
-source_version = ["", "ext/syslog/"].find do |dir|
-  begin
-    break File.open(File.join(__dir__, "#{dir}syslog.c")) {|f|
-      f.gets("\n#define SYSLOG_VERSION ")
-      f.gets[/\s*"(.+)"/, 1]
-    }
-  rescue Errno::ENOENT
-  end
+source_version = %w[. ext/syslog].find do |dir|
+  break $1 if File.foreach(File.join(__dir__, dir, "syslog.c")).any?(/^#define\s+SYSLOG_VERSION\s+"(.+)"/)
+rescue Errno::ENOENT
 end
 
 Gem::Specification.new do |spec|
