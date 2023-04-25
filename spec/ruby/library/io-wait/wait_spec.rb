@@ -10,6 +10,7 @@ describe "IO#wait" do
     @io = File.new(__FILE__ )
 
     if /mswin|mingw/ =~ RUBY_PLATFORM
+      require 'socket'
       @r, @w = Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     else
       @r, @w = IO.pipe
