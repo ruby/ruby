@@ -213,12 +213,12 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_spaceship_order_is_preserved_when_uri_differs
-    sourceA = Gem::Source.new "http://example.com/a"
-    sourceB = Gem::Source.new "http://example.com/b"
+    source_a = Gem::Source.new "http://example.com/a"
+    source_b = Gem::Source.new "http://example.com/b"
 
-    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, sourceA.<=>(sourceB), "sourceA <=> sourceB")
-    assert_equal(1, sourceB.<=>(sourceA), "sourceB <=> sourceA")
+    assert_equal(0, source_a.<=>(source_a), "source_a <=> source_a") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, source_a.<=>(source_b), "source_a <=> source_b")
+    assert_equal(1, source_b.<=>(source_a), "source_b <=> source_a")
   end
 
   def test_update_cache_eh

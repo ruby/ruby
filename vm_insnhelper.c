@@ -895,7 +895,7 @@ vm_get_const_key_cref(const VALUE *ep)
 
     while (cref) {
         if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
-            FL_TEST(CREF_CLASS(cref), RCLASS_CLONED)) {
+                RCLASS_EXT(CREF_CLASS(cref))->cloned) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
@@ -5375,6 +5375,24 @@ VALUE
 rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 {
     return vm_opt_newarray_min(ec, num, ptr);
+}
+
+static VALUE
+vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    // If Array#hash is _not_ monkeypatched, use the optimized call
+    if (BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_hash_values(num, ptr);
+    }
+    else {
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
+    }
+}
+
+VALUE
+rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    return vm_opt_newarray_hash(ec, num, ptr);
 }
 
 #undef id_cmp

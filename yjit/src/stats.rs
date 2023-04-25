@@ -26,7 +26,9 @@ pub struct YjitExitLocations {
     raw_samples: Vec<VALUE>,
     /// Vec to hold line_samples which represent line numbers of
     /// the iseq caller.
-    line_samples: Vec<i32>
+    line_samples: Vec<i32>,
+    /// Number of samples skipped when sampling
+    skipped_samples: usize
 }
 
 /// Private singleton instance of yjit exit locations
@@ -47,7 +49,8 @@ impl YjitExitLocations {
 
         let yjit_exit_locations = YjitExitLocations {
             raw_samples: Vec::new(),
-            line_samples: Vec::new()
+            line_samples: Vec::new(),
+            skipped_samples: 0
         };
 
         // Initialize the yjit exit locations instance
@@ -69,6 +72,11 @@ impl YjitExitLocations {
     /// Get a mutable reference to yjit the line samples Vec.
     pub fn get_line_samples() -> &'static mut Vec<i32> {
         &mut YjitExitLocations::get_instance().line_samples
+    }
+
+    /// Get the number of samples skipped
+    pub fn get_skipped_samples() -> &'static mut usize {
+        &mut YjitExitLocations::get_instance().skipped_samples
     }
 
     /// Mark the data stored in YjitExitLocations::get_raw_samples that needs to be used by
@@ -125,6 +133,20 @@ macro_rules! make_counters {
         #[derive(Default, Debug)]
         pub struct Counters { $(pub $counter_name: u64),+ }
 
+        /// Enum to represent a counter
+        #[allow(non_camel_case_types)]
+        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        pub enum Counter { $($counter_name),+ }
+
+        impl Counter {
+            /// Get a counter name string
+            pub fn get_name(&self) -> String {
+                match self {
+                    $( Counter::$counter_name => stringify!($counter_name).to_string() ),+
+                }
+            }
+        }
+
         /// Global counters instance, initialized to zero
         pub static mut COUNTERS: Counters = Counters { $($counter_name: 0),+ };
 
@@ -132,7 +154,7 @@ macro_rules! make_counters {
         const COUNTER_NAMES: &'static [&'static str] = &[ $(stringify!($counter_name)),+ ];
 
         /// Map a counter name string to a counter pointer
-        fn get_counter_ptr(name: &str) -> *mut u64 {
+        pub fn get_counter_ptr(name: &str) -> *mut u64 {
             match name {
                 $( stringify!($counter_name) => { ptr_to_counter!($counter_name) } ),+
                 _ => panic!()
@@ -255,10 +277,14 @@ make_counters! {
     send_iseq_has_rest_and_captured,
     send_iseq_has_rest_and_send,
     send_iseq_has_rest_and_kw_supplied,
-    send_iseq_has_rest_and_optional,
+    send_iseq_has_rest_opt_and_block,
     send_iseq_has_rest_and_splat_not_equal,
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
+    send_interrupted,
+    send_not_fixnums,
+    send_not_string,
+    send_mid_mismatch,
 
     send_bmethod_ractor,
     send_bmethod_block_arg,
@@ -286,20 +312,37 @@ make_counters! {
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
     getivar_megamorphic,
+    getivar_not_heap,
 
     setivar_se_self_not_heap,
     setivar_idx_out_of_range,
     setivar_val_heapobject,
     setivar_name_not_mapped,
-    setivar_not_object,
+    setivar_not_heap,
     setivar_frozen,
     setivar_megamorphic,
 
-    // Not using "getivar_" to exclude this from exit reasons
-    get_ivar_max_depth,
+    definedivar_not_heap,
+    definedivar_megamorphic,
 
-    oaref_argc_not_one,
-    oaref_arg_not_fixnum,
+    setlocal_wb_required,
+
+    opt_plus_overflow,
+    opt_minus_overflow,
+
+    opt_mod_zero,
+    opt_div_zero,
+
+    opt_aref_argc_not_one,
+    opt_aref_arg_not_fixnum,
+    opt_aref_not_array,
+    opt_aref_not_hash,
+
+    opt_aset_not_array,
+    opt_aset_not_fixnum,
+    opt_aset_not_hash,
+
+    opt_case_dispatch_megamorphic,
 
     opt_getinlinecache_miss,
 
@@ -308,8 +351,17 @@ make_counters! {
     expandarray_not_array,
     expandarray_rhs_too_small,
 
+    gbp_wb_required,
     gbpp_block_param_modified,
+    gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
+
+    branchif_interrupted,
+    branchunless_interrupted,
+    branchnil_interrupted,
+    jump_interrupted,
+
+    objtostring_not_string,
 
     binding_allocations,
     binding_set,
@@ -338,6 +390,9 @@ make_counters! {
     invalidate_constant_ic_fill,
 
     constant_state_bumps,
+
+    // Not using "getivar_" to exclude this from exit reasons
+    get_ivar_max_depth,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
@@ -573,6 +628,15 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         return;
     }
 
+    if get_option!(trace_exits_sample_rate) > 0 {
+        if get_option!(trace_exits_sample_rate) <= *YjitExitLocations::get_skipped_samples() {
+            YjitExitLocations::get_instance().skipped_samples = 0;
+        } else {
+            YjitExitLocations::get_instance().skipped_samples += 1;
+            return;
+        }
+    }
+
     // rb_vm_insn_addr2opcode won't work in cargo test --all-features
     // because it's a C function. Without insn call, this function is useless
     // so wrap the whole thing in a not test check.
@@ -660,10 +724,8 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         // Push the insn value into the yjit_raw_samples Vec.
         yjit_raw_samples.push(VALUE(insn as usize));
 
-        // Push the current line onto the yjit_line_samples Vec. This
-        // points to the line in insns.def.
-        let line = yjit_line_samples.len() - 1;
-        yjit_line_samples.push(line as i32);
+        // We don't know the line
+        yjit_line_samples.push(0);
 
         // Push number of times seen onto the stack, which is 1
         // because it's the first time we've seen it.

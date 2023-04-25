@@ -176,7 +176,7 @@ module SyntaxSuggest
           break
         end
 
-        lines << line
+        lines << line if line.is_kw? || line.is_end?
       end
 
       lines.reverse!
@@ -195,7 +195,7 @@ module SyntaxSuggest
           break
         end
 
-        lines << line
+        lines << line if line.is_kw? || line.is_end?
       end
 
       lines
@@ -316,24 +316,6 @@ module SyntaxSuggest
       indent = before_after_indent.min
       scan_while { |line| line.not_empty? && line.indent >= indent }
 
-      self
-    end
-
-    # TODO: Doc or delete
-    #
-    # I don't remember why this is needed, but it's called in code_context.
-    # It's related to the implementation of `capture_neighbor_context` somehow
-    # and that display improvement is only triggered when there's one visible line
-    #
-    # I think the primary purpose is to not include the current line in the
-    # logic evaluation of `capture_neighbor_context`. If that's true, then
-    # we should fix that method to handle this logic instead of only using
-    # it in one place and together.
-    def start_at_next_line
-      before_index
-      after_index
-      @before_index -= 1
-      @after_index += 1
       self
     end
 

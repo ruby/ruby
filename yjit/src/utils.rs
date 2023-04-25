@@ -1,7 +1,6 @@
 #![allow(dead_code)] // Some functions for print debugging in here
 
 use crate::backend::ir::*;
-use crate::core::Context;
 use crate::cruby::*;
 use std::slice;
 
@@ -142,7 +141,7 @@ macro_rules! c_callable {
 }
 pub(crate) use c_callable;
 
-pub fn print_int(asm: &mut Assembler, ctx: &Context, opnd: Opnd) {
+pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
     c_callable!{
         fn print_int_fn(val: i64) {
             println!("{}", val);
@@ -165,11 +164,11 @@ pub fn print_int(asm: &mut Assembler, ctx: &Context, opnd: Opnd) {
     };
 
     asm.ccall(print_int_fn as *const u8, vec![argument]);
-    asm.cpop_all(ctx);
+    asm.cpop_all();
 }
 
 /// Generate code to print a pointer
-pub fn print_ptr(asm: &mut Assembler, ctx: &Context, opnd: Opnd) {
+pub fn print_ptr(asm: &mut Assembler, opnd: Opnd) {
     c_callable!{
         fn print_ptr_fn(ptr: *const u8) {
             println!("{:p}", ptr);
@@ -180,11 +179,11 @@ pub fn print_ptr(asm: &mut Assembler, ctx: &Context, opnd: Opnd) {
 
     asm.cpush_all();
     asm.ccall(print_ptr_fn as *const u8, vec![opnd]);
-    asm.cpop_all(ctx);
+    asm.cpop_all();
 }
 
 /// Generate code to print a value
-pub fn print_value(asm: &mut Assembler, ctx: &Context, opnd: Opnd) {
+pub fn print_value(asm: &mut Assembler, opnd: Opnd) {
     c_callable!{
         fn print_value_fn(val: VALUE) {
             unsafe { rb_obj_info_dump(val) }
@@ -195,11 +194,11 @@ pub fn print_value(asm: &mut Assembler, ctx: &Context, opnd: Opnd) {
 
     asm.cpush_all();
     asm.ccall(print_value_fn as *const u8, vec![opnd]);
-    asm.cpop_all(ctx);
+    asm.cpop_all();
 }
 
 /// Generate code to print constant string to stdout
-pub fn print_str(asm: &mut Assembler, ctx: &Context, str: &str) {
+pub fn print_str(asm: &mut Assembler, str: &str) {
     c_callable!{
         fn print_str_cfun(ptr: *const u8, num_bytes: usize) {
             unsafe {
@@ -223,7 +222,7 @@ pub fn print_str(asm: &mut Assembler, ctx: &Context, str: &str) {
     let opnd = asm.lea_label(string_data);
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
 
-    asm.cpop_all(ctx);
+    asm.cpop_all();
 }
 
 #[cfg(test)]
@@ -263,8 +262,8 @@ mod tests {
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy(1024);
 
-        print_int(&mut asm, &Context::default(), Opnd::Imm(42));
-        asm.compile(&mut cb);
+        print_int(&mut asm, Opnd::Imm(42));
+        asm.compile(&mut cb, None);
     }
 
     #[test]
@@ -272,7 +271,7 @@ mod tests {
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy(1024);
 
-        print_str(&mut asm, &Context::default(), "Hello, world!");
-        asm.compile(&mut cb);
+        print_str(&mut asm, "Hello, world!");
+        asm.compile(&mut cb, None);
     }
 }

@@ -12,6 +12,8 @@
 #include "ruby/util.h"
 #include <syslog.h>
 
+#define SYSLOG_VERSION "0.1.1"
+
 /* Syslog class */
 static VALUE mSyslog;
 /*
@@ -573,6 +575,8 @@ void Init_syslog(void)
 #endif
 
     /* Syslog macros */
+
+    rb_define_const(mSyslog, "VERSION", rb_str_new_cstr(SYSLOG_VERSION));
 
     rb_define_method(mSyslogMacros, "LOG_MASK", mSyslogMacros_LOG_MASK, 1);
     rb_define_method(mSyslogMacros, "LOG_UPTO", mSyslogMacros_LOG_UPTO, 1);

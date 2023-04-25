@@ -38,7 +38,7 @@ const MAX_LOCAL_TYPES: usize = 8;
 pub type IseqIdx = u16;
 
 // Represent the type of a value (local/stack/self) in YJIT
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub enum Type {
     Unknown,
     UnknownImm,
@@ -298,7 +298,7 @@ pub enum TypeDiff {
 
 // Potential mapping of a value on the temporary stack to
 // self, a local variable or constant so that we can track its type
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TempMapping {
     MapToStack, // Normal stack value
     MapToSelf,  // Temp maps to the self operand
@@ -307,7 +307,7 @@ pub enum TempMapping {
 }
 
 // Index used by MapToLocal. Using this instead of u8 makes TempMapping 1 byte.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum LocalIndex {
     Local0,
     Local1,
@@ -417,7 +417,7 @@ impl RegTemps {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Clone, Default, PartialEq, Debug)]
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u8,
@@ -478,12 +478,12 @@ pub enum BranchGenFn {
 }
 
 impl BranchGenFn {
-    pub fn call(&self, asm: &mut Assembler, target0: CodePtr, target1: Option<CodePtr>) {
+    pub fn call(&self, asm: &mut Assembler, target0: Target, target1: Option<Target>) {
         match self {
             BranchGenFn::BranchIf(shape) => {
                 match shape.get() {
-                    BranchShape::Next0 => asm.jz(target1.unwrap().into()),
-                    BranchShape::Next1 => asm.jnz(target0.into()),
+                    BranchShape::Next0 => asm.jz(target1.unwrap()),
+                    BranchShape::Next1 => asm.jnz(target0),
                     BranchShape::Default => {
                         asm.jnz(target0.into());
                         asm.jmp(target1.unwrap().into());
@@ -492,21 +492,21 @@ impl BranchGenFn {
             }
             BranchGenFn::BranchNil(shape) => {
                 match shape.get() {
-                    BranchShape::Next0 => asm.jne(target1.unwrap().into()),
-                    BranchShape::Next1 => asm.je(target0.into()),
+                    BranchShape::Next0 => asm.jne(target1.unwrap()),
+                    BranchShape::Next1 => asm.je(target0),
                     BranchShape::Default => {
-                        asm.je(target0.into());
-                        asm.jmp(target1.unwrap().into());
+                        asm.je(target0);
+                        asm.jmp(target1.unwrap());
                     }
                 }
             }
             BranchGenFn::BranchUnless(shape) => {
                 match shape.get() {
-                    BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
-                    BranchShape::Next1 => asm.jz(target0.into()),
+                    BranchShape::Next0 => asm.jnz(target1.unwrap()),
+                    BranchShape::Next1 => asm.jz(target0),
                     BranchShape::Default => {
-                        asm.jz(target0.into());
-                        asm.jmp(target1.unwrap().into());
+                        asm.jz(target0);
+                        asm.jmp(target1.unwrap());
                     }
                 }
             }
@@ -522,14 +522,14 @@ impl BranchGenFn {
                 asm.jnz(target0.into())
             }
             BranchGenFn::JZToTarget0 => {
-                asm.jz(Target::CodePtr(target0))
+                asm.jz(target0)
             }
             BranchGenFn::JBEToTarget0 => {
-                asm.jbe(Target::CodePtr(target0))
+                asm.jbe(target0)
             }
             BranchGenFn::JITReturn => {
                 asm.comment("update cfp->jit_return");
-                asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
+                asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.unwrap_code_ptr().raw_ptr()));
             }
         }
     }
@@ -1378,10 +1378,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         // Produce a generic context that stores no type information,
         // but still respects the stack_size and sp_offset constraints.
         // This new context will then match all future requests.
-        let mut generic_ctx = Context::default();
-        generic_ctx.stack_size = ctx.stack_size;
-        generic_ctx.sp_offset = ctx.sp_offset;
-        generic_ctx.reg_temps = ctx.reg_temps;
+        let generic_ctx = ctx.get_generic_ctx();
 
         debug_assert_ne!(
             TypeDiff::Incompatible,
@@ -1570,6 +1567,15 @@ impl Context {
         self.stack_size
     }
 
+    /// Create a new Context that is compatible with self but doesn't have type information.
+    pub fn get_generic_ctx(&self) -> Context {
+        let mut generic_ctx = Context::default();
+        generic_ctx.stack_size = self.stack_size;
+        generic_ctx.sp_offset = self.sp_offset;
+        generic_ctx.reg_temps = self.reg_temps;
+        generic_ctx
+    }
+
     /// Create a new Context instance with a given stack_size and sp_offset adjusted
     /// accordingly. This is useful when you want to virtually rewind a stack_size for
     /// generating a side exit while considering past sp_offset changes on gen_save_sp.
@@ -1616,105 +1622,14 @@ impl Context {
     }
 
     /// Stop using a register for a given stack temp.
+    /// This allows us to reuse the register for a value that we know is dead
+    /// and will no longer be used (e.g. popped stack temp).
     pub fn dealloc_temp_reg(&mut self, stack_idx: u8) {
-        let mut reg_temps = self.get_reg_temps();
-        reg_temps.set(stack_idx, false);
-        self.set_reg_temps(reg_temps);
-    }
-
-    /// Push one new value on the temp stack with an explicit mapping
-    /// Return a pointer to the new stack top
-    pub fn stack_push_mapping(&mut self, asm: &mut Assembler, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
-        // If type propagation is disabled, store no types
-        if get_option!(no_type_prop) {
-            return self.stack_push_mapping(asm, (mapping, Type::Unknown));
+        if stack_idx < MAX_REG_TEMPS {
+            let mut reg_temps = self.get_reg_temps();
+            reg_temps.set(stack_idx, false);
+            self.set_reg_temps(reg_temps);
         }
-
-        let stack_size: usize = self.stack_size.into();
-
-        // Keep track of the type and mapping of the value
-        if stack_size < MAX_TEMP_TYPES {
-            self.temp_mapping[stack_size] = mapping;
-            self.temp_types[stack_size] = temp_type;
-
-            if let MapToLocal(idx) = mapping {
-                assert!((idx as usize) < MAX_LOCAL_TYPES);
-            }
-        }
-
-        // Allocate a register to the stack operand
-        assert_eq!(self.reg_temps, asm.get_reg_temps());
-        if self.stack_size < MAX_REG_TEMPS {
-            asm.alloc_temp_reg(self, self.stack_size);
-        }
-
-        self.stack_size += 1;
-        self.sp_offset += 1;
-
-        return self.stack_opnd(0);
-    }
-
-    /// Push one new value on the temp stack
-    /// Return a pointer to the new stack top
-    pub fn stack_push(&mut self, asm: &mut Assembler, val_type: Type) -> Opnd {
-        return self.stack_push_mapping(asm, (MapToStack, val_type));
-    }
-
-    /// Push the self value on the stack
-    pub fn stack_push_self(&mut self, asm: &mut Assembler) -> Opnd {
-        return self.stack_push_mapping(asm, (MapToSelf, Type::Unknown));
-    }
-
-    /// Push a local variable on the stack
-    pub fn stack_push_local(&mut self, asm: &mut Assembler, local_idx: usize) -> Opnd {
-        if local_idx >= MAX_LOCAL_TYPES {
-            return self.stack_push(asm, Type::Unknown);
-        }
-
-        return self.stack_push_mapping(asm, (MapToLocal((local_idx as u8).into()), Type::Unknown));
-    }
-
-    // Pop N values off the stack
-    // Return a pointer to the stack top before the pop operation
-    pub fn stack_pop(&mut self, n: usize) -> Opnd {
-        assert!(n <= self.stack_size.into());
-
-        let top = self.stack_opnd(0);
-
-        // Clear the types of the popped values
-        for i in 0..n {
-            let idx: usize = (self.stack_size as usize) - i - 1;
-
-            if idx < MAX_TEMP_TYPES {
-                self.temp_types[idx] = Type::Unknown;
-                self.temp_mapping[idx] = MapToStack;
-            }
-        }
-
-        self.stack_size -= n as u8;
-        self.sp_offset -= n as i8;
-
-        return top;
-    }
-
-    pub fn shift_stack(&mut self, argc: usize) {
-        assert!(argc < self.stack_size.into());
-
-        let method_name_index = (self.stack_size as usize) - (argc as usize) - 1;
-
-        for i in method_name_index..(self.stack_size - 1) as usize {
-
-            if i + 1 < MAX_TEMP_TYPES {
-                self.temp_types[i] = self.temp_types[i + 1];
-                self.temp_mapping[i] = self.temp_mapping[i + 1];
-            }
-        }
-        self.stack_pop(1);
-    }
-
-    /// Get an operand pointing to a slot on the temp stack
-    pub fn stack_opnd(&self, idx: i32) -> Opnd {
-        Opnd::Stack { idx, stack_size: self.stack_size, sp_offset: self.sp_offset, num_bits: 64 }
     }
 
     /// Get the type of an instruction operand
@@ -1978,6 +1893,108 @@ impl Context {
     }
 }
 
+impl Assembler {
+    /// Push one new value on the temp stack with an explicit mapping
+    /// Return a pointer to the new stack top
+    pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
+        // If type propagation is disabled, store no types
+        if get_option!(no_type_prop) {
+            return self.stack_push_mapping((mapping, Type::Unknown));
+        }
+
+        let stack_size: usize = self.ctx.stack_size.into();
+
+        // Keep track of the type and mapping of the value
+        if stack_size < MAX_TEMP_TYPES {
+            self.ctx.temp_mapping[stack_size] = mapping;
+            self.ctx.temp_types[stack_size] = temp_type;
+
+            if let MapToLocal(idx) = mapping {
+                assert!((idx as usize) < MAX_LOCAL_TYPES);
+            }
+        }
+
+        // Allocate a register to the stack operand
+        if self.ctx.stack_size < MAX_REG_TEMPS {
+            self.alloc_temp_reg(self.ctx.stack_size);
+        }
+
+        self.ctx.stack_size += 1;
+        self.ctx.sp_offset += 1;
+
+        return self.stack_opnd(0);
+    }
+
+    /// Push one new value on the temp stack
+    /// Return a pointer to the new stack top
+    pub fn stack_push(&mut self, val_type: Type) -> Opnd {
+        return self.stack_push_mapping((MapToStack, val_type));
+    }
+
+    /// Push the self value on the stack
+    pub fn stack_push_self(&mut self) -> Opnd {
+        return self.stack_push_mapping((MapToSelf, Type::Unknown));
+    }
+
+    /// Push a local variable on the stack
+    pub fn stack_push_local(&mut self, local_idx: usize) -> Opnd {
+        if local_idx >= MAX_LOCAL_TYPES {
+            return self.stack_push(Type::Unknown);
+        }
+
+        return self.stack_push_mapping((MapToLocal((local_idx as u8).into()), Type::Unknown));
+    }
+
+    // Pop N values off the stack
+    // Return a pointer to the stack top before the pop operation
+    pub fn stack_pop(&mut self, n: usize) -> Opnd {
+        assert!(n <= self.ctx.stack_size.into());
+
+        let top = self.stack_opnd(0);
+
+        // Clear the types of the popped values
+        for i in 0..n {
+            let idx: usize = (self.ctx.stack_size as usize) - i - 1;
+
+            if idx < MAX_TEMP_TYPES {
+                self.ctx.temp_types[idx] = Type::Unknown;
+                self.ctx.temp_mapping[idx] = MapToStack;
+            }
+        }
+
+        self.ctx.stack_size -= n as u8;
+        self.ctx.sp_offset -= n as i8;
+
+        return top;
+    }
+
+    /// Shift stack temps to remove a Symbol for #send.
+    pub fn shift_stack(&mut self, argc: usize) {
+        assert!(argc < self.ctx.stack_size.into());
+
+        let method_name_index = (self.ctx.stack_size as usize) - (argc as usize) - 1;
+
+        for i in method_name_index..(self.ctx.stack_size - 1) as usize {
+            if i + 1 < MAX_TEMP_TYPES {
+                self.ctx.temp_types[i] = self.ctx.temp_types[i + 1];
+                self.ctx.temp_mapping[i] = self.ctx.temp_mapping[i + 1];
+            }
+        }
+        self.stack_pop(1);
+    }
+
+    /// Get an operand pointing to a slot on the temp stack
+    pub fn stack_opnd(&self, idx: i32) -> Opnd {
+        Opnd::Stack {
+            idx,
+            num_bits: 64,
+            stack_size: self.ctx.stack_size,
+            sp_offset: self.ctx.sp_offset,
+            reg_temps: None, // push_insn will set this
+        }
+    }
+}
+
 impl BlockId {
     /// Print Ruby source location for debugging
     #[cfg(debug_assertions)]
@@ -2168,7 +2185,7 @@ pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: Cod
     let old_dropped_bytes = cb.has_dropped_bytes();
     cb.set_write_ptr(unsafe { entryref.as_ref() }.start_addr);
     cb.set_dropped_bytes(false);
-    asm.compile(cb);
+    asm.compile(cb, None);
 
     // Rewind write_pos to the original one
     assert_eq!(cb.get_write_ptr(), unsafe { entryref.as_ref() }.end_addr);
@@ -2217,7 +2234,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     let next_entry = cb.get_write_ptr();
     let mut asm = Assembler::new();
     let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
-    asm.compile(cb);
+    asm.compile(cb, Some(ocb));
 
     // Try to find an existing compiled version of this block
     let blockid = BlockId { iseq, idx: insn_idx };
@@ -2227,7 +2244,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
         Some(blockref) => {
             let mut asm = Assembler::new();
             asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
-            asm.compile(cb);
+            asm.compile(cb, Some(ocb));
             blockref
         }
         // If this block hasn't yet been compiled, generate blocks after the entry guard.
@@ -2271,7 +2288,7 @@ pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<Code
     // Not really a side exit, just don't need a padded jump here.
     asm.jmp(CodegenGlobals::get_entry_stub_hit_trampoline().as_side_exit());
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     if ocb.has_dropped_bytes() {
         return None; // No space
@@ -2294,7 +2311,7 @@ pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Jump to the address returned by the entry_stub_hit() call
     asm.jmp_opnd(jump_addr);
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     code_ptr
 }
@@ -2314,8 +2331,8 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     asm.comment("regenerate_branch");
     branch.gen_fn.call(
         &mut asm,
-        branch.get_target_address(0).unwrap(),
-        branch.get_target_address(1),
+        Target::CodePtr(branch.get_target_address(0).unwrap()),
+        branch.get_target_address(1).map(|addr| Target::CodePtr(addr)),
     );
 
     // Rewrite the branch
@@ -2323,7 +2340,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     let old_dropped_bytes = cb.has_dropped_bytes();
     cb.set_write_ptr(branch.start_addr);
     cb.set_dropped_bytes(false);
-    asm.compile(cb);
+    asm.compile(cb, None);
     let new_end_addr = cb.get_write_ptr();
 
     branch.end_addr.set(new_end_addr);
@@ -2556,6 +2573,7 @@ fn gen_branch_stub(
     let stub_addr = ocb.get_write_ptr();
 
     let mut asm = Assembler::new();
+    asm.ctx = ctx.clone();
     asm.set_reg_temps(ctx.reg_temps);
     asm.comment("branch stub hit");
 
@@ -2566,7 +2584,7 @@ fn gen_branch_stub(
     }
 
     // Spill temps to the VM stack as well for jit.peek_at_stack()
-    asm.spill_temps(&mut ctx.clone());
+    asm.spill_temps();
 
     // Set up the arguments unique to this stub for:
     //
@@ -2581,7 +2599,7 @@ fn gen_branch_stub(
     // Not really a side exit, just don't need a padded jump here.
     asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline().as_side_exit());
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     if ocb.has_dropped_bytes() {
         // No space
@@ -2620,7 +2638,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     // Jump to the address returned by the branch_stub_hit() call
     asm.jmp_opnd(jump_addr);
 
-    asm.compile(ocb);
+    asm.compile(ocb, None);
 
     code_ptr
 }
@@ -2712,7 +2730,7 @@ pub fn gen_branch(
     // Call the branch generation function
     asm.mark_branch_start(&branch);
     if let Some(dst_addr) = target0_addr {
-        branch.gen_fn.call(asm, dst_addr, target1_addr);
+        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), target1_addr.map(|addr| Target::CodePtr(addr)));
     }
     asm.mark_branch_end(&branch);
 }
@@ -2729,7 +2747,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
         // Call the branch generation function
         asm.comment("gen_direct_jmp: existing block");
         asm.mark_branch_start(&branch);
-        branch.gen_fn.call(asm, block_addr, None);
+        branch.gen_fn.call(asm, Target::CodePtr(block_addr), None);
         asm.mark_branch_end(&branch);
 
         BranchTarget::Block(blockref)
@@ -2756,15 +2774,14 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
 /// Create a stub to force the code up to this point to be executed
 pub fn defer_compilation(
     jit: &mut JITState,
-    cur_ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
-    if cur_ctx.chain_depth != 0 {
+    if asm.ctx.chain_depth != 0 {
         panic!("Double defer!");
     }
 
-    let mut next_ctx = cur_ctx.clone();
+    let mut next_ctx = asm.ctx.clone();
 
     if next_ctx.chain_depth == u8::MAX {
         panic!("max block version chain depth reached!");
@@ -2785,7 +2802,7 @@ pub fn defer_compilation(
     asm.comment("defer_compilation");
     asm.mark_branch_start(&branch);
     if let Some(dst_addr) = target0_address {
-        branch.gen_fn.call(asm, dst_addr, None);
+        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);
     }
     asm.mark_branch_end(&branch);
 
@@ -2960,7 +2977,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             let mut asm = Assembler::new();
             asm.jmp(block_entry_exit.as_side_exit());
             cb.set_dropped_bytes(false);
-            asm.compile(&mut cb);
+            asm.compile(&mut cb, Some(ocb));
 
             assert!(
                 cb.get_write_ptr() <= block_end,
@@ -3169,9 +3186,9 @@ mod tests {
         assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
-        let mut ctx = Context::default();
-        ctx.stack_push(&mut Assembler::new(), Type::Fixnum);
-        let top_type = ctx.get_opnd_type(StackOpnd(0));
+        let mut asm = Assembler::new();
+        asm.stack_push(Type::Fixnum);
+        let top_type = asm.ctx.get_opnd_type(StackOpnd(0));
         assert!(top_type == Type::Fixnum);
 
         // TODO: write more tests for Context type diff

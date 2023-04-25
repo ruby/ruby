@@ -91,8 +91,7 @@ module RubyVM::RJIT
       when :opt_str_freeze then opt_str_freeze(jit, ctx, asm)
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
-      # opt_newarray_max
-      when :opt_newarray_min then opt_newarray_min(jit, ctx, asm)
+      when :opt_newarray_send then opt_newarray_send(jit, ctx, asm)
       when :invokesuper then invokesuper(jit, ctx, asm)
       when :invokeblock then invokeblock(jit, ctx, asm)
       when :leave then leave(jit, ctx, asm)
@@ -1510,7 +1509,21 @@ module RubyVM::RJIT
     end
 
     # opt_str_uminus
-    # opt_newarray_max
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_newarray_send(jit, ctx, asm)
+      type = C.ID2SYM jit.operand(1)
+
+      case type
+      when :min then opt_newarray_min(jit, ctx, asm)
+      when :max then opt_newarray_max(jit, ctx, asm)
+      when :hash then opt_newarray_hash(jit, ctx, asm)
+      else
+        return CantCompile
+      end
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -1529,6 +1542,56 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], num)
       asm.mov(C_ARGS[2], :rax)
       asm.call(C.rb_vm_opt_newarray_min)
+
+      ctx.stack_pop(num)
+      stack_ret = ctx.stack_push(Type::Unknown)
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_newarray_max(jit, ctx, asm)
+      num = jit.operand(0)
+
+      # Save the PC and SP because we may allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      offset_magnitude = C.VALUE.size * num
+      values_opnd = ctx.sp_opnd(-offset_magnitude)
+      asm.lea(:rax, values_opnd)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], num)
+      asm.mov(C_ARGS[2], :rax)
+      asm.call(C.rb_vm_opt_newarray_max)
+
+      ctx.stack_pop(num)
+      stack_ret = ctx.stack_push(Type::Unknown)
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_newarray_hash(jit, ctx, asm)
+      num = jit.operand(0)
+
+      # Save the PC and SP because we may allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      offset_magnitude = C.VALUE.size * num
+      values_opnd = ctx.sp_opnd(-offset_magnitude)
+      asm.lea(:rax, values_opnd)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], num)
+      asm.mov(C_ARGS[2], :rax)
+      asm.call(C.rb_vm_opt_newarray_hash)
 
       ctx.stack_pop(num)
       stack_ret = ctx.stack_push(Type::Unknown)
@@ -4937,7 +5000,7 @@ module RubyVM::RJIT
       end
 
       # Delegate to codegen for C methods if we have it.
-      if kw_arg.nil? && flags & C::VM_CALL_OPT_SEND == 0
+      if kw_arg.nil? && flags & C::VM_CALL_OPT_SEND == 0 && flags & C::VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc)
         known_cfunc_codegen = lookup_cfunc_codegen(cme.def)
         if known_cfunc_codegen&.call(jit, ctx, asm, argc, known_recv_class)
           # cfunc codegen generated code. Terminate the block so

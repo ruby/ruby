@@ -39,6 +39,9 @@ require 'random/formatter'
 # +NotImplementedError+ is raised.
 
 module SecureRandom
+
+  VERSION = "0.2.2"
+
   class << self
     def bytes(n)
       return gen_random(n)
@@ -47,17 +50,6 @@ module SecureRandom
     private
 
     def gen_random_openssl(n)
-      @pid = 0 unless defined?(@pid)
-      pid = $$
-      unless @pid == pid
-        now = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
-        OpenSSL::Random.random_add([now, @pid, pid].join(""), 0.0)
-        seed = Random.urandom(16)
-        if (seed)
-          OpenSSL::Random.random_add(seed, 16)
-        end
-        @pid = pid
-      end
       return OpenSSL::Random.random_bytes(n)
     end
 

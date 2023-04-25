@@ -138,15 +138,15 @@ class TestBundlerGem < Gem::TestCase
       ENV["GEM_PATH"] = path
 
       with_rubygems_gemdeps("-") do
-        new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
-        new_RUBYOPT = "-I#{rubygems_path} -I#{bundler_path}"
+        new_path = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+        new_rubyopt = "-I#{rubygems_path} -I#{bundler_path}"
 
         path = File.join @tempdir, "gem.deps.rb"
 
         File.open path, "w" do |f|
           f.puts "gem 'a'"
         end
-        out0 = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out0 = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", &:read).split(/\n/)
         end
 
@@ -154,7 +154,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'b'"
           f.puts "gem 'c'"
         end
-        out = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", &:read).split(/\n/)
         end
 
@@ -192,15 +192,15 @@ class TestBundlerGem < Gem::TestCase
       with_rubygems_gemdeps("-") do
         Dir.mkdir "sub1"
 
-        new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
-        new_RUBYOPT = "-I#{rubygems_path} -I#{bundler_path}"
+        new_path = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+        new_rubyopt = "-I#{rubygems_path} -I#{bundler_path}"
 
         path = File.join @tempdir, "gem.deps.rb"
 
         File.open path, "w" do |f|
           f.puts "gem 'a'"
         end
-        out0 = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out0 = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
         end
 
@@ -208,7 +208,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'b'"
           f.puts "gem 'c'"
         end
-        out = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
         end
 

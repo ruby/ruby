@@ -9,14 +9,14 @@ class TestPatternMatching < Test::Unit::TestCase
   end
 
   def setup
-    if defined?(DidYouMean)
+    if defined?(DidYouMean.formatter=nil)
       @original_formatter = DidYouMean.formatter
       DidYouMean.formatter = NullFormatter.new
     end
   end
 
   def teardown
-    if defined?(DidYouMean)
+    if defined?(DidYouMean.formatter=nil)
       DidYouMean.formatter = @original_formatter
     end
   end

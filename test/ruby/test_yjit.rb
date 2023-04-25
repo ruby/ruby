@@ -777,6 +777,25 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_with_alias
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper opt_plus opt_mult], result: 15)
+      class A
+        def foo = 1 + 2
+      end
+
+      module M
+        def foo = super() * 5
+        alias bar foo
+
+        def foo = :bad
+      end
+
+      A.prepend M
+
+      A.new.bar
+    RUBY
+  end
+
   def test_super_cfunc
     assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: "Hello")
       class Gnirts < String

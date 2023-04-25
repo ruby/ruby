@@ -3,12 +3,6 @@
 require_relative "helper"
 
 class TestGemResolver < Gem::TestCase
-  def setup
-    super
-
-    @DR = Gem::Resolver
-  end
-
   def make_dep(name, *req)
     Gem::Dependency.new(name, *req)
   end
@@ -37,18 +31,18 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_best_set
-    best_set = @DR::BestSet.new
+    best_set = Gem::Resolver::BestSet.new
 
-    composed = @DR.compose_sets best_set
+    composed = Gem::Resolver.compose_sets best_set
 
     assert_equal best_set, composed
   end
 
   def test_self_compose_sets_multiple
-    index_set  = @DR::IndexSet.new
-    vendor_set = @DR::VendorSet.new
+    index_set  = Gem::Resolver::IndexSet.new
+    vendor_set = Gem::Resolver::VendorSet.new
 
-    composed = @DR.compose_sets index_set, vendor_set
+    composed = Gem::Resolver.compose_sets index_set, vendor_set
 
     assert_kind_of Gem::Resolver::ComposedSet, composed
 
@@ -56,14 +50,14 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_nest
-    index_set  = @DR::IndexSet.new
-    vendor_set = @DR::VendorSet.new
+    index_set  = Gem::Resolver::IndexSet.new
+    vendor_set = Gem::Resolver::VendorSet.new
 
-    inner = @DR.compose_sets index_set, vendor_set
+    inner = Gem::Resolver.compose_sets index_set, vendor_set
 
-    current_set = @DR::CurrentSet.new
+    current_set = Gem::Resolver::CurrentSet.new
 
-    composed = @DR.compose_sets inner, current_set
+    composed = Gem::Resolver.compose_sets inner, current_set
 
     assert_kind_of Gem::Resolver::ComposedSet, composed
 
@@ -71,23 +65,23 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_nil
-    index_set = @DR::IndexSet.new
+    index_set = Gem::Resolver::IndexSet.new
 
-    composed = @DR.compose_sets index_set, nil
+    composed = Gem::Resolver.compose_sets index_set, nil
 
     assert_same index_set, composed
 
     e = assert_raise ArgumentError do
-      @DR.compose_sets nil
+      Gem::Resolver.compose_sets nil
     end
 
     assert_equal "one set in the composition must be non-nil", e.message
   end
 
   def test_self_compose_sets_single
-    index_set = @DR::IndexSet.new
+    index_set = Gem::Resolver::IndexSet.new
 
-    composed = @DR.compose_sets index_set
+    composed = Gem::Resolver.compose_sets index_set
 
     assert_same index_set, composed
   end
@@ -779,29 +773,29 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_sorts_by_source_then_version
-    sourceA = Gem::Source.new "http://example.com/a"
-    sourceB = Gem::Source.new "http://example.com/b"
-    sourceC = Gem::Source.new "http://example.com/c"
+    source_a = Gem::Source.new "http://example.com/a"
+    source_b = Gem::Source.new "http://example.com/b"
+    source_c = Gem::Source.new "http://example.com/c"
 
-    spec_A_1 = util_spec "some-dep", "0.0.1"
-    spec_A_2 = util_spec "some-dep", "1.0.0"
-    spec_B_1 = util_spec "some-dep", "0.0.1"
-    spec_B_2 = util_spec "some-dep", "0.0.2"
-    spec_C_1 = util_spec "some-dep", "0.1.0"
+    spec_a_1 = util_spec "some-dep", "0.0.1"
+    spec_a_2 = util_spec "some-dep", "1.0.0"
+    spec_b_1 = util_spec "some-dep", "0.0.1"
+    spec_b_2 = util_spec "some-dep", "0.0.2"
+    spec_c_1 = util_spec "some-dep", "0.1.0"
 
     set = StaticSet.new [
-      Gem::Resolver::SpecSpecification.new(nil, spec_B_1, sourceB),
-      Gem::Resolver::SpecSpecification.new(nil, spec_B_2, sourceB),
-      Gem::Resolver::SpecSpecification.new(nil, spec_C_1, sourceC),
-      Gem::Resolver::SpecSpecification.new(nil, spec_A_2, sourceA),
-      Gem::Resolver::SpecSpecification.new(nil, spec_A_1, sourceA),
+      Gem::Resolver::SpecSpecification.new(nil, spec_b_1, source_b),
+      Gem::Resolver::SpecSpecification.new(nil, spec_b_2, source_b),
+      Gem::Resolver::SpecSpecification.new(nil, spec_c_1, source_c),
+      Gem::Resolver::SpecSpecification.new(nil, spec_a_2, source_a),
+      Gem::Resolver::SpecSpecification.new(nil, spec_a_1, source_a),
     ]
 
     dependency = make_dep "some-dep", "> 0"
 
     resolver = Gem::Resolver.new [dependency], set
 
-    assert_resolves_to [spec_B_2], resolver
+    assert_resolves_to [spec_b_2], resolver
   end
 
   def test_select_local_platforms

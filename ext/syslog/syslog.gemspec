@@ -1,13 +1,18 @@
+source_version = %w[. ext/syslog].find do |dir|
+  break $1 if File.foreach(File.join(__dir__, dir, "syslog.c")).any?(/^#define\s+SYSLOG_VERSION\s+"(.+)"/)
+rescue Errno::ENOENT
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "syslog"
-  spec.version       = "0.1.1"
+  spec.version       = source_version
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 
   spec.summary       = %q{Ruby interface for the POSIX system logging facility.}
   spec.description   = %q{Ruby interface for the POSIX system logging facility.}
   spec.homepage      = "https://github.com/ruby/syslog"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

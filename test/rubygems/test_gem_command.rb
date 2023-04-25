@@ -234,7 +234,7 @@ class TestGemCommand < Gem::TestCase
 WARNING:  The \"--test\" option has been deprecated and will be removed in Rubygems 3.1.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
@@ -250,7 +250,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")
@@ -263,7 +263,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
 WARNING:  The \"--test\" option has been deprecated and will be removed in future versions of Rubygems.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
@@ -279,7 +279,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")
@@ -292,7 +292,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
 WARNING:  The \"--test\" option has been deprecated and will be removed in Rubygems 3.1. Whether you set `--test` mode or not, this dummy app always runs in test mode.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
@@ -308,7 +308,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")
@@ -321,7 +321,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
 WARNING:  The \"--test\" option has been deprecated and will be removed in future versions of Rubygems. Whether you set `--test` mode or not, this dummy app always runs in test mode.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
@@ -337,7 +337,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")

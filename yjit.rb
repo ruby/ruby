@@ -67,8 +67,10 @@ module RubyVM::YJIT
     # [ length, line_1, line_2, line_n, ..., dummy value, count
     i = 0
     while i < raw_samples.length
-      stack_length = raw_samples[i] + 1
+      stack_length = raw_samples[i]
       i += 1 # consume the stack length
+
+      sample_count = raw_samples[i + stack_length]
 
       prev_frame_id = nil
       stack_length.times do |idx|
@@ -78,14 +80,14 @@ module RubyVM::YJIT
         if prev_frame_id
           prev_frame = frames[prev_frame_id]
           prev_frame[:edges][frame_id] ||= 0
-          prev_frame[:edges][frame_id] += 1
+          prev_frame[:edges][frame_id] += sample_count
         end
 
         frame_info = frames[frame_id]
-        frame_info[:total_samples] += 1
+        frame_info[:total_samples] += sample_count
 
         frame_info[:lines][line_samples[idx]] ||= [0, 0]
-        frame_info[:lines][line_samples[idx]][0] += 1
+        frame_info[:lines][line_samples[idx]][0] += sample_count
 
         prev_frame_id = frame_id
       end
@@ -94,8 +96,6 @@ module RubyVM::YJIT
 
       top_frame_id = prev_frame_id
       top_frame_line = 1
-
-      sample_count = raw_samples[i]
 
       frames[top_frame_id][:samples] += sample_count
       frames[top_frame_id][:lines] ||= {}
@@ -250,7 +250,8 @@ module RubyVM::YJIT
       print_counters(stats, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
       print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
-      print_counters(stats, prefix: 'oaref_', prompt: 'opt_aref exit reasons: ')
+      print_counters(stats, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
+      print_counters(stats, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
       print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
       print_counters(stats, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
       print_counters(stats, prefix: 'invalidate_', prompt: 'invalidation reasons: ')

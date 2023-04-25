@@ -517,6 +517,8 @@ extern VALUE rb_vm_concat_array(VALUE ary1, VALUE ary2st);
 extern VALUE rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil);
 extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic);
 extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+extern VALUE rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+extern VALUE rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
 extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
 extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
 extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);
@@ -531,7 +533,7 @@ extern const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VA
 extern VALUE rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv);
 extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
-extern void* rb_rjit_entry_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
+extern void* rb_rjit_entry_stub_hit(VALUE branch_stub);
 extern void* rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
 
 #include "rjit_c.rbinc"

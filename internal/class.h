@@ -62,12 +62,10 @@ struct rb_classext_struct {
         } singleton_class;
     } as;
     const VALUE includer;
-#if !SHAPE_IN_BASIC_FLAGS
-    shape_id_t shape_id;
-#endif
     attr_index_t max_iv_count;
     unsigned char variation_count;
-    bool permanent_classpath;
+    bool permanent_classpath : 1;
+    bool cloned : 1;
     VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;
@@ -78,21 +76,12 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     struct rb_id_table *m_tbl;
-#if !RCLASS_EXT_EMBEDDED
-    struct rb_classext_struct *ptr;
-#endif
 };
 
-#if RCLASS_EXT_EMBEDDED
 // Assert that classes can be embedded in size_pools[2] (which has 160B slot size)
 STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
-#endif
 
-#if RCLASS_EXT_EMBEDDED
-#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
-#else
-#  define RCLASS_EXT(c) (RCLASS(c)->ptr)
-#endif
+#define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_IVPTR(c) (RCLASS_EXT(c)->iv_ptr)
@@ -110,7 +99,6 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT(c)->as.singleton_class.attached_object)
 
 #define RICLASS_IS_ORIGIN FL_USER0
-#define RCLASS_CLONED     FL_USER1
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
 

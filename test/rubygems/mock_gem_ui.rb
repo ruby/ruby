@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "user_interaction"
+require "rubygems/user_interaction"
 
 ##
 # This Gem::StreamUI subclass records input and output to StringIO for

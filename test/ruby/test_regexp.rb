@@ -187,6 +187,13 @@ class TestRegexp < Test::Unit::TestCase
     RUBY
   end
 
+  def test_utf8_comment_in_usascii_extended_regexp_bug_19455
+    assert_separately([], <<-RUBY)
+      assert_equal(Encoding::UTF_8, /(?#\u1000)/x.encoding)
+      assert_equal(Encoding::UTF_8, /#\u1000/x.encoding)
+    RUBY
+  end
+
   def test_union
     assert_equal :ok, begin
       Regexp.union(
@@ -303,6 +310,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal({'a' => '1', 'b' => '2', 'c' => nil}, /^(?<a>.)(?<b>.)(?<c>.)?/.match('12').named_captures)
     assert_equal({'a' => '1', 'b' => '2', 'c' => '3'}, /^(?<a>.)(?<b>.)(?<c>.)?/.match('123').named_captures)
     assert_equal({'a' => '1', 'b' => '2', 'c' => ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures)
+
+    assert_equal({a: '1', b: '2', c: ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures(symbolize_names: true))
+    assert_equal({'a' => '1', 'b' => '2', 'c' => ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures(symbolize_names: false))
 
     assert_equal({'a' => 'x'}, /(?<a>x)|(?<a>y)/.match('x').named_captures)
     assert_equal({'a' => 'y'}, /(?<a>x)|(?<a>y)/.match('y').named_captures)
@@ -1730,7 +1740,7 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
-  def test_cache_optimization_exponential
+  def test_match_cache_exponential
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
@@ -1740,7 +1750,7 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
-  def test_cache_optimization_square
+  def test_match_cache_square
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
@@ -1748,6 +1758,14 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
     end;
+  end
+
+  def test_cache_opcodes_initialize
+    str = 'test1-test2-test3-test4-test_5'
+    re = '^([0-9a-zA-Z\-/]*){1,256}$'
+    100.times do
+      assert !Regexp.new(re).match?(str)
+    end
   end
 
   def test_bug_19273 # [Bug #19273]
@@ -1768,6 +1786,14 @@ class TestRegexp < Test::Unit::TestCase
   def test_bug_19476 # [Bug #19476]
     assert_equal("123456789".match(/(?:x?\dx?){2,10}/)[0], "123456789")
     assert_equal("123456789".match(/(?:x?\dx?){2,}/)[0], "123456789")
+  end
+
+  def test_bug_19537
+    str = 'aac'
+    re = '^([ab]{1,3})(a?)*$'
+    100.times do
+      assert !Regexp.new(re).match?(str)
+    end
   end
 
   def test_linear_time_p

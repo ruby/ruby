@@ -30,6 +30,42 @@
 #include "ruby/st.h"
 #include "vm_core.h"
 
+/* Flags of T_CLASS
+ *
+ * 2:     RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *            The RCLASS_SUPERCLASSES contains the class as the last element.
+ *            This means that this class owns the RCLASS_SUPERCLASSES list.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the class.
+ * endif
+ */
+
+/* Flags of T_ICLASS
+ *
+ * 0:    RICLASS_IS_ORIGIN
+ * 3:    RICLASS_ORIGIN_SHARED_MTBL
+ *           The T_ICLASS does not own the method table.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID. This is set but not used.
+ * endif
+ */
+
+/* Flags of T_MODULE
+ *
+ * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
+ *           Module has not been initialized.
+ * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF
+ *           See RCLASS_SUPERCLASSES_INCLUDE_SELF in T_CLASS.
+ * 3:    RMODULE_IS_REFINEMENT
+ *           Module is used for refinements.
+ * if !SHAPE_IN_BASIC_FLAGS
+ * 4-19: SHAPE_FLAG_MASK
+ *           Shape ID for the module.
+ * endif
+ */
+
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
@@ -193,22 +229,14 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    size_t alloc_size = sizeof(struct RClass);
-
-#if RCLASS_EXT_EMBEDDED
-    alloc_size += sizeof(rb_classext_t);
-#endif
+    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     flags &= T_MASK;
     flags |= FL_PROMOTED1 /* start from age == 2 */;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
-#if RCLASS_EXT_EMBEDDED
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
-#else
-    obj->ptr = ZALLOC(rb_classext_t);
-#endif
 
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
@@ -465,7 +493,7 @@ static bool ensure_origin(VALUE klass);
 /**
  * If this flag is set, that module is allocated but not initialized yet.
  */
-enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER5};
+enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER1};
 
 static inline bool
 RMODULE_UNINITIALIZED(VALUE module)
@@ -508,8 +536,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
      */
-    FL_SET(clone, RCLASS_CLONED);
-    FL_SET(orig , RCLASS_CLONED);
+    RCLASS_EXT(clone)->cloned = true;
+    RCLASS_EXT(orig)->cloned = true;
 
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));

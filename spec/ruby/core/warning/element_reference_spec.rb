@@ -8,6 +8,13 @@ describe "Warning.[]" do
     end
   end
 
+  ruby_version_is '3.3' do
+    it "returns default values for :performance category" do
+      ruby_exe('p Warning[:performance]').chomp.should == "false"
+      ruby_exe('p Warning[:performance]', options: "-w").chomp.should == "false"
+    end
+  end
+
   it "raises for unknown category" do
     -> { Warning[:noop] }.should raise_error(ArgumentError, /unknown category: noop/)
   end

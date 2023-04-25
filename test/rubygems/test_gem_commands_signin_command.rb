@@ -109,7 +109,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def test_execute_with_key_name_and_scope
     email     = "you@example.com"
     password  = "secret"
-    api_key   = "1234"
+    api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
 
     key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\n"
@@ -134,7 +134,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def test_execute_with_key_name_scope_and_mfa_level_of_ui_only
     email     = "you@example.com"
     password  = "secret"
-    api_key   = "1234"
+    api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "ui_only"
 
@@ -161,7 +161,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def test_execute_with_key_name_scope_and_mfa_level_of_gem_signin
     email     = "you@example.com"
     password  = "secret"
-    api_key   = "1234"
+    api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "ui_and_gem_signin"
 
@@ -188,7 +188,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def test_execute_with_warnings
     email     = "you@example.com"
     password  = "secret"
-    api_key   = "1234"
+    api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "disabled"
     warning   = "/[WARNING/] For protection of your account and gems"
@@ -204,7 +204,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     email     = "you@example.com"
     password  = "secret"
-    api_key   = "1234"
+    api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
 
     key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"

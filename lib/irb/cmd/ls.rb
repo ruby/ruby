@@ -39,8 +39,12 @@ module IRB
       def dump_methods(o, klass, obj)
         singleton_class = begin obj.singleton_class; rescue TypeError; nil end
         dumped_mods = Array.new
+        ancestors = klass.ancestors
+        ancestors = ancestors.reject { |c| c >= Object } if klass < Object
+        singleton_ancestors = (singleton_class&.ancestors || []).reject { |c| c >= Class }
+
         # singleton_class' ancestors should be at the front
-        maps = class_method_map(singleton_class&.ancestors || [], dumped_mods) + class_method_map(klass.ancestors, dumped_mods)
+        maps = class_method_map(singleton_ancestors, dumped_mods) + class_method_map(ancestors, dumped_mods)
         maps.each do |mod, methods|
           name = mod == singleton_class ? "#{klass}.methods" : "#{mod}#methods"
           o.dump(name, methods)
@@ -49,7 +53,6 @@ module IRB
 
       def class_method_map(classes, dumped_mods)
         dumped_methods = Array.new
-        classes = classes.reject { |mod| mod >= Object }
         classes.map do |mod|
           next if dumped_mods.include? mod
 

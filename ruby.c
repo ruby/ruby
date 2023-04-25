@@ -347,14 +347,17 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
         M("experimental", "",     "experimental features"),
+        M("performance", "",      "performance issues"),
     };
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
-        M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
-        M("--yjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: 64)"),
-        M("--yjit-call-threshold=num", "", "Number of calls to trigger JIT (default: 30)"),
-        M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
-        M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
+        M("--yjit-stats",                    "", "Enable collecting YJIT statistics"),
+        M("--yjit-trace-exits",              "", "Record Ruby source location when exiting from generated code"),
+        M("--yjit-trace-exits-sample-rate",  "", "Trace exit locations only every Nth occurrence"),
+        M("--yjit-exec-mem-size=num",        "", "Size of executable memory block in MiB (default: 64)"),
+        M("--yjit-call-threshold=num",       "", "Number of calls to trigger JIT (default: 30)"),
+        M("--yjit-max-versions=num",         "", "Maximum number of versions per basic block (default: 4)"),
+        M("--yjit-greedy-versioning",        "", "Greedy versioning mode (default: disabled)"),
     };
 #endif
 #if USE_RJIT
@@ -1197,7 +1200,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 warning = 1;
                 ruby_verbose = Qtrue;
             }
-            FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
+            FEATURE_SET(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS);
             s++;
             goto reswitch;
 
@@ -1213,6 +1216,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 }
                 else if (NAME_MATCH_P("experimental", s, len)) {
                     bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+                }
+                else if (NAME_MATCH_P("performance", s, len)) {
+                    bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
                 }
                 else {
                     rb_warn("unknown warning category: `%s'", s);
@@ -1246,13 +1252,13 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 warning = 1;
                 switch (v) {
                   case 0:
-                    FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_ALL_BITS, 0);
+                    FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS, 0);
                     break;
                   case 1:
                     FEATURE_SET_TO(opt->warn, 1U << RB_WARN_CATEGORY_DEPRECATED, 0);
                     break;
                   default:
-                    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_ALL_BITS);
+                    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS);
                     break;
                 }
             }

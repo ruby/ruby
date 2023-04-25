@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.6"
+#define STRINGIO_VERSION "3.0.7"
 
 #include "ruby.h"
 #include "ruby/io.h"

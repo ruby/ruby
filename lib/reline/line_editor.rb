@@ -239,21 +239,10 @@ class Reline::LineEditor
         @old_trap.call if @old_trap.respond_to?(:call)
       end
     }
-    begin
-      @old_tstp_trap = Signal.trap('TSTP') {
-        Reline::IOGate.ungetc("\C-z".ord)
-        @old_tstp_trap.call if @old_tstp_trap.respond_to?(:call)
-      }
-    rescue ArgumentError
-    end
   end
 
   def finalize
     Signal.trap('INT', @old_trap)
-    begin
-      Signal.trap('TSTP', @old_tstp_trap)
-    rescue ArgumentError
-    end
   end
 
   def eof?

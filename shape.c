@@ -7,6 +7,7 @@
 #include "internal/gc.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "internal/error.h"
 #include "variable.h"
 #include <stdbool.h>
 
@@ -68,13 +69,6 @@ rb_shape_get_parent(rb_shape_t * shape)
 }
 
 #if !SHAPE_IN_BASIC_FLAGS
-shape_id_t
-rb_rclass_shape_id(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    return RCLASS_EXT(obj)->shape_id;
-}
-
 shape_id_t rb_generic_shape_id(VALUE obj);
 #endif
 
@@ -407,6 +401,16 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 
         if (variation_created) {
             RCLASS_EXT(klass)->variation_count++;
+            if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
+                if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
+                    rb_category_warning(
+                        RB_WARN_CATEGORY_PERFORMANCE,
+                        "Maximum shapes variations (%d) reached by %"PRIsVALUE", instance variables accesses will be slower.",
+                        SHAPE_MAX_VARIATIONS,
+                        rb_class_path(klass)
+                    );
+                }
+            }
         }
     }
 
@@ -492,6 +496,9 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
             rb_shape_t * child = SINGLE_CHILD(next_shape->edges);
             if (child->edge_name == dest_shape->edge_name) {
                 return child;
+            }
+            else {
+                return NULL;
             }
         }
         else {

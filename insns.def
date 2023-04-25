@@ -899,8 +899,8 @@ opt_str_uminus
 }
 
 DEFINE_INSN
-opt_newarray_max
-(rb_num_t num)
+opt_newarray_send
+(rb_num_t num, ID method)
 (...)
 (VALUE val)
 /* This instruction typically has no funcalls.  But it compares array
@@ -909,20 +909,21 @@ opt_newarray_max
  * cannot but mark it being not leaf. */
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+// attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
-}
-
-DEFINE_INSN
-opt_newarray_min
-(rb_num_t num)
-(...)
-(VALUE val)
-/* Same discussion as opt_newarray_max. */
-// attr bool leaf = false; /* has rb_funcall() */
-// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
-{
-    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
+    switch(method) {
+      case idHash:
+        val = vm_opt_newarray_hash(ec, num, STACK_ADDR_FROM_TOP(num));
+        break;
+      case idMin:
+        val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
+        break;
+      case idMax:
+        val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
+        break;
+      default:
+        rb_bug("unreachable");
+    }
 }
 
 /* super(args) # args.size => num */
@@ -1469,27 +1470,6 @@ opt_regexpmatch2
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
     }
-}
-
-/* call native compiled method */
-DEFINE_INSN_IF(SUPPORT_CALL_C_FUNCTION)
-opt_call_c_function
-(rb_insn_func_t funcptr)
-()
-()
-// attr bool leaf = false; /* anything can happen inside */
-// attr bool handles_sp = true;
-{
-    reg_cfp = (funcptr)(ec, reg_cfp);
-
-    if (reg_cfp == 0) {
-        VALUE err = ec->errinfo;
-        ec->errinfo = Qnil;
-        THROW_EXCEPTION(err);
-    }
-
-    RESTORE_REGS();
-    NEXT_INSN();
 }
 
 /* call specific function with args */

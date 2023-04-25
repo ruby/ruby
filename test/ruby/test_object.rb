@@ -422,6 +422,18 @@ class TestObject < Test::Unit::TestCase
     assert_equal(1+3+5+7+9, n)
   end
 
+  def test_max_shape_variation_with_performance_warnings
+    assert_in_out_err([], <<-INPUT, %w(), /Maximum shapes variations \(8\) reached by Foo, instance variables accesses will be slower\.$/)
+      $VERBOSE = true
+      Warning[:performance] = true
+
+      class Foo; end
+      10.times do |i|
+        Foo.new.instance_variable_set(:"@a\#{i}", nil)
+      end
+    INPUT
+  end
+
   def test_redefine_method_under_verbose
     assert_in_out_err([], <<-INPUT, %w(2), /warning: method redefined; discarding old foo$/)
       $VERBOSE = true

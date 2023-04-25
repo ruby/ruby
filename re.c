@@ -2316,7 +2316,7 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  *  call-seq:
- *    named_captures -> hash
+ *    named_captures(symbolize_names: false) -> hash
  *
  *  Returns a hash of the named captures;
  *  each key is a capture name; each value is its captured string or +nil+:
@@ -2337,10 +2337,17 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    # => #<MatchData "01" a:"0" a:"1">
  *    m.named_captures #=> {"a" => "1"}
  *
+ * If keyword argument +symbolize_names+ is given
+ * a true value, the keys in the resulting hash are Symbols:
+ *
+ *    m = /(?<a>.)(?<a>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" a:"1">
+ *    m.named_captures(symbolize_names: true) #=> {:a => "1"}
+ *
  */
 
 static VALUE
-match_named_captures(VALUE match)
+match_named_captures(int argc, VALUE *argv, VALUE match)
 {
     VALUE hash;
     struct MEMO *memo;
@@ -2349,8 +2356,27 @@ match_named_captures(VALUE match)
     if (NIL_P(RMATCH(match)->regexp))
         return rb_hash_new();
 
+    VALUE opt;
+    VALUE symbolize_names = 0;
+
+    rb_scan_args(argc, argv, "0:", &opt);
+
+    if (!NIL_P(opt)) {
+        static ID keyword_ids[1];
+
+        VALUE symbolize_names_val;
+
+        if (!keyword_ids[0]) {
+            keyword_ids[0] = rb_intern_const("symbolize_names");
+        }
+        rb_get_kwargs(opt, keyword_ids, 0, 1, &symbolize_names_val);
+        if (!UNDEF_P(symbolize_names_val) && RTEST(symbolize_names_val)) {
+            symbolize_names = 1;
+        }
+    }
+
     hash = rb_hash_new();
-    memo = MEMO_NEW(hash, match, 0);
+    memo = MEMO_NEW(hash, match, symbolize_names);
 
     onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
 
@@ -2922,7 +2948,11 @@ escape_asis:
           case '#':
             if (extended_mode && !in_char_class) {
                 /* consume and ignore comment in extended regexp */
-                while ((p < end) && ((c = *p++) != '\n'));
+                while ((p < end) && ((c = *p++) != '\n')) {
+                    if ((c & 0x80) && !*encp && enc == rb_utf8_encoding()) {
+                        *encp = enc;
+                    }
+                }
                 break;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
@@ -2957,6 +2987,9 @@ escape_asis:
                         switch (c = *p++) {
                           default:
                             if (!(c & 0x80)) break;
+                            if (!*encp && enc == rb_utf8_encoding()) {
+                                *encp = enc;
+                            }
                             --p;
                             /* fallthrough */
                           case '\\':
@@ -4754,7 +4787,7 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
     rb_define_alias(rb_cMatch,  "deconstruct", "captures");
-    rb_define_method(rb_cMatch, "named_captures", match_named_captures, 0);
+    rb_define_method(rb_cMatch, "named_captures", match_named_captures, -1);
     rb_define_method(rb_cMatch, "deconstruct_keys", match_deconstruct_keys, 1);
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);

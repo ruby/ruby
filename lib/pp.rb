@@ -61,6 +61,9 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+
+  VERSION = "0.4.0"
+
   # Returns the usable width for +out+.
   # As the width of +out+:
   # 1. If +out+ is assigned to a tty device, its width is used.

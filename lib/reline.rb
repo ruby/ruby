@@ -166,9 +166,13 @@ module Reline
 
     DialogProc = Struct.new(:dialog_proc, :context)
     def add_dialog_proc(name_sym, p, context = nil)
-      raise ArgumentError unless p.respond_to?(:call) or p.nil?
       raise ArgumentError unless name_sym.instance_of?(Symbol)
-      @dialog_proc_list[name_sym] = DialogProc.new(p, context)
+      if p.nil?
+        @dialog_proc_list.delete(name_sym)
+      else
+        raise ArgumentError unless p.respond_to?(:call)
+        @dialog_proc_list[name_sym] = DialogProc.new(p, context)
+      end
     end
 
     def dialog_proc(name_sym)

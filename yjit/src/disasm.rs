@@ -207,7 +207,6 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
 #[cfg(test)]
 macro_rules! assert_disasm {
     ($cb:expr, $hex:expr, $disasm:expr) => {
-        assert_eq!(format!("{:x}", $cb), $hex);
         #[cfg(feature = "disasm")]
         {
             let disasm = disasm_addr_range(
@@ -217,6 +216,7 @@ macro_rules! assert_disasm {
             );
             assert_eq!(unindent(&disasm, false), unindent(&$disasm, true));
         }
+        assert_eq!(format!("{:x}", $cb), $hex);
     };
 }
 #[cfg(test)]

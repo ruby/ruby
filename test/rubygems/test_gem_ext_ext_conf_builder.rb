@@ -65,11 +65,11 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     end
   end
 
-  def test_class_build_env_MAKE
+  def test_class_build_env_make
     env_make = ENV.delete "make"
     ENV["make"] = nil
 
-    env_MAKE = ENV.delete "MAKE"
+    env_large_make = ENV.delete "MAKE"
     ENV["MAKE"] = "anothermake"
 
     if Gem.java_platform?
@@ -91,7 +91,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
       assert_contains_make_command "clean", output[4]
     end
   ensure
-    ENV["MAKE"] = env_MAKE
+    ENV["MAKE"] = env_large_make
     ENV["make"] = env_make
   end
 
