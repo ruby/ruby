@@ -4791,7 +4791,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 
             if (me) {
                 VALUE klass = vm_search_normal_superclass(me->defined_class);
-                if (klass == (VALUE)NULL) return false;
+                if (!klass) return false;
 
                 ID id = me->def->original_id;
 
