@@ -40,6 +40,7 @@ struct rb_thread_sched_item {
         struct ccan_list_node timeslice_threads;
     } node;
 
+    // this data should be protected by timer_th.waiting_lock
     struct {
         enum thread_sched_waiting_flag {
             thread_sched_waiting_none     = 0x00,
@@ -95,6 +96,8 @@ struct rb_native_thread {
 
     struct coroutine_context nt_context;
     int dedicated;
+
+    size_t machine_stack_maxsize;
 };
 
 #undef except
@@ -119,17 +122,19 @@ struct rb_thread_sched {
 };
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-# ifdef __APPLE__
-// on Darwin, TLS can not be accessed across .so
-struct rb_execution_context_struct *rb_current_ec(void);
-void rb_current_ec_set(struct rb_execution_context_struct *);
-# else
-RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
+  # ifdef __APPLE__
+    // on Darwin, TLS can not be accessed across .so
+    struct rb_execution_context_struct *rb_current_ec(void);
+    void rb_current_ec_set(struct rb_execution_context_struct *);
+  # else
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
 
-// for RUBY_DEBUG_LOG()
-RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
-#define RUBY_NT_SERIAL 1
-# endif
+    // for RUBY_DEBUG_LOG()
+    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
+    #define RUBY_NT_SERIAL 1
+  # endif
+
+  NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
 #else
 typedef pthread_key_t native_tls_key_t;
 

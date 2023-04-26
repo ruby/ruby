@@ -1233,6 +1233,13 @@ q.pop
   end if Process.respond_to?(:fork)
 
   def test_fork_in_thread
+=begin
+TestThread#test_fork_in_thread [/home/ko1/ruby/src/trunk/test/ruby/test_thread.rb:1251]:
+[ruby-core:62070] [Bug #9751]
+pid 32557 killed by SIGKILL (signal 9).
+Expected #<Process::Status: pid 32557 SIGKILL (signal 9)> to not be signaled?.
+=end
+
     bug9751 = '[ruby-core:62070] [Bug #9751]'
     f = nil
     th = Thread.start do
@@ -1281,6 +1288,7 @@ q.pop
 
   def test_fork_while_parent_locked
     omit 'needs fork' unless Process.respond_to?(:fork)
+
     m = Thread::Mutex.new
     nr = 1
     thrs = []
@@ -1435,7 +1443,8 @@ q.pop
     Thread.pass until th1.stop?
 
     # After a thread starts (and execute `sleep`), it returns native_thread_id
-    assert_instance_of Integer, th1.native_thread_id
+    native_tid = th1.native_thread_id
+    assert_instance_of Integer, native_tid if native_tid # it can be nil
 
     th1.wakeup
     Thread.pass while th1.alive?

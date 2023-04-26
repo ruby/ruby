@@ -1856,6 +1856,20 @@ rb_current_execution_context(bool expect_ec)
   #else
     rb_execution_context_t *ec = ruby_current_ec;
   #endif
+
+    /* On the shared objects, `__tls_get_addr()` is used to access the TLS
+     * and the address of the `ruby_current_ec` can be stored on a function
+     * frame. However, this address can be mis-used after native thread
+     * migration of a coroutine.
+     *   1) Get `ptr =&ruby_current_ec` op NT1 and store it on the frame.
+     *   2) Context switch and resume it on the NT2.
+     *   3) `ptr` is used on NT2 but it accesses to the TLS on NT1.
+     * This assertion checks such misusage.
+     *
+     * To avoid accidents, `GET_EC()` should be called once on the frame.
+     * Note that inlining can produce the problem.
+     */
+    VM_ASSERT(ec == rb_current_ec_noinline());
 #else
     rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
 #endif

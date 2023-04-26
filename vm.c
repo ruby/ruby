@@ -489,6 +489,14 @@ bool ruby_vm_keep_script_lines;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+
+// no-inline decl on thread_pthread.h
+rb_execution_context_t *
+rb_current_ec_noinline(void)
+{
+    return ruby_current_ec;
+}
+
 #ifdef RUBY_NT_SERIAL
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif

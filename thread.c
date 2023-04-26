@@ -349,7 +349,6 @@ rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
         }
 
         if (th->unblock.func != NULL) {
-            fprintf(stderr, "rb_threadptr_interrupt_common %p\n", th->unblock.func);
             (th->unblock.func)(th->unblock.arg);
         }
         else {
@@ -1467,7 +1466,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
         th->status = THREAD_STOPPED;
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 
-        RUBY_DEBUG_LOG("");
+        RUBY_DEBUG_LOG("thread_id:%p", (void *)th->nt->thread_id);
 
         RB_VM_SAVE_MACHINE_CONTEXT(th);
         thread_sched_to_waiting(TH_SCHED(th), th);
@@ -3353,7 +3352,7 @@ rb_thread_setname(VALUE thread, VALUE name)
         name = rb_str_new_frozen(name);
     }
     target_th->name = name;
-    if (threadptr_initialized(target_th)) {
+    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt) {
         native_set_another_thread_name(target_th->nt->thread_id, name);
     }
     return name;
@@ -4272,12 +4271,10 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     wfd.fd = fd;
     wfd.busy = NULL;
 
-#if 1
     if (!th->nt->dedicated) {
         rb_hrtime_t rel = timeout ? rb_timeval2hrtime(timeout) : 0;
         thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), &rel);
     }
-#endif
 
     RB_VM_LOCK_ENTER();
     {
