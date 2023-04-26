@@ -290,6 +290,7 @@ static struct {
     unsigned int cnt;
     struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
     unsigned int filters_num;
+    bool show_pid;
     rb_nativethread_lock_t lock;
     FILE *output;
 } debug_log;
@@ -406,6 +407,10 @@ setup_debug_log(void)
         rb_nativethread_lock_initialize(&debug_log.lock);
 
         setup_debug_log_filter();
+
+        if (getenv("RUBY_DEBUG_LOG_PID")) {
+            debug_log.show_pid = true;
+        }
     }
 }
 
@@ -500,6 +505,12 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
     char buff[MAX_DEBUG_LOG_MESSAGE_LEN] = {0};
     int len = 0;
     int r = 0;
+
+    if (debug_log.show_pid) {
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "pid:%d\t", getpid());
+        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        len += r;
+    }
 
     // message title
     if (func_name && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
