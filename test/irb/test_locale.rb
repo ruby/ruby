@@ -79,5 +79,40 @@ module TestIRB
         end
       end
     end
+
+    def test_load
+      # reset Locale's internal cache
+      IRB::Locale.class_variable_set(:@@loaded, [])
+      # Because error.rb files define the same class, loading them causes method redefinition warnings.
+      original_verbose = $VERBOSE
+      $VERBOSE = nil
+
+      jp_local = IRB::Locale.new("ja_JP.UTF-8")
+      jp_local.load("irb/error.rb")
+      msg = IRB::CantReturnToNormalMode.new.message
+      assert_equal("Normalモードに戻れません.", msg)
+
+      # reset Locale's internal cache
+      IRB::Locale.class_variable_set(:@@loaded, [])
+
+      en_local = IRB::Locale.new("en_US.UTF-8")
+      en_local.load("irb/error.rb")
+      msg = IRB::CantReturnToNormalMode.new.message
+      assert_equal("Can't return to normal mode.", msg)
+    ensure
+      # before turning warnings back on, load the error.rb file again to avoid warnings in other tests
+      IRB::Locale.new.load("irb/error.rb")
+      $VERBOSE = original_verbose
+    end
+
+    def test_find
+      jp_local = IRB::Locale.new("ja_JP.UTF-8")
+      path = jp_local.find("irb/error.rb").delete_prefix(Dir.pwd)
+      assert_equal("/lib/irb/lc/ja/error.rb", path)
+
+      en_local = IRB::Locale.new("en_US.UTF-8")
+      path = en_local.find("irb/error.rb").delete_prefix(Dir.pwd)
+      assert_equal("/lib/irb/lc/error.rb", path)
+    end
   end
 end
