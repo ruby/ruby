@@ -15,7 +15,11 @@ module IRB # :nodoc:
     ]x
     LOCALE_DIR = "/lc/"
 
-    @@legacy_encoding_alias_map = {}.freeze
+    LEGACY_ENCODING_ALIAS_MAP = {
+      'ujis' => Encoding::EUC_JP,
+      'euc' => Encoding::EUC_JP
+    }
+
     @@loaded = []
 
     def initialize(locale = nil)
@@ -26,8 +30,7 @@ module IRB # :nodoc:
         @lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
 
         if @encoding_name
-          begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
-          if @encoding = @@legacy_encoding_alias_map[@encoding_name]
+          if @encoding = LEGACY_ENCODING_ALIAS_MAP[@encoding_name]
             warn(("%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]), uplevel: 1)
           else
             @encoding = Encoding.find(@encoding_name) rescue nil
