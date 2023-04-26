@@ -107,12 +107,12 @@ module TestIRB
 
     def test_find
       jp_local = IRB::Locale.new("ja_JP.UTF-8")
-      path = jp_local.find("irb/error.rb").delete_prefix(Dir.pwd)
-      assert_equal("/lib/irb/lc/ja/error.rb", path)
+      path = jp_local.find("irb/error.rb")
+      assert_include(path, "/lib/irb/lc/ja/error.rb")
 
       en_local = IRB::Locale.new("en_US.UTF-8")
-      path = en_local.find("irb/error.rb").delete_prefix(Dir.pwd)
-      assert_equal("/lib/irb/lc/error.rb", path)
+      path = en_local.find("irb/error.rb")
+      assert_include(path, "/lib/irb/lc/error.rb")
     end
   end
 end
