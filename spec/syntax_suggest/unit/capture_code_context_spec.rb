@@ -16,13 +16,14 @@ module SyntaxSuggest
       EOM
 
       code_lines = CleanDocument.new(source: source).call.lines
-      block = CodeBlock.new(lines: code_lines[0])
+      block = CodeBlock.new(lines: code_lines[3])
 
       display = CaptureCodeContext.new(
         blocks: [block],
         code_lines: code_lines
       )
-      lines = display.call
+
+      lines = display.capture_before_after_kws(block).sort
       expect(lines.join).to eq(<<~'EOM')
         def sit
         end

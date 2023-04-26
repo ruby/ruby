@@ -49,11 +49,24 @@ ruby_version_is "3.1" do
       enum.tally(hash).should equal(hash)
     end
 
+    it "calls #to_hash to convert argument to Hash implicitly if passed not a Hash" do
+      enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
+      object = Object.new
+      def object.to_hash; { 'foo' => 1 }; end
+      enum.tally(object).should == { 'foo' => 3, 'bar' => 1, 'baz' => 1}
+    end
+
     it "raises a FrozenError and does not update the given hash when the hash is frozen" do
       enum = EnumerableSpecs::Numerous.new('foo', 'bar', 'foo', 'baz')
       hash = { 'foo' => 1 }.freeze
       -> { enum.tally(hash) }.should raise_error(FrozenError)
       hash.should == { 'foo' => 1 }
+    end
+
+    it "raises a FrozenError even if enumerable is empty" do
+      enum = EnumerableSpecs::Numerous.new()
+      hash = { 'foo' => 1 }.freeze
+      -> { enum.tally(hash) }.should raise_error(FrozenError)
     end
 
     it "does not call given block" do

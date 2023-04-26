@@ -431,6 +431,10 @@ describe "Time.new with a timezone argument" do
         time.zone.should == nil
       end
 
+      it "returns a Time with UTC offset specified as a single letter military timezone" do
+        Time.new(2000, 1, 1, 0, 0, 0, in: "W").utc_offset.should == 3600 * -10
+      end
+
       it "could be a timezone object" do
         zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
         time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
@@ -445,13 +449,29 @@ describe "Time.new with a timezone argument" do
         time.zone.should == zone
       end
 
+      it "allows omitting minor arguments" do
+        Time.new(2000, 1, 1, 12, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 1, "+05:00")
+        Time.new(2000, 1, 1, 12, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 0, "+05:00")
+        Time.new(2000, 1, 1, 12, in: "+05:00").should == Time.new(2000, 1, 1, 12, 0, 0, "+05:00")
+        Time.new(2000, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+        Time.new(2000, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+        Time.new(2000, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+        Time.new(in: "+05:00").should be_close(Time.now.getlocal("+05:00"), TIME_TOLERANCE)
+      end
+
+      it "converts to a provided timezone if all the positional arguments are omitted" do
+        Time.new(in: "+05:00").utc_offset.should == 5*3600
+      end
+
       it "raises ArgumentError if format is invalid" do
         -> { Time.new(2000, 1, 1, 12, 0, 0, in: "+09:99") }.should raise_error(ArgumentError)
         -> { Time.new(2000, 1, 1, 12, 0, 0, in: "ABC") }.should raise_error(ArgumentError)
       end
 
       it "raises ArgumentError if two offset arguments are given" do
-        -> { Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00") }.should raise_error(ArgumentError)
+        -> {
+          Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00")
+        }.should raise_error(ArgumentError, "timezone argument given as positional and keyword arguments")
       end
     end
   end

@@ -116,7 +116,6 @@ module SyntaxSuggest
       return unless block.visible_lines.count == 1
 
       around_lines = AroundBlockScan.new(code_lines: @code_lines, block: block)
-        .start_at_next_line
         .capture_neighbor_context
 
       around_lines -= block.lines

@@ -30,9 +30,9 @@ describe "Integer#|" do
     end
 
     it "coerces the rhs and calls #coerce" do
-      obj = mock("fixnum bit and")
-      obj.should_receive(:coerce).with(6).and_return([3, 6])
-      (6 & obj).should == 2
+      obj = mock("fixnum bit or")
+      obj.should_receive(:coerce).with(6).and_return([6, 3])
+      (6 | obj).should == 7
     end
 
     it "raises a TypeError when passed a Float" do

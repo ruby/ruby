@@ -41,19 +41,33 @@ typedef enum call_type {
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
 static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const VALUE *argv);
 
+static VALUE *
+vm_argv_ruby_array(VALUE *av, const VALUE *argv, int *flags, int *argc, int kw_splat)
+{
+    *flags |= VM_CALL_ARGS_SPLAT;
+    VALUE argv_ary = rb_ary_hidden_new(*argc);
+    rb_ary_cat(argv_ary, argv, *argc);
+    *argc = 2;
+    av[0] = argv_ary;
+    if (kw_splat) {
+        av[1] = rb_ary_pop(argv_ary);
+    }
+    else {
+        // Make sure flagged keyword hash passed as regular argument
+        // isn't treated as keywords
+        *flags |= VM_CALL_KW_SPLAT;
+        av[1] = rb_hash_new();
+    }
+    return av;
+}
+
+static inline VALUE vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callcache *cc, int kw_splat);
+
 VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat)
 {
-    struct rb_calling_info calling = {
-        .ci = &VM_CI_ON_STACK(id, kw_splat ? VM_CALL_KW_SPLAT : 0, argc, NULL),
-        .cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme),
-        .block_handler = vm_passed_block_handler(ec),
-        .recv = recv,
-        .argc = argc,
-        .kw_splat = kw_splat,
-    };
-
-    return vm_call0_body(ec, &calling, argv);
+    const struct rb_callcache cc = VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    return vm_call0_cc(ec, recv, id, argc, argv, &cc, kw_splat);
 }
 
 VALUE
@@ -73,8 +87,16 @@ rb_vm_call_with_refinements(rb_execution_context_t *ec, VALUE recv, ID id, int a
 static inline VALUE
 vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callcache *cc, int kw_splat)
 {
+    int flags = kw_splat ? VM_CALL_KW_SPLAT : 0;
+    VALUE *use_argv = (VALUE *)argv;
+    VALUE av[2];
+
+    if (UNLIKELY(vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ && argc > VM_ARGC_STACK_MAX)) {
+        use_argv = vm_argv_ruby_array(av, argv, &flags, &argc, kw_splat);
+    }
+
     struct rb_calling_info calling = {
-        .ci = &VM_CI_ON_STACK(id, kw_splat ? VM_CALL_KW_SPLAT : 0, argc, NULL),
+        .ci = &VM_CI_ON_STACK(id, flags, argc, NULL),
         .cc = cc,
         .block_handler = vm_passed_block_handler(ec),
         .recv = recv,
@@ -82,7 +104,7 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
         .kw_splat = kw_splat,
     };
 
-    return vm_call0_body(ec, &calling, argv);
+    return vm_call0_body(ec, &calling, use_argv);
 }
 
 static VALUE

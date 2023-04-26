@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require '-test-/iter'
 
 class TestCall < Test::Unit::TestCase
   def aaa(a, b=100, *rest)
@@ -99,6 +100,19 @@ class TestCall < Test::Unit::TestCase
     }
   end
 
+  def test_call_bmethod_proc
+    pr = proc{|sym| sym}
+    define_singleton_method(:a, &pr)
+    ary = [10]
+    assert_equal(10, a(*ary))
+
+    pr = proc{|*sym| sym}
+    define_singleton_method(:a, &pr)
+    ary = [10]
+    assert_equal([10], a(*ary))
+    assert_equal([10], a(10))
+  end
+
   def test_call_splat_order
     bug12860 = '[ruby-core:77701] [Bug# 12860]'
     ary = [1, 2]
@@ -116,8 +130,11 @@ class TestCall < Test::Unit::TestCase
     assert_equal([0, 1, 2, b], aaa(0, *ary, &ary.pop), bug16504)
   end
 
+  OVER_STACK_LEN = (ENV['RUBY_OVER_STACK_LEN'] || 150).to_i # Greater than VM_ARGC_STACK_MAX
+  OVER_STACK_ARGV = OVER_STACK_LEN.times.to_a.freeze
+
   def test_call_cfunc_splat_large_array_bug_4040
-    a = 1380.times.to_a # Greater than VM_ARGC_STACK_MAX
+    a = OVER_STACK_ARGV
 
     assert_equal(a, [].push(*a))
     assert_equal(a, [].push(a[0], *a[1..]))
@@ -198,5 +215,882 @@ class TestCall < Test::Unit::TestCase
     # Single test with value that would cause SystemStackError.
     # Not all tests use such a large array to reduce testing time.
     assert_equal(1380888, [].push(*1380888.times.to_a).size)
+  end
+
+  def test_call_iseq_large_array_splat_fail
+    def self.a; end
+    def self.b(a=1); end
+    def self.c(k: 1); end
+    def self.d(**kw); end
+    def self.e(k: 1, **kw); end
+    def self.f(a=1, k: 1); end
+    def self.g(a=1, **kw); end
+    def self.h(a=1, k: 1, **kw); end
+
+    (:a..:h).each do |meth|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        instance_eval("#{meth}(*OVER_STACK_ARGV)", __FILE__, __LINE__)
+      end
+    end
+  end
+
+  def test_call_iseq_large_array_splat_pass
+    def self.a(*a); a.length end
+    assert_equal OVER_STACK_LEN, a(*OVER_STACK_ARGV)
+
+    def self.b(_, *a); a.length end
+    assert_equal (OVER_STACK_LEN - 1), b(*OVER_STACK_ARGV)
+
+    def self.c(_, *a, _); a.length end
+    assert_equal (OVER_STACK_LEN - 2), c(*OVER_STACK_ARGV)
+
+    def self.d(b=1, *a); a.length end
+    assert_equal (OVER_STACK_LEN - 1), d(*OVER_STACK_ARGV)
+
+    def self.e(b=1, *a, _); a.length end
+    assert_equal (OVER_STACK_LEN - 2), e(*OVER_STACK_ARGV)
+
+    def self.f(b, *a); a.length end
+    assert_equal (OVER_STACK_LEN - 1), f(*OVER_STACK_ARGV)
+
+    def self.g(*a, k: 1); a.length end
+    assert_equal OVER_STACK_LEN, g(*OVER_STACK_ARGV)
+
+    def self.h(*a, **kw); a.length end
+    assert_equal OVER_STACK_LEN, h(*OVER_STACK_ARGV)
+
+    def self.i(*a, k: 1, **kw); a.length end
+    assert_equal OVER_STACK_LEN, i(*OVER_STACK_ARGV)
+
+    def self.j(b=1, *a, k: 1); a.length end
+    assert_equal (OVER_STACK_LEN - 1), j(*OVER_STACK_ARGV)
+
+    def self.k(b=1, *a, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 1), k(*OVER_STACK_ARGV)
+
+    def self.l(b=1, *a, k: 1, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 1), l(*OVER_STACK_ARGV)
+
+    def self.m(b=1, *a, _, k: 1); a.length end
+    assert_equal (OVER_STACK_LEN - 2), m(*OVER_STACK_ARGV)
+
+    def self.n(b=1, *a, _, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 2), n(*OVER_STACK_ARGV)
+
+    def self.o(b=1, *a, _, k: 1, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 2), o(*OVER_STACK_ARGV)
+  end
+
+  def test_call_iseq_large_array_splat_with_large_number_of_parameters
+    args = OVER_STACK_ARGV.map{|i| "a#{i}"}.join(',')
+    args1 = (OVER_STACK_LEN-1).times.map{|i| "a#{i}"}.join(',')
+
+    singleton_class.class_eval("def a(#{args}); [#{args}] end")
+    assert_equal OVER_STACK_ARGV, a(*OVER_STACK_ARGV)
+
+    singleton_class.class_eval("def b(#{args}, b=0); [#{args}, b] end")
+    assert_equal(OVER_STACK_ARGV + [0], b(*OVER_STACK_ARGV))
+
+    singleton_class.class_eval("def c(#{args}, *b); [#{args}, b] end")
+    assert_equal(OVER_STACK_ARGV + [[]], c(*OVER_STACK_ARGV))
+
+    singleton_class.class_eval("def d(#{args1}, *b); [#{args1}, b] end")
+    assert_equal(OVER_STACK_ARGV[0...-1] + [[OVER_STACK_ARGV.last]], d(*OVER_STACK_ARGV))
+  end if OVER_STACK_LEN < 200
+
+  def test_call_proc_large_array_splat_pass
+    [
+      proc{0} ,
+      proc{|a=1|a},
+      proc{|k: 1|0},
+      proc{|**kw| 0},
+      proc{|k: 1, **kw| 0},
+      proc{|a=1, k: 1| a},
+      proc{|a=1, **kw| a},
+      proc{|a=1, k: 1, **kw| a},
+    ].each do |l|
+      assert_equal 0, l.call(*OVER_STACK_ARGV)
+    end
+
+    assert_equal OVER_STACK_LEN, proc{|*a| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), proc{|_, *a| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), proc{|_, *a, _| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), proc{|b=1, *a| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), proc{|b=1, *a, _| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), proc{|b=1, *a| a.length}.(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, proc{|*a, k: 1| a.length}.(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, proc{|*a, **kw| a.length}.(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, proc{|*a, k: 1, **kw| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), proc{|b=1, *a, k: 1| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), proc{|b=1, *a, **kw| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), proc{|b=1, *a, k: 1, **kw| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), proc{|b=1, *a, _, k: 1| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), proc{|b=1, *a, _, **kw| a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), proc{|b=1, *a, _, k: 1, **kw| a.length}.(*OVER_STACK_ARGV)
+  end
+
+  def test_call_proc_large_array_splat_with_large_number_of_parameters
+    args = OVER_STACK_ARGV.map{|i| "a#{i}"}.join(',')
+    args1 = (OVER_STACK_LEN-1).times.map{|i| "a#{i}"}.join(',')
+
+    l = instance_eval("proc{|#{args}| [#{args}]}")
+    assert_equal OVER_STACK_ARGV, l.(*OVER_STACK_ARGV)
+
+    l = instance_eval("proc{|#{args}, b| [#{args}, b]}")
+    assert_equal(OVER_STACK_ARGV + [nil], l.(*OVER_STACK_ARGV))
+
+    l = instance_eval("proc{|#{args1}| [#{args1}]}")
+    assert_equal(OVER_STACK_ARGV[0...-1], l.(*OVER_STACK_ARGV))
+
+    l = instance_eval("proc{|#{args}, *b| [#{args}, b]}")
+    assert_equal(OVER_STACK_ARGV + [[]], l.(*OVER_STACK_ARGV))
+
+    l = instance_eval("proc{|#{args1}, *b| [#{args1}, b]}")
+    assert_equal(OVER_STACK_ARGV[0...-1] + [[OVER_STACK_ARGV.last]], l.(*OVER_STACK_ARGV))
+
+    l = instance_eval("proc{|#{args}, b, *c| [#{args}, b, c]}")
+    assert_equal(OVER_STACK_ARGV + [nil, []], l.(*OVER_STACK_ARGV))
+
+    l = instance_eval("proc{|#{args}, b, *c, d| [#{args}, b, c, d]}")
+    assert_equal(OVER_STACK_ARGV + [nil, [], nil], l.(*OVER_STACK_ARGV))
+  end if OVER_STACK_LEN < 200
+
+  def test_call_lambda_large_array_splat_fail
+    [
+      ->{} ,
+      ->(a=1){},
+      ->(k: 1){},
+      ->(**kw){},
+      ->(k: 1, **kw){},
+      ->(a=1, k: 1){},
+      ->(a=1, **kw){},
+      ->(a=1, k: 1, **kw){},
+    ].each do |l|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        l.call(*OVER_STACK_ARGV)
+      end
+    end
+  end
+
+  def test_call_lambda_large_array_splat_pass
+    assert_equal OVER_STACK_LEN, ->(*a){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), ->(_, *a){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), ->(_, *a, _){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), ->(b=1, *a){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), ->(b=1, *a, _){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), ->(b, *a){a.length}.(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, ->(*a, k: 1){a.length}.(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, ->(*a, **kw){a.length}.(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, ->(*a, k: 1, **kw){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), ->(b=1, *a, k: 1){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), ->(b=1, *a, **kw){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 1), ->(b=1, *a, k: 1, **kw){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), ->(b=1, *a, _, k: 1){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), ->(b=1, *a, _, **kw){a.length}.(*OVER_STACK_ARGV)
+    assert_equal (OVER_STACK_LEN - 2), ->(b=1, *a, _, k: 1, **kw){a.length}.(*OVER_STACK_ARGV)
+  end
+
+  def test_call_yield_block_large_array_splat_pass
+    def self.a
+      yield(*OVER_STACK_ARGV)
+    end
+
+    [
+      proc{0} ,
+      proc{|a=1|a},
+      proc{|k: 1|0},
+      proc{|**kw| 0},
+      proc{|k: 1, **kw| 0},
+      proc{|a=1, k: 1| a},
+      proc{|a=1, **kw| a},
+      proc{|a=1, k: 1, **kw| a},
+    ].each do |l|
+      assert_equal 0, a(&l)
+    end
+
+    assert_equal OVER_STACK_LEN, a{|*a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), a{|_, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 2), a{|_, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 1), a{|b=1, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 2), a{|b=1, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 1), a{|b, *a| a.length}
+    assert_equal OVER_STACK_LEN, a{|*a, k: 1| a.length}
+    assert_equal OVER_STACK_LEN, a{|*a, **kw| a.length}
+    assert_equal OVER_STACK_LEN, a{|*a, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), a{|b=1, *a, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 1), a{|b=1, *a, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), a{|b=1, *a, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), a{|b=1, *a, _, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 2), a{|b=1, *a, _, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), a{|b=1, *a, _, k: 1, **kw| a.length}
+  end
+
+  def test_call_yield_large_array_splat_with_large_number_of_parameters
+    def self.a
+      yield(*OVER_STACK_ARGV)
+    end
+
+    args = OVER_STACK_ARGV.map{|i| "a#{i}"}.join(',')
+    args1 = (OVER_STACK_LEN-1).times.map{|i| "a#{i}"}.join(',')
+
+    assert_equal OVER_STACK_ARGV, instance_eval("a{|#{args}| [#{args}]}", __FILE__, __LINE__)
+    assert_equal(OVER_STACK_ARGV + [nil], instance_eval("a{|#{args}, b| [#{args}, b]}", __FILE__, __LINE__))
+    assert_equal(OVER_STACK_ARGV[0...-1], instance_eval("a{|#{args1}| [#{args1}]}", __FILE__, __LINE__))
+    assert_equal(OVER_STACK_ARGV + [[]], instance_eval("a{|#{args}, *b| [#{args}, b]}", __FILE__, __LINE__))
+    assert_equal(OVER_STACK_ARGV[0...-1] + [[OVER_STACK_ARGV.last]], instance_eval("a{|#{args1}, *b| [#{args1}, b]}", __FILE__, __LINE__))
+    assert_equal(OVER_STACK_ARGV + [nil, []], instance_eval("a{|#{args}, b, *c| [#{args}, b, c]}", __FILE__, __LINE__))
+    assert_equal(OVER_STACK_ARGV + [nil, [], nil], instance_eval("a{|#{args}, b, *c, d| [#{args}, b, c, d]}", __FILE__, __LINE__))
+  end if OVER_STACK_LEN < 200
+
+  def test_call_yield_lambda_large_array_splat_fail
+    def self.a
+      yield(*OVER_STACK_ARGV)
+    end
+    [
+      ->{} ,
+      ->(a=1){},
+      ->(k: 1){},
+      ->(**kw){},
+      ->(k: 1, **kw){},
+      ->(a=1, k: 1){},
+      ->(a=1, **kw){},
+      ->(a=1, k: 1, **kw){},
+    ].each do |l|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        a(&l)
+      end
+    end
+  end
+
+  def test_call_yield_lambda_large_array_splat_pass
+    def self.a
+      yield(*OVER_STACK_ARGV)
+    end
+
+    assert_equal OVER_STACK_LEN, a(&->(*a){a.length})
+    assert_equal (OVER_STACK_LEN - 1), a(&->(_, *a){a.length})
+    assert_equal (OVER_STACK_LEN - 2), a(&->(_, *a, _){a.length})
+    assert_equal (OVER_STACK_LEN - 1), a(&->(b=1, *a){a.length})
+    assert_equal (OVER_STACK_LEN - 2), a(&->(b=1, *a, _){a.length})
+    assert_equal (OVER_STACK_LEN - 1), a(&->(b, *a){a.length})
+    assert_equal OVER_STACK_LEN, a(&->(*a, k: 1){a.length})
+    assert_equal OVER_STACK_LEN, a(&->(*a, **kw){a.length})
+    assert_equal OVER_STACK_LEN, a(&->(*a, k: 1, **kw){a.length})
+    assert_equal (OVER_STACK_LEN - 1), a(&->(b=1, *a, k: 1){a.length})
+    assert_equal (OVER_STACK_LEN - 1), a(&->(b=1, *a, **kw){a.length})
+    assert_equal (OVER_STACK_LEN - 1), a(&->(b=1, *a, k: 1, **kw){a.length})
+    assert_equal (OVER_STACK_LEN - 2), a(&->(b=1, *a, _, k: 1){a.length})
+    assert_equal (OVER_STACK_LEN - 2), a(&->(b=1, *a, _, **kw){a.length})
+    assert_equal (OVER_STACK_LEN - 2), a(&->(b=1, *a, _, k: 1, **kw){a.length})
+  end
+
+  def test_call_send_iseq_large_array_splat_fail
+    def self.a; end
+    def self.b(a=1); end
+    def self.c(k: 1); end
+    def self.d(**kw); end
+    def self.e(k: 1, **kw); end
+    def self.f(a=1, k: 1); end
+    def self.g(a=1, **kw); end
+    def self.h(a=1, k: 1, **kw); end
+
+    (:a..:h).each do |meth|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        send(meth, *OVER_STACK_ARGV)
+      end
+    end
+  end
+
+  def test_call_send_iseq_large_array_splat_pass
+    def self.a(*a); a.length end
+    assert_equal OVER_STACK_LEN, send(:a, *OVER_STACK_ARGV)
+
+    def self.b(_, *a); a.length end
+    assert_equal (OVER_STACK_LEN - 1), send(:b, *OVER_STACK_ARGV)
+
+    def self.c(_, *a, _); a.length end
+    assert_equal (OVER_STACK_LEN - 2), send(:c, *OVER_STACK_ARGV)
+
+    def self.d(b=1, *a); a.length end
+    assert_equal (OVER_STACK_LEN - 1), send(:d, *OVER_STACK_ARGV)
+
+    def self.e(b=1, *a, _); a.length end
+    assert_equal (OVER_STACK_LEN - 2), send(:e, *OVER_STACK_ARGV)
+
+    def self.f(b, *a); a.length end
+    assert_equal (OVER_STACK_LEN - 1), send(:f, *OVER_STACK_ARGV)
+
+    def self.g(*a, k: 1); a.length end
+    assert_equal OVER_STACK_LEN, send(:g, *OVER_STACK_ARGV)
+
+    def self.h(*a, **kw); a.length end
+    assert_equal OVER_STACK_LEN, send(:h, *OVER_STACK_ARGV)
+
+    def self.i(*a, k: 1, **kw); a.length end
+    assert_equal OVER_STACK_LEN, send(:i, *OVER_STACK_ARGV)
+
+    def self.j(b=1, *a, k: 1); a.length end
+    assert_equal (OVER_STACK_LEN - 1), send(:j, *OVER_STACK_ARGV)
+
+    def self.k(b=1, *a, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 1), send(:k, *OVER_STACK_ARGV)
+
+    def self.l(b=1, *a, k: 1, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 1), send(:l, *OVER_STACK_ARGV)
+
+    def self.m(b=1, *a, _, k: 1); a.length end
+    assert_equal (OVER_STACK_LEN - 2), send(:m, *OVER_STACK_ARGV)
+
+    def self.n(b=1, *a, _, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 2), send(:n, *OVER_STACK_ARGV)
+
+    def self.o(b=1, *a, _, k: 1, **kw); a.length end
+    assert_equal (OVER_STACK_LEN - 2), send(:o, *OVER_STACK_ARGV)
+  end
+
+  def test_call_send_iseq_large_array_splat_with_large_number_of_parameters
+    args = OVER_STACK_ARGV.map{|i| "a#{i}"}.join(',')
+    args1 = (OVER_STACK_LEN-1).times.map{|i| "a#{i}"}.join(',')
+
+    singleton_class.class_eval("def a(#{args}); [#{args}] end")
+    assert_equal OVER_STACK_ARGV, send(:a, *OVER_STACK_ARGV)
+
+    singleton_class.class_eval("def b(#{args}, b=0); [#{args}, b] end")
+    assert_equal(OVER_STACK_ARGV + [0], send(:b, *OVER_STACK_ARGV))
+
+    singleton_class.class_eval("def c(#{args}, *b); [#{args}, b] end")
+    assert_equal(OVER_STACK_ARGV + [[]], send(:c, *OVER_STACK_ARGV))
+
+    singleton_class.class_eval("def d(#{args1}, *b); [#{args1}, b] end")
+    assert_equal(OVER_STACK_ARGV[0...-1] + [[OVER_STACK_ARGV.last]], send(:d, *OVER_STACK_ARGV))
+  end if OVER_STACK_LEN < 200
+
+  def test_call_send_cfunc_large_array_splat_fail
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      send(:object_id, *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_send_cfunc_large_array_splat_pass
+    assert_equal OVER_STACK_LEN, [].send(:push, *OVER_STACK_ARGV).length
+  end
+
+  def test_call_attr_reader_large_array_splat_fail
+    singleton_class.send(:attr_reader, :a)
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      a(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      send(:a, *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_attr_writer_large_array_splat_fail
+    singleton_class.send(:attr_writer, :a)
+    singleton_class.send(:alias_method, :a, :a=)
+
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 1)") do
+      a(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 1)") do
+      send(:a, *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_struct_aref_large_array_splat_fail
+    s = Struct.new(:a).new
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      s.a(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      s.send(:a, *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_struct_aset_large_array_splat_fail
+    s = Struct.new(:a) do
+      alias b a=
+    end.new
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 1)") do
+      s.b(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 1)") do
+      s.send(:b, *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_alias_large_array_splat
+    c = Class.new do
+      def a; end
+      def c(*a); a.length end
+      attr_accessor :e
+    end
+    sc = Class.new(c) do
+      alias b a
+      alias d c
+      alias f e
+      alias g e=
+    end
+
+    obj = sc.new
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      obj.b(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      obj.f(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 1)") do
+      obj.g(*OVER_STACK_ARGV)
+    end
+
+    assert_equal OVER_STACK_LEN, obj.d(*OVER_STACK_ARGV)
+  end
+
+  def test_call_zsuper_large_array_splat
+    c = Class.new do
+      private
+      def a; end
+      def c(*a); a.length end
+      attr_reader :e
+    end
+    sc = Class.new(c) do
+      public :a
+      public :c
+      public :e
+    end
+
+    obj = sc.new
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      obj.a(*OVER_STACK_ARGV)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      obj.e(*OVER_STACK_ARGV)
+    end
+
+    assert_equal OVER_STACK_LEN, obj.c(*OVER_STACK_ARGV)
+  end
+
+  class RefinedModuleLargeArrayTest
+    c = self
+    using(Module.new do
+      refine c do
+        def a; end
+        def c(*a) a.length end
+        attr_reader :e
+      end
+    end)
+
+    def b
+      a(*OVER_STACK_ARGV)
+    end
+
+    def d
+      c(*OVER_STACK_ARGV)
+    end
+
+    def f
+      e(*OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_refined_large_array_splat_fail
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      RefinedModuleLargeArrayTest.new.b
+    end
+
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN}, expected 0)") do
+      RefinedModuleLargeArrayTest.new.f
+    end
+  end
+
+  def test_call_refined_large_array_splat_pass
+    assert_equal OVER_STACK_LEN, RefinedModuleLargeArrayTest.new.d
+  end
+
+  def test_call_method_missing_iseq_large_array_splat_fail
+    def self.method_missing(_) end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN+1}, expected 1)") do
+      nonexistent_method(*OVER_STACK_ARGV)
+    end
+
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN+1}, expected 1)") do
+      send(:nonexistent_method, *OVER_STACK_ARGV)
+    end
+
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN+1}, expected 1)") do
+      send("nonexistent_method123", *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_method_missing_iseq_large_array_splat_pass
+    def self.method_missing(m, *a)
+      a.length
+    end
+    assert_equal OVER_STACK_LEN, nonexistent_method(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, send(:nonexistent_method, *OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, send("nonexistent_method123", *OVER_STACK_ARGV)
+  end
+
+  def test_call_bmethod_large_array_splat_fail
+    define_singleton_method(:a){}
+    define_singleton_method(:b){|a=1|}
+    define_singleton_method(:c){|k: 1|}
+    define_singleton_method(:d){|**kw|}
+    define_singleton_method(:e){|k: 1, **kw|}
+    define_singleton_method(:f){|a=1, k: 1|}
+    define_singleton_method(:g){|a=1, **kw|}
+    define_singleton_method(:h){|a=1, k: 1, **kw|}
+
+    (:a..:h).each do |meth|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        instance_eval("#{meth}(*OVER_STACK_ARGV)", __FILE__, __LINE__)
+      end
+    end
+  end
+
+  def test_call_bmethod_large_array_splat_pass
+    define_singleton_method(:a){|*a| a.length}
+    assert_equal OVER_STACK_LEN, a(*OVER_STACK_ARGV)
+
+    define_singleton_method(:b){|_, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), b(*OVER_STACK_ARGV)
+
+    define_singleton_method(:c){|_, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 2), c(*OVER_STACK_ARGV)
+
+    define_singleton_method(:d){|b=1, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), d(*OVER_STACK_ARGV)
+
+    define_singleton_method(:e){|b=1, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 2), e(*OVER_STACK_ARGV)
+
+    define_singleton_method(:f){|b, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), f(*OVER_STACK_ARGV)
+
+    define_singleton_method(:g){|*a, k: 1| a.length}
+    assert_equal OVER_STACK_LEN, g(*OVER_STACK_ARGV)
+
+    define_singleton_method(:h){|*a, **kw| a.length}
+    assert_equal OVER_STACK_LEN, h(*OVER_STACK_ARGV)
+
+    define_singleton_method(:i){|*a, k: 1, **kw| a.length}
+    assert_equal OVER_STACK_LEN, i(*OVER_STACK_ARGV)
+
+    define_singleton_method(:j){|b=1, *a, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 1), j(*OVER_STACK_ARGV)
+
+    define_singleton_method(:k){|b=1, *a, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), k(*OVER_STACK_ARGV)
+
+    define_singleton_method(:l){|b=1, *a, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), l(*OVER_STACK_ARGV)
+
+    define_singleton_method(:m){|b=1, *a, _, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 2), m(*OVER_STACK_ARGV)
+
+    define_singleton_method(:n){|b=1, *a, _, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), n(*OVER_STACK_ARGV)
+
+    define_singleton_method(:o){|b=1, *a, _, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), o(*OVER_STACK_ARGV)
+  end
+
+  def test_call_method_missing_bmethod_large_array_splat_fail
+    define_singleton_method(:method_missing){|_|}
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN+1}, expected 1)") do
+      nonexistent_method(*OVER_STACK_ARGV)
+    end
+
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN+1}, expected 1)") do
+      send(:nonexistent_method, *OVER_STACK_ARGV)
+    end
+
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given #{OVER_STACK_LEN+1}, expected 1)") do
+      send("nonexistent_method123", *OVER_STACK_ARGV)
+    end
+  end
+
+  def test_call_method_missing_bmethod_large_array_splat_pass
+    define_singleton_method(:method_missing){|_, *a| a.length}
+    assert_equal OVER_STACK_LEN, nonexistent_method(*OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, send(:nonexistent_method, *OVER_STACK_ARGV)
+    assert_equal OVER_STACK_LEN, send("nonexistent_method123", *OVER_STACK_ARGV)
+  end
+
+  def test_call_symproc_large_array_splat_fail
+    define_singleton_method(:a){}
+    define_singleton_method(:b){|a=1|}
+    define_singleton_method(:c){|k: 1|}
+    define_singleton_method(:d){|**kw|}
+    define_singleton_method(:e){|k: 1, **kw|}
+    define_singleton_method(:f){|a=1, k: 1|}
+    define_singleton_method(:g){|a=1, **kw|}
+    define_singleton_method(:h){|a=1, k: 1, **kw|}
+
+    (:a..:h).each do |meth|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        instance_eval(":#{meth}.to_proc.(self, *OVER_STACK_ARGV)", __FILE__, __LINE__)
+      end
+    end
+  end
+
+  def test_call_symproc_large_array_splat_pass
+    define_singleton_method(:a){|*a| a.length}
+    assert_equal OVER_STACK_LEN, :a.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:b){|_, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), :b.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:c){|_, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 2), :c.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:d){|b=1, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), :d.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:e){|b=1, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 2), :e.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:f){|b, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), :f.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:g){|*a, k: 1| a.length}
+    assert_equal OVER_STACK_LEN, :g.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:h){|*a, **kw| a.length}
+    assert_equal OVER_STACK_LEN, :h.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:i){|*a, k: 1, **kw| a.length}
+    assert_equal OVER_STACK_LEN, :i.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:j){|b=1, *a, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 1), :j.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:k){|b=1, *a, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), :k.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:l){|b=1, *a, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), :l.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:m){|b=1, *a, _, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 2), :m.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:n){|b=1, *a, _, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), :n.to_proc.(self, *OVER_STACK_ARGV)
+
+    define_singleton_method(:o){|b=1, *a, _, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), :o.to_proc.(self, *OVER_STACK_ARGV)
+  end
+
+  def test_call_rb_call_iseq_large_array_splat_fail
+    extend Bug::Iter::Yield
+    l = ->(*a){}
+
+    def self.a; end
+    def self.b(a=1) end
+    def self.c(k: 1) end
+    def self.d(**kw) end
+    def self.e(k: 1, **kw) end
+    def self.f(a=1, k: 1) end
+    def self.g(a=1, **kw) end
+    def self.h(a=1, k: 1, **kw) end
+
+    (:a..:h).each do |meth|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        yield_block(meth, *OVER_STACK_ARGV, &l)
+      end
+    end
+  end
+
+  def test_call_rb_call_iseq_large_array_splat_pass
+    extend Bug::Iter::Yield
+    l = ->(*a){a.length}
+
+    def self.a(*a) a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    def self.b(_, *a) a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:b, *OVER_STACK_ARGV, &l)
+
+    def self.c(_, *a, _) a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:c, *OVER_STACK_ARGV, &l)
+
+    def self.d(b=1, *a) a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:d, *OVER_STACK_ARGV, &l)
+
+    def self.e(b=1, *a, _) a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:e, *OVER_STACK_ARGV, &l)
+
+    def self.f(b, *a) a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:f, *OVER_STACK_ARGV, &l)
+
+    def self.g(*a, k: 1) a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:g, *OVER_STACK_ARGV, &l)
+
+    def self.h(*a, **kw) a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:h, *OVER_STACK_ARGV, &l)
+
+    def self.i(*a, k: 1, **kw) a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:h, *OVER_STACK_ARGV, &l)
+
+    def self.j(b=1, *a, k: 1) a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:j, *OVER_STACK_ARGV, &l)
+
+    def self.k(b=1, *a, **kw) a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:k, *OVER_STACK_ARGV, &l)
+
+    def self.l(b=1, *a, k: 1, **kw) a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:l, *OVER_STACK_ARGV, &l)
+
+    def self.m(b=1, *a, _, k: 1) a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:m, *OVER_STACK_ARGV, &l)
+
+    def self.n(b=1, *a, _, **kw) a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:n, *OVER_STACK_ARGV, &l)
+
+    def self.o(b=1, *a, _, k: 1, **kw) a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:o, *OVER_STACK_ARGV, &l)
+  end
+
+  def test_call_rb_call_bmethod_large_array_splat_fail
+    extend Bug::Iter::Yield
+    l = ->(*a){}
+
+    define_singleton_method(:a){||}
+    define_singleton_method(:b){|a=1|}
+    define_singleton_method(:c){|k: 1|}
+    define_singleton_method(:d){|**kw|}
+    define_singleton_method(:e){|k: 1, **kw|}
+    define_singleton_method(:f){|a=1, k: 1|}
+    define_singleton_method(:g){|a=1, **kw|}
+    define_singleton_method(:h){|a=1, k: 1, **kw|}
+
+    (:a..:h).each do |meth|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        yield_block(meth, *OVER_STACK_ARGV, &l)
+      end
+    end
+  end
+
+  def test_call_rb_call_bmethod_large_array_splat_pass
+    extend Bug::Iter::Yield
+    l = ->(*a){a.length}
+
+    define_singleton_method(:a){|*a| a.length}
+    assert_equal OVER_STACK_LEN, yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:b){|_, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:b, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:c){|_, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:c, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:d){|b=1, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:d, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:e){|b=1, *a, _| a.length}
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:e, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:f){|b, *a| a.length}
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:f, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:g){|*a, k: 1| a.length}
+    assert_equal OVER_STACK_LEN, yield_block(:g, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:h){|*a, **kw| a.length}
+    assert_equal OVER_STACK_LEN, yield_block(:h, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:i){|*a, k: 1, **kw| a.length}
+    assert_equal OVER_STACK_LEN, yield_block(:h, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:j){|b=1, *a, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:j, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:k){|b=1, *a, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:k, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:l){|b=1, *a, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:l, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:m){|b=1, *a, _, k: 1| a.length}
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:m, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:n){|b=1, *a, _, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:n, *OVER_STACK_ARGV, &l)
+
+    define_singleton_method(:o){|b=1, *a, _, k: 1, **kw| a.length}
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:o, *OVER_STACK_ARGV, &l)
+  end
+
+  def test_call_ifunc_iseq_large_array_splat_fail
+    extend Bug::Iter::Yield
+    def self.a(*a)
+      yield(*a)
+    end
+    [
+      ->(){},
+      ->(a=1){},
+      ->(k: 1){},
+      ->(**kw){},
+      ->(k: 1, **kw){},
+      ->(a=1, k: 1){},
+      ->(a=1, **kw){},
+      ->(a=1, k: 1, **kw){},
+    ].each do |l|
+      assert_raise_with_message(ArgumentError, /wrong number of arguments \(given #{OVER_STACK_LEN}, expected 0(\.\.[12])?\)/) do
+        yield_block(:a, *OVER_STACK_ARGV, &l)
+      end
+    end
+  end
+
+  def test_call_ifunc_iseq_large_array_splat_pass
+    extend Bug::Iter::Yield
+    def self.a(*a)
+      yield(*a)
+    end
+
+    l = ->(*a) do a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(_, *a) do a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(_, *a, _) do a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a) do a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, _) do a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b, *a) do a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(*a, k: 1) do a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(*a, **kw) do a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(*a, k: 1, **kw) do a.length end
+    assert_equal OVER_STACK_LEN, yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, k: 1) do a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, **kw) do a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, k: 1, **kw) do a.length end
+    assert_equal (OVER_STACK_LEN - 1), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, _, k: 1) do a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, _, **kw) do a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:a, *OVER_STACK_ARGV, &l)
+
+    l = ->(b=1, *a, _, k: 1, **kw) do a.length end
+    assert_equal (OVER_STACK_LEN - 2), yield_block(:a, *OVER_STACK_ARGV, &l)
   end
 end

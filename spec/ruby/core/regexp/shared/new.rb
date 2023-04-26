@@ -432,6 +432,10 @@ describe :regexp_new_string, shared: true do
       Regexp.send(@method, "\056\x42\u3042\x52\076").should == /#{"\x2e\x42\u3042\x52\x3e"}/
     end
 
+    it "accepts a multiple byte character which need not be escaped" do
+      Regexp.send(@method, "\§").should == /#{"§"}/
+    end
+
     it "raises a RegexpError if less than four digits are given for \\uHHHH" do
       -> { Regexp.send(@method, "\\" + "u304") }.should raise_error(RegexpError)
     end

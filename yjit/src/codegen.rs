@@ -1465,7 +1465,9 @@ fn guard_object_is_not_ruby2_keyword_hash(
     asm.write_label(not_ruby2_keyword);
 }
 
-// push enough nils onto the stack to fill out an array
+/// This instruction pops a single value off the stack, converts it to an
+/// arrayif it isn’t already one using the #to_ary method, and then pushes
+/// the values from the array back onto the stack.
 fn gen_expandarray(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -1893,6 +1895,8 @@ pub const SEND_MAX_CHAIN_DEPTH: i32 = 20;
 
 // up to 20 different offsets for case-when
 pub const CASE_WHEN_MAX_DEPTH: i32 = 20;
+
+pub const MAX_SPLAT_LENGTH: i32 = 127;
 
 // Codegen for setting an instance variable.
 // Preconditions:
@@ -2415,7 +2419,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.shape_too_complex() {
+    if comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() as i32 >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate
@@ -5873,6 +5877,10 @@ fn gen_send_iseq(
             // all the remaining arguments. In the generated code
             // we test if this is true and if not side exit.
             argc = argc - 1 + array_length as i32 + remaining_opt as i32;
+            if argc + asm.ctx.get_stack_size() as i32 > MAX_SPLAT_LENGTH {
+                gen_counter_incr!(asm, send_splat_too_long);
+                return None;
+            }
             push_splat_args(array_length, asm);
 
             for _ in 0..remaining_opt {
@@ -7031,13 +7039,6 @@ fn gen_invokesuper(
     // FIXME: We should track and invalidate this block when this cme is invalidated
     let current_defined_class = unsafe { (*me).defined_class };
     let mid = unsafe { get_def_original_id((*me).def) };
-
-    if me != unsafe { rb_callable_method_entry(current_defined_class, (*me).called_id) } {
-        // Though we likely could generate this call, as we are only concerned
-        // with the method entry remaining valid, assume_method_lookup_stable
-        // below requires that the method lookup matches as well
-        return None;
-    }
 
     // vm_search_normal_superclass
     let rbasic_ptr: *const RBasic = current_defined_class.as_ptr();

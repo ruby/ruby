@@ -52,7 +52,9 @@ describe :string_unpack_unicode, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "\x01\x02".unpack("U\x00U").should == [1, 2]
+      suppress_warning do
+        "\x01\x02".unpack("U\x00U").should == [1, 2]
+      end
     end
   end
 

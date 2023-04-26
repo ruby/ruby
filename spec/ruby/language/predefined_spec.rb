@@ -979,6 +979,10 @@ describe "Global variable $VERBOSE" do
     $VERBOSE = @verbose
   end
 
+  it "is false by default" do
+    $VERBOSE.should be_false
+  end
+
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value

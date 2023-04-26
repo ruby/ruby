@@ -557,20 +557,6 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    provided = %w[complex enumerator rational thread]
-    provided << 'ruby2_keywords'
-
-    it "#{provided.join(', ')} are already required" do
-      features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-      provided.each { |feature|
-        features.should =~ /\b#{feature}\.(rb|so|jar)$/
-      }
-
-      code = provided.map { |f| "puts require #{f.inspect}\n" }.join
-      required = ruby_exe(code, options: '--disable-gems')
-      required.should == "false\n" * provided.size
-    end
-
     it "unicode_normalize is part of core and not $LOADED_FEATURES" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
       features.lines.each { |feature|

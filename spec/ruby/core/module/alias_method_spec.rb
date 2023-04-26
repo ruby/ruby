@@ -81,6 +81,12 @@ describe "Module#alias_method" do
     -> { @class.make_alias mock('x'), :public_one }.should raise_error(TypeError)
   end
 
+  it "raises a NoMethodError if the given name raises a NoMethodError during type coercion using to_str" do
+    obj = mock("mock-name")
+    obj.should_receive(:to_str).and_raise(NoMethodError)
+    -> { @class.make_alias obj, :public_one }.should raise_error(NoMethodError)
+  end
+
   it "is a public method" do
     Module.should have_public_instance_method(:alias_method, false)
   end

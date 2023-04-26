@@ -1426,17 +1426,29 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
     VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
     rb_control_frame_t *cfp = ec->cfp;
     VALUE *sp = cfp->sp;
+    int flags = (kw_splat ? VM_CALL_KW_SPLAT : 0);
+    VALUE *use_argv = (VALUE *)argv;
+    VALUE av[2];
 
     stack_check(ec);
+
+#if VM_ARGC_STACK_MAX < 1
+    /* Skip ruby array for potential autosplat case */
+    if (UNLIKELY(argc > VM_ARGC_STACK_MAX && (argc != 1 || is_lambda))) {
+#else
+    if (UNLIKELY(argc > VM_ARGC_STACK_MAX)) {
+#endif
+        use_argv = vm_argv_ruby_array(av, argv, &flags, &argc, kw_splat);
+    }
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
     vm_check_canary(ec, sp);
     cfp->sp = sp + argc;
     for (i=0; i<argc; i++) {
-        sp[i] = argv[i];
+        sp[i] = use_argv[i];
     }
 
-    opt_pc = vm_yield_setup_args(ec, iseq, argc, sp, kw_splat, passed_block_handler,
+    opt_pc = vm_yield_setup_args(ec, iseq, argc, sp, flags, passed_block_handler,
                                  (is_lambda ? arg_setup_method : arg_setup_block));
     cfp->sp = sp;
 

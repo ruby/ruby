@@ -17,20 +17,27 @@ describe "Process.times" do
     end
   end
 
-  platform_is_not :windows do
+  # TODO: The precision of `getrusage` depends on platforms (OpenBSD
+  # seems not supporting under-milliseconds in fact); this example is
+  # very questionable as an example of Ruby, and it just repeats the
+  # guard condition.
+  guard -> do
+    1000.times.any? do
+      # If getrusage has precision beyond milliseconds, there will be
+      # very likely at least one non-zero microsecond results when
+      # repeating enough.
+      time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+      not ('%.6f' % time).end_with?('000')
+    end
+  rescue Errno::EINVAL
+    false
+  end do
     it "uses getrusage when available to improve precision beyond milliseconds" do
       max = 10_000
-      has_getrusage = max.times.find do
-        time = Process.clock_gettime(:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-        ('%.6f' % time).end_with?('000')
-      end
-      unless has_getrusage
-        skip "getrusage is not supported on this environment"
-      end
 
       found = (max * 100).times.find do
         time = Process.times.utime
-        ('%.6f' % time).end_with?('000')
+        !('%.6f' % time).end_with?('000')
       end
 
       found.should_not == nil

@@ -29,8 +29,9 @@ module IRB # :nodoc:
           begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
           if @encoding = @@legacy_encoding_alias_map[@encoding_name]
             warn(("%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]), uplevel: 1)
+          else
+            @encoding = Encoding.find(@encoding_name) rescue nil
           end
-          @encoding = Encoding.find(@encoding_name) rescue nil
         end
       end
       @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)

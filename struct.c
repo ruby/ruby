@@ -637,17 +637,14 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init = Qnil;
+    VALUE name = Qnil, rest, keyword_init = Qnil;
     long i;
     VALUE st;
     VALUE opt;
 
-    argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
-    name = argv[0];
-    if (SYMBOL_P(name)) {
-        name = Qnil;
-    }
-    else {
+    argc = rb_scan_args(argc, argv, "0*:", NULL, &opt);
+    if (argc >= 1 && !SYMBOL_P(argv[0])) {
+        name = argv[0];
         --argc;
         ++argv;
     }

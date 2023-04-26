@@ -220,6 +220,7 @@ end
 
 describe "IO#write" do
   it_behaves_like :io_write, :write
+  it_behaves_like :io_write_transcode, :write
 
   it "accepts multiple arguments" do
     IO.pipe do |r, w|
