@@ -540,20 +540,19 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
 
     rb_execution_context_t *ec = rb_current_execution_context(false);
 
-    if (ec) {
-        // Ruby location
-        int ruby_line;
-        const char *ruby_file = rb_source_location_cstr(&ruby_line);
-        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            if (ruby_file) {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
-            }
-            else {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-            }
-            if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
-            len += r;
+    // Ruby location
+    int ruby_line;
+    const char *ruby_file = ec ? rb_source_location_cstr(&ruby_line) : NULL;
+
+    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        if (ruby_file) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
         }
+        else {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+        }
+        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        len += r;
     }
 
 #ifdef RUBY_NT_SERIAL
