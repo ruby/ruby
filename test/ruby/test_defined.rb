@@ -311,9 +311,9 @@ class TestDefined < Test::Unit::TestCase
     end
 
     assert_nil(a)
-
+  ensure
     BasicObject.class_eval do
-      undef_method :a
+      undef_method :a if defined?(a)
     end
   end
 
