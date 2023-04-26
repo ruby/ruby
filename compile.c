@@ -2795,6 +2795,24 @@ find_destination(INSN *i)
     return 0;
 }
 
+static bool
+jump_destination_might_be_loop_p(INSN *iobj, INSN **prev_jump_dests, size_t prev_jump_dests_size)
+{
+    for (size_t i = 0; i < prev_jump_dests_size; i++) {
+        if (prev_jump_dests[i] == iobj) {
+            /* Definitely a loop - we've seen this one before. */
+            return TRUE;
+        }
+        if (prev_jump_dests[i] == NULL) {
+            /* Definitely not a loop - we have space to record this. */
+            prev_jump_dests[i] = iobj;
+            return FALSE;
+        }
+    }
+    /* Might be a loop - we ran out of space in the table to know for sure. */
+    return TRUE;
+}
+
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
@@ -3001,6 +3019,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 {
     INSN *const iobj = (INSN *)list;
 
+    /* Keep track of jump destinations we already saw, to prevent infinite loops when
+     * doing useless jump elimination. The zero-initialization is important, it's used
+     * by jump_destination_might_be_loop_p. */
+    INSN *prev_jump_dests[16] = { 0 };
+
   again:
     optimize_checktype(iseq, iobj);
 
@@ -3023,7 +3046,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         else if (iobj != diobj && IS_INSN(&diobj->link) &&
                  IS_INSN_ID(diobj, jump) &&
                  OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0) &&
-                 diobj->insn_info.events == 0) {
+                 diobj->insn_info.events == 0 &&
+                 /* Needs to be last - it mutates prev_jump_dests & depends on the above checks to be true. */
+                 !jump_destination_might_be_loop_p(diobj, (INSN **)&prev_jump_dests, numberof(prev_jump_dests))) {
             /*
              *  useless jump elimination:
              *     jump LABEL1

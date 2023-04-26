@@ -1949,6 +1949,16 @@ eom
     RUBY
   end
 
+  def test_infinite_jump_jump_elimination
+    # Assert that this doesn't loop infinitely doing jump-jump elimination.
+    assert_separately([], <<-RUBY)
+      def bug_19611
+        while true && true
+        end
+      end
+    RUBY
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
