@@ -2155,7 +2155,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 marshal_compat_t *compat = (marshal_compat_t*)d;
                 v = compat->loader(klass, v);
             }
-            if (!partial) v = r_post_proc(v, arg);
+            if (!partial) {
+                if (arg->freeze) {
+                    OBJ_FREEZE(v);
+                }
+                v = r_post_proc(v, arg);
+            }
         }
         break;
 
@@ -2180,6 +2185,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             load_funcall(arg, v, s_mload, 1, &data);
             v = r_fixup_compat(v, arg);
             v = r_copy_ivar(v, data);
+            if (arg->freeze) {
+                OBJ_FREEZE(v);
+            }
             v = r_post_proc(v, arg);
             if (!NIL_P(extmod)) {
                 if (oldclass) append_extmod(v, extmod);
