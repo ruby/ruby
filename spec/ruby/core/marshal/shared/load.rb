@@ -141,16 +141,14 @@ describe :marshal_load, shared: true do
       end
 
       ruby_bug "#19427", "3.1"..."3.3" do
-        ruby_bug "#19427", "3.1"..."3.4" do # https://bugs.ruby-lang.org/issues/19427#note-15
-          it "returns frozen object having #_dump method" do
-            object = Marshal.send(@method, Marshal.dump(UserDefined.new), freeze: true)
-            object.should.frozen?
-          end
+        it "returns frozen object having #_dump method" do
+          object = Marshal.send(@method, Marshal.dump(UserDefined.new), freeze: true)
+          object.should.frozen?
+        end
 
-          it "returns frozen object responding to #marshal_dump and #marshal_load" do
-            object = Marshal.send(@method, Marshal.dump(UserMarshal.new), freeze: true)
-            object.should.frozen?
-          end
+        it "returns frozen object responding to #marshal_dump and #marshal_load" do
+          object = Marshal.send(@method, Marshal.dump(UserMarshal.new), freeze: true)
+          object.should.frozen?
         end
 
         it "returns frozen object extended by a module" do
