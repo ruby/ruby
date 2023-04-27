@@ -22,8 +22,14 @@ You may still manually pass `--enable-rjit` to try RJIT on unsupported platforms
 
 ### --enable-rjit=dev
 
-`--enable-rjit=dev` makes the interpreter slower, but enables `vm_insns_count` and `ratio_in_rjit`
-in `ruby --rjit-stats` to work.
+It enables `--rjit-dump-disasm` if libcapstone is available.
+
+It also enables `vm_insns_count` and `ratio_in_rjit` in `--rjit-stats`.
+However, it makes the interpreter a little slower.
+
+### --enable-rjit=disasm
+
+It enables `--rjit-dump-disasm` if libcapstone is available.
 
 ## make
 ### rjit-bindgen
@@ -40,7 +46,8 @@ This prints RJIT stats at exit. Some stats are available only with `--enable-rji
 
 ### --rjit-dump-disasm
 
-This dumps all JIT code. You need to install libcapstone before configure.
+This dumps all JIT code. You need to install libcapstone before configure and use `--enable-rjit=dev`
+or `--enable-rjit=disasm` on configure.
 
 * Ubuntu: `sudo apt-get install -y libcapstone-dev`
 * macOS: `brew install capstone`

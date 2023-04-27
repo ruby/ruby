@@ -3890,7 +3890,7 @@ AC_ARG_ENABLE(rjit,
 )
 
 AS_CASE(["$RJIT_SUPPORT"],
-[yes|dev], [
+[yes|dev|disasm], [
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
         # Link libcapstone for --rjit-dump-disasm
@@ -3898,6 +3898,10 @@ AS_CASE(["$RJIT_SUPPORT"],
 
         # Enable extra stats (vm_insns_count, ratio_in_rjit)
         AC_DEFINE(RJIT_STATS, 1)
+    ],
+    [disasm], [
+        # Link libcapstone for --rjit-dump-disasm
+        AC_CHECK_LIB([capstone], [cs_disasm])
     ])
 
     AC_DEFINE(USE_RJIT, 1)
