@@ -12,7 +12,7 @@ module IRB
     lc = IRB.conf[:LC_MESSAGES]
     path = lc.find("irb/help-message")
     space_line = false
-    IRB::MagicFile.open(path){|f|
+    File.open(path){|f|
       f.each_line do |l|
         if /^\s*$/ =~ l
           lc.puts l unless space_line
