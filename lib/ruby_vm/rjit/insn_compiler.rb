@@ -5548,14 +5548,14 @@ module RubyVM::RJIT
       end
       jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
 
+      sp_offset = ctx.sp_offset + 3 + local_size + (doing_kw_call ? 1 : 0) # callee_sp
       local_size.times do |i|
         asm.comment('set local variables') if i == 0
-        local_index = ctx.sp_offset + i
+        local_index = sp_offset + i - local_size - 3
         asm.mov([SP, C.VALUE.size * local_index], Qnil)
       end
 
       asm.comment('set up EP with managing data')
-      sp_offset = ctx.sp_offset + 3 + local_size + (doing_kw_call ? 1 : 0)
       ep_offset = sp_offset - 1
       # ep[-2]: cref_or_me
       asm.mov(:rax, cme.to_i)
