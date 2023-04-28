@@ -2,7 +2,13 @@
 
 require "fileutils"
 
-test_lib_files = %w[core_assertions.rb find_executable.rb envutil.rb]
+test_lib_files = %w[
+  core_assertions.rb
+  find_executable.rb
+  envutil.rb
+].map do |file|
+  [file, File.read("#{__dir__}/lib/#{file}")]
+end
 
 repos = %w[
   bigdecimal cgi cmath date delegate did_you_mean digest drb erb etc
@@ -17,20 +23,23 @@ title = "Update test libraries from ruby/ruby #{Time.now.strftime("%Y-%m-%d")}"
 commit = `git rev-parse HEAD`.chomp
 message = "Update test libraries from https://github.com/ruby/ruby/commit/#{commit}"
 
+topdir = ARGV.shift || '..'
+
 repos.each do |repo|
   puts "#{repo}: start"
 
-  Dir.chdir("../#{repo}") do
+  Dir.chdir("#{topdir}/#{repo}") do
     if `git branch --list #{branch_name}`.empty?
       system "git switch master"
       system "git switch -c #{branch_name}"
     else
-      puts "#{repo}: "
+      puts "#{repo}: skip"
       next
     end
 
-    test_lib_files.each do |file|
-      FileUtils.cp("../ruby/tool/lib/#{file}", "test/lib/#{file}")
+    test_lib_files.each do |file, code|
+      FileUtils.mkdir_p("test/lib")
+      File.binwrite("test/lib/#{file}", code)
       system "git add test/lib/#{file}"
     end
 
@@ -47,5 +56,5 @@ repos.each do |repo|
     system "git branch -D #{branch_name}"
   end
 rescue StandardError => e
-  ptus e
+  puts e
 end
