@@ -194,16 +194,13 @@ class Resolv
           File.open(@filename, 'rb') {|f|
             f.each {|line|
               line.sub!(/#.*/, '')
-              addr, hostname, *aliases = line.split(/\s+/)
+              addr, *hostnames = line.split(/\s+/)
               next unless addr
               @addr2name[addr] = [] unless @addr2name.include? addr
-              @addr2name[addr] << hostname
-              @addr2name[addr].concat(aliases)
-              @name2addr[hostname] = [] unless @name2addr.include? hostname
-              @name2addr[hostname] << addr
-              aliases.each {|n|
-                @name2addr[n] = [] unless @name2addr.include? n
-                @name2addr[n] << addr
+              @addr2name[addr].concat(hostnames)
+              hostnames.each {|hostname|
+                @name2addr[hostname] = [] unless @name2addr.include? hostname
+                @name2addr[hostname] << addr
               }
             }
           }
