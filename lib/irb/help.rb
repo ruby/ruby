@@ -4,8 +4,6 @@
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 
-require_relative 'magic-file'
-
 module IRB
   # Outputs the irb help message, see IRB@Command+line+options.
   def IRB.print_usage

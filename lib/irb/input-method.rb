@@ -5,7 +5,6 @@
 #
 
 require_relative 'src_encoding'
-require_relative 'magic-file'
 require_relative 'completion'
 require 'io/console'
 require 'reline'
@@ -132,7 +131,7 @@ module IRB
     # Creates a new input method object
     def initialize(file)
       super
-      @io = file.is_a?(IO) ? file : IRB::MagicFile.open(file)
+      @io = file.is_a?(IO) ? file : File.open(file)
       @external_encoding = @io.external_encoding
     end
     # The file name of this input method, usually given during initialization.
