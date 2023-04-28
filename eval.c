@@ -2114,17 +2114,17 @@ Init_eval(void)
 int
 rb_errno(void)
 {
-    return rb_orig_errno;
+    return *rb_orig_errno_ptr();
 }
 
 void
 rb_errno_set(int e)
 {
-    rb_orig_errno = e;
+    *rb_orig_errno_ptr() = e;
 }
 
 int *
 rb_errno_ptr(void)
 {
-    return &rb_orig_errno;
+    return rb_orig_errno_ptr();
 }
