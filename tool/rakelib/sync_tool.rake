@@ -1,4 +1,6 @@
-task :sync_tool, [:from] do |t, from: (File.identical?(__dir__, "rakelib") ? "../ruby/tool" : __dir__)|
+task :sync_tool, [:from] do |t, from: nil|
+  from ||= (File.identical?(__dir__, "rakelib") ? "../ruby/tool" : File.dirname(__dir__))
+
   require 'fileutils'
 
   {
