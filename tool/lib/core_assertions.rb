@@ -743,8 +743,7 @@ eom
         CLOCK_MONOTONIC
       ].find do |clk|
         if Process.const_defined?(clk)
-          clk = clk.to_sym
-          begin
+          [clk.to_sym, Process.const_get(clk)].find do |clk|
             Process.clock_gettime(clk)
           rescue
             # Constants may be defined but not implemented, e.g., mingw.
