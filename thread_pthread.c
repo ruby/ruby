@@ -754,7 +754,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 {
     VM_ASSERT(!th_has_dedicated_nt(th));
 
-    bool timedout = false;
+    volatile bool timedout = false;
 
     if (timer_thread_register_waiting(th, fd, events, rel)) {
         RUBY_DEBUG_LOG("wait fd:%d", fd);
@@ -937,10 +937,10 @@ ractor_sched_deq(rb_vm_t *vm)
             }
         }
 
-        VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
         VM_ASSERT(rb_current_execution_context(false) == NULL);
 
         if (r) {
+            VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
         }
@@ -1728,7 +1728,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
  * <------------- 512MB ------------->
  */
 
-struct nt_stack_chunk_header {
+static struct nt_stack_chunk_header {
     struct nt_stack_chunk_header *prev_chunk;
     struct nt_stack_chunk_header *prev_free_chunk;
 
@@ -1746,7 +1746,7 @@ struct nt_machine_stack_footer {
     size_t index;
 };
 
-rb_nativethread_lock_t nt_machine_stack_lock = RB_NATIVETHREAD_LOCK_INIT;
+static rb_nativethread_lock_t nt_machine_stack_lock = RB_NATIVETHREAD_LOCK_INIT;
 
 #include <sys/mman.h>
 
