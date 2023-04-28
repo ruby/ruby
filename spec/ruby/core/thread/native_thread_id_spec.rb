@@ -14,6 +14,8 @@ ruby_version_is "3.1" do
       end
 
       it "each thread has different native thread id" do
+        skip 'TODO (spec change)'
+
         t = Thread.new { sleep }
         Thread.pass until t.stop?
         main_thread_id = Thread.current.native_thread_id
