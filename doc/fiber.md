@@ -9,21 +9,21 @@ Fibers execute a user-provided block. During the execution, the block may call `
 ``` ruby
 #!/usr/bin/env ruby
 
-puts "1: Start program."
+puts '1: Start program.'
 
 f = Fiber.new do
-  puts "3: Entered fiber."
+  puts '3: Entered fiber.'
   Fiber.yield
-  puts "5: Resumed fiber."
+  puts '5: Resumed fiber.'
 end
 
-puts "2: Resume fiber first time."
+puts '2: Resume fiber first time.'
 f.resume
 
-puts "4: Resume fiber second time."
+puts '4: Resume fiber second time.'
 f.resume
 
-puts "6: Finished."
+puts '6: Finished.'
 ```
 
 This program demonstrates the flow control of fibers.
