@@ -2,13 +2,14 @@
 
 require "fileutils"
 
-test_lib_files = %w[
-  core_assertions.rb
-  find_executable.rb
-  envutil.rb
-  helper.rb
-].map do |file|
-  [file, File.read("#{__dir__}/lib/#{file}")]
+test_lib_files = [
+  ["lib/core_assertions.rb", "test/lib"],
+  ["lib/find_executable.rb", "test/lib"],
+  ["lib/envutil.rb", "test/lib"],
+  ["lib/helper.rb", "test/lib"],
+  ["rakelib/sync_tool.rake", "rakelib"],
+].map do |file, dest|
+  [file, dest, File.read("#{__dir__}/#{file}")]
 end
 
 repos = %w[
@@ -25,6 +26,7 @@ commit = `git rev-parse HEAD`.chomp
 message = "Update test libraries from https://github.com/ruby/ruby/commit/#{commit}"
 
 topdir = ARGV.shift || '..'
+repos = ARGV unless ARGV.empty?
 
 repos.each do |repo|
   puts "#{repo}: start"
@@ -38,10 +40,11 @@ repos.each do |repo|
       next
     end
 
-    test_lib_files.each do |file, code|
-      FileUtils.mkdir_p("test/lib")
-      File.binwrite("test/lib/#{file}", code)
-      system "git add test/lib/#{file}"
+    test_lib_files.each do |file, dest, code|
+      FileUtils.mkdir_p(dest)
+      file = "#{dest}/#{File.basename(file)}"
+      File.binwrite(file, code)
+      system "git add #{file}"
     end
 
     if `git commit -m '#{message}'`.chomp =~ /nothing to commit/
