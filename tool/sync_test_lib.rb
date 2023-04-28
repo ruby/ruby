@@ -6,6 +6,7 @@ test_lib_files = %w[
   core_assertions.rb
   find_executable.rb
   envutil.rb
+  helper.rb
 ].map do |file|
   [file, File.read("#{__dir__}/lib/#{file}")]
 end
