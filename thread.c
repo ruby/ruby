@@ -1526,7 +1526,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
 
     BLOCKING_REGION(th, {
         val = func(data1);
-        saved_errno = errno;
+        saved_errno = rb_errno();
     }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
 
     if (is_main_thread) vm->ubf_async_safe = 0;
@@ -1539,7 +1539,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
         thread_value(rb_thread_kill(ubf_th));
     }
 
-    errno = saved_errno;
+    rb_errno_set(saved_errno);
 
     return val;
 }
@@ -4272,8 +4272,19 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     wfd.busy = NULL;
 
     if (!th->nt->dedicated) {
-        rb_hrtime_t rel = timeout ? rb_timeval2hrtime(timeout) : 0;
-        thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), &rel);
+        rb_hrtime_t rel, *prel;
+
+        if (timeout) {
+            rel = rb_timeval2hrtime(timeout);
+            prel = &rel;
+        }
+        else {
+            prel = NULL;
+        }
+
+        if (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
+            return 0; // timeout
+        }
     }
 
     RB_VM_LOCK_ENTER();

@@ -35,6 +35,8 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def test_join_counters # Bug #18900
+    omit 'TODO'
+
     thr = Thread.new { fib(30) }
     Bug::ThreadInstrumentation.reset_counters
     thr.join

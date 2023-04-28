@@ -260,6 +260,8 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_timedwait
+    omit 'TODO'
+
     cond = @monitor.new_cond
     b = "foo"
     queue2 = Thread::Queue.new

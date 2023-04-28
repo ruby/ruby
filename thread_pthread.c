@@ -748,10 +748,13 @@ ubf_tt_waiting(void *ptr)
 
 static bool timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel);
 
-static void
+// return true if timed out
+static bool
 thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd, enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
 {
     VM_ASSERT(!th_has_dedicated_nt(th));
+
+    bool timedout = false;
 
     if (timer_thread_register_waiting(th, fd, events, rel)) {
         RUBY_DEBUG_LOG("wait fd:%d", fd);
@@ -778,6 +781,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
                     thread_sched_wait_running_turn(sched, th);
                     RUBY_DEBUG_LOG("wakeup");
                 }
+                timedout = th->sched.waiting_reason.data.result == 0;
             }
             thread_sched_unlock(sched, th);
         }
@@ -787,9 +791,12 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     }
     else {
         RUBY_DEBUG_LOG("can not wait fd:%d", fd);
+        return false;
     }
 
     VM_ASSERT(sched->running == th);
+
+    return timedout;
 }
 
 static void
@@ -903,6 +910,8 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
     rb_native_mutex_unlock(&vm->ractor.sched.lock);
 }
 
+#define SNT_KEEP_SECONDS 5
+
 static rb_ractor_t *
 ractor_sched_deq(rb_vm_t *vm)
 {
@@ -915,15 +924,29 @@ ractor_sched_deq(rb_vm_t *vm)
 
         while ((r = ccan_list_pop(&vm->ractor.sched.grq, rb_ractor_t, threads.sched.grq_node)) == NULL) {
             RUBY_DEBUG_LOG("wait grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-            rb_native_cond_wait(&vm->ractor.sched.cond, &vm->ractor.sched.lock);
-            RUBY_DEBUG_LOG("wakeup grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
+
+            rb_hrtime_t abs = rb_hrtime_add(rb_hrtime_now(), RB_HRTIME_PER_SEC * SNT_KEEP_SECONDS);
+            if (native_cond_timedwait(&vm->ractor.sched.cond, &vm->ractor.sched.lock, &abs) == ETIMEDOUT) {
+                RUBY_DEBUG_LOG("timeout, grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
+                VM_ASSERT(r == NULL);
+                vm->ractor.sched.snt_cnt--;
+                break;
+            }
+            else {
+                RUBY_DEBUG_LOG("wakeup grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
+            }
         }
+
         VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
         VM_ASSERT(rb_current_execution_context(false) == NULL);
 
-        vm->ractor.sched.grq_cnt--;
-
-        RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
+        if (r) {
+            vm->ractor.sched.grq_cnt--;
+            RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
+        }
+        else {
+            // timeout
+        }
     }
     rb_native_mutex_unlock(&vm->ractor.sched.lock);
 
@@ -1625,21 +1648,28 @@ nt_start(void *ptr)
         else {
             RUBY_DEBUG_LOG("check next");
             rb_ractor_t *r = ractor_sched_deq(vm);
-            struct rb_thread_sched *sched = &r->threads.sched;
 
-            thread_sched_lock(sched, NULL);
-            {
-                rb_thread_t *next_th = sched->running;
+            if (r) {
+                struct rb_thread_sched *sched = &r->threads.sched;
 
-                if (next_th && next_th->nt == NULL) {
-                    RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
-                    thread_sched_switch0(&nt->nt_context, next_th, nt);
+                thread_sched_lock(sched, NULL);
+                {
+                    rb_thread_t *next_th = sched->running;
+
+                    if (next_th && next_th->nt == NULL) {
+                        RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
+                        thread_sched_switch0(&nt->nt_context, next_th, nt);
+                    }
+                    else {
+                        RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
+                    }
                 }
-                else {
-                    RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
-                }
+                thread_sched_unlock(sched, NULL);
             }
-            thread_sched_unlock(sched, NULL);
+            else {
+                // timeout -> deleted.
+                break;
+            }
         }
     }
 
@@ -2458,6 +2488,20 @@ timer_thread_check_signal(rb_vm_t *vm)
     }
 }
 
+static bool
+timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
+{
+    if (abs < now) {
+        return true;
+    }
+    else if (abs - now < RB_HRTIME_PER_MSEC) {
+        return true; // too short time
+    }
+    else {
+        return false;
+    }
+}
+
 static rb_thread_t *
 timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
 {
@@ -2468,7 +2512,7 @@ timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
         rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
         if (th != NULL &&
             (th->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
-            th->sched.waiting_reason.data.timeout < now) {
+            timer_thread_check_exceed(th->sched.waiting_reason.data.timeout, now)) {
 
             RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
 
@@ -2514,7 +2558,6 @@ rb_assert_sig(void)
     }
 }
 
-
 /*
  * The purpose of the timer thread:
  *
@@ -2546,9 +2589,13 @@ timer_thread_func(void *ptr)
         timer_thread_check_signal(vm);
         timer_thread_check_timeout(vm); // 2-2-1
 
-        switch ((r = epoll_wait(timer_th.epoll_fd, finished_events, EPOLL_EVENTS_MAX, timer_thread_set_timeout(vm)))) {
+        r = epoll_wait(timer_th.epoll_fd, finished_events, EPOLL_EVENTS_MAX, timer_thread_set_timeout(vm));
+        RUBY_DEBUG_LOG("r:%d", r);
+
+        switch (r) {
           case 0: // timeout
             RUBY_DEBUG_LOG("timeout%s", "");
+
             // (1-1) timeslice
             rb_native_mutex_lock(&vm->ractor.sched.lock);
             {
@@ -2745,13 +2792,27 @@ verify_waiting_list(void)
 static bool
 timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting_flag flags, rb_hrtime_t *rel)
 {
-    RUBY_DEBUG_LOG("th:%u fd:%d flag:%d", rb_th_serial(th), fd, flags);
+    RUBY_DEBUG_LOG("th:%u fd:%d flag:%d rel:%lu", rb_th_serial(th), fd, flags, rel ? (unsigned long)*rel : 0);
+
     VM_ASSERT(th == NULL || TH_SCHED(th)->running == th);
     VM_ASSERT(flags != 0);
 
     rb_hrtime_t abs = 0; // 0 means no timeout
 
     // epoll case
+
+    if (rel) {
+        if (*rel > 0) {
+            flags |= thread_sched_waiting_timeout;
+        }
+        else {
+            return false;
+        }
+    }
+
+    if (rel && *rel > 0) {
+        flags |= thread_sched_waiting_timeout;
+    }
 
     __uint32_t epoll_events = 0;
     if (flags & thread_sched_waiting_timeout) {
@@ -2820,9 +2881,13 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
             }
 
             if (abs == 0) { // no timeout
+                VM_ASSERT(!(flags & thread_sched_waiting_timeout));
                 ccan_list_add_tail(&timer_th.waiting, &th->sched.waiting_reason.node);
             }
             else {
+                RUBY_DEBUG_LOG("abs:%lu", abs);
+                VM_ASSERT(flags & thread_sched_waiting_timeout);
+
                 // insert th to sorted list (TODO: O(n))
                 rb_thread_t *wth, *prev_wth = NULL;
 

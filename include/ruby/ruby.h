@@ -270,6 +270,15 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 0)
  */
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
+// TODO: doc
+int rb_errno(void);
+void rb_errno_set(int);
+int *rb_errno_ptr(void);
+
+#define rb_orig_errno errno
+#undef errno
+#define errno (*rb_errno_ptr())
+
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
