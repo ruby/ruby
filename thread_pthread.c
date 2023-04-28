@@ -2587,7 +2587,7 @@ timer_thread_func(void *ptr)
         struct epoll_event finished_events[EPOLL_EVENTS_MAX];
 
         timer_thread_check_signal(vm);
-        timer_thread_check_timeout(vm); // 2-2-1
+        timer_thread_check_timeout(vm); // (2-2)
 
         r = epoll_wait(timer_th.epoll_fd, finished_events, EPOLL_EVENTS_MAX, timer_thread_set_timeout(vm));
         RUBY_DEBUG_LOG("r:%d", r);
