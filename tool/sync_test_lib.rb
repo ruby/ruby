@@ -23,7 +23,7 @@ repos = %w[
 branch_name = "update-test-lib-#{Time.now.strftime("%Y%m%d")}"
 title = "Update test libraries from ruby/ruby #{Time.now.strftime("%Y-%m-%d")}"
 commit = `git rev-parse HEAD`.chomp
-message = "Update test libraries from https://github.com/ruby/ruby/commit/#{commit}"
+message = "From https://github.com/ruby/ruby/commit/#{commit}"
 
 update = true
 keep = nil
@@ -76,7 +76,7 @@ repos.each do |repo|
       system "git add #{file}"
     end
 
-    if IO.popen(%W"git commit -m #{message}", &:read).chomp =~ /nothing to commit/
+    if IO.popen(%W"git commit -m #{title}\n\n#{message}", &:read).chomp =~ /nothing to commit/
       puts "#{repo}: nothing to update"
     elsif update
       system(*%W"git push")
