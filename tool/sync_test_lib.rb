@@ -25,7 +25,36 @@ title = "Update test libraries from ruby/ruby #{Time.now.strftime("%Y-%m-%d")}"
 commit = `git rev-parse HEAD`.chomp
 message = "Update test libraries from https://github.com/ruby/ruby/commit/#{commit}"
 
-topdir = ARGV.shift || '..'
+update = true
+keep = nil
+topdir = nil
+while arg = ARGV.shift
+  case arg
+  when '--dry-run'
+    update = false
+    keep = true
+  when '--update'
+    update = true
+    keep = false if keep.nil?
+  when '--no-update'
+    update = false
+    keep = true if keep.nil?
+  when '--keep'
+    keep = true
+  when '--no-keep'
+    keep = false
+  when '--'
+    break
+  else
+    if topdir
+      ARGV.unshift(arg)
+    else
+      topdir = arg
+    end
+    break
+  end
+end
+topdir ||= '..'
 repos = ARGV unless ARGV.empty?
 
 repos.each do |repo|
@@ -33,8 +62,8 @@ repos.each do |repo|
 
   Dir.chdir("#{topdir}/#{repo}") do
     if `git branch --list #{branch_name}`.empty?
-      system "git switch master"
-      system "git switch -c #{branch_name}"
+      system(*%W"git switch master")
+      system(*%W"git switch -c #{branch_name}")
     else
       puts "#{repo}: skip"
       next
@@ -47,17 +76,19 @@ repos.each do |repo|
       system "git add #{file}"
     end
 
-    if `git commit -m '#{message}'`.chomp =~ /nothing to commit/
+    if IO.popen(%W"git commit -m #{message}", &:read).chomp =~ /nothing to commit/
       puts "#{repo}: nothing to update"
-    else
-      system "git push"
-      system "gh repo set-default ruby/#{repo}"
-      system "gh pr create --base master --head ruby:#{branch_name} --title \"#{title}\" --body \"#{message}\""
+    elsif update
+      system(*%W"git push")
+      system(*%W"gh repo set-default ruby/#{repo}")
+      system(*%W"gh pr create --base master --head ruby:#{branch_name} --title #{title} --body #{message}")
       puts "#{repo}: updated"
     end
 
-    system "git switch master"
-    system "git branch -D #{branch_name}"
+    unless keep
+      system "git switch master"
+      system "git branch -D #{branch_name}"
+    end
   end
 rescue StandardError => e
   puts e
