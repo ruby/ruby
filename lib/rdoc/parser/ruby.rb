@@ -2134,7 +2134,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       if :on_nl == tk[:kind] or (:on_kw == tk[:kind] && 'def' == tk[:text]) then
         return
       elsif :on_comment == tk[:kind] or :on_embdoc == tk[:kind] then
-        return unless tk[:text] =~ /\s*:?([\w-]+):\s*(.*)/
+        return unless tk[:text] =~ /:?\b([\w-]+):\s*(.*)/
 
         directive = $1.downcase
 
