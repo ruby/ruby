@@ -435,7 +435,8 @@ module SyncDefaultGems
     |\.git.*
     |[A-Z]\w+file
     |COPYING
-    |rakelib\/.*
+    |\Arakelib\/.*
+    |\Atest\/lib\/.*
     )\z/mx
 
   def message_filter(repo, sha, input: ARGF)
@@ -583,8 +584,9 @@ module SyncDefaultGems
         next
       end
 
-      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/")
+      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/ rakelib/")
       unless tools.empty?
+        system(*%W"git rm --", *tools)
         system(*%W"git checkout HEAD~ --", *tools)
         if system(*%W"git diff --quiet HEAD~")
           `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
