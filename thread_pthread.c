@@ -725,7 +725,7 @@ setup_ubf(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
 static bool timer_thread_cancel_waiting(rb_thread_t *th);
 
 static void
-ubf_tt_waiting(void *ptr)
+ubf_event_waiting(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     struct rb_thread_sched *sched = TH_SCHED(th);
@@ -770,7 +770,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
         RUBY_DEBUG_LOG("wait fd:%d", fd);
 
         RB_VM_SAVE_MACHINE_CONTEXT(th);
-        setup_ubf(th, ubf_tt_waiting, (void *)th);
+        setup_ubf(th, ubf_event_waiting, (void *)th);
 
         thread_sched_lock(sched, th);
         {
@@ -2567,16 +2567,31 @@ timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
 }
 
 static void
+timer_thread_wakeup_thread(rb_thread_t *th)
+{
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+    struct rb_thread_sched *sched = TH_SCHED(th);
+
+    thread_sched_lock(sched, th);
+    {
+        if (sched->running != th) {
+            thread_sched_to_ready_common(sched, th, true);
+        }
+        else {
+            // will be release the execution right
+        }
+    }
+    thread_sched_unlock(sched, th);
+}
+
+static void
 timer_thread_check_timeout(rb_vm_t *vm)
 {
     rb_hrtime_t now = rb_hrtime_now();
     rb_thread_t *th;
 
     while ((th = timer_thread_deq_wakeup(vm, now)) != NULL) {
-        // wakeup th
-        RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
-        struct rb_thread_sched *sched = TH_SCHED(th);
-        thread_sched_to_ready(sched, th, true);
+        timer_thread_wakeup_thread(th);
     }
 }
 
@@ -2706,14 +2721,7 @@ timer_thread_func(void *ptr)
                     rb_native_mutex_unlock(&timer_th.waiting_lock);
 
                     if (waiting_flags) {
-                        struct rb_thread_sched *sched = TH_SCHED(th);
-                        thread_sched_lock(sched, th);
-                        {
-                            if (th->status == THREAD_STOPPED_FOREVER) {
-                                thread_sched_to_ready_common(sched, th, true);
-                            }
-                        }
-                        thread_sched_unlock(sched, th);
+                        timer_thread_wakeup_thread(th);
                     }
                 }
             }
