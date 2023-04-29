@@ -1196,7 +1196,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         kprintf("\n");
     }
 
-    {
+    if (0) { // TODO: FIXME: disable memmap because it prints so many lines
 #ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
