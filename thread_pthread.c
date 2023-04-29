@@ -738,19 +738,18 @@ ubf_event_waiting(void *ptr)
     th->unblock.func = NULL;
     th->unblock.arg = NULL;
 
+    bool canceled = timer_thread_cancel_waiting(th);
+
     thread_sched_lock(sched, th);
     {
         if (sched->running == th) {
-            // not sleeping yet.
-            // interrupt flag is enough
+            RUBY_DEBUG_LOG("not waiting yet");
+        }
+        else if (canceled) {
+            thread_sched_to_ready_common(sched, th, true);
         }
         else {
-            if (timer_thread_cancel_waiting(th)) {
-                thread_sched_to_ready_common(sched, th, true);
-            }
-            else {
-                RUBY_DEBUG_LOG("already not waiting");
-            }
+            RUBY_DEBUG_LOG("already not waiting");
         }
     }
     thread_sched_unlock(sched, th);
@@ -764,7 +763,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 {
     VM_ASSERT(!th_has_dedicated_nt(th));
 
-    volatile bool timedout = false;
+    volatile bool timedout = false, need_cancel = false;
 
     if (timer_thread_register_waiting(th, fd, events, rel)) {
         RUBY_DEBUG_LOG("wait fd:%d", fd);
@@ -774,15 +773,13 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
         thread_sched_lock(sched, th);
         {
-            if (RUBY_VM_INTERRUPTED(th->ec)) {
-                RUBY_DEBUG_LOG("interrupted");
-                timer_thread_cancel_waiting(th);
-            }
-            else if (th->sched.waiting_reason.flags == thread_sched_waiting_none) {
+            if (th->sched.waiting_reason.flags == thread_sched_waiting_none) {
                 // already awaken
             }
+            else if (RUBY_VM_INTERRUPTED(th->ec)) {
+                need_cancel = true;
+            }
             else {
-                // wait for wakeup
                 RUBY_DEBUG_LOG("sleep");
 
                 th->status = THREAD_STOPPED_FOREVER;
@@ -791,9 +788,14 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
                 RUBY_DEBUG_LOG("wakeup");
             }
+
             timedout = th->sched.waiting_reason.data.result == 0;
         }
         thread_sched_unlock(sched, th);
+
+        if (need_cancel) {
+            timer_thread_cancel_waiting(th);
+        }
 
         setup_ubf(th, NULL, NULL); // TODO: maybe it is already NULL?
 
@@ -2540,30 +2542,25 @@ timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
 static rb_thread_t *
 timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
 {
-    rb_thread_t *timeout_th = NULL;
+    rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
 
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        rb_thread_t *th = ccan_list_top(&timer_th.waiting, rb_thread_t, sched.waiting_reason.node);
-        if (th != NULL &&
-            (th->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
-            timer_thread_check_exceed(th->sched.waiting_reason.data.timeout, now)) {
+    if (th != NULL &&
+        (th->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
+        timer_thread_check_exceed(th->sched.waiting_reason.data.timeout, now)) {
 
-            RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
+        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
 
-            // delete from waiting list
-            ccan_list_del_init(&th->sched.waiting_reason.node);
+        // delete from waiting list
+        ccan_list_del_init(&th->sched.waiting_reason.node);
 
-            // setup result
-            th->sched.waiting_reason.flags = thread_sched_waiting_none;
-            th->sched.waiting_reason.data.result = 0;
+        // setup result
+        th->sched.waiting_reason.flags = thread_sched_waiting_none;
+        th->sched.waiting_reason.data.result = 0;
 
-            timeout_th = th;
-        }
+        return th;
     }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
 
-    return timeout_th;
+    return NULL;
 }
 
 static void
@@ -2590,9 +2587,13 @@ timer_thread_check_timeout(rb_vm_t *vm)
     rb_hrtime_t now = rb_hrtime_now();
     rb_thread_t *th;
 
-    while ((th = timer_thread_deq_wakeup(vm, now)) != NULL) {
-        timer_thread_wakeup_thread(th);
+    rb_native_mutex_lock(&timer_th.waiting_lock);
+    {
+        while ((th = timer_thread_deq_wakeup(vm, now)) != NULL) {
+            timer_thread_wakeup_thread(th);
+        }
     }
+    rb_native_mutex_unlock(&timer_th.waiting_lock);
 }
 
 void
@@ -2699,13 +2700,9 @@ timer_thread_func(void *ptr)
                                    (events & EPOLLERR) ? "err/" : "",
                                    (events & EPOLLHUP) ? "hup/" : "");
 
-                    enum thread_sched_waiting_flag waiting_flags;
-
                     rb_native_mutex_lock(&timer_th.waiting_lock);
                     {
-                        waiting_flags = th->sched.waiting_reason.flags;
-
-                        if (waiting_flags) {
+                        if (th->sched.waiting_reason.flags) {
                             // delete from chain
                             ccan_list_del_init(&th->sched.waiting_reason.node);
                             timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd);
@@ -2713,16 +2710,14 @@ timer_thread_func(void *ptr)
                             th->sched.waiting_reason.flags = thread_sched_waiting_none;
                             th->sched.waiting_reason.data.fd = -1;
                             th->sched.waiting_reason.data.result = (int)events;
+
+                            timer_thread_wakeup_thread(th);
                         }
                         else {
                             // already released
                         }
                     }
                     rb_native_mutex_unlock(&timer_th.waiting_lock);
-
-                    if (waiting_flags) {
-                        timer_thread_wakeup_thread(th);
-                    }
                 }
             }
         }
