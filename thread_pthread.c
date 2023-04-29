@@ -2684,28 +2684,37 @@ timer_thread_func(void *ptr)
                                    (events & EPOLLERR) ? "err/" : "",
                                    (events & EPOLLHUP) ? "hup/" : "");
 
+                    enum thread_sched_waiting_flag waiting_flags;
+
                     rb_native_mutex_lock(&timer_th.waiting_lock);
                     {
-                        // delete from chain
-                        ccan_list_del_init(&th->sched.waiting_reason.node);
-                        timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd);
-                    }
-                    rb_native_mutex_unlock(&timer_th.waiting_lock);
+                        waiting_flags = th->sched.waiting_reason.flags;
 
-                    struct rb_thread_sched *sched = TH_SCHED(th);
-                    thread_sched_lock(sched, th);
-                    {
-                        if (th->sched.waiting_reason.flags != thread_sched_waiting_none) {
+                        if (waiting_flags) {
+                            // delete from chain
+                            ccan_list_del_init(&th->sched.waiting_reason.node);
+                            timer_thread_unregister_waiting(th, th->sched.waiting_reason.data.fd);
+
                             th->sched.waiting_reason.flags = thread_sched_waiting_none;
                             th->sched.waiting_reason.data.fd = -1;
                             th->sched.waiting_reason.data.result = (int)events;
+                        }
+                        else {
+                            // already released
+                        }
+                    }
+                    rb_native_mutex_unlock(&timer_th.waiting_lock);
 
+                    if (waiting_flags) {
+                        struct rb_thread_sched *sched = TH_SCHED(th);
+                        thread_sched_lock(sched, th);
+                        {
                             if (th->status == THREAD_STOPPED_FOREVER) {
                                 thread_sched_to_ready_common(sched, th, true);
                             }
                         }
+                        thread_sched_unlock(sched, th);
                     }
-                    thread_sched_unlock(sched, th);
                 }
             }
         }
