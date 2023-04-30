@@ -75,6 +75,13 @@ class RubyVM::MJIT::Compiler # :nodoc: all
     src << "#undef GET_SELF\n"
     src << "#define GET_SELF() cfp_self\n"
 
+    # Generate merged ivar guards first if needed
+    if !status.compile_info.disable_ivar_cache && using_ivar?(iseq.body)
+      src << "    if (UNLIKELY(!RB_TYPE_P(GET_SELF(), T_OBJECT))) {"
+      src << "        goto ivar_cancel;\n"
+      src << "    }\n"
+    end
+
     # Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
     # are not considered since vm_exec doesn't call jit_exec for catch tables.
     if iseq.body.param.flags.has_opt
@@ -85,13 +92,6 @@ class RubyVM::MJIT::Compiler # :nodoc: all
         src << "      case #{pc_offset}:\n"
         src << "        goto label_#{pc_offset};\n"
       end
-      src << "    }\n"
-    end
-
-    # Generate merged ivar guards first if needed
-    if !status.compile_info.disable_ivar_cache && using_ivar?(iseq.body)
-      src << "    if (UNLIKELY(!RB_TYPE_P(GET_SELF(), T_OBJECT))) {"
-      src << "        goto ivar_cancel;\n"
       src << "    }\n"
     end
 
