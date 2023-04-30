@@ -149,6 +149,8 @@ bool mjit_cancel_p = false;
 static bool mjit_compile_p = false;
 // The actual number of units in active_units
 static int active_units_length = 0;
+// The actual number of units in compact_units
+static int compact_units_length = 0;
 
 // Priority queue of iseqs waiting for JIT compilation.
 // This variable is a pointer to head unit of the queue.
@@ -728,6 +730,7 @@ mjit_compact(struct rb_mjit_unit *unit)
     compile_prelude(f);
 
     bool success = true;
+    compact_units_length = 0;
     struct rb_mjit_unit *batch_unit = 0, *child_unit = 0;
     ccan_list_for_each(&active_units.head, batch_unit, unode) {
         ccan_list_for_each(&batch_unit->units.head, child_unit, unode) {
@@ -744,6 +747,7 @@ mjit_compact(struct rb_mjit_unit *unit)
             if (!iseq_label) iseq_label = sep = "";
             fprintf(f, "\n/* %s%s%s:%d */\n", iseq_label, sep, iseq_path, iseq_lineno);
             success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
+            compact_units_length++;
         }
     }
 
@@ -1130,7 +1134,13 @@ check_compaction(void)
     int max_compact_size = mjit_opts.max_cache_size / 100;
     if (max_compact_size < 10) max_compact_size = 10;
 
-    if (active_units_length == mjit_opts.max_cache_size) {
+    // Run JIT compaction only when it's going to add 10%+ units.
+    int throttle_threshold = active_units_length / 10;
+
+    if (compact_units.length < max_compact_size
+        && active_units_length - compact_units_length > throttle_threshold
+        && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
+            || (active_units_length == mjit_opts.max_cache_size))) {
         struct rb_mjit_unit *unit = create_unit(MJIT_UNIT_COMPACT);
 
         // Run the MJIT compiler synchronously
