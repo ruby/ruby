@@ -4249,10 +4249,7 @@ method_call	: fcall paren_args
                 | primary_value '[' opt_call_args rbracket
                     {
                     /*%%%*/
-                        if ($1 && nd_type_p($1, NODE_SELF))
-                            $$ = NEW_FCALL(tAREF, $3, &@$);
-                        else
-                            $$ = NEW_CALL($1, tAREF, $3, &@$);
+                        $$ = NEW_CALL($1, tAREF, $3, &@$);
                         fixpos($$, $1);
                     /*% %*/
                     /*% ripper: aref!($1, escape_Qundef($3)) %*/
