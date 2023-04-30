@@ -310,11 +310,13 @@ static inline void
 rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const char *file, int line)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
+
 # ifdef __APPLE__
     rb_current_ec_set(ec);
 # else
     ruby_current_ec = ec;
 # endif
+
 #else
     native_tls_set(ruby_current_ec_key, ec);
 #endif

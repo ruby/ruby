@@ -497,6 +497,12 @@ rb_current_ec_noinline(void)
     return ruby_current_ec;
 }
 
+void
+rb_current_ec_set(rb_execution_context_t *ec)
+{
+    ruby_current_ec = ec;
+}
+
 #ifdef RUBY_NT_SERIAL
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
@@ -514,7 +520,6 @@ rb_current_ec_set(rb_execution_context_t *ec)
     ruby_current_ec = ec;
 }
 #endif
-
 #else
 native_tls_key_t ruby_current_ec_key;
 #endif
