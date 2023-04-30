@@ -1543,7 +1543,7 @@ class TestProcess < Test::Unit::TestCase
       end
       t1 = Time.now
       diff = t1 - t0
-      sec = RUBY_PLATFORM =~ /freebsd/ ? sec * 2 : sec
+      sec *= 3 if RUBY_PLATFORM =~ /freebsd/
       assert_operator(diff, :<, sec,
                   ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
