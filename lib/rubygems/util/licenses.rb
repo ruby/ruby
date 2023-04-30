@@ -578,7 +578,7 @@ class Gem::Licenses
   /ox.freeze
 
   def self.match?(license)
-    !REGEXP.match(license).nil?
+    REGEXP.match?(license)
   end
 
   def self.suggestions(license)
