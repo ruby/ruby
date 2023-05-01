@@ -1205,27 +1205,8 @@ rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
 
 #endif /* RIPPER */
 
-static void
-restore_defun(struct parser_params *p, NODE *name)
-{
-    YYSTYPE c = {.val = name->nd_cval};
-    p->cur_arg = name->nd_vid;
-    p->ctxt.in_def = c.ctxt.in_def;
-    p->ctxt.shareable_constant_value = c.ctxt.shareable_constant_value;
-}
-
-static void
-endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
-{
-#ifdef RIPPER
-    defn = defn->nd_defn;
-#endif
-    ID mid = defn->nd_mid;
-    if (is_attrset_id(mid)) {
-        yyerror1(loc, "setter method cannot be defined in an endless method definition");
-    }
-    token_info_drop(p, "def", loc->beg_pos);
-}
+static void restore_defun(struct parser_params *p, NODE *name);
+static void endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *name_loc, const YYLTYPE *def_loc);
 
 #define debug_token_line(p, name, line) do { \
         if (p->debug) { \
@@ -1906,7 +1887,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     }
                 | defn_head f_opt_paren_args '=' endless_command
                     {
-                        endless_method_name(p, $<node>1, &@1);
+                        endless_method_name(p, $<node>1, &@1, &@$);
                         restore_defun(p, $<node>1->nd_defn);
                     /*%%%*/
                         $$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -1916,7 +1897,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     }
                 | defs_head f_opt_paren_args '=' endless_command
                     {
-                        endless_method_name(p, $<node>1, &@1);
+                        endless_method_name(p, $<node>1, &@1, &@$);
                         restore_defun(p, $<node>1->nd_defn);
                     /*%%%*/
                         $$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -2835,7 +2816,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     }
                 | defn_head f_opt_paren_args '=' endless_arg
                     {
-                        endless_method_name(p, $<node>1, &@1);
+                        endless_method_name(p, $<node>1, &@1, &@$);
                         restore_defun(p, $<node>1->nd_defn);
                     /*%%%*/
                         $$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -2845,7 +2826,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     }
                 | defs_head f_opt_paren_args '=' endless_arg
                     {
-                        endless_method_name(p, $<node>1, &@1);
+                        endless_method_name(p, $<node>1, &@1, &@$);
                         restore_defun(p, $<node>1->nd_defn);
                     /*%%%*/
                         $$ = set_defun_body(p, $1, $2, $4, &@$);
@@ -6404,6 +6385,31 @@ parser_precise_mbclen(struct parser_params *p, const char *ptr)
         return -1;
     }
     return len;
+}
+
+static void
+restore_defun(struct parser_params *p, NODE *name)
+{
+    YYSTYPE c = {.val = name->nd_cval};
+    p->cur_arg = name->nd_vid;
+    p->ctxt.in_def = c.ctxt.in_def;
+    p->ctxt.shareable_constant_value = c.ctxt.shareable_constant_value;
+}
+
+static void
+endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *name_loc, const YYLTYPE *def_loc)
+{
+#ifdef RIPPER
+    defn = defn->nd_defn;
+#endif
+    ID mid = defn->nd_mid;
+    if (is_attrset_id(mid)) {
+        yyerror1(name_loc, "setter method cannot be defined in an endless method definition");
+    }
+    if (def_loc->beg_pos.lineno != def_loc->end_pos.lineno) {
+        rb_warn0L(def_loc->beg_pos.lineno, "end-less method definition accross newlines");
+    }
+    token_info_drop(p, "def", name_loc->beg_pos);
 }
 
 #ifndef RIPPER
