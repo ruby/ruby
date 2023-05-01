@@ -245,21 +245,17 @@ pub enum JCCKinds {
     JCC_JNA,
 }
 
-macro_rules! gen_counter_incr {
-    ($asm:tt, $counter_name:ident) => {
-        if (get_option!(gen_stats)) {
-            // Get a pointer to the counter variable
-            let ptr = ptr_to_counter!($counter_name);
+#[inline(always)]
+fn gen_counter_incr(asm: &mut Assembler, counter: Counter) {
+    if get_option!(gen_stats) {
+        asm.comment(&format!("increment counter {}", counter.get_name()));
+        let ptr = get_counter_ptr(&counter.get_name());
+        let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
+        let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
-            // Load the pointer into a register
-            $asm.comment(&format!("increment counter {}", stringify!($counter_name)));
-            let ptr_reg = $asm.load(Opnd::const_ptr(ptr as *const u8));
-            let counter_opnd = Opnd::mem(64, ptr_reg, 0);
-
-            // Increment and store the updated value
-            $asm.incr_counter(counter_opnd, Opnd::UImm(1));
-        }
-    };
+        // Increment and store the updated value
+        asm.incr_counter(counter_opnd, Opnd::UImm(1));
+    }
 }
 
 // Save the incremented PC on the CFP
@@ -412,7 +408,7 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
-    gen_counter_incr!(asm, exit_from_branch_stub);
+    gen_counter_incr(&mut asm, Counter::exit_from_branch_stub);
 
     asm.comment("exit from branch stub");
     asm.cpop_into(SP);
@@ -575,7 +571,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     );
 
     // Count the exit
-    gen_counter_incr!(asm, traced_cfunc_return);
+    gen_counter_incr(&mut asm, Counter::traced_cfunc_return);
 
     // Return to the interpreter
     asm.cpop_into(SP);
@@ -603,7 +599,7 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     let ret_opnd = asm.live_reg_opnd(C_RET_OPND);
 
     // Every exit to the interpreter should be counted
-    gen_counter_incr!(asm, leave_interp_return);
+    gen_counter_incr(&mut asm, Counter::leave_interp_return);
 
     asm.comment("exit from leave");
     asm.cpop_into(SP);
@@ -857,7 +853,7 @@ pub fn gen_single_block(
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
             // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr!(asm, exec_instruction);
+            gen_counter_incr(&mut asm, Counter::exec_instruction);
 
             // Add a comment for the name of the YARV instruction
             asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
@@ -1479,13 +1475,13 @@ fn gen_expandarray(
 
     // If this instruction has the splat flag, then bail out.
     if flag & 0x01 != 0 {
-        gen_counter_incr!(asm, expandarray_splat);
+        gen_counter_incr(asm, Counter::expandarray_splat);
         return None;
     }
 
     // If this instruction has the postarg flag, then bail out.
     if flag & 0x02 != 0 {
-        gen_counter_incr!(asm, expandarray_postarg);
+        gen_counter_incr(asm, Counter::expandarray_postarg);
         return None;
     }
 
@@ -1977,7 +1973,7 @@ fn gen_get_ivar(
     // Use a general C call at the last chain to avoid exits on megamorphic shapes
     let last_chain = asm.ctx.get_chain_depth() as i32 == max_chain_depth - 1;
     if last_chain {
-        gen_counter_incr!(asm, get_ivar_max_depth);
+        gen_counter_incr(asm, Counter::get_ivar_max_depth);
     }
 
     // If the class uses the default allocator, instances should all be T_OBJECT
@@ -2168,7 +2164,7 @@ fn gen_setinstancevariable(
     // If the comptime receiver is frozen, writing an IV will raise an exception
     // and we don't want to JIT code to deal with that situation.
     if comptime_receiver.is_frozen() {
-        gen_counter_incr!(asm, setivar_frozen);
+        gen_counter_incr(asm, Counter::setivar_frozen);
         return None;
     }
 
@@ -2863,7 +2859,7 @@ fn gen_opt_aref(
 
     // Only JIT one arg calls like `ary[6]`
     if argc != 1 {
-        gen_counter_incr!(asm, opt_aref_argc_not_one);
+        gen_counter_incr(asm, Counter::opt_aref_argc_not_one);
         return None;
     }
 
@@ -4934,13 +4930,13 @@ fn gen_send_cfunc(
 
     // If the function expects a Ruby array of arguments
     if cfunc_argc < 0 && cfunc_argc != -1 {
-        gen_counter_incr!(asm, send_cfunc_ruby_array_varg);
+        gen_counter_incr(asm, Counter::send_cfunc_ruby_array_varg);
         return None;
     }
 
     // We aren't handling a vararg cfuncs with splat currently.
     if flags & VM_CALL_ARGS_SPLAT != 0 && cfunc_argc == -1 {
-        gen_counter_incr!(asm, send_args_splat_cfunc_var_args);
+        gen_counter_incr(asm, Counter::send_args_splat_cfunc_var_args);
         return None;
     }
 
@@ -4949,7 +4945,7 @@ fn gen_send_cfunc(
         // They are also marked as splat, but don't actually have an array
         // they pull arguments from, instead we need to change to call
         // a different method with the current stack.
-        gen_counter_incr!(asm, send_args_splat_cfunc_zuper);
+        gen_counter_incr(asm, Counter::send_args_splat_cfunc_zuper);
         return None;
     }
 
@@ -4961,7 +4957,7 @@ fn gen_send_cfunc(
     if unsafe {
         get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
     } {
-        gen_counter_incr!(asm, send_args_splat_cfunc_ruby2_keywords);
+        gen_counter_incr(asm, Counter::send_args_splat_cfunc_ruby2_keywords);
         return None;
     }
 
@@ -4973,13 +4969,13 @@ fn gen_send_cfunc(
     };
 
     if kw_arg_num != 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_cfunc_splat_with_kw);
+        gen_counter_incr(asm, Counter::send_cfunc_splat_with_kw);
         return None;
     }
 
     if c_method_tracing_currently_enabled(jit) {
         // Don't JIT if tracing c_call or c_return
-        gen_counter_incr!(asm, send_cfunc_tracing);
+        gen_counter_incr(asm, Counter::send_cfunc_tracing);
         return None;
     }
 
@@ -5020,13 +5016,13 @@ fn gen_send_cfunc(
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {
-        gen_counter_incr!(asm, send_cfunc_argc_mismatch);
+        gen_counter_incr(asm, Counter::send_cfunc_argc_mismatch);
         return None;
     }
 
     // Don't JIT functions that need C stack arguments for now
     if cfunc_argc >= 0 && passed_argc + 1 > (C_ARG_OPNDS.len() as i32) {
-        gen_counter_incr!(asm, send_cfunc_toomany_args);
+        gen_counter_incr(asm, Counter::send_cfunc_toomany_args);
         return None;
     }
 
@@ -5045,7 +5041,7 @@ fn gen_send_cfunc(
             // Nothing to do
         }
         _ => {
-            gen_counter_incr!(asm, send_block_arg);
+            gen_counter_incr(asm, Counter::send_block_arg);
             return None;
         }
     }
@@ -5073,7 +5069,7 @@ fn gen_send_cfunc(
         let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
         // + 1 because we pass self
         if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
-            gen_counter_incr!(asm, send_cfunc_toomany_args);
+            gen_counter_incr(asm, Counter::send_cfunc_toomany_args);
             return None;
         }
 
@@ -5411,14 +5407,14 @@ fn gen_send_bmethod(
     // Optimize for single ractor mode and avoid runtime check for
     // "defined with an un-shareable Proc in a different Ractor"
     if !assume_single_ractor_mode(jit, asm, ocb) {
-        gen_counter_incr!(asm, send_bmethod_ractor);
+        gen_counter_incr(asm, Counter::send_bmethod_ractor);
         return None;
     }
 
     // Passing a block to a block needs logic different from passing
     // a block to a method and sometimes requires allocation. Bail for now.
     if block.is_some() {
-        gen_counter_incr!(asm, send_bmethod_block_arg);
+        gen_counter_incr(asm, Counter::send_bmethod_block_arg);
         return None;
     }
 
@@ -5449,100 +5445,10 @@ fn gen_send_iseq(
     // stack pointer.
     let doing_kw_call = unsafe { get_iseq_flags_has_kw(iseq) };
     let supplying_kws = unsafe { vm_ci_flag(ci) & VM_CALL_KWARG } != 0;
-
-    if unsafe { vm_ci_flag(ci) } & VM_CALL_TAILCALL != 0 {
-        // We can't handle tailcalls
-        gen_counter_incr!(asm, send_iseq_tailcall);
-        return None;
-    }
-
-    // Reject ISEQs with very large temp stacks,
-    // this will allow us to use u8/i8 values to track stack_size and sp_offset
-    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
-    if stack_max >= i8::MAX as u32 {
-        incr_counter!(iseq_stack_too_large);
-        return None;
-    }
-
-    // No support for callees with these parameters yet as they require allocation
-    // or complex handling.
-    if unsafe { get_iseq_flags_has_post(iseq) } {
-        gen_counter_incr!(asm, send_iseq_has_post);
-        return None;
-    }
-    if unsafe { get_iseq_flags_has_kwrest(iseq) } {
-        gen_counter_incr!(asm, send_iseq_has_kwrest);
-        return None;
-    }
-
-    // In order to handle backwards compatibility between ruby 3 and 2
-    // ruby2_keywords was introduced. It is called only on methods
-    // with splat and changes they way they handle them.
-    // We are just going to not compile these.
-    // https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
-    if unsafe {
-        get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
-    } {
-        gen_counter_incr!(asm, send_iseq_ruby2_keywords);
-        return None;
-    }
-
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
-
-    if iseq_has_rest && captured_opnd.is_some() {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_captured);
-        return None;
-    }
-
-    if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_send);
-        return None;
-    }
-
-    if iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } && supplying_kws {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_kw_supplied);
-        return None;
-    }
-
-    // If we have keyword arguments being passed to a callee that only takes
-    // positionals, then we need to allocate a hash. For now we're going to
-    // call that too complex and bail.
-    if supplying_kws && !unsafe { get_iseq_flags_has_kw(iseq) } {
-        gen_counter_incr!(asm, send_iseq_has_no_kw);
-        return None;
-    }
-
-    // If we have a method accepting no kwargs (**nil), exit if we have passed
-    // it any kwargs.
-    if supplying_kws && unsafe { get_iseq_flags_accepts_no_kwarg(iseq) } {
-        gen_counter_incr!(asm, send_iseq_accepts_no_kwarg);
-        return None;
-    }
 
     // For computing number of locals to set up for the callee
     let mut num_params = unsafe { get_iseq_body_param_size(iseq) };
-
-    // Block parameter handling. This mirrors setup_parameters_complex().
-    if unsafe { get_iseq_flags_has_block(iseq) } {
-        if unsafe { get_iseq_body_local_iseq(iseq) == iseq } {
-            num_params -= 1;
-        } else {
-            // In this case (param.flags.has_block && local_iseq != iseq),
-            // the block argument is setup as a local variable and requires
-            // materialization (allocation). Bail.
-            gen_counter_incr!(asm, send_iseq_materialized_block);
-            return None;
-        }
-    }
-
-    if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
-        // zsuper methods are super calls without any arguments.
-        // They are also marked as splat, but don't actually have an array
-        // they pull arguments from, instead we need to change to call
-        // a different method with the current stack.
-        gen_counter_incr!(asm, send_iseq_zsuper);
-        return None;
-    }
 
     let mut start_pc_offset: u16 = 0;
     let required_num = unsafe { get_iseq_body_param_lead_num(iseq) };
@@ -5567,22 +5473,6 @@ fn gen_send_iseq(
     }
     let mut opts_missing: i32 = opt_num - opts_filled;
 
-    if doing_kw_call && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_iseq_splat_with_kw);
-        return None;
-    }
-
-    if opts_filled < 0 && flags & VM_CALL_ARGS_SPLAT == 0 {
-        // Too few arguments and no splat to make up for it
-        gen_counter_incr!(asm, send_iseq_arity_error);
-        return None;
-    }
-
-    if opts_filled > opt_num && !iseq_has_rest {
-        // Too many arguments and no place to put them (i.e. rest arg)
-        gen_counter_incr!(asm, send_iseq_arity_error);
-        return None;
-    }
 
     let block_arg = flags & VM_CALL_ARGS_BLOCKARG != 0;
     let block_arg_type = if block_arg {
@@ -5591,30 +5481,34 @@ fn gen_send_iseq(
         None
     };
 
-    if iseq_has_rest && opt_num != 0 && (unsafe { get_iseq_flags_has_block(iseq) } || block_arg) {
-        gen_counter_incr!(asm, send_iseq_has_rest_opt_and_block);
-        return None;
-    }
+    exit_if_stack_too_large(iseq)?;
+    exit_if_tail_call(asm, ci)?;
+    exit_if_has_post(asm, iseq)?;
+    exit_if_has_kwrest(asm, iseq)?;
+    exit_if_splat_and_ruby2_keywords(asm, jit, flags)?;
+    exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
+    exit_if_has_rest_and_send(asm, iseq_has_rest, flags)?;
+    exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
+    exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
+    exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
+    exit_if_splat_and_zsuper(asm, flags)?;
+    exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
+    exit_if_wrong_number_arguments(asm, opts_filled, flags, opt_num, iseq_has_rest)?;
+    exit_if_doing_kw_and_opts_missing(asm, doing_kw_call, opts_missing)?;
+    exit_if_has_rest_and_optional_and_block(asm, iseq_has_rest, opt_num, iseq, block_arg)?;
+    exit_if_unsupported_block_arg_type(asm, block_arg_type)?;
 
-    match block_arg_type {
-        Some(Type::Nil | Type::BlockParamProxy) => {
-            // We'll handle this later
-        }
-        None => {
-            // Nothing to do
-        }
-        _ => {
-            gen_counter_incr!(asm, send_block_arg);
+    // Block parameter handling. This mirrors setup_parameters_complex().
+    if unsafe { get_iseq_flags_has_block(iseq) } {
+        if unsafe { get_iseq_body_local_iseq(iseq) == iseq } {
+            num_params -= 1;
+        } else {
+            // In this case (param.flags.has_block && local_iseq != iseq),
+            // the block argument is setup as a local variable and requires
+            // materialization (allocation). Bail.
+            gen_counter_incr(asm, Counter::send_iseq_materialized_block);
             return None;
         }
-    }
-
-    // If we have unfilled optional arguments and keyword arguments then we
-    // would need to adjust the arguments location to account for that.
-    // For now we aren't handling this case.
-    if doing_kw_call && opts_missing > 0 {
-        gen_counter_incr!(asm, send_iseq_missing_optional_kw);
-        return None;
     }
 
     // We will handle splat case later
@@ -5642,7 +5536,7 @@ fn gen_send_iseq(
             // We have so many keywords that (1 << num) encoded as a FIXNUM
             // (which shifts it left one more) no longer fits inside a 32-bit
             // immediate.
-            gen_counter_incr!(asm, send_iseq_too_many_kwargs);
+            gen_counter_incr(asm, Counter::send_iseq_too_many_kwargs);
             return None;
         }
 
@@ -5680,7 +5574,7 @@ fn gen_send_iseq(
                         // If the keyword was never found, then we know we have a
                         // mismatch in the names of the keyword arguments, so we need to
                         // bail.
-                        gen_counter_incr!(asm, send_iseq_kwargs_mismatch);
+                        gen_counter_incr(asm, Counter::send_iseq_kwargs_mismatch);
                         return None;
                     }
                     Some((callee_idx, _)) if callee_idx < keyword_required_num => {
@@ -5693,7 +5587,7 @@ fn gen_send_iseq(
         }
         assert!(required_kwargs_filled <= keyword_required_num);
         if required_kwargs_filled != keyword_required_num {
-            gen_counter_incr!(asm, send_iseq_kwargs_mismatch);
+            gen_counter_incr(asm, Counter::send_iseq_kwargs_mismatch);
             return None;
         }
     }
@@ -5707,13 +5601,13 @@ fn gen_send_iseq(
         // If block_arg0_splat, we still need side exits after splat, but
         // doing push_splat_args here disallows it. So bail out.
         if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_args_splat);
+            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_args_splat);
             return None;
         }
         // The block_arg0_splat implementation is for the rb_simple_iseq_p case,
         // but doing_kw_call means it's not a simple ISEQ.
         if doing_kw_call {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_has_kw);
             return None;
         }
     }
@@ -5727,7 +5621,7 @@ fn gen_send_iseq(
         };
 
         if opt_num == 0 && required_num != array_length as i32 + argc - 1 && !iseq_has_rest {
-            gen_counter_incr!(asm, send_iseq_splat_arity_error);
+            gen_counter_incr(asm, Counter::send_iseq_splat_arity_error);
             return None;
         }
 
@@ -5878,7 +5772,7 @@ fn gen_send_iseq(
             // we test if this is true and if not side exit.
             argc = argc - 1 + array_length as i32 + remaining_opt as i32;
             if argc + asm.ctx.get_stack_size() as i32 > MAX_SPLAT_LENGTH {
-                gen_counter_incr!(asm, send_splat_too_long);
+                gen_counter_incr(asm, Counter::send_splat_too_long);
                 return None;
             }
             push_splat_args(array_length, asm);
@@ -6280,6 +6174,161 @@ fn gen_send_iseq(
     Some(EndBlock)
 }
 
+/// This is a helper function to allow us to exit early
+/// during code generation if a predicate is true.
+/// We return Option<()> here because we will be able to
+/// short-circuit using the ? operator if we return None.
+/// It would be great if rust let you implement ? for your
+/// own types, but as of right now they don't.
+fn exit_if(asm: &mut Assembler, pred: bool, counter: Counter) -> Option<()> {
+    if pred {
+        gen_counter_incr(asm, counter);
+        return None
+    }
+    Some(())
+}
+
+#[must_use]
+fn exit_if_tail_call(asm: &mut Assembler, ci: *const rb_callinfo) -> Option<()> {
+    exit_if(asm, unsafe { vm_ci_flag(ci) } & VM_CALL_TAILCALL != 0, Counter::send_iseq_tailcall)
+}
+
+#[must_use]
+fn exit_if_has_post(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
+    exit_if(asm, unsafe { get_iseq_flags_has_post(iseq) }, Counter::send_iseq_has_post)
+}
+
+#[must_use]
+fn exit_if_has_kwrest(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
+    exit_if(asm, unsafe { get_iseq_flags_has_kwrest(iseq) }, Counter::send_iseq_has_kwrest)
+}
+
+#[must_use]
+fn exit_if_splat_and_ruby2_keywords(asm: &mut Assembler, jit: &mut JITState, flags: u32) -> Option<()> {
+    // In order to handle backwards compatibility between ruby 3 and 2
+    // ruby2_keywords was introduced. It is called only on methods
+    // with splat and changes they way they handle them.
+    // We are just going to not compile these.
+    // https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
+    exit_if(
+        asm,
+        unsafe { get_iseq_flags_ruby2_keywords(jit.iseq) } && flags & VM_CALL_ARGS_SPLAT != 0,
+        Counter::send_iseq_ruby2_keywords,
+    )
+}
+
+#[must_use]
+fn exit_if_has_rest_and_captured(asm: &mut Assembler, iseq_has_rest: bool, captured_opnd: Option<Opnd>) -> Option<()> {
+    exit_if(asm, iseq_has_rest && captured_opnd.is_some(), Counter::send_iseq_has_rest_and_captured)
+}
+
+#[must_use]
+fn exit_if_has_rest_and_send( asm: &mut Assembler, iseq_has_rest: bool, flags: u32) -> Option<()> {
+    exit_if(asm, iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0, Counter::send_iseq_has_rest_and_send)
+}
+
+#[must_use]
+fn exit_if_has_rest_and_supplying_kws(asm: &mut Assembler, iseq_has_rest: bool, iseq: *const rb_iseq_t, supplying_kws: bool) -> Option<()> {
+    exit_if(
+        asm,
+        iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } && supplying_kws,
+        Counter::send_iseq_has_rest_and_kw_supplied,
+    )
+}
+
+#[must_use]
+fn exit_if_supplying_kw_and_has_no_kw(asm: &mut Assembler, supplying_kws: bool, iseq: *const rb_iseq_t) -> Option<()> {
+    // If we have keyword arguments being passed to a callee that only takes
+    // positionals, then we need to allocate a hash. For now we're going to
+    // call that too complex and bail.
+    exit_if(
+        asm,
+        supplying_kws && !unsafe { get_iseq_flags_has_kw(iseq) },
+        Counter::send_iseq_has_no_kw,
+    )
+}
+
+#[must_use]
+fn exit_if_supplying_kws_and_accept_no_kwargs(asm: &mut Assembler, supplying_kws: bool, iseq: *const rb_iseq_t) -> Option<()> {
+    // If we have a method accepting no kwargs (**nil), exit if we have passed
+    // it any kwargs.
+    exit_if(
+        asm,
+        supplying_kws && unsafe { get_iseq_flags_accepts_no_kwarg(iseq) },
+        Counter::send_iseq_accepts_no_kwarg
+    )
+}
+
+#[must_use]
+fn exit_if_splat_and_zsuper(asm: &mut Assembler, flags: u32) -> Option<()> {
+    // zsuper methods are super calls without any arguments.
+    // They are also marked as splat, but don't actually have an array
+    // they pull arguments from, instead we need to change to call
+    // a different method with the current stack.
+    exit_if(asm, flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0, Counter::send_iseq_zsuper)
+}
+
+#[must_use]
+fn exit_if_doing_kw_and_splat(asm: &mut Assembler, doing_kw_call: bool, flags: u32) -> Option<()> {
+    exit_if(asm, doing_kw_call && flags & VM_CALL_ARGS_SPLAT != 0, Counter::send_iseq_splat_with_kw)
+}
+
+#[must_use]
+fn exit_if_wrong_number_arguments(asm: &mut Assembler, opts_filled: i32, flags: u32, opt_num: i32, iseq_has_rest: bool) -> Option<()> {
+    // Too few arguments and no splat to make up for it
+    let too_few = opts_filled < 0 && flags & VM_CALL_ARGS_SPLAT == 0;
+    // Too many arguments and no place to put them (i.e. rest arg)
+    let too_many = opts_filled > opt_num && !iseq_has_rest;
+
+    exit_if(asm, too_few || too_many, Counter::send_iseq_arity_error)
+}
+
+#[must_use]
+fn exit_if_doing_kw_and_opts_missing(asm: &mut Assembler, doing_kw_call: bool, opts_missing: i32) -> Option<()> {
+    // If we have unfilled optional arguments and keyword arguments then we
+    // would need to adjust the arguments location to account for that.
+    // For now we aren't handling this case.
+    exit_if(asm, doing_kw_call && opts_missing > 0, Counter::send_iseq_missing_optional_kw)
+}
+
+#[must_use]
+fn exit_if_has_rest_and_optional_and_block(asm: &mut Assembler, iseq_has_rest: bool, opt_num: i32, iseq: *const rb_iseq_t, block_arg: bool) -> Option<()> {
+    exit_if(
+        asm,
+        iseq_has_rest && opt_num != 0 && (unsafe { get_iseq_flags_has_block(iseq) } || block_arg),
+        Counter::send_iseq_has_rest_opt_and_block
+    )
+}
+
+#[must_use]
+fn exit_if_unsupported_block_arg_type(asm: &mut Assembler, block_arg_type: Option<Type>) -> Option<()> {
+    match block_arg_type {
+        Some(Type::Nil | Type::BlockParamProxy) => {
+            // We'll handle this later
+        }
+        None => {
+            // Nothing to do
+        }
+        _ => {
+            gen_counter_incr(asm, Counter::send_block_arg);
+            return None
+        }
+    }
+    Some(())
+}
+
+#[must_use]
+fn exit_if_stack_too_large(iseq: *const rb_iseq_t) -> Option<()> {
+    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
+    // Reject ISEQs with very large temp stacks,
+    // this will allow us to use u8/i8 values to track stack_size and sp_offset
+    if stack_max >= i8::MAX as u32 {
+        incr_counter!(iseq_stack_too_large);
+        return None;
+    }
+    Some(())
+}
+
 fn gen_struct_aref(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -6408,7 +6457,7 @@ fn gen_send_general(
 
     // Don't JIT calls with keyword splat
     if flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr!(asm, send_kw_splat);
+        gen_counter_incr(asm, Counter::send_kw_splat);
         return None;
     }
 
@@ -6440,12 +6489,12 @@ fn gen_send_general(
     }
 
     // Gather some statistics about sends
-    gen_counter_incr!(asm, num_send);
+    gen_counter_incr(asm, Counter::num_send);
     if let Some(_known_klass) = asm.ctx.get_opnd_type(recv_opnd).known_class()  {
-        gen_counter_incr!(asm, num_send_known_class);
+        gen_counter_incr(asm, Counter::num_send_known_class);
     }
     if asm.ctx.get_chain_depth() > 1 {
-        gen_counter_incr!(asm, num_send_polymorphic);
+        gen_counter_incr(asm, Counter::num_send_polymorphic);
     }
 
     jit_guard_known_klass(
@@ -6521,19 +6570,19 @@ fn gen_send_general(
             }
             VM_METHOD_TYPE_IVAR => {
                 if flags & VM_CALL_ARGS_SPLAT != 0 {
-                    gen_counter_incr!(asm, send_args_splat_ivar);
+                    gen_counter_incr(asm, Counter::send_args_splat_ivar);
                     return None;
                 }
 
                 if argc != 0 {
                     // Argument count mismatch. Getters take no arguments.
-                    gen_counter_incr!(asm, send_getter_arity);
+                    gen_counter_incr(asm, Counter::send_getter_arity);
                     return None;
                 }
 
                 // This is a .send call not supported right now for getters
                 if flags & VM_CALL_OPT_SEND != 0 {
-                    gen_counter_incr!(asm, send_send_getter);
+                    gen_counter_incr(asm, Counter::send_send_getter);
                     return None;
                 }
 
@@ -6547,14 +6596,14 @@ fn gen_send_general(
                     // attr_accessor is invalidated and we exit at the closest
                     // instruction boundary which is always outside of the body of
                     // the attr_accessor code.
-                    gen_counter_incr!(asm, send_cfunc_tracing);
+                    gen_counter_incr(asm, Counter::send_cfunc_tracing);
                     return None;
                 }
 
                 let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
 
                 if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr!(asm, send_block_arg);
+                    gen_counter_incr(asm, Counter::send_block_arg);
                     return None;
                 }
 
@@ -6571,22 +6620,22 @@ fn gen_send_general(
             }
             VM_METHOD_TYPE_ATTRSET => {
                 if flags & VM_CALL_ARGS_SPLAT != 0 {
-                    gen_counter_incr!(asm, send_args_splat_attrset);
+                    gen_counter_incr(asm, Counter::send_args_splat_attrset);
                     return None;
                 }
                 if flags & VM_CALL_KWARG != 0 {
-                    gen_counter_incr!(asm, send_attrset_kwargs);
+                    gen_counter_incr(asm, Counter::send_attrset_kwargs);
                     return None;
                 } else if argc != 1 || unsafe { !RB_TYPE_P(comptime_recv, RUBY_T_OBJECT) } {
-                    gen_counter_incr!(asm, send_ivar_set_method);
+                    gen_counter_incr(asm, Counter::send_ivar_set_method);
                     return None;
                 } else if c_method_tracing_currently_enabled(jit) {
                     // Can't generate code for firing c_call and c_return events
                     // See :attr-tracing:
-                    gen_counter_incr!(asm, send_cfunc_tracing);
+                    gen_counter_incr(asm, Counter::send_cfunc_tracing);
                     return None;
                 } else if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr!(asm, send_block_arg);
+                    gen_counter_incr(asm, Counter::send_block_arg);
                     return None;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
@@ -6596,7 +6645,7 @@ fn gen_send_general(
             // Block method, e.g. define_method(:foo) { :my_block }
             VM_METHOD_TYPE_BMETHOD => {
                 if flags & VM_CALL_ARGS_SPLAT != 0 {
-                    gen_counter_incr!(asm, send_args_splat_bmethod);
+                    gen_counter_incr(asm, Counter::send_args_splat_bmethod);
                     return None;
                 }
                 return gen_send_bmethod(jit, asm, ocb, ci, cme, block, flags, argc);
@@ -6609,7 +6658,7 @@ fn gen_send_general(
             // Send family of methods, e.g. call/apply
             VM_METHOD_TYPE_OPTIMIZED => {
                 if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr!(asm, send_block_arg);
+                    gen_counter_incr(asm, Counter::send_block_arg);
                     return None;
                 }
 
@@ -6627,12 +6676,12 @@ fn gen_send_general(
                         // currently work, we can't do stack manipulation until we will no longer
                         // side exit.
                         if flags & VM_CALL_OPT_SEND != 0 {
-                            gen_counter_incr!(asm, send_send_nested);
+                            gen_counter_incr(asm, Counter::send_send_nested);
                             return None;
                         }
 
                         if argc == 0 {
-                            gen_counter_incr!(asm, send_send_wrong_args);
+                            gen_counter_incr(asm, Counter::send_send_wrong_args);
                             return None;
                         }
 
@@ -6641,19 +6690,19 @@ fn gen_send_general(
                         let compile_time_name = jit.peek_at_stack(&asm.ctx, argc as isize);
 
                         if !compile_time_name.string_p() && !compile_time_name.static_sym_p()  {
-                            gen_counter_incr!(asm, send_send_chain_not_string_or_sym);
+                            gen_counter_incr(asm, Counter::send_send_chain_not_string_or_sym);
                             return None;
                         }
 
                         mid = unsafe { rb_get_symbol_id(compile_time_name) };
                         if mid == 0 {
-                            gen_counter_incr!(asm, send_send_null_mid);
+                            gen_counter_incr(asm, Counter::send_send_null_mid);
                             return None;
                         }
 
                         cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
                         if cme.is_null() {
-                            gen_counter_incr!(asm, send_send_null_cme);
+                            gen_counter_incr(asm, Counter::send_send_null_cme);
                             return None;
                         }
 
@@ -6714,24 +6763,24 @@ fn gen_send_general(
                     OPTIMIZED_METHOD_TYPE_CALL => {
 
                         if block.is_some() {
-                            gen_counter_incr!(asm, send_call_block);
+                            gen_counter_incr(asm, Counter::send_call_block);
                             return None;
                         }
 
                         if flags & VM_CALL_KWARG != 0 {
-                            gen_counter_incr!(asm, send_call_kwarg);
+                            gen_counter_incr(asm, Counter::send_call_kwarg);
                             return None;
                         }
 
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
-                            gen_counter_incr!(asm, send_args_splat_opt_call);
+                            gen_counter_incr(asm, Counter::send_args_splat_opt_call);
                             return None;
                         }
 
                         // Optimize for single ractor mode and avoid runtime check for
                         // "defined with an un-shareable Proc in a different Ractor"
                         if !assume_single_ractor_mode(jit, asm, ocb) {
-                            gen_counter_incr!(asm, send_call_multi_ractor);
+                            gen_counter_incr(asm, Counter::send_call_multi_ractor);
                             return None;
                         }
 
@@ -6768,12 +6817,12 @@ fn gen_send_general(
 
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
-                        gen_counter_incr!(asm, send_optimized_method_block_call);
+                        gen_counter_incr(asm, Counter::send_optimized_method_block_call);
                         return None;
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_AREF => {
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
-                            gen_counter_incr!(asm, send_args_splat_aref);
+                            gen_counter_incr(asm, Counter::send_args_splat_aref);
                             return None;
                         }
                         return gen_struct_aref(
@@ -6789,7 +6838,7 @@ fn gen_send_general(
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_ASET => {
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
-                            gen_counter_incr!(asm, send_args_splat_aset);
+                            gen_counter_incr(asm, Counter::send_args_splat_aset);
                             return None;
                         }
                         return gen_struct_aset(
@@ -6809,23 +6858,23 @@ fn gen_send_general(
                 }
             }
             VM_METHOD_TYPE_ZSUPER => {
-                gen_counter_incr!(asm, send_zsuper_method);
+                gen_counter_incr(asm, Counter::send_zsuper_method);
                 return None;
             }
             VM_METHOD_TYPE_UNDEF => {
-                gen_counter_incr!(asm, send_undef_method);
+                gen_counter_incr(asm, Counter::send_undef_method);
                 return None;
             }
             VM_METHOD_TYPE_NOTIMPLEMENTED => {
-                gen_counter_incr!(asm, send_not_implemented_method);
+                gen_counter_incr(asm, Counter::send_not_implemented_method);
                 return None;
             }
             VM_METHOD_TYPE_MISSING => {
-                gen_counter_incr!(asm, send_missing_method);
+                gen_counter_incr(asm, Counter::send_missing_method);
                 return None;
             }
             VM_METHOD_TYPE_REFINED => {
-                gen_counter_incr!(asm, send_refined_method);
+                gen_counter_incr(asm, Counter::send_refined_method);
                 return None;
             }
             _ => {
@@ -6904,7 +6953,7 @@ fn gen_invokeblock(
 
     // Handle each block_handler type
     if comptime_handler.0 == VM_BLOCK_HANDLER_NONE as usize { // no block given
-        gen_counter_incr!(asm, invokeblock_none);
+        gen_counter_incr(asm, Counter::invokeblock_none);
         None
     } else if comptime_handler.0 & 0x3 == 0x1 { // VM_BH_ISEQ_BLOCK_P
         asm.comment("get local EP");
@@ -6958,11 +7007,11 @@ fn gen_invokeblock(
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
-            gen_counter_incr!(asm, invokeblock_ifunc_args_splat);
+            gen_counter_incr(asm, Counter::invokeblock_ifunc_args_splat);
             return None;
         }
         if flags & VM_CALL_KW_SPLAT != 0 {
-            gen_counter_incr!(asm, invokeblock_ifunc_kw_splat);
+            gen_counter_incr(asm, Counter::invokeblock_ifunc_kw_splat);
             return None;
         }
 
@@ -7009,10 +7058,10 @@ fn gen_invokeblock(
         jump_to_next_insn(jit, asm, ocb);
         Some(EndBlock)
     } else if comptime_handler.symbol_p() {
-        gen_counter_incr!(asm, invokeblock_symbol);
+        gen_counter_incr(asm, Counter::invokeblock_symbol);
         None
     } else { // Proc
-        gen_counter_incr!(asm, invokeblock_proc);
+        gen_counter_incr(asm, Counter::invokeblock_proc);
         None
     }
 }
@@ -7059,15 +7108,15 @@ fn gen_invokesuper(
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
 
     if ci_flags & VM_CALL_KWARG != 0 {
-        gen_counter_incr!(asm, send_keywords);
+        gen_counter_incr(asm, Counter::send_keywords);
         return None;
     }
     if ci_flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr!(asm, send_kw_splat);
+        gen_counter_incr(asm, Counter::send_kw_splat);
         return None;
     }
     if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
-        gen_counter_incr!(asm, send_block_arg);
+        gen_counter_incr(asm, Counter::send_block_arg);
         return None;
     }
 
