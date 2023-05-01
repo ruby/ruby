@@ -1138,6 +1138,23 @@ begin
       EOC
     end
 
+    def test_rerender_multiple_dialog
+      start_terminal(20, 60, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete --dialog simple}, startup_message: 'Multiline REPL.')
+      write("if\n  abcdef\n  123456\n  456789\nend\C-p\C-p\C-p\C-p Str")
+      write("\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> if String
+        prompt>   aStringRuby is...
+        prompt>   1StructA dynamic, open source programming
+        prompt>   456789 language with a focus on simplicity
+        prompt> end      and productivity. It has an elegant
+                         syntax that is natural to read and
+                         easy to write.
+      EOC
+    end
+
     def test_autocomplete_long_with_scrollbar
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S')
@@ -1343,11 +1360,11 @@ begin
         prompt>
         prompt>
         prompt>
-        prompt>   S
         prompt>   String
         prompt>   Struct
-        prompt> enSymbol
-                  ScriptError
+        prompt>   Symbol
+        prompt> enScriptError
+                  SyntaxError
                   Signal
       EOC
     end
