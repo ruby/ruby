@@ -288,6 +288,7 @@ class Tempfile < DelegateClass(File)
       "#<#{self.class}:#{path}>"
     end
   end
+  alias to_s inspect
 
   protected
 
