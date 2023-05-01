@@ -1670,6 +1670,8 @@ eom
         assert_raise(NameError) {eval("_1")},
       ]
     }
+
+    assert_valid_syntax("proc {def foo(_);end;_1}")
   end
 
   def test_value_expr_in_condition
