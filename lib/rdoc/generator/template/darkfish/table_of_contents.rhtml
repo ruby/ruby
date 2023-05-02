@@ -36,8 +36,9 @@
    unless table.empty? then %>
     <ul>
 <%- table.each do |item| -%>
-      <li><a href="<%= klass.path %>#<%= item.label(klass) %>"><%= item.plain_html %></a>
-<%-   end -%>
+<%-   label = item.respond_to?(:label) ? item.label(klass) : item.aref -%>
+      <li><a href="<%= klass.path %>#<%= label %>"><%= item.plain_html %></a>
+<%- end -%>
     </ul>
 <%- end -%>
   </li>
