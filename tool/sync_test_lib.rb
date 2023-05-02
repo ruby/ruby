@@ -76,6 +76,12 @@ repos.each do |repo|
       system "git add #{file}"
     end
 
+    rf = File.binread("Rakefile")
+    if rf.sub!(/(?>\A|(\n)\n*)task +:sync_tool +do\n(?>(?> .*)?\n)*end\n(?=\z|(\n))/) {$1&&$2}
+      File.binwrite("Rakefile", rf)
+      system "git add Rakefile"
+    end
+
     if IO.popen(%W"git commit -m #{title}\n\n#{message}", &:read).chomp =~ /nothing to commit/
       puts "#{repo}: nothing to update"
     elsif update
