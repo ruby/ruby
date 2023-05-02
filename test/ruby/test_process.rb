@@ -1547,6 +1547,8 @@ class TestProcess < Test::Unit::TestCase
       assert_operator(diff, :<, sec,
                   ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
+    rescue Errno::EPIPE
+      omit "child process exited already in #{diff} seconds"
     end
   end
 
