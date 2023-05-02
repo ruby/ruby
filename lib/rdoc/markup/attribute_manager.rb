@@ -1,19 +1,19 @@
 # frozen_string_literal: true
+
 ##
 # Manages changes of attributes in a block of text
 
-unless MatchData.method_defined?(:match_length)
-  using Module.new {
-    refine(MatchData) {
-      def match_length(nth)
-        b, e = offset(nth)
-        e - b if b
-      end
-    }
-  }
-end
-
 class RDoc::Markup::AttributeManager
+  unless ::MatchData.method_defined?(:match_length)
+    using ::Module.new {
+      refine(::MatchData) {
+        def match_length(nth) # :nodoc:
+          b, e = offset(nth)
+          e - b if b
+        end
+      }
+    }
+  end
 
   ##
   # The NUL character
