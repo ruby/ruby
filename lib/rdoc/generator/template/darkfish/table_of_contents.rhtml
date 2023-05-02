@@ -36,7 +36,7 @@
    unless table.empty? then %>
     <ul>
 <%- table.each do |item| -%>
-      <li><a href="<%= klass.path %>#<%= item.aref %>"><%= item.plain_html %></a>
+      <li><a href="<%= klass.path %>#<%= item.label(klass) %>"><%= item.plain_html %></a>
 <%-   end -%>
     </ul>
 <%- end -%>
