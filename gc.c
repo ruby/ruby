@@ -1007,11 +1007,11 @@ asan_unlock_freelist(struct heap_page *page)
 /* Aliases */
 #define rb_objspace (*rb_objspace_of(GET_VM()))
 #define rb_objspace_of(vm) ((vm)->objspace)
-#define rb_objspace_ptr() \
-  ({ \
-    rb_vm_t *rb_objspace_ptr_vm = GET_VM(); \
-    (UNLIKELY(rb_objspace_ptr_vm == NULL)) ? NULL : ((rb_objspace_ptr_vm)->objspace); \
-  })
+#define unless_objspace(objspace) \
+    rb_objspace_t *objspace; \
+    rb_vm_t *unless_objspace_vm = GET_VM(); \
+    if (unless_objspace_vm) objspace = unless_objspace_vm->objspace; \
+    else /* return; or objspace will be warned uninitialized */
 
 #define ruby_initial_gc_stress	gc_params.gc_stress
 
@@ -10919,7 +10919,7 @@ rb_gc_start(void)
 void
 rb_gc(void)
 {
-    rb_objspace_t *objspace = rb_objspace_ptr();
+    unless_objspace(objspace) { return; }
     if (!objspace) return;
     unsigned int reason = GPR_DEFAULT_REASON;
     garbage_collect(objspace, reason);
@@ -10928,8 +10928,7 @@ rb_gc(void)
 int
 rb_during_gc(void)
 {
-    rb_objspace_t *objspace = rb_objspace_ptr();
-    if (!objspace) return FALSE;
+    unless_objspace(objspace) { return FALSE; }
     return during_gc;
 }
 
@@ -12747,8 +12746,7 @@ gc_malloc_allocations(VALUE self)
 void
 rb_gc_adjust_memory_usage(ssize_t diff)
 {
-    rb_objspace_t *objspace = rb_objspace_ptr();
-    if (objspace == NULL) return;
+    unless_objspace(objspace) { return; }
 
     if (diff > 0) {
         objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC);
