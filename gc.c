@@ -10920,7 +10920,6 @@ void
 rb_gc(void)
 {
     unless_objspace(objspace) { return; }
-    if (!objspace) return;
     unsigned int reason = GPR_DEFAULT_REASON;
     garbage_collect(objspace, reason);
 }
