@@ -3,10 +3,7 @@ require 'test/unit'
 require 'uri/http'
 require 'uri/https'
 
-module URI
-
-
-class TestHTTP < Test::Unit::TestCase
+class URI::TestHTTP < Test::Unit::TestCase
   def setup
   end
 
@@ -81,7 +78,4 @@ class TestHTTP < Test::Unit::TestCase
     assert_equal('http://a.b.c', URI.parse('http://a.b.c:80/').origin)
     assert_equal('https://a.b.c', URI.parse('https://a.b.c/').origin)
   end
-end
-
-
 end

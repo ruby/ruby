@@ -3,10 +3,7 @@ require 'test/unit'
 require 'envutil'
 require 'uri'
 
-module URI
-
-
-class TestCommon < Test::Unit::TestCase
+class URI::TestCommon < Test::Unit::TestCase
   def setup
   end
 
@@ -291,7 +288,4 @@ class TestCommon < Test::Unit::TestCase
 
   private
   def s(str) str.force_encoding(Encoding::Windows_31J); end
-end
-
-
 end
