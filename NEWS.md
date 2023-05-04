@@ -107,6 +107,14 @@ changelog for details of the default gems or bundled gems.
   * `--trace-exits-sample-rate=N`
 * Multiple bug fixes
 
+### RJIT
+
+* Introduced a pure-Ruby JIT compiler RJIT and replaced MJIT.
+  * RJIT supports only x86\_64 architecture on Unix platforms.
+  * Unlike MJIT, it doesn't require a C compiler at runtime.
+* RJIT exists only for experimental purposes.
+  * You should keep using YJIT in production.
+
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
