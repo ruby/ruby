@@ -86,7 +86,18 @@ changelog for details of the default gems or bundled gems.
 
 ## Implementation improvements
 
-## JIT
+* `defined?(@ivar)` is optimized with Object Shapes.
+
+### YJIT
+
+* Metadata for compiled code uses a lot less memory.
+* Splat and rest arguments support has been improved.
+* Registers are allocated for stack operations of the virtual machine.
+* More calls with optional arguments are compiled.
+* `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
+  `Kernel#instance_of?`, `Module#===` are specially optimized.
+* Instance variables no longer exit to the interpreter
+  with megamorphic Object Shapes.
 
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
