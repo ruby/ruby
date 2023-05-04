@@ -287,8 +287,8 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
-  def test_dump_too_complex_shape
-    if defined?(RubyVM::Shape)
+  if defined?(RubyVM::Shape)
+    def test_dump_too_complex_shape
       RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
         Object.new.instance_variable_set(:"@a#{_1}", 1)
       end
