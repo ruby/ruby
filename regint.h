@@ -909,7 +909,7 @@ typedef struct {
   uint64_t end_time;
 #endif
 #ifdef USE_MATCH_CACHE
-  int              enable_match_cache;
+  int              match_cache_status;
   long             num_fails;
   long             num_cache_opcodes;
   OnigCacheOpcode* cache_opcodes;
@@ -918,8 +918,13 @@ typedef struct {
 #endif
 } OnigMatchArg;
 
+#define NUM_CACHE_OPCODES_UNINIT      1
 #define NUM_CACHE_OPCODES_IMPOSSIBLE -1
-#define NUM_CACHE_OPCODES_UNINIT     -2
+
+#define MATCH_CACHE_STATUS_UNINIT    1
+#define MATCH_CACHE_STATUS_INIT      2
+#define MATCH_CACHE_STATUS_DISABLED -1
+#define MATCH_CACHE_STATUS_ENABLED   0
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))
