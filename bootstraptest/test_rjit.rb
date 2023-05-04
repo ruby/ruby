@@ -28,3 +28,17 @@ assert_equal 'bar', %q{
 
   bar(Struct.new(:bar).new(:bar))
 }
+
+# kwargs default w/ checkkeyword + locals (which shouldn't overwrite unspecified_bits)
+assert_equal '1', %q{
+  def foo(bar: 1.to_s)
+    _ = 1
+    bar
+  end
+
+  def entry
+    foo
+  end
+
+  entry
+}

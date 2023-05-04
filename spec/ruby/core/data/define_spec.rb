@@ -9,18 +9,28 @@ ruby_version_is "3.2" do
     end
 
     it "accepts symbols" do
-      movie_with_symbol = Data.define(:title, :year)
-      movie_with_symbol.members.should == [:title, :year]
+      movie = Data.define(:title, :year)
+      movie.members.should == [:title, :year]
     end
 
     it "accepts strings" do
-      movie_with_string = Data.define("title", "year")
-      movie_with_string.members.should == [:title, :year]
+      movie = Data.define("title", "year")
+      movie.members.should == [:title, :year]
     end
 
     it "accepts a mix of strings and symbols" do
-      blockbuster_movie = Data.define("title", :year, "genre")
-      blockbuster_movie.members.should == [:title, :year, :genre]
+      movie = Data.define("title", :year, "genre")
+      movie.members.should == [:title, :year, :genre]
+    end
+
+    it "accepts a block" do
+      movie = Data.define(:title, :year) do
+        def title_with_year
+          "#{title} (#{year})"
+        end
+      end
+      movie.members.should == [:title, :year]
+      movie.new("Matrix", 1999).title_with_year.should == "Matrix (1999)"
     end
   end
 end

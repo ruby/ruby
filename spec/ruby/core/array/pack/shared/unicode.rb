@@ -69,7 +69,9 @@ describe :array_pack_unicode, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      [1, 2, 3].pack("U\x00U").should == "\x01\x02"
+      suppress_warning do
+        [1, 2, 3].pack("U\x00U").should == "\x01\x02"
+      end
     end
   end
 

@@ -85,4 +85,10 @@ describe "Dir.home" do
   it "raises an ArgumentError if the named user doesn't exist" do
     -> { Dir.home('geuw2n288dh2k') }.should raise_error(ArgumentError)
   end
+
+  describe "when called with a nil user name" do
+    it "returns the current user's home directory, reading $HOME first" do
+      Dir.home(nil).should == "/rubyspec_home"
+    end
+  end
 end

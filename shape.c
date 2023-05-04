@@ -403,7 +403,7 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
             RCLASS_EXT(klass)->variation_count++;
             if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
                 if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
-                    rb_category_warning(
+                    rb_category_warn(
                         RB_WARN_CATEGORY_PERFORMANCE,
                         "Maximum shapes variations (%d) reached by %"PRIsVALUE", instance variables accesses will be slower.",
                         SHAPE_MAX_VARIATIONS,

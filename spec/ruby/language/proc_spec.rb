@@ -161,6 +161,18 @@ describe "A Proc" do
     end
   end
 
+  describe "taking |*a, b| arguments" do
+    it "assigns [] to the argument when passed no values" do
+      proc { |*a, b| [a, b] }.call.should == [[], nil]
+    end
+  end
+
+  describe "taking |a, *b, c| arguments" do
+    it "assigns [] to the argument when passed no values" do
+      proc { |a, *b, c| [a, b, c] }.call.should == [nil, [], nil]
+    end
+  end
+
   describe "taking |a, | arguments" do
     before :each do
       @l = lambda { |a, | a }

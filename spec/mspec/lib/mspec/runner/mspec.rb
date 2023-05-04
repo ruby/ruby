@@ -396,7 +396,7 @@ module MSpec
     desc = tag.escape(tag.description)
     file = tags_file
     if File.exist? file
-      lines = IO.readlines(file)
+      lines = File.readlines(file)
       File.open(file, "w:utf-8") do |f|
         lines.each do |line|
           line = line.chomp

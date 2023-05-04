@@ -158,7 +158,7 @@ module SyncDefaultGems
       cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/test_gems*"), "tool/bundler")
       cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
       cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
-      rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
+      rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
     when "rdoc"
       rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
@@ -435,7 +435,8 @@ module SyncDefaultGems
     |\.git.*
     |[A-Z]\w+file
     |COPYING
-    |rakelib\/.*
+    |\Arakelib\/.*
+    |\Atest\/lib\/.*
     )\z/mx
 
   def message_filter(repo, sha, input: ARGF)
@@ -583,8 +584,9 @@ module SyncDefaultGems
         next
       end
 
-      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/")
+      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/ rakelib/")
       unless tools.empty?
+        system(*%W"git rm --", *tools)
         system(*%W"git checkout HEAD~ --", *tools)
         if system(*%W"git diff --quiet HEAD~")
           `git reset HEAD~ --` && `git checkout .` && `git clean -fd`

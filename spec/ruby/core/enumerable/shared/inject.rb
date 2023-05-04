@@ -28,6 +28,15 @@ describe :enumerable_inject, shared: true do
     }.should complain(/#{__FILE__}:#{__LINE__-1}: warning: given block not used/, verbose: true)
   end
 
+  it "does not warn when given a Symbol with $VERBOSE true" do
+    -> {
+      [1, 2].send(@method, 0, :+)
+      [1, 2].send(@method, :+)
+      EnumerableSpecs::Numerous.new(1, 2).send(@method, 0, :+)
+      EnumerableSpecs::Numerous.new(1, 2).send(@method, :+)
+    }.should_not complain(verbose: true)
+  end
+
   it "can take a symbol argument" do
     EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, :-).should == 4
   end

@@ -82,4 +82,76 @@ module VariablesSpecs
   def self.false
     false
   end
+
+  class EvalOrder
+    attr_reader :order
+
+    def initialize
+      @order = []
+    end
+
+    def reset
+      @order = []
+    end
+
+    def foo
+      self << "foo"
+      FooClass.new(self)
+    end
+
+    def bar
+      self << "bar"
+      BarClass.new(self)
+    end
+
+    def a
+      self << "a"
+    end
+
+    def b
+      self << "b"
+    end
+
+    def node
+      self << "node"
+
+      node = Node.new
+      node.left = Node.new
+      node.left.right = Node.new
+
+      node
+    end
+
+    def <<(value)
+      order << value
+    end
+
+    class FooClass
+      attr_reader :evaluator
+
+      def initialize(evaluator)
+        @evaluator = evaluator
+      end
+
+      def []=(_index, _value)
+        evaluator << "foo[]="
+      end
+    end
+
+    class BarClass
+      attr_reader :evaluator
+
+      def initialize(evaluator)
+        @evaluator = evaluator
+      end
+
+      def baz=(_value)
+        evaluator << "bar.baz="
+      end
+    end
+
+    class Node
+      attr_accessor :left, :right
+    end
+  end
 end

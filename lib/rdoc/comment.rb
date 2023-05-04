@@ -97,42 +97,26 @@ class RDoc::Comment
     # comment.  The difficulty is to make sure not to match lines starting
     # with ARGF at the same indent, but that are after the first description
     # paragraph.
-    if @text =~ /^\s*:?call-seq:(.*?(?:\S).*?)^\s*$/m then
+    if /^(?<S> ((?!\n)\s)*+        (?# whitespaces except newline))
+         :?call-seq:
+           (?<B> \g<S>(?<N>\n|\z)  (?# trailing spaces))?
+         (?<seq>
+           (\g<S>(?!\w)\S.*\g<N>)*
+           (?>
+             (?<H> \g<S>\w+        (?# ' #   ARGF' in the example above))
+             .*\g<N>)?
+           (\g<S>\S.*\g<N>         (?# other non-blank line))*+
+           (\g<B>+(\k<H>.*\g<N>    (?# ARGF.to_a lines))++)*+
+         )
+         (?m:^\s*$|\z)
+        /x =~ @text
+      seq = $~[:seq]
+
       all_start, all_stop = $~.offset(0)
-      seq_start, seq_stop = $~.offset(1)
-
-      # we get the following lines that start with the leading word at the
-      # same indent, even if they have blank lines before
-      if $1 =~ /(^\s*\n)+^(\s*\w+)/m then
-        leading = $2 # ' *    ARGF' in the example above
-        re = %r%
-          \A(
-             (^\s*\n)+
-             (^#{Regexp.escape leading}.*?\n)+
-            )+
-          ^\s*$
-        %xm
-
-        if @text[seq_stop..-1] =~ re then
-          all_stop = seq_stop + $~.offset(0).last
-          seq_stop = seq_stop + $~.offset(1).last
-        end
-      end
-
-      seq = @text[seq_start..seq_stop]
-      seq.gsub!(/^\s*(\S|\n)/m, '\1')
       @text.slice! all_start...all_stop
 
-      method.call_seq = seq.chomp
-
-    else
-      regexp = /^\s*:?call-seq:(.*?)(^\s*$|\z)/m
-      if regexp =~ @text then
-        @text = @text.sub(regexp, '')
-        seq = $1
-        seq.gsub!(/^\s*/, '')
-        method.call_seq = seq
-      end
+      seq.gsub!(/^\s*/, '')
+      method.call_seq = seq
     end
 
     method

@@ -17,4 +17,12 @@ describe "StringIO#set_encoding" do
     io.set_encoding Encoding::UTF_8
     io.string.encoding.should == Encoding::US_ASCII
   end
+
+  it "accepts a String" do
+    str = "".encode(Encoding::US_ASCII)
+    io = StringIO.new(str)
+    io.set_encoding("ASCII-8BIT")
+    io.external_encoding.should == Encoding::BINARY
+    str.encoding.should == Encoding::BINARY
+  end
 end

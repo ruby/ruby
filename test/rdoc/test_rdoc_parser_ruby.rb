@@ -3350,6 +3350,13 @@ end
     assert_equal :on_const, parser.get_tk[:kind]
   end
 
+  def test_read_directive_linear_performance
+    pre = ->(i) {util_parser '# ' + '0'*i + '=000:'}
+    assert_linear_performance((1..5).map{|i|10**i}, pre: pre) do |parser|
+      assert_nil parser.read_directive []
+    end
+  end
+
   def test_read_documentation_modifiers
     c = RDoc::Context.new
 

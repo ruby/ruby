@@ -771,6 +771,14 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(NoMethodError) { (self).mv2 }
     assert_nothing_raised { self.mv3 }
 
+    class << (obj = Object.new)
+      private def [](x) x end
+      def mv1(x) self[x] end
+      def mv2(x) (self)[x] end
+    end
+    assert_nothing_raised { obj.mv1(0) }
+    assert_raise(NoMethodError) { obj.mv2(0) }
+
     v = Visibility.new
 
     assert_equal('method', defined?(v.mv1))

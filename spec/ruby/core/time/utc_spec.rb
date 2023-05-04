@@ -21,12 +21,22 @@ describe "Time#utc?" do
     Time.new(2022, 1, 1, 0, 0, 0, "UTC").utc?.should == true
     Time.now.localtime("UTC").utc?.should == true
     Time.at(Time.now, in: 'UTC').utc?.should == true
+
+    ruby_version_is "3.1" do
+      Time.new(2022, 1, 1, 0, 0, 0, in: "UTC").utc?.should == true
+      Time.now(in: "UTC").utc?.should == true
+    end
   end
 
   it "does treat time with Z offset as UTC" do
     Time.new(2022, 1, 1, 0, 0, 0, "Z").utc?.should == true
     Time.now.localtime("Z").utc?.should == true
     Time.at(Time.now, in: 'Z').utc?.should == true
+
+    ruby_version_is "3.1" do
+      Time.new(2022, 1, 1, 0, 0, 0, in: "Z").utc?.should == true
+      Time.now(in: "Z").utc?.should == true
+    end
   end
 
   ruby_version_is "3.1" do

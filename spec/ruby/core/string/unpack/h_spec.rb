@@ -58,7 +58,9 @@ describe "String#unpack with format 'H'" do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "\x01\x10".unpack("H\x00H").should == ["0", "1"]
+      suppress_warning do
+        "\x01\x10".unpack("H\x00H").should == ["0", "1"]
+      end
     end
   end
 
@@ -133,7 +135,9 @@ describe "String#unpack with format 'h'" do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      "\x01\x10".unpack("h\x00h").should == ["1", "0"]
+      suppress_warning do
+        "\x01\x10".unpack("h\x00h").should == ["1", "0"]
+      end
     end
   end
 

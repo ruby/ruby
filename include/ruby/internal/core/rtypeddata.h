@@ -354,16 +354,14 @@ struct RTypedData {
      * data.   This roughly  resembles a  Ruby level  class (apart  from method
      * definition etc.)
      */
-    const rb_data_type_t *type;
+    const rb_data_type_t *const type;
 
     /**
      * This has to be always 1.
      *
      * @internal
-     *
-     * Why, then, this is not a const ::VALUE?
      */
-    VALUE typed_flag;
+    const VALUE typed_flag;
 
     /** Pointer to the actual C level struct that you want to wrap. */
     void *data;

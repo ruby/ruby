@@ -102,7 +102,7 @@ VALUE rb_rjit_raw_samples = 0;
 VALUE rb_rjit_line_samples = 0;
 
 // A default threshold used to add iseq to JIT.
-#define DEFAULT_CALL_THRESHOLD 30
+#define DEFAULT_CALL_THRESHOLD 10
 // Size of executable memory block in MiB.
 #define DEFAULT_EXEC_MEM_SIZE 64
 

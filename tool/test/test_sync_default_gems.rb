@@ -84,13 +84,14 @@ module Test_SyncDefaultGems
       ENV["GIT_CONFIG_GLOBAL"] = @testdir + "/gitconfig"
       system(*%W"git config --global user.email test@ruby-lang.org")
       system(*%W"git config --global user.name", "Ruby")
+      system(*%W"git config --global init.defaultBranch default")
       @target = "sync-test"
       SyncDefaultGems::REPOSITORIES[@target.to_sym] = ["ruby/#{@target}", "default"]
       @sha = {}
       @origdir = Dir.pwd
       Dir.chdir(@testdir)
       ["src", @target].each do |dir|
-        system(*%W"git init -q -b default #{dir}", exception: true)
+        system(*%W"git init -q #{dir}", exception: true)
         Dir.mkdir("#{dir}/tool")
         File.write("#{dir}/tool/ok", "#!/bin/sh\n""echo ok\n")
         system(*%W"git add tool/ok", exception: true, chdir: dir)

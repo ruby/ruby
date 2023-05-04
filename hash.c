@@ -7085,7 +7085,7 @@ static const rb_data_type_t env_data_type = {
  *  - #<=: Returns whether +self+ is a subset of a given object.
  *  - #==: Returns whether a given object is equal to +self+.
  *  - #>: Returns whether +self+ is a proper superset of a given object
- *  - #>=: Returns whether +self+ is a proper superset of a given object.
+ *  - #>=: Returns whether +self+ is a superset of a given object.
  *
  *  ==== Methods for Fetching
  *

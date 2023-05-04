@@ -13,7 +13,7 @@ module RubyVM::RJIT
   C_ARGS = [:rdi, :rsi, :rdx, :rcx, :r8, :r9]
   C_RET  = :rax
 
-  # https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
+  # https://cdrdv2.intel.com/v1/dl/getContent/671110
   # Mostly an x86_64 assembler, but this also has some stuff that is useful for any architecture.
   class Assembler
     # rel8 jumps are made with labels

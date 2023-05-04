@@ -2335,6 +2335,8 @@ rb_ractor_terminate_all(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *cr = vm->ractor.main_ractor;
 
+    RUBY_DEBUG_LOG("ractor.cnt:%d", (int)vm->ractor.cnt);
+
     VM_ASSERT(cr == GET_RACTOR()); // only main-ractor's main-thread should kick it.
 
     if (vm->ractor.cnt > 1) {

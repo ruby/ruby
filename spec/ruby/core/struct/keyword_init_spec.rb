@@ -17,5 +17,24 @@ ruby_version_is "3.1" do
       struct = Struct.new(:arg)
       struct.keyword_init?.should be_nil
     end
+
+    it "returns nil for a struct that does specify keyword_init to be nil" do
+      struct = Struct.new(:arg, keyword_init: nil)
+      struct.keyword_init?.should be_nil
+    end
+
+    it "returns true for any truthy value, not just for true" do
+      struct = Struct.new(:arg, keyword_init: 1)
+      struct.keyword_init?.should be_true
+
+      struct = Struct.new(:arg, keyword_init: "")
+      struct.keyword_init?.should be_true
+
+      struct = Struct.new(:arg, keyword_init: [])
+      struct.keyword_init?.should be_true
+
+      struct = Struct.new(:arg, keyword_init: {})
+      struct.keyword_init?.should be_true
+    end
   end
 end
