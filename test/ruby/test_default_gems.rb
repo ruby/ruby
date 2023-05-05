@@ -16,7 +16,7 @@ class TestDefaultGems < Test::Unit::TestCase
     srcdir = File.expand_path('../../..', __FILE__)
     specs = 0
     Dir.chdir(srcdir) do
-      Dir.glob("#{srcdir}/{lib,ext}/**/*.gemspec").map do |src|
+      all_assertions_foreach(nil, *Dir["{lib,ext}/**/*.gemspec"]) do |src|
         specs += 1
         assert_kind_of(Gem::Specification, self.class.load(src), "invalid spec in #{src}")
       end
