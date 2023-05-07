@@ -570,10 +570,11 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         // ractor information
         if (ruby_single_main_ractor == NULL) {
             rb_ractor_t *cr = th ? th->ractor : NULL;
+            rb_vm_t *vm = GET_VM();
 
             if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u",
-                             cr ? (int)rb_ractor_id(cr) : -1, GET_VM()->ractor.cnt);
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u (%u)",
+                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt, vm->ractor.sched.running_cnt);
 
                 if (r < 0) rb_bug("ruby_debug_log returns %d", r);
                 len += r;

@@ -103,7 +103,6 @@ struct rb_ractor_sync {
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by;
 #endif
-    rb_nativethread_cond_t cond;
 
     bool incoming_port_closed;
     bool outgoing_port_closed;
@@ -120,6 +119,7 @@ struct rb_ractor_sync {
     struct ractor_wait {
         enum rb_ractor_wait_status status;
         enum rb_ractor_wakeup_status wakeup_status;
+        rb_thread_t *waiting_thread;
     } wait;
 };
 

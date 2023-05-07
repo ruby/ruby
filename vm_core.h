@@ -634,11 +634,6 @@ typedef struct rb_vm_struct {
             struct rb_ractor_struct *lock_owner;
             unsigned int lock_rec;
 
-            // barrier
-            bool barrier_waiting;
-            unsigned int barrier_cnt;
-            rb_nativethread_cond_t barrier_cond;
-
             // join at exit
             rb_nativethread_cond_t terminate_cond;
             bool terminate_waiting;
@@ -650,15 +645,28 @@ typedef struct rb_vm_struct {
             rb_nativethread_cond_t cond; // GRQ
             unsigned int snt_cnt; // count of shared NTs
             unsigned int dnt_cnt; // count of dedicated NTs
+
+            unsigned int running_cnt;
+
             unsigned int max_proc;
             struct ccan_list_head grq; // // Global Ready Queue
             unsigned int grq_cnt;
+
+            // running threads
+            struct ccan_list_head running_threads;
 
             // threads which switch context by timeslice
             struct ccan_list_head timeslice_threads;
 
             // true if timeslice timer is not enable
             bool timeslice_wait_inf;
+
+            // barrier
+            rb_nativethread_cond_t barrier_complete_cond;
+            rb_nativethread_cond_t barrier_release_cond;
+            bool barrier_waiting;
+            unsigned int barrier_waiting_cnt;
+            unsigned int barrier_serial;
         } sched;
     } ractor;
 

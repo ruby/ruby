@@ -3449,6 +3449,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
     th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
+
+    RUBY_DEBUG_LOG("th:%u", th->serial);
 #endif
 }
 
@@ -4076,7 +4078,6 @@ Init_BareVM(void)
 
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 }
 

@@ -35,9 +35,13 @@ struct rb_thread_sched_item {
         // locked by ractor->threads.sched.lock
         struct ccan_list_node readyq;
 
-        // connected to vm->ractor.sched.running_nt
+        // connected to vm->ractor.sched.timeslice_threads
         // locked by vm->ractor.sched.lock
         struct ccan_list_node timeslice_threads;
+
+        // connected to vm->ractor.sched.running_threads
+        // locked by vm->ractor.sched.lock
+        struct ccan_list_node running_threads;
     } node;
 
     // this data should be protected by timer_th.waiting_lock
@@ -112,7 +116,8 @@ struct rb_thread_sched {
     struct rb_thread_struct *lock_owner;
 #endif
     struct rb_thread_struct *running; // running thread or NULL
-    bool running_is_timeslice_thread;
+    bool is_running;
+    bool is_running_timeslice;
 
     struct ccan_list_head readyq;
     int readyq_cnt;

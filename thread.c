@@ -1350,14 +1350,14 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
 void
 rb_thread_sleep_forever(void)
 {
-    RUBY_DEBUG_LOG("");
+    RUBY_DEBUG_LOG("forever");
     sleep_forever(GET_THREAD(), SLEEP_SPURIOUS_CHECK);
 }
 
 void
 rb_thread_sleep_deadly(void)
 {
-    RUBY_DEBUG_LOG("");
+    RUBY_DEBUG_LOG("deadly");
     sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_SPURIOUS_CHECK);
 }
 
@@ -1369,7 +1369,7 @@ rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hr
         rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
     else {
-        RUBY_DEBUG_LOG("");
+        RUBY_DEBUG_LOG("...");
         if (end) {
             sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
         }
@@ -1494,7 +1494,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
         th->status = region->prev_status;
     }
 
-    RUBY_DEBUG_LOG("");
+    RUBY_DEBUG_LOG("end");
     VM_ASSERT(th == GET_THREAD());
 }
 
