@@ -957,6 +957,20 @@ begin
       EOC
     end
 
+    def test_simple_dialog_with_scroll_screen
+      start_terminal(5, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+      write("if 1\n  2\n  3\n  4\n  5\n  6")
+      write("\C-p\C-n\C-p\C-p\C-p#")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   2
+        prompt>   3#
+        prompt>   4
+        prompt>   5
+        prompt>   6 Ruby is...
+      EOC
+    end
+
     def test_autocomplete_at_bottom
       start_terminal(15, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('def hoge' + "\C-m" * 10 + "end\C-p  ")
@@ -1360,12 +1374,12 @@ begin
         prompt>
         prompt>
         prompt>
+        prompt>   S
         prompt>   String
         prompt>   Struct
-        prompt>   Symbol
-        prompt> enScriptError
+        prompt> enSymbol
+                  ScriptError
                   SyntaxError
-                  Signal
       EOC
     end
 
