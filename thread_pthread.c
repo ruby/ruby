@@ -1093,7 +1093,17 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
         RUBY_DEBUG_LOG("r:%u th:%u grq_cnt:%u", rb_ractor_id(r), rb_th_serial(sched->running), vm->ractor.sched.grq_cnt);
-        rb_native_cond_signal(&vm->ractor.sched.cond);
+
+        if (vm->ractor.sched.grq_cnt > 1) {
+            rb_native_cond_signal(&vm->ractor.sched.cond);
+        }
+        else if (th_has_dedicated_nt(GET_THREAD())) {
+            rb_native_cond_signal(&vm->ractor.sched.cond);
+        }
+        else {
+            // lazy deq
+            timer_thread_wakeup_locked(vm);
+        }
     }
     rb_native_mutex_unlock(&vm->ractor.sched.lock);
 }
@@ -2832,20 +2842,23 @@ static int
 timer_thread_set_timeout(rb_vm_t *vm)
 {
 #if 0
-    return 10; // 10ms
+    return 10; // ms
 #else
     int timeout = -1;
 
     rb_native_mutex_lock(&vm->ractor.sched.lock);
     {
-        if (!ccan_list_empty(&vm->ractor.sched.timeslice_threads) ||
-            !ubf_threads_empty()) {
+        if (   !ccan_list_empty(&vm->ractor.sched.timeslice_threads) // (1-1) Provide time slice for active NTs
+            || !ubf_threads_empty()                                  // (1-3) Periodic UBF
+            || vm->ractor.sched.grq_cnt > 0                          // (1-4) Lazy GRQ deq start
+            ) {
 
-            RUBY_DEBUG_LOG("timeslice:%d ubf:%d",
+            RUBY_DEBUG_LOG("timeslice:%d ubf:%d grq:%d",
                            !ccan_list_empty(&vm->ractor.sched.timeslice_threads),
-                           !ubf_threads_empty());
+                           !ubf_threads_empty(),
+                           (vm->ractor.sched.grq_cnt > 0));
 
-            timeout = 10; // 10ms
+            timeout = 10; // ms
             vm->ractor.sched.timeslice_wait_inf = false;
         }
         else {
@@ -2868,7 +2881,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
                 RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
 
                 // TODO: overflow?
-                timeout = (int)(hrrel / RB_HRTIME_PER_MSEC);
+                timeout = (int)(hrrel / RB_HRTIME_PER_MSEC); // ms
             }
         }
         rb_native_mutex_unlock(&timer_th.waiting_lock);
@@ -3011,6 +3024,7 @@ rb_assert_sig(void)
  *   (1-1) Provide time slice for active NTs
  *   (1-2) Check NT shortage
  *   (1-3) Periodic UBF
+ *   (1-4) Lazy GRQ deq start
  * (2) Receive notification
  *   (2-1) async I/O termination
  *   (2-2) timeout
@@ -3042,13 +3056,20 @@ timer_thread_func(void *ptr)
           case 0: // timeout
             RUBY_DEBUG_LOG("timeout%s", "");
 
-            // (1-1) timeslice
             rb_native_mutex_lock(&vm->ractor.sched.lock);
             {
+                // (1-1) timeslice
+
                 rb_thread_t *th;
                 ccan_list_for_each(&vm->ractor.sched.timeslice_threads, th, sched.node.timeslice_threads) {
                     RUBY_DEBUG_LOG("timeslice th:%u", rb_th_serial(th));
                     RUBY_VM_SET_TIMER_INTERRUPT(th->ec);
+                }
+
+                // (1-4) lazy grq deq
+                if (vm->ractor.sched.grq_cnt > 0) {
+                    RUBY_DEBUG_LOG("GRQ cnt: %u", vm->ractor.sched.grq_cnt);
+                    rb_native_cond_signal(&vm->ractor.sched.cond);
                 }
             }
             rb_native_mutex_unlock(&vm->ractor.sched.lock);
@@ -3058,6 +3079,7 @@ timer_thread_func(void *ptr)
 
             // (1-3)
             ubf_wakeup_all_threads();
+
             break;
 
           case -1:
