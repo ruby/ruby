@@ -31,7 +31,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-15
+  default_cc: clang-16
   append_cc: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
@@ -71,6 +71,7 @@ jobs:
         env:
           - {}
         entry:
+          - { name: gcc-13,    env: { default_cc: gcc-13 } }
           - { name: gcc-12,    env: { default_cc: gcc-12 } }
           - { name: gcc-11,    env: { default_cc: gcc-11 } }
           - { name: gcc-10,    env: { default_cc: gcc-10 } }
@@ -87,6 +88,7 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
+          - { name: clang-17,  env: { default_cc: clang-17 } }
           - { name: clang-16,  env: { default_cc: clang-16 } }
           - { name: clang-15,  env: { default_cc: clang-15 } }
           - { name: clang-14,  env: { default_cc: clang-14 } }
@@ -212,7 +214,7 @@ jobs:
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-15' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-16' }}
       options: --user root
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env: ${{ matrix.entry.env || matrix.env }}
