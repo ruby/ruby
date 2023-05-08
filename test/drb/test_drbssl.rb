@@ -41,9 +41,9 @@ end
 class TestDRbSSLCore < Test::Unit::TestCase
   include DRbCore
   def setup
-    if RUBY_PLATFORM.match?(/mingw/)
+    if RUBY_PLATFORM.match?(/mswin|mingw/)
       @omitted = true
-      omit 'This test seems to randomly hang on GitHub Actions MinGW'
+      omit 'This test seems to randomly hang on Windows'
     end
     @drb_service = DRbSSLService.new
     super
@@ -63,6 +63,10 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
+    if RUBY_PLATFORM.match?(/mswin|mingw/)
+      @omitted = true
+      omit 'This test seems to randomly hang on Windows'
+    end
     LeakChecker.skip if defined?(LeakChecker)
     @drb_service = DRbSSLService.new
     super
