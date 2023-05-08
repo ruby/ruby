@@ -1692,7 +1692,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def conficts_when_loaded_with?(list_of_specs) # :nodoc:
     result = list_of_specs.any? do |spec|
-      spec.dependencies.any? {|dep| dep.runtime? && (dep.name == name) && !satisfies_requirement?(dep) }
+      spec.runtime_dependencies.any? {|dep| (dep.name == name) && !satisfies_requirement?(dep) }
     end
     result
   end
@@ -1702,13 +1702,9 @@ class Gem::Specification < Gem::BasicSpecification
 
   def has_conflicts?
     return true unless Gem.env_requirement(name).satisfied_by?(version)
-    dependencies.any? do |dep|
-      if dep.runtime?
-        spec = Gem.loaded_specs[dep.name]
-        spec && !spec.satisfies_requirement?(dep)
-      else
-        false
-      end
+    runtime_dependencies.any? do |dep|
+      spec = Gem.loaded_specs[dep.name]
+      spec && !spec.satisfies_requirement?(dep)
     end
   rescue ArgumentError => e
     raise e, "#{name} #{version}: #{e.message}"
@@ -2595,8 +2591,7 @@ class Gem::Specification < Gem::BasicSpecification
   def traverse(trail = [], visited = {}, &block)
     trail.push(self)
     begin
-      dependencies.each do |dep|
-        next unless dep.runtime?
+      runtime_dependencies.each do |dep|
         dep.matching_specs(true).each do |dep_spec|
           next if visited.key?(dep_spec)
           visited[dep_spec] = true
