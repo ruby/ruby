@@ -93,7 +93,7 @@
  *
  * FrozenError will be raised if these methods are called against a frozen enumerator.
  * Since +rewind+ and +feed+ also change state for external iteration,
- * these methods may raise FroznError too.
+ * these methods may raise FrozenError too.
  *
  * External iteration differs *significantly* from internal iteration
  * due to using a Fiber:
