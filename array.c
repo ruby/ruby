@@ -5647,7 +5647,8 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *    array & other_array -> new_array
  *
  *  Returns a new \Array containing each element found in both +array+ and \Array +other_array+;
- *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>
+ *  (items must also implement +hash+ correctly):
  *
  *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
  *    [0, 1, 0, 1] & [0, 1] # => [0, 1]
@@ -5700,7 +5701,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *
  *  Returns a new \Array containing each element found both in +self+
  *  and in all of the given Arrays +other_arrays+;
- *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>
+ *  (items must also implement +hash+ correctly):
  *
  *    [0, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
@@ -5849,6 +5851,8 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *     a.intersect?(b)   #=> true
  *     a.intersect?(c)   #=> false
  *
+ *  Array elements are compared using <tt>eql?</tt>
+ *  (items must also implement +hash+ correctly).
  */
 
 static VALUE
