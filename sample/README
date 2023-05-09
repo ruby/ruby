@@ -11,13 +11,17 @@ eval.rb		simple evaluator
 export.rb	method access example
 exyacc.rb	extrace BNF from yacc file
 fact.rb		factorial calculator
+fib_numbers.rb  Returns the first n fibonacci numbers
 fib.awk		Fibonacci number (AWK)
 fib.pl		Fibonacci number (Perl)
 fib.py		Fibonacci number (Python)
 fib.rb		Fibonacci number (Ruby)
 fib.scm		Fibonacci number (Scheme)
+freq.rb     Returns a one-character string containing the character that occurs with the highest frequency within "s"
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
+hash_to_array.rb    Returns an array of arrays, each element of the returned array is a two-element array where the first item is a key from the hash and the second item is its corresponding value
+is_palindrome.rb    Returns true if n is a palindrome and false otherwise
 less.rb		front end for less
 list.rb		stupid object sample
 list2.rb	stupid object sample
@@ -25,6 +29,7 @@ list3.rb	stupid object sample
 mine.rb		simple mine sweeper
 mkproto.rb	extract prototype from C
 mpart.rb	split file int multi part
+nth_max.rb  Returns the nth largest element in the array a or nil if it does not exist
 observ.rb	observer design pattern sample
 occur.pl	count word occurrence (Perl)
 occur.rb	count word occurrence (Ruby)
@@ -41,3 +46,4 @@ timeout.rb	timeout test
 trojan.rb	simple tool to find file that may be trojan horse.
 tsvr.rb		socket server using thread
 uumerge.rb	merge files and uudecode them
+zip_hash.rb Returns a hash that maps corresponding elements in arr1 and arr2
