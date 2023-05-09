@@ -165,7 +165,7 @@ module RubyVM::YJIT
     retired_in_yjit = stats[:exec_instruction] - side_exits
 
     # Average length of instruction sequences executed by YJIT
-    avg_len_in_yjit = retired_in_yjit.to_f / total_exits
+    avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0
 
     # This only available on yjit stats builds
     if stats.key?(:vm_insns_count)
