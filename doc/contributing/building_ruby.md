@@ -23,7 +23,6 @@
 
 2. Install optional, recommended dependencies:
 
-    * readline/editline (libedit, to build readline)
     * libffi (to build fiddle)
     * gmp (if you with to accelerate Bignum operations)
     * libexecinfo (FreeBSD)
