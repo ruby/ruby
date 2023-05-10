@@ -43,7 +43,6 @@ module SyncDefaultGems
     benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
     readline: "ruby/readline",
-    "readline-ext": "ruby/readline-ext",
     observer: "ruby/observer",
     timeout: "ruby/timeout",
     yaml: "ruby/yaml",
@@ -335,12 +334,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/lib/net/http", "lib/net")
       cp_r("#{upstream}/test/net/http", "test/net")
       cp_r("#{upstream}/net-http.gemspec", "lib/net/http")
-    when "readline-ext"
-      rm_rf(%w[ext/readline test/readline])
-      cp_r("#{upstream}/ext/readline", "ext")
-      cp_r("#{upstream}/test/readline", "test")
-      cp_r("#{upstream}/readline-ext.gemspec", "ext/readline")
-      `git checkout ext/readline/depend`
     when "did_you_mean"
       rm_rf(%w[lib/did_you_mean lib/did_you_mean.rb test/did_you_mean])
       cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
