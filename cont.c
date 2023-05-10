@@ -3223,13 +3223,13 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
     return rb_fiber_raise(self, argc, argv);
 }
 
-VALUE
+static VALUE
 fiber_kill(VALUE self)
 {
     return rb_fiber_raise(self, 0, NULL);
 }
 
-VALUE
+static VALUE
 fiber_kill_rescue(VALUE self, VALUE exception)
 {
     return Qnil;
