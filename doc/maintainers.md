@@ -418,11 +418,6 @@ have commit right, others don't.
 * https://github.com/ruby/racc
 * https://rubygems.org/gems/racc
 
-#### ext/readline
-* TAKAO Kouji (kouji)
-* https://github.com/ruby/readline-ext
-* https://rubygems.org/gems/readline-ext
-
 #### ext/stringio
 * Nobuyuki Nakada (nobu)
 * https://github.com/ruby/stringio
