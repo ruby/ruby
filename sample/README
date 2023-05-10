@@ -17,7 +17,7 @@ fib.pl		Fibonacci number (Perl)
 fib.py		Fibonacci number (Python)
 fib.rb		Fibonacci number (Ruby)
 fib.scm		Fibonacci number (Scheme)
-freq.rb     Returns a one-character string containing the character that occurs with the highest frequency within "s"
+freq.rb 	Returns a one-character string containing the character that occurs with the highest frequency within "s"
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
 hash_to_array.rb    Returns an array of arrays, each element of the returned array is a two-element array where the first item is a key from the hash and the second item is its corresponding value
