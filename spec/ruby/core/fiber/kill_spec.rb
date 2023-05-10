@@ -22,7 +22,6 @@ ruby_version_is "3.3" do
       fiber.kill
       fiber.alive?.should == false
     end
-    
     it "executes the ensure block" do
       ensure_executed = false
 
