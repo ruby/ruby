@@ -46,4 +46,4 @@ timeout.rb	timeout test
 trojan.rb	simple tool to find file that may be trojan horse.
 tsvr.rb		socket server using thread
 uumerge.rb	merge files and uudecode them
-zip_hash.rb Returns a hash that maps corresponding elements in arr1 and arr2
+zip_hash.rb	Returns a hash that maps corresponding elements in arr1 and arr2
