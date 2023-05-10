@@ -229,18 +229,18 @@ typedef struct rb_context_struct {
     struct rb_jit_cont *jit_cont; // Continuation contexts for JITs
 } rb_context_t;
 
-
 /*
  * Fiber status:
- *    [Fiber.new] ------> FIBER_CREATED
- *                        | [Fiber#resume]
- *                        v
- *                   +--> FIBER_RESUMED ----+
- *    [Fiber#resume] |    | [Fiber.yield]   |
- *                   |    v                 |
- *                   +-- FIBER_SUSPENDED    | [Terminate]
- *                                          |
- *                       FIBER_TERMINATED <-+
+ *    [Fiber.new] ------> FIBER_CREATED ----> [Fiber#kill] --> |
+ *                        | [Fiber#resume]                     |
+ *                        v                                    |
+ *                   +--> FIBER_RESUMED ----> [return] ------> |
+ *    [Fiber#resume] |    | [Fiber.yield/transfer]             |
+ *  [Fiber#transfer] |    v                                    |
+ *                   +--- FIBER_SUSPENDED --> [Fiber#kill] --> |
+ *                                                             |
+ *                                                             |
+ *                        FIBER_TERMINATED <-------------------+
  */
 enum fiber_status {
     FIBER_CREATED,
@@ -3223,6 +3223,46 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
     return rb_fiber_raise(self, argc, argv);
 }
 
+VALUE
+fiber_kill(VALUE self)
+{
+    return rb_fiber_raise(self, 0, NULL);
+}
+
+VALUE
+fiber_kill_rescue(VALUE self, VALUE exception)
+{
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     fiber.kill -> nil
+ *
+ *  Terminates +fiber+ by raising an uncatchable exception, returning
+ *  the terminated Fiber.
+ *
+ *  If the fiber has not been started, transition directly to the terminated state.
+ *
+ *  If the fiber is already terminated, does nothing.
+ */
+static VALUE
+rb_fiber_m_kill(VALUE self)
+{
+    rb_fiber_t *fiber = fiber_ptr(self);
+
+    if (fiber->status == FIBER_CREATED) {
+        fiber->status = FIBER_TERMINATED;
+    }
+    else {
+        while (fiber->status != FIBER_TERMINATED) {
+            rb_rescue(fiber_kill, self, fiber_kill_rescue, self);
+        }
+    }
+
+    return self;
+}
+
 /*
  *  call-seq:
  *     Fiber.current -> fiber
@@ -3398,6 +3438,7 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "storage=", rb_fiber_storage_set, 1);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_m_raise, -1);
+    rb_define_method(rb_cFiber, "kill", rb_fiber_m_kill, 0);
     rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
     rb_define_method(rb_cFiber, "backtrace_locations", rb_fiber_backtrace_locations, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
