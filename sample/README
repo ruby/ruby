@@ -29,7 +29,7 @@ list3.rb	stupid object sample
 mine.rb		simple mine sweeper
 mkproto.rb	extract prototype from C
 mpart.rb	split file int multi part
-nth_max.rb  Returns the nth largest element in the array a or nil if it does not exist
+nth_max.rb	Returns the nth largest element in the array a or nil if it does not exist
 observ.rb	observer design pattern sample
 occur.pl	count word occurrence (Perl)
 occur.rb	count word occurrence (Ruby)
