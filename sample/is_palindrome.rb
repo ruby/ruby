@@ -1,14 +1,4 @@
-def isPalindrome(n)
-    s = n.to_s
-    length = s.size
-    head = 0
-    tail = length - 1
-    while head <= tail do
-        if s[head] != s[tail]
-            return false
-        end
-        head += 1
-        tail -= 1
-    end
-    return true
+def is_palindrome(n)
+  s = n.to_s
+  (s.size / 2).times.all? {|i| s[i] == s[-1-i]}
 end
