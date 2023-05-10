@@ -101,7 +101,7 @@ CC = cl -nologo
 CPP = $(CC) -E
 !endif
 !if !defined(YACC)
-YACC = bison
+YACC = $(top_srcdir)/tool/lrama/exe/lrama
 !endif
 AR = lib -nologo
 PURIFY =
