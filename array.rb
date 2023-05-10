@@ -67,6 +67,37 @@ class Array
     end
   end
 
+  # call-seq:
+  #   array.first -> object or nil
+  #   array.first(n) -> new_array
+  #
+  # Returns elements from +self+; does not modify +self+.
+  #
+  # When no argument is given, returns the first element:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.first # => :foo
+  #   a # => [:foo, "bar", 2]
+  #
+  # If +self+ is empty, returns +nil+.
+  #
+  # When non-negative \Integer argument +n+ is given,
+  # returns the first +n+ elements in a new \Array:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.first(2) # => [:foo, "bar"]
+  #
+  # If <tt>n >= array.size</tt>, returns all elements:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.first(50) # => [:foo, "bar", 2]
+  #
+  # If <tt>n == 0</tt> returns an new empty \Array:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.first(0) # []
+  #
+  # Related: #last.
   def first n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
@@ -80,6 +111,37 @@ class Array
     end
   end
 
+  # call-seq:
+  #   array.last  -> object or nil
+  #   array.last(n) -> new_array
+  #
+  # Returns elements from +self+; +self+ is not modified.
+  #
+  # When no argument is given, returns the last element:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.last # => 2
+  #   a # => [:foo, "bar", 2]
+  #
+  # If +self+ is empty, returns +nil+.
+  #
+  # When non-negative \Integer argument +n+ is given,
+  # returns the last +n+ elements in a new \Array:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.last(2) # => ["bar", 2]
+  #
+  # If <tt>n >= array.size</tt>, returns all elements:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.last(50) # => [:foo, "bar", 2]
+  #
+  # If <tt>n == 0</tt>, returns an new empty \Array:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.last(0) # []
+  #
+  # Related: #first.
   def last n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
