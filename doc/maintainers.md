@@ -254,11 +254,6 @@ have commit right, others don't.
 * https://github.com/ruby/rdoc
 * https://rubygems.org/gems/rdoc
 
-#### lib/readline.rb
-* aycabta
-* https://github.com/ruby/readline
-* https://rubygems.org/gems/readline
-
 #### lib/reline.rb, lib/reline/*
 * aycabta
 * https://github.com/ruby/reline
