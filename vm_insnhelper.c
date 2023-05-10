@@ -1616,7 +1616,7 @@ vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
     /* continue throw */
 
     if (FIXNUM_P(err)) {
-        ec->tag->state = FIX2INT(err);
+        ec->tag->state = RUBY_TAG_FATAL;
     }
     else if (SYMBOL_P(err)) {
         ec->tag->state = TAG_THROW;
