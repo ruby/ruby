@@ -1,13 +1,14 @@
-def fib(n)
-    fib_arr = Array.new
-    for i in 1..n do
-        if i == 1
-            fib_arr.push(0)
-        elsif i == 2
-            fib_arr.push(1)
-        else
-            fib_arr.push(fib_arr[i - 3] + fib_arr[i - 2])
-        end
-    end
-    return fib_arr
+def fib_numbers(n)
+  case
+  when n < 1
+    return []
+  when n == 1
+    return [0]
+  end
+
+  fib_arr = [0, 1]
+  3.upto(n) do
+    fib_arr.push(fib_arr[-2] + fib_arr[-1])
+  end
+  return fib_arr
 end
