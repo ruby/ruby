@@ -172,6 +172,16 @@ class TestOpenURI < Test::Unit::TestCase
     assert_raise(ArgumentError) { URI.open("http://127.0.0.1/", :invalid_option=>true) {} }
   end
 
+  def test_pass_keywords
+    require 'tempfile'
+    t = Tempfile.new
+    assert_kind_of File, URI.open(Tempfile.new.path, mode: 0666)
+
+    o = Object.new
+    def o.open(foo: ) foo end
+    assert_equal 1, URI.open(o, foo: 1)
+  end
+
   def test_mode
     with_http {|srv, dr, url|
       srv.mount_proc("/mode", lambda { |req, res| res.body = "mode" } )
