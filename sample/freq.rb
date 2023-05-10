@@ -1,21 +1,10 @@
 def freq(s)
-    if s.empty?
-        return ""
-    end
-    map = Hash.new
-    for i in 0..s.length - 1 do
-        if map.has_key?(s[i])
-            map[s[i]] = map[s[i]] + 1
-        else
-            map.store(s[i], 1)
-        end
-    end
-    keys = map.keys
-    frequent = s[0]
-    for i in keys do
-        if (map[i] > map[frequent])
-            frequent = i
-        end
-    end
-    return frequent
+  if s.empty?
+    return ""
+  end
+  map = Hash.new(0)
+  s.each_char do |i|
+    map[s[i]] += 1
+  end
+  map.max_by {|_, i| i}.first
 end
