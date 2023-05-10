@@ -53,7 +53,7 @@ jobs:
           libssl-dev libyaml-dev libreadline6-dev \
           zlib1g-dev libncurses5-dev libffi-dev \
           libclang1-10 \
-          bison autoconf
+          autoconf
           sudo apt-get install -q -y pkg-config || :
       - name: Set up Ruby
         uses: ruby/setup-ruby@d2b39ad0b52eca07d23f3aa14fdf2a3fcc1f411c # v1.148.0
