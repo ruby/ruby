@@ -449,14 +449,14 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_vm_t *vm, r
             ccan_list_del_init(&del_th->sched.node.running_threads);
             vm->ractor.sched.running_cnt--;
 
-            if (vm->ractor.sched.barrier_waiting) {
+            if (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
                 ractor_sched_barrier_join_signal_locked(vm);
             }
             sched->is_running = false;
         }
 
         if (add_th) {
-            if (vm->ractor.sched.barrier_waiting) {
+            if (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
                 RUBY_DEBUG_LOG("barrier-wait");
 
                 ractor_sched_barrier_join_signal_locked(vm);
