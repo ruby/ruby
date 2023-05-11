@@ -1,0 +1,8 @@
+prelude: |
+  t = Time.utc(2000, 1, 1, 20, 15, 1)
+benchmark:
+  noarg: |
+    t.localtime 
+  given_zone: |
+    t.localtime("-09:00")  
+loop_count: 20000000

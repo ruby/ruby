@@ -401,4 +401,41 @@ class Time
 
     Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
   end
+
+  #
+  #  call-seq:
+  #    localtime -> self or new_time
+  #    localtime(zone) -> new_time
+  #
+  #  With no argument given:
+  #
+  #  - Returns +self+ if +self+ is a local time.
+  #  - Otherwise returns a new \Time in the user's local timezone:
+  #
+  #      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+  #      t.localtime                         # => 2000-01-01 14:15:01 -0600
+  #
+  #  With argument +zone+ given,
+  #  returns the new \Time object created by converting
+  #  +self+ to the given time zone:
+  #
+  #    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+  #    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
+  #
+  #  For forms of argument +zone+, see
+  #  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+  #
+  #
+  def localtime(zone = unspecified = true)
+    if Primitive.mandatory_only?
+      Primitive.attr! :leaf
+      Primitive.cexpr! %q{ time_localtime(self) }
+    else
+      if unspecified
+        Primitive.cexpr! %q{ time_localtime(self) }
+      else
+        Primitive.cexpr! %q{ time_zonelocal(self, zone) }
+      end
+    end
+  end
 end
