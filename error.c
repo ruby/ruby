@@ -3312,12 +3312,14 @@ rb_syserr_fail_str(int e, VALUE mesg)
     rb_exc_raise(rb_syserr_new_str(e, mesg));
 }
 
+#undef rb_sys_fail
 void
 rb_sys_fail(const char *mesg)
 {
     rb_exc_raise(make_errno_exc(mesg));
 }
 
+#undef rb_sys_fail_str
 void
 rb_sys_fail_str(VALUE mesg)
 {
