@@ -5210,7 +5210,7 @@ ruby_setenv(const char *name, const char *value)
         }
         ENV_UNLOCK();
 
-        if (ret) rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
+        if (ret) rb_sys_fail_sprintf("setenv(%s)", name);
     }
     else {
 #ifdef VOID_UNSETENV
@@ -5227,7 +5227,7 @@ ruby_setenv(const char *name, const char *value)
         }
         ENV_UNLOCK();
 
-        if (ret) rb_sys_fail_str(rb_sprintf("unsetenv(%s)", name));
+        if (ret) rb_sys_fail_sprintf("unsetenv(%s)", name);
 #endif
     }
 #elif defined __sun
@@ -5244,7 +5244,7 @@ ruby_setenv(const char *name, const char *value)
         mem_size = len + strlen(value) + 2;
         mem_ptr = malloc(mem_size);
         if (mem_ptr == NULL)
-            rb_sys_fail_str(rb_sprintf("malloc(%"PRIuSIZE")", mem_size));
+            rb_sys_fail_sprintf("malloc(%"PRIuSIZE")", mem_size);
         snprintf(mem_ptr, mem_size, "%s=%s", name, value);
     }
 
@@ -5270,7 +5270,7 @@ ruby_setenv(const char *name, const char *value)
 
         if (ret) {
             free(mem_ptr);
-            rb_sys_fail_str(rb_sprintf("putenv(%s)", name));
+            rb_sys_fail_sprintf("putenv(%s)", name);
         }
     }
 #else  /* WIN32 */

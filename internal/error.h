@@ -54,6 +54,12 @@ do { \
     rb_syserr_fail_path(errno_to_fail, (path)); \
 } while (0)
 
+#define rb_sys_fail_sprintf(...) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_str(errno_to_fail, rb_sprintf("" __VA_ARGS__)); \
+} while (0)
+
 /* error.c */
 extern long rb_backtrace_length_limit;
 extern VALUE rb_eEAGAIN;
