@@ -56,7 +56,7 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
       - run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - run: sudo apt-get install build-essential autoconf bison libyaml-dev
+      - run: sudo apt-get install build-essential autoconf libyaml-dev
       - run: ./autogen.sh
       - run: ./configure --disable-install-doc
       - run: make common-srcs

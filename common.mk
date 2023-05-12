@@ -298,7 +298,8 @@ configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(mflags) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
-	    EXTENCS="$(ENCOBJS)" MINIRUBY="$(MINIRUBY)" UPDATE_LIBRARIES=no $(EXTSTATIC)
+	    EXTENCS="$(ENCOBJS)" BASERUBY="$(BASERUBY)" MINIRUBY="$(MINIRUBY)" \
+	    UPDATE_LIBRARIES=no $(EXTSTATIC)
 	$(Q)$(MAKE) $(EXTS_NOTE)
 
 exts-note: $(EXTS_MK)
@@ -1208,8 +1209,8 @@ $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/p
 	$(Q) $(CHDIR) $(@D) && \
 	$(CAT_DEPEND) depend | \
 	$(exec) $(MAKE) -f - $(mflags) \
-		Q=$(Q) ECHO=$(ECHO) RM="$(RM1)" BISON="$(YACC)" top_srcdir=../.. srcdir=. VPATH=../.. \
-		RUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)" LANG=C
+		Q=$(Q) ECHO=$(ECHO) RM="$(RM1)" top_srcdir=../.. srcdir=. VPATH=../.. \
+		RUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)" LANG=C
 
 $(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl $(srcdir)/ext/json/parser/prereq.mk
 	$(ECHO) generating $@

@@ -103,7 +103,7 @@ jobs:
         run: |
           set -x
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev autoconf ruby
       - name: Install Rust
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal

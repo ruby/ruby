@@ -72,7 +72,7 @@ GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
-YACC = ENV["YACC"] ||= "bison"
+YACC = ENV["YACC"] ||= "#{$tooldir}/lrama/exe/lrama"
 ENV["BASERUBY"] ||= "ruby"
 ENV["RUBY"] ||= "ruby"
 ENV["MV"] ||= "mv"
