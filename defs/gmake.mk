@@ -1,6 +1,7 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
 reconfig config.status: export MAKE:=$(MAKE)
+export BASERUBY:=$(BASERUBY)
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
