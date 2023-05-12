@@ -25,19 +25,30 @@ module Lrama
       @grammar = grammar
     end
 
+    if ERB.instance_method(:initialize).parameters.last.first == :key
+      def self.erb(input)
+        ERB.new(input, trim_mode: '-')
+      end
+    else
+      def self.erb(input)
+        ERB.new(input, nil, '-')
+      end
+    end
+
+    def eval_template(file, path)
+      erb = self.class.erb(File.read(file))
+      erb.filename = file
+      tmp = erb.result_with_hash(context: @context, output: self)
+      replace_special_variables(tmp, path)
+    end
+
     def render
       report_duration(:render) do
-        erb = ERB.new(File.read(template_file), trim_mode: '-')
-        erb.filename = template_file
-        tmp = erb.result_with_hash(context: @context, output: self)
-        tmp = replace_special_variables(tmp, @output_file_path)
+        tmp = eval_template(template_file, @output_file_path)
         @out << tmp
 
         if @header_file_path
-          erb = ERB.new(File.read(header_template_file), trim_mode: '-')
-          erb.filename = header_template_file
-          tmp = erb.result_with_hash(context: @context, output: self)
-          tmp = replace_special_variables(tmp, @header_file_path)
+          tmp = eval_template(header_template_file, @header_file_path)
 
           if @header_out
             @header_out << tmp
@@ -141,7 +152,7 @@ module Lrama
 
       <<-STR
         #{comment}
-        #line #{@grammar.initial_action.line} "#{@grammar_file_path}"
+#line #{@grammar.initial_action.line} "#{@grammar_file_path}"
         #{@grammar.initial_action.translated_code}
       STR
     end

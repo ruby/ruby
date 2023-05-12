@@ -776,7 +776,7 @@ module Lrama
         state.reduces.each do |reduce|
           next if reduce.look_ahead.nil?
 
-          intersection = a.intersection(reduce.look_ahead)
+          intersection = a & reduce.look_ahead
           a += reduce.look_ahead
 
           if !intersection.empty?
