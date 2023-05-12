@@ -4679,6 +4679,35 @@ rb_reg_timeout_get(VALUE re)
 }
 
 /*
+ *  call-seq:
+ *     rxp.timeout = float or nil
+ *
+ *  It sets the timeout interval for the Regexp instance in seconds
+ *  +nil+ means no timeout.
+ *
+ *  This configuration is per-object. The global configuration set by
+ *  Regexp.timeout= is ignored if per-object configuration is set.
+ *
+ *     re = Regexp.new("^a*b?a*$")
+ *     re.timeout = 1.0          #=> 1.0
+ *     re =~ "a" * 100000 + "x" #=> regexp match timeout (RuntimeError)
+ */
+
+static VALUE
+rb_reg_timeout_set(VALUE re, VALUE timeout)
+{
+    rb_reg_check(re);
+    rb_check_frozen(re);
+    double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
+    if (!NIL_P(timeout) && timeout_d <= 0) {
+        rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
+    }
+    rb_hrtime_t *hrt = &RREGEXP_PTR(re)->timelimit;
+    double2hrtime(hrt, timeout_d);
+    return timeout;
+}
+
+/*
  *  Document-class: RegexpError
  *
  *  Raised when given an invalid regexp expression.
@@ -4749,6 +4778,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "names", rb_reg_names, 0);
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
+    rb_define_method(rb_cRegexp, "timeout=", rb_reg_timeout_set, 1);
 
     rb_eRegexpTimeoutError = rb_define_class_under(rb_cRegexp, "TimeoutError", rb_eRegexpError);
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);

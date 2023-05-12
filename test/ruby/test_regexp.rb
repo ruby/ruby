@@ -1813,4 +1813,16 @@ class TestRegexp < Test::Unit::TestCase
       re =~ s
     end
   end
+
+  def test_timeout_setter
+    re = /(a)\1{100000}/.dup
+    re.timeout = 0.1
+    assert_equal(0.1, re.timeout)
+    assert_raise(Regexp::TimeoutError) {re.match? "a"* 100000}
+  end
+
+  def test_timeout_setter_frozen
+    re = /(a)\1{100000}/
+    assert_raise(FrozenError) {re.timeout = 0.1}
+  end
 end
