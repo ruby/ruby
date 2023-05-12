@@ -3475,8 +3475,7 @@ nogvl_dir_empty_p(void *ptr)
             /* fall through */
           case 0:
             if (e == ENOTDIR) return (void *)Qfalse;
-            errno = e; /* for rb_sys_fail_path */
-            return (void *)Qundef;
+            return (void *)INT2FIX(e);
         }
     }
     while ((dp = READDIR(dir, NULL)) != NULL) {
@@ -3530,8 +3529,8 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 
     result = (VALUE)rb_thread_call_without_gvl(nogvl_dir_empty_p, (void *)path,
                                             RUBY_UBF_IO, 0);
-    if (UNDEF_P(result)) {
-        rb_sys_fail_path(orig);
+    if (FIXNUM_P(result)) {
+        rb_syserr_fail_path((int)FIX2LONG(result), orig);
     }
     return result;
 }
