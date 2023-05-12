@@ -97,7 +97,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() && github.event_name == 'push' && secrets.SIMPLER_ALERTS_URL }}
 
 defaults:
   run:
