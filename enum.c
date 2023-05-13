@@ -1499,9 +1499,18 @@ enum_sort_by(VALUE obj)
         rb_ary_concat(ary, buf);
     }
     if (RARRAY_LEN(ary) > 2) {
+        if (rb_uniform_only_num_2(ary))
+        {
+            const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+            rb_uniform_intro_sort_2(ptr, ptr + RARRAY_LEN(ary));
+
+        }
+        else
+        {
         RARRAY_PTR_USE(ary, ptr,
                        ruby_qsort(ptr, RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
                                   sort_by_cmp, (void *)ary));
+        }
     }
     if (RBASIC(ary)->klass) {
         rb_raise(rb_eRuntimeError, "sort_by reentered");

@@ -609,6 +609,188 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
     }
 }
 
+
+/*
+    This is parts of uniform sort
+*/
+
+#define ucmp rb_uniform_num_cmp_bool
+
+static inline bool
+rb_uniform_num_cmp_bool(VALUE a, VALUE b)
+{
+    if ((FIXNUM_P(a)))
+    {
+        if (FIXNUM_P(b))
+            return a < b;
+        else
+            return FIX2LONG(a) < RFLOAT_VALUE(b);
+    }
+    else
+    {
+        if (FIXNUM_P(b))
+            return RFLOAT_VALUE(a) < FIX2LONG(b);
+        else
+            return RFLOAT_VALUE(a) < RFLOAT_VALUE(b);
+    }
+}
+
+#define med3_val(a,b,c) (ucmp(a,b)?(ucmp(b,c)?b:ucmp(c,a)?a:c):(ucmp(c,b)?b:ucmp(a,c)?a:c))
+
+static void
+rb_uniform_insertionsort_2(VALUE *ptr_begin, VALUE* ptr_end)
+{
+    if (((ptr_end - ptr_begin) >> 1) < 2)
+        return;
+    for (VALUE *index = ptr_begin + 2; index < ptr_end; index += 2)
+    {
+        VALUE tmp = *index;
+        VALUE tmp2 = *(index + 1);
+        VALUE *j = index, *k = index;
+        if (ucmp(tmp, *ptr_begin))
+            while (ptr_begin < j)
+            {
+                *j = *(k -= 2);
+                *(j + 1) = *(k + 1);
+                j = k;
+            }
+        else
+            while (ucmp(tmp, *(k -= 2)))
+            {
+                *j = *k;
+                *(j + 1) = *(k + 1);
+                j = k;
+            }
+        *j = tmp;
+        *(j + 1) = tmp2;
+    }
+}
+
+static inline void
+rb_uniform_heap_down_2(VALUE* ptr_begin, size_t offset, size_t len)
+{
+    size_t c;
+    VALUE tmp1 = *(ptr_begin + offset * 2);
+    VALUE tmp2 = *(ptr_begin + offset * 2 + 1);
+    while ((c = (offset << 1) + 1) <= len)
+    {
+        if (c < len && ucmp(*(ptr_begin + (c << 1)), *(ptr_begin + ((c + 1) << 1))) ) c++;
+        if (!ucmp(tmp1, *(ptr_begin + (c << 1)))) break;
+
+        *(ptr_begin + (offset << 1)) = *(ptr_begin + (c << 1));
+        *(ptr_begin + (offset << 1) + 1) = *(ptr_begin + (c << 1) + 1);
+
+        offset = c;
+    }
+    *(ptr_begin + (offset << 1)) = tmp1;
+    *(ptr_begin + (offset << 1) + 1) = tmp2;
+}
+
+static void
+rb_uniform_heapsort_2(VALUE *ptr_begin, VALUE * ptr_end)
+{
+    size_t n = (ptr_end - ptr_begin) >> 1;
+    if (n < 2) return;
+    for (size_t offset = n >> 1; offset > 0;)
+    {
+        rb_uniform_heap_down_2(ptr_begin, --offset, n - 1);
+    }
+    for (size_t offset = n - 1; offset > 0;)
+    {
+        VALUE tmp_1 = *ptr_begin;
+        VALUE tmp_2 = *(ptr_begin + 1);
+
+        *ptr_begin = *(ptr_begin + (offset << 1));
+        *(ptr_begin + 1) =  *(ptr_begin + (offset << 1) + 1);
+
+        *(ptr_begin + (offset << 1)) = tmp_1;
+        *(ptr_begin + (offset << 1) + 1) = tmp_2;
+
+        rb_uniform_heap_down_2(ptr_begin, 0, --offset);
+    }
+}
+
+
+static void
+rb_uniform_quicksort_intro_2(VALUE* ptr_begin, VALUE *ptr_end, VALUE d)
+{
+
+    if (ptr_end - ptr_begin <= 32)
+    {
+        rb_uniform_insertionsort_2(ptr_begin, ptr_end);
+        return;
+    }
+    if (d == 0)
+    {
+        rb_uniform_heapsort_2(ptr_begin, ptr_end);
+        return;
+    }
+
+    VALUE x;
+    x = med3_val(*ptr_begin, *(ptr_begin + ((ptr_end - ptr_begin) >> 1)), *(ptr_end - 2));
+
+
+    VALUE *i = ptr_begin;
+    VALUE *j = ptr_end - 2;
+    do
+    {
+        while (ucmp(*i, x)) i += 2;
+        while (ucmp(x, *j)) j -= 2;
+        if (i <= j)
+        {
+
+            VALUE tmp_1 = *i;
+            VALUE tmp_2 = *(i + 1);
+
+            *i = *j;
+            *(i + 1) = *(j + 1);
+
+            *j = tmp_1;
+            *(j + 1) = tmp_2;
+
+            i += 2;
+            j -= 2;
+        }
+    }
+    while (i <= j);
+    j += 2;
+    if (ptr_end - j > 2)   rb_uniform_quicksort_intro_2(j, ptr_end, d - 1);
+    if (i - ptr_begin > 2) rb_uniform_quicksort_intro_2(ptr_begin, i, d - 1);
+}
+
+void
+rb_uniform_intro_sort_2(VALUE * ptr_begin, VALUE *ptr_end)
+{
+    VALUE d = 0;
+    VALUE n = (ptr_end - ptr_begin) >> 1;
+    for (d = 0; n > 1; n >>= 1) d++;
+    rb_uniform_quicksort_intro_2(ptr_begin, ptr_end, d << 1);
+}
+
+#undef ucmp
+
+
+
+bool
+rb_uniform_only_num_2(VALUE ary)
+{
+
+    long len = RARRAY_LEN(ary);
+
+    const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+
+    for (long offset = 0; offset < len; offset += 2, ptr+=2)
+    {
+
+        if ((!RB_TYPE_P(*ptr, T_FIXNUM)) && (!RB_TYPE_P(*ptr, T_FLOAT)))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 #undef strtod
 #define strtod ruby_strtod
 #undef dtoa
