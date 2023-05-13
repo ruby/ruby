@@ -1978,7 +1978,7 @@ onig_print_statistics(FILE* f)
 
 
 #ifdef ONIG_DEBUG_MATCH
-static char *
+static const char *
 stack_type_str(int stack_type)
 {
   switch (stack_type) {
@@ -2098,8 +2098,8 @@ reset_match_cache_on_null_check(regex_t* reg, const UChar* pstart, const UChar* 
   match_cache_point_end_bit = match_cache_point_end & 7;
 
 #ifdef ONIG_DEBUG_MATCH_CACHE
-  fprintf(stderr, "MATCH CACHE: reset start %ld (%ld index=%ld bits=%d)\n", match_cache_point_start, cache_point_start, match_cache_point_start_index, match_cache_point_start_bits);
-  fprintf(stderr, "MATCH CACHE: reset end   %ld (%ld index=%ld bits=%d)\n", match_cache_point_end, cache_point_end, match_cache_point_end_index, match_cache_point_end_bits);
+  fprintf(stderr, "MATCH CACHE: reset start %ld (%ld index=%ld bit=%d)\n", match_cache_point_start, cache_point_start, match_cache_point_start_index, match_cache_point_start_bit);
+  fprintf(stderr, "MATCH CACHE: reset end   %ld (%ld index=%ld bit=%d)\n", match_cache_point_end, cache_point_end, match_cache_point_end_index, match_cache_point_end_bit);
 #endif
 
   if (match_cache_point_start_index == match_cache_point_end_index) {
