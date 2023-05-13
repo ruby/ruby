@@ -69,6 +69,7 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.18.0
+* test-unit 3.5.8
 * rbs 3.1.0
 * typeprof 0.21.7
 * debug 1.8.0
