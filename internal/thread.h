@@ -29,6 +29,10 @@ struct rb_thread_struct;        /* in vm_core.h */
 #define COVERAGE_TARGET_ONESHOT_LINES 8
 #define COVERAGE_TARGET_EVAL 16
 
+#define RUBY_FATAL_THREAD_KILLED INT2FIX(0)
+#define RUBY_FATAL_THREAD_TERMINATED INT2FIX(1)
+#define RUBY_FATAL_FIBER_KILLED RB_INT2FIX(2)
+
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);

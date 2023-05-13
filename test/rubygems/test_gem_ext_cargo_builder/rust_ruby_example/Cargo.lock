@@ -13,9 +13,9 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.60.1"
+version = "0.62.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "062dddbc1ba4aca46de6338e2bf87771414c335f7b2f2036e8f3e9befebf88e6"
+checksum = "c6720a8b7b2d39dd533285ed438d458f65b31b5c257e6ac7bb3d7e82844dd722"
 dependencies = [
  "bitflags",
  "cexpr",
@@ -28,6 +28,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
+ "syn",
 ]
 
 [[package]]
@@ -144,18 +145,18 @@ dependencies = [
 
 [[package]]
 name = "rb-sys"
-version = "0.9.75"
+version = "0.9.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32ffbc5146796cb118f5a68196fabf1bccfff94c4830dea18aac0690cb29bb87"
+checksum = "9d2eb4e2afad796b886b0146e82343f5cf06c5f8abc26648cb7a0c4aff1e5e87"
 dependencies = [
  "rb-sys-build",
 ]
 
 [[package]]
 name = "rb-sys-build"
-version = "0.9.75"
+version = "0.9.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55edd49608668f9d45b7b1d619e6dab24ce8e591bcb912975936314aad94be40"
+checksum = "b489abaa43843504e3aab8c7f86aa964b3041452d031281969a5fc70b0bd67c3"
 dependencies = [
  "bindgen",
  "lazy_static",

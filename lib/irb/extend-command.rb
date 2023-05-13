@@ -157,8 +157,12 @@ module IRB # :nodoc:
 
       [
         :irb_help, :Help, "cmd/help",
-        [:show_doc, NO_OVERRIDE],
         [:help, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_show_doc, :ShowDoc, "cmd/show_doc",
+        [:show_doc, NO_OVERRIDE],
       ],
 
       [

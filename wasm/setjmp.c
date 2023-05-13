@@ -29,10 +29,25 @@
 #include "wasm/setjmp.h"
 
 #ifdef RB_WASM_ENABLE_DEBUG_LOG
-# include <stdio.h>
-# define RB_WASM_DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
+# include <wasi/api.h>
+# include <unistd.h>
+// NOTE: We can't use printf() and most of library function that are
+// Asyncified due to the use of them in the application itself.
+// Use of printf() causes "unreachable" error because Asyncified
+// function misunderstands Asyncify's internal state during
+// start_unwind()...stop_unwind() and start_rewind()...stop_rewind().
+# define RB_WASM_DEBUG_LOG_INTERNAL(msg) do { \
+    const uint8_t *msg_start = (uint8_t *)msg; \
+    const uint8_t *msg_end = msg_start; \
+    for (; *msg_end != '\0'; msg_end++) {} \
+    __wasi_ciovec_t iov = {.buf = msg_start, .buf_len = msg_end - msg_start}; \
+    size_t nwritten; \
+    __wasi_fd_write(STDERR_FILENO, &iov, 1, &nwritten); \
+} while (0)
+# define RB_WASM_DEBUG_LOG(msg) \
+    RB_WASM_DEBUG_LOG_INTERNAL(__FILE__ ":" STRINGIZE(__LINE__) ": " msg "\n")
 #else
-# define RB_WASM_DEBUG_LOG(...)
+# define RB_WASM_DEBUG_LOG(msg)
 #endif
 
 enum rb_wasm_jmp_buf_state {
@@ -63,12 +78,13 @@ __attribute__((noinline))
 int
 _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
 {
-    RB_WASM_DEBUG_LOG("[%s] env = %p, env->state = %d, _rb_wasm_active_jmpbuf = %p\n", __func__, env, env->state, _rb_wasm_active_jmpbuf);
+    RB_WASM_DEBUG_LOG("enter _rb_wasm_setjmp_internal");
     switch (env->state) {
     case JMP_BUF_STATE_INITIALIZED: {
-        RB_WASM_DEBUG_LOG("[%s] JMP_BUF_STATE_INITIALIZED\n", __func__);
+        RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_INITIALIZED");
         env->state = JMP_BUF_STATE_CAPTURING;
         env->payload = 0;
+        env->longjmp_buf_ptr = NULL;
         _rb_wasm_active_jmpbuf = env;
         async_buf_init(&env->setjmp_buf);
         asyncify_start_unwind(&env->setjmp_buf);
@@ -76,15 +92,16 @@ _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
     }
     case JMP_BUF_STATE_CAPTURING: {
         asyncify_stop_rewind();
-        RB_WASM_DEBUG_LOG("[%s] JMP_BUF_STATE_CAPTURING\n", __func__);
+        RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_CAPTURING");
         env->state = JMP_BUF_STATE_CAPTURED;
         _rb_wasm_active_jmpbuf = NULL;
         return 0;
     }
     case JMP_BUF_STATE_RETURNING: {
         asyncify_stop_rewind();
-        RB_WASM_DEBUG_LOG("[%s] JMP_BUF_STATE_RETURNING\n", __func__);
+        RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_RETURNING");
         env->state = JMP_BUF_STATE_CAPTURED;
+        free(env->longjmp_buf_ptr);
         _rb_wasm_active_jmpbuf = NULL;
         return env->payload;
     }
@@ -97,14 +114,15 @@ _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
 void
 _rb_wasm_longjmp(rb_wasm_jmp_buf* env, int value)
 {
-    RB_WASM_DEBUG_LOG("[%s] env = %p, env->state = %d, value = %d\n", __func__, env, env->state, value);
+    RB_WASM_DEBUG_LOG("enter _rb_wasm_longjmp");
     assert(env->state == JMP_BUF_STATE_CAPTURED);
     assert(value != 0);
     env->state = JMP_BUF_STATE_RETURNING;
     env->payload = value;
+    env->longjmp_buf_ptr = malloc(sizeof(struct __rb_wasm_asyncify_jmp_buf));
     _rb_wasm_active_jmpbuf = env;
-    async_buf_init(&env->longjmp_buf);
-    asyncify_start_unwind(&env->longjmp_buf);
+    async_buf_init(env->longjmp_buf_ptr);
+    asyncify_start_unwind(env->longjmp_buf_ptr);
 }
 
 
@@ -179,20 +197,20 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
 void *
 rb_wasm_handle_jmp_unwind(void)
 {
-    RB_WASM_DEBUG_LOG("[%s] _rb_wasm_active_jmpbuf = %p\n", __func__, _rb_wasm_active_jmpbuf);
+    RB_WASM_DEBUG_LOG("enter rb_wasm_handle_jmp_unwind");
     if (!_rb_wasm_active_jmpbuf) {
         return NULL;
     }
 
     switch (_rb_wasm_active_jmpbuf->state) {
     case JMP_BUF_STATE_CAPTURING: {
-        RB_WASM_DEBUG_LOG("[%s] JMP_BUF_STATE_CAPTURING\n", __func__);
+        RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_CAPTURING");
         // save the captured Asyncify stack top
         _rb_wasm_active_jmpbuf->dst_buf_top = _rb_wasm_active_jmpbuf->setjmp_buf.top;
         break;
     }
     case JMP_BUF_STATE_RETURNING: {
-        RB_WASM_DEBUG_LOG("[%s] JMP_BUF_STATE_RETURNING\n", __func__);
+        RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_RETURNING");
         // restore the saved Asyncify stack top
         _rb_wasm_active_jmpbuf->setjmp_buf.top = _rb_wasm_active_jmpbuf->dst_buf_top;
         break;

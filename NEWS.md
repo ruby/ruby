@@ -69,6 +69,7 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.18.0
+* test-unit 3.5.8
 * rbs 3.1.0
 * typeprof 0.21.7
 * debug 1.8.0
@@ -125,3 +126,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19591]: https://bugs.ruby-lang.org/issues/19591

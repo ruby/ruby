@@ -509,13 +509,9 @@ stat_col(void)
 }
 #endif
 
-/* Create and return table with TYPE which can hold at least SIZE
-   entries.  The real number of entries which the table can hold is
-   the nearest power of two for SIZE.  */
 st_table *
-st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
+st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type, st_index_t size)
 {
-    st_table *tab;
     int n;
 
 #ifdef HASH_LOG
@@ -536,11 +532,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     if (n < 0)
         return NULL;
 #endif
-    tab = (st_table *) malloc(sizeof (st_table));
-#ifndef RUBY
-    if (tab == NULL)
-        return NULL;
-#endif
+
     tab->type = type;
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
@@ -566,6 +558,30 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 #endif
     make_tab_empty(tab);
     tab->rebuilds_num = 0;
+    return tab;
+}
+
+/* Create and return table with TYPE which can hold at least SIZE
+   entries.  The real number of entries which the table can hold is
+   the nearest power of two for SIZE.  */
+st_table *
+st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
+{
+    st_table *tab = malloc(sizeof(st_table));
+#ifndef RUBY
+    if (tab == NULL)
+        return NULL;
+#endif
+
+#ifdef RUBY
+    st_init_existing_table_with_size(tab, type, size);
+#else
+    if (st_init_existing_table_with_size(tab, type, size) == NULL) {
+        free(tab);
+        return NULL;
+    }
+#endif
+
     return tab;
 }
 

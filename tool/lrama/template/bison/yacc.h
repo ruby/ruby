@@ -1,5 +1,5 @@
 <%# b4_generated_by -%>
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by Lrama <%= Lrama::VERSION %>.  */
 
 <%# b4_copyright -%>
 /* Bison interface for Yacc-like parsers in C

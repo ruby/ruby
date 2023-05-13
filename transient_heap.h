@@ -42,7 +42,6 @@ int  rb_transient_heap_managed_ptr_p(const void *ptr);
 /* evacuate functions for each type */
 void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
 void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
-void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 
 #else /* USE_TRANSIENT_HEAP */
@@ -58,7 +57,6 @@ void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 
 #define rb_ary_transient_heap_evacuate(x, y) ((void)0)
 #define rb_obj_transient_heap_evacuate(x, y) ((void)0)
-#define rb_hash_transient_heap_evacuate(x, y) ((void)0)
 #define rb_struct_transient_heap_evacuate(x, y) ((void)0)
 
 #endif /* USE_TRANSIENT_HEAP */

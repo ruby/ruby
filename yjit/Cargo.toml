@@ -32,7 +32,6 @@ overflow-checks = true
 
 [profile.dev_nodebug]
 inherits = "dev"
-debug = false
 
 [profile.stats]
 inherits = "release"

@@ -132,18 +132,9 @@ extern int ruby_assert_critical_section_entered;
 #define RUBY_NSIG NSIG
 
 #if defined(SIGCLD)
-#  define RUBY_SIGCHLD    (SIGCLD)
+#  define RUBY_SIGCHLD (SIGCLD)
 #elif defined(SIGCHLD)
-#  define RUBY_SIGCHLD    (SIGCHLD)
-#else
-#  define RUBY_SIGCHLD    (0)
-#endif
-
-/* platforms with broken or non-existent SIGCHLD work by polling */
-#if defined(__APPLE__)
-#  define SIGCHLD_LOSSY (1)
-#else
-#  define SIGCHLD_LOSSY (0)
+#  define RUBY_SIGCHLD (SIGCHLD)
 #endif
 
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)

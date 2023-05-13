@@ -149,8 +149,6 @@ NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 static int consume_communication_pipe(int fd);
 static int check_signals_nogvl(rb_thread_t *, int sigwait_fd);
 
-#define eKillSignal INT2FIX(0)
-#define eTerminateSignal INT2FIX(1)
 static volatile int system_working = 1;
 
 struct waiting_fd {
@@ -388,7 +386,7 @@ terminate_all(rb_ractor_t *r, const rb_thread_t *main_thread)
         if (th != main_thread) {
             RUBY_DEBUG_LOG("terminate start th:%u status:%s", rb_th_serial(th), thread_status_name(th, TRUE));
 
-            rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
+            rb_threadptr_pending_interrupt_enque(th, RUBY_FATAL_THREAD_TERMINATED);
             rb_threadptr_interrupt(th);
 
             RUBY_DEBUG_LOG("terminate done th:%u status:%s", rb_th_serial(th), thread_status_name(th, TRUE));
@@ -2337,8 +2335,8 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             if (UNDEF_P(err)) {
                 /* no error */
             }
-            else if (err == eKillSignal        /* Thread#kill received */   ||
-                     err == eTerminateSignal   /* Terminate thread */       ||
+            else if (err == RUBY_FATAL_THREAD_KILLED        /* Thread#kill received */   ||
+                     err == RUBY_FATAL_THREAD_TERMINATED   /* Terminate thread */       ||
                      err == INT2FIX(TAG_FATAL) /* Thread.exit etc. */         ) {
                 terminate_interrupt = 1;
             }
@@ -2569,7 +2567,7 @@ rb_thread_kill(VALUE thread)
     }
     else {
         threadptr_check_pending_interrupt_queue(target_th);
-        rb_threadptr_pending_interrupt_enque(target_th, eKillSignal);
+        rb_threadptr_pending_interrupt_enque(target_th, RUBY_FATAL_THREAD_KILLED);
         rb_threadptr_interrupt(target_th);
     }
 
@@ -4511,7 +4509,7 @@ check_signals_nogvl(rb_thread_t *th, int sigwait_fd)
         else {
             threadptr_trap_interrupt(vm->ractor.main_thread);
         }
-        ret = TRUE; /* for SIGCHLD_LOSSY && rb_sigwait_sleep */
+        ret = TRUE; /* for rb_sigwait_sleep */
     }
     return ret;
 }

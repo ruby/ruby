@@ -3568,21 +3568,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_hash_st);
         }
 #endif
-        if (/* RHASH_AR_TABLE_P(obj) */ !FL_TEST_RAW(obj, RHASH_ST_TABLE_FLAG)) {
-            struct ar_table_struct *tab = RHASH(obj)->as.ar;
 
-            if (tab) {
-                if (RHASH_TRANSIENT_P(obj)) {
-                    RB_DEBUG_COUNTER_INC(obj_hash_transient);
-                }
-                else {
-                    ruby_xfree(tab);
-                }
-            }
-        }
-        else {
-            GC_ASSERT(RHASH_ST_TABLE_P(obj));
-            st_free_table(RHASH(obj)->as.st);
+        if (RHASH_ST_TABLE_P(obj)) {
+            st_table *tab = RHASH_ST_TABLE(obj);
+
+            if (tab->bins != NULL) free(tab->bins);
+            free(tab->entries);
         }
         break;
       case T_REGEXP:
@@ -4921,15 +4912,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
         size += rb_ary_memsize(obj);
         break;
       case T_HASH:
-        if (RHASH_AR_TABLE_P(obj)) {
-            if (RHASH_AR_TABLE(obj) != NULL) {
-                size_t rb_hash_ar_table_size(void);
-                size += rb_hash_ar_table_size();
-            }
-        }
-        else {
+        if (RHASH_ST_TABLE_P(obj)) {
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
-            size += st_memsize(RHASH_ST_TABLE(obj));
+            /* st_table is in the slot */
+            size += st_memsize(RHASH_ST_TABLE(obj)) - sizeof(st_table);
         }
         break;
       case T_REGEXP:
@@ -6608,14 +6594,6 @@ mark_hash(rb_objspace_t *objspace, VALUE hash)
         rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
     }
 
-    if (RHASH_AR_TABLE_P(hash)) {
-        if (LIKELY(during_gc) && RHASH_TRANSIENT_P(hash)) {
-            rb_transient_heap_mark(hash, RHASH_AR_TABLE(hash));
-        }
-    }
-    else {
-        VM_ASSERT(!RHASH_TRANSIENT_P(hash));
-    }
     gc_mark(objspace, RHASH(hash)->ifnone);
 }
 
@@ -8423,6 +8401,10 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
 
       case T_STRING:
         obj_size = rb_str_size_as_embedded(src);
+        break;
+
+      case T_HASH:
+        obj_size = sizeof(struct RHash) + (RHASH_ST_TABLE_P(src) ? sizeof(st_table) : sizeof(ar_table));
         break;
 
       default:
@@ -13583,9 +13565,8 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             break;
           }
           case T_HASH: {
-            APPEND_F("[%c%c] %"PRIdSIZE,
+            APPEND_F("[%c] %"PRIdSIZE,
                      RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
-                     RHASH_TRANSIENT_P(obj) ? 'T' : ' ',
                      RHASH_SIZE(obj));
             break;
           }

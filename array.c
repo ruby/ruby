@@ -6416,6 +6416,12 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
 static VALUE
 flatten(VALUE ary, int level)
 {
+    static const rb_data_type_t flatten_memo_data_type = {
+        .wrap_struct_name = "array_flatten_memo_data_type",
+        .function = { NULL, (RUBY_DATA_FUNC)st_free_table },
+        NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    };
+
     long i;
     VALUE stack, result, tmp = 0, elt, vmemo;
     st_table *memo = 0;
@@ -6441,10 +6447,8 @@ flatten(VALUE ary, int level)
     rb_ary_push(stack, LONG2NUM(i + 1));
 
     if (level < 0) {
-        vmemo = rb_hash_new();
-        RBASIC_CLEAR_CLASS(vmemo);
         memo = st_init_numtable();
-        rb_hash_st_table_set(vmemo, memo);
+        vmemo = TypedData_Wrap_Struct(0, &flatten_memo_data_type, memo);
         st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
         st_insert(memo, (st_data_t)tmp, (st_data_t)Qtrue);
     }

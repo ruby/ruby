@@ -1,5 +1,5 @@
 <%# b4_generated_by -%>
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by Lrama <%= Lrama::VERSION %>.  */
 
 <%# b4_copyright -%>
 /* Bison implementation for Yacc-like parsers in C
@@ -114,7 +114,7 @@
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
-#if YYDEBUG
+#if YYDEBUG && !defined(yydebug)
 extern int yydebug;
 #endif
   <%-# b4_percent_code_get([[requires]]). %code is not supported -%>
@@ -731,7 +731,7 @@ do {                                            \
 
    /* Temporary convenience wrapper in case some people defined the
       undocumented and private YY_LOCATION_PRINT macros.  */
-#   define YYLOCATION_PRINT(File, Loc)  YY_LOCATION_PRINT(File, *(Loc))
+#   define YYLOCATION_PRINT(File, Loc<%= output.user_args %>)  YY_LOCATION_PRINT(File, *(Loc)<%= output.user_args %>)
 
 #  elif defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
 
@@ -767,11 +767,11 @@ yy_location_print_ (FILE *yyo, YYLTYPE const * const yylocp)
 
     /* Temporary convenience wrapper in case some people defined the
        undocumented and private YY_LOCATION_PRINT macros.  */
-#   define YY_LOCATION_PRINT(File, Loc)  YYLOCATION_PRINT(File, &(Loc))
+#   define YY_LOCATION_PRINT(File, Loc<%= output.user_args %>)  YYLOCATION_PRINT(File, &(Loc)<%= output.user_args %>)
 
 #  else
 
-#   define YYLOCATION_PRINT(File, Loc) ((void) 0)
+#   define YYLOCATION_PRINT(File, Loc<%= output.user_args %>) ((void) 0)
     /* Temporary convenience wrapper in case some people defined the
        undocumented and private YY_LOCATION_PRINT macros.  */
 #   define YY_LOCATION_PRINT  YYLOCATION_PRINT
@@ -780,13 +780,13 @@ yy_location_print_ (FILE *yyo, YYLTYPE const * const yylocp)
 # endif /* !defined YYLOCATION_PRINT */
 
 
-# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)                    \
+# define YY_SYMBOL_PRINT(Title, Kind, Value, Location<%= output.user_args %>) \
 do {                                                                      \
   if (yydebug)                                                            \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Kind, Value, Location, p); \
+                  Kind, Value, Location<%= output.user_args %>);          \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
@@ -828,9 +828,9 @@ yy_symbol_print (FILE *yyo,
   YYFPRINTF (yyo, "%s %s (",
              yykind < YYNTOKENS ? "token" : "nterm", yysymbol_name (yykind));
 
-  YYLOCATION_PRINT (yyo, yylocationp);
+  YYLOCATION_PRINT (yyo, yylocationp<%= output.user_args %>);
   YYFPRINTF (yyo, ": ");
-  yy_symbol_value_print (yyo, yykind, yyvaluep, yylocationp, p);
+  yy_symbol_value_print (yyo, yykind, yyvaluep, yylocationp<%= output.user_args %>);
   YYFPRINTF (yyo, ")");
 }
 
@@ -840,7 +840,7 @@ yy_symbol_print (FILE *yyo,
 `------------------------------------------------------------------*/
 
 static void
-yy_stack_print (yy_state_t *yybottom, yy_state_t *yytop)
+yy_stack_print (yy_state_t *yybottom, yy_state_t *yytop<%= output.user_formals %>)
 {
   YYFPRINTF (stderr, "Stack now");
   for (; yybottom <= yytop; yybottom++)
@@ -851,10 +851,10 @@ yy_stack_print (yy_state_t *yybottom, yy_state_t *yytop)
   YYFPRINTF (stderr, "\n");
 }
 
-# define YY_STACK_PRINT(Bottom, Top)                            \
+# define YY_STACK_PRINT(Bottom, Top<%= output.user_args %>)     \
 do {                                                            \
   if (yydebug)                                                  \
-    yy_stack_print ((Bottom), (Top));                           \
+    yy_stack_print ((Bottom), (Top)<%= output.user_args %>);    \
 } while (0)
 
 
@@ -878,25 +878,27 @@ yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp,
       yy_symbol_print (stderr,
                        YY_ACCESSING_SYMBOL (+yyssp[yyi + 1 - yynrhs]),
                        &yyvsp[(yyi + 1) - (yynrhs)],
-                       &(yylsp[(yyi + 1) - (yynrhs)]), p);
+                       &(yylsp[(yyi + 1) - (yynrhs)])<%= output.user_args %>);
       YYFPRINTF (stderr, "\n");
     }
 }
 
-# define YY_REDUCE_PRINT(Rule)          \
+# define YY_REDUCE_PRINT(Rule<%= output.user_args %>) \
 do {                                    \
   if (yydebug)                          \
-    yy_reduce_print (yyssp, yyvsp, yylsp, Rule, p); \
+    yy_reduce_print (yyssp, yyvsp, yylsp, Rule<%= output.user_args %>); \
 } while (0)
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
    multiple parsers can coexist.  */
+#ifndef yydebug
 int yydebug;
+#endif
 #else /* !YYDEBUG */
 # define YYDPRINTF(Args) ((void) 0)
-# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)
-# define YY_STACK_PRINT(Bottom, Top)
-# define YY_REDUCE_PRINT(Rule)
+# define YY_SYMBOL_PRINT(Title, Kind, Value, Location<%= output.user_args %>)
+# define YY_STACK_PRINT(Bottom, Top<%= output.user_args %>)
+# define YY_REDUCE_PRINT(Rule<%= output.user_args %>)
 #endif /* !YYDEBUG */
 
 
@@ -1110,7 +1112,7 @@ yy_syntax_error_arguments (const yypcontext_t *yyctx,
    required number of bytes is too large to store.  */
 static int
 yysyntax_error (YYPTRDIFF_T *yymsg_alloc, char **yymsg,
-                const yypcontext_t *yyctx)
+                const yypcontext_t *yyctx<%= output.user_formals %>)
 {
   enum { YYARGS_MAX = 5 };
   /* Internationalized format string. */
@@ -1200,7 +1202,7 @@ yydestruct (const char *yymsg,
 <%= output.parse_param_use("yyvaluep", "yylocationp") %>
   if (!yymsg)
     yymsg = "Deleting";
-  YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp);
+  YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp<%= output.user_args %>);
 
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   YY_USE (yykind);
@@ -1227,11 +1229,11 @@ int yychar;
 /* The semantic value of the lookahead symbol.  */
 /* Default value used for initialization, for pacifying older GCCs
    or non-GCC compilers.  */
-YY_INITIAL_VALUE (static YYSTYPE yyval_default;)
+YY_INITIAL_VALUE (static const YYSTYPE yyval_default;)
 YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);
 
 /* Location data for the lookahead symbol.  */
-static YYLTYPE yyloc_default
+static const YYLTYPE yyloc_default
 # if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
   = { 1, 1, 1, 1 }
 # endif
@@ -1322,7 +1324,7 @@ yysetstate:
   YY_IGNORE_USELESS_CAST_BEGIN
   *yyssp = YY_CAST (yy_state_t, yystate);
   YY_IGNORE_USELESS_CAST_END
-  YY_STACK_PRINT (yyss, yyssp);
+  YY_STACK_PRINT (yyss, yyssp<%= output.user_args %>);
 
   if (yyss + yystacksize - 1 <= yyssp)
 #if !defined yyoverflow && !defined YYSTACK_RELOCATE
@@ -1440,7 +1442,7 @@ yybackup:
   else
     {
       yytoken = YYTRANSLATE (yychar);
-      YY_SYMBOL_PRINT ("Next token is", yytoken, &yylval, &yylloc);
+      YY_SYMBOL_PRINT ("Next token is", yytoken, &yylval, &yylloc<%= output.user_args %>);
     }
 
   /* If the proper action on seeing token YYTOKEN is to reduce or to
@@ -1463,7 +1465,7 @@ yybackup:
     yyerrstatus--;
 
   /* Shift the lookahead token.  */
-  YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
+  YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc<%= output.user_args %>);
   yystate = yyn;
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   *++yyvsp = yylval;
@@ -1505,7 +1507,7 @@ yyreduce:
   /* Default location. */
   YYLLOC_DEFAULT (yyloc, (yylsp - yylen), yylen);
   yyerror_range[1] = yyloc;
-  YY_REDUCE_PRINT (yyn);
+  YY_REDUCE_PRINT (yyn<%= output.user_args %>);
   switch (yyn)
     {
 <%= output.user_actions -%>
@@ -1523,7 +1525,7 @@ yyreduce:
      case of YYERROR or YYBACKUP, subsequent parser actions might lead
      to an incorrect destructor call or verbose syntax error message
      before the lookahead is translated.  */
-  YY_SYMBOL_PRINT ("-> $$ =", YY_CAST (yysymbol_kind_t, yyr1[yyn]), &yyval, &yyloc);
+  YY_SYMBOL_PRINT ("-> $$ =", YY_CAST (yysymbol_kind_t, yyr1[yyn]), &yyval, &yyloc<%= output.user_args %>);
 
   YYPOPSTACK (yylen);
   yylen = 0;
@@ -1561,7 +1563,7 @@ yyerrlab:
           = {yyssp, yytoken, &yylloc};
         char const *yymsgp = YY_("syntax error");
         int yysyntax_error_status;
-        yysyntax_error_status = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
+        yysyntax_error_status = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx<%= output.user_args %>);
         if (yysyntax_error_status == 0)
           yymsgp = yymsg;
         else if (yysyntax_error_status == -1)
@@ -1573,7 +1575,7 @@ yyerrlab:
             if (yymsg)
               {
                 yysyntax_error_status
-                  = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
+                  = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx<%= output.user_args %>);
                 yymsgp = yymsg;
               }
             else
@@ -1628,7 +1630,7 @@ yyerrorlab:
      this YYERROR.  */
   YYPOPSTACK (yylen);
   yylen = 0;
-  YY_STACK_PRINT (yyss, yyssp);
+  YY_STACK_PRINT (yyss, yyssp<%= output.user_args %>);
   yystate = *yyssp;
   goto yyerrlab1;
 
@@ -1663,7 +1665,7 @@ yyerrlab1:
                   YY_ACCESSING_SYMBOL (yystate), yyvsp, yylsp<%= output.user_args %>);
       YYPOPSTACK (1);
       yystate = *yyssp;
-      YY_STACK_PRINT (yyss, yyssp);
+      YY_STACK_PRINT (yyss, yyssp<%= output.user_args %>);
     }
 
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
@@ -1675,7 +1677,7 @@ yyerrlab1:
   YYLLOC_DEFAULT (*yylsp, yyerror_range, 2);
 
   /* Shift the error token.  */
-  YY_SYMBOL_PRINT ("Shifting", YY_ACCESSING_SYMBOL (yyn), yyvsp, yylsp);
+  YY_SYMBOL_PRINT ("Shifting", YY_ACCESSING_SYMBOL (yyn), yyvsp, yylsp<%= output.user_args %>);
 
   yystate = yyn;
   goto yynewstate;
@@ -1721,7 +1723,7 @@ yyreturnlab:
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYABORT or YYACCEPT.  */
   YYPOPSTACK (yylen);
-  YY_STACK_PRINT (yyss, yyssp);
+  YY_STACK_PRINT (yyss, yyssp<%= output.user_args %>);
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",

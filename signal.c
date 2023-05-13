@@ -36,6 +36,7 @@
 #include "debug_counter.h"
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/sanitizers.h"
 #include "internal/signal.h"
@@ -132,7 +133,7 @@ static const struct signals {
 #ifdef SIGCONT
     {"CONT", SIGCONT},
 #endif
-#if RUBY_SIGCHLD
+#ifdef RUBY_SIGCHLD
     {"CHLD", RUBY_SIGCHLD },
     {"CLD", RUBY_SIGCHLD },
 #endif
@@ -508,9 +509,6 @@ static struct {
     rb_atomic_t cnt[RUBY_NSIG];
     rb_atomic_t size;
 } signal_buff;
-#if RUBY_SIGCHLD
-volatile unsigned int ruby_nocldwait;
-#endif
 
 #define sighandler_t ruby_sighandler_t
 
@@ -608,27 +606,6 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     switch (signum) {
-#if RUBY_SIGCHLD
-      case RUBY_SIGCHLD:
-        if (handler == SIG_IGN) {
-            ruby_nocldwait = 1;
-# ifdef USE_SIGALTSTACK
-            if (sigact.sa_flags & SA_SIGINFO) {
-                sigact.sa_sigaction = (ruby_sigaction_t*)sighandler;
-            }
-            else {
-                sigact.sa_handler = sighandler;
-            }
-# else
-            sigact.sa_handler = handler;
-            sigact.sa_flags = 0;
-# endif
-        }
-        else {
-            ruby_nocldwait = 0;
-        }
-        break;
-#endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
       case SIGSEGV:
 #ifdef SIGBUS
@@ -707,35 +684,14 @@ signal_enque(int sig)
     ATOMIC_INC(signal_buff.size);
 }
 
-#if RUBY_SIGCHLD
-static rb_atomic_t sigchld_hit;
-/* destructive getter than simple predicate */
-# define GET_SIGCHLD_HIT() ATOMIC_EXCHANGE(sigchld_hit, 0)
-#else
-# define GET_SIGCHLD_HIT() 0
-#endif
-
 static void
 sighandler(int sig)
 {
     int old_errnum = errno;
 
-    /* the VM always needs to handle SIGCHLD for rb_waitpid */
-    if (sig == RUBY_SIGCHLD) {
-#if RUBY_SIGCHLD
-        rb_vm_t *vm = GET_VM();
-        ATOMIC_EXCHANGE(sigchld_hit, 1);
-
-        /* avoid spurious wakeup in main thread if and only if nobody uses trap(:CHLD) */
-        if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
-            signal_enque(sig);
-        }
-#endif
-    }
-    else {
-        signal_enque(sig);
-    }
+    signal_enque(sig);
     rb_thread_wakeup_timer_thread(sig);
+
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
 #endif
@@ -1152,7 +1108,7 @@ default_handler(int sig)
 #ifdef SIGUSR2
       case SIGUSR2:
 #endif
-#if RUBY_SIGCHLD
+#ifdef RUBY_SIGCHLD
       case RUBY_SIGCHLD:
 #endif
         func = sighandler;
@@ -1220,9 +1176,6 @@ trap_handler(VALUE *cmd, int sig)
                 break;
               case 14:
                 if (memcmp(cptr, "SYSTEM_DEFAULT", 14) == 0) {
-                    if (sig == RUBY_SIGCHLD) {
-                        goto sig_dfl;
-                    }
                     func = SIG_DFL;
                     *cmd = 0;
                 }
@@ -1440,6 +1393,7 @@ sig_list(VALUE _)
         if (reserved_signal_p(signum)) rb_bug(failed); \
         perror(failed); \
     } while (0)
+
 static int
 install_sighandler_core(int signum, sighandler_t handler, sighandler_t *old_handler)
 {
@@ -1464,25 +1418,6 @@ install_sighandler_core(int signum, sighandler_t handler, sighandler_t *old_hand
 #  define force_install_sighandler(signum, handler, old_handler) \
     INSTALL_SIGHANDLER(install_sighandler_core(signum, handler, old_handler), #signum, signum)
 
-#if RUBY_SIGCHLD
-static int
-init_sigchld(int sig)
-{
-    sighandler_t oldfunc;
-    sighandler_t func = sighandler;
-
-    oldfunc = ruby_signal(sig, SIG_DFL);
-    if (oldfunc == SIG_ERR) return -1;
-    ruby_signal(sig, func);
-    ACCESS_ONCE(VALUE, GET_VM()->trap_list.cmd[sig]) = 0;
-
-    return 0;
-}
-
-#    define init_sigchld(signum) \
-    INSTALL_SIGHANDLER(init_sigchld(signum), #signum, signum)
-#endif
-
 void
 ruby_sig_finalize(void)
 {
@@ -1493,7 +1428,6 @@ ruby_sig_finalize(void)
         ruby_signal(SIGINT, SIG_DFL);
     }
 }
-
 
 int ruby_enable_coredump = 0;
 
@@ -1591,8 +1525,8 @@ Init_signal(void)
     install_sighandler(SIGSYS, sig_do_nothing);
 #endif
 
-#if RUBY_SIGCHLD
-    init_sigchld(RUBY_SIGCHLD);
+#ifdef RUBY_SIGCHLD
+    install_sighandler(RUBY_SIGCHLD, sighandler);
 #endif
 
     rb_enable_interrupt();

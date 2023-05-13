@@ -398,7 +398,8 @@ module IRB
       formatter = RDoc::Markup::ToAnsi.new
       formatter.width = width
       dialog.trap_key = alt_d
-      message = 'Press Alt+d to read the full document'
+      mod_key = RUBY_PLATFORM.match?(/darwin/) ? "Option" : "Alt"
+      message = "Press #{mod_key}+d to read the full document"
       contents = [message] + doc.accept(formatter).split("\n")
 
       y = cursor_pos_to_render.y
