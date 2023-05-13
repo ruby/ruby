@@ -446,8 +446,10 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
       case OP_POP_POS:
       case OP_PUSH_POS_NOT:
       case OP_FAIL_POS:
+	goto impossible;
       case OP_PUSH_STOP_BT:
       case OP_POP_STOP_BT:
+	break;
       case OP_LOOK_BEHIND:
       case OP_PUSH_LOOK_BEHIND_NOT:
       case OP_FAIL_LOOK_BEHIND_NOT:
@@ -709,8 +711,10 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
       case OP_POP_POS:
       case OP_PUSH_POS_NOT:
       case OP_FAIL_POS:
+	goto unexpected_bytecode_error;
       case OP_PUSH_STOP_BT:
       case OP_POP_STOP_BT:
+	break;
       case OP_LOOK_BEHIND:
       case OP_PUSH_LOOK_BEHIND_NOT:
       case OP_FAIL_LOOK_BEHIND_NOT:
