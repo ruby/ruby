@@ -506,7 +506,7 @@ class Bundler::Thor
       #
       def public_command(*names)
         names.each do |name|
-          class_eval "def #{name}(*); super end"
+          class_eval "def #{name}(*); super end", __FILE__, __LINE__
         end
       end
       alias_method :public_task, :public_command
@@ -558,8 +558,7 @@ class Bundler::Thor
         return if options.empty?
 
         list = []
-        padding = options.map { |o| o.aliases.size }.max.to_i * 4
-
+        padding = options.map { |o| o.aliases_for_usage.size }.max.to_i
         options.each do |option|
           next if option.hide
           item = [option.usage(padding)]
@@ -610,7 +609,7 @@ class Bundler::Thor
       def find_and_refresh_command(name) #:nodoc:
         if commands[name.to_s]
           commands[name.to_s]
-        elsif command = all_commands[name.to_s] # rubocop:disable AssignmentInCondition
+        elsif command = all_commands[name.to_s] # rubocop:disable Lint/AssignmentInCondition
           commands[name.to_s] = command.clone
         else
           raise ArgumentError, "You supplied :for => #{name.inspect}, but the command #{name.inspect} could not be found."
@@ -618,7 +617,7 @@ class Bundler::Thor
       end
       alias_method :find_and_refresh_task, :find_and_refresh_command
 
-      # Everytime someone inherits from a Bundler::Thor class, register the klass
+      # Every time someone inherits from a Bundler::Thor class, register the klass
       # and file into baseclass.
       def inherited(klass)
         super(klass)

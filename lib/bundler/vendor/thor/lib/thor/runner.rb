@@ -2,12 +2,10 @@ require_relative "../thor"
 require_relative "group"
 
 require "yaml"
-require "digest/md5"
+require "digest/sha2"
 require "pathname"
 
-class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLength
-  autoload :OpenURI, "open-uri"
-
+class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
   map "-T" => :list, "-i" => :install, "-u" => :update, "-v" => :version
 
   def self.banner(command, all = false, subcommand = false)
@@ -45,25 +43,37 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
 
   desc "install NAME", "Install an optionally named Bundler::Thor file into your system commands"
   method_options :as => :string, :relative => :boolean, :force => :boolean
-  def install(name) # rubocop:disable MethodLength
+  def install(name) # rubocop:disable Metrics/MethodLength
     initialize_thorfiles
 
-    # If a directory name is provided as the argument, look for a 'main.thor'
-    # command in said directory.
-    begin
-      if File.directory?(File.expand_path(name))
-        base = File.join(name, "main.thor")
-        package = :directory
-        contents = open(base, &:read)
-      else
-        base = name
-        package = :file
-        contents = open(name, &:read)
+    is_uri  = name =~ %r{^https?\://}
+
+    if is_uri
+      base = name
+      package = :file
+      require "open-uri"
+      begin
+        contents = URI.send(:open, name, &:read) # Using `send` for Ruby 2.4- support
+      rescue OpenURI::HTTPError
+        raise Error, "Error opening URI '#{name}'"
       end
-    rescue OpenURI::HTTPError
-      raise Error, "Error opening URI '#{name}'"
-    rescue Errno::ENOENT
-      raise Error, "Error opening file '#{name}'"
+    else
+      # If a directory name is provided as the argument, look for a 'main.thor'
+      # command in said directory.
+      begin
+        if File.directory?(File.expand_path(name))
+          base = File.join(name, "main.thor")
+          package = :directory
+          contents = File.open(base, &:read)
+        else
+          base = name
+          package = :file
+          require "open-uri"
+          contents = URI.send(:open, name, &:read) # for ruby 2.1-2.4
+        end
+      rescue Errno::ENOENT
+        raise Error, "Error opening file '#{name}'"
+      end
     end
 
     say "Your Thorfile contains:"
@@ -84,14 +94,14 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
       as = basename if as.empty?
     end
 
-    location = if options[:relative] || name =~ %r{^https?://}
+    location = if options[:relative] || is_uri
       name
     else
       File.expand_path(name)
     end
 
     thor_yaml[as] = {
-      :filename   => Digest::MD5.hexdigest(name + as),
+      :filename   => Digest::SHA256.hexdigest(name + as),
       :location   => location,
       :namespaces => Bundler::Thor::Util.namespaces_in_content(contents, base)
     }

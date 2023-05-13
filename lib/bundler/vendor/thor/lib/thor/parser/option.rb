@@ -58,7 +58,7 @@ class Bundler::Thor
         default = nil
         if VALID_TYPES.include?(value)
           value
-        elsif required = (value == :required) # rubocop:disable AssignmentInCondition
+        elsif required = (value == :required) # rubocop:disable Lint/AssignmentInCondition
           :string
         end
       when TrueClass, FalseClass
@@ -93,10 +93,14 @@ class Bundler::Thor
         sample << ", [#{dasherize('no-' + human_name)}]" unless (name == "force") || name.start_with?("no-")
       end
 
+      aliases_for_usage.ljust(padding) + sample
+    end
+
+    def aliases_for_usage
       if aliases.empty?
-        (" " * padding) << sample
+        ""
       else
-        "#{aliases.join(', ')}, #{sample}"
+        "#{aliases.join(', ')}, "
       end
     end
 

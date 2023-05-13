@@ -60,7 +60,7 @@ class Bundler::Thor
         invoke_with_conflict_check do
           require "fileutils"
           FileUtils.mkdir_p(File.dirname(destination))
-          File.open(destination, "wb") { |f| f.write render }
+          File.open(destination, "wb", config[:perm]) { |f| f.write render }
         end
         given_destination
       end

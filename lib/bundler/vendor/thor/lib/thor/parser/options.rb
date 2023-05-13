@@ -1,5 +1,5 @@
 class Bundler::Thor
-  class Options < Arguments #:nodoc: # rubocop:disable ClassLength
+  class Options < Arguments #:nodoc:
     LONG_RE     = /^(--\w+(?:-\w+)*)$/
     SHORT_RE    = /^(-[a-z])$/i
     EQ_RE       = /^(--\w+(?:-\w+)*|-[a-z])=(.*)$/i
@@ -85,7 +85,7 @@ class Bundler::Thor
       super(arg)
     end
 
-    def parse(args) # rubocop:disable MethodLength
+    def parse(args) # rubocop:disable Metrics/MethodLength
       @pile = args.dup
       @is_treated_as_value = false
       @parsing_options = true
@@ -101,7 +101,7 @@ class Bundler::Thor
               unshift($1.split("").map { |f| "-#{f}" })
               next
             when EQ_RE
-              unshift($2, is_value: true)
+              unshift($2, :is_value => true)
               switch = $1
             when SHORT_NUM
               unshift($2)
@@ -194,7 +194,7 @@ class Bundler::Thor
     end
 
     def switch_option(arg)
-      if match = no_or_skip?(arg) # rubocop:disable AssignmentInCondition
+      if match = no_or_skip?(arg) # rubocop:disable Lint/AssignmentInCondition
         @switches[arg] || @switches["--#{match}"]
       else
         @switches[arg]
