@@ -101,8 +101,8 @@ RBIMPL_WARNING_POP()
 #define YYREALLOC(ptr, size)	rb_parser_realloc(p, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
 #define YYFREE(ptr)		rb_parser_free(p, (ptr))
-#define YYFPRINTF		rb_parser_printf
-#define YY_LOCATION_PRINT(File, loc) \
+#define YYFPRINTF(out, ...)	rb_parser_printf(p, __VA_ARGS__)
+#define YY_LOCATION_PRINT(File, loc, p) \
      rb_parser_printf(p, "%d.%d-%d.%d", \
                       (loc).beg_pos.lineno, (loc).beg_pos.column,\
                       (loc).end_pos.lineno, (loc).end_pos.column)
