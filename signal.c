@@ -1390,6 +1390,7 @@ sig_list(VALUE _)
         if (reserved_signal_p(signum)) rb_bug(failed); \
         perror(failed); \
     } while (0)
+
 static int
 install_sighandler_core(int signum, sighandler_t handler, sighandler_t *old_handler)
 {
@@ -1414,25 +1415,6 @@ install_sighandler_core(int signum, sighandler_t handler, sighandler_t *old_hand
 #  define force_install_sighandler(signum, handler, old_handler) \
     INSTALL_SIGHANDLER(install_sighandler_core(signum, handler, old_handler), #signum, signum)
 
-#if RUBY_SIGCHLD
-static int
-init_sigchld(int sig)
-{
-    sighandler_t oldfunc;
-    sighandler_t func = sighandler;
-
-    oldfunc = ruby_signal(sig, SIG_DFL);
-    if (oldfunc == SIG_ERR) return -1;
-    ruby_signal(sig, func);
-    ACCESS_ONCE(VALUE, GET_VM()->trap_list.cmd[sig]) = 0;
-
-    return 0;
-}
-
-#    define init_sigchld(signum) \
-    INSTALL_SIGHANDLER(init_sigchld(signum), #signum, signum)
-#endif
-
 void
 ruby_sig_finalize(void)
 {
@@ -1443,7 +1425,6 @@ ruby_sig_finalize(void)
         ruby_signal(SIGINT, SIG_DFL);
     }
 }
-
 
 int ruby_enable_coredump = 0;
 
@@ -1542,7 +1523,7 @@ Init_signal(void)
 #endif
 
 #if RUBY_SIGCHLD
-    init_sigchld(RUBY_SIGCHLD);
+    install_sighandler(RUBY_SIGCHLD, sighandler);
 #endif
 
     rb_enable_interrupt();
