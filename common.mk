@@ -924,13 +924,8 @@ PHONY:
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
-	$(Q)$(BASERUBY) $(tooldir)/id2token.rb $(SRC_FILE) > parse.tmp.y
-	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c parse.tmp.y
-	$(Q)$(RM) parse.tmp.y
-	$(Q)sed -e "/^#/s|parse\.tmp\.[iy]|$(SRC_FILE)|" -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
-	$(Q)$(MV) $@.new $@
-	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse.*\.y/d" y.tab.h > $(@:.c=.h)
-	$(Q)$(RM) y.tab.c y.tab.h
+	$(Q)$(BASERUBY) $(tooldir)/id2token.rb $(SRC_FILE) | \
+	$(YACC) -d $(YFLAGS) -o$@ -h$*.h - parse.y
 
 $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
