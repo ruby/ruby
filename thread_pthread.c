@@ -2083,18 +2083,6 @@ rb_nativethread_self(void)
 int
 rb_sigwait_fd_get(const rb_thread_t *th)
 {
-    if (signal_self_pipe.normal[0] >= 0) {
-        VM_ASSERT(signal_self_pipe.fork_gen == current_fork_gen);
-        /*
-         * no need to keep firing the timer if any thread is sleeping
-         * on the signal self-pipe
-         */
-        ubf_timer_disarm();
-
-        if (ATOMIC_PTR_CAS(sigwait_th, THREAD_INVALID, th) == THREAD_INVALID) {
-            return signal_self_pipe.normal[0];
-        }
-    }
     return -1; /* avoid thundering herd and work stealing/starvation */
 }
 
