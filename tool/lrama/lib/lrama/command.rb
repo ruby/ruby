@@ -57,14 +57,18 @@ module Lrama
       end
 
       if !grammar_file
-        puts "File should be specified\n"
-        exit 1
+        abort "File should be specified\n"
       end
 
       Report::Duration.enable if trace_opts[:time]
 
       warning = Lrama::Warning.new
-      y = File.read(grammar_file)
+      if grammar_file == '-'
+        grammar_file = argv.shift or abort "File name for STDIN should be specified\n"
+        y = STDIN.read
+      else
+        y = File.read(grammar_file)
+      end
       grammar = Lrama::Parser.new(y).parse
       states = Lrama::States.new(grammar, warning, trace_state: (trace_opts[:automaton] || trace_opts[:closure]))
       states.compute
