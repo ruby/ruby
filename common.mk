@@ -14436,6 +14436,7 @@ signal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 signal.$(OBJEXT): $(top_srcdir)/internal/array.h
 signal.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 signal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+signal.$(OBJEXT): $(top_srcdir)/internal/error.h
 signal.$(OBJEXT): $(top_srcdir)/internal/eval.h
 signal.$(OBJEXT): $(top_srcdir)/internal/gc.h
 signal.$(OBJEXT): $(top_srcdir)/internal/imemo.h
