@@ -133,7 +133,7 @@ static const struct signals {
 #ifdef SIGCONT
     {"CONT", SIGCONT},
 #endif
-#if RUBY_SIGCHLD
+#ifdef RUBY_SIGCHLD
     {"CHLD", RUBY_SIGCHLD },
     {"CLD", RUBY_SIGCHLD },
 #endif
@@ -1522,7 +1522,7 @@ Init_signal(void)
     install_sighandler(SIGSYS, sig_do_nothing);
 #endif
 
-#if RUBY_SIGCHLD
+#ifdef RUBY_SIGCHLD
     install_sighandler(RUBY_SIGCHLD, sighandler);
 #endif
 
