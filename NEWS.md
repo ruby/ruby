@@ -126,3 +126,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19591]: https://bugs.ruby-lang.org/issues/19591
