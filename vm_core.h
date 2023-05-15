@@ -137,13 +137,6 @@ extern int ruby_assert_critical_section_entered;
 #  define RUBY_SIGCHLD (SIGCHLD)
 #endif
 
-/* platforms with broken or non-existent SIGCHLD work by polling */
-#if defined(__APPLE__)
-#  define SIGCHLD_LOSSY (1)
-#else
-#  define SIGCHLD_LOSSY (0)
-#endif
-
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK
 void *rb_allocate_sigaltstack(void);
