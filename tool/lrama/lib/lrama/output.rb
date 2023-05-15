@@ -53,9 +53,7 @@ module Lrama
           if @header_out
             @header_out << tmp
           else
-            File.open(@header_file_path, "w+") do |f|
-              f << tmp
-            end
+            File.write(@header_file_path, tmp)
           end
         end
       end
