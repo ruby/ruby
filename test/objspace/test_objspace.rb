@@ -221,7 +221,7 @@ class TestObjSpace < Test::Unit::TestCase
       o4 =
         # This line intentionally left blank
         # This line intentionally left blank
-        1.0 / 0.0; line4 = __LINE__; c4 = GC.count
+        1.0 / 0.0; line4 = __LINE__; _c4 = GC.count
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o4))
       assert_equal(line4, ObjectSpace.allocation_sourceline(o4))
 
@@ -287,8 +287,8 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
-  def test_dump_too_complex_shape
-    if defined?(RubyVM::Shape)
+  if defined?(RubyVM::Shape)
+    def test_dump_too_complex_shape
       RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
         Object.new.instance_variable_set(:"@a#{_1}", 1)
       end

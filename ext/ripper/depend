@@ -1,6 +1,7 @@
 GEN  = $(srcdir)/tools/generate.rb
 SRC1 = $(top_srcdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
+BISON = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 
 .SUFFIXES: .y
 
@@ -10,18 +11,15 @@ ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
-	$(Q) $(BISON) -t -v -oy.tab.c $<
-	$(Q) sed -e "/^#/s!y\.tab\.c!$@!" -f $(top_srcdir)/tool/ytab.sed y.tab.c > $@
-	@$(RM) y.tab.c
+	$(Q) $(BISON) -t -v -o$@ -h$*.h $<
 
 all: check
 static: check
 
 ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.y $(top_srcdir)/defs/id.def
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb $(top_srcdir)/parse.y > ripper.tmp.y
-	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
-	$(Q) $(RM) ripper.tmp.y
+	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb $(top_srcdir)/parse.y | \
+	$(RUBY) $(srcdir)/tools/preproc.rb --output=$@ - ripper.y
 
 check: .eventids2-check
 

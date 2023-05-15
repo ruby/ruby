@@ -12,6 +12,12 @@ module BundledGem
     pkg = Gem::Package.new(file)
     prepare_test(pkg.spec, *rest) {|dir| pkg.extract_files(dir)}
     puts "Unpacked #{file}"
+  rescue Gem::Package::FormatError, Errno::ENOENT
+    puts "Try with hash version of bundled gems instead of #{file}. We don't use this gem with release version of Ruby."
+    if file =~ /^gems\/(\w+)-/
+      file = Dir.glob("gems/#{$1}-*.gem").first
+    end
+    retry
   end
 
   def build(gemspec, version, outdir = ".", validation: true)
@@ -20,9 +26,6 @@ module BundledGem
     Dir.chdir(gemdir) do
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
-      unless spec.version == Gem::Version.new(version)
-        abort "Unexpected versions between bundled_gems:#{version} and gemspec:#{spec.version}"
-      end
       output = File.join(outdir, spec.file_name)
       FileUtils.rm_rf(output)
       package = Gem::Package.new(output)

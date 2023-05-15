@@ -2003,39 +2003,6 @@ rb_ary_at(VALUE ary, VALUE pos)
 }
 
 #if 0
-/*
- *  call-seq:
- *    array.first -> object or nil
- *    array.first(n) -> new_array
- *
- *  Returns elements from +self+; does not modify +self+.
- *
- *  When no argument is given, returns the first element:
- *
- *    a = [:foo, 'bar', 2]
- *    a.first # => :foo
- *    a # => [:foo, "bar", 2]
- *
- *  If +self+ is empty, returns +nil+.
- *
- *  When non-negative \Integer argument +n+ is given,
- *  returns the first +n+ elements in a new \Array:
- *
- *    a = [:foo, 'bar', 2]
- *    a.first(2) # => [:foo, "bar"]
- *
- *  If <tt>n >= array.size</tt>, returns all elements:
- *
- *    a = [:foo, 'bar', 2]
- *    a.first(50) # => [:foo, "bar", 2]
- *
- *  If <tt>n == 0</tt> returns an new empty \Array:
- *
- *    a = [:foo, 'bar', 2]
- *    a.first(0) # []
- *
- *  Related: #last.
- */
 static VALUE
 rb_ary_first(int argc, VALUE *argv, VALUE ary)
 {
@@ -2061,40 +2028,6 @@ ary_last(VALUE self)
     long len = RARRAY_LEN(self);
     return (len == 0) ? Qnil : RARRAY_AREF(self, len-1);
 }
-
-/*
- *  call-seq:
- *    array.last  -> object or nil
- *    array.last(n) -> new_array
- *
- *  Returns elements from +self+; +self+ is not modified.
- *
- *  When no argument is given, returns the last element:
- *
- *    a = [:foo, 'bar', 2]
- *    a.last # => 2
- *    a # => [:foo, "bar", 2]
- *
- *  If +self+ is empty, returns +nil+.
- *
- *  When non-negative \Integer argument +n+ is given,
- *  returns the last +n+ elements in a new \Array:
- *
- *    a = [:foo, 'bar', 2]
- *    a.last(2) # => ["bar", 2]
- *
- *  If <tt>n >= array.size</tt>, returns all elements:
- *
- *    a = [:foo, 'bar', 2]
- *    a.last(50) # => [:foo, "bar", 2]
- *
- *  If <tt>n == 0</tt>, returns an new empty \Array:
- *
- *    a = [:foo, 'bar', 2]
- *    a.last(0) # []
- *
- *  Related: #first.
- */
 
 VALUE
 rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
@@ -5647,7 +5580,8 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *    array & other_array -> new_array
  *
  *  Returns a new \Array containing each element found in both +array+ and \Array +other_array+;
- *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>
+ *  (items must also implement +hash+ correctly):
  *
  *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
  *    [0, 1, 0, 1] & [0, 1] # => [0, 1]
@@ -5700,7 +5634,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *
  *  Returns a new \Array containing each element found both in +self+
  *  and in all of the given Arrays +other_arrays+;
- *  duplicates are omitted; items are compared using <tt>eql?</tt>:
+ *  duplicates are omitted; items are compared using <tt>eql?</tt>
+ *  (items must also implement +hash+ correctly):
  *
  *    [0, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
@@ -5849,6 +5784,8 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *     a.intersect?(b)   #=> true
  *     a.intersect?(c)   #=> false
  *
+ *  Array elements are compared using <tt>eql?</tt>
+ *  (items must also implement +hash+ correctly).
  */
 
 static VALUE

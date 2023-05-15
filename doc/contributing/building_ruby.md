@@ -15,7 +15,6 @@
     If you want to build from the git repository, you will also need:
 
     * autoconf - 2.67 or later
-    * bison - 3.0 or later
     * gperf - 3.1 or later
         * Usually unneeded; only if you edit some source files using gperf
     * ruby - 2.5 or later
@@ -23,7 +22,6 @@
 
 2. Install optional, recommended dependencies:
 
-    * readline/editline (libedit, to build readline)
     * libffi (to build fiddle)
     * gmp (if you with to accelerate Bignum operations)
     * libexecinfo (FreeBSD)

@@ -13,8 +13,10 @@ describe "Process.argv0" do
     end
   end
 
-  it "returns a non frozen object" do
-    Process.argv0.should_not.frozen?
+  ruby_bug "#19597", ""..."3.3" do
+    it "returns a frozen object" do
+      Process.argv0.should.frozen?
+    end
   end
 
   it "returns every time the same object" do

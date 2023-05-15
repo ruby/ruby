@@ -602,6 +602,23 @@ text appearing in <b></b> tags without including the tags in the match:
     /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favours the <b>bold</b>")
         #=> #<MatchData "bold">
 
+== Absent operator
+
+Absent operator <tt>(?~</tt><i>pat</i><tt>)</tt> matches string which does
+not match <i>pat</i>.
+
+For example, a regexp to match C comment, which is enclosed by <tt>/*</tt>
+and <tt>*/</tt> and does not include <tt>*/</tt>, using absent operator:
+
+    %r[/\*(?~\*/)\*/] =~ "/* comment */ not-comment */"
+        #=> #<MatchData "/* comment */">
+
+This is often shorter and clearer than without absent operator:
+
+    %r[/\*[^\*]*\*+(?:[^\*/][^\*]*\*+)*/]
+    %r[/\*(?:(?!\*/).)*\*/]
+    %r[/\*(?>.*?\*/)]
+
 == Options
 
 The end delimiter for a regexp can be followed by one or more single-letter

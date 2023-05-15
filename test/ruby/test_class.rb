@@ -359,7 +359,7 @@ class TestClass < Test::Unit::TestCase
     assert_raise_with_message NameError, /uninitialized/ do
       begin
         eval('class ::TestClass::PrivateClass; end')
-      rescue NameError => e
+      rescue NameError
       end
 
       Object.const_get "NOT_AVAILABLE_CONST_NAME_#{__LINE__}"

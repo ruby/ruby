@@ -182,7 +182,7 @@ class Bundler::Thor
       # indent<Integer>:: Indent the first column by indent value.
       # colwidth<Integer>:: Force the first column to colwidth spaces wide.
       #
-      def print_table(array, options = {}) # rubocop:disable MethodLength
+      def print_table(array, options = {}) # rubocop:disable Metrics/MethodLength
         return if array.empty?
 
         formats = []

@@ -36,6 +36,7 @@
 #include "debug_counter.h"
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/sanitizers.h"
 #include "internal/signal.h"

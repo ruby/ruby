@@ -14,7 +14,6 @@ Gem::Specification.new do |s|
   s.name = "stringio"
   s.version = source_version
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 2.6")
   s.require_paths = ["lib"]
   s.authors = ["Nobu Nakada", "Charles Oliver Nutter"]
   s.description = "Pseudo `IO` class from/to `String`."
@@ -30,7 +29,7 @@ Gem::Specification.new do |s|
   end
   s.homepage = "https://github.com/ruby/stringio"
   s.licenses = ["Ruby", "BSD-2-Clause"]
-  s.required_ruby_version = ">= 2.5"
+  s.required_ruby_version = ">= 2.7"
   s.summary = "Pseudo IO on String"
 
   # s.cert_chain  = %w[certs/nobu.pem]

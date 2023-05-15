@@ -101,8 +101,8 @@ RBIMPL_WARNING_POP()
 #define YYREALLOC(ptr, size)	rb_parser_realloc(p, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
 #define YYFREE(ptr)		rb_parser_free(p, (ptr))
-#define YYFPRINTF		rb_parser_printf
-#define YY_LOCATION_PRINT(File, loc) \
+#define YYFPRINTF(out, ...)	rb_parser_printf(p, __VA_ARGS__)
+#define YY_LOCATION_PRINT(File, loc, p) \
      rb_parser_printf(p, "%d.%d-%d.%d", \
                       (loc).beg_pos.lineno, (loc).beg_pos.column,\
                       (loc).end_pos.lineno, (loc).end_pos.column)
@@ -708,6 +708,14 @@ parser_get_node_id(struct parser_params *p)
     int node_id = p->node_id;
     p->node_id++;
     return node_id;
+}
+
+static void
+anddot_multiple_assignment_check(struct parser_params* p, const YYLTYPE *loc, ID id)
+{
+    if (id == tANDDOT) {
+	yyerror1(loc, "&. inside multiple assignment destination");
+    }
 }
 
 #ifndef RIPPER
@@ -2386,9 +2394,7 @@ mlhs_node	: user_variable
                     }
                 | primary_value call_op tIDENTIFIER
                     {
-                        if ($2 == tANDDOT) {
-                            yyerror1(&@2, "&. inside multiple assignment destination");
-                        }
+                        anddot_multiple_assignment_check(p, &@2, $2);
                     /*%%%*/
                         $$ = attrset(p, $1, $2, $3, &@$);
                     /*% %*/
@@ -2403,9 +2409,7 @@ mlhs_node	: user_variable
                     }
                 | primary_value call_op tCONSTANT
                     {
-                        if ($2 == tANDDOT) {
-                            yyerror1(&@2, "&. inside multiple assignment destination");
-                        }
+                        anddot_multiple_assignment_check(p, &@2, $2);
                     /*%%%*/
                         $$ = attrset(p, $1, $2, $3, &@$);
                     /*% %*/
@@ -9745,7 +9749,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
     if (result == tCONSTANT && is_local_id(ident)) result = tIDENTIFIER;
     if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
         (result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
-        lvar_defined(p, ident)) {
+        (lvar_defined(p, ident) || NUMPARAM_ID_P(ident))) {
         SET_LEX_STATE(EXPR_END|EXPR_LABEL);
     }
     return result;

@@ -170,6 +170,12 @@ math_tan(VALUE unused_obj, VALUE x)
     return DBL2NUM(tan(Get_Double(x)));
 }
 
+#define math_arc(num, func) \
+    double d; \
+    d = Get_Double((num)); \
+    domain_check_range(d, -1.0, 1.0, #func); \
+    return DBL2NUM(func(d));
+
 /*
  *  call-seq:
  *     Math.acos(x) -> float
@@ -190,11 +196,7 @@ math_tan(VALUE unused_obj, VALUE x)
 static VALUE
 math_acos(VALUE unused_obj, VALUE x)
 {
-    double d;
-
-    d = Get_Double(x);
-    domain_check_range(d, -1.0, 1.0, "acos");
-    return DBL2NUM(acos(d));
+    math_arc(x, acos)
 }
 
 /*
@@ -217,11 +219,7 @@ math_acos(VALUE unused_obj, VALUE x)
 static VALUE
 math_asin(VALUE unused_obj, VALUE x)
 {
-    double d;
-
-    d = Get_Double(x);
-    domain_check_range(d, -1.0, 1.0, "asin");
-    return DBL2NUM(asin(d));
+    math_arc(x, asin)
 }
 
 /*

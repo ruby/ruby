@@ -66,7 +66,7 @@ jobs:
         run: |
           set -ex
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y ruby bison make autoconf git wget
+          sudo apt-get install --no-install-recommends -q -y ruby make autoconf git wget
 
           wasi_sdk_deb="wasi-sdk_${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}_amd64.deb"
           wget "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION_MAJOR}/${wasi_sdk_deb}"

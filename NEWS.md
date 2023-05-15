@@ -69,9 +69,10 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.18.0
+* test-unit 3.5.8
 * rbs 3.1.0
 * typeprof 0.21.7
-* debug 1.7.2
+* debug 1.8.0
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
@@ -82,11 +83,43 @@ changelog for details of the default gems or bundled gems.
 
 ## Stdlib compatibility issues
 
+### `ext/readline` is retired
+
+* We have `reline` that is pure Ruby implementation compatible with `ext/readline` API. We rely on `reline` in the future. If you need to use `ext/readline`, you can install `ext/readline` via rubygems.org with `gem install readline-ext`.
+* We no longer need to install libraries like `libreadline` or `libedit`.
+
 ## C API updates
 
 ## Implementation improvements
 
-## JIT
+* `defined?(@ivar)` is optimized with Object Shapes.
+
+### YJIT
+
+* Significant performance improvements over 3.2
+  * Splat and rest arguments support has been improved.
+  * Registers are allocated for stack operations of the virtual machine.
+  * More calls with optional arguments are compiled.
+  * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
+    `Kernel#instance_of?`, `Module#===` are specially optimized.
+  * Instance variables no longer exit to the interpreter
+    with megamorphic Object Shapes.
+* Metadata for compiled code uses a lot less memory.
+* Improved code generation on ARM64
+* Option to start YJIT in paused mode and then later enable it manually
+  * `--yjit-pause` and `RubyVM::YJIT.resume`
+  * This can be used to enable YJIT only once your application is done booting
+* Exit tracing option now supports sampling
+  * `--trace-exits-sample-rate=N`
+* Multiple bug fixes
+
+### RJIT
+
+* Introduced a pure-Ruby JIT compiler RJIT and replaced MJIT.
+  * RJIT supports only x86\_64 architecture on Unix platforms.
+  * Unlike MJIT, it doesn't require a C compiler at runtime.
+* RJIT exists only for experimental purposes.
+  * You should keep using YJIT in production.
 
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150

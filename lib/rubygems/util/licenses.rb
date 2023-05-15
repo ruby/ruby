@@ -40,6 +40,7 @@ class Gem::Licenses
     APSL-1.2
     APSL-2.0
     Abstyles
+    AdaCore-doc
     Adobe-2006
     Adobe-Glyph
     Afmparse
@@ -72,6 +73,10 @@ class Gem::Licenses
     BSD-4-Clause
     BSD-4-Clause-Shortened
     BSD-4-Clause-UC
+    BSD-4.3RENO
+    BSD-4.3TAHOE
+    BSD-Advertising-Acknowledgement
+    BSD-Attribution-HPND-disclaimer
     BSD-Protection
     BSD-Source-Code
     BSL-1.0
@@ -82,9 +87,11 @@ class Gem::Licenses
     Beerware
     BitTorrent-1.0
     BitTorrent-1.1
+    Bitstream-Charter
     Bitstream-Vera
     BlueOak-1.0.0
     Borceux
+    Brian-Gladman-3-Clause
     C-UDA-1.0
     CAL-1.0
     CAL-1.0-Combined-Work-Exception
@@ -115,6 +122,7 @@ class Gem::Licenses
     CC-BY-NC-ND-4.0
     CC-BY-NC-SA-1.0
     CC-BY-NC-SA-2.0
+    CC-BY-NC-SA-2.0-DE
     CC-BY-NC-SA-2.0-FR
     CC-BY-NC-SA-2.0-UK
     CC-BY-NC-SA-2.5
@@ -156,6 +164,8 @@ class Gem::Licenses
     CERN-OHL-P-2.0
     CERN-OHL-S-2.0
     CERN-OHL-W-2.0
+    CFITSIO
+    CMU-Mach
     CNRI-Jython
     CNRI-Python
     CNRI-Python-GPL-Compatible
@@ -166,8 +176,10 @@ class Gem::Licenses
     CUA-OPL-1.0
     Caldera
     ClArtistic
+    Clips
     Community-Spec-1.0
     Condor-1.1
+    Cornell-Lossless-JPEG
     Crossword
     CrystalStacker
     Cube
@@ -248,14 +260,21 @@ class Gem::Licenses
     Giftware
     Glide
     Glulxe
+    Graphics-Gems
+    HP-1986
     HPND
+    HPND-Markus-Kuhn
+    HPND-export-US
     HPND-sell-variant
+    HPND-sell-variant-MIT-disclaimer
     HTMLTIDY
     HaskellReport
     Hippocratic-2.1
     IBM-pibs
     ICU
+    IEC-Code-Components-EULA
     IJG
+    IJG-short
     IPA
     IPL-1.0
     ISC
@@ -265,10 +284,12 @@ class Gem::Licenses
     Intel
     Intel-ACPI
     Interbase-1.0
+    JPL-image
     JPNIC
     JSON
     Jam
     JasPer-2.0
+    Kazlib
     Knuth-CTAN
     LAL-1.2
     LAL-1.3
@@ -285,6 +306,7 @@ class Gem::Licenses
     LGPL-3.0-only
     LGPL-3.0-or-later
     LGPLLR
+    LOOP
     LPL-1.0
     LPL-1.02
     LPPL-1.0
@@ -306,6 +328,7 @@ class Gem::Licenses
     MIT-0
     MIT-CMU
     MIT-Modern-Variant
+    MIT-Wu
     MIT-advertising
     MIT-enna
     MIT-feh
@@ -320,6 +343,7 @@ class Gem::Licenses
     MS-RL
     MTLL
     MakeIndex
+    Martin-Birgmeier
     Minpack
     MirOS
     Motosoto
@@ -358,6 +382,7 @@ class Gem::Licenses
     OCLC-2.0
     ODC-By-1.0
     ODbL-1.0
+    OFFIS
     OFL-1.0
     OFL-1.0-RFN
     OFL-1.0-no-RFN
@@ -396,6 +421,7 @@ class Gem::Licenses
     OSL-2.0
     OSL-2.1
     OSL-3.0
+    OpenPBS-2.3
     OpenSSL
     PDDL-1.0
     PHP-3.0
@@ -410,6 +436,7 @@ class Gem::Licenses
     Python-2.0
     Python-2.0.1
     QPL-1.0
+    QPL-1.0-INRIA-2004
     Qhull
     RHeCos-1.1
     RPL-1.1
@@ -447,14 +474,20 @@ class Gem::Licenses
     Spencer-99
     StandardML-NJ
     SugarCRM-1.1.3
+    SunPro
+    Symlinks
     TAPR-OHL-1.0
     TCL
     TCP-wrappers
     TMate
     TORQUE-1.1
     TOSL
+    TPDL
+    TPL-1.0
+    TTWL
     TU-Berlin-1.0
     TU-Berlin-2.0
+    UCAR
     UCL-1.0
     UPL-1.0
     Unicode-DFS-2015
@@ -510,8 +543,11 @@ class Gem::Licenses
     mplus
     psfrag
     psutils
+    snprintf
+    w3m
     wxWindows
     xinetd
+    xlock
     xpp
     zlib-acknowledgement
   ].freeze
@@ -521,6 +557,7 @@ class Gem::Licenses
     389-exception
     Autoconf-exception-2.0
     Autoconf-exception-3.0
+    Autoconf-exception-generic
     Bison-exception-2.2
     Bootloader-exception
     CLISP-exception-2.0
@@ -531,6 +568,7 @@ class Gem::Licenses
     Font-exception-2.0
     GCC-exception-2.0
     GCC-exception-3.1
+    GNAT-exception
     GPL-3.0-linking-exception
     GPL-3.0-linking-source-exception
     GPL-CC-1.0
@@ -547,11 +585,13 @@ class Gem::Licenses
     OCaml-LGPL-linking-exception
     OpenJDK-assembly-exception-1.0
     PS-or-PDF-font-exception-20170817
+    QPL-1.0-INRIA-2004-exception
     Qt-GPL-exception-1.0
     Qt-LGPL-exception-1.1
     Qwt-exception-1.0
     SHL-2.0
     SHL-2.1
+    SWI-exception
     Swift-exception
     Universal-FOSS-exception-1.0
     WxWindows-exception-3.1

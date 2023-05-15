@@ -5,10 +5,13 @@
 #
 # To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
 # PropertyAliases.txt, PropertyValueAliases.txt, DerivedCoreProperties.txt,
-# DerivedAge.txt and Blocks.txt  from unicode.org.
+# DerivedAge.txt, Blocks.txt, emoji/emoji-data.txt,
+# auxiliary/GraphemeBreakProperty.txt from unicode.org
 # (http://unicode.org/Public/UNIDATA/) And run following command.
-# ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
+# tool/enc-unicode.rb data_dir emoji_data_dir > enc/unicode/name2ctype.kwd
 # You can get source file for gperf.  After this, simply make ruby.
+# Or directly run:
+# tool/enc-unicode.rb --header data_dir emoji_data_dir > enc/unicode/<VERSION>/name2ctype.h
 
 while arg = ARGV.shift
   case arg

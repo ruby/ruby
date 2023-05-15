@@ -2656,12 +2656,18 @@ external_str_new_cstr(const char *p)
 #endif
 }
 
+static void
+set_progname(VALUE name)
+{
+    rb_orig_progname = rb_progname = name;
+    rb_vm_set_progname(rb_progname);
+}
+
 void
 ruby_script(const char *name)
 {
     if (name) {
-        rb_orig_progname = rb_progname = external_str_new_cstr(name);
-        rb_vm_set_progname(rb_progname);
+        set_progname(rb_str_freeze(external_str_new_cstr(name)));
     }
 }
 
@@ -2672,8 +2678,7 @@ ruby_script(const char *name)
 void
 ruby_set_script_name(VALUE name)
 {
-    rb_orig_progname = rb_progname = rb_str_dup(name);
-    rb_vm_set_progname(rb_progname);
+    set_progname(rb_str_new_frozen(name));
 }
 
 static void
@@ -2797,7 +2802,7 @@ ruby_process_options(int argc, char **argv)
         origarg.argc = argc;
         origarg.argv = argv;
     }
-    ruby_script(script_name);  /* for the time being */
+    set_progname(external_str_new_cstr(script_name));  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
     iseq = process_options(argc, argv, cmdline_options_init(&opt));

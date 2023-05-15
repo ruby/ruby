@@ -3,10 +3,7 @@ require 'test/unit'
 require 'envutil'
 require 'uri'
 
-module URI
-
-
-class TestCommon < Test::Unit::TestCase
+class URI::TestCommon < Test::Unit::TestCase
   def setup
   end
 
@@ -116,7 +113,7 @@ class TestCommon < Test::Unit::TestCase
     pre = ->(n) {
       'https://example.com/dir/' + 'a' * (n * 100) + '/##.jpg'
     }
-    assert_linear_performance((1..10).map {|i| i * 100}, rehearsal: 1000, pre: pre) do |uri|
+    assert_linear_performance((1..3).map {|i| 10**i}, rehearsal: 1000, pre: pre) do |uri|
       assert_raise(URI::InvalidURIError) do
         URI.parse(uri)
       end
@@ -291,7 +288,4 @@ class TestCommon < Test::Unit::TestCase
 
   private
   def s(str) str.force_encoding(Encoding::Windows_31J); end
-end
-
-
 end
