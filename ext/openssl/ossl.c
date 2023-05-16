@@ -422,7 +422,7 @@ ossl_fips_mode_get(VALUE self)
     VALUE enabled;
     enabled = EVP_default_properties_is_fips_enabled(NULL) ? Qtrue : Qfalse;
     return enabled;
-#elif OPENSSL_FIPS
+#elif defined(OPENSSL_FIPS)
     VALUE enabled;
     enabled = FIPS_mode() ? Qtrue : Qfalse;
     return enabled;
@@ -457,7 +457,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
         }
     }
     return enabled;
-#elif OPENSSL_FIPS
+#elif defined(OPENSSL_FIPS)
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -1215,7 +1215,7 @@ Init_openssl(void)
 /* OpenSSL 3 is FIPS-capable even when it is installed without fips option */
 #if OSSL_OPENSSL_PREREQ(3, 0, 0)
                     Qtrue
-#elif OPENSSL_FIPS
+#elif defined(OPENSSL_FIPS)
 		    Qtrue
 #else
 		    Qfalse
