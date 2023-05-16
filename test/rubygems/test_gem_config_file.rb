@@ -324,14 +324,19 @@ if you believe they were disclosed to a third party.
     temp_cred = File.join Gem.user_home, ".gem", "credentials"
     FileUtils.mkdir_p File.dirname(temp_cred)
     File.open temp_cred, "w", 0o600 do |fp|
-      fp.puts ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
-      fp.puts ":other: a5fdbb6ba150cbb83aad2bb2fede64c"
+      fp.puts ":rubygems_api_key: rubygems_b9ce70c306b3a2e248679fbbbd66722d408d3c8c4f00566c"
+      fp.puts ":other: rubygems_9636a120106ea8b81fbc792188251738665711d2ece160c5"
+      fp.puts "http://localhost:3000: rubygems_be293ad9dd71550a012b17d848893b41960b811ce9312b47"
     end
 
     util_config_file
 
-    assert_equal({ :rubygems => "701229f217cdf23b1344c7b4b54ca97",
-                   :other => "a5fdbb6ba150cbb83aad2bb2fede64c" }, @cfg.api_keys)
+    assert_equal(
+      { :rubygems => "rubygems_b9ce70c306b3a2e248679fbbbd66722d408d3c8c4f00566c",
+        :other => "rubygems_9636a120106ea8b81fbc792188251738665711d2ece160c5",
+        "http://localhost:3000" => "rubygems_be293ad9dd71550a012b17d848893b41960b811ce9312b47" },
+      @cfg.api_keys
+    )
   end
 
   def test_load_api_keys_bad_permission
