@@ -1108,6 +1108,9 @@ default_handler(int sig)
 #ifdef SIGUSR2
       case SIGUSR2:
 #endif
+#ifdef RUBY_SIGCHLD
+      case RUBY_SIGCHLD:
+#endif
         func = sighandler;
         break;
 #ifdef SIGBUS
