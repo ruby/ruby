@@ -212,10 +212,10 @@ class TestThreadQueue < Test::Unit::TestCase
       total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, timeout: timeout, chdir: d)
+          r, w = IO.pipe
           #{total_count}.times do |i|
             File.open("test_thr_kill_count", "w") {|f| f.puts i }
             queue = Thread::Queue.new
-            r, w = IO.pipe
             th = Thread.start {
               queue.push(nil)
               r.read 1
