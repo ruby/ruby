@@ -17,7 +17,7 @@ module TestIRB
 
   class DebugCommandTestCase < TestCase
     IRB_AND_DEBUGGER_OPTIONS = {
-      "RUBY_DEBUG_NO_RELINE" => "true", "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
+      "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
     }
 
     def setup
@@ -211,7 +211,10 @@ module TestIRB
       cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
       tmp_dir = Dir.mktmpdir
       rc_file = File.open(File.join(tmp_dir, ".irbrc"), "w+")
-      rc_file.write("IRB.conf[:USE_SINGLELINE] = true")
+      rc_file.write(<<~RUBY)
+        IRB.conf[:USE_SINGLELINE] = true
+        Reline.const_set(:IOGate, Reline::GeneralIO)
+      RUBY
       rc_file.close
 
       @commands = []
