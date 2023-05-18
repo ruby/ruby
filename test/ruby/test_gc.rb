@@ -643,4 +643,30 @@ class TestGc < Test::Unit::TestCase
     Module.new.class_eval( (["# shareable_constant_value: literal"] +
                             (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
   end
+
+  def test_old_to_young_reference
+    original_gc_disabled = GC.disable
+
+    require "objspace"
+
+    old_obj = Object.new
+    4.times { GC.start }
+
+    assert_include ObjectSpace.dump(old_obj), '"old":true'
+
+    young_obj = Object.new
+    old_obj.instance_variable_set(:@test, young_obj)
+
+    # Not immediately promoted to old generation
+    3.times do
+      assert_not_include ObjectSpace.dump(young_obj), '"old":true'
+      GC.start
+    end
+
+    # Takes 4 GC to promote to old generation
+    GC.start
+    assert_include ObjectSpace.dump(young_obj), '"old":true'
+  ensure
+    GC.enable if !original_gc_disabled
+  end
 end
