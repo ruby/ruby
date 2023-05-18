@@ -43,7 +43,11 @@ class RubyLex
   end
 
   # io functions
-  def set_input(io, &block)
+  def set_input(&block)
+    @input = block
+  end
+
+  def configure_io(io)
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
@@ -112,10 +116,22 @@ class RubyLex
       end
     end
 
-    if block_given?
-      @input = block
-    else
-      @input = Proc.new{@io.gets}
+    if @io.respond_to?(:auto_indent) and @context.auto_indent_mode
+      @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
+        if is_newline
+          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"), context: @context)
+          prev_spaces = find_prev_spaces(line_index)
+          depth_difference = check_newline_depth_difference
+          depth_difference = 0 if depth_difference < 0
+          prev_spaces + depth_difference * 2
+        else
+          code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
+          last_line = lines[line_index]&.byteslice(0, byte_pointer)
+          code += last_line if last_line
+          @tokens = self.class.ripper_lex_without_warning(code, context: @context)
+          check_corresponding_token_depth(lines, line_index)
+        end
+      end
     end
   end
 
@@ -182,26 +198,6 @@ class RubyLex
       end
     end
     prev_spaces
-  end
-
-  def set_auto_indent
-    if @io.respond_to?(:auto_indent) and @context.auto_indent_mode
-      @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
-        if is_newline
-          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"), context: @context)
-          prev_spaces = find_prev_spaces(line_index)
-          depth_difference = check_newline_depth_difference
-          depth_difference = 0 if depth_difference < 0
-          prev_spaces + depth_difference * 2
-        else
-          code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
-          last_line = lines[line_index]&.byteslice(0, byte_pointer)
-          code += last_line if last_line
-          @tokens = self.class.ripper_lex_without_warning(code, context: @context)
-          check_corresponding_token_depth(lines, line_index)
-        end
-      end
-    end
   end
 
   def check_state(code, tokens)

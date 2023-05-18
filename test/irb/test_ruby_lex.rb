@@ -41,8 +41,8 @@ module TestIRB
       ruby_lex = RubyLex.new(context)
       mock_io = MockIO_AutoIndent.new(lines, last_line_index, byte_pointer, add_new_line)
 
-      ruby_lex.set_input(mock_io)
-      ruby_lex.set_auto_indent
+      ruby_lex.set_input { @io.gets }
+      ruby_lex.configure_io(mock_io)
       mock_io.calculated_indent
     end
 
@@ -99,7 +99,7 @@ module TestIRB
       ruby_lex = RubyLex.new(context)
 
       io = proc{ lines.join("\n") }
-      ruby_lex.set_input(io) do
+      ruby_lex.set_input do
         lines.join("\n")
       end
       ruby_lex.lex
@@ -658,7 +658,7 @@ module TestIRB
       ruby_lex.set_prompt do |ltype, indent, continue, line_no|
         '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
       end
-      ruby_lex.set_input(io)
+      ruby_lex.set_input { @io.gets }
     end
 
     def test_dyanmic_prompt
