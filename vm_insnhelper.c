@@ -1616,7 +1616,8 @@ vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
     /* continue throw */
 
     if (FIXNUM_P(err)) {
-        ec->tag->state = FIX2INT(err);
+        VM_ASSERT(FIX2INT(err) == RUBY_TAG_FATAL);
+        ec->tag->state = RUBY_TAG_FATAL;
     }
     else if (SYMBOL_P(err)) {
         ec->tag->state = TAG_THROW;
@@ -1625,7 +1626,7 @@ vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
         ec->tag->state = THROW_DATA_STATE((struct vm_throw_data *)err);
     }
     else {
-        ec->tag->state = TAG_RAISE;
+        ec->tag->state = RUBY_TAG_RAISE;
     }
     return err;
 }
