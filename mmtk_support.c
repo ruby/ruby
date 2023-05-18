@@ -48,30 +48,18 @@ bool obj_free_on_exit_started = false;
 // Use up to 80% of memory for the heap
 static const int rb_mmtk_heap_limit_percentage = 80;
 
-struct RubyMMTKThreadIterator {
-    rb_thread_t **threads;
-    size_t num_threads;
-    size_t cursor;
-};
-
 struct RubyMMTKGlobal {
     pthread_mutex_t mutex;
     pthread_cond_t cond_world_stopped;
     pthread_cond_t cond_world_started;
     size_t stopped_ractors;
     size_t start_the_world_count;
-    struct RubyMMTKThreadIterator thread_iter;
 } rb_mmtk_global = {
     .mutex = PTHREAD_MUTEX_INITIALIZER,
     .cond_world_stopped = PTHREAD_COND_INITIALIZER,
     .cond_world_started = PTHREAD_COND_INITIALIZER,
     .stopped_ractors = 0,
     .start_the_world_count = 0,
-    .thread_iter = {
-        .threads = NULL,
-        .num_threads = 0,
-        .cursor = 0,
-    },
 };
 
 struct rb_mmtk_address_buffer {
@@ -834,54 +822,16 @@ rb_mmtk_number_of_mutators(void)
 }
 
 static void
-rb_mmtk_reset_mutator_iterator(void)
+rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), void *data)
 {
     rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
-
-    struct RubyMMTKThreadIterator *thread_iter = &rb_mmtk_global.thread_iter;
-
-    if (thread_iter->threads != NULL) {
-        free(thread_iter->threads);
-    }
 
     rb_ractor_t *main_ractor = GET_VM()->ractor.main_ractor;
 
-    size_t num_threads = main_ractor->threads.cnt;
-
-    rb_thread_t **threads = (rb_thread_t**)malloc(sizeof(rb_thread_t*) * num_threads);
-    RUBY_ASSERT(threads != NULL); // Could this fail? Maybe if the GC itself uses malloc.
-
-    size_t i = 0;
     rb_thread_t *th = NULL;
     ccan_list_for_each(&main_ractor->threads.set, th, lt_node) {
-        RUBY_ASSERT(i < num_threads);
-        threads[i] = th;
-        i++;
-    }
-
-    thread_iter->threads = threads;
-    thread_iter->num_threads = num_threads;
-    thread_iter->cursor = 0;
-}
-
-static MMTk_Mutator*
-rb_mmtk_get_next_mutator(void)
-{
-    rb_mmtk_assert_mmtk_worker();
-    rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
-
-    struct RubyMMTKThreadIterator *thread_iter = &rb_mmtk_global.thread_iter;
-
-    RUBY_ASSERT_MESG(thread_iter->threads != NULL,
-        "thread_iter->threads is NULL. Maybe rb_mmtk_reset_mutator_iterator is not called");
-
-    if (thread_iter->cursor < thread_iter->num_threads) {
-        rb_thread_t *thread = thread_iter->threads[thread_iter->cursor];
-        thread_iter->cursor++;
-        return thread->mutator;
-    } else {
-        return NULL;
+        visit_mutator(th->mutator, data);
     }
 }
 
@@ -945,8 +895,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
     rb_mmtk_number_of_mutators,
-    rb_mmtk_reset_mutator_iterator,
-    rb_mmtk_get_next_mutator,
+    rb_mmtk_get_mutators,
     rb_mmtk_scan_vm_specific_roots,
     rb_mmtk_scan_thread_roots,
     rb_mmtk_scan_thread_root,

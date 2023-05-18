@@ -62,8 +62,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*resume_mutators)(MMTk_VMWorkerThread tls);
     void (*block_for_gc)(MMTk_VMMutatorThread tls);
     size_t (*number_of_mutators)(void);
-    void (*reset_mutator_iterator)(void);
-    MMTk_Mutator *(*get_next_mutator)(void);
+    void (*get_mutators)(void (*visit_mutator)(MMTk_Mutator*, void*), void *data);
     void (*scan_vm_specific_roots)(void);
     void (*scan_thread_roots)(void);
     void (*scan_thread_root)(MMTk_VMMutatorThread mutator_tls, MMTk_VMWorkerThread worker_tls);
