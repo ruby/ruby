@@ -506,7 +506,26 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
 
     if (!sched->timer) {
-        if (!designate_timer_thread(sched) && !ubf_threads_empty()) {
+        /* Make sure that this thread is not currently the sigwait_thread before we
+           decide to wake it up. Otherwise, we can end up in a loop of the following
+           operations:
+             * We are in native_sleep -> sigwait_sleep
+             * A signal arives, kicking this thread out of rb_sigwait_sleep
+             * We get here because of the call to THREAD_BLOCKING_END() in native_sleep
+             * write into the sigwait_fd pipe here
+             * re-loop around in native_sleep() because the desired sleep time has not
+               actually yet expired
+             * that calls rb_sigwait_sleep again
+             * the ppoll() in rb_sigwait_sleep immediately returns because of the byte we
+               wrote to the sigwait_fd here
+             * that wakes the thread up again and we end up here again.
+           Such a loop can only be broken by the main thread waking up and handling the
+           signal, such that ubf_threads_empty() below becomes true again; however this
+           loop can actually keep things so busy (and cause so much contention on the
+           main thread's interrupt_lock) that the main thread doesn't deal with the
+           signal for many seconds. This seems particuarly likely on FreeBSD 13.
+        */
+        if (!designate_timer_thread(sched) && !ubf_threads_empty() && th != sigwait_th) {
             rb_thread_wakeup_timer_thread(-1);
         }
     }

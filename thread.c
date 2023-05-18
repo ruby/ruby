@@ -4509,7 +4509,6 @@ check_signals_nogvl(rb_thread_t *th, int sigwait_fd)
         else {
             threadptr_trap_interrupt(vm->ractor.main_thread);
         }
-        ret = TRUE; /* for rb_sigwait_sleep */
     }
     return ret;
 }
