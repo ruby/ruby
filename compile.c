@@ -856,7 +856,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-#include "yarp_compiler.c"
+static VALUE rb_translate_yarp(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret);
 
 VALUE
 rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer)
@@ -13467,3 +13467,5 @@ rb_iseq_ibf_load_extra_data(VALUE str)
     RB_GC_GUARD(loader_obj);
     return extra_str;
 }
+
+#include "yarp_compiler.c"
