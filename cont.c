@@ -28,6 +28,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/cont.h"
+#include "internal/thread.h"
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/proc.h"
@@ -76,8 +77,6 @@ enum context_type {
     CONTINUATION_CONTEXT = 0,
     FIBER_CONTEXT = 1
 };
-
-#define RUBY_FATAL_FIBER_KILLED RB_INT2FIX(2)
 
 struct cont_saved_vm_stack {
     VALUE *ptr;
