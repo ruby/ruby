@@ -1124,19 +1124,6 @@ struct io_internal_write_struct {
     struct timeval *timeout;
 };
 
-#ifdef HAVE_WRITEV
-struct io_internal_writev_struct {
-    VALUE th;
-    rb_io_t *fptr;
-    int nonblock;
-    int fd;
-
-    int iovcnt;
-    const struct iovec *iov;
-    struct timeval *timeout;
-};
-#endif
-
 static int nogvl_wait_for(VALUE th, rb_io_t *fptr, short events, struct timeval *timeout);
 
 /**
@@ -1226,37 +1213,6 @@ internal_write_func(void *ptr)
     return result;
 }
 
-#ifdef HAVE_WRITEV
-static VALUE
-internal_writev_func(void *ptr)
-{
-    struct io_internal_writev_struct *iis = ptr;
-    ssize_t result;
-
-    if (iis->timeout && !iis->nonblock) {
-        if (io_internal_wait(iis->th, iis->fptr, 0, RB_WAITFD_OUT, iis->timeout) == -1) {
-            return -1;
-        }
-    }
-
-  retry:
-    do_write_retry(writev(iis->fd, iis->iov, iis->iovcnt));
-
-    if (result < 0 && !iis->nonblock) {
-        if (io_again_p(errno)) {
-            if (io_internal_wait(iis->th, iis->fptr, errno, RB_WAITFD_OUT, iis->timeout) == -1) {
-                return -1;
-            }
-            else {
-                goto retry;
-            }
-        }
-    }
-
-    return result;
-}
-#endif
-
 static ssize_t
 rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
 {
@@ -1322,44 +1278,6 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
 
     return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
 }
-
-#ifdef HAVE_WRITEV
-static ssize_t
-rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
-{
-    if (!iovcnt) return 0;
-
-    VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        // This path assumes at least one `iov`:
-        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len, 0);
-
-        if (!UNDEF_P(result)) {
-            return rb_fiber_scheduler_io_result_apply(result);
-        }
-    }
-
-    struct io_internal_writev_struct iis = {
-        .th = rb_thread_current(),
-        .fptr = fptr,
-        .nonblock = 0,
-        .fd = fptr->fd,
-
-        .iov = iov,
-        .iovcnt = iovcnt,
-        .timeout = NULL
-    };
-
-    struct timeval timeout_storage;
-
-    if (fptr->timeout != Qnil) {
-        timeout_storage = rb_time_interval(fptr->timeout);
-        iis.timeout = &timeout_storage;
-    }
-
-    return (ssize_t)rb_thread_io_blocking_region(internal_writev_func, &iis, fptr->fd);
-}
-#endif
 
 static VALUE
 io_flush_buffer_sync(void *arg)
@@ -1711,44 +1629,6 @@ struct write_arg {
     int nosync;
 };
 
-#ifdef HAVE_WRITEV
-static ssize_t
-io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
-{
-    if (fptr->wbuf.len) {
-        struct iovec iov[2];
-
-        iov[0].iov_base = fptr->wbuf.ptr+fptr->wbuf.off;
-        iov[0].iov_len = fptr->wbuf.len;
-        iov[1].iov_base = (void*)ptr;
-        iov[1].iov_len = length;
-
-        ssize_t result = rb_writev_internal(fptr, iov, 2);
-
-        if (result < 0)
-            return result;
-
-        if (result >= fptr->wbuf.len) {
-            // We wrote more than the internal buffer:
-            result -= fptr->wbuf.len;
-            fptr->wbuf.off = 0;
-            fptr->wbuf.len = 0;
-        }
-        else {
-            // We only wrote less data than the internal buffer:
-            fptr->wbuf.off += (int)result;
-            fptr->wbuf.len -= (int)result;
-
-            result = 0;
-        }
-
-        return result;
-    }
-    else {
-        return rb_io_write_memory(fptr, ptr, length);
-    }
-}
-#else
 static ssize_t
 io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
 {
@@ -1782,7 +1662,6 @@ io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
     // Otherwise, we should write the data directly:
     return rb_io_write_memory(fptr, ptr, length);
 }
-#endif
 
 static VALUE
 io_binwrite_string(VALUE arg)
@@ -2019,186 +1898,12 @@ io_write(VALUE io, VALUE str, int nosync)
     return LONG2FIX(n);
 }
 
-#ifdef HAVE_WRITEV
-struct binwritev_arg {
-    rb_io_t *fptr;
-    struct iovec *iov;
-    int iovcnt;
-    size_t total;
-};
-
-static VALUE
-io_binwritev_internal(VALUE arg)
-{
-    struct binwritev_arg *p = (struct binwritev_arg *)arg;
-
-    size_t remaining = p->total;
-    size_t offset = 0;
-
-    rb_io_t *fptr = p->fptr;
-    struct iovec *iov = p->iov;
-    int iovcnt = p->iovcnt;
-
-    while (remaining) {
-        long result = rb_writev_internal(fptr, iov, iovcnt);
-
-        if (result >= 0) {
-            offset += result;
-            if (fptr->wbuf.ptr && fptr->wbuf.len) {
-                if (offset < (size_t)fptr->wbuf.len) {
-                    fptr->wbuf.off += result;
-                    fptr->wbuf.len -= result;
-                }
-                else {
-                    offset -= (size_t)fptr->wbuf.len;
-                    fptr->wbuf.off = 0;
-                    fptr->wbuf.len = 0;
-                }
-            }
-
-            if (offset == p->total) {
-                return p->total;
-            }
-
-            while (result >= (ssize_t)iov->iov_len) {
-                /* iovcnt > 0 */
-                result -= iov->iov_len;
-                iov->iov_len = 0;
-                iov++;
-
-                if (!--iovcnt) {
-                    // I don't believe this code path can ever occur.
-                    return offset;
-                }
-            }
-
-            iov->iov_base = (char *)iov->iov_base + result;
-            iov->iov_len -= result;
-        }
-        else if (rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
-            rb_io_check_closed(fptr);
-        }
-        else {
-            return -1;
-        }
-    }
-
-    return offset;
-}
-
-static long
-io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
-{
-    // Don't write anything if current thread has a pending interrupt:
-    rb_thread_check_ints();
-
-    if (iovcnt == 0) return 0;
-
-    size_t total = 0;
-    for (int i = 1; i < iovcnt; i++) total += iov[i].iov_len;
-
-    io_allocate_write_buffer(fptr, 1);
-
-    if (fptr->wbuf.ptr && fptr->wbuf.len) {
-        // The end of the buffered data:
-        size_t offset = fptr->wbuf.off + fptr->wbuf.len;
-
-        if (offset + total <= (size_t)fptr->wbuf.capa) {
-            for (int i = 1; i < iovcnt; i++) {
-                memcpy(fptr->wbuf.ptr+offset, iov[i].iov_base, iov[i].iov_len);
-                offset += iov[i].iov_len;
-            }
-
-            fptr->wbuf.len += total;
-
-            return total;
-        }
-        else {
-            iov[0].iov_base = fptr->wbuf.ptr + fptr->wbuf.off;
-            iov[0].iov_len = fptr->wbuf.len;
-        }
-    }
-    else {
-        // The first iov is reserved for the internal buffer, and it's empty.
-        iov++;
-
-        if (!--iovcnt) {
-            // If there are no other io vectors we are done.
-            return 0;
-        }
-    }
-
-    struct binwritev_arg arg;
-    arg.fptr = fptr;
-    arg.iov = iov;
-    arg.iovcnt = iovcnt;
-    arg.total = total;
-
-    if (!NIL_P(fptr->write_lock)) {
-        return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, (VALUE)&arg);
-    }
-    else {
-        return io_binwritev_internal((VALUE)&arg);
-    }
-}
-
-static long
-io_fwritev(int argc, const VALUE *argv, rb_io_t *fptr)
-{
-    int i, converted, iovcnt = argc + 1;
-    long n;
-    VALUE v1, v2, str, tmp, *tmp_array;
-    struct iovec *iov;
-
-    iov = ALLOCV_N(struct iovec, v1, iovcnt);
-    tmp_array = ALLOCV_N(VALUE, v2, argc);
-
-    for (i = 0; i < argc; i++) {
-        str = rb_obj_as_string(argv[i]);
-        converted = 0;
-        str = do_writeconv(str, fptr, &converted);
-
-        if (converted)
-            OBJ_FREEZE(str);
-
-        tmp = rb_str_tmp_frozen_acquire(str);
-        tmp_array[i] = tmp;
-
-        /* iov[0] is reserved for buffer of fptr */
-        iov[i+1].iov_base = RSTRING_PTR(tmp);
-        iov[i+1].iov_len = RSTRING_LEN(tmp);
-    }
-
-    n = io_binwritev(iov, iovcnt, fptr);
-    if (v1) ALLOCV_END(v1);
-
-    for (i = 0; i < argc; i++) {
-        rb_str_tmp_frozen_release(argv[i], tmp_array[i]);
-    }
-
-    if (v2) ALLOCV_END(v2);
-
-    return n;
-}
-
-static int
-iovcnt_ok(int iovcnt)
-{
-#ifdef IOV_MAX
-    return iovcnt < IOV_MAX;
-#else /* GNU/Hurd has writev, but no IOV_MAX */
-    return 1;
-#endif
-}
-#endif /* HAVE_WRITEV */
-
 static VALUE
 io_writev(int argc, const VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     long n;
     VALUE tmp, total = INT2FIX(0);
-    int i, cnt = 1;
 
     io = GetWriteIO(io);
     tmp = rb_io_check_io(io);
@@ -2213,18 +1918,9 @@ io_writev(int argc, const VALUE *argv, VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    for (i = 0; i < argc; i += cnt) {
-#ifdef HAVE_WRITEV
-        if ((fptr->mode & (FMODE_SYNC|FMODE_TTY)) && iovcnt_ok(cnt = argc - i)) {
-            n = io_fwritev(cnt, &argv[i], fptr);
-        }
-        else
-#endif
-        {
-            cnt = 1;
-            /* sync at last item */
-            n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
-        }
+    for (int i = 0; i < argc; i += 1) {
+        /* sync at last item */
+        n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
 
         if (n < 0L)
             rb_sys_fail_on_write(fptr);
