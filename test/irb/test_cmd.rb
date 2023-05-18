@@ -783,19 +783,33 @@ module TestIRB
   end
 
   class ShowDocTest < CommandTestCase
-    def test_help_and_show_doc
-      ["help", "show_doc"].each do |cmd|
-        out, err = execute_lines(
-          "#{cmd} String#gsub\n",
-          "\n",
-        )
+    def test_help
+      out, err = execute_lines(
+        "help String#gsub\n",
+        "\n",
+      )
 
-        # the former is what we'd get without document content installed, like on CI
-        # the latter is what we may get locally
-        possible_rdoc_output = [/Nothing known about String#gsub/, /gsub\(pattern\)/]
-        assert_empty err
-        assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `#{cmd}` command to match one of the possible outputs. Got:\n#{out}")
-      end
+      # the former is what we'd get without document content installed, like on CI
+      # the latter is what we may get locally
+      possible_rdoc_output = [/Nothing known about String#gsub/, /gsub\(pattern\)/]
+      assert_include err, "[Deprecation] The `help` command will be repurposed to display command help in the future.\n"
+      assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `help` command to match one of the possible outputs. Got:\n#{out}")
+    ensure
+      # this is the only way to reset the redefined method without coupling the test with its implementation
+      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+    end
+
+    def test_show_doc
+      out, err = execute_lines(
+        "show_doc String#gsub\n",
+        "\n",
+      )
+
+      # the former is what we'd get without document content installed, like on CI
+      # the latter is what we may get locally
+      possible_rdoc_output = [/Nothing known about String#gsub/, /gsub\(pattern\)/]
+      assert_not_include err, "[Deprecation]"
+      assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `show_doc` command to match one of the possible outputs. Got:\n#{out}")
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
       EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
