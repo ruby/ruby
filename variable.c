@@ -221,6 +221,20 @@ build_const_path(VALUE head, ID tail)
     return build_const_pathname(head, rb_id2str(tail));
 }
 
+static VALUE
+build_permanent_const_path(VALUE head, VALUE temporary_classpath)
+{
+    char *name = RSTRING_PTR(temporary_classpath);
+    char *next = name;
+    while ((next = strstr(next + 1, "::"))) {
+        name = next;
+    }
+
+    VALUE path = rb_str_dup(head);
+    rb_str_cat2(path, name);
+    return rb_fstring(path);
+}
+
 void
 rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 {
@@ -3228,11 +3242,11 @@ set_namespace_path_i(ID id, VALUE v, void *payload)
     }
 
     bool has_permanent_classpath;
-    classname(value, &has_permanent_classpath);
+    VALUE temporary_classpath = classname(value, &has_permanent_classpath);
     if (has_permanent_classpath) {
         return ID_TABLE_CONTINUE;
     }
-    set_namespace_path(value, build_const_path(parental_path, id));
+    set_namespace_path(value, build_permanent_const_path(parental_path, temporary_classpath));
 
     if (!RCLASS_EXT(value)->permanent_classpath) {
         RCLASS_SET_CLASSPATH(value, 0, false);

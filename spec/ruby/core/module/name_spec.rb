@@ -53,6 +53,24 @@ describe "Module#name" do
     end
   end
 
+  ruby_bug("#19681", ""..."3.3") do
+    it "keeps the very first name it was assigned" do
+      module ModuleSpecs
+        m = Module.new
+
+        class m::C; end
+        m::C.name.should =~ /\A#<Module:0x\h+>::C\z/
+
+        m::D = m::C
+        m::D.name.should =~ /\A#<Module:0x\h+>::C\z/
+
+        M = m
+        M::C.name.should == "ModuleSpecs::M::C"
+        M::D.name.should == "ModuleSpecs::M::C"
+      end
+    end
+  end
+
   it "is set after it is removed from a constant under an anonymous module" do
     m = Module.new
     module m::Child; end
