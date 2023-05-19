@@ -1516,7 +1516,7 @@ rb_uniform_quicksort_intro_2(struct rb_uniform_sort_data* ptr_begin,
         return;
     }
 
-    VALUE x = med3_val(ptr_begin->,
+    VALUE x = med3_val(ptr_begin->v,
                        ptr_begin[(ptr_end - ptr_begin)>>1].v,
                        ptr_end[-1].v);
     struct rb_uniform_sort_data *i = ptr_begin;
