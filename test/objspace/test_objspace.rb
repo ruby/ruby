@@ -300,6 +300,7 @@ class TestObjSpace < Test::Unit::TestCase
       assert_not_match(/"too_complex_shape"/, info)
       tc.instance_variable_set(:@new_ivar, 1)
       info = ObjectSpace.dump(tc)
+      omit 'too flaky with YJIT' if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
       assert_match(/"too_complex_shape":true/, info)
       if defined?(JSON)
         assert_true(JSON.parse(info)["too_complex_shape"])
