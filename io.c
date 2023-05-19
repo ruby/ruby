@@ -15,6 +15,7 @@
 
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io/buffer.h"
+#include <ruby/ruby.h>
 
 #ifdef _WIN32
 # include "ruby/ruby.h"
@@ -1899,36 +1900,46 @@ io_write(VALUE io, VALUE str, int nosync)
 }
 
 static VALUE
-io_writev(int argc, const VALUE *argv, VALUE io)
+io_writev(int argc, const VALUE *argv, VALUE self)
 {
     rb_io_t *fptr;
-    long n;
-    VALUE tmp, total = INT2FIX(0);
 
-    io = GetWriteIO(io);
-    tmp = rb_io_check_io(io);
+    self = GetWriteIO(self);
+    VALUE io = rb_io_check_io(self);
 
-    if (NIL_P(tmp)) {
+    if (NIL_P(io)) {
         /* port is not IO, call write method for it. */
-        return rb_funcallv(io, id_write, argc, argv);
+        return rb_funcallv(self, id_write, argc, argv);
     }
-
-    io = tmp;
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
+    // Compute the buffer size:
+    VALUE strings[argc];
+    
+    size_t size = 0;
     for (int i = 0; i < argc; i += 1) {
-        /* sync at last item */
-        n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
-
-        if (n < 0L)
-            rb_sys_fail_on_write(fptr);
-
-        total = rb_fix_plus(LONG2FIX(n), total);
+        VALUE string = rb_obj_as_string(argv[i]);
+        strings[i] = do_writeconv(string, fptr, &converted);
+        size += RSTRING_LEN(string);
     }
 
-    return total;
+    VALUE buffer = rb_io_buffer_new(NULL, size, 0);
+
+    char *base;
+    size_t size;
+    rb_io_buffer_get_bytes_for_writing(buffer, &base, *size);
+
+    for (int i = 0; i < argc; i += 1) {
+        VALUE string = strings[i];
+        memcpy(base, RSTRING_PTR(string), RSTRING_LEN(string));
+        base += RSTRING_LEN(string);
+    }
+
+    long total  = io_fwrite(buffer, fptr, 0);
+
+    return RB_LONG2NUM(total);
 }
 
 /*
@@ -8561,6 +8572,41 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
     return Qtrue;
 }
 
+static void
+io_puts(int argc, const VALUE *argv, VALUE out)
+{
+    VALUE args[2];
+    VALUE line;
+
+    for (int i = 0; i < argc; i++) {
+        int n = 0;
+
+        // Convert the argument to a string:
+        if (RB_TYPE_P(argv[i], T_STRING)) {
+            line = argv[i];
+        }
+        else if (rb_exec_recursive(io_puts_ary, argv[i], out)) {
+            continue;
+        }
+        else {
+            line = rb_obj_as_string(argv[i]);
+        }
+
+        // Write the line:
+        if (RSTRING_LEN(line) == 0) {
+            args[n++] = rb_default_rs;
+        }
+        else {
+            args[n++] = line;
+            if (!rb_str_end_with_asciichar(line, '\n')) {
+                args[n++] = rb_default_rs;
+            }
+        }
+
+        rb_io_writev(out, n, args);
+    }
+}
+
 /*
  *  call-seq:
  *    puts(*objects) -> nil
@@ -8611,40 +8657,14 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 VALUE
 rb_io_puts(int argc, const VALUE *argv, VALUE out)
 {
-    VALUE line, args[2];
-
-    /* if no argument given, print newline. */
     if (argc == 0) {
+        // If no argument given, print newline:
         rb_io_write(out, rb_default_rs);
-        return Qnil;
     }
-    for (int i = 0; i < argc; i++) {
-        // Convert the argument to a string:
-        if (RB_TYPE_P(argv[i], T_STRING)) {
-            line = argv[i];
-        }
-        else if (rb_exec_recursive(io_puts_ary, argv[i], out)) {
-            continue;
-        }
-        else {
-            line = rb_obj_as_string(argv[i]);
-        }
-
-        // Write the line:
-        int n = 0;
-        if (RSTRING_LEN(line) == 0) {
-            args[n++] = rb_default_rs;
-        }
-        else {
-            args[n++] = line;
-            if (!rb_str_end_with_asciichar(line, '\n')) {
-                args[n++] = rb_default_rs;
-            }
-        }
-
-        rb_io_writev(out, n, args);
+    else {
+        io_puts(argc, argv, out);
     }
-
+    
     return Qnil;
 }
 
