@@ -585,9 +585,14 @@ class TestThreadQueue < Test::Unit::TestCase
     count_items = rand(3000..5000)
     count_producers = rand(10..20)
 
+    # ensure threads do not start running too soon and complete before we check status
+    mutex = Mutex.new
+    mutex.lock
+
     producers = count_producers.times.map do
       Thread.new do
-        sleep(rand / 100)
+        mutex.lock
+        mutex.unlock
         count_items.times{|i| q << [i,"#{i} for #{Thread.current.inspect}"]}
       end
     end
@@ -605,9 +610,11 @@ class TestThreadQueue < Test::Unit::TestCase
 
     # No dead or finished threads, give up to 10 seconds to start running
     t = Time.now
-    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}
+    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status.to_s =~ /\A(?:run|sleep)\z/}
 
-    assert (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}, 'no threads running'
+    assert (consumers + producers).all?{|thr| thr.status.to_s =~ /\A(?:run|sleep)\z/}, 'no threads running'
+
+    mutex.unlock
 
     # just exercising the concurrency of the support methods.
     counter = Thread.new do
