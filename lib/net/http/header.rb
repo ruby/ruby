@@ -491,7 +491,7 @@ module Net::HTTPHeader
   alias canonical_each each_capitalized
 
   def capitalize(name)
-    name.to_s.split(/-/).map {|s| s.capitalize }.join('-')
+    name.to_s.split('-').map {|s| s.capitalize }.join('-')
   end
   private :capitalize
 
