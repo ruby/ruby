@@ -1,0 +1,73 @@
+ProgramNode(0...51)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...51)(
+    [DefNode(0...23)(
+       IDENTIFIER(4...7)("foo"),
+       nil,
+       ParametersNode(8...9)(
+         [],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         BlockParameterNode(8...9)(nil, (8...9))
+       ),
+       StatementsNode(13...19)(
+         [CallNode(13...19)(
+            nil,
+            nil,
+            IDENTIFIER(13...16)("bar"),
+            PARENTHESIS_LEFT(16...17)("("),
+            ArgumentsNode(17...18)(
+              [BlockArgumentNode(17...18)(nil, (17...18))]
+            ),
+            PARENTHESIS_RIGHT(18...19)(")"),
+            nil,
+            "bar"
+          )]
+       ),
+       ScopeNode(0...3)([AMPERSAND(8...9)("&")]),
+       (0...3),
+       nil,
+       (7...8),
+       (9...10),
+       nil,
+       (20...23)
+     ),
+     DefNode(25...51)(
+       IDENTIFIER(29...32)("foo"),
+       nil,
+       ParametersNode(33...37)(
+         [RequiredParameterNode(33...34)()],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         BlockParameterNode(36...37)(nil, (36...37))
+       ),
+       StatementsNode(41...47)(
+         [CallNode(41...47)(
+            nil,
+            nil,
+            IDENTIFIER(41...44)("bar"),
+            PARENTHESIS_LEFT(44...45)("("),
+            ArgumentsNode(45...46)(
+              [BlockArgumentNode(45...46)(nil, (45...46))]
+            ),
+            PARENTHESIS_RIGHT(46...47)(")"),
+            nil,
+            "bar"
+          )]
+       ),
+       ScopeNode(25...28)([IDENTIFIER(33...34)("a"), AMPERSAND(36...37)("&")]),
+       (25...28),
+       nil,
+       (32...33),
+       (37...38),
+       nil,
+       (48...51)
+     )]
+  )
+)

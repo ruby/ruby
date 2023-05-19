@@ -1,0 +1,28 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [CallNode(0...17)(
+       nil,
+       nil,
+       IDENTIFIER(0...4)("desc"),
+       nil,
+       ArgumentsNode(5...10)(
+         [StringNode(5...10)(
+            STRING_BEGIN(5...6)("\""),
+            STRING_CONTENT(6...9)("foo"),
+            STRING_END(9...10)("\""),
+            "foo"
+          )]
+       ),
+       nil,
+       BlockNode(11...17)(
+         ScopeNode(11...13)([]),
+         nil,
+         nil,
+         (11...13),
+         (14...17)
+       ),
+       "desc"
+     )]
+  )
+)

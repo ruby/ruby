@@ -1,0 +1,26 @@
+ProgramNode(0...13)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...13)(
+    [HashNode(0...13)(
+       BRACE_LEFT(0...1)("{"),
+       [AssocNode(2...11)(
+          InterpolatedSymbolNode(2...8)(
+            STRING_BEGIN(2...3)("\""),
+            [StringInterpolatedNode(3...6)(
+               EMBEXPR_BEGIN(3...5)("\#{"),
+               nil,
+               EMBEXPR_END(5...6)("}")
+             )],
+            LABEL_END(6...8)("\":")
+          ),
+          ArrayNode(9...11)(
+            [],
+            BRACKET_LEFT_ARRAY(9...10)("["),
+            BRACKET_RIGHT(10...11)("]")
+          ),
+          nil
+        )],
+       BRACE_RIGHT(12...13)("}")
+     )]
+  )
+)

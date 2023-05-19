@@ -1,0 +1,28 @@
+ProgramNode(0...11)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...11)(
+    [OperatorOrAssignmentNode(0...11)(
+       CallNode(0...3)(
+         ConstantReadNode(0...1)(),
+         DOT(1...2)("."),
+         CONSTANT(2...3)("B"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "B="
+       ),
+       CallNode(8...11)(
+         nil,
+         nil,
+         IDENTIFIER(8...9)("c"),
+         nil,
+         ArgumentsNode(10...11)([IntegerNode(10...11)()]),
+         nil,
+         nil,
+         "c"
+       ),
+       (4...7)
+     )]
+  )
+)

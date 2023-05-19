@@ -1,0 +1,24 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([IDENTIFIER(0...1)("a")]),
+  StatementsNode(0...17)(
+    [LocalVariableWriteNode(0...17)(
+       (0...1),
+       RescueModifierNode(4...17)(
+         CallNode(4...8)(
+           nil,
+           nil,
+           IDENTIFIER(4...5)("b"),
+           PARENTHESIS_LEFT(5...6)("("),
+           ArgumentsNode(6...7)([IntegerNode(6...7)()]),
+           PARENTHESIS_RIGHT(7...8)(")"),
+           nil,
+           "b"
+         ),
+         KEYWORD_RESCUE_MODIFIER(9...15)("rescue"),
+         IntegerNode(16...17)()
+       ),
+       (2...3),
+       0
+     )]
+  )
+)

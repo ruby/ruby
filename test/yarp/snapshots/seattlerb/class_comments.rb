@@ -1,0 +1,28 @@
+ProgramNode(19...71)(
+  ScopeNode(0...0)([]),
+  StatementsNode(19...71)(
+    [ClassNode(19...71)(
+       ScopeNode(19...24)([]),
+       KEYWORD_CLASS(19...24)("class"),
+       ConstantReadNode(25...26)(),
+       nil,
+       nil,
+       StatementsNode(40...67)(
+         [DefNode(40...67)(
+            IDENTIFIER(44...48)("blah"),
+            nil,
+            nil,
+            nil,
+            ScopeNode(40...43)([]),
+            (40...43),
+            nil,
+            nil,
+            nil,
+            nil,
+            (64...67)
+          )]
+       ),
+       KEYWORD_END(68...71)("end")
+     )]
+  )
+)

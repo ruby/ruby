@@ -1,0 +1,33 @@
+ProgramNode(0...7)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...7)(
+    [CallNode(0...7)(
+       CallNode(2...7)(
+         CallNode(2...3)(
+           nil,
+           nil,
+           IDENTIFIER(2...3)("a"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "a"
+         ),
+         DOT(3...4)("."),
+         IDENTIFIER(4...5)("b"),
+         nil,
+         ArgumentsNode(6...7)([IntegerNode(6...7)()]),
+         nil,
+         nil,
+         "b"
+       ),
+       nil,
+       BANG(0...1)("!"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "!"
+     )]
+  )
+)

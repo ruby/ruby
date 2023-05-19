@@ -1,0 +1,34 @@
+ProgramNode(0...20)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...20)(
+    [BeginNode(0...20)(
+       KEYWORD_BEGIN(0...5)("begin"),
+       StatementsNode(6...16)(
+         [CallNode(6...10)(
+            nil,
+            nil,
+            IDENTIFIER(6...10)("foo!"),
+            nil,
+            nil,
+            nil,
+            nil,
+            "foo!"
+          ),
+          CallNode(12...16)(
+            nil,
+            nil,
+            IDENTIFIER(12...16)("bar!"),
+            nil,
+            nil,
+            nil,
+            nil,
+            "bar!"
+          )]
+       ),
+       nil,
+       nil,
+       nil,
+       KEYWORD_END(17...20)("end")
+     )]
+  )
+)

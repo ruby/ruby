@@ -1,0 +1,24 @@
+ProgramNode(0...6)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...6)(
+    [CallNode(0...6)(
+       CallNode(0...1)(
+         nil,
+         nil,
+         IDENTIFIER(0...1)("a"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "a"
+       ),
+       AMPERSAND_DOT(1...3)("&."),
+       GREATER(3...4)(">"),
+       nil,
+       ArgumentsNode(5...6)([IntegerNode(5...6)()]),
+       nil,
+       nil,
+       ">"
+     )]
+  )
+)

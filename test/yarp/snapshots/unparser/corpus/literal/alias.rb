@@ -1,0 +1,25 @@
+ProgramNode(0...31)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...31)(
+    [AliasNode(0...15)(
+       GlobalVariableReadNode(6...10)(GLOBAL_VARIABLE(6...10)("$foo")),
+       GlobalVariableReadNode(11...15)(GLOBAL_VARIABLE(11...15)("$bar")),
+       (0...5)
+     ),
+     AliasNode(16...31)(
+       SymbolNode(22...26)(
+         SYMBOL_BEGIN(22...23)(":"),
+         IDENTIFIER(23...26)("foo"),
+         nil,
+         "foo"
+       ),
+       SymbolNode(27...31)(
+         SYMBOL_BEGIN(27...28)(":"),
+         IDENTIFIER(28...31)("bar"),
+         nil,
+         "bar"
+       ),
+       (16...21)
+     )]
+  )
+)

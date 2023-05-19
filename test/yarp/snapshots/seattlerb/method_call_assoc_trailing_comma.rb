@@ -1,0 +1,34 @@
+ProgramNode(0...10)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...10)(
+    [CallNode(0...10)(
+       CallNode(0...1)(
+         nil,
+         nil,
+         IDENTIFIER(0...1)("a"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "a"
+       ),
+       DOT(1...2)("."),
+       IDENTIFIER(2...3)("f"),
+       PARENTHESIS_LEFT(3...4)("("),
+       ArgumentsNode(4...8)(
+         [HashNode(4...8)(
+            nil,
+            [AssocNode(4...8)(
+               IntegerNode(4...5)(),
+               IntegerNode(7...8)(),
+               EQUAL_GREATER(5...7)("=>")
+             )],
+            nil
+          )]
+       ),
+       PARENTHESIS_RIGHT(9...10)(")"),
+       nil,
+       "f"
+     )]
+  )
+)

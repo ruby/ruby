@@ -1,0 +1,17 @@
+ProgramNode(0...12)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...12)(
+    [SymbolNode(0...6)(
+       SYMBOL_BEGIN(0...2)(":'"),
+       STRING_CONTENT(2...5)("foo"),
+       STRING_END(5...6)("'"),
+       "foo"
+     ),
+     SymbolNode(8...12)(
+       SYMBOL_BEGIN(8...9)(":"),
+       IDENTIFIER(9...12)("foo"),
+       nil,
+       "foo"
+     )]
+  )
+)

@@ -1,0 +1,10 @@
+ProgramNode(0...4)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...4)(
+    [ArrayNode(0...4)(
+       [],
+       PERCENT_UPPER_I(0...3)("%I("),
+       STRING_END(3...4)(")")
+     )]
+  )
+)

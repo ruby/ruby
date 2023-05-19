@@ -1,0 +1,21 @@
+ProgramNode(0...28)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...28)(
+    [CaseNode(0...28)(
+       nil,
+       [WhenNode(6...23)(
+          KEYWORD_WHEN(6...10)("when"),
+          [RegularExpressionNode(11...23)(
+             REGEXP_BEGIN(11...14)("%r%"),
+             STRING_CONTENT(14...22)("blahblah"),
+             REGEXP_END(22...23)("%"),
+             "blahblah"
+           )],
+          nil
+        )],
+       nil,
+       (0...4),
+       (25...28)
+     )]
+  )
+)

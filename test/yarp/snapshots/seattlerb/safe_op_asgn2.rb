@@ -1,0 +1,37 @@
+ProgramNode(0...10)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...10)(
+    [OperatorOrAssignmentNode(0...10)(
+       CallNode(0...4)(
+         CallNode(0...1)(
+           nil,
+           nil,
+           IDENTIFIER(0...1)("a"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "a"
+         ),
+         AMPERSAND_DOT(1...3)("&."),
+         IDENTIFIER(3...4)("b"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "b="
+       ),
+       CallNode(9...10)(
+         nil,
+         nil,
+         IDENTIFIER(9...10)("x"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "x"
+       ),
+       (5...8)
+     )]
+  )
+)

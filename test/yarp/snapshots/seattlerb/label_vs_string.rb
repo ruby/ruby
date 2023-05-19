@@ -1,0 +1,31 @@
+ProgramNode(0...12)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...12)(
+    [CallNode(0...12)(
+       CallNode(0...4)(
+         nil,
+         nil,
+         IDENTIFIER(0...4)("_buf"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "_buf"
+       ),
+       nil,
+       LESS_LESS(5...7)("<<"),
+       nil,
+       ArgumentsNode(8...12)(
+         [StringNode(8...12)(
+            STRING_BEGIN(8...9)("'"),
+            STRING_CONTENT(9...11)(":\n"),
+            STRING_END(11...12)("'"),
+            ":\n"
+          )]
+       ),
+       nil,
+       nil,
+       "<<"
+     )]
+  )
+)

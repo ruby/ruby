@@ -1,0 +1,29 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [DefNode(0...17)(
+       IDENTIFIER(4...5)("f"),
+       nil,
+       ParametersNode(6...12)(
+         [],
+         [],
+         [],
+         nil,
+         [],
+         KeywordRestParameterNode(6...12)(
+           USTAR_STAR(6...8)("**"),
+           IDENTIFIER(8...12)("opts")
+         ),
+         nil
+       ),
+       nil,
+       ScopeNode(0...3)([IDENTIFIER(8...12)("opts")]),
+       (0...3),
+       nil,
+       (5...6),
+       (12...13),
+       nil,
+       (14...17)
+     )]
+  )
+)

@@ -1,0 +1,12 @@
+ProgramNode(0...15)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...15)(
+    [ModuleNode(0...15)(
+       ScopeNode(0...6)([]),
+       KEYWORD_MODULE(0...6)("module"),
+       ConstantReadNode(7...10)(),
+       nil,
+       KEYWORD_END(12...15)("end")
+     )]
+  )
+)

@@ -1,0 +1,35 @@
+ProgramNode(0...9)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...9)(
+    [CallNode(0...9)(
+       CallNode(0...3)(
+         nil,
+         nil,
+         IDENTIFIER(0...3)("foo"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "foo"
+       ),
+       nil,
+       BRACKET_LEFT_RIGHT(3...4)("["),
+       BRACKET_LEFT(3...4)("["),
+       ArgumentsNode(4...7)(
+         [CallNode(4...7)(
+            nil,
+            nil,
+            IDENTIFIER(4...7)("bar"),
+            nil,
+            nil,
+            nil,
+            nil,
+            "bar"
+          )]
+       ),
+       BRACKET_RIGHT(8...9)("]"),
+       nil,
+       "[]"
+     )]
+  )
+)

@@ -1,0 +1,11 @@
+ProgramNode(0...7)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...7)(
+    [YieldNode(0...7)(
+       KEYWORD_YIELD(0...5)("yield"),
+       PARENTHESIS_LEFT(5...6)("("),
+       nil,
+       PARENTHESIS_RIGHT(6...7)(")")
+     )]
+  )
+)

@@ -1,0 +1,30 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([IDENTIFIER(0...1)("a")]),
+  StatementsNode(0...17)(
+    [LocalVariableWriteNode(0...17)(
+       (0...1),
+       IfNode(4...17)(
+         QUESTION_MARK(4...5)("?"),
+         CallNode(2...3)(
+           nil,
+           nil,
+           IDENTIFIER(2...3)("b"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "b"
+         ),
+         StatementsNode(6...10)([TrueNode(6...10)()]),
+         ElseNode(10...17)(
+           COLON(10...11)(":"),
+           StatementsNode(12...17)([FalseNode(12...17)()]),
+           nil
+         ),
+         nil
+       ),
+       (1...2),
+       0
+     )]
+  )
+)

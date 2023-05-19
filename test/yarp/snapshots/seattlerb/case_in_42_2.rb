@@ -1,0 +1,32 @@
+ProgramNode(0...32)(
+  ScopeNode(0...0)([IDENTIFIER(14...18)("list")]),
+  StatementsNode(0...32)(
+    [CaseNode(0...32)(
+       SymbolNode(5...7)(
+         SYMBOL_BEGIN(5...6)(":"),
+         IDENTIFIER(6...7)("a"),
+         nil,
+         "a"
+       ),
+       [InNode(8...24)(
+          ArrayPatternNode(11...19)(
+            ConstantReadNode(11...12)(),
+            [],
+            SplatNode(13...18)(
+              USTAR(13...14)("*"),
+              LocalVariableWriteNode(14...18)((14...18), nil, nil, 0)
+            ),
+            [],
+            (12...13),
+            (18...19)
+          ),
+          StatementsNode(25...28)([NilNode(25...28)()]),
+          (8...10),
+          (20...24)
+        )],
+       nil,
+       (0...4),
+       (29...32)
+     )]
+  )
+)

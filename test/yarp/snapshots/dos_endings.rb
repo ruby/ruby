@@ -1,0 +1,96 @@
+ProgramNode(0...108)(
+  ScopeNode(0...0)([IDENTIFIER(75...76)("x"), IDENTIFIER(88...89)("a")]),
+  StatementsNode(0...108)(
+    [CallNode(0...24)(
+       nil,
+       nil,
+       IDENTIFIER(0...4)("puts"),
+       nil,
+       ArgumentsNode(5...24)(
+         [StringConcatNode(5...24)(
+            StringNode(5...9)(
+              STRING_BEGIN(5...6)("\""),
+              STRING_CONTENT(6...8)("hi"),
+              STRING_END(8...9)("\""),
+              "hi"
+            ),
+            StringNode(17...24)(
+              STRING_BEGIN(17...18)("\""),
+              STRING_CONTENT(18...23)("there"),
+              STRING_END(23...24)("\""),
+              "there"
+            )
+          )]
+       ),
+       nil,
+       nil,
+       "puts"
+     ),
+     ArrayNode(28...37)(
+       [SymbolNode(31...36)(
+          nil,
+          STRING_CONTENT(31...36)("a\\\r\n" + "b"),
+          nil,
+          "a\u0000\u0000b"
+        )],
+       PERCENT_UPPER_I(28...31)("%I{"),
+       STRING_END(36...37)("}")
+     ),
+     InterpolatedStringNode(41...73)(
+       HEREDOC_START(41...45)("<<-E"),
+       [StringNode(47...70)(
+          nil,
+          STRING_CONTENT(47...70)("    1 \\\r\n" + "    2\r\n" + "    3\r\n"),
+          nil,
+          "    1 \u0000\u0000    2\r\n" + "    3\r\n"
+        )],
+       HEREDOC_END(70...73)("E\r\n")
+     ),
+     LocalVariableWriteNode(75...84)(
+       (75...76),
+       StringNode(79...84)(
+         STRING_BEGIN(79...82)("%\r\n"),
+         STRING_CONTENT(82...82)(""),
+         STRING_END(82...84)("\r\n"),
+         ""
+       ),
+       (77...78),
+       0
+     ),
+     LocalVariableWriteNode(88...108)(
+       (88...89),
+       CallNode(92...108)(
+         nil,
+         nil,
+         IDENTIFIER(92...95)("foo"),
+         PARENTHESIS_LEFT(95...96)("("),
+         ArgumentsNode(96...107)(
+           [CallNode(96...107)(
+              InterpolatedStringNode(96...128)(
+                HEREDOC_START(96...102)("<<~EOF"),
+                [StringNode(110...121)(
+                   nil,
+                   STRING_CONTENT(110...121)("\r\n" + "    baz\r\n"),
+                   nil,
+                   "\n" + "baz\r\n"
+                 )],
+                HEREDOC_END(121...128)("  EOF\r\n")
+              ),
+              DOT(102...103)("."),
+              IDENTIFIER(103...107)("chop"),
+              nil,
+              nil,
+              nil,
+              nil,
+              "chop"
+            )]
+         ),
+         PARENTHESIS_RIGHT(107...108)(")"),
+         nil,
+         "foo"
+       ),
+       (90...91),
+       0
+     )]
+  )
+)

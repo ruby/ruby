@@ -1,0 +1,22 @@
+ProgramNode(0...13)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...13)(
+    [ArrayNode(0...11)(
+       [StringNode(2...5)(
+          STRING_BEGIN(2...3)("'"),
+          STRING_CONTENT(3...4)("a"),
+          STRING_END(4...5)("'"),
+          "a"
+        ),
+        StringNode(7...10)(
+          STRING_BEGIN(7...8)("'"),
+          STRING_CONTENT(8...9)("b"),
+          STRING_END(9...10)("'"),
+          "b"
+        )],
+       BRACKET_LEFT_ARRAY(0...1)("["),
+       BRACKET_RIGHT(10...11)("]")
+     ),
+     IntegerNode(12...13)()]
+  )
+)

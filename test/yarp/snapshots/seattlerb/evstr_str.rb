@@ -1,0 +1,26 @@
+ProgramNode(0...8)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...8)(
+    [InterpolatedStringNode(0...8)(
+       STRING_BEGIN(0...1)("\""),
+       [StringInterpolatedNode(1...5)(
+          EMBEXPR_BEGIN(1...3)("\#{"),
+          StatementsNode(3...4)(
+            [CallNode(3...4)(
+               nil,
+               nil,
+               IDENTIFIER(3...4)("a"),
+               nil,
+               nil,
+               nil,
+               nil,
+               "a"
+             )]
+          ),
+          EMBEXPR_END(4...5)("}")
+        ),
+        StringNode(5...7)(nil, STRING_CONTENT(5...7)(" b"), nil, " b")],
+       STRING_END(7...8)("\"")
+     )]
+  )
+)

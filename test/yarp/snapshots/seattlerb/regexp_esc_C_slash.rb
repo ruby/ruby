@@ -1,0 +1,11 @@
+ProgramNode(0...7)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...7)(
+    [RegularExpressionNode(0...7)(
+       REGEXP_BEGIN(0...1)("/"),
+       STRING_CONTENT(1...6)("\\cC\\d"),
+       REGEXP_END(6...7)("/"),
+       "\u0003d"
+     )]
+  )
+)

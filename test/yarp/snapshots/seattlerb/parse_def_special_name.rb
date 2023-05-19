@@ -1,0 +1,18 @@
+ProgramNode(0...13)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...13)(
+    [DefNode(0...13)(
+       KEYWORD_NEXT(4...8)("next"),
+       nil,
+       nil,
+       nil,
+       ScopeNode(0...3)([]),
+       (0...3),
+       nil,
+       nil,
+       nil,
+       nil,
+       (10...13)
+     )]
+  )
+)

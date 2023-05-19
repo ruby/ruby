@@ -1,0 +1,18 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [DefNode(0...17)(
+       BANG(4...6)("!@"),
+       nil,
+       nil,
+       StatementsNode(8...12)([TrueNode(8...12)()]),
+       ScopeNode(0...3)([]),
+       (0...3),
+       nil,
+       nil,
+       nil,
+       nil,
+       (14...17)
+     )]
+  )
+)

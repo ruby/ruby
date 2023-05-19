@@ -1,0 +1,30 @@
+ProgramNode(0...29)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...29)(
+    [DefNode(0...29)(
+       IDENTIFIER(4...8)("call"),
+       nil,
+       ParametersNode(9...24)(
+         [RequiredParameterNode(9...15)()],
+         [],
+         [RequiredParameterNode(20...24)()],
+         RestParameterNode(17...18)(USTAR(17...18)("*"), nil),
+         [],
+         nil,
+         nil
+       ),
+       nil,
+       ScopeNode(0...3)(
+         [IDENTIFIER(9...15)("interp"),
+          USTAR(17...18)("*"),
+          IDENTIFIER(20...24)("args")]
+       ),
+       (0...3),
+       nil,
+       (8...9),
+       (24...25),
+       nil,
+       (26...29)
+     )]
+  )
+)

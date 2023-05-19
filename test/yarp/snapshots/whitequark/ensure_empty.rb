@@ -1,0 +1,17 @@
+ProgramNode(0...16)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...16)(
+    [BeginNode(0...16)(
+       KEYWORD_BEGIN(0...5)("begin"),
+       nil,
+       nil,
+       nil,
+       EnsureNode(6...16)(
+         KEYWORD_ENSURE(6...12)("ensure"),
+         nil,
+         KEYWORD_END(13...16)("end")
+       ),
+       KEYWORD_END(13...16)("end")
+     )]
+  )
+)

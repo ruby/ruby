@@ -1,0 +1,18 @@
+ProgramNode(0...20)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...20)(
+    [DefNode(0...20)(
+       KEYWORD_RETURN(9...15)("return"),
+       SelfNode(4...8)(),
+       nil,
+       nil,
+       ScopeNode(0...3)([]),
+       (0...3),
+       (8...9),
+       nil,
+       nil,
+       nil,
+       (17...20)
+     )]
+  )
+)

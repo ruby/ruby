@@ -1,0 +1,15 @@
+ProgramNode(0...10)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...10)(
+    [ArrayNode(0...4)(
+       [],
+       PERCENT_UPPER_W(0...3)("%W("),
+       STRING_END(3...4)(")")
+     ),
+     ArrayNode(6...10)(
+       [],
+       PERCENT_LOWER_W(6...9)("%w["),
+       STRING_END(9...10)("]")
+     )]
+  )
+)

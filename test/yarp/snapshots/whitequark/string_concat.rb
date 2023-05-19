@@ -1,0 +1,19 @@
+ProgramNode(0...14)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...14)(
+    [StringConcatNode(0...14)(
+       InterpolatedStringNode(0...8)(
+         STRING_BEGIN(0...1)("\""),
+         [StringNode(1...4)(nil, STRING_CONTENT(1...4)("foo"), nil, "foo"),
+          InstanceVariableReadNode(5...7)()],
+         STRING_END(7...8)("\"")
+       ),
+       StringNode(9...14)(
+         STRING_BEGIN(9...10)("\""),
+         STRING_CONTENT(10...13)("bar"),
+         STRING_END(13...14)("\""),
+         "bar"
+       )
+     )]
+  )
+)

@@ -1,0 +1,16 @@
+ProgramNode(0...7)(
+  ScopeNode(0...0)([IDENTIFIER(0...1)("x")]),
+  StatementsNode(0...7)(
+    [LocalVariableWriteNode(0...7)(
+       (0...1),
+       StringNode(4...7)(
+         STRING_BEGIN(4...6)("%\n"),
+         STRING_CONTENT(6...6)(""),
+         STRING_END(6...7)("\n"),
+         ""
+       ),
+       (2...3),
+       0
+     )]
+  )
+)

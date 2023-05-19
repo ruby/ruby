@@ -1,0 +1,29 @@
+ProgramNode(0...27)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...27)(
+    [UndefNode(0...10)(
+       [SymbolNode(6...10)(
+          SYMBOL_BEGIN(6...7)(":"),
+          IDENTIFIER(7...10)("foo"),
+          nil,
+          "foo"
+        )],
+       (0...5)
+     ),
+     UndefNode(11...27)(
+       [SymbolNode(17...21)(
+          SYMBOL_BEGIN(17...18)(":"),
+          IDENTIFIER(18...21)("foo"),
+          nil,
+          "foo"
+        ),
+        SymbolNode(23...27)(
+          SYMBOL_BEGIN(23...24)(":"),
+          IDENTIFIER(24...27)("bar"),
+          nil,
+          "bar"
+        )],
+       (11...16)
+     )]
+  )
+)

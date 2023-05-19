@@ -1,0 +1,23 @@
+ProgramNode(0...39)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...39)(
+    [ModuleNode(0...17)(
+       ScopeNode(0...6)([]),
+       KEYWORD_MODULE(0...6)("module"),
+       ConstantPathNode(7...12)(nil, ConstantReadNode(9...12)(), (7...9)),
+       nil,
+       KEYWORD_END(14...17)("end")
+     ),
+     ModuleNode(19...39)(
+       ScopeNode(19...25)([]),
+       KEYWORD_MODULE(19...25)("module"),
+       ConstantPathNode(26...34)(
+         ConstantReadNode(26...29)(),
+         ConstantReadNode(31...34)(),
+         (29...31)
+       ),
+       nil,
+       KEYWORD_END(36...39)("end")
+     )]
+  )
+)

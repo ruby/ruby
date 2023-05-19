@@ -1,0 +1,14 @@
+ProgramNode(0...13)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...13)(
+    [UndefNode(0...13)(
+       [SymbolNode(6...13)(
+          SYMBOL_BEGIN(6...9)("%s("),
+          STRING_CONTENT(9...12)("foo"),
+          STRING_END(12...13)(")"),
+          "foo"
+        )],
+       (0...5)
+     )]
+  )
+)

@@ -1,0 +1,31 @@
+ProgramNode(6...77)(
+  ScopeNode(0...0)([]),
+  StatementsNode(6...77)(
+    [DefNode(6...77)(
+       IDENTIFIER(10...14)("blah"),
+       nil,
+       nil,
+       StatementsNode(23...67)(
+         [IfNode(23...67)(
+            KEYWORD_IF(23...25)("if"),
+            TrueNode(26...30)(),
+            StatementsNode(46...55)(
+              [ReturnNode(46...55)(
+                 KEYWORD_RETURN(46...52)("return"),
+                 ArgumentsNode(53...55)([IntegerNode(53...55)()])
+               )]
+            ),
+            nil,
+            KEYWORD_END(64...67)("end")
+          )]
+       ),
+       ScopeNode(6...9)([]),
+       (6...9),
+       nil,
+       nil,
+       nil,
+       nil,
+       (74...77)
+     )]
+  )
+)

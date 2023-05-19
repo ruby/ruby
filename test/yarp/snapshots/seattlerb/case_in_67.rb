@@ -1,0 +1,22 @@
+ProgramNode(0...27)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...27)(
+    [CaseNode(0...27)(
+       SymbolNode(5...7)(
+         SYMBOL_BEGIN(5...6)(":"),
+         IDENTIFIER(6...7)("a"),
+         nil,
+         "a"
+       ),
+       [InNode(8...19)(
+          RangeNode(11...14)(IntegerNode(11...12)(), nil, (12...14)),
+          StatementsNode(20...23)([NilNode(20...23)()]),
+          (8...10),
+          (15...19)
+        )],
+       nil,
+       (0...4),
+       (24...27)
+     )]
+  )
+)

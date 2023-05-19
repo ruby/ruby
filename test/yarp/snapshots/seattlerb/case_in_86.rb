@@ -1,0 +1,43 @@
+ProgramNode(0...43)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...43)(
+    [CaseNode(0...43)(
+       ArrayNode(5...13)(
+         [SymbolNode(6...8)(
+            SYMBOL_BEGIN(6...7)(":"),
+            IDENTIFIER(7...8)("a"),
+            nil,
+            "a"
+          ),
+          SymbolNode(10...12)(
+            SYMBOL_BEGIN(10...11)(":"),
+            IDENTIFIER(11...12)("b"),
+            nil,
+            "b"
+          )],
+         BRACKET_LEFT_ARRAY(5...6)("["),
+         BRACKET_RIGHT(12...13)("]")
+       ),
+       [InNode(14...35)(
+          ArrayPatternNode(17...30)(
+            nil,
+            [ConstantPathNode(17...27)(
+               nil,
+               ConstantReadNode(19...27)(),
+               (17...19)
+             )],
+            SplatNode(29...30)(USTAR(29...30)("*"), nil),
+            [],
+            nil,
+            nil
+          ),
+          StatementsNode(36...39)([NilNode(36...39)()]),
+          (14...16),
+          (31...35)
+        )],
+       nil,
+       (0...4),
+       (40...43)
+     )]
+  )
+)

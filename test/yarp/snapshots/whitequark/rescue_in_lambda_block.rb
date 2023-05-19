@@ -1,0 +1,25 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [LambdaNode(0...17)(
+       ScopeNode(0...2)([]),
+       MINUS_GREATER(0...2)("->"),
+       nil,
+       BeginNode(0...17)(
+         nil,
+         nil,
+         RescueNode(6...12)(
+           KEYWORD_RESCUE(6...12)("rescue"),
+           [],
+           nil,
+           nil,
+           nil,
+           nil
+         ),
+         nil,
+         nil,
+         KEYWORD_END(14...17)("end")
+       )
+     )]
+  )
+)

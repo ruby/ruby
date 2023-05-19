@@ -1,0 +1,39 @@
+ProgramNode(0...23)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...23)(
+    [DefNode(0...23)(
+       IDENTIFIER(4...7)("foo"),
+       nil,
+       ParametersNode(8...9)(
+         [],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         BlockParameterNode(8...9)(nil, (8...9))
+       ),
+       StatementsNode(12...18)(
+         [CallNode(12...18)(
+            nil,
+            nil,
+            IDENTIFIER(12...15)("bar"),
+            PARENTHESIS_LEFT(15...16)("("),
+            ArgumentsNode(16...17)(
+              [BlockArgumentNode(16...17)(nil, (16...17))]
+            ),
+            PARENTHESIS_RIGHT(17...18)(")"),
+            nil,
+            "bar"
+          )]
+       ),
+       ScopeNode(0...3)([AMPERSAND(8...9)("&")]),
+       (0...3),
+       nil,
+       (7...8),
+       (9...10),
+       nil,
+       (20...23)
+     )]
+  )
+)

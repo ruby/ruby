@@ -1,0 +1,14 @@
+cp -r ../yarp/include/* internal
+mkdir yarp
+cp -r ../yarp/src/* yarp
+
+cp -r ../yarp/test test/yarp
+cp ../yarp/test.rb test/test_yarp.rb
+cp -r ../yarp/lib ext/yarp/lib
+
+rm ../lib/yarp/yarp.bundle
+
+cp -r ../yarp/ext/yarp/ ext/yarp
+
+in lib/yarp.rb: require_relative "yarp" instead of require_relative "yarp/yarp"
+

@@ -1,0 +1,10 @@
+ProgramNode(0...15)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...15)(
+    [AliasNode(0...15)(
+       GlobalVariableReadNode(6...12)(GLOBAL_VARIABLE(6...12)("$MATCH")),
+       GlobalVariableReadNode(13...15)(BACK_REFERENCE(13...15)("$&")),
+       (0...5)
+     )]
+  )
+)

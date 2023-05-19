@@ -1,0 +1,28 @@
+ProgramNode(0...31)(
+  ScopeNode(0...0)([IDENTIFIER(4...9)("match")]),
+  StatementsNode(0...31)(
+    [CallNode(0...24)(
+       RegularExpressionNode(0...15)(
+         REGEXP_BEGIN(0...1)("/"),
+         STRING_CONTENT(1...14)("(?<match>bar)"),
+         REGEXP_END(14...15)("/"),
+         "(?<match>bar)"
+       ),
+       nil,
+       EQUAL_TILDE(16...18)("=~"),
+       nil,
+       ArgumentsNode(19...24)(
+         [StringNode(19...24)(
+            STRING_BEGIN(19...20)("'"),
+            STRING_CONTENT(20...23)("bar"),
+            STRING_END(23...24)("'"),
+            "bar"
+          )]
+       ),
+       nil,
+       nil,
+       "=~"
+     ),
+     LocalVariableReadNode(26...31)(0)]
+  )
+)

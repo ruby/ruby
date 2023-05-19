@@ -1,0 +1,32 @@
+ProgramNode(0...26)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...26)(
+    [CaseNode(0...26)(
+       nil,
+       [WhenNode(6...21)(
+          KEYWORD_WHEN(6...10)("when"),
+          [CallNode(11...14)(
+             nil,
+             nil,
+             IDENTIFIER(11...14)("foo"),
+             nil,
+             nil,
+             nil,
+             nil,
+             "foo"
+           )],
+          StatementsNode(16...21)(
+            [StringNode(16...21)(
+               STRING_BEGIN(16...17)("'"),
+               STRING_CONTENT(17...20)("foo"),
+               STRING_END(20...21)("'"),
+               "foo"
+             )]
+          )
+        )],
+       nil,
+       (0...4),
+       (23...26)
+     )]
+  )
+)

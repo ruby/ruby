@@ -1,0 +1,49 @@
+ProgramNode(0...37)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...37)(
+    [DefNode(0...15)(
+       IDENTIFIER(4...5)("f"),
+       nil,
+       ParametersNode(6...9)(
+         [RequiredParameterNode(6...9)()],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         nil
+       ),
+       nil,
+       ScopeNode(0...3)([IDENTIFIER(6...9)("foo")]),
+       (0...3),
+       nil,
+       (5...6),
+       (9...10),
+       nil,
+       (12...15)
+     ),
+     DefNode(17...37)(
+       IDENTIFIER(21...22)("f"),
+       nil,
+       ParametersNode(23...31)(
+         [RequiredParameterNode(23...26)(), RequiredParameterNode(28...31)()],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         nil
+       ),
+       nil,
+       ScopeNode(17...20)(
+         [IDENTIFIER(23...26)("foo"), IDENTIFIER(28...31)("bar")]
+       ),
+       (17...20),
+       nil,
+       (22...23),
+       (31...32),
+       nil,
+       (34...37)
+     )]
+  )
+)

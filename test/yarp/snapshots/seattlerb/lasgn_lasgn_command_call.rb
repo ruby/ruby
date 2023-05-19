@@ -1,0 +1,25 @@
+ProgramNode(0...11)(
+  ScopeNode(0...0)([IDENTIFIER(0...1)("a"), IDENTIFIER(4...5)("b")]),
+  StatementsNode(0...11)(
+    [LocalVariableWriteNode(0...11)(
+       (0...1),
+       LocalVariableWriteNode(4...11)(
+         (4...5),
+         CallNode(8...11)(
+           nil,
+           nil,
+           IDENTIFIER(8...9)("c"),
+           nil,
+           ArgumentsNode(10...11)([IntegerNode(10...11)()]),
+           nil,
+           nil,
+           "c"
+         ),
+         (6...7),
+         0
+       ),
+       (2...3),
+       0
+     )]
+  )
+)

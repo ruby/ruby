@@ -1,0 +1,20 @@
+ProgramNode(0...3)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...3)(
+    [CallNode(0...3)(
+       SymbolNode(1...3)(
+         SYMBOL_BEGIN(1...2)(":"),
+         IDENTIFIER(2...3)("a"),
+         nil,
+         "a"
+       ),
+       nil,
+       UPLUS(0...1)("+"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "+@"
+     )]
+  )
+)

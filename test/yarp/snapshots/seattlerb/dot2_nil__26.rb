@@ -1,0 +1,19 @@
+ProgramNode(0...3)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...3)(
+    [RangeNode(0...3)(
+       CallNode(0...1)(
+         nil,
+         nil,
+         IDENTIFIER(0...1)("a"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "a"
+       ),
+       nil,
+       (1...3)
+     )]
+  )
+)

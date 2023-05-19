@@ -1,0 +1,49 @@
+ProgramNode(0...78)(
+  ScopeNode(0...0)([IDENTIFIER(36...37)("x")]),
+  StatementsNode(0...78)(
+    [AndNode(0...25)(
+       DefinedNode(0...10)(nil, IntegerNode(9...10)(), nil, (0...8)),
+       DefinedNode(15...25)(nil, IntegerNode(24...25)(), nil, (15...23)),
+       KEYWORD_AND(11...14)("and")
+     ),
+     DefinedNode(27...43)(
+       PARENTHESIS_LEFT(35...36)("("),
+       OperatorAssignmentNode(36...42)(
+         LocalVariableWriteNode(36...37)((36...37), nil, nil, 0),
+         PERCENT_EQUAL(38...40)("%="),
+         IntegerNode(41...42)()
+       ),
+       PARENTHESIS_RIGHT(42...43)(")"),
+       (27...35)
+     ),
+     DefinedNode(45...66)(
+       PARENTHESIS_LEFT(53...54)("("),
+       AndNode(54...65)(
+         CallNode(54...57)(
+           nil,
+           nil,
+           IDENTIFIER(54...57)("foo"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "foo"
+         ),
+         CallNode(62...65)(
+           nil,
+           nil,
+           IDENTIFIER(62...65)("bar"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "bar"
+         ),
+         KEYWORD_AND(58...61)("and")
+       ),
+       PARENTHESIS_RIGHT(65...66)(")"),
+       (45...53)
+     ),
+     DefinedNode(68...78)(nil, IntegerNode(77...78)(), nil, (68...76))]
+  )
+)

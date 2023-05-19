@@ -1,0 +1,48 @@
+ProgramNode(0...41)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...41)(
+    [ReturnNode(0...6)(KEYWORD_RETURN(0...6)("return"), nil),
+     ReturnNode(8...18)(
+       KEYWORD_RETURN(8...14)("return"),
+       ArgumentsNode(15...18)(
+         [CallNode(15...18)(
+            nil,
+            nil,
+            IDENTIFIER(15...18)("foo"),
+            nil,
+            nil,
+            nil,
+            nil,
+            "foo"
+          )]
+       )
+     ),
+     ReturnNode(20...28)(
+       KEYWORD_RETURN(20...26)("return"),
+       ArgumentsNode(26...28)(
+         [ParenthesesNode(26...28)(nil, (26...27), (27...28))]
+       )
+     ),
+     ReturnNode(30...41)(
+       KEYWORD_RETURN(30...36)("return"),
+       ArgumentsNode(36...41)(
+         [ParenthesesNode(36...41)(
+            StatementsNode(37...40)(
+              [CallNode(37...40)(
+                 nil,
+                 nil,
+                 IDENTIFIER(37...40)("foo"),
+                 nil,
+                 nil,
+                 nil,
+                 nil,
+                 "foo"
+               )]
+            ),
+            (36...37),
+            (40...41)
+          )]
+       )
+     )]
+  )
+)

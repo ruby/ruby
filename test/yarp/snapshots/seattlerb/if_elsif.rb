@@ -1,0 +1,18 @@
+ProgramNode(0...18)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...18)(
+    [IfNode(0...18)(
+       KEYWORD_IF(0...2)("if"),
+       IntegerNode(3...4)(),
+       nil,
+       IfNode(6...13)(
+         KEYWORD_ELSIF(6...11)("elsif"),
+         IntegerNode(12...13)(),
+         StatementsNode(0...0)([]),
+         nil,
+         nil
+       ),
+       KEYWORD_END(15...18)("end")
+     )]
+  )
+)

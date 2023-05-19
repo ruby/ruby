@@ -1,0 +1,36 @@
+ProgramNode(0...24)(
+  ScopeNode(0...0)([IDENTIFIER(13...14)("c")]),
+  StatementsNode(0...24)(
+    [CaseNode(0...24)(
+       SymbolNode(5...7)(
+         SYMBOL_BEGIN(5...6)(":"),
+         IDENTIFIER(6...7)("a"),
+         nil,
+         "a"
+       ),
+       [InNode(8...20)(
+          ArrayPatternNode(11...15)(
+            ConstantReadNode(11...12)(),
+            [LocalVariableWriteNode(13...14)((13...14), nil, nil, 0)],
+            nil,
+            [],
+            (12...13),
+            (14...15)
+          ),
+          StatementsNode(18...20)(
+            [SymbolNode(18...20)(
+               SYMBOL_BEGIN(18...19)(":"),
+               IDENTIFIER(19...20)("d"),
+               nil,
+               "d"
+             )]
+          ),
+          (8...10),
+          nil
+        )],
+       nil,
+       (0...4),
+       (21...24)
+     )]
+  )
+)

@@ -1,0 +1,31 @@
+ProgramNode(0...21)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...21)(
+    [DefNode(0...10)(
+       IDENTIFIER(4...5)("f"),
+       nil,
+       nil,
+       nil,
+       ScopeNode(0...3)([]),
+       (0...3),
+       nil,
+       nil,
+       nil,
+       nil,
+       (7...10)
+     ),
+     DefNode(12...21)(
+       IDENTIFIER(16...17)("f"),
+       nil,
+       nil,
+       nil,
+       ScopeNode(12...15)([]),
+       (12...15),
+       nil,
+       nil,
+       nil,
+       nil,
+       (18...21)
+     )]
+  )
+)

@@ -1,0 +1,29 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [DefNode(0...17)(
+       IDENTIFIER(4...5)("f"),
+       nil,
+       ParametersNode(6...12)(
+         [RequiredParameterNode(6...7)()],
+         [],
+         [],
+         nil,
+         [KeywordParameterNode(9...12)(
+            LABEL(9...11)("b:"),
+            IntegerNode(11...12)()
+          )],
+         nil,
+         nil
+       ),
+       nil,
+       ScopeNode(0...3)([IDENTIFIER(6...7)("a"), LABEL(9...10)("b")]),
+       (0...3),
+       nil,
+       (5...6),
+       (12...13),
+       nil,
+       (14...17)
+     )]
+  )
+)

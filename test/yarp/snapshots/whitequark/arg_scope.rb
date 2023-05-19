@@ -1,0 +1,26 @@
+ProgramNode(0...13)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...13)(
+    [CallNode(0...13)(
+       nil,
+       nil,
+       IDENTIFIER(0...6)("lambda"),
+       nil,
+       nil,
+       nil,
+       BlockNode(6...13)(
+         ScopeNode(6...7)([IDENTIFIER(9...10)("a")]),
+         BlockParametersNode(7...11)(
+           nil,
+           [IDENTIFIER(9...10)("a")],
+           (7...8),
+           (10...11)
+         ),
+         StatementsNode(11...12)([LocalVariableReadNode(11...12)(0)]),
+         (6...7),
+         (12...13)
+       ),
+       "lambda"
+     )]
+  )
+)

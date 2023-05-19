@@ -1,0 +1,35 @@
+ProgramNode(0...15)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...15)(
+    [CallNode(0...1)(
+       nil,
+       nil,
+       IDENTIFIER(0...1)("a"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "a"
+     ),
+     CallNode(2...3)(
+       nil,
+       nil,
+       IDENTIFIER(2...3)("b"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "b"
+     ),
+     CallNode(14...15)(
+       nil,
+       nil,
+       IDENTIFIER(14...15)("c"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "c"
+     )]
+  )
+)

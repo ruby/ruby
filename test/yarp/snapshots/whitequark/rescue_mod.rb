@@ -1,0 +1,28 @@
+ProgramNode(0...15)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...15)(
+    [RescueModifierNode(0...15)(
+       CallNode(0...4)(
+         nil,
+         nil,
+         IDENTIFIER(0...4)("meth"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "meth"
+       ),
+       KEYWORD_RESCUE_MODIFIER(5...11)("rescue"),
+       CallNode(12...15)(
+         nil,
+         nil,
+         IDENTIFIER(12...15)("bar"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "bar"
+       )
+     )]
+  )
+)

@@ -1,0 +1,36 @@
+ProgramNode(0...19)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...19)(
+    [CallNode(0...19)(
+       nil,
+       nil,
+       IDENTIFIER(0...3)("foo"),
+       PARENTHESIS_LEFT(3...4)("("),
+       ArgumentsNode(4...18)(
+         [SymbolNode(4...8)(
+            SYMBOL_BEGIN(4...5)(":"),
+            IDENTIFIER(5...8)("bar"),
+            nil,
+            "bar"
+          ),
+          HashNode(10...18)(
+            nil,
+            [AssocNode(10...18)(
+               SymbolNode(10...14)(
+                 nil,
+                 LABEL(10...13)("baz"),
+                 LABEL_END(13...14)(":"),
+                 "baz"
+               ),
+               NilNode(15...18)(),
+               nil
+             )],
+            nil
+          )]
+       ),
+       PARENTHESIS_RIGHT(18...19)(")"),
+       nil,
+       "foo"
+     )]
+  )
+)

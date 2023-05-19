@@ -1,0 +1,38 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [CallNode(0...17)(
+       CallNode(0...11)(
+         nil,
+         nil,
+         IDENTIFIER(0...1)("a"),
+         nil,
+         ArgumentsNode(2...4)(
+           [SymbolNode(2...4)(
+              SYMBOL_BEGIN(2...3)(":"),
+              IDENTIFIER(3...4)("b"),
+              nil,
+              "b"
+            )]
+         ),
+         nil,
+         BlockNode(5...11)(ScopeNode(5...7)([]), nil, nil, (5...7), (8...11)),
+         "a"
+       ),
+       COLON_COLON(11...13)("::"),
+       IDENTIFIER(16...17)("d"),
+       nil,
+       ArgumentsNode(15...17)(
+         [SymbolNode(15...17)(
+            SYMBOL_BEGIN(15...16)(":"),
+            IDENTIFIER(16...17)("d"),
+            nil,
+            "d"
+          )]
+       ),
+       nil,
+       nil,
+       "d"
+     )]
+  )
+)

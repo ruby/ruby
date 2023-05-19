@@ -1,0 +1,35 @@
+ProgramNode(0...17)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...17)(
+    [CallNode(0...3)(
+       nil,
+       nil,
+       IDENTIFIER(0...3)("fun"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "fun"
+     ),
+     CallNode(5...9)(
+       nil,
+       nil,
+       IDENTIFIER(5...9)("fun!"),
+       nil,
+       nil,
+       nil,
+       nil,
+       "fun!"
+     ),
+     CallNode(11...17)(
+       nil,
+       nil,
+       IDENTIFIER(11...14)("fun"),
+       PARENTHESIS_LEFT(14...15)("("),
+       ArgumentsNode(15...16)([IntegerNode(15...16)()]),
+       PARENTHESIS_RIGHT(16...17)(")"),
+       nil,
+       "fun"
+     )]
+  )
+)

@@ -1,0 +1,48 @@
+ProgramNode(0...33)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...33)(
+    [NextNode(0...4)(nil, (0...4)),
+     NextNode(6...14)(
+       ArgumentsNode(11...14)(
+         [CallNode(11...14)(
+            nil,
+            nil,
+            IDENTIFIER(11...14)("foo"),
+            nil,
+            nil,
+            nil,
+            nil,
+            "foo"
+          )]
+       ),
+       (6...10)
+     ),
+     NextNode(16...22)(
+       ArgumentsNode(20...22)(
+         [ParenthesesNode(20...22)(nil, (20...21), (21...22))]
+       ),
+       (16...20)
+     ),
+     NextNode(24...33)(
+       ArgumentsNode(28...33)(
+         [ParenthesesNode(28...33)(
+            StatementsNode(29...32)(
+              [CallNode(29...32)(
+                 nil,
+                 nil,
+                 IDENTIFIER(29...32)("foo"),
+                 nil,
+                 nil,
+                 nil,
+                 nil,
+                 "foo"
+               )]
+            ),
+            (28...29),
+            (32...33)
+          )]
+       ),
+       (24...28)
+     )]
+  )
+)

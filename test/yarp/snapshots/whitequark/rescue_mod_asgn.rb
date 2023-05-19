@@ -1,0 +1,33 @@
+ProgramNode(0...21)(
+  ScopeNode(0...0)([IDENTIFIER(0...3)("foo")]),
+  StatementsNode(0...21)(
+    [LocalVariableWriteNode(0...21)(
+       (0...3),
+       RescueModifierNode(6...21)(
+         CallNode(6...10)(
+           nil,
+           nil,
+           IDENTIFIER(6...10)("meth"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "meth"
+         ),
+         KEYWORD_RESCUE_MODIFIER(11...17)("rescue"),
+         CallNode(18...21)(
+           nil,
+           nil,
+           IDENTIFIER(18...21)("bar"),
+           nil,
+           nil,
+           nil,
+           nil,
+           "bar"
+         )
+       ),
+       (4...5),
+       0
+     )]
+  )
+)

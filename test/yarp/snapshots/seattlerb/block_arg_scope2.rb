@@ -1,0 +1,38 @@
+ProgramNode(0...14)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...14)(
+    [CallNode(0...14)(
+       nil,
+       nil,
+       IDENTIFIER(0...1)("a"),
+       nil,
+       nil,
+       nil,
+       BlockNode(2...14)(
+         ScopeNode(2...3)(
+           [IDENTIFIER(4...5)("b"),
+            IDENTIFIER(7...8)("c"),
+            IDENTIFIER(10...11)("d")]
+         ),
+         BlockParametersNode(3...12)(
+           ParametersNode(4...5)(
+             [RequiredParameterNode(4...5)()],
+             [],
+             [],
+             nil,
+             [],
+             nil,
+             nil
+           ),
+           [IDENTIFIER(7...8)("c"), IDENTIFIER(10...11)("d")],
+           (3...4),
+           (11...12)
+         ),
+         nil,
+         (2...3),
+         (13...14)
+       ),
+       "a"
+     )]
+  )
+)

@@ -1,0 +1,24 @@
+ProgramNode(0...9)(
+  ScopeNode(0...0)([]),
+  StatementsNode(0...9)(
+    [CallNode(0...9)(
+       CallNode(0...4)(
+         nil,
+         nil,
+         IDENTIFIER(0...4)("meth"),
+         nil,
+         nil,
+         nil,
+         nil,
+         "meth"
+       ),
+       nil,
+       BRACKET_LEFT_RIGHT(4...5)("["),
+       BRACKET_LEFT(4...5)("["),
+       nil,
+       BRACKET_RIGHT(5...6)("]"),
+       BlockNode(7...9)(ScopeNode(7...8)([]), nil, nil, (7...8), (8...9)),
+       "[]"
+     )]
+  )
+)
