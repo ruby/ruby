@@ -210,7 +210,7 @@ module Lrama
           io << "\n"
 
 
-          # Reprot reads_relation
+          # Report reads_relation
           io << "  [Reads Relation]\n"
           @states.nterms.each do |nterm|
             a = @states.reads_relation[[state.id, nterm.token_id]]
@@ -224,7 +224,7 @@ module Lrama
           io << "\n"
 
 
-          # Reprot read_sets
+          # Report read_sets
           io << "  [Read sets]\n"
           read_sets = @states.read_sets
           @states.nterms.each do |nterm|
@@ -239,7 +239,7 @@ module Lrama
           io << "\n"
 
 
-          # Reprot includes_relation
+          # Report includes_relation
           io << "  [Includes Relation]\n"
           @states.nterms.each do |nterm|
             a = @states.includes_relation[[state.id, nterm.token_id]]
@@ -267,7 +267,7 @@ module Lrama
           io << "\n"
 
 
-          # Reprot follow_sets
+          # Report follow_sets
           io << "  [Follow sets]\n"
           follow_sets = @states.follow_sets
           @states.nterms.each do |nterm|

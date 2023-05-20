@@ -206,6 +206,8 @@ module Lrama
         when ss.scan(/\/\*/)
           # TODO: Need to keep comment?
           line = lex_comment(ss, line, lines, "")
+        when ss.scan(/\/\//)
+          line = lex_line_comment(ss, line, "")
         when ss.scan(/'(.)'/)
           tokens << create_token(Token::Char, ss[0], line, ss.pos - column)
         when ss.scan(/'\\(.)'/) # '\\', '\t'
@@ -218,7 +220,7 @@ module Lrama
           l = line - lines.first[1]
           split = ss.string.split("\n")
           col = ss.pos - split[0...l].join("\n").length
-          raise "Parse error (unknow token): #{split[l]} \"#{ss.string[ss.pos]}\" (#{line}: #{col})"
+          raise "Parse error (unknown token): #{split[l]} \"#{ss.string[ss.pos]}\" (#{line}: #{col})"
         end
       end
     end
@@ -276,6 +278,9 @@ module Lrama
         when ss.scan(/\/\*/)
           str << ss[0]
           line = lex_comment(ss, line, lines, str)
+        when ss.scan(/\/\//)
+          str << ss[0]
+          line = lex_line_comment(ss, line, str)
         else
           # noop, just consume char
           str << ss.getch
@@ -314,8 +319,6 @@ module Lrama
       raise "Parse error (quote mismatch): #{ss.string.split("\n")[l]} \"#{ss.string[ss.pos]}\" (#{line}: #{ss.pos})"
     end
 
-    # TODO: Need to handle // style comment
-    #
     # /*  */ style comment
     def lex_comment(ss, line, lines, str)
       while !ss.eos? do
@@ -335,6 +338,23 @@ module Lrama
       # Reach to end of input but quote does not match
       l = line - lines.first[1]
       raise "Parse error (comment mismatch): #{ss.string.split("\n")[l]} \"#{ss.string[ss.pos]}\" (#{line}: #{ss.pos})"
+    end
+
+    # // style comment
+    def lex_line_comment(ss, line, str)
+      while !ss.eos? do
+        case
+        when ss.scan(/\n/)
+          return line + 1
+        else
+          str << ss.getch
+          next
+        end
+
+        str << ss[0]
+      end
+
+      line # Reach to end of input
     end
 
     def lex_grammar_rules_tokens
