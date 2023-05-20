@@ -1791,7 +1791,9 @@ class TestProcess < Test::Unit::TestCase
     exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
-    opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
+    if defined?(Process::RLIMIT_NPROC)
+      opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
+    end
     EnvUtil.suppress_warning do
       assert_raise(*exs, mesg) do
         begin
