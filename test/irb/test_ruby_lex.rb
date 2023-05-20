@@ -639,6 +639,7 @@ module TestIRB
       pend if RUBY_ENGINE == 'truffleruby'
       context = build_context
       ruby_lex = RubyLex.new(context)
+      dynamic_prompt_executed = false
       io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
         error_message = <<~EOM
           Expected dynamic prompt:
@@ -647,12 +648,14 @@ module TestIRB
           Actual dynamic prompt:
           #{prompt_list.join("\n")}
         EOM
+        dynamic_prompt_executed = true
         assert_equal(expected_prompt_list, prompt_list, error_message)
       end
       ruby_lex.set_prompt do |ltype, indent, continue, line_no|
         '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
       end
       ruby_lex.configure_io(io)
+      assert dynamic_prompt_executed, "dynamic_prompt's assertions were not executed."
     end
 
     def test_dyanmic_prompt
