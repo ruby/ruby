@@ -3398,7 +3398,7 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
         st_delete(objspace->id_to_obj_tbl, &id, NULL);
     }
     else {
-        rb_bug("Object ID seen, but not in mapping table: %s\n", obj_info(obj));
+        rb_bug("Object ID seen, but not in mapping table: %s", obj_info(obj));
     }
 }
 
@@ -5578,7 +5578,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                          * The sweep cursor and compact cursor move in
                          * opposite directions, and when they meet references will
                          * get updated and "during_compacting" should get disabled */
-                        rb_bug("T_MOVED shouldn't be seen until compaction is finished\n");
+                        rb_bug("T_MOVED shouldn't be seen until compaction is finished");
                     }
                     gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info(vp));
                     ctx->empty_slots++;
@@ -7970,11 +7970,11 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     if (0) {
         /* free_slots may not equal to free_objects */
         if (page->free_slots != free_objects) {
-            rb_bug("page %p's free_slots should be %d, but %d\n", (void *)page, page->free_slots, free_objects);
+            rb_bug("page %p's free_slots should be %d, but %d", (void *)page, page->free_slots, free_objects);
         }
     }
     if (page->final_slots != zombie_objects) {
-        rb_bug("page %p's final_slots should be %d, but %d\n", (void *)page, page->final_slots, zombie_objects);
+        rb_bug("page %p's final_slots should be %d, but %d", (void *)page, page->final_slots, zombie_objects);
     }
 
     return remembered_old_objects;
@@ -10767,7 +10767,7 @@ static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
     if (gc_object_moved_p(&rb_objspace, obj)) {
-        rb_bug("ROOT %s points to MOVED: %p -> %s\n", category, (void *)obj, obj_info(rb_gc_location(obj)));
+        rb_bug("ROOT %s points to MOVED: %p -> %s", category, (void *)obj, obj_info(rb_gc_location(obj)));
     }
 }
 
@@ -10776,7 +10776,7 @@ reachable_object_check_moved_i(VALUE ref, void *data)
 {
     VALUE parent = (VALUE)data;
     if (gc_object_moved_p(&rb_objspace, ref)) {
-        rb_bug("Object %s points to MOVED: %p -> %s\n", obj_info(parent), (void *)ref, obj_info(rb_gc_location(ref)));
+        rb_bug("Object %s points to MOVED: %p -> %s", obj_info(parent), (void *)ref, obj_info(rb_gc_location(ref)));
     }
 }
 

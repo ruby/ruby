@@ -2113,7 +2113,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_ALIAS:
         break;
     }
-    rb_bug("rb_method_definition_eq: unsupported type: %d\n", d1->type);
+    rb_bug("rb_method_definition_eq: unsupported type: %d", d1->type);
 }
 
 static st_index_t
@@ -2148,7 +2148,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_ALIAS:
         break; /* unreachable */
     }
-    rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
+    rb_bug("rb_hash_method_definition: unsupported method type (%d)", def->type);
 }
 
 st_index_t

@@ -151,7 +151,7 @@ mprotect_exec(rb_execution_context_t *ec, VALUE self, VALUE rb_mem_block, VALUE 
     if (mem_size == 0) return Qfalse; // Some platforms return an error for mem_size 0.
 
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
-        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
     return Qtrue;

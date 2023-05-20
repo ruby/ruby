@@ -1667,7 +1667,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
         return;
       case SHAPE_OBJ_TOO_COMPLEX:
-        rb_bug("Unreachable\n");
+        rb_bug("Unreachable");
     }
 }
 

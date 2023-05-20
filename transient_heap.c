@@ -297,12 +297,12 @@ transient_heap_block_alloc(struct transient_heap* theap)
     block = mmap(NULL, TRANSIENT_HEAP_BLOCK_SIZE, PROT_READ | PROT_WRITE,
                  MAP_PRIVATE | MAP_ANONYMOUS,
                  -1, 0);
-    if (block == MAP_FAILED) rb_bug("transient_heap_block_alloc: err:%d\n", errno);
+    if (block == MAP_FAILED) rb_bug("transient_heap_block_alloc: err:%d", errno);
 #else
     if (theap->arena == NULL) {
         theap->arena = rb_aligned_malloc(TRANSIENT_HEAP_BLOCK_SIZE, TRANSIENT_HEAP_TOTAL_SIZE);
         if (theap->arena == NULL) {
-             rb_bug("transient_heap_block_alloc: failed\n");
+             rb_bug("transient_heap_block_alloc: failed");
         }
     }
 
@@ -529,7 +529,7 @@ alloc_header_to_block(struct transient_heap *theap, struct transient_alloc_heade
     block = alloc_header_to_block_verbose(theap, header);
     if (block == NULL) {
         transient_heap_dump(theap);
-        rb_bug("alloc_header_to_block: not found in mark_blocks (%p)\n", header);
+        rb_bug("alloc_header_to_block: not found in mark_blocks (%p)", header);
     }
 #else
     block = (void *)((intptr_t)header & ~(TRANSIENT_HEAP_BLOCK_SIZE-1));
@@ -560,7 +560,7 @@ rb_transient_heap_mark(VALUE obj, const void *ptr)
         }
         else if (header->obj != obj) {
             // transient_heap_dump(theap);
-            rb_bug("rb_transient_heap_mark: unmatch (%s is stored, but %s is given)\n",
+            rb_bug("rb_transient_heap_mark: unmatch (%s is stored, but %s is given)",
                    rb_obj_info(header->obj), rb_obj_info(obj));
         }
     }
@@ -608,7 +608,7 @@ transient_heap_ptr(VALUE obj, int error)
         break;
       default:
         if (error) {
-            rb_bug("transient_heap_ptr: unknown obj %s\n", rb_obj_info(obj));
+            rb_bug("transient_heap_ptr: unknown obj %s", rb_obj_info(obj));
         }
     }
 
@@ -709,7 +709,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
         asan_unpoison_memory_region(header, sizeof *header, true);
         VALUE obj = header->obj;
         TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
-        if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("transient_heap_block_evacuate: wrong header %p %s\n", (void *)header, rb_obj_info(obj));
+        if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("transient_heap_block_evacuate: wrong header %p %s", (void *)header, rb_obj_info(obj));
 
         if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, " * transient_heap_block_evacuate %p %s\n", (void *)header, rb_obj_info(obj));
 
@@ -727,7 +727,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
                 rb_struct_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
               default:
-                rb_bug("unsupported: %s\n", rb_obj_info(obj));
+                rb_bug("unsupported: %s", rb_obj_info(obj));
             }
             header->obj = Qundef; /* for debug */
         }

@@ -1363,7 +1363,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
                 populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
             }
             else {
-                rb_bug("didn't find the id\n");
+                rb_bug("didn't find the id");
             }
 
             return val;

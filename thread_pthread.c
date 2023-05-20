@@ -1869,7 +1869,7 @@ ubf_timer_create(rb_serial_t fork_gen)
         rb_atomic_t prev = timer_state_exchange(RTIMER_DISARM);
 
         if (prev != RTIMER_DEAD) {
-            rb_bug("timer_posix was not dead: %u\n", (unsigned)prev);
+            rb_bug("timer_posix was not dead: %u", (unsigned)prev);
         }
         timer_posix.fork_gen = fork_gen;
     }
@@ -1931,7 +1931,7 @@ ubf_timer_disarm(void)
         return;
       case RTIMER_DEAD: return; /* stay dead */
       default:
-        rb_bug("UBF_TIMER_POSIX bad state: %u\n", (unsigned)prev);
+        rb_bug("UBF_TIMER_POSIX bad state: %u", (unsigned)prev);
     }
 
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
