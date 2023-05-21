@@ -55,7 +55,7 @@ describe :rational_truncate, shared: true do
     end
   end
 
-  describe "with an invalid valud for precision" do
+  describe "with an invalid value for precision" do
     it "raises a TypeError" do
       -> { @rational.truncate(nil) }.should raise_error(TypeError, "not an integer")
       -> { @rational.truncate(1.0) }.should raise_error(TypeError, "not an integer")
