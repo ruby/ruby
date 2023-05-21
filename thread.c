@@ -155,6 +155,7 @@ struct waiting_fd {
     struct ccan_list_node wfd_node; /* <=> vm.waiting_fds */
     rb_thread_t *th;
     int fd;
+    struct rb_io_close_wait_list *busy;
 };
 
 /********************************************************************************/
@@ -1672,7 +1673,8 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 
     struct waiting_fd waiting_fd = {
         .fd = fd,
-        .th = rb_ec_thread_ptr(ec)
+        .th = rb_ec_thread_ptr(ec),
+	.busy = NULL,
     };
 
     // `errno` is only valid when there is an actual error - but we can't
@@ -1702,7 +1704,14 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
      */
     RB_VM_LOCK_ENTER();
     {
+        if (waiting_fd.busy) {
+            rb_native_mutex_lock(&waiting_fd.busy->mu);
+        }
         ccan_list_del(&waiting_fd.wfd_node);
+        if (waiting_fd.busy) {
+            rb_native_cond_broadcast(&waiting_fd.busy->cv);
+            rb_native_mutex_unlock(&waiting_fd.busy->mu);
+        }
     }
     RB_VM_LOCK_LEAVE();
 
@@ -2461,10 +2470,12 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
 }
 
 int
-rb_notify_fd_close(int fd, struct ccan_list_head *busy)
+rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     struct waiting_fd *wfd = 0, *next;
+    ccan_list_head_init(&busy->list);
+    int has_any;
 
     RB_VM_LOCK_ENTER();
     {
@@ -2474,27 +2485,52 @@ rb_notify_fd_close(int fd, struct ccan_list_head *busy)
                 VALUE err;
 
                 ccan_list_del(&wfd->wfd_node);
-                ccan_list_add(busy, &wfd->wfd_node);
+                ccan_list_add(&busy->list, &wfd->wfd_node);
 
+		wfd->busy = busy;
                 err = th->vm->special_exceptions[ruby_error_stream_closed];
                 rb_threadptr_pending_interrupt_enque(th, err);
                 rb_threadptr_interrupt(th);
             }
         }
     }
+    has_any = !ccan_list_empty(&busy->list);
+    if (has_any) {
+        rb_native_mutex_initialize(&busy->mu);
+	rb_native_cond_initialize(&busy->cv);
+    }
     RB_VM_LOCK_LEAVE();
 
-    return !ccan_list_empty(busy);
+    return has_any;
+}
+
+void
+rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy)
+{
+    rb_native_mutex_lock(&busy->mu);
+    while (!ccan_list_empty(&busy->list)) {
+        rb_native_cond_wait(&busy->cv, &busy->mu);
+    };
+    rb_native_mutex_unlock(&busy->mu);
+    rb_native_mutex_destroy(&busy->mu);
+    rb_native_cond_destroy(&busy->cv);
+}
+
+static void*
+call_notify_fd_close_wait_nogvl(void *arg)
+{
+    struct rb_io_close_wait_list *busy = (struct rb_io_close_wait_list *)arg;
+    rb_notify_fd_close_wait(busy);
+    return NULL;
 }
 
 void
 rb_thread_fd_close(int fd)
 {
-    struct ccan_list_head busy;
+    struct rb_io_close_wait_list busy;
 
-    ccan_list_head_init(&busy);
     if (rb_notify_fd_close(fd, &busy)) {
-        do rb_thread_schedule(); while (!ccan_list_empty(&busy));
+        rb_thread_call_without_gvl(call_notify_fd_close_wait_nogvl, &busy, RUBY_UBF_IO, 0);
     }
 }
 
