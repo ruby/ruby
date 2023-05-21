@@ -1573,6 +1573,17 @@ after_fork_ruby(rb_pid_t pid)
 
 #if defined(HAVE_WORKING_FORK)
 
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
+static inline rb_pid_t
+rb_fork(void)
+{
+    return fork();
+}
+COMPILER_WARNING_POP
+
 /* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
 #define try_with_sh(err, prog, argv, envp) ((err == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
 static void

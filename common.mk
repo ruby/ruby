@@ -13661,7 +13661,6 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/loadpath.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/missing.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/object.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/parse.h
-ruby.$(OBJEXT): $(top_srcdir)/internal/process.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/string.h

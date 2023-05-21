@@ -54,7 +54,6 @@
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/parse.h"
-#include "internal/process.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
