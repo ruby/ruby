@@ -1824,6 +1824,8 @@ env_var_truthy(const char *name)
 }
 #endif
 
+rb_pid_t rb_fork_ruby(int *status);
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1860,7 +1862,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #ifdef HAVE_WORKING_FORK
                 int fds[2];
                 if (rb_pipe(fds) == 0) {
-                    rb_pid_t pid = rb_fork();
+                    rb_pid_t pid = rb_fork_ruby(NULL);
                     if (pid > 0) {
                         /* exec PAGER with reading from child */
                         dup2(fds[0], 0);
