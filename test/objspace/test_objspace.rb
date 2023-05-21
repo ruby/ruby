@@ -287,10 +287,14 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
-  class TooComplex; end
-
   if defined?(RubyVM::Shape)
+    class TooComplex; end
+
     def test_dump_too_complex_shape
+      %i[YJIT RJIT].each do |jit|
+        omit "flaky with #{jit}" if RubyVM.const_defined?(jit) && RubyVM.const_get(jit).enabled?
+      end
+
       RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
         TooComplex.new.instance_variable_set(:"@a#{_1}", 1)
       end
@@ -300,8 +304,6 @@ class TestObjSpace < Test::Unit::TestCase
       assert_not_match(/"too_complex_shape"/, info)
       tc.instance_variable_set(:@new_ivar, 1)
       info = ObjectSpace.dump(tc)
-      omit 'flaky with YJIT' if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
-      omit 'flaky with RJIT' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
       assert_match(/"too_complex_shape":true/, info)
       if defined?(JSON)
         assert_true(JSON.parse(info)["too_complex_shape"])
