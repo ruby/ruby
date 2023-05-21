@@ -658,7 +658,7 @@ module TestIRB
       assert dynamic_prompt_executed, "dynamic_prompt's assertions were not executed."
     end
 
-    def test_dyanmic_prompt
+    def test_dynamic_prompt
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(def hoge)),
         PromptRow.new('002:1: :* ', %q(  3)),
@@ -670,7 +670,7 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
-    def test_dyanmic_prompt_with_double_newline_braking_code
+    def test_dynamic_prompt_with_double_newline_breaking_code
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(if true)),
         PromptRow.new('002:1: :* ', %q(%)),
@@ -684,7 +684,7 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
-    def test_dyanmic_prompt_with_multiline_literal
+    def test_dynamic_prompt_with_multiline_literal
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(if true)),
         PromptRow.new('002:1:]:* ', %q(  %w[)),
@@ -702,7 +702,7 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
-    def test_dyanmic_prompt_with_blank_line
+    def test_dynamic_prompt_with_blank_line
       input_with_prompt = [
         PromptRow.new('001:0:]:* ', %q(%w[)),
         PromptRow.new('002:0:]:* ', %q()),
