@@ -10,6 +10,8 @@
  */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
+#include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
+#include "ruby/thread_native.h" /* for mutexes in rb_io_close_wait_list */
 
 struct rb_thread_struct;        /* in vm_core.h */
 
@@ -51,6 +53,14 @@ VALUE rb_mutex_owned_p(VALUE self);
 VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
 
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
+
+struct rb_io_close_wait_list {
+    struct ccan_list_head list;
+    rb_nativethread_lock_t mu;
+    rb_nativethread_cond_t cv;
+};
+int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
+void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */

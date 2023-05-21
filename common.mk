@@ -6576,6 +6576,10 @@ explicit_bzero.$(OBJEXT): {$(VPATH)}internal/config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/dllexport.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}missing.h
+file.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+file.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+file.$(OBJEXT): $(CCAN_DIR)/list/list.h
+file.$(OBJEXT): $(CCAN_DIR)/str/str.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 file.$(OBJEXT): $(top_srcdir)/internal/array.h
 file.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -6773,6 +6777,7 @@ file.$(OBJEXT): {$(VPATH)}shape.h
 file.$(OBJEXT): {$(VPATH)}st.h
 file.$(OBJEXT): {$(VPATH)}subst.h
 file.$(OBJEXT): {$(VPATH)}thread.h
+file.$(OBJEXT): {$(VPATH)}thread_native.h
 file.$(OBJEXT): {$(VPATH)}util.h
 gc.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 gc.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
@@ -7810,6 +7815,10 @@ io.$(OBJEXT): {$(VPATH)}thread_native.h
 io.$(OBJEXT): {$(VPATH)}util.h
 io.$(OBJEXT): {$(VPATH)}vm_core.h
 io.$(OBJEXT): {$(VPATH)}vm_opts.h
+io_buffer.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+io_buffer.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+io_buffer.$(OBJEXT): $(CCAN_DIR)/list/list.h
+io_buffer.$(OBJEXT): $(CCAN_DIR)/str/str.h
 io_buffer.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/array.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -7995,6 +8004,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}onigmo.h
 io_buffer.$(OBJEXT): {$(VPATH)}oniguruma.h
 io_buffer.$(OBJEXT): {$(VPATH)}st.h
 io_buffer.$(OBJEXT): {$(VPATH)}subst.h
+io_buffer.$(OBJEXT): {$(VPATH)}thread_native.h
 iseq.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 iseq.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 iseq.$(OBJEXT): $(CCAN_DIR)/list/list.h
