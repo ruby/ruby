@@ -16,7 +16,7 @@
 require "mkmf"
 
 # Link against librubyparse if it's available
-have_library "rubyparser"
+has_library = have_library "rubyparser"
 
 # If someone requests the system yarp, then test for it
 if with_config("system-yarp")
@@ -30,7 +30,12 @@ end
 
 # If this function is available either via librubyparser
 # or via Ruby itself, then use that function
-unless have_func("yp_parser_init")
+if have_func("yp_parser_init")
+  unless has_library
+    $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
+    $VPATH << '$(topdir)' << '$(top_srcdir)' # for id.h.
+  end
+else
   # In this version we want to bundle all of the C source files together into
   # the gem so that it can all be compiled together.
 

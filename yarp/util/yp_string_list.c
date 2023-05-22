@@ -1,4 +1,4 @@
-#include "internal/yarp/util/yp_string_list.h"
+#include "yarp/util/yp_string_list.h"
 
 // Allocate a new yp_string_list_t.
 yp_string_list_t *

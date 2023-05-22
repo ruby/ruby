@@ -5,10 +5,10 @@
 /* if you are looking to modify the                                           */
 /* template                                                                   */
 /******************************************************************************/
-#include "internal/yarp/ast.h"
-#include "internal/yarp/parser.h"
-#include "internal/yarp/util/yp_buffer.h"
-#include "internal/yarp/util/yp_conversion.h"
+#include "yarp/ast.h"
+#include "yarp/parser.h"
+#include "yarp/util/yp_buffer.h"
+#include "yarp/util/yp_conversion.h"
 
 static void
 serialize_token(yp_parser_t *parser, yp_token_t *token, yp_buffer_t *buffer) {
@@ -34,7 +34,6 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
   yp_buffer_append_u8(buffer, node->type);
 
   size_t offset = buffer->length;
-  yp_buffer_append_u32(buffer, 0); /* Updated below */
 
   assert(node->location.start);
   assert(node->location.end);
@@ -381,6 +380,11 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
       break;
     }
     case YP_NODE_DEF_NODE: {
+        // serialize length
+        // encoding of location u32s make us need to save this offset.
+        size_t length_offset = buffer->length;
+
+        yp_buffer_append_u32(buffer, 0); /* Updated below */
       serialize_token(parser, &((yp_def_node_t *)node)->name, buffer);
       if (((yp_def_node_t *)node)->receiver == NULL) {
         yp_buffer_append_u8(buffer, 0);
@@ -429,6 +433,9 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
         yp_buffer_append_u8(buffer, 1);
         serialize_location(parser, &((yp_def_node_t *)node)->end_keyword_loc, buffer);
       }
+        // serialize length
+        uint32_t length = yp_ulong_to_u32(buffer->length - offset - sizeof(uint32_t));
+        memcpy(buffer->value + length_offset, &length, sizeof(uint32_t));      
       break;
     }
     case YP_NODE_DEFINED_NODE: {
@@ -1275,7 +1282,4 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
       break;
     }
   }
-
-  uint32_t length = yp_ulong_to_u32(buffer->length - offset - sizeof(uint32_t));
-  memcpy(buffer->value + offset, &length, sizeof(uint32_t));
 }

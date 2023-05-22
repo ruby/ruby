@@ -1,4 +1,4 @@
-#include "internal/yarp/unescape.h"
+#include "yarp/unescape.h"
 
 /******************************************************************************/
 /* Character checks                                                           */

@@ -1,4 +1,4 @@
-#include "internal/yarp/missing.h"
+#include "yarp/missing.h"
 
 const char *
 yp_strnstr(const char *haystack, const char *needle, size_t length) {

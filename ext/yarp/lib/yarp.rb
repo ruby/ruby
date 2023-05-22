@@ -204,5 +204,5 @@ require_relative "yarp/lex_compat"
 require_relative "yarp/node"
 require_relative "yarp/ripper_compat"
 require_relative "yarp/serialize"
-require_relative "yarp" # JEM: Changed this line
+require_relative "yarp/yarp"
 require_relative "yarp/pack"

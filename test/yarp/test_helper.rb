@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-$LOAD_PATH.unshift File.expand_path("../../lib", __dir__)
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "yarp"
 require "ripper"
 require "pp"
-# require "test-unit"
+require "test-unit"
 require "tempfile"
 
 module YARP
@@ -13,11 +13,11 @@ module YARP
 
     def assert_equal_nodes(expected, actual, compare_location: true, parent: nil)
       assert_equal expected.class, actual.class
-
+  
       case expected
       when Array
         assert_equal expected.size, actual.size
-
+  
         expected.zip(actual).each do |(expected, actual)|
           assert_equal_nodes(
             expected,
@@ -41,7 +41,7 @@ module YARP
         deconstructed_expected = expected.deconstruct_keys(nil)
         deconstructed_actual = actual.deconstruct_keys(nil)
         assert_equal deconstructed_expected.keys, deconstructed_actual.keys
-
+  
         deconstructed_expected.each_key do |key|
           assert_equal_nodes(
             deconstructed_expected[key],

@@ -1,4 +1,4 @@
-#include "internal/yarp/enc/yp_encoding.h"
+#include "yarp/enc/yp_encoding.h"
 
 typedef uint32_t unicode_codepoint_t;
 

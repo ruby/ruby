@@ -1,4 +1,4 @@
-#include "internal/yarp/util/yp_buffer.h"
+#include "yarp/util/yp_buffer.h"
 
 #define YP_BUFFER_INITIAL_SIZE 1024
 

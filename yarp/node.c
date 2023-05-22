@@ -5,7 +5,7 @@
 /* if you are looking to modify the                                           */
 /* template                                                                   */
 /******************************************************************************/
-#include "internal/yarp/node.h"
+#include "yarp/node.h"
 
 // Clear the node but preserves the location.
 void yp_node_clear(yp_node_t *node) {
@@ -81,16 +81,12 @@ yp_node_list_memsize(yp_node_list_t *node_list, yp_memsize_t *memsize) {
 
 // Append a new node onto the end of the node list.
 void
-yp_node_list_append(__attribute__((unused)) yp_parser_t *parser, yp_node_t *parent, yp_node_list_t *list, yp_node_t *node) {
+yp_node_list_append(yp_node_list_t *list, yp_node_t *node) {
   if (list->size == list->capacity) {
     list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
     list->nodes = realloc(list->nodes, list->capacity * sizeof(yp_node_t *));
   }
-
   list->nodes[list->size++] = node;
-
-  if (list->size == 1) parent->location.start = node->location.start;
-  parent->location.end = node->location.end;
 }
 
 __attribute__((__visibility__("default"))) void

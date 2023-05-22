@@ -419,11 +419,14 @@ module SyncDefaultGems
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
     when "yarp"
       rm_rf(%w[ext/yarp test/yarp yarp])
+      system("ruby #{upstream}/bin/template.rb")
       cp_r("#{upstream}/ext/yarp", "ext")
-      cp_r("#{upstream}/test/yarp", "test")
+      cp_r("#{upstream}/lib", "ext/yarp")
+      cp_r("#{upstream}/test", "test/yarp")
 
       cp_r("#{upstream}/src/.", "yarp")
-      cp_r("#{upstream}/include/.", "yarp")
+      cp_r("#{upstream}/include/yarp/.", "yarp")
+
        # `git checkout ext/yarp/depend ext/yarp/README.md` # TODO: FIX ME
     else
       sync_lib gem, upstream
