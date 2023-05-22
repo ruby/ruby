@@ -1340,7 +1340,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %printer {
 #ifndef RIPPER
     if ($$) {
-        rb_parser_printf(p, "%s", ruby_node_name(nd_type($$)));
+        rb_parser_printf(p, "%s", rb_node_name(nd_type($$)));
     }
 #else
 #endif
@@ -11078,7 +11078,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         RB_OBJ_WRITTEN(p->ast, Qnil, symbol->nd_lit = rb_str_intern(symbol->nd_lit));
         break;
       default:
-        compile_error(p, "unexpected node as symbol: %s", ruby_node_name(type));
+        compile_error(p, "unexpected node as symbol: %s", rb_node_name(type));
     }
     return list_append(p, symbols, symbol);
 }

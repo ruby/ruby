@@ -404,7 +404,7 @@ do { \
     if (error_type != (ndtype)) { \
         COMPILE_ERROR(ERROR_ARGS_AT(error_node) \
                       prefix ": " #ndtype " is expected, but %s", \
-                      ruby_node_name(error_type)); \
+                      rb_node_name(error_type)); \
         return errval; \
     } \
 } while (0)
@@ -420,7 +420,7 @@ do { \
 do { \
     const NODE *error_node = (node); \
     COMPILE_ERROR(ERROR_ARGS_AT(error_node) prefix ": unknown node (%s)", \
-                  ruby_node_name(nd_type(error_node))); \
+                  rb_node_name(nd_type(error_node))); \
     return errval; \
 } while (0)
 
@@ -4302,12 +4302,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_STR:
       case NODE_ZLIST:
       case NODE_LAMBDA:
-        /* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
+        /* printf("useless condition eliminate (%s)\n",  rb_node_name(nd_type(cond))); */
         ADD_INSNL(ret, cond, jump, then_label);
         return COMPILE_OK;
       case NODE_FALSE:
       case NODE_NIL:
-        /* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
+        /* printf("useless condition eliminate (%s)\n", rb_node_name(nd_type(cond))); */
         ADD_INSNL(ret, cond, jump, else_label);
         return COMPILE_OK;
       case NODE_LIST:
@@ -8910,7 +8910,7 @@ compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         break;
       default:
         COMPILE_ERROR(ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
-                      ruby_node_name(nd_type(node->nd_head)));
+                      rb_node_name(nd_type(node->nd_head)));
         return COMPILE_NG;
     }
     mid = node->nd_head->nd_mid;
