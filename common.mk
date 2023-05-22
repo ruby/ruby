@@ -8200,7 +8200,6 @@ iseq.$(OBJEXT): {$(VPATH)}iseq.h
 iseq.$(OBJEXT): {$(VPATH)}method.h
 iseq.$(OBJEXT): {$(VPATH)}missing.h
 iseq.$(OBJEXT): {$(VPATH)}node.h
-iseq.$(OBJEXT): {$(VPATH)}node_name.inc
 iseq.$(OBJEXT): {$(VPATH)}onigmo.h
 iseq.$(OBJEXT): {$(VPATH)}oniguruma.h
 iseq.$(OBJEXT): {$(VPATH)}ractor.h
@@ -9895,6 +9894,7 @@ node.$(OBJEXT): {$(VPATH)}method.h
 node.$(OBJEXT): {$(VPATH)}missing.h
 node.$(OBJEXT): {$(VPATH)}node.c
 node.$(OBJEXT): {$(VPATH)}node.h
+node.$(OBJEXT): {$(VPATH)}node_name.inc
 node.$(OBJEXT): {$(VPATH)}ruby_assert.h
 node.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 node.$(OBJEXT): {$(VPATH)}shape.h
