@@ -19,6 +19,7 @@ module SyncDefaultGems
     fileutils: 'ruby/fileutils',
     fiddle: 'ruby/fiddle',
     stringio: 'ruby/stringio',
+    yarp: 'Shopify/yarp', # TODO: Fix this
     "io-console": 'ruby/io-console',
     "io-nonblock": 'ruby/io-nonblock',
     "io-wait": 'ruby/io-wait',
@@ -416,6 +417,14 @@ module SyncDefaultGems
       rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
+    when "yarp"
+      rm_rf(%w[ext/yarp test/yarp yarp])
+      cp_r("#{upstream}/ext/yarp", "ext")
+      cp_r("#{upstream}/test/yarp", "test")
+
+      cp_r("#{upstream}/src/.", "yarp")
+      cp_r("#{upstream}/include/.", "yarp")
+       # `git checkout ext/yarp/depend ext/yarp/README.md` # TODO: FIX ME
     else
       sync_lib gem, upstream
     end
