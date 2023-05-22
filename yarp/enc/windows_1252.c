@@ -1,4 +1,4 @@
-#include "yarp/enc/yp_encoding.h"
+#include "internal/yarp/enc/yp_encoding.h"
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding windows-1252 character.

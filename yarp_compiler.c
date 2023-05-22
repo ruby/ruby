@@ -1,6 +1,6 @@
 // This file is part of a bigger compilation unit
 
-#include "yarp.h"
+#include "internal/yarp.h"
 
 // The reason we're using this is because we need access to the linked list
 // internals, but we also don't want to make a large diff in compile.c

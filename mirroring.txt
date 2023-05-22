@@ -12,3 +12,5 @@ cp -r ../yarp/ext/yarp/ ext/yarp
 
 in lib/yarp.rb: require_relative "yarp" instead of require_relative "yarp/yarp"
 
+grep -rl 'include "./' . | xargs sed -i '' 's/include "yarp\//include "internal\/yarp\//g'
+grep -rl 'include "yarp.h"' . | xargs sed -i '' 's/include "yarp\.h"/include "internal\/yarp.h"/g'

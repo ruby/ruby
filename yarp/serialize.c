@@ -5,10 +5,10 @@
 /* if you are looking to modify the                                           */
 /* template                                                                   */
 /******************************************************************************/
-#include "yarp/ast.h"
-#include "yarp/parser.h"
-#include "yarp/util/yp_buffer.h"
-#include "yarp/util/yp_conversion.h"
+#include "internal/yarp/ast.h"
+#include "internal/yarp/parser.h"
+#include "internal/yarp/util/yp_buffer.h"
+#include "internal/yarp/util/yp_conversion.h"
 
 static void
 serialize_token(yp_parser_t *parser, yp_token_t *token, yp_buffer_t *buffer) {

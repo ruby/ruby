@@ -1,12 +1,12 @@
 #ifndef YARP_STRING_LIST_H
 #define YARP_STRING_LIST_H
 
-#include "yarp/defines.h"
+#include "./../defines.h"
 
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "yarp/util/yp_string.h"
+#include "./yp_string.h"
 
 typedef struct {
   yp_string_t *strings;

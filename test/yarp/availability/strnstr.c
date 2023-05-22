@@ -1,4 +1,4 @@
-#include "yarp/defines.h"
+#include "internal/yarp/defines.h"
 #include <string.h>
 
 int main() {

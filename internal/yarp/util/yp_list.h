@@ -30,7 +30,7 @@
 #ifndef YARP_LIST_H
 #define YARP_LIST_H
 
-#include "yarp/defines.h"
+#include "./../defines.h"
 
 #include <stdbool.h>
 #include <stddef.h>

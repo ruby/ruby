@@ -1,14 +1,14 @@
 #ifndef YARP_PARSER_H
 #define YARP_PARSER_H
 
-#include "yarp/defines.h"
+#include "./defines.h"
 
 #include <stdbool.h>
 
-#include "yarp/ast.h"
-#include "yarp/enc/yp_encoding.h"
-#include "yarp/util/yp_list.h"
-#include "yarp/util/yp_state_stack.h"
+#include "./ast.h"
+#include "./enc/yp_encoding.h"
+#include "./util/yp_list.h"
+#include "./util/yp_state_stack.h"
 
 // This enum provides various bits that represent different kinds of states that
 // the lexer can track. This is used to determine which kind of token to return
@@ -154,7 +154,7 @@ typedef struct yp_lex_mode {
       const char *start;
       const char *end;
     } numeric;
-    
+
     struct {
       // These pointers point to the beginning and end of the heredoc
       // identifier.

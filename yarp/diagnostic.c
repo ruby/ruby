@@ -1,4 +1,4 @@
-#include "yarp/diagnostic.h"
+#include "internal/yarp/diagnostic.h"
 
 // Append an error to the given list of diagnostic.
 void

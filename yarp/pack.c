@@ -1,4 +1,4 @@
-#include "yarp/pack.h"
+#include "internal/yarp/pack.h"
 
 #include <stdbool.h>
 #include <errno.h>

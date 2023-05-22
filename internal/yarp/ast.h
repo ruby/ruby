@@ -8,13 +8,13 @@
 #ifndef YARP_AST_H
 #define YARP_AST_H
 
-#include "yarp/defines.h"
+#include "./defines.h"
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "yarp/util/yp_string.h"
+#include "./util/yp_string.h"
 
 // This enum represents every type of token in the Ruby source.
 typedef enum yp_token_type {

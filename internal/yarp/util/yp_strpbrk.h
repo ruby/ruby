@@ -1,7 +1,7 @@
 #ifndef YP_STRPBRK_H
 #define YP_STRPBRK_H
 
-#include "yarp/defines.h"
+#include "./../defines.h"
 
 #include <stddef.h>
 #include <string.h>

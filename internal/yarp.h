@@ -1,7 +1,7 @@
 #ifndef YARP_H
 #define YARP_H
 
-#include "internal/yarp/defines.h"
+#include "./yarp/defines.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -12,17 +12,17 @@
 #include <string.h>
 #include <strings.h>
 
-#include "internal/yarp/missing.h"
-#include "internal/yarp/ast.h"
-#include "internal/yarp/diagnostic.h"
-#include "internal/yarp/node.h"
-#include "internal/yarp/pack.h"
-#include "internal/yarp/parser.h"
-#include "internal/yarp/regexp.h"
-#include "internal/yarp/unescape.h"
-#include "internal/yarp/util/yp_buffer.h"
-#include "internal/yarp/util/yp_char.h"
-#include "internal/yarp/util/yp_strpbrk.h"
+#include "./yarp/missing.h"
+#include "./yarp/ast.h"
+#include "./yarp/diagnostic.h"
+#include "./yarp/node.h"
+#include "./yarp/pack.h"
+#include "./yarp/parser.h"
+#include "./yarp/regexp.h"
+#include "./yarp/unescape.h"
+#include "./yarp/util/yp_buffer.h"
+#include "./yarp/util/yp_char.h"
+#include "./yarp/util/yp_strpbrk.h"
 
 #define YP_VERSION_MAJOR 0
 #define YP_VERSION_MINOR 4

@@ -1,7 +1,7 @@
 #ifndef YARP_MISSING_H
 #define YARP_MISSING_H
 
-# include "internal/yarp/defines.h"
+#include "./defines.h"
 
 #include <ctype.h>
 #include <stddef.h>

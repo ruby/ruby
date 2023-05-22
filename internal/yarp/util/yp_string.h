@@ -1,7 +1,7 @@
 #ifndef YARP_STRING_H
 #define YARP_STRING_H
 
-#include "yarp/defines.h"
+#include "./../defines.h"
 
 #include <stddef.h>
 #include <stdlib.h>

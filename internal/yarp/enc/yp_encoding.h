@@ -1,7 +1,7 @@
 #ifndef YARP_ENCODING_H
 #define YARP_ENCODING_H
 
-#include "yarp/defines.h"
+#include "./../defines.h"
 
 #include <stdbool.h>
 #include <stddef.h>

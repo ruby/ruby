@@ -7,9 +7,9 @@
 /******************************************************************************/
 #include <stdio.h>
 
-#include "yarp/ast.h"
-#include "yarp/parser.h"
-#include "yarp/util/yp_buffer.h"
+#include "internal/yarp/ast.h"
+#include "internal/yarp/parser.h"
+#include "internal/yarp/util/yp_buffer.h"
 
 static void
 prettyprint_token(yp_buffer_t *buffer, yp_token_t *token) {

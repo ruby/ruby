@@ -1,7 +1,7 @@
 #ifndef YARP_BUFFER_H
 #define YARP_BUFFER_H
 
-#include "yarp/defines.h"
+#include "./../defines.h"
 
 #include <stdint.h>
 #include <stdlib.h>
