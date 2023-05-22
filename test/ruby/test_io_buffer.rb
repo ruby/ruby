@@ -362,10 +362,6 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_read
-    # This is currently a bug in IO:Buffer [#19084] which affects extended
-    # strings. On 32 bit machines, the example below becomes extended, so
-    # we omit this test until the bug is fixed.
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
     io = Tempfile.new
     io.write("Hello World")
     io.seek(0)
