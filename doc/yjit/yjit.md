@@ -54,8 +54,7 @@ series = {VMIL 2021}
 
 ## Current Limitations
 
-YJIT may not be suitable for certain applications. It currently only supports macOS and Linux on x86-64 and arm64/aarch64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state
-information.
+YJIT may not be suitable for certain applications. It currently only supports macOS and Linux on x86-64 and arm64/aarch64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
 You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options). There is a slight performance tradeoff because allocating less executable memory could result in the generated machine code being collected more often.
 
 ## Installation
@@ -94,9 +93,18 @@ make -j install
 or
 
 ```sh
-# Configure in dev (debug) mode for development, build and install
+# Configure in lower-performance dev (debug) mode for development, build and install
 ./autogen.sh
 ./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
+make -j install
+```
+
+Dev mode includes extended YJIT statistics, but can be slow. For only statistics you can configure in stats mode:
+
+```sh
+# Configure in extended-stats mode without slow runtime checks, build and install
+./autogen.sh
+./configure --enable-yjit=stats --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
@@ -158,7 +166,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
 - `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
-- `--yjit-stats`: produce statistics after the execution of a program (incurs a run-time cost)
+- `--yjit-stats`: produce statistics after the execution of a program (incurs a small run-time cost)
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
 - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
@@ -197,7 +205,9 @@ You can also use the `--yjit-stats` command-line option to see which bytecodes c
 
 ### Other Statistics
 
-If you compile Ruby with `RUBY_DEBUG` and/or `YJIT_STATS` defined and run with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
+If you configure with --enable-yjit=dev or --enable-yjit=stats and run with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
+
+You will get a much more limited set of statistics with YJIT enabled but not in dev or stats configuration.
 
 ```rb
 $ RUBYOPT="--yjit --yjit-stats" irb
@@ -216,14 +226,23 @@ irb(main):001:0> RubyVM::YJIT.runtime_stats
 Some of the counters include:
 
 :exec_instruction - how many Ruby bytecode instructions have been executed
+:yjit_insns_count - how many Ruby bytecode instruction have been executed in compiled code
 :binding_allocations - number of bindings allocated
 :binding_set - number of variables set via a binding
+:code_gc_count - number of garbage collections of compiled code since process start
 :vm_insns_count - number of instructions executed by the Ruby interpreter
 :compiled_iseq_count - number of bytecode sequences compiled
+:inline_code_size - size in bytes of compiled YJIT blocks
+:outline_code_size - size in bytes of YJIT error-handling compiled code
+:side_exit_count - number of side exits taken at runtime
+:total_exit_count - number of exits, including side exits, taken at runtime
+:avg_len_in_yjit - avg. number of instructions in compiled blocks before exiting to interpreter
 
 Counters starting with "exit_" show reasons for YJIT code taking a side exit (return to the interpreter.) See yjit_hacking.md for more details.
 
 Performance counter names are not guaranteed to remain the same between Ruby versions. If you're curious what one does, it's usually best to search the source code for it &mdash; but it may change in a later Ruby version.
+
+Some of these counters are available in non-stats configuration, but most counters are only in stats or dev configuration. The printed text after a --yjit-stats run includes other information that may be named differently than the information in runtime_stats.
 
 ## Contributing
 
