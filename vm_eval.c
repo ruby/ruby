@@ -2512,10 +2512,7 @@ rb_current_realfilepath(void)
         if (RTEST(path)) return path;
         // eval context
         path = rb_iseq_path(cfp->iseq);
-        if (path == eval_default_path) {
-            return Qnil;
-        }
-        else {
+        if (path != eval_default_path) {
             return path;
         }
     }
