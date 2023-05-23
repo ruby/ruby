@@ -2933,11 +2933,6 @@ rb_hash_replace(VALUE hash, VALUE hash2)
         rb_gc_writebarrier_remember(hash);
     }
 
-    if (RHASH_EMPTY_P(hash2) && RHASH_ST_TABLE_P(hash2)) {
-        /* ident hash */
-        hash_st_table_init(hash, RHASH_TYPE(hash2), 0);
-    }
-
     return hash;
 }
 
