@@ -539,19 +539,19 @@ describe :marshal_load, shared: true do
       end
 
       it "preserves compare_by_identity behaviour for a Hash subclass" do
-        h = UserHash.new(a: 1)
+        h = UserHash.new({ a: 1 })
         h.compare_by_identity
         unmarshalled = Marshal.send(@method, Marshal.dump(h))
         unmarshalled.should.compare_by_identity?
 
-        h = UserHash.new(a: 1)
+        h = UserHash.new({ a: 1 })
         unmarshalled = Marshal.send(@method, Marshal.dump(h))
         unmarshalled.should_not.compare_by_identity?
       end
     end
 
     it "allocates an instance of the proper class when Hash subclass with compare_by_identity behaviour" do
-      h = UserHash.new(a: 1)
+      h = UserHash.new({ a: 1 })
       h.compare_by_identity
 
       unmarshalled = Marshal.send(@method, Marshal.dump(h))

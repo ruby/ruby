@@ -1714,17 +1714,21 @@ set_proc_default(VALUE hash, VALUE proc)
 static VALUE
 rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE ifnone;
-
     rb_hash_modify(hash);
+
     if (rb_block_given_p()) {
         rb_check_arity(argc, 0, 0);
-        ifnone = rb_block_proc();
-        SET_PROC_DEFAULT(hash, ifnone);
+        SET_PROC_DEFAULT(hash, rb_block_proc());
     }
     else {
         rb_check_arity(argc, 0, 1);
-        ifnone = argc == 0 ? Qnil : argv[0];
+
+        VALUE options, ifnone;
+        rb_scan_args(argc, argv, "01:", &ifnone, &options);
+        if (NIL_P(ifnone) && !NIL_P(options)) {
+            ifnone = options;
+            rb_warn_deprecated_to_remove("3.4", "Calling Hash.new with keyword arguments", "Hash.new({ key: value })");
+        }
         RHASH_SET_IFNONE(hash, ifnone);
     }
 
