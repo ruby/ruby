@@ -850,6 +850,16 @@ class TestHash < Test::Unit::TestCase
     assert(true)
   end
 
+  def test_replace_st_with_ar
+    # ST hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # AR hash
+    h2 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }
+    # Replace ST hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
   def test_shift
     h = @h.dup
 
