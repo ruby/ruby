@@ -61,7 +61,7 @@ The following default gems are updated.
 * reline 0.3.4
 * stringio 3.0.7
 * strscan 3.0.7
-* syntax_suggest 1.0.4
+* syntax_suggest 1.1.0
 * time 0.2.2
 * timeout 0.3.2
 * uri 0.12.1
