@@ -117,133 +117,6 @@ module SyntaxSuggest
       self
     end
 
-    # Shows surrounding kw/end pairs
-    #
-    # The purpose of showing these extra pairs is due to cases
-    # of ambiguity when only one visible line is matched.
-    #
-    # For example:
-    #
-    #     1  class Dog
-    #     2    def bark
-    #     4    def eat
-    #     5    end
-    #     6  end
-    #
-    # In this case either line 2 could be missing an `end` or
-    # line 4 was an extra line added by mistake (it happens).
-    #
-    # When we detect the above problem it shows the issue
-    # as only being on line 2
-    #
-    #     2    def bark
-    #
-    # Showing "neighbor" keyword pairs gives extra context:
-    #
-    #     2    def bark
-    #     4    def eat
-    #     5    end
-    #
-    def capture_before_after_kws
-      lines = []
-      up_stop_next = false
-      down_stop_next = false
-      @scanner.commit_if_changed
-
-      lines = []
-      @scanner.scan(
-        up: ->(line, kw_count, end_count) {
-          break if up_stop_next
-          next true if line.empty?
-          break if line.indent < @orig_indent
-          next true if line.indent != @orig_indent
-
-          # If we're going up and have one complete kw/end pair, stop
-          if kw_count != 0 && kw_count == end_count
-            lines << line
-            break
-          end
-
-          lines << line if line.is_kw? || line.is_end?
-        },
-        down: ->(line, kw_count, end_count) {
-          break if down_stop_next
-          next true if line.empty?
-          break if line.indent < @orig_indent
-          next true if line.indent != @orig_indent
-
-          # if we're going down and have one complete kw/end pair,stop
-          if kw_count != 0 && kw_count == end_count
-            lines << line
-            break
-          end
-
-          lines << line if line.is_kw? || line.is_end?
-        }
-      )
-      @scanner.stash_changes
-      lines
-    end
-
-    # Shows the context around code provided by "falling" indentation
-    #
-    #
-    # If this is the original code lines:
-    #
-    #   class OH
-    #     def hello
-    #       it "foo" do
-    #     end
-    #   end
-    #
-    # And this is the line that is captured
-    #
-    #       it "foo" do
-    #
-    # It will yield its surrounding context:
-    #
-    #   class OH
-    #     def hello
-    #     end
-    #   end
-    #
-    # Example:
-    #
-    #   AroundBlockScan.new(
-    #       block: block,
-    #       code_lines: @code_lines
-    #   ).on_falling_indent do |line|
-    #     @lines_to_output << line
-    #   end
-    #
-    def on_falling_indent
-      last_indent_up = @orig_indent
-      last_indent_down = @orig_indent
-
-      @scanner.commit_if_changed
-      @scanner.scan(
-        up: ->(line, _, _) {
-          next true if line.empty?
-
-          if line.indent < last_indent_up
-            yield line
-            last_indent_up = line.indent
-          end
-          true
-        },
-        down: ->(line, _, _) {
-          next true if line.empty?
-          if line.indent < last_indent_down
-            yield line
-            last_indent_down = line.indent
-          end
-          true
-        }
-      )
-      @scanner.stash_changes
-      self
-    end
-
     # Scanning is intentionally conservative because
     # we have no way of rolling back an agressive block (at this time)
     #
@@ -275,24 +148,28 @@ module SyntaxSuggest
 
       return self if kw_count == end_count # nothing to balance
 
-      @scanner.commit_if_changed
-      scan_while { |line| line.empty? }
+      @scanner.commit_if_changed # Rollback point if we don't find anything to optimize
+
+      # Try to eat up empty lines
+      @scanner.scan(
+        up: ->(line, _, _) { line.hidden? || line.empty? },
+        down: ->(line, _, _) { line.hidden? || line.empty? }
+      )
 
       # More ends than keywords, check if we can balance expanding up
       next_up = @scanner.next_up
       next_down = @scanner.next_down
-      if (end_count - kw_count) == 1 && next_up
-        if next_up.is_kw? && next_up.indent >= @target_indent
+      case end_count - kw_count
+      when 1
+        if next_up&.is_kw? && next_up.indent >= @target_indent
           @scanner.scan(
             up: ->(line, _, _) { line == next_up },
             down: ->(line, _, _) { false }
           )
           @scanner.commit_if_changed
         end
-
-      # More keywords than ends, check if we can balance by expanding down
-      elsif (kw_count - end_count) == 1 && next_down
-        if next_down.is_end? && next_down.indent >= @target_indent
+      when -1
+        if next_down&.is_end? && next_down.indent >= @target_indent
           @scanner.scan(
             up: ->(line, _, _) { false },
             down: ->(line, _, _) { line == next_down }
@@ -300,7 +177,7 @@ module SyntaxSuggest
           @scanner.commit_if_changed
         end
       end
-
+      # Rollback any uncommitted changes
       @scanner.stash_changes
 
       self

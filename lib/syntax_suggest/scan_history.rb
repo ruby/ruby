@@ -3,8 +3,21 @@
 module SyntaxSuggest
   # Scans up/down from the given block
   #
-  # You can snapshot a change by committing it and rolling back.
+  # You can try out a change, stash it, or commit it to save for later
   #
+  # Example:
+  #
+  #   scanner = ScanHistory.new(code_lines: code_lines, block: block)
+  #   scanner.scan(
+  #     up: ->(_, _, _) { true },
+  #     down: ->(_, _, _) { true }
+  #   )
+  #   scanner.changed? # => true
+  #   expect(scanner.lines).to eq(code_lines)
+  #
+  #   scanner.stash_changes
+  #
+  #   expect(scanner.lines).to_not eq(code_lines)
   class ScanHistory
     attr_reader :before_index, :after_index
 
@@ -25,6 +38,7 @@ module SyntaxSuggest
     # Discards any changes that have not been committed
     def stash_changes
       refresh_index
+      self
     end
 
     # Discard changes that have not been committed and revert the last commit
