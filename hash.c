@@ -1160,10 +1160,6 @@ ar_copy(VALUE hash1, VALUE hash2)
     ar_table *old_tab = RHASH_AR_TABLE(hash2);
     ar_table *new_tab = RHASH_AR_TABLE(hash1);
 
-    if (new_tab == NULL) {
-        new_tab = ar_alloc_table(hash1);
-    }
-
     *new_tab = *old_tab;
     RHASH_AR_TABLE(hash1)->ar_hint.word = RHASH_AR_TABLE(hash2)->ar_hint.word;
     RHASH_AR_TABLE_BOUND_SET(hash1, RHASH_AR_TABLE_BOUND(hash2));
