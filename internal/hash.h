@@ -179,7 +179,6 @@ static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
     memset(RHASH_ST_TABLE(h), 0, sizeof(st_table));
-    FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG);
 }
 
 static inline unsigned

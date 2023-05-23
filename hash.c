@@ -2906,13 +2906,37 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     else {
         RHASH_ST_CLEAR(hash);
     }
-    hash_copy(hash, hash2);
+
+    if (RHASH_AR_TABLE_P(hash2)) {
+        if (RHASH_AR_TABLE_P(hash)) {
+            ar_copy(hash, hash2);
+        }
+        else {
+            st_table *tab = RHASH_ST_TABLE(hash);
+            rb_st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash2));
+
+            int bound = RHASH_AR_TABLE_BOUND(hash2);
+            for (int i = 0; i < bound; i++) {
+                if (ar_cleared_entry(hash2, i)) continue;
+
+                ar_table_pair *pair = RHASH_AR_TABLE_REF(hash2, i);
+                st_add_direct(tab, pair->key, pair->val);
+                RB_OBJ_WRITTEN(hash, Qundef, pair->key);
+                RB_OBJ_WRITTEN(hash, Qundef, pair->val);
+            }
+        }
+    }
+    else {
+        HASH_ASSERT(sizeof(st_table) <= sizeof(ar_table));
+
+        RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
+        rb_gc_writebarrier_remember(hash);
+    }
+
     if (RHASH_EMPTY_P(hash2) && RHASH_ST_TABLE_P(hash2)) {
         /* ident hash */
         hash_st_table_init(hash, RHASH_TYPE(hash2), 0);
     }
-
-    rb_gc_writebarrier_remember(hash);
 
     return hash;
 }
