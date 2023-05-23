@@ -488,6 +488,47 @@ module TestIRB
       assert_empty err
       assert_include(out, code)
     end
+
+    def test_show_source_private_instance
+      pend if RUBY_ENGINE == 'truffleruby'
+      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
+        class PrivateInstanceTest
+          private def show_source_test_method
+            unless true
+            end
+          end unless private_method_defined?(:show_source_test_method)
+        end
+      EOS
+
+      out, err = execute_lines(
+        "show_source '#{self.class.name}::PrivateInstanceTest#show_source_test_method'\n",
+      )
+
+      assert_empty err
+      assert_include(out, code.lines[1..-2].join)
+    end
+
+
+    def test_show_source_private
+      pend if RUBY_ENGINE == 'truffleruby'
+      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
+        class PrivateTest
+          private def show_source_test_method
+            unless true
+            end
+          end unless private_method_defined?(:show_source_test_method)
+        end
+
+        Instance = PrivateTest.new unless defined?(Instance)
+      EOS
+
+      out, err = execute_lines(
+        "show_source '#{self.class.name}::Instance.show_source_test_method'\n",
+      )
+
+      assert_empty err
+      assert_include(out, code.lines[1..-4].join)
+    end
   end
 
   class WorkspaceCommandTestCase < CommandTestCase
