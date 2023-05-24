@@ -4549,7 +4549,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 }
 
 static inline int
-is_swept_object(rb_objspace_t *objspace, VALUE ptr)
+is_swept_object(VALUE ptr)
 {
     struct heap_page *page = GET_HEAP_PAGE(ptr);
     return page->flags.before_sweep ? FALSE : TRUE;
@@ -4560,7 +4560,7 @@ static inline int
 is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
     if (!is_lazy_sweeping(objspace) ||
-        is_swept_object(objspace, ptr) ||
+        is_swept_object(ptr) ||
         MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
 
         return FALSE;
@@ -4591,7 +4591,7 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
 }
 
 static inline int
-is_markable_object(rb_objspace_t *objspace, VALUE obj)
+is_markable_object(VALUE obj)
 {
     if (rb_special_const_p(obj)) return FALSE; /* special const is not markable */
     check_rvalue_consistency(obj);
@@ -4602,7 +4602,7 @@ int
 rb_objspace_markable_object_p(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return is_markable_object(objspace, obj) && is_live_object(objspace, obj);
+    return is_markable_object(obj) && is_live_object(objspace, obj);
 }
 
 int
@@ -6475,7 +6475,7 @@ gc_mark_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
     long i;
 
     for (i=0; i<n; i++) {
-        if (is_markable_object(objspace, values[i])) {
+        if (is_markable_object(values[i])) {
             gc_mark_and_pin(objspace, values[i]);
         }
     }
@@ -6989,7 +6989,7 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
-    GC_ASSERT(is_markable_object(objspace, obj));
+    GC_ASSERT(is_markable_object(obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
         if (LIKELY(during_gc)) {
             MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
@@ -7000,7 +7000,7 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!is_markable_object(objspace, obj)) return;
+    if (!is_markable_object(obj)) return;
     gc_pin(objspace, obj);
     gc_mark_ptr(objspace, obj);
 }
@@ -7008,7 +7008,7 @@ gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!is_markable_object(objspace, obj)) return;
+    if (!is_markable_object(obj)) return;
     gc_mark_ptr(objspace, obj);
 }
 
@@ -11784,7 +11784,7 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
     {
         if (during_gc) rb_bug("rb_objspace_reachable_objects_from() is not supported while during_gc == true");
 
-        if (is_markable_object(objspace, obj)) {
+        if (is_markable_object(obj)) {
             rb_ractor_t *cr = GET_RACTOR();
             struct gc_mark_func_data_struct mfd = {
                 .mark_func = func,
@@ -13808,7 +13808,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     if (is_lazy_sweeping(objspace)) {
         fprintf(stderr, "lazy sweeping?: true\n");
-        fprintf(stderr, "swept?: %s\n", is_swept_object(objspace, obj) ? "done" : "not yet");
+        fprintf(stderr, "swept?: %s\n", is_swept_object(obj) ? "done" : "not yet");
     }
     else {
         fprintf(stderr, "lazy sweeping?: false\n");
