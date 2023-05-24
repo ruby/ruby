@@ -209,7 +209,7 @@ rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst)
 	dst->pointer = NUM2PTR(rb_Integer(*src));
 	break;
       case TYPE_CHAR:
-        if (RB_TYPE_P(*src) == RUBY_T_STRING && RSTRING_LEN(*src) == 1) {
+        if (RB_TYPE_P(*src, RUBY_T_STRING) && RSTRING_LEN(*src) == 1) {
             dst->schar = RSTRING_PTR(*src)[0];
         } else {
             dst->schar = (signed char)NUM2INT(*src);
