@@ -165,6 +165,7 @@ describe "C-API Thread function" do
       end
     end
 
+    # This test is disabled on Windows: https://bugs.ruby-lang.org/issues/16265
     platform_is_not :mingw, :windows do
       it "runs a C function with the global lock unlocked and unlocks IO with the generic RUBY_UBF_IO" do
         thr = Thread.new do

@@ -7211,6 +7211,7 @@ setup_overlapped(OVERLAPPED *ol, int fd, int iswrite, rb_off_t *_offset)
             }
         }
 
+        // As we need to restore the current offset later, we save it here:
         *_offset = current_offset.QuadPart;
     }
     else if (!(_osfile(fd) & (FDEV | FPIPE))) {
@@ -7243,6 +7244,7 @@ finish_overlapped(OVERLAPPED *ol, int fd, DWORD size, rb_off_t *_offset)
     CloseHandle(ol->hEvent);
 
     if (_offset) {
+        // If we were doing a `pread`/`pwrite`, we need to restore the current that was saved in setup_overlapped:
         DWORD seek_method = (_osfile(fd) & FAPPEND) ? FILE_END : FILE_BEGIN;
 
         LARGE_INTEGER seek_offset = {0};
@@ -7421,6 +7423,7 @@ rb_w32_write(int fd, const void *buf, size_t size, rb_off_t *offset)
         return -1;
     }
 
+    // If an offset is given, we can't use `_write`.
     if (!offset && (_osfile(fd) & FTEXT) &&
         (!(_osfile(fd) & FPIPE) || fd == fileno(stdout) || fd == fileno(stderr))) {
         ssize_t w = _write(fd, buf, size);
@@ -7443,6 +7446,7 @@ rb_w32_write(int fd, const void *buf, size_t size, rb_off_t *offset)
     size -= len;
   retry2:
 
+    // Provide the requested offset.
     if (setup_overlapped(&ol, fd, TRUE, offset)) {
         rb_acrt_lowio_unlock_fh(fd);
         return -1;
