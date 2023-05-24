@@ -8,7 +8,7 @@
 #include <unistd.h>
 #endif
 #if defined(_WIN32)
-#define pipe(p) rb_w32_pipe(p)
+#include "ruby/win32.h"
 #endif
 
 #ifndef _WIN32
