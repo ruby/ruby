@@ -279,7 +279,7 @@ rb_ast_node_alloc(VALUE klass)
 static const char*
 node_type_to_str(const NODE *node)
 {
-    return (rb_node_name(nd_type(node)) + rb_strlen_lit("NODE_"));
+    return (ruby_node_name(nd_type(node)) + rb_strlen_lit("NODE_"));
 }
 
 static VALUE
@@ -675,7 +675,7 @@ node_children(rb_ast_t *ast, const NODE *node)
         break;
     }
 
-    rb_bug("node_children: unknown node: %s", rb_node_name(type));
+    rb_bug("node_children: unknown node: %s", ruby_node_name(type));
 }
 
 static VALUE
