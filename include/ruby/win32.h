@@ -148,8 +148,8 @@ typedef int clockid_t;
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
 
-#define read(f, b, s) rb_w32_read(f, b, s, NULL)
-#define write(f, b, s) rb_w32_write(f, b, s, NULL)
+#define read(f, b, s) rb_w32_read(f, b, s)
+#define write(f, b, s) rb_w32_write(f, b, s)
 
 #define HAVE_PREAD
 #define pread(f, b, s, o) rb_w32_pread(f, b, s, o)
@@ -722,8 +722,8 @@ int  rb_w32_wopen(const WCHAR *, int, ...);
 int  rb_w32_close(int);
 int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
-ssize_t rb_w32_read(int, void *, size_t, rb_off_t *offset);
-ssize_t rb_w32_write(int, const void *, size_t, rb_off_t *offset);
+ssize_t rb_w32_read(int, void *, size_t);
+ssize_t rb_w32_write(int, const void *, size_t);
 ssize_t rb_w32_pread(int, void *, size_t, rb_off_t offset);
 ssize_t rb_w32_pwrite(int, const void *, size_t, rb_off_t offset);
 rb_off_t  rb_w32_lseek(int, rb_off_t, int);
