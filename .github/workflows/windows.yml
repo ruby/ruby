@@ -130,7 +130,7 @@ jobs:
       - run: nmake
       - run: nmake test
         timeout-minutes: 5
-      - run: nmake test-spec
+      - run: nmake test-spec MSPECOPT="-V -fspec"
         timeout-minutes: 10
       - run: nmake test-all
         env:
