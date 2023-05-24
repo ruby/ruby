@@ -7265,8 +7265,8 @@ finish_overlapped(OVERLAPPED *ol, int fd, DWORD size, rb_off_t *_offset)
 
 #undef read
 /* License: Ruby's */
-ssize_t
-rb_w32_read(int fd, void *buf, size_t size, rb_off_t *offset)
+static ssize_t
+rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
 {
     SOCKET sock = TO_SOCKET(fd);
     DWORD read;
@@ -7404,8 +7404,8 @@ rb_w32_read(int fd, void *buf, size_t size, rb_off_t *offset)
 
 #undef write
 /* License: Ruby's */
-ssize_t
-rb_w32_write(int fd, const void *buf, size_t size, rb_off_t *offset)
+static ssize_t
+rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
 {
     SOCKET sock = TO_SOCKET(fd);
     DWORD written;
@@ -7510,14 +7510,28 @@ rb_w32_write(int fd, const void *buf, size_t size, rb_off_t *offset)
     return ret;
 }
 
-ssize_t rb_w32_pread(int descriptor, void *base, size_t size, rb_off_t offset)
+ssize_t
+rb_w32_read(int fd, void *buf, size_t size)
 {
-    return rb_w32_read(descriptor, base, size, &offset);
+    return rb_w32_read_internal(fd, buf, size, NULL);
 }
 
-ssize_t rb_w32_pwrite(int descriptor, const void *base, size_t size, rb_off_t offset)
+ssize_t
+rb_w32_write(int fd, const void *buf, size_t size)
 {
-    return rb_w32_write(descriptor, base, size, &offset);
+    return rb_w32_write_internal(fd, buf, size, NULL);
+}
+
+ssize_t
+rb_w32_pread(int descriptor, void *base, size_t size, rb_off_t offset)
+{
+    return rb_w32_read_internal(descriptor, base, size, &offset);
+}
+
+ssize_t
+rb_w32_pwrite(int descriptor, const void *base, size_t size, rb_off_t offset)
+{
+    return rb_w32_write_internal(descriptor, base, size, &offset);
 }
 
 /* License: Ruby's */
