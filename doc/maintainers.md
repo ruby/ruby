@@ -72,10 +72,6 @@ have commit right, others don't.
 
 ## Default gems Maintainers
 ### Libraries
-#### lib/abbrev.rb
-* Akinori MUSHA (knu)
-* https://github.com/ruby/abbrev
-* https://rubygems.org/gems/abbrev
 
 #### lib/base64.rb
 * Yusuke Endoh (mame)
@@ -475,6 +471,8 @@ have commit right, others don't.
 ### racc
 * https://github.com/ruby/racc
 
+### abbrev
+* https://github.com/ruby/abbrev
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)

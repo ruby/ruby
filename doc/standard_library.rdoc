@@ -33,7 +33,6 @@ Socket:: Access underlying OS socket implementations
 
 == Libraries
 
-Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
@@ -129,3 +128,4 @@ RBS:: RBS is a language to describe the structure of Ruby programs
 TypeProf:: A type analysis tool for Ruby code based on abstract interpretation
 DEBUGGER__:: Debugging functionality for Ruby
 Racc:: A LALR(1) parser generator written in Ruby.
+Abbrev:: Calculates a set of unique abbreviations for a given set of strings
