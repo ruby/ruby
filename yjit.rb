@@ -191,8 +191,7 @@ module RubyVM::YJIT
     require 'stringio'
     strio = StringIO.new
     _print_stats(out: strio)
-    strio.rewind
-    strio.read
+    strio.string
   end
 
   # Produce disassembly for an iseq
