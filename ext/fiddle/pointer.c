@@ -88,8 +88,13 @@ fiddle_ptr_memsize(const void *ptr)
 }
 
 static const rb_data_type_t fiddle_ptr_data_type = {
-    "fiddle/pointer",
-    {fiddle_ptr_mark, fiddle_ptr_free, fiddle_ptr_memsize,},
+    .wrap_struct_name = "fiddle/pointer",
+    .function = {
+        .dmark = fiddle_ptr_mark,
+        .dfree = fiddle_ptr_free,
+        .dsize = fiddle_ptr_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
@@ -135,8 +140,8 @@ rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func, VALUE wra
     data->free = func;
     data->freed = false;
     data->size = size;
-    data->wrap[0] = wrap0;
-    data->wrap[1] = wrap1;
+    RB_OBJ_WRITE(val, &data->wrap[0], wrap0);
+    RB_OBJ_WRITE(val, &data->wrap[1], wrap1);
 
     return val;
 }
@@ -235,8 +240,8 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
 	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
 	    (*(data->free))(data->ptr);
 	}
-	data->wrap[0] = wrap;
-	data->wrap[1] = funcwrap;
+	RB_OBJ_WRITE(self, &data->wrap[0], wrap);
+	RB_OBJ_WRITE(self, &data->wrap[1], funcwrap);
 	data->ptr  = p;
 	data->size = s;
 	data->free = f;
@@ -314,7 +319,7 @@ rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
     }
 
     obj = rb_fiddle_ptr_malloc(klass, s,f);
-    if (wrap) RPTR_DATA(obj)->wrap[1] = wrap;
+    if (wrap) RB_OBJ_WRITE(obj, &RPTR_DATA(obj)->wrap[1], wrap);
 
     if (rb_block_given_p()) {
         if (!f) {
@@ -795,7 +800,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 	if (num == val) wrap = 0;
 	ptr = rb_fiddle_ptr_new(NUM2PTR(num), 0, NULL);
     }
-    if (wrap) RPTR_DATA(ptr)->wrap[0] = wrap;
+    if (wrap) RB_OBJ_WRITE(ptr, &RPTR_DATA(ptr)->wrap[0], wrap);
     return ptr;
 }
 
