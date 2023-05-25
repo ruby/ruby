@@ -612,11 +612,12 @@ block passed to it.
 If the first argument you pass to +throw+ is not handled by a matching
 +catch+, an UncaughtThrowError exception will be raised.  This is because
 +throw+/+catch+ should only be used for expected control flow changes, so
-using a value that is not already expected in an error.
+using a value that is not already expected is an error.
 
-+throw+/+catch+ are implemented as Kernel methods, not as keywords. So they
-are not usable directly if you are in a BasicObject context.  You can use
-+::Kernel.throw+/+::Kernel.catch+ in this case:
++throw+/+catch+ are implemented as Kernel methods (Kernel#throw and
+Kernel#catch), not as keywords. So they are not usable directly if you are
+in a BasicObject context.  You can use Kernel.throw and Kernel.catch in
+this case:
 
   BasicObject.new.instance_exec do
     def a
