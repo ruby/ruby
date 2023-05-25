@@ -179,7 +179,7 @@ struct fiber_pool {
     // A singly-linked list of allocations which contain 1 or more stacks each.
     struct fiber_pool_allocation * allocations;
 
-    // Provides O(1) stack "allocation":
+    // Free list that provides O(1) stack "allocation".
     struct fiber_pool_vacancy * vacancies;
 
     // The size of the stack allocations (excluding any guard page).
@@ -191,13 +191,15 @@ struct fiber_pool {
     // The initial number of stacks to allocate.
     size_t initial_count;
 
-    // Whether to madvise(free) the stack or not:
+    // Whether to madvise(free) the stack or not.
+    // If this value is set to 1, the stack will be madvise(free)ed
+    // (or equivalent), where possible, when it is returned to the pool.
     int free_stacks;
 
     // The number of stacks that have been used in this pool.
     size_t used;
 
-    // The amount to allocate for the vm_stack:
+    // The amount to allocate for the vm_stack.
     size_t vm_stack_size;
 };
 
@@ -695,7 +697,9 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // If this is not true, the vacancy information will almost certainly be destroyed:
     VM_ASSERT(size <= (stack->size - RB_PAGE_SIZE));
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%"PRIuSIZE" [base=%p, size=%"PRIuSIZE"]\n", base, size, stack->base, stack->size);
+    int advice = stack->pool->free_stacks >> 1;
+
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%"PRIuSIZE" [base=%p, size=%"PRIuSIZE"] advice=%d\n", base, size, stack->base, stack->size, advice);
 
     // The pages being used by the stack can be returned back to the system.
     // That doesn't change the page mapping, but it does allow the system to
@@ -709,24 +713,29 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 #ifdef __wasi__
     // WebAssembly doesn't support madvise, so we just don't do anything.
 #elif VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
+    if (!advice) advice = MADV_DONTNEED;
     // This immediately discards the pages and the memory is reset to zero.
-    madvise(base, size, MADV_DONTNEED);
+    madvise(base, size, advice);
 #elif defined(MADV_FREE_REUSABLE)
+    if (!advice) advice = MADV_FREE_REUSABLE;
     // Darwin / macOS / iOS.
     // Acknowledge the kernel down to the task info api we make this
     // page reusable for future use.
-    // As for MADV_FREE_REUSE below we ensure in the rare occasions the task was not
+    // As for MADV_FREE_REUSABLE below we ensure in the rare occasions the task was not
     // completed at the time of the call to re-iterate.
-    while (madvise(base, size, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN);
+    while (madvise(base, size, advice) == -1 && errno == EAGAIN);
 #elif defined(MADV_FREE)
+    if (!advice) advice = MADV_FREE;
     // Recent Linux.
-    madvise(base, size, MADV_FREE);
+    madvise(base, size, advice);
 #elif defined(MADV_DONTNEED)
+    if (!advice) advice = MADV_DONTNEED;
     // Old Linux.
-    madvise(base, size, MADV_DONTNEED);
+    madvise(base, size, advice);
 #elif defined(POSIX_MADV_DONTNEED)
+    if (!advice) advice = POSIX_MADV_DONTNEED;
     // Solaris?
-    posix_madvise(base, size, POSIX_MADV_DONTNEED);
+    posix_madvise(base, size, advice);
 #elif defined(_WIN32)
     VirtualAlloc(base, size, MEM_RESET, PAGE_READWRITE);
     // Not available in all versions of Windows.
@@ -3439,6 +3448,15 @@ Init_Cont(void)
     const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
         shared_fiber_pool.free_stacks = atoi(fiber_shared_fiber_pool_free_stacks);
+
+        if (shared_fiber_pool.free_stacks < 0) {
+            rb_warn("Setting RUBY_SHARED_FIBER_POOL_FREE_STACKS to a negative value is not allowed.");
+            shared_fiber_pool.free_stacks = 0;
+        }
+
+        if (shared_fiber_pool.free_stacks > 1) {
+            rb_warn("Setting RUBY_SHARED_FIBER_POOL_FREE_STACKS to a value greater than 1 is operating system specific, and may cause crashes.");
+        }
     }
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
