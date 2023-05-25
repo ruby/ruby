@@ -89,7 +89,6 @@ Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
-NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
@@ -129,3 +128,4 @@ Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
+NKF:: Ruby extension for Network Kanji Filter
