@@ -64,6 +64,19 @@ module Gem
       full_require_paths
     end
 
+    ##
+    # Returns a Gem::StubSpecification for bundled gems
+
+    def self.bundled_stubs
+      require_relative "../bundled_gems"
+      Gem.bundled_gems.map do |name|
+        Gem::Specification.find_by_name(name)
+      rescue Gem::MissingSpecError
+      end.compact
+    rescue LoadError
+      []
+    end
+
     alias_method :rg_extension_dir, :extension_dir
     def extension_dir
       # following instance variable is already used in original method
