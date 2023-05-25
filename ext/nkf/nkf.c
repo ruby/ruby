@@ -9,7 +9,7 @@
 
 #define RUBY_NKF_REVISION "$Revision$"
 #define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
-#define NKF_GEM_VERSION "0.1.2"
+#define NKF_GEM_VERSION "0.1.3"
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
