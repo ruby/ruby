@@ -217,6 +217,7 @@ module Bundler
     rescue BundlerError => e
       @resolve = nil
       @resolver = nil
+      @resolution_packages = nil
       @specs = nil
       @gem_version_promoter = nil
 
