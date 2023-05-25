@@ -47,7 +47,6 @@ ErrorHighlight:: Highlight error location in your code
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
-GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 OptionParser:: Ruby-oriented class for command-line option analysis
@@ -129,3 +128,4 @@ TypeProf:: A type analysis tool for Ruby code based on abstract interpretation
 DEBUGGER__:: Debugging functionality for Ruby
 Racc:: A LALR(1) parser generator written in Ruby.
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
+GetoptLong:: Parse command line options similar to the GNU C getopt_long()

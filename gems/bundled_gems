@@ -22,3 +22,4 @@ typeprof        0.21.7  https://github.com/ruby/typeprof aabc019684d8b4a1ed66c2a
 debug           1.8.0   https://github.com/ruby/debug
 racc            1.7.1   https://github.com/ruby/racc
 abbrev          0.1.1   https://github.com/ruby/abbrev
+getoptlong      0.2.0   https://github.com/ruby/getoptlong
