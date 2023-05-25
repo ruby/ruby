@@ -69,12 +69,16 @@ module Gem
 
     def self.bundled_stubs
       begin
-        require_relative "../bundled_gems"
+        require "bundled_gems"
+      rescue LoadError
+      end
+
+      if Gem.respond_to?(:bundled_gems)
         Gem.bundled_gems.map do |name|
           Gem::Specification.find_by_name(name)
         rescue Gem::MissingSpecError
         end.compact
-      rescue LoadError
+      else
         []
       end
     end
