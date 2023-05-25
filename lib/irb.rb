@@ -973,7 +973,7 @@ class Binding
   #     Cooked potato: true
   #
   #
-  # See IRB@Usage for more information.
+  # See IRB@IRB+Usage for more information.
   def irb(show_code: true)
     IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)
