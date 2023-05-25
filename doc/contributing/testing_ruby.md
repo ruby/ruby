@@ -70,13 +70,19 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     first the file name, and then the test name, prefixed with `--name`. For example:
 
     ```
-    make test-all TESTS="../test/ruby/test_alias.rb --name=/test_alias_with_zsuper_method/"
+    make test-all TESTS="../test/ruby/test_alias.rb --name=TestAlias#test_alias_with_zsuper_method"
     ```
 
     To run these specs with logs, we can use:
 
     ```
     make test-all TESTS=-v
+    ```
+
+    We can display the help of the `TESTS` option:
+
+    ```
+    $ make test-all TESTS=--help
     ```
 
     If we would like to run both the `test/` and `bootstraptest/` test suites, we can run
