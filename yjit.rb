@@ -184,6 +184,17 @@ module RubyVM::YJIT
     stats
   end
 
+  # Format and print out counters as a String. This returns a non-empty
+  # content only when --yjit-stats is enabled.
+  def self.printed_stats
+    # Lazily require StringIO to avoid breaking miniruby
+    require 'stringio'
+    strio = StringIO.new
+    _print_stats(out: strio)
+    strio.rewind
+    strio.read
+  end
+
   # Produce disassembly for an iseq
   def self.disasm(iseq)
     # If a method or proc is passed in, get its iseq
@@ -237,90 +248,90 @@ module RubyVM::YJIT
     end
 
     # Format and print out counters
-    def _print_stats # :nodoc:
+    def _print_stats(out: $stderr) # :nodoc:
       stats = runtime_stats(context: true)
-      return unless stats
+      return unless Primitive.rb_yjit_stats_enabled_p
 
-      $stderr.puts("***YJIT: Printing YJIT statistics on exit***")
+      out.puts("***YJIT: Printing YJIT statistics on exit***")
 
-      print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons: ')
-      print_counters(stats, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons: ')
-      print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
-      print_counters(stats, prefix: 'leave_', prompt: 'leave exit reasons: ')
-      print_counters(stats, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
-      print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
-      print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
-      print_counters(stats, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
-      print_counters(stats, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
-      print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
-      print_counters(stats, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
-      print_counters(stats, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
+      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons: ')
+      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
+      print_counters(stats, out: out, prefix: 'leave_', prompt: 'leave exit reasons: ')
+      print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
+      print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
+      print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
+      print_counters(stats, out: out, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
+      print_counters(stats, out: out, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
+      print_counters(stats, out: out, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
+      print_counters(stats, out: out, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
+      print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
 
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
 
-      $stderr.puts "num_send:              " + format_number(13, stats[:num_send])
-      $stderr.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
-      $stderr.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
+      out.puts "num_send:              " + format_number(13, stats[:num_send])
+      out.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
+      out.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
-        $stderr.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
-        $stderr.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
+        out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
+        out.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
       end
 
-      $stderr.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
-      $stderr.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
-      $stderr.puts "temp_reg_opnd:         " + format_number(13, stats[:temp_reg_opnd])
-      $stderr.puts "temp_mem_opnd:         " + format_number(13, stats[:temp_mem_opnd])
-      $stderr.puts "temp_spill:            " + format_number(13, stats[:temp_spill])
-      $stderr.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
-      $stderr.puts "bindings_set:          " + format_number(13, stats[:binding_set])
-      $stderr.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
-      $stderr.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
-      $stderr.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
-      $stderr.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
+      out.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
+      out.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
+      out.puts "temp_reg_opnd:         " + format_number(13, stats[:temp_reg_opnd])
+      out.puts "temp_mem_opnd:         " + format_number(13, stats[:temp_mem_opnd])
+      out.puts "temp_spill:            " + format_number(13, stats[:temp_spill])
+      out.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
+      out.puts "bindings_set:          " + format_number(13, stats[:binding_set])
+      out.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
+      out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
+      out.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
+      out.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
       if stats[:compiled_blockid_count] != 0
-        $stderr.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
+        out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
-      $stderr.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
-      $stderr.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
-      $stderr.puts "defer_count:           " + format_number(13, stats[:defer_count])
-      $stderr.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])
+      out.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
+      out.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
+      out.puts "defer_count:           " + format_number(13, stats[:defer_count])
+      out.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])
 
-      $stderr.puts "branch_insn_count:     " + format_number(13, stats[:branch_insn_count])
-      $stderr.puts "branch_known_count:    " + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
+      out.puts "branch_insn_count:     " + format_number(13, stats[:branch_insn_count])
+      out.puts "branch_known_count:    " + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
 
-      $stderr.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
-      $stderr.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
-      $stderr.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
-      $stderr.puts "get_ivar_max_depth:    " + format_number(13, stats[:get_ivar_max_depth])
-      $stderr.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
-      $stderr.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
-      $stderr.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
-      $stderr.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
-      $stderr.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
-      $stderr.puts "live_context_size:     " + format_number(13, stats[:live_context_size])
-      $stderr.puts "live_context_count:    " + format_number(13, stats[:live_context_count])
-      $stderr.puts "live_page_count:       " + format_number(13, stats[:live_page_count])
-      $stderr.puts "freed_page_count:      " + format_number(13, stats[:freed_page_count])
-      $stderr.puts "code_gc_count:         " + format_number(13, stats[:code_gc_count])
-      $stderr.puts "num_gc_obj_refs:       " + format_number(13, stats[:num_gc_obj_refs])
-      $stderr.puts "object_shape_count:    " + format_number(13, stats[:object_shape_count])
-      $stderr.puts "side_exit_count:       " + format_number(13, stats[:side_exit_count])
-      $stderr.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
-      $stderr.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count]) if stats.key?(:total_insns_count)
+      out.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
+      out.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
+      out.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
+      out.puts "get_ivar_max_depth:    " + format_number(13, stats[:get_ivar_max_depth])
+      out.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
+      out.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
+      out.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
+      out.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
+      out.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
+      out.puts "live_context_size:     " + format_number(13, stats[:live_context_size])
+      out.puts "live_context_count:    " + format_number(13, stats[:live_context_count])
+      out.puts "live_page_count:       " + format_number(13, stats[:live_page_count])
+      out.puts "freed_page_count:      " + format_number(13, stats[:freed_page_count])
+      out.puts "code_gc_count:         " + format_number(13, stats[:code_gc_count])
+      out.puts "num_gc_obj_refs:       " + format_number(13, stats[:num_gc_obj_refs])
+      out.puts "object_shape_count:    " + format_number(13, stats[:object_shape_count])
+      out.puts "side_exit_count:       " + format_number(13, stats[:side_exit_count])
+      out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
+      out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count]) if stats.key?(:total_insns_count)
       if stats.key?(:vm_insns_count)
-        $stderr.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
+        out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
       end
-      $stderr.puts "yjit_insns_count:      " + format_number(13, stats[:exec_instruction])
+      out.puts "yjit_insns_count:      " + format_number(13, stats[:exec_instruction])
       if stats.key?(:ratio_in_yjit)
-        $stderr.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
+        out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
       end
-      $stderr.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
+      out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
-      print_sorted_exit_counts(stats, prefix: "exit_")
+      print_sorted_exit_counts(stats, out: out, prefix: "exit_")
     end
 
-    def print_sorted_exit_counts(stats, prefix:, how_many: 20, left_pad: 4) # :nodoc:
+    def print_sorted_exit_counts(stats, out:, prefix:, how_many: 20, left_pad: 4) # :nodoc:
       total_exits = total_exit_count(stats)
 
       if total_exits > 0
@@ -336,17 +347,17 @@ module RubyVM::YJIT
         top_n_total = exits.sum { |name, count| count }
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
-        $stderr.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
+        out.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
         longest_insn_name_len = exits.max_by { |name, count| name.length }.first.length
         exits.each do |name, count|
           padding = longest_insn_name_len + left_pad
           padded_name = "%#{padding}s" % name
           padded_count = format_number_pct(10, count, total_exits)
-          $stderr.puts("#{padded_name}: #{padded_count}")
+          out.puts("#{padded_name}: #{padded_count}")
         end
       else
-        $stderr.puts "total_exits:           " + format_number(10, total_exits)
+        out.puts "total_exits:           " + format_number(10, total_exits)
       end
     end
 
@@ -358,14 +369,14 @@ module RubyVM::YJIT
       total
     end
 
-    def print_counters(counters, prefix:, prompt:) # :nodoc:
-      $stderr.puts(prompt)
+    def print_counters(counters, out:, prefix:, prompt:) # :nodoc:
+      out.puts(prompt)
       counters = counters.filter { |key, _| key.start_with?(prefix) }
       counters.filter! { |_, value| value != 0 }
       counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
 
       if counters.empty?
-        $stderr.puts("    (all relevant counters are zero)")
+        out.puts("    (all relevant counters are zero)")
         return
       end
 
@@ -377,7 +388,7 @@ module RubyVM::YJIT
       counters.reverse_each do |(name, value)|
         padded_name = name.rjust(longest_name_length, ' ')
         padded_count = format_number_pct(10, value, total)
-        $stderr.puts("    #{padded_name}: #{padded_count}")
+        out.puts("    #{padded_name}: #{padded_count}")
       end
     end
 
