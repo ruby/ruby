@@ -186,7 +186,7 @@ module RubyVM::YJIT
 
   # Format and print out counters as a String. This returns a non-empty
   # content only when --yjit-stats is enabled.
-  def self.printed_stats
+  def self.stats_string
     # Lazily require StringIO to avoid breaking miniruby
     require 'stringio'
     strio = StringIO.new
