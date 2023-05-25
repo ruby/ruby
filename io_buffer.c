@@ -2591,14 +2591,18 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, length, [offset]) -> read length or -errno
+ *  call-seq: read(io, [length, [offset]]) -> read length or -errno
  *
- *  Read at most +length+ bytes from +io+ into the buffer, starting at
+ *  Read at least +length+ bytes from the +io+, into the buffer starting at
  *  +offset+. If an error occurs, return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, read from the beginning of the buffer.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is 0, read nothing.
+ *  If +length+ is zero, exactly one <tt>read</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
  *
  *  Example:
  *
@@ -2699,13 +2703,19 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
 }
 
 /*
- *  call-seq: pread(io, from, length, [offset]) -> read length or -errno
+ *  call-seq: pread(io, from, [length, [offset]]) -> read length or -errno
  *
- *  Read at most +length+ bytes from +io+ into the buffer, starting at
- *  +from+, and put it in buffer starting from specified +offset+.
- *  If an error occurs, return <tt>-errno</tt>.
+ *  Read at least +length+ bytes from the +io+ starting at the specified +from+
+ *  position, into the buffer starting at +offset+. If an error occurs,
+ *  return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, put it at the beginning of the buffer.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
+ *
+ *  If +length+ is zero, exactly one <tt>pread</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
  *
  *  Example:
  *
@@ -2816,14 +2826,18 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 /*
  *  call-seq: write(io, [length, [offset]]) -> written length or -errno
  *
- *  Writes at least +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
+ *  Write at least +length+ bytes from the buffer starting at +offset+, into the +io+.
+ *  If an error occurs, return <tt>-errno</tt>.
  *
- *  If +length+ is not given or nil, the whole buffer is written, minus
- *  the offset. If +length+ is zero, write will be called once.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
  *
- *  If +offset+ is not given, the bytes are taken from the beginning
- *  of the buffer.
+ *  If +length+ is zero, exactly one <tt>write</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
+ *
+ *  Example:
  *
  *    out = File.open('output.txt', 'wb')
  *    IO::Buffer.for('1234567').write(out, 3)
@@ -2915,14 +2929,24 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
 }
 
 /*
- *  call-seq: pwrite(io, from, length, [offset]) -> written length or -errno
+ *  call-seq: pwrite(io, from, [length, [offset]]) -> written length or -errno
  *
- *  Writes +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
+ *  Write at least +length+ bytes from the buffer starting at +offset+, into
+ *  the +io+ starting at the specified +from+ position. If an error occurs,
+ *  return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, the bytes are taken from the beginning of the
- *  buffer. If the +offset+ is given and is beyond the end of the file, the
- *  gap will be filled with null (0 value) bytes.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
+ *
+ *  If +length+ is zero, exactly one <tt>pwrite</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
+ *
+ *  If the +from+ position is beyond the end of the file, the gap will be
+ *  filled with null (0 value) bytes.
+ *
+ *  Example:
  *
  *    out = File.open('output.txt', File::RDWR) # open for read/write, no truncation
  *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
