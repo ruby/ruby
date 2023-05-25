@@ -4884,7 +4884,7 @@ enum_compact(VALUE obj)
  *
  * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
  * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]
- * - {Searching}[rdoc-ref:Enumerable@Methods+for+Searching]
+ * - {Searching and Filtering}[rdoc-ref:Enumerable@Methods+for+Searching+and+Filtering]
  * - {Sorting}[rdoc-ref:Enumerable@Methods+for+Sorting]
  * - {Iterating}[rdoc-ref:Enumerable@Methods+for+Iterating]
  * - {And more....}[rdoc-ref:Enumerable@Other+Methods]
