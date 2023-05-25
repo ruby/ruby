@@ -239,11 +239,6 @@ have commit right, others don't.
 * https://github.com/ruby/reline
 * https://rubygems.org/gems/reline
 
-#### lib/rinda/*
-* Masatoshi SEKI (seki)
-* https://github.com/ruby/rinda
-* https://rubygems.org/gems/rinda
-
 #### lib/securerandom.rb
 * Tanaka Akira (akr)
 * https://github.com/ruby/securerandom
@@ -469,6 +464,9 @@ have commit right, others don't.
 
 ### observer
 * https://github.com/ruby/observer
+
+### rinda
+* https://github.com/ruby/rinda
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)

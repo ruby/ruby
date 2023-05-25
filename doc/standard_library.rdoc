@@ -64,7 +64,6 @@ Reline:: GNU Readline and Editline by pure Ruby implementation.
 Resolv::  Thread-aware DNS resolver library in Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
-Rinda:: The Linda distributed computing paradigm in Ruby
 SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
@@ -129,3 +128,4 @@ Racc:: A LALR(1) parser generator written in Ruby.
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
+Rinda:: The Linda distributed computing paradigm in Ruby
