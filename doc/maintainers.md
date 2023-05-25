@@ -387,11 +387,6 @@ have commit right, others don't.
 * https://github.com/ruby/strscan
 * https://rubygems.org/gems/strscan
 
-#### ext/syslog
-* Akinori MUSHA (knu)
-* https://github.com/ruby/syslog
-* https://rubygems.org/gems/syslog
-
 #### ext/win32ole
 * Masaki Suketa (suke)
 * https://github.com/ruby/win32ole
@@ -465,6 +460,9 @@ have commit right, others don't.
 
 ### nkf
 * https://github.com/ruby/nkf
+
+### syslog
+* https://github.com/ruby/syslog
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
