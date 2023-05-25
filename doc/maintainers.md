@@ -184,11 +184,6 @@ have commit right, others don't.
 * https://github.com/ruby/net-protocol
 * https://rubygems.org/gems/net-protocol
 
-#### lib/observer.rb
-* *unmaintained*
-* https://github.com/ruby/observer
-* https://rubygems.org/gems/observer
-
 #### lib/open3.rb
 * *unmaintained*
 * https://github.com/ruby/open3
@@ -471,6 +466,9 @@ have commit right, others don't.
 
 ### getoptlong
 * https://github.com/ruby/getoptlong
+
+### observer
+* https://github.com/ruby/observer
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)

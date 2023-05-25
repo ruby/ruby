@@ -53,7 +53,6 @@ OptionParser:: Ruby-oriented class for command-line option analysis
 Logger:: Provides a simple logging utility for outputting messages
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
 Net::HTTP:: HTTP client api for Ruby
-Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
@@ -129,3 +128,4 @@ DEBUGGER__:: Debugging functionality for Ruby
 Racc:: A LALR(1) parser generator written in Ruby.
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
+Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
