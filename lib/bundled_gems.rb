@@ -1,23 +1,14 @@
 module Gem
+  # https://bugs.ruby-lang.org/issues/19351
   def self.bundled_gems
-    # for Rails dependencies
     %w[
-      base64
-      benchmark
-      delegate
-      drb
-      forwardable
-      ipaddr
-      irb
-      mutex_m
-      ostruct
-      rdoc
-      singleton
-      tsort
-      weakref
-      bigdecimal
-      date
-      racc
+      abbrev
+      getoptlong
+      observer
+      resolv-replace
+      rinda
+      nkf
+      syslog
     ]
   end
 end
