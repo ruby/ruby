@@ -212,11 +212,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).to include("vendor/bundle2")
     end
 
-    it "works with the --deployment flag if you didn't change anything", :bundler => "< 3" do
-      bundle "install --deployment"
-    end
-
-    it "works with the --frozen flag if you didn't change anything", :bundler => "< 3" do
+    it "works with the --frozen flag" do
       bundle "install --frozen"
     end
 
