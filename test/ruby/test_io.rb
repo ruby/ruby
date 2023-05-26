@@ -3814,7 +3814,7 @@ __END__
   end
 
   def test_race_gets_and_close
-    opt = { signal: :ABRT, timeout: 200 }
+    opt = { signal: :ABRT, timeout: 10 }
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", **opt)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
