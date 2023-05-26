@@ -1674,7 +1674,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     struct waiting_fd waiting_fd = {
         .fd = fd,
         .th = rb_ec_thread_ptr(ec),
-	.busy = NULL,
+        .busy = NULL,
     };
 
     // `errno` is only valid when there is an actual error - but we can't
@@ -2487,7 +2487,7 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
                 ccan_list_del(&wfd->wfd_node);
                 ccan_list_add(&busy->list, &wfd->wfd_node);
 
-		wfd->busy = busy;
+                wfd->busy = busy;
                 err = th->vm->special_exceptions[ruby_error_stream_closed];
                 rb_threadptr_pending_interrupt_enque(th, err);
                 rb_threadptr_interrupt(th);
@@ -2497,7 +2497,7 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
     has_any = !ccan_list_empty(&busy->list);
     if (has_any) {
         rb_native_mutex_initialize(&busy->mu);
-	rb_native_cond_initialize(&busy->cv);
+        rb_native_cond_initialize(&busy->cv);
     }
     RB_VM_LOCK_LEAVE();
 
