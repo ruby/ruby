@@ -320,23 +320,26 @@ dl.note-list dt {
   background: url(../images/arrow_up.png) no-repeat right center;
 }
 
-.nav-section details summary {
+.nav-section details > summary {
   display: block;
 }
 
-.nav-section details summary::-webkit-details-marker {
+.nav-section details > summary::-webkit-details-marker {
   display: none;
 }
 
-.nav-section details summary:before {
+.nav-section details > summary::before {
   content: "";
 }
 
-.nav-section details summary:after {
-  content: "  \25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
+.nav-section details > summary::after {
+  content: "\25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
+  font-size: 0.8em;
+  margin-left: 0.4em;
 }
-.nav-section details[open] > summary:after {
-  content: "  \25BD"; /* WHITE DOWN-POINTING TRIANGLE */
+
+.nav-section details[open] > summary::after {
+  content: "\25BD"; /* WHITE DOWN-POINTING TRIANGLE */
 }
 
 /* @end */
