@@ -10,10 +10,10 @@ end
 base_path = File.expand_path("../lib", __dir__)
 
 if File.exist?(base_path)
-  require_relative "../lib/bundler"
-else
-  require "bundler"
+  $LOAD_PATH.unshift(base_path)
 end
+
+require "bundler"
 
 if Gem.rubygems_version < Gem::Version.new("3.2.3") && Gem.ruby_version < Gem::Version.new("2.7.a") && !ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"]
   Bundler.ui.warn \
@@ -24,18 +24,10 @@ if Gem.rubygems_version < Gem::Version.new("3.2.3") && Gem.ruby_version < Gem::V
     "and silence this warning by running `gem update --system 3.2.3`"
 end
 
-if File.exist?(base_path)
-  require_relative "../lib/bundler/friendly_errors"
-else
-  require "bundler/friendly_errors"
-end
+require "bundler/friendly_errors"
 
 Bundler.with_friendly_errors do
-  if File.exist?(base_path)
-    require_relative "../lib/bundler/cli"
-  else
-    require "bundler/cli"
-  end
+  require "bundler/cli"
 
   # Allow any command to use --help flag to show help for that command
   help_flags = %w[--help -h]
