@@ -538,7 +538,7 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *
  *  The returned string may be used as an argument to Regexp.new,
  *  or as interpolated text for a
- *  {Regexp literal}[rdoc-ref:regexp.rdoc@Regexp+Literal]:
+ *  {Regexp literal}[rdoc-ref:literals.rdoc@Regexp+Literals]:
  *
  *    r1 = Regexp.new(s0) # => /(?ix-m:ab+c)/
  *    r2 = /#{s0}/        # => /(?ix-m:ab+c)/

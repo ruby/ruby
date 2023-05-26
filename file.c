@@ -7135,7 +7135,7 @@ const char ruby_null_device[] =
  *
  *  Note that file permissions are quite different from the _mode_
  *  of a file stream (\File object).
- *  See IO@Modes.
+ *  See IO.
  *
  *  In a \File object, the permissions are available thus,
  *  where method +mode+, despite its name, returns permissions:
@@ -7191,8 +7191,7 @@ const char ruby_null_device[] =
  *
  *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
- *  - Includes {module FileTest}[rdoc-ref:FileTest@What-27s+Here].
- *    which provides dozens of additional methods.
+ *  - Includes module FileTest, which provides dozens of additional methods.
  *
  *  Here, class \File provides methods that are useful for:
  *

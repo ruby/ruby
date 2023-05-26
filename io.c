@@ -11957,7 +11957,7 @@ io_s_foreach(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+Options].
+ *  - {Line IO}[rdoc-ref:IO@Line+IO].
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -12055,7 +12055,7 @@ io_s_readlines(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+Options].
+ *  - {Line IO}[rdoc-ref:IO@Line+IO].
  *
  */
 
