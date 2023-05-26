@@ -125,17 +125,6 @@ VALUE rb_cSymbol;
     }\
 } while (0)
 
-#define STR_DEC_LEN(str) do {\
-    if (STR_EMBED_P(str)) {\
-        long n = RSTRING_LEN(str);\
-        n--;\
-        STR_SET_EMBED_LEN((str), n);\
-    }\
-    else {\
-        RSTRING(str)->as.heap.len--;\
-    }\
-} while (0)
-
 static inline bool
 str_enc_fastpath(VALUE str)
 {
