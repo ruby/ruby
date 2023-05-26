@@ -318,7 +318,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("The path `#{lib_path("path_gem-1.0")}` does not exist.")
     end
 
-    it "can have --frozen set via an environment variable", :bundler => "< 3" do
+    it "can have --frozen set via an environment variable" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -350,13 +350,13 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).not_to include("You have changed in the Gemfile")
     end
 
-    it "installs gems by default to vendor/bundle when deployment mode is set via an environment variable", :bundler => "< 3" do
+    it "installs gems by default to vendor/bundle when deployment mode is set via an environment variable" do
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       bundle "install"
       expect(out).to include("vendor/bundle")
     end
 
-    it "installs gems to custom path when deployment mode is set via an environment variable ", :bundler => "< 3" do
+    it "installs gems to custom path when deployment mode is set via an environment variable " do
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       ENV["BUNDLE_PATH"] = "vendor/bundle2"
       bundle "install"
