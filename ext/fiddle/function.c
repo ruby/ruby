@@ -53,8 +53,13 @@ function_memsize(const void *p)
 }
 
 const rb_data_type_t function_data_type = {
-    "fiddle/function",
-    {0, deallocate, function_memsize,},
+    .wrap_struct_name = "fiddle/function",
+    .function = {
+        .dmark = 0,
+        .dfree = deallocate,
+        .dsize = function_memsize
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
