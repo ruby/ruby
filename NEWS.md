@@ -56,12 +56,13 @@ The following default gems are updated.
 * fiddle 1.1.2
 * fileutils 1.7.1
 * irb 1.6.4
+* nkf 0.1.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
-* reline 0.3.3
+* reline 0.3.4
 * stringio 3.0.7
 * strscan 3.0.7
-* syntax_suggest 1.0.4
+* syntax_suggest 1.1.0
 * time 0.2.2
 * timeout 0.3.2
 * uri 0.12.1
@@ -69,7 +70,7 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.18.0
-* test-unit 3.5.8
+* test-unit 3.5.9
 * rbs 3.1.0
 * typeprof 0.21.7
 * debug 1.8.0
@@ -126,3 +127,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19591]: https://bugs.ruby-lang.org/issues/19591

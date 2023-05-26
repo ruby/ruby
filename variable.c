@@ -505,12 +505,13 @@ mark_global_entry(VALUE v, void *ignored)
     return ID_TABLE_CONTINUE;
 }
 
+#define gc_mark_table(task) \
+    if (rb_global_tbl) { rb_id_table_foreach_values(rb_global_tbl, task##_global_entry, 0); }
+
 void
 rb_gc_mark_global_tbl(void)
 {
-    if (rb_global_tbl) {
-        rb_id_table_foreach_values(rb_global_tbl, mark_global_entry, 0);
-    }
+    gc_mark_table(mark);
 }
 
 static enum rb_id_table_iterator_result
@@ -526,9 +527,7 @@ update_global_entry(VALUE v, void *ignored)
 void
 rb_gc_update_global_tbl(void)
 {
-    if (rb_global_tbl) {
-        rb_id_table_foreach_values(rb_global_tbl, update_global_entry, 0);
-    }
+    gc_mark_table(update);
 }
 
 static ID
@@ -1682,7 +1681,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
         return;
       case SHAPE_OBJ_TOO_COMPLEX:
-        rb_bug("Unreachable\n");
+        rb_bug("Unreachable");
     }
 }
 

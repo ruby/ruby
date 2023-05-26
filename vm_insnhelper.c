@@ -1363,7 +1363,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
                 populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
             }
             else {
-                rb_bug("didn't find the id\n");
+                rb_bug("didn't find the id");
             }
 
             return val;
@@ -1616,7 +1616,7 @@ vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
     /* continue throw */
 
     if (FIXNUM_P(err)) {
-        ec->tag->state = FIX2INT(err);
+        ec->tag->state = RUBY_TAG_FATAL;
     }
     else if (SYMBOL_P(err)) {
         ec->tag->state = TAG_THROW;

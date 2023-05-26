@@ -10,6 +10,8 @@
  */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
+#include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
+#include "ruby/thread_native.h" /* for mutexes in rb_io_close_wait_list */
 
 struct rb_thread_struct;        /* in vm_core.h */
 
@@ -29,6 +31,10 @@ struct rb_thread_struct;        /* in vm_core.h */
 #define COVERAGE_TARGET_ONESHOT_LINES 8
 #define COVERAGE_TARGET_EVAL 16
 
+#define RUBY_FATAL_THREAD_KILLED INT2FIX(0)
+#define RUBY_FATAL_THREAD_TERMINATED INT2FIX(1)
+#define RUBY_FATAL_FIBER_KILLED RB_INT2FIX(2)
+
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
@@ -47,6 +53,14 @@ VALUE rb_mutex_owned_p(VALUE self);
 VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
 
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
+
+struct rb_io_close_wait_list {
+    struct ccan_list_head list;
+    rb_nativethread_lock_t mu;
+    rb_nativethread_cond_t cv;
+};
+int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
+void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */

@@ -104,6 +104,8 @@ st_table *rb_st_init_table(const struct st_hash_type *);
 #define st_init_table rb_st_init_table
 st_table *rb_st_init_table_with_size(const struct st_hash_type *, st_index_t);
 #define st_init_table_with_size rb_st_init_table_with_size
+st_table *rb_st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type, st_index_t size);
+#define st_init_existing_table_with_size rb_st_init_existing_table_with_size
 st_table *rb_st_init_numtable(void);
 #define st_init_numtable rb_st_init_numtable
 st_table *rb_st_init_numtable_with_size(st_index_t);

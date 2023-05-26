@@ -18,10 +18,7 @@ class RubyLex
 
   def initialize(context)
     @context = context
-    @exp_line_no = @line_no = 1
-    @indent = 0
-    @continue = false
-    @line = ""
+    @line_no = 1
     @prompt = nil
   end
 
@@ -42,8 +39,17 @@ class RubyLex
     result
   end
 
+  def single_line_command?(code)
+    command = code.split(/\s/, 2).first
+    @context.symbol_alias?(command) || @context.transform_args?(command)
+  end
+
   # io functions
-  def set_input(io, &block)
+  def set_input(&block)
+    @input = block
+  end
+
+  def configure_io(io)
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
@@ -61,14 +67,9 @@ class RubyLex
           end
         else
           # Accept any single-line input for symbol aliases or commands that transform args
-          command = code.split(/\s/, 2).first
-          if @context.symbol_alias?(command) || @context.transform_args?(command)
-            next true
-          end
+          next true if single_line_command?(code)
 
-          code.gsub!(/\s*\z/, '').concat("\n")
-          tokens = self.class.ripper_lex_without_warning(code, context: @context)
-          ltype, indent, continue, code_block_open = check_state(code, tokens)
+          ltype, indent, continue, code_block_open = check_code_state(code)
           if ltype or indent > 0 or continue or code_block_open
             false
           else
@@ -112,10 +113,22 @@ class RubyLex
       end
     end
 
-    if block_given?
-      @input = block
-    else
-      @input = Proc.new{@io.gets}
+    if @io.respond_to?(:auto_indent) and @context.auto_indent_mode
+      @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
+        if is_newline
+          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"), context: @context)
+          prev_spaces = find_prev_spaces(line_index)
+          depth_difference = check_newline_depth_difference
+          depth_difference = 0 if depth_difference < 0
+          prev_spaces + depth_difference * 2
+        else
+          code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
+          last_line = lines[line_index]&.byteslice(0, byte_pointer)
+          code += last_line if last_line
+          @tokens = self.class.ripper_lex_without_warning(code, context: @context)
+          check_corresponding_token_depth(lines, line_index)
+        end
+      end
     end
   end
 
@@ -184,26 +197,6 @@ class RubyLex
     prev_spaces
   end
 
-  def set_auto_indent
-    if @io.respond_to?(:auto_indent) and @context.auto_indent_mode
-      @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
-        if is_newline
-          @tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"), context: @context)
-          prev_spaces = find_prev_spaces(line_index)
-          depth_difference = check_newline_depth_difference
-          depth_difference = 0 if depth_difference < 0
-          prev_spaces + depth_difference * 2
-        else
-          code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
-          last_line = lines[line_index]&.byteslice(0, byte_pointer)
-          code += last_line if last_line
-          @tokens = self.class.ripper_lex_without_warning(code, context: @context)
-          check_corresponding_token_depth(lines, line_index)
-        end
-      end
-    end
-  end
-
   def check_state(code, tokens)
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
@@ -214,67 +207,56 @@ class RubyLex
     [ltype, indent, continue, code_block_open]
   end
 
-  def prompt
-    if @prompt
-      @prompt.call(@ltype, @indent, @continue, @line_no)
-    end
+  def check_code_state(code)
+    check_target_code = code.gsub(/\s*\z/, '').concat("\n")
+    tokens = self.class.ripper_lex_without_warning(check_target_code, context: @context)
+    check_state(check_target_code, tokens)
   end
 
-  def initialize_input
-    @ltype = nil
-    @indent = 0
-    @continue = false
-    @line = ""
-    @exp_line_no = @line_no
-    @code_block_open = false
+  def save_prompt_to_context_io(ltype, indent, continue, line_num_offset)
+    # Implicitly saves prompt string to `@context.io.prompt`. This will be used in the next `@input.call`.
+    @prompt.call(ltype, indent, continue, @line_no + line_num_offset)
+  end
+
+  def readmultiline
+    save_prompt_to_context_io(nil, 0, false, 0)
+
+    # multiline
+    return @input.call if @io.respond_to?(:check_termination)
+
+    # nomultiline
+    code = ''
+    line_offset = 0
+    loop do
+      line = @input.call
+      unless line
+        return code.empty? ? nil : code
+      end
+
+      code << line
+      # Accept any single-line input for symbol aliases or commands that transform args
+      return code if single_line_command?(code)
+
+      ltype, indent, continue, code_block_open = check_code_state(code)
+      return code unless ltype or indent > 0 or continue or code_block_open
+
+      line_offset += 1
+      save_prompt_to_context_io(ltype, indent, continue, line_offset)
+    end
   end
 
   def each_top_level_statement
-    initialize_input
-    catch(:TERM_INPUT) do
-      loop do
-        begin
-          prompt
-          unless l = lex
-            throw :TERM_INPUT if @line == ''
-          else
-            @line_no += l.count("\n")
-            if l == "\n"
-              @exp_line_no += 1
-              next
-            end
-            @line.concat l
-            if @code_block_open or @ltype or @continue or @indent > 0
-              next
-            end
-          end
-          if @line != "\n"
-            @line.force_encoding(@io.encoding)
-            yield @line, @exp_line_no
-          end
-          raise TerminateLineInput if @io.eof?
-          @line = ''
-          @exp_line_no = @line_no
+    loop do
+      code = readmultiline
+      break unless code
 
-          @indent = 0
-        rescue TerminateLineInput
-          initialize_input
-          prompt
-        end
+      if code != "\n"
+        code.force_encoding(@io.encoding)
+        yield code, @line_no
       end
+      @line_no += code.count("\n")
+    rescue TerminateLineInput
     end
-  end
-
-  def lex
-    line = @input.call
-    if @io.respond_to?(:check_termination)
-      return line # multiline
-    end
-    code = @line + (line.nil? ? '' : line)
-    code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = self.class.ripper_lex_without_warning(code, context: @context)
-    @ltype, @indent, @continue, @code_block_open = check_state(code, @tokens)
-    line
   end
 
   def process_continue(tokens)

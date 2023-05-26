@@ -348,7 +348,7 @@ if you believe they were disclosed to a third party.
 
     begin
       config = self.class.load_with_rubygems_config_hash(File.read(filename))
-      if config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(":") }
+      if config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       else
@@ -535,7 +535,7 @@ if you believe they were disclosed to a third party.
     content.transform_keys! do |k|
       if k.match?(/\A:(.*)\Z/)
         k[1..-1].to_sym
-      elsif k.include?("__")
+      elsif k.include?("__") || k.match?(%r{/\Z})
         if k.is_a?(Symbol)
           k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
         else

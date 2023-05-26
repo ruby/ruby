@@ -31,13 +31,14 @@ module IRB
           when /\A(?<owner>[A-Z]\w*(::[A-Z]\w*)*)#(?<method>[^ :.]+)\z/ # Class#method
             owner = eval(Regexp.last_match[:owner], irb_context.workspace.binding)
             method = Regexp.last_match[:method]
-            if owner.respond_to?(:instance_method) && owner.instance_methods.include?(method.to_sym)
-              file, line = owner.instance_method(method).source_location
+            if owner.respond_to?(:instance_method)
+              methods = owner.instance_methods + owner.private_instance_methods
+              file, line = owner.instance_method(method).source_location if methods.include?(method.to_sym)
             end
           when /\A((?<receiver>.+)(\.|::))?(?<method>[^ :.]+)\z/ # method, receiver.method, receiver::method
             receiver = eval(Regexp.last_match[:receiver] || 'self', irb_context.workspace.binding)
             method = Regexp.last_match[:method]
-            file, line = receiver.method(method).source_location if receiver.respond_to?(method)
+            file, line = receiver.method(method).source_location if receiver.respond_to?(method, true)
           end
           if file && line
             Source.new(file: file, first_line: line, last_line: find_end(file, line, irb_context))

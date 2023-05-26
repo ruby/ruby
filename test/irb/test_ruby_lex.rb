@@ -41,8 +41,7 @@ module TestIRB
       ruby_lex = RubyLex.new(context)
       mock_io = MockIO_AutoIndent.new(lines, last_line_index, byte_pointer, add_new_line)
 
-      ruby_lex.set_input(mock_io)
-      ruby_lex.set_auto_indent
+      ruby_lex.configure_io(mock_io)
       mock_io.calculated_indent
     end
 
@@ -83,27 +82,22 @@ module TestIRB
     end
 
     def assert_nesting_level(lines, expected, local_variables: [])
-      ruby_lex = ruby_lex_for_lines(lines, local_variables: local_variables)
+      indent, _code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Calculated the wrong number of nesting level for:\n #{lines.join("\n")}"
-      assert_equal(expected, ruby_lex.instance_variable_get(:@indent), error_message)
+      assert_equal(expected, indent, error_message)
     end
 
     def assert_code_block_open(lines, expected, local_variables: [])
-      ruby_lex = ruby_lex_for_lines(lines, local_variables: local_variables)
+      _indent, code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Wrong result of code_block_open for:\n #{lines.join("\n")}"
-      assert_equal(expected, ruby_lex.instance_variable_get(:@code_block_open), error_message)
+      assert_equal(expected, code_block_open, error_message)
     end
 
-    def ruby_lex_for_lines(lines, local_variables: [])
+    def check_state(lines, local_variables: [])
       context = build_context(local_variables)
       ruby_lex = RubyLex.new(context)
-
-      io = proc{ lines.join("\n") }
-      ruby_lex.set_input(io) do
-        lines.join("\n")
-      end
-      ruby_lex.lex
-      ruby_lex
+      _ltype, indent, _continue, code_block_open = ruby_lex.check_code_state(lines.join("\n"))
+      [indent, code_block_open]
     end
 
     def test_auto_indent
@@ -645,6 +639,7 @@ module TestIRB
       pend if RUBY_ENGINE == 'truffleruby'
       context = build_context
       ruby_lex = RubyLex.new(context)
+      dynamic_prompt_executed = false
       io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
         error_message = <<~EOM
           Expected dynamic prompt:
@@ -653,15 +648,17 @@ module TestIRB
           Actual dynamic prompt:
           #{prompt_list.join("\n")}
         EOM
+        dynamic_prompt_executed = true
         assert_equal(expected_prompt_list, prompt_list, error_message)
       end
       ruby_lex.set_prompt do |ltype, indent, continue, line_no|
         '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
       end
-      ruby_lex.set_input(io)
+      ruby_lex.configure_io(io)
+      assert dynamic_prompt_executed, "dynamic_prompt's assertions were not executed."
     end
 
-    def test_dyanmic_prompt
+    def test_dynamic_prompt
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(def hoge)),
         PromptRow.new('002:1: :* ', %q(  3)),
@@ -673,7 +670,7 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
-    def test_dyanmic_prompt_with_double_newline_braking_code
+    def test_dynamic_prompt_with_double_newline_breaking_code
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(if true)),
         PromptRow.new('002:1: :* ', %q(%)),
@@ -687,7 +684,7 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
-    def test_dyanmic_prompt_with_multiline_literal
+    def test_dynamic_prompt_with_multiline_literal
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(if true)),
         PromptRow.new('002:1:]:* ', %q(  %w[)),
@@ -705,7 +702,7 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
-    def test_dyanmic_prompt_with_blank_line
+    def test_dynamic_prompt_with_blank_line
       input_with_prompt = [
         PromptRow.new('001:0:]:* ', %q(%w[)),
         PromptRow.new('002:0:]:* ', %q()),

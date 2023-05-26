@@ -40,17 +40,23 @@ enum ruby_rhash_flags {
     RHASH_LEV_MAX = 127, /* 7 bits */
 };
 
-struct RHash {
-    struct RBasic basic;
-    union {
-        st_table *st;
-        struct ar_table_struct *ar; /* possibly 0 */
-    } as;
-    const VALUE ifnone;
+typedef struct ar_table_pair_struct {
+    VALUE key;
+    VALUE val;
+} ar_table_pair;
+
+typedef struct ar_table_struct {
     union {
         ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
         VALUE word;
     } ar_hint;
+    /* 64bit CPU: 8B * 2 * 8 = 128B */
+    ar_table_pair pairs[RHASH_AR_TABLE_MAX_SIZE];
+} ar_table;
+
+struct RHash {
+    struct RBasic basic;
+    const VALUE ifnone;
 };
 
 #define RHASH(obj) ((struct RHash *)(obj))
@@ -96,9 +102,6 @@ static inline struct ar_table_struct *RHASH_AR_TABLE(VALUE h);
 static inline st_table *RHASH_ST_TABLE(VALUE h);
 static inline size_t RHASH_ST_SIZE(VALUE h);
 static inline void RHASH_ST_CLEAR(VALUE h);
-static inline bool RHASH_TRANSIENT_P(VALUE h);
-static inline void RHASH_SET_TRANSIENT_FLAG(VALUE h);
-static inline void RHASH_UNSET_TRANSIENT_FLAG(VALUE h);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* hash.c (export) */
@@ -128,13 +131,13 @@ RHASH_AR_TABLE_P(VALUE h)
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
-    return RHASH(h)->as.ar;
+    return (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
 }
 
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    return RHASH(h)->as.st;
+    return (st_table *)((uintptr_t)h + sizeof(struct RHash));
 }
 
 static inline VALUE
@@ -175,8 +178,7 @@ RHASH_ST_SIZE(VALUE h)
 static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
-    RHASH(h)->as.st = NULL;
-    FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG);
+    memset(RHASH_ST_TABLE(h), 0, sizeof(st_table));
 }
 
 static inline unsigned
@@ -185,32 +187,6 @@ RHASH_AR_TABLE_SIZE_RAW(VALUE h)
     VALUE ret = FL_TEST_RAW(h, RHASH_AR_TABLE_SIZE_MASK);
     ret >>= RHASH_AR_TABLE_SIZE_SHIFT;
     return (unsigned)ret;
-}
-
-static inline bool
-RHASH_TRANSIENT_P(VALUE h)
-{
-#if USE_TRANSIENT_HEAP
-    return FL_TEST_RAW(h, RHASH_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-static inline void
-RHASH_SET_TRANSIENT_FLAG(VALUE h)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(h, RHASH_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RHASH_UNSET_TRANSIENT_FLAG(VALUE h)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG);
-#endif
 }
 
 #endif /* INTERNAL_HASH_H */

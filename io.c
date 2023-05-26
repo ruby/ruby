@@ -5422,9 +5422,17 @@ maygvl_fclose(FILE *file, int keepgvl)
 static void free_io_buffer(rb_io_buffer_t *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
+static void*
+call_close_wait_nogvl(void *arg)
+{
+    struct rb_io_close_wait_list *busy = (struct rb_io_close_wait_list *)arg;
+    rb_notify_fd_close_wait(busy);
+    return NULL;
+}
+
 static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
-                    struct ccan_list_head *busy)
+                    struct rb_io_close_wait_list *busy)
 {
     VALUE error = Qnil;
     int fd = fptr->fd;
@@ -5467,7 +5475,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     // Ensure waiting_fd users do not hit EBADF.
     if (busy) {
         // Wait for them to exit before we call close().
-        do rb_thread_schedule(); while (!ccan_list_empty(busy));
+        (void)rb_thread_call_without_gvl(call_close_wait_nogvl, busy, RUBY_UBF_IO, 0);
     }
 
     // Disable for now.
@@ -5618,16 +5626,14 @@ rb_io_memsize(const rb_io_t *fptr)
 # define KEEPGVL FALSE
 #endif
 
-int rb_notify_fd_close(int fd, struct ccan_list_head *);
 static rb_io_t *
 io_close_fptr(VALUE io)
 {
     rb_io_t *fptr;
     VALUE write_io;
     rb_io_t *write_fptr;
-    struct ccan_list_head busy;
+    struct rb_io_close_wait_list busy;
 
-    ccan_list_head_init(&busy);
     write_io = GetWriteIO(io);
     if (io != write_io) {
         write_fptr = RFILE(write_io)->fptr;

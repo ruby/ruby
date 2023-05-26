@@ -1613,8 +1613,6 @@ rb_each(VALUE obj)
     return rb_call(obj, idEach, 0, 0, CALL_FCALL);
 }
 
-void rb_parser_warn_location(VALUE, int);
-
 static VALUE eval_default_path;
 
 static const rb_iseq_t *

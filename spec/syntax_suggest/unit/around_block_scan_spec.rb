@@ -104,8 +104,8 @@ module SyntaxSuggest
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
       expand.scan_while { true }
 
-      expect(expand.before_index).to eq(0)
-      expect(expand.after_index).to eq(6)
+      expect(expand.lines.first.index).to eq(0)
+      expect(expand.lines.last.index).to eq(6)
       expect(expand.code_block.to_s).to eq(source_string)
     end
 

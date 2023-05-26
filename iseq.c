@@ -2732,17 +2732,6 @@ iseqw_s_disasm(VALUE klass, VALUE body)
     return NIL_P(iseqw) ? Qnil : rb_iseq_disasm(iseqw_check(iseqw));
 }
 
-const char *
-ruby_node_name(int node)
-{
-    switch (node) {
-#include "node_name.inc"
-      default:
-        rb_bug("unknown node: %d", node);
-        return 0;
-    }
-}
-
 static VALUE
 register_label(struct st_table *table, unsigned long idx)
 {

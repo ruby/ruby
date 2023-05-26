@@ -5,7 +5,7 @@ require_relative "helper"
 
 class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
-  include Helper
+  include CSVHelper
 
   def setup
     super

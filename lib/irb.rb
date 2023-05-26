@@ -537,7 +537,7 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input(@context.io) do
+      @scanner.set_input do
         signal_status(:IN_INPUT) do
           if l = @context.io.gets
             print l if @context.verbose?
@@ -555,7 +555,7 @@ module IRB
         end
       end
 
-      @scanner.set_auto_indent
+      @scanner.configure_io(@context.io)
 
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do

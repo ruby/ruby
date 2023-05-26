@@ -122,7 +122,7 @@ shape_alloc(void)
 
     if (shape_id == MAX_SHAPE_ID) {
         // TODO: Make an OutOfShapesError ??
-        rb_bug("Out of shapes\n");
+        rb_bug("Out of shapes");
     }
 
     return &GET_SHAPE_TREE()->shape_list[shape_id];
@@ -451,7 +451,7 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
                 return false;
               case SHAPE_OBJ_TOO_COMPLEX:
               case SHAPE_FROZEN:
-                rb_bug("Ivar should not exist on transition\n");
+                rb_bug("Ivar should not exist on transition");
             }
         }
         shape = rb_shape_get_parent(shape);
@@ -516,7 +516,7 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
       case SHAPE_T_OBJECT:
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
-        rb_bug("Unreachable\n");
+        rb_bug("Unreachable");
         break;
     }
 
@@ -553,7 +553,7 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
       case SHAPE_T_OBJECT:
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
-        rb_bug("Unreachable\n");
+        rb_bug("Unreachable");
         break;
     }
 

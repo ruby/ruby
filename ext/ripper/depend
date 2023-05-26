@@ -11,7 +11,7 @@ ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
-	$(Q) $(BISON) -t -v -o$@ -h$*.h $<
+	$(Q) $(BISON) -t -v -o$@ -h$*.h - parse.y < $<
 
 all: check
 static: check

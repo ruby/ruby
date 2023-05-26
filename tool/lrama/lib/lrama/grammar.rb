@@ -166,7 +166,7 @@ module Lrama
         when ref.type == :at # @n
           raise "@#{ref.number} can not be used in %printer."
         else
-          raise "Unexpected. #{code}, #{ref}"
+          raise "Unexpected. #{self}, #{ref}"
         end
 
         t_code[first_column..last_column] = str
@@ -205,7 +205,7 @@ module Lrama
           i = -ref.position_in_rhs + ref.number
           str = "(yylsp[#{i}])"
         else
-          raise "Unexpected. #{code}, #{ref}"
+          raise "Unexpected. #{self}, #{ref}"
         end
 
         t_code[first_column..last_column] = str
@@ -235,7 +235,7 @@ module Lrama
         when ref.type == :at # @n
           raise "@#{ref.number} can not be used in initial_action."
         else
-          raise "Unexpected. #{code}, #{ref}"
+          raise "Unexpected. #{self}, #{ref}"
         end
 
         t_code[first_column..last_column] = str
@@ -716,7 +716,7 @@ module Lrama
         # If id is Token::Char, it uses ASCII code
         if sym.term? && sym.token_id.nil?
           if sym.id.type == Token::Char
-            # Igonre ' on the both sides
+            # Ignore ' on the both sides
             case sym.id.s_value[1..-2]
             when "\\b"
               sym.token_id = 8
@@ -844,7 +844,7 @@ module Lrama
 
       return if invalid.empty?
 
-      raise "Symbol number is dupulicated. #{invalid}"
+      raise "Symbol number is duplicated. #{invalid}"
     end
   end
 end

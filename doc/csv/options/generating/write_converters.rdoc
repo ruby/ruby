@@ -23,11 +23,3 @@ With two write converters (called in order):
   str # => "a,b,c\n"
 
 See also {Write Converters}[#class-CSV-label-Write+Converters]
-
----
-
-Raises an exception if the converter returns a value that is neither +nil+
-nor \String-convertible:
-  bad_converter = proc {|field| BasicObject.new }
-  # Raises NoMethodError (undefined method `is_a?' for #<BasicObject:>)
-  CSV.generate_line(['a', 'b', 'c'], write_converters: bad_converter)

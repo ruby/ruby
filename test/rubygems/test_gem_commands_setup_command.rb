@@ -431,7 +431,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       s.files = %W[lib/rubygems_plugin.rb]
     end
     write_file File.join @tempdir, "lib", "rubygems_plugin.rb" do |f|
-      f.puts "require '#{gem.plugins.first}'"
+      f.puts "# do nothing"
     end
     install_gem gem
 

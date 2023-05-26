@@ -61,11 +61,14 @@ module SyntaxSuggest
     # they can expand to capture more code up and down). It does this conservatively
     # as there's no undo (currently).
     def expand_indent(block)
-      AroundBlockScan.new(code_lines: @code_lines, block: block)
+      now = AroundBlockScan.new(code_lines: @code_lines, block: block)
         .force_add_hidden
         .stop_after_kw
         .scan_adjacent_indent
-        .code_block
+
+      now.lookahead_balance_one_line
+
+      now.code_block
     end
 
     # A neighbor is code that is at or above the current indent line.
@@ -125,17 +128,20 @@ module SyntaxSuggest
     #
     # We try to resolve this edge case with `lookahead_balance_one_line` below.
     def expand_neighbors(block)
-      neighbors = AroundBlockScan.new(code_lines: @code_lines, block: block)
+      now = AroundBlockScan.new(code_lines: @code_lines, block: block)
+
+      # Initial scan
+      now
         .force_add_hidden
         .stop_after_kw
         .scan_neighbors_not_empty
 
       # Slurp up empties
-      with_empties = neighbors
+      now
         .scan_while { |line| line.empty? }
 
       # If next line is kw and it will balance us, take it
-      expanded_lines = with_empties
+      expanded_lines = now
         .lookahead_balance_one_line
         .lines
 

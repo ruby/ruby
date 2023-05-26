@@ -78,7 +78,7 @@ module SyntaxSuggest
       code_lines: search.code_lines
     ).call
   rescue Timeout::Error => e
-    io.puts "Search timed out SYNTAX_SUGGEST_TIMEOUT=#{timeout}, run with DEBUG=1 for more info"
+    io.puts "Search timed out SYNTAX_SUGGEST_TIMEOUT=#{timeout}, run with SYNTAX_SUGGEST_DEBUG=1 for more info"
     io.puts e.backtrace.first(3).join($/)
   end
 

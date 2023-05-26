@@ -39,7 +39,7 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     size_t size;
     const unsigned char *bin = builtin_lookup(feature_name, &size);
     if (! bin) {
-        rb_bug("builtin_lookup: can not find %s\n", feature_name);
+        rb_bug("builtin_lookup: can not find %s", feature_name);
     }
 
     // load binary
