@@ -248,6 +248,12 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).to include("vendor/bundle2")
     end
 
+    it "installs gems to custom path if specified, even when configured through ENV" do
+      bundle "config set deployment true"
+      bundle "install", :env => { "BUNDLE_PATH" => "vendor/bundle2" }
+      expect(out).to include("vendor/bundle2")
+    end
+
     it "works with the `frozen` setting" do
       bundle "config set frozen true"
       bundle "install"
