@@ -87,6 +87,7 @@ pub extern "C" fn rb_yjit_init_rust() {
 /// In case we want to start doing fancier exception handling with panic=unwind,
 /// we can revisit this later. For now, this helps to get us good bug reports.
 fn rb_bug_panic_hook() {
+    use std::env;
     use std::panic;
     use std::io::{stderr, Write};
 
@@ -97,6 +98,8 @@ fn rb_bug_panic_hook() {
         // Not using `eprintln` to avoid double panic.
         let _ = stderr().write_all(b"ruby: YJIT has panicked. More info to follow...\n");
 
+        // Always show a Rust backtrace.
+        env::set_var("RUST_BACKTRACE", "1");
         previous_hook(panic_info);
 
         unsafe { rb_bug(b"YJIT panicked\0".as_ref().as_ptr() as *const raw::c_char); }
