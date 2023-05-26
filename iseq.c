@@ -326,7 +326,8 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                     // Since vm_empty_cc is not T_MOVED, it treats it like an un-moved object.
                     // But MMTk will think it is not a heap object and will crash.
                     // We simply skip it if cc is vm_empty_cc.
-                    if (!rb_mmtk_enabled_p() || cc != rb_vm_empty_cc()) {
+                    if (!rb_mmtk_enabled_p() ||
+                        (cc != rb_vm_empty_cc() && cc != rb_vm_empty_cc_for_super())) {
 #endif
 #if USE_MMTK
                     if (rb_mmtk_enabled_p() || reference_updating) {
