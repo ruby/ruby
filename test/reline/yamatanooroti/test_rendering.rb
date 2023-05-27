@@ -957,6 +957,25 @@ begin
       EOC
     end
 
+    def test_dialog_scroll_pushup_condition
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("\n" * 10)
+      write("if 1\n  sSt\nend")
+      write("\C-p\C-h\C-e")
+      assert_screen(<<~'EOC')
+        prompt>
+        prompt>
+        prompt>
+        prompt>
+        prompt>
+        prompt>
+        prompt> if 1
+        prompt>   St
+        prompt> enString
+                  Struct
+      EOC
+    end
+
     def test_simple_dialog_with_scroll_screen
       start_terminal(5, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
       write("if 1\n  2\n  3\n  4\n  5\n  6")

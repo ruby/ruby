@@ -724,7 +724,7 @@ class Reline::LineEditor
     ymax = ymax.clamp(screen_y_range.begin, screen_y_range.end)
     dialog_y = @first_line_started_from + @started_from
     cursor_y = dialog_y
-    if @highest_in_all < ymax
+    if @highest_in_all <= ymax
       scroll_down(ymax - cursor_y)
       move_cursor_up(ymax - cursor_y)
     end
