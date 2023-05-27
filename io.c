@@ -12054,7 +12054,7 @@ io_s_readlines(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line IO}[rdoc-ref:IO@Line+IO].
+ *  - Whether line separators are to be omitted (keyword +chomp+).
  *
  */
 
