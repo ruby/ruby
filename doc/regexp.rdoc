@@ -140,136 +140,81 @@ Examples:
 Note that Regexp#match?, String#match?, Symbol#match?, and NilClass#=~
 do not set global variables.
 
-
-
-
-
-
-
-
-
-
-
-A regexp is usually delimited with forward slashes (<tt>/</tt>). For
-example:
-
-    /hay/ =~ 'haystack'   #=> 0
-    /y/.match('haystack') #=> #<MatchData "y">
-
-If a string contains the pattern it is said to <i>match</i>. A literal
-string matches itself.
-
-Here 'haystack' does not contain the pattern 'needle', so it doesn't match:
-
-    /needle/.match('haystack') #=> nil
-
-Here 'haystack' contains the pattern 'hay', so it matches:
-
-    /hay/.match('haystack')    #=> #<MatchData "hay">
-
-Specifically, <tt>/st/</tt> requires that the string contains the letter
-_s_ followed by the letter _t_, so it matches _haystack_, also.
-
-Note that any Regexp matching will raise a RuntimeError if timeout is set and
-exceeded. See {"Timeout"}[#label-Timeout] section in detail.
-
-== \Regexp Interpolation
-
-A regexp may contain interpolated strings; trivially:
-
-  foo = 'bar'
-  /#{foo}/ # => /bar/
-
-== <tt>=~</tt> and Regexp#match
-
-Pattern matching may be achieved by using <tt>=~</tt> operator or Regexp#match
-method.
-
-=== <tt>=~</tt> Operator
-
-<tt>=~</tt> is Ruby's basic pattern-matching operator.  When one operand is a
-regular expression and the other is a string then the regular expression is
-used as a pattern to match against the string.  (This operator is equivalently
-defined by Regexp and String so the order of String and Regexp do not matter.
-Other classes may have different implementations of <tt>=~</tt>.)  If a match
-is found, the operator returns index of first match in string, otherwise it
-returns +nil+.
-
-    /hay/ =~ 'haystack'   #=> 0
-    'haystack' =~ /hay/   #=> 0
-    /a/   =~ 'haystack'   #=> 1
-    /u/   =~ 'haystack'   #=> nil
-
-Using <tt>=~</tt> operator with a String and Regexp the <tt>$~</tt> global
-variable is set after a successful match.  <tt>$~</tt> holds a MatchData
-object. Regexp.last_match is equivalent to <tt>$~</tt>.
-
-=== Regexp#match Method
-
-The #match method returns a MatchData object:
-
-    /st/.match('haystack')   #=> #<MatchData "st">
-
-
-
-
-
 == Metacharacters and Escapes
 
-The following are <i>metacharacters</i> <tt>(</tt>, <tt>)</tt>,
-<tt>[</tt>, <tt>]</tt>, <tt>{</tt>, <tt>}</tt>, <tt>.</tt>, <tt>?</tt>,
-<tt>+</tt>, <tt>*</tt>. They have a specific meaning when appearing in a
-pattern. To match them literally they must be backslash-escaped. To match
-a backslash literally, backslash-escape it: <tt>\\\\</tt>.
+Some characters have special meanings in certain regexp contexts;
+these are _metacharacters_:
+<tt>(</tt>,
+<tt>)</tt>,
+<tt>[</tt>,
+<tt>]</tt>,
+<tt>{</tt>,
+<tt>}</tt>,
+<tt>.</tt>,
+<tt>?</tt>,
+<tt>-</tt>,
+<tt>+</tt>,
+<tt>*</tt>.
 
-    /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
-    /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
+To match a metacharacter literally, backslash-escape it:
 
-Patterns behave like double-quoted strings and can contain the same
-backslash escapes (the meaning of <tt>\s</tt> is different, however,
-see below[#label-Character+Classes]).
+  # Metacharacter period matches any character except newline.
+  /./.match('foo')  # => #<MatchData "f">
+  # Literal character period matches only period.
+  /\./.match('.')   # => #<MatchData ".">
+  /\./.match('foo') # => nil
 
-    /\s\u{6771 4eac 90fd}/.match("Go to 東京都")
-        #=> #<MatchData " 東京都">
+To match a backslash literally, backslash-escape it:
 
-Arbitrary Ruby expressions can be embedded into patterns with the
-<tt>#{...}</tt> construct.
+  /\./.match('\.')  # => #<MatchData ".">
+  /\\./.match('\.') # => #<MatchData "\\.">
+
+The source string mostly behaves like a double-quoted string, and can contain:
+
+- Interpolated strings:
 
     place = "東京都"
-    /#{place}/.match("Go to 東京都")
-        #=> #<MatchData "東京都">
+    /#{place}/.match('Go to 東京都') # => #<MatchData "東京都">
+
+
+- Many backslash-escaped characters;
+  however, certain backslash-letter combinations function as _metasequences_
+  (see below):
+
+    /\s\u{6771 4eac 90fd}/.match("Go to 東京都") # => #<MatchData " 東京都">
 
 == Character Classes
 
-A <i>character class</i> is delimited with square brackets (<tt>[</tt>,
-<tt>]</tt>) and lists characters that may appear at that point in the
-match. <tt>/[ab]/</tt> means _a_ or _b_, as opposed to <tt>/ab/</tt> which
-means _a_ followed by _b_.
+A <i>character class</i> is delimited by square brackets;
+it specifies that certain characters match at a given point in the target string:
 
-    /W[aeiou]rd/.match("Word") #=> #<MatchData "Word">
+  # This character class will match any vowel.
+  re = /B[aeiou]rd/
+  re.match('Bird') # => #<MatchData "Bird">
+  re.match('Bard') # => #<MatchData "Bard">
+  re.match('Byrd') # => nil
 
-Within a character class the hyphen (<tt>-</tt>) is a metacharacter
-denoting an inclusive range of characters. <tt>[abcd]</tt> is equivalent
-to <tt>[a-d]</tt>. A range can be followed by another range, so
-<tt>[abcdwxyz]</tt> is equivalent to <tt>[a-dw-z]</tt>. The order in which
-ranges or individual characters appear inside a character class is
-irrelevant.
+A character class may contain hyphen characters to specify ranges of characters:
 
-    /[0-9a-f]/.match('9f') #=> #<MatchData "9">
-    /[9f]/.match('9f')     #=> #<MatchData "9">
+  # These regexps have the same effect.
+  /[abcdef]/.match('foo') # => #<MatchData "f">
+  /[a-f]/.match('foo')    # => #<MatchData "f">
+  /[a-cd-f]/.match('foo') # => #<MatchData "f">
 
-If the first character of a character class is a caret (<tt>^</tt>) the
-class is inverted: it matches any character _except_ those named.
+When the first character of a character class is a caret (<tt>^</tt>),
+the sense of the class is inverted: it matches any character _except_ those specified.
 
-    /[^a-eg-z]/.match('f') #=> #<MatchData "f">
+  /[^a-eg-z]/.match('f') #=> #<MatchData "f">
 
-A character class may contain another character class. By itself this
-isn't useful because <tt>[a-z[0-9]]</tt> describes the same set as
-<tt>[a-z0-9]</tt>. However, character classes also support the <tt>&&</tt>
-operator which performs set intersection on its arguments. The two can be
-combined as follows:
+A character class may contain another character class.
+By itself this isn't useful because <tt>[a-z[0-9]]</tt>
+describes the same set as <tt>[a-z0-9]</tt>.
 
-    /[a-w&&[^c-g]z]/ # ([a-w] AND ([^c-g] OR z))
+However, character classes also support the <tt>&&</tt> operator,
+which performs set intersection on its arguments.
+The two can be combined as follows:
+
+  /[a-w&&[^c-g]z]/ # ([a-w] AND ([^c-g] OR z))
 
 This is equivalent to:
 
