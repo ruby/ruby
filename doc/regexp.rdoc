@@ -1,11 +1,154 @@
-# -*- mode: rdoc; coding: utf-8; fill-column: 74; -*-
 
-Regular expressions (<i>regexp</i>s) are patterns which describe the
-contents of a string. They're used for testing whether a string contains a
-given pattern, or extracting the portions that match. They are created
-with the <tt>/</tt><i>pat</i><tt>/</tt> and
-<tt>%r{</tt><i>pat</i><tt>}</tt> literals or the <tt>Regexp.new</tt>
-constructor.
+A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
+(also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
+The regexp is a rich, versatile, and powerful tool for manipulating strings.
+
+== Uses
+
+A regexp may be used:
+
+- To extract substrings based on a given pattern:
+
+    'food'.match(/foo/)        # => #<MatchData "foo">
+    'food'.match(/foo/).string # => "food"
+    'food'.match(/goo/)        # => nil
+
+  See {Method match}[rdoc-ref:regexp.rdoc@Method+match].
+  and {Operator =~}[rdoc-ref:regexp.rdoc@Operator+-3D~].
+
+- To determine whether a string matches a given pattern:
+
+    'food'.match?(/foo/) # => true
+    'food'.match?(/goo/) # => false
+
+  See {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
+
+- As an argument for calls to certain methods in other classes and modules
+  that allow a regexp as an argument,
+  including Kernel, Enumerable, and String.
+
+    r = /[aeiouy]/ # Matches a any vowel or y.
+    s = 'abstemiously'
+    s.gsub(r, '')  # => "bstmsl"
+
+== Creating a \Regexp
+
+In Ruby, a regular expression may be created with:
+
+- A regexp literal using slash characters
+  (see {Regexp Literals}[https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-Regexp+Literals]):
+
+    # This is a very common usage.
+    /foo/
+
+- A <tt>%r</tt> regexp literal
+  (see {%r: Regexp Literals}[https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25r-3A+Regexp+Literals]):
+
+    # Same delimiter character at beginning and end;
+    # useful for avoiding escaping characters
+    %r/name\/value pair/ # => /name\/value pair/
+    %r:name/value pair:  # => /name\/value pair/
+    %r|name/value pair|  # => /name\/value pair/
+
+    # Certain "paired" characters can be delimiters.
+    %r[foo] # => /foo/
+    %r{foo} # => /foo/
+    %r(foo) # => /foo/
+    %r<foo> # => /foo/
+
+- \Method Regexp.new.
+
+== \Method <tt>match</tt>
+
+Each of the methods Regexp#match, String#match, and Symbol#match
+returns a MatchData object if a match was found, +nil+ otherwise;
+each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
+
+  'food'.match(/foo/) # => #<MatchData "foo">
+  'food'.match(/bar/) # => nil
+
+== Operator <tt>=~</tt>
+
+Each of the operators Regexp#=~, String#=~, and Symbol#=~
+returns an integer offset if a match was found, +nil+ otherwise;
+each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
+
+  'foo bar' =~ /bar/ # => 4
+  'foo bar' =~ /baz/ # => nil
+
+Operator NilClass#=~ returns +nil+ and does not set global variables.
+
+== \Method <tt>match?</tt>
+
+Each of the methods Regexp#match?, String#match?, and Symbol#match?
+returns +true+ if a match was found, +false+ otherwise;
+none sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
+
+  'food'.match?(/foo/) # => true
+  'food'.match?(/bar/) # => false
+
+== Global Variables
+
+Certain regexp-oriented methods assign values to global variables:
+
+- <tt>#match</tt>: see {Method match}[rdoc-ref:regexp.rdoc@Method+match].
+- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:regexp.rdoc@Operator+-3D~].
+
+The affected global variables are:
+
+- <tt>$~</tt>: Returns a MatchData object, or +nil+.
+- <tt>$&</tt>: Returns the matched string, or +nil+.
+- <tt>$`</tt>: Returns the string to the left of the matched string, or +nil+.
+- <tt>$'</tt>: Returns the string to the right of the matched string, or +nil+.
+- <tt>$+</tt>: Returns the last group matched, or +nil+.
+- <tt>$1</tt>, <tt>$2</tt>, etc.: Returns the first, second, etc.,
+  matched group, or +nil+.
+  Note that <tt>$0</tt> is quite different;
+  it returns the name of the currently executing program.
+
+Examples:
+
+  # Matched string, but no matched groups.
+  'foo bar bar baz'.match('bar')
+  $~ # => #<MatchData "bar">
+  $& # => "bar"
+  $` # => "foo "
+  $' # => " bar baz"
+  $+ # => nil
+  $1 # => nil
+
+  # Matched groups.
+  /s(\w{2}).*(c)/.match('haystack')
+  $~ # => #<MatchData "stac" 1:"ta" 2:"c">
+  $& # => "stac"
+  $` # => "hay"
+  $' # => "k"
+  $+ # => "c"
+  $1 # => "ta"
+  $2 # => "c"
+  $3 # => nil
+
+  # No match.
+  'foo'.match('bar')
+  $~ # => nil
+  $& # => nil
+  $` # => nil
+  $' # => nil
+  $+ # => nil
+  $1 # => nil
+
+Note that Regexp#match?, String#match?, Symbol#match?, and NilClass#=~
+do not set global variables.
+
+
+
+
+
+
+
+
+
+
 
 A regexp is usually delimited with forward slashes (<tt>/</tt>). For
 example:
@@ -66,6 +209,10 @@ object. Regexp.last_match is equivalent to <tt>$~</tt>.
 The #match method returns a MatchData object:
 
     /st/.match('haystack')   #=> #<MatchData "st">
+
+
+
+
 
 == Metacharacters and Escapes
 
@@ -602,23 +749,6 @@ text appearing in <b></b> tags without including the tags in the match:
     /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favours the <b>bold</b>")
         #=> #<MatchData "bold">
 
-== Absent operator
-
-Absent operator <tt>(?~</tt><i>pat</i><tt>)</tt> matches string which does
-not match <i>pat</i>.
-
-For example, a regexp to match C comment, which is enclosed by <tt>/*</tt>
-and <tt>*/</tt> and does not include <tt>*/</tt>, using absent operator:
-
-    %r[/\*(?~\*/)\*/] =~ "/* comment */ not-comment */"
-        #=> #<MatchData "/* comment */">
-
-This is often shorter and clearer than without absent operator:
-
-    %r[/\*[^\*]*\*+(?:[^\*/][^\*]*\*+)*/]
-    %r[/\*(?:(?!\*/).)*\*/]
-    %r[/\*(?>.*?\*/)]
-
 == Options
 
 The end delimiter for a regexp can be followed by one or more single-letter
@@ -825,3 +955,11 @@ feature to avoid excessive backtracking. Otherwise, a malicious user can
 provide input to Regexp causing Denial-of-Service attack.
 Note that the timeout is not set by default because an appropriate limit
 highly depends on an application requirement and context.
+
+References:
+
+- {Mastering Regular Expressions}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf]
+  by Jeffrey E.F. Friedl
+- {Regular Expressions Cookbook}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf]
+  by Jan Goyvaerts & Steven Levithan.
+
