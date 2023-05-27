@@ -1365,21 +1365,21 @@ begin
 
     def test_scroll_at_bottom_for_dialog
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
-      write("\n\n\n\n\n\n")
-      write("def hoge\n\n\n\n\n\n\nend\C-p\C-p\C-p\C-e")
+      write("\n\n\n\n\n\n\n\n\n\n\n")
+      write("def hoge\n\nend\C-p\C-e")
       write("  S")
       close
       assert_screen(<<~'EOC')
+        prompt>
+        prompt>
+        prompt>
+        prompt>
+        prompt>
         prompt> def hoge
-        prompt>
-        prompt>
-        prompt>
         prompt>   S
-        prompt>   String
-        prompt>   Struct
-        prompt> enSymbol
-                  ScriptError
-                  SyntaxError
+        prompt> enString     █
+                  Struct     ▀
+                  Symbol
       EOC
     end
 
@@ -1433,30 +1433,35 @@ begin
 
     def test_clear_dialog_when_just_move_cursor_at_last_line
       start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
-      write("class A\n  3\nend\n")
-      write("\C-p\C-p\C-p\C-e\C-hS")
+      write("class A\n  3\nend\n\n\n")
+      write("\C-p\C-p\C-e; S")
       write("\C-n")
-      write("1")
+      write(";")
       close
       assert_screen(<<~'EOC')
         prompt>   3
         prompt> end
         => 3
-        prompt> class S
-        prompt>   31
-        prompt> end
+        prompt>
+        prompt>
+        prompt> class A
+        prompt>   3; S
+        prompt> end;
       EOC
     end
 
     def test_clear_dialog_when_adding_new_line_to_end_of_buffer
       start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
-      write("class A\n  def a\n    3\n  end\nend")
+      write("class A\n  def a\n    3\n    3\n  end\nend")
       write("\n")
       write("class S")
       write("\n")
       write("  3")
       close
       assert_screen(<<~'EOC')
+        prompt>   def a
+        prompt>     3
+        prompt>     3
         prompt>   end
         prompt> end
         => :a
@@ -1474,6 +1479,7 @@ begin
       write("  3")
       close
       assert_screen(<<~'EOC')
+        prompt>     3
         prompt>   end
         prompt> end
         => :a
