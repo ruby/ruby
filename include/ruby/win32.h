@@ -147,16 +147,10 @@ typedef int clockid_t;
 #define open			rb_w32_uopen
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
-
 #define read(f, b, s) rb_w32_read(f, b, s)
 #define write(f, b, s) rb_w32_write(f, b, s)
-
-#define HAVE_PREAD
 #define pread(f, b, s, o) rb_w32_pread(f, b, s, o)
-
-#define HAVE_PWRITE
 #define pwrite(f, b, s, o) rb_w32_pwrite(f, b, s, o)
-
 #define getpid()		rb_w32_getpid()
 #undef HAVE_GETPPID
 #define HAVE_GETPPID 1

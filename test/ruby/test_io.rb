@@ -3976,7 +3976,7 @@ __END__
         assert_raise(EOFError) { f.pread(1, f.size) }
       end
     }
-  end if IO.method_defined?(:pread)
+  end
 
   def test_pwrite
     make_tempfile { |t|
@@ -3985,7 +3985,7 @@ __END__
         assert_equal("ooo", f.pread(3, 4))
       end
     }
-  end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
+  end
 
   def test_select_exceptfds
     if Etc.uname[:sysname] == 'SunOS'

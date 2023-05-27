@@ -6071,7 +6071,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     return str;
 }
 
-#if defined(HAVE_PREAD) || defined(HAVE_PWRITE)
 struct prdwr_internal_arg {
     VALUE io;
     int fd;
@@ -6079,9 +6078,7 @@ struct prdwr_internal_arg {
     size_t count;
     rb_off_t offset;
 };
-#endif /* HAVE_PREAD || HAVE_PWRITE */
 
-#if defined(HAVE_PREAD)
 static VALUE
 internal_pread_func(void *_arg)
 {
@@ -6171,11 +6168,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
 
     return str;
 }
-#else
-# define rb_io_pread rb_f_notimplement
-#endif /* HAVE_PREAD */
 
-#if defined(HAVE_PWRITE)
 static VALUE
 internal_pwrite_func(void *_arg)
 {
@@ -6247,9 +6240,6 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
 
     return SSIZET2NUM(n);
 }
-#else
-# define rb_io_pwrite rb_f_notimplement
-#endif /* HAVE_PWRITE */
 
 VALUE
 rb_io_binmode(VALUE io)
@@ -12918,12 +12908,7 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
         ss = maygvl_read(has_gvl, stp->src_fptr, buf, len);
     }
     else {
-#ifdef HAVE_PREAD
         ss = pread(stp->src_fptr->fd, buf, len, offset);
-#else
-        stp->notimp = "pread";
-        return -1;
-#endif
     }
     if (ss == 0) {
         return 0;

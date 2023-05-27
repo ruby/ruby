@@ -2516,13 +2516,12 @@ io_buffer_extract_arguments(VALUE self, int argc, VALUE argv[], size_t *length, 
 }
 
 struct io_buffer_read_internal_argument {
+    // The file descriptor to read from:
     int descriptor;
-
     // The base pointer to read from:
     char *base;
     // The size of the buffer:
     size_t size;
-
     // The minimum number of bytes to read:
     size_t length;
 };
@@ -2579,6 +2578,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
     base = (unsigned char*)base + offset;
+    size = size - offset;
 
     struct io_buffer_read_internal_argument argument = {
         .descriptor = descriptor,
@@ -2632,13 +2632,18 @@ io_buffer_read(int argc, VALUE *argv, VALUE self)
 }
 
 struct io_buffer_pread_internal_argument {
+    // The file descriptor to read from:
     int descriptor;
-    void *base;
+    // The base pointer to read from:
+    char *base;
+    // The size of the buffer:
     size_t size;
+    // The minimum number of bytes to read:
+    size_t length;
+    // The offset to read from:
     off_t offset;
 };
 
-#ifdef HAVE_PREAD
 static VALUE
 io_buffer_pread_internal(void *_argument)
 {
@@ -2667,29 +2672,6 @@ io_buffer_pread_internal(void *_argument)
         }
     }
 }
-#else
-static VALUE
-io_buffer_pread_internal(void *_argument)
-{
-    // ******************************************************
-    // ** WARNING: This implementation is not thread safe! **
-    // ******************************************************
-
-    struct io_buffer_pread_internal_argument *argument = _argument;
-
-    if (lseek(argument->descriptor, argument->offset, SEEK_SET) < 0) {
-        return rb_fiber_scheduler_io_result(-1, errno);
-    }
-
-    struct io_buffer_read_internal_argument read_argument = {
-        .descriptor = argument->descriptor,
-        .base = argument->base,
-        .size = argument->size,
-    };
-
-    return io_buffer_read_internal(&read_argument);
-}
-#endif
 
 VALUE
 rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
@@ -2714,16 +2696,14 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
+    base = (unsigned char*)base + offset;
+    size = size - offset;
+
     struct io_buffer_pread_internal_argument argument = {
         .descriptor = descriptor,
-
-        // Move the base pointer to the offset:
-        .base = (unsigned char*)base + offset,
-
-        // And the size to the length of buffer we want to read:
-        .size = length,
-
-        // From the offset in the file we want to read from:
+        .base = base,
+        .size = size,
+        .length = length,
         .offset = from,
     };
 
@@ -2777,13 +2757,12 @@ io_buffer_pread(int argc, VALUE *argv, VALUE self)
 }
 
 struct io_buffer_write_internal_argument {
+    // The file descriptor to write to:
     int descriptor;
-
     // The base pointer to write from:
     const char *base;
     // The size of the buffer:
     size_t size;
-
     // The minimum length to write:
     size_t length;
 };
@@ -2839,7 +2818,8 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    base = (unsigned char *)base + offset;
+    base = (unsigned char*)base + offset;
+    size = size - offset;
 
     struct io_buffer_write_internal_argument argument = {
         .descriptor = descriptor,
@@ -2884,15 +2864,19 @@ io_buffer_write(int argc, VALUE *argv, VALUE self)
 
     return rb_io_buffer_write(self, io, length, offset);
 }
-
 struct io_buffer_pwrite_internal_argument {
+    // The file descriptor to write to:
     int descriptor;
-    const void *base;
+    // The base pointer to write from:
+    const char *base;
+    // The size of the buffer:
     size_t size;
+    // The minimum length to write:
+    size_t length;
+    // The offset to write to:
     off_t offset;
 };
 
-#ifdef HAVE_PWRITE
 static VALUE
 io_buffer_pwrite_internal(void *_argument)
 {
@@ -2921,29 +2905,6 @@ io_buffer_pwrite_internal(void *_argument)
         }
     }
 }
-#else
-static VALUE
-io_buffer_pwrite_internal(void *_argument)
-{
-    // ******************************************************
-    // ** WARNING: This implementation is not thread safe! **
-    // ******************************************************
-
-    struct io_buffer_pwrite_internal_argument *argument = _argument;
-
-    if (lseek(argument->descriptor, argument->offset, SEEK_SET) < 0) {
-        return rb_fiber_scheduler_io_result(-1, errno);
-    }
-
-    struct io_buffer_write_internal_argument write_argument = {
-        .descriptor = argument->descriptor,
-        .base = argument->base,
-        .size = argument->size,
-    };
-
-    return io_buffer_write_internal(&write_argument);
-}
-#endif
 
 VALUE
 rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
@@ -2968,14 +2929,20 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
+    base = (unsigned char*)base + offset;
+    size = size - offset;
+
     struct io_buffer_pwrite_internal_argument argument = {
         .descriptor = descriptor,
 
         // Move the base pointer to the offset:
-        .base = (unsigned char *)base + offset,
+        .base = base,
 
         // And the size to the length of buffer we want to read:
-        .size = length,
+        .size = size,
+
+        // And the length of the buffer we want to write:
+        .length = length,
 
         // And the offset in the file we want to write from:
         .offset = from,
