@@ -11957,10 +11957,9 @@ io_s_foreach(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line IO}[rdoc-ref:IO@Line+IO].
+ *  - Whether line separators are to be omitted (keyword +chomp+).
  *
  *  Returns an Enumerator if no block is given.
- *
  */
 
 static VALUE
