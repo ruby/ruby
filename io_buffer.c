@@ -2516,13 +2516,12 @@ io_buffer_extract_arguments(VALUE self, int argc, VALUE argv[], size_t *length, 
 }
 
 struct io_buffer_read_internal_argument {
+    // The file descriptor to read from:
     int descriptor;
-
     // The base pointer to read from:
     char *base;
     // The size of the buffer:
     size_t size;
-
     // The minimum number of bytes to read:
     size_t length;
 };
@@ -2579,6 +2578,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
     base = (unsigned char*)base + offset;
+    size = size - offset;
 
     struct io_buffer_read_internal_argument argument = {
         .descriptor = descriptor,
@@ -2591,14 +2591,18 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, length, [offset]) -> read length or -errno
+ *  call-seq: read(io, [length, [offset]]) -> read length or -errno
  *
- *  Read at most +length+ bytes from +io+ into the buffer, starting at
+ *  Read at least +length+ bytes from the +io+, into the buffer starting at
  *  +offset+. If an error occurs, return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, read from the beginning of the buffer.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is 0, read nothing.
+ *  If +length+ is zero, exactly one <tt>read</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
  *
  *  Example:
  *
@@ -2628,35 +2632,45 @@ io_buffer_read(int argc, VALUE *argv, VALUE self)
 }
 
 struct io_buffer_pread_internal_argument {
+    // The file descriptor to read from:
     int descriptor;
-    void *base;
+    // The base pointer to read from:
+    char *base;
+    // The size of the buffer:
     size_t size;
+    // The minimum number of bytes to read:
+    size_t length;
+    // The offset to read from:
     off_t offset;
 };
 
 static VALUE
 io_buffer_pread_internal(void *_argument)
 {
+    size_t total = 0;
     struct io_buffer_pread_internal_argument *argument = _argument;
 
-#if defined(HAVE_PREAD)
-    ssize_t result = pread(argument->descriptor, argument->base, argument->size, argument->offset);
-#else
-    // This emulation is not thread safe.
-    rb_off_t offset = lseek(argument->descriptor, 0, SEEK_CUR);
-    if (offset == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+    while (true) {
+        ssize_t result = pread(argument->descriptor, argument->base, argument->size, argument->offset);
 
-    if (lseek(argument->descriptor, argument->offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+        if (result < 0) {
+            return rb_fiber_scheduler_io_result(result, errno);
+        }
+        else if (result == 0) {
+            return rb_fiber_scheduler_io_result(total, 0);
+        }
+        else {
+            total += result;
 
-    ssize_t result = read(argument->descriptor, argument->base, argument->size);
+            if (total >= argument->length) {
+                return rb_fiber_scheduler_io_result(total, 0);
+            }
 
-    if (lseek(argument->descriptor, offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
-#endif
-
-    return rb_fiber_scheduler_io_result(result, errno);
+            argument->base = argument->base + result;
+            argument->size = argument->size - result;
+            argument->offset = argument->offset + result;
+        }
+    }
 }
 
 VALUE
@@ -2682,16 +2696,14 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
+    base = (unsigned char*)base + offset;
+    size = size - offset;
+
     struct io_buffer_pread_internal_argument argument = {
         .descriptor = descriptor,
-
-        // Move the base pointer to the offset:
-        .base = (unsigned char*)base + offset,
-
-        // And the size to the length of buffer we want to read:
-        .size = length,
-
-        // From the offset in the file we want to read from:
+        .base = base,
+        .size = size,
+        .length = length,
         .offset = from,
     };
 
@@ -2699,13 +2711,19 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
 }
 
 /*
- *  call-seq: pread(io, from, length, [offset]) -> read length or -errno
+ *  call-seq: pread(io, from, [length, [offset]]) -> read length or -errno
  *
- *  Read at most +length+ bytes from +io+ into the buffer, starting at
- *  +from+, and put it in buffer starting from specified +offset+.
- *  If an error occurs, return <tt>-errno</tt>.
+ *  Read at least +length+ bytes from the +io+ starting at the specified +from+
+ *  position, into the buffer starting at +offset+. If an error occurs,
+ *  return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, put it at the beginning of the buffer.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
+ *
+ *  If +length+ is zero, exactly one <tt>pread</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
  *
  *  Example:
  *
@@ -2739,13 +2757,12 @@ io_buffer_pread(int argc, VALUE *argv, VALUE self)
 }
 
 struct io_buffer_write_internal_argument {
+    // The file descriptor to write to:
     int descriptor;
-
     // The base pointer to write from:
     const char *base;
     // The size of the buffer:
     size_t size;
-
     // The minimum length to write:
     size_t length;
 };
@@ -2801,7 +2818,8 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    base = (unsigned char *)base + offset;
+    base = (unsigned char*)base + offset;
+    size = size - offset;
 
     struct io_buffer_write_internal_argument argument = {
         .descriptor = descriptor,
@@ -2816,14 +2834,18 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 /*
  *  call-seq: write(io, [length, [offset]]) -> written length or -errno
  *
- *  Writes at least +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
+ *  Write at least +length+ bytes from the buffer starting at +offset+, into the +io+.
+ *  If an error occurs, return <tt>-errno</tt>.
  *
- *  If +length+ is not given or nil, the whole buffer is written, minus
- *  the offset. If +length+ is zero, write will be called once.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
  *
- *  If +offset+ is not given, the bytes are taken from the beginning
- *  of the buffer.
+ *  If +length+ is zero, exactly one <tt>write</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
+ *
+ *  Example:
  *
  *    out = File.open('output.txt', 'wb')
  *    IO::Buffer.for('1234567').write(out, 3)
@@ -2842,37 +2864,46 @@ io_buffer_write(int argc, VALUE *argv, VALUE self)
 
     return rb_io_buffer_write(self, io, length, offset);
 }
-
 struct io_buffer_pwrite_internal_argument {
+    // The file descriptor to write to:
     int descriptor;
-    const void *base;
+    // The base pointer to write from:
+    const char *base;
+    // The size of the buffer:
     size_t size;
+    // The minimum length to write:
+    size_t length;
+    // The offset to write to:
     off_t offset;
 };
 
 static VALUE
 io_buffer_pwrite_internal(void *_argument)
 {
+    size_t total = 0;
     struct io_buffer_pwrite_internal_argument *argument = _argument;
 
-#if defined(HAVE_PWRITE)
-    ssize_t result = pwrite(argument->descriptor, argument->base, argument->size, argument->offset);
-#else
-    // This emulation is not thread safe.
-    rb_off_t offset = lseek(argument->descriptor, 0, SEEK_CUR);
-    if (offset == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+    while (true) {
+        ssize_t result = pwrite(argument->descriptor, argument->base, argument->size, argument->offset);
 
-    if (lseek(argument->descriptor, argument->offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+        if (result < 0) {
+            return rb_fiber_scheduler_io_result(result, errno);
+        }
+        else if (result == 0) {
+            return rb_fiber_scheduler_io_result(total, 0);
+        }
+        else {
+            total += result;
 
-    ssize_t result = write(argument->descriptor, argument->base, argument->size);
+            if (total >= argument->length) {
+                return rb_fiber_scheduler_io_result(total, 0);
+            }
 
-    if (lseek(argument->descriptor, offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
-#endif
-
-    return rb_fiber_scheduler_io_result(result, errno);
+            argument->base = argument->base + result;
+            argument->size = argument->size - result;
+            argument->offset = argument->offset + result;
+        }
+    }
 }
 
 VALUE
@@ -2898,14 +2929,20 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
+    base = (unsigned char*)base + offset;
+    size = size - offset;
+
     struct io_buffer_pwrite_internal_argument argument = {
         .descriptor = descriptor,
 
         // Move the base pointer to the offset:
-        .base = (unsigned char *)base + offset,
+        .base = base,
 
         // And the size to the length of buffer we want to read:
-        .size = length,
+        .size = size,
+
+        // And the length of the buffer we want to write:
+        .length = length,
 
         // And the offset in the file we want to write from:
         .offset = from,
@@ -2915,14 +2952,24 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
 }
 
 /*
- *  call-seq: pwrite(io, from, length, [offset]) -> written length or -errno
+ *  call-seq: pwrite(io, from, [length, [offset]]) -> written length or -errno
  *
- *  Writes +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
+ *  Write at least +length+ bytes from the buffer starting at +offset+, into
+ *  the +io+ starting at the specified +from+ position. If an error occurs,
+ *  return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, the bytes are taken from the beginning of the
- *  buffer. If the +offset+ is given and is beyond the end of the file, the
- *  gap will be filled with null (0 value) bytes.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
+ *
+ *  If +length+ is zero, exactly one <tt>pwrite</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
+ *
+ *  If the +from+ position is beyond the end of the file, the gap will be
+ *  filled with null (0 value) bytes.
+ *
+ *  Example:
  *
  *    out = File.open('output.txt', File::RDWR) # open for read/write, no truncation
  *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
