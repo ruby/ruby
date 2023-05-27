@@ -1,9 +1,8 @@
+= Regular Expressions
 
 A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
 The regexp is a rich, versatile, and powerful tool for manipulating strings.
-
-== Uses
 
 A regexp may be used:
 
@@ -31,15 +30,49 @@ A regexp may be used:
     s = 'abstemiously'
     s.gsub(r, '')  # => "bstmsl"
 
+A regexp has:
+
+- A source string, consisting of literal characters and metacharacters:
+
+    /foo/ # => /foo/
+
+  Much more will be said about the source string:
+
+  - Metacharacters and escapes.
+  - Character classes.
+  - Character properties.
+  - Repetition.
+  - Captures.
+  - Groups.
+  - Alternation.
+  - Condition.
+  - Anchors.
+
+- Zero or more trailing modifiers:
+
+    /foo/xim # => /foo/mix
+
+  Each of these modifiers sets a mode for the regexp:
+
+  - +i+: See {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
+  - +m+: See {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
+  - +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
+  - +o+: See {Single-Interpolation Mode}[rdoc-ref:regexp.rdoc@Single-Interpolation+Mode].
+
+  Any of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
+  see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
+
+  - A timeout; see {Timeout}[rdoc-ref:regexp.rdoc@Timeout].
+
 == Creating a \Regexp
 
-In Ruby, a regular expression may be created with:
+A regular expression may be created with:
 
 - A regexp literal using slash characters
   (see {Regexp Literals}[https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-Regexp+Literals]):
 
     # This is a very common usage.
-    /foo/
+    /foo/ # => /foo/
 
 - A <tt>%r</tt> regexp literal
   (see {%r: Regexp Literals}[https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25r-3A+Regexp+Literals]):
@@ -220,21 +253,42 @@ This is equivalent to:
 
     /[abh-w]/
 
-The following metacharacters also behave like character classes:
+== Metacharacters and Metasequences
 
-* <tt>/./</tt> - Any character except a newline.
-* <tt>/./m</tt> - Any character (the +m+ modifier enables multiline mode)
-* <tt>/\w/</tt> - A word character (<tt>[a-zA-Z0-9_]</tt>)
-* <tt>/\W/</tt> - A non-word character (<tt>[^a-zA-Z0-9_]</tt>).
-  Please take a look at {Bug #4044}[https://bugs.ruby-lang.org/issues/4044] if
-  using <tt>/\W/</tt> with the <tt>/i</tt> modifier.
-* <tt>/\d/</tt> - A digit character (<tt>[0-9]</tt>)
-* <tt>/\D/</tt> - A non-digit character (<tt>[^0-9]</tt>)
-* <tt>/\h/</tt> - A hexdigit character (<tt>[0-9a-fA-F]</tt>)
-* <tt>/\H/</tt> - A non-hexdigit character (<tt>[^0-9a-fA-F]</tt>)
-* <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f\v]/</tt>
-* <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f\v]/</tt>
-* <tt>/\R/</tt> - A linebreak: <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, <tt>\r</tt>
+The following metacharacters and metasequences also behave like character classes:
+
+- <tt>/./</tt>: Matches any character except a newline:
+
+    /./.match('foo') # => #<MatchData "f">
+    /./.match("\n")  # => nil
+
+- <tt>/./m</tt>: Matches any character, including a newline;
+  see {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode}:
+
+    /./m.match("\n") # => #<MatchData "\n">
+
+- <tt>/\w/</tt>: Matches a word character: equivalent to <tt>[a-zA-Z0-9_]</tt>:
+
+    /\w/.match(' foo') # => #<MatchData "f">
+    /\w/.match(' _')   # => #<MatchData "_">
+    /\w/.match(' ')    # => nil
+
+- <tt>/\W/</tt>: Matches a non-word character: equivalent to <tt>[^a-zA-Z0-9_]</tt>:
+
+    /\W/.match(' ') # => #<MatchData " ">
+    /\W/.match('_') # => nil
+
+- <tt>/\d/</tt>: Matches a digit character: equivalent to <tt>[0-9]</tt>:
+
+    /\d/.match('THX1138') # => #<MatchData "1">
+    /\d/.match('foo')     # => nil
+
+- <tt>/\D/</tt>: Matches a non-digit character: equivalent to <tt>[^0-9]</tt>.
+- <tt>/\h/</tt>: Matches a hexdigit character: equivalent to <tt>[0-9a-fA-F]</tt>.
+- <tt>/\H/</tt>: Matches a non-hexdigit character: equivalent to <tt>[^0-9a-fA-F]</tt>.
+- <tt>/\s/</tt>: Matches a whitespace character: equivalent to <tt>/[ \t\r\n\f\v]/</tt>.
+- <tt>/\S/</tt>: Matches a non-whitespace character: equivalent to <tt>/[^ \t\r\n\f\v]/</tt>.
+- <tt>/\R/</tt>: Matches a linebreak: <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, <tt>\r</tt>
   <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), <tt>\u2029</tt> (PARAGRAPH SEPARATOR)
   or <tt>\r\n</tt>.
 
@@ -244,28 +298,28 @@ that they encompass non-ASCII characters. For instance, <tt>/\d/</tt>
 matches only the ASCII decimal digits (0-9); whereas <tt>/[[:digit:]]/</tt>
 matches any character in the Unicode _Nd_ category.
 
-* <tt>/[[:alnum:]]/</tt> - Alphabetic and numeric character
-* <tt>/[[:alpha:]]/</tt> - Alphabetic character
-* <tt>/[[:blank:]]/</tt> - Space or tab
-* <tt>/[[:cntrl:]]/</tt> - Control character
-* <tt>/[[:digit:]]/</tt> - Digit
-* <tt>/[[:graph:]]/</tt> - Non-blank character (excludes spaces, control
+- <tt>/[[:alnum:]]/</tt> - Alphabetic and numeric character
+- <tt>/[[:alpha:]]/</tt> - Alphabetic character
+- <tt>/[[:blank:]]/</tt> - Space or tab
+- <tt>/[[:cntrl:]]/</tt> - Control character
+- <tt>/[[:digit:]]/</tt> - Digit
+- <tt>/[[:graph:]]/</tt> - Non-blank character (excludes spaces, control
   characters, and similar)
-* <tt>/[[:lower:]]/</tt> - Lowercase alphabetical character
-* <tt>/[[:print:]]/</tt> - Like [:graph:], but includes the space character
-* <tt>/[[:punct:]]/</tt> - Punctuation character
-* <tt>/[[:space:]]/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
+- <tt>/[[:lower:]]/</tt> - Lowercase alphabetical character
+- <tt>/[[:print:]]/</tt> - Like [:graph:], but includes the space character
+- <tt>/[[:punct:]]/</tt> - Punctuation character
+- <tt>/[[:space:]]/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
   carriage return, etc.)
-* <tt>/[[:upper:]]/</tt> - Uppercase alphabetical
-* <tt>/[[:xdigit:]]/</tt> - Digit allowed in a hexadecimal number (i.e.,
+- <tt>/[[:upper:]]/</tt> - Uppercase alphabetical
+- <tt>/[[:xdigit:]]/</tt> - Digit allowed in a hexadecimal number (i.e.,
   0-9a-fA-F)
 
 Ruby also supports the following non-POSIX character classes:
 
-* <tt>/[[:word:]]/</tt> - A character in one of the following Unicode
+- <tt>/[[:word:]]/</tt> - A character in one of the following Unicode
   general categories _Letter_, _Mark_, _Number_,
   <i>Connector_Punctuation</i>
-* <tt>/[[:ascii:]]/</tt> - A character in the ASCII character set
+- <tt>/[[:ascii:]]/</tt> - A character in the ASCII character set
 
     # U+06F2 is "EXTENDED ARABIC-INDIC DIGIT TWO"
     /[[:digit:]]/.match("\u06F2")    #=> #<MatchData "\u{06F2}">
@@ -278,13 +332,13 @@ The constructs described so far match a single character. They can be
 followed by a repetition metacharacter to specify how many times they need
 to occur. Such metacharacters are called <i>quantifiers</i>.
 
-* <tt>*</tt> - Zero or more times
-* <tt>+</tt> - One or more times
-* <tt>?</tt> - Zero or one times (optional)
-* <tt>{</tt><i>n</i><tt>}</tt> - Exactly <i>n</i> times
-* <tt>{</tt><i>n</i><tt>,}</tt> - <i>n</i> or more times
-* <tt>{,</tt><i>m</i><tt>}</tt> - <i>m</i> or less times
-* <tt>{</tt><i>n</i><tt>,</tt><i>m</i><tt>}</tt> - At least <i>n</i> and
+- <tt>*</tt> - Zero or more times
+- <tt>+</tt> - One or more times
+- <tt>?</tt> - Zero or one times (optional)
+- <tt>{</tt><i>n</i><tt>}</tt> - Exactly <i>n</i> times
+- <tt>{</tt><i>n</i><tt>,}</tt> - <i>n</i> or more times
+- <tt>{,</tt><i>m</i><tt>}</tt> - <i>m</i> or less times
+- <tt>{</tt><i>n</i><tt>,</tt><i>m</i><tt>}</tt> - At least <i>n</i> and
   at most <i>m</i> times
 
 At least one uppercase character ('H'), at least one lowercase character
