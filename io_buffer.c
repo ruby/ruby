@@ -2638,30 +2638,58 @@ struct io_buffer_pread_internal_argument {
     off_t offset;
 };
 
+#ifdef HAVE_PREAD
 static VALUE
 io_buffer_pread_internal(void *_argument)
 {
+    size_t total = 0;
     struct io_buffer_pread_internal_argument *argument = _argument;
 
-#if defined(HAVE_PREAD)
-    ssize_t result = pread(argument->descriptor, argument->base, argument->size, argument->offset);
-#else
-    // This emulation is not thread safe.
-    rb_off_t offset = lseek(argument->descriptor, 0, SEEK_CUR);
-    if (offset == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+    while (true) {
+        ssize_t result = pread(argument->descriptor, argument->base, argument->size, argument->offset);
 
-    if (lseek(argument->descriptor, argument->offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+        if (result < 0) {
+            return rb_fiber_scheduler_io_result(result, errno);
+        }
+        else if (result == 0) {
+            return rb_fiber_scheduler_io_result(total, 0);
+        }
+        else {
+            total += result;
 
-    ssize_t result = read(argument->descriptor, argument->base, argument->size);
+            if (total >= argument->length) {
+                return rb_fiber_scheduler_io_result(total, 0);
+            }
 
-    if (lseek(argument->descriptor, offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
-#endif
-
-    return rb_fiber_scheduler_io_result(result, errno);
+            argument->base = argument->base + result;
+            argument->size = argument->size - result;
+            argument->offset = argument->offset + result;
+        }
+    }
 }
+#else
+static VALUE
+io_buffer_pread_internal(void *_argument)
+{
+    // ******************************************************
+    // ** WARNING: This implementation is not thread safe! **
+    // ******************************************************
+
+    struct io_buffer_pread_internal_argument *argument = _argument;
+
+    if (lseek(argument->descriptor, argument->offset, SEEK_SET) < 0) {
+        return rb_fiber_scheduler_io_result(-1, errno);
+    }
+
+    struct io_buffer_read_internal_argument read_argument = {
+        .descriptor = argument->descriptor,
+        .base = argument->base,
+        .size = argument->size,
+    };
+
+    return io_buffer_read_internal(&read_argument);
+}
+#endif
 
 VALUE
 rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
@@ -2864,30 +2892,58 @@ struct io_buffer_pwrite_internal_argument {
     off_t offset;
 };
 
+#ifdef HAVE_PWRITE
 static VALUE
 io_buffer_pwrite_internal(void *_argument)
 {
+    size_t total = 0;
     struct io_buffer_pwrite_internal_argument *argument = _argument;
 
-#if defined(HAVE_PWRITE)
-    ssize_t result = pwrite(argument->descriptor, argument->base, argument->size, argument->offset);
-#else
-    // This emulation is not thread safe.
-    rb_off_t offset = lseek(argument->descriptor, 0, SEEK_CUR);
-    if (offset == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+    while (true) {
+        ssize_t result = pwrite(argument->descriptor, argument->base, argument->size, argument->offset);
 
-    if (lseek(argument->descriptor, argument->offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
+        if (result < 0) {
+            return rb_fiber_scheduler_io_result(result, errno);
+        }
+        else if (result == 0) {
+            return rb_fiber_scheduler_io_result(total, 0);
+        }
+        else {
+            total += result;
 
-    ssize_t result = write(argument->descriptor, argument->base, argument->size);
+            if (total >= argument->length) {
+                return rb_fiber_scheduler_io_result(total, 0);
+            }
 
-    if (lseek(argument->descriptor, offset, SEEK_SET) == (rb_off_t)-1)
-        return rb_fiber_scheduler_io_result(-1, errno);
-#endif
-
-    return rb_fiber_scheduler_io_result(result, errno);
+            argument->base = argument->base + result;
+            argument->size = argument->size - result;
+            argument->offset = argument->offset + result;
+        }
+    }
 }
+#else
+static VALUE
+io_buffer_pwrite_internal(void *_argument)
+{
+    // ******************************************************
+    // ** WARNING: This implementation is not thread safe! **
+    // ******************************************************
+
+    struct io_buffer_pwrite_internal_argument *argument = _argument;
+
+    if (lseek(argument->descriptor, argument->offset, SEEK_SET) < 0) {
+        return rb_fiber_scheduler_io_result(-1, errno);
+    }
+
+    struct io_buffer_write_internal_argument write_argument = {
+        .descriptor = argument->descriptor,
+        .base = argument->base,
+        .size = argument->size,
+    };
+
+    return io_buffer_write_internal(&write_argument);
+}
+#endif
 
 VALUE
 rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
