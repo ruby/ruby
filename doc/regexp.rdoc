@@ -1,5 +1,3 @@
-= Regular Expressions
-
 A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
 The regexp is a rich, versatile, and powerful tool for manipulating strings.
@@ -12,7 +10,7 @@ A regexp may be used:
     'food'.match(/foo/).string # => "food"
     'food'.match(/goo/)        # => nil
 
-  See {Method match}[rdoc-ref:regexp.rdoc@Method+match].
+  See sections {Method match}[rdoc-ref:regexp.rdoc@Method+match]
   and {Operator =~}[rdoc-ref:regexp.rdoc@Operator+-3D~].
 
 - To determine whether a string matches a given pattern:
@@ -23,10 +21,10 @@ A regexp may be used:
   See {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
 
 - As an argument for calls to certain methods in other classes and modules
-  that allow a regexp as an argument,
-  including Kernel, Enumerable, and String.
+  that allow a regexp as an argument;
+  those include Kernel, Enumerable, and String:
 
-    r = /[aeiouy]/ # Matches a any vowel or y.
+    re = /[aeiouy]/ # Matches a any vowel or y.
     s = 'abstemiously'
     s.gsub(r, '')  # => "bstmsl"
 
@@ -57,12 +55,12 @@ A regexp has:
   - +i+: See {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
   - +m+: See {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
   - +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
-  - +o+: See {Single-Interpolation Mode}[rdoc-ref:regexp.rdoc@Single-Interpolation+Mode].
+  - +o+: See {Interpolation}[rdoc-ref:regexp.rdoc@Interpolation].
 
   Any of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
   see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
 
-  - A timeout; see {Timeout}[rdoc-ref:regexp.rdoc@Timeout].
+  - A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeout].
 
 == Creating a \Regexp
 
@@ -175,19 +173,10 @@ do not set global variables.
 
 == Metacharacters and Escapes
 
-Some characters have special meanings in certain regexp contexts;
-these are _metacharacters_:
-<tt>(</tt>,
-<tt>)</tt>,
-<tt>[</tt>,
-<tt>]</tt>,
-<tt>{</tt>,
-<tt>}</tt>,
-<tt>.</tt>,
-<tt>?</tt>,
-<tt>-</tt>,
-<tt>+</tt>,
-<tt>*</tt>.
+A _metacharacter_ has a special meaning in certain contexts;
+depending on the context, these are sometimes metacharacters:
+
+  ( ) [ ] { } . ? - + * ^ \ |
 
 To match a metacharacter literally, backslash-escape it:
 
@@ -208,7 +197,6 @@ The source string mostly behaves like a double-quoted string, and can contain:
 
     place = "東京都"
     /#{place}/.match('Go to 東京都') # => #<MatchData "東京都">
-
 
 - Many backslash-escaped characters;
   however, certain backslash-letter combinations function as _metasequences_
@@ -253,9 +241,9 @@ This is equivalent to:
 
     /[abh-w]/
 
-== Metacharacters and Metasequences
+== Metasequences
 
-The following metacharacters and metasequences also behave like character classes:
+The following metacharacter and metasequences also behave like character classes:
 
 - <tt>/./</tt>: Matches any character except a newline:
 
@@ -283,36 +271,100 @@ The following metacharacters and metasequences also behave like character classe
     /\d/.match('THX1138') # => #<MatchData "1">
     /\d/.match('foo')     # => nil
 
-- <tt>/\D/</tt>: Matches a non-digit character: equivalent to <tt>[^0-9]</tt>.
-- <tt>/\h/</tt>: Matches a hexdigit character: equivalent to <tt>[0-9a-fA-F]</tt>.
-- <tt>/\H/</tt>: Matches a non-hexdigit character: equivalent to <tt>[^0-9a-fA-F]</tt>.
-- <tt>/\s/</tt>: Matches a whitespace character: equivalent to <tt>/[ \t\r\n\f\v]/</tt>.
-- <tt>/\S/</tt>: Matches a non-whitespace character: equivalent to <tt>/[^ \t\r\n\f\v]/</tt>.
-- <tt>/\R/</tt>: Matches a linebreak: <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, <tt>\r</tt>
-  <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), <tt>\u2029</tt> (PARAGRAPH SEPARATOR)
-  or <tt>\r\n</tt>.
+- <tt>/\D/</tt>: Matches a non-digit character: equivalent to <tt>[^0-9]</tt>:
 
-POSIX <i>bracket expressions</i> are also similar to character classes.
-They provide a portable alternative to the above, with the added benefit
-that they encompass non-ASCII characters. For instance, <tt>/\d/</tt>
-matches only the ASCII decimal digits (0-9); whereas <tt>/[[:digit:]]/</tt>
-matches any character in the Unicode _Nd_ category.
+    /\D/.match('123Jump!') # => #<MatchData "J">
+    /\D/.match('123')      # => nil
 
-- <tt>/[[:alnum:]]/</tt> - Alphabetic and numeric character
-- <tt>/[[:alpha:]]/</tt> - Alphabetic character
-- <tt>/[[:blank:]]/</tt> - Space or tab
-- <tt>/[[:cntrl:]]/</tt> - Control character
-- <tt>/[[:digit:]]/</tt> - Digit
-- <tt>/[[:graph:]]/</tt> - Non-blank character (excludes spaces, control
-  characters, and similar)
-- <tt>/[[:lower:]]/</tt> - Lowercase alphabetical character
-- <tt>/[[:print:]]/</tt> - Like [:graph:], but includes the space character
-- <tt>/[[:punct:]]/</tt> - Punctuation character
-- <tt>/[[:space:]]/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
-  carriage return, etc.)
-- <tt>/[[:upper:]]/</tt> - Uppercase alphabetical
-- <tt>/[[:xdigit:]]/</tt> - Digit allowed in a hexadecimal number (i.e.,
-  0-9a-fA-F)
+- <tt>/\h/</tt>: Matches a hexdigit character: equivalent to <tt>[0-9a-fA-F]</tt>:
+
+    /\h/.match('xyz fedcba9876543210') # => #<MatchData "f">
+    /\h/.match('xyz')                  # => nil
+
+- <tt>/\H/</tt>: Matches a non-hexdigit character: equivalent to <tt>[^0-9a-fA-F]</tt>:
+
+    /\H/.match('fedcba9876543210xyz') # => #<MatchData "x">
+    /\H/.match('fedcba9876543210')    # => nil
+
+- <tt>/\s/</tt>: Matches a whitespace character: equivalent to <tt>/[ \t\r\n\f\v]/</tt>:
+
+    /\s/.match('foo bar') # => #<MatchData " ">
+    /\s/.match('foo')     # => nil
+
+- <tt>/\S/</tt>: Matches a non-whitespace character: equivalent to <tt>/[^ \t\r\n\f\v]/</tt>:
+
+    /\S/.match(" \t\r\n\f\v foo") # => #<MatchData "f">
+    /\S/.match(" \t\r\n\f\v")     # => nil
+
+- <tt>/\R/</tt>: Matches a linebreak:
+
+    /\R/.match("\r")     # => #<MatchData "\r">     # Carriage return (CR)
+    /\R/.match("\n")     # => #<MatchData "\n">     # Newline (LF)
+    /\R/.match("\f")     # => #<MatchData "\f">     # Formfeed (FF)
+    /\R/.match("\v")     # => #<MatchData "\v">     # Vertical tab (VT)
+    /\R/.match("\r\n")   # => #<MatchData "\r\n">   # CRLF
+    /\R/.match("\u0085") # => #<MatchData "\u0085"> # Next line (NEL)
+    /\R/.match("\u2028") # => #<MatchData "\u2028"> # Line separator (LSEP)
+    /\R/.match("\u2029") # => #<MatchData "\u2029"> # Paragraph separator (PSEP)
+
+== POSIX Bracket Expressions
+
+A POSIX <i>bracket expression</i> is also similar to a character class.
+These expressions provide a portable alternative to the above,
+with the added benefit of encompassing non-ASCII characters:
+
+- <tt>/\d/</tt> matches only ASCII decimal digits +0+ through +9+.
+- <tt>/[[:digit:]]/</tt> matches any character in the Unicode _Nd_ category.
+  see below.
+
+The POSIX bracket expressions:
+
+- <tt>/[[:digit:]]/</tt>: Matches a {Unicode digit}[https://www.compart.com/en/unicode/category/Nd]:
+
+    /[[:digit:]]/.match('9')       # => #<MatchData "9">
+    /[[:digit:]]/.match("\u1fbf9") # => #<MatchData "9">
+
+- <tt>/[[:xdigit:]]/</tt>: Matches a digit allowed in a hexadecimal number;
+  equivalent to <tt>[0-9a-fA-F]</tt>.
+
+- <tt>/[[:upper:]]/</tt>: Matches a {Unicode uppercase letter}[https://www.compart.com/en/unicode/category/Lu]:
+
+    /[[:upper:]]/.match('A')      # => #<MatchData "A">
+    /[[:upper:]]/.match("\u00c6") # => #<MatchData "Æ">
+
+- <tt>/[[:lower:]]/</tt>: Matches a {Unicode lowercase letter}[https://www.compart.com/en/unicode/category/Ll]:
+
+    /[[:lower:]]/.match('a')      # => #<MatchData "a">
+    /[[:lower:]]/.match("\u01fd") # => #<MatchData "ǽ">
+
+- <tt>/[[:alpha:]]/</tt>: Matches <tt>/[[:upper:]]/</tt> or <tt>/[[:lower:]]/</tt>.
+
+- <tt>/[[:alnum:]]/</tt>: Matches <tt>/[[:alpha:]]/</tt> or <tt>/[[:digit:]]/</tt>.
+
+- <tt>/[[:space:]]/</tt>: Matches {Unicode space character}[https://www.compart.com/en/unicode/category/Zs]:
+
+    /[[:space:]]/.match(' ')      # => #<MatchData " ">
+    /[[:space:]]/.match("\u2005") # => #<MatchData " ">
+
+- <tt>/[[:blank:]]/</tt>: Matches <tt>/[[:space:]]/</tt> or tab character:
+
+    /[[:blank:]]/.match(' ')      # => #<MatchData " ">
+    /[[:blank:]]/.match("\u2005") # => #<MatchData " ">
+    /[[:blank:]]/.match("\t")     # => #<MatchData "\t">
+
+- <tt>/[[:cntrl:]]/</tt>: Matches {Unicode control character}[https://www.compart.com/en/unicode/category/Cc]:
+
+    /[[:cntrl:]]/.match("\u0000") # => #<MatchData "\u0000">
+    /[[:cntrl:]]/.match("\u009f") # => #<MatchData "\u009F">
+
+- <tt>/[[:graph:]]/</tt>: Matches any character
+  except <tt>/[[:space:]]/</tt> or <tt>/[[:cntrl:]]/</tt>.
+
+- <tt>/[[:print:]]/</tt>: Matches <tt>/[[:graph:]]/</tt> or space character.
+
+- <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
+
+
 
 Ruby also supports the following non-POSIX character classes:
 
@@ -838,8 +890,8 @@ regexp's encoding can be explicitly fixed by supplying
 <tt>Regexp::FIXEDENCODING</tt> as the second argument of
 <tt>Regexp.new</tt>:
 
-    r = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
-    r =~ "a\u3042"
+    re = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
+    re =~ "a\u3042"
        # raises Encoding::CompatibilityError: incompatible encoding regexp match
        #         (ISO-8859-1 regexp with UTF-8 string)
 
