@@ -112,49 +112,9 @@ struct rb_io_enc_t {
     VALUE ecopts;
 };
 
-#ifdef RB_IO_T
-// Internal definition of `struct rb_io`.
 struct rb_io;
-#else
-/** Ruby's IO, metadata and buffers. */
-struct rb_io {
-    /** The IO's Ruby level counterpart. */
-    VALUE self;
-
-    /** stdio ptr for read/write, if available. */
-    FILE *stdio_file;
-
-    /** file descriptor. */
-    int fd;
-
-    /** mode flags: FMODE_XXXs */
-    int mode;
-
-    /** child's pid (for pipes) */
-    rb_pid_t pid;
-
-    /** number of lines read */
-    int lineno;
-
-    /** pathname for file */
-    VALUE pathv;
-
-    /**
-     * Duplex IO object, if set.
-     *
-     * @see rb_io_set_write_io()
-     */
-    VALUE tied_io_for_writing;
-
-    /*************************************************************************/
-    /**   THE FIELDS ABOVE THIS POINT ARE PART OF THE PUBLIC INTERFACE AND  **/
-    /**      MUST BE KEPT IN SYNC WITH THE PRIVATE INTERFACE DEFINED IN     **/
-    /**                           `internal/io.h`                           **/
-    /*************************************************************************/
-};
-#endif
-
 typedef struct rb_io rb_io_t;
+
 typedef struct rb_io_enc_t rb_io_enc_t;
 
 /**
