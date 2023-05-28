@@ -1,6 +1,8 @@
 # frozen_string_literal: false
 require_relative 'base'
 
+using MakeMakefile::STRING_REFINEMENT
+
 class TestMkmfConvertible < TestMkmf
   def test_typeof_builtin
     ["", ["signed ", ""], "unsigned "].each do |signed, prefix|

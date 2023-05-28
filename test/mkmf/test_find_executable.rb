@@ -10,7 +10,7 @@ class TestMkmfFindExecutable < TestMkmf
   def each_exts(&block)
     name = "foobar#{$$}#{rand(1000)}"
     stdout.filter {|s| s.sub(name, "<executable>")}
-    exts = mkmf {self.class::CONFIG['EXECUTABLE_EXTS']}.split
+    exts = mkmf {CONFIG['EXECUTABLE_EXTS']}.split
     exts[0] ||= ""
     exts.each do |ext|
       yield name+ext, name

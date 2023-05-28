@@ -14,8 +14,8 @@ require 'mkmf'
 require 'tmpdir'
 
 $extout = '$(topdir)/'+RbConfig::CONFIG["EXTOUT"]
-RbConfig::CONFIG['topdir'] = CONFIG['topdir'] = File.expand_path(CONFIG['topdir'])
-RbConfig::CONFIG["extout"] = CONFIG["extout"] = $extout
+RbConfig::CONFIG['topdir'] = MakeMakefile::CONFIG['topdir'] = File.expand_path(MakeMakefile::CONFIG['topdir'])
+RbConfig::CONFIG["extout"] = MakeMakefile::CONFIG["extout"] = $extout
 $INCFLAGS << " -I."
 $extout_prefix = "$(extout)$(target_prefix)/"
 
@@ -70,6 +70,10 @@ class TestMkmf < Test::Unit::TestCase
       proc {MKMFLOG[] << msg}
     end
 
+    class MakefileObject
+      include MakeMakefile::GLOBAL_MODULE
+    end
+
     def setup
       @rbconfig = rbconfig0 = RbConfig::CONFIG
       @mkconfig = mkconfig0 = RbConfig::MAKEFILE_CONFIG
@@ -97,10 +101,10 @@ class TestMkmf < Test::Unit::TestCase
       }
       @tmpdir = Dir.mktmpdir
       @curdir = Dir.pwd
-      @mkmfobj = Object.new
+      @mkmfobj = MakefileObject.new
       @stdout = Capture.new
       Dir.chdir(@tmpdir)
-      @quiet, Logging.quiet = Logging.quiet, true
+      @quiet, MakeMakefile::Logging.quiet = MakeMakefile::Logging.quiet, true
       init_mkmf
       $INCFLAGS[0, 0] = "-I. "
     end
@@ -119,8 +123,8 @@ class TestMkmf < Test::Unit::TestCase
         remove_const(:CONFIG)
         const_set(:CONFIG, mkconfig0)
       }
-      Logging.quiet = @quiet
-      Logging.log_close
+      MakeMakefile::Logging.quiet = @quiet
+      MakeMakefile::Logging.log_close
       FileUtils.rm_f("mkmf.log")
       Dir.chdir(@curdir)
       FileUtils.rm_rf(@tmpdir)
@@ -145,9 +149,15 @@ class TestMkmf < Test::Unit::TestCase
     end
   end
 
+  unless "".respond_to?(:create_makefile, true)
+    alias testunit_message message
+    include MakeMakefile::GLOBAL_MODULE
+    extend MakeMakefile::GLOBAL_MODULE
+    alias message testunit_message
+  end
   include Base
 
   def assert_separately(args, src, *rest, **options)
-    super(args + ["-r#{__FILE__}"], "extend TestMkmf::Base; setup\nEND{teardown}\n#{src}", *rest, **options)
+    super(args + [], "require #{__FILE__.inspect}; extend TestMkmf::Base; setup\nEND{teardown}\n#{src}", *rest, **options)
   end
 end

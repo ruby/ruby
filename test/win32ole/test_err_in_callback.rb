@@ -16,9 +16,9 @@ if defined?(WIN32OLE)
   class TestErrInCallBack < Test::Unit::TestCase
     def setup
       @ruby = nil
-      if File.exist?("./" + CONFIG["RUBY_INSTALL_NAME"] + CONFIG["EXEEXT"])
+      if File.exist?("./" + MakeMakefile::CONFIG["RUBY_INSTALL_NAME"] + MakeMakefile::CONFIG["EXEEXT"])
         sep = File::ALT_SEPARATOR || "/"
-        @ruby = "." + sep + CONFIG["RUBY_INSTALL_NAME"]
+        @ruby = "." + sep + MakeMakefile::CONFIG["RUBY_INSTALL_NAME"]
         cwd = Pathname.new(File.expand_path('.'))
         @iopt = $:.map {|e|
           " -I " + (Pathname.new(e).relative_path_from(cwd).to_s rescue e)
