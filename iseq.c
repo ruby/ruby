@@ -28,7 +28,7 @@
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
-#include "internal/parse.h"
+#include "internal/ruby_parser.h"
 #include "internal/sanitizers.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"

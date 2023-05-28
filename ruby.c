@@ -53,7 +53,7 @@
 #include "internal/loadpath.h"
 #include "internal/missing.h"
 #include "internal/object.h"
-#include "internal/parse.h"
+#include "internal/ruby_parser.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"

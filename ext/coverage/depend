@@ -15,6 +15,7 @@ coverage.o: $(hdrdir)/ruby/backward/2/long_long.h
 coverage.o: $(hdrdir)/ruby/backward/2/stdalign.h
 coverage.o: $(hdrdir)/ruby/backward/2/stdarg.h
 coverage.o: $(hdrdir)/ruby/defines.h
+coverage.o: $(hdrdir)/ruby/encoding.h
 coverage.o: $(hdrdir)/ruby/intern.h
 coverage.o: $(hdrdir)/ruby/internal/abi.h
 coverage.o: $(hdrdir)/ruby/internal/anyargs.h
@@ -87,6 +88,15 @@ coverage.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 coverage.o: $(hdrdir)/ruby/internal/ctype.h
 coverage.o: $(hdrdir)/ruby/internal/dllexport.h
 coverage.o: $(hdrdir)/ruby/internal/dosish.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/re.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/string.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+coverage.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 coverage.o: $(hdrdir)/ruby/internal/error.h
 coverage.o: $(hdrdir)/ruby/internal/eval.h
 coverage.o: $(hdrdir)/ruby/internal/event.h
@@ -156,6 +166,8 @@ coverage.o: $(hdrdir)/ruby/internal/variable.h
 coverage.o: $(hdrdir)/ruby/internal/warning_push.h
 coverage.o: $(hdrdir)/ruby/internal/xmalloc.h
 coverage.o: $(hdrdir)/ruby/missing.h
+coverage.o: $(hdrdir)/ruby/onigmo.h
+coverage.o: $(hdrdir)/ruby/oniguruma.h
 coverage.o: $(hdrdir)/ruby/ruby.h
 coverage.o: $(hdrdir)/ruby/st.h
 coverage.o: $(hdrdir)/ruby/subst.h
@@ -184,6 +196,7 @@ coverage.o: $(top_srcdir)/method.h
 coverage.o: $(top_srcdir)/node.h
 coverage.o: $(top_srcdir)/ruby_assert.h
 coverage.o: $(top_srcdir)/ruby_atomic.h
+coverage.o: $(top_srcdir)/rubyparser.h
 coverage.o: $(top_srcdir)/shape.h
 coverage.o: $(top_srcdir)/thread_pthread.h
 coverage.o: $(top_srcdir)/vm_core.h
