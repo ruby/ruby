@@ -7,5 +7,3 @@ if have_macro("O_NONBLOCK", hdr) and
     (have_macro("F_GETFL", hdr) or have_macro("F_SETFL", hdr))
   create_makefile(target)
 end
-
-have_function("rb_io_descriptor")
