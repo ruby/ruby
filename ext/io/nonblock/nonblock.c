@@ -17,6 +17,16 @@
 #endif
 #include <fcntl.h>
 
+#ifndef HAVE_RB_IO_DESCRIPTOR
+static int
+rb_io_descriptor(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return fptr->fd;
+}
+#endif
+
 #ifdef F_GETFL
 static int
 get_fcntl_flags(int fd)
@@ -39,10 +49,8 @@ get_fcntl_flags(int fd)
 static VALUE
 rb_io_nonblock_p(VALUE io)
 {
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    if (get_fcntl_flags(fptr->fd) & O_NONBLOCK)
-	return Qtrue;
+    if (get_fcntl_flags(rb_io_descriptor(io)) & O_NONBLOCK)
+        return Qtrue;
     return Qfalse;
 }
 #else
@@ -122,15 +130,13 @@ io_nonblock_set(int fd, int f, int nb)
  *
  */
 static VALUE
-rb_io_nonblock_set(VALUE io, VALUE nb)
+rb_io_nonblock_set(VALUE self, VALUE value)
 {
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    if (RTEST(nb))
-	rb_io_set_nonblock(fptr);
-    else
-	io_nonblock_set(fptr->fd, get_fcntl_flags(fptr->fd), RTEST(nb));
-    return io;
+    int descriptor = rb_io_descriptor(self);
+
+    io_nonblock_set(rb_io_descriptor(descriptor), get_fcntl_flags(descriptor), RTEST(value));
+
+    return self;
 }
 
 static VALUE
@@ -152,23 +158,25 @@ io_nonblock_restore(VALUE arg)
  * The original mode is restored after the block is executed.
  */
 static VALUE
-rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
+rb_io_nonblock_block(int argc, VALUE *argv, VALUE self)
 {
     int nb = 1;
     rb_io_t *fptr;
-    int f, restore[2];
 
-    GetOpenFile(io, fptr);
+    int descriptor = rb_io_descriptor(self);
+
     if (argc > 0) {
-	VALUE v;
-	rb_scan_args(argc, argv, "01", &v);
-	nb = RTEST(v);
+        VALUE v;
+        rb_scan_args(argc, argv, "01", &v);
+        nb = RTEST(v);
     }
-    f = get_fcntl_flags(fptr->fd);
-    restore[0] = fptr->fd;
-    restore[1] = f;
-    if (!io_nonblock_set(fptr->fd, f, nb))
-	return rb_yield(io);
+
+    int current_flags = get_fcntl_flags(descriptor);
+    int restore[2] = {descriptor, current_flags};
+
+    if (!io_nonblock_set(descriptor, current_flags, nb))
+        return rb_yield(io);
+
     return rb_ensure(rb_yield, io, io_nonblock_restore, (VALUE)restore);
 }
 #else
