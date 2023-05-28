@@ -5,10 +5,14 @@ require 'optparse'
 
 def main
   output = nil
+  template = nil
   parser = OptionParser.new
-  parser.banner = "Usage: #{File.basename($0)} [--output=PATH] <parse.y>"
+  parser.banner = "Usage: #{File.basename($0)} [--output=PATH] [--template=PATH] <parse.y>"
   parser.on('--output=PATH', 'An output file.') {|path|
     output = path
+  }
+  parser.on('--template=PATH', 'An template file.') {|path|
+    template = path
   }
   parser.on('--help', 'Prints this message and quit.') {
     puts parser.help
@@ -25,13 +29,13 @@ def main
     unless ARGV.size == 2
       abort "wrong number of arguments (#{ARGV.size} for 2)"
     end
-    process STDIN, out, ARGV[1]
+    process STDIN, out, ARGV[1], template
   else
     unless ARGV.size == 1
       abort "wrong number of arguments (#{ARGV.size} for 1)"
     end
     File.open(ARGV[0]) {|f|
-      process f, out, ARGV[0]
+      process f, out, ARGV[0], template
     }
   end
   if output
@@ -41,10 +45,10 @@ def main
   end
 end
 
-def process(f, out, path)
+def process(f, out, path, template)
   prelude f, out
   grammar f, out
-  usercode f, out, path
+  usercode f, out, path, template
 end
 
 def prelude(f, out)
@@ -103,12 +107,25 @@ def grammar(f, out)
   end
 end
 
-def usercode(f, out, path)
+def usercode(f, out, path, template)
   require 'erb'
+  lineno = nil
+  src = nil
   compiler = ERB::Compiler.new('%-')
   compiler.put_cmd = compiler.insert_cmd = "out.<<"
-  lineno = f.lineno
-  src, = compiler.compile(f.read)
+
+  if template
+    File.open(template) do |f|
+      out.clear
+      lineno = f.lineno
+      src, = compiler.compile(f.read)
+      path = template
+    end
+  else
+    lineno = f.lineno
+    src, = compiler.compile(f.read)
+  end
+
   eval(src, binding, path, lineno)
 end
 

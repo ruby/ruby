@@ -15,6 +15,7 @@ object_tracing.o: $(hdrdir)/ruby/backward/2/stdalign.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/stdarg.h
 object_tracing.o: $(hdrdir)/ruby/debug.h
 object_tracing.o: $(hdrdir)/ruby/defines.h
+object_tracing.o: $(hdrdir)/ruby/encoding.h
 object_tracing.o: $(hdrdir)/ruby/intern.h
 object_tracing.o: $(hdrdir)/ruby/internal/abi.h
 object_tracing.o: $(hdrdir)/ruby/internal/anyargs.h
@@ -87,6 +88,15 @@ object_tracing.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 object_tracing.o: $(hdrdir)/ruby/internal/ctype.h
 object_tracing.o: $(hdrdir)/ruby/internal/dllexport.h
 object_tracing.o: $(hdrdir)/ruby/internal/dosish.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/re.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/string.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+object_tracing.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 object_tracing.o: $(hdrdir)/ruby/internal/error.h
 object_tracing.o: $(hdrdir)/ruby/internal/eval.h
 object_tracing.o: $(hdrdir)/ruby/internal/event.h
@@ -156,6 +166,8 @@ object_tracing.o: $(hdrdir)/ruby/internal/variable.h
 object_tracing.o: $(hdrdir)/ruby/internal/warning_push.h
 object_tracing.o: $(hdrdir)/ruby/internal/xmalloc.h
 object_tracing.o: $(hdrdir)/ruby/missing.h
+object_tracing.o: $(hdrdir)/ruby/onigmo.h
+object_tracing.o: $(hdrdir)/ruby/oniguruma.h
 object_tracing.o: $(hdrdir)/ruby/ruby.h
 object_tracing.o: $(hdrdir)/ruby/st.h
 object_tracing.o: $(hdrdir)/ruby/subst.h
@@ -178,6 +190,7 @@ object_tracing.o: $(top_srcdir)/method.h
 object_tracing.o: $(top_srcdir)/node.h
 object_tracing.o: $(top_srcdir)/ruby_assert.h
 object_tracing.o: $(top_srcdir)/ruby_atomic.h
+object_tracing.o: $(top_srcdir)/rubyparser.h
 object_tracing.o: $(top_srcdir)/thread_pthread.h
 object_tracing.o: $(top_srcdir)/vm_core.h
 object_tracing.o: $(top_srcdir)/vm_opts.h
@@ -365,11 +378,6 @@ objspace.o: $(top_srcdir)/ccan/container_of/container_of.h
 objspace.o: $(top_srcdir)/ccan/list/list.h
 objspace.o: $(top_srcdir)/ccan/str/str.h
 objspace.o: $(top_srcdir)/constant.h
-objspace.o: $(hdrdir)/ruby/thread_native.h
-objspace.o: $(top_srcdir)/ccan/check_type/check_type.h
-objspace.o: $(top_srcdir)/ccan/container_of/container_of.h
-objspace.o: $(top_srcdir)/ccan/list/list.h
-objspace.o: $(top_srcdir)/ccan/str/str.h
 objspace.o: $(top_srcdir)/id_table.h
 objspace.o: $(top_srcdir)/internal.h
 objspace.o: $(top_srcdir)/internal/array.h
@@ -389,6 +397,7 @@ objspace.o: $(top_srcdir)/method.h
 objspace.o: $(top_srcdir)/node.h
 objspace.o: $(top_srcdir)/ruby_assert.h
 objspace.o: $(top_srcdir)/ruby_atomic.h
+objspace.o: $(top_srcdir)/rubyparser.h
 objspace.o: $(top_srcdir)/shape.h
 objspace.o: $(top_srcdir)/symbol.h
 objspace.o: $(top_srcdir)/thread_pthread.h
@@ -597,6 +606,7 @@ objspace_dump.o: $(top_srcdir)/method.h
 objspace_dump.o: $(top_srcdir)/node.h
 objspace_dump.o: $(top_srcdir)/ruby_assert.h
 objspace_dump.o: $(top_srcdir)/ruby_atomic.h
+objspace_dump.o: $(top_srcdir)/rubyparser.h
 objspace_dump.o: $(top_srcdir)/shape.h
 objspace_dump.o: $(top_srcdir)/symbol.h
 objspace_dump.o: $(top_srcdir)/thread_pthread.h

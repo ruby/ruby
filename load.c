@@ -9,7 +9,7 @@
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/load.h"
-#include "internal/parse.h"
+#include "internal/ruby_parser.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
