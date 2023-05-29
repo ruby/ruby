@@ -5300,7 +5300,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 #define rb_io_set_close_on_exec rb_f_notimplement
 #endif
 
-#define IS_EXTERNAL_FD(f) ((f)->mode & FMODE_EXTERNAL)
+#define RUBY_IO_EXTERNAL_P(f) ((f)->mode & FMODE_EXTERNAL)
 #define PREP_STDIO_NAME(f) (RSTRING_PTR((f)->pathv))
 
 static VALUE
@@ -5458,7 +5458,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
     int done = 0;
 
-    if (IS_EXTERNAL_FD(fptr) || fd <= 2) {
+    if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2) {
         // Need to keep FILE objects of stdin, stdout and stderr, so we are done:
         done = 1;
     }
@@ -8284,7 +8284,7 @@ io_reopen(VALUE io, VALUE nfile)
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
-    if (IS_EXTERNAL_FD(fptr)) {
+    if (RUBY_IO_EXTERNAL_P(fptr)) {
         if ((fptr->stdio_file == stdin && !(orig->mode & FMODE_READABLE)) ||
             (fptr->stdio_file == stdout && !(orig->mode & FMODE_WRITABLE)) ||
             (fptr->stdio_file == stderr && !(orig->mode & FMODE_WRITABLE))) {
@@ -8314,13 +8314,13 @@ io_reopen(VALUE io, VALUE nfile)
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
-    else if (!IS_EXTERNAL_FD(fptr)) fptr->pathv = Qnil;
+    else if (!RUBY_IO_EXTERNAL_P(fptr)) fptr->pathv = Qnil;
     fptr_copy_finalizer(fptr, orig);
 
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
-        if (IS_EXTERNAL_FD(fptr) || fd <= 2 || !fptr->stdio_file) {
+        if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2 || !fptr->stdio_file) {
             /* need to keep FILE objects of stdin, stdout and stderr */
             if (rb_cloexec_dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
@@ -8428,7 +8428,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         convconfig_t convconfig;
 
         rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
-        if (IS_EXTERNAL_FD(fptr) &&
+        if (RUBY_IO_EXTERNAL_P(fptr) &&
             ((fptr->mode & FMODE_READWRITE) & (fmode & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
             rb_raise(rb_eArgError,
