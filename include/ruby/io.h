@@ -624,6 +624,12 @@ VALUE rb_io_path(VALUE io);
 int rb_io_descriptor(VALUE io);
 
 /**
+ * Get the mode of the IO.
+ *
+ */
+int rb_io_mode(VALUE io);
+
+/**
  * This function  breaks down the  option hash that `IO#initialize`  takes into
  * components.   This is  an implementation  detail of  rb_io_extract_modeenc()
  * today.  People prefer that API instead.

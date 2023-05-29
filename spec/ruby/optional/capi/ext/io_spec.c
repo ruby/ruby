@@ -307,7 +307,7 @@ VALUE io_spec_rb_io_set_nonblock(VALUE self, VALUE io) {
   GetOpenFile(io, fp);
   rb_io_set_nonblock(fp);
 #ifdef F_GETFL
-  flags = fcntl(fp->fd, F_GETFL, 0);
+  flags = fcntl(io_spec_get_fd(io), F_GETFL, 0);
   return flags & O_NONBLOCK ? Qtrue : Qfalse;
 #else
   return Qfalse;
@@ -326,9 +326,13 @@ static VALUE io_spec_errno_set(VALUE self, VALUE val) {
 }
 
 VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
+#ifdef RUBY_VERSION_IS_3_3
+  if (rb_io_mode(io) & FMODE_SYNC) {
+#else
   rb_io_t *fp;
   GetOpenFile(io, fp);
   if (fp->mode & FMODE_SYNC) {
+#endif
     return Qtrue;
   } else {
     return Qfalse;
