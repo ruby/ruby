@@ -28,9 +28,13 @@ static int set_non_blocking(int fd) {
 }
 
 static int io_spec_get_fd(VALUE io) {
+#ifdef RUBY_VERSION_IS_3_1
+  return rb_io_descriptor(io);
+#else
   rb_io_t* fp;
   GetOpenFile(io, fp);
   return fp->fd;
+#endif
 }
 
 VALUE io_spec_GetOpenFile_fd(VALUE self, VALUE io) {
