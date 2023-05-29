@@ -507,7 +507,7 @@ pty_open(VALUE klass)
     VALUE master_path = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
     VALUE master_io = rb_io_open_descriptor(rb_cIO, master_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX, master_path, RUBY_IO_TIMEOUT_DEFAULT, NULL);
 
-    VALUE slave_path = rb_obj_freeze(rb_sprintf("slavepty:%s", slavename));
+    VALUE slave_path = rb_obj_freeze(rb_str_new_cstr(slavename));
     VALUE slave_file = rb_io_open_descriptor(rb_cFile, slave_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY, slave_path, RUBY_IO_TIMEOUT_DEFAULT, NULL);
 
     VALUE assoc = rb_assoc_new(master_io, slave_file);
