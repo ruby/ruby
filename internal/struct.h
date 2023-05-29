@@ -12,10 +12,10 @@
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 enum {
-    RSTRUCT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
-    RSTRUCT_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER1),
+    RSTRUCT_EMBED_LEN_MASK = RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 |
+                                 RUBY_FL_USER3 | RUBY_FL_USER2 | RUBY_FL_USER1,
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
-    RSTRUCT_TRANSIENT_FLAG = FL_USER3,
+    RSTRUCT_TRANSIENT_FLAG = RUBY_FL_USER8,
 };
 
 struct RStruct {
@@ -25,7 +25,12 @@ struct RStruct {
             long len;
             const VALUE *ptr;
         } heap;
-        const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
+        /* This is a length 1 array because:
+         *   1. GCC has a bug that does not optimize C flexible array members
+         *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+         *   2. Zero length arrays are not supported by all compilers
+         */
+        const VALUE ary[1];
     } as;
 };
 
@@ -145,7 +150,7 @@ RSTRUCT_GET(VALUE st, long k)
 static inline const VALUE *
 rb_struct_const_heap_ptr(VALUE st)
 {
-    /* TODO: check embed on debug mode */
+    assert(!FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK));
     return RSTRUCT(st)->as.heap.ptr;
 }
 
