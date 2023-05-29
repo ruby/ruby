@@ -364,17 +364,23 @@ The POSIX bracket expressions:
 
 - <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
 
-Ruby also supports the following non-POSIX character classes:
+Ruby also supports these (non-POSIX) character classes:
 
-- <tt>/[[:word:]]/</tt> - A character in one of the following Unicode
-  general categories _Letter_, _Mark_, _Number_,
-  <i>Connector_Punctuation</i>
-- <tt>/[[:ascii:]]/</tt> - A character in the ASCII character set
+- <tt>/[[:ascii:]]/</tt>: Matches a character in the ASCII character set.
+- <tt>/[[:word:]]/</tt>: Matches a character in one of these Unicode character
+  categories:
 
-    # U+06F2 is "EXTENDED ARABIC-INDIC DIGIT TWO"
-    /[[:digit:]]/.match("\u06F2")    #=> #<MatchData "\u{06F2}">
-    /[[:upper:]][[:lower:]]/.match("Hello") #=> #<MatchData "He">
-    /[[:xdigit:]][[:xdigit:]]/.match("A6")  #=> #<MatchData "A6">
+  - {Spacing Mark (Mc)}[https://www.compart.com/en/unicode/category/Mc].
+  - {Enclosing Mark (Me)}[https://www.compart.com/en/unicode/category/Me].
+  - {Nonspacing Mark (Mn)}[https://www.compart.com/en/unicode/category/Mn].
+  - {Lowercase Letter (Ll)}[https://www.compart.com/en/unicode/category/Ll].
+  - {Modifier Letter (Lm)}[https://www.compart.com/en/unicode/category/Lm].
+  - {Other Letter (Lo)}[https://www.compart.com/en/unicode/category/Lo].
+  - {Titlecase Letter (Lt)}[https://www.compart.com/en/unicode/category/Lt].
+  - {Uppercase Letter (Lu)}[https://www.compart.com/en/unicode/category/Lu].
+  - {Decimal Number (Nd)}[https://www.compart.com/en/unicode/category/Nd].
+  - {Letter Number (Nl)}[https://www.compart.com/en/unicode/category/Nl].
+  - {Connector Punctuation}[https://www.compart.com/en/unicode/category/Pc].
 
 == Character Properties
 
@@ -390,74 +396,77 @@ by prefixing the name with a caret character (<tt>^</tt>):
   /\p{^Ll}/.match("A") # => #<MatchData "A">
 
 See {Character Properties}[./Regexp/character_properties_rdoc.html]
-for a list of the many property names.
+for a list of the regexps based on the many character properties.
 
-* <tt>/\p{Alnum}/</tt> - Alphabetic and numeric character
-* <tt>/\p{Alpha}/</tt> - Alphabetic character
-* <tt>/\p{Blank}/</tt> - Space or tab
-* <tt>/\p{Cntrl}/</tt> - Control character
-* <tt>/\p{Digit}/</tt> - Digit
-* <tt>/\p{Emoji}/</tt> - Unicode emoji
-* <tt>/\p{Graph}/</tt> - Non-blank character (excludes spaces, control
+Some character properties correspond to POSIX bracket expressions:
+
+- <tt>/\p{Alnum}/</tt>: Alphabetic and numeric character
+- <tt>/\p{Alpha}/</tt>: Alphabetic character
+- <tt>/\p{Blank}/</tt>: Space or tab
+- <tt>/\p{Cntrl}/</tt>: Control character
+- <tt>/\p{Digit}/</tt>: Digit
   characters, and similar)
-* <tt>/\p{Lower}/</tt> - Lowercase alphabetical character
-* <tt>/\p{Print}/</tt> - Like <tt>\p{Graph}</tt>, but includes the space character
-* <tt>/\p{Punct}/</tt> - Punctuation character
-* <tt>/\p{Space}/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
+- <tt>/\p{Lower}/</tt>: Lowercase alphabetical character
+- <tt>/\p{Print}/</tt>: Like <tt>\p{Graph}</tt>, but includes the space character
+- <tt>/\p{Punct}/</tt>: Punctuation character
+- <tt>/\p{Space}/</tt>: Whitespace character (<tt>[:blank:]</tt>, newline,
   carriage return, etc.)
-* <tt>/\p{Upper}/</tt> - Uppercase alphabetical
-* <tt>/\p{XDigit}/</tt> - Digit allowed in a hexadecimal number (i.e., 0-9a-fA-F)
-* <tt>/\p{Word}/</tt> - A member of one of the following Unicode general
+- <tt>/\p{Upper}/</tt>: Uppercase alphabetical
+- <tt>/\p{XDigit}/</tt>: Digit allowed in a hexadecimal number (i.e., 0-9a-fA-F)
+
+- <tt>/\p{Emoji}/</tt>: Unicode emoji
+- <tt>/\p{Graph}/</tt>: Non-blank character (excludes spaces, control
+- <tt>/\p{Word}/</tt>: A member of one of the following Unicode general
   category <i>Letter</i>, <i>Mark</i>, <i>Number</i>,
   <i>Connector\_Punctuation</i>
-* <tt>/\p{ASCII}/</tt> - A character in the ASCII character set
-* <tt>/\p{Any}/</tt> - Any Unicode character (including unassigned
+- <tt>/\p{ASCII}/</tt>: A character in the ASCII character set
+- <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned
   characters)
-* <tt>/\p{Assigned}/</tt> - An assigned character
+- <tt>/\p{Assigned}/</tt>: An assigned character
 
 A Unicode character's <i>General Category</i> value can also be matched
 with <tt>\p{</tt><i>Ab</i><tt>}</tt> where <i>Ab</i> is the category's
 abbreviation as described below:
 
-* <tt>/\p{L}/</tt> - 'Letter'
-* <tt>/\p{Ll}/</tt> - 'Letter: Lowercase'
-* <tt>/\p{Lm}/</tt> - 'Letter: Mark'
-* <tt>/\p{Lo}/</tt> - 'Letter: Other'
-* <tt>/\p{Lt}/</tt> - 'Letter: Titlecase'
-* <tt>/\p{Lu}/</tt> - 'Letter: Uppercase
-* <tt>/\p{Lo}/</tt> - 'Letter: Other'
-* <tt>/\p{M}/</tt> - 'Mark'
-* <tt>/\p{Mn}/</tt> - 'Mark: Nonspacing'
-* <tt>/\p{Mc}/</tt> - 'Mark: Spacing Combining'
-* <tt>/\p{Me}/</tt> - 'Mark: Enclosing'
-* <tt>/\p{N}/</tt> - 'Number'
-* <tt>/\p{Nd}/</tt> - 'Number: Decimal Digit'
-* <tt>/\p{Nl}/</tt> - 'Number: Letter'
-* <tt>/\p{No}/</tt> - 'Number: Other'
-* <tt>/\p{P}/</tt> - 'Punctuation'
-* <tt>/\p{Pc}/</tt> - 'Punctuation: Connector'
-* <tt>/\p{Pd}/</tt> - 'Punctuation: Dash'
-* <tt>/\p{Ps}/</tt> - 'Punctuation: Open'
-* <tt>/\p{Pe}/</tt> - 'Punctuation: Close'
-* <tt>/\p{Pi}/</tt> - 'Punctuation: Initial Quote'
-* <tt>/\p{Pf}/</tt> - 'Punctuation: Final Quote'
-* <tt>/\p{Po}/</tt> - 'Punctuation: Other'
-* <tt>/\p{S}/</tt> - 'Symbol'
-* <tt>/\p{Sm}/</tt> - 'Symbol: Math'
-* <tt>/\p{Sc}/</tt> - 'Symbol: Currency'
-* <tt>/\p{Sc}/</tt> - 'Symbol: Currency'
-* <tt>/\p{Sk}/</tt> - 'Symbol: Modifier'
-* <tt>/\p{So}/</tt> - 'Symbol: Other'
-* <tt>/\p{Z}/</tt> - 'Separator'
-* <tt>/\p{Zs}/</tt> - 'Separator: Space'
-* <tt>/\p{Zl}/</tt> - 'Separator: Line'
-* <tt>/\p{Zp}/</tt> - 'Separator: Paragraph'
-* <tt>/\p{C}/</tt> - 'Other'
-* <tt>/\p{Cc}/</tt> - 'Other: Control'
-* <tt>/\p{Cf}/</tt> - 'Other: Format'
-* <tt>/\p{Cn}/</tt> - 'Other: Not Assigned'
-* <tt>/\p{Co}/</tt> - 'Other: Private Use'
-* <tt>/\p{Cs}/</tt> - 'Other: Surrogate'
+- <tt>/\p{L}/</tt>: 'Letter'
+- <tt>/\p{Ll}/</tt>: 'Letter: Lowercase'
+- <tt>/\p{Lm}/</tt>: 'Letter: Mark'
+- <tt>/\p{Lo}/</tt>: 'Letter: Other'
+- <tt>/\p{Lt}/</tt>: 'Letter: Titlecase'
+- <tt>/\p{Lu}/</tt>: 'Letter: Uppercase
+- <tt>/\p{Lo}/</tt>: 'Letter: Other'
+- <tt>/\p{M}/</tt>: 'Mark'
+- <tt>/\p{Mn}/</tt>: 'Mark: Nonspacing'
+- <tt>/\p{Mc}/</tt>: 'Mark: Spacing Combining'
+- <tt>/\p{Me}/</tt>: 'Mark: Enclosing'
+- <tt>/\p{N}/</tt>: 'Number'
+- <tt>/\p{Nd}/</tt>: 'Number: Decimal Digit'
+- <tt>/\p{Nl}/</tt>: 'Number: Letter'
+- <tt>/\p{No}/</tt>: 'Number: Other'
+- <tt>/\p{P}/</tt>: 'Punctuation'
+- <tt>/\p{Pc}/</tt>: 'Punctuation: Connector'
+- <tt>/\p{Pd}/</tt>: 'Punctuation: Dash'
+- <tt>/\p{Ps}/</tt>: 'Punctuation: Open'
+- <tt>/\p{Pe}/</tt>: 'Punctuation: Close'
+- <tt>/\p{Pi}/</tt>: 'Punctuation: Initial Quote'
+- <tt>/\p{Pf}/</tt>: 'Punctuation: Final Quote'
+- <tt>/\p{Po}/</tt>: 'Punctuation: Other'
+- <tt>/\p{S}/</tt>: 'Symbol'
+- <tt>/\p{Sm}/</tt>: 'Symbol: Math'
+- <tt>/\p{Sc}/</tt>: 'Symbol: Currency'
+- <tt>/\p{Sc}/</tt>: 'Symbol: Currency'
+- <tt>/\p{Sk}/</tt>: 'Symbol: Modifier'
+- <tt>/\p{So}/</tt>: 'Symbol: Other'
+- <tt>/\p{Z}/</tt>: 'Separator'
+- <tt>/\p{Zs}/</tt>: 'Separator: Space'
+- <tt>/\p{Zl}/</tt>: 'Separator: Line'
+- <tt>/\p{Zp}/</tt>: 'Separator: Paragraph'
+- <tt>/\p{C}/</tt>: 'Other'
+- <tt>/\p{Cc}/</tt>: 'Other: Control'
+- <tt>/\p{Cf}/</tt>: 'Other: Format'
+- <tt>/\p{Cn}/</tt>: 'Other: Not Assigned'
+- <tt>/\p{Co}/</tt>: 'Other: Private Use'
+- <tt>/\p{Cs}/</tt>: 'Other: Surrogate'
 
 Lastly, <tt>\p{}</tt> matches a character's Unicode <i>script</i>. The
 following scripts are supported: <i>Arabic</i>, <i>Armenian</i>,
@@ -486,13 +495,13 @@ The constructs described so far match a single character. They can be
 followed by a repetition metacharacter to specify how many times they need
 to occur. Such metacharacters are called <i>quantifiers</i>.
 
-- <tt>*</tt> - Zero or more times
-- <tt>+</tt> - One or more times
-- <tt>?</tt> - Zero or one times (optional)
-- <tt>{</tt><i>n</i><tt>}</tt> - Exactly <i>n</i> times
-- <tt>{</tt><i>n</i><tt>,}</tt> - <i>n</i> or more times
-- <tt>{,</tt><i>m</i><tt>}</tt> - <i>m</i> or less times
-- <tt>{</tt><i>n</i><tt>,</tt><i>m</i><tt>}</tt> - At least <i>n</i> and
+- <tt>*</tt>: Zero or more times
+- <tt>+</tt>: One or more times
+- <tt>?</tt>: Zero or one times (optional)
+- <tt>{</tt><i>n</i><tt>}</tt>: Exactly <i>n</i> times
+- <tt>{</tt><i>n</i><tt>,}</tt>: <i>n</i> or more times
+- <tt>{,</tt><i>m</i><tt>}</tt>: <i>m</i> or less times
+- <tt>{</tt><i>n</i><tt>,</tt><i>m</i><tt>}</tt>: At least <i>n</i> and
   at most <i>m</i> times
 
 At least one uppercase character ('H'), at least one lowercase character
@@ -719,13 +728,13 @@ number is an absolute position, but can not be a relative position.
 Anchors are metacharacter that match the zero-width positions between
 characters, <i>anchoring</i> the match to a specific position.
 
-* <tt>^</tt> - Matches beginning of line
-* <tt>$</tt> - Matches end of line
-* <tt>\A</tt> - Matches beginning of string.
-* <tt>\Z</tt> - Matches end of string. If string ends with a newline,
+- <tt>^</tt>: Matches beginning of line
+- <tt>$</tt>: Matches end of line
+- <tt>\A</tt>: Matches beginning of string.
+- <tt>\Z</tt>: Matches end of string. If string ends with a newline,
   it matches just before newline
-* <tt>\z</tt> - Matches end of string
-* <tt>\G</tt> - Matches first matching position:
+- <tt>\z</tt>: Matches end of string
+- <tt>\G</tt>: Matches first matching position:
 
   In methods like <tt>String#gsub</tt> and <tt>String#scan</tt>, it changes on each iteration.
   It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
@@ -738,23 +747,23 @@ characters, <i>anchoring</i> the match to a specific position.
       "hello, world".match(/,/, 3)    #=> #<MatchData ",">
       "hello, world".match(/\G,/, 3)  #=> nil
 
-* <tt>\b</tt> - Matches word boundaries when outside brackets;
+- <tt>\b</tt>: Matches word boundaries when outside brackets;
   backspace (0x08) when inside brackets
-* <tt>\B</tt> - Matches non-word boundaries
-* <tt>(?=</tt><i>pat</i><tt>)</tt> - <i>Positive lookahead</i> assertion:
+- <tt>\B</tt>: Matches non-word boundaries
+- <tt>(?=</tt><i>pat</i><tt>)</tt>: <i>Positive lookahead</i> assertion:
   ensures that the following characters match <i>pat</i>, but doesn't
   include those characters in the matched text
-* <tt>(?!</tt><i>pat</i><tt>)</tt> - <i>Negative lookahead</i> assertion:
+- <tt>(?!</tt><i>pat</i><tt>)</tt>: <i>Negative lookahead</i> assertion:
   ensures that the following characters do not match <i>pat</i>, but
   doesn't include those characters in the matched text
-* <tt>(?<=</tt><i>pat</i><tt>)</tt> - <i>Positive lookbehind</i>
+- <tt>(?<=</tt><i>pat</i><tt>)</tt>: <i>Positive lookbehind</i>
   assertion: ensures that the preceding characters match <i>pat</i>, but
   doesn't include those characters in the matched text
-* <tt>(?<!</tt><i>pat</i><tt>)</tt> - <i>Negative lookbehind</i>
+- <tt>(?<!</tt><i>pat</i><tt>)</tt>: <i>Negative lookbehind</i>
   assertion: ensures that the preceding characters do not match
   <i>pat</i>, but doesn't include those characters in the matched text
 
-* <tt>\K</tt> - <i>Match reset</i>: the matched content preceding
+- <tt>\K</tt>: <i>Match reset</i>: the matched content preceding
   <tt>\K</tt> in the regexp is excluded from the result.  For example,
   the following two regexps are almost equivalent:
 
@@ -801,10 +810,10 @@ text appearing in <b></b> tags without including the tags in the match:
 The end delimiter for a regexp can be followed by one or more single-letter
 options which control how the pattern can match.
 
-* <tt>/pat/i</tt> - Ignore case
-* <tt>/pat/m</tt> - Treat a newline as a character matched by <tt>.</tt>
-* <tt>/pat/x</tt> - Ignore whitespace and comments in the pattern
-* <tt>/pat/o</tt> - Perform <tt>#{}</tt> interpolation only once
+- <tt>/pat/i</tt>: Ignore case
+- <tt>/pat/m</tt>: Treat a newline as a character matched by <tt>.</tt>
+- <tt>/pat/x</tt>: Ignore whitespace and comments in the pattern
+- <tt>/pat/o</tt>: Perform <tt>#{}</tt> interpolation only once
 
 <tt>i</tt>, <tt>m</tt>, and <tt>x</tt> can also be applied on the
 subexpression level with the
@@ -868,10 +877,10 @@ characters.
 Regular expressions are assumed to use the source encoding. This can be
 overridden with one of the following modifiers.
 
-* <tt>/</tt><i>pat</i><tt>/u</tt> - UTF-8
-* <tt>/</tt><i>pat</i><tt>/e</tt> - EUC-JP
-* <tt>/</tt><i>pat</i><tt>/s</tt> - Windows-31J
-* <tt>/</tt><i>pat</i><tt>/n</tt> - ASCII-8BIT
+- <tt>/</tt><i>pat</i><tt>/u</tt>: UTF-8
+- <tt>/</tt><i>pat</i><tt>/e</tt>: EUC-JP
+- <tt>/</tt><i>pat</i><tt>/s</tt>: Windows-31J
+- <tt>/</tt><i>pat</i><tt>/n</tt>: ASCII-8BIT
 
 A regexp can be matched against a string when they either share an
 encoding, or the regexp's encoding is _US-ASCII_ and the string's encoding
@@ -895,13 +904,13 @@ regexp's encoding can be explicitly fixed by supplying
 
 Pattern matching sets some global variables :
 
-* <tt>$~</tt> is equivalent to Regexp.last_match;
-* <tt>$&</tt> contains the complete matched text;
-* <tt>$`</tt> contains string before match;
-* <tt>$'</tt> contains string after match;
-* <tt>$1</tt>, <tt>$2</tt> and so on contain text matching first, second, etc
+- <tt>$~</tt> is equivalent to Regexp.last_match;
+- <tt>$&</tt> contains the complete matched text;
+- <tt>$`</tt> contains string before match;
+- <tt>$'</tt> contains string after match;
+- <tt>$1</tt>, <tt>$2</tt> and so on contain text matching first, second, etc
   capture group;
-* <tt>$+</tt> contains last capture group.
+- <tt>$+</tt> contains last capture group.
 
 Example:
 

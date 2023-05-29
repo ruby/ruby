@@ -1,4 +1,4 @@
-== \Regexps with Character Properties
+== \Regexps Based on Character Properties
 
 - <tt>/\p{Alpha}}/</tt>
 - <tt>/\p{Blank}/</tt>
