@@ -523,9 +523,16 @@ describe "Time.new with a timezone argument" do
       end
 
       it "raise TypeError is can't convert precision keyword argument into Integer" do
+        error_msg =
+          if "3.3" <= RUBY_VERSION
+            "no implicit conversion of String into Integer"
+          else
+            "no implicit conversion from string"
+          end
+
         -> {
           Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: "")
-        }.should raise_error(TypeError, "no implicit conversion from string")
+        }.should raise_error(TypeError, error_msg)
       end
 
       it "raises ArgumentError if part of time string is missing" do
