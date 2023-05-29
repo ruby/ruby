@@ -5765,10 +5765,8 @@ io_close(VALUE io)
  *
  *  Related: IO#close_read, IO#close_write, IO#close.
  */
-
-
-static VALUE
-rb_io_closed(VALUE io)
+VALUE
+rb_io_closed_p(VALUE io)
 {
     rb_io_t *fptr;
     VALUE write_io;
@@ -14490,7 +14488,7 @@ argf_closed(VALUE argf)
 {
     next_argv();
     ARGF_FORWARD(0, 0);
-    return rb_io_closed(ARGF.current_file);
+    return rb_io_closed_p(ARGF.current_file);
 }
 
 /*
@@ -15537,7 +15535,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "close_on_exec=", rb_io_set_close_on_exec, 1);
 
     rb_define_method(rb_cIO, "close", rb_io_close_m, 0);
-    rb_define_method(rb_cIO, "closed?", rb_io_closed, 0);
+    rb_define_method(rb_cIO, "closed?", rb_io_closed_p, 0);
     rb_define_method(rb_cIO, "close_read", rb_io_close_read, 0);
     rb_define_method(rb_cIO, "close_write", rb_io_close_write, 0);
 

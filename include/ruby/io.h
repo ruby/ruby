@@ -244,6 +244,13 @@ typedef struct rb_io_encoding rb_io_enc_t;
 VALUE rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding);
 
 /**
+ * Returns whether or not the underlying IO is closed.
+ *
+ * @return Whether the underlying IO is closed.
+ */
+VALUE rb_io_closed_p(VALUE io);
+
+/**
  * Queries the underlying IO pointer.
  *
  * @param[in]   obj              An IO object.
