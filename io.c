@@ -2923,8 +2923,7 @@ rb_io_path(VALUE io)
     if (!fptr)
         return Qnil;
 
-    // We expect this to be frozen:
-    return fptr->pathv;
+    return rb_obj_dup(fptr->pathv);
 }
 
 /*
