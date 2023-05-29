@@ -9181,15 +9181,41 @@ stderr_getter(ID id, VALUE *ptr)
     return rb_ractor_stderr();
 }
 
+static VALUE
+allocate_and_open_new_file(VALUE klass)
+{
+    VALUE self = io_alloc(klass);
+    rb_io_make_open_file(self);
+    return self;
+}
+
 VALUE
 rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding)
 {
-    VALUE self = io_alloc(klass);
-    struct rb_io *io = rb_io_make_open_file(self);
 
+    int state;
+    VALUE self = rb_protect(allocate_and_open_new_file, klass, &state);
+    if (state) {
+        /* if we raised an exception allocating an IO object, but the caller
+           intended to transfer ownership of this FD to us, close the fd before
+           raising the exception. Otherwise, we would leak a FD - the caller
+           expects GC to close the file, but we never got around to assigning
+           it to a rb_io. */
+        if (!(mode & FMODE_EXTERNAL)) {
+            maygvl_close(descriptor, 0);
+        }
+        rb_jump_tag(state);
+    }
+
+
+    struct rb_io *io = RFILE(self)->fptr;
     io->self = self;
     io->fd = descriptor;
     io->mode = mode;
+
+    /* At this point, Ruby fully owns the descriptor, and will close it when
+       the IO gets GC'd (unless FMODE_EXTERNAL was set), no matter what happens
+       in the rest of this method. */
 
     if (NIL_P(path)) {
         io->pathv = Qnil;
