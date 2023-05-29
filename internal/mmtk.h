@@ -122,7 +122,7 @@ void mmtk_destroy_mutator(MMTk_Mutator *mutator);
 MMTk_Address mmtk_alloc(MMTk_Mutator *mutator,
                         size_t size,
                         size_t align,
-                        ptrdiff_t offset,
+                        size_t offset,
                         MMTk_AllocationSemantics semantics);
 
 void mmtk_post_alloc(MMTk_Mutator *mutator,
