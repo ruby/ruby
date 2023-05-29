@@ -262,7 +262,7 @@ class CGIUtilPureRubyTest < Test::Unit::TestCase
       remove_method :escapeHTML
       alias _unescapeHTML unescapeHTML
       remove_method :unescapeHTML
-    end
+    end if defined?(CGI::Escape)
   end
 
   def teardown
@@ -271,7 +271,7 @@ class CGIUtilPureRubyTest < Test::Unit::TestCase
       remove_method :_escapeHTML
       alias unescapeHTML _unescapeHTML
       remove_method :_unescapeHTML
-    end
+    end if defined?(CGI::Escape)
   end
 
   def test_cgi_escapeHTML_with_invalid_byte_sequence

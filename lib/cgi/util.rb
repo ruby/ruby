@@ -90,9 +90,12 @@ module CGI::Util
     end
   end
 
-  begin
-    require 'cgi/escape'
-  rescue LoadError
+  # TruffleRuby runs the pure-Ruby variant faster, do not use the C extension there
+  unless RUBY_ENGINE == 'truffleruby'
+    begin
+      require 'cgi/escape'
+    rescue LoadError
+    end
   end
 
   # Unescape a string that has been HTML-escaped
