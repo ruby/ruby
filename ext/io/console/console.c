@@ -971,7 +971,7 @@ console_ioflush(VALUE io)
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     int fd1 = GetReadFD(io);
     int fd2 = GetWriteFD(io);
-    
+
     if (fd2 != -1 && fd1 != fd2) {
         if (tcflush(fd1, TCIFLUSH)) sys_fail(io);
         if (tcflush(fd2, TCOFLUSH)) sys_fail(io);
