@@ -76,7 +76,7 @@ struct rb_io {
      */
     struct rb_io_internal_buffer rbuf;
 
-    struct rb_io_enc_t encs; /**< Decomposed encoding flags. */
+    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
 
     /** Encoding converter used when reading from this IO. */
     rb_econv_t *readconv;

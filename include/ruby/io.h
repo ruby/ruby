@@ -91,7 +91,7 @@ typedef enum {
  * e1   NULL force_encoding(e1)               convert str.encoding to e1
  * e1   e2   convert from e2 to e1            convert str.encoding to e2
  */
-struct rb_io_enc_t {
+struct rb_io_encoding {
     /** Internal encoding. */
     rb_encoding *enc;
     /** External encoding. */
@@ -115,7 +115,7 @@ struct rb_io_enc_t {
 struct rb_io;
 typedef struct rb_io rb_io_t;
 
-typedef struct rb_io_enc_t rb_io_enc_t;
+typedef struct rb_io_encoding rb_io_enc_t;
 
 /**
  * @private
@@ -228,6 +228,11 @@ typedef struct rb_io_enc_t rb_io_enc_t;
 /* #define FMODE_INET6                 0x00800000 */
 
 /** @} */
+
+/**
+ * Allocate a new IO object, with the given file descriptor.
+ */
+VALUE rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding);
 
 /**
  * Queries the underlying IO pointer.
@@ -586,6 +591,12 @@ VALUE rb_io_set_write_io(VALUE io, VALUE w);
  * create a nonblocking file descriptor using our API.
  */
 void rb_io_set_nonblock(rb_io_t *fptr);
+
+/**
+ * Returns the path for the given IO.
+ * 
+ */
+VALUE rb_io_path(VALUE io);
 
 /**
  * Returns an integer representing the numeric file descriptor for

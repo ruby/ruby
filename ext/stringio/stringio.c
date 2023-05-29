@@ -276,7 +276,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, vmode, opt;
     int oflags;
-    struct rb_io_enc_t convconfig;
+    struct rb_io_encoding convconfig;
 
     argc = rb_scan_args(argc, argv, "02:", &string, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &ptr->flags, &convconfig);
@@ -1743,7 +1743,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
     else {
 	enc = rb_find_encoding(ext_enc);
 	if (!enc) {
-	    struct rb_io_enc_t convconfig;
+	    struct rb_io_encoding convconfig;
 	    int oflags, fmode;
 	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
 	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);

@@ -499,28 +499,21 @@ pty_open(VALUE klass)
 {
     int master_fd, slave_fd;
     char slavename[DEVICELEN];
-    VALUE master_io, slave_file;
-    rb_io_t *master_fptr, *slave_fptr;
-    VALUE assoc;
 
     getDevice(&master_fd, &slave_fd, slavename, 1);
 
-    master_io = rb_obj_alloc(rb_cIO);
-    MakeOpenFile(master_io, master_fptr);
-    master_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
-    master_fptr->fd = master_fd;
-    master_fptr->pathv = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
+    VALUE master_path = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
+    VALUE master_io = rb_io_open_descriptor(rb_cIO, master_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX, master_path, RUBY_IO_TIMEOUT_DEFAULT);
 
-    slave_file = rb_obj_alloc(rb_cFile);
-    MakeOpenFile(slave_file, slave_fptr);
-    slave_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY;
-    slave_fptr->fd = slave_fd;
-    slave_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(slavename));
+    VALUE slave_path = rb_obj_freeze(rb_sprintf("slavepty:%s", slavename));
+    VALUE slave_file = rb_io_open_descriptor(rb_cFile, slave_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY, rb_str_new_cstr(slavename), RUBY_IO_TIMEOUT_DEFAULT);
 
-    assoc = rb_assoc_new(master_io, slave_file);
+    VALUE assoc = rb_assoc_new(master_io, slave_file);
+
     if (rb_block_given_p()) {
         return rb_ensure(rb_yield, assoc, pty_close_pty, assoc);
     }
+
     return assoc;
 }
 

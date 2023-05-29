@@ -216,7 +216,7 @@ struct argf {
     long lineno;
     VALUE argv;
     VALUE inplace;
-    struct rb_io_enc_t encs;
+    struct rb_io_encoding encs;
     int8_t init_p, next_p, binmode;
 };
 
@@ -2916,7 +2916,7 @@ rb_io_pid(VALUE io)
  *    File.open("testfile") {|f| f.path} # => "testfile"
  */
 
-static VALUE
+VALUE
 rb_io_path(VALUE io)
 {
     rb_io_t *fptr = RFILE(io)->fptr;
@@ -2924,7 +2924,8 @@ rb_io_path(VALUE io)
     if (!fptr)
         return Qnil;
 
-    return rb_obj_dup(fptr->pathv);
+    // We expect this to be frozen:
+    return fptr->pathv;
 }
 
 /*
@@ -6719,7 +6720,7 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     return extracted;
 }
 
-typedef struct rb_io_enc_t convconfig_t;
+typedef struct rb_io_encoding convconfig_t;
 
 static void
 validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
@@ -9181,27 +9182,54 @@ stderr_getter(ID id, VALUE *ptr)
     return rb_ractor_stderr();
 }
 
+VALUE
+rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding)
+{
+    VALUE self = io_alloc(klass);
+    struct rb_io *io = rb_io_make_open_file(self);
+
+    io->self = self;
+    io->fd = descriptor;
+    io->mode = mode;
+
+    if (NIL_P(path)) {
+        io->pathv = Qnil;
+    }
+    else {
+        StringValue(path);
+        io->pathv = rb_str_new_frozen(path);
+    }
+
+    io->timeout = timeout;
+
+    if (encoding) {
+        io->encs = *encoding;
+    }
+
+    rb_update_max_fd(descriptor);
+
+    return self;
+}
+
 static VALUE
 prep_io(int fd, int fmode, VALUE klass, const char *path)
 {
-    rb_io_t *fp;
-    VALUE io = io_alloc(klass);
+    VALUE path_value = Qnil;
+    if (path) {
+        path_value = rb_obj_freeze(rb_str_new_cstr(path));
+    }
 
-    MakeOpenFile(io, fp);
-    fp->self = io;
-    fp->fd = fd;
-    fp->mode = fmode;
-    fp->timeout = Qnil;
-    if (!io_check_tty(fp)) {
+    VALUE self = rb_io_open_descriptor(klass, fd, fmode, path_value, Qnil, NULL);
+    struct rb_io *io = RFILE(self)->fptr;
+
+    if (!io_check_tty(io)) {
 #ifdef __CYGWIN__
-        fp->mode |= FMODE_BINMODE;
+        io->mode |= FMODE_BINMODE;
         setmode(fd, O_BINARY);
 #endif
     }
-    if (path) fp->pathv = rb_obj_freeze(rb_str_new_cstr(path));
-    rb_update_max_fd(fd);
 
-    return io;
+    return self;
 }
 
 VALUE
