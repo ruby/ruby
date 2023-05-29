@@ -49,4 +49,11 @@ describe "UnboundMethod#source_location" do
     method.source_location[0].should =~ /#{__FILE__}/
     method.source_location[1].should == line
   end
+
+  it "works for eval with a given line" do
+    c = Class.new do
+      eval('def m; end', nil, "foo", 100)
+    end
+    c.instance_method(:m).source_location.should == ["foo", 100]
+  end
 end
