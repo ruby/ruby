@@ -215,7 +215,16 @@ typedef struct rb_io_encoding rb_io_enc_t;
  * Setting this one and #FMODE_BINMODE at the same time is a contradiction.
  */
 #define FMODE_TEXTMODE              0x00001000
-/* #define FMODE_PREP               0x00010000 */
+/**
+ * This flag means that an IO object is wrapping an "external" file descriptor,
+ * which is owned by something outside the Ruby interpreter (usually a C extension).
+ * Ruby will not close this file when the IO object is garbage collected.
+ * If this flag is set, then IO#autoclose? is false, and vice-versa.
+ *
+ * This flag was previously called FMODE_PREP internally.
+ */
+#define FMODE_EXTERNAL              0x00010000
+
 /* #define FMODE_SIGNAL_ON_EPIPE    0x00020000 */
 
 /**
@@ -594,7 +603,7 @@ void rb_io_set_nonblock(rb_io_t *fptr);
 
 /**
  * Returns the path for the given IO.
- * 
+ *
  */
 VALUE rb_io_path(VALUE io);
 

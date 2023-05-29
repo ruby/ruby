@@ -520,7 +520,6 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr);
 
-#define FMODE_PREP (1<<16)
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
 
 #define fptr_signal_on_epipe(fptr) \
@@ -1458,7 +1457,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 static VALUE
 io_from_fd(int fd)
 {
-    return prep_io(fd, FMODE_PREP, rb_cIO, NULL);
+    return prep_io(fd, FMODE_EXTERNAL, rb_cIO, NULL);
 }
 
 static int
@@ -5301,7 +5300,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 #define rb_io_set_close_on_exec rb_f_notimplement
 #endif
 
-#define IS_PREP_STDIO(f) ((f)->mode & FMODE_PREP)
+#define IS_EXTERNAL_FD(f) ((f)->mode & FMODE_EXTERNAL)
 #define PREP_STDIO_NAME(f) (RSTRING_PTR((f)->pathv))
 
 static VALUE
@@ -5459,7 +5458,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
     int done = 0;
 
-    if (IS_PREP_STDIO(fptr) || fd <= 2) {
+    if (IS_EXTERNAL_FD(fptr) || fd <= 2) {
         // Need to keep FILE objects of stdin, stdout and stderr, so we are done:
         done = 1;
     }
@@ -8285,7 +8284,7 @@ io_reopen(VALUE io, VALUE nfile)
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
-    if (IS_PREP_STDIO(fptr)) {
+    if (IS_EXTERNAL_FD(fptr)) {
         if ((fptr->stdio_file == stdin && !(orig->mode & FMODE_READABLE)) ||
             (fptr->stdio_file == stdout && !(orig->mode & FMODE_WRITABLE)) ||
             (fptr->stdio_file == stderr && !(orig->mode & FMODE_WRITABLE))) {
@@ -8311,17 +8310,17 @@ io_reopen(VALUE io, VALUE nfile)
     }
 
     /* copy rb_io_t structure */
-    fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
+    fptr->mode = orig->mode | (fptr->mode & FMODE_EXTERNAL);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
-    else if (!IS_PREP_STDIO(fptr)) fptr->pathv = Qnil;
+    else if (!IS_EXTERNAL_FD(fptr)) fptr->pathv = Qnil;
     fptr_copy_finalizer(fptr, orig);
 
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
-        if (IS_PREP_STDIO(fptr) || fd <= 2 || !fptr->stdio_file) {
+        if (IS_EXTERNAL_FD(fptr) || fd <= 2 || !fptr->stdio_file) {
             /* need to keep FILE objects of stdin, stdout and stderr */
             if (rb_cloexec_dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
@@ -8429,7 +8428,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         convconfig_t convconfig;
 
         rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
-        if (IS_PREP_STDIO(fptr) &&
+        if (IS_EXTERNAL_FD(fptr) &&
             ((fptr->mode & FMODE_READWRITE) & (fmode & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
             rb_raise(rb_eArgError,
@@ -8508,7 +8507,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     rb_io_flush(io);
 
     /* copy rb_io_t structure */
-    fptr->mode = orig->mode & ~FMODE_PREP;
+    fptr->mode = orig->mode & ~FMODE_EXTERNAL;
     fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
@@ -9245,7 +9244,7 @@ static VALUE
 prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
 {
     rb_io_t *fptr;
-    VALUE io = prep_io(fileno(f), fmode|FMODE_PREP|DEFAULT_TEXTMODE, klass, path);
+    VALUE io = prep_io(fileno(f), fmode|FMODE_EXTERNAL|DEFAULT_TEXTMODE, klass, path);
 
     GetOpenFile(io, fptr);
     fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
@@ -9429,7 +9428,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     if (!NIL_P(opt)) {
         if (rb_hash_aref(opt, sym_autoclose) == Qfalse) {
-            fmode |= FMODE_PREP;
+            fmode |= FMODE_EXTERNAL;
         }
 
         path = rb_hash_aref(opt, RB_ID2SYM(idPath));
@@ -9606,7 +9605,7 @@ rb_io_autoclose_p(VALUE io)
 {
     rb_io_t *fptr = RFILE(io)->fptr;
     rb_io_check_closed(fptr);
-    return RBOOL(!(fptr->mode & FMODE_PREP));
+    return RBOOL(!(fptr->mode & FMODE_EXTERNAL));
 }
 
 /*
@@ -9632,9 +9631,9 @@ rb_io_set_autoclose(VALUE io, VALUE autoclose)
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     if (!RTEST(autoclose))
-        fptr->mode |= FMODE_PREP;
+        fptr->mode |= FMODE_EXTERNAL;
     else
-        fptr->mode &= ~FMODE_PREP;
+        fptr->mode &= ~FMODE_EXTERNAL;
     return autoclose;
 }
 
