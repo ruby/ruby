@@ -314,7 +314,8 @@ These expressions provide a portable alternative to the above,
 with the added benefit of encompassing non-ASCII characters:
 
 - <tt>/\d/</tt> matches only ASCII decimal digits +0+ through +9+.
-- <tt>/[[:digit:]]/</tt> matches any character in the Unicode _Nd_ category.
+- <tt>/[[:digit:]]/</tt> matches any character in the Unicode
+  <tt>Decimal Number</tt> (+Nd+) category;
   see below.
 
 The POSIX bracket expressions:
@@ -368,19 +369,12 @@ Ruby also supports these (non-POSIX) character classes:
 
 - <tt>/[[:ascii:]]/</tt>: Matches a character in the ASCII character set.
 - <tt>/[[:word:]]/</tt>: Matches a character in one of these Unicode character
-  categories:
+  categories (see below):
 
-  - {Spacing Mark (Mc)}[https://www.compart.com/en/unicode/category/Mc].
-  - {Enclosing Mark (Me)}[https://www.compart.com/en/unicode/category/Me].
-  - {Nonspacing Mark (Mn)}[https://www.compart.com/en/unicode/category/Mn].
-  - {Lowercase Letter (Ll)}[https://www.compart.com/en/unicode/category/Ll].
-  - {Modifier Letter (Lm)}[https://www.compart.com/en/unicode/category/Lm].
-  - {Other Letter (Lo)}[https://www.compart.com/en/unicode/category/Lo].
-  - {Titlecase Letter (Lt)}[https://www.compart.com/en/unicode/category/Lt].
-  - {Uppercase Letter (Lu)}[https://www.compart.com/en/unicode/category/Lu].
-  - {Decimal Number (Nd)}[https://www.compart.com/en/unicode/category/Nd].
-  - {Letter Number (Nl)}[https://www.compart.com/en/unicode/category/Nl].
-  - {Connector Punctuation}[https://www.compart.com/en/unicode/category/Pc].
+    - +Mark+ (+M+).
+    - +Letter+ (+L+).
+    - +Number+ (+N+)
+    - <tt>Connector Punctuation</tt> (+Pc+).
 
 == Character Properties
 
@@ -396,9 +390,9 @@ by prefixing the name with a caret character (<tt>^</tt>):
   /\p{^Ll}/.match("A") # => #<MatchData "A">
 
 See {Character Properties}[./Regexp/character_properties_rdoc.html]
-for a list of the regexps based on the many character properties.
+for regexps based on the numerous character properties.
 
-Some character properties correspond to POSIX bracket expressions:
+Some commonly-used character properties correspond to POSIX bracket expressions:
 
 - <tt>/\p{Alnum}/</tt>: Alphabetic and numeric character
 - <tt>/\p{Alpha}/</tt>: Alphabetic character
@@ -414,53 +408,85 @@ Some character properties correspond to POSIX bracket expressions:
 - <tt>/\p{Upper}/</tt>: Uppercase alphabetical
 - <tt>/\p{XDigit}/</tt>: Digit allowed in a hexadecimal number (i.e., 0-9a-fA-F)
 
-- <tt>/\p{Emoji}/</tt>: Unicode emoji
-- <tt>/\p{Graph}/</tt>: Non-blank character (excludes spaces, control
-- <tt>/\p{Word}/</tt>: A member of one of the following Unicode general
-  category <i>Letter</i>, <i>Mark</i>, <i>Number</i>,
-  <i>Connector\_Punctuation</i>
-- <tt>/\p{ASCII}/</tt>: A character in the ASCII character set
-- <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned
-  characters)
-- <tt>/\p{Assigned}/</tt>: An assigned character
+These are also commonly used:
 
-A Unicode character's <i>General Category</i> value can also be matched
-with <tt>\p{</tt><i>Ab</i><tt>}</tt> where <i>Ab</i> is the category's
-abbreviation as described below:
+- <tt>/\p{Emoji}/</tt>: Unicode emoji.
+- <tt>/\p{Graph}/</tt>: Non-blank character
+  (excludes spaces, control characters, and similar).
+- <tt>/\p{Word}/</tt>: A member of one of the following Unicode character
+  categories (see below):
 
-- <tt>/\p{L}/</tt>: 'Letter'
-- <tt>/\p{Ll}/</tt>: 'Letter: Lowercase'
-- <tt>/\p{Lm}/</tt>: 'Letter: Mark'
-- <tt>/\p{Lo}/</tt>: 'Letter: Other'
-- <tt>/\p{Lt}/</tt>: 'Letter: Titlecase'
-- <tt>/\p{Lu}/</tt>: 'Letter: Uppercase
-- <tt>/\p{Lo}/</tt>: 'Letter: Other'
-- <tt>/\p{M}/</tt>: 'Mark'
-- <tt>/\p{Mn}/</tt>: 'Mark: Nonspacing'
-- <tt>/\p{Mc}/</tt>: 'Mark: Spacing Combining'
-- <tt>/\p{Me}/</tt>: 'Mark: Enclosing'
-- <tt>/\p{N}/</tt>: 'Number'
-- <tt>/\p{Nd}/</tt>: 'Number: Decimal Digit'
-- <tt>/\p{Nl}/</tt>: 'Number: Letter'
-- <tt>/\p{No}/</tt>: 'Number: Other'
-- <tt>/\p{P}/</tt>: 'Punctuation'
-- <tt>/\p{Pc}/</tt>: 'Punctuation: Connector'
-- <tt>/\p{Pd}/</tt>: 'Punctuation: Dash'
-- <tt>/\p{Ps}/</tt>: 'Punctuation: Open'
-- <tt>/\p{Pe}/</tt>: 'Punctuation: Close'
-- <tt>/\p{Pi}/</tt>: 'Punctuation: Initial Quote'
-- <tt>/\p{Pf}/</tt>: 'Punctuation: Final Quote'
-- <tt>/\p{Po}/</tt>: 'Punctuation: Other'
+    - +Mark+ (+M+).
+    - +Letter+ (+L+).
+    - +Number+ (+N+)
+    - <tt>Connector Punctuation</tt> (+Pc+).
+
+- <tt>/\p{ASCII}/</tt>: A character in the ASCII character set.
+- <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned characters).
+- <tt>/\p{Assigned}/</tt>: An assigned character.
+
+A Unicode character category can be specified by either its full name
+or its abbrviation;
+these are equivalent:
+
+  /\p{L}/
+  /\p{Letter}/
+
+Below are the Unicode character category abbreviations and names.
+An abbreviation or name is case-insensitive;
+a name may be written with either a space or an underscore.
+
+Enumerations of characters in each category are at the links.
+
+Letters:
+
+- +L+, +Letter+: +LC+, +Lm+, or +Lo+.
+- +LC+, +Cased_Letter+: +Ll+, +Lt+, or +Lu+.
+- {Lu, Lowercase_Letter}[https://www.compart.com/en/unicode/category/Ll].
+- {Lu, Modifier_Letter}[https://www.compart.com/en/unicode/category/Lm].
+- {Lu, Other_Letter}[https://www.compart.com/en/unicode/category/Lo].
+- {Lu, Titlecase_Letter}[https://www.compart.com/en/unicode/category/Lt].
+- {Lu, Uppercase_Letter}[https://www.compart.com/en/unicode/category/Lu].
+
+Marks:
+
+- +M+, +Mark+: +Mc+, +Me+, or +Mn+.
+- {Mc, Spacing_Mark}[https://www.compart.com/en/unicode/category/Mc].
+- {Me, Enclosing_Mark}[https://www.compart.com/en/unicode/category/Me].
+- {Mn, Nonapacing_Mark}[https://www.compart.com/en/unicode/category/Mn].
+
+Numbers:
+
+- +N+, +Number+: +Nd+, +Nl+, or +No+.
+- {Nd, Decimal_Number}[https://www.compart.com/en/unicode/category/Nd].
+- {Nl, Letter_Number}[https://www.compart.com/en/unicode/category/Nl].
+- {No, Other_Number}[https://www.compart.com/en/unicode/category/No].
+
+Punctation:
+
+- +P+, +Punctuation+: +Pc+, +Pd+, +Pe+, +Pf+, +Pi+, +Po+, or +Ps+.
+- {Pc, Connector_Punctuation}[https://www.compart.com/en/unicode/category/Pc].
+- {Pd, Dash_Punctuation}[https://www.compart.com/en/unicode/category/Pd].
+- {Pe, Close_Punctuation}[https://www.compart.com/en/unicode/category/Pe].
+- {Pf, Final_Punctuation}[https://www.compart.com/en/unicode/category/Pf].
+- {Pi, Initial_Punctuation}[https://www.compart.com/en/unicode/category/Pi].
+- {Po, Open_Punctuation}[https://www.compart.com/en/unicode/category/Po].
+- {Ps, Open_Punctuation}[https://www.compart.com/en/unicode/category/Ps].
+
+
+
 - <tt>/\p{S}/</tt>: 'Symbol'
 - <tt>/\p{Sm}/</tt>: 'Symbol: Math'
 - <tt>/\p{Sc}/</tt>: 'Symbol: Currency'
 - <tt>/\p{Sc}/</tt>: 'Symbol: Currency'
 - <tt>/\p{Sk}/</tt>: 'Symbol: Modifier'
 - <tt>/\p{So}/</tt>: 'Symbol: Other'
+
 - <tt>/\p{Z}/</tt>: 'Separator'
 - <tt>/\p{Zs}/</tt>: 'Separator: Space'
 - <tt>/\p{Zl}/</tt>: 'Separator: Line'
 - <tt>/\p{Zp}/</tt>: 'Separator: Paragraph'
+
 - <tt>/\p{C}/</tt>: 'Other'
 - <tt>/\p{Cc}/</tt>: 'Other: Control'
 - <tt>/\p{Cf}/</tt>: 'Other: Format'
