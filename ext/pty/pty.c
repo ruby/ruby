@@ -448,8 +448,10 @@ pty_close_pty(VALUE assoc)
 
     for (i = 0; i < 2; i++) {
         io = rb_ary_entry(assoc, i);
-        if (RB_TYPE_P(io, T_FILE) && 0 <= RFILE(io)->fptr->fd)
+        if (RB_TYPE_P(io, T_FILE)) {
+            /* it's OK to call rb_io_close again even if it's already closed */
             rb_io_close(io);
+        }
     }
     return Qnil;
 }
@@ -503,10 +505,10 @@ pty_open(VALUE klass)
     getDevice(&master_fd, &slave_fd, slavename, 1);
 
     VALUE master_path = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
-    VALUE master_io = rb_io_open_descriptor(rb_cIO, master_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX, master_path, RUBY_IO_TIMEOUT_DEFAULT);
+    VALUE master_io = rb_io_open_descriptor(rb_cIO, master_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX, master_path, RUBY_IO_TIMEOUT_DEFAULT, NULL);
 
     VALUE slave_path = rb_obj_freeze(rb_sprintf("slavepty:%s", slavename));
-    VALUE slave_file = rb_io_open_descriptor(rb_cFile, slave_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY, rb_str_new_cstr(slavename), RUBY_IO_TIMEOUT_DEFAULT);
+    VALUE slave_file = rb_io_open_descriptor(rb_cFile, slave_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY, slave_path, RUBY_IO_TIMEOUT_DEFAULT, NULL);
 
     VALUE assoc = rb_assoc_new(master_io, slave_file);
 
@@ -570,30 +572,27 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
 {
     VALUE res;
     struct pty_info info;
-    rb_io_t *wfptr,*rfptr;
-    VALUE rport = rb_obj_alloc(rb_cFile);
-    VALUE wport = rb_obj_alloc(rb_cFile);
     char SlaveName[DEVICELEN];
-
-    MakeOpenFile(rport, rfptr);
-    MakeOpenFile(wport, wfptr);
 
     establishShell(argc, argv, &info, SlaveName);
 
-    rfptr->mode = rb_io_modestr_fmode("r");
-    rfptr->fd = info.fd;
-    rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    VALUE pty_path = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    VALUE rport = rb_io_open_descriptor(
+        rb_cFile, info.fd, FMODE_READABLE, pty_path, RUBY_IO_TIMEOUT_DEFAULT, NULL
+    );
 
-    wfptr->mode = rb_io_modestr_fmode("w") | FMODE_SYNC;
-    wfptr->fd = rb_cloexec_dup(info.fd);
-    if (wfptr->fd == -1)
+    int wpty_fd = rb_cloexec_dup(info.fd);
+    if (wpty_fd == -1) {
         rb_sys_fail("dup()");
-    rb_update_max_fd(wfptr->fd);
-    wfptr->pathv = rfptr->pathv;
+    }
+    VALUE wport = rb_io_open_descriptor(
+        rb_cFile, wpty_fd, FMODE_WRITABLE | FMODE_TRUNC | FMODE_CREATE | FMODE_SYNC,
+        pty_path, RUBY_IO_TIMEOUT_DEFAULT, NULL
+    );
 
     res = rb_ary_new2(3);
-    rb_ary_store(res,0,(VALUE)rport);
-    rb_ary_store(res,1,(VALUE)wport);
+    rb_ary_store(res, 0, rport);
+    rb_ary_store(res, 1, wport);
     rb_ary_store(res,2,PIDT2NUM(info.child_pid));
 
     if (rb_block_given_p()) {
