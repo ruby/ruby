@@ -364,8 +364,6 @@ The POSIX bracket expressions:
 
 - <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
 
-
-
 Ruby also supports the following non-POSIX character classes:
 
 - <tt>/[[:word:]]/</tt> - A character in one of the following Unicode
@@ -377,6 +375,110 @@ Ruby also supports the following non-POSIX character classes:
     /[[:digit:]]/.match("\u06F2")    #=> #<MatchData "\u{06F2}">
     /[[:upper:]][[:lower:]]/.match("Hello") #=> #<MatchData "He">
     /[[:xdigit:]][[:xdigit:]]/.match("A6")  #=> #<MatchData "A6">
+
+== Character Properties
+
+The <tt>/\p{_property_name_}/</tt> construct matches characters using a property name,
+much like a character class;
+property +Ll+ specifies lowercase characters:
+
+  /\p{Ll}/.match("a") # => #<MatchData "a">
+
+A character property can be inverted
+by prefixing the name with a caret character (<tt>^</tt>):
+
+  /\p{^Ll}/.match("A") # => #<MatchData "A">
+
+See {Character Properties}[./Regexp/character_properties_rdoc.html]
+for a list of the many property names.
+
+* <tt>/\p{Alnum}/</tt> - Alphabetic and numeric character
+* <tt>/\p{Alpha}/</tt> - Alphabetic character
+* <tt>/\p{Blank}/</tt> - Space or tab
+* <tt>/\p{Cntrl}/</tt> - Control character
+* <tt>/\p{Digit}/</tt> - Digit
+* <tt>/\p{Emoji}/</tt> - Unicode emoji
+* <tt>/\p{Graph}/</tt> - Non-blank character (excludes spaces, control
+  characters, and similar)
+* <tt>/\p{Lower}/</tt> - Lowercase alphabetical character
+* <tt>/\p{Print}/</tt> - Like <tt>\p{Graph}</tt>, but includes the space character
+* <tt>/\p{Punct}/</tt> - Punctuation character
+* <tt>/\p{Space}/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
+  carriage return, etc.)
+* <tt>/\p{Upper}/</tt> - Uppercase alphabetical
+* <tt>/\p{XDigit}/</tt> - Digit allowed in a hexadecimal number (i.e., 0-9a-fA-F)
+* <tt>/\p{Word}/</tt> - A member of one of the following Unicode general
+  category <i>Letter</i>, <i>Mark</i>, <i>Number</i>,
+  <i>Connector\_Punctuation</i>
+* <tt>/\p{ASCII}/</tt> - A character in the ASCII character set
+* <tt>/\p{Any}/</tt> - Any Unicode character (including unassigned
+  characters)
+* <tt>/\p{Assigned}/</tt> - An assigned character
+
+A Unicode character's <i>General Category</i> value can also be matched
+with <tt>\p{</tt><i>Ab</i><tt>}</tt> where <i>Ab</i> is the category's
+abbreviation as described below:
+
+* <tt>/\p{L}/</tt> - 'Letter'
+* <tt>/\p{Ll}/</tt> - 'Letter: Lowercase'
+* <tt>/\p{Lm}/</tt> - 'Letter: Mark'
+* <tt>/\p{Lo}/</tt> - 'Letter: Other'
+* <tt>/\p{Lt}/</tt> - 'Letter: Titlecase'
+* <tt>/\p{Lu}/</tt> - 'Letter: Uppercase
+* <tt>/\p{Lo}/</tt> - 'Letter: Other'
+* <tt>/\p{M}/</tt> - 'Mark'
+* <tt>/\p{Mn}/</tt> - 'Mark: Nonspacing'
+* <tt>/\p{Mc}/</tt> - 'Mark: Spacing Combining'
+* <tt>/\p{Me}/</tt> - 'Mark: Enclosing'
+* <tt>/\p{N}/</tt> - 'Number'
+* <tt>/\p{Nd}/</tt> - 'Number: Decimal Digit'
+* <tt>/\p{Nl}/</tt> - 'Number: Letter'
+* <tt>/\p{No}/</tt> - 'Number: Other'
+* <tt>/\p{P}/</tt> - 'Punctuation'
+* <tt>/\p{Pc}/</tt> - 'Punctuation: Connector'
+* <tt>/\p{Pd}/</tt> - 'Punctuation: Dash'
+* <tt>/\p{Ps}/</tt> - 'Punctuation: Open'
+* <tt>/\p{Pe}/</tt> - 'Punctuation: Close'
+* <tt>/\p{Pi}/</tt> - 'Punctuation: Initial Quote'
+* <tt>/\p{Pf}/</tt> - 'Punctuation: Final Quote'
+* <tt>/\p{Po}/</tt> - 'Punctuation: Other'
+* <tt>/\p{S}/</tt> - 'Symbol'
+* <tt>/\p{Sm}/</tt> - 'Symbol: Math'
+* <tt>/\p{Sc}/</tt> - 'Symbol: Currency'
+* <tt>/\p{Sc}/</tt> - 'Symbol: Currency'
+* <tt>/\p{Sk}/</tt> - 'Symbol: Modifier'
+* <tt>/\p{So}/</tt> - 'Symbol: Other'
+* <tt>/\p{Z}/</tt> - 'Separator'
+* <tt>/\p{Zs}/</tt> - 'Separator: Space'
+* <tt>/\p{Zl}/</tt> - 'Separator: Line'
+* <tt>/\p{Zp}/</tt> - 'Separator: Paragraph'
+* <tt>/\p{C}/</tt> - 'Other'
+* <tt>/\p{Cc}/</tt> - 'Other: Control'
+* <tt>/\p{Cf}/</tt> - 'Other: Format'
+* <tt>/\p{Cn}/</tt> - 'Other: Not Assigned'
+* <tt>/\p{Co}/</tt> - 'Other: Private Use'
+* <tt>/\p{Cs}/</tt> - 'Other: Surrogate'
+
+Lastly, <tt>\p{}</tt> matches a character's Unicode <i>script</i>. The
+following scripts are supported: <i>Arabic</i>, <i>Armenian</i>,
+<i>Balinese</i>, <i>Bengali</i>, <i>Bopomofo</i>, <i>Braille</i>,
+<i>Buginese</i>, <i>Buhid</i>, <i>Canadian_Aboriginal</i>, <i>Carian</i>,
+<i>Cham</i>, <i>Cherokee</i>, <i>Common</i>, <i>Coptic</i>,
+<i>Cuneiform</i>, <i>Cypriot</i>, <i>Cyrillic</i>, <i>Deseret</i>,
+<i>Devanagari</i>, <i>Ethiopic</i>, <i>Georgian</i>, <i>Glagolitic</i>,
+<i>Gothic</i>, <i>Greek</i>, <i>Gujarati</i>, <i>Gurmukhi</i>, <i>Han</i>,
+<i>Hangul</i>, <i>Hanunoo</i>, <i>Hebrew</i>, <i>Hiragana</i>,
+<i>Inherited</i>, <i>Kannada</i>, <i>Katakana</i>, <i>Kayah_Li</i>,
+<i>Kharoshthi</i>, <i>Khmer</i>, <i>Lao</i>, <i>Latin</i>, <i>Lepcha</i>,
+<i>Limbu</i>, <i>Linear_B</i>, <i>Lycian</i>, <i>Lydian</i>,
+<i>Malayalam</i>, <i>Mongolian</i>, <i>Myanmar</i>, <i>New_Tai_Lue</i>,
+<i>Nko</i>, <i>Ogham</i>, <i>Ol_Chiki</i>, <i>Old_Italic</i>,
+<i>Old_Persian</i>, <i>Oriya</i>, <i>Osmanya</i>, <i>Phags_Pa</i>,
+<i>Phoenician</i>, <i>Rejang</i>, <i>Runic</i>, <i>Saurashtra</i>,
+<i>Shavian</i>, <i>Sinhala</i>, <i>Sundanese</i>, <i>Syloti_Nagri</i>,
+<i>Syriac</i>, <i>Tagalog</i>, <i>Tagbanwa</i>, <i>Tai_Le</i>,
+<i>Tamil</i>, <i>Telugu</i>, <i>Thaana</i>, <i>Thai</i>, <i>Tibetan</i>,
+<i>Tifinagh</i>, <i>Ugaritic</i>, <i>Vai</i>, and <i>Yi</i>.
 
 == Repetition
 
@@ -611,112 +713,6 @@ In the case _no_ part is empty, also <tt>|</tt> can be omitted.
 
 The _cond_ may be a backreference number or a captured name.  A backreference
 number is an absolute position, but can not be a relative position.
-
-== Character Properties
-
-The <tt>\p{}</tt> construct matches characters with the named property,
-much like POSIX bracket classes.
-
-* <tt>/\p{Alnum}/</tt> - Alphabetic and numeric character
-* <tt>/\p{Alpha}/</tt> - Alphabetic character
-* <tt>/\p{Blank}/</tt> - Space or tab
-* <tt>/\p{Cntrl}/</tt> - Control character
-* <tt>/\p{Digit}/</tt> - Digit
-* <tt>/\p{Emoji}/</tt> - Unicode emoji
-* <tt>/\p{Graph}/</tt> - Non-blank character (excludes spaces, control
-  characters, and similar)
-* <tt>/\p{Lower}/</tt> - Lowercase alphabetical character
-* <tt>/\p{Print}/</tt> - Like <tt>\p{Graph}</tt>, but includes the space character
-* <tt>/\p{Punct}/</tt> - Punctuation character
-* <tt>/\p{Space}/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
-  carriage return, etc.)
-* <tt>/\p{Upper}/</tt> - Uppercase alphabetical
-* <tt>/\p{XDigit}/</tt> - Digit allowed in a hexadecimal number (i.e., 0-9a-fA-F)
-* <tt>/\p{Word}/</tt> - A member of one of the following Unicode general
-  category <i>Letter</i>, <i>Mark</i>, <i>Number</i>,
-  <i>Connector\_Punctuation</i>
-* <tt>/\p{ASCII}/</tt> - A character in the ASCII character set
-* <tt>/\p{Any}/</tt> - Any Unicode character (including unassigned
-  characters)
-* <tt>/\p{Assigned}/</tt> - An assigned character
-
-A Unicode character's <i>General Category</i> value can also be matched
-with <tt>\p{</tt><i>Ab</i><tt>}</tt> where <i>Ab</i> is the category's
-abbreviation as described below:
-
-* <tt>/\p{L}/</tt> - 'Letter'
-* <tt>/\p{Ll}/</tt> - 'Letter: Lowercase'
-* <tt>/\p{Lm}/</tt> - 'Letter: Mark'
-* <tt>/\p{Lo}/</tt> - 'Letter: Other'
-* <tt>/\p{Lt}/</tt> - 'Letter: Titlecase'
-* <tt>/\p{Lu}/</tt> - 'Letter: Uppercase
-* <tt>/\p{Lo}/</tt> - 'Letter: Other'
-* <tt>/\p{M}/</tt> - 'Mark'
-* <tt>/\p{Mn}/</tt> - 'Mark: Nonspacing'
-* <tt>/\p{Mc}/</tt> - 'Mark: Spacing Combining'
-* <tt>/\p{Me}/</tt> - 'Mark: Enclosing'
-* <tt>/\p{N}/</tt> - 'Number'
-* <tt>/\p{Nd}/</tt> - 'Number: Decimal Digit'
-* <tt>/\p{Nl}/</tt> - 'Number: Letter'
-* <tt>/\p{No}/</tt> - 'Number: Other'
-* <tt>/\p{P}/</tt> - 'Punctuation'
-* <tt>/\p{Pc}/</tt> - 'Punctuation: Connector'
-* <tt>/\p{Pd}/</tt> - 'Punctuation: Dash'
-* <tt>/\p{Ps}/</tt> - 'Punctuation: Open'
-* <tt>/\p{Pe}/</tt> - 'Punctuation: Close'
-* <tt>/\p{Pi}/</tt> - 'Punctuation: Initial Quote'
-* <tt>/\p{Pf}/</tt> - 'Punctuation: Final Quote'
-* <tt>/\p{Po}/</tt> - 'Punctuation: Other'
-* <tt>/\p{S}/</tt> - 'Symbol'
-* <tt>/\p{Sm}/</tt> - 'Symbol: Math'
-* <tt>/\p{Sc}/</tt> - 'Symbol: Currency'
-* <tt>/\p{Sc}/</tt> - 'Symbol: Currency'
-* <tt>/\p{Sk}/</tt> - 'Symbol: Modifier'
-* <tt>/\p{So}/</tt> - 'Symbol: Other'
-* <tt>/\p{Z}/</tt> - 'Separator'
-* <tt>/\p{Zs}/</tt> - 'Separator: Space'
-* <tt>/\p{Zl}/</tt> - 'Separator: Line'
-* <tt>/\p{Zp}/</tt> - 'Separator: Paragraph'
-* <tt>/\p{C}/</tt> - 'Other'
-* <tt>/\p{Cc}/</tt> - 'Other: Control'
-* <tt>/\p{Cf}/</tt> - 'Other: Format'
-* <tt>/\p{Cn}/</tt> - 'Other: Not Assigned'
-* <tt>/\p{Co}/</tt> - 'Other: Private Use'
-* <tt>/\p{Cs}/</tt> - 'Other: Surrogate'
-
-Lastly, <tt>\p{}</tt> matches a character's Unicode <i>script</i>. The
-following scripts are supported: <i>Arabic</i>, <i>Armenian</i>,
-<i>Balinese</i>, <i>Bengali</i>, <i>Bopomofo</i>, <i>Braille</i>,
-<i>Buginese</i>, <i>Buhid</i>, <i>Canadian_Aboriginal</i>, <i>Carian</i>,
-<i>Cham</i>, <i>Cherokee</i>, <i>Common</i>, <i>Coptic</i>,
-<i>Cuneiform</i>, <i>Cypriot</i>, <i>Cyrillic</i>, <i>Deseret</i>,
-<i>Devanagari</i>, <i>Ethiopic</i>, <i>Georgian</i>, <i>Glagolitic</i>,
-<i>Gothic</i>, <i>Greek</i>, <i>Gujarati</i>, <i>Gurmukhi</i>, <i>Han</i>,
-<i>Hangul</i>, <i>Hanunoo</i>, <i>Hebrew</i>, <i>Hiragana</i>,
-<i>Inherited</i>, <i>Kannada</i>, <i>Katakana</i>, <i>Kayah_Li</i>,
-<i>Kharoshthi</i>, <i>Khmer</i>, <i>Lao</i>, <i>Latin</i>, <i>Lepcha</i>,
-<i>Limbu</i>, <i>Linear_B</i>, <i>Lycian</i>, <i>Lydian</i>,
-<i>Malayalam</i>, <i>Mongolian</i>, <i>Myanmar</i>, <i>New_Tai_Lue</i>,
-<i>Nko</i>, <i>Ogham</i>, <i>Ol_Chiki</i>, <i>Old_Italic</i>,
-<i>Old_Persian</i>, <i>Oriya</i>, <i>Osmanya</i>, <i>Phags_Pa</i>,
-<i>Phoenician</i>, <i>Rejang</i>, <i>Runic</i>, <i>Saurashtra</i>,
-<i>Shavian</i>, <i>Sinhala</i>, <i>Sundanese</i>, <i>Syloti_Nagri</i>,
-<i>Syriac</i>, <i>Tagalog</i>, <i>Tagbanwa</i>, <i>Tai_Le</i>,
-<i>Tamil</i>, <i>Telugu</i>, <i>Thaana</i>, <i>Thai</i>, <i>Tibetan</i>,
-<i>Tifinagh</i>, <i>Ugaritic</i>, <i>Vai</i>, and <i>Yi</i>.
-
-Unicode codepoint U+06E9 is named "ARABIC PLACE OF SAJDAH" and belongs to the
-Arabic script:
-
-    /\p{Arabic}/.match("\u06E9") #=> #<MatchData "\u06E9">
-
-All character properties can be inverted by prefixing their name with a
-caret (<tt>^</tt>).
-
-Letter 'A' is not in the Unicode Ll (Letter; Lowercase) category, so this
-match succeeds:
-
-    /\p{^Ll}/.match("A") #=> #<MatchData "A">
 
 == Anchors
 
