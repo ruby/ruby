@@ -2,6 +2,11 @@
 require 'mkmf'
 target = "io/nonblock"
 
+unless RUBY_ENGINE == 'ruby'
+  File.write("Makefile", dummy_makefile($srcdir).join(""))
+  return
+end
+
 have_func("rb_io_descriptor")
 
 hdr = %w"fcntl.h"
