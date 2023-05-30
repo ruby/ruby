@@ -473,47 +473,27 @@ Punctation:
 - {Po, Open_Punctuation}[https://www.compart.com/en/unicode/category/Po].
 - {Ps, Open_Punctuation}[https://www.compart.com/en/unicode/category/Ps].
 
+- +S+, +Symbol+: +Sc+, +Sk+, +Sm+, or +So+.
+- {Sc, Currency_Symbol}[https://www.compart.com/en/unicode/category/Sc].
+- {Sk, Modifier_Symbol}[https://www.compart.com/en/unicode/category/Sk].
+- {Sm, Math_Symbol}[https://www.compart.com/en/unicode/category/Sm].
+- {So, Other_Symbol}[https://www.compart.com/en/unicode/category/So].
 
+- +Z+, +Separator+: +Zl+, +Zp+, or +Zs+.
+- {Zl, Line_Separator}[https://www.compart.com/en/unicode/category/Zl].
+- {Zp, Paragraph_Separator}[https://www.compart.com/en/unicode/category/Zp].
+- {Zs, Space_Separator}[https://www.compart.com/en/unicode/category/Zs].
 
-- <tt>/\p{S}/</tt>: 'Symbol'
-- <tt>/\p{Sm}/</tt>: 'Symbol: Math'
-- <tt>/\p{Sc}/</tt>: 'Symbol: Currency'
-- <tt>/\p{Sc}/</tt>: 'Symbol: Currency'
-- <tt>/\p{Sk}/</tt>: 'Symbol: Modifier'
-- <tt>/\p{So}/</tt>: 'Symbol: Other'
+- +C+, +Other+: +Cc+, +Cf+, +Cn+, +Co+, or +Cs+.
+- {Cc, Control}[https://www.compart.com/en/unicode/category/Cc].
+- {Cf, Format}[https://www.compart.com/en/unicode/category/Cf].
+- {Cn, Unassigned}[https://www.compart.com/en/unicode/category/Cn].
+- {Co, Private_Use}[https://www.compart.com/en/unicode/category/Co].
+- {Cs, Surrogate}[https://www.compart.com/en/unicode/category/Cs].
 
-- <tt>/\p{Z}/</tt>: 'Separator'
-- <tt>/\p{Zs}/</tt>: 'Separator: Space'
-- <tt>/\p{Zl}/</tt>: 'Separator: Line'
-- <tt>/\p{Zp}/</tt>: 'Separator: Paragraph'
-
-- <tt>/\p{C}/</tt>: 'Other'
-- <tt>/\p{Cc}/</tt>: 'Other: Control'
-- <tt>/\p{Cf}/</tt>: 'Other: Format'
-- <tt>/\p{Cn}/</tt>: 'Other: Not Assigned'
-- <tt>/\p{Co}/</tt>: 'Other: Private Use'
-- <tt>/\p{Cs}/</tt>: 'Other: Surrogate'
-
-Lastly, <tt>\p{}</tt> matches a character's Unicode <i>script</i>. The
-following scripts are supported: <i>Arabic</i>, <i>Armenian</i>,
-<i>Balinese</i>, <i>Bengali</i>, <i>Bopomofo</i>, <i>Braille</i>,
-<i>Buginese</i>, <i>Buhid</i>, <i>Canadian_Aboriginal</i>, <i>Carian</i>,
-<i>Cham</i>, <i>Cherokee</i>, <i>Common</i>, <i>Coptic</i>,
-<i>Cuneiform</i>, <i>Cypriot</i>, <i>Cyrillic</i>, <i>Deseret</i>,
-<i>Devanagari</i>, <i>Ethiopic</i>, <i>Georgian</i>, <i>Glagolitic</i>,
-<i>Gothic</i>, <i>Greek</i>, <i>Gujarati</i>, <i>Gurmukhi</i>, <i>Han</i>,
-<i>Hangul</i>, <i>Hanunoo</i>, <i>Hebrew</i>, <i>Hiragana</i>,
-<i>Inherited</i>, <i>Kannada</i>, <i>Katakana</i>, <i>Kayah_Li</i>,
-<i>Kharoshthi</i>, <i>Khmer</i>, <i>Lao</i>, <i>Latin</i>, <i>Lepcha</i>,
-<i>Limbu</i>, <i>Linear_B</i>, <i>Lycian</i>, <i>Lydian</i>,
-<i>Malayalam</i>, <i>Mongolian</i>, <i>Myanmar</i>, <i>New_Tai_Lue</i>,
-<i>Nko</i>, <i>Ogham</i>, <i>Ol_Chiki</i>, <i>Old_Italic</i>,
-<i>Old_Persian</i>, <i>Oriya</i>, <i>Osmanya</i>, <i>Phags_Pa</i>,
-<i>Phoenician</i>, <i>Rejang</i>, <i>Runic</i>, <i>Saurashtra</i>,
-<i>Shavian</i>, <i>Sinhala</i>, <i>Sundanese</i>, <i>Syloti_Nagri</i>,
-<i>Syriac</i>, <i>Tagalog</i>, <i>Tagbanwa</i>, <i>Tai_Le</i>,
-<i>Tamil</i>, <i>Telugu</i>, <i>Thaana</i>, <i>Thai</i>, <i>Tibetan</i>,
-<i>Tifinagh</i>, <i>Ugaritic</i>, <i>Vai</i>, and <i>Yi</i>.
+Among the character properties are
+{Unicode scripts}[https://en.wikipedia.org/wiki/Script_(Unicode)].
+See {Supported Scripts}[https://www.unicode.org/standard/supported.html].
 
 == Repetition
 
