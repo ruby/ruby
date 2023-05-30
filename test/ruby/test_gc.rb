@@ -253,19 +253,20 @@ class TestGc < Test::Unit::TestCase
     return unless use_rgengc?
     omit 'stress' if GC.stress
 
-    3.times { GC.start }
-    assert_nil GC.latest_gc_info(:need_major_by)
+    assert_separately([], <<~RUBY)
+      GC.start
 
-    # allocate objects until need_major_by is set or major GC happens
-    major_count = GC.stat(:major_gc_count)
-    objects = []
-    while GC.stat(:major_gc_count) == major_count && GC.latest_gc_info(:need_major_by).nil?
-      objects.append(100.times.map { '*' })
-    end
+      assert_nil GC.latest_gc_info(:need_major_by)
 
-    assert_not_nil GC.latest_gc_info(:need_major_by)
-    GC.start(full_mark: false) # should be upgraded to major
-    assert_not_nil GC.latest_gc_info(:major_by)
+      objects = []
+      while GC.latest_gc_info(:need_major_by).nil?
+        objects << Object.new
+      end
+
+      assert_not_nil GC.latest_gc_info(:need_major_by)
+      GC.start(full_mark: false) # should be upgraded to major
+      assert_not_nil GC.latest_gc_info(:major_by)
+    RUBY
   end
 
   def test_stress_compile_send
