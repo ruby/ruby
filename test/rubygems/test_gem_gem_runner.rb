@@ -4,9 +4,6 @@ require_relative "helper"
 
 class TestGemGemRunner < Gem::TestCase
   def setup
-    @orig_gem_home = ENV["GEM_HOME"]
-    ENV["GEM_HOME"] = @gemhome
-
     require "rubygems/command"
     @orig_args = Gem::Command.build_args
     @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
@@ -24,8 +21,6 @@ class TestGemGemRunner < Gem::TestCase
     Gem::Command.build_args = @orig_args
     Gem::Command.specific_extra_args_hash = @orig_specific_extra_args
     Gem::Command.extra_args = @orig_extra_args
-
-    ENV["GEM_HOME"] = @orig_gem_home
   end
 
   def test_do_configuration

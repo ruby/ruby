@@ -90,7 +90,7 @@ module Bundler
 
         Gem::Specification.reset # invalidate gem specification cache so that installed gems are immediately available
 
-        lock unless Bundler.frozen_bundle?
+        lock
         Standalone.new(options[:standalone], @definition).generate if options[:standalone]
       end
     end
