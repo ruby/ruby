@@ -84,29 +84,6 @@ typedef enum {
     RUBY_IO_PRIORITY = RB_WAITFD_PRI, /**< `IO::PRIORITY` */
 } rb_io_event_t;
 
-/**
- * IO  buffers.   This  is  an implementation  detail  of  ::rb_io_t::wbuf  and
- * ::rb_io_t::rbuf.  People don't manipulate it directly.
- */
-RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
-struct rb_io_buffer_t {
-
-    /** Pointer to the underlying memory region, of at least `capa` bytes. */
-    char *ptr;                  /* off + len <= capa */
-
-    /** Offset inside of `ptr`. */
-    int off;
-
-    /** Length of the buffer. */
-    int len;
-
-    /** Designed capacity of the buffer. */
-    int capa;
-} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
-
-/** @alias{rb_io_buffer_t} */
-typedef struct rb_io_buffer_t rb_io_buffer_t;
-
 /** Decomposed encoding flags (e.g. `"enc:enc2""`). */
 /*
  * enc  enc2 read action                      write action
@@ -114,7 +91,7 @@ typedef struct rb_io_buffer_t rb_io_buffer_t;
  * e1   NULL force_encoding(e1)               convert str.encoding to e1
  * e1   e2   convert from e2 to e1            convert str.encoding to e2
  */
-struct rb_io_enc_t {
+struct rb_io_encoding {
     /** Internal encoding. */
     rb_encoding *enc;
     /** External encoding. */
@@ -135,103 +112,10 @@ struct rb_io_enc_t {
     VALUE ecopts;
 };
 
-/** Ruby's IO, metadata and buffers. */
-typedef struct rb_io_t {
+struct rb_io;
+typedef struct rb_io rb_io_t;
 
-    /** The IO's Ruby level counterpart. */
-    VALUE self;
-
-    /** stdio ptr for read/write, if available. */
-    FILE *stdio_file;
-
-    /** file descriptor. */
-    int fd;
-
-    /** mode flags: FMODE_XXXs */
-    int mode;
-
-    /** child's pid (for pipes) */
-    rb_pid_t pid;
-
-    /** number of lines read */
-    int lineno;
-
-    /** pathname for file */
-    VALUE pathv;
-
-    /** finalize proc */
-    void (*finalize)(struct rb_io_t*,int);
-
-    /** Write buffer. */
-    rb_io_buffer_t wbuf;
-
-    /**
-     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
-     * ::rb_io_t::cbuf, which also concerns read IO.
-     */
-    rb_io_buffer_t rbuf;
-
-    /**
-     * Duplex IO object, if set.
-     *
-     * @see rb_io_set_write_io()
-     */
-    VALUE tied_io_for_writing;
-
-    struct rb_io_enc_t encs; /**< Decomposed encoding flags. */
-
-    /** Encoding converter used when reading from this IO. */
-    rb_econv_t *readconv;
-
-    /**
-     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
-     * ::rb_io_t::rbuf
-     */
-    rb_io_buffer_t cbuf;
-
-    /** Encoding converter used when writing to this IO. */
-    rb_econv_t *writeconv;
-
-    /**
-     * This is, when set, an instance  of ::rb_cString which holds the "common"
-     * encoding.   Write  conversion  can  convert strings  twice...   In  case
-     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
-     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
-     */
-    VALUE writeconv_asciicompat;
-
-    /** Whether ::rb_io_t::writeconv is already set up. */
-    int writeconv_initialized;
-
-    /**
-     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
-     * initialising ::rb_io_t::writeconv.
-     */
-    int writeconv_pre_ecflags;
-
-    /**
-     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
-     * ::rb_io_t::writeconv.
-     */
-    VALUE writeconv_pre_ecopts;
-
-    /**
-     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
-     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
-     * next to its arguments.
-     *
-     * This of course doesn't help inter-process IO interleaves, though.
-     */
-    VALUE write_lock;
-
-    /**
-     * The timeout associated with this IO when performing blocking operations.
-     */
-    VALUE timeout;
-} rb_io_t;
-
-/** @alias{rb_io_enc_t} */
-typedef struct rb_io_enc_t rb_io_enc_t;
+typedef struct rb_io_encoding rb_io_enc_t;
 
 /**
  * @private
@@ -331,7 +215,16 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * Setting this one and #FMODE_BINMODE at the same time is a contradiction.
  */
 #define FMODE_TEXTMODE              0x00001000
-/* #define FMODE_PREP               0x00010000 */
+/**
+ * This flag means that an IO object is wrapping an "external" file descriptor,
+ * which is owned by something outside the Ruby interpreter (usually a C extension).
+ * Ruby will not close this file when the IO object is garbage collected.
+ * If this flag is set, then IO#autoclose? is false, and vice-versa.
+ *
+ * This flag was previously called FMODE_PREP internally.
+ */
+#define FMODE_EXTERNAL              0x00010000
+
 /* #define FMODE_SIGNAL_ON_EPIPE    0x00020000 */
 
 /**
@@ -344,6 +237,18 @@ typedef struct rb_io_enc_t rb_io_enc_t;
 /* #define FMODE_INET6                 0x00800000 */
 
 /** @} */
+
+/**
+ * Allocate a new IO object, with the given file descriptor.
+ */
+VALUE rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding);
+
+/**
+ * Returns whether or not the underlying IO is closed.
+ *
+ * @return Whether the underlying IO is closed.
+ */
+VALUE rb_io_closed_p(VALUE io);
 
 /**
  * Queries the underlying IO pointer.
@@ -704,6 +609,12 @@ VALUE rb_io_set_write_io(VALUE io, VALUE w);
 void rb_io_set_nonblock(rb_io_t *fptr);
 
 /**
+ * Returns the path for the given IO.
+ *
+ */
+VALUE rb_io_path(VALUE io);
+
+/**
  * Returns an integer representing the numeric file descriptor for
  * <em>io</em>.
  *
@@ -711,6 +622,12 @@ void rb_io_set_nonblock(rb_io_t *fptr);
  * @retval      int        A file descriptor.
  */
 int rb_io_descriptor(VALUE io);
+
+/**
+ * Get the mode of the IO.
+ *
+ */
+int rb_io_mode(VALUE io);
 
 /**
  * This function  breaks down the  option hash that `IO#initialize`  takes into
