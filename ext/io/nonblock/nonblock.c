@@ -19,12 +19,13 @@
 
 #ifndef HAVE_RB_IO_DESCRIPTOR
 static int
-rb_io_descriptor(VALUE io)
+io_descriptor_fallback(VALUE io)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     return fptr->fd;
 }
+#define rb_io_descriptor io_descriptor_fallback
 #endif
 
 #ifdef F_GETFL
