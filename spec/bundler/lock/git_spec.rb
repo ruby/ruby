@@ -28,7 +28,7 @@ RSpec.describe "bundle lock with git gems" do
       gem 'foo', :git => "#{lib_path("foo-1.0")}", :branch => "bad"
     G
 
-    bundle "lock --update foo", :raise_on_error => false
+    bundle "lock --update foo", :env => { "LANG" => "en" }, :raise_on_error => false
 
     expect(err).to include("Revision bad does not exist in the repository")
   end

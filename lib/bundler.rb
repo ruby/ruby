@@ -210,9 +210,10 @@ module Bundler
     end
 
     def frozen_bundle?
-      frozen = settings[:deployment]
-      frozen ||= settings[:frozen]
-      frozen
+      frozen = settings[:frozen]
+      return frozen unless frozen.nil?
+
+      settings[:deployment]
     end
 
     def locked_gems
