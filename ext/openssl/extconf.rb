@@ -18,6 +18,12 @@ dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
+# Append flags from environment variables.
+extcflags = ENV["RUBY_OPENSSL_EXTCFLAGS"]
+append_cflags(extcflags.split) if extcflags
+extldflags = ENV["RUBY_OPENSSL_EXTLDFLAGS"]
+append_ldflags(extldflags.split) if extldflags
+
 ##
 # Adds -DOSSL_DEBUG for compilation and some more targets when GCC is used
 # To turn it on, use: --with-debug or --enable-debug
