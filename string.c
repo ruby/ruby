@@ -3057,13 +3057,9 @@ str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
 
     if (STR_EMBED_P(str)) {
         capa = str_embed_capa(str) - termlen;
-        sptr = RSTRING(str)->as.embed.ary;
-        olen = RSTRING_EMBED_LEN(str);
     }
     else {
         capa = RSTRING(str)->as.heap.aux.capa;
-        sptr = RSTRING(str)->as.heap.ptr;
-        olen = RSTRING(str)->as.heap.len;
     }
     if (olen > LONG_MAX - len) {
         rb_raise(rb_eArgError, "string sizes too big");
