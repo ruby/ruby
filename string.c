@@ -3046,7 +3046,7 @@ str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
     }
     if (len == 0) return 0;
 
-    long capa, total, olen, off = -1;
+    long total, olen, off = -1;
     char *sptr;
     const int termlen = TERM_LEN(str);
 
@@ -3055,12 +3055,8 @@ str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
         off = ptr - sptr;
     }
 
-    if (STR_EMBED_P(str)) {
-        capa = str_embed_capa(str) - termlen;
-    }
-    else {
-        capa = RSTRING(str)->as.heap.aux.capa;
-    }
+    long capa = str_capacity(str, termlen);
+
     if (olen > LONG_MAX - len) {
         rb_raise(rb_eArgError, "string sizes too big");
     }
