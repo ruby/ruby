@@ -691,6 +691,7 @@ class TestProcess < Test::Unit::TestCase
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_print
+    omit "[Bug #19700]" if /darwin/ =~ RUBY_PLATFORM
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
