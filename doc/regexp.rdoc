@@ -497,23 +497,58 @@ See {Supported Scripts}[https://www.unicode.org/standard/supported.html].
 
 == Repetition
 
-The constructs described so far match a single character. They can be
-followed by a repetition metacharacter to specify how many times they need
-to occur. Such metacharacters are called <i>quantifiers</i>.
+A simple regexp matches one character:
 
-- <tt>*</tt>: Zero or more times
-- <tt>+</tt>: One or more times
-- <tt>?</tt>: Zero or one times (optional)
-- <tt>{</tt><i>n</i><tt>}</tt>: Exactly <i>n</i> times
-- <tt>{</tt><i>n</i><tt>,}</tt>: <i>n</i> or more times
-- <tt>{,</tt><i>m</i><tt>}</tt>: <i>m</i> or less times
-- <tt>{</tt><i>n</i><tt>,</tt><i>m</i><tt>}</tt>: At least <i>n</i> and
-  at most <i>m</i> times
+  /\w/.match('Hello')  # => #<MatchData "H">
 
-At least one uppercase character ('H'), at least one lowercase character
-('e'), two 'l' characters, then one 'o':
+An added _quantifier_ specifies how many matches are required or allowed:
 
-    "Hello".match(/[[:upper:]]+[[:lower:]]+l{2}o/) #=> #<MatchData "Hello">
+- <tt>*</tt> - Matches zero or more times:
+
+    /\w*/.match('')
+    # => #<MatchData "">
+    /\w*/.match('x')
+    # => #<MatchData "x">
+    /\w*/.match('xyz')
+    # => #<MatchData "yz">
+
+- <tt>+</tt> - Matches one or more times:
+
+    /\w+/.match('')    # => nil
+    /\w+/.match('x')   # => #<MatchData "x">
+    /\w+/.match('xyz') # => #<MatchData "xyz">
+
+- <tt>?</tt> - Matches zero or one times:
+
+    /\w?/.match('')    # => #<MatchData "">
+    /\w?/.match('x')   # => #<MatchData "x">
+    /\w?/.match('xyz') # => #<MatchData "x">
+
+- <tt>{</tt><i>n</i><tt>}</tt> - Matches exactly <i>n</i> times:
+
+    /\w{2}/.match('')    # => nil
+    /\w{2}/.match('x')   # => nil
+    /\w{2}/.match('xyz') # => #<MatchData "xy">
+
+- <tt>{</tt><i>min</i><tt>,}</tt> - Matches <i>min</i> or more times:
+
+    /\w{2,}/.match('')    # => nil
+    /\w{2,}/.match('x')   # => nil
+    /\w{2,}/.match('xy')  # => #<MatchData "xy">
+    /\w{2,}/.match('xyz') # => #<MatchData "xyz">
+
+- <tt>{,</tt><i>max</i><tt>}</tt> - Matches <i>max</i> or fewer times:
+
+    /\w{,2}/.match('')    # => #<MatchData "">
+    /\w{,2}/.match('x')   # => #<MatchData "x">
+    /\w{,2}/.match('xyz') # => #<MatchData "xy">
+
+- <tt>{</tt><i>min</i><tt>,</tt><i>max</i><tt>}</tt> -
+  Matches at least <i>min</i> times and at most <i>max</i> times:
+
+    /\w{1,2}/.match('')    # => nil
+    /\w{1,2}/.match('x')   # => #<MatchData "x">
+    /\w{1,2}/.match('xyz') # => #<MatchData "xy">
 
 === Greedy Match
 
