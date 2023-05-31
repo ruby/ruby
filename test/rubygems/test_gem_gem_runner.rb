@@ -11,11 +11,16 @@ class TestGemGemRunner < Gem::TestCase
 
     super
 
+    @orig_gem_home = ENV["GEM_HOME"]
+    ENV["GEM_HOME"] = @gemhome
+
     require "rubygems/gem_runner"
     @runner = Gem::GemRunner.new
   end
 
   def teardown
+    ENV["GEM_HOME"] = @orig_gem_home
+
     super
 
     Gem::Command.build_args = @orig_args
