@@ -500,11 +500,14 @@ Punctation:
 - {Co, Private_Use}[https://www.compart.com/en/unicode/category/Co].
 - {Cs, Surrogate}[https://www.compart.com/en/unicode/category/Cs].
 
-=== Unicode Scripts
+=== Unicode Scripts and Blocks
 
-Among the Unicode properties are
-{Unicode scripts}[https://en.wikipedia.org/wiki/Script_(Unicode)].
-See {Supported Scripts}[https://www.unicode.org/standard/supported.html].
+Among the Unicode properties are:
+
+- {Unicode scripts}[https://en.wikipedia.org/wiki/Script_(Unicode)].
+See {supported scripts}[https://www.unicode.org/standard/supported.html].
+- {Unicode blocks}[https://en.wikipedia.org/wiki/Unicode_block].
+See {supported blocks}[http://www.unicode.org/Public/UNIDATA/Blocks.txt].
 
 == Repetition
 
@@ -995,24 +998,24 @@ performance.
 Consider a string of 25 <i>a</i>s, a <i>d</i>, 4 <i>a</i>s, and a
 <i>c</i>.
 
-    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-    #=> "aaaaaaaaaaaaaaaaaaaaaaaaadaaaac"
+   s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
+   #=> "aaaaaaaaaaaaaaaaaaaaaaaaadaaaac"
 
-The following patterns match instantly as you would expect:
+The following patterns match quickly, as one would expect:
 
-    /(b|a)/ =~ s #=> 0
-    /(b|a+)/ =~ s #=> 0
-    /(b|a+)*/ =~ s #=> 0
+   (start = Time.now) && /(b|a)/ =~ s && (Time.now - start)    # => 2.0e-06
+   (start = Time.now) && /(b|a+)/ =~ s && (Time.now - start)   # => 2.2e-06
+   (start = Time.now) && /(b|a+)*/ =~ s && (Time.now - start)  # => 2.3e-06
 
 However, the following pattern takes appreciably longer:
 
-    /(b|a+)*c/ =~ s #=> 26
+   (start = Time.now) && /(b|a+)*c/ =~ s && (Time.now - start) # => 5.9e-06
 
 This happens because an atom in the regexp is quantified by both an
 immediate <tt>+</tt> and an enclosing <tt>*</tt> with nothing to
 differentiate which is in control of any particular character.
 
-The nondeterminism that results produces super-linear performance.
+The nondeterminism that results produces non-linear performance.
 For an in-depth analysis, see
  {"Crafting an Efficient Expression"}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf#page=245]
 in <i>Mastering Regular Expressions</i> (3rd ed.) by Jeffrey Friedl.
@@ -1021,31 +1024,8 @@ This particular case
 can be fixed by use of atomic grouping, which prevents the unnecessary
 backtracking:
 
-    (start = Time.now) && /(b|a+)*c/ =~ s && (Time.now - start)
-       #=> 24.702736882
-    (start = Time.now) && /(?>b|a+)*c/ =~ s && (Time.now - start)
-       #=> 0.000166571
-
-A similar case is typified by the following example, which takes
-approximately 60 seconds to execute for me:
-
-Match a string of 29 <i>a</i>s against a pattern of 29 optional <i>a</i>s
-followed by 29 mandatory <i>a</i>s:
-
-    Regexp.new('a?' * 29 + 'a' * 29) =~ 'a' * 29
-
-The 29 optional <i>a</i>s match the string, but this prevents the 29
-mandatory <i>a</i>s that follow from matching. Ruby must then backtrack
-repeatedly so as to satisfy as many of the optional matches as it can
-while still matching the mandatory 29. It is plain to us that none of the
-optional matches can succeed, but this fact unfortunately eludes Ruby.
-
-The best way to improve performance is to significantly reduce the amount of
-backtracking needed.  For this case, instead of individually matching 29
-optional <i>a</i>s, a range of optional <i>a</i>s can be matched all at once
-with <i>a{0,29}</i>:
-
-    Regexp.new('a{0,29}' + 'a' * 29) =~ 'a' * 29
+   (start = Time.now) && /(b|a+)*c/ =~ s && (Time.now - start)   # => 5.8e-06
+   (start = Time.now) && /(?>b|a+)*c/ =~ s && (Time.now - start) # => 1.01e-05
 
 == Timeout
 
