@@ -2,7 +2,7 @@
 
 module IOSpecs
   THREAD_CLOSE_RETRIES = 10
-  THREAD_CLOSE_ERROR_MESSAGE = 'stream closed in another thread'
+  THREAD_CLOSE_ERROR_MESSAGE = 'stream closed in another context'
 
   class SubIO < IO
   end

@@ -2440,10 +2440,10 @@ io_buffer_default_size(size_t page_size)
 }
 
 struct io_buffer_blocking_region_argument {
+    struct rb_io *io;
     struct rb_io_buffer *buffer;
     rb_blocking_function_t *function;
     void *data;
-    int descriptor;
 };
 
 static VALUE
@@ -2451,7 +2451,7 @@ io_buffer_blocking_region_begin(VALUE _argument)
 {
     struct io_buffer_blocking_region_argument *argument = (void*)_argument;
 
-    return rb_thread_io_blocking_region(argument->function, argument->data, argument->descriptor);
+    return rb_thread_io_blocking_region(argument->io, argument->function, argument->data);
 }
 
 static VALUE
@@ -2465,13 +2465,17 @@ io_buffer_blocking_region_ensure(VALUE _argument)
 }
 
 static VALUE
-io_buffer_blocking_region(struct rb_io_buffer *buffer, rb_blocking_function_t *function, void *data, int descriptor)
+io_buffer_blocking_region(VALUE io, struct rb_io_buffer *buffer, rb_blocking_function_t *function, void *data)
 {
+    io = rb_io_get_io(io);
+    struct rb_io *ioptr;
+    RB_IO_POINTER(io, ioptr);
+
     struct io_buffer_blocking_region_argument argument = {
+        .io = ioptr,
         .buffer = buffer,
         .function = function,
         .data = data,
-        .descriptor = descriptor,
     };
 
     // If the buffer is already locked, we can skip the ensure (unlock):
@@ -2587,7 +2591,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
         .length = length,
     };
 
-    return io_buffer_blocking_region(buffer, io_buffer_read_internal, &argument, descriptor);
+    return io_buffer_blocking_region(io, buffer, io_buffer_read_internal, &argument);
 }
 
 /*
@@ -2707,7 +2711,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
         .offset = from,
     };
 
-    return io_buffer_blocking_region(buffer, io_buffer_pread_internal, &argument, descriptor);
+    return io_buffer_blocking_region(io, buffer, io_buffer_pread_internal, &argument);
 }
 
 /*
@@ -2828,7 +2832,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
         .length = length,
     };
 
-    return io_buffer_blocking_region(buffer, io_buffer_write_internal, &argument, descriptor);
+    return io_buffer_blocking_region(io, buffer, io_buffer_write_internal, &argument);
 }
 
 /*
@@ -2948,7 +2952,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
         .offset = from,
     };
 
-    return io_buffer_blocking_region(buffer, io_buffer_pwrite_internal, &argument, descriptor);
+    return io_buffer_blocking_region(io, buffer, io_buffer_pwrite_internal, &argument);
 }
 
 /*

@@ -119,6 +119,7 @@ RUBY_EXTERN VALUE rb_eStopIteration;             /**< `StopIteration` exception.
 RUBY_EXTERN VALUE rb_eKeyError;                  /**< `KeyError` exception. */
 RUBY_EXTERN VALUE rb_eRangeError;                /**< `RangeError` exception. */
 RUBY_EXTERN VALUE rb_eIOError;                   /**< `IOError` exception. */
+RUBY_EXTERN VALUE rb_eIOCancelled;               /**< `IO::Cancelled` exception. */
 RUBY_EXTERN VALUE rb_eRuntimeError;              /**< `RuntimeError` exception. */
 RUBY_EXTERN VALUE rb_eFrozenError;               /**< `FrozenError` exception. */
 RUBY_EXTERN VALUE rb_eSecurityError;             /**< `SecurityError` exception. */

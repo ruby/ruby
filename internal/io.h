@@ -14,6 +14,9 @@
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/io.h"
 
+// For blocking list.
+#include "ccan/list/list.h"
+
 /**
  * IO  buffers.   This  is  an implementation  detail  of  ::rb_io_t::wbuf  and
  * ::rb_io_t::rbuf.  People don't manipulate it directly.
@@ -46,7 +49,7 @@ struct rb_io {
     int fd;
 
     /** mode flags: FMODE_XXXs */
-    int mode;
+    enum rb_io_mode mode;
 
     /** child's pid (for pipes) */
     rb_pid_t pid;
@@ -126,6 +129,13 @@ struct rb_io {
      * The timeout associated with this IO when performing blocking operations.
      */
     VALUE timeout;
+
+    /**
+     * Threads that are performing a blocking operation without the GVL using
+     * this IO. On calling IO#close, these threads will be interrupted so that
+     * the operation can be cancelled.
+     */
+    struct ccan_list_head blocking_list;
 };
 
 /* io.c */
@@ -134,16 +144,14 @@ void rb_stdio_set_default_encoding(void);
 VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
 int rb_stderr_tty_p(void);
-void rb_io_fptr_finalize_internal(void *ptr);
-#ifdef rb_io_fptr_finalize
-# undef rb_io_fptr_finalize
-#endif
-#define rb_io_fptr_finalize rb_io_fptr_finalize_internal
 VALUE rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt);
 
 VALUE rb_io_prep_stdin(void);
 VALUE rb_io_prep_stdout(void);
 VALUE rb_io_prep_stderr(void);
+
+int rb_notify_io_close(rb_io_t *fptr);
+int rb_io_fptr_finalize(struct rb_io *fptr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* io.c (export) */

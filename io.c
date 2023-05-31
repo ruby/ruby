@@ -175,6 +175,7 @@ off_t __syscall(quad_t number, ...);
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
+VALUE rb_eIOCancelled;
 VALUE rb_eIOTimeoutError;
 VALUE rb_mWaitReadable;
 VALUE rb_mWaitWritable;
@@ -301,6 +302,13 @@ io_again_p(int e)
     return (e == EWOULDBLOCK) || (e == EAGAIN);
 }
 
+RBIMPL_ATTR_NORETURN()
+void
+rb_ioptr_sys_fail(rb_io_t *fptr)
+{
+    rb_sys_fail_str(fptr->pathv);
+}
+
 int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
@@ -383,21 +391,86 @@ rb_cloexec_dup2(int oldfd, int newfd)
 }
 
 static int
-rb_fd_set_nonblock(int fd)
+io_set_nonblock(int fd, int nonblock)
 {
 #ifdef _WIN32
-    return rb_w32_set_nonblock(fd);
+    return rb_w32_set_nonblock(fd, nonblock);
 #elif defined(F_GETFL)
     int oflags = fcntl(fd, F_GETFL);
 
-    if (oflags == -1)
-        return -1;
-    if (oflags & O_NONBLOCK)
-        return 0;
-    oflags |= O_NONBLOCK;
-    return fcntl(fd, F_SETFL, oflags);
+    // It failed for some reason?
+    if (oflags == -1) return oflags;
+
+    int flags = oflags;
+    if (nonblock) {
+        flags |= O_NONBLOCK;
+    } else {
+        flags &= ~O_NONBLOCK;
+    }
+
+    if (flags != oflags)
+        oflags = fcntl(fd, F_SETFL, flags);
+
+    // It failed for some reason?
+    if (oflags == -1) return oflags;
+
+    return oflags & O_NONBLOCK;
 #endif
+
+    // Non-blocking isn't supported.
     return 0;
+}
+
+VALUE
+rb_io_set_nonblock_m(VALUE self, VALUE nonblock)
+{
+    rb_io_t *fptr;
+    RB_IO_POINTER(self, fptr);
+
+    int result = io_set_nonblock(fptr->fd, RTEST(nonblock));
+
+    if (result == -1) rb_ioptr_sys_fail(fptr);
+
+    if (result) fptr->mode |= RUBY_IO_MODE_NONBLOCK;
+    else fptr->mode &= ~RUBY_IO_MODE_NONBLOCK;
+
+    return RBOOL(result);
+}
+
+void
+rb_io_set_nonblock(rb_io_t *fptr)
+{
+    if (io_set_nonblock(fptr->fd, 1) == -1) {
+        rb_sys_fail_path(fptr->pathv);
+    }
+}
+
+static int
+io_nonblock_p(int fd)
+{
+#if defined(F_GETFL)
+    int oflags = fcntl(fd, F_GETFL);
+
+    // It failed for some reason?
+    if (oflags == -1) return oflags;
+
+    return oflags & O_NONBLOCK;
+#endif
+
+    // No way to query this.
+    return -1;
+}
+
+VALUE
+rb_io_nonblock_p(struct rb_io *io)
+{
+    int result = io_nonblock_p(io->fd);
+
+    // Query failed, so return last known status:
+    if (result == -1)
+        return (io->mode & RUBY_IO_MODE_NONBLOCK);
+
+    return RBOOL(result);
 }
 
 int
@@ -426,8 +499,8 @@ rb_cloexec_pipe(int descriptors[2])
     rb_maygvl_fd_fix_cloexec(descriptors[1]);
 
 #ifndef _WIN32
-    rb_fd_set_nonblock(descriptors[0]);
-    rb_fd_set_nonblock(descriptors[1]);
+    io_set_nonblock(descriptors[0], 1);
+    io_set_nonblock(descriptors[1], 1);
 #endif
 #endif
 
@@ -1281,7 +1354,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_read_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_region(fptr, internal_read_func, &iis);
 }
 
 static ssize_t
@@ -1314,7 +1387,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_region(fptr, internal_write_func, &iis);
 }
 
 #ifdef HAVE_WRITEV
@@ -1351,7 +1424,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_writev_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_region(fptr, internal_writev_func, &iis);
 }
 #endif
 
@@ -1381,7 +1454,7 @@ static VALUE
 io_flush_buffer_async(VALUE arg)
 {
     rb_io_t *fptr = (rb_io_t *)arg;
-    return rb_thread_io_blocking_region(io_flush_buffer_sync, fptr, fptr->fd);
+    return rb_thread_io_blocking_region(fptr, io_flush_buffer_sync, fptr);
 }
 
 static inline int
@@ -1560,13 +1633,13 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 int
 rb_thread_wait_fd(int fd)
 {
-    return rb_wait_for_single_fd(fd, RUBY_IO_READABLE, NULL);
+    return io_wait_for_single_fd(fd, RUBY_IO_READABLE, NULL);
 }
 
 int
 rb_thread_fd_writable(int fd)
 {
-    return rb_wait_for_single_fd(fd, RUBY_IO_WRITABLE, NULL);
+    return io_wait_for_single_fd(fd, RUBY_IO_WRITABLE, NULL);
 }
 
 VALUE
@@ -2771,7 +2844,7 @@ rb_io_fsync(VALUE io)
 
     if (io_fflush(fptr) < 0)
         rb_sys_fail_on_write(fptr);
-    if ((int)rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd) < 0)
+    if ((int)rb_thread_io_blocking_region(fptr, nogvl_fsync, fptr) < 0)
         rb_sys_fail_path(fptr->pathv);
     return INT2FIX(0);
 }
@@ -2821,7 +2894,7 @@ rb_io_fdatasync(VALUE io)
     if (io_fflush(fptr) < 0)
         rb_sys_fail_on_write(fptr);
 
-    if ((int)rb_thread_io_blocking_region(nogvl_fdatasync, fptr, fptr->fd) == 0)
+    if ((int)rb_thread_io_blocking_region(fptr, nogvl_fdatasync, fptr) == 0)
         return INT2FIX(0);
 
     /* fall back */
@@ -3373,14 +3446,6 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     return str;
 }
 
-void
-rb_io_set_nonblock(rb_io_t *fptr)
-{
-    if (rb_fd_set_nonblock(fptr->fd) != 0) {
-        rb_sys_fail_path(fptr->pathv);
-    }
-}
-
 static VALUE
 io_read_memory_call(VALUE arg)
 {
@@ -3396,7 +3461,7 @@ io_read_memory_call(VALUE arg)
         }
     }
 
-    return rb_thread_io_blocking_region(internal_read_func, iis, iis->fptr->fd);
+    return rb_thread_io_blocking_region(iis->fptr, internal_read_func, iis);
 }
 
 static long
@@ -3609,7 +3674,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
 
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
-        rb_fd_set_nonblock(fptr->fd);
+        io_set_nonblock(fptr->fd, 1);
         shrinkable |= io_setstrbuf(&str, len);
         iis.fptr = fptr;
         iis.nonblock = 1;
@@ -3656,7 +3721,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
     if (io_fflush(fptr) < 0)
         rb_sys_fail_on_write(fptr);
 
-    rb_fd_set_nonblock(fptr->fd);
+    io_set_nonblock(fptr->fd, 1);
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
     RB_GC_GUARD(str);
 
@@ -5420,20 +5485,11 @@ maygvl_fclose(FILE *file, int keepgvl)
     return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
 }
 
-static void free_io_buffer(struct rb_io_internal_buffer *buf);
+static void io_internal_buffer_free(struct rb_io_internal_buffer *buffer);
 static void clear_codeconv(rb_io_t *fptr);
 
-static void*
-call_close_wait_nogvl(void *arg)
-{
-    struct rb_io_close_wait_list *busy = (struct rb_io_close_wait_list *)arg;
-    rb_notify_fd_close_wait(busy);
-    return NULL;
-}
-
 static void
-fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
-                    struct rb_io_close_wait_list *busy)
+fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
 {
     VALUE error = Qnil;
     int fd = fptr->fd;
@@ -5472,12 +5528,6 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
-
-    // Ensure waiting_fd users do not hit EBADF.
-    if (busy) {
-        // Wait for them to exit before we call close().
-        (void)rb_thread_call_without_gvl(call_close_wait_nogvl, busy, RUBY_UBF_IO, 0);
-    }
 
     // Disable for now.
     // if (!done && fd >= 0) {
@@ -5525,9 +5575,9 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
-    fptr_finalize_flush(fptr, noraise, FALSE, 0);
-    free_io_buffer(&fptr->rbuf);
-    free_io_buffer(&fptr->wbuf);
+    fptr_finalize_flush(fptr, noraise, FALSE);
+    io_internal_buffer_free(&fptr->rbuf);
+    io_internal_buffer_free(&fptr->wbuf);
     clear_codeconv(fptr);
 }
 
@@ -5543,11 +5593,11 @@ rb_io_fptr_cleanup(rb_io_t *fptr, int noraise)
 }
 
 static void
-free_io_buffer(struct rb_io_internal_buffer *buf)
+io_internal_buffer_free(struct rb_io_internal_buffer *buffer)
 {
-    if (buf->ptr) {
-        ruby_sized_xfree(buf->ptr, (size_t)buf->capa);
-        buf->ptr = NULL;
+    if (buffer->ptr) {
+        ruby_sized_xfree(buffer->ptr, (size_t)buffer->capa);
+        buffer->ptr = NULL;
     }
 }
 
@@ -5558,7 +5608,7 @@ clear_readconv(rb_io_t *fptr)
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
-    free_io_buffer(&fptr->cbuf);
+    io_internal_buffer_free(&fptr->cbuf);
 }
 
 static void
@@ -5578,35 +5628,20 @@ clear_codeconv(rb_io_t *fptr)
     clear_writeconv(fptr);
 }
 
-void
-rb_io_fptr_finalize_internal(void *ptr)
+int
+rb_io_fptr_finalize(struct rb_io *fptr)
 {
-    rb_io_t *fptr = ptr;
-
-    if (!ptr) return;
+    if (!fptr) return 0;
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
         rb_io_fptr_cleanup(fptr, TRUE);
     fptr->write_lock = Qnil;
-    free_io_buffer(&fptr->rbuf);
-    free_io_buffer(&fptr->wbuf);
+    io_internal_buffer_free(&fptr->rbuf);
+    io_internal_buffer_free(&fptr->wbuf);
     clear_codeconv(fptr);
     free(fptr);
+    return 1;
 }
-
-#undef rb_io_fptr_finalize
-int
-rb_io_fptr_finalize(rb_io_t *fptr)
-{
-    if (!fptr) {
-        return 0;
-    }
-    else {
-        rb_io_fptr_finalize_internal(fptr);
-        return 1;
-    }
-}
-#define rb_io_fptr_finalize(fptr) rb_io_fptr_finalize_internal(fptr)
 
 RUBY_FUNC_EXPORTED size_t
 rb_io_memsize(const rb_io_t *fptr)
@@ -5633,7 +5668,6 @@ io_close_fptr(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
     rb_io_t *write_fptr;
-    struct rb_io_close_wait_list busy;
 
     write_io = GetWriteIO(io);
     if (io != write_io) {
@@ -5647,11 +5681,12 @@ io_close_fptr(VALUE io)
     if (!fptr) return 0;
     if (fptr->fd < 0) return 0;
 
-    if (rb_notify_fd_close(fptr->fd, &busy)) {
-        /* calls close(fptr->fd): */
-        fptr_finalize_flush(fptr, FALSE, KEEPGVL, &busy);
+    if (rb_notify_io_close(fptr)) {
+        fptr_finalize_flush(fptr, FALSE, KEEPGVL);
     }
+
     rb_io_fptr_cleanup(fptr, FALSE);
+
     return fptr;
 }
 
@@ -6072,6 +6107,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
 struct prdwr_internal_arg {
     VALUE io;
+    rb_io_t *fptr;
     int fd;
     void *buf;
     size_t count;
@@ -6089,18 +6125,8 @@ internal_pread_func(void *_arg)
 static VALUE
 pread_internal_call(VALUE _arg)
 {
-    struct prdwr_internal_arg *arg = (struct prdwr_internal_arg *)_arg;
-
-    VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pread_memory(scheduler, arg->io, arg->offset, arg->buf, arg->count, 0);
-
-        if (!UNDEF_P(result)) {
-            return rb_fiber_scheduler_io_result_apply(result);
-        }
-    }
-
-    return rb_thread_io_blocking_region(internal_pread_func, arg, arg->fd);
+    struct prdwr_internal_arg *p = (struct prdwr_internal_arg *)_arg;
+    return rb_thread_io_blocking_region(p->fptr, internal_pread_func, p);
 }
 
 /*
@@ -6151,6 +6177,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
+    arg.fptr = fptr;
     arg.fd = fptr->fd;
     rb_io_check_closed(fptr);
 
@@ -6227,13 +6254,14 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
+    arg.fptr = fptr;
     arg.fd = fptr->fd;
 
     tmp = rb_str_tmp_frozen_acquire(str);
     arg.buf = RSTRING_PTR(tmp);
     arg.count = (size_t)RSTRING_LEN(tmp);
 
-    n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
+    n = (ssize_t)rb_thread_io_blocking_region(fptr, internal_pwrite_func, &arg);
     if (n < 0) rb_sys_fail_path(fptr->pathv);
     rb_str_tmp_frozen_release(str, tmp);
 
@@ -6372,7 +6400,7 @@ io_encname_bom_p(const char *name, long len)
     return len > bom_prefix_len && STRNCASECMP(name, bom_prefix, bom_prefix_len) == 0;
 }
 
-int
+enum rb_io_mode
 rb_io_modestr_fmode(const char *modestr)
 {
     int fmode = 0;
@@ -6588,7 +6616,7 @@ unsupported_encoding(const char *name, rb_encoding *enc)
 
 static void
 parse_mode_enc(const char *estr, rb_encoding *estr_enc,
-               rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
+	       rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p)
 {
     const char *p;
     char encname[ENCODING_MAXNAMELEN+1];
@@ -6655,7 +6683,7 @@ parse_mode_enc(const char *estr, rb_encoding *estr_enc,
 }
 
 int
-rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
+rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p)
 {
     VALUE encoding=Qnil, extenc=Qundef, intenc=Qundef, tmp;
     int extracted = 0;
@@ -6723,10 +6751,8 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     return extracted;
 }
 
-typedef struct rb_io_encoding convconfig_t;
-
 static void
-validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
+validate_enc_binmode(enum rb_io_mode *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
 {
     int fmode = *fmode_p;
 
@@ -6753,7 +6779,7 @@ validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *e
 }
 
 static void
-extract_binmode(VALUE opthash, int *fmode)
+extract_binmode(VALUE opthash, enum rb_io_mode *fmode)
 {
     if (!NIL_P(opthash)) {
         VALUE v;
@@ -6783,10 +6809,11 @@ extract_binmode(VALUE opthash, int *fmode)
 
 void
 rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
-        int *oflags_p, int *fmode_p, convconfig_t *convconfig_p)
+        int *oflags_p, int *fmode_p, struct rb_io_encoding *convconfig_p)
 {
     VALUE vmode;
-    int oflags, fmode;
+    int oflags;
+    enum rb_io_mode fmode;
     rb_encoding *enc, *enc2;
     int ecflags;
     VALUE ecopts;
@@ -7110,12 +7137,11 @@ io_set_encoding_by_bom(VALUE io)
 }
 
 static VALUE
-rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
-                     const convconfig_t *convconfig, mode_t perm)
+rb_file_open_generic(VALUE io, VALUE filename, int oflags, enum rb_io_mode fmode, const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE pathv;
     rb_io_t *fptr;
-    convconfig_t cc;
+    struct rb_io_encoding cc;
     if (!convconfig) {
         /* Set to default encodings */
         rb_io_ext_int_to_encs(NULL, NULL, &cc.enc, &cc.enc2, fmode);
@@ -7147,9 +7173,9 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
 static VALUE
 rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 {
-    int fmode = rb_io_modestr_fmode(modestr);
+    enum rb_io_mode fmode = rb_io_modestr_fmode(modestr);
     const char *p = strchr(modestr, ':');
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
 
     if (p) {
         parse_mode_enc(p+1, rb_usascii_encoding(),
@@ -7257,7 +7283,7 @@ static void
 fptr_copy_finalizer(rb_io_t *fptr, const rb_io_t *orig)
 {
 #if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    void (*const old_finalize)(rb_io_t*,int) = fptr->finalize;
+    void (*const old_finalize)(struct rb_io*,int) = fptr->finalize;
 
     if (old_finalize == orig->finalize) return;
 #endif
@@ -7461,8 +7487,7 @@ char *rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog);
 
 #ifndef __EMSCRIPTEN__
 static VALUE
-pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
-          const convconfig_t *convconfig)
+pipe_open(VALUE execarg_obj, const char *modestr, int fmode, const struct rb_io_encoding *convconfig)
 {
     struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
     VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
@@ -7690,8 +7715,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 }
 #else
 static VALUE
-pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
-          const convconfig_t *convconfig)
+pipe_open(VALUE execarg_obj, const char *modestr, int fmode, const struct rb_io_encoding *convconfig)
 {
     rb_raise(rb_eNotImpError, "popen() is not available");
 }
@@ -7712,8 +7736,7 @@ is_popen_fork(VALUE prog)
 }
 
 static VALUE
-pipe_open_s(VALUE prog, const char *modestr, int fmode,
-            const convconfig_t *convconfig)
+pipe_open_s(VALUE prog, const char *modestr, int fmode, const struct rb_io_encoding *convconfig)
 {
     int argc = 1;
     VALUE *argv = &prog;
@@ -7922,7 +7945,7 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
     const char *modestr;
     VALUE tmp, execarg_obj = Qnil;
     int oflags, fmode;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
 
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -7976,7 +7999,7 @@ popen_finish(VALUE port, VALUE klass)
 static void
 rb_scan_open_args(int argc, const VALUE *argv,
         VALUE *fname_p, int *oflags_p, int *fmode_p,
-        convconfig_t *convconfig_p, mode_t *perm_p)
+        struct rb_io_encoding *convconfig_p, mode_t *perm_p)
 {
     VALUE opt, fname, vmode, vperm;
     int oflags, fmode;
@@ -8000,7 +8023,7 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
 {
     VALUE fname;
     int oflags, fmode;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
     mode_t perm;
 
     rb_scan_open_args(argc, argv, &fname, &oflags, &fmode, &convconfig, &perm);
@@ -8248,13 +8271,13 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
-static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const convconfig_t *, mode_t);
+static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const struct rb_io_encoding *, mode_t);
 
 static VALUE
 rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 {
     int oflags, fmode;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
     mode_t perm;
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
@@ -8263,8 +8286,7 @@ rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 }
 
 static VALUE
-rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
-                   const convconfig_t *convconfig, mode_t perm)
+rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode, const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE cmd;
     if (klass == rb_cIO && !NIL_P(cmd = check_pipe_command(filename))) {
@@ -8429,7 +8451,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 
     if (!NIL_P(nmode) || !NIL_P(opt)) {
         int fmode;
-        convconfig_t convconfig;
+        struct rb_io_encoding convconfig;
 
         rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
         if (RUBY_IO_EXTERNAL_P(fptr) &&
@@ -9217,6 +9239,8 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
     io->fd = descriptor;
     io->mode = mode;
 
+    ccan_list_head_init(&io->blocking_list);
+
     /* At this point, Ruby fully owns the descriptor, and will close it when
        the IO gets GC'd (unless FMODE_EXTERNAL was set), no matter what happens
        in the rest of this method. */
@@ -9318,12 +9342,12 @@ rb_io_stdio_file(rb_io_t *fptr)
 }
 
 static inline void
-rb_io_buffer_init(struct rb_io_internal_buffer *buf)
+io_internal_buffer_initialize(struct rb_io_internal_buffer *buffer)
 {
-    buf->ptr = NULL;
-    buf->off = 0;
-    buf->len = 0;
-    buf->capa = 0;
+    buffer->ptr = NULL;
+    buffer->off = 0;
+    buffer->len = 0;
+    buffer->capa = 0;
 }
 
 static inline rb_io_t *
@@ -9338,9 +9362,9 @@ rb_io_fptr_new(void)
     fp->lineno = 0;
     fp->pathv = Qnil;
     fp->finalize = 0;
-    rb_io_buffer_init(&fp->wbuf);
-    rb_io_buffer_init(&fp->rbuf);
-    rb_io_buffer_init(&fp->cbuf);
+    io_internal_buffer_initialize(&fp->wbuf);
+    io_internal_buffer_initialize(&fp->rbuf);
+    io_internal_buffer_initialize(&fp->cbuf);
     fp->readconv = NULL;
     fp->writeconv = NULL;
     fp->writeconv_asciicompat = Qnil;
@@ -9354,6 +9378,7 @@ rb_io_fptr_new(void)
     fp->encs.ecopts = Qnil;
     fp->write_lock = Qnil;
     fp->timeout = Qnil;
+    ccan_list_head_init(&fp->blocking_list);
     return fp;
 }
 
@@ -9370,6 +9395,7 @@ rb_io_make_open_file(VALUE obj)
     }
     fp = rb_io_fptr_new();
     fp->self = obj;
+    ccan_list_head_init(&fp->blocking_list);
     RFILE(obj)->fptr = fp;
     return fp;
 }
@@ -9421,14 +9447,13 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     VALUE fnum, vmode;
     rb_io_t *fp;
     int fd, fmode, oflags = O_RDONLY;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
     VALUE opt;
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     int ofmode;
 #else
     struct stat st;
 #endif
-
 
     argc = rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
@@ -9475,6 +9500,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     fp->encs = convconfig;
     fp->pathv = path;
     fp->timeout = Qnil;
+    ccan_list_head_init(&fp->blocking_list);
     clear_codeconv(fp);
     io_check_tty(fp);
     if (fileno(stdin) == fd)
@@ -10792,7 +10818,7 @@ do_io_advise(rb_io_t *fptr, VALUE advice, rb_off_t offset, rb_off_t len)
     ias.offset = offset;
     ias.len    = len;
 
-    rv = (int)rb_thread_io_blocking_region(io_advise_internal, &ias, fptr->fd);
+    rv = (int)rb_thread_io_blocking_region(fptr, io_advise_internal, &ias);
     if (rv && rv != ENOSYS) {
         /* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
            it returns the error code. */
@@ -11084,16 +11110,16 @@ nogvl_ioctl(void *ptr)
 }
 
 static int
-do_ioctl(int fd, ioctl_req_t cmd, long narg)
+do_ioctl(rb_io_t *fptr, ioctl_req_t cmd, long narg)
 {
     int retval;
     struct ioctl_arg arg;
 
-    arg.fd = fd;
+    arg.fd = fptr->fd;
     arg.cmd = cmd;
     arg.narg = narg;
 
-    retval = (int)rb_thread_io_blocking_region(nogvl_ioctl, &arg, fd);
+    retval = (int)rb_thread_io_blocking_region(fptr, nogvl_ioctl, &arg);
 
     return retval;
 }
@@ -11356,7 +11382,7 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
 
     narg = setup_narg(cmd, &arg, ioctl_narg_len);
     GetOpenFile(io, fptr);
-    retval = do_ioctl(fptr->fd, cmd, narg);
+    retval = do_ioctl(fptr, cmd, narg);
     return finish_narg(retval, arg, fptr);
 }
 
@@ -11410,16 +11436,16 @@ nogvl_fcntl(void *ptr)
 }
 
 static int
-do_fcntl(int fd, int cmd, long narg)
+do_fcntl(rb_io_t *fptr, int cmd, long narg)
 {
     int retval;
     struct fcntl_arg arg;
 
-    arg.fd = fd;
+    arg.fd = fptr->fd;
     arg.cmd = cmd;
     arg.narg = narg;
 
-    retval = (int)rb_thread_io_blocking_region(nogvl_fcntl, &arg, fd);
+    retval = (int)rb_thread_io_blocking_region(fptr, nogvl_fcntl, &arg);
     if (retval != -1) {
         switch (cmd) {
 #if defined(F_DUPFD)
@@ -11445,7 +11471,7 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
 
     narg = setup_narg(cmd, &arg, fcntl_narg_len);
     GetOpenFile(io, fptr);
-    retval = do_fcntl(fptr->fd, cmd, narg);
+    retval = do_fcntl(fptr, cmd, narg);
     return finish_narg(retval, arg, fptr);
 }
 
@@ -11793,7 +11819,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     VALUE opt;
     rb_io_t *fptr, *fptr2;
     struct io_encoding_set_args ies_args;
-    int fmode = 0;
+    enum rb_io_mode fmode = 0;
     VALUE ret;
 
     argc = rb_scan_args(argc, argv, "02:", &v1, &v2, &opt);
@@ -12255,7 +12281,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
                 |O_BINARY
 #endif
     };
-    convconfig_t convconfig = {NULL, NULL, 0, Qnil};
+    struct rb_io_encoding convconfig = {NULL, NULL, 0, Qnil};
 
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
     FilePathValue(argv[0]);
@@ -15386,6 +15412,7 @@ Init_IO(void)
     rb_define_method(rb_mKernel, "display", rb_obj_display, -1);
 
     rb_cIO = rb_define_class("IO", rb_cObject);
+    rb_eIOCancelled = rb_define_class_under(rb_cIO, "Cancelled", rb_eIOError);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
     /* Can be raised by IO operations when IO#timeout= is set. */

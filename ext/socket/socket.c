@@ -391,13 +391,14 @@ sock_connect(VALUE sock, VALUE addr)
 {
     VALUE rai;
     rb_io_t *fptr;
-    int fd, n;
+    int n;
 
     SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
-    fd = fptr->fd;
-    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
+
+    n = rsock_connect(sock, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
+
     if (n < 0) {
         rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }

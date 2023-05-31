@@ -101,6 +101,7 @@ rsock_send_blocking(void *data)
 }
 
 struct recvfrom_arg {
+    rb_io_t *fptr;
     int fd, flags;
     VALUE str;
     size_t length;
@@ -144,7 +145,7 @@ recvfrom_locktmp(VALUE v)
 {
     struct recvfrom_arg *arg = (struct recvfrom_arg *)v;
 
-    return rb_thread_io_blocking_region(recvfrom_blocking, arg, arg->fd);
+    return rb_thread_io_blocking_region(arg->fptr, recvfrom_blocking, arg);
 }
 
 VALUE
@@ -173,6 +174,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
         rb_raise(rb_eIOError, "recv for buffered IO");
     }
 
+    arg.fptr = fptr;
     arg.fd = fptr->fd;
     arg.alen = (socklen_t)sizeof(arg.buf);
     arg.str = str;
@@ -549,19 +551,23 @@ socks_connect_blocking(void *data)
 #endif
 
 int
-rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
+rsock_connect(VALUE io, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
 {
     int status;
     rb_blocking_function_t *func = connect_blocking;
+    int descriptor = rb_io_descriptor(io);
     struct connect_arg arg;
 
-    arg.fd = fd;
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+
+    arg.fd = descriptor;
     arg.sockaddr = sockaddr;
     arg.len = len;
 #if defined(SOCKS) && !defined(SOCKS5)
     if (socks) func = socks_connect_blocking;
 #endif
-    status = (int)BLOCKING_REGION_FD(func, &arg);
+    status = (int)rb_thread_io_blocking_region(fptr, func, &arg);
 
     if (status < 0) {
         switch (errno) {
@@ -573,7 +579,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struc
 #ifdef EINPROGRESS
           case EINPROGRESS:
 #endif
-            return wait_connectable(fd, timeout);
+            return wait_connectable(descriptor, timeout);
         }
     }
     return status;
@@ -692,7 +698,7 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
     rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 #endif
-    peer = (int)BLOCKING_REGION_FD(accept_blocking, &accept_arg);
+    peer = (int)rb_thread_io_blocking_region(fptr, accept_blocking, &accept_arg);
     if (peer < 0) {
         int error = errno;
 

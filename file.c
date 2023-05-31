@@ -1142,14 +1142,14 @@ no_gvl_fstat(void *data)
 }
 
 static int
-fstat_without_gvl(int fd, struct stat *st)
+fstat_without_gvl(rb_io_t *fptr, struct stat *st)
 {
     no_gvl_stat_data data;
 
-    data.file.fd = fd;
+    data.file.fd = fptr->fd;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_fstat, &data, fd);
+    return (int)(VALUE)rb_thread_io_blocking_region(fptr, no_gvl_fstat, &data);
 }
 
 static void *
@@ -1223,12 +1223,12 @@ statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
 }
 
 static int
-fstatx_without_gvl(int fd, struct statx *stx, unsigned int mask)
+fstatx_without_gvl(rb_io_t *fptr, struct statx *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, fd, "", AT_EMPTY_PATH, mask};
+    no_gvl_statx_data data = {stx, fptr->fd, "", AT_EMPTY_PATH, mask};
 
     /* call statx(2) with fd */
-    return (int)rb_thread_io_blocking_region(io_blocking_statx, &data, fd);
+    return (int)rb_thread_io_blocking_region(fptr, io_blocking_statx, &data);
 }
 
 static int
@@ -1241,7 +1241,7 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     if (!NIL_P(tmp)) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
-        result = fstatx_without_gvl(fptr->fd, stx, mask);
+        result = fstatx_without_gvl(fptr, stx, mask);
         file = tmp;
     }
     else {
@@ -1282,7 +1282,7 @@ typedef struct statx statx_data;
 
 #elif defined(HAVE_STAT_BIRTHTIME)
 # define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
-# define fstatx_without_gvl(fd, st, mask) fstat_without_gvl(fd, st)
+# define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
 # define statx_birthtime(st, fname) stat_birthtime(st)
 # define statx_has_birthtime(st) 1
 # define rb_statx(file, st, mask) rb_stat(file, st)
@@ -1302,7 +1302,7 @@ rb_stat(VALUE file, struct stat *st)
         rb_io_t *fptr;
 
         GetOpenFile(tmp, fptr);
-        result = fstat_without_gvl(fptr->fd, st);
+        result = fstat_without_gvl(fptr, st);
         file = tmp;
     }
     else {
@@ -2505,7 +2505,7 @@ rb_file_birthtime(VALUE obj)
     statx_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstatx_without_gvl(fptr->fd, &st, STATX_BTIME) == -1) {
+    if (fstatx_without_gvl(fptr, &st, STATX_BTIME) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
     return statx_birthtime(&st, fptr->pathv);
@@ -5180,7 +5180,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     }
     rb_io_flush_raw(obj, 0);
     fa.fd = fptr->fd;
-    if ((int)rb_thread_io_blocking_region(nogvl_ftruncate, &fa, fa.fd) < 0) {
+    if ((int)rb_thread_io_blocking_region(fptr, nogvl_ftruncate, &fa) < 0) {
         rb_sys_fail_path(fptr->pathv);
     }
     return INT2FIX(0);
@@ -5281,7 +5281,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     if (fptr->mode & FMODE_WRITABLE) {
         rb_io_flush_raw(obj, 0);
     }
-    while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
+    while ((int)rb_thread_io_blocking_region(fptr, rb_thread_flock, op) < 0) {
         int e = errno;
         switch (e) {
           case EAGAIN:

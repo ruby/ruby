@@ -3856,7 +3856,7 @@ __END__
         thread = Thread.new do
           begin
             q << true
-            assert_raise_with_message(IOError, /stream closed/) do
+            assert_raise_with_message(IO::Cancelled, /stream closed/) do
               while r.gets
               end
             end

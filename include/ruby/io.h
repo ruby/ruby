@@ -78,11 +78,13 @@ RUBY_EXTERN VALUE rb_eIOTimeoutError;
  *
  * This is visible from extension libraries because `io/wait` wants it.
  */
-typedef enum {
+enum rb_io_event_flags {
     RUBY_IO_READABLE = RB_WAITFD_IN,  /**< `IO::READABLE` */
     RUBY_IO_WRITABLE = RB_WAITFD_OUT, /**< `IO::WRITABLE` */
     RUBY_IO_PRIORITY = RB_WAITFD_PRI, /**< `IO::PRIORITY` */
-} rb_io_event_t;
+};
+
+typedef enum rb_io_event_flags rb_io_event_t;
 
 /** Decomposed encoding flags (e.g. `"enc:enc2""`). */
 /*
@@ -116,15 +118,6 @@ struct rb_io;
 typedef struct rb_io rb_io_t;
 
 typedef struct rb_io_encoding rb_io_enc_t;
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- */
-#define HAVE_RB_IO_T 1
 
 /**
  * @name Possible flags for ::rb_io_t::mode
@@ -238,6 +231,31 @@ typedef struct rb_io_encoding rb_io_enc_t;
 
 /** @} */
 
+enum rb_io_mode {
+    RUBY_IO_MODE_READABLE = FMODE_READABLE,
+    RUBY_IO_MODE_WRITABLE = FMODE_WRITABLE,
+    RUBY_IO_MODE_READABLE_WRITABLE = (RUBY_IO_MODE_READABLE|RUBY_IO_MODE_WRITABLE),
+
+    RUBY_IO_MODE_BINARY = FMODE_BINMODE,
+    RUBY_IO_MODE_TEXT = FMODE_TEXTMODE,
+    RUBY_IO_MODE_TEXT_ENCODING_BOM = FMODE_SETENC_BY_BOM,
+
+    // Optimistically track whether the IO is in non-blocking mode.
+    // It might be incorrect unless the Ruby interface is used to update it.
+    RUBY_IO_MODE_NONBLOCK = 0x00000200,
+
+    RUBY_IO_MODE_SYNCHRONISED = FMODE_SYNC,
+
+    RUBY_IO_MODE_TTY = FMODE_TTY,
+
+    RUBY_IO_MODE_DUPLEX = FMODE_DUPLEX,
+
+    RUBY_IO_MODE_APPEND = FMODE_APPEND,
+    RUBY_IO_MODE_CREATE = FMODE_CREATE,
+    RUBY_IO_MODE_EXCLUSIVE = FMODE_EXCL,
+    RUBY_IO_MODE_TRUNCATE = FMODE_TRUNC,
+};
+
 /**
  * Allocate a new IO object, with the given file descriptor.
  */
@@ -301,7 +319,7 @@ VALUE rb_io_closed_p(VALUE io);
  * @return      `obj`'s backend IO.
  * @post        `obj` is initialised.
  */
-rb_io_t *rb_io_make_open_file(VALUE obj);
+struct rb_io *rb_io_make_open_file(VALUE obj);
 
 /**
  * Finds or creates  a stdio's file structure  from a Ruby's one.   This can be
@@ -320,14 +338,14 @@ rb_io_t *rb_io_make_open_file(VALUE obj);
  * like this:
  *
  * ```CXX
- * typedef struct rb_io_t {
+ * typedef struct rb_io {
  *     FILE *f;                    // stdio ptr for read/write
  *     FILE *f2;                   // additional ptr for rw pipes
  *     int mode;                   // mode flags
  *     int pid;                    // child's pid (for pipes)
  *     int lineno;                 // number of lines read
  *     char *path;                 // pathname for file
- *     void (*finalize) _((struct rb_io_t*,int)); // finalize proc
+ *     void (*finalize) _((struct rb_io*,int)); // finalize proc
  * } rb_io_t;
  *```
  *
@@ -358,7 +376,7 @@ rb_io_t *rb_io_make_open_file(VALUE obj);
  * methinks.  Ruby doesn't prevent you from  shooting yourself in the foot, but
  * consider yourself warned here.
  */
-FILE *rb_io_stdio_file(rb_io_t *fptr);
+FILE *rb_io_stdio_file(struct rb_io *fptr);
 
 /**
  * Identical to rb_io_stdio_file(), except it takes file descriptors instead of
@@ -391,7 +409,7 @@ FILE *rb_fdopen(int fd, const char *modestr);
  *
  * rb_io_modestr_fmode() is not a pure function because it raises.
  */
-int rb_io_modestr_fmode(const char *modestr);
+enum rb_io_mode rb_io_modestr_fmode(const char *modestr);
 
 /**
  * Identical  to rb_io_modestr_fmode(),  except it  returns a  mixture of  `O_`
@@ -429,10 +447,10 @@ int rb_io_oflags_fmode(int oflags);
  *
  * The parameter must have been `const rb_io_t *`.
  */
-void rb_io_check_writable(rb_io_t *fptr);
+void rb_io_check_writable(struct rb_io *fptr);
 
 /** @alias{rb_io_check_byte_readable} */
-void rb_io_check_readable(rb_io_t *fptr);
+void rb_io_check_readable(struct rb_io *fptr);
 
 /**
  * Asserts that an  IO is opened for character-based reading.   A character can
@@ -452,7 +470,7 @@ void rb_io_check_readable(rb_io_t *fptr);
  * @see  "Can I use OpenSSL's SSL library with non-blocking I/O?"
  *        https://www.openssl.org/docs/faq.html
  */
-void rb_io_check_char_readable(rb_io_t *fptr);
+void rb_io_check_char_readable(struct rb_io *fptr);
 
 /**
  * Asserts  that  an IO  is  opened  for  byte-based reading.   Byte-based  and
@@ -462,18 +480,7 @@ void rb_io_check_char_readable(rb_io_t *fptr);
  * @exception  rb_eIOError  `fptr` is not for reading.
  * @post       Upon successful return `fptr` is ready for reading bytes.
  */
-void rb_io_check_byte_readable(rb_io_t *fptr);
-
-/**
- * Destroys the given IO.  Any pending operations are flushed.
- *
- * @note  It makes no sense to call this function from anywhere outside of your
- *        class' ::rb_data_type_struct::dfree.
- *
- * @param[out]  fptr  IO to close.
- * @post        `fptr` is no longer a valid pointer.
- */
-int rb_io_fptr_finalize(rb_io_t *fptr);
+void rb_io_check_byte_readable(struct rb_io *fptr);
 
 /**
  * Sets #FMODE_SYNC.
@@ -484,7 +491,7 @@ int rb_io_fptr_finalize(rb_io_t *fptr);
  * @exception   rb_eIOError  `fptr` is not opened.
  * @post        `fptr` is in sync mode.
  */
-void rb_io_synchronized(rb_io_t *fptr);
+void rb_io_synchronized(struct rb_io *fptr);
 
 /**
  * Asserts that the passed IO is initialised.
@@ -493,7 +500,7 @@ void rb_io_synchronized(rb_io_t *fptr);
  * @exception  rb_eIOError  `fptr` is not initialised.
  * @post       `fptr` is initialised.
  */
-void rb_io_check_initialized(rb_io_t *fptr);
+void rb_io_check_initialized(struct rb_io *fptr);
 
 /**
  * This badly named function asserts that the passed IO is _open_.
@@ -502,7 +509,7 @@ void rb_io_check_initialized(rb_io_t *fptr);
  * @exception  rb_eIOError  `fptr` is closed.
  * @post       `fptr` is open.
  */
-void rb_io_check_closed(rb_io_t *fptr);
+void rb_io_check_closed(struct rb_io *fptr);
 
 /**
  * Identical  to rb_io_check_io(),  except it  raises exceptions  on conversion
@@ -598,15 +605,17 @@ VALUE rb_io_set_write_io(VALUE io, VALUE w);
  *        nonblocking file and stdio, and `stderr` tends to be under control of
  *        stdio in other processes.
  *
- * @param[out]  fptr  An IO that is to ne nonblocking.
+ * @param[out]  fptr  An IO that is to be nonblocking.
  * @post        Descriptor that `fptr` describes is under nonblocking mode.
  *
- * @internal
- *
- * There  is  `O_NONBLOCK` but  not  `FMODE_NONBLOCK`.   You cannot  atomically
- * create a nonblocking file descriptor using our API.
  */
-void rb_io_set_nonblock(rb_io_t *fptr);
+void rb_io_set_nonblock(struct rb_io *fptr);
+
+/**
+ * Returns the path for the given IO.
+ *
+ */
+VALUE rb_io_path(VALUE io);
 
 /**
  * Returns the path for the given IO.
@@ -646,7 +655,7 @@ int rb_io_mode(VALUE io);
  * @post        `enc2_p` is the specified external encoding.
  * @post        `fmode_p` is the specified set of `FMODE_` modes.
  */
-int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
+int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p);
 
 /**
  * This    function    can   be    seen    as    an   extended    version    of
@@ -658,16 +667,12 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
  * static VALUE
  * your_method(int argc, const VALUE *argv, VALUE self)
  * {
- *     VALUE       f; // file name
- *     VALUE       m; // open mode
- *     VALUE       p; // permission (O_CREAT)
- *     VALUE       k; // keywords
- *     rb_io_enc_t c; // converter
- *     int         oflags;
- *     int         fmode;
+ *     VALUE file_name, open_mode, permissions, keywords;
+ *     rb_io_encoding_t converter;
+ *     int oflags, fmode;
  *
- *     int n = rb_scan_args(argc, argv, "12:", &f, &m, &p, &k);
- *     rb_io_extract_modeenc(&m, &p, k, &oflags, &fmode, &c);
+ *     int n = rb_scan_args(argc, argv, "12:", &file_name, &open_mode, &permissions, &keywords);
+ *     rb_io_extract_modeenc(&open_mode, &permissions, keywords, &oflags, &fmode, &converter);
  *
  *     // Every local variables declared so far has been properly filled here.
  *    ...
@@ -715,7 +720,7 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
  *   ) -> void
  * ```
  */
-void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
+void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, struct rb_io_encoding *convconfig_p);
 
 /* :TODO: can this function be __attribute__((warn_unused_result)) or not? */
 /**
@@ -735,7 +740,7 @@ void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *o
  */
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
+RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
 /**
  * Blocks until the passed file descriptor gets readable.
  *
@@ -747,7 +752,7 @@ ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
  */
 int rb_io_wait_readable(int fd);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
+RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
 /**
  * Blocks until the passed file descriptor gets writable.
  *
@@ -758,7 +763,7 @@ int rb_io_wait_readable(int fd);
  */
 int rb_io_wait_writable(int fd);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
+RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
 /**
  * Blocks until the passed file descriptor is ready for the passed events.
  *
@@ -912,7 +917,7 @@ void rb_eof_error(void);
  * @param[out]  fptr  An IO to wait for reading.
  * @post        The are bytes to be read.
  */
-void rb_io_read_check(rb_io_t *fptr);
+void rb_io_read_check(struct rb_io *fptr);
 
 RBIMPL_ATTR_PURE()
 /**
@@ -923,7 +928,7 @@ RBIMPL_ATTR_PURE()
  * @retval     0     The IO is empty.
  * @retval     1     There is something buffered.
  */
-int rb_io_read_pending(rb_io_t *fptr);
+int rb_io_read_pending(struct rb_io *fptr);
 
 /**
  * Constructs an instance of ::rb_cStat from the passed information.

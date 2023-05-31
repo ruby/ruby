@@ -15,6 +15,8 @@
 
 #include "ruby/fiber/scheduler.h"
 
+#include "internal/io.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
@@ -1839,7 +1841,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
             goto wrong;
     }
     else if (!NIL_P(tmp = rb_io_check_io(v))) {
-        rb_io_t *fptr;
+        struct rb_io *fptr;
         GetOpenFile(tmp, fptr);
         if (fptr->tied_io_for_writing)
             rb_raise(rb_eArgError, "duplex IO redirection");

@@ -574,7 +574,7 @@ class TestSocket < Test::Unit::TestCase
     begin sleep(0.1) end until serv_thread.stop?
     sock = TCPSocket.new("localhost", server.addr[1])
     client_thread = Thread.new do
-      assert_raise(IOError, bug4390) {
+      assert_raise(IO::Cancelled, bug4390) {
         sock.readline
       }
     end
