@@ -253,9 +253,6 @@ show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, i
 static void
 usage(const char *name, int help, int highlight, int columns)
 {
-    /* This message really ought to be max 23 lines.
-     * Removed -h because the user already knows that option. Others? */
-
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 
 #if USE_YJIT
@@ -263,6 +260,9 @@ usage(const char *name, int help, int highlight, int columns)
 #else
 # define PLATFORM_JIT_OPTION "--rjit (experimental)"
 #endif
+
+    /* This message really ought to be max 23 lines.
+     * Removed -h because the user already knows that option. Others? */
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
         M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
@@ -293,6 +293,8 @@ usage(const char *name, int help, int highlight, int columns)
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
+    STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 25);
+
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
         M("--dump={insns|parsetree|...}[,...]",     "",
