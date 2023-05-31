@@ -7211,6 +7211,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         }
         mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         cc_table_mark(objspace, obj);
+        gc_mark(objspace, RCLASS_EXT(obj)->classpath);
         break;
 
       case T_ARRAY:
@@ -10443,6 +10444,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         update_cc_tbl(objspace, obj);
+        UPDATE_IF_MOVED(objspace, RCLASS_EXT(obj)->classpath);
         break;
 
       case T_IMEMO:
