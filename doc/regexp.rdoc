@@ -1,4 +1,5 @@
 A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
+A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
 The regexp is a rich, versatile, and powerful tool for manipulating strings.
 
@@ -38,7 +39,7 @@ A regexp has:
 
   - Metacharacters and escapes.
   - Character classes.
-  - Character properties.
+  - Unicode properties.
   - Repetition.
   - Captures.
   - Groups.
@@ -376,23 +377,31 @@ Ruby also supports these (non-POSIX) character classes:
     - +Number+ (+N+)
     - <tt>Connector Punctuation</tt> (+Pc+).
 
-== Character Properties
+== Unicode Properties
 
-The <tt>/\p{_property_name_}/</tt> construct matches characters using a property name,
+The <tt>/\p{_property_name_}/</tt> construct (with lowercase +p+)
+matches characters using a property name,
 much like a character class;
-property +Ll+ specifies lowercase characters:
+property +Alpha+ specifies alphabetic characters:
 
-  /\p{Ll}/.match("a") # => #<MatchData "a">
+  /\p{Alpha}/.match('a') # => #<MatchData "a">
+  /\p{Alpha}/.match('1') # => nil
 
-A character property can be inverted
+A property can be inverted
 by prefixing the name with a caret character (<tt>^</tt>):
 
-  /\p{^Ll}/.match("A") # => #<MatchData "A">
+  /\p{^Alpha}/.match('1') # => #<MatchData "1">
+  /\p{^Alpha}/.match('a') # => nil
 
-See {Character Properties}[./Regexp/character_properties_rdoc.html]
-for regexps based on the numerous character properties.
+Or by using <tt>\P</tt> (uppercase +P+):
 
-Some commonly-used character properties correspond to POSIX bracket expressions:
+  /\P{Alpha}/.match('1') # => #<MatchData "1">
+  /\P{Alpha}/.match('a') # => nil
+
+See {Unicode Properties}[./Regexp/unicode_properties_rdoc.html]
+for regexps based on the numerous properties.
+
+Some commonly-used properties correspond to POSIX bracket expressions:
 
 - <tt>/\p{Alnum}/</tt>: Alphabetic and numeric character
 - <tt>/\p{Alpha}/</tt>: Alphabetic character
@@ -491,7 +500,9 @@ Punctation:
 - {Co, Private_Use}[https://www.compart.com/en/unicode/category/Co].
 - {Cs, Surrogate}[https://www.compart.com/en/unicode/category/Cs].
 
-Among the character properties are
+=== Unicode Scripts
+
+Among the Unicode properties are
 {Unicode scripts}[https://en.wikipedia.org/wiki/Script_(Unicode)].
 See {Supported Scripts}[https://www.unicode.org/standard/supported.html].
 
@@ -550,7 +561,7 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w{1,2}/.match('x')   # => #<MatchData "x">
     /\w{1,2}/.match('xyz') # => #<MatchData "xy">
 
-=== Greedy Match
+=== Greedy or Lazy Matching
 
 Repetition is <i>greedy</i> by default: as many occurrences as possible
 are matched while still allowing the overall match to succeed. By
@@ -568,7 +579,7 @@ Both patterns below match the string. The first uses a greedy quantifier so
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
     /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
 
-=== Possessive Match
+=== Possessive Matching
 
 A quantifier followed by <tt>+</tt> matches <i>possessively</i>: once it
 has matched it does not backtrack. They behave like greedy quantifiers,
@@ -999,10 +1010,14 @@ However, the following pattern takes appreciably longer:
 
 This happens because an atom in the regexp is quantified by both an
 immediate <tt>+</tt> and an enclosing <tt>*</tt> with nothing to
-differentiate which is in control of any particular character. The
-nondeterminism that results produces super-linear performance. (Consult
-<i>Mastering Regular Expressions</i> (3rd ed.), pp 222, by
-<i>Jeffery Friedl</i>, for an in-depth analysis). This particular case
+differentiate which is in control of any particular character.
+
+The nondeterminism that results produces super-linear performance.
+For an in-depth analysis, see
+ {"Crafting an Efficient Expression"}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf#page=245]
+in <i>Mastering Regular Expressions</i> (3rd ed.) by Jeffrey Friedl.
+
+This particular case
 can be fixed by use of atomic grouping, which prevents the unnecessary
 backtracking:
 
