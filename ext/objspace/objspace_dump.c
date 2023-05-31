@@ -18,7 +18,6 @@
 #include "internal/class.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
-#include "internal/io.h"
 #include "internal/string.h"
 #include "internal/sanitizers.h"
 #include "symbol.h"

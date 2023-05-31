@@ -169,6 +169,7 @@ int flock(int, int);
 #include "internal/thread.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 

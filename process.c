@@ -103,7 +103,6 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
-#include "internal/io.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"

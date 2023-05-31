@@ -16,6 +16,11 @@
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io/buffer.h"
 
+#ifdef _WIN32
+# include "ruby/ruby.h"
+# include "ruby/io.h"
+#endif
+
 #include <ctype.h>
 #include <errno.h>
 #include <stddef.h>
@@ -216,7 +221,7 @@ struct argf {
     long lineno;
     VALUE argv;
     VALUE inplace;
-    struct rb_io_encoding encs;
+    struct rb_io_enc_t encs;
     int8_t init_p, next_p, binmode;
 };
 
@@ -520,6 +525,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr);
 
+#define FMODE_PREP (1<<16)
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
 
 #define fptr_signal_on_epipe(fptr) \
@@ -1457,7 +1463,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 static VALUE
 io_from_fd(int fd)
 {
-    return prep_io(fd, FMODE_EXTERNAL, rb_cIO, NULL);
+    return prep_io(fd, FMODE_PREP, rb_cIO, NULL);
 }
 
 static int
@@ -2869,13 +2875,6 @@ rb_io_descriptor(VALUE io)
     }
 }
 
-int rb_io_mode(VALUE io)
-{
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    return fptr->mode;
-}
-
 /*
  *  call-seq:
  *    pid -> integer or nil
@@ -2922,7 +2921,7 @@ rb_io_pid(VALUE io)
  *    File.open("testfile") {|f| f.path} # => "testfile"
  */
 
-VALUE
+static VALUE
 rb_io_path(VALUE io)
 {
     rb_io_t *fptr = RFILE(io)->fptr;
@@ -5306,7 +5305,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 #define rb_io_set_close_on_exec rb_f_notimplement
 #endif
 
-#define RUBY_IO_EXTERNAL_P(f) ((f)->mode & FMODE_EXTERNAL)
+#define IS_PREP_STDIO(f) ((f)->mode & FMODE_PREP)
 #define PREP_STDIO_NAME(f) (RSTRING_PTR((f)->pathv))
 
 static VALUE
@@ -5420,7 +5419,7 @@ maygvl_fclose(FILE *file, int keepgvl)
     return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
 }
 
-static void free_io_buffer(struct rb_io_internal_buffer *buf);
+static void free_io_buffer(rb_io_buffer_t *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
 static void*
@@ -5464,7 +5463,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
     int done = 0;
 
-    if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2) {
+    if (IS_PREP_STDIO(fptr) || fd <= 2) {
         // Need to keep FILE objects of stdin, stdout and stderr, so we are done:
         done = 1;
     }
@@ -5543,7 +5542,7 @@ rb_io_fptr_cleanup(rb_io_t *fptr, int noraise)
 }
 
 static void
-free_io_buffer(struct rb_io_internal_buffer *buf)
+free_io_buffer(rb_io_buffer_t *buf)
 {
     if (buf->ptr) {
         ruby_sized_xfree(buf->ptr, (size_t)buf->capa);
@@ -5771,8 +5770,10 @@ io_close(VALUE io)
  *
  *  Related: IO#close_read, IO#close_write, IO#close.
  */
-VALUE
-rb_io_closed_p(VALUE io)
+
+
+static VALUE
+rb_io_closed(VALUE io)
 {
     rb_io_t *fptr;
     VALUE write_io;
@@ -6723,7 +6724,7 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     return extracted;
 }
 
-typedef struct rb_io_encoding convconfig_t;
+typedef struct rb_io_enc_t convconfig_t;
 
 static void
 validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
@@ -7257,7 +7258,7 @@ static void
 fptr_copy_finalizer(rb_io_t *fptr, const rb_io_t *orig)
 {
 #if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    void (*const old_finalize)(rb_io_t*,int) = fptr->finalize;
+    void (*const old_finalize)(struct rb_io_t*,int) = fptr->finalize;
 
     if (old_finalize == orig->finalize) return;
 #endif
@@ -8288,7 +8289,7 @@ io_reopen(VALUE io, VALUE nfile)
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
-    if (RUBY_IO_EXTERNAL_P(fptr)) {
+    if (IS_PREP_STDIO(fptr)) {
         if ((fptr->stdio_file == stdin && !(orig->mode & FMODE_READABLE)) ||
             (fptr->stdio_file == stdout && !(orig->mode & FMODE_WRITABLE)) ||
             (fptr->stdio_file == stderr && !(orig->mode & FMODE_WRITABLE))) {
@@ -8314,17 +8315,17 @@ io_reopen(VALUE io, VALUE nfile)
     }
 
     /* copy rb_io_t structure */
-    fptr->mode = orig->mode | (fptr->mode & FMODE_EXTERNAL);
+    fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
-    else if (!RUBY_IO_EXTERNAL_P(fptr)) fptr->pathv = Qnil;
+    else if (!IS_PREP_STDIO(fptr)) fptr->pathv = Qnil;
     fptr_copy_finalizer(fptr, orig);
 
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
-        if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2 || !fptr->stdio_file) {
+        if (IS_PREP_STDIO(fptr) || fd <= 2 || !fptr->stdio_file) {
             /* need to keep FILE objects of stdin, stdout and stderr */
             if (rb_cloexec_dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
@@ -8432,7 +8433,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         convconfig_t convconfig;
 
         rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
-        if (RUBY_IO_EXTERNAL_P(fptr) &&
+        if (IS_PREP_STDIO(fptr) &&
             ((fptr->mode & FMODE_READWRITE) & (fmode & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
             rb_raise(rb_eArgError,
@@ -8511,7 +8512,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     rb_io_flush(io);
 
     /* copy rb_io_t structure */
-    fptr->mode = orig->mode & ~FMODE_EXTERNAL;
+    fptr->mode = orig->mode & ~FMODE_PREP;
     fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
@@ -9186,79 +9187,26 @@ stderr_getter(ID id, VALUE *ptr)
 }
 
 static VALUE
-allocate_and_open_new_file(VALUE klass)
-{
-    VALUE self = io_alloc(klass);
-    rb_io_make_open_file(self);
-    return self;
-}
-
-VALUE
-rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding)
-{
-
-    int state;
-    VALUE self = rb_protect(allocate_and_open_new_file, klass, &state);
-    if (state) {
-        /* if we raised an exception allocating an IO object, but the caller
-           intended to transfer ownership of this FD to us, close the fd before
-           raising the exception. Otherwise, we would leak a FD - the caller
-           expects GC to close the file, but we never got around to assigning
-           it to a rb_io. */
-        if (!(mode & FMODE_EXTERNAL)) {
-            maygvl_close(descriptor, 0);
-        }
-        rb_jump_tag(state);
-    }
-
-
-    struct rb_io *io = RFILE(self)->fptr;
-    io->self = self;
-    io->fd = descriptor;
-    io->mode = mode;
-
-    /* At this point, Ruby fully owns the descriptor, and will close it when
-       the IO gets GC'd (unless FMODE_EXTERNAL was set), no matter what happens
-       in the rest of this method. */
-
-    if (NIL_P(path)) {
-        io->pathv = Qnil;
-    }
-    else {
-        StringValue(path);
-        io->pathv = rb_str_new_frozen(path);
-    }
-
-    io->timeout = timeout;
-
-    if (encoding) {
-        io->encs = *encoding;
-    }
-
-    rb_update_max_fd(descriptor);
-
-    return self;
-}
-
-static VALUE
 prep_io(int fd, int fmode, VALUE klass, const char *path)
 {
-    VALUE path_value = Qnil;
-    if (path) {
-        path_value = rb_obj_freeze(rb_str_new_cstr(path));
-    }
+    rb_io_t *fp;
+    VALUE io = io_alloc(klass);
 
-    VALUE self = rb_io_open_descriptor(klass, fd, fmode, path_value, Qnil, NULL);
-    struct rb_io *io = RFILE(self)->fptr;
-
-    if (!io_check_tty(io)) {
+    MakeOpenFile(io, fp);
+    fp->self = io;
+    fp->fd = fd;
+    fp->mode = fmode;
+    fp->timeout = Qnil;
+    if (!io_check_tty(fp)) {
 #ifdef __CYGWIN__
-        io->mode |= FMODE_BINMODE;
+        fp->mode |= FMODE_BINMODE;
         setmode(fd, O_BINARY);
 #endif
     }
+    if (path) fp->pathv = rb_obj_freeze(rb_str_new_cstr(path));
+    rb_update_max_fd(fd);
 
-    return self;
+    return io;
 }
 
 VALUE
@@ -9274,7 +9222,7 @@ static VALUE
 prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
 {
     rb_io_t *fptr;
-    VALUE io = prep_io(fileno(f), fmode|FMODE_EXTERNAL|DEFAULT_TEXTMODE, klass, path);
+    VALUE io = prep_io(fileno(f), fmode|FMODE_PREP|DEFAULT_TEXTMODE, klass, path);
 
     GetOpenFile(io, fptr);
     fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
@@ -9318,7 +9266,7 @@ rb_io_stdio_file(rb_io_t *fptr)
 }
 
 static inline void
-rb_io_buffer_init(struct rb_io_internal_buffer *buf)
+rb_io_buffer_init(rb_io_buffer_t *buf)
 {
     buf->ptr = NULL;
     buf->off = 0;
@@ -9458,7 +9406,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     if (!NIL_P(opt)) {
         if (rb_hash_aref(opt, sym_autoclose) == Qfalse) {
-            fmode |= FMODE_EXTERNAL;
+            fmode |= FMODE_PREP;
         }
 
         path = rb_hash_aref(opt, RB_ID2SYM(idPath));
@@ -9635,7 +9583,7 @@ rb_io_autoclose_p(VALUE io)
 {
     rb_io_t *fptr = RFILE(io)->fptr;
     rb_io_check_closed(fptr);
-    return RBOOL(!(fptr->mode & FMODE_EXTERNAL));
+    return RBOOL(!(fptr->mode & FMODE_PREP));
 }
 
 /*
@@ -9661,9 +9609,9 @@ rb_io_set_autoclose(VALUE io, VALUE autoclose)
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     if (!RTEST(autoclose))
-        fptr->mode |= FMODE_EXTERNAL;
+        fptr->mode |= FMODE_PREP;
     else
-        fptr->mode &= ~FMODE_EXTERNAL;
+        fptr->mode &= ~FMODE_PREP;
     return autoclose;
 }
 
@@ -14494,7 +14442,7 @@ argf_closed(VALUE argf)
 {
     next_argv();
     ARGF_FORWARD(0, 0);
-    return rb_io_closed_p(ARGF.current_file);
+    return rb_io_closed(ARGF.current_file);
 }
 
 /*
@@ -15541,7 +15489,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "close_on_exec=", rb_io_set_close_on_exec, 1);
 
     rb_define_method(rb_cIO, "close", rb_io_close_m, 0);
-    rb_define_method(rb_cIO, "closed?", rb_io_closed_p, 0);
+    rb_define_method(rb_cIO, "closed?", rb_io_closed, 0);
     rb_define_method(rb_cIO, "close_read", rb_io_close_read, 0);
     rb_define_method(rb_cIO, "close_write", rb_io_close_write, 0);
 

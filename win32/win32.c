@@ -8269,7 +8269,10 @@ w32_io_info(VALUE *file, w32_io_info_t *st)
 
     tmp = rb_check_convert_type_with_id(*file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
-        f = (HANDLE)rb_w32_get_osfhandle(rb_io_descriptor(tmp));
+        rb_io_t *fptr;
+
+        GetOpenFile(tmp, fptr);
+        f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
         if (f == (HANDLE)-1) return INVALID_HANDLE_VALUE;
     }
     else {
