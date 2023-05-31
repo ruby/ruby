@@ -434,9 +434,11 @@ class TestGCCompact < Test::Unit::TestCase
       ary = HASH_COUNT.times.map { base_hash.dup }
       ary.each { |h| h[:i] = 9 }
 
+      before_stat_heap = GC.stat_heap
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      after_stat_heap = GC.stat_heap
 
-      assert_operator(stats[:moved_down][:T_HASH], :>=, 500, "read barrier faults: before #{before_read_barrier_faults}, after #{GC.stat(:read_barrier_faults)}")
+      assert_operator(stats[:moved_down][:T_HASH], :>=, 500, "read barrier faults: before #{before_read_barrier_faults}, after #{GC.stat(:read_barrier_faults)}, stat_heap: before #{before_stat_heap}, after: #{after_stat_heap}, stats: #{stats}")
     end;
   end
 
