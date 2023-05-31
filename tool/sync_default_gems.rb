@@ -34,7 +34,6 @@ module SyncDefaultGems
     irb: 'ruby/irb',
     forwardable: "ruby/forwardable",
     mutex_m: "ruby/mutex_m",
-    racc: "ruby/racc",
     singleton: "ruby/singleton",
     open3: "ruby/open3",
     getoptlong: "ruby/getoptlong",
@@ -287,25 +286,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
       rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
       `git checkout ext/strscan/depend`
-    when "racc"
-      rm_rf(%w[lib/racc lib/racc.rb ext/racc test/racc])
-      parser_files = %w[
-        lib/racc/parser-text.rb
-      ]
-      Dir.chdir(upstream) do
-        `bundle install`
-        parser_files.each do |file|
-          `bundle exec rake #{file}`
-        end
-      end
-      cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
-      mkdir_p("ext/racc/cparse")
-      cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
-      cp_r("#{upstream}/test", "test/racc")
-      cp_r("#{upstream}/racc.gemspec", "lib/racc")
-      rm_rf("test/racc/lib")
-      rm_rf("lib/racc/cparse-jruby.jar")
-      `git checkout ext/racc/cparse/README ext/racc/cparse/depend`
     when "cgi"
       rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
       cp_r("#{upstream}/ext/cgi", "ext")
