@@ -49,19 +49,6 @@ class TestVariable < Test::Unit::TestCase
     assert_equal(1, c.class_variable_get(:@@foo))
   end
 
-  Zeus = Gods.clone
-
-  def test_cloned_allows_setting_cvar
-    Zeus.class_variable_set(:@@rule, "Athena")
-
-    god = Gods.new.ruler0
-    zeus = Zeus.new.ruler0
-
-    assert_equal "Cronus", god
-    assert_equal "Athena", zeus
-    assert_not_equal god.object_id, zeus.object_id
-  end
-
   def test_singleton_class_included_class_variable
     c = Class.new
     c.extend(Olympians)

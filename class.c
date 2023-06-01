@@ -446,11 +446,8 @@ cvc_table_copy(ID id, VALUE val, void *data)
 
     ent = ALLOC(struct rb_cvar_class_tbl_entry);
     ent->class_value = ctx->clone;
-    ent->cref = orig_entry->cref;
     ent->global_cvar_state = orig_entry->global_cvar_state;
     rb_id_table_insert(ctx->new_table, id, (VALUE)ent);
-
-    RB_OBJ_WRITTEN(ctx->clone, Qundef, ent->cref);
 
     return ID_TABLE_CONTINUE;
 }
