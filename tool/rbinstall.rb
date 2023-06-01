@@ -587,7 +587,7 @@ end
 install?(:local, :comm, :bin, :'bin-comm') do
   prepare "command scripts", bindir
 
-  install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
+  install_recursive(File.join(srcdir, "libexec"), bindir, :maxdepth => 1) do |src, cmd|
     $script_installer.install(src, cmd)
   end
 end
@@ -959,6 +959,7 @@ def install_default_gem(dir, srcdir, bindir)
     :wrappers => true,
     :format_executable => true,
     :install_as_default => true,
+    :force => true,
   }
   default_spec_dir = Gem.default_specifications_dir
 
