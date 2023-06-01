@@ -89,7 +89,7 @@ typedef enum {
  * ::rb_io_t::rbuf.  People don't manipulate it directly.
  */
 RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
-struct rb_io_buffer_t {
+struct rb_io_internal_buffer {
 
     /** Pointer to the underlying memory region, of at least `capa` bytes. */
     char *ptr;                  /* off + len <= capa */
@@ -105,7 +105,7 @@ struct rb_io_buffer_t {
 } RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 /** @alias{rb_io_buffer_t} */
-typedef struct rb_io_buffer_t rb_io_buffer_t;
+typedef struct rb_io_internal_buffer rb_io_buffer_t;
 
 /** Decomposed encoding flags (e.g. `"enc:enc2""`). */
 /*
@@ -114,7 +114,7 @@ typedef struct rb_io_buffer_t rb_io_buffer_t;
  * e1   NULL force_encoding(e1)               convert str.encoding to e1
  * e1   e2   convert from e2 to e1            convert str.encoding to e2
  */
-struct rb_io_enc_t {
+struct rb_io_encoding {
     /** Internal encoding. */
     rb_encoding *enc;
     /** External encoding. */
@@ -136,7 +136,7 @@ struct rb_io_enc_t {
 };
 
 /** Ruby's IO, metadata and buffers. */
-typedef struct rb_io_t {
+typedef struct rb_io {
 
     /** The IO's Ruby level counterpart. */
     VALUE self;
@@ -160,7 +160,7 @@ typedef struct rb_io_t {
     VALUE pathv;
 
     /** finalize proc */
-    void (*finalize)(struct rb_io_t*,int);
+    void (*finalize)(struct rb_io*,int);
 
     /** Write buffer. */
     rb_io_buffer_t wbuf;
@@ -178,7 +178,7 @@ typedef struct rb_io_t {
      */
     VALUE tied_io_for_writing;
 
-    struct rb_io_enc_t encs; /**< Decomposed encoding flags. */
+    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
 
     /** Encoding converter used when reading from this IO. */
     rb_econv_t *readconv;
@@ -231,7 +231,7 @@ typedef struct rb_io_t {
 } rb_io_t;
 
 /** @alias{rb_io_enc_t} */
-typedef struct rb_io_enc_t rb_io_enc_t;
+typedef struct rb_io_encoding rb_io_enc_t;
 
 /**
  * @private
@@ -357,7 +357,7 @@ typedef struct rb_io_enc_t rb_io_enc_t;
 /**
  * Allocate a new IO object, with the given file descriptor.
  */
-VALUE rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_enc_t *encoding);
+VALUE rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding);
 
 /**
  * Returns whether or not the underlying IO is closed.
@@ -436,14 +436,14 @@ rb_io_t *rb_io_make_open_file(VALUE obj);
  * like this:
  *
  * ```CXX
- * typedef struct rb_io_t {
+ * typedef struct rb_io {
  *     FILE *f;                    // stdio ptr for read/write
  *     FILE *f2;                   // additional ptr for rw pipes
  *     int mode;                   // mode flags
  *     int pid;                    // child's pid (for pipes)
  *     int lineno;                 // number of lines read
  *     char *path;                 // pathname for file
- *     void (*finalize) _((struct rb_io_t*,int)); // finalize proc
+ *     void (*finalize) _((struct rb_io*,int)); // finalize proc
  * } rb_io_t;
  *```
  *
