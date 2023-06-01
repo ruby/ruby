@@ -5423,14 +5423,6 @@ maygvl_fclose(FILE *file, int keepgvl)
 static void free_io_buffer(rb_io_buffer_t *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
-static void*
-call_close_wait_nogvl(void *arg)
-{
-    struct rb_io_close_wait_list *busy = (struct rb_io_close_wait_list *)arg;
-    rb_notify_fd_close_wait(busy);
-    return NULL;
-}
-
 static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
                     struct rb_io_close_wait_list *busy)
@@ -5476,7 +5468,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     // Ensure waiting_fd users do not hit EBADF.
     if (busy) {
         // Wait for them to exit before we call close().
-        (void)rb_thread_call_without_gvl(call_close_wait_nogvl, busy, RUBY_UBF_IO, 0);
+        rb_notify_fd_close_wait(busy);
     }
 
     // Disable for now.
