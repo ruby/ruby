@@ -4432,6 +4432,9 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *  Returns +true+ if any element satisfies a given criterion;
  *  +false+ otherwise.
  *
+ *  If +self+ has no element, returns +false+ and argument or block
+ *  are not used.
+ *
  *  With no argument and no block,
  *  returns +true+ if +self+ is non-empty; +false+ if empty.
  *
@@ -4450,6 +4453,8 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.any? {|key, value| value < 3 } # => true
  *    h.any? {|key, value| value > 3 } # => false
+ *
+ *  Related: Enumerable#any?
  */
 
 static VALUE
