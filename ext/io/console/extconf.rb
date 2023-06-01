@@ -1,12 +1,6 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-have_func("rb_io_path")
-have_func("rb_io_descriptor")
-have_func("rb_io_get_write_io")
-have_func("rb_io_closed_p")
-have_func("rb_io_open_descriptor")
-
 ok = true if RUBY_ENGINE == "ruby" || RUBY_ENGINE == "truffleruby"
 hdr = nil
 case
