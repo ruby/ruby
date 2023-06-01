@@ -137,113 +137,6 @@ struct rb_io_encoding {
     VALUE ecopts;
 };
 
-/** Ruby's IO, metadata and buffers. */
-typedef struct rb_io {
-
-    /** The IO's Ruby level counterpart. */
-    VALUE self;
-
-    /** stdio ptr for read/write, if available. */
-    FILE *stdio_file;
-
-    /** file descriptor. */
-    int fd;
-
-    /** mode flags: FMODE_XXXs */
-    int mode;
-
-    /** child's pid (for pipes) */
-    rb_pid_t pid;
-
-    /** number of lines read */
-    int lineno;
-
-    /** pathname for file */
-    VALUE pathv;
-
-    /** finalize proc */
-    void (*finalize)(struct rb_io*,int);
-
-    /** Write buffer. */
-    rb_io_buffer_t wbuf;
-
-    /**
-     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
-     * ::rb_io_t::cbuf, which also concerns read IO.
-     */
-    rb_io_buffer_t rbuf;
-
-    /**
-     * Duplex IO object, if set.
-     *
-     * @see rb_io_set_write_io()
-     */
-    VALUE tied_io_for_writing;
-
-    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
-
-    /** Encoding converter used when reading from this IO. */
-    rb_econv_t *readconv;
-
-    /**
-     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
-     * ::rb_io_t::rbuf
-     */
-    rb_io_buffer_t cbuf;
-
-    /** Encoding converter used when writing to this IO. */
-    rb_econv_t *writeconv;
-
-    /**
-     * This is, when set, an instance  of ::rb_cString which holds the "common"
-     * encoding.   Write  conversion  can  convert strings  twice...   In  case
-     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
-     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
-     */
-    VALUE writeconv_asciicompat;
-
-    /** Whether ::rb_io_t::writeconv is already set up. */
-    int writeconv_initialized;
-
-    /**
-     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
-     * initialising ::rb_io_t::writeconv.
-     */
-    int writeconv_pre_ecflags;
-
-    /**
-     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
-     * ::rb_io_t::writeconv.
-     */
-    VALUE writeconv_pre_ecopts;
-
-    /**
-     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
-     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
-     * next to its arguments.
-     *
-     * This of course doesn't help inter-process IO interleaves, though.
-     */
-    VALUE write_lock;
-
-    /**
-     * The timeout associated with this IO when performing blocking operations.
-     */
-    VALUE timeout;
-} rb_io_t;
-
-/** @alias{rb_io_enc_t} */
-typedef struct rb_io_encoding rb_io_enc_t;
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- */
-#define HAVE_RB_IO_T 1
-
 /**
  * @name Possible flags for ::rb_io_t::mode
  *
@@ -355,6 +248,136 @@ typedef struct rb_io_encoding rb_io_enc_t;
 /* #define FMODE_INET6                 0x00800000 */
 
 /** @} */
+
+enum rb_io_mode {
+    RUBY_IO_MODE_EXTERNAL = FMODE_EXTERNAL,
+
+    RUBY_IO_MODE_READABLE = FMODE_READABLE,
+    RUBY_IO_MODE_WRITABLE = FMODE_WRITABLE,
+    RUBY_IO_MODE_READABLE_WRITABLE = (RUBY_IO_MODE_READABLE|RUBY_IO_MODE_WRITABLE),
+
+    RUBY_IO_MODE_BINARY = FMODE_BINMODE,
+    RUBY_IO_MODE_TEXT = FMODE_TEXTMODE,
+    RUBY_IO_MODE_TEXT_SET_ENCODING_FROM_BOM = FMODE_SETENC_BY_BOM,
+
+    RUBY_IO_MODE_SYNCHRONISED = FMODE_SYNC,
+
+    RUBY_IO_MODE_TTY = FMODE_TTY,
+
+    RUBY_IO_MODE_DUPLEX = FMODE_DUPLEX,
+
+    RUBY_IO_MODE_APPEND = FMODE_APPEND,
+    RUBY_IO_MODE_CREATE = FMODE_CREATE,
+    RUBY_IO_MODE_EXCLUSIVE = FMODE_EXCL,
+    RUBY_IO_MODE_TRUNCATE = FMODE_TRUNC,
+};
+
+/** Ruby's IO, metadata and buffers. */
+typedef struct rb_io {
+
+    /** The IO's Ruby level counterpart. */
+    VALUE self;
+
+    /** stdio ptr for read/write, if available. */
+    FILE *stdio_file;
+
+    /** file descriptor. */
+    int fd;
+
+    /** mode flags: FMODE_XXXs */
+    enum rb_io_mode mode;
+
+    /** child's pid (for pipes) */
+    rb_pid_t pid;
+
+    /** number of lines read */
+    int lineno;
+
+    /** pathname for file */
+    VALUE pathv;
+
+    /** finalize proc */
+    void (*finalize)(struct rb_io*,int);
+
+    /** Write buffer. */
+    rb_io_buffer_t wbuf;
+
+    /**
+     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
+     * ::rb_io_t::cbuf, which also concerns read IO.
+     */
+    rb_io_buffer_t rbuf;
+
+    /**
+     * Duplex IO object, if set.
+     *
+     * @see rb_io_set_write_io()
+     */
+    VALUE tied_io_for_writing;
+
+    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
+
+    /** Encoding converter used when reading from this IO. */
+    rb_econv_t *readconv;
+
+    /**
+     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
+     * ::rb_io_t::rbuf
+     */
+    rb_io_buffer_t cbuf;
+
+    /** Encoding converter used when writing to this IO. */
+    rb_econv_t *writeconv;
+
+    /**
+     * This is, when set, an instance  of ::rb_cString which holds the "common"
+     * encoding.   Write  conversion  can  convert strings  twice...   In  case
+     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
+     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
+     */
+    VALUE writeconv_asciicompat;
+
+    /** Whether ::rb_io_t::writeconv is already set up. */
+    int writeconv_initialized;
+
+    /**
+     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
+     * initialising ::rb_io_t::writeconv.
+     */
+    int writeconv_pre_ecflags;
+
+    /**
+     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
+     * ::rb_io_t::writeconv.
+     */
+    VALUE writeconv_pre_ecopts;
+
+    /**
+     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
+     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
+     * next to its arguments.
+     *
+     * This of course doesn't help inter-process IO interleaves, though.
+     */
+    VALUE write_lock;
+
+    /**
+     * The timeout associated with this IO when performing blocking operations.
+     */
+    VALUE timeout;
+} rb_io_t;
+
+/** @alias{rb_io_enc_t} */
+typedef struct rb_io_encoding rb_io_enc_t;
+
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ */
+#define HAVE_RB_IO_T 1
 
 /**
  * Allocate a new IO object, with the given file descriptor.
@@ -509,7 +532,7 @@ FILE *rb_fdopen(int fd, const char *modestr);
  *
  * rb_io_modestr_fmode() is not a pure function because it raises.
  */
-int rb_io_modestr_fmode(const char *modestr);
+enum rb_io_mode rb_io_modestr_fmode(const char *modestr);
 
 /**
  * Identical  to rb_io_modestr_fmode(),  except it  returns a  mixture of  `O_`
@@ -764,7 +787,7 @@ int rb_io_mode(VALUE io);
  * @post        `enc2_p` is the specified external encoding.
  * @post        `fmode_p` is the specified set of `FMODE_` modes.
  */
-int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
+int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p);
 
 /**
  * This    function    can   be    seen    as    an   extended    version    of
@@ -833,7 +856,7 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
  *   ) -> void
  * ```
  */
-void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
+void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, enum rb_io_mode *fmode_p, rb_io_enc_t *convconfig_p);
 
 /* :TODO: can this function be __attribute__((warn_unused_result)) or not? */
 /**
