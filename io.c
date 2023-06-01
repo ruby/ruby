@@ -216,7 +216,7 @@ struct argf {
     long lineno;
     VALUE argv;
     VALUE inplace;
-    struct rb_io_enc_t encs;
+    struct rb_io_encoding encs;
     int8_t init_p, next_p, binmode;
 };
 
@@ -6715,8 +6715,6 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     return extracted;
 }
 
-typedef struct rb_io_enc_t convconfig_t;
-
 static void
 validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
 {
@@ -6775,7 +6773,7 @@ extract_binmode(VALUE opthash, int *fmode)
 
 void
 rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
-        int *oflags_p, int *fmode_p, convconfig_t *convconfig_p)
+        int *oflags_p, int *fmode_p, struct rb_io_encoding *convconfig_p)
 {
     VALUE vmode;
     int oflags, fmode;
@@ -7103,11 +7101,11 @@ io_set_encoding_by_bom(VALUE io)
 
 static VALUE
 rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
-                     const convconfig_t *convconfig, mode_t perm)
+                     const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE pathv;
     rb_io_t *fptr;
-    convconfig_t cc;
+    struct rb_io_encoding cc;
     if (!convconfig) {
         /* Set to default encodings */
         rb_io_ext_int_to_encs(NULL, NULL, &cc.enc, &cc.enc2, fmode);
@@ -7141,7 +7139,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 {
     int fmode = rb_io_modestr_fmode(modestr);
     const char *p = strchr(modestr, ':');
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
 
     if (p) {
         parse_mode_enc(p+1, rb_usascii_encoding(),
@@ -7249,7 +7247,7 @@ static void
 fptr_copy_finalizer(rb_io_t *fptr, const rb_io_t *orig)
 {
 #if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    void (*const old_finalize)(struct rb_io_t*,int) = fptr->finalize;
+    void (*const old_finalize)(struct rb_io*,int) = fptr->finalize;
 
     if (old_finalize == orig->finalize) return;
 #endif
@@ -7454,7 +7452,7 @@ char *rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog);
 #ifndef __EMSCRIPTEN__
 static VALUE
 pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
-          const convconfig_t *convconfig)
+          const struct rb_io_encoding *convconfig)
 {
     struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
     VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
@@ -7683,7 +7681,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 #else
 static VALUE
 pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
-          const convconfig_t *convconfig)
+          const struct rb_io_encoding *convconfig)
 {
     rb_raise(rb_eNotImpError, "popen() is not available");
 }
@@ -7705,7 +7703,7 @@ is_popen_fork(VALUE prog)
 
 static VALUE
 pipe_open_s(VALUE prog, const char *modestr, int fmode,
-            const convconfig_t *convconfig)
+            const struct rb_io_encoding *convconfig)
 {
     int argc = 1;
     VALUE *argv = &prog;
@@ -7914,7 +7912,7 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
     const char *modestr;
     VALUE tmp, execarg_obj = Qnil;
     int oflags, fmode;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
 
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -7968,7 +7966,7 @@ popen_finish(VALUE port, VALUE klass)
 static void
 rb_scan_open_args(int argc, const VALUE *argv,
         VALUE *fname_p, int *oflags_p, int *fmode_p,
-        convconfig_t *convconfig_p, mode_t *perm_p)
+        struct rb_io_encoding *convconfig_p, mode_t *perm_p)
 {
     VALUE opt, fname, vmode, vperm;
     int oflags, fmode;
@@ -7992,7 +7990,7 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
 {
     VALUE fname;
     int oflags, fmode;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
     mode_t perm;
 
     rb_scan_open_args(argc, argv, &fname, &oflags, &fmode, &convconfig, &perm);
@@ -8240,13 +8238,13 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
-static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const convconfig_t *, mode_t);
+static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const struct rb_io_encoding *, mode_t);
 
 static VALUE
 rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 {
     int oflags, fmode;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
     mode_t perm;
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
@@ -8256,7 +8254,7 @@ rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 
 static VALUE
 rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
-                   const convconfig_t *convconfig, mode_t perm)
+                   const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE cmd;
     if (klass == rb_cIO && !NIL_P(cmd = check_pipe_command(filename))) {
@@ -8421,7 +8419,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 
     if (!NIL_P(nmode) || !NIL_P(opt)) {
         int fmode;
-        convconfig_t convconfig;
+        struct rb_io_encoding convconfig;
 
         rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
         if (RUBY_IO_EXTERNAL_P(fptr) &&
@@ -9186,7 +9184,7 @@ allocate_and_open_new_file(VALUE klass)
 }
 
 VALUE
-rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_enc_t *encoding)
+rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding)
 {
     int state;
     VALUE self = rb_protect(allocate_and_open_new_file, klass, &state);
@@ -9309,7 +9307,7 @@ rb_io_stdio_file(rb_io_t *fptr)
 }
 
 static inline void
-rb_io_buffer_init(struct rb_io_buffer_t *buf)
+rb_io_buffer_init(struct rb_io_internal_buffer *buf)
 {
     buf->ptr = NULL;
     buf->off = 0;
@@ -9412,7 +9410,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     VALUE fnum, vmode;
     rb_io_t *fp;
     int fd, fmode, oflags = O_RDONLY;
-    convconfig_t convconfig;
+    struct rb_io_encoding convconfig;
     VALUE opt;
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     int ofmode;
@@ -12246,7 +12244,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
                 |O_BINARY
 #endif
     };
-    convconfig_t convconfig = {NULL, NULL, 0, Qnil};
+    struct rb_io_encoding convconfig = {NULL, NULL, 0, Qnil};
 
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
     FilePathValue(argv[0]);
