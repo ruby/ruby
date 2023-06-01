@@ -3,65 +3,69 @@ A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
 The regexp is a rich, versatile, and powerful tool for manipulating strings.
 
+== \Regexp Uses
+
 A regexp may be used:
 
 - To extract substrings based on a given pattern:
 
-    'food'.match(/foo/)        # => #<MatchData "foo">
-    'food'.match(/foo/).string # => "food"
-    'food'.match(/goo/)        # => nil
+    re = /foo/              # => /foo/
+    re.match('food')        # => #<MatchData "foo">
+    re.match('food').string # => "food"
+    re.match('good')        # => nil
 
   See sections {Method match}[rdoc-ref:regexp.rdoc@Method+match]
   and {Operator =~}[rdoc-ref:regexp.rdoc@Operator+-3D~].
 
 - To determine whether a string matches a given pattern:
 
-    'food'.match?(/foo/) # => true
-    'food'.match?(/goo/) # => false
+    re.match?('food') # => true
+    re.match?('good') # => false
 
-  See {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
+  See section {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
 
-- As an argument for calls to certain methods in other classes and modules
-  that allow a regexp as an argument;
-  those include Kernel, Enumerable, and String:
+- As an argument for calls to certain methods in other classes and modules,
+  including String, Enumerable, and Kernel:
 
     re = /[aeiouy]/ # Matches a any vowel or y.
     s = 'abstemiously'
     s.gsub(r, '')  # => "bstmsl"
 
+== \Regexp Ingredients
+
 A regexp has:
 
-- A source string, consisting of literal characters and metacharacters:
+- A source string, in this case <tt>'foo'</tt>:
 
     /foo/ # => /foo/
 
-  Much more will be said about the source string:
-
-  - Metacharacters and escapes.
-  - Character classes.
-  - Unicode properties.
-  - Repetition.
-  - Captures.
-  - Groups.
-  - Alternation.
-  - Condition.
-  - Anchors.
-
-- Zero or more trailing modifiers:
+- Zero or more trailing modifiers (see below):
 
     /foo/xim # => /foo/mix
 
-  Each of these modifiers sets a mode for the regexp:
+- A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeout].
 
-  - +i+: See {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
-  - +m+: See {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
-  - +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
-  - +o+: See {Interpolation}[rdoc-ref:regexp.rdoc@Interpolation].
+Much more will be said about the source string:
 
-  Any of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
-  see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
+- Metacharacters and escapes.
+- Character classes.
+- Unicode properties.
+- Repetition.
+- Captures.
+- Groups.
+- Alternation.
+- Condition.
+- Anchors.
 
-  - A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeout].
+Each of these modifiers sets a mode for the regexp:
+
+- +i+: See {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
+- +m+: See {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
+- +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
+- +o+: See {Interpolation}[rdoc-ref:regexp.rdoc@Interpolation].
+
+Any of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
+see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
 
 == Creating a \Regexp
 
@@ -425,26 +429,30 @@ These are also commonly used:
 - <tt>/\p{Word}/</tt>: A member of one of the following Unicode character
   categories (see below):
 
-    - +Mark+ (+M+).
-    - +Letter+ (+L+).
-    - +Number+ (+N+)
-    - <tt>Connector Punctuation</tt> (+Pc+).
+  - +Mark+ (+M+).
+  - +Letter+ (+L+).
+  - +Number+ (+N+)
+  - <tt>Connector Punctuation</tt> (+Pc+).
 
 - <tt>/\p{ASCII}/</tt>: A character in the ASCII character set.
 - <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned characters).
 - <tt>/\p{Assigned}/</tt>: An assigned character.
 
-A Unicode character category can be specified by either its full name
-or its abbrviation;
-these are equivalent:
+A Unicode character category name:
 
-  /\p{L}/
-  /\p{Letter}/
+- May be either its full name or its abbreviated name.
+- Is case-insensitive.
+- Treats a space, a hyphen, or an underscore as equivalent.
+
+Examples:
+
+  /\p{lu}/                # => /\p{lu}/
+  /\p{LU}/                # => /\p{LU}/
+  /\p{Uppercase Letter}/  # => /\p{Uppercase Letter}/
+  /\p{Uppercase_Letter}/  # => /\p{Uppercase_Letter}/
+  /\p{UPPERCASE-LETTER}/  # => /\p{UPPERCASE-LETTER}/
 
 Below are the Unicode character category abbreviations and names.
-An abbreviation or name is case-insensitive;
-a name may be written with either a space or an underscore.
-
 Enumerations of characters in each category are at the links.
 
 Letters:
@@ -504,10 +512,10 @@ Punctation:
 
 Among the Unicode properties are:
 
-- {Unicode scripts}[https://en.wikipedia.org/wiki/Script_(Unicode)].
-See {supported scripts}[https://www.unicode.org/standard/supported.html].
-- {Unicode blocks}[https://en.wikipedia.org/wiki/Unicode_block].
-See {supported blocks}[http://www.unicode.org/Public/UNIDATA/Blocks.txt].
+- {Unicode scripts}[https://en.wikipedia.org/wiki/Script_(Unicode)];
+  see {supported scripts}[https://www.unicode.org/standard/supported.html].
+- {Unicode blocks}[https://en.wikipedia.org/wiki/Unicode_block];
+  see {supported blocks}[http://www.unicode.org/Public/UNIDATA/Blocks.txt].
 
 == Repetition
 
@@ -564,34 +572,47 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w{1,2}/.match('x')   # => #<MatchData "x">
     /\w{1,2}/.match('xyz') # => #<MatchData "xy">
 
-=== Greedy or Lazy Matching
+=== Greedy, Lazy, or Possessive Matching
 
-Repetition is <i>greedy</i> by default: as many occurrences as possible
-are matched while still allowing the overall match to succeed. By
-contrast, <i>lazy</i> matching makes the minimal amount of matches
-necessary for overall success. Most greedy metacharacters can be made lazy
-by following them with <tt>?</tt>. For the <tt>{n}</tt> pattern, because
-it specifies an exact number of characters to match and not a variable
-number of characters, the <tt>?</tt> metacharacter instead makes the
-repeated pattern optional.
+Matching may be greedy or lazy:
 
-Both patterns below match the string. The first uses a greedy quantifier so
-'.+' matches '<a><b>'; the second uses a lazy quantifier so '.+?' matches
-'<a>':
+- In _greedy_ matching, as many occurrences as possible are matched.
+  while still allowing the overall match to succeed.
+  Greedy quantifiers: <tt>*</tt>, <tt>+</tt>, <tt>?</tt>,
+  <tt>{min, max}</tt> and its variants.
+- In _lazy_ matching, the minimum number of occurrences are matched.
+  Lazy quantifiers: <tt>*?</tt>, <tt>+?</tt>, <tt>??</tt>,
+  <tt>{min, max}?</tt> and its variants.
+- In _possessive_ matching, once a match is found, there is no backtracking;
+  that match is retained, even if it jeopardises the overall match.
+  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
+  <tt>{min, max}+</tt> and its variants.
 
-    /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
-    /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
+Quantifier <tt>{n}</tt> is different;
+<tt>{n}?</tt> makes the pattern optional.
 
-=== Possessive Matching
+Examples:
 
-A quantifier followed by <tt>+</tt> matches <i>possessively</i>: once it
-has matched it does not backtrack. They behave like greedy quantifiers,
-but having matched they refuse to "give up" their match even if this
-jeopardises the overall match.
+  /.*/.match('foo')      # => #<MatchData "foo">
+  /.*?/.match('foo')     # => #<MatchData "">
+  /.*+/.match('foo')     # => #<MatchData "foo">
 
-    /<.*><.+>/.match("<a><b>") #=> #<MatchData "<a><b>">
-    /<.*+><.+>/.match("<a><b>") #=> nil
-    /<.*><.++>/.match("<a><b>") #=> nil
+  /.+/.match('foo')      # => #<MatchData "foo">
+  /.+?/.match('foo')     # => #<MatchData "f">
+  /.++/.match('foo')     # => #<MatchData "foo">
+
+  /.?/.match('foo')      # => #<MatchData "f">
+  /.??/.match('foo')     # => #<MatchData "">
+  /.?+/.match('foo')     # => #<MatchData "f">
+
+  /.{1, 2}/.match('foo')  # => #<MatchData "fo">
+  /.{1, 2}?/.match('foo') # => #<MatchData "f">
+  /.{1, 2}+/.match('foo') # => nil
+
+  /.{2}/.match('foo')     # => #<MatchData "fo">
+  /.{2}?/.match('foo')    # => #<MatchData "fo">
+  /.{2}?/.match('')       # => #<MatchData "">
+  /.{2}+/.match('foo')    # => #<MatchData "fo">
 
 == Capturing
 
@@ -955,41 +976,6 @@ regexp's encoding can be explicitly fixed by supplying
        # raises Encoding::CompatibilityError: incompatible encoding regexp match
        #         (ISO-8859-1 regexp with UTF-8 string)
 
-== \Regexp Global Variables
-
-Pattern matching sets some global variables :
-
-- <tt>$~</tt> is equivalent to Regexp.last_match;
-- <tt>$&</tt> contains the complete matched text;
-- <tt>$`</tt> contains string before match;
-- <tt>$'</tt> contains string after match;
-- <tt>$1</tt>, <tt>$2</tt> and so on contain text matching first, second, etc
-  capture group;
-- <tt>$+</tt> contains last capture group.
-
-Example:
-
-    m = /s(\w{2}).*(c)/.match('haystack') #=> #<MatchData "stac" 1:"ta" 2:"c">
-    $~                                    #=> #<MatchData "stac" 1:"ta" 2:"c">
-    Regexp.last_match                     #=> #<MatchData "stac" 1:"ta" 2:"c">
-
-    $&      #=> "stac"
-            # same as m[0]
-    $`      #=> "hay"
-            # same as m.pre_match
-    $'      #=> "k"
-            # same as m.post_match
-    $1      #=> "ta"
-            # same as m[1]
-    $2      #=> "c"
-            # same as m[2]
-    $3      #=> nil
-            # no third group in pattern
-    $+      #=> "c"
-            # same as m[-1]
-
-These global variables are thread-local and method-local variables.
-
 == Performance
 
 Certain pathological combinations of constructs can lead to abysmally bad
@@ -1017,7 +1003,7 @@ differentiate which is in control of any particular character.
 
 The nondeterminism that results produces non-linear performance.
 For an in-depth analysis, see
- {"Crafting an Efficient Expression"}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf#page=245]
+{"Crafting an Efficient Expression"}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf#page=245]
 in <i>Mastering Regular Expressions</i> (3rd ed.) by Jeffrey Friedl.
 
 This particular case
