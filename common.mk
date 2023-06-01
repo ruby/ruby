@@ -1349,7 +1349,7 @@ update-config_files: PHONY
 	    config.guess config.sub
 
 update-coverage: main PHONY
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+	$(XRUBY) -C "$(srcdir)" libexec/gem install --no-document \
 		--install-dir .bundle --conservative "simplecov"
 
 refresh-gems: update-bundled_gems prepare-gems
@@ -1428,7 +1428,7 @@ test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
 no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_GROUP)
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+	$(XRUBY) -C "$(srcdir)" libexec/gem install --no-document \
 		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "yard" "pry" "packnga" "rexml" "json-schema" "test-unit-rr"
 	$(ACTIONS_ENDGROUP)
 
@@ -1452,7 +1452,7 @@ test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
 no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
 yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
 	$(ACTIONS_GROUP)
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+	$(XRUBY) -C "$(srcdir)" libexec/gem install --no-document \
 		--install-dir .bundle --conservative "bundler" "rake" "rspec:~> 3"
 	$(ACTIONS_ENDGROUP)
 

@@ -55,7 +55,7 @@ module Spec
     end
 
     def gem_cmd
-      @gem_cmd ||= ruby_core? ? source_root.join("bin/gem") : "gem"
+      @gem_cmd ||= ruby_core? ? source_root.join("libexec/gem") : "gem"
     end
 
     def gem_bin
