@@ -10997,6 +10997,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 process.$(OBJEXT): $(top_srcdir)/internal/gc.h
 process.$(OBJEXT): $(top_srcdir)/internal/hash.h
 process.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+process.$(OBJEXT): $(top_srcdir)/internal/io.h
 process.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 process.$(OBJEXT): $(top_srcdir)/internal/object.h
 process.$(OBJEXT): $(top_srcdir)/internal/process.h
