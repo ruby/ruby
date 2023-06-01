@@ -4,6 +4,36 @@ require_relative "../spec_helper"
 
 module SyntaxSuggest
   RSpec.describe BlockExpand do
+    it "empty line in methods" do
+      source_string = <<~EOM
+        class Dog        # index 0
+          def bark       # index 1
+
+          end            # index 3
+
+          def sit        # index 5
+            print "sit"  # index 6
+          end            # index 7
+        end              # index 8
+        end # extra end
+      EOM
+
+      code_lines = code_line_array(source_string)
+
+      sit = code_lines[4..7]
+      sit.each(&:mark_invisible)
+
+      block = CodeBlock.new(lines: sit)
+      expansion = BlockExpand.new(code_lines: code_lines)
+      block = expansion.expand_neighbors(block)
+
+      expect(block.to_s).to eq(<<~EOM.indent(2))
+        def bark       # index 1
+
+        end            # index 3
+      EOM
+    end
+
     it "captures multiple empty and hidden lines" do
       source_string = <<~EOM
         def foo
