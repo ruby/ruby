@@ -112,20 +112,19 @@ module Singleton
   module SingletonClassMethods # :nodoc:
 
     def clone # :nodoc:
-      Singleton.__init__(super)
+      super.include(Singleton)
     end
 
     # By default calls instance(). Override to retain singleton state.
-    def _load(str)
+    def _load(*)
       instance
     end
 
     def instance # :nodoc:
-      return @singleton__instance__ if @singleton__instance__
-      @singleton__mutex__.synchronize {
-        return @singleton__instance__ if @singleton__instance__
-        @singleton__instance__ = new()
-      }
+      unless @singleton__instance__
+        @singleton__mutex__.synchronize { @singleton__instance__ ||= new }
+      end
+
       @singleton__instance__
     end
 
@@ -133,19 +132,11 @@ module Singleton
 
     def inherited(sub_klass)
       super
-      Singleton.__init__(sub_klass)
+      sub_klass.include(Singleton)
     end
   end
 
   class << Singleton # :nodoc:
-    def __init__(klass) # :nodoc:
-      klass.instance_eval {
-        @singleton__instance__ = nil
-        @singleton__mutex__ = Thread::Mutex.new
-      }
-      klass
-    end
-
     private
 
     # extending an object with Singleton is a bad idea
@@ -156,14 +147,16 @@ module Singleton
       unless mod.instance_of?(Class)
         raise TypeError, "Inclusion of the OO-Singleton module in module #{mod}"
       end
+
       super
     end
 
     def included(klass)
       super
+
       klass.private_class_method :new, :allocate
       klass.extend SingletonClassMethods
-      Singleton.__init__(klass)
+      klass.instance_eval { @singleton__mutex__ = Thread::Mutex.new }
     end
   end
 
