@@ -78,11 +78,13 @@ RUBY_EXTERN VALUE rb_eIOTimeoutError;
  *
  * This is visible from extension libraries because `io/wait` wants it.
  */
-typedef enum {
+enum rb_io_event {
     RUBY_IO_READABLE = RB_WAITFD_IN,  /**< `IO::READABLE` */
     RUBY_IO_WRITABLE = RB_WAITFD_OUT, /**< `IO::WRITABLE` */
     RUBY_IO_PRIORITY = RB_WAITFD_PRI, /**< `IO::PRIORITY` */
-} rb_io_event_t;
+};
+
+typedef enum rb_io_event rb_io_event_t;
 
 /**
  * IO  buffers.   This  is  an implementation  detail  of  ::rb_io_t::wbuf  and

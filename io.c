@@ -9785,7 +9785,7 @@ wait_mode_sym(VALUE mode)
     rb_raise(rb_eArgError, "unsupported mode: %"PRIsVALUE, mode);
 }
 
-static inline rb_io_event_t
+static inline enum rb_io_event
 io_event_from_value(VALUE value)
 {
     int events = RB_NUM2INT(value);
@@ -9816,7 +9816,7 @@ static VALUE
 io_wait(int argc, VALUE *argv, VALUE io)
 {
     VALUE timeout = Qundef;
-    rb_io_event_t events = 0;
+    enum rb_io_event events = 0;
     int return_io = 0;
 
     // The documented signature for this method is actually incorrect.
