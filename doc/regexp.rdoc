@@ -574,7 +574,7 @@ An added _quantifier_ specifies how many matches are required or allowed:
 
 === Greedy, Lazy, or Possessive Matching
 
-Matching may be greedy or lazy:
+Quantifier matching may be greedy, lazy, or possessive:
 
 - In _greedy_ matching, as many occurrences as possible are matched.
   while still allowing the overall match to succeed.
@@ -588,31 +588,43 @@ Matching may be greedy or lazy:
   Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
   <tt>{min, max}+</tt> and its variants.
 
-Quantifier <tt>{n}</tt> is different;
-<tt>{n}?</tt> makes the pattern optional.
+About greedy and lazy matching, see
+{Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack];
+about possessive matching, see
+{Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
 
 Examples:
 
-  /.*/.match('foo')      # => #<MatchData "foo">
-  /.*?/.match('foo')     # => #<MatchData "">
-  /.*+/.match('foo')     # => #<MatchData "foo">
+- Greedy quantifier <tt>?</tt>:
 
-  /.+/.match('foo')      # => #<MatchData "foo">
-  /.+?/.match('foo')     # => #<MatchData "f">
-  /.++/.match('foo')     # => #<MatchData "foo">
+    re = /abc?/
+    re.match('abc') # => #<MatchData "abc">
+    re.match('ab')  # => #<MatchData "ab">
+    re.match('a')   # => nil
 
-  /.?/.match('foo')      # => #<MatchData "f">
-  /.??/.match('foo')     # => #<MatchData "">
-  /.?+/.match('foo')     # => #<MatchData "f">
+- Lazy quantifier <tt>??</tt>:
 
-  /.{1, 2}/.match('foo')  # => #<MatchData "fo">
-  /.{1, 2}?/.match('foo') # => #<MatchData "f">
-  /.{1, 2}+/.match('foo') # => nil
+    re = /abc??/
+    re.match('abc') # => #<MatchData "ab">
+    re.match('ab')  # => #<MatchData "ab">
+    re.match('a')   # => nil
+
+- Possessive quantifier <tt>?+</tt>:
+
+    re = /abc?+c/
+    re.match('abcc') # => #<MatchData "abcc">
+    re.match('abc')  # => nil
+
+- Greedy quantifier <tt>*</tt>:
+
+
+
+Quantifier <tt>{n}</tt> is different;
+<tt>{n}?</tt> makes the pattern optional:
 
   /.{2}/.match('foo')     # => #<MatchData "fo">
   /.{2}?/.match('foo')    # => #<MatchData "fo">
   /.{2}?/.match('')       # => #<MatchData "">
-  /.{2}+/.match('foo')    # => #<MatchData "fo">
 
 == Capturing
 
