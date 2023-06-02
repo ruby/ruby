@@ -1311,6 +1311,7 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, const rb_c
     RUBY_ASSERT(BUILTIN_TYPE((VALUE)cref) == T_IMEMO && IMEMO_TYPE_P(cref, imemo_cref));
     RB_OBJ_WRITTEN(iseq, Qundef, ent->cref);
     RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+    RB_OBJ_WRITTEN(ent->class_value, Qundef, ent->cref);
 
     return cvar_value;
 }
