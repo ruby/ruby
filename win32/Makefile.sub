@@ -579,7 +579,9 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 scriptbin: $(SCRIPTPROGRAMS)
 
+!if "$(SCRIPTPROGRAMS)" != ""
 $(SCRIPTPROGRAMS): $(STUBPROGRAM)
+!endif
 
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
