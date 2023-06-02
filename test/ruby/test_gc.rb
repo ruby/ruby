@@ -259,7 +259,7 @@ class TestGc < Test::Unit::TestCase
     # allocate objects until need_major_by is set or major GC happens
     major_count = GC.stat(:major_gc_count)
     objects = []
-    while GC.stat(:major_gc_count) == major_count && GC.latest_gc_info(:need_major_by).nil?
+    while GC.latest_gc_info(:need_major_by).nil?
       objects.append(100.times.map { '*' })
     end
 
