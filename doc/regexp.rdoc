@@ -438,6 +438,8 @@ These are also commonly used:
 - <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned characters).
 - <tt>/\p{Assigned}/</tt>: An assigned character.
 
+=== Unicode Character Categories
+
 A Unicode character category name:
 
 - May be either its full name or its abbreviated name.
@@ -588,10 +590,12 @@ Quantifier matching may be greedy, lazy, or possessive:
   Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
   <tt>{min, max}+</tt> and its variants.
 
-About greedy and lazy matching, see
-{Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack];
-about possessive matching, see
-{Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+More:
+
+- About greedy and lazy matching, see
+  {Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+- About possessive matching, see
+  {Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
 
 == Capturing
 
