@@ -9,7 +9,6 @@ end
 require "tempfile"
 require "tmpdir"
 
-require_relative "../lib/envutil"
 require_relative "helper"
 
 module TestIRB
