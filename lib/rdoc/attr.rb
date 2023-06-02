@@ -173,4 +173,3 @@ class RDoc::Attr < RDoc::MethodAttr
   end
 
 end
-

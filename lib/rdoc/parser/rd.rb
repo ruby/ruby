@@ -20,4 +20,3 @@ class RDoc::Parser::RD < RDoc::Parser
   end
 
 end
-

@@ -27,4 +27,3 @@ class TestRDocMarkupVerbatim < RDoc::TestCase
   end
 
 end
-
