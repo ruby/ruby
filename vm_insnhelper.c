@@ -1491,7 +1491,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 }
 
 static VALUE
-update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
+update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, const rb_cref_t * cref, ICVARC ic)
 {
     VALUE defined_class = 0;
     VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
@@ -1511,9 +1511,13 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
     }
 
     struct rb_cvar_class_tbl_entry *ent = (void *)ent_data;
-    ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
 
+    ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
+    ent->cref = cref;
     ic->entry = ent;
+
+    RUBY_ASSERT(BUILTIN_TYPE((VALUE)cref) == T_IMEMO && IMEMO_TYPE_P(cref, imemo_cref));
+    RB_OBJ_WRITTEN(iseq, Qundef, ent->cref);
     RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
 
     return cvar_value;
@@ -1523,8 +1527,9 @@ static inline VALUE
 vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, ICVARC ic)
 {
     const rb_cref_t *cref;
+    cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && LIKELY(rb_ractor_main_p())) {
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
@@ -1533,10 +1538,9 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
         return v;
     }
 
-    cref = vm_get_cref(GET_EP());
     VALUE klass = vm_get_cvar_base(cref, reg_cfp, 1);
 
-    return update_classvariable_cache(iseq, klass, id, ic);
+    return update_classvariable_cache(iseq, klass, id, cref, ic);
 }
 
 VALUE
@@ -1549,20 +1553,20 @@ static inline void
 vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, VALUE val, ICVARC ic)
 {
     const rb_cref_t *cref;
+    cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
         rb_class_ivar_set(ic->entry->class_value, id, val);
         return;
     }
 
-    cref = vm_get_cref(GET_EP());
     VALUE klass = vm_get_cvar_base(cref, reg_cfp, 1);
 
     rb_cvar_set(klass, id, val);
 
-    update_classvariable_cache(iseq, klass, id, ic);
+    update_classvariable_cache(iseq, klass, id, cref, ic);
 }
 
 void
