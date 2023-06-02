@@ -493,7 +493,8 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
     // rb_vm_insn_addr2opcode won't work in cargo test --all-features
     // because it's a C function. Without insn call, this function is useless
     // so wrap the whole thing in a not test check.
-    if cfg!(not(test)) {
+    #[cfg(not(test))]
+    {
         // Get the opcode from the encoded insn handler at this PC
         let insn = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
 
