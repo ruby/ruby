@@ -37,6 +37,7 @@
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
+// test visual studio code build
 static rb_subclass_entry_t *
 push_subclass_entry_to_list(VALUE super, VALUE klass)
 {
