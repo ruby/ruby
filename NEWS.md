@@ -59,7 +59,7 @@ The following default gems are updated.
 * nkf 0.1.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
-* reline 0.3.4
+* reline 0.3.5
 * stringio 3.0.8
 * strscan 3.0.7
 * syntax_suggest 1.1.0
