@@ -230,7 +230,7 @@ A character class may contain hyphen characters to specify ranges of characters:
 When the first character of a character class is a caret (<tt>^</tt>),
 the sense of the class is inverted: it matches any character _except_ those specified.
 
-  /[^a-eg-z]/.match('f') #=> #<MatchData "f">
+  /[^a-eg-z]/.match('f') # => #<MatchData "f">
 
 A character class may contain another character class.
 By itself this isn't useful because <tt>[a-z[0-9]]</tt>
@@ -519,7 +519,7 @@ Among the Unicode properties are:
 - {Unicode blocks}[https://en.wikipedia.org/wiki/Unicode_block];
   see {supported blocks}[http://www.unicode.org/Public/UNIDATA/Blocks.txt].
 
-== Repetition
+== Quantifiers
 
 A simple regexp matches one character:
 
@@ -597,7 +597,72 @@ More:
 - About possessive matching, see
   {Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
 
-== Capturing
+== Groups and Captures
+
+A simple regexp has (at most) one match:
+
+  re = /\d\d\d\d-\d\d-\d\d/
+  re.match('1943-02-04')      # => #<MatchData "1943-02-04">
+  re.match('1943-02-04').size # => 1
+  re.match('foo')             # => nil
+
+Adding one or more pairs of parentheses, <tt>(_subexpression_)</tt>,
+defines <i>groups</i>, which may result in multiple matched substrings,
+called _captures_:
+
+  re = /(\d\d\d\d)-(\d\d)-(\d\d)/
+  re.match('1943-02-04')      # => #<MatchData "1943-02-04" 1:"1943" 2:"02" 3:"04">
+  re.match('1943-02-04').size # => 4
+
+The first capture is the entire matched string;
+the other captures are the matched substrings from the groups.
+
+A group may have a
+{quantifier}[rdoc-ref:regexp.rdoc@Quantifiers]:
+
+  re = /July 4(th)?/
+  re.match('July 4')   # => #<MatchData "July 4" 1:nil>
+  re.match('July 4th') # => #<MatchData "July 4th" 1:"th">
+
+  re = /(foo)*/
+  re.match('')       # => #<MatchData "" 1:nil>
+  re.match('foo')    # => #<MatchData "foo" 1:"foo">
+  re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
+
+  re = /(foo)+/
+  re.match('')       # => nil
+  re.match('foo')    # => #<MatchData "foo" 1:"foo">
+  re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
+
+The returned \MatchData object give access to matched the substrings:
+
+  re = /(\d\d\d\d)-(\d\d)-(\d\d)/
+  md = re.match('1943-02-04')
+  # => #<MatchData "1943-02-04" 1:"1943" 2:"02" 3:"04">
+  md[0] # => "1943-02-04"
+  md[1] # => "1943"
+  md[2] # => "02"
+  md[3] # => "04"
+
+A group match may also be referenced within the regexp itself;
+such a reference is called a +backreference+:
+
+  /[csh](..) [csh]\1 in/.match("The cat sat in the hat")
+  # => #<MatchData "cat sat in" 1:"at">
+
+This table shows how each subexpression in the regexp above
+matches a substring in the target string:
+
+  | Subexpression in Regexp   | Matching Substring in Target String |
+  |---------------------------|-------------------------------------|
+  |       First '[csh]'       |            Character 'c'            |
+  |          '(..)'           |        First substring 'at'         |
+  |      First space ' '      |      First space character ' '      |
+  |       Second '[csh]'      |            Character 'c'            |
+  | '\1' (backreference 'at') |        Second substring 'at'        |
+  |           ' in'           |            Substring ' in'          |
+
+
 
 Parentheses can be used for <i>capturing</i>. The text enclosed by the
 <i>n</i>th group of parentheses can be subsequently referred to
