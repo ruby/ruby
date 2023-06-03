@@ -74,7 +74,7 @@ If elements don't fit the provided directive, only least significant bits are en
 The method can accept a block:
 
   # Packed string is passed to the block.
-  [65, 66].pack('C*') {|s| p s }    # => "AB"
+  [65, 66].pack('C*') {|s| p s } # => "AB"
 
 === Unpacking Methods
 
@@ -105,9 +105,9 @@ for one element in the input or output array.
 - <tt>'c'</tt> - 8-bit signed integer
   (like C <tt>signed char</tt>):
 
-    [0, 1, 255].pack('c*')  # => "\x00\x01\xFF"
+    [0, 1, 255].pack('c*')    # => "\x00\x01\xFF"
     s = [0, 1, -1].pack('c*') # => "\x00\x01\xFF"
-    s.unpack('c*') # => [0, 1, -1]
+    s.unpack('c*')            # => [0, 1, -1]
 
 - <tt>'C'</tt> - 8-bit unsigned integer
   (like C <tt>unsigned char</tt>):
@@ -198,7 +198,7 @@ for one element in the input or output array.
 
 ==== Platform-Dependent \Integer Directives
 
-- <tt>'i'</tt> - Platform-dependent width signed integer,
+- <tt>'i'</tt> - Platform-dependent-width signed integer,
   native-endian (like C <tt>int</tt>):
 
     s = [67305985, -50462977].pack('i*')
@@ -206,7 +206,7 @@ for one element in the input or output array.
     s.unpack('i*')
     # => [67305985, -50462977]
 
-- <tt>'I'</tt> - Platform-dependent width unsigned integer,
+- <tt>'I'</tt> - Platform-dependent-width unsigned integer,
   native-endian (like C <tt>unsigned int</tt>):
 
     s = [67305985, -50462977].pack('I*')
@@ -242,7 +242,7 @@ for one element in the input or output array.
     # => [4194304]
 
 - <tt>'w'</tt> - BER-encoded integer
-  (see {BER enocding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
+  (see {BER encoding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
 
     s = [1073741823].pack('w*')
     # => "\x83\xFF\xFF\xFF\x7F"
@@ -327,14 +327,14 @@ for one byte in the input or output string.
 - <tt>'A'</tt> - Arbitrary binary string (space padded; count is width);
   +nil+ is treated as the empty string:
 
-    ['foo'].pack('A')    # => "f"
-    ['foo'].pack('A*')   # => "foo"
-    ['foo'].pack('A2')   # => "fo"
-    ['foo'].pack('A4')   # => "foo "
-    [nil].pack('A')      # => " "
-    [nil].pack('A*')     # => ""
-    [nil].pack('A2')     # => "  "
-    [nil].pack('A4')     # => "    "
+    ['foo'].pack('A')  # => "f"
+    ['foo'].pack('A*') # => "foo"
+    ['foo'].pack('A2') # => "fo"
+    ['foo'].pack('A4') # => "foo "
+    [nil].pack('A')    # => " "
+    [nil].pack('A*')   # => ""
+    [nil].pack('A2')   # => "  "
+    [nil].pack('A4')   # => "    "
 
     "foo\0".unpack('A')      # => ["f"]
     "foo\0".unpack('A4')     # => ["foo"]
@@ -373,8 +373,8 @@ for one byte in the input or output string.
 - <tt>'Z'</tt> - Same as <tt>'a'</tt>,
   except that null is added or ignored with <tt>'*'</tt>:
 
-    ["foo"].pack('Z*')   # => "foo\x00"
-    [nil].pack('Z*')     # => "\x00"
+    ["foo"].pack('Z*') # => "foo\x00"
+    [nil].pack('Z*')   # => "\x00"
 
     "foo\0".unpack('Z*')    # => ["foo"]
     "foo".unpack('Z*')      # => ["foo"]
@@ -428,25 +428,25 @@ for one byte in the input or output string.
 
 - <tt>'H'</tt> - Hex string (high nibble first):
 
-    ['10ef'].pack('H*')    # => "\x10\xEF"
-    ['10ef'].pack('H0')    # => ""
-    ['10ef'].pack('H3')    # => "\x10\xE0"
-    ['10ef'].pack('H5')    # => "\x10\xEF\x00"
+    ['10ef'].pack('H*') # => "\x10\xEF"
+    ['10ef'].pack('H0') # => ""
+    ['10ef'].pack('H3') # => "\x10\xE0"
+    ['10ef'].pack('H5') # => "\x10\xEF\x00"
 
-    ['fff'].pack('H3')    # => "\xFF\xF0"
-    ['fff'].pack('H4')    # => "\xFF\xF0"
-    ['fff'].pack('H5')    # => "\xFF\xF0\x00"
-    ['fff'].pack('H6')    # => "\xFF\xF0\x00"
-    ['fff'].pack('H7')    # => "\xFF\xF0\x00\x00"
-    ['fff'].pack('H8')    # => "\xFF\xF0\x00\x00"
+    ['fff'].pack('H3') # => "\xFF\xF0"
+    ['fff'].pack('H4') # => "\xFF\xF0"
+    ['fff'].pack('H5') # => "\xFF\xF0\x00"
+    ['fff'].pack('H6') # => "\xFF\xF0\x00"
+    ['fff'].pack('H7') # => "\xFF\xF0\x00\x00"
+    ['fff'].pack('H8') # => "\xFF\xF0\x00\x00"
 
-    "\x10\xef".unpack('H*')    # => ["10ef"]
-    "\x10\xef".unpack('H0')    # => [""]
-    "\x10\xef".unpack('H1')    # => ["1"]
-    "\x10\xef".unpack('H2')    # => ["10"]
-    "\x10\xef".unpack('H3')    # => ["10e"]
-    "\x10\xef".unpack('H4')    # => ["10ef"]
-    "\x10\xef".unpack('H5')    # => ["10ef"]
+    "\x10\xef".unpack('H*') # => ["10ef"]
+    "\x10\xef".unpack('H0') # => [""]
+    "\x10\xef".unpack('H1') # => ["1"]
+    "\x10\xef".unpack('H2') # => ["10"]
+    "\x10\xef".unpack('H3') # => ["10e"]
+    "\x10\xef".unpack('H4') # => ["10ef"]
+    "\x10\xef".unpack('H5') # => ["10ef"]
 
 - <tt>'h'</tt> - Hex string (low nibble first):
 
@@ -490,7 +490,7 @@ for one byte in the input or output string.
 
 ==== Other \String Directives
 
-- <tt>'M'</tt> - Quoted printable, MIME encoding;
+- <tt>'M'</tt> - Quoted-printable MIME encoding;
   text mode, but input must use LF and output LF;
   (see {RFC 2045}[https://www.ietf.org/rfc/rfc2045.txt]):
 
@@ -501,8 +501,8 @@ for one byte in the input or output string.
     ("a"*73+"=\na=\n").unpack('M') == ["a"*74]           # => true
     (("a"*73+"=\n")*14+"a=\n").unpack('M') == ["a"*1023] # => true
 
-    "a b c\td =\n\ne=\n".unpack('M')    # => ["a b c\td \ne"]
-    "=00=\n".unpack('M')    # => ["\x00"]
+    "a b c\td =\n\ne=\n".unpack('M') # => ["a b c\td \ne"]
+    "=00=\n".unpack('M')             # => ["\x00"]
 
     "pre=31=32=33after".unpack('M') # => ["pre123after"]
     "pre=\nafter".unpack('M')       # => ["preafter"]
@@ -580,7 +580,7 @@ for one byte in the input or output string.
     [0, 1, 2].pack("CCX2C")   # => "\x02"
     "\x00\x02".unpack("CCXC") # => [0, 2, 2]
 
-=== Null Byte Direcive
+=== Null Byte Directive
 
 - <tt>'x'</tt> - Null byte:
 
