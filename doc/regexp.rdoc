@@ -1,5 +1,4 @@
 A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
-A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
 The regexp is a rich, versatile, and powerful tool for manipulating strings.
 
@@ -64,7 +63,7 @@ Each of these modifiers sets a mode for the regexp:
 - +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
 - +o+: See {Interpolation}[rdoc-ref:regexp.rdoc@Interpolation].
 
-Any of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
+Each of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
 see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
 
 == Creating a \Regexp
@@ -370,16 +369,16 @@ The POSIX bracket expressions:
 
 - <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
 
-Ruby also supports these (non-POSIX) character classes:
+Ruby also supports these (non-POSIX) bracket expressions:
 
 - <tt>/[[:ascii:]]/</tt>: Matches a character in the ASCII character set.
 - <tt>/[[:word:]]/</tt>: Matches a character in one of these Unicode character
   categories (see below):
 
-    - +Mark+ (+M+).
-    - +Letter+ (+L+).
-    - +Number+ (+N+)
-    - <tt>Connector Punctuation</tt> (+Pc+).
+  - +Mark+ (+M+).
+  - +Letter+ (+L+).
+  - +Number+ (+N+)
+  - <tt>Connector Punctuation</tt> (+Pc+).
 
 == Unicode Properties
 
@@ -444,7 +443,7 @@ A Unicode character category name:
 
 - May be either its full name or its abbreviated name.
 - Is case-insensitive.
-- Treats a space, a hyphen, or an underscore as equivalent.
+- Treats a space, a hyphen, and an underscore as equivalent.
 
 Examples:
 
