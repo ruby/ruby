@@ -643,10 +643,24 @@ The returned \MatchData object give access to matched the substrings:
   md[2] # => "02"
   md[3] # => "04"
 
+=== Non-Capturing Groups
+
+A group may be made non-capturing;
+it is still a group (and, for example, can have a quantifier),
+but its matching substring is not included among the captures.
+
+A non-capturing group begins with <tt>?:</tt> (inside the parentheses):
+
+  # Don't capture the year.
+  re = /(?:\d\d\d\d)-(\d\d)-(\d\d)/
+  md = re.match('1943-02-04') # => #<MatchData "1943-02-04" 1:"02" 2:"04">
+
+=== Backreferences
+
 A group match may also be referenced within the regexp itself;
 such a reference is called a +backreference+:
 
-  /[csh](..) [csh]\1 in/.match("The cat sat in the hat")
+  /[csh](..) [csh]\1 in/.match('The cat sat in the hat')
   # => #<MatchData "cat sat in" 1:"at">
 
 This table shows how each subexpression in the regexp above
@@ -661,73 +675,50 @@ matches a substring in the target string:
   | '\1' (backreference 'at') |        Second substring 'at'        |
   |           ' in'           |            Substring ' in'          |
 
+A regexp may contain any number of groups:
 
+- For a large number of groups:
 
-Parentheses can be used for <i>capturing</i>. The text enclosed by the
-<i>n</i>th group of parentheses can be subsequently referred to
-with <i>n</i>. Within a pattern use the <i>backreference</i>
-<tt>\n</tt> (e.g. <tt>\1</tt>); outside of the pattern use
-<tt>MatchData[n]</tt> (e.g. <tt>MatchData[1]</tt>).
+  - The ordinary <tt>\\_n_</tt> notation applies only for _n_ in range (1..9).
+  - The <tt>MatchData[_n_]</tt> notation applies for any non-negative _n_.
 
-In this example, <tt>'at'</tt> is captured by the first group of
-parentheses, then referred to later with <tt>\1</tt>:
+- <tt>\0</tt> is a special backreference, referring to the entire matched string;
+  it may not be used within the regexp itself,
+  but may be used outside it (for example, in a substitution method call):
 
-    /[csh](..) [csh]\1 in/.match("The cat sat in the hat")
-        #=> #<MatchData "cat sat in" 1:"at">
-
-Regexp#match returns a MatchData object which makes the captured text
-available with its #[] method:
-
-    /[csh](..) [csh]\1 in/.match("The cat sat in the hat")[1] #=> 'at'
-
-While Ruby supports an arbitrary number of numbered captured groups,
-only groups 1-9 are supported using the <tt>\n</tt> backreference
-syntax.
-
-Ruby also supports <tt>\0</tt> as a special backreference, which
-references the entire matched string.  This is also available at
-<tt>MatchData[0]</tt>.  Note that the <tt>\0</tt> backreference cannot
-be used inside the regexp, as backreferences can only be used after the
-end of the capture group, and the <tt>\0</tt> backreference uses the
-implicit capture group of the entire match.  However, you can use
-this backreference when doing substitution:
-
-  "The cat sat in the hat".gsub(/[csh]at/, '\0s')
+    'The cat sat in the hat'.gsub(/[csh]at/, '\0s')
     # => "The cats sats in the hats"
 
 === Named Captures
 
-Capture groups can be referred to by name when defined with the
-<tt>(?<</tt><i>name</i><tt>>)</tt> or <tt>(?'</tt><i>name</i><tt>')</tt>
-constructs.
+As seen above, a capture can be referred to by its number.
+A capture can also have a name,
+prefixed as <tt>?<_name_></tt> or <tt>?'_name_'></tt>,
+and the name (symbolized) may be used as an index in <tt>MatchData[]</tt>:
 
-    /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")
-        #=> #<MatchData "$3.67" dollars:"3" cents:"67">
-    /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")[:dollars] #=> "3"
+  md = /\$(?<dollars>\d+)\.(?'cents'\d+)/.match("$3.67")
+  # => #<MatchData "$3.67" dollars:"3" cents:"67">
+  md[:dollars]  # => "3"
+  md[:cents]    # => "67"
+  # The capture numbers are still valid.
+  md[2]         # => "67"
 
-Named groups can be backreferenced with <tt>\k<</tt><i>name</i><tt>></tt>,
-where _name_ is the group name.
+When a regexp contains a named capture, there are no unnamed captures:
 
-    /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
-        #=> #<MatchData "ototo" vowel:"o">
+  /\$(?<dollars>\d+)\.(\d+)/.match("$3.67")
+  # => #<MatchData "$3.67" dollars:"3">
 
-*Note*: A regexp can't use named backreferences and numbered
-backreferences simultaneously. Also, if a named capture is used in a
-regexp, then parentheses used for grouping which would otherwise result
-in a unnamed capture are treated as non-capturing.
+A named group may be backreferenced as <tt>\k_name_</tt>:
 
-    /(\w)(\w)/.match("ab").captures # => ["a", "b"]
-    /(\w)(\w)/.match("ab").named_captures # => {}
+  /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
+  # => #<MatchData "ototo" vowel:"o">
 
-    /(?<c>\w)(\w)/.match("ab").captures # => ["a"]
-    /(?<c>\w)(\w)/.match("ab").named_captures # => {"c"=>"a"}
+When (and only when) a regexp contains named capture groups
+and appears before the <tt>=~</tt> operator,
+the captured substrings are assigned to local variables with corresponding names:
 
-When named capture groups are used with a literal regexp on the left-hand
-side of an expression and the <tt>=~</tt> operator, the captured text is
-also assigned to local variables with corresponding names.
-
-    /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ "$3.67" #=> 0
-    dollars #=> "3"
+  /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ "$3.67" #=> 0
+  dollars #=> "3"
 
 == Grouping
 
