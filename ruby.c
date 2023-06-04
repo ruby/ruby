@@ -238,10 +238,26 @@ static const char esc_reset[] = "\033[0m";
 static const char esc_none[] = "";
 
 static void
-show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help, int highlight, unsigned int w)
+show_usage_line(const struct ruby_opt_message *m,
+                int help, int highlight, unsigned int w, int columns)
 {
+    const char *str = m->str;
+    const unsigned int namelen = m->namelen, secondlen = m->secondlen;
     const char *sb = highlight ? esc_bold : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
+    if (help && (namelen > w) && (int)(namelen + secondlen) >= columns) {
+        printf("  %s" "%.*s" "%s\n", sb, namelen-1, str, se);
+        if (secondlen > 1) {
+            const int second_end = namelen+secondlen-1;
+            int n = namelen;
+            if (str[n] == ',') n++;
+            if (str[n] == ' ') n++;
+            printf("  %s" "%.*s" "%s\n", sb, second_end-n, str+n, se);
+        }
+        printf("%-*s%s\n", w + 2, "",
+               str + namelen + secondlen);
+        return;
+    }
     const int wrap = help && namelen + secondlen - 1 > w;
     printf("  %s%.*s%-*.*s%s%-*s%s\n", sb, namelen-1, str,
            (wrap ? 0 : w - namelen + 1),
@@ -354,7 +370,7 @@ usage(const char *name, int help, int highlight, int columns)
     const char *se = highlight ? esc_reset : esc_none;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
     unsigned int w = (columns > 80 ? (columns - 79) / 2 : 0) + 16;
-#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help, highlight, w)
+#define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
     printf("%sUsage:%s %s [switches] [--] [programfile] [arguments]\n", sb, se, name);
     for (i = 0; i < num; ++i)
