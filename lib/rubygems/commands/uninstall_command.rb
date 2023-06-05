@@ -1,8 +1,9 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../version_option'
-require_relative '../uninstaller'
-require 'fileutils'
+
+require_relative "../command"
+require_relative "../version_option"
+require_relative "../uninstaller"
+require "fileutils"
 
 ##
 # Gem uninstaller command line tool
@@ -13,78 +14,77 @@ class Gem::Commands::UninstallCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
-    super 'uninstall', 'Uninstall gems from the local repository',
+    super "uninstall", "Uninstall gems from the local repository",
           :version => Gem::Requirement.default, :user_install => true,
           :check_dev => false, :vendor => false
 
-    add_option('-a', '--[no-]all',
-      'Uninstall all matching versions'
-    ) do |value, options|
+    add_option("-a", "--[no-]all",
+      "Uninstall all matching versions") do |value, options|
       options[:all] = value
     end
 
-    add_option('-I', '--[no-]ignore-dependencies',
-               'Ignore dependency requirements while',
-               'uninstalling') do |value, options|
+    add_option("-I", "--[no-]ignore-dependencies",
+               "Ignore dependency requirements while",
+               "uninstalling") do |value, options|
       options[:ignore] = value
     end
 
-    add_option('-D', '--[no-]check-development',
-               'Check development dependencies while uninstalling',
-               '(default: false)') do |value, options|
+    add_option("-D", "--[no-]check-development",
+               "Check development dependencies while uninstalling",
+               "(default: false)") do |value, options|
       options[:check_dev] = value
     end
 
-    add_option('-x', '--[no-]executables',
-                 'Uninstall applicable executables without',
-                 'confirmation') do |value, options|
+    add_option("-x", "--[no-]executables",
+                 "Uninstall applicable executables without",
+                 "confirmation") do |value, options|
       options[:executables] = value
     end
 
-    add_option('-i', '--install-dir DIR',
-               'Directory to uninstall gem from') do |value, options|
+    add_option("-i", "--install-dir DIR",
+               "Directory to uninstall gem from") do |value, options|
       options[:install_dir] = File.expand_path(value)
     end
 
-    add_option('-n', '--bindir DIR',
-               'Directory to remove executables from') do |value, options|
+    add_option("-n", "--bindir DIR",
+               "Directory to remove executables from") do |value, options|
       options[:bin_dir] = File.expand_path(value)
     end
 
-    add_option('--[no-]user-install',
-               'Uninstall from user\'s home directory',
-               'in addition to GEM_HOME.') do |value, options|
+    add_option("--[no-]user-install",
+               "Uninstall from user's home directory",
+               "in addition to GEM_HOME.") do |value, options|
       options[:user_install] = value
     end
 
-    add_option('--[no-]format-executable',
-               'Assume executable names match Ruby\'s prefix and suffix.') do |value, options|
+    add_option("--[no-]format-executable",
+               "Assume executable names match Ruby's prefix and suffix.") do |value, options|
       options[:format_executable] = value
     end
 
-    add_option('--[no-]force',
-               'Uninstall all versions of the named gems',
-               'ignoring dependencies') do |value, options|
+    add_option("--[no-]force",
+               "Uninstall all versions of the named gems",
+               "ignoring dependencies") do |value, options|
       options[:force] = value
     end
 
-    add_option('--[no-]abort-on-dependent',
-               'Prevent uninstalling gems that are',
-               'depended on by other gems.') do |value, options|
+    add_option("--[no-]abort-on-dependent",
+               "Prevent uninstalling gems that are",
+               "depended on by other gems.") do |value, options|
       options[:abort_on_dependent] = value
     end
 
     add_version_option
     add_platform_option
 
-    add_option('--vendor',
-               'Uninstall gem from the vendor directory.',
-               'Only for use by gem repackagers.') do |value, options|
+    add_option("--vendor",
+               "Uninstall gem from the vendor directory.",
+               "Only for use by gem repackagers.") do |_value, options|
       unless Gem.vendor_dir
-        raise Gem::OptionParser::InvalidOption.new 'your platform is not supported'
+        raise Gem::OptionParser::InvalidOption.new "your platform is not supported"
       end
 
-      alert_warning 'Use your OS package manager to uninstall vendor gems'
+      alert_warning "Use your OS package manager to uninstall vendor gems"
       options[:vendor] = true
       options[:install_dir] = Gem.vendor_dir
     end
@@ -95,8 +95,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--version '#{Gem::Requirement.default}' --no-force " +
-    "--user-install"
+    "--version '#{Gem::Requirement.default}' --no-force " \
+      "--user-install"
   end
 
   def description # :nodoc:
@@ -114,8 +114,8 @@ that is a dependency of an existing gem.  You can use the
   end
 
   def check_version # :nodoc:
-    if options[:version] != Gem::Requirement.default and
-         get_all_gem_names.size > 1
+    if options[:version] != Gem::Requirement.default &&
+       get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
                   " version requirements using `gem uninstall 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
       terminate_interaction 1
@@ -125,7 +125,10 @@ that is a dependency of an existing gem.  You can use the
   def execute
     check_version
 
-    if options[:all] and not options[:args].empty?
+    # Consider only gem specifications installed at `--install-dir`
+    Gem::Specification.dirs = options[:install_dir] if options[:install_dir]
+
+    if options[:all] && !options[:args].empty?
       uninstall_specific
     elsif options[:all]
       uninstall_all
@@ -135,7 +138,7 @@ that is a dependency of an existing gem.  You can use the
   end
 
   def uninstall_all
-    specs = Gem::Specification.reject {|spec| spec.default_gem? }
+    specs = Gem::Specification.reject(&:default_gem?)
 
     specs.each do |spec|
       options[:version] = spec.version
@@ -165,15 +168,14 @@ that is a dependency of an existing gem.  You can use the
     gems_to_uninstall = {}
 
     deps.each do |dep|
-      unless gems_to_uninstall[dep.name]
-        gems_to_uninstall[dep.name] = true
+      next if gems_to_uninstall[dep.name]
+      gems_to_uninstall[dep.name] = true
 
-        unless original_gem_version[dep.name] == Gem::Requirement.default
-          options[:version] = dep.version
-        end
-
-        uninstall_gem(dep.name)
+      unless original_gem_version[dep.name] == Gem::Requirement.default
+        options[:version] = dep.version
       end
+
+      uninstall_gem(dep.name)
     end
   end
 
@@ -181,12 +183,12 @@ that is a dependency of an existing gem.  You can use the
     uninstall(gem_name)
   rescue Gem::GemNotInHomeException => e
     spec = e.spec
-    alert("In order to remove #{spec.name}, please execute:\n" +
+    alert("In order to remove #{spec.name}, please execute:\n" \
           "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
   rescue Gem::UninstallError => e
     spec = e.spec
-    alert_error("Error: unable to successfully uninstall '#{spec.name}' which is " +
-          "located at '#{spec.full_gem_path}'. This is most likely because" +
+    alert_error("Error: unable to successfully uninstall '#{spec.name}' which is " \
+          "located at '#{spec.full_gem_path}'. This is most likely because" \
           "the current user does not have the appropriate permissions")
     terminate_interaction 1
   end

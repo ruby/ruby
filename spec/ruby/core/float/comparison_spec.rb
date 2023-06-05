@@ -7,9 +7,25 @@ describe "Float#<=>" do
     ((bignum_value*1.1) <=> bignum_value).should == 1
   end
 
-  it "returns nil when either argument is NaN" do
-    (nan_value <=> 71.2).should be_nil
-    (1771.176 <=> nan_value).should be_nil
+  it "returns nil if one side is NaN" do
+    [1.0, 42, bignum_value].each { |n|
+      (nan_value <=> n).should == nil
+      (n <=> nan_value).should == nil
+    }
+  end
+
+  it "handles positive infinity" do
+    [1.0, 42, bignum_value].each { |n|
+      (infinity_value <=> n).should == 1
+      (n <=> infinity_value).should == -1
+    }
+  end
+
+  it "handles negative infinity" do
+    [1.0, 42, bignum_value].each { |n|
+      (-infinity_value <=> n).should == -1
+      (n <=> -infinity_value).should == 1
+    }
   end
 
   it "returns nil when the given argument is not a Float" do
@@ -49,21 +65,10 @@ describe "Float#<=>" do
     }.should raise_error(TypeError, "coerce must return [x, y]")
   end
 
-  # The 4 tests below are taken from matz's revision 23730 for Ruby trunk
-  #
-  it "returns 1 when self is Infinity and other is an Integer" do
+  it "returns the correct result when one side is infinite" do
     (infinity_value <=> Float::MAX.to_i*2).should == 1
-  end
-
-  it "returns -1 when self is negative and other is Infinity" do
     (-Float::MAX.to_i*2 <=> infinity_value).should == -1
-  end
-
-  it "returns -1 when self is -Infinity and other is negative" do
     (-infinity_value <=> -Float::MAX.to_i*2).should == -1
-  end
-
-  it "returns 1 when self is negative and other is -Infinity" do
     (-Float::MAX.to_i*2 <=> -infinity_value).should == 1
   end
 

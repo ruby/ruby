@@ -71,11 +71,9 @@ static VALUE encoding_spec_rb_default_external_encoding(VALUE self) {
   return rb_str_new2(enc->name);
 }
 
-#ifdef RUBY_VERSION_IS_2_6
 static VALUE encoding_spec_rb_enc_alias(VALUE self, VALUE alias, VALUE orig) {
   return INT2NUM(rb_enc_alias(RSTRING_PTR(alias), RSTRING_PTR(orig)));
 }
-#endif
 
 static VALUE encoding_spec_rb_enc_associate(VALUE self, VALUE obj, VALUE enc) {
   return rb_enc_associate(obj, NIL_P(enc) ? NULL : rb_enc_find(RSTRING_PTR(enc)));
@@ -120,10 +118,9 @@ static VALUE encoding_spec_rb_enc_from_index(VALUE self, VALUE index) {
   return rb_str_new2(rb_enc_from_index(NUM2INT(index))->name);
 }
 
-static VALUE encoding_spec_rb_enc_mbc_to_codepoint(VALUE self, VALUE str, VALUE offset) {
-  int o = FIX2INT(offset);
+static VALUE encoding_spec_rb_enc_mbc_to_codepoint(VALUE self, VALUE str) {
   char *p = RSTRING_PTR(str);
-  char *e = p + o;
+  char *e = RSTRING_END(str);
   return INT2FIX(rb_enc_mbc_to_codepoint(p, e, rb_enc_get(str)));
 }
 
@@ -275,7 +272,9 @@ static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
 }
 
 static VALUE encoding_spec_rb_uv_to_utf8(VALUE self, VALUE buf, VALUE num) {
-  return INT2NUM(rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num)));
+  int len = rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num));
+  RB_ENC_CODERANGE_CLEAR(buf);
+  return INT2NUM(len);
 }
 
 static VALUE encoding_spec_ONIGENC_MBC_CASE_FOLD(VALUE self, VALUE str) {
@@ -300,6 +299,14 @@ static VALUE encoding_spec_rb_enc_codelen(VALUE self, VALUE code, VALUE encoding
   return INT2FIX(rb_enc_codelen(c, enc));
 }
 
+static VALUE encoding_spec_rb_enc_strlen(VALUE self, VALUE str, VALUE length, VALUE encoding) {
+  int l = FIX2INT(length);
+  char *p = RSTRING_PTR(str);
+  char *e = p + l;
+
+  return LONG2FIX(rb_enc_strlen(p, e, rb_to_encoding(encoding)));
+}
+
 void Init_encoding_spec(void) {
   VALUE cls;
   native_rb_encoding_pointer = (rb_encoding**) malloc(sizeof(rb_encoding*));
@@ -318,28 +325,22 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_locale_encindex", encoding_spec_rb_locale_encindex, 0);
   rb_define_method(cls, "rb_filesystem_encoding", encoding_spec_rb_filesystem_encoding, 0);
   rb_define_method(cls, "rb_filesystem_encindex", encoding_spec_rb_filesystem_encindex, 0);
-  rb_define_method(cls, "rb_default_internal_encoding",
-                   encoding_spec_rb_default_internal_encoding, 0);
-
-  rb_define_method(cls, "rb_default_external_encoding",
-                   encoding_spec_rb_default_external_encoding, 0);
-
-#ifdef RUBY_VERSION_IS_2_6
+  rb_define_method(cls, "rb_default_internal_encoding", encoding_spec_rb_default_internal_encoding, 0);
+  rb_define_method(cls, "rb_default_external_encoding", encoding_spec_rb_default_external_encoding, 0);
   rb_define_method(cls, "rb_enc_alias", encoding_spec_rb_enc_alias, 2);
-#endif
-
   rb_define_method(cls, "MBCLEN_CHARFOUND_P", encoding_spec_MBCLEN_CHARFOUND_P, 1);
   rb_define_method(cls, "rb_enc_associate", encoding_spec_rb_enc_associate, 2);
   rb_define_method(cls, "rb_enc_associate_index", encoding_spec_rb_enc_associate_index, 2);
   rb_define_method(cls, "rb_enc_compatible", encoding_spec_rb_enc_compatible, 2);
   rb_define_method(cls, "rb_enc_copy", encoding_spec_rb_enc_copy, 2);
   rb_define_method(cls, "rb_enc_codelen", encoding_spec_rb_enc_codelen, 2);
+  rb_define_method(cls, "rb_enc_strlen", encoding_spec_rb_enc_strlen, 3);
   rb_define_method(cls, "rb_enc_find", encoding_spec_rb_enc_find, 1);
   rb_define_method(cls, "rb_enc_find_index", encoding_spec_rb_enc_find_index, 1);
   rb_define_method(cls, "rb_enc_isalnum", encoding_spec_rb_enc_isalnum, 2);
   rb_define_method(cls, "rb_enc_isspace", encoding_spec_rb_enc_isspace, 2);
   rb_define_method(cls, "rb_enc_from_index", encoding_spec_rb_enc_from_index, 1);
-  rb_define_method(cls, "rb_enc_mbc_to_codepoint", encoding_spec_rb_enc_mbc_to_codepoint, 2);
+  rb_define_method(cls, "rb_enc_mbc_to_codepoint", encoding_spec_rb_enc_mbc_to_codepoint, 1);
   rb_define_method(cls, "rb_enc_mbcput", encoding_spec_rb_enc_mbcput, 2);
   rb_define_method(cls, "rb_enc_from_encoding", encoding_spec_rb_enc_from_encoding, 1);
   rb_define_method(cls, "rb_enc_get", encoding_spec_rb_enc_get, 1);

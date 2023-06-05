@@ -7,11 +7,7 @@
 require 'strscan'
 require 'test/unit'
 
-class TestStringScanner < Test::Unit::TestCase
-  def create_string_scanner(string, *args)
-    StringScanner.new(string, *args)
-  end
-
+module StringScannerTests
   def test_s_new
     s = create_string_scanner('test string')
     assert_instance_of StringScanner, s
@@ -155,8 +151,10 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_string
-    s = create_string_scanner('test')
-    assert_equal 'test', s.string
+    s = create_string_scanner('test string')
+    assert_equal 'test string', s.string
+    s.scan(/test/)
+    assert_equal 'test string', s.string
     s.string = 'a'
     assert_equal 'a', s.string
     s.scan(/a/)
@@ -207,6 +205,8 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_charpos_not_use_string_methods
+    omit "not supported on TruffleRuby" if RUBY_ENGINE == "truffleruby"
+
     string = +'abcädeföghi'
     scanner = create_string_scanner(string)
 
@@ -465,7 +465,10 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'foo', s['a']
     assert_equal 'bar', s['b']
     assert_raise(IndexError) { s['c'] }
-    assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
+    # see https://github.com/jruby/jruby/issues/7644
+    unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG['host_os'] =~ /mswin|win32|mingw/
+      assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
+    end
   end
 
   def test_pre_match
@@ -567,6 +570,8 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_invalid_encoding_string
+    omit "no encoding check on TruffleRuby for scan(String)" if RUBY_ENGINE == "truffleruby"
+
     str = "\xA1\xA2".dup.force_encoding("euc-jp")
     ss = create_string_scanner(str)
     assert_raise(Encoding::CompatibilityError) do
@@ -712,6 +717,8 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_aref_without_regex
+    omit "#[:missing] always raises on TruffleRuby if matched" if RUBY_ENGINE == "truffleruby"
+
     s = create_string_scanner('abc')
     s.get_byte
     assert_nil(s[:c])
@@ -745,6 +752,41 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil(s.values_at(0, -1, 5, 2))
   end
 
+  def test_scan_aref_repeatedly
+    s = StringScanner.new('test string')
+    assert_equal "test",   s.scan(/\w(\w)(\w*)/)
+    assert_equal "test",   s[0]
+    assert_equal "e",      s[1]
+    assert_equal "st",     s[2]
+    assert_nil             s.scan(/\w+/)
+    assert_nil             s[0]
+    assert_nil             s[1]
+    assert_nil             s[2]
+    assert_equal " ",      s.scan(/\s+/)
+    assert_equal " ",      s[0]
+    assert_nil             s[1]
+    assert_nil             s[2]
+    assert_equal "string", s.scan(/\w(\w)(\w*)/)
+    assert_equal "string", s[0]
+    assert_equal "t",      s[1]
+    assert_equal "ring",   s[2]
+  end
+
+  def test_named_captures
+    omit("not implemented on TruffleRuby") if ["truffleruby"].include?(RUBY_ENGINE)
+    scan = StringScanner.new("foobarbaz")
+    assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
+    assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
+  end
+end
+
+class TestStringScanner < Test::Unit::TestCase
+  include StringScannerTests
+
+  def create_string_scanner(string, *args)
+    StringScanner.new(string, *args)
+  end
+
   def test_fixed_anchor_true
     assert_equal(true,  StringScanner.new("a", fixed_anchor: true).fixed_anchor?)
   end
@@ -759,7 +801,9 @@ class TestStringScanner < Test::Unit::TestCase
   end
 end
 
-class TestStringScannerFixedAnchor < TestStringScanner
+class TestStringScannerFixedAnchor < Test::Unit::TestCase
+  include StringScannerTests
+
   def create_string_scanner(string, *args)
     StringScanner.new(string, fixed_anchor: true)
   end

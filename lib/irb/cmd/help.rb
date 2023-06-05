@@ -1,47 +1,23 @@
-# frozen_string_literal: false
-#
-#   help.rb - helper using ri
-#   	$Release Version: 0.9.6$
-#   	$Revision$
-#
-# --
-#
-#
-#
+# frozen_string_literal: true
 
-require_relative "nop"
+require_relative "show_doc"
 
-# :stopdoc:
 module IRB
   module ExtendCommand
-    class Help < Nop
+    class Help < ShowDoc
+      category "Context"
+      description "[DEPRECATED] Enter the mode to look up RI documents."
+
+      DEPRECATION_MESSAGE = <<~MSG
+        [Deprecation] The `help` command will be repurposed to display command help in the future.
+        For RI document lookup, please use the `show_doc` command instead.
+        For command help, please use `show_cmds` for now.
+      MSG
+
       def execute(*names)
-        require 'rdoc/ri/driver'
-        opts = RDoc::RI::Driver.process_args([])
-        IRB::ExtendCommand::Help.const_set(:Ri, RDoc::RI::Driver.new(opts))
-      rescue LoadError, SystemExit
-        IRB::ExtendCommand::Help.remove_method(:execute)
-        # raise NoMethodError in ensure
-      else
-        def execute(*names)
-          if names.empty?
-            Ri.interactive
-            return
-          end
-          names.each do |name|
-            begin
-              Ri.display_name(name.to_s)
-            rescue RDoc::RI::Error
-              puts $!.message
-            end
-          end
-          nil
-        end
-        nil
-      ensure
-        execute(*names)
+        warn DEPRECATION_MESSAGE
+        super
       end
     end
   end
 end
-# :startdoc:

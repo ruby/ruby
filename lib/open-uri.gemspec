@@ -1,6 +1,13 @@
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", "."].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
 Gem::Specification.new do |spec|
-  spec.name          = "open-uri"
-  spec.version       = "0.2.0"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Tanaka Akira"]
   spec.email         = ["akr@fsij.org"]
 
@@ -14,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{\A((bin|test|spec|features)/|\.git|[Rr]ake|Gemfile)|\.gemspec\z}) }
   end
   spec.executables   = []
   spec.require_paths = ["lib"]

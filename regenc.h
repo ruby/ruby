@@ -40,6 +40,7 @@
 #   include "ruby/defines.h"
 #  endif
 # endif
+# include "ruby.h"
 #else /* RUBY */
 # ifndef PACKAGE
 /* PACKAGE is defined in config.h */
@@ -90,7 +91,7 @@ typedef struct {
 #define ONIG_CHECK_NULL_RETURN(p)          if (ONIG_IS_NULL(p)) return NULL
 #define ONIG_CHECK_NULL_RETURN_VAL(p,val)  if (ONIG_IS_NULL(p)) return (val)
 
-#define enclen(enc,p,e) ((enc->max_enc_len == enc->min_enc_len) ? enc->min_enc_len : ONIGENC_MBC_ENC_LEN(enc,p,e))
+#define enclen(enc,p,e) ((enc->max_enc_len == enc->min_enc_len) ? (p < e ? enc->min_enc_len : 0) : ONIGENC_MBC_ENC_LEN(enc,p,e))
 
 /* character types bit flag */
 #define BIT_CTYPE_NEWLINE  (1<< ONIGENC_CTYPE_NEWLINE)
@@ -124,10 +125,9 @@ typedef struct {
 #define POSIX_BRACKET_ENTRY_INIT(name, ctype) \
   {(short int )(sizeof(name) - 1), name, (ctype)}
 
-#ifndef numberof
-# define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
-#endif
-
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 
 #define USE_CRNL_AS_LINE_TERMINATOR
 #define USE_UNICODE_PROPERTIES

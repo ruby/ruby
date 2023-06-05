@@ -5,13 +5,14 @@ require 'rbconfig/sizeof'
 
 class Test_StringCapacity < Test::Unit::TestCase
   def test_capacity_embedded
-    assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] - embed_header_size - 1, capa('foo')
+    assert_equal GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] - embed_header_size - 1, capa('foo')
     assert_equal max_embed_len, capa('1' * max_embed_len)
     assert_equal max_embed_len, capa('1' * (max_embed_len - 1))
   end
 
   def test_capacity_shared
-    assert_equal 0, capa(:abcdefghijklmnopqrstuvwxyz.to_s)
+    sym = ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).to_sym
+    assert_equal 0, capa(sym.to_s)
   end
 
   def test_capacity_normal
@@ -46,13 +47,13 @@ class Test_StringCapacity < Test::Unit::TestCase
 
   def test_capacity_frozen
     s = String.new("I am testing", capacity: 1000)
-    s << "fstring capacity"
+    s << "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
     s.freeze
     assert_equal(s.length, capa(s))
   end
 
   def test_capacity_fstring
-    s = String.new("a" * max_embed_len, capacity: 1000)
+    s = String.new("a" * max_embed_len, capacity: max_embed_len * 3)
     s << "fstring capacity"
     s = -s
     assert_equal(s.length, capa(s))
@@ -65,11 +66,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def embed_header_size
-    if GC.using_rvargc?
-      2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
-    else
-      2 * RbConfig::SIZEOF['void*']
-    end
+    2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
   end
 
   def max_embed_len

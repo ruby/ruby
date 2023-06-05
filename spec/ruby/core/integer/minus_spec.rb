@@ -10,7 +10,7 @@ describe "Integer#-" do
       (9237212 - 5_280).should == 9231932
 
       (781 - 0.5).should == 780.5
-      (2_560_496 - bignum_value).should == -9223372036852215312
+      (2_560_496 - bignum_value).should == -18446744073706991120
     end
 
     it "raises a TypeError when given a non-Integer" do
@@ -29,8 +29,8 @@ describe "Integer#-" do
     end
 
     it "returns self minus the given Integer" do
-      (@bignum - 9).should == 9223372036854776113
-      (@bignum - 12.57).should be_close(9223372036854776109.43, TOLERANCE)
+      (@bignum - 9).should == 18446744073709551921
+      (@bignum - 12.57).should be_close(18446744073709551917.43, TOLERANCE)
       (@bignum - bignum_value(42)).should == 272
     end
 

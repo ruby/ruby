@@ -151,45 +151,43 @@ describe :range_cover_subrange, shared: true do
     end
   end
 
-  ruby_version_is "2.7" do
-    it "allows self to be a beginless range" do
-      eval("(...10)").send(@method, (3..7)).should be_true
-      eval("(...10)").send(@method, (3..15)).should be_false
+  it "allows self to be a beginless range" do
+    (...10).send(@method, (3..7)).should be_true
+    (...10).send(@method, (3..15)).should be_false
 
-      eval("(..7.9)").send(@method, (2.5..6.5)).should be_true
-      eval("(..7.9)").send(@method, (2.5..8.5)).should be_false
+    (..7.9).send(@method, (2.5..6.5)).should be_true
+    (..7.9).send(@method, (2.5..8.5)).should be_false
 
-      eval("(..'i')").send(@method, ('d'..'f')).should be_true
-      eval("(..'i')").send(@method, ('d'..'z')).should be_false
-    end
+    (..'i').send(@method, ('d'..'f')).should be_true
+    (..'i').send(@method, ('d'..'z')).should be_false
+  end
 
-    it "allows self to be a endless range" do
-      eval("(0...)").send(@method, (3..7)).should be_true
-      eval("(5...)").send(@method, (3..15)).should be_false
+  it "allows self to be a endless range" do
+    eval("(0...)").send(@method, (3..7)).should be_true
+    eval("(5...)").send(@method, (3..15)).should be_false
 
-      eval("(1.1..)").send(@method, (2.5..6.5)).should be_true
-      eval("(3.3..)").send(@method, (2.5..8.5)).should be_false
+    eval("(1.1..)").send(@method, (2.5..6.5)).should be_true
+    eval("(3.3..)").send(@method, (2.5..8.5)).should be_false
 
-      eval("('a'..)").send(@method, ('d'..'f')).should be_true
-      eval("('p'..)").send(@method, ('d'..'z')).should be_false
-    end
+    eval("('a'..)").send(@method, ('d'..'f')).should be_true
+    eval("('p'..)").send(@method, ('d'..'z')).should be_false
+  end
 
-    it "accepts beginless range argument" do
-      eval("(..10)").send(@method, eval("(...10)")).should be_true
-      (0..10).send(@method, eval("(...10)")).should be_false
+  it "accepts beginless range argument" do
+    (..10).send(@method, (...10)).should be_true
+    (0..10).send(@method, (...10)).should be_false
 
-      (1.1..7.9).send(@method, eval("(...10.5)")).should be_false
+    (1.1..7.9).send(@method, (...10.5)).should be_false
 
-      ('c'..'i').send(@method, eval("(..'i')")).should be_false
-    end
+    ('c'..'i').send(@method, (..'i')).should be_false
+  end
 
-    it "accepts endless range argument" do
-      eval("(0..)").send(@method, eval("(0...)")).should be_true
-      (0..10).send(@method, eval("(0...)")).should be_false
+  it "accepts endless range argument" do
+    eval("(0..)").send(@method, eval("(0...)")).should be_true
+    (0..10).send(@method, eval("(0...)")).should be_false
 
-      (1.1..7.9).send(@method, eval("(0.8...)")).should be_false
+    (1.1..7.9).send(@method, eval("(0.8...)")).should be_false
 
-      ('c'..'i').send(@method, eval("('a'..)")).should be_false
-    end
+    ('c'..'i').send(@method, eval("('a'..)")).should be_false
   end
 end

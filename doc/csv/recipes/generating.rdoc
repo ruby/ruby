@@ -1,5 +1,7 @@
 == Recipes for Generating \CSV
 
+These recipes are specific code examples for specific \CSV generating tasks.
+
 For other recipes, see {Recipes for CSV}[./recipes_rdoc.html].
 
 All code snippets on this page assume that the following has been executed:
@@ -144,7 +146,7 @@ This example defines and uses a custom write converter to strip whitespace from 
 
 ==== Recipe: Specify Multiple Write Converters
 
-Use option <tt>:write_converters</tt> and multiple custom coverters
+Use option <tt>:write_converters</tt> and multiple custom converters
 to convert field values when generating \CSV.
 
 This example defines and uses two custom write converters to strip and upcase generated fields:

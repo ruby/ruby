@@ -352,7 +352,7 @@ RSpec.describe "major deprecations" do
       G
 
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
 
       expect(the_bundle).not_to include_gem "rack 1.0"
@@ -414,7 +414,7 @@ RSpec.describe "major deprecations" do
 
     it "shows a deprecation", :bundler => "< 3" do
       expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
+        "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source."
@@ -425,7 +425,7 @@ RSpec.describe "major deprecations" do
       bundle "install"
 
       expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
+        "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source."
@@ -438,7 +438,7 @@ RSpec.describe "major deprecations" do
       bundle "install"
 
       expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
+        "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source."
@@ -512,7 +512,7 @@ RSpec.describe "major deprecations" do
 
     it "should print a single deprecation warning" do
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
     end
   end
@@ -587,10 +587,9 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful message", :bundler => "3"
   end
 
-  context "bundle viz" do
+  context "bundle viz", :realworld do
     before do
-      graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
-      realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
+      realworld_system_gems "ruby-graphviz --version 1.2.5"
       create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       bundle "viz"
     end

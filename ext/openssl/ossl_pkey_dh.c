@@ -178,7 +178,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
@@ -197,14 +197,14 @@ ossl_dh_is_public(VALUE self)
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
     DH_get0_key(dh, NULL, &bn);
 
 #if !defined(OPENSSL_NO_ENGINE)
-    return (bn || DH_get0_engine(dh)) ? Qtrue : Qfalse;
+    return (bn || DH_get0_engine((DH *)dh)) ? Qtrue : Qfalse;
 #else
     return bn ? Qtrue : Qfalse;
 #endif
@@ -223,7 +223,7 @@ ossl_dh_is_private(VALUE self)
 static VALUE
 ossl_dh_export(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     BIO *out;
     VALUE str;
 
@@ -252,7 +252,7 @@ ossl_dh_export(VALUE self)
 static VALUE
 ossl_dh_to_der(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     unsigned char *p;
     long len;
     VALUE str;
@@ -280,7 +280,7 @@ ossl_dh_to_der(VALUE self)
 static VALUE
 ossl_dh_get_params(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     VALUE hash;
     const BIGNUM *p, *q, *g, *pub_key, *priv_key;
 

@@ -5,14 +5,30 @@
 #
 # To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
 # PropertyAliases.txt, PropertyValueAliases.txt, DerivedCoreProperties.txt,
-# DerivedAge.txt and Blocks.txt  from unicode.org.
+# DerivedAge.txt, Blocks.txt, emoji/emoji-data.txt,
+# auxiliary/GraphemeBreakProperty.txt from unicode.org
 # (http://unicode.org/Public/UNIDATA/) And run following command.
-# ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
+# tool/enc-unicode.rb data_dir emoji_data_dir > enc/unicode/name2ctype.kwd
 # You can get source file for gperf.  After this, simply make ruby.
+# Or directly run:
+# tool/enc-unicode.rb --header data_dir emoji_data_dir > enc/unicode/<VERSION>/name2ctype.h
 
-if ARGV[0] == "--header"
-  header = true
-  ARGV.shift
+while arg = ARGV.shift
+  case arg
+  when "--"
+    break
+  when "--header"
+    header = true
+  when "--diff"
+    diff = ARGV.shift or abort "#{$0}: --diff=DIFF-COMMAND"
+  when /\A--diff=(.+)/m
+    diff = $1
+  when /\A-/
+    abort "#{$0}: unknown option #{arg}"
+  else
+    ARGV.unshift(arg)
+    break
+  end
 end
 unless ARGV.size == 2
   abort "Usage: #{$0} data_directory emoji_data_directory"
@@ -59,7 +75,7 @@ def parse_unicode_data(file)
   data = {'Any' => (0x0000..0x10ffff).to_a, 'Assigned' => [],
     'ASCII' => (0..0x007F).to_a, 'NEWLINE' => [0x0a], 'Cn' => []}
   beg_cp = nil
-  IO.foreach(file) do |line|
+  File.foreach(file) do |line|
     fields = line.split(';')
     cp = fields[0].to_i(16)
 
@@ -311,18 +327,19 @@ end
 def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
-  if /^emoji/ =~ name
-    sep = ""
-    pat = /^# #{Regexp.quote(File.basename(name))}.*^# Version: ([\d.]+)/m
-    type = :Emoji
-  else
-    sep = "\n"
-    pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
-    type = :Unicode
-  end
   File.open(fn, 'rb') do |f|
-    line = f.gets(sep)
-    unless version = line[pat, 1]
+    if /^emoji/ =~ name
+      line = f.gets("")
+      # Headers till Emoji 13 or 15
+      version = line[/^# #{Regexp.quote(File.basename(name))}.*(?:^# Version:|Emoji Version) ([\d.]+)/m, 1]
+      type = :Emoji
+    else
+      # Headers since Emoji 14 or other Unicode data
+      line = f.gets("\n")
+      type = :Unicode
+    end
+    version ||= line[/^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/, 1]
+    unless version
       raise ArgumentError, <<-ERROR
 #{name}: no #{type} version
 #{line.gsub(/^/, '> ')}
@@ -330,7 +347,7 @@ def data_foreach(name, &block)
     end
     if !(v = $versions[type])
       $versions[type] = version
-    elsif v != version
+    elsif v != version and "#{v}.0" != version
       raise ArgumentError, <<-ERROR
 #{name}: #{type} version mismatch: #{version} to #{v}
 #{line.gsub(/^/, '> ')}
@@ -464,11 +481,7 @@ struct uniname2ctype_struct {
 };
 #define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
-static const struct uniname2ctype_struct *uniname2ctype_p(
-#if !(/*ANSI*/+0) /* if ANSI, old style not to conflict with generated prototype */
-    const char *, unsigned int
-#endif
-);
+static const struct uniname2ctype_struct *uniname2ctype_p(register const char *str, register size_t len);
 %}
 struct uniname2ctype_struct;
 %%
@@ -547,6 +560,47 @@ output.restore
 if header
   require 'tempfile'
 
+  def diff_args(diff)
+    ok = IO.popen([diff, "-DDIFF_TEST", IO::NULL, "-"], "r+") do |f|
+      f.puts "Test for diffutils 3.8"
+      f.close_write
+      /^#if/ =~ f.read
+    end
+    if ok
+      proc {|macro, *inputs|
+        [diff, "-D#{macro}", *inputs]
+      }
+    else
+      IO.popen([diff, "--old-group-format=%<", "--new-group-format=%>", IO::NULL, IO::NULL], err: %i[child out], &:read)
+      unless $?.success?
+        abort "#{$0}: #{diff} -D does not work"
+      end
+      warn "Avoiding diffutils 3.8 bug#61193"
+      proc {|macro, *inputs|
+        [diff] + [
+          "--old-group-format=" \
+	  "#ifndef @\n" \
+	  "%<" \
+	  "#endif /* ! @ */\n",
+
+          "--new-group-format=" \
+	  "#ifdef @\n" \
+	  "%>" \
+	  "#endif /* @ */\n",
+
+	  "--changed-group-format=" \
+	  "#ifndef @\n" \
+	  "%<" \
+	  "#else /* @ */\n" \
+	  "%>" \
+	  "#endif /* @ */\n"
+        ].map {|opt| opt.gsub(/@/) {macro}} + inputs
+      }
+    end
+  end
+
+  ifdef = diff_args(diff || "diff")
+
   NAME2CTYPE = %w[gperf -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p]
 
   fds = []
@@ -557,8 +611,8 @@ if header
   end while syms.pop
   fds.each(&:close)
   ff = nil
-  IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
-    IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
+  IO.popen(ifdef["USE_UNICODE_AGE_PROPERTIES", fds[1].path, fds[0].path], "r") {|age|
+    IO.popen(ifdef["USE_UNICODE_PROPERTIES", fds[2].path, "-"], "r", in: age) {|f|
       ansi = false
       f.each {|line|
         if /ANSI-C code produced by gperf/ =~ line

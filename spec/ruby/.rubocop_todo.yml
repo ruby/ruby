@@ -50,17 +50,6 @@ Lint/IneffectiveAccessModifier:
     - 'core/module/fixtures/classes.rb'
     - 'language/fixtures/private.rb'
 
-# Offense count: 6
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: runtime_error, standard_error
-Lint/InheritException:
-  Exclude:
-    - 'core/enumerator/lazy/fixtures/classes.rb'
-    - 'core/exception/fixtures/common.rb'
-    - 'core/module/fixtures/autoload_ex1.rb'
-    - 'shared/kernel/raise.rb'
-
 # Offense count: 72
 # Cop supports --auto-correct.
 Lint/LiteralInInterpolation:
@@ -109,6 +98,7 @@ Lint/RescueException:
     - 'core/dir/fileno_spec.rb'
     - 'core/exception/cause_spec.rb'
     - 'core/exception/no_method_error_spec.rb'
+    - 'core/fiber/kill_spec.rb'
     - 'core/kernel/fixtures/autoload_frozen.rb'
     - 'core/kernel/raise_spec.rb'
     - 'core/module/autoload_spec.rb'

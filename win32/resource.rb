@@ -53,7 +53,7 @@ end
   [$so_name,     '.dll',           'VFT_DLL', 'DLL', dll_icons.join],
 ].each do |base, ext, type, desc, icon|
   next if $output and $output != base
-  open(base + '.rc', "w") { |f|
+  File.open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
     f.print <<EOF

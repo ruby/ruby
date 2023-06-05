@@ -12,17 +12,15 @@ module Bundler
         method = instance_method(method_name)
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
-          begin
-            method.bind(self).call(*args, &blk)
-          rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
-            raise HTTPError, e.message
-          rescue AuthenticationRequiredError
-            # Fail since we got a 401 from the server.
-            raise
-          rescue HTTPError => e
-            Bundler.ui.trace(e)
-            nil
-          end
+          method.bind(self).call(*args, &blk)
+        rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
+          raise HTTPError, e.message
+        rescue AuthenticationRequiredError
+          # Fail since we got a 401 from the server.
+          raise
+        rescue HTTPError => e
+          Bundler.ui.trace(e)
+          nil
         end
       end
 
@@ -42,7 +40,7 @@ module Bundler
           deps = begin
                    parallel_compact_index_client.dependencies(remaining_gems)
                  rescue TooManyRequestsError
-                   @bundle_worker.stop if @bundle_worker
+                   @bundle_worker&.stop
                    @bundle_worker = nil # reset it.  Not sure if necessary
                    serial_compact_index_client.dependencies(remaining_gems)
                  end
@@ -51,7 +49,7 @@ module Bundler
           complete_gems.concat(deps.map(&:first)).uniq!
           remaining_gems = next_gems - complete_gems
         end
-        @bundle_worker.stop if @bundle_worker
+        @bundle_worker&.stop
         @bundle_worker = nil # reset it.  Not sure if necessary
 
         gem_info

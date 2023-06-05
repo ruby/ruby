@@ -21,11 +21,8 @@ describe "String#delete_suffix" do
     r.should == s
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting strings when other is tainted" do
-      'hello'.taint.delete_suffix('ello').should.tainted?
-      'hello'.taint.delete_suffix('').should.tainted?
-    end
+  it "does not remove partial bytes, only full characters" do
+    "\xe3\x81\x82".delete_suffix("\x82").should == "\xe3\x81\x82"
   end
 
   it "doesn't set $~" do
@@ -53,6 +50,10 @@ describe "String#delete_suffix" do
       s = StringSpecs::MyString.new('hello')
       s.delete_suffix('ello').should be_an_instance_of(String)
     end
+  end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").delete_suffix("ello").encoding.should == Encoding::US_ASCII
   end
 end
 

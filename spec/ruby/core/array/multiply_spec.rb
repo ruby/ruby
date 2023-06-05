@@ -97,46 +97,6 @@ describe "Array#* with an integer" do
       ScratchPad.recorded.should be_nil
     end
   end
-
-  ruby_version_is ''...'2.7' do
-    it "copies the taint status of the original array even if the passed count is 0" do
-      ary = [1, 2, 3]
-      ary.taint
-      (ary * 0).should.tainted?
-    end
-
-    it "copies the taint status of the original array even if the array is empty" do
-      ary = []
-      ary.taint
-      (ary * 3).should.tainted?
-    end
-
-    it "copies the taint status of the original array if the passed count is not 0" do
-      ary = [1, 2, 3]
-      ary.taint
-      (ary * 1).should.tainted?
-      (ary * 2).should.tainted?
-    end
-
-    it "copies the untrusted status of the original array even if the passed count is 0" do
-      ary = [1, 2, 3]
-      ary.untrust
-      (ary * 0).should.untrusted?
-    end
-
-    it "copies the untrusted status of the original array even if the array is empty" do
-      ary = []
-      ary.untrust
-      (ary * 3).should.untrusted?
-    end
-
-    it "copies the untrusted status of the original array if the passed count is not 0" do
-      ary = [1, 2, 3]
-      ary.untrust
-      (ary * 1).should.untrusted?
-      (ary * 2).should.untrusted?
-    end
-  end
 end
 
 describe "Array#* with a string" do

@@ -382,7 +382,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(flags))
 	flg = NUM2INT(flags);
     if (NIL_P(digest))
-	md = EVP_sha1();
+	md = NULL;
     else
 	md = ossl_evp_get_digestbyname(digest);
     if (NIL_P(certs))
@@ -1033,7 +1033,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(flags))
 	flg = NUM2INT(flags);
     if (NIL_P(digest))
-	md = EVP_sha1();
+	md = NULL;
     else
 	md = ossl_evp_get_digestbyname(digest);
     if (NIL_P(certs))

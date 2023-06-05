@@ -67,7 +67,7 @@
  * Minor  version.   As of  writing  this  version changes  annually.   Greater
  * version doesn't mean "better"; they just mean years passed.
  */
-#define RUBY_API_VERSION_MINOR 2
+#define RUBY_API_VERSION_MINOR 3
 
 /**
  * Teeny version.  This digit  is kind of reserved these days.   Kept 0 for the
@@ -137,7 +137,8 @@ RUBY_EXTERN const int  ruby_patchlevel;
 
 /**
  * This is what `ruby -v` prints to the standard error.  Something like:
- * `"ruby 2.5.9p229 (2021-04-05 revision 67829) [x86_64-linux]"`
+ * `"ruby 2.5.9p229 (2021-04-05 revision 67829) [x86_64-linux]"`. This doesn't
+ * include runtime options like a JIT being enabled.
  */
 RUBY_EXTERN const char ruby_description[];
 

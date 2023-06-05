@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'date'
-require 'timeout'
+require 'envutil'
 
 class TestDateParse < Test::Unit::TestCase
 
@@ -41,6 +41,7 @@ class TestDateParse < Test::Unit::TestCase
      [['Sat Aug 28 02:29:34 Mountain Daylight Time 2000',false],[2000,8,28,2,29,34,'Mountain Daylight Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 Mexico Standard Time 2000',false],[2000,8,28,2,29,34,'Mexico Standard Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 E. Australia Standard Time 2000',false],[2000,8,28,2,29,34,'E. Australia Standard Time',10*3600,6], __LINE__],
+     [['Sat Aug 28 02:29:34 W.  Central  Africa  Standard  Time 2000',false],[2000,8,28,2,29,34,'W. Central Africa Standard Time',1*3600,6], __LINE__],
 
      # part of iso 8601
      [['1999-05-23 23:55:21',false],[1999,5,23,23,55,21,nil,nil,nil], __LINE__],
@@ -132,6 +133,7 @@ class TestDateParse < Test::Unit::TestCase
      [['19990523235521.123[-9]',false],[1999,5,23,23,55,21,'-9',-(9*3600),nil], __LINE__],
      [['19990523235521.123[+9]',false],[1999,5,23,23,55,21,'+9',+(9*3600),nil], __LINE__],
      [['19990523235521.123[9]',false],[1999,5,23,23,55,21,'9',+(9*3600),nil], __LINE__],
+     [['19990523235521.123[9 ]',false],[1999,5,23,23,55,21,'9 ',+(9*3600),nil], __LINE__],
      [['19990523235521.123[-9.50]',false],[1999,5,23,23,55,21,'-9.50',-(9*3600+30*60),nil], __LINE__],
      [['19990523235521.123[+9.50]',false],[1999,5,23,23,55,21,'+9.50',+(9*3600+30*60),nil], __LINE__],
      [['19990523235521.123[-5:EST]',false],[1999,5,23,23,55,21,'EST',-5*3600,nil], __LINE__],
@@ -140,6 +142,7 @@ class TestDateParse < Test::Unit::TestCase
      [['235521.123',false],[nil,nil,nil,23,55,21,nil,nil,nil], __LINE__],
      [['235521.123[-9]',false],[nil,nil,nil,23,55,21,'-9',-9*3600,nil], __LINE__],
      [['235521.123[+9]',false],[nil,nil,nil,23,55,21,'+9',+9*3600,nil], __LINE__],
+     [['235521.123[-9 ]',false],[nil,nil,nil,23,55,21,'-9 ',-9*3600,nil], __LINE__],
      [['235521.123[-5:EST]',false],[nil,nil,nil,23,55,21,'EST',-5*3600,nil], __LINE__],
      [['235521.123[+9:JST]',false],[nil,nil,nil,23,55,21,'JST',+9*3600,nil], __LINE__],
 
@@ -585,6 +588,18 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(5025, h[:offset])
   end
 
+  def test__parse_too_long_year
+    str = "Jan 1" + "0" * 100_000
+    h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
+    assert_equal(100_000, Math.log10(h[:year]))
+    assert_equal(1, h[:mon])
+
+    str = "Jan - 1" + "0" * 100_000
+    h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
+    assert_equal(1, h[:mon])
+    assert_not_include(h, :year)
+  end
+
   require 'time'
 
   def test_parse__time
@@ -852,7 +867,7 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._iso8601(nil)
     assert_equal({}, h)
 
-    h = Date._iso8601('01-02-03T04:05:06Z'.to_sym)
+    h = assert_deprecated_warn {Date._iso8601('01-02-03T04:05:06Z'.to_sym)}
     assert_equal([2001, 2, 3, 4, 5, 6, 0],
       h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
@@ -874,7 +889,7 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._rfc3339(nil)
     assert_equal({}, h)
 
-    h = Date._rfc3339('2001-02-03T04:05:06Z'.to_sym)
+    h = assert_deprecated_warn {Date._rfc3339('2001-02-03T04:05:06Z'.to_sym)}
     assert_equal([2001, 2, 3, 4, 5, 6, 0],
       h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
@@ -963,7 +978,7 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._xmlschema(nil)
     assert_equal({}, h)
 
-    h = Date._xmlschema('2001-02-03'.to_sym)
+    h = assert_deprecated_warn {Date._xmlschema('2001-02-03'.to_sym)}
     assert_equal([2001, 2, 3, nil, nil, nil, nil],
       h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
@@ -1002,7 +1017,7 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._rfc2822(nil)
     assert_equal({}, h)
 
-    h = Date._rfc2822('Sat, 3 Feb 2001 04:05:06 UT'.to_sym)
+    h = assert_deprecated_warn {Date._rfc2822('Sat, 3 Feb 2001 04:05:06 UT'.to_sym)}
     assert_equal([2001, 2, 3, 4, 5, 6, 0],
       h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
@@ -1029,7 +1044,7 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._httpdate(nil)
     assert_equal({}, h)
 
-    h = Date._httpdate('Sat, 03 Feb 2001 04:05:06 GMT'.to_sym)
+    h = assert_deprecated_warn {Date._httpdate('Sat, 03 Feb 2001 04:05:06 GMT'.to_sym)}
     assert_equal([2001, 2, 3, 4, 5, 6, 0],
       h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
@@ -1112,7 +1127,7 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._jisx0301(nil)
     assert_equal({}, h)
 
-    h = Date._jisx0301('H13.02.03T04:05:06.07+0100'.to_sym)
+    h = assert_deprecated_warn {Date._jisx0301('H13.02.03T04:05:06.07+0100'.to_sym)}
     assert_equal([2001, 2, 3, 4, 5, 6, 3600],
       h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
   end
@@ -1297,6 +1312,5 @@ class TestDateParse < Test::Unit::TestCase
     assert_raise(ArgumentError) { DateTime.jisx0301("1" * 1000) }
 
     assert_raise(ArgumentError) { Date._parse("Jan " + "9" * 1000000) }
-    assert_raise(Timeout::Error) { Timeout.timeout(1) { Date._parse("Jan " + "9" * 1000000, limit: nil) } }
   end
 end

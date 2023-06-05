@@ -22,12 +22,14 @@ module Fiddle
     def test_static_sym_unknown
       assert_raise(DLError) { Fiddle::Handle.sym('fooo') }
       assert_raise(DLError) { Fiddle::Handle['fooo'] }
+      refute Fiddle::Handle.sym_defined?('fooo')
     end
 
     def test_static_sym
       begin
         # Linux / Darwin / FreeBSD
         refute_nil Fiddle::Handle.sym('dlopen')
+        assert Fiddle::Handle.sym_defined?('dlopen')
         assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
         return
       rescue
@@ -54,6 +56,7 @@ module Fiddle
       handle = Fiddle::Handle.new(LIBC_SO)
       assert_raise(DLError) { handle.sym('fooo') }
       assert_raise(DLError) { handle['fooo'] }
+      refute handle.sym_defined?('fooo')
     end
 
     def test_sym_with_bad_args
@@ -66,6 +69,7 @@ module Fiddle
       handle = Handle.new(LIBC_SO)
       refute_nil handle.sym('calloc')
       refute_nil handle['calloc']
+      assert handle.sym_defined?('calloc')
     end
 
     def test_handle_close
@@ -185,6 +189,9 @@ module Fiddle
     end if /freebsd/=~ RUBY_PLATFORM
 
     def test_no_memory_leak
+      # https://github.com/ruby/fiddle/actions/runs/3202406059/jobs/5231356410
+      omit if RUBY_VERSION >= '3.2'
+
       if respond_to?(:assert_nothing_leaked_memory)
         n_tries = 100_000
         assert_nothing_leaked_memory(SIZEOF_VOIDP * (n_tries / 100)) do

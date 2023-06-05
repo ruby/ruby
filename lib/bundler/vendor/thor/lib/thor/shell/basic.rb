@@ -182,7 +182,7 @@ class Bundler::Thor
       # indent<Integer>:: Indent the first column by indent value.
       # colwidth<Integer>:: Force the first column to colwidth spaces wide.
       #
-      def print_table(array, options = {}) # rubocop:disable MethodLength
+      def print_table(array, options = {}) # rubocop:disable Metrics/MethodLength
         return if array.empty?
 
         formats = []
@@ -425,7 +425,7 @@ class Bundler::Thor
       end
 
       def unix?
-        RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris|irix|hpux)/i
+        RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris)/i
       end
 
       def truncate(string, width)

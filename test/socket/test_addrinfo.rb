@@ -373,8 +373,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 
   def errors_addrinuse
     errs = [Errno::EADDRINUSE]
-    # MinGW fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
-    errs << Errno::EACCES if /mingw/ =~ RUBY_PLATFORM
+    # Windows fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
+    errs << Errno::EACCES if /mingw|mswin/ =~ RUBY_PLATFORM
     errs
   end
 

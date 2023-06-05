@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexRangeNotSatisfiable < CompactIndexAPI
   get "/versions" do
@@ -30,5 +28,7 @@ class CompactIndexRangeNotSatisfiable < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexRangeNotSatisfiable)

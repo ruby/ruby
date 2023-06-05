@@ -8,7 +8,10 @@
 #include <unistd.h>
 #endif
 #if defined(_WIN32)
-#define pipe(p) rb_w32_pipe(p)
+#include "ruby/win32.h"
+#define read rb_w32_read
+#define write rb_w32_write
+#define pipe rb_w32_pipe
 #endif
 
 #ifndef _WIN32
@@ -143,6 +146,7 @@ static VALUE thread_spec_ruby_native_thread_p(VALUE self) {
   }
 }
 
+#ifndef _WIN32
 static VALUE false_result = Qfalse;
 static VALUE true_result = Qtrue;
 
@@ -153,14 +157,15 @@ static void *new_thread_check(void *args) {
     return &false_result;
   }
 }
+#endif
 
 static VALUE thread_spec_ruby_native_thread_p_new_thread(VALUE self) {
 #ifndef _WIN32
     pthread_t t;
-    VALUE *result = &true_result;
+    void *result = &true_result;
     pthread_create(&t, NULL, new_thread_check, NULL);
-    pthread_join(t, (void **)&result);
-    return *result;
+    pthread_join(t, &result);
+    return *(VALUE *)result;
 #else
     return Qfalse;
 #endif

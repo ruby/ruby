@@ -9,7 +9,7 @@ module Bundler
       raise GemfileError, "Please define :engine" if options[:engine_version] && options[:engine].nil?
 
       if options[:engine] == "ruby" && options[:engine_version] &&
-          ruby_version != Array(options[:engine_version])
+         ruby_version != Array(options[:engine_version])
         raise GemfileEvalError, "ruby_version must match the :engine_version for MRI"
       end
       @ruby_version = RubyVersion.new(ruby_version, options[:patchlevel], options[:engine], options[:engine_version])

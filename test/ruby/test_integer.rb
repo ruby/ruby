@@ -2,16 +2,9 @@
 require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
-  BDSIZE = 0x4000000000000000.coerce(0)[0].size
-  def self.bdsize(x)
-    ((x + 1) / 8 + BDSIZE) / BDSIZE * BDSIZE
-  end
-  def bdsize(x)
-    self.class.bdsize(x)
-  end
-
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
+  LONG_MAX = RbConfig::LIMITS['LONG_MAX']
 
   def test_aref
 
@@ -96,11 +89,16 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(0, 1 << -0x40000001)
     assert_equal(0, 1 << -0x80000000)
     assert_equal(0, 1 << -0x80000001)
-    # assert_equal(bdsize(0x80000000), (1 << 0x80000000).size)
+
+    char_bit = RbConfig::LIMITS["UCHAR_MAX"].bit_length
+    size_max = RbConfig::LIMITS["SIZE_MAX"]
+    size_bit_max = size_max * char_bit
+    assert_raise_with_message(RangeError, /shift width/) {
+      1 << size_bit_max
+    }
   end
 
   def test_rshift
-    # assert_equal(bdsize(0x40000001), (1 >> -0x40000001).size)
     assert_predicate((1 >> 0x80000000), :zero?)
     assert_predicate((1 >> 0xffffffff), :zero?)
     assert_predicate((1 >> 0x100000000), :zero?)
@@ -245,6 +243,13 @@ class TestInteger < Test::Unit::TestCase
       class Integer;def method_missing(*);"";end;end
       assert_equal(0, Integer("0", 2))
     end;
+  end
+
+  def test_Integer_when_to_str
+    def (obj = Object.new).to_str
+      "0x10"
+    end
+    assert_equal(16, Integer(obj))
   end
 
   def test_int_p
@@ -703,5 +708,26 @@ class TestInteger < Test::Unit::TestCase
     o = Object.new
     def o.to_int; Object.new; end
     assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
+  end
+
+  def test_ceildiv
+    assert_equal(0, 0.ceildiv(3))
+    assert_equal(1, 1.ceildiv(3))
+    assert_equal(1, 3.ceildiv(3))
+    assert_equal(2, 4.ceildiv(3))
+
+    assert_equal(-1, 4.ceildiv(-3))
+    assert_equal(-1, -4.ceildiv(3))
+    assert_equal(2, -4.ceildiv(-3))
+
+    assert_equal(3, 3.ceildiv(1.2))
+    assert_equal(3, 3.ceildiv(6/5r))
+
+    assert_equal(10, (10**100-11).ceildiv(10**99-1))
+    assert_equal(11, (10**100-9).ceildiv(10**99-1))
+
+    o = Object.new
+    def o.coerce(other); [other, 10]; end
+    assert_equal(124, 1234.ceildiv(o))
   end
 end

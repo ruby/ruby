@@ -26,7 +26,9 @@ describe "Array.new with no arguments" do
   end
 
   it "does not use the given block" do
-    ->{ Array.new { raise } }.should_not raise_error
+    -> {
+      -> { Array.new { raise } }.should_not raise_error
+    }.should complain(/warning: given block not used/, verbose: true)
   end
 end
 

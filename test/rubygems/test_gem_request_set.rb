@@ -1,14 +1,13 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/request_set'
+
+require_relative "helper"
+require "rubygems/request_set"
 
 class TestGemRequestSet < Gem::TestCase
   def setup
     super
 
     Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
-
-    @DR = Gem::Resolver
   end
 
   def test_gem
@@ -23,49 +22,49 @@ class TestGemRequestSet < Gem::TestCase
   def test_gem_duplicate
     rs = Gem::RequestSet.new
 
-    rs.gem 'a', '1'
-    rs.gem 'a', '2'
+    rs.gem "a", "1"
+    rs.gem "a", "2"
 
-    assert_equal [dep('a', '= 1', '= 2')], rs.dependencies
+    assert_equal [dep("a", "= 1", "= 2")], rs.dependencies
   end
 
   def test_import
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
 
-    rs.import [dep('b')]
+    rs.import [dep("b")]
 
-    assert_equal [dep('a'), dep('b')], rs.dependencies
+    assert_equal [dep("a"), dep("b")], rs.dependencies
   end
 
   def test_install_from_gemdeps
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
     done_installing_ran = false
 
-    Gem.done_installing do |installer, specs|
+    Gem.done_installing do |_installer, _specs|
       done_installing_ran = true
     end
 
     rs = Gem::RequestSet.new
     installed = []
 
-    File.open 'gem.deps.rb', 'w' do |io|
+    File.open "gem.deps.rb", "w" do |io|
       io.puts 'gem "a"'
       io.flush
 
-      result = rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+      result = rs.install_from_gemdeps :gemdeps => io.path do |req, _installer|
         installed << req.full_name
       end
 
       assert_kind_of Array, result # what is supposed to be in here?
     end
 
-    assert_includes installed, 'a-2'
-    assert_path_exist File.join @gemhome, 'gems', 'a-2'
-    assert_path_exist 'gem.deps.rb.lock'
+    assert_includes installed, "a-2"
+    assert_path_exist File.join @gemhome, "gems", "a-2"
+    assert_path_exist "gem.deps.rb.lock"
 
     assert rs.remote
     refute done_installing_ran
@@ -73,12 +72,12 @@ class TestGemRequestSet < Gem::TestCase
 
   def test_install_from_gemdeps_explain
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
     rs = Gem::RequestSet.new
 
-    File.open 'gem.deps.rb', 'w' do |io|
+    File.open "gem.deps.rb", "w" do |io|
       io.puts 'gem "a"'
       io.flush
 
@@ -96,40 +95,40 @@ Gems to install:
 
   def test_install_from_gemdeps_install_dir
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
     util_clear_gems
-    assert_path_not_exist File.join Gem.dir, 'gems', 'a-2'
+    assert_path_not_exist File.join Gem.dir, "gems", "a-2"
 
     rs = Gem::RequestSet.new
     installed = []
 
-    File.open 'gem.deps.rb', 'w' do |io|
+    File.open "gem.deps.rb", "w" do |io|
       io.puts 'gem "a"'
     end
 
     options = {
-      :gemdeps     => 'gem.deps.rb',
+      :gemdeps => "gem.deps.rb",
       :install_dir => "#{@gemhome}2",
     }
 
-    rs.install_from_gemdeps options do |req, installer|
+    rs.install_from_gemdeps options do |req, _installer|
       installed << req.full_name
     end
 
-    assert_includes installed, 'a-2'
-    assert_path_not_exist File.join Gem.dir, 'gems', 'a-2'
+    assert_includes installed, "a-2"
+    assert_path_not_exist File.join Gem.dir, "gems", "a-2"
   end
 
   def test_install_from_gemdeps_local
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
     rs = Gem::RequestSet.new
 
-    File.open 'gem.deps.rb', 'w' do |io|
+    File.open "gem.deps.rb", "w" do |io|
       io.puts 'gem "a"'
       io.flush
 
@@ -143,15 +142,15 @@ Gems to install:
 
   def test_install_from_gemdeps_lockfile
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 1
-      fetcher.download 'a', 2
-      fetcher.download 'b', 1, 'a' => '>= 0'
+      fetcher.download "a", 1
+      fetcher.download "a", 2
+      fetcher.download "b", 1, "a" => ">= 0"
     end
 
     rs = Gem::RequestSet.new
     installed = []
 
-    File.open 'gem.deps.rb.lock', 'w' do |io|
+    File.open "gem.deps.rb.lock", "w" do |io|
       io.puts <<-LOCKFILE
 GEM
   remote: #{@gem_repo}
@@ -168,19 +167,19 @@ DEPENDENCIES
       LOCKFILE
     end
 
-    File.open 'gem.deps.rb', 'w' do |io|
+    File.open "gem.deps.rb", "w" do |io|
       io.puts 'gem "b"'
     end
 
-    rs.install_from_gemdeps :gemdeps => 'gem.deps.rb' do |req, installer|
+    rs.install_from_gemdeps :gemdeps => "gem.deps.rb" do |req, _installer|
       installed << req.full_name
     end
 
-    assert_includes installed, 'b-1'
-    assert_includes installed, 'a-1'
+    assert_includes installed, "b-1"
+    assert_includes installed, "a-1"
 
-    assert_path_exist File.join @gemhome, 'specifications', 'a-1.gemspec'
-    assert_path_exist File.join @gemhome, 'specifications', 'b-1.gemspec'
+    assert_path_exist File.join @gemhome, "specifications", "a-1.gemspec"
+    assert_path_exist File.join @gemhome, "specifications", "b-1.gemspec"
   end
 
   def test_install_from_gemdeps_complex_dependencies
@@ -197,7 +196,7 @@ DEPENDENCIES
     rs = Gem::RequestSet.new
     installed = []
 
-    File.open 'Gemfile.lock', 'w' do |io|
+    File.open "Gemfile.lock", "w" do |io|
       io.puts <<-LOCKFILE
 GEM
   remote: #{@gem_repo}
@@ -212,7 +211,7 @@ DEPENDENCIES
       LOCKFILE
     end
 
-    File.open 'testo.gemspec', 'w' do |io|
+    File.open "testo.gemspec", "w" do |io|
       io.puts <<-LOCKFILE
 Gem::Specification.new do |spec|
   spec.name = 'testo'
@@ -222,28 +221,28 @@ end
       LOCKFILE
     end
 
-    File.open 'Gemfile', 'w' do |io|
+    File.open "Gemfile", "w" do |io|
       io.puts("gemspec")
     end
 
-    rs.install_from_gemdeps :gemdeps => 'Gemfile' do |req, installer|
+    rs.install_from_gemdeps :gemdeps => "Gemfile" do |req, _installer|
       installed << req.full_name
     end
 
-    assert_includes installed, 'z-1.0.3'
+    assert_includes installed, "z-1.0.3"
 
-    assert_path_exist File.join @gemhome, 'specifications', 'z-1.0.3.gemspec'
+    assert_path_exist File.join @gemhome, "specifications", "z-1.0.3.gemspec"
   end
 
   def test_install_from_gemdeps_version_mismatch
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
     rs = Gem::RequestSet.new
     installed = []
 
-    File.open 'gem.deps.rb', 'w' do |io|
+    File.open "gem.deps.rb", "w" do |io|
       io.puts <<-GEM_DEPS
 gem "a"
 ruby "0"
@@ -251,18 +250,18 @@ ruby "0"
 
       io.flush
 
-      rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+      rs.install_from_gemdeps :gemdeps => io.path do |req, _installer|
         installed << req.full_name
       end
     end
 
-    assert_includes installed, 'a-2'
+    assert_includes installed, "a-2"
   end
 
   def test_load_gemdeps
     rs = Gem::RequestSet.new
 
-    tf = Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open "gem.deps.rb" do |io|
       io.puts 'gem "a"'
       io.flush
 
@@ -273,7 +272,7 @@ ruby "0"
     end
     tf.close!
 
-    assert_equal [dep('a')], rs.dependencies
+    assert_equal [dep("a")], rs.dependencies
 
     assert rs.git_set
     assert rs.vendor_set
@@ -282,7 +281,7 @@ ruby "0"
   def test_load_gemdeps_installing
     rs = Gem::RequestSet.new
 
-    tf = Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open "gem.deps.rb" do |io|
       io.puts 'ruby "0"'
       io.puts 'gem "a"'
       io.flush
@@ -294,13 +293,13 @@ ruby "0"
     end
     tf.close!
 
-    assert_equal [dep('a')], rs.dependencies
+    assert_equal [dep("a")], rs.dependencies
   end
 
   def test_load_gemdeps_without_groups
     rs = Gem::RequestSet.new
 
-    tf = Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open "gem.deps.rb" do |io|
       io.puts 'gem "a", :group => :test'
       io.flush
 
@@ -324,7 +323,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b])
     assert_equal 2, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal ["a-2", "b-2"], names
 
@@ -332,28 +331,28 @@ ruby "0"
   end
 
   def test_bug_bug_990
-    a = util_spec 'a', '1.b',  'b' => '~> 1.a'
-    b = util_spec 'b', '1.b',  'c' => '>= 1'
-    c = util_spec 'c', '1.1.b'
+    a = util_spec "a", "1.b",  "b" => "~> 1.a"
+    b = util_spec "b", "1.b",  "c" => ">= 1"
+    c = util_spec "c", "1.1.b"
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
     rs.prerelease = true
 
     res = rs.resolve StaticSet.new([a, b, c])
     assert_equal 3, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal %w[a-1.b b-1.b c-1.1.b], names
   end
 
   def test_resolve_development
-    a = util_spec 'a', 1
+    a = util_spec "a", 1
     spec = Gem::Resolver::SpecSpecification.new nil, a
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
     rs.development = true
 
     res = rs.resolve StaticSet.new [spec]
@@ -364,22 +363,22 @@ ruby "0"
   end
 
   def test_resolve_development_shallow
-    a = util_spec 'a', 1 do |s|
-      s.add_development_dependency 'b'
+    a = util_spec "a", 1 do |s|
+      s.add_development_dependency "b"
     end
 
-    b = util_spec 'b', 1 do |s|
-      s.add_development_dependency 'c'
+    b = util_spec "b", 1 do |s|
+      s.add_development_dependency "c"
     end
 
-    c = util_spec 'c', 1
+    c = util_spec "c", 1
 
     a_spec = Gem::Resolver::SpecSpecification.new nil, a
     b_spec = Gem::Resolver::SpecSpecification.new nil, b
     c_spec = Gem::Resolver::SpecSpecification.new nil, c
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
     rs.development = true
     rs.development_shallow = true
 
@@ -395,7 +394,7 @@ ruby "0"
 
     rs = Gem::RequestSet.new
 
-    tf = Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open "gem.deps.rb" do |io|
       io.puts <<-GEMS_DEPS_RB
         gem "#{name}", :git => "#{repository}"
       GEMS_DEPS_RB
@@ -410,12 +409,12 @@ ruby "0"
     res = rs.resolve
     assert_equal 1, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal %w[a-1], names
 
-    assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
-                 rs.sets.map {|set| set.class }
+    assert_equal [Gem::Resolver::BestSet, Gem::Resolver::GitSet, Gem::Resolver::VendorSet, Gem::Resolver::SourceSet],
+                 rs.sets.map(&:class)
   end
 
   def test_resolve_ignore_dependencies
@@ -429,18 +428,18 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b])
     assert_equal 1, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal %w[a-2], names
   end
 
   def test_resolve_incompatible
-    a1 = util_spec 'a', 1
-    a2 = util_spec 'a', 2
+    a1 = util_spec "a", 1
+    a2 = util_spec "a", 2
 
     rs = Gem::RequestSet.new
-    rs.gem 'a', '= 1'
-    rs.gem 'a', '= 2'
+    rs.gem "a", "= 1"
+    rs.gem "a", "= 2"
 
     set = StaticSet.new [a1, a2]
 
@@ -450,15 +449,15 @@ ruby "0"
   end
 
   def test_resolve_vendor
-    a_name, _, a_directory = vendor_gem 'a', 1 do |s|
-      s.add_dependency 'b', '~> 2.0'
+    a_name, _, a_directory = vendor_gem "a", 1 do |s|
+      s.add_dependency "b", "~> 2.0"
     end
 
-    b_name, _, b_directory = vendor_gem 'b', 2
+    b_name, _, b_directory = vendor_gem "b", 2
 
     rs = Gem::RequestSet.new
 
-    tf = Tempfile.open 'gem.deps.rb' do |io|
+    tf = Tempfile.open "gem.deps.rb" do |io|
       io.puts <<-GEMS_DEPS_RB
         gem "#{a_name}", :path => "#{a_directory}"
         gem "#{b_name}", :path => "#{b_directory}"
@@ -474,12 +473,12 @@ ruby "0"
     res = rs.resolve
     assert_equal 2, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal ["a-1", "b-2"], names
 
-    assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
-                 rs.sets.map {|set| set.class }
+    assert_equal [Gem::Resolver::BestSet, Gem::Resolver::GitSet, Gem::Resolver::VendorSet, Gem::Resolver::SourceSet],
+                 rs.sets.map(&:class)
   end
 
   def test_sorted_requests
@@ -492,7 +491,7 @@ ruby "0"
 
     rs.resolve StaticSet.new([a, b, c])
 
-    names = rs.sorted_requests.map {|s| s.full_name }
+    names = rs.sorted_requests.map(&:full_name)
     assert_equal %w[c-2 b-2 a-2], names
   end
 
@@ -509,7 +508,7 @@ ruby "0"
     end
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
 
     rs.resolve
 
@@ -521,14 +520,14 @@ ruby "0"
       installers << installer
     end
 
-    assert_equal %w[b-1 a-1], reqs.map {|req| req.full_name }
+    assert_equal %w[b-1 a-1], reqs.map(&:full_name)
     assert_equal %w[b-1 a-1],
                  installers.map {|installer| installer.spec.full_name }
 
-    assert_path_exist File.join @gemhome, 'specifications', 'a-1.gemspec'
-    assert_path_exist File.join @gemhome, 'specifications', 'b-1.gemspec'
+    assert_path_exist File.join @gemhome, "specifications", "a-1.gemspec"
+    assert_path_exist File.join @gemhome, "specifications", "b-1.gemspec"
 
-    assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map(&:full_name)
 
     assert done_installing_ran
   end
@@ -545,60 +544,60 @@ ruby "0"
     rs.resolve
 
     installed = rs.install_into @tempdir do
-      assert_equal @tempdir, ENV['GEM_HOME']
+      assert_equal @tempdir, ENV["GEM_HOME"]
     end
 
-    assert_path_exist File.join @tempdir, 'specifications', 'a-1.gemspec'
-    assert_path_exist File.join @tempdir, 'specifications', 'b-1.gemspec'
+    assert_path_exist File.join @tempdir, "specifications", "a-1.gemspec"
+    assert_path_exist File.join @tempdir, "specifications", "b-1.gemspec"
 
-    assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map(&:full_name)
   end
 
   def test_install_into_development_shallow
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', '1' do |s|
-        s.add_development_dependency 'b', '= 1'
+      fetcher.gem "a", "1" do |s|
+        s.add_development_dependency "b", "= 1"
       end
 
-      fetcher.gem 'b', '1' do |s|
-        s.add_development_dependency 'c', '= 1'
+      fetcher.gem "b", "1" do |s|
+        s.add_development_dependency "c", "= 1"
       end
 
-      fetcher.spec 'c', '1'
+      fetcher.spec "c", "1"
     end
 
     rs = Gem::RequestSet.new
     rs.development         = true
     rs.development_shallow = true
-    rs.gem 'a'
+    rs.gem "a"
 
     rs.resolve
 
     options = {
-      :development         => true,
+      :development => true,
       :development_shallow => true,
     }
 
     installed = rs.install_into @tempdir, true, options do
-      assert_equal @tempdir, ENV['GEM_HOME']
+      assert_equal @tempdir, ENV["GEM_HOME"]
     end
 
-    assert_equal %w[a-1 b-1], installed.map {|s| s.full_name }.sort
+    assert_equal %w[a-1 b-1], installed.map(&:full_name).sort
   end
 
   def test_sorted_requests_development_shallow
-    a = util_spec 'a', 1 do |s|
-      s.add_development_dependency 'b'
+    a = util_spec "a", 1 do |s|
+      s.add_development_dependency "b"
     end
 
-    b = util_spec 'b', 1 do |s|
-      s.add_development_dependency 'c'
+    b = util_spec "b", 1 do |s|
+      s.add_development_dependency "c"
     end
 
-    c = util_spec 'c', 1
+    c = util_spec "c", 1
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
     rs.development = true
     rs.development_shallow = true
 
@@ -608,22 +607,22 @@ ruby "0"
 
     rs.resolve StaticSet.new [a_spec, b_spec, c_spec]
 
-    assert_equal %w[b-1 a-1], rs.sorted_requests.map {|req| req.full_name }
+    assert_equal %w[b-1 a-1], rs.sorted_requests.map(&:full_name)
   end
 
   def test_tsort_each_child_development
-    a = util_spec 'a', 1 do |s|
-      s.add_development_dependency 'b'
+    a = util_spec "a", 1 do |s|
+      s.add_development_dependency "b"
     end
 
-    b = util_spec 'b', 1 do |s|
-      s.add_development_dependency 'c'
+    b = util_spec "b", 1 do |s|
+      s.add_development_dependency "c"
     end
 
-    c = util_spec 'c', 1
+    c = util_spec "c", 1
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
     rs.development = true
     rs.development_shallow = true
 
@@ -637,22 +636,22 @@ ruby "0"
 
     deps = rs.enum_for(:tsort_each_child, a_req).to_a
 
-    assert_equal %w[b], deps.map {|dep| dep.name }
+    assert_equal %w[b], deps.map(&:name)
   end
 
   def test_tsort_each_child_development_shallow
-    a = util_spec 'a', 1 do |s|
-      s.add_development_dependency 'b'
+    a = util_spec "a", 1 do |s|
+      s.add_development_dependency "b"
     end
 
-    b = util_spec 'b', 1 do |s|
-      s.add_development_dependency 'c'
+    b = util_spec "b", 1 do |s|
+      s.add_development_dependency "c"
     end
 
-    c = util_spec 'c', 1
+    c = util_spec "c", 1
 
     rs = Gem::RequestSet.new
-    rs.gem 'a'
+    rs.gem "a"
     rs.development = true
     rs.development_shallow = true
 

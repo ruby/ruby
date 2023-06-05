@@ -406,4 +406,10 @@ class TC_OpenStruct < Test::Unit::TestCase
     o2 = Marshal.load(Marshal.dump(o))
     assert_equal o, o2
   end
+
+  def test_class
+    os = OpenStruct.new(class: 'my-class', method: 'post')
+    assert_equal('my-class', os.class)
+    assert_equal(OpenStruct, os.class!)
+  end
 end

@@ -48,18 +48,6 @@ describe :string_times, shared: true do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints the result when self is tainted" do
-      ["", "OK", MyString.new(""), MyString.new("OK")].each do |str|
-        str.taint
-
-        [0, 1, 2].each do |arg|
-          @object.call(str, arg).should.tainted?
-        end
-      end
-    end
-  end
-
   it "returns a String in the same encoding as self" do
     str = "\xE3\x81\x82".force_encoding Encoding::UTF_8
     result = @object.call(str, 2)

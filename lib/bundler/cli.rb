@@ -10,6 +10,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
+    EXTENSIONS = ["c", "rust"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -22,6 +23,8 @@ module Bundler
     }.freeze
 
     def self.start(*)
+      check_deprecated_ext_option(ARGV) if ARGV.include?("--ext")
+
       super
     ensure
       Bundler::SharedHelpers.print_major_deprecations!
@@ -153,6 +156,7 @@ module Bundler
       dependency listed in the gemspec file to the newly created Gemfile.
     D
     method_option "gemspec", :type => :string, :banner => "Use the specified .gemspec to create the Gemfile"
+    method_option "gemfile", :type => :string, :banner => "Use the specified name for the gemfile instead of 'Gemfile'"
     def init
       require_relative "cli/init"
       Init.new(options.dup).run
@@ -218,6 +222,8 @@ module Bundler
       "Specify the number of jobs to run in parallel"
     method_option "local", :type => :boolean, :banner =>
       "Do not attempt to fetch gems remotely and use the gem cache instead"
+    method_option "prefer-local", :type => :boolean, :banner =>
+      "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", :type => :boolean, :banner =>
       "Don't update the existing gem cache."
     method_option "redownload", :type => :boolean, :aliases => "--force", :banner =>
@@ -236,7 +242,7 @@ module Bundler
       "Install to the system location ($BUNDLE_PATH or $GEM_HOME) even if the bundle was previously installed somewhere else for this application"
     method_option "trust-policy", :alias => "P", :type => :string, :banner =>
       "Gem trust policy (like gem install -P). Must be one of " +
-        Bundler.rubygems.security_policy_keys.join("|")
+      Bundler.rubygems.security_policy_keys.join("|")
     method_option "without", :type => :array, :banner =>
       "Exclude gems that are part of the specified named group."
     method_option "with", :type => :array, :banner =>
@@ -290,6 +296,8 @@ module Bundler
       "Prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner =>
       "Prefer updating to next major version (default)"
+    method_option "pre", :type => :boolean, :banner =>
+      "Always choose the highest allowed version when updating gems, regardless of prerelease status"
     method_option "strict", :type => :boolean, :banner =>
       "Do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>
@@ -370,6 +378,7 @@ module Bundler
     method_option "group", :aliases => "-g", :type => :string
     method_option "source", :aliases => "-s", :type => :string
     method_option "require", :aliases => "-r", :type => :string, :banner => "Adds require path to gem. Provide false, or a path as a string."
+    method_option "path", :type => :string
     method_option "git", :type => :string
     method_option "github", :type => :string
     method_option "branch", :type => :string
@@ -391,7 +400,7 @@ module Bundler
       are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 
       For more information on patch level options (--major, --minor, --patch,
-      --update-strict) see documentation on the same options on the update command.
+      --strict) see documentation on the same options on the update command.
     D
     method_option "group", :type => :string, :banner => "List gems from a specific group"
     method_option "groups", :type => :boolean, :banner => "List gems organized by groups"
@@ -399,10 +408,9 @@ module Bundler
       "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "pre", :type => :boolean, :banner => "Check for newer pre-release gems"
     method_option "source", :type => :array, :banner => "Check against a specific source"
-    strict_is_update = Bundler.feature_flag.forget_cli_options?
-    method_option "filter-strict", :type => :boolean, :aliases => strict_is_update ? [] : %w[--strict], :banner =>
+    method_option "filter-strict", :type => :boolean, :aliases => "--strict", :banner =>
       "Only list newer versions allowed by your Gemfile requirements"
-    method_option "update-strict", :type => :boolean, :aliases => strict_is_update ? %w[--strict] : [], :banner =>
+    method_option "update-strict", :type => :boolean, :banner =>
       "Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "minor", :type => :boolean, :banner => "Prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner => "Prefer updating to next major version (default)"
@@ -502,6 +510,7 @@ module Bundler
     subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
+    method_option "path", :type => :string, :lazy_default => "", :banner => "Open relative path of the gem source."
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run
@@ -515,7 +524,7 @@ module Bundler
       end
     end
 
-    desc "version", "Prints the bundler's version information"
+    desc "version", "Prints Bundler version information"
     def version
       cli_help = current_command.name == "cli_help"
       if cli_help || ARGV.include?("version")
@@ -572,7 +581,7 @@ module Bundler
     method_option :edit, :type => :string, :aliases => "-e", :required => false, :banner => "EDITOR",
                          :lazy_default => [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? },
                          :desc => "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
-    method_option :ext, :type => :boolean, :default => false, :desc => "Generate the boilerplate for C extension code"
+    method_option :ext, :type => :string, :desc => "Generate the boilerplate for C extension code.", :enum => EXTENSIONS
     method_option :git, :type => :boolean, :default => true, :desc => "Initialize a git repo inside your library."
     method_option :mit, :type => :boolean, :desc => "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
     method_option :rubocop, :type => :boolean, :desc => "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
@@ -580,7 +589,7 @@ module Bundler
     method_option :test, :type => :string, :lazy_default => Bundler.settings["gem.test"] || "", :aliases => "-t", :banner => "Use the specified test framework for your library",
                          :desc => "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, :type => :string, :lazy_default => Bundler.settings["gem.ci"] || "",
-                       :desc => "Generate CI configuration, either GitHub Actions, Travis CI, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|travis|gitlab|circle)`"
+                       :desc => "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
     method_option :linter, :type => :string, :lazy_default => Bundler.settings["gem.linter"] || "",
                            :desc => "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
     method_option :github_username, :type => :string, :default => Bundler.settings["gem.github_username"], :banner => "Set your username on GitHub", :desc => "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
@@ -611,14 +620,14 @@ module Bundler
     private :gem
 
     def self.source_root
-      File.expand_path(File.join(File.dirname(__FILE__), "templates"))
+      File.expand_path("templates", __dir__)
     end
 
     desc "clean [OPTIONS]", "Cleans up unused gems in your bundler directory", :hide => true
     method_option "dry-run", :type => :boolean, :default => false, :banner =>
       "Only print out changes, do not clean gems"
     method_option "force", :type => :boolean, :default => false, :banner =>
-      "Forces clean even if --path is not set"
+      "Forces cleaning up unused gems even if Bundler is configured to use globally installed gems. As a consequence, removes all system gems except for the ones in the current application."
     def clean
       require_relative "cli/clean"
       Clean.new(options.dup).run
@@ -666,10 +675,14 @@ module Bundler
       "If updating, prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner =>
       "If updating, prefer updating to next major version (default)"
+    method_option "pre", :type => :boolean, :banner =>
+      "If updating, always choose the highest allowed version, regardless of prerelease status"
     method_option "strict", :type => :boolean, :banner =>
       "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>
       "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"
+    method_option "bundler", :type => :string, :lazy_default => "> 0.a", :banner =>
+      "Update the locked version of bundler"
     def lock
       require_relative "cli/lock"
       Lock.new(options).run
@@ -745,6 +758,38 @@ module Bundler
       else
         args
       end
+    end
+
+    def self.check_deprecated_ext_option(arguments)
+      # when deprecated version of `--ext` is called
+      # print out deprecation warning and pretend `--ext=c` was provided
+      if deprecated_ext_value?(arguments)
+        SharedHelpers.major_deprecation 2, "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
+        arguments[arguments.index("--ext")] = "--ext=c"
+      end
+    end
+
+    def self.deprecated_ext_value?(arguments)
+      index = arguments.index("--ext")
+      next_argument = arguments[index + 1]
+
+      # it is ok when --ext is followed with valid extension value
+      # for example `bundle gem hello --ext c`
+      return false if EXTENSIONS.include?(next_argument)
+
+      # deprecated call when --ext is called with no value in last position
+      # for example `bundle gem hello_gem --ext`
+      return true if next_argument.nil?
+
+      # deprecated call when --ext is followed by other parameter
+      # for example `bundle gem --ext --no-ci hello_gem`
+      return true if next_argument.start_with?("-")
+
+      # deprecated call when --ext is followed by gem name
+      # for example `bundle gem --ext hello_gem`
+      return true if next_argument
+
+      false
     end
 
     private

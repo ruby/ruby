@@ -22,7 +22,6 @@ module Fiddle
     extern "int fprintf(FILE*, char*)" rescue nil
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
-    BoundQsortCallback = bind("void *bound_qsort_callback(void*, void*)"){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
     Timeval = struct [
       "long tv_sec",
       "long tv_usec",
@@ -59,11 +58,6 @@ module Fiddle
         ]
       }
     ]
-
-    CallCallback = bind("void call_callback(void*, void*)"){ | ptr1, ptr2|
-      f = Function.new(ptr1.to_i, [TYPE_VOIDP], TYPE_VOID)
-      f.call(ptr2)
-    }
   end
 
   class TestImport < TestCase
@@ -130,8 +124,25 @@ module Fiddle
         name = $1.sub(/P\z/,"*").gsub(/_(?!T\z)/, " ").downcase
         type_name = name
       end
+      type_name = "unsigned #{$1}" if type_name =~ /\Au(long|short|char|int|long long)\z/
+
       define_method("test_sizeof_#{name}") do
         assert_equal(size, Fiddle::Importer.sizeof(type_name), type)
+      end
+    end
+
+    # Assert that the unsigned constants are equal to the "negative" signed ones
+    # for backwards compatibility
+    def test_unsigned_equals_negative_signed
+      Fiddle.constants.grep(/\ATYPE_(?!VOID|VARIADIC\z)(U.*)/) do |unsigned|
+        assert_equal(-Fiddle.const_get(unsigned.to_s.sub(/U/, '')),
+                     Fiddle.const_get(unsigned))
+      end
+    end
+
+    def test_type_constants
+      Fiddle::Types.constants.each do |const|
+        assert_equal Fiddle::Types.const_get(const), Fiddle.const_get("TYPE_#{const}")
       end
     end
 

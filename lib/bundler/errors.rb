@@ -21,16 +21,7 @@ module Bundler
   class InstallError < BundlerError; status_code(5); end
 
   # Internal error, should be rescued
-  class VersionConflict < BundlerError
-    attr_reader :conflicts
-
-    def initialize(conflicts, msg = nil)
-      super(msg)
-      @conflicts = conflicts
-    end
-
-    status_code(6)
-  end
+  class SolveFailure < BundlerError; status_code(6); end
 
   class GemNotFound < BundlerError; status_code(7); end
   class InstallHookError < BundlerError; status_code(8); end
@@ -41,19 +32,20 @@ module Bundler
   class GemspecError < BundlerError; status_code(14); end
   class InvalidOption < BundlerError; status_code(15); end
   class ProductionError < BundlerError; status_code(16); end
+
   class HTTPError < BundlerError
     status_code(17)
     def filter_uri(uri)
       URICredentialsFilter.credential_filtered_uri(uri)
     end
   end
+
   class RubyVersionMismatch < BundlerError; status_code(18); end
   class SecurityError < BundlerError; status_code(19); end
   class LockfileError < BundlerError; status_code(20); end
   class CyclicDependencyError < BundlerError; status_code(21); end
   class GemfileLockNotFound < BundlerError; status_code(22); end
   class PluginError < BundlerError; status_code(29); end
-  class SudoNotPermittedError < BundlerError; status_code(30); end
   class ThreadCreationError < BundlerError; status_code(33); end
   class APIResponseMismatchError < BundlerError; status_code(34); end
   class APIResponseInvalidDependenciesError < BundlerError; status_code(35); end
@@ -79,10 +71,6 @@ module Bundler
       case @permission_type
       when :create
         "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
-      when :delete
-        permissions = "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
-        permissions += ", and the same thing for all subdirectories inside #{@path}" if File.directory?(@path)
-        permissions
       else
         "#{@permission_type} permissions for that path"
       end
@@ -171,5 +159,17 @@ module Bundler
     end
 
     status_code(32)
+  end
+
+  class DirectoryRemovalError < BundlerError
+    def initialize(orig_exception, msg)
+      full_message = "#{msg}.\n" \
+                     "The underlying error was #{orig_exception.class}: #{orig_exception.message}, with backtrace:\n" \
+                     "  #{orig_exception.backtrace.join("\n  ")}\n\n" \
+                     "Bundler Error Backtrace:"
+      super(full_message)
+    end
+
+    status_code(36)
   end
 end

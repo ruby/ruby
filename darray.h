@@ -13,7 +13,7 @@
 //
 // Example:
 //      rb_darray(char) char_array = NULL;
-//      if (!rb_darray_append(&char_array, 'e')) abort();
+//      rb_darray_append(&char_array, 'e');
 //      printf("pushed %c\n", *rb_darray_ref(char_array, 0));
 //      rb_darray_free(char_array);
 //
@@ -21,35 +21,35 @@
 
 // Copy an element out of the array. Warning: not bounds checked.
 //
-// T rb_darray_get(rb_darray(T) ary, int32_t idx);
+// T rb_darray_get(rb_darray(T) ary, size_t idx);
 //
 #define rb_darray_get(ary, idx) ((ary)->data[(idx)])
 
 // Assign to an element. Warning: not bounds checked.
 //
-// void rb_darray_set(rb_darray(T) ary, int32_t idx, T element);
+// void rb_darray_set(rb_darray(T) ary, size_t idx, T element);
 //
 #define rb_darray_set(ary, idx, element) ((ary)->data[(idx)] = (element))
 
 // Get a pointer to an element. Warning: not bounds checked.
 //
-// T *rb_darray_ref(rb_darray(T) ary, int32_t idx);
+// T *rb_darray_ref(rb_darray(T) ary, size_t idx);
 //
 #define rb_darray_ref(ary, idx) (&((ary)->data[(idx)]))
 
-// Copy a new element into the array. Return 1 on success and 0 on failure.
-// ptr_to_ary is evaluated multiple times.
+// Copy a new element into the array. ptr_to_ary is evaluated multiple times.
 //
-// bool rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
+// void rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
 //
-#define rb_darray_append(ptr_to_ary, element) (   \
-    rb_darray_ensure_space((ptr_to_ary), sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0])) ? ( \
-        rb_darray_set(*(ptr_to_ary),              \
-                      (*(ptr_to_ary))->meta.size, \
-                      (element)),                 \
-        ++((*(ptr_to_ary))->meta.size),           \
-        1                                         \
-    ) : 0)
+#define rb_darray_append(ptr_to_ary, element) do {  \
+    rb_darray_ensure_space((ptr_to_ary), sizeof(**(ptr_to_ary)), \
+                           sizeof((*(ptr_to_ary))->data[0])); \
+    rb_darray_set(*(ptr_to_ary), \
+                  (*(ptr_to_ary))->meta.size, \
+                  (element)); \
+    (*(ptr_to_ary))->meta.size++; \
+} while (0)
+
 
 // Last element of the array
 //
@@ -68,21 +68,24 @@
 // Iterate over items of the array in a for loop
 //
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
-    for (int idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
+    for (size_t idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
 
-// Iterate over valid indicies in the array in a for loop
+// Iterate over valid indices in the array in a for loop
 //
 #define rb_darray_for(ary, idx_name) \
-    for (int idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)
+    for (size_t idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)
 
 // Make a dynamic array of a certain size. All bytes backing the elements are set to zero.
-// Return 1 on success and 0 on failure.
 //
 // Note that NULL is a valid empty dynamic array.
 //
-// bool rb_darray_make(rb_darray(T) *ptr_to_ary, int32_t size);
+// void rb_darray_make(rb_darray(T) *ptr_to_ary, size_t size);
 //
-#define rb_darray_make(ptr_to_ary, size) rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0]))
+#define rb_darray_make(ptr_to_ary, size) \
+    rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
+                         sizeof((*(ptr_to_ary))->data[0]))
+
+#define rb_darray_data_ptr(ary) ((ary)->data)
 
 // Set the size of the array to zero without freeing the backing memory.
 // Allows reusing the same array.
@@ -90,13 +93,13 @@
 #define rb_darray_clear(ary) (ary->meta.size = 0)
 
 typedef struct rb_darray_meta {
-    int32_t size;
-    int32_t capa;
+    size_t size;
+    size_t capa;
 } rb_darray_meta_t;
 
 // Get the size of the dynamic array.
 //
-static inline int32_t
+static inline size_t
 rb_darray_size(const void *ary)
 {
     const rb_darray_meta_t *meta = ary;
@@ -105,7 +108,7 @@ rb_darray_size(const void *ary)
 
 // Get the capacity of the dynamic array.
 //
-static inline int32_t
+static inline size_t
 rb_darray_capa(const void *ary)
 {
     const rb_darray_meta_t *meta = ary;
@@ -117,46 +120,27 @@ rb_darray_capa(const void *ary)
 static inline void
 rb_darray_free(void *ary)
 {
-    free(ary);
-}
-
-// Internal function. Calculate buffer size on malloc heap.
-static inline size_t
-rb_darray_buffer_size(int32_t capacity, size_t header_size, size_t element_size)
-{
-    if (capacity == 0) return 0;
-    return header_size + (size_t)capacity * element_size;
+    rb_darray_meta_t *meta = ary;
+    ruby_sized_xfree(ary, meta->capa);
 }
 
 // Internal function
-// Ensure there is space for one more element. Return 1 on success and 0 on failure.
+// Ensure there is space for one more element.
 // Note: header_size can be bigger than sizeof(rb_darray_meta_t) when T is __int128_t, for example.
-static inline int
+static inline void
 rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size)
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
-    int32_t current_capa = rb_darray_capa(meta);
-    if (rb_darray_size(meta) < current_capa) return 1;
+    size_t current_capa = rb_darray_capa(meta);
+    if (rb_darray_size(meta) < current_capa) return;
 
-    int32_t new_capa;
-    // Calculate new capacity
-    if (current_capa == 0) {
-        new_capa = 1;
-    }
-    else {
-        int64_t doubled = 2 * (int64_t)current_capa;
-        new_capa = (int32_t)doubled;
-        if (new_capa != doubled) return 0;
-    }
+    // Double the capacity
+    size_t new_capa = current_capa == 0 ? 1 : current_capa * 2;
 
-    // Calculate new buffer size
-    size_t current_buffer_size = rb_darray_buffer_size(current_capa, header_size, element_size);
-    size_t new_buffer_size = rb_darray_buffer_size(new_capa, header_size, element_size);
-    if (new_buffer_size <= current_buffer_size) return 0;
-
-    rb_darray_meta_t *doubled_ary = realloc(meta, new_buffer_size);
-    if (!doubled_ary) return 0;
+    rb_darray_meta_t *doubled_ary = rb_xrealloc_mul_add(meta, new_capa, element_size, header_size);
+    // rb_xrealloc functions guarantee that NULL is not returned
+    assert(doubled_ary != NULL);
 
     if (meta == NULL) {
         // First allocation. Initialize size. On subsequence allocations
@@ -169,22 +153,20 @@ rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size
     // We don't have access to the type of the dynamic array in function context.
     // Write out result with memcpy to avoid strict aliasing issue.
     memcpy(ptr_to_ary, &doubled_ary, sizeof(doubled_ary));
-    return 1;
 }
 
-static inline int
-rb_darray_make_impl(void *ptr_to_ary, int32_t array_size, size_t header_size, size_t element_size)
+static inline void
+rb_darray_make_impl(void *ptr_to_ary, size_t array_size, size_t header_size, size_t element_size)
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
-    if (array_size < 0) return 0;
     if (array_size == 0) {
         *ptr_to_ptr_to_meta = NULL;
-        return 1;
+        return;
     }
 
-    size_t buffer_size = rb_darray_buffer_size(array_size, header_size, element_size);
-    rb_darray_meta_t *meta = calloc(buffer_size, 1);
-    if (!meta) return 0;
+    rb_darray_meta_t *meta = rb_xcalloc_mul_add(array_size, element_size, header_size);
+    // rb_xcalloc functions guarantee that NULL is not returned
+    assert(meta != NULL);
 
     meta->size = array_size;
     meta->capa = array_size;
@@ -192,7 +174,6 @@ rb_darray_make_impl(void *ptr_to_ary, int32_t array_size, size_t header_size, si
     // We don't have access to the type of the dynamic array in function context.
     // Write out result with memcpy to avoid strict aliasing issue.
     memcpy(ptr_to_ary, &meta, sizeof(meta));
-    return 1;
 }
 
 #endif /* RUBY_DARRAY_H */

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require_relative 'tsort'
+
+require_relative "tsort"
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.
@@ -107,7 +108,7 @@ class Gem::RequestSet
     @requests            = []
     @sets                = []
     @soft_missing        = false
-    @sorted              = nil
+    @sorted_requests     = nil
     @specs               = nil
     @vendor_set          = nil
     @source_set          = nil
@@ -159,7 +160,7 @@ class Gem::RequestSet
     end
 
     # Create N threads in a pool, have them download all the gems
-    threads = Gem.configuration.concurrent_downloads.times.map do
+    threads = Array.new(Gem.configuration.concurrent_downloads) do
       # When a thread pops this item, it knows to stop running. The symbol
       # is queued here so that there will be one symbol per thread.
       download_queue << :stop
@@ -254,7 +255,8 @@ class Gem::RequestSet
   end
 
   def install_into(dir, force = true, options = {})
-    gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
+    gem_home = ENV["GEM_HOME"]
+    ENV["GEM_HOME"] = dir
 
     existing = force ? [] : specs_in(dir)
     existing.delete_if {|s| @always_install.include? s }
@@ -287,7 +289,7 @@ class Gem::RequestSet
 
     installed
   ensure
-    ENV['GEM_HOME'] = gem_home
+    ENV["GEM_HOME"] = gem_home
   end
 
   ##
@@ -337,32 +339,32 @@ class Gem::RequestSet
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[RequestSet:', ']' do
+    q.group 2, "[RequestSet:", "]" do
       q.breakable
 
       if @remote
-        q.text 'remote'
+        q.text "remote"
         q.breakable
       end
 
       if @prerelease
-        q.text 'prerelease'
+        q.text "prerelease"
         q.breakable
       end
 
       if @development_shallow
-        q.text 'shallow development'
+        q.text "shallow development"
         q.breakable
       elsif @development
-        q.text 'development'
+        q.text "development"
         q.breakable
       end
 
       if @soft_missing
-        q.text 'soft missing'
+        q.text "soft missing"
       end
 
-      q.group 2, '[dependencies:', ']' do
+      q.group 2, "[dependencies:", "]" do
         q.breakable
         @dependencies.map do |dep|
           q.text dep.to_s
@@ -371,10 +373,10 @@ class Gem::RequestSet
       end
 
       q.breakable
-      q.text 'sets:'
+      q.text "sets:"
 
       q.breakable
-      q.pp @sets.map {|set| set.class }
+      q.pp @sets.map(&:class)
     end
   end
 
@@ -424,11 +426,11 @@ class Gem::RequestSet
   end
 
   def sorted_requests
-    @sorted ||= strongly_connected_components.flatten
+    @sorted_requests ||= strongly_connected_components.flatten
   end
 
   def specs
-    @specs ||= @requests.map {|r| r.full_spec }
+    @specs ||= @requests.map(&:full_spec)
   end
 
   def specs_in(dir)
@@ -443,14 +445,14 @@ class Gem::RequestSet
 
   def tsort_each_child(node) # :nodoc:
     node.spec.dependencies.each do |dep|
-      next if dep.type == :development and not @development
+      next if dep.type == :development && !@development
 
       match = @requests.find do |r|
-        dep.match? r.spec.name, r.spec.version, @prerelease
+        dep.match?(r.spec.name, r.spec.version, r.spec.is_a?(Gem::Resolver::InstalledSpecification) || @prerelease)
       end
 
       unless match
-        next if dep.type == :development and @development_shallow
+        next if dep.type == :development && @development_shallow
         next if @soft_missing
         raise Gem::DependencyError,
               "Unresolved dependency found during sorting - #{dep} (requested by #{node.spec.full_name})"
@@ -461,6 +463,6 @@ class Gem::RequestSet
   end
 end
 
-require_relative 'request_set/gem_dependency_api'
-require_relative 'request_set/lockfile'
-require_relative 'request_set/lockfile/tokenizer'
+require_relative "request_set/gem_dependency_api"
+require_relative "request_set/lockfile"
+require_relative "request_set/lockfile/tokenizer"

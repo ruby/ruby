@@ -43,6 +43,8 @@ char *rb_str_to_cstr(VALUE str);
 const char *ruby_escaped_char(int c);
 void rb_str_make_independent(VALUE str);
 int rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc);
+int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
+VALUE rb_str_include(VALUE str, VALUE arg);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
@@ -59,9 +61,12 @@ void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
+void rb_str_make_embedded(VALUE);
+size_t rb_str_size_as_embedded(VALUE);
+bool rb_str_reembeddable_p(VALUE);
+void rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_fstring_new(const char *ptr, long len);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
@@ -72,7 +77,6 @@ VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE 
 
 struct rb_execution_context_struct;
 VALUE rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str);
-MJIT_SYMBOL_EXPORT_END
 
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
 #define rb_fstring_literal(str) rb_fstring_lit(str)
@@ -100,7 +104,7 @@ STR_EMBED_P(VALUE str)
 static inline bool
 STR_SHARED_P(VALUE str)
 {
-    return FL_ALL_RAW(str, STR_NOEMBED | ELTS_SHARED);
+    return FL_ALL_RAW(str, STR_NOEMBED | STR_SHARED);
 }
 
 static inline bool

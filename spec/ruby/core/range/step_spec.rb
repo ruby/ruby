@@ -474,42 +474,45 @@ describe "Range#step" do
         end
       end
 
+      # We use .take below to ensure the enumerator works
+      # because that's an Enumerable method and so it uses the Enumerator behavior
+      # not just a method overridden in Enumerator::ArithmeticSequence.
       describe "type" do
         context "when both begin and end are numerics" do
           it "returns an instance of Enumerator::ArithmeticSequence" do
             (1..10).step.class.should == Enumerator::ArithmeticSequence
+            (1..10).step(3).take(4).should == [1, 4, 7, 10]
           end
         end
 
-        ruby_version_is "2.7" do
-          context "when begin is not defined and end is numeric" do
-            it "returns an instance of Enumerator::ArithmeticSequence" do
-              eval("(..10)").step.class.should == Enumerator::ArithmeticSequence
-            end
+        context "when begin is not defined and end is numeric" do
+          it "returns an instance of Enumerator::ArithmeticSequence" do
+            (..10).step.class.should == Enumerator::ArithmeticSequence
           end
         end
 
         context "when range is endless" do
           it "returns an instance of Enumerator::ArithmeticSequence when begin is numeric" do
             (1..).step.class.should == Enumerator::ArithmeticSequence
+            (1..).step(2).take(3).should == [1, 3, 5]
           end
 
           it "returns an instance of Enumerator when begin is not numeric" do
             ("a"..).step.class.should == Enumerator
+            ("a"..).step(2).take(3).should == %w[a c e]
           end
         end
 
-        ruby_version_is "2.7" do
-          context "when range is beginless and endless" do
-            it "returns an instance of Enumerator" do
-              Range.new(nil, nil).step.class.should == Enumerator
-            end
+        context "when range is beginless and endless" do
+          it "returns an instance of Enumerator" do
+            Range.new(nil, nil).step.class.should == Enumerator
           end
         end
 
         context "when begin and end are not numerics" do
           it "returns an instance of Enumerator" do
             ("a".."z").step.class.should == Enumerator
+            ("a".."z").step(3).take(4).should == %w[a d g j]
           end
         end
       end

@@ -8,13 +8,13 @@ class TestThreadQueue < Test::Unit::TestCase
   SizedQueue = Thread::SizedQueue
 
   def test_queue_initialized
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, /\bQueue.* not initialized/) {
       Queue.allocate.push(nil)
     }
   end
 
   def test_sized_queue_initialized
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, /\bSizedQueue.* not initialized/) {
       SizedQueue.allocate.push(nil)
     }
   end
@@ -111,6 +111,23 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_equal(0, q.num_waiting)
   end
 
+  def test_queue_pop_timeout
+    q = Thread::Queue.new
+    q << 1
+    assert_equal 1, q.pop(timeout: 1)
+
+    t1 = Thread.new { q.pop(timeout: 1) }
+    assert_equal t1, t1.join(2)
+    assert_nil t1.value
+
+    t2 = Thread.new { q.pop(timeout: 0.1) }
+    assert_equal t2, t2.join(1)
+    assert_nil t2.value
+  ensure
+    t1&.kill&.join
+    t2&.kill&.join
+  end
+
   def test_queue_pop_non_block
     q = Thread::Queue.new
     assert_raise_with_message(ThreadError, /empty/) do
@@ -126,11 +143,47 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_equal(0, q.num_waiting)
   end
 
+  def test_sized_queue_pop_timeout
+    q = Thread::SizedQueue.new(1)
+
+    q << 1
+    assert_equal 1, q.pop(timeout: 1)
+
+    t1 = Thread.new { q.pop(timeout: 1) }
+    assert_equal t1, t1.join(2)
+    assert_nil t1.value
+
+    t2 = Thread.new { q.pop(timeout: 0.1) }
+    assert_equal t2, t2.join(1)
+    assert_nil t2.value
+  ensure
+    t1&.kill&.join
+    t2&.kill&.join
+  end
+
   def test_sized_queue_pop_non_block
     q = Thread::SizedQueue.new(1)
     assert_raise_with_message(ThreadError, /empty/) do
       q.pop(true)
     end
+  end
+
+  def test_sized_queue_push_timeout
+    q = Thread::SizedQueue.new(1)
+
+    q << 1
+    assert_equal 1, q.size
+
+    t1 = Thread.new { q.push(2, timeout: 1) }
+    assert_equal t1, t1.join(2)
+    assert_nil t1.value
+
+    t2 = Thread.new { q.push(2, timeout: 0.1) }
+    assert_equal t2, t2.join(1)
+    assert_nil t2.value
+  ensure
+    t1&.kill&.join
+    t2&.kill&.join
   end
 
   def test_sized_queue_push_interrupt
@@ -151,16 +204,18 @@ class TestThreadQueue < Test::Unit::TestCase
   end
 
   def test_thr_kill
+    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
+
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
-      timeout = EnvUtil.apply_timeout_scale(60)
+      timeout = 60
       total_count = 250
       begin
-        assert_normal_exit(<<-"_eom", bug5343, **{:timeout => timeout, :chdir=>d})
+        assert_normal_exit(<<-"_eom", bug5343, timeout: timeout, chdir: d)
+          r, w = IO.pipe
           #{total_count}.times do |i|
-            open("test_thr_kill_count", "w") {|f| f.puts i }
+            File.open("test_thr_kill_count", "w") {|f| f.puts i }
             queue = Thread::Queue.new
-            r, w = IO.pipe
             th = Thread.start {
               queue.push(nil)
               r.read 1
@@ -530,9 +585,14 @@ class TestThreadQueue < Test::Unit::TestCase
     count_items = rand(3000..5000)
     count_producers = rand(10..20)
 
+    # ensure threads do not start running too soon and complete before we check status
+    mutex = Mutex.new
+    mutex.lock
+
     producers = count_producers.times.map do
       Thread.new do
-        sleep(rand / 100)
+        mutex.lock
+        mutex.unlock
         count_items.times{|i| q << [i,"#{i} for #{Thread.current.inspect}"]}
       end
     end
@@ -550,9 +610,11 @@ class TestThreadQueue < Test::Unit::TestCase
 
     # No dead or finished threads, give up to 10 seconds to start running
     t = Time.now
-    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}
+    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status.to_s =~ /\A(?:run|sleep)\z/}
 
-    assert (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}, 'no threads running'
+    assert (consumers + producers).all?{|thr| thr.status.to_s =~ /\A(?:run|sleep)\z/}, 'no threads running'
+
+    mutex.unlock
 
     # just exercising the concurrency of the support methods.
     counter = Thread.new do

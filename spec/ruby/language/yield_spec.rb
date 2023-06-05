@@ -186,7 +186,7 @@ describe "The yield call" do
 end
 
 describe "Using yield in a singleton class literal" do
-  ruby_version_is "2.7"..."3.0" do
+  ruby_version_is ""..."3.0" do
     it 'emits a deprecation warning' do
       code = <<~RUBY
         def m
@@ -211,5 +211,15 @@ describe "Using yield in a singleton class literal" do
 
       -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
     end
+  end
+end
+
+describe "Using yield in non-lambda block" do
+  it 'raises a SyntaxError' do
+    code = <<~RUBY
+        1.times { yield }
+      RUBY
+
+    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
   end
 end

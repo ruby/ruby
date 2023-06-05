@@ -392,6 +392,26 @@ class TestRange < Test::Unit::TestCase
     assert_equal(4, (1.0...5.6).step(1.5).to_a.size)
   end
 
+  def test_step_with_succ
+    c = Struct.new(:i) do
+      def succ; self.class.new(i+1); end
+      def <=>(other) i <=> other.i;end
+    end.new(0)
+
+    result = []
+    (c..c.succ).step(2) do |d|
+      result << d.i
+    end
+    assert_equal([0], result)
+
+    result = []
+    (c..).step(2) do |d|
+      result << d.i
+      break if d.i >= 4
+    end
+    assert_equal([0, 2, 4], result)
+  end
+
   def test_each
     a = []
     (0..10).each {|x| a << x }
@@ -454,6 +474,26 @@ class TestRange < Test::Unit::TestCase
     a = []
     (o..).each {|x| a << x; break if a.size >= 3}
     assert_equal(["a", "b", "c"], a)
+  end
+
+  def test_each_with_succ
+    c = Struct.new(:i) do
+      def succ; self.class.new(i+1); end
+      def <=>(other) i <=> other.i;end
+    end.new(0)
+
+    result = []
+    (c..c.succ).each do |d|
+      result << d.i
+    end
+    assert_equal([0, 1], result)
+
+    result = []
+    (c..).each do |d|
+      result << d.i
+      break if d.i >= 4
+    end
+    assert_equal([0, 1, 2, 3, 4], result)
   end
 
   def test_begin_end
@@ -539,6 +579,8 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(0..10, :===, 11)
     assert_operator(5..nil, :===, 11)
     assert_not_operator(5..nil, :===, 0)
+    assert_operator(nil..10, :===, 0)
+    assert_operator(nil..nil, :===, 0)
   end
 
   def test_eqq_string
@@ -546,7 +588,7 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator('A'..'Z', :===, 'ana')
     assert_operator('A'.., :===, 'ANA')
     assert_operator(..'Z', :===, 'ANA')
-    assert_operator(nil..nil, :===, 'ANA')
+    assert_raise(TypeError) {(nil..nil) === 'ANA'}
   end
 
   def test_eqq_time
@@ -599,11 +641,16 @@ class TestRange < Test::Unit::TestCase
     assert_include("a"..."z", "y")
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
-    assert_include("a".., "c")
-    assert_not_include("a".., "5")
+    assert_raise(TypeError) {("a"..).include?("c")}
+    assert_raise(TypeError) {("a"..).include?("5")}
+
     assert_include(0...10, 5)
     assert_include(5..., 10)
     assert_not_include(5..., 0)
+    assert_raise(TypeError) {(.."z").include?("z")}
+    assert_raise(TypeError) {(..."z").include?("z")}
+    assert_include(..10, 10)
+    assert_not_include(...10, 10)
   end
 
   def test_cover
@@ -666,6 +713,35 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(1..10, :cover?, 3...3)
     assert_not_operator('aa'..'zz', :cover?, 'aa'...'zzz')
     assert_not_operator(1..10, :cover?, 1...10.1)
+
+    assert_operator(..2, :cover?, 1)
+    assert_operator(..2, :cover?, 2)
+    assert_not_operator(..2, :cover?, 3)
+    assert_not_operator(...2, :cover?, 2)
+    assert_not_operator(..2, :cover?, "2")
+    assert_operator(..2, :cover?, ..2)
+    assert_operator(..2, :cover?, ...2)
+    assert_not_operator(..2, :cover?, .."2")
+    assert_not_operator(...2, :cover?, ..2)
+
+    assert_not_operator(2.., :cover?, 1)
+    assert_operator(2.., :cover?, 2)
+    assert_operator(2..., :cover?, 3)
+    assert_operator(2.., :cover?, 2)
+    assert_not_operator(2.., :cover?, "2")
+    assert_operator(2.., :cover?, 2..)
+    assert_operator(2.., :cover?, 2...)
+    assert_not_operator(2.., :cover?, "2"..)
+    assert_not_operator(2..., :cover?, 2..)
+    assert_operator(2..., :cover?, 3...)
+    assert_not_operator(2..., :cover?, 3..)
+    assert_not_operator(3.., :cover?, 2..)
+
+    assert_operator(nil..., :cover?, Object.new)
+    assert_operator(nil..., :cover?, nil...)
+    assert_operator(nil.., :cover?, nil...)
+    assert_not_operator(nil..., :cover?, nil..)
+    assert_not_operator(nil..., :cover?, 1..)
   end
 
   def test_beg_len
@@ -744,6 +820,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal 5, (1.1...6).size
     assert_equal 42, (1..42).each.size
     assert_nil ("a"..."z").size
+    assert_nil ("a"...).size
+    assert_nil (..."z").size    # [Bug #18983]
+    assert_nil (nil...nil).size # [Bug #18983]
 
     assert_equal Float::INFINITY, (1...).size
     assert_equal Float::INFINITY, (1.0...).size

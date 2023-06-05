@@ -7,7 +7,7 @@ require_relative "../helper"
 
 #
 # Following tests are my interpretation of the
-# {CSV RCF}[http://www.ietf.org/rfc/rfc4180.txt].  I only deviate from that
+# {CSV RCF}[https://www.ietf.org/rfc/rfc4180.txt].  I only deviate from that
 # document in one place (intentionally) and that is to make the default row
 # separator <tt>$/</tt>.
 #
@@ -75,7 +75,7 @@ class TestCSVParseGeneral < Test::Unit::TestCase
     end
   end
 
-  # From:  http://ruby-talk.org/cgi-bin/scat.rb/ruby/ruby-core/6496
+  # From: [ruby-core:6496]
   def test_aras_edge_cases
     [ [%Q{a,b},               ["a", "b"]],
       [%Q{a,"""b"""},         ["a", "\"b\""]],
@@ -199,6 +199,32 @@ line,5,jkl
                              field_size_limit: 2048 )
   end
 
+  def test_field_size_limit_max_allowed
+    column = "abcde"
+    assert_equal([[column]],
+                 CSV.parse("\"#{column}\"",
+                           field_size_limit: column.size + 1))
+  end
+
+  def test_field_size_limit_quote_simple
+    column = "abcde"
+    assert_parse_errors_out("\"#{column}\"",
+                            field_size_limit: column.size)
+  end
+
+  def test_field_size_limit_no_quote_implicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            field_size_limit: column.size)
+  end
+
+  def test_field_size_limit_no_quote_explicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            field_size_limit: column.size,
+                            quote_char: nil)
+  end
+
   def test_field_size_limit_in_extended_column_not_exceeding
     data = <<~DATA
       "a","b"
@@ -219,6 +245,59 @@ line,5,jkl
       ",""
     DATA
     assert_parse_errors_out(data, field_size_limit: 5)
+  end
+
+  def test_max_field_size_controls_lookahead
+    assert_parse_errors_out( 'valid,fields,"' + BIG_DATA + '"',
+                             max_field_size: 2048 )
+  end
+
+  def test_max_field_size_max_allowed
+    column = "abcde"
+    assert_equal([[column]],
+                 CSV.parse("\"#{column}\"",
+                           max_field_size: column.size))
+  end
+
+  def test_max_field_size_quote_simple
+    column = "abcde"
+    assert_parse_errors_out("\"#{column}\"",
+                            max_field_size: column.size - 1)
+  end
+
+  def test_max_field_size_no_quote_implicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            max_field_size: column.size - 1)
+  end
+
+  def test_max_field_size_no_quote_explicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            max_field_size: column.size - 1,
+                            quote_char: nil)
+  end
+
+  def test_max_field_size_in_extended_column_not_exceeding
+    data = <<~DATA
+      "a","b"
+      "
+      2
+      ",""
+    DATA
+    assert_nothing_raised(CSV::MalformedCSVError) do
+      CSV.parse(data, max_field_size: 3)
+    end
+  end
+
+  def test_max_field_size_in_extended_column_exceeding
+    data = <<~DATA
+      "a","b"
+      "
+      2345
+      ",""
+    DATA
+    assert_parse_errors_out(data, max_field_size: 4)
   end
 
   def test_row_sep_auto_cr
@@ -244,12 +323,22 @@ line,5,jkl
   end
 
   private
-  def assert_parse_errors_out(data, **options)
+
+  {
+    "YJIT"=>1,              # for --yjit-call-threshold=1
+    "MJIT"=>5, "RJIT"=>5,   # for --jit-wait
+  }.any? do |jit, timeout|
+    if (RubyVM.const_defined?(jit) and
+        jit = RubyVM.const_get(jit) and
+        jit.respond_to?(:enabled?) and
+        jit.enabled?)
+      PARSE_ERROR_TIMEOUT = timeout
+    end
+  end
+  PARSE_ERROR_TIMEOUT ||= 0.2
+
+  def assert_parse_errors_out(data, timeout: PARSE_ERROR_TIMEOUT, **options)
     assert_raise(CSV::MalformedCSVError) do
-      timeout = 0.2
-      if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
-        timeout = 5  # for --jit-wait
-      end
       Timeout.timeout(timeout) do
         CSV.parse(data, **options)
         fail("Parse didn't error out")

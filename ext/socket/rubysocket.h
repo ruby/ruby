@@ -33,6 +33,9 @@
 #endif
 
 #ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#  include <iphlpapi.h>
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
@@ -67,6 +70,11 @@
 
 #ifdef HAVE_SYS_UN_H
 #  include <sys/un.h>
+#endif
+
+#ifdef HAVE_AFUNIX_H
+// Windows doesn't have sys/un.h, but it does have afunix.h just to be special:
+#  include <afunix.h>
 #endif
 
 #if defined(HAVE_FCNTL)
@@ -268,7 +276,7 @@ extern VALUE rb_cIPSocket;
 extern VALUE rb_cTCPSocket;
 extern VALUE rb_cTCPServer;
 extern VALUE rb_cUDPSocket;
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 extern VALUE rb_cUNIXSocket;
 extern VALUE rb_cUNIXServer;
 #endif
@@ -336,7 +344,7 @@ VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 VALUE rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 socklen_t rsock_unix_sockaddr_len(VALUE path);
@@ -368,23 +376,23 @@ enum sock_recv_type {
 };
 
 VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
-			        VALUE ex, enum sock_recv_type from);
+                                VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout);
 
 VALUE rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
-			      struct sockaddr *sockaddr, socklen_t *len);
+                              struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #if defined(HAVE_SENDMSG)
 VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags,
-			  VALUE dest_sockaddr, VALUE controls);
+                          VALUE dest_sockaddr, VALUE controls);
 VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
-			     VALUE dest_sockaddr, VALUE controls, VALUE ex);
+                             VALUE dest_sockaddr, VALUE controls, VALUE ex);
 #else
 #define rsock_bsock_sendmsg rb_f_notimplement
 #define rsock_bsock_sendmsg_nonblock rb_f_notimplement
@@ -392,9 +400,9 @@ VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
 
 #if defined(HAVE_RECVMSG)
 VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags,
-			  VALUE scm_rights);
+                          VALUE scm_rights);
 VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen,
-				   VALUE flags, VALUE scm_rights, VALUE ex);
+                                   VALUE flags, VALUE scm_rights, VALUE ex);
 ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
 #define rsock_bsock_recvmsg rb_f_notimplement

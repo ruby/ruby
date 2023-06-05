@@ -3,9 +3,7 @@ require 'test/unit'
 require 'optparse'
 require 'optparse/kwargs'
 
-class TestOptionParser < Test::Unit::TestCase
-end
-class TestOptionParser::KwArg < Test::Unit::TestCase
+class TestOptionParserKwArg < Test::Unit::TestCase
   class K
     def initialize(host:, port: 8080)
       @host = host

@@ -83,13 +83,12 @@ module ObjectSpace
 
   def self.module_refenreces_image klass, file
     dot = module_refenreces_dot(klass)
-    img = nil
-    IO.popen("dot -Tpng", 'r+'){|io|
+    img = IO.popen(%W"dot -Tpng", 'r+b') {|io|
       #
       io.puts dot
       io.close_write
-      img = io.read
+      io.read
     }
-    open(File.expand_path(file), 'w+'){|f| f.puts img}
+    File.binwrite(file, img)
   end
 end

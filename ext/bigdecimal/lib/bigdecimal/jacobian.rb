@@ -42,8 +42,8 @@ module Jacobian
   end
 
 
-  # Computes the derivative of f[i] at x[i].
-  # fx is the value of f at x.
+  # Computes the derivative of +f[i]+ at +x[i]+.
+  # +fx+ is the value of +f+ at +x+.
   def dfdxi(f,fx,x,i)
     nRetry = 0
     n = x.size
@@ -75,7 +75,7 @@ module Jacobian
     deriv
   end
 
-  # Computes the Jacobian of f at x. fx is the value of f at x.
+  # Computes the Jacobian of +f+ at +x+. +fx+ is the value of +f+ at +x+.
   def jacobian(f,fx,x)
     n = x.size
     dfdx = Array.new(n*n)

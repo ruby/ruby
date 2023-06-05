@@ -300,6 +300,44 @@ describe 'Optional variable assignments' do
         (@b[:k] ||= 12).should == 12
       end
 
+      it 'correctly handles a splatted argument for the index' do
+        (@b[*[:k]] ||= 12).should == 12
+      end
+
+      it "evaluates the index precisely once" do
+        ary = [:x, :y]
+        @a[:x] = 15
+        @a[ary.pop] ||= 25
+        ary.should == [:x]
+        @a.should == { x: 15, y: 25 }
+      end
+
+      it "evaluates the index arguments in the correct order" do
+        ary = Class.new(Array) do
+          def [](x, y)
+            super(x + 3 * y)
+          end
+
+          def []=(x, y, value)
+            super(x + 3 * y, value)
+          end
+        end.new
+        ary[0, 0] = 1
+        ary[1, 0] = 1
+        ary[2, 0] = nil
+        ary[3, 0] = 1
+        ary[4, 0] = 1
+        ary[5, 0] = 1
+        ary[6, 0] = nil
+
+        foo = [0, 2]
+
+        ary[foo.pop, foo.pop] ||= 2
+
+        ary[2, 0].should == 2
+        ary[6, 0].should == nil
+      end
+
       it 'returns the assigned value, not the result of the []= method with +=' do
         @b[:k] = 17
         (@b[:k] += 12).should == 29

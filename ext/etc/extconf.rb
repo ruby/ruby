@@ -50,6 +50,8 @@ end
 # TODO: remove when dropping 2.7 support, as exported since 3.0
 have_func('rb_deprecate_constant(Qnil, "None")')
 
+have_func("rb_io_descriptor")
+
 $distcleanfiles << "constdefs.h"
 
 create_makefile("etc")

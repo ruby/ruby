@@ -13,6 +13,7 @@ thread_fd.o: $(hdrdir)/ruby/backward/2/stdalign.h
 thread_fd.o: $(hdrdir)/ruby/backward/2/stdarg.h
 thread_fd.o: $(hdrdir)/ruby/defines.h
 thread_fd.o: $(hdrdir)/ruby/intern.h
+thread_fd.o: $(hdrdir)/ruby/internal/abi.h
 thread_fd.o: $(hdrdir)/ruby/internal/anyargs.h
 thread_fd.o: $(hdrdir)/ruby/internal/arithmetic.h
 thread_fd.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -50,6 +51,7 @@ thread_fd.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/noinline.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+thread_fd.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/pure.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/restrict.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -109,7 +111,6 @@ thread_fd.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/error.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/eval.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/file.h
-thread_fd.o: $(hdrdir)/ruby/internal/intern/gc.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/hash.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/io.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -140,7 +141,6 @@ thread_fd.o: $(hdrdir)/ruby/internal/memory.h
 thread_fd.o: $(hdrdir)/ruby/internal/method.h
 thread_fd.o: $(hdrdir)/ruby/internal/module.h
 thread_fd.o: $(hdrdir)/ruby/internal/newobj.h
-thread_fd.o: $(hdrdir)/ruby/internal/rgengc.h
 thread_fd.o: $(hdrdir)/ruby/internal/scan_args.h
 thread_fd.o: $(hdrdir)/ruby/internal/special_consts.h
 thread_fd.o: $(hdrdir)/ruby/internal/static_assert.h

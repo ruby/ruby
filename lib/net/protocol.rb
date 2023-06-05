@@ -26,7 +26,7 @@ require 'io/wait'
 module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
-    VERSION = "0.1.2"
+    VERSION = "0.2.1"
 
     private
     def Protocol.protocol_param(name, val)
@@ -120,6 +120,8 @@ module Net # :nodoc:
       @continue_timeout = continue_timeout
       @debug_output = debug_output
       @rbuf = ''.b
+      @rbuf_empty = true
+      @rbuf_offset = 0
     end
 
     attr_reader :io
@@ -154,14 +156,15 @@ module Net # :nodoc:
       LOG "reading #{len} bytes..."
       read_bytes = 0
       begin
-        while read_bytes + @rbuf.size < len
-          s = rbuf_consume(@rbuf.size)
-          read_bytes += s.size
-          dest << s
+        while read_bytes + rbuf_size < len
+          if s = rbuf_consume_all
+            read_bytes += s.bytesize
+            dest << s
+          end
           rbuf_fill
         end
         s = rbuf_consume(len - read_bytes)
-        read_bytes += s.size
+        read_bytes += s.bytesize
         dest << s
       rescue EOFError
         raise unless ignore_eof
@@ -175,9 +178,10 @@ module Net # :nodoc:
       read_bytes = 0
       begin
         while true
-          s = rbuf_consume(@rbuf.size)
-          read_bytes += s.size
-          dest << s
+          if s = rbuf_consume_all
+            read_bytes += s.bytesize
+            dest << s
+          end
           rbuf_fill
         end
       rescue EOFError
@@ -188,14 +192,16 @@ module Net # :nodoc:
     end
 
     def readuntil(terminator, ignore_eof = false)
+      offset = @rbuf_offset
       begin
-        until idx = @rbuf.index(terminator)
+        until idx = @rbuf.index(terminator, offset)
+          offset = @rbuf.bytesize
           rbuf_fill
         end
-        return rbuf_consume(idx + terminator.size)
+        return rbuf_consume(idx + terminator.bytesize - @rbuf_offset)
       rescue EOFError
         raise unless ignore_eof
-        return rbuf_consume(@rbuf.size)
+        return rbuf_consume
       end
     end
 
@@ -208,12 +214,16 @@ module Net # :nodoc:
     BUFSIZE = 1024 * 16
 
     def rbuf_fill
-      tmp = @rbuf.empty? ? @rbuf : nil
+      tmp = @rbuf_empty ? @rbuf : nil
       case rv = @io.read_nonblock(BUFSIZE, tmp, exception: false)
       when String
-        return if rv.equal?(tmp)
-        @rbuf << rv
-        rv.clear
+        @rbuf_empty = false
+        if rv.equal?(tmp)
+          @rbuf_offset = 0
+        else
+          @rbuf << rv
+          rv.clear
+        end
         return
       when :wait_readable
         (io = @io.to_io).wait_readable(@read_timeout) or raise Net::ReadTimeout.new(io)
@@ -228,13 +238,40 @@ module Net # :nodoc:
       end while true
     end
 
-    def rbuf_consume(len)
-      if len == @rbuf.size
+    def rbuf_flush
+      if @rbuf_empty
+        @rbuf.clear
+        @rbuf_offset = 0
+      end
+      nil
+    end
+
+    def rbuf_size
+      @rbuf.bytesize - @rbuf_offset
+    end
+
+    def rbuf_consume_all
+      rbuf_consume if rbuf_size > 0
+    end
+
+    def rbuf_consume(len = nil)
+      if @rbuf_offset == 0 && (len.nil? || len == @rbuf.bytesize)
         s = @rbuf
         @rbuf = ''.b
+        @rbuf_offset = 0
+        @rbuf_empty = true
+      elsif len.nil?
+        s = @rbuf.byteslice(@rbuf_offset..-1)
+        @rbuf = ''.b
+        @rbuf_offset = 0
+        @rbuf_empty = true
       else
-        s = @rbuf.slice!(0, len)
+        s = @rbuf.byteslice(@rbuf_offset, len)
+        @rbuf_offset += len
+        @rbuf_empty = @rbuf_offset == @rbuf.bytesize
+        rbuf_flush
       end
+
       @debug_output << %Q[-> #{s.dump}\n] if @debug_output
       s
     end

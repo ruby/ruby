@@ -42,4 +42,25 @@ describe "Method#super_method" do
 
     method.super_method.should == nil
   end
+
+  # https://github.com/jruby/jruby/issues/7240
+  context "after changing an inherited methods visibility" do
+    it "calls the proper super method" do
+      MethodSpecs::InheritedMethods::C.new.derp.should == 'BA'
+    end
+
+    it "returns the expected super_method" do
+      method = MethodSpecs::InheritedMethods::C.new.method(:derp)
+      method.super_method.owner.should == MethodSpecs::InheritedMethods::A
+    end
+  end
+
+  ruby_version_is "2.7.3" do
+    context "after aliasing an inherited method" do
+      it "returns the expected super_method" do
+        method = MethodSpecs::InheritedMethods::C.new.method(:meow)
+        method.super_method.owner.should == MethodSpecs::InheritedMethods::A
+      end
+    end
+  end
 end

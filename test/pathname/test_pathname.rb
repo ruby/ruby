@@ -1043,6 +1043,25 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_lutime
+    return if !has_symlink?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.write "abc" }
+      atime = File.atime("a")
+      mtime = File.mtime("a")
+      latime = Time.utc(2000)
+      lmtime = Time.utc(1999)
+      File.symlink("a", "l")
+      Pathname("l").utime(latime, lmtime)
+      s = File.lstat("a")
+      ls = File.lstat("l")
+      assert_equal(atime, s.atime)
+      assert_equal(mtime, s.mtime)
+      assert_equal(latime, ls.atime)
+      assert_equal(lmtime, ls.mtime)
+    }
+  end
+
   def test_basename
     assert_equal(Pathname("basename"), Pathname("dirname/basename").basename)
     assert_equal(Pathname("bar"), Pathname("foo/bar.x").basename(".x"))

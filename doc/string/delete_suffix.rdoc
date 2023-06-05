@@ -1,0 +1,8 @@
+Returns a copy of +self+ with trailing substring <tt>suffix</tt> removed:
+
+  'hello'.delete_suffix('llo')      # => "he"
+  'hello'.delete_suffix('hel')      # => "hello"
+  'тест'.delete_suffix('ст')        # => "те"
+  'こんにちは'.delete_suffix('ちは')  # => "こんに"
+
+Related: String#delete_suffix!, String#delete_prefix.

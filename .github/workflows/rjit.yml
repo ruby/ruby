@@ -1,0 +1,134 @@
+name: RJIT
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  make:
+    strategy:
+      matrix:
+        # main variables included in the job name
+        test_task: [check]
+        run_opts: ['--rjit-call-threshold=1']
+        arch: ['']
+      fail-fast: false
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      RUBY_DEBUG: ci
+      SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
+    runs-on: ubuntu-22.04
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    steps:
+      - run: mkdir build
+        working-directory:
+      - name: Set ENV
+        run: |
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - name: Install libraries
+        env:
+          arch: ${{matrix.arch}}
+        run: |
+          set -x
+          arch=${arch:+:${arch/i[3-6]86/i386}}
+          ${arch:+sudo dpkg --add-architecture ${arch#:}}
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y \
+          ${arch:+cross}build-essential${arch/:/-} \
+          libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
+          zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
+          autoconf ruby libcapstone-dev
+          sudo apt-get install -q -y pkg-config${arch} || :
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.1.0
+        with:
+          path: src
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.0.11
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
+      - name: Fixed world writable dirs
+        run: |
+          chmod -v go-w $HOME $HOME/.config
+          sudo chmod -R go-w /usr/share
+          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+      - run: ./autogen.sh
+        working-directory: src
+      - name: Run configure
+        env:
+          arch: ${{matrix.arch}}
+        run: >-
+          $SETARCH ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG
+          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
+      - run: $SETARCH make
+      - name: make test
+        run: |
+          $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 30
+        env:
+          GNUMAKEFLAGS: ""
+          RUBY_TESTOPTS: "-v --tty=no"
+          RUN_OPTS: ${{ matrix.run_opts }}
+      - name: make test-all
+        run: |
+          $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 40
+        env:
+          GNUMAKEFLAGS: ""
+          RUBY_TESTOPTS: "-v --tty=no"
+          RUN_OPTS: ${{ matrix.run_opts }}
+      - name: make test-spec
+        run: |
+          $SETARCH make -s test-spec RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 10
+        env:
+          GNUMAKEFLAGS: ""
+          RUN_OPTS: ${{ matrix.run_opts }}
+      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "RJIT / ${{ matrix.run_opts }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

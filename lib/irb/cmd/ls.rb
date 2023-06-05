@@ -4,10 +4,23 @@ require "reline"
 require_relative "nop"
 require_relative "../color"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Ls < Nop
+      category "Context"
+      description "Show methods, constants, and variables. `-g [query]` or `-G [query]` allows you to filter out the output."
+
+      def self.transform_args(args)
+        if match = args&.match(/\A(?<args>.+\s|)(-g|-G)\s+(?<grep>[^\s]+)\s*\n\z/)
+          args = match[:args]
+          "#{args}#{',' unless args.chomp.empty?} grep: /#{match[:grep]}/"
+        else
+          args
+        end
+      end
+
       def execute(*arg, grep: nil)
         o = Output.new(grep: grep)
 
@@ -20,25 +33,42 @@ module IRB
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
+        nil
       end
 
       def dump_methods(o, klass, obj)
         singleton_class = begin obj.singleton_class; rescue TypeError; nil end
-        maps = class_method_map((singleton_class || klass).ancestors)
+        dumped_mods = Array.new
+        ancestors = klass.ancestors
+        ancestors = ancestors.reject { |c| c >= Object } if klass < Object
+        singleton_ancestors = (singleton_class&.ancestors || []).reject { |c| c >= Class }
+
+        # singleton_class' ancestors should be at the front
+        maps = class_method_map(singleton_ancestors, dumped_mods) + class_method_map(ancestors, dumped_mods)
         maps.each do |mod, methods|
           name = mod == singleton_class ? "#{klass}.methods" : "#{mod}#methods"
           o.dump(name, methods)
         end
       end
 
-      def class_method_map(classes)
-        dumped = Array.new
-        classes.reject { |mod| mod >= Object }.map do |mod|
-          methods = mod.public_instance_methods(false).select do |m|
-            dumped.push(m) unless dumped.include?(m)
+      def class_method_map(classes, dumped_mods)
+        dumped_methods = Array.new
+        classes.map do |mod|
+          next if dumped_mods.include? mod
+
+          dumped_mods << mod
+
+          methods = mod.public_instance_methods(false).select do |method|
+            if dumped_methods.include? method
+              false
+            else
+              dumped_methods << method
+              true
+            end
           end
+
           [mod, methods]
-        end.reverse
+        end.compact
       end
 
       class Output
@@ -97,5 +127,6 @@ module IRB
       private_constant :Output
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

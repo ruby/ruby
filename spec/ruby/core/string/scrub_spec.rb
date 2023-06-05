@@ -14,6 +14,11 @@ describe "String#scrub with a default replacement" do
     "abc\u3042#{x81}".scrub.should == "abc\u3042\uFFFD"
   end
 
+  it "replaces invalid byte sequences in lazy substrings" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    "abc\u3042#{x81}def"[1...-1].scrub.should == "bc\u3042\uFFFDde"
+  end
+
   it "returns a copy of self when the input encoding is BINARY" do
     input = "foo".encode('BINARY')
 
@@ -24,6 +29,11 @@ describe "String#scrub with a default replacement" do
     xE3x80 = [0xE3, 0x80].pack('CC').force_encoding 'utf-8'
     input = "abc\u3042#{xE3x80}".force_encoding('ASCII')
     input.scrub.should == "abc?????"
+  end
+
+  it "returns a String in the same encoding as self" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    "abc\u3042#{x81}".scrub.encoding.should == Encoding::UTF_8
   end
 
   ruby_version_is '3.0' do
@@ -73,6 +83,11 @@ describe "String#scrub with a custom replacement" do
     block = -> { "foo#{x81}".scrub(xE4) }
 
     block.should raise_error(ArgumentError)
+  end
+
+  it "returns a String in the same encoding as self" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    "abc\u3042#{x81}".scrub("*").encoding.should == Encoding::UTF_8
   end
 
   it "raises TypeError when a non String replacement is given" do

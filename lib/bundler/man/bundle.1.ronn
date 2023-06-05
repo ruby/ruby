@@ -36,9 +36,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle update(1)`](bundle-update.1.html):
   Update dependencies to their latest versions
 
-* [`bundle package(1)`](bundle-package.1.html):
+* [`bundle cache(1)`](bundle-cache.1.html):
   Package the .gem files required by your application into the
-  `vendor/cache` directory
+  `vendor/cache` directory (aliases: `bundle package`, `bundle pack`)
 
 * [`bundle exec(1)`](bundle-exec.1.html):
   Execute a script in the current bundle
@@ -46,7 +46,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle config(1)`](bundle-config.1.html):
   Specify and read configuration options for Bundler
 
-* `bundle help(1)`:
+* [`bundle help(1)`](bundle-help.1.html):
   Display detailed help for each subcommand
 
 ## UTILITIES
@@ -67,7 +67,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle outdated(1)`](bundle-outdated.1.html):
   Show all of the outdated gems in the current bundle
 
-* `bundle console(1)`:
+* `bundle console(1)` (deprecated):
   Start an IRB session in the current bundle
 
 * [`bundle open(1)`](bundle-open.1.html):
@@ -76,7 +76,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle lock(1)`](bundle-lock.1.html):
   Generate a lockfile for your dependencies
 
-* [`bundle viz(1)`](bundle-viz.1.html):
+* [`bundle viz(1)`](bundle-viz.1.html) (deprecated):
   Generate a visual representation of your dependencies
 
 * [`bundle init(1)`](bundle-init.1.html):
@@ -97,6 +97,12 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle remove(1)`](bundle-remove.1.html):
   Removes gems from the Gemfile
 
+* [`bundle plugin(1)`](bundle-plugin.1.html):
+  Manage Bundler plugins
+
+* [`bundle version(1)`](bundle-version.1.html):
+  Prints Bundler version information
+
 ## PLUGINS
 
 When running a command that isn't listed in PRIMARY COMMANDS or UTILITIES,
@@ -107,5 +113,4 @@ and execute it, passing down any extra arguments to it.
 
 These commands are obsolete and should no longer be used:
 
-* `bundle cache(1)`
-* `bundle show(1)`
+* `bundle inject(1)`

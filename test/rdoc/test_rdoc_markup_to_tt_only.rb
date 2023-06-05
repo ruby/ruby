@@ -244,4 +244,3 @@ class TestRDocMarkupToTtOnly < RDoc::Markup::FormatterTestCase
   end
 
 end
-

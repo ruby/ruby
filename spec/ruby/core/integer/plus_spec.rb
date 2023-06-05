@@ -9,7 +9,7 @@ describe "Integer#+" do
       (491 + 2).should == 493
       (90210 + 10).should == 90220
 
-      (9 + bignum_value).should == 9223372036854775817
+      (9 + bignum_value).should == 18446744073709551625
       (1001 + 5.219).should == 1006.219
     end
 
@@ -29,9 +29,9 @@ describe "Integer#+" do
     end
 
     it "returns self plus the given Integer" do
-      (@bignum + 4).should == 9223372036854775888
-      (@bignum + 4.2).should be_close(9223372036854775888.2, TOLERANCE)
-      (@bignum + bignum_value(3)).should == 18446744073709551695
+      (@bignum + 4).should == 18446744073709551696
+      (@bignum + 4.2).should be_close(18446744073709551696.2, TOLERANCE)
+      (@bignum + bignum_value(3)).should == 36893488147419103311
     end
 
     it "raises a TypeError when given a non-Integer" do

@@ -4,11 +4,15 @@ require_relative 'fixtures/classes'
 require_relative 'fixtures/utf-8-encoding'
 
 describe "String#rindex with object" do
-  it "raises a TypeError if obj isn't a String, Integer or Regexp" do
+  it "raises a TypeError if obj isn't a String or Regexp" do
     not_supported_on :opal do
       -> { "hello".rindex(:sym) }.should raise_error(TypeError)
     end
     -> { "hello".rindex(mock('x')) }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError if obj is an Integer" do
+    -> { "hello".rindex(42) }.should raise_error(TypeError)
   end
 
   it "doesn't try to convert obj to an integer via to_int" do
@@ -191,6 +195,14 @@ describe "String#rindex with String" do
 
   it "raises a TypeError when given offset is nil" do
     -> { "str".rindex("st", nil) }.should raise_error(TypeError)
+  end
+
+  it "handles a substring in a superset encoding" do
+    'abc'.force_encoding(Encoding::US_ASCII).rindex('é').should == nil
+  end
+
+  it "handles a substring in a subset encoding" do
+    'été'.rindex('t'.force_encoding(Encoding::US_ASCII)).should == 1
   end
 end
 

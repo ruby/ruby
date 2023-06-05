@@ -335,6 +335,7 @@ end
 
 class TestDRbTCP < Test::Unit::TestCase
   def test_immediate_close
+    omit 'MinGW leaks a thread in this test' if /mingw/ =~ RUBY_PLATFORM
     server = DRb::DRbServer.new('druby://localhost:0')
     host, port, = DRb::DRbTCPSocket.send(:parse_uri, server.uri)
     socket = TCPSocket.open host, port
@@ -345,8 +346,8 @@ class TestDRbTCP < Test::Unit::TestCase
   ensure
     client&.close
     socket&.close
-    server.stop_service
-    server.thread.join
+    server&.stop_service
+    server&.thread&.join
     DRb::DRbConn.stop_pool
   end
 end

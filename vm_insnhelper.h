@@ -11,20 +11,30 @@
 
 **********************************************************************/
 
-MJIT_SYMBOL_EXPORT_BEGIN
-
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
-RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
-RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
+RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
+RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-MJIT_SYMBOL_EXPORT_END
+#ifndef RJIT_STATS
+# define RJIT_STATS RUBY_DEBUG
+#endif
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
+#elif RJIT_STATS && YJIT_STATS
+// Both flags could be enabled at the same time. You need to call both in that case.
+#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
+#define COLLECT_USAGE_REGISTER(reg, s)     /* none */
+#elif RJIT_STATS
+// for --rjit-stats
+#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
+#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
 #elif YJIT_STATS
 /* for --yjit-stats */
 #define COLLECT_USAGE_INSN(insn)           rb_yjit_collect_vm_usage_insn(insn)
@@ -171,7 +181,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /* others                                                 */
 /**********************************************************/
 
-#ifndef MJIT_HEADER
 #define CALL_SIMPLE_METHOD() do { \
     rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
     rb_snum_t y = attr_width_opt_send_without_block(0); \
@@ -179,12 +188,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
     ADD_PC(z); \
     DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
 } while (0)
-#endif
 
-#define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
-#define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
-#define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
-#define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 #define GET_GLOBAL_CVAR_STATE() (ruby_vm_global_cvar_state)
 #define INC_GLOBAL_CVAR_STATE() (++ruby_vm_global_cvar_state)
 
@@ -242,8 +246,8 @@ static inline void
 THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 {
     if (THROW_DATA_P(obj) &&
-	THROW_DATA_STATE(obj) == TAG_BREAK) {
-	obj->flags |= THROW_DATA_CONSUMED;
+        THROW_DATA_STATE(obj) == TAG_BREAK) {
+        obj->flags |= THROW_DATA_CONSUMED;
     }
 }
 
@@ -253,13 +257,18 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 #define IS_ARGS_KW_OR_KW_SPLAT(ci) (vm_ci_flag(ci) & (VM_CALL_KWARG | VM_CALL_KW_SPLAT))
 #define IS_ARGS_KW_SPLAT_MUT(ci)   (vm_ci_flag(ci) & VM_CALL_KW_SPLAT_MUT)
 
+static inline bool
+vm_call_cacheable(const struct rb_callinfo *ci, const struct rb_callcache *cc)
+{
+    return (vm_ci_flag(ci) & VM_CALL_FCALL) ||
+        METHOD_ENTRY_VISI(vm_cc_cme(cc)) != METHOD_VISI_PROTECTED;
+}
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
 static inline bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
-    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc));
+    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && vm_call_cacheable(ci, cc);
 }
 
 #endif /* RUBY_INSNHELPER_H */

@@ -30,11 +30,13 @@ describe :integer_exponent, shared: true do
       (-2).send(@method, 30).should eql(1073741824)
       (-2).send(@method, 31).should eql(-2147483648)
       (-2).send(@method, 32).should eql(4294967296)
+      (-2).send(@method, 33).should eql(-8589934592)
 
       (-2).send(@method, 61).should eql(-2305843009213693952)
       (-2).send(@method, 62).should eql(4611686018427387904)
       (-2).send(@method, 63).should eql(-9223372036854775808)
       (-2).send(@method, 64).should eql(18446744073709551616)
+      (-2).send(@method, 65).should eql(-36893488147419103232)
     end
 
     it "can raise 1 to a bignum safely" do
@@ -96,8 +98,8 @@ describe :integer_exponent, shared: true do
     end
 
     it "returns self raised to other power" do
-      (@bignum.send(@method, 4)).should == 7237005577332262361485077344629993318496048279512298547155833600056910050625
-      (@bignum.send(@method, 1.2)).should be_close(57262152889751597425762.57804, TOLERANCE)
+      (@bignum.send(@method, 4)).should == 115792089237316196603666111261383895964500887398800252671052694326794607293761
+      (@bignum.send(@method, 1.3)).should be_close(11109528802438156839288832.0, TOLERANCE)
     end
 
     it "raises a TypeError when given a non-Integer" do
@@ -116,8 +118,9 @@ describe :integer_exponent, shared: true do
     end
 
     it "returns a complex number when negative and raised to a fractional power" do
-      ((-@bignum).send(@method, (1.0/3)))      .should be_close(Complex(1048576,1816186.907597341), TOLERANCE)
-      ((-@bignum).send(@method, Rational(1,3))).should be_close(Complex(1048576,1816186.907597341), TOLERANCE)
+      (-bignum_value).send(@method, (1.0/2)).should be_close(Complex(0.0, 4294967296.0), TOLERANCE)
+      (-@bignum).send(@method, (1.0/3))      .should be_close(Complex(1321122.9748145656, 2288252.1154253655), TOLERANCE)
+      (-@bignum).send(@method, Rational(1,3)).should be_close(Complex(1321122.9748145656, 2288252.1154253655), TOLERANCE)
     end
   end
 end

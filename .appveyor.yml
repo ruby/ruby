@@ -11,26 +11,28 @@ clone_depth: 10
 platform:
   - x64
 skip_commits:
-  message: /^\[DOC\]/
+  message: /\[DOC\]/
   files:
     - doc/*
     - '**/*.md'
     - '**/*.rdoc'
+    - '**/.document'
+    - '**/*.[1-8]'
+    - '**/*.ronn'
 environment:
-  ruby_version: "24-%Platform%"
-  zlib_version: "1.2.11"
+  ruby_version: "25-%Platform%"
   matrix:
+    # Test only the oldest supported version because AppVeyor is unstable, its concurrency
+    # is limited, and compatibility issues that happen only in newer versions are rare.
+    # You may test some other stuff on GitHub Actions instead.
     - build: vs
       vs: 120
-      ssl: OpenSSL
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      GEMS_FOR_TEST: ""
-    - build: vs
-      vs: 140
       ssl: OpenSSL-v111
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "UTF-8"
+cache:
+  - c:\Tools\vcpkg\installed\
 for:
 -
   matrix:
@@ -42,6 +44,11 @@ for:
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
     - SET OPENSSL_DIR=C:\%ssl%-Win%BITS%
+    - cd C:\Tools\vcpkg
+    - git pull -q
+    - .\bootstrap-vcpkg.bat
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - vcpkg --triplet %Platform%-windows install --x-use-aria2 libffi libyaml readline zlib
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
     - '"%vcvars%" %Platform:x64=amd64%'
@@ -61,16 +68,20 @@ for:
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
-    - SET ZLIB_ZIP=.downloaded-cache\zlib%zlib_version:.=%.zip
-    - if not exist %ZLIB_ZIP% curl -fsSL -o %ZLIB_ZIP% --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
-    - 7z x -aos -o%APPVEYOR_BUILD_FOLDER%\ext\zlib %ZLIB_ZIP%
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+    - for %%I in (c:\Tools\vcpkg\installed\%Platform%-windows\bin\*.dll) do (
+        if not %%~nI == readline mklink \usr\local\bin\%%~nxI %%I
+      )
     - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%
   build_script:
+    - set HAVE_GIT=no
     - cd %APPVEYOR_BUILD_FOLDER%
     - cd %Platform%-mswin_%vs%
-    - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
+    - >-
+      ..\win32\configure.bat
+      --with-opt-dir="/usr/local;c:/Tools/vcpkg/installed/%Platform%-windows"
+      --with-openssl-dir=%OPENSSL_DIR:\=/%
     - nmake -l
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
@@ -80,9 +91,26 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
+    - >-
+      nmake -l "TESTOPTS=-v --timeout-scale=3.0
+      --excludes=../test/excludes/_appveyor -j%JOBS%
+      --exclude win32ole
+      --exclude test_bignum
+      --exclude test_syntax
+      --exclude test_open-uri
+      --exclude test_bundled_ca
+      " test-all
     # separately execute tests without -j which may crash worker with -j.
-    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
+    - >-
+      nmake -l
+      "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor"
+      TESTS="
+      ../test/win32ole
+      ../test/ruby/test_bignum.rb
+      ../test/ruby/test_syntax.rb
+      ../test/open-uri/test_open-uri.rb
+      ../test/rubygems/test_bundled_ca.rb
+      " test-all
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
   - provider: Webhook
@@ -93,7 +121,7 @@ notifications:
       {{^isPullRequest}}
         {
           "ci": "AppVeyor CI",
-          "env": "Visual Studio 2013 / 2015",
+          "env": "Visual Studio 2013",
           "url": "{{buildUrl}}",
           "commit": "{{commitId}}",
           "branch": "{{branch}}"

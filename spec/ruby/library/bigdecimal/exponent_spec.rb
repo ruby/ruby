@@ -18,17 +18,6 @@ describe "BigDecimal#exponent" do
     BigDecimal("1234567E10").exponent.should == 17
   end
 
-# commenting this spec out after discussion with Defiler, since it seems to be an MRI bug, not a real feature
-=begin
-  platform_is wordsize: 32 do
-    # TODO: write specs for both 32 and 64 bit
-    it "returns 0 if exponent can't be represented as Integer" do
-      BigDecimal("2E1000000000000000").exponent.should == 0
-      BigDecimal("-5E-999999999999999").exponent.should == 0
-    end
-  end
-=end
-
   it "returns 0 if self is 0" do
     BigDecimal("0").exponent.should == 0
     BigDecimal("+0").exponent.should == 0

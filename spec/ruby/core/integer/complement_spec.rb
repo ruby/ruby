@@ -12,9 +12,9 @@ describe "Integer#~" do
 
   context "bignum" do
     it "returns self with each bit flipped" do
-      (~bignum_value(48)).should == -9223372036854775857
-      (~(-bignum_value(21))).should == 9223372036854775828
-      (~bignum_value(1)).should == -9223372036854775810
+      (~bignum_value(48)).should == -18446744073709551665
+      (~(-bignum_value(21))).should == 18446744073709551636
+      (~bignum_value(1)).should == -18446744073709551618
     end
   end
 end

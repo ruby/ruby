@@ -175,4 +175,33 @@ class TestDate < Test::Unit::TestCase
     assert_equal(-1, -Float::INFINITY <=> Date::Infinity.new)
     assert_equal(-1, -Date::Infinity.new <=> Float::INFINITY)
   end
+
+  def test_deconstruct_keys
+    d = Date.new(1999,5,23)
+    assert_equal({year: 1999, month: 5, day: 23, wday: 0, yday: 143}, d.deconstruct_keys(nil))
+    assert_equal({year: 1999}, d.deconstruct_keys([:year, :century]))
+    assert_equal(
+      {year: 1999, month: 5, day: 23, wday: 0, yday: 143},
+      d.deconstruct_keys([:year, :month, :day, :wday, :yday])
+    )
+
+    dt = DateTime.new(1999, 5, 23, 4, 20, Rational(1, 10000))
+
+    assert_equal(
+      {year: 1999, month: 5, day: 23, wday: 0, yday: 143,
+       hour: 4, min: 20, sec: 0, sec_fraction: Rational(1, 10000), zone: "+00:00"},
+      dt.deconstruct_keys(nil)
+    )
+
+    assert_equal({year: 1999}, dt.deconstruct_keys([:year, :century]))
+
+    assert_equal(
+      {year: 1999, month: 5, day: 23, wday: 0, yday: 143,
+       hour: 4, min: 20, sec: 0, sec_fraction: Rational(1, 10000), zone: "+00:00"},
+      dt.deconstruct_keys([:year, :month, :day, :wday, :yday, :hour, :min, :sec, :sec_fraction, :zone])
+    )
+
+    dtz = DateTime.parse('3rd Feb 2001 04:05:06+03:30')
+    assert_equal({zone: '+03:30'}, dtz.deconstruct_keys([:zone]))
+  end
 end

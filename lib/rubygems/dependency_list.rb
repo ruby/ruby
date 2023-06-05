@@ -1,12 +1,13 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'tsort'
-require_relative 'deprecate'
+require_relative "tsort"
+require_relative "deprecate"
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the
@@ -104,7 +105,7 @@ class Gem::DependencyList
   end
 
   def inspect # :nodoc:
-    "%s %p>" % [super[0..-2], map {|s| s.full_name }]
+    format("%s %p>", super[0..-2], map(&:full_name))
   end
 
   ##
@@ -119,11 +120,11 @@ class Gem::DependencyList
     each do |spec|
       spec.runtime_dependencies.each do |dep|
         inst = Gem::Specification.any? do |installed_spec|
-          dep.name == installed_spec.name and
-            dep.requirement.satisfied_by? installed_spec.version
+          dep.name == installed_spec.name &&
+            dep.requirement.satisfied_by?(installed_spec.version)
         end
 
-        unless inst or @specs.find {|s| s.satisfies_requirement? dep }
+        unless inst || @specs.find {|s| s.satisfies_requirement? dep }
           unsatisfied[spec.name] << dep
           return unsatisfied if quick
         end
@@ -175,7 +176,7 @@ class Gem::DependencyList
   def remove_specs_unsatisfied_by(dependencies)
     specs.reject! do |spec|
       dep = dependencies[spec.name]
-      dep and not dep.requirement.satisfied_by? spec.version
+      dep && !dep.requirement.satisfied_by?(spec.version)
     end
   end
 

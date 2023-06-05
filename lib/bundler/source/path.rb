@@ -11,7 +11,7 @@ module Bundler
 
       protected :original_path
 
-      DEFAULT_GLOB = "{,*,*/*}.gemspec".freeze
+      DEFAULT_GLOB = "{,*,*/*}.gemspec"
 
       def initialize(options)
         @options = options.dup
@@ -82,7 +82,7 @@ module Bundler
       end
 
       def install(spec, options = {})
-        using_message = "Using #{version_message(spec)} from #{self}"
+        using_message = "Using #{version_message(spec, options[:previous_spec])} from #{self}"
         using_message += " and installing its executables" unless spec.executables.empty?
         print_using_message using_message
         generate_bin(spec, :disable_extensions => true)
@@ -224,13 +224,13 @@ module Bundler
 
         # Some gem authors put absolute paths in their gemspec
         # and we have to save them from themselves
-        spec.files = spec.files.map do |p|
-          next p unless p =~ /\A#{Pathname::SEPARATOR_PAT}/
-          next if File.directory?(p)
+        spec.files = spec.files.map do |path|
+          next path unless /\A#{Pathname::SEPARATOR_PAT}/.match?(path)
+          next if File.directory?(path)
           begin
-            Pathname.new(p).relative_path_from(gem_dir).to_s
+            Pathname.new(path).relative_path_from(gem_dir).to_s
           rescue ArgumentError
-            p
+            path
           end
         end.compact
 

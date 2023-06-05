@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Represents a specification retrieved via the rubygems.org API.
 #
@@ -40,10 +41,10 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @set          == other.set and
-      @name         == other.name and
-      @version      == other.version and
+    self.class === other &&
+      @set          == other.set &&
+      @name         == other.name &&
+      @version      == other.version &&
       @platform     == other.platform
   end
 
@@ -62,7 +63,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[APISpecification', ']' do
+    q.group 2, "[APISpecification", "]" do
       q.breakable
       q.text "name: #{name}"
 
@@ -73,7 +74,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       q.text "platform: #{platform}"
 
       q.breakable
-      q.text 'dependencies:'
+      q.text "dependencies:"
       q.breakable
       q.pp @dependencies
 

@@ -108,12 +108,6 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_not_equal s1, s2
   end
 
-  def test_empty_data
-    cipher = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
-    cipher.random_key
-    assert_raise(ArgumentError) { cipher.update("") }
-  end
-
   def test_initialize
     cipher = OpenSSL::Cipher.new("DES-EDE3-CBC")
     assert_raise(RuntimeError) { cipher.__send__(:initialize, "DES-EDE3-CBC") }

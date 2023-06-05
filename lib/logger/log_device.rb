@@ -79,8 +79,10 @@ class Logger
     def set_dev(log)
       if log.respond_to?(:write) and log.respond_to?(:close)
         @dev = log
-        if log.respond_to?(:path)
-          @filename = log.path
+        if log.respond_to?(:path) and path = log.path
+          if File.exist?(path)
+            @filename = path
+          end
         end
       else
         @dev = open_logfile(log)

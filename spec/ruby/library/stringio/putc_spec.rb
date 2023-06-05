@@ -35,6 +35,21 @@ describe "StringIO#putc when passed [String]" do
     @io.putc("t")
     @io.pos.should == 3
   end
+
+  it "handles concurrent writes correctly" do
+    @io = StringIO.new
+    n = 8
+    go = false
+    threads = n.times.map { |i|
+      Thread.new {
+        Thread.pass until go
+        @io.putc i.to_s
+      }
+    }
+    go = true
+    threads.each(&:join)
+    @io.string.size.should == n
+  end
 end
 
 describe "StringIO#putc when passed [Object]" do

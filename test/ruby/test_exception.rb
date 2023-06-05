@@ -252,6 +252,27 @@ class TestException < Test::Unit::TestCase
     }
   end
 
+  def test_catch_throw_in_require_cant_be_rescued
+    bug18562 = '[ruby-core:107403]'
+    Tempfile.create(["dep", ".rb"]) {|t|
+      t.puts("throw :extdep, 42")
+      t.close
+
+      rescue_all = Class.new(Exception)
+      def rescue_all.===(_)
+        raise "should not reach here"
+      end
+
+      v = assert_throw(:extdep, bug18562) do
+        require t.path
+      rescue rescue_all
+        assert(false, "should not reach here")
+      end
+
+      assert_equal(42, v, bug18562)
+    }
+  end
+
   def test_throw_false
     bug12743 = '[ruby-core:77229] [Bug #12743]'
     Thread.start {
@@ -457,6 +478,12 @@ end.join
       def to_s; ""; end
     end
     assert_equal(e.inspect, e.new.inspect)
+
+    # https://bugs.ruby-lang.org/issues/18170#note-13
+    assert_equal('#<Exception:"foo\nbar">', Exception.new("foo\nbar").inspect)
+    assert_equal('#<Exception: foo bar>', Exception.new("foo bar").inspect)
+    assert_equal('#<Exception: foo\bar>', Exception.new("foo\\bar").inspect)
+    assert_equal('#<Exception: "foo\nbar">', Exception.new('"foo\nbar"').inspect)
   end
 
   def test_to_s
@@ -786,6 +813,7 @@ end.join
     cause = ArgumentError.new("foobar")
     e = assert_raise(RuntimeError) {raise msg, cause: cause}
     assert_same(cause, e.cause)
+    assert_raise(TypeError) {raise msg, {cause: cause}}
   end
 
   def test_cause_with_no_arguments
@@ -970,11 +998,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
     assert_not_nil(e)
     assert_include(e.message, "\0")
-    assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
-      err.each do |e|
-        assert_not_include(e, "\0")
-      end
-    end
+    # Disabled by [Feature #18367]
+    #assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
+    #  err.each do |e|
+    #    assert_not_include(e, "\0")
+    #  end
+    #end
     e
   end
 
@@ -1030,7 +1059,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
           warning << [str, category]
         end
       else
-        define_method(:warn) do |str|
+        define_method(:warn) do |str, category: nil|
           warning << str
         end
       end
@@ -1237,7 +1266,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     begin;
       class Bug < RuntimeError
         def backtrace
-          IO.readlines(IO::NULL)
+          File.readlines(IO::NULL)
         end
       end
       bug = Bug.new '[ruby-core:85939] [Bug #14577]'
@@ -1383,6 +1412,18 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end;
   end
 
+  def test_marshal_circular_cause
+    begin
+      raise RuntimeError, "err", [], cause: Exception.new
+    rescue => e
+    end
+    dump = Marshal.dump(e).sub(/o:\x0EException\x08;.0;.0;.0/, "@\x05")
+    assert_raise_with_message(ArgumentError, /circular cause/, ->{dump.inspect}) do
+      e = Marshal.load(dump)
+      assert_same(e, e.cause)
+    end
+  end
+
   def test_super_in_method_missing
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -1398,5 +1439,100 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         Object.new.foo
       end
     end;
+  end
+
+  def test_detailed_message
+    e = RuntimeError.new("message")
+    assert_equal("message (RuntimeError)", e.detailed_message)
+    assert_equal("\e[1mmessage (\e[1;4mRuntimeError\e[m\e[1m)\e[m", e.detailed_message(highlight: true))
+
+    e = RuntimeError.new("foo\nbar\nbaz")
+    assert_equal("foo (RuntimeError)\nbar\nbaz", e.detailed_message)
+    assert_equal("\e[1mfoo (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n\e[1mbar\e[m\n\e[1mbaz\e[m", e.detailed_message(highlight: true))
+
+    e = RuntimeError.new("")
+    assert_equal("unhandled exception", e.detailed_message)
+    assert_equal("\e[1;4munhandled exception\e[m", e.detailed_message(highlight: true))
+
+    e = RuntimeError.new
+    assert_equal("RuntimeError (RuntimeError)", e.detailed_message)
+    assert_equal("\e[1mRuntimeError (\e[1;4mRuntimeError\e[m\e[1m)\e[m", e.detailed_message(highlight: true))
+  end
+
+  def test_full_message_with_custom_detailed_message
+    e = RuntimeError.new("message")
+    opt_ = nil
+    e.define_singleton_method(:detailed_message) do |**opt|
+      opt_ = opt
+      "BOO!"
+    end
+    assert_match("BOO!", e.full_message.lines.first)
+    assert_equal({ highlight: Exception.to_tty? }, opt_)
+  end
+
+  def test_full_message_with_encoding
+    message = "\u{dc}bersicht"
+    begin
+      begin
+        raise message
+      rescue => e
+        raise "\n#{e.message}"
+      end
+    rescue => e
+    end
+    assert_include(e.full_message, message)
+  end
+
+  def test_syntax_error_detailed_message
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "detail.rb"), "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class SyntaxError
+          def detailed_message(**)
+            Thread.new {}.join
+            "<#{super}>\n""<#{File.basename(__FILE__)}>"
+          rescue ThreadError => e
+            e.message
+          end
+        end
+      end;
+      pattern = /^<detail\.rb>/
+      assert_in_out_err(%W[-r#{dir}/detail -], "1+", [], pattern)
+
+      File.write(File.join(dir, "main.rb"), "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        1 +
+      end;
+      assert_in_out_err(%W[-r#{dir}/detail #{dir}/main.rb]) do |stdout, stderr,|
+        assert_empty(stdout)
+        assert_not_empty(stderr.grep(pattern))
+        error, = stderr.grep(/unexpected end-of-input/)
+        assert_not_nil(error)
+        assert_match(/<.*unexpected end-of-input.*>/, error)
+      end
+    end
+  end
+
+  def test_syntax_error_path
+    e = assert_raise(SyntaxError) {
+      eval("1+", nil, "test_syntax_error_path.rb")
+    }
+    assert_equal("test_syntax_error_path.rb", e.path)
+
+    Dir.mktmpdir do |dir|
+      lib = File.join(dir, "syntax_error-path.rb")
+      File.write(lib, "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class SyntaxError
+          def detailed_message(**)
+            STDERR.puts "\n""path=#{path}\n"
+            super
+          end
+        end
+      end;
+      main = File.join(dir, "syntax_error.rb")
+      File.write(main, "1+\n")
+      assert_in_out_err(%W[-r#{lib} #{main}], "", [], [:*, "\n""path=#{main}\n", :*])
+    end
   end
 end

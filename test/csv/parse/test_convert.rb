@@ -15,6 +15,22 @@ class TestCSVParseConvert < Test::Unit::TestCase
 
     @time = Time.utc(2018, 12, 30, 6, 41, 29)
     @windows_safe_time_data = @time.strftime("%a %b %d %H:%M:%S %Y")
+
+    @preserving_converter = lambda do |field, info|
+      f = field.encode(CSV::ConverterEncoding)
+      return f if info.quoted?
+      begin
+        Integer(f, 10)
+      rescue
+        f
+      end
+    end
+
+    @quoted_header_converter = lambda do |field, info|
+      f = field.encode(CSV::ConverterEncoding)
+      return f if info.quoted?
+      f.to_sym
+    end
   end
 
   def test_integer
@@ -106,5 +122,44 @@ class TestCSVParseConvert < Test::Unit::TestCase
   def test_empty_value
     assert_equal([nil, "empty", "a"],
                  CSV.parse_line(',"",a', empty_value: "empty"))
+  end
+
+  def test_quoted_parse_line
+    row = CSV.parse_line('1,"2",3', converters: @preserving_converter)
+    assert_equal([1, "2", 3], row)
+  end
+
+  def test_quoted_parse
+    expected = [["quoted", "unquoted"], ["109", 1], ["10A", 2]]
+    rows = CSV.parse(<<~CSV, converters: @preserving_converter)
+      "quoted",unquoted
+      "109",1
+      "10A",2
+    CSV
+    assert_equal(expected, rows)
+  end
+
+  def test_quoted_alternating_quote
+    row = CSV.parse_line('"1",2,"3"', converters: @preserving_converter)
+    assert_equal(['1', 2, '3'], row)
+  end
+
+  def test_quoted_parse_headers
+    expected = [["quoted", :unquoted], ["109", "1"], ["10A", "2"]]
+    table = CSV.parse(<<~CSV, headers: true, header_converters: @quoted_header_converter)
+      "quoted",unquoted
+      "109",1
+      "10A",2
+    CSV
+    assert_equal(expected, table.to_a)
+  end
+
+  def test_quoted_parse_with_string_headers
+    expected = [["quoted", :unquoted], %w[109 1], %w[10A 2]]
+    table = CSV.parse(<<~CSV, headers: '"quoted",unquoted', header_converters: @quoted_header_converter)
+      "109",1
+      "10A",2
+    CSV
+    assert_equal(expected, table.to_a)
   end
 end

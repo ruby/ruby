@@ -19,7 +19,7 @@
 # include <stddef.h>                       /* size_t */
 #endif
 
-#if HAVE_SYS_TYPES_H
+#ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>                    /* ssize_t */
 #endif
 
@@ -35,6 +35,15 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /** an approximation of ceil(n * log10(2)), up to 65536 at least */
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
+
+/** an approximation of decimal representation size for n-bytes */
+#define DECIMAL_SIZE_OF_BYTES(n) DECIMAL_SIZE_OF_BITS((n) * CHAR_BIT)
+
+/**
+ * An approximation of decimal representation size. `expr` may be a
+ * type name
+ */
+#define DECIMAL_SIZE_OF(expr) DECIMAL_SIZE_OF_BYTES(sizeof(expr))
 
 /**
  * Character to  number mapping  like `'a'`  -> `10`, `'b'`  -> `11`  etc.  For
@@ -124,7 +133,7 @@ unsigned long ruby_scan_hex(const char *str, size_t len, size_t *ret);
 # define ruby_qsort qsort_r
 #else
 void ruby_qsort(void *, const size_t, const size_t,
-		int (*)(const void *, const void *, void *), void *);
+                int (*)(const void *, const void *, void *), void *);
 #endif
 
 RBIMPL_ATTR_NONNULL((1))

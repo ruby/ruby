@@ -81,4 +81,3 @@ class RDoc::Markup::Verbatim < RDoc::Markup::Raw
   end
 
 end
-

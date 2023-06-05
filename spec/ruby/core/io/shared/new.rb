@@ -1,5 +1,7 @@
 require_relative '../fixtures/classes'
 
+# NOTE: should be syncronized with library/stringio/initialize_spec.rb
+
 # This group of specs may ONLY contain specs that do successfully create
 # an IO instance from the file descriptor returned by #new_fd helper.
 describe :io_new, shared: true do
@@ -60,6 +62,17 @@ describe :io_new, shared: true do
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")
     @io.should be_an_instance_of(IO)
+  end
+
+  ruby_version_is "3.0" do
+    it "accepts options as keyword arguments" do
+      @io = IO.send(@method, @fd, "w", flags: File::CREAT)
+      @io.write("foo").should == 3
+
+      -> {
+        IO.send(@method, @fd, "w", {flags: File::CREAT})
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
+    end
   end
 
   it "accepts a :mode option" do

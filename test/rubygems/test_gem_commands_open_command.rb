@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/open_command'
+
+require_relative "helper"
+require "rubygems/commands/open_command"
 
 class TestGemCommandsOpenCommand < Gem::TestCase
   def setup
@@ -23,8 +24,8 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:editor] = "#{ruby_with_rubygems_in_load_path} -eexit --"
 
-    gem 'foo', '1.0.0'
-    spec = gem 'foo', '1.0.1'
+    gem "foo", "1.0.0"
+    spec = gem "foo", "1.0.1"
 
     assert_nothing_raised Gem::MockGemUi::TermError do
       Dir.stub(:chdir, spec.full_gem_path) do
@@ -49,7 +50,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{Unable to find gem 'foo'}, @ui.output
+    assert_match(/Unable to find gem 'foo'/, @ui.output)
     assert_equal "", @ui.error
   end
 
@@ -62,7 +63,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{Unable to find gem 'foo'}, @ui.output
+    assert_match(/Unable to find gem 'foo'/, @ui.output)
     assert_equal "", @ui.error
   end
 
@@ -91,7 +92,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{'foo' is a default gem and can't be opened\.} , @ui.output
+    assert_match(/'foo' is a default gem and can't be opened\./, @ui.output)
     assert_equal "", @ui.error
   end
 end

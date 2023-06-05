@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+
+require_relative 'markup/attribute_manager' # for PROTECT_ATTR
+
 ##
 # RDoc::CrossReference is a reusable way to create cross references for names.
 
@@ -15,11 +18,24 @@ class RDoc::CrossReference
   CLASS_REGEXP_STR = '\\\\?((?:\:{2})?[A-Z]\w*(?:\:\:\w+)*)'
 
   ##
+  # Regular expression to match a single method argument.
+
+  METHOD_ARG_REGEXP_STR = '[\w.+*/=<>-]+'
+
+  ##
+  # Regular expression to match method arguments.
+
+  METHOD_ARGS_REGEXP_STR = /(?:\((?:#{METHOD_ARG_REGEXP_STR}(?:,\s*#{METHOD_ARG_REGEXP_STR})*)?\))?/.source
+
+  ##
   # Regular expression to match method references.
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '([A-Za-z]\w*[!?=]?|%|===?|\[\]=?|<<|>>|\+@|-@|-|\+|\*)(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = /(
+    (?!\d)[\w#{RDoc::Markup::AttributeManager::PROTECT_ATTR}]+[!?=]?|
+    %|=(?:==?|~)|![=~]|\[\]=?|<(?:<|=>?)?|>[>=]?|[-+!]@?|\*\*?|[\/%\`|&^~]
+  )#{METHOD_ARGS_REGEXP_STR}/.source.delete("\n ").freeze
 
   ##
   # Regular expressions matching text that should potentially have
@@ -207,4 +223,3 @@ class RDoc::CrossReference
   end
 
 end
-

@@ -182,7 +182,8 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && t.alive?
+      t != Thread.current && t.alive? &&
+        !(t.thread_variable?(:"\0__detached_thread__") && t.thread_variable_get(:"\0__detached_thread__"))
     }
   end
 
@@ -232,7 +233,13 @@ class LeakChecker
     old_env = @env_info
     new_env = find_env
     return false if old_env == new_env
+    if defined?(Bundler::EnvironmentPreserver)
+      bundler_prefix = Bundler::EnvironmentPreserver::BUNDLER_PREFIX
+    end
     (old_env.keys | new_env.keys).sort.each {|k|
+      # Don't report changed environment variables caused by Bundler's backups
+      next if bundler_prefix and k.start_with?(bundler_prefix)
+
       if old_env.has_key?(k)
         if new_env.has_key?(k)
           if old_env[k] != new_env[k]

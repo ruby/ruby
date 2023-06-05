@@ -129,6 +129,52 @@ RSpec.describe "bundle executable" do
     end
   end
 
+  describe "bundle outdated" do
+    let(:run_command) do
+      bundle "install"
+
+      bundle "outdated #{flags}", :raise_on_error => false
+    end
+
+    before do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack", '0.9.1'
+      G
+    end
+
+    context "with --groups flag" do
+      let(:flags) { "--groups" }
+
+      it "prints a message when there are outdated gems" do
+        run_command
+
+        expect(out).to include("Gem   Current  Latest  Requested  Groups")
+        expect(out).to include("rack  0.9.1    1.0.0   = 0.9.1    default")
+      end
+    end
+
+    context "with --parseable" do
+      let(:flags) { "--parseable" }
+
+      it "prints a message when there are outdated gems" do
+        run_command
+
+        expect(out).to include("rack (newest 1.0.0, installed 0.9.1, requested = 0.9.1)")
+      end
+    end
+
+    context "with --groups and --parseable" do
+      let(:flags) { "--groups --parseable" }
+
+      it "prints a simplified message when there are outdated gems" do
+        run_command
+
+        expect(out).to include("rack (newest 1.0.0, installed 0.9.1, requested = 0.9.1)")
+      end
+    end
+  end
+
   describe "printing the outdated warning" do
     shared_examples_for "no warning" do
       it "prints no warning" do

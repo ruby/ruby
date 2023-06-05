@@ -28,8 +28,16 @@
  * SUCH DAMAGE.
  */
 
+// Suppress some false-positive compiler warnings
+#if defined(__GNUC__) && __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wrestrict"
+#endif
+
 #include "regparse.h"
 #include <stdarg.h>
+#include "internal/sanitizers.h"
 
 #define WARN_BUFSIZE    256
 
@@ -386,6 +394,8 @@ str_end_cmp(st_data_t xp, st_data_t yp)
 
   return 0;
 }
+
+NO_SANITIZE("unsigned-integer-overflow", static st_index_t str_end_hash(st_data_t xp));
 
 static st_index_t
 str_end_hash(st_data_t xp)

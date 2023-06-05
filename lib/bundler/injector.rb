@@ -2,7 +2,7 @@
 
 module Bundler
   class Injector
-    INJECTED_GEMS = "injected gems".freeze
+    INJECTED_GEMS = "injected gems"
 
     def self.inject(new_deps, options = {})
       injector = new(new_deps, options)
@@ -70,8 +70,12 @@ module Bundler
 
         show_warning("No gems were removed from the gemfile.") if deps.empty?
 
-        deps.each {|dep| Bundler.ui.confirm "#{SharedHelpers.pretty_dependency(dep, false)} was removed." }
+        deps.each {|dep| Bundler.ui.confirm "#{SharedHelpers.pretty_dependency(dep)} was removed." }
       end
+
+      # Invalidate the cached Bundler.definition.
+      # This prevents e.g. `bundle remove ...` from using outdated information.
+      Bundler.reset_paths!
     end
 
     private
@@ -111,13 +115,14 @@ module Bundler
         end
 
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
+        path = ", :path => \"#{d.path}\"" unless d.path.nil?
         git = ", :git => \"#{d.git}\"" unless d.git.nil?
         github = ", :github => \"#{d.github}\"" unless d.github.nil?
         branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
         ref = ", :ref => \"#{d.ref}\"" unless d.ref.nil?
         require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source}#{git}#{github}#{branch}#{ref}#{require_path})
+        %(gem #{name}#{requirement}#{group}#{source}#{path}#{git}#{github}#{branch}#{ref}#{require_path})
       end.join("\n")
     end
 
@@ -230,7 +235,7 @@ module Bundler
 
         gemfile.each_with_index do |line, index|
           next unless !line.nil? && line.strip.start_with?(block_name)
-          if gemfile[index + 1] =~ /^\s*end\s*$/
+          if /^\s*end\s*$/.match?(gemfile[index + 1])
             gemfile[index] = nil
             gemfile[index + 1] = nil
           end

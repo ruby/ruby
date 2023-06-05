@@ -10,20 +10,20 @@ describe "String#lstrip" do
    "  hello world  ".lstrip.should == "hello world  "
    "\n\r\t\n\v\r hello world  ".lstrip.should == "hello world  "
    "hello".lstrip.should == "hello"
+   " こにちわ".lstrip.should == "こにちわ"
   end
 
-  ruby_version_is '3.1' do
+  it "works with lazy substrings" do
+    "  hello  "[1...-1].lstrip.should == "hello "
+    "  hello world  "[1...-1].lstrip.should == "hello world "
+    "\n\r\t\n\v\r hello world  "[1...-1].lstrip.should == "hello world "
+    "   こにちわ "[1...-1].lstrip.should == "こにちわ"
+  end
+
+  ruby_version_is '3.0' do
     it "strips leading \\0" do
      "\x00hello".lstrip.should == "hello"
      "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "".taint.lstrip.should.tainted?
-      "ok".taint.lstrip.should.tainted?
-      "   ok".taint.lstrip.should.tainted?
     end
   end
 end
@@ -35,18 +35,24 @@ describe "String#lstrip!" do
     a.should == "hello  "
   end
 
-  ruby_version_is '3.1' do
-    it "strips leading \\0" do
-      a = "\000 \000hello\000 \000"
-      a.lstrip!
-      a.should == "hello\000 \000"
-    end
-  end
-
   it "returns nil if no modifications were made" do
     a = "hello"
     a.lstrip!.should == nil
     a.should == "hello"
+  end
+
+  it "makes a string empty if it is only whitespace" do
+    "".lstrip!.should == nil
+    " ".lstrip.should == ""
+    "  ".lstrip.should == ""
+  end
+
+  ruby_version_is '3.0' do
+    it "removes leading NULL bytes and whitespace" do
+      a = "\000 \000hello\000 \000"
+      a.lstrip!
+      a.should == "hello\000 \000"
+    end
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
@@ -57,5 +63,15 @@ describe "String#lstrip!" do
   it "raises a FrozenError on a frozen instance that would not be modified" do
     -> { "hello".freeze.lstrip! }.should raise_error(FrozenError)
     -> { "".freeze.lstrip!      }.should raise_error(FrozenError)
+  end
+
+  it "raises an ArgumentError if the first non-space codepoint is invalid" do
+    s = "\xDFabc".force_encoding(Encoding::UTF_8)
+    s.valid_encoding?.should be_false
+    -> { s.lstrip! }.should raise_error(ArgumentError)
+
+    s = "   \xDFabc".force_encoding(Encoding::UTF_8)
+    s.valid_encoding?.should be_false
+    -> { s.lstrip! }.should raise_error(ArgumentError)
   end
 end

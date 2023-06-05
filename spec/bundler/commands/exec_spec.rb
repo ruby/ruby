@@ -2,11 +2,10 @@
 
 RSpec.describe "bundle exec" do
   let(:system_gems_to_install) { %w[rack-1.0.0 rack-0.9.1] }
-  before :each do
-    system_gems(system_gems_to_install, :path => default_bundle_path)
-  end
 
   it "works with --gemfile flag" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     create_file "CustomGemfile", <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "1.0.0"
@@ -17,6 +16,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "activates the correct gem" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
@@ -27,6 +28,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "works and prints no warnings when HOME is not writable" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
@@ -209,8 +212,6 @@ RSpec.describe "bundle exec" do
   end
 
   context "with default gems" do
-    let(:system_gems_to_install) { [] }
-
     let(:default_irb_version) { ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", :raise_on_error => false }
 
     context "when not specified in Gemfile" do
@@ -291,7 +292,7 @@ RSpec.describe "bundle exec" do
       end
     end
 
-    bundle "config set path.system true"
+    bundle "config set --global path.system true"
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -402,6 +403,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "raises a helpful error when exec'ing to something outside of the bundle" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     bundle "config set clean false" # want to keep the rackup binstub
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -694,7 +697,7 @@ RSpec.describe "bundle exec" do
   context "`load`ing a ruby file instead of `exec`ing" do
     let(:path) { bundled_app("ruby_executable") }
     let(:shebang) { "#!/usr/bin/env ruby" }
-    let(:executable) { <<-RUBY.gsub(/^ */, "").strip }
+    let(:executable) { <<~RUBY.strip }
       #{shebang}
 
       require "rack"
@@ -706,6 +709,8 @@ RSpec.describe "bundle exec" do
     RUBY
 
     before do
+      system_gems(system_gems_to_install, :path => default_bundle_path)
+
       bundled_app(path).open("w") {|f| f << executable }
       bundled_app(path).chmod(0o755)
 
@@ -775,9 +780,7 @@ RSpec.describe "bundle exec" do
       end
       let(:expected_err) { "" }
       let(:exit_code) do
-        # signal mask 128 + plus signal 15 -> TERM
-        # this is specified by C99
-        128 + 15
+        exit_status_for_signal(Signal.list["TERM"])
       end
 
       it "runs" do
@@ -909,6 +912,30 @@ Run `bundle install` to install missing gems.
         subject
         expect(exitstatus).to eq(exit_code)
         expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
+      end
+    end
+
+    context "when Bundler.setup fails and Gemfile is not the default" do
+      before do
+        create_file "CustomGemfile", <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem 'rack', '2'
+        G
+        ENV["BUNDLER_FORCE_TTY"] = "true"
+        ENV["BUNDLE_GEMFILE"] = "CustomGemfile"
+        ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = nil
+      end
+
+      let(:exit_code) { Bundler::GemNotFound.new.status_code }
+      let(:expected) { "" }
+
+      it "prints proper suggestion" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to include("Run `bundle install --gemfile CustomGemfile` to install missing gems.")
         expect(out).to eq(expected)
       end
     end

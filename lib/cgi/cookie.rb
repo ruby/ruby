@@ -40,6 +40,10 @@ class CGI
   class Cookie < Array
     @@accept_charset="UTF-8" unless defined?(@@accept_charset)
 
+    TOKEN_RE = %r"\A[[!-~]&&[^()<>@,;:\\\"/?=\[\]{}]]+\z"
+    PATH_VALUE_RE = %r"\A[[ -~]&&[^;]]*\z"
+    DOMAIN_VALUE_RE = %r"\A\.?(?<label>(?!-)[-A-Za-z0-9]+(?<!-))(?:\.\g<label>)*\z"
+
     # Create a new CGI::Cookie object.
     #
     # :call-seq:
@@ -72,8 +76,8 @@ class CGI
       @domain = nil
       @expires = nil
       if name.kind_of?(String)
-        @name = name
-        @path = (%r|\A(.*/)| =~ ENV["SCRIPT_NAME"] ? $1 : "")
+        self.name = name
+        self.path = (%r|\A(.*/)| =~ ENV["SCRIPT_NAME"] ? $1 : "")
         @secure = false
         @httponly = false
         return super(value)
@@ -84,11 +88,11 @@ class CGI
         raise ArgumentError, "`name' required"
       end
 
-      @name = options["name"]
+      self.name = options["name"]
       value = Array(options["value"])
       # simple support for IE
-      @path = options["path"] || (%r|\A(.*/)| =~ ENV["SCRIPT_NAME"] ? $1 : "")
-      @domain = options["domain"]
+      self.path = options["path"] || (%r|\A(.*/)| =~ ENV["SCRIPT_NAME"] ? $1 : "")
+      self.domain = options["domain"]
       @expires = options["expires"]
       @secure = options["secure"] == true
       @httponly = options["httponly"] == true
@@ -97,11 +101,35 @@ class CGI
     end
 
     # Name of this cookie, as a +String+
-    attr_accessor :name
+    attr_reader :name
+    # Set name of this cookie
+    def name=(str)
+      if str and !TOKEN_RE.match?(str)
+        raise ArgumentError, "invalid name: #{str.dump}"
+      end
+      @name = str
+    end
+
     # Path for which this cookie applies, as a +String+
-    attr_accessor :path
+    attr_reader :path
+    # Set path for which this cookie applies
+    def path=(str)
+      if str and !PATH_VALUE_RE.match?(str)
+        raise ArgumentError, "invalid path: #{str.dump}"
+      end
+      @path = str
+    end
+
     # Domain for which this cookie applies, as a +String+
-    attr_accessor :domain
+    attr_reader :domain
+    # Set domain for which this cookie applies
+    def domain=(str)
+      if str and ((str = str.b).bytesize > 255 or !DOMAIN_VALUE_RE.match?(str))
+        raise ArgumentError, "invalid domain: #{str.dump}"
+      end
+      @domain = str
+    end
+
     # Time at which this cookie expires, as a +Time+
     attr_accessor :expires
     # True if this cookie is secure; false otherwise

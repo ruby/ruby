@@ -1,3 +1,4 @@
+#include "internal/gc.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
 #include "vm_core.h"
@@ -5,25 +6,69 @@
 #include "vm_debug.h"
 
 #ifndef RACTOR_CHECK_MODE
-#define RACTOR_CHECK_MODE (0 || VM_CHECK_MODE || RUBY_DEBUG)
+#define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #endif
 
 enum rb_ractor_basket_type {
+    // basket is empty
     basket_type_none,
+
+    // value is available
     basket_type_ref,
     basket_type_copy,
     basket_type_move,
     basket_type_will,
+
+    // basket should be deleted
     basket_type_deleted,
+
+    // basket is reserved
     basket_type_reserved,
+
+    // take_basket is available
+    basket_type_take_basket,
+
+    // basket is keeping by yielding ractor
+    basket_type_yielding,
+};
+
+// per ractor taking configuration
+struct rb_ractor_selector_take_config {
+    bool closed;
+    bool oneshot;
 };
 
 struct rb_ractor_basket {
-    bool exception;
-    enum rb_ractor_basket_type type;
-    VALUE v;
+    union {
+        enum rb_ractor_basket_type e;
+        rb_atomic_t atomic;
+    } type;
     VALUE sender;
+
+    union {
+        struct {
+            VALUE v;
+            bool exception;
+        } send;
+
+        struct {
+            struct rb_ractor_basket *basket;
+            struct rb_ractor_selector_take_config *config;
+        } take;
+    } p; // payload
 };
+
+static inline bool
+basket_type_p(struct rb_ractor_basket *b, enum rb_ractor_basket_type type)
+{
+    return b->type.e == type;
+}
+
+static inline bool
+basket_none_p(struct rb_ractor_basket *b)
+{
+    return basket_type_p(b, basket_type_none);
+}
 
 struct rb_ractor_queue {
     struct rb_ractor_basket *baskets;
@@ -34,10 +79,22 @@ struct rb_ractor_queue {
     unsigned int reserved_cnt;
 };
 
-struct rb_ractor_waiting_list {
-    int cnt;
-    int size;
-    rb_ractor_t **ractors;
+enum rb_ractor_wait_status {
+    wait_none      = 0x00,
+    wait_receiving = 0x01,
+    wait_taking    = 0x02,
+    wait_yielding  = 0x04,
+    wait_moving    = 0x08,
+};
+
+enum rb_ractor_wakeup_status {
+    wakeup_none,
+    wakeup_by_send,
+    wakeup_by_yield,
+    wakeup_by_take,
+    wakeup_by_close,
+    wakeup_by_interrupt,
+    wakeup_by_retry,
 };
 
 struct rb_ractor_sync {
@@ -48,35 +105,43 @@ struct rb_ractor_sync {
 #endif
     rb_nativethread_cond_t cond;
 
-    // communication
-    struct rb_ractor_queue  incoming_queue;
-    struct rb_ractor_waiting_list taking_ractors;
-
     bool incoming_port_closed;
     bool outgoing_port_closed;
 
+    // All sent messages will be pushed into recv_queue
+    struct rb_ractor_queue recv_queue;
+
+    // The following ractors waiting for the yielding by this ractor
+    struct rb_ractor_queue takers_queue;
+
+    // Enabled if the ractor already terminated and not taken yet.
+    struct rb_ractor_basket will_basket;
+
     struct ractor_wait {
-        enum ractor_wait_status {
-            wait_none      = 0x00,
-            wait_receiving = 0x01,
-            wait_taking    = 0x02,
-            wait_yielding  = 0x04,
-            wait_moving    = 0x08,
-        } status;
-
-        enum ractor_wakeup_status {
-            wakeup_none,
-            wakeup_by_send,
-            wakeup_by_yield,
-            wakeup_by_take,
-            wakeup_by_close,
-            wakeup_by_interrupt,
-            wakeup_by_retry,
-        } wakeup_status;
-
-        struct rb_ractor_basket yielded_basket;
-        struct rb_ractor_basket taken_basket;
+        enum rb_ractor_wait_status status;
+        enum rb_ractor_wakeup_status wakeup_status;
     } wait;
+};
+
+// created
+//   | ready to run
+// ====================== inserted to vm->ractor
+//   v
+// blocking <---+ all threads are blocking
+//   |          |
+//   v          |
+// running -----+
+//   | all threads are terminated.
+// ====================== removed from vm->ractor
+//   v
+// terminated
+//
+// status is protected by VM lock (global state)
+enum ractor_status {
+    ractor_created,
+    ractor_running,
+    ractor_blocking,
+    ractor_terminated,
 };
 
 struct rb_ractor_struct {
@@ -84,18 +149,17 @@ struct rb_ractor_struct {
 
     struct rb_ractor_sync sync;
     VALUE receiving_mutex;
-    bool yield_atexit;
 
     // vm wide barrier synchronization
     rb_nativethread_cond_t barrier_wait_cond;
 
     // thread management
     struct {
-        struct list_head set;
+        struct ccan_list_head set;
         unsigned int cnt;
         unsigned int blocking_cnt;
         unsigned int sleeper;
-        rb_global_vm_lock_t gvl;
+        struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
     } threads;
@@ -104,29 +168,9 @@ struct rb_ractor_struct {
     VALUE name;
     VALUE loc;
 
-    // created
-    //   | ready to run
-    // ====================== inserted to vm->ractor
-    //   v
-    // blocking <---+ all threads are blocking
-    //   |          |
-    //   v          |
-    // running -----+
-    //   | all threads are terminated.
-    // ====================== removed from vm->ractor
-    //   v
-    // terminated
-    //
-    // status is protected by VM lock (global state)
+    enum ractor_status status_;
 
-    enum ractor_status {
-        ractor_created,
-        ractor_running,
-        ractor_blocking,
-        ractor_terminated,
-    } status_;
-
-    struct list_node vmlr_node;
+    struct ccan_list_node vmlr_node;
 
     // ractor local data
 
@@ -165,9 +209,8 @@ void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE
 
 VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // defined in thread.c
 
-rb_global_vm_lock_t *rb_ractor_gvl(rb_ractor_t *);
 int rb_ractor_living_thread_num(const rb_ractor_t *);
-VALUE rb_ractor_thread_list(rb_ractor_t *r);
+VALUE rb_ractor_thread_list(void);
 bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);
@@ -238,6 +281,10 @@ rb_ractor_sleeper_thread_num(rb_ractor_t *r)
 static inline void
 rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 {
+    RUBY_DEBUG_LOG("th:%d->%u%s",
+                   cr->threads.running_ec ? (int)rb_th_serial(cr->threads.running_ec->thread_ptr) : -1,
+                   rb_th_serial(th), cr->threads.running_ec == th->ec ? " (same)" : "");
+
     if (cr->threads.running_ec != th->ec) {
         if (0) {
             ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n",
@@ -257,8 +304,10 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
     VM_ASSERT(cr == GET_RACTOR());
 }
 
+#define rb_ractor_set_current_ec(cr, ec) rb_ractor_set_current_ec_(cr, ec, __FILE__, __LINE__)
+
 static inline void
-rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
+rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const char *file, int line)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   #ifdef __APPLE__
@@ -269,17 +318,8 @@ rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 #else
     native_tls_set(ruby_current_ec_key, ec);
 #endif
-
-    if (cr->threads.running_ec != ec) {
-        if (0) {
-            ruby_debug_printf("rb_ractor_set_current_ec ec:%p->%p\n",
-                              (void *)cr->threads.running_ec, (void *)ec);
-        }
-    }
-    else {
-        VM_ASSERT(0); // should be different
-    }
-
+    RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", (void *)cr->threads.running_ec, (void *)ec);
+    VM_ASSERT(ec == NULL || cr->threads.running_ec != ec);
     cr->threads.running_ec = ec;
 }
 
@@ -293,13 +333,14 @@ rb_ractor_id(const rb_ractor_t *r)
 }
 
 #if RACTOR_CHECK_MODE > 0
+# define RACTOR_BELONGING_ID(obj) (*(uint32_t *)(((uintptr_t)(obj)) + rb_gc_obj_slot_size(obj)))
+
 uint32_t rb_ractor_current_id(void);
 
 static inline void
 rb_ractor_setup_belonging_to(VALUE obj, uint32_t rid)
 {
-    VALUE flags = RBASIC(obj)->flags & 0xffffffff; // 4B
-    RBASIC(obj)->flags = flags | ((VALUE)rid << 32);
+    RACTOR_BELONGING_ID(obj) = rid;
 }
 
 static inline void
@@ -315,7 +356,7 @@ rb_ractor_belonging(VALUE obj)
         return 0;
     }
     else {
-        return RBASIC(obj)->flags >> 32;
+        return RACTOR_BELONGING_ID(obj);
     }
 }
 

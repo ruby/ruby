@@ -7,8 +7,12 @@ unless /^[^#]/ !~ (gem = $F[0])
     s.platform == "ruby" && s.name == gem
   }
   gem = src.fetch_spec(gem)
-  uri = gem.metadata["source_code_uri"] || gem.homepage
-  uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "").chomp(".git")
+  if ENV["UPDATE_BUNDLED_GEMS_ALL"]
+    uri = gem.metadata["source_code_uri"] || gem.homepage
+    uri = uri.sub(%r[\Ahttps://github\.com/[^/]+/[^/]+\K/tree/.*], "").chomp(".git")
+  else
+    uri = $F[2]
+  end
   if $F[3]
     if $F[3].include?($F[1])
       $F[3][$F[1]] = gem.version.to_s
@@ -16,5 +20,8 @@ unless /^[^#]/ !~ (gem = $F[0])
       $F[3..-1] = []
     end
   end
-  $_ = [gem.name, gem.version, uri, *$F[3..-1]].join(" ")
+  f = [gem.name, gem.version.to_s, uri, *$F[3..-1]]
+  $_.gsub!(/\S+\s*/) {|s| (f.shift || "").ljust(s.size)}
+  $_ = [$_, *f].join(" ") unless f.empty?
+  $_.rstrip!
 end

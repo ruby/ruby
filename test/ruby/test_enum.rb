@@ -234,6 +234,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
     assert_equal(24, assert_warning(/given block not used/) {@obj.inject(2, :*) {|z, x| z * x }})
     assert_equal(nil, @empty.inject() {9})
+
+    assert_raise(ArgumentError) {@obj.inject}
   end
 
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
@@ -1331,5 +1333,17 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], @obj.filter_map { false })
     assert_equal([], @obj.filter_map { nil })
     assert_instance_of(Enumerator, @obj.filter_map)
+  end
+
+  def test_ruby_svar
+    klass = Class.new do
+      include Enumerable
+      def each
+        %w(bar baz).each{|e| yield e}
+      end
+    end
+    svars = []
+    klass.new.grep(/(b.)/) { svars << $1 }
+    assert_equal(["ba", "ba"], svars)
   end
 end

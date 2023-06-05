@@ -15,10 +15,10 @@ require_relative '../controllers/application_controller.rb'
 
 module RubyVM::Insns2VM
   def self.router argv
-    options = { destdir: nil }
+    options = { destdir: nil, basedir: nil }
     targets = generate_parser(options).parse argv
     return targets.map do |i|
-      next ApplicationController.new.generate i, options[:destdir]
+      next ApplicationController.new.generate i, options[:destdir], options[:basedir]
     end
   end
 
@@ -82,6 +82,14 @@ module RubyVM::Insns2VM
       begin
         raise "directory was not found in '#{dir}'" unless Dir.exist?(dir)
         options[:destdir] = dir
+      end
+
+      this.on "--basedir=DIR", <<-'begin' do |dir|
+        Change the base directory from the current working directory
+        to the given path. Used for searching the source template.
+      begin
+        raise "directory was not found in '#{dir}'" unless Dir.exist?(dir)
+        options[:basedir] = dir
       end
 
       this.on "-V", "--[no-]verbose", <<-'end'

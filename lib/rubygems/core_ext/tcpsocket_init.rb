@@ -1,4 +1,6 @@
-require 'socket'
+# frozen_string_literal: true
+
+require "socket"
 
 module CoreExtensions
   module TCPSocketExt
@@ -17,7 +19,7 @@ module CoreExtensions
         cond_var = Thread::ConditionVariable.new
 
         Addrinfo.foreach(host, serv, nil, :STREAM) do |addr|
-          Thread.report_on_exception = false if defined? Thread.report_on_exception = ()
+          Thread.report_on_exception = false
 
           threads << Thread.new(addr) do
             # give head start to ipv6 addresses

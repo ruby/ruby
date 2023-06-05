@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A Resolver::Specification contains a subset of the information
 # contained in a Gem::Specification.  Only the information necessary for
@@ -93,7 +94,7 @@ class Gem::Resolver::Specification
   # specification.
 
   def install(options = {})
-    require_relative '../installer'
+    require_relative "../installer"
 
     gem = download options
 

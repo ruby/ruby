@@ -2,52 +2,46 @@ require_relative "formatter"
 
 module ErrorHighlight
   module CoreExt
-    # This is a marker to let `DidYouMean::Correctable#original_message` skip
-    # the following method definition of `to_s`.
-    # See https://github.com/ruby/did_you_mean/pull/152
-    SKIP_TO_S_FOR_SUPER_LOOKUP = true
-    private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
+    private def generate_snippet
+      spot = ErrorHighlight.spot(self)
+      return "" unless spot
+      return ErrorHighlight.formatter.message_for(spot)
+    end
 
-    def to_s
-      msg = super.dup
-
-      locs = backtrace_locations
-      return msg unless locs
-
-      loc = locs.first
-      return msg unless loc
-      begin
-        node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
-        opts = {}
-
-        case self
-        when NoMethodError, NameError
-          opts[:point_type] = :name
-          opts[:name] = name
-        when TypeError, ArgumentError
-          opts[:point_type] = :args
+    if Exception.method_defined?(:detailed_message)
+      def detailed_message(highlight: false, error_highlight: true, **)
+        return super unless error_highlight
+        snippet = generate_snippet
+        if highlight
+          snippet = snippet.gsub(/.+/) { "\e[1m" + $& + "\e[m" }
         end
-
-        spot = ErrorHighlight.spot(node, **opts)
-
-      rescue SyntaxError
-      rescue SystemCallError # file not found or something
-      rescue ArgumentError   # eval'ed code
+        super + snippet
       end
+    else
+      # This is a marker to let `DidYouMean::Correctable#original_message` skip
+      # the following method definition of `to_s`.
+      # See https://github.com/ruby/did_you_mean/pull/152
+      SKIP_TO_S_FOR_SUPER_LOOKUP = true
+      private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
 
-      if spot
-        points = ErrorHighlight.formatter.message_for(spot)
-        msg << points if !msg.include?(points)
+      def to_s
+        msg = super
+        snippet = generate_snippet
+        if snippet != "" && !msg.include?(snippet)
+          msg + snippet
+        else
+          msg
+        end
       end
-
-      msg
     end
   end
 
   NameError.prepend(CoreExt)
 
-  # The extension for TypeError/ArgumentError is temporarily disabled due to many test failures
-
-  #TypeError.prepend(CoreExt)
-  #ArgumentError.prepend(CoreExt)
+  if Exception.method_defined?(:detailed_message)
+    # ErrorHighlight is enabled for TypeError and ArgumentError only when Exception#detailed_message is available.
+    # This is because changing ArgumentError#message is highly incompatible.
+    TypeError.prepend(CoreExt)
+    ArgumentError.prepend(CoreExt)
+  end
 end

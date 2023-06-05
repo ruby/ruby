@@ -210,6 +210,7 @@ class TestRequire < Test::Unit::TestCase
       assert_not_nil(bt = e.backtrace, "no backtrace")
       assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
     end
+  ensure
     $LOADED_FEATURES.replace loaded_features
   end
 
@@ -562,9 +563,6 @@ class TestRequire < Test::Unit::TestCase
 
       assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
       assert_equal([:pre, :post], scratch, bug5754)
-
-      assert_match(/circular require/, output)
-      assert_match(/in #{__method__}'$/o, output)
     }
   ensure
     $VERBOSE = verbose
@@ -824,6 +822,8 @@ class TestRequire < Test::Unit::TestCase
   end if File.respond_to?(:mkfifo)
 
   def test_loading_fifo_threading_success
+    omit "[Bug #18613]" if /freebsd/=~ RUBY_PLATFORM
+
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
       File.unlink(f.path)

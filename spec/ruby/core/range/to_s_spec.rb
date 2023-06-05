@@ -16,24 +16,8 @@ describe "Range#to_s" do
     eval("(1.0...)").to_s.should == "1.0..."
   end
 
-  ruby_version_is "2.7" do
-    it "can show beginless ranges" do
-      eval("(..1)").to_s.should == "..1"
-      eval("(...1.0)").to_s.should == "...1.0"
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted string if either end is tainted" do
-      (("a".taint)..."c").to_s.tainted?.should be_true
-      ("a"...("c".taint)).to_s.tainted?.should be_true
-      ("a"..."c").taint.to_s.tainted?.should be_true
-    end
-
-    it "returns a untrusted string if either end is untrusted" do
-      (("a".untrust)..."c").to_s.untrusted?.should be_true
-      ("a"...("c".untrust)).to_s.untrusted?.should be_true
-      ("a"..."c").untrust.to_s.untrusted?.should be_true
-    end
+  it "can show beginless ranges" do
+    (..1).to_s.should == "..1"
+    (...1.0).to_s.should == "...1.0"
   end
 end

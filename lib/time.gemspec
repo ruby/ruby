@@ -1,13 +1,20 @@
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1).join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
 Gem::Specification.new do |spec|
-  spec.name          = "time"
-  spec.version       = "0.2.0"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Tanaka Akira"]
   spec.email         = ["akr@fsij.org"]
 
   spec.summary       = %q{Extends the Time class with methods for parsing and conversion.}
   spec.description   = %q{Extends the Time class with methods for parsing and conversion.}
   spec.homepage      = "https://github.com/ruby/time"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

@@ -61,6 +61,9 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+
+  VERSION = "0.4.0"
+
   # Returns the usable width for +out+.
   # As the width of +out+:
   # 1. If +out+ is assigned to a tty device, its width is used.
@@ -415,6 +418,26 @@ class Struct # :nodoc:
     q.text sprintf("#<struct %s:...>", PP.mcall(self, Kernel, :class).name)
   end
 end
+
+class Data # :nodoc:
+  def pretty_print(q) # :nodoc:
+    q.group(1, sprintf("#<data %s", PP.mcall(self, Kernel, :class).name), '>') {
+      q.seplist(PP.mcall(self, Data, :members), lambda { q.text "," }) {|member|
+        q.breakable
+        q.text member.to_s
+        q.text '='
+        q.group(1) {
+          q.breakable ''
+          q.pp public_send(member)
+        }
+      }
+    }
+  end
+
+  def pretty_print_cycle(q) # :nodoc:
+    q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
+  end
+end if "3.2" <= RUBY_VERSION
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:

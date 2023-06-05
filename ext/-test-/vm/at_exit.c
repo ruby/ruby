@@ -23,14 +23,14 @@ register_at_exit(VALUE self, VALUE t)
 {
     switch (t) {
       case Qtrue:
-	ruby_vm_at_exit(print_begin);
-	break;
+        ruby_vm_at_exit(print_begin);
+        break;
       case Qfalse:
-	ruby_vm_at_exit(print_end);
-	break;
+        ruby_vm_at_exit(print_end);
+        break;
       default:
-	ruby_vm_at_exit(do_nothing);
-	break;
+        ruby_vm_at_exit(do_nothing);
+        break;
     }
     return self;
 }

@@ -46,7 +46,7 @@ module Bundler
 
       Bundler::CLI::Common.configure_gem_version_promoter(
         Bundler.definition,
-        options
+        options.merge(:strict => @strict)
       )
 
       definition_resolution = proc do
@@ -111,9 +111,7 @@ module Bundler
           end.compact
 
           if options[:parseable]
-            relevant_outdated_gems.each do |gems|
-              print_gems(gems)
-            end
+            print_gems(relevant_outdated_gems)
           else
             print_gems_table(relevant_outdated_gems)
           end
@@ -128,6 +126,12 @@ module Bundler
     end
 
     private
+
+    def loaded_from_for(spec)
+      return unless spec.respond_to?(:loaded_from)
+
+      spec.loaded_from
+    end
 
     def groups_text(group_text, groups)
       "#{group_text}#{groups.split(",").size > 1 ? "s" : ""} \"#{groups}\""
@@ -184,10 +188,13 @@ module Bundler
 
     def print_gem(current_spec, active_spec, dependency, groups)
       spec_version = "#{active_spec.version}#{active_spec.git_version}"
-      spec_version += " (from #{active_spec.loaded_from})" if Bundler.ui.debug? && active_spec.loaded_from
+      if Bundler.ui.debug?
+        loaded_from = loaded_from_for(active_spec)
+        spec_version += " (from #{loaded_from})" if loaded_from
+      end
       current_version = "#{current_spec.version}#{current_spec.git_version}"
 
-      if dependency && dependency.specific?
+      if dependency&.specific?
         dependency_version = %(, requested #{dependency.requirement})
       end
 
@@ -211,7 +218,7 @@ module Bundler
       dependency = dependency.requirement if dependency
 
       ret_val = [active_spec.name, current_version, spec_version, dependency.to_s, groups.to_s]
-      ret_val << active_spec.loaded_from.to_s if Bundler.ui.debug?
+      ret_val << loaded_from_for(active_spec).to_s if Bundler.ui.debug?
       ret_val
     end
 

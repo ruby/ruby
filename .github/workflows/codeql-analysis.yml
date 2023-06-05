@@ -1,44 +1,62 @@
-name: "Code scanning - action"
+name: "CodeQL"
 
 on:
   push:
+    branches: [ "master" ]
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   schedule:
-    - cron: '0 12 * * 4'
+    - cron: '0 12 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
-jobs:
-  CodeQL-Build:
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
 
-    # CodeQL runs on ubuntu-latest and windows-latest
+jobs:
+  analyze:
+    name: Analyze
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    permissions:
+      actions: read  # for github/codeql-action/init to get workflow details
+      contents: read  # for actions/checkout to fetch code
+      security-events: write  # for github/codeql-action/autobuild to send a status report
+    # CodeQL fails to run pull requests from dependabot due to missing write access to upload results.
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') && github.event.head_commit.pusher.name != 'dependabot[bot]' }}
 
     env:
       enable_install_doc: no
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp', 'ruby' ]
 
     steps:
     - name: Install libraries
       run: |
         set -x
         sudo apt-get update -q || :
-        sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+        sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev autoconf ruby
 
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
       with:
         path: .downloaded-cache
         key: downloaded-cache
@@ -47,15 +65,46 @@ jobs:
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
       with:
-        config-file: ./.github/codeql/codeql-config.yml
+        languages: ${{ matrix.language }}
 
     - name: Set ENV
       run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+      uses: github/codeql-action/autobuild@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
+      with:
+        category: "/language:${{matrix.language}}"
+        upload: False
+        output: sarif-results
+
+    - name: filter-sarif
+      uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d # v1.0
+      with:
+        patterns: |
+          +**/*.rb
+          -lib/uri/mailto.rb:rb/overly-large-range
+          -lib/uri/rfc3986_parser.rb:rb/overly-large-range
+          -lib/bundler/vendor/uri/lib/uri/mailto.rb:rb/overly-large-range
+          -lib/bundler/vendor/uri/lib/uri/rfc3986_parser.rb:rb/overly-large-range
+          -test/ruby/test_io.rb:rb/non-constant-kernel-open
+          -test/open-uri/test_open-uri.rb:rb/non-constant-kernel-open
+          -test/open-uri/test_ssl.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/binread_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/readlines_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/foreach_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/write_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/read_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/kernel/open_spec.rb:rb/non-constant-kernel-open
+        input: sarif-results/${{ matrix.language }}.sarif
+        output: sarif-results/${{ matrix.language }}.sarif
+      if: ${{ matrix.language == 'ruby' }}
+
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
+      with:
+        sarif_file: sarif-results/${{ matrix.language }}.sarif

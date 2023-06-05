@@ -49,16 +49,27 @@
 /** @endcond */
 
 #include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/packed_struct.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/attributes.h" /* PACKED_STRUCT_UNALIGNED */
+
+// IO#wait, IO#wait_readable, IO#wait_writable, IO#wait_priority are defined by this implementation.
+#define RUBY_IO_WAIT_METHODS
+
+// Used as the default timeout argument to `rb_io_wait` to use the `IO#timeout` value.
+#define RUBY_IO_TIMEOUT_DEFAULT Qnil
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct stat;
 struct timeval;
+
+/**
+ * Indicates that a timeout has occurred while performing an IO operation.
+ */
+RUBY_EXTERN VALUE rb_eIOTimeoutError;
 
 /**
  * Type of events that an IO can wait.
@@ -67,17 +78,20 @@ struct timeval;
  *
  * This is visible from extension libraries because `io/wait` wants it.
  */
-typedef enum {
+enum rb_io_event {
     RUBY_IO_READABLE = RB_WAITFD_IN,  /**< `IO::READABLE` */
     RUBY_IO_WRITABLE = RB_WAITFD_OUT, /**< `IO::WRITABLE` */
     RUBY_IO_PRIORITY = RB_WAITFD_PRI, /**< `IO::PRIORITY` */
-} rb_io_event_t;
+};
+
+typedef enum rb_io_event rb_io_event_t;
 
 /**
  * IO  buffers.   This  is  an implementation  detail  of  ::rb_io_t::wbuf  and
  * ::rb_io_t::rbuf.  People don't manipulate it directly.
  */
-PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct rb_io_internal_buffer {
 
     /** Pointer to the underlying memory region, of at least `capa` bytes. */
     char *ptr;                  /* off + len <= capa */
@@ -90,13 +104,41 @@ PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
 
     /** Designed capacity of the buffer. */
     int capa;
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 /** @alias{rb_io_buffer_t} */
-typedef struct rb_io_buffer_t rb_io_buffer_t;
+typedef struct rb_io_internal_buffer rb_io_buffer_t;
+
+/** Decomposed encoding flags (e.g. `"enc:enc2""`). */
+/*
+ * enc  enc2 read action                      write action
+ * NULL NULL force_encoding(default_external) write the byte sequence of str
+ * e1   NULL force_encoding(e1)               convert str.encoding to e1
+ * e1   e2   convert from e2 to e1            convert str.encoding to e2
+ */
+struct rb_io_encoding {
+    /** Internal encoding. */
+    rb_encoding *enc;
+    /** External encoding. */
+    rb_encoding *enc2;
+    /**
+     * Flags.
+     *
+     * @see enum ::ruby_econv_flag_type
+     */
+    int ecflags;
+    /**
+     * Flags as Ruby hash.
+     *
+     * @internal
+     *
+     * This is set.  But used from nowhere maybe?
+     */
+    VALUE ecopts;
+};
 
 /** Ruby's IO, metadata and buffers. */
-typedef struct rb_io_t {
+typedef struct rb_io {
 
     /** The IO's Ruby level counterpart. */
     VALUE self;
@@ -120,7 +162,7 @@ typedef struct rb_io_t {
     VALUE pathv;
 
     /** finalize proc */
-    void (*finalize)(struct rb_io_t*,int);
+    void (*finalize)(struct rb_io*,int);
 
     /** Write buffer. */
     rb_io_buffer_t wbuf;
@@ -138,36 +180,7 @@ typedef struct rb_io_t {
      */
     VALUE tied_io_for_writing;
 
-    /** Decomposed encoding flags (e.g. `"enc:enc2""`). */
-    /*
-     * enc  enc2 read action                      write action
-     * NULL NULL force_encoding(default_external) write the byte sequence of str
-     * e1   NULL force_encoding(e1)               convert str.encoding to e1
-     * e1   e2   convert from e2 to e1            convert str.encoding to e2
-     */
-    struct rb_io_enc_t {
-        /** Internal encoding. */
-        rb_encoding *enc;
-
-        /** External encoding. */
-        rb_encoding *enc2;
-
-        /**
-         * Flags.
-         *
-         * @see enum ::ruby_econv_flag_type
-         */
-        int ecflags;
-
-        /**
-         * Flags as Ruby hash.
-         *
-         * @internal
-         *
-         * This is set.  But used from nowhere maybe?
-         */
-        VALUE ecopts;
-    } encs; /**< Decomposed encoding flags. */
+    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
 
     /** Encoding converter used when reading from this IO. */
     rb_econv_t *readconv;
@@ -212,10 +225,15 @@ typedef struct rb_io_t {
      * This of course doesn't help inter-process IO interleaves, though.
      */
     VALUE write_lock;
+
+    /**
+     * The timeout associated with this IO when performing blocking operations.
+     */
+    VALUE timeout;
 } rb_io_t;
 
 /** @alias{rb_io_enc_t} */
-typedef struct rb_io_enc_t rb_io_enc_t;
+typedef struct rb_io_encoding rb_io_enc_t;
 
 /**
  * @private
@@ -315,7 +333,16 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * Setting this one and #FMODE_BINMODE at the same time is a contradiction.
  */
 #define FMODE_TEXTMODE              0x00001000
-/* #define FMODE_PREP               0x00010000 */
+/**
+ * This flag means that an IO object is wrapping an "external" file descriptor,
+ * which is owned by something outside the Ruby interpreter (usually a C extension).
+ * Ruby will not close this file when the IO object is garbage collected.
+ * If this flag is set, then IO#autoclose? is false, and vice-versa.
+ *
+ * This flag was previously called FMODE_PREP internally.
+ */
+#define FMODE_EXTERNAL              0x00010000
+
 /* #define FMODE_SIGNAL_ON_EPIPE    0x00020000 */
 
 /**
@@ -328,6 +355,18 @@ typedef struct rb_io_enc_t rb_io_enc_t;
 /* #define FMODE_INET6                 0x00800000 */
 
 /** @} */
+
+/**
+ * Allocate a new IO object, with the given file descriptor.
+ */
+VALUE rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, struct rb_io_encoding *encoding);
+
+/**
+ * Returns whether or not the underlying IO is closed.
+ *
+ * @return Whether the underlying IO is closed.
+ */
+VALUE rb_io_closed_p(VALUE io);
 
 /**
  * Queries the underlying IO pointer.
@@ -399,14 +438,14 @@ rb_io_t *rb_io_make_open_file(VALUE obj);
  * like this:
  *
  * ```CXX
- * typedef struct rb_io_t {
+ * typedef struct rb_io {
  *     FILE *f;                    // stdio ptr for read/write
  *     FILE *f2;                   // additional ptr for rw pipes
  *     int mode;                   // mode flags
  *     int pid;                    // child's pid (for pipes)
  *     int lineno;                 // number of lines read
  *     char *path;                 // pathname for file
- *     void (*finalize) _((struct rb_io_t*,int)); // finalize proc
+ *     void (*finalize) _((struct rb_io*,int)); // finalize proc
  * } rb_io_t;
  *```
  *
@@ -652,10 +691,23 @@ VALUE rb_io_get_write_io(VALUE io);
 VALUE rb_io_set_write_io(VALUE io, VALUE w);
 
 /**
- * Sets an IO to a "nonblock mode".  This amends the way an IO operates so that
- * instead of waiting for rooms for  read/write, it returns errors.  In case of
- * multiplexed IO  situations it can be  vital for IO operations  not to block.
- * This is the key API to achieve that property.
+ * Instructs the OS to put its internal file structure into "nonblocking mode".
+ * This is  an in-Kernel concept.   Reading from/writing  to that file  using C
+ * function calls would return  -1 with errno set.  However when  it comes to a
+ * ruby program,  we hide that error  behind our `IO#read` method.   Ruby level
+ * `IO#read` blocks  regardless of this flag.   If you want to  avoid blocking,
+ * you should consider using methods like `IO#readpartial`.
+ *
+ * ```ruby
+ * require 'io/nonblock'
+ * STDIN.nonblock = true
+ * STDIN.gets # blocks.
+ * ```
+ *
+ * As of  writing there is  a room  of this API  in Fiber schedulers.   A Fiber
+ * scheduler could be written in a  way its behaviour depends on this property.
+ * You  need an  in-depth  understanding  of how  schedulers  work to  properly
+ * leverage this, though.
  *
  * @note  Note   however  that   nonblocking-ness  propagates   across  process
  *        boundaries.  You must  really carefully watch your  step when turning
@@ -675,6 +727,12 @@ VALUE rb_io_set_write_io(VALUE io, VALUE w);
 void rb_io_set_nonblock(rb_io_t *fptr);
 
 /**
+ * Returns the path for the given IO.
+ *
+ */
+VALUE rb_io_path(VALUE io);
+
+/**
  * Returns an integer representing the numeric file descriptor for
  * <em>io</em>.
  *
@@ -682,6 +740,12 @@ void rb_io_set_nonblock(rb_io_t *fptr);
  * @retval      int        A file descriptor.
  */
 int rb_io_descriptor(VALUE io);
+
+/**
+ * Get the mode of the IO.
+ *
+ */
+int rb_io_mode(VALUE io);
 
 /**
  * This function  breaks down the  option hash that `IO#initialize`  takes into
@@ -830,13 +894,37 @@ int rb_io_wait_writable(int fd);
 int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 /**
+ * Get the timeout associated with the specified io object.
+ *
+ * @param[in]  io                   An IO object.
+ * @retval     RUBY_Qnil            There is no associated timeout.
+ * @retval     Otherwise            The timeout value.
+ */
+VALUE rb_io_timeout(VALUE io);
+
+/**
+ * Set the timeout associated with the specified io object. This timeout is
+ * used as a best effort timeout to prevent operations from blocking forever.
+ *
+ * @param[in]  io                   An IO object.
+ * @param[in]  timeout              A timeout value. Must respond to #to_f.
+ * @
+ */
+VALUE rb_io_set_timeout(VALUE io, VALUE timeout);
+
+/**
  * Blocks until  the passed IO  is ready for  the passed events.   The "events"
  * here is  a Ruby level  integer, which is  an OR-ed value  of `IO::READABLE`,
  * `IO::WRITable`, and `IO::PRIORITY`.
  *
+ * If timeout is `Qnil`, it will use the default timeout as given by
+ * `rb_io_timeout(io)`.
+ *
  * @param[in]  io                   An IO object to wait.
  * @param[in]  events               See above.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.
+ *                                  If Qnil, use the default timeout. If Qfalse
+ *                                  or Qundef, wait forever.
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
@@ -888,13 +976,8 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @exception  rb_eTypeError        Operation timed out.
- * @return     Always returns ::RUBY_IO_READABLE.
- *
- * @internal
- *
- * Because rb_io_maybe_wait()  returns ::RUBY_Qfalse on timeout,  this function
- * fails to convert that value to `int`, and raises ::rb_eTypeError.
+ * @retval     0                    Operation timed out.
+ * @retval     Otherwise            Always returns ::RUBY_IO_READABLE.
  */
 int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
 
@@ -909,13 +992,8 @@ int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @exception  rb_eTypeError        Operation timed out.
- * @return     Always returns ::RUBY_IO_WRITABLE.
- *
- * @internal
- *
- * Because rb_io_maybe_wait()  returns ::RUBY_Qfalse on timeout,  this function
- * fails to convert that value to `int`, and raises ::rb_eTypeError.
+ * @retval     0                    Operation timed out.
+ * @retval     Otherwise            Always returns ::RUBY_IO_WRITABLE.
  */
 int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout);
 

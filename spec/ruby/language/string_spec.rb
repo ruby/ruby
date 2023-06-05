@@ -56,28 +56,6 @@ describe "Ruby character strings" do
     "#\$".should == '#$'
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result of interpolation when an interpolated value is tainted" do
-      "#{"".taint}".tainted?.should be_true
-
-      @ip.taint
-      "#@ip".tainted?.should be_true
-
-      $ip.taint
-      "#$ip".tainted?.should be_true
-    end
-
-    it "untrusts the result of interpolation when an interpolated value is untrusted" do
-      "#{"".untrust}".untrusted?.should be_true
-
-      @ip.untrust
-      "#@ip".untrusted?.should be_true
-
-      $ip.untrust
-      "#$ip".untrusted?.should be_true
-    end
-  end
-
   it "allows using non-alnum characters as string delimiters" do
     %(hey #{@ip}).should == "hey xxx"
     %[hey #{@ip}].should == "hey xxx"

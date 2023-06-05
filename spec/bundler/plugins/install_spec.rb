@@ -22,6 +22,13 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo")
   end
 
+  it "installs from rubygems source in frozen mode" do
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)}", :env => { "BUNDLE_DEPLOYMENT" => "true" }
+
+    expect(out).to include("Installed plugin foo")
+    plugin_should_be_installed("foo")
+  end
+
   it "installs from sources configured as Gem.sources without any flags" do
     bundle "plugin install foo", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
 
@@ -32,7 +39,8 @@ RSpec.describe "bundler plugin install" do
   it "shows help when --help flag is given" do
     bundle "plugin install --help"
 
-    expect(out).to include("bundle plugin install PLUGINS    # Install the plugin from the source")
+    # The help message defined in ../../lib/bundler/man/bundle-plugin.1.ronn will be output.
+    expect(out).to include("You can install, uninstall, and list plugin(s)")
   end
 
   context "plugin is already installed" do
@@ -82,6 +90,26 @@ RSpec.describe "bundler plugin install" do
 
     bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --verbose"
     expect(out).to include("Using foo 1.1")
+  end
+
+  it "installs when --branch specified" do
+    bundle "plugin install foo --branch main --source #{file_uri_for(gem_repo2)}"
+
+    expect(out).to include("Installed plugin foo")
+  end
+
+  it "installs when --ref specified" do
+    bundle "plugin install foo --ref v1.2.3 --source #{file_uri_for(gem_repo2)}"
+
+    expect(out).to include("Installed plugin foo")
+  end
+
+  it "raises error when both --branch and --ref options are specified" do
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --branch main --ref v1.2.3", :raise_on_error => false
+
+    expect(out).not_to include("Installed plugin foo")
+
+    expect(err).to include("You cannot specify `--branch` and `--ref` at the same time.")
   end
 
   it "works with different load paths" do

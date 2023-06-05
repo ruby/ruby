@@ -5,18 +5,6 @@ describe :string_concat, shared: true do
     str.should == "hello world"
   end
 
-  it "converts the given argument to a String using to_str" do
-    obj = mock('world!')
-    obj.should_receive(:to_str).and_return("world!")
-    a = 'hello '.send(@method, obj)
-    a.should == 'hello world!'
-  end
-
-  it "raises a TypeError if the given argument can't be converted to a String" do
-    -> { 'hello '.send(@method, [])        }.should raise_error(TypeError)
-    -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
-  end
-
   it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
@@ -37,18 +25,6 @@ describe :string_concat, shared: true do
     str.send(@method, " world")
     str.should == "hello world"
     str.should be_an_instance_of(StringSpecs::MyString)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other is tainted" do
-      "x".send(@method, "".taint).should.tainted?
-      "x".send(@method, "y".taint).should.tainted?
-    end
-
-    it "untrusts self if other is untrusted" do
-      "x".send(@method, "".untrust).should.untrusted?
-      "x".send(@method, "y".untrust).should.untrusted?
-    end
   end
 
   describe "with Integer" do
@@ -158,5 +134,25 @@ describe :string_concat_encoding, shared: true do
     it "uses BINARY encoding" do
       "abc".encode("BINARY").send(@method, "123".encode("US-ASCII")).encoding.should == Encoding::BINARY
     end
+  end
+end
+
+describe :string_concat_type_coercion, shared: true do
+  it "converts the given argument to a String using to_str" do
+    obj = mock('world!')
+    obj.should_receive(:to_str).and_return("world!")
+    a = 'hello '.send(@method, obj)
+    a.should == 'hello world!'
+  end
+
+  it "raises a TypeError if the given argument can't be converted to a String" do
+    -> { 'hello '.send(@method, [])        }.should raise_error(TypeError)
+    -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
+  end
+
+  it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to a String" do
+    obj = mock('world!')
+    obj.should_receive(:to_str).and_raise(NoMethodError)
+    -> { 'hello '.send(@method, obj) }.should raise_error(NoMethodError)
   end
 end

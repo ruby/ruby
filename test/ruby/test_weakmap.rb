@@ -82,6 +82,22 @@ class TestWeakMap < Test::Unit::TestCase
                  @wm.inspect)
   end
 
+  def test_delete
+    k1 = "foo"
+    x1 = Object.new
+    @wm[k1] = x1
+    assert_equal x1, @wm[k1]
+    assert_equal x1, @wm.delete(k1)
+    assert_nil @wm[k1]
+    assert_nil @wm.delete(k1)
+
+    fallback =  @wm.delete(k1) do |key|
+      assert_equal k1, key
+      42
+    end
+    assert_equal 42, fallback
+  end
+
   def test_each
     m = __callee__[/test_(.*)/, 1]
     x1 = Object.new
@@ -166,5 +182,51 @@ class TestWeakMap < Test::Unit::TestCase
     o = Object.new.freeze
     assert_nothing_raised(FrozenError) {@wm[o] = 'foo'}
     assert_nothing_raised(FrozenError) {@wm['foo'] = o}
+  end
+
+  def test_no_memory_leak
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #19398]", rss: true, limit: 1.5, timeout: 60)
+    begin;
+      1_000_000.times do
+        ObjectSpace::WeakMap.new
+      end
+    end;
+  end
+
+  def test_compaction_bug_19529
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    obj = Object.new
+    100.times do |i|
+      GC.compact
+      @wm[i] = obj
+    end
+
+    assert_separately(%w(--disable-gems), <<-'end;')
+      wm = ObjectSpace::WeakMap.new
+      obj = Object.new
+      100.times do
+        wm[Object.new] = obj
+        GC.start
+      end
+      GC.compact
+    end;
+  end
+
+  def test_replaced_values_bug_19531
+    a = "A".dup
+    b = "B".dup
+
+    @wm[1] = a
+    @wm[1] = a
+    @wm[1] = a
+
+    @wm[1] = b
+    assert_equal b, @wm[1]
+
+    a = nil
+    GC.start
+
+    assert_equal b, @wm[1]
   end
 end

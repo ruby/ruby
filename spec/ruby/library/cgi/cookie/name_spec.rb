@@ -6,18 +6,18 @@ describe "CGI::Cookie#name" do
     cookie = CGI::Cookie.new("test-cookie")
     cookie.name.should == "test-cookie"
 
-    cookie = CGI::Cookie.new("name" => "another cookie")
-    cookie.name.should == "another cookie"
+    cookie = CGI::Cookie.new("name" => "another-cookie")
+    cookie.name.should == "another-cookie"
   end
 end
 
 describe "CGI::Cookie#name=" do
   it "sets self's expiration date" do
     cookie = CGI::Cookie.new("test-cookie")
-    cookie.name = "another name"
-    cookie.name.should == "another name"
+    cookie.name = "another-name"
+    cookie.name.should == "another-name"
 
-    cookie.name = "and one more"
-    cookie.name.should == "and one more"
+    cookie.name = "and-one-more"
+    cookie.name.should == "and-one-more"
   end
 end

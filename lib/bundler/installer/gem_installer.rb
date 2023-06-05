@@ -16,13 +16,13 @@ module Bundler
       post_install_message = install
       Bundler.ui.debug "#{worker}:  #{spec.name} (#{spec.version}) from #{spec.loaded_from}"
       generate_executable_stubs
-      return true, post_install_message
+      [true, post_install_message]
     rescue Bundler::InstallHookError, Bundler::SecurityError, Bundler::APIResponseMismatchError
       raise
     rescue Errno::ENOSPC
-      return false, out_of_space_message
+      [false, out_of_space_message]
     rescue Bundler::BundlerError, Gem::InstallError, Bundler::APIResponseInvalidDependenciesError => e
-      return false, specific_failure_message(e)
+      [false, specific_failure_message(e)]
     end
 
     private
@@ -51,7 +51,20 @@ module Bundler
     end
 
     def install
-      spec.source.install(spec, :force => force, :ensure_builtin_gems_cached => standalone, :build_args => Array(spec_settings))
+      spec.source.install(
+        spec,
+        :force => force,
+        :ensure_builtin_gems_cached => standalone,
+        :build_args => Array(spec_settings),
+        :previous_spec => previous_spec,
+      )
+    end
+
+    def previous_spec
+      locked_gems = installer.definition.locked_gems
+      return unless locked_gems
+
+      locked_gems.specs.find {|s| s.name == spec.name }
     end
 
     def out_of_space_message

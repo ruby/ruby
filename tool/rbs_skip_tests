@@ -1,0 +1,32 @@
+# Running tests of RBS gem may fail because of various reasons.
+# You can skip tests of RBS gem using this file, instead of pushing a new commit to `ruby/rbs` repository.
+#
+# The most frequently seen reason is the incompatibilities introduced to the unreleased version, including
+#
+# * Strict argument type check is introduced
+# * A required method parameter is added
+# * A method/class is removed
+#
+# Feel free to skip the tests with this file for that case.
+#
+# Syntax:
+#
+#   $(test-case-name) ` ` $(optional comment)    # Skipping single test case
+#   $(test-class-name) ` ` $(optional comment)   # Skipping a test class
+#
+
+test_replicate(EncodingTest) the method was removed in 3.3
+
+test_collection_install(RBS::CliTest) running tests without Bundler
+test_collection_install_frozen(RBS::CliTest) running tests without Bundler
+test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
+test_collection_update(RBS::CliTest) running tests without Bundler
+test_subtract(RBS::CliTest) running tests without Bundler
+test_subtract_several_subtrahends(RBS::CliTest) running tests without Bundler
+test_subtract_write(RBS::CliTest) running tests without Bundler
+
+NetSingletonTest depending on external resources
+NetInstanceTest depending on external resources
+TestHTTPRequest depending on external resources
+TestSingletonNetHTTPResponse depending on external resources
+TestInstanceNetHTTPResponse depending on external resources

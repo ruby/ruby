@@ -154,7 +154,7 @@ static void
 rb_digest_instance_method_unimpl(VALUE self, const char *method)
 {
     rb_raise(rb_eRuntimeError, "%s does not implement %s()",
-	     rb_obj_classname(self), method);
+             rb_obj_classname(self), method);
 }
 
 /*
@@ -383,8 +383,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
     StringValue(str2);
 
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
-	rb_str_cmp(str1, str2) == 0) {
-	return Qtrue;
+        rb_str_cmp(str1, str2) == 0) {
+        return Qtrue;
     }
     return Qfalse;
 }
@@ -602,7 +602,7 @@ static inline void
 algo_init(const rb_digest_metadata_t *algo, void *pctx)
 {
     if (algo->init_func(pctx) != 1) {
-	rb_raise(rb_eRuntimeError, "Digest initialization failed.");
+        rb_raise(rb_eRuntimeError, "Digest initialization failed.");
     }
 }
 
@@ -614,7 +614,7 @@ rb_digest_base_alloc(VALUE klass)
     void *pctx;
 
     if (klass == rb_cDigest_Base) {
-	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+        rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
     }
 
     algo = get_digest_base_metadata(klass);
@@ -639,7 +639,7 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
 
     algo = get_digest_obj_metadata(copy);
     if (algo != get_digest_obj_metadata(obj))
-	rb_raise(rb_eTypeError, "different algorithms");
+        rb_raise(rb_eTypeError, "different algorithms");
 
     TypedData_Get_Struct(obj, void, &digest_type, pctx1);
     TypedData_Get_Struct(copy, void, &digest_type, pctx2);

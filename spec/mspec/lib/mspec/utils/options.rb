@@ -32,6 +32,10 @@ class MSpecOptions
   # Raised if an unrecognized option is encountered.
   class ParseError < Exception; end
 
+  class << self
+    attr_accessor :latest
+  end
+
   attr_accessor :config, :banner, :width, :options
 
   def initialize(banner = "", width = 30, config = nil)
@@ -46,7 +50,7 @@ class MSpecOptions
       @extra << x
     }
 
-    yield self if block_given?
+    MSpecOptions.latest = self
   end
 
   # Registers an option. Acceptable formats for arguments are:
@@ -311,6 +315,11 @@ class MSpecOptions
        "Write formatter output to FILE") do |f|
       config[:output] = f
     end
+
+    on("--error-output", "FILE",
+       "Write error output of failing specs to FILE, or $stderr if value is 'stderr'.") do |f|
+      config[:error_output] = f
+    end
   end
 
   def filters
@@ -413,6 +422,10 @@ class MSpecOptions
         STDERR.print @marker
       end
       MSpec.register :load, obj
+    end
+
+    on("--print-skips", "Print skips") do
+      config[:print_skips] = true
     end
   end
 

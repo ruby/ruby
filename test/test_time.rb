@@ -62,6 +62,15 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(true, t.utc?)
   end
 
+  def test_rfc2822_nonlinear
+    pre = ->(n) {"0 Feb 00 00 :00" + " " * n}
+    assert_linear_performance([100, 500, 5000, 50_000], pre: pre) do |s|
+      assert_raise(ArgumentError) do
+        Time.rfc2822(s)
+      end
+    end
+  end
+
   if defined?(Ractor)
     def test_rfc2822_ractor
       assert_ractor(<<~RUBY, require: 'time')

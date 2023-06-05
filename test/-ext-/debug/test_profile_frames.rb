@@ -137,6 +137,30 @@ class TestProfileFrames < Test::Unit::TestCase
     }
   end
 
+  def test_matches_backtrace_locations_main_thread
+    assert_equal(Thread.current, Thread.main)
+
+    # Keep these in the same line, so the backtraces match exactly
+    backtrace_locations, profile_frames = [Thread.current.backtrace_locations, Bug::Debug.profile_frames(0, 100)]
+
+    assert_equal(backtrace_locations.size, profile_frames.size)
+
+    # The first entries are not going to match, since one is #backtrace_locations and the other #profile_frames
+    backtrace_locations.shift
+    profile_frames.shift
+
+    # The rest of the stack is expected to look the same...
+    backtrace_locations.zip(profile_frames).each.with_index do |(location, (path, absolute_path, _, base_label, _, _, _, _, _, _, lineno)), i|
+      next if absolute_path == "<cfunc>" # ...except for cfunc frames
+
+      err_msg = "#{i}th frame"
+      assert_equal(location.absolute_path, absolute_path, err_msg)
+      assert_equal(location.base_label, base_label, err_msg)
+      assert_equal(location.lineno, lineno, err_msg)
+      assert_equal(location.path, path, err_msg)
+    end
+  end
+
   def test_ifunc_frame
     bug11851 = '[ruby-core:72409] [Bug #11851]'
     assert_ruby_status([], <<~'end;', bug11851) # do

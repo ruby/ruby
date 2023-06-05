@@ -30,13 +30,13 @@ rb_cmperr(VALUE x, VALUE y)
     VALUE classname;
 
     if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
-	classname = rb_inspect(y);
+        classname = rb_inspect(y);
     }
     else {
-	classname = rb_obj_class(y);
+        classname = rb_obj_class(y);
     }
     rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed",
-	     rb_obj_class(x), classname);
+             rb_obj_class(x), classname);
 }
 
 static VALUE
@@ -50,12 +50,12 @@ VALUE
 rb_invcmp(VALUE x, VALUE y)
 {
     VALUE invcmp = rb_exec_recursive(invcmp_recursive, x, y);
-    if (invcmp == Qundef || NIL_P(invcmp)) {
-	return Qnil;
+    if (NIL_OR_UNDEF_P(invcmp)) {
+        return Qnil;
     }
     else {
-	int result = -rb_cmpint(invcmp, x, y);
-	return INT2FIX(result);
+        int result = -rb_cmpint(invcmp, x, y);
+        return INT2FIX(result);
     }
 }
 
@@ -167,9 +167,7 @@ cmp_le(VALUE x, VALUE y)
 static VALUE
 cmp_between(VALUE x, VALUE min, VALUE max)
 {
-    if (cmpint(x, min) < 0) return Qfalse;
-    if (cmpint(x, max) > 0) return Qfalse;
-    return Qtrue;
+    return RBOOL((cmpint(x, min) >= 0 && cmpint(x, max) <= 0));
 }
 
 /*
@@ -231,7 +229,7 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
         }
     }
     if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
-	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
+        rb_raise(rb_eArgError, "min argument must be less than or equal to max argument");
     }
 
     if (!NIL_P(min)) {
@@ -288,18 +286,18 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *
  *  \Module \Comparable provides these methods, all of which use method <tt><=></tt>:
  *
- *  - {<}[#method-i-3C]:: Returns whether +self+ is less than the given object.
- *  - {<=}[#method-i-3C-3D]:: Returns whether +self+ is less than or equal to
- *                            the given object.
- *  - {==}[#method-i-3D-3D]:: Returns whether +self+ is equal to the given object.
- *  - {>}[#method-i-3E]:: Returns whether +self+ is greater than or equal to
- *                        the given object.
- *  - {>=}[#method-i-3E-3D]:: Returns whether +self+ is greater than the given object.
- *  - #between? Returns +true+ if +self+ is between two given objects.
- *  - #clamp:: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
+ *  - #<: Returns whether +self+ is less than the given object.
+ *  - #<=: Returns whether +self+ is less than or equal to the given object.
+ *  - #==: Returns whether +self+ is equal to the given object.
+ *  - #>: Returns whether +self+ is greater than the given object.
+ *  - #>=: Returns whether +self+ is greater than or equal to the given object.
+ *  - #between?: Returns +true+ if +self+ is between two given objects.
+ *  - #clamp: For given objects +min+ and +max+, or range <tt>(min..max)</tt>, returns:
+ *
  *    - +min+ if <tt>(self <=> min) < 0</tt>.
  *    - +max+ if <tt>(self <=> max) > 0</tt>.
  *    - +self+ otherwise.
+ *
  */
 
 void

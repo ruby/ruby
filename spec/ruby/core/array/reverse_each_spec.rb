@@ -5,7 +5,7 @@ require_relative '../enumerable/shared/enumeratorized'
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
-# http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/23633
+# https://blade.ruby-lang.org/ruby-core/23633
 
 describe "Array#reverse_each" do
   before :each do
@@ -36,6 +36,20 @@ describe "Array#reverse_each" do
 
   it "returns the correct size when no block is given" do
     [1, 2, 3].reverse_each.size.should == 3
+  end
+
+  it "tolerates increasing an array size during iteration" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.reverse_each do |e|
+      ScratchPad << e
+      array.prepend i if i < 100
+      i += 1
+    end
+
+    ScratchPad.recorded.should == [:c, :a, 1]
   end
 
   it_behaves_like :enumeratorize, :reverse_each

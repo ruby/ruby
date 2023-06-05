@@ -131,7 +131,6 @@ describe "Enumerable#all?" do
       pattern.yielded.should == [[0], [1], [2], [-1]]
     end
 
-    # may raise an exception in future versions
     it "always returns true on empty enumeration" do
       @empty.all?(Integer).should == true
       [].all?(Integer).should == true
@@ -177,6 +176,12 @@ describe "Enumerable#all?" do
       pattern = EnumerableSpecs::Pattern.new { true }
       multi.all?(pattern).should == true
       pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
+    end
+
+    it "ignores the block if there is an argument" do
+      -> {
+        EnumerableSpecs::Numerous.new(1, 2, 3, 4, 5).all?(String) { true }.should == false
+      }.should complain(/given block not used/)
     end
   end
 end

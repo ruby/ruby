@@ -304,6 +304,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal before, ObjectSpace.count_objects[:T_STRING]
   end
 
+  def test_AREF_fstring_key_default_proc
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      h = Hash.new do |h, k|
+        k.frozen?
+      end
+
+      str = "foo"
+      refute str.frozen? # assumes this file is frozen_string_literal: false
+      refute h[str]
+      refute h["foo"]
+    end;
+  end
+
   def test_ASET_fstring_key
     a, b = {}, {}
     assert_equal 1, a["abc"] = 1
@@ -836,6 +850,16 @@ class TestHash < Test::Unit::TestCase
     assert(true)
   end
 
+  def test_replace_st_with_ar
+    # ST hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # AR hash
+    h2 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }
+    # Replace ST hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
   def test_shift
     h = @h.dup
 
@@ -1067,6 +1091,19 @@ class TestHash < Test::Unit::TestCase
       super.upcase
     end
     assert_nil(h.shift)
+  end
+
+  def test_shift_for_empty_hash
+    # [ruby-dev:51159]
+    h = @cls[]
+    100.times{|n|
+      while h.size < n
+        k = Random.rand 0..1<<30
+        h[k] = 1
+      end
+      0 while h.shift
+      assert_equal({}, h)
+    }
   end
 
   def test_reject_bang2
@@ -1527,6 +1564,17 @@ class TestHash < Test::Unit::TestCase
         c.call
       end
     end
+  end
+
+  def hash_iter_recursion(h, level)
+    return if level == 0
+    h.each_key {}
+    h.each_value { hash_iter_recursion(h, level - 1) }
+  end
+
+  def test_iterlevel_in_ivar_bug19589
+    h = { a: nil }
+    hash_iter_recursion(h, 200)
   end
 
   def test_threaded_iter_level
@@ -2151,6 +2199,27 @@ class TestHash < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       {a: 1}.each(&->(k, v) {})
     end
+  end
+
+  # Previously this test would fail because rb_hash inside opt_aref would look
+  # at the current method name
+  def test_hash_recursion_independent_of_mid
+    o = Class.new do
+      def hash(h, k)
+        h[k]
+      end
+
+      def any_other_name(h, k)
+        h[k]
+      end
+    end.new
+
+    rec = []; rec << rec
+
+    h = @cls[]
+    h[rec] = 1
+    assert o.hash(h, rec)
+    assert o.any_other_name(h, rec)
   end
 
   def test_any_hash_fixable

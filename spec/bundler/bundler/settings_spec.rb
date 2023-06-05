@@ -27,7 +27,7 @@ RSpec.describe Bundler::Settings do
         "gem.mit" => "false",
         "gem.test" => "minitest",
         "thingy" => <<-EOS.tr("\n", " "),
---asdf --fdsa --ty=oh man i hope this doesnt break bundler because
+--asdf --fdsa --ty=oh man i hope this doesn't break bundler because
 that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
 --very-important-option=DontDeleteRoo
 --very-important-option=DontDeleteRoo

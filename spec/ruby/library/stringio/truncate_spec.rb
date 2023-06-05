@@ -6,10 +6,8 @@ describe "StringIO#truncate when passed [length]" do
     @io = StringIO.new('123456789')
   end
 
-  # TODO: Report to Ruby-Core: The RDoc says it always returns 0
-  it "returns the passed length" do
-    @io.truncate(4).should eql(4)
-    @io.truncate(10).should eql(10)
+  it "returns an Integer" do
+    @io.truncate(4).should be_kind_of(Integer)
   end
 
   it "truncated the underlying string down to the passed length" do
@@ -45,12 +43,6 @@ describe "StringIO#truncate when passed [length]" do
 
     @io.truncate(obj)
     @io.string.should == "1234"
-  end
-
-  it "returns the passed length Object, NOT the result of #to_int" do
-    obj = mock("to_int")
-    obj.should_receive(:to_int).and_return(4)
-    @io.truncate(obj).should equal(obj)
   end
 
   it "raises a TypeError when the passed length can't be converted to an Integer" do

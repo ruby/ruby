@@ -27,9 +27,6 @@ DESCRIPTION
     "bin/setup", "ext/psych/depend", "ext/psych/extconf.rb", "ext/psych/psych.c", "ext/psych/psych.h",
     "ext/psych/psych_emitter.c", "ext/psych/psych_emitter.h", "ext/psych/psych_parser.c", "ext/psych/psych_parser.h",
     "ext/psych/psych_to_ruby.c", "ext/psych/psych_to_ruby.h", "ext/psych/psych_yaml_tree.c", "ext/psych/psych_yaml_tree.h",
-    "ext/psych/yaml/LICENSE", "ext/psych/yaml/api.c", "ext/psych/yaml/config.h", "ext/psych/yaml/dumper.c",
-    "ext/psych/yaml/emitter.c", "ext/psych/yaml/loader.c", "ext/psych/yaml/parser.c", "ext/psych/yaml/reader.c",
-    "ext/psych/yaml/scanner.c", "ext/psych/yaml/writer.c", "ext/psych/yaml/yaml.h", "ext/psych/yaml/yaml_private.h",
     "lib/psych.rb", "lib/psych/class_loader.rb", "lib/psych/coder.rb", "lib/psych/core_ext.rb", "lib/psych/exception.rb",
     "lib/psych/handler.rb", "lib/psych/handlers/document_stream.rb", "lib/psych/handlers/recorder.rb",
     "lib/psych/json/ruby_events.rb", "lib/psych/json/stream.rb", "lib/psych/json/tree_builder.rb",
@@ -55,15 +52,16 @@ DESCRIPTION
       "ext/java/org/jruby/ext/psych/PsychLibrary.java",
       "ext/java/org/jruby/ext/psych/PsychParser.java",
       "ext/java/org/jruby/ext/psych/PsychToRuby.java",
-      "ext/java/org/jruby/ext/psych/PsychYamlTree.java",
       "lib/psych_jars.rb",
       "lib/psych.jar"
     ]
-    s.requirements = "jar org.yaml:snakeyaml, #{version_module::Psych::DEFAULT_SNAKEYAML_VERSION}"
+    s.requirements = "jar org.snakeyaml:snakeyaml-engine, #{version_module::Psych::DEFAULT_SNAKEYAML_VERSION}"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
   else
     s.extensions = ["ext/psych/extconf.rb"]
     s.add_dependency 'stringio'
   end
+
+  s.metadata['msys2_mingw_dependencies'] = 'libyaml'
 
 end

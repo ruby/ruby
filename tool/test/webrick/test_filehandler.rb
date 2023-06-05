@@ -85,12 +85,12 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
           "Content-Type: text/plain\r\n" \
           "Content-Range: bytes 0-0/#{filesize}\r\n" \
           "\r\n" \
-          "#{IO.read(__FILE__, 1)}\r\n" \
+          "#{File.read(__FILE__, 1)}\r\n" \
           "--#{boundary}\r\n" \
           "Content-Type: text/plain\r\n" \
           "Content-Range: bytes #{off}-#{last}/#{filesize}\r\n" \
           "\r\n" \
-          "#{IO.read(__FILE__, 2, off)}\r\n" \
+          "#{File.read(__FILE__, 2, off)}\r\n" \
           "--#{boundary}--\r\n"
     assert_equal exp, body
   end

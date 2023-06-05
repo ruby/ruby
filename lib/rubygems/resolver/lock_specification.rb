@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The LockSpecification comes from a lockfile (Gem::RequestSet::Lockfile).
 #
@@ -29,7 +30,7 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
   def install(options = {})
     destination = options[:install_dir] || Gem.dir
 
-    if File.exist? File.join(destination, 'specifications', spec.spec_name)
+    if File.exist? File.join(destination, "specifications", spec.spec_name)
       yield nil
       return
     end
@@ -45,7 +46,7 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[LockSpecification', ']' do
+    q.group 2, "[LockSpecification", "]" do
       q.breakable
       q.text "name: #{@name}"
 
@@ -59,7 +60,7 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
 
       unless @dependencies.empty?
         q.breakable
-        q.text 'dependencies:'
+        q.text "dependencies:"
         q.breakable
         q.pp @dependencies
       end
@@ -71,7 +72,7 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
 
   def spec
     @spec ||= Gem::Specification.find do |spec|
-      spec.name == @name and spec.version == @version
+      spec.name == @name && spec.version == @version
     end
 
     @spec ||= Gem::Specification.new do |s|

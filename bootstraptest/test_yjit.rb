@@ -1,32 +1,41 @@
-assert_equal '2022', %q{
- def contrivance(hash, key)
-    # Expect this to compile to an `opt_aref`.
-    hash[key]
+# Regression test for GC mishap while doing shape transition
+assert_equal '[:ok]', %q{
+  # [Bug #19601]
+  class RegressionTest
+    def initialize
+      @a = @b = @fourth_ivar_does_shape_transition = nil
+    end
 
-    # The [] call above tracks that the `hash` local has a VALUE that
-    # is a heap pointer and the guard for the Kernel#itself call below
-    # doesn't check that it's a heap pointer VALUE.
-    #
-    # As you can see from the crash, the call to rb_hash_aref() can set the
-    # `hash` local, making eliding the heap object guard unsound.
-    hash.itself
+    def extender
+      @first_extended_ivar = [:ok]
+    end
   end
 
-  # This is similar to ->(recv, mid) { send(recv, mid).local_variable_set(...) }.
-  # By composing we avoid creating new Ruby frames and so sending :binding
-  # captures the environment of the frame that does the missing key lookup.
-  # We use it to capture the environment inside of `contrivance`.
-  cap_then_set =
-    Kernel.instance_method(:send).method(:bind_call).to_proc >>
-      ->(binding) { binding.local_variable_set(:hash, 2022) }
-  special_missing = Hash.new(&cap_then_set)
+  GC.stress = true
 
-  # Make YJIT speculate that it's a hash and generate code
-  # that calls rb_hash_aref().
-  contrivance({}, :warmup)
-  contrivance({}, :warmup)
+  # Used to crash due to GC run in rb_ensure_iv_list_size()
+  # not marking the newly allocated [:ok].
+  RegressionTest.new.extender.itself
+} unless RUBY_DESCRIPTION.include?('+RJIT') # Skip on RJIT since this uncovers a crash
 
-  contrivance(special_missing, :binding)
+assert_equal 'true', %q{
+  # regression test for tracking type of locals for too long
+  def local_setting_cmp(five)
+    victim = 5
+    five.define_singleton_method(:respond_to?) do |_, _|
+      victim = nil
+    end
+
+    # +1 makes YJIT track that victim is a number and
+    # defined? calls respond_to? from above indirectly
+    unless (victim + 1) && defined?(five.something)
+      # Would return wrong result if we still think `five` is a number
+      victim.nil?
+    end
+  end
+
+  local_setting_cmp(Object.new)
+  local_setting_cmp(Object.new)
 }
 
 assert_equal '18374962167983112447', %q{
@@ -45,7 +54,7 @@ assert_equal '18374962167983112447', %q{
 }
 
 assert_normal_exit %q{
-  # regression test for a leak caught by an asert on --yjit-call-threshold=2
+  # regression test for a leak caught by an assert on --yjit-call-threshold=2
   Foo = 1
 
   eval("def foo = [#{(['Foo,']*256).join}]")
@@ -56,6 +65,29 @@ assert_normal_exit %q{
   Object.send(:remove_const, :Foo)
 }
 
+assert_normal_exit %q{
+  # Test to ensure send on overriden c functions
+  # doesn't corrupt the stack
+  class Bar
+    def bar(x)
+      x
+    end
+  end
+
+  class Foo
+    def bar
+      Bar.new
+    end
+  end
+
+  foo = Foo.new
+  # before this change, this line would error
+  # because "s" would still be on the stack
+  # String.to_s is the overridden method here
+  p foo.bar.bar("s".__send__(:to_s))
+}
+
+
 assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
   [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
     klass.class_eval("def foo = @foo")
@@ -65,6 +97,53 @@ assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
     instance.foo
     instance.foo
   end
+}
+
+assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
+  # Tests defined? on non-heap objects
+  [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
+    klass.class_eval("def foo = defined?(@foo)")
+  end
+
+  [nil, true, false, 0xFABCAFE, 0.42, :cake].map do |instance|
+    instance.foo
+    instance.foo
+  end
+}
+
+assert_equal '[nil, "instance-variable", nil, "instance-variable"]', %q{
+  # defined? on object that changes shape between calls
+  class Foo
+    def foo
+      defined?(@foo)
+    end
+
+    def add
+      @foo = 1
+    end
+
+    def remove
+      self.remove_instance_variable(:@foo)
+    end
+  end
+
+  obj = Foo.new
+  [obj.foo, (obj.add; obj.foo), (obj.remove; obj.foo), (obj.add; obj.foo)]
+}
+
+assert_equal '["instance-variable", 5]', %q{
+  # defined? on object too complex for shape information
+  class Foo
+    def initialize
+      100.times { |i| instance_variable_set("@foo#{i}", i) }
+    end
+
+    def foo
+      [defined?(@foo5), @foo5]
+    end
+  end
+
+  Foo.new.foo
 }
 
 assert_equal '0', %q{
@@ -360,6 +439,45 @@ assert_equal 'false', %q{
   end
 
   less_than 2
+}
+
+# BOP redefinition works on Integer#<=
+assert_equal 'false', %q{
+  def le(x, y) = x <= y
+
+  le(2, 2)
+
+  class Integer
+    def <=(_) = false
+  end
+
+  le(2, 2)
+}
+
+# BOP redefinition works on Integer#>
+assert_equal 'false', %q{
+  def gt(x, y) = x > y
+
+  gt(3, 2)
+
+  class Integer
+    def >(_) = false
+  end
+
+  gt(3, 2)
+}
+
+# BOP redefinition works on Integer#>=
+assert_equal 'false', %q{
+  def ge(x, y) = x >= y
+
+  ge(2, 2)
+
+  class Integer
+    def >=(_) = false
+  end
+
+  ge(2, 2)
 }
 
 # Putobject, less-than operator, fixnums
@@ -817,7 +935,7 @@ assert_equal "good", %q{
   foo
 
   begin
-    GC.verify_compaction_references(double_heap: true, toward: :empty)
+    GC.verify_compaction_references(expand_heap: true, toward: :empty)
   rescue NotImplementedError
     # in case compaction isn't supported
   end
@@ -1129,6 +1247,38 @@ assert_equal '42', %q{
   run
 }
 
+# splatting an empty array on a specialized method
+assert_equal 'ok', %q{
+  def run
+    "ok".to_s(*[])
+  end
+
+  run
+  run
+}
+
+# splatting an single element array on a specialized method
+assert_equal '[1]', %q{
+  def run
+    [].<<(*[1])
+  end
+
+  run
+  run
+}
+
+# specialized method with wrong args
+assert_equal 'ok', %q{
+  def run(x)
+    "bad".to_s(123) if x
+  rescue
+    :ok
+  end
+
+  run(false)
+  run(true)
+}
+
 # getinstancevariable on Symbol
 assert_equal '[nil, nil]', %q{
   # @foo to exercise the getinstancevariable instruction
@@ -1233,6 +1383,19 @@ assert_equal '[1, 2, 42]', %q{
   end
 
   [foo {1}, foo {2}, foo {42}]
+}
+
+# test calling without block param
+assert_equal '[1, false, 2, false]', %q{
+  def bar
+    block_given? && yield
+  end
+
+  def foo(&block)
+    bar(&block)
+  end
+
+  [foo { 1 }, foo, foo { 2 }, foo]
 }
 
 # test calling block param failing
@@ -1368,6 +1531,46 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test that invalidation of String#to_s doesn't crash
+assert_equal 'meh', %q{
+  def inval_method
+    "".to_s
+  end
+
+  inval_method
+
+  class String
+    def to_s
+      "meh"
+    end
+  end
+
+  inval_method
+}
+
+# test that overriding to_s on a String subclass works consistently
+assert_equal 'meh', %q{
+  class MyString < String
+    def to_s
+      "meh"
+    end
+  end
+
+  def test_to_s(obj)
+    obj.to_s
+  end
+
+  OBJ = MyString.new
+
+  # Should return '' both times
+  test_to_s("")
+  test_to_s("")
+
+  # Can return '' if YJIT optimises String#to_s too aggressively
+  test_to_s(OBJ)
+  test_to_s(OBJ)
+}
+
 # test string interpolation with overridden to_s
 assert_equal 'foo', %q{
   class String
@@ -1384,6 +1587,149 @@ assert_equal 'foo', %q{
   make_str("foo")
 }
 
+# Test that String unary plus returns the same object ID for an unfrozen string.
+assert_equal 'true', %q{
+  def jittable_method
+    str = "bar"
+
+    old_obj_id = str.object_id
+    uplus_str = +str
+
+    uplus_str.object_id == old_obj_id
+  end
+  jittable_method
+}
+
+# Test that String unary plus returns a different unfrozen string when given a frozen string
+assert_equal 'false', %q{
+  # Logic needs to be inside an ISEQ, such as a method, for YJIT to compile it
+  def jittable_method
+    frozen_str = "foo".freeze
+
+    old_obj_id = frozen_str.object_id
+    uplus_str = +frozen_str
+
+    uplus_str.object_id == old_obj_id || uplus_str.frozen?
+  end
+
+  jittable_method
+}
+
+# String-subclass objects should behave as expected inside string-interpolation via concatstrings
+assert_equal 'monkeys / monkeys, yo!', %q{
+  class MyString < String
+    # This is a terrible idea in production code, but we'd like YJIT to match CRuby
+    def to_s
+      super + ", yo!"
+    end
+  end
+
+  def jittable_method
+    m = MyString.new('monkeys')
+    "#{m} / #{m.to_s}"
+  end
+
+  jittable_method
+}
+
+# String-subclass objects should behave as expected for string equality
+assert_equal 'false', %q{
+  class MyString < String
+    # This is a terrible idea in production code, but we'd like YJIT to match CRuby
+    def ==(b)
+      "#{self}_" == b
+    end
+  end
+
+  def jittable_method
+    ma = MyString.new("a")
+
+    # Check equality with string-subclass receiver
+    ma == "a" || ma != "a_" ||
+      # Check equality with string receiver
+      "a_" == ma || "a" != ma ||
+      # Check equality between string subclasses
+      ma != MyString.new("a_") ||
+      # Make sure "string always equals itself" check isn't used with overridden equality
+      ma == ma
+  end
+  jittable_method
+}
+
+# Test to_s duplicates a string subclass object but not a string
+assert_equal 'false', %q{
+  class MyString < String; end
+
+  def jittable_method
+    a = "a"
+    ma = MyString.new("a")
+
+    a.object_id != a.to_s.object_id ||
+      ma.object_id == ma.to_s.object_id
+  end
+  jittable_method
+}
+
+# Test freeze on string subclass
+assert_equal 'true', %q{
+  class MyString < String; end
+
+  def jittable_method
+    fma = MyString.new("a").freeze
+
+    # Freezing a string subclass should not duplicate it
+    fma.object_id == fma.freeze.object_id
+  end
+  jittable_method
+}
+
+# Test unary minus on string subclass
+assert_equal 'true', %q{
+  class MyString < String; end
+
+  def jittable_method
+    ma = MyString.new("a")
+    fma = MyString.new("a").freeze
+
+    # Unary minus on frozen string subclass should not duplicate it
+    fma.object_id == (-fma).object_id &&
+      # Unary minus on unfrozen string subclass should duplicate it
+      ma.object_id != (-ma).object_id
+  end
+  jittable_method
+}
+
+# Test unary plus on string subclass
+assert_equal 'true', %q{
+  class MyString < String; end
+
+  def jittable_method
+    fma = MyString.new("a").freeze
+
+    # Unary plus on frozen string subclass should not duplicate it
+    fma.object_id != (+fma).object_id
+  end
+  jittable_method
+}
+
+# Test << operator on string subclass
+assert_equal 'abab', %q{
+  class MyString < String; end
+
+  def jittable_method
+    a = -"a"
+    mb = MyString.new("b")
+
+    buf = String.new
+    mbuf = MyString.new
+
+    buf << a << mb
+    mbuf << a << mb
+
+    buf + mbuf
+  end
+  jittable_method
+}
 
 # test invokebuiltin as used in struct assignment
 assert_equal '123', %q{
@@ -1732,6 +2078,38 @@ assert_equal '[:A, :Btwo]', %q{
   ins.foo
 }
 
+# invokesuper with a block
+assert_equal 'true', %q{
+  class A
+    def foo = block_given?
+  end
+
+  class B < A
+    def foo = super()
+  end
+
+  B.new.foo { }
+  B.new.foo { }
+}
+
+# invokesuper in a block
+assert_equal '[0, 2]', %q{
+  class A
+    def foo(x) = x * 2
+  end
+
+  class B < A
+    def foo
+      2.times.map do |x|
+        super(x)
+      end
+    end
+  end
+
+  B.new.foo
+  B.new.foo
+}
+
 # Call to fixnum
 assert_equal '[true, false]', %q{
   def is_odd(obj)
@@ -1965,7 +2343,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-}
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2047,7 +2425,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-}
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2060,6 +2438,26 @@ assert_equal '[[:c_return, :itself, main]]', %q{
 
   # assume first call compiles
   tp.enable { shouldnt_compile }
+
+  events
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+
+# test c_call invalidation
+assert_equal '[[:c_call, :itself]]', %q{
+  # enable the event once to make sure invalidation
+  # happens the second time we enable it
+  TracePoint.new(:c_call) {}.enable{}
+
+  def compiled
+    itself
+  end
+
+  # assume first call compiles
+  compiled
+
+  events = []
+  tp = TracePoint.new(:c_call) { |tp| events << [tp.event, tp.method_id] }
+  tp.enable { compiled }
 
   events
 }
@@ -2087,7 +2485,6 @@ assert_equal '[:itself]', %q{
   def traced_method
     itself
   end
-
 
   tracing_ractor = Ractor.new do
     # 1: start tracing
@@ -2717,10 +3114,19 @@ assert_equal 'new', %q{
     foo
   end
 
+  def bar
+    :bar
+  end
+
+
   test
   test
 
   RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  # Old simulat_omm! leaves one byte of space and this fills it up
+  bar
+  bar
 
   def foo
     :new
@@ -2837,3 +3243,723 @@ assert_equal '', %q{
   foo
   foo
 }
+
+# Make sure we're correctly reading RStruct's as.ary union for embedded RStructs
+assert_equal '3,12', %q{
+  pt_struct = Struct.new(:x, :y)
+  p = pt_struct.new(3, 12)
+  def pt_inspect(pt)
+    "#{pt.x},#{pt.y}"
+  end
+
+  # Make sure pt_inspect is JITted
+  10.times { pt_inspect(p) }
+
+  # Make sure it's returning '3,12' instead of e.g. '3,false'
+  pt_inspect(p)
+}
+
+# Regression test for deadlock between branch_stub_hit and ractor_receive_if
+assert_equal '10', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+    main << 4
+    main << 5
+    main << 6
+    main << 7
+    main << 8
+    main << 9
+    main << 10
+  end
+
+  a = []
+  a << Ractor.receive_if{|msg| msg == 10}
+  a << Ractor.receive_if{|msg| msg == 9}
+  a << Ractor.receive_if{|msg| msg == 8}
+  a << Ractor.receive_if{|msg| msg == 7}
+  a << Ractor.receive_if{|msg| msg == 6}
+  a << Ractor.receive_if{|msg| msg == 5}
+  a << Ractor.receive_if{|msg| msg == 4}
+  a << Ractor.receive_if{|msg| msg == 3}
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| msg == 1}
+
+  a.length
+}
+
+# checktype
+assert_equal 'false', %q{
+    def function()
+        [1, 2] in [Integer, String]
+    end
+    function()
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_ATTRSET)
+assert_equal 'foo', %q{
+    class Foo
+      attr_writer :foo
+
+      def foo()
+        self.foo = "foo"
+      end
+    end
+    foo = Foo.new
+    foo.foo
+}
+
+# anytostring, intern
+assert_equal 'true', %q{
+    def foo()
+      :"#{true}"
+    end
+    foo()
+}
+
+# toregexp, objtostring
+assert_equal '/true/', %q{
+    def foo()
+      /#{true}/
+    end
+    foo().inspect
+}
+
+# concatstrings, objtostring
+assert_equal '9001', %q{
+    def foo()
+      "#{9001}"
+    end
+    foo()
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_CFUNC)
+assert_equal 'nil', %q{
+    def foo
+      nil.inspect # argc: 0
+    end
+    foo
+}
+assert_equal '4', %q{
+    def foo
+      2.pow(2) # argc: 1
+    end
+    foo
+}
+assert_equal 'aba', %q{
+    def foo
+      "abc".tr("c", "a") # argc: 2
+    end
+    foo
+}
+assert_equal 'true', %q{
+    def foo
+      respond_to?(:inspect) # argc: -1
+    end
+    foo
+}
+assert_equal '["a", "b"]', %q{
+    def foo
+      "a\nb".lines(chomp: true) # kwargs
+    end
+    foo
+}
+
+# invokebuiltin
+assert_equal '123', %q{
+  def foo(obj)
+    obj.foo = 123
+  end
+
+  struct = Struct.new(:foo)
+  obj = struct.new
+  foo(obj)
+}
+
+# invokebuiltin_delegate
+assert_equal '.', %q{
+  def foo(path)
+    Dir.open(path).path
+  end
+  foo(".")
+}
+
+# opt_invokebuiltin_delegate_leave
+assert_equal '[0]', %q{"\x00".unpack("c")}
+
+# opt_send_without_block (VM_METHOD_TYPE_ISEQ)
+assert_equal '1', %q{
+  def foo = 1
+  def bar = foo
+  bar
+}
+assert_equal '[1, 2, 3]', %q{
+  def foo(a, b) = [1, a, b]
+  def bar = foo(2, 3)
+  bar
+}
+assert_equal '[1, 2, 3, 4, 5, 6]', %q{
+  def foo(a, b, c:, d:, e: 0, f: 6) = [a, b, c, d, e, f]
+  def bar = foo(1, 2, c: 3, d: 4, e: 5)
+  bar
+}
+assert_equal '[1, 2, 3, 4]', %q{
+  def foo(a, b = 2) = [a, b]
+  def bar = foo(1) + foo(3, 4)
+  bar
+}
+
+assert_equal '1', %q{
+  def foo(a) = a
+  def bar = foo(1) { 2 }
+  bar
+}
+assert_equal '[1, 2]', %q{
+  def foo(a, &block) = [a, block.call]
+  def bar = foo(1) { 2 }
+  bar
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_IVAR)
+assert_equal 'foo', %q{
+  class Foo
+    attr_reader :foo
+
+    def initialize
+      @foo = "foo"
+    end
+  end
+  Foo.new.foo
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_OPTIMIZED)
+assert_equal 'foo', %q{
+  Foo = Struct.new(:bar)
+  Foo.new("bar").bar = "foo"
+}
+assert_equal 'foo', %q{
+  Foo = Struct.new(:bar)
+  Foo.new("foo").bar
+}
+
+# getblockparamproxy
+assert_equal 'foo', %q{
+  def foo(&block)
+    block.call
+  end
+  foo { "foo" }
+}
+
+# getblockparam
+assert_equal 'foo', %q{
+  def foo(&block)
+    block
+  end
+  foo { "foo" }.call
+}
+
+assert_equal '[1, 2]', %q{
+  def foo
+    x = [2]
+    [1, *x]
+  end
+
+  foo
+  foo
+}
+
+# respond_to? with changing symbol
+assert_equal 'false', %q{
+  def foo(name)
+    :sym.respond_to?(name)
+  end
+  foo(:to_s)
+  foo(:to_s)
+  foo(:not_exist)
+}
+
+# respond_to? with method being defined
+assert_equal 'true', %q{
+  def foo
+    :sym.respond_to?(:not_yet_defined)
+  end
+  foo
+  foo
+  module Kernel
+    def not_yet_defined = true
+  end
+  foo
+}
+
+# respond_to? with undef method
+assert_equal 'false', %q{
+  module Kernel
+    def to_be_removed = true
+  end
+  def foo
+    :sym.respond_to?(:to_be_removed)
+  end
+  foo
+  foo
+  class Object
+    undef_method :to_be_removed
+  end
+  foo
+}
+
+# respond_to? with respond_to_missing?
+assert_equal 'true', %q{
+  class Foo
+  end
+  def foo(x)
+    x.respond_to?(:bar)
+  end
+  foo(Foo.new)
+  foo(Foo.new)
+  class Foo
+    def respond_to_missing?(*) = true
+  end
+  foo(Foo.new)
+}
+
+# bmethod
+assert_equal '[1, 2, 3]', %q{
+  one = 1
+  define_method(:foo) do
+    one
+  end
+
+  3.times.map { |i| foo + i }
+}
+
+# return inside bmethod
+assert_equal 'ok', %q{
+  define_method(:foo) do
+    1.tap { return :ok }
+  end
+
+  foo
+}
+
+# bmethod optional and keywords
+assert_equal '[[1, nil, 2]]', %q{
+  define_method(:opt_and_kwargs) do |a = {}, b: nil, c: nil|
+    [a, b, c]
+  end
+
+  5.times.map { opt_and_kwargs(1, c: 2) }.uniq
+}
+
+# bmethod with forwarded block
+assert_equal '2', %q{
+  define_method(:foo) do |&block|
+    block.call
+  end
+
+  def bar(&block)
+    foo(&block)
+  end
+
+  bar { 1 }
+  bar { 2 }
+}
+
+# bmethod with forwarded block and arguments
+assert_equal '5', %q{
+  define_method(:foo) do |n, &block|
+    n + block.call
+  end
+
+  def bar(n, &block)
+    foo(n, &block)
+  end
+
+  bar(0) { 1 }
+  bar(3) { 2 }
+}
+
+# bmethod with forwarded unwanted block
+assert_equal '1', %q{
+  one = 1
+  define_method(:foo) do
+    one
+  end
+
+  def bar(&block)
+    foo(&block)
+  end
+
+  bar { }
+  bar { }
+}
+
+# test for return stub lifetime issue
+assert_equal '1', %q{
+  def foo(n)
+    if n == 2
+      return 1.times { Object.define_method(:foo) {} }
+    end
+
+    foo(n + 1)
+  end
+
+  foo(1)
+}
+
+# case-when with redefined ===
+assert_equal 'ok', %q{
+  class Symbol
+    def ===(a)
+      true
+    end
+  end
+
+  def cw(arg)
+    case arg
+    when :b
+      :ok
+    when 4
+      :ng
+    end
+  end
+
+  cw(4)
+}
+
+assert_equal 'threw', %q{
+  def foo(args)
+    wrap(*args)
+  rescue ArgumentError
+    'threw'
+  end
+
+  def wrap(a)
+    [a]
+  end
+
+  foo([Hash.ruby2_keywords_hash({})])
+}
+
+assert_equal 'threw', %q{
+  # C call
+  def bar(args)
+    Array(*args)
+  rescue ArgumentError
+    'threw'
+  end
+
+  bar([Hash.ruby2_keywords_hash({})])
+}
+
+# Test instance_of? and is_a?
+assert_equal 'true', %q{
+  1.instance_of?(Integer) && 1.is_a?(Integer)
+}
+
+# Test instance_of? and is_a? for singleton classes
+assert_equal 'true', %q{
+  a = []
+  def a.test = :test
+  a.instance_of?(Array) && a.is_a?(Array)
+}
+
+# Test instance_of? for singleton_class
+# Yes this does really return false
+assert_equal 'false', %q{
+  a = []
+  def a.test = :test
+  a.instance_of?(a.singleton_class)
+}
+
+# Test is_a? for singleton_class
+assert_equal 'true', %q{
+  a = []
+  def a.test = :test
+  a.is_a?(a.singleton_class)
+}
+
+# Test send with splat to a cfunc
+assert_equal 'true', %q{
+  1.send(:==, 1, *[])
+}
+
+# Test empty splat with cfunc
+assert_equal '2', %q{
+  def foo
+    Integer.sqrt(4, *[])
+  end
+  # call twice to deal with constant exiting
+  foo
+  foo
+}
+
+# Test non-empty splat with cfunc
+assert_equal 'Hello World', %q{
+  def bar
+    args = ["Hello "]
+    greeting = "World"
+    greeting.insert(0, *args)
+    greeting
+  end
+  bar
+}
+
+# Regression: this creates a temp stack with > 127 elements
+assert_normal_exit %q{
+  def foo(a)
+    [
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a,
+    ]
+  end
+
+  def entry
+    foo(1)
+  end
+
+  entry
+}
+
+# Test that splat and rest combined
+# properly dupe the array
+assert_equal "[]", %q{
+  def foo(*rest)
+    rest << 1
+  end
+
+  def test(splat)
+    foo(*splat)
+  end
+
+  EMPTY = []
+  custom = Object.new
+  def custom.to_a
+    EMPTY
+  end
+
+  test(custom)
+  test(custom)
+  EMPTY
+}
+
+# Rest with send
+assert_equal '[1, 2, 3]', %q{
+  def bar(x, *rest)
+    rest.insert(0, x)
+  end
+  send(:bar, 1, 2, 3)
+}
+
+# Fix splat block arg bad compilation
+assert_equal "foo", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    sql << v
+  end
+
+  literal("foo")
+}
+
+# regression test for accidentally having a parameter truncated
+# due to Rust/C signature mismatch. Used to crash with
+# > [BUG] rb_vm_insn_addr2insn: invalid insn address ...
+# or
+# > ... `Err` value: TryFromIntError(())'
+assert_normal_exit %q{
+  n = 16384
+  eval(
+    "def foo(arg); " + "_=arg;" * n + '_=1;' + "Object; end"
+  )
+  foo 1
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_normal_exit %q{
+  class Integer
+    def ===(other)
+      false
+    end
+  end
+
+  def my_func(x)
+    case x
+    when 1
+      1
+    when 2
+      2
+    else
+      3
+    end
+  end
+
+  my_func(1)
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_equal "ArgumentError", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    args = [1, 2, 3]
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    [sql.inspect, v.inspect]
+  end
+
+  begin
+    literal("foo")
+  rescue ArgumentError
+    "ArgumentError"
+  end
+}
+
+# Rest with block
+# Simplified code from railsbench
+assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
+  def match(path, *rest, &block)
+    [path, rest, block]
+  end
+
+  def map_method(method, args, &block)
+    options = args.last
+    args.pop
+    options[:via] = method
+    match(*args, options, &block)
+  end
+
+  def post(*args, &block)
+    map_method(:post, args, &block)
+  end
+
+  post "/a" => "b", as: :c
+}
+
+# Test rest and kw_args
+assert_equal '[true, true, true, true]', %q{
+  def my_func(*args, base: nil, sort: true)
+    [args, base, sort]
+  end
+
+  def calling_my_func
+    results = []
+    results << (my_func("test") == [["test"], nil, true])
+    results << (my_func("test", base: :base) == [["test"], :base, true])
+    results << (my_func("test", sort: false) == [["test"], nil, false])
+    results << (my_func("test", "other", base: :base) == [["test", "other"], :base, true])
+    results
+  end
+  calling_my_func
+}
+
+# Test Integer#[] with 2 args
+assert_equal '0', %q{
+  3[0, 0]
+}
+
+# unspecified_bits + checkkeyword
+assert_equal '2', %q{
+  def callee = 1
+
+  # checkkeyword should see unspecified_bits=0 (use bar), not Integer 1 (set bar = foo).
+  def foo(foo, bar: foo) = bar
+
+  def entry(&block)
+    # write 1 at stack[3]. Calling #callee spills stack[3].
+    1 + (1 + (1 + (1 + callee)))
+    # &block is written to a register instead of stack[3]. When &block is popped and
+    # unspecified_bits is pushed, it must be written to stack[3], not to a register.
+    foo(1, bar: 2, &block)
+  end
+
+  entry # call branch_stub_hit (spill temps)
+  entry # doesn't call branch_stub_hit (not spill temps)
+}
+
+# Test rest and optional_params
+assert_equal '[true, true, true, true]', %q{
+  def my_func(stuff, base=nil, sort=true, *args)
+    [stuff, base, sort, args]
+  end
+
+  def calling_my_func
+    results = []
+    results << (my_func("test") == ["test", nil, true, []])
+    results << (my_func("test", :base) == ["test", :base, true, []])
+    results << (my_func("test", :base, false) == ["test", :base, false, []])
+    results << (my_func("test", :base, false, "other", "other") == ["test", :base, false, ["other", "other"]])
+    results
+  end
+  calling_my_func
+}
+
+# Test rest and optional_params and splat
+assert_equal '[true, true, true, true, true]', %q{
+  def my_func(stuff, base=nil, sort=true, *args)
+    [stuff, base, sort, args]
+  end
+
+  def calling_my_func
+    results = []
+    splat = ["test"]
+    results << (my_func(*splat) == ["test", nil, true, []])
+    splat = [:base]
+    results << (my_func("test", *splat) == ["test", :base, true, []])
+    splat = [:base, false]
+    results << (my_func("test", *splat) == ["test", :base, false, []])
+    splat = [:base, false, "other", "other"]
+    results << (my_func("test", *splat) == ["test", :base, false, ["other", "other"]])
+    splat = ["test", :base, false, "other", "other"]
+    results << (my_func(*splat) == ["test", :base, false, ["other", "other"]])
+    results
+  end
+  calling_my_func
+}
+
+# Regresssion test: rest and optional and splat
+assert_equal 'true', %q{
+  def my_func(base=nil, *args)
+    [base, args]
+  end
+
+  def calling_my_func
+    array = []
+    my_func(:base, :rest1, *array) == [:base, [:rest1]]
+  end
+
+  calling_my_func
+}
+
+# Fix failed case for large splat
+assert_equal 'true', %q{
+  def d(a, b=:b)
+  end
+
+  def calling_func
+    ary = 1380888.times;
+    d(*ary)
+  end
+  begin
+    calling_func
+  rescue ArgumentError
+    true
+  end
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT

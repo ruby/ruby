@@ -3,30 +3,105 @@
 require "forwardable"
 
 class CSV
+  # = \CSV::Row
+  # A \CSV::Row instance represents a \CSV table row.
+  # (see {class CSV}[../CSV.html]).
   #
-  # A CSV::Row is part Array and part Hash. It retains an order for the fields
-  # and allows duplicates just as an Array would, but also allows you to access
-  # fields by name just as you could if they were in a Hash.
+  # The instance may have:
+  # - Fields: each is an object, not necessarily a \String.
+  # - Headers: each serves a key, and also need not be a \String.
   #
-  # All rows returned by CSV will be constructed from this class, if header row
-  # processing is activated.
+  # === Instance Methods
+  #
+  # \CSV::Row has three groups of instance methods:
+  # - Its own internally defined instance methods.
+  # - Methods included by module Enumerable.
+  # - Methods delegated to class Array.:
+  #   * Array#empty?
+  #   * Array#length
+  #   * Array#size
+  #
+  # == Creating a \CSV::Row Instance
+  #
+  # Commonly, a new \CSV::Row instance is created by parsing \CSV source
+  # that has headers:
+  #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   table = CSV.parse(source, headers: true)
+  #   table.each {|row| p row }
+  # Output:
+  #   #<CSV::Row "Name":"foo" "Value":"0">
+  #   #<CSV::Row "Name":"bar" "Value":"1">
+  #   #<CSV::Row "Name":"baz" "Value":"2">
+  #
+  # You can also create a row directly. See ::new.
+  #
+  # == Headers
+  #
+  # Like a \CSV::Table, a \CSV::Row has headers.
+  #
+  # A \CSV::Row that was created by parsing \CSV source
+  # inherits its headers from the table:
+  #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+  #   table = CSV.parse(source, headers: true)
+  #   row = table.first
+  #   row.headers # => ["Name", "Value"]
+  #
+  # You can also create a new row with headers;
+  # like the keys in a \Hash, the headers need not be Strings:
+  #   row = CSV::Row.new([:name, :value], ['foo', 0])
+  #   row.headers # => [:name, :value]
+  #
+  # The new row retains its headers even if added to a table
+  # that has headers:
+  #   table << row # => #<CSV::Table mode:col_or_row row_count:5>
+  #   row.headers # => [:name, :value]
+  #   row[:name] # => "foo"
+  #   row['Name'] # => nil
+  #
+  #
+  #
+  # == Accessing Fields
+  #
+  # You may access a field in a \CSV::Row with either its \Integer index
+  # (\Array-style) or its header (\Hash-style).
+  #
+  # Fetch a field using method #[]:
+  #   row = CSV::Row.new(['Name', 'Value'], ['foo', 0])
+  #   row[1] # => 0
+  #   row['Value'] # => 0
+  #
+  # Set a field using method #[]=:
+  #   row = CSV::Row.new(['Name', 'Value'], ['foo', 0])
+  #   row # => #<CSV::Row "Name":"foo" "Value":0>
+  #   row[0] = 'bar'
+  #   row['Value'] = 1
+  #   row # => #<CSV::Row "Name":"bar" "Value":1>
   #
   class Row
+    # :call-seq:
+    #   CSV::Row.new(headers, fields, header_row = false) -> csv_row
     #
-    # Constructs a new CSV::Row from +headers+ and +fields+, which are expected
-    # to be Arrays. If one Array is shorter than the other, it will be padded
-    # with +nil+ objects.
+    # Returns the new \CSV::Row instance constructed from
+    # arguments +headers+ and +fields+; both should be Arrays;
+    # note that the fields need not be Strings:
+    #   row = CSV::Row.new(['Name', 'Value'], ['foo', 0])
+    #   row # => #<CSV::Row "Name":"foo" "Value":0>
     #
-    # The optional +header_row+ parameter can be set to +true+ to indicate, via
-    # CSV::Row.header_row?() and CSV::Row.field_row?(), that this is a header
-    # row. Otherwise, the row assumes to be a field row.
+    # If the \Array lengths are different, the shorter is +nil+-filled:
+    #   row = CSV::Row.new(['Name', 'Value', 'Date', 'Size'], ['foo', 0])
+    #   row # => #<CSV::Row "Name":"foo" "Value":0 "Date":nil "Size":nil>
     #
-    # A CSV::Row object supports the following Array methods through delegation:
+    # Each \CSV::Row object is either a <i>field row</i> or a <i>header row</i>;
+    # by default, a new row is a field row;  for the row created above:
+    #   row.field_row? # => true
+    #   row.header_row? # => false
     #
-    # * empty?()
-    # * length()
-    # * size()
-    #
+    # If the optional argument +header_row+ is given as +true+,
+    # the created row is a header row:
+    #   row = CSV::Row.new(['Name', 'Value'], ['foo', 0], header_row = true)
+    #   row # => #<CSV::Row "Name":"foo" "Value":0>
+    #   row.field_row? # => false
+    #   row.header_row? # => true
     def initialize(headers, fields, header_row = false)
       @header_row = header_row
       headers.each { |h| h.freeze if h.is_a? String }
@@ -48,6 +123,10 @@ class CSV
     extend Forwardable
     def_delegators :@row, :empty?, :length, :size
 
+    # :call-seq:
+    #   row.initialize_copy(other_row) -> self
+    #
+    # Calls superclass method.
     def initialize_copy(other)
       super_return_value = super
       @row = @row.collect(&:dup)
@@ -71,7 +150,7 @@ class CSV
     end
 
     # :call-seq:
-    #    row.headers
+    #    row.headers -> array_of_headers
     #
     # Returns the headers for this row:
     #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
@@ -83,9 +162,9 @@ class CSV
     end
 
     # :call-seq:
-    #   field(index)
-    #   field(header)
-    #   field(header, offset)
+    #   field(index) -> value
+    #   field(header) -> value
+    #   field(header, offset) -> value
     #
     # Returns the field value for the given +index+ or +header+.
     #
@@ -137,9 +216,9 @@ class CSV
 
     #
     # :call-seq:
-    #   fetch(header)
-    #   fetch(header, default)
-    #   fetch(header) {|row| ... }
+    #   fetch(header) -> value
+    #   fetch(header, default) -> value
+    #   fetch(header) {|row| ... } -> value
     #
     # Returns the field value as specified by +header+.
     #
@@ -193,7 +272,7 @@ class CSV
     end
 
     # :call-seq:
-    #   row.has_key?(header)
+    #   row.has_key?(header) -> true or false
     #
     # Returns +true+ if there is a field with the given +header+,
     # +false+ otherwise.
@@ -320,7 +399,7 @@ class CSV
     end
 
     # :call-seq:
-    #   row.push(*values) ->self
+    #   row.push(*values) -> self
     #
     # Appends each of the given +values+ to +self+ as a field; returns +self+:
     #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
@@ -403,7 +482,7 @@ class CSV
     end
 
     # :call-seq:
-    #   self.fields(*specifiers)
+    #   self.fields(*specifiers) -> array_of_fields
     #
     # Returns field values per the given +specifiers+, which may be any mixture of:
     # - \Integer index.
@@ -471,15 +550,26 @@ class CSV
     end
     alias_method :values_at, :fields
 
-    #
     # :call-seq:
-    #   index( header )
-    #   index( header, offset )
+    #   index(header) -> index
+    #   index(header, offset) -> index
     #
-    # This method will return the index of a field with the provided +header+.
-    # The +offset+ can be used to locate duplicate header names, as described in
-    # CSV::Row.field().
+    # Returns the index for the given header, if it exists;
+    # otherwise returns +nil+.
     #
+    # With the single argument +header+, returns the index
+    # of the first-found field with the given +header+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.index('Name') # => 0
+    #   row.index('NAME') # => nil
+    #
+    # With arguments +header+ and +offset+,
+    # returns the index of the first-found field with given +header+,
+    # but ignoring the first +offset+ fields:
+    #   row.index('Name', 1) # => 1
+    #   row.index('Name', 3) # => nil
     def index(header, minimum_index = 0)
       # find the pair
       index = headers[minimum_index..-1].index(header)
@@ -487,24 +577,36 @@ class CSV
       index.nil? ? nil : index + minimum_index
     end
 
+    # :call-seq:
+    #   row.field?(value) -> true or false
     #
-    # Returns +true+ if +data+ matches a field in this row, and +false+
-    # otherwise.
-    #
+    # Returns +true+ if +value+ is a field in this row, +false+ otherwise:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.field?('Bar') # => true
+    #   row.field?('BAR') # => false
     def field?(data)
       fields.include? data
     end
 
     include Enumerable
 
+    # :call-seq:
+    #   row.each {|header, value| ... } -> self
     #
-    # Yields each pair of the row as header and field tuples (much like
-    # iterating over a Hash). This method returns the row for chaining.
+    # Calls the block with each header-value pair; returns +self+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   row.each {|header, value| p [header, value] }
+    # Output:
+    #   ["Name", "Foo"]
+    #   ["Name", "Bar"]
+    #   ["Name", "Baz"]
     #
-    # If no block is given, an Enumerator is returned.
-    #
-    # Support for Enumerable.
-    #
+    # If no block is given, returns a new Enumerator:
+    #   row.each # => #<Enumerator: #<CSV::Row "Name":"Foo" "Name":"Bar" "Name":"Baz">:each>
     def each(&block)
       return enum_for(__method__) { size } unless block_given?
 
@@ -515,10 +617,19 @@ class CSV
 
     alias_method :each_pair, :each
 
+    # :call-seq:
+    #   row == other -> true or false
     #
-    # Returns +true+ if this row contains the same headers and fields in the
-    # same order as +other+.
-    #
+    # Returns +true+ if +other+ is a /CSV::Row that has the same
+    # fields (headers and values) in the same order as +self+;
+    # otherwise returns +false+:
+    #   source = "Name,Name,Name\nFoo,Bar,Baz\n"
+    #   table = CSV.parse(source, headers: true)
+    #   row = table[0]
+    #   other_row = table[0]
+    #   row == other_row # => true
+    #   other_row = table[1]
+    #   row == other_row # => false
     def ==(other)
       return @row == other.row if other.is_a? CSV::Row
       @row == other
@@ -548,7 +659,29 @@ class CSV
     end
     alias_method :to_hash, :to_h
 
+    # :call-seq:
+    #   row.deconstruct_keys(keys) -> hash
+    #
+    # Returns the new \Hash suitable for pattern matching containing only the
+    # keys specified as an argument.
+    def deconstruct_keys(keys)
+      if keys.nil?
+        to_h
+      else
+        keys.to_h { |key| [key, self[key]] }
+      end
+    end
+
     alias_method :to_ary, :to_a
+
+    # :call-seq:
+    #   row.deconstruct -> array
+    #
+    # Returns the new \Array suitable for pattern matching containing the values
+    # of the row.
+    def deconstruct
+      fields
+    end
 
     # :call-seq:
     #   row.to_csv -> csv_string
@@ -570,7 +703,7 @@ class CSV
     # by +index_or_header+ and +specifiers+.
     #
     # The nested objects may be instances of various classes.
-    # See {Dig Methods}[https://docs.ruby-lang.org/en/master/doc/dig_methods_rdoc.html].
+    # See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
     #
     # Examples:
     #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"

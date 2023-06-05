@@ -19,7 +19,7 @@ module Bundler
         # Stringify options that could be set as symbols
         %w[ref branch tag revision].each {|k| options[k] = options[k].to_s if options[k] }
 
-        @uri        = options["uri"] || ""
+        @uri        = URINormalizer.normalize_suffix(options["uri"] || "", :trailing_slash => false)
         @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"]
@@ -64,7 +64,7 @@ module Bundler
           at = if local?
             path
           elsif user_ref = options["ref"]
-            if ref =~ /\A[a-z0-9]{4,}\z/i
+            if /\A[a-z0-9]{4,}\z/i.match?(ref)
               shortref_for_display(user_ref)
             else
               user_ref
@@ -72,7 +72,7 @@ module Bundler
           elsif ref
             ref
           else
-            git_proxy.branch
+            current_branch
           end
 
           rev = "at #{at}@#{shortref_for_display(revision)}"
@@ -102,13 +102,7 @@ module Bundler
         @install_path ||= begin
           git_scope = "#{base_name}-#{shortref_for_path(revision)}"
 
-          path = Bundler.install_path.join(git_scope)
-
-          if !path.exist? && Bundler.requires_sudo?
-            Bundler.user_bundle_path.join(Bundler.ruby_scope).join(git_scope)
-          else
-            path
-          end
+          Bundler.install_path.join(git_scope)
         end
       end
 
@@ -132,7 +126,7 @@ module Bundler
         path = Pathname.new(path)
         path = path.expand_path(Bundler.root) unless path.relative?
 
-        unless options["branch"] || Bundler.settings[:disable_local_branch_check]
+        unless branch || Bundler.settings[:disable_local_branch_check]
           raise GitError, "Cannot use local override for #{name} at #{path} because " \
             ":branch is not specified in Gemfile. Specify a branch or run " \
             "`bundle config unset local.#{override_for(original_path)}` to remove the local override"
@@ -147,14 +141,14 @@ module Bundler
 
         # Create a new git proxy without the cached revision
         # so the Gemfile.lock always picks up the new revision.
-        @git_proxy = GitProxy.new(path, uri, ref)
+        @git_proxy = GitProxy.new(path, uri, options)
 
-        if git_proxy.branch != options["branch"] && !Bundler.settings[:disable_local_branch_check]
+        if current_branch != branch && !Bundler.settings[:disable_local_branch_check]
           raise GitError, "Local override for #{name} at #{path} is using branch " \
-            "#{git_proxy.branch} but Gemfile specifies #{options["branch"]}"
+            "#{current_branch} but Gemfile specifies #{branch}"
         end
 
-        changed = cached_revision && cached_revision != git_proxy.revision
+        changed = cached_revision && cached_revision != revision
 
         if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(cached_revision)
           raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(cached_revision)} " \
@@ -179,9 +173,10 @@ module Bundler
       end
 
       def install(spec, options = {})
+        return if Bundler.settings[:no_install]
         force = options[:force]
 
-        print_using_message "Using #{version_message(spec)} from #{self}"
+        print_using_message "Using #{version_message(spec, options[:previous_spec])} from #{self}"
 
         if (requires_checkout? && !@copied) || force
           Bundler.ui.debug "  * Checking out revision: #{ref}"
@@ -219,13 +214,11 @@ module Bundler
       # across different projects, this cache will be shared.
       # When using local git repos, this is set to the local repo.
       def cache_path
-        @cache_path ||= begin
-          if Bundler.requires_sudo? || Bundler.feature_flag.global_gem_cache?
-            Bundler.user_cache
-          else
-            Bundler.bundle_path.join("cache", "bundler")
-          end.join("git", git_scope)
-        end
+        @cache_path ||= if Bundler.feature_flag.global_gem_cache?
+          Bundler.user_cache
+        else
+          Bundler.bundle_path.join("cache", "bundler")
+        end.join("git", git_scope)
       end
 
       def app_cache_dirname
@@ -234,6 +227,10 @@ module Bundler
 
       def revision
         git_proxy.revision
+      end
+
+      def current_branch
+        git_proxy.current_branch
       end
 
       def allow_git_ops?
@@ -299,7 +296,7 @@ module Bundler
       end
 
       def uri_hash
-        if uri =~ %r{^\w+://(\w+@)?}
+        if %r{^\w+://(\w+@)?}.match?(uri)
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
           input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
@@ -321,7 +318,7 @@ module Bundler
       end
 
       def git_proxy
-        @git_proxy ||= GitProxy.new(cache_path, uri, ref, cached_revision, self)
+        @git_proxy ||= GitProxy.new(cache_path, uri, options, cached_revision, self)
       end
 
       def fetch
@@ -336,7 +333,7 @@ module Bundler
 
       def load_gemspec(file)
         stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
         StubSpecification.from_stub(stub)
       end
 

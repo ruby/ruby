@@ -9,32 +9,25 @@ if RUBY_PLATFORM =~ /s390x/
 end
 
 class TestGCCompact < Test::Unit::TestCase
-  module SupportsCompact
+  module CompactionSupportInspector
+    def supports_auto_compact?
+      GC::OPTS.include?("GC_COMPACTION_SUPPORTED")
+    end
+  end
+
+  module OmitUnlessCompactSupported
+    include CompactionSupportInspector
+
     def setup
       omit "autocompact not supported on this platform" unless supports_auto_compact?
       super
     end
-
-    private
-
-    def supports_auto_compact?
-      return false if /wasm/ =~ RUBY_PLATFORM
-      return true unless defined?(Etc::SC_PAGE_SIZE)
-
-      begin
-        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
-      rescue NotImplementedError
-      rescue ArgumentError
-      end
-
-      true
-    end
   end
 
-  include SupportsCompact
+  include OmitUnlessCompactSupported
 
   class AutoCompact < Test::Unit::TestCase
-    include SupportsCompact
+    include OmitUnlessCompactSupported
 
     def test_enable_autocompact
       before = GC.auto_compact
@@ -88,13 +81,39 @@ class TestGCCompact < Test::Unit::TestCase
     end
   end
 
-  def os_page_size
-    return true unless defined?(Etc::SC_PAGE_SIZE)
+  class CompactMethodsNotImplemented < Test::Unit::TestCase
+    include CompactionSupportInspector
+
+    def assert_not_implemented(method, *args)
+      omit "autocompact is supported on this platform" if supports_auto_compact?
+
+      assert_raise(NotImplementedError) { GC.send(method, *args) }
+      refute(GC.respond_to?(method), "GC.#{method} should be defined as rb_f_notimplement")
+    end
+
+    def test_gc_compact_not_implemented
+      assert_not_implemented(:compact)
+    end
+
+    def test_gc_auto_compact_get_not_implemented
+      assert_not_implemented(:auto_compact)
+    end
+
+    def test_gc_auto_compact_set_not_implemented
+      assert_not_implemented(:auto_compact=, true)
+    end
+
+    def test_gc_latest_compact_info_not_implemented
+      assert_not_implemented(:latest_compact_info)
+    end
+
+    def test_gc_verify_compaction_references_not_implemented
+      assert_not_implemented(:verify_compaction_references)
+    end
   end
 
-  def setup
-    omit "autocompact not supported on this platform" unless supports_auto_compact?
-    super
+  def os_page_size
+    return true unless defined?(Etc::SC_PAGE_SIZE)
   end
 
   def test_gc_compact_stats
@@ -147,7 +166,7 @@ class TestGCCompact < Test::Unit::TestCase
     hash = list_of_objects.hash
     GC.verify_compaction_references(toward: :empty)
     assert_equal hash, list_of_objects.hash
-    GC.verify_compaction_references(double_heap: false)
+    GC.verify_compaction_references(expand_heap: false)
     assert_equal hash, list_of_objects.hash
   end
 
@@ -171,5 +190,283 @@ class TestGCCompact < Test::Unit::TestCase
     count = GC.stat(:compact_count)
     GC.compact
     assert_equal count + 1, GC.stat(:compact_count)
+  end
+
+  def test_compacting_from_trace_point
+    obj = Object.new
+    def obj.tracee
+      :ret # expected to emit both line and call event from one instruction
+    end
+
+    results = []
+    TracePoint.new(:call, :line) do |tp|
+      results << tp.event
+      GC.verify_compaction_references
+    end.enable(target: obj.method(:tracee)) do
+      obj.tracee
+    end
+
+    assert_equal([:call, :line], results)
+  end
+
+  def test_updating_references_for_heap_allocated_shared_arrays
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = []
+      50.times { |i| ary << i }
+
+      # Pointer in slice should point to buffer of ary
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+    end;
+  end
+
+  def test_updating_references_for_embed_shared_arrays
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = Array.new(50)
+      50.times { |i| ary[i] = i }
+
+      # Ensure ary is embedded
+      assert_include(ObjectSpace.dump(ary), '"embedded":true')
+
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+    end;
+  end
+
+  def test_updating_references_for_heap_allocated_frozen_shared_arrays
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = []
+      50.times { |i| ary << i }
+      # Frozen arrays can become shared root without RARRAY_SHARED_ROOT_FLAG
+      ary.freeze
+
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+    end;
+  end
+
+  def test_updating_references_for_embed_frozen_shared_arrays
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = Array.new(50)
+      50.times { |i| ary[i] = i }
+      # Frozen arrays can become shared root without RARRAY_SHARED_ROOT_FLAG
+      ary.freeze
+
+      # Ensure ary is embedded
+      assert_include(ObjectSpace.dump(ary), '"embedded":true')
+
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+    end;
+  end
+
+  def test_moving_arrays_down_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ARY_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      arys = ARY_COUNT.times.map do
+        ary = "abbbbbbbbbb".chars
+        ary.uniq!
+      end
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT)
+      assert_include(ObjectSpace.dump(arys[0]), '"embedded":true')
+    end;
+  end
+
+  def test_moving_arrays_up_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ARY_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      ary = "hello".chars
+      arys = ARY_COUNT.times.map do
+        x = []
+        ary.each { |e| x << e }
+        x
+      end
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT)
+      assert_include(ObjectSpace.dump(arys[0]), '"embedded":true')
+    end;
+  end
+
+  def test_moving_objects_between_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      class Foo
+        def add_ivars
+          10.times do |i|
+            instance_variable_set("@foo" + i.to_s, 0)
+          end
+        end
+      end
+
+      OBJ_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      ary = OBJ_COUNT.times.map { Foo.new }
+      ary.each(&:add_ivars)
+
+      GC.start
+      Foo.new.add_ivars
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
+      assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
+    end;
+  end
+
+  def test_moving_strings_up_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      STR_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+      ary = STR_COUNT.times.map { "" << str }
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
+      assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
+    end;
+  end
+
+  def test_moving_strings_down_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      STR_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).squeeze! }
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
+      assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
+    end;
+  end
+
+  def test_moving_hashes_down_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    # AR and ST hashes are in the same size pool on 32 bit
+    omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
+
+    assert_separately(%w[-robjspace], "#{<<~'begin;'}\n#{<<~'end;'}", timeout: 10, signal: :SEGV)
+    begin;
+      HASH_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      before_read_barrier_faults = GC.stat(:read_barrier_faults)
+
+      base_hash = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }
+      ary = HASH_COUNT.times.map { base_hash.dup }
+      ary.each { |h| h[:i] = 9 }
+
+      before_stat_heap = GC.stat_heap
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      after_stat_heap = GC.stat_heap
+
+      assert_operator(stats[:moved_down][:T_HASH], :>=, 500, "read barrier faults: before #{before_read_barrier_faults}, after #{GC.stat(:read_barrier_faults)}, stat_heap: before #{before_stat_heap}, after: #{after_stat_heap}, stats: #{stats}")
+    end;
+  end
+
+  def test_moving_objects_between_size_pools_keeps_shape_frozen_status
+    # [Bug #19536]
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class A
+        def add_ivars
+          @a = @b = @c = @d = 1
+        end
+
+        def set_a
+          @a = 10
+        end
+      end
+
+      a = A.new
+      a.add_ivars
+      a.freeze
+
+      b = A.new
+      b.add_ivars
+      b.set_a # Set the inline cache in set_a
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_raise(FrozenError) { a.set_a }
+    end;
   end
 end

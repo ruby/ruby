@@ -1,10 +1,11 @@
 # frozen_string_literal: false
-require "test/unit"
 require "irb"
 require "fileutils"
 
+require_relative "helper"
+
 module TestIRB
-  class TestInit < Test::Unit::TestCase
+  class TestInit < TestCase
     def setup
       # IRBRC is for RVM...
       @backup_env = %w[HOME XDG_CONFIG_HOME IRBRC].each_with_object({}) do |env, hash|
@@ -16,6 +17,7 @@ module TestIRB
     def teardown
       ENV.update(@backup_env)
       FileUtils.rm_rf(@tmpdir)
+      IRB.conf.delete(:SCRIPT)
     end
 
     def test_setup_with_argv_preserves_global_argv
@@ -35,13 +37,16 @@ module TestIRB
     def test_rc_file
       tmpdir = @tmpdir
       Dir.chdir(tmpdir) do
+        ENV["XDG_CONFIG_HOME"] = "#{tmpdir}/xdg"
         IRB.conf[:RC_NAME_GENERATOR] = nil
         assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
         assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
+        assert_file.not_exist?(tmpdir+"/xdg")
         IRB.conf[:RC_NAME_GENERATOR] = nil
         FileUtils.touch(tmpdir+"/.irb#{IRB::IRBRC_EXT}")
         assert_equal(tmpdir+"/.irb#{IRB::IRBRC_EXT}", IRB.rc_file)
         assert_equal(tmpdir+"/.irb_history", IRB.rc_file("_history"))
+        assert_file.not_exist?(tmpdir+"/xdg")
       end
     end
 
@@ -79,12 +84,84 @@ module TestIRB
       IRB.setup(__FILE__)
       refute IRB.conf[:USE_COLORIZE]
 
+      ENV['NO_COLOR'] = ''
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_COLORIZE]
+
       ENV['NO_COLOR'] = nil
       IRB.setup(__FILE__)
       assert IRB.conf[:USE_COLORIZE]
     ensure
       ENV['NO_COLOR'] = orig_no_color
       IRB.conf[:USE_COLORIZE] = orig_use_colorize
+    end
+
+    def test_use_autocomplete_environment_variable
+      orig_use_autocomplete_env = ENV['IRB_USE_AUTOCOMPLETE']
+      orig_use_autocomplete_conf = IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = nil
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = ''
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = 'false'
+      IRB.setup(__FILE__)
+      refute IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = 'true'
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_AUTOCOMPLETE]
+    ensure
+      ENV["IRB_USE_AUTOCOMPLETE"] = orig_use_autocomplete_env
+      IRB.conf[:USE_AUTOCOMPLETE] = orig_use_autocomplete_conf
+    end
+
+    def test_noscript
+      argv = %w[--noscript -- -f]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['-f'], argv)
+
+      argv = %w[--noscript -- a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['a'], argv)
+
+      argv = %w[--noscript a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['a'], argv)
+
+      argv = %w[--script --noscript a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['a'], argv)
+
+      argv = %w[--noscript --script a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('a', IRB.conf[:SCRIPT])
+      assert_equal([], argv)
+    end
+
+    def test_dash
+      argv = %w[-]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('-', IRB.conf[:SCRIPT])
+      assert_equal([], argv)
+
+      argv = %w[-- -]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('-', IRB.conf[:SCRIPT])
+      assert_equal([], argv)
+
+      argv = %w[-- - -f]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('-', IRB.conf[:SCRIPT])
+      assert_equal(['-f'], argv)
     end
 
     private

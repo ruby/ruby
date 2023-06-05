@@ -192,7 +192,7 @@ RSpec.describe "bundle outdated" do
             vcr (6.0.0)
 
         PLATFORMS
-          #{specific_local_platform}
+          #{local_platform}
 
         DEPENDENCIES
           dotenv
@@ -570,8 +570,7 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  filter_strict_option = Bundler.feature_flag.bundler_2_mode? ? :"filter-strict" : :strict
-  describe "with --#{filter_strict_option} option" do
+  describe "with --filter-strict option" do
     before do
       build_repo2 do
         build_git "foo", :path => lib_path("foo")
@@ -595,7 +594,23 @@ RSpec.describe "bundle outdated" do
         build_gem "weakling", "0.0.5"
       end
 
-      bundle :outdated, filter_strict_option => true, :raise_on_error => false
+      bundle :outdated, :"filter-strict" => true, :raise_on_error => false
+
+      expected_output = <<~TABLE.strip
+        Gem       Current  Latest  Requested  Groups
+        weakling  0.0.3    0.0.5   ~> 0.0.1   default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+
+    it "only reports gems that have a newer version that matches the specified dependency version requirements, using --strict alias" do
+      update_repo2 do
+        build_gem "activesupport", "3.0"
+        build_gem "weakling", "0.0.5"
+      end
+
+      bundle :outdated, :strict => true, :raise_on_error => false
 
       expected_output = <<~TABLE.strip
         Gem       Current  Latest  Requested  Groups
@@ -611,7 +626,7 @@ RSpec.describe "bundle outdated" do
         gem "activesupport", platforms: [:ruby_22]
       G
 
-      bundle :outdated, filter_strict_option => true
+      bundle :outdated, :"filter-strict" => true
 
       expect(out).to end_with("Bundle up to date!")
     end
@@ -622,7 +637,7 @@ RSpec.describe "bundle outdated" do
         gem "rack_middleware", "1.0"
       G
 
-      bundle :outdated, filter_strict_option => true
+      bundle :outdated, :"filter-strict" => true
 
       expect(out).to end_with("Bundle up to date!")
     end
@@ -640,7 +655,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.0.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-patch" => true, :raise_on_error => false
+        bundle :outdated, :"filter-strict" => true, "filter-patch" => true, :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem       Current  Latest  Requested  Groups
@@ -662,7 +677,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.1.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-minor" => true, :raise_on_error => false
+        bundle :outdated, :"filter-strict" => true, "filter-minor" => true, :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem       Current  Latest  Requested  Groups
@@ -684,7 +699,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "1.1.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-major" => true, :raise_on_error => false
+        bundle :outdated, :"filter-strict" => true, "filter-major" => true, :raise_on_error => false
 
         expected_output = <<~TABLE.strip
           Gem       Current  Latest  Requested  Groups
@@ -822,7 +837,7 @@ RSpec.describe "bundle outdated" do
       expect(out).to end_with("Bundle up to date!")
     end
 
-    it "reports that updates are available if the JRuby platform is used", :jruby do
+    it "reports that updates are available if the JRuby platform is used", :jruby_only do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "laduradura", '= 5.15.2', :platforms => [:ruby, :jruby]
@@ -1099,116 +1114,125 @@ RSpec.describe "bundle outdated" do
   end
 
   context "conservative updates" do
-    context "without update-strict" do
-      before do
-        build_repo4 do
-          build_gem "patch", %w[1.0.0 1.0.1]
-          build_gem "minor", %w[1.0.0 1.0.1 1.1.0]
-          build_gem "major", %w[1.0.0 1.0.1 1.1.0 2.0.0]
-        end
-
-        # establish a lockfile set to 1.0.0
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem 'patch', '1.0.0'
-          gem 'minor', '1.0.0'
-          gem 'major', '1.0.0'
-        G
-
-        # remove 1.4.3 requirement and bar altogether
-        # to setup update specs below
-        gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem 'patch'
-          gem 'minor'
-          gem 'major'
-        G
+    before do
+      build_repo4 do
+        build_gem "patch", %w[1.0.0 1.0.1]
+        build_gem "minor", %w[1.0.0 1.0.1 1.1.0]
+        build_gem "major", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
-      it "shows nothing when patching and filtering to minor" do
-        bundle "outdated --patch --filter-minor"
+      # establish a lockfile set to 1.0.0
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'patch', '1.0.0'
+        gem 'minor', '1.0.0'
+        gem 'major', '1.0.0'
+      G
 
-        expect(out).to end_with("No minor updates to display.")
-      end
-
-      it "shows all gems when patching and filtering to patch" do
-        bundle "outdated --patch --filter-patch", :raise_on_error => false
-
-        expected_output = <<~TABLE.strip
-          Gem    Current  Latest  Requested  Groups
-          major  1.0.0    1.0.1   >= 0       default
-          minor  1.0.0    1.0.1   >= 0       default
-          patch  1.0.0    1.0.1   >= 0       default
-        TABLE
-
-        expect(out).to end_with(expected_output)
-      end
-
-      it "shows minor and major when updating to minor and filtering to patch and minor" do
-        bundle "outdated --minor --filter-minor", :raise_on_error => false
-
-        expected_output = <<~TABLE.strip
-          Gem    Current  Latest  Requested  Groups
-          major  1.0.0    1.1.0   >= 0       default
-          minor  1.0.0    1.1.0   >= 0       default
-        TABLE
-
-        expect(out).to end_with(expected_output)
-      end
-
-      it "shows minor when updating to major and filtering to minor with parseable" do
-        bundle "outdated --major --filter-minor --parseable", :raise_on_error => false
-
-        expect(out).not_to include("patch (newest")
-        expect(out).to include("minor (newest")
-        expect(out).not_to include("major (newest")
-      end
+      # remove all version requirements
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'patch'
+        gem 'minor'
+        gem 'major'
+      G
     end
 
-    context "with update-strict" do
-      before do
-        build_repo4 do
-          build_gem "foo", %w[1.4.3 1.4.4] do |s|
-            s.add_dependency "bar", "~> 2.0"
-          end
-          build_gem "foo", %w[1.4.5 1.5.0] do |s|
-            s.add_dependency "bar", "~> 2.1"
-          end
-          build_gem "foo", %w[1.5.1] do |s|
-            s.add_dependency "bar", "~> 3.0"
-          end
-          build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
-          build_gem "qux", %w[1.0.0 1.1.0 2.0.0]
+    it "shows nothing when patching and filtering to minor" do
+      bundle "outdated --patch --filter-minor"
+
+      expect(out).to end_with("No minor updates to display.")
+    end
+
+    it "shows all gems when patching and filtering to patch" do
+      bundle "outdated --patch --filter-patch", :raise_on_error => false
+
+      expected_output = <<~TABLE.strip
+        Gem    Current  Latest  Requested  Groups
+        major  1.0.0    1.0.1   >= 0       default
+        minor  1.0.0    1.0.1   >= 0       default
+        patch  1.0.0    1.0.1   >= 0       default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+
+    it "shows minor and major when updating to minor and filtering to patch and minor" do
+      bundle "outdated --minor --filter-minor", :raise_on_error => false
+
+      expected_output = <<~TABLE.strip
+        Gem    Current  Latest  Requested  Groups
+        major  1.0.0    1.1.0   >= 0       default
+        minor  1.0.0    1.1.0   >= 0       default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+
+    it "shows minor when updating to major and filtering to minor with parseable" do
+      bundle "outdated --major --filter-minor --parseable", :raise_on_error => false
+
+      expect(out).not_to include("patch (newest")
+      expect(out).to include("minor (newest")
+      expect(out).not_to include("major (newest")
+    end
+  end
+
+  context "tricky conservative updates" do
+    before do
+      build_repo4 do
+        build_gem "foo", %w[1.4.3 1.4.4] do |s|
+          s.add_dependency "bar", "~> 2.0"
         end
-
-        # establish a lockfile set to 1.4.3
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem 'foo', '1.4.3'
-          gem 'bar', '2.0.3'
-          gem 'qux', '1.0.0'
-        G
-
-        # remove 1.4.3 requirement and bar altogether
-        # to setup update specs below
-        gemfile <<-G
-          source "#{file_uri_for(gem_repo4)}"
-          gem 'foo'
-          gem 'qux'
-        G
+        build_gem "foo", %w[1.4.5 1.5.0] do |s|
+          s.add_dependency "bar", "~> 2.1"
+        end
+        build_gem "foo", %w[1.5.1] do |s|
+          s.add_dependency "bar", "~> 3.0"
+        end
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "qux", %w[1.0.0 1.1.0 2.0.0]
       end
 
-      it "shows gems with update-strict updating to patch and filtering to patch" do
-        bundle "outdated --patch --update-strict --filter-patch", :raise_on_error => false
+      # establish a lockfile set to 1.4.3
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo', '1.4.3'
+        gem 'bar', '2.0.3'
+        gem 'qux', '1.0.0'
+      G
 
-        expected_output = <<~TABLE.strip
-          Gem  Current  Latest  Requested  Groups
-          bar  2.0.3    2.0.5
-          foo  1.4.3    1.4.4   >= 0       default
-        TABLE
+      # remove 1.4.3 requirement and bar altogether
+      # to setup update specs below
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo'
+        gem 'qux'
+      G
+    end
 
-        expect(out).to end_with(expected_output)
-      end
+    it "shows gems updating to patch and filtering to patch" do
+      bundle "outdated --patch --filter-patch", :raise_on_error => false, :env => { "DEBUG_RESOLVER" => "1" }
+
+      expected_output = <<~TABLE.strip
+        Gem  Current  Latest  Requested  Groups
+        bar  2.0.3    2.0.5
+        foo  1.4.3    1.4.4   >= 0       default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+
+    it "shows gems updating to patch and filtering to patch, in debug mode" do
+      bundle "outdated --patch --filter-patch", :raise_on_error => false, :env => { "DEBUG" => "1" }
+
+      expected_output = <<~TABLE.strip
+        Gem  Current  Latest  Requested  Groups   Path
+        bar  2.0.3    2.0.5
+        foo  1.4.3    1.4.4   >= 0       default
+      TABLE
+
+      expect(out).to end_with(expected_output)
     end
   end
 

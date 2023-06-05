@@ -513,9 +513,9 @@ and modifier +if+ has lower precedence than <code>=</code>.
 
 == Flip-Flop
 
-The flip-flop is a rarely seen conditional expression.  It's primary use is
-for processing text from ruby one-line programs used with <code>ruby -n</code>
-or <code>ruby -p</code>.
+The flip-flop is a slightly special conditional expression.  One of its
+typical uses is processing text from ruby one-line programs used with
+<code>ruby -n</code> or <code>ruby -p</code>.
 
 The form of the flip-flop is an expression that indicates when the
 flip-flop turns on, <code>..</code> (or <code>...</code>), then an expression
@@ -523,7 +523,6 @@ that indicates when the flip-flop will turn off.  While the flip-flop is on it
 will continue to evaluate to +true+, and +false+ when off.
 
 Here is an example:
-
 
   selected = []
 
@@ -533,15 +532,16 @@ Here is an example:
 
   p selected # prints [2, 3, 4, 5, 6, 7, 8]
 
-In the above example, the on condition is <code>n==2</code>.  The flip-flop
-is initially off (false) for 0 and 1, but becomes on (true) for 2 and remains
-on through 8.  After 8 it turns off and remains off for 9 and 10.
+In the above example, the `on' condition is <code>n==2</code>.  The flip-flop
+is initially `off' (false) for 0 and 1, but becomes `on' (true) for 2 and
+remains `on' through 8.  After 8 it turns off and remains `off' for 9 and 10.
 
-The flip-flop must be used inside a conditional such as +if+, +while+,
-+unless+, +until+ etc. including the modifier forms.
+The flip-flop must be used inside a conditional such as <code>!</code>,
+<code>? :</code>, +not+, +if+, +while+, +unless+, +until+ etc. including the
+modifier forms.
 
-When you use an inclusive range (<code>..</code>), the off condition is
-evaluated when the on condition changes:
+When you use an inclusive range (<code>..</code>), the `off' condition is
+evaluated when the `on' condition changes:
 
   selected = []
 
@@ -555,7 +555,7 @@ Here, both sides of the flip-flop are evaluated so the flip-flop turns on and
 off only when +value+ equals 2.  Since the flip-flop turned on in the
 iteration it returns true.
 
-When you use an exclusive range (<code>...</code>), the off condition is
+When you use an exclusive range (<code>...</code>), the `off' condition is
 evaluated on the following iteration:
 
   selected = []
@@ -567,5 +567,73 @@ evaluated on the following iteration:
   p selected # prints [2, 3, 4, 5]
 
 Here, the flip-flop turns on when +value+ equals 2, but doesn't turn off on the
-same iteration.  The off condition isn't evaluated until the following
+same iteration.  The `off' condition isn't evaluated until the following
 iteration and +value+ will never be two again.
+
+== throw/catch
+
++throw+ and +catch+ are used to implement non-local control flow in Ruby. They
+operate similarly to exceptions, allowing control to pass directly from the
+place where +throw+ is called to the place where the matching +catch+ is
+called. The main difference between +throw+/+catch+ and the use of exceptions
+is that +throw+/+catch+ are designed for expected non-local control flow,
+while exceptions are designed for exceptional control flow situations, such
+as handling unexpected errors.
+
+When using +throw+, you provide 1-2 arguments.  The first argument is the
+value for the matching +catch+.  The second argument is optional (defaults to
++nil+), and will be the value that +catch+ returns if there is a matching
++throw+ inside the +catch+ block.  If no matching +throw+ method is called
+inside a +catch+ block, the +catch+ method returns the return value of the
+block passed to it.
+
+  def a(n)
+    throw :d, :a if n == 0
+    b(n)
+  end
+
+  def b(n)
+    throw :d, :b if n == 1
+    c(n)
+  end
+
+  def c(n)
+    throw :d if n == 2
+  end
+
+  4.times.map do |i|
+    catch(:d) do
+      a(i)
+      :default
+    end
+  end
+  # => [:a, :b, nil, :default]
+
+If the first argument you pass to +throw+ is not handled by a matching
++catch+, an UncaughtThrowError exception will be raised.  This is because
++throw+/+catch+ should only be used for expected control flow changes, so
+using a value that is not already expected is an error.
+
++throw+/+catch+ are implemented as Kernel methods (Kernel#throw and
+Kernel#catch), not as keywords. So they are not usable directly if you are
+in a BasicObject context.  You can use Kernel.throw and Kernel.catch in
+this case:
+
+  BasicObject.new.instance_exec do
+    def a
+      b
+    end
+
+    def b
+      c
+    end
+
+    def c
+      ::Kernel.throw :d, :e
+    end
+
+    result = ::Kernel.catch(:d) do
+      a
+    end
+    result # => :e
+  end

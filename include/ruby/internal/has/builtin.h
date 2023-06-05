@@ -78,10 +78,6 @@
 # define RBIMPL_HAS_BUILTIN___builtin_unreachable       RBIMPL_COMPILER_SINCE(GCC, 4, 5, 0)
 # /* Note that "0, 0, 0" might be inaccurate. */
 
-#elif RBIMPL_COMPILER_IS(MSVC)
-# /* MSVC has UNREACHABLE, but that is not __builtin_unreachable. */
-# define RBIMPL_HAS_BUILTIN(_) 0
-
 #else
 # /* Take config.h definition when available */
 # define RBIMPL_HAS_BUILTIN(_) ((RBIMPL_HAS_BUILTIN_ ## _)+0)
@@ -111,7 +107,7 @@
 # define RBIMPL_HAS_BUILTIN___builtin_rotateright64     0
 # define RBIMPL_HAS_BUILTIN___builtin_popcountll        HAVE_BUILTIN___BUILTIN_POPCOUNTLL
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
-# if defined(UNREACHABLE)
+# if defined(HAVE___BUILTIN_UNREACHABLE)
 #  define RBIMPL_HAS_BUILTIN___builtin_unreachable 1
 # else
 #  define RBIMPL_HAS_BUILTIN___builtin_unreachable 0

@@ -178,13 +178,8 @@ class TestNetHTTP < Test::Unit::TestCase
       http = Net::HTTP.new 'hostname.example'
 
       assert_equal true, http.proxy?
-      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
-        assert_equal 'foo', http.proxy_user
-        assert_equal 'bar', http.proxy_pass
-      else
-        assert_nil http.proxy_user
-        assert_nil http.proxy_pass
-      end
+      assert_equal 'foo', http.proxy_user
+      assert_equal 'bar', http.proxy_pass
     end
   end
 
@@ -195,13 +190,8 @@ class TestNetHTTP < Test::Unit::TestCase
       http = Net::HTTP.new 'hostname.example'
 
       assert_equal true, http.proxy?
-      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
-        assert_equal "Y\\X", http.proxy_user
-        assert_equal "R%S] ?X", http.proxy_pass
-      else
-        assert_nil http.proxy_user
-        assert_nil http.proxy_pass
-      end
+      assert_equal "Y\\X", http.proxy_user
+      assert_equal "R%S] ?X", http.proxy_pass
     end
   end
 
@@ -1294,3 +1284,87 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
   end
 end
 
+class TestNetHTTPForceEncoding < Test::Unit::TestCase
+  CONFIG = {
+    'host' => 'localhost',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def fe_request(force_enc, content_type=nil)
+    @server.mount_proc('/fe') do |req, res|
+      res['Content-Type'] = content_type if content_type
+      res.body = "hello\u1234"
+    end
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.local_host = Addrinfo.tcp(config('host'), config('port')).ip_address
+    assert_not_nil(http.local_host)
+    assert_nil(http.local_port)
+
+    http.response_body_encoding = force_enc
+    http.get('/fe')
+  end
+
+  def test_response_body_encoding_false
+    res = fe_request(false)
+    assert_equal("hello\u1234".b, res.body)
+    assert_equal(Encoding::ASCII_8BIT, res.body.encoding)
+  end
+
+  def test_response_body_encoding_true_without_content_type
+    res = fe_request(true)
+    assert_equal("hello\u1234".b, res.body)
+    assert_equal(Encoding::ASCII_8BIT, res.body.encoding)
+  end
+
+  def test_response_body_encoding_true_with_content_type
+    res = fe_request(true, 'text/html; charset=utf-8')
+    assert_equal("hello\u1234", res.body)
+    assert_equal(Encoding::UTF_8, res.body.encoding)
+  end
+
+  def test_response_body_encoding_string_without_content_type
+    res = fe_request('utf-8')
+    assert_equal("hello\u1234", res.body)
+    assert_equal(Encoding::UTF_8, res.body.encoding)
+  end
+
+  def test_response_body_encoding_encoding_without_content_type
+    res = fe_request(Encoding::UTF_8)
+    assert_equal("hello\u1234", res.body)
+    assert_equal(Encoding::UTF_8, res.body.encoding)
+  end
+end
+
+class TestNetHTTPPartialResponse < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_partial_response
+    str = "0123456789"
+    @server.mount_proc('/') do |req, res|
+      res.status = 200
+      res['Content-Type'] = 'text/plain'
+
+      res.body = str
+      res['Content-Length'] = str.length + 1
+    end
+    @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    res = http.get('/')
+    assert_equal(str, res.body)
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.ignore_eof = false
+    assert_raise(EOFError) {http.get('/')}
+  end
+end

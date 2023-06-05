@@ -147,7 +147,7 @@ RBIMPL_ATTR_NONNULL(())
  * init_Foo(void)
  * {
  *     foo = rb_eval_string("...");
- *     rb_define_global_variable("$foo", &foo);
+ *     rb_define_variable("$foo", &foo);
  * }
  * ```
  *

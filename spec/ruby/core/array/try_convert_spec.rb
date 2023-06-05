@@ -39,7 +39,7 @@ describe "Array.try_convert" do
   it "sends #to_ary to the argument and raises TypeError if it's not a kind of Array" do
     obj = mock("to_ary")
     obj.should_receive(:to_ary).and_return(Object.new)
-    -> { Array.try_convert obj }.should raise_error(TypeError)
+    -> { Array.try_convert obj }.should raise_error(TypeError, "can't convert MockObject to Array (MockObject#to_ary gives Object)")
   end
 
   it "does not rescue exceptions raised by #to_ary" do

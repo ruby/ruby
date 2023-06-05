@@ -1,8 +1,9 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../gemcutter_utilities'
-require_relative '../text'
+
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../gemcutter_utilities"
+require_relative "../text"
 
 class Gem::Commands::OwnerCommand < Gem::Command
   include Gem::Text
@@ -12,7 +13,12 @@ class Gem::Commands::OwnerCommand < Gem::Command
   def description # :nodoc:
     <<-EOF
 The owner command lets you add and remove owners of a gem on a push
-server (the default is https://rubygems.org).
+server (the default is https://rubygems.org). Multiple owners can be
+added or removed at the same time, if the flag is given multiple times.
+
+The supported user identifiers are dependent on the push server.
+For rubygems.org, both e-mail and handle are supported, even though the
+user identifier field is called "email".
 
 The owner of a gem has the permission to push new versions, yank existing
 versions or edit the HTML page of the gem.  Be careful of who you give push
@@ -29,23 +35,23 @@ permission to.
   end
 
   def initialize
-    super 'owner', 'Manage gem owners of a gem on the push server'
+    super "owner", "Manage gem owners of a gem on the push server"
     add_proxy_option
     add_key_option
     add_otp_option
     defaults.merge! :add => [], :remove => []
 
-    add_option '-a', '--add EMAIL', 'Add an owner' do |value, options|
+    add_option "-a", "--add NEW_OWNER", "Add an owner by user identifier" do |value, options|
       options[:add] << value
     end
 
-    add_option '-r', '--remove EMAIL', 'Remove an owner' do |value, options|
+    add_option "-r", "--remove OLD_OWNER", "Remove an owner by user identifier" do |value, options|
       options[:remove] << value
     end
 
-    add_option '-h', '--host HOST',
-               'Use another gemcutter-compatible host',
-               '  (e.g. https://rubygems.org)' do |value, options|
+    add_option "-h", "--host HOST",
+               "Use another gemcutter-compatible host",
+               "  (e.g. https://rubygems.org)" do |value, options|
       options[:host] = value
     end
   end
@@ -73,7 +79,7 @@ permission to.
 
       say "Owners for gem: #{name}"
       owners.each do |owner|
-        say "- #{owner['email'] || owner['handle'] || owner['id']}"
+        say "- #{owner["email"] || owner["handle"] || owner["id"]}"
       end
     end
   end
@@ -88,14 +94,14 @@ permission to.
 
   def manage_owners(method, name, owners)
     owners.each do |owner|
-      begin
-        response = send_owner_request(method, name, owner)
-        action = method == :delete ? "Removing" : "Adding"
+      response = send_owner_request(method, name, owner)
+      action = method == :delete ? "Removing" : "Adding"
 
-        with_response response, "#{action} #{owner}"
-      rescue
-        # ignore
-      end
+      with_response response, "#{action} #{owner}"
+    rescue Gem::WebauthnVerificationError => e
+      raise e
+    rescue StandardError
+      # ignore early exits to allow for completing the iteration of all owners
     end
   end
 
@@ -103,7 +109,7 @@ permission to.
 
   def send_owner_request(method, name, owner)
     rubygems_api_request method, "api/v1/gems/#{name}/owners", scope: get_owner_scope(method: method) do |request|
-      request.set_form_data 'email' => owner
+      request.set_form_data "email" => owner
       request.add_field "Authorization", api_key
     end
   end

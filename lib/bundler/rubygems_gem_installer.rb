@@ -25,7 +25,7 @@ module Bundler
 
       extract_files
 
-      build_extensions
+      build_extensions if spec.extensions.any?
       write_build_info_file
       run_post_build_hooks
 
@@ -66,41 +66,53 @@ module Bundler
 
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
-      unless extension_cache_path && extension_dir = spec.extension_dir
-        require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
+      extension_dir = spec.extension_dir
+      unless extension_cache_path && extension_dir
+        prepare_extension_build(extension_dir)
         return super
       end
 
-      extension_dir = Pathname.new(extension_dir)
       build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
       if build_complete && !options[:force]
-        SharedHelpers.filesystem_access(extension_dir.parent, &:mkpath)
+        SharedHelpers.filesystem_access(File.dirname(extension_dir)) do |p|
+          FileUtils.mkpath p
+        end
         SharedHelpers.filesystem_access(extension_cache_path) do
-          FileUtils.cp_r extension_cache_path, spec.extension_dir
+          FileUtils.cp_r extension_cache_path, extension_dir
         end
       else
-        require "shellwords" # compensate missing require in rubygems before version 3.2.25
+        prepare_extension_build(extension_dir)
         super
-        if extension_dir.directory? # not made for gems without extensions
-          SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
-          SharedHelpers.filesystem_access(extension_cache_path) do
-            FileUtils.cp_r extension_dir, extension_cache_path
-          end
+        SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
+        SharedHelpers.filesystem_access(extension_cache_path) do
+          FileUtils.cp_r extension_dir, extension_cache_path
         end
+      end
+    end
+
+    def spec
+      if Bundler.rubygems.provides?("< 3.3.12") # RubyGems implementation rescues and re-raises errors before 3.3.12 and we don't want that
+        @package.spec
+      else
+        super
       end
     end
 
     private
 
-    def strict_rm_rf(dir)
-      # FileUtils.rm_rf should probably rise in case of permission issues like
-      # `rm -rf` does. However, it fails to delete the folder silently due to
-      # https://github.com/ruby/fileutils/issues/57. It should probably be fixed
-      # inside `fileutils` but for now I`m checking whether the folder was
-      # removed after it completes, and raising otherwise.
-      FileUtils.rm_rf dir
+    def prepare_extension_build(extension_dir)
+      SharedHelpers.filesystem_access(extension_dir, :create) do
+        FileUtils.mkdir_p extension_dir
+      end
+      require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
+    end
 
-      raise PermissionError.new(dir, :delete) if File.directory?(dir)
+    def strict_rm_rf(dir)
+      Bundler.rm_rf dir
+    rescue StandardError => e
+      raise unless File.exist?(dir)
+
+      raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
     end
 
     def validate_bundler_checksum(checksum)

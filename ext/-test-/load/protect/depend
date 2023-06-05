@@ -14,6 +14,7 @@ protect.o: $(hdrdir)/ruby/backward/2/stdalign.h
 protect.o: $(hdrdir)/ruby/backward/2/stdarg.h
 protect.o: $(hdrdir)/ruby/defines.h
 protect.o: $(hdrdir)/ruby/intern.h
+protect.o: $(hdrdir)/ruby/internal/abi.h
 protect.o: $(hdrdir)/ruby/internal/anyargs.h
 protect.o: $(hdrdir)/ruby/internal/arithmetic.h
 protect.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -51,6 +52,7 @@ protect.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 protect.o: $(hdrdir)/ruby/internal/attr/noinline.h
 protect.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 protect.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+protect.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 protect.o: $(hdrdir)/ruby/internal/attr/pure.h
 protect.o: $(hdrdir)/ruby/internal/attr/restrict.h
 protect.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +112,6 @@ protect.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 protect.o: $(hdrdir)/ruby/internal/intern/error.h
 protect.o: $(hdrdir)/ruby/internal/intern/eval.h
 protect.o: $(hdrdir)/ruby/internal/intern/file.h
-protect.o: $(hdrdir)/ruby/internal/intern/gc.h
 protect.o: $(hdrdir)/ruby/internal/intern/hash.h
 protect.o: $(hdrdir)/ruby/internal/intern/io.h
 protect.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +142,6 @@ protect.o: $(hdrdir)/ruby/internal/memory.h
 protect.o: $(hdrdir)/ruby/internal/method.h
 protect.o: $(hdrdir)/ruby/internal/module.h
 protect.o: $(hdrdir)/ruby/internal/newobj.h
-protect.o: $(hdrdir)/ruby/internal/rgengc.h
 protect.o: $(hdrdir)/ruby/internal/scan_args.h
 protect.o: $(hdrdir)/ruby/internal/special_consts.h
 protect.o: $(hdrdir)/ruby/internal/static_assert.h

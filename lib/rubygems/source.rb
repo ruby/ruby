@@ -12,9 +12,9 @@ class Gem::Source
   include Gem::Text
 
   FILES = { # :nodoc:
-    :released   => 'specs',
-    :latest     => 'latest_specs',
-    :prerelease => 'prerelease_specs',
+    :released => "specs",
+    :latest => "latest_specs",
+    :prerelease => "prerelease_specs",
   }.freeze
 
   ##
@@ -26,15 +26,8 @@ class Gem::Source
   # Creates a new Source which will use the index located at +uri+.
 
   def initialize(uri)
-    begin
-      unless uri.kind_of? URI
-        uri = URI.parse(uri.to_s)
-      end
-    rescue URI::InvalidURIError
-      raise if Gem::Source == self.class
-    end
-
-    @uri = uri
+    require_relative "uri"
+    @uri = Gem::Uri.parse!(uri)
     @update_cache = nil
   end
 
@@ -51,25 +44,23 @@ class Gem::Source
          Gem::Source::Vendor then
       -1
     when Gem::Source then
-      if !@uri
+      unless @uri
         return 0 unless other.uri
         return 1
       end
 
-      return -1 if !other.uri
+      return -1 unless other.uri
 
       # Returning 1 here ensures that when sorting a list of sources, the
       # original ordering of sources supplied by the user is preserved.
       return 1 unless @uri.to_s == other.uri.to_s
 
       0
-    else
-      nil
     end
   end
 
   def ==(other) # :nodoc:
-    self.class === other and @uri == other.uri
+    self.class === other && @uri == other.uri
   end
 
   alias_method :eql?, :== # :nodoc:
@@ -78,7 +69,7 @@ class Gem::Source
   # Returns a Set that can fetch specifications from this source.
 
   def dependency_resolver_set # :nodoc:
-    return Gem::Resolver::IndexSet.new self if 'file' == uri.scheme
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
 
     fetch_uri = if uri.host == "rubygems.org"
       index_uri = uri.dup
@@ -109,7 +100,7 @@ class Gem::Source
 
   def cache_dir(uri)
     # Correct for windows paths
-    escaped_path = uri.path.sub(/^\/([a-z]):\//i, '/\\1-/')
+    escaped_path = uri.path.sub(%r{^/([a-z]):/}i, '/\\1-/')
     escaped_path.tap(&Gem::UNTAINT)
 
     File.join Gem.spec_cache_dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
@@ -144,11 +135,15 @@ class Gem::Source
 
     if File.exist? local_spec
       spec = Gem.read_binary local_spec
-      spec = Marshal.load(spec) rescue nil
+      spec = begin
+               Marshal.load(spec)
+             rescue StandardError
+               nil
+             end
       return spec if spec
     end
 
-    source_uri.path << '.rz'
+    source_uri.path << ".rz"
 
     spec = fetcher.fetch_path source_uri
     spec = Gem::Util.inflate spec
@@ -157,7 +152,7 @@ class Gem::Source
       require "fileutils"
       FileUtils.mkdir_p cache_dir
 
-      File.open local_spec, 'wb' do |io|
+      File.open local_spec, "wb" do |io|
         io.write spec
       end
     end
@@ -216,13 +211,13 @@ class Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Remote:', ']' do
+    q.group 2, "[Remote:", "]" do
       q.breakable
       q.text @uri.to_s
 
       if api = uri
         q.breakable
-        q.text 'API URI: '
+        q.text "API URI: "
         q.text api.to_s
       end
     end
@@ -236,13 +231,13 @@ class Gem::Source
   private
 
   def enforce_trailing_slash(uri)
-    uri.merge(uri.path.gsub(/\/+$/, '') + '/')
+    uri.merge(uri.path.gsub(%r{/+$}, "") + "/")
   end
 end
 
-require_relative 'source/git'
-require_relative 'source/installed'
-require_relative 'source/specific_file'
-require_relative 'source/local'
-require_relative 'source/lock'
-require_relative 'source/vendor'
+require_relative "source/git"
+require_relative "source/installed"
+require_relative "source/specific_file"
+require_relative "source/local"
+require_relative "source/lock"
+require_relative "source/vendor"

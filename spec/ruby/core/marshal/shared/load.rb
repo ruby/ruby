@@ -8,7 +8,11 @@ describe :marshal_load, shared: true do
 
   it "raises an ArgumentError when the dumped data is truncated" do
     obj = {first: 1, second: 2, third: 3}
-    -> { Marshal.send(@method, Marshal.dump(obj)[0, 5]) }.should raise_error(ArgumentError)
+    -> { Marshal.send(@method, Marshal.dump(obj)[0, 5]) }.should raise_error(ArgumentError, "marshal data too short")
+  end
+
+  it "raises an ArgumentError when the argument is empty String" do
+    -> { Marshal.send(@method, "") }.should raise_error(ArgumentError, "marshal data too short")
   end
 
   it "raises an ArgumentError when the dumped class is missing" do
@@ -50,23 +54,130 @@ describe :marshal_load, shared: true do
         regexp.should.frozen?
       end
 
+      it "returns frozen structs" do
+        struct = Marshal.send(@method, Marshal.dump(MarshalSpec::StructToDump.new(1, 2)), freeze: true)
+        struct.should == MarshalSpec::StructToDump.new(1, 2)
+        struct.should.frozen?
+      end
+
       it "returns frozen objects" do
         source_object = Object.new
-        source_object.instance_variable_set(:@foo, "bar")
 
         object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
         object.should.frozen?
-        object.instance_variable_get(:@foo).should.frozen?
+      end
+
+      describe "deep freezing" do
+        it "returns hashes with frozen keys and values" do
+          key = Object.new
+          value = Object.new
+          source_object = {key => value}
+
+          hash = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+          hash.size.should == 1
+          hash.keys[0].should.frozen?
+          hash.values[0].should.frozen?
+        end
+
+        it "returns arrays with frozen elements" do
+          object = Object.new
+          source_object = [object]
+
+          array = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+          array.size.should == 1
+          array[0].should.frozen?
+        end
+
+        it "returns structs with frozen members" do
+          object1 = Object.new
+          object2 = Object.new
+          source_object = MarshalSpec::StructToDump.new(object1, object2)
+
+          struct = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+          struct.a.should.frozen?
+          struct.b.should.frozen?
+        end
+
+        it "returns objects with frozen instance variables" do
+          source_object = Object.new
+          instance_variable = Object.new
+          source_object.instance_variable_set(:@a, instance_variable)
+
+          object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+          object.instance_variable_get(:@a).should != nil
+          object.instance_variable_get(:@a).should.frozen?
+        end
+
+        it "deduplicates frozen strings" do
+          source_object = ["foo" + "bar", "foobar"]
+          object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+
+          object[0].should equal(object[1])
+        end
       end
 
       it "does not freeze modules" do
-        Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
+        object = Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
+        object.should_not.frozen?
         Kernel.should_not.frozen?
       end
 
       it "does not freeze classes" do
-        Marshal.send(@method, Marshal.dump(Object), freeze: true)
+        object = Marshal.send(@method, Marshal.dump(Object), freeze: true)
+        object.should_not.frozen?
         Object.should_not.frozen?
+      end
+
+      ruby_bug "#19427", ""..."3.3" do
+        it "does freeze extended objects" do
+          object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x00", freeze: true)
+          object.should.frozen?
+        end
+
+        it "does freeze extended objects with instance variables" do
+          object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x06:\n@ivarT", freeze: true)
+          object.should.frozen?
+        end
+      end
+
+      ruby_bug "#19427", "3.1"..."3.3" do
+        it "returns frozen object having #_dump method" do
+          object = Marshal.send(@method, Marshal.dump(UserDefined.new), freeze: true)
+          object.should.frozen?
+        end
+
+        it "returns frozen object responding to #marshal_dump and #marshal_load" do
+          object = Marshal.send(@method, Marshal.dump(UserMarshal.new), freeze: true)
+          object.should.frozen?
+        end
+
+        it "returns frozen object extended by a module" do
+          object = Object.new
+          object.extend(MarshalSpec::ModuleToExtendBy)
+
+          object = Marshal.send(@method, Marshal.dump(object), freeze: true)
+          object.should.frozen?
+        end
+      end
+
+      it "does not call freeze method" do
+        object = MarshalSpec::ObjectWithFreezeRaisingException.new
+        object = Marshal.send(@method, Marshal.dump(object), freeze: true)
+        object.should.frozen?
+      end
+
+      it "returns frozen object even if object does not respond to freeze method" do
+        object = MarshalSpec::ObjectWithoutFreeze.new
+        object = Marshal.send(@method, Marshal.dump(object), freeze: true)
+        object.should.frozen?
+      end
+
+      it "returns a frozen object when is an instance of String/Array/Regexp/Hash subclass and has instance variables" do
+        source_object = UserString.new
+        source_object.instance_variable_set(:@foo, "bar")
+
+        object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        object.should.frozen?
       end
 
       describe "when called with a proc" do
@@ -129,6 +240,14 @@ describe :marshal_load, shared: true do
       it "no longer mutate the object after it was passed to the proc" do
         string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
         string.should.frozen?
+      end
+    end
+
+    ruby_bug "#19427", ""..."3.3" do
+      it "call the proc with extended objects" do
+        objs = []
+        obj = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x00", Proc.new { |o| objs << o; o })
+        objs.should == [obj]
       end
     end
 
@@ -195,7 +314,19 @@ describe :marshal_load, shared: true do
       marshaled_obj.field2.should be_nil
     end
 
-    describe "that return an immediate value" do
+    it "loads the String in non US-ASCII and non UTF-8 encoding" do
+      source_object = UserDefinedString.new("a".encode("windows-1251"))
+      object = Marshal.send(@method, Marshal.dump(source_object))
+      object.string.should == "a".encode("windows-1251")
+    end
+
+    it "loads the String in multibyte encoding" do
+      source_object = UserDefinedString.new("a".encode("utf-32le"))
+      object = Marshal.send(@method, Marshal.dump(source_object))
+      object.string.should == "a".encode("utf-32le")
+    end
+
+    describe "that returns an immediate value" do
       it "loads an array containing an instance of the object, followed by multiple instances of another object" do
         str = "string"
 
@@ -306,89 +437,6 @@ describe :marshal_load, shared: true do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns an untainted object if source is untainted" do
-      x = Object.new
-      y = Marshal.send(@method, Marshal.dump(x))
-      y.tainted?.should be_false
-    end
-
-    describe "when source is tainted" do
-      it "returns a tainted object" do
-        x = Object.new
-        x.taint
-        s = Marshal.dump(x)
-        y = Marshal.send(@method, s)
-        y.tainted?.should be_true
-
-        # note that round-trip via Marshal does not preserve
-        # the taintedness at each level of the nested structure
-        y = Marshal.send(@method, Marshal.dump([[x]]))
-        y.tainted?.should be_true
-        y.first.tainted?.should be_true
-        y.first.first.tainted?.should be_true
-      end
-
-      it "does not taint Symbols" do
-        x = [:x]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-
-      it "does not taint Fixnums" do
-        x = [1]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-
-      it "does not taint Bignums" do
-        x = [bignum_value]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-
-      it "does not taint Floats" do
-        x = [1.2]
-        y = Marshal.send(@method, Marshal.dump(x).taint)
-        y.tainted?.should be_true
-        y.first.tainted?.should be_false
-      end
-    end
-
-    it "preserves taintedness of nested structure" do
-      x = Object.new
-      a = [[x]]
-      x.taint
-      y = Marshal.send(@method, Marshal.dump(a))
-      y.tainted?.should be_true
-      y.first.tainted?.should be_true
-      y.first.first.tainted?.should be_true
-    end
-
-    it "returns a trusted object if source is trusted" do
-      x = Object.new
-      y = Marshal.send(@method, Marshal.dump(x))
-      y.untrusted?.should be_false
-    end
-
-    it "returns an untrusted object if source is untrusted" do
-      x = Object.new
-      x.untrust
-      y = Marshal.send(@method, Marshal.dump(x))
-      y.untrusted?.should be_true
-
-      # note that round-trip via Marshal does not preserve
-      # the untrustedness at each level of the nested structure
-      y = Marshal.send(@method, Marshal.dump([[x]]))
-      y.untrusted?.should be_true
-      y.first.untrusted?.should be_true
-      y.first.first.untrusted?.should be_true
-    end
-  end
-
   # Note: Ruby 1.9 should be compatible with older marshal format
   MarshalSpec::DATA.each do |description, (object, marshal, attributes)|
     it "loads a #{description}" do
@@ -477,6 +525,38 @@ describe :marshal_load, shared: true do
       unmarshalled.instance_variable_get(:@hash_ivar).should == 'hash ivar'
       unmarshalled[:key].instance_variable_get(:@string_ivar).should == 'string ivar'
     end
+
+    ruby_version_is "3.1" do
+      it "preserves compare_by_identity behaviour" do
+        h = { a: 1 }
+        h.compare_by_identity
+        unmarshalled = Marshal.send(@method, Marshal.dump(h))
+        unmarshalled.should.compare_by_identity?
+
+        h = { a: 1 }
+        unmarshalled = Marshal.send(@method, Marshal.dump(h))
+        unmarshalled.should_not.compare_by_identity?
+      end
+
+      it "preserves compare_by_identity behaviour for a Hash subclass" do
+        h = UserHash.new({ a: 1 })
+        h.compare_by_identity
+        unmarshalled = Marshal.send(@method, Marshal.dump(h))
+        unmarshalled.should.compare_by_identity?
+
+        h = UserHash.new({ a: 1 })
+        unmarshalled = Marshal.send(@method, Marshal.dump(h))
+        unmarshalled.should_not.compare_by_identity?
+      end
+    end
+
+    it "allocates an instance of the proper class when Hash subclass with compare_by_identity behaviour" do
+      h = UserHash.new({ a: 1 })
+      h.compare_by_identity
+
+      unmarshalled = Marshal.send(@method, Marshal.dump(h))
+      unmarshalled.should.kind_of?(UserHash)
+    end
   end
 
   describe "for a Symbol" do
@@ -556,6 +636,12 @@ describe :marshal_load, shared: true do
       require 'stringio'
       obj = "This is a string which should be unmarshalled through StringIO stream!"
       Marshal.send(@method, StringIO.new(Marshal.dump(obj))).should == obj
+    end
+
+    it "sets binmode if it is loading through StringIO stream" do
+      io = StringIO.new("\004\b:\vsymbol")
+      def io.binmode; raise "binmode"; end
+      -> { Marshal.load(io) }.should raise_error(RuntimeError, "binmode")
     end
 
     it "loads a string with an ivar" do
@@ -791,7 +877,7 @@ describe :marshal_load, shared: true do
         [Meths, MethsMore, Regexp]
     end
 
-    it "loads a extended_user_regexp having ivar" do
+    it "loads a Regexp subclass instance variables when it is extended with a module" do
       obj = UserRegexp.new('').extend(Meths)
       obj.instance_variable_set(:@noise, 'much')
 
@@ -802,6 +888,25 @@ describe :marshal_load, shared: true do
       new_obj_metaclass_ancestors = class << new_obj; ancestors; end
       new_obj_metaclass_ancestors[@num_self_class, 3].should ==
         [Meths, UserRegexp, Regexp]
+    end
+
+    ruby_bug "#19439", ""..."3.3" do
+      it "restore the regexp instance variables" do
+        obj = Regexp.new("hello")
+        obj.instance_variable_set(:@regexp_ivar, [42])
+
+        new_obj = Marshal.send(@method, "\x04\bI/\nhello\x00\a:\x06EF:\x11@regexp_ivar[\x06i/")
+        new_obj.instance_variables.should == [:@regexp_ivar]
+        new_obj.instance_variable_get(:@regexp_ivar).should == [42]
+      end
+    end
+
+    it "preserves Regexp encoding" do
+      source_object = Regexp.new("a".encode("utf-32le"))
+      regexp = Marshal.send(@method, Marshal.dump(source_object))
+
+      regexp.encoding.should == Encoding::UTF_32LE
+      regexp.source.should == "a".encode("utf-32le")
     end
   end
 
@@ -936,16 +1041,46 @@ describe :marshal_load, shared: true do
       t1.should equal t2
     end
 
-    it "loads the zone" do
+    it "keeps the local zone" do
       with_timezone 'AST', 3 do
         t = Time.local(2012, 1, 1)
         Marshal.send(@method, Marshal.dump(t)).zone.should == t.zone
       end
     end
 
-    it "loads nanoseconds" do
+    it "keeps UTC zone" do
+      t = Time.now.utc
+      t2 = Marshal.send(@method, Marshal.dump(t))
+      t2.should.utc?
+    end
+
+    it "keeps the zone" do
+      t = nil
+
+      with_timezone 'AST', 4 do
+        t = Time.local(2012, 1, 1)
+      end
+
+      with_timezone 'EET', -2 do
+        Marshal.send(@method, Marshal.dump(t)).zone.should == 'AST'
+      end
+    end
+
+    it "keeps utc offset" do
+      t = Time.new(2007,11,1,15,25,0, "+09:00")
+      t2 = Marshal.send(@method, Marshal.dump(t))
+      t2.utc_offset.should == 32400
+    end
+
+    it "keeps nanoseconds" do
       t = Time.now
       Marshal.send(@method, Marshal.dump(t)).nsec.should == t.nsec
+    end
+
+    it "does not add any additional instance variable" do
+      t = Time.now
+      t2 = Marshal.send(@method, Marshal.dump(t))
+      t2.instance_variables.should.empty?
     end
   end
 

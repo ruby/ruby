@@ -1,17 +1,18 @@
 # frozen_string_literal: true
-require_relative 'helper'
+
+require_relative "helper"
 
 unless Gem::HAVE_OPENSSL
-  warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
+  warn "Skipping Gem::Security::TrustDir tests.  openssl not found."
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-  CHILD_CERT = load_cert 'child'
+  CHILD_CERT = load_cert "child"
 
   def setup
     super
 
-    @dest_dir = File.join @tempdir, 'trust'
+    @dest_dir = File.join @tempdir, "trust"
 
     @trust_dir = Gem::Security::TrustDir.new @dest_dir
   end
@@ -55,9 +56,9 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_path_exist trusted
 
-    mask = 0100600 & (~File.umask)
+    mask = 0o100600 & (~File.umask)
 
-    assert_equal mask, File.stat(trusted).mode unless win_platform?
+    assert_equal mask, File.stat(trusted).mode unless Gem.win_platform?
 
     assert_equal PUBLIC_CERT.to_pem, File.read(trusted)
   end
@@ -69,10 +70,10 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     assert_path_exist @dest_dir
 
-    mask = 040700 & (~File.umask)
-    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
+    mask = 0o040700 & (~File.umask)
+    mask |= 0o200000 if RUBY_PLATFORM.include?("aix")
 
-    assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
+    assert_equal mask, File.stat(@dest_dir).mode unless Gem.win_platform?
   end
 
   def test_verify_file
@@ -86,13 +87,13 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_verify_wrong_permissions
-    FileUtils.mkdir_p @dest_dir, :mode => 0777
+    FileUtils.mkdir_p @dest_dir, :mode => 0o777
 
     @trust_dir.verify
 
-    mask = 040700 & (~File.umask)
-    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
+    mask = 0o40700 & (~File.umask)
+    mask |= 0o200000 if RUBY_PLATFORM.include?("aix")
 
-    assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
+    assert_equal mask, File.stat(@dest_dir).mode unless Gem.win_platform?
   end
 end if Gem::HAVE_OPENSSL

@@ -32,6 +32,21 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(out).to eq(expected_gems.values.join("\n"))
     end
 
+    it "makes the gems available without bundler nor rubygems" do
+      testrb = String.new <<-RUBY
+        $:.unshift File.expand_path("bundle")
+        require "bundler/setup"
+
+      RUBY
+      expected_gems.each do |k, _|
+        testrb << "\nrequire \"#{k}\""
+        testrb << "\nputs #{k.upcase}"
+      end
+      sys_exec %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
+
+      expect(out).to eq(expected_gems.values.join("\n"))
+    end
+
     it "makes the gems available without bundler via Kernel.require" do
       testrb = String.new <<-RUBY
         $:.unshift File.expand_path("bundle")
@@ -113,10 +128,11 @@ RSpec.shared_examples "bundle install --standalone" do
       skip "does not work on rubygems versions where `--install_dir` doesn't respect --default" unless Gem::Installer.for_spec(loaded_gemspec, :install_dir => "/foo").default_spec_file == "/foo/specifications/default/bundler-#{Bundler::VERSION}.gemspec" # Since rubygems 3.2.0.rc.2
       skip "does not work on old rubies because the realworld gems that need to be installed don't support them" if RUBY_VERSION < "2.7.0"
 
-      realworld_system_gems "fiddle --version 1.0.8", "tsort --version 0.1.0"
+      realworld_system_gems "tsort --version 0.1.0"
 
-      necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "yaml --version 0.1.1", "logger --version 1.4.3", "etc --version 1.2.0", "stringio --version 3.0.0"]
+      necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.2.0", "stringio --version 3.0.1"]
       necessary_system_gems += ["shellwords --version 0.1.0", "base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
+      necessary_system_gems += ["yaml --version 0.1.1"] if Gem.rubygems_version < Gem::Version.new("3.4.a")
       realworld_system_gems(*necessary_system_gems, :path => scoped_gem_path(bundled_app("bundle")))
 
       build_gem "foo", "1.0.0", :to_system => true, :default => true do |s|
@@ -141,13 +157,20 @@ RSpec.shared_examples "bundle install --standalone" do
       bundle "lock", :dir => cwd, :artifice => "compact_index"
     end
 
-    it "works" do
+    it "works and points to the vendored copies, not to the default copies", :realworld do
       bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :dir => cwd, :artifice => "compact_index", :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+
+      load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
+
+      expect(load_path_lines).to eq [
+        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/bar-1.0.0/lib")',
+        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/foo-1.0.0/lib")',
+      ]
     end
   end
 
-  describe "with Gemfiles using path sources and resulting bundle moved to a folder hierarchy with different nesting" do
+  describe "with Gemfiles using absolute path sources and resulting bundle moved to a folder hierarchy with different nesting" do
     before do
       build_lib "minitest", "1.0.0", :path => lib_path("minitest")
 
@@ -177,7 +200,36 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with gems with native extension", :ruby_repo do
+  describe "with Gemfiles using relative path sources and app moved to a different root" do
+    before do
+      FileUtils.mkdir_p bundled_app("app/vendor")
+
+      build_lib "minitest", "1.0.0", :path => bundled_app("app/vendor/minitest")
+
+      gemfile bundled_app("app/Gemfile"), <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "minitest", :path => "vendor/minitest"
+      G
+
+      bundle "install", :standalone => true, :dir => bundled_app("app")
+
+      FileUtils.mv(bundled_app("app"), bundled_app2("app"))
+    end
+
+    it "also works" do
+      ruby <<-RUBY, :dir => bundled_app2("app")
+        require "./bundle/bundler/setup"
+
+        require "minitest"
+        puts MINITEST
+      RUBY
+
+      expect(out).to eq("1.0.0")
+      expect(err).to be_empty
+    end
+  end
+
+  describe "with gems with native extension" do
     before do
       bundle "config set --local path #{bundled_app("bundle")}"
       install_gemfile <<-G, :standalone => true, :dir => cwd
@@ -188,9 +240,13 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
-      extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
-      expect(extension_line).to start_with '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}/extensions/'
-      expect(extension_line).to end_with '/very_simple_binary-1.0")'
+      script_content = File.read(expected_path)
+      expect(script_content).to include("def self.ruby_api_version")
+      expect(script_content).to include("def self.extension_api_version")
+      extension_line = script_content.each_line.find {|line| line.include? "/extensions/" }.strip
+      platform = Gem::Platform.local
+      expect(extension_line).to start_with '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/extensions/'
+      expect(extension_line).to end_with platform.to_s + '/#{Gem.extension_api_version}/very_simple_binary-1.0")'
     end
   end
 
@@ -199,7 +255,7 @@ RSpec.shared_examples "bundle install --standalone" do
       build_git "bar", :gemspec => false do |s|
         s.write "lib/bar/version.rb", %(BAR_VERSION = '1.0')
         s.write "bar.gemspec", <<-G
-          lib = File.expand_path('../lib/', __FILE__)
+          lib = File.expand_path('lib/', __dir__)
           $:.unshift lib unless $:.include?(lib)
           require 'bar/version'
 
@@ -413,7 +469,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "creates stubs with the correct load path" do
       extension_line = File.read(bundled_app("bin/rails")).each_line.find {|line| line.include? "$:.unshift" }.strip
-      expect(extension_line).to eq %($:.unshift File.expand_path "../../bundle", path.realpath)
+      expect(extension_line).to eq %($:.unshift File.expand_path "../bundle", __dir__)
     end
   end
 end
@@ -428,4 +484,32 @@ RSpec.describe "bundle install --standalone run in a subdirectory" do
   let(:cwd) { bundled_app("bob").tap(&:mkpath) }
 
   include_examples("bundle install --standalone")
+end
+
+RSpec.describe "bundle install --standalone --local" do
+  before do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    system_gems "rack-1.0.0", :path => default_bundle_path
+  end
+
+  it "generates script pointing to system gems" do
+    bundle "install --standalone --local --verbose"
+
+    expect(out).to include("Using rack 1.0.0")
+
+    load_error_ruby <<-RUBY, "spec"
+      require "./bundler/setup"
+
+      require "rack"
+      puts RACK
+      require "spec"
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to eq("ZOMG LOAD ERROR")
+  end
 end

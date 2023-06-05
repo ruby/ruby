@@ -17,3 +17,10 @@ begin
 rescue LoadError
   warn "`did_you_mean' was not loaded."
 end if defined?(DidYouMean)
+
+begin
+  require 'syntax_suggest/core_ext'
+rescue LoadError
+  warn "`syntax_suggest' was not loaded."
+end if defined?(SyntaxSuggest)
+

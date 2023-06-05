@@ -3,6 +3,12 @@ require_relative '../../spec_helper'
 require 'fiber'
 
 describe "Fiber.current" do
+  ruby_version_is "3.1" do
+    it "is available without an extra require" do
+      ruby_exe("print Fiber.current.class", options: '--disable-gems --disable-did-you-mean').should == "Fiber"
+    end
+  end
+
   it "returns the root Fiber when called outside of a Fiber" do
     root = Fiber.current
     root.should be_an_instance_of(Fiber)

@@ -30,7 +30,7 @@ class RDoc::NormalModule < RDoc::ClassModule
   end
 
   def pretty_print q # :nodoc:
-    q.group 2, "[module #{full_name}: ", "]" do
+    q.group 2, "[module #{full_name}:", "]" do
       q.breakable
       q.text "includes:"
       q.breakable
@@ -71,4 +71,3 @@ class RDoc::NormalModule < RDoc::ClassModule
   end
 
 end
-

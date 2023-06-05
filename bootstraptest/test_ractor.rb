@@ -283,8 +283,7 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   30.times.map{|i|
     test i
   }
-} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ || # This always fails with --jit-wait --jit-min-calls=5
-  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
+} unless (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
@@ -501,7 +500,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     rs.delete r
     n
   }.sort
-}
+} unless /mswin/ =~ RUBY_PLATFORM # randomly hangs on mswin https://github.com/ruby/ruby/actions/runs/3753871445/jobs/6377551069#step:20:131
 
 # Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
@@ -515,9 +514,9 @@ assert_equal '[true, true, true]', %q{
     end
   }
   received = []
-  take = []
+  taken = []
   yielded = []
-  until rs.empty?
+  until received.size == RN && taken.size == RN && yielded.size == RN
     r, v = Ractor.select(CR, *rs, yield_value: 'yield')
     case r
     when :receive
@@ -525,11 +524,17 @@ assert_equal '[true, true, true]', %q{
     when :yield
       yielded << v
     else
-      take << v
+      taken << v
       rs.delete r
     end
   end
-  [received.all?('sendyield'), yielded.all?(nil), take.all?('take')]
+  r = [received == ['sendyield'] * RN,
+       yielded  == [nil] * RN,
+       taken    == ['take'] * RN,
+  ]
+
+  STDERR.puts [received, yielded, taken].inspect
+  r
 }
 
 # multiple Ractors can send to one Ractor
@@ -1471,21 +1476,6 @@ assert_equal "#{N}#{N}", %Q{
   }.map{|r| r.take}.join
 }
 
-# enc_table
-assert_equal "#{N/10}", %Q{
-  Ractor.new do
-    loop do
-      Encoding.find("test-enc-#{rand(5_000)}").inspect
-    rescue ArgumentError => e
-    end
-  end
-
-  src = Encoding.find("UTF-8")
-  #{N/10}.times{|i|
-    src.replicate("test-enc-\#{i}")
-  }
-}
-
 # Generic ivtbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
@@ -1504,8 +1494,9 @@ assert_equal "#{n}#{n}", %Q{
 
 # NameError
 assert_equal "ok", %q{
+  obj = "".freeze # NameError refers the receiver indirectly
   begin
-    bar
+    obj.bar
   rescue => err
   end
   begin
@@ -1541,7 +1532,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-}
+} unless ENV['RUN_OPTS'] =~ /rjit/ # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
@@ -1577,6 +1568,176 @@ assert_equal "ok", %q{
   rescue Ractor::IsolationError
     "ok"
   end
+}
+
+# check method cache invalidation
+assert_equal "ok", %q{
+  module M
+    def foo
+      @foo
+    end
+  end
+
+  class A
+    include M
+
+    def initialize
+      100.times { |i| instance_variable_set(:"@var_#{i}", "bad: #{i}") }
+      @foo = 2
+    end
+  end
+
+  class B
+    include M
+
+    def initialize
+      @foo = 1
+    end
+  end
+
+  Ractor.new do
+    b = B.new
+    100_000.times do
+      raise unless b.foo == 1
+    end
+  end
+
+  a = A.new
+  100_000.times do
+    raise unless a.foo == 2
+  end
+
+  "ok"
+}
+
+# check method cache invalidation
+assert_equal 'true', %q{
+  class C1; def self.foo = 1; end
+  class C2; def self.foo = 2; end
+  class C3; def self.foo = 3; end
+  class C4; def self.foo = 5; end
+  class C5; def self.foo = 7; end
+  class C6; def self.foo = 11; end
+  class C7; def self.foo = 13; end
+  class C8; def self.foo = 17; end
+
+  LN = 10_000
+  RN = 10
+  CS = [C1, C2, C3, C4, C5, C6, C7, C8]
+  rs = RN.times.map{|i|
+    Ractor.new(CS.shuffle){|cs|
+      LN.times.sum{
+        cs.inject(1){|r, c| r * c.foo} # c.foo invalidates method cache entry
+      }
+    }
+  }
+
+  n = CS.inject(1){|r, c| r * c.foo} * LN
+  rs.map{|r| r.take} == Array.new(RN){n}
+}
+
+# check experimental warning
+assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
+  Warning[:experimental] = $VERBOSE = true
+  STDERR.reopen(STDOUT)
+  eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
+}
+
+## Ractor::Selector
+
+# Selector#empty? returns true
+assert_equal 'true', %q{
+  s = Ractor::Selector.new
+  s.empty?
+}
+
+# Selector#empty? returns false if there is target ractors
+assert_equal 'false', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{}
+  s.empty?
+}
+
+# Selector#clear removes all ractors from the waiting list
+assert_equal 'true', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{10}
+  s.add Ractor.new{20}
+  s.clear
+  s.empty?
+}
+
+# Selector#wait can wait multiple ractors
+assert_equal '[10, 20, true]', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{10}
+  s.add Ractor.new{20}
+  r, v = s.wait
+  vs = []
+  vs << v
+  r, v = s.wait
+  vs << v
+  [*vs.sort, s.empty?]
+}
+
+# Selector#wait can wait multiple ractors with receiving.
+assert_equal '30', %q{
+  RN = 30
+  rs = RN.times.map{
+    Ractor.new{ :v }
+  }
+  s = Ractor::Selector.new(*rs)
+
+  results = []
+  until s.empty?
+    results << s.wait
+
+    # Note that s.wait can raise an exception because other Ractors/Threads
+    # can take from the same ractors in the waiting set.
+    # In this case there is no other takers so `s.wait` doesn't raise an error.
+  end
+
+  results.size
+}
+
+# Selector#wait can support dynamic addition
+yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
+assert_equal '600', %q{
+  RN = 100
+  s = Ractor::Selector.new
+  rs = RN.times.map{
+    Ractor.new{
+      Ractor.main << Ractor.new{ Ractor.yield :v3; :v4 }
+      Ractor.main << Ractor.new{ Ractor.yield :v5; :v6 }
+      Ractor.yield :v1
+      :v2
+    }
+  }
+
+  rs.each{|r| s.add(r)}
+  h = {v1: 0, v2: 0, v3: 0, v4: 0, v5: 0, v6: 0}
+
+  loop do
+    case s.wait receive: true
+    in :receive, r
+      s.add r
+    in r, v
+      h[v] += 1
+      break if h.all?{|k, v| v == RN}
+    end
+  end
+
+  h.sum{|k, v| v}
+} unless yjit_enabled # http://ci.rvm.jp/results/trunk-yjit@ruby-sp2-docker/4466770
+
+# Selector should be GCed (free'ed) withtou trouble
+assert_equal 'ok', %q{
+  RN = 30
+  rs = RN.times.map{
+    Ractor.new{ :v }
+  }
+  s = Ractor::Selector.new(*rs)
+  :ok
 }
 
 end # if !ENV['GITHUB_WORKFLOW']

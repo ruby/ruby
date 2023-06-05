@@ -56,6 +56,10 @@ describe "Symbol#casecmp with Symbol" do
     lower_a_tilde.casecmp(upper_a_tilde).should == 1
     lower_a_umlaut.casecmp(upper_a_umlaut).should == 1
   end
+
+  it "returns 0 for empty strings in different encodings" do
+    ''.to_sym.casecmp(''.encode("UTF-32LE").to_sym).should == 0
+  end
 end
 
 describe "Symbol#casecmp" do
@@ -140,5 +144,9 @@ describe 'Symbol#casecmp?' do
 
     upper_a_tilde.casecmp?(lower_a_tilde).should == nil
     lower_a_tilde.casecmp?(upper_a_tilde).should == nil
+  end
+
+  it "returns true for empty symbols in different encodings" do
+    ''.to_sym.should.casecmp?(''.encode("UTF-32LE").to_sym)
   end
 end

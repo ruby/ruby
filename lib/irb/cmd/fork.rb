@@ -1,18 +1,14 @@
 # frozen_string_literal: false
 #
 #   fork.rb -
-#   	$Release Version: 0.9.6 $
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
+require_relative "nop"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Fork < Nop
       def execute
@@ -33,5 +29,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

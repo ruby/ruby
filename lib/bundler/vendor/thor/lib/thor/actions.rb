@@ -175,7 +175,7 @@ class Bundler::Thor
       shell.padding += 1 if verbose
       @destination_stack.push File.expand_path(dir, destination_root)
 
-      # If the directory doesnt exist and we're not pretending
+      # If the directory doesn't exist and we're not pretending
       if !File.exist?(destination_root) && !pretend
         require "fileutils"
         FileUtils.mkdir_p(destination_root)
@@ -223,9 +223,10 @@ class Bundler::Thor
 
       contents = if is_uri
         require "open-uri"
-        URI.open(path, "Accept" => "application/x-thor-template", &:read)
+        # for ruby 2.1-2.4
+        URI.send(:open, path, "Accept" => "application/x-thor-template", &:read)
       else
-        open(path, &:read)
+        File.open(path, &:read)
       end
 
       instance_eval(contents, path)

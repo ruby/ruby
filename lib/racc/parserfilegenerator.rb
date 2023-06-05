@@ -310,8 +310,10 @@ module Racc
           racc_reduce_n,
           racc_use_result_var ]
       End
+      line "Ractor.make_shareable(Racc_arg) if defined?(Ractor)"
       line
       string_list 'Racc_token_to_s_table', table.token_to_s_table
+      line "Ractor.make_shareable(Racc_token_to_s_table) if defined?(Ractor)"
       line
       line "Racc_debug_parser = #{table.debug_parser}"
       line

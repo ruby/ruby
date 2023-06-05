@@ -1,6 +1,8 @@
 # frozen_string_literal: true
+
 module Gem
-  class List
+  # The Gem::List class is currently unused and will be removed in the next major rubygems version
+  class List # :nodoc:
     include Enumerable
     attr_accessor :value, :tail
 
@@ -34,4 +36,5 @@ module Gem
       List.new value, list
     end
   end
+  deprecate_constant :List
 end

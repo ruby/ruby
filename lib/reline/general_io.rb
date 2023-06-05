@@ -31,6 +31,10 @@ class Reline::GeneralIO
     @@input = val
   end
 
+  def self.with_raw_input
+    yield
+  end
+
   def self.getc
     unless @@buf.empty?
       return @@buf.shift
@@ -55,6 +59,12 @@ class Reline::GeneralIO
 
   def self.cursor_pos
     Reline::CursorPos.new(1, 1)
+  end
+
+  def self.hide_cursor
+  end
+
+  def self.show_cursor
   end
 
   def self.move_cursor_column(val)

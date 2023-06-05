@@ -147,16 +147,6 @@ describe "Array#flatten" do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted array if self is tainted" do
-      [].taint.flatten.tainted?.should be_true
-    end
-
-    it "returns an untrusted array if self is untrusted" do
-      [].untrust.flatten.untrusted?.should be_true
-    end
-  end
-
   it "performs respond_to? and method_missing-aware checks when coercing elements to array" do
     bo = BasicObject.new
     [bo].flatten.should == [bo]

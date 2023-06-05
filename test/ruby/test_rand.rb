@@ -336,6 +336,14 @@ class TestRand < Test::Unit::TestCase
     }
   end
 
+  def test_seed_leading_zero_guard
+    guard = 1<<32
+    range = 0...(1<<32)
+    all_assertions_foreach(nil, 0, 1, 2) do |i|
+      assert_not_equal(Random.new(i).rand(range), Random.new(i+guard).rand(range))
+    end
+  end
+
   def test_marshal
     bug3656 = '[ruby-core:31622]'
     assert_raise(TypeError, bug3656) {

@@ -94,20 +94,6 @@ describe "Proc.new with an associated block" do
     obj.first.should == :a
     obj.second.should == 2
   end
-
-  ruby_version_is ""..."2.7" do
-    it "returns a new Proc instance from the block passed to the containing method" do
-      prc = ProcSpecs.new_proc_in_method { "hello" }
-      prc.should be_an_instance_of(Proc)
-      prc.call.should == "hello"
-    end
-
-    it "returns a new Proc instance from the block passed to the containing method" do
-      prc = ProcSpecs.new_proc_subclass_in_method { "hello" }
-      prc.should be_an_instance_of(ProcSpecs::ProcSubclass)
-      prc.call.should == "hello"
-    end
-  end
 end
 
 describe "Proc.new with a block argument" do
@@ -180,30 +166,7 @@ describe "Proc.new without a block" do
     -> { ProcSpecs.new_proc_subclass_in_method }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ""..."2.7" do
-    it "uses the implicit block from an enclosing method" do
-      def some_method
-        Proc.new
-      end
-
-      prc = some_method { "hello" }
-
-      prc.call.should == "hello"
-    end
-
-    it "uses the implicit block from an enclosing method when called inside a block" do
-      def some_method
-        proc do |&block|
-          Proc.new
-        end.call { "failing" }
-      end
-      prc = some_method { "hello" }
-
-      prc.call.should == "hello"
-    end
-  end
-
-  ruby_version_is "2.7"..."3.0" do
+  ruby_version_is ""..."3.0" do
     it "can be created if invoked from within a method with a block" do
       -> { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end

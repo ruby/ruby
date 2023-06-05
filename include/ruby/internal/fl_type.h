@@ -787,6 +787,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTABLE(VALUE obj)
 {
+    (void)obj;
     return false;
 }
 
@@ -804,6 +805,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline VALUE
 RB_OBJ_TAINTED_RAW(VALUE obj)
 {
+    (void)obj;
     return false;
 }
 
@@ -821,6 +823,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTED(VALUE obj)
 {
+    (void)obj;
     return false;
 }
 
@@ -836,6 +839,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT_RAW(VALUE obj)
 {
+    (void)obj;
     return;
 }
 
@@ -851,6 +855,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT(VALUE obj)
 {
+    (void)obj;
     return;
 }
 
@@ -867,6 +872,8 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 {
+    (void)dst;
+    (void)src;
     return;
 }
 
@@ -883,6 +890,8 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT(VALUE dst, VALUE src)
 {
+    (void)dst;
+    (void)src;
     return;
 }
 
@@ -941,21 +950,8 @@ RB_OBJ_FREEZE_RAW(VALUE obj)
     RB_FL_SET_RAW(obj, RUBY_FL_FREEZE);
 }
 
-/**
- * Prevents further modifications to the given object.  ::rb_eFrozenError shall
- * be raised if modification is attempted.
- *
- * @param[out]  x  Object in question.
- */
-static inline void
-rb_obj_freeze_inline(VALUE x)
-{
-    if (RB_FL_ABLE(x)) {
-        RB_OBJ_FREEZE_RAW(x);
-        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
-            rb_freeze_singleton_class(x);
-        }
-    }
-}
+RUBY_SYMBOL_EXPORT_BEGIN
+void rb_obj_freeze_inline(VALUE obj);
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RBIMPL_FL_TYPE_H */

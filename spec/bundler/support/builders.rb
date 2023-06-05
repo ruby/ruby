@@ -17,18 +17,6 @@ module Spec
       Gem::Platform.new(platform)
     end
 
-    # Returns a number smaller than the size of the index. Useful for specs that
-    # need the API request limit to be reached for some reason.
-    def low_api_request_limit_for(gem_repo)
-      all_gems = Dir[gem_repo.join("gems/*.gem")]
-
-      all_gem_names = all_gems.map do |file|
-        File.basename(file, ".gem").match(/\A(?<gem_name>[^-]+)-.*\z/)[:gem_name]
-      end.uniq
-
-      (all_gem_names - ["bundler"]).size
-    end
-
     def build_repo1
       rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
 
@@ -94,8 +82,8 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
+          s.platform = Gem::Platform.local
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Gem::Platform.local}'"
         end
 
         build_gem "platform_specific" do |s|
@@ -110,15 +98,27 @@ module Spec
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mswin32"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 MSWIN'"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mswin32'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mswin64"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mswin64'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mingw32"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mingw32'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x64-mingw32"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw32'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mingw-ucrt"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw-ucrt'"
         end
 
         build_gem "platform_specific" do |s|
@@ -286,10 +286,6 @@ module Spec
       end
     end
 
-    def build_dep(name, requirements = Gem::Requirement.default, type = :runtime)
-      Bundler::Dependency.new(name, :version => requirements)
-    end
-
     def build_lib(name, *args, &blk)
       build_with(LibBuilder, name, args, &blk)
     end
@@ -444,8 +440,7 @@ module Spec
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"
 
-
-          # exit 1 unless with_config("simple")
+          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
 
           extension_name = "#{name}_c"
           if extra_lib_dir = with_config("ext-lib")
@@ -484,7 +479,7 @@ module Spec
         end
 
         @spec.authors = ["no one"]
-        @spec.files = @files.keys
+        @spec.files += @files.keys
 
         case options[:gemspec]
         when false
@@ -525,7 +520,7 @@ module Spec
 
     class GitBuilder < LibBuilder
       def _build(options)
-        default_branch = options[:default_branch] || "master"
+        default_branch = options[:default_branch] || "main"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
         super(options.merge(:path => path, :source => source))
@@ -589,7 +584,8 @@ module Spec
 
     class GemBuilder < LibBuilder
       def _build(opts)
-        lib_path = super(opts.merge(:path => @context.tmp(".tmp/#{@spec.full_name}"), :no_default => opts[:no_default]))
+        lib_path = opts[:lib_path] || @context.tmp(".tmp/#{@spec.full_name}")
+        lib_path = super(opts.merge(:path => lib_path, :no_default => opts[:no_default]))
         destination = opts[:path] || _default_path
         FileUtils.mkdir_p(lib_path.join(destination))
 
@@ -627,7 +623,7 @@ module Spec
       end
     end
 
-    TEST_CERT = <<-CERT.gsub(/^\s*/, "")
+    TEST_CERT = <<~CERT
       -----BEGIN CERTIFICATE-----
       MIIDMjCCAhqgAwIBAgIBATANBgkqhkiG9w0BAQUFADAnMQwwCgYDVQQDDAN5b3Ux
       FzAVBgoJkiaJk/IsZAEZFgdleGFtcGxlMB4XDTE1MDIwODAwMTIyM1oXDTQyMDYy
@@ -650,7 +646,7 @@ module Spec
       -----END CERTIFICATE-----
     CERT
 
-    TEST_PKEY = <<-PKEY.gsub(/^\s*/, "")
+    TEST_PKEY = <<~PKEY
       -----BEGIN RSA PRIVATE KEY-----
       MIIEowIBAAKCAQEA2W8V2k3jdzgMxL0mjTqbRruTdtDcdZDXKtiFkyLvsXUXvc2k
       GSdgcjMOS1CkafqGz/hAUlPibjM0QEXjtQuMdTmdMrmuORLeeIZhSO+HdkTNV6j3

@@ -55,6 +55,27 @@ describe "IO#read_nonblock" do
     @read.read_nonblock(4).should == "hell"
   end
 
+  it "reads after ungetc with data in the buffer" do
+    @write.write("foobar")
+    @read.set_encoding(
+      'utf-8', universal_newline: false
+    )
+    c = @read.getc
+    @read.ungetc(c)
+    @read.read_nonblock(3).should == "foo"
+    @read.read_nonblock(3).should == "bar"
+  end
+
+  it "raises an exception after ungetc with data in the buffer and character conversion enabled" do
+    @write.write("foobar")
+    @read.set_encoding(
+      'utf-8', universal_newline: true
+    )
+    c = @read.getc
+    @read.ungetc(c)
+    -> { @read.read_nonblock(3).should == "foo" }.should raise_error(IOError)
+  end
+
   it "returns less data if that is all that is available" do
     @write << "hello"
     @read.read_nonblock(10).should == "hello"
@@ -68,6 +89,10 @@ describe "IO#read_nonblock" do
     @write.write "1"
     @read.read_nonblock(0).should == ""
     @read.read_nonblock(1).should == "1"
+  end
+
+  it "raises ArgumentError when length is less than 0" do
+    -> { @read.read_nonblock(-1) }.should raise_error(ArgumentError)
   end
 
   it "reads into the passed buffer" do
@@ -84,6 +109,21 @@ describe "IO#read_nonblock" do
     output.should equal(buffer)
   end
 
+  it "discards the existing buffer content upon successful read" do
+    buffer = "existing content"
+    @write.write("hello world")
+    @write.close
+    @read.read_nonblock(11, buffer)
+    buffer.should == "hello world"
+  end
+
+  it "discards the existing buffer content upon error" do
+    buffer = "existing content"
+    @write.close
+    -> { @read.read_nonblock(1, buffer) }.should raise_error(EOFError)
+    buffer.should be_empty
+  end
+
   it "raises IOError on closed stream" do
     -> { IOSpecs.closed_io.read_nonblock(5) }.should raise_error(IOError)
   end
@@ -95,5 +135,14 @@ describe "IO#read_nonblock" do
     @read.read_nonblock(5)
 
     -> { @read.read_nonblock(5) }.should raise_error(EOFError)
+  end
+
+  it "preserves the encoding of the given buffer" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    @write.write("abc")
+    @write.close
+    @read.read_nonblock(10, buffer)
+
+    buffer.encoding.should == Encoding::ISO_8859_1
   end
 end

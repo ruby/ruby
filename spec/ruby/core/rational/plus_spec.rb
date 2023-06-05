@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative '../../shared/rational/plus'
 require_relative '../../shared/rational/arithmetic_exception_in_coerce'
 

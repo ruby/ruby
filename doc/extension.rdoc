@@ -1,6 +1,6 @@
 # extension.rdoc -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
-= Creating Extension Libraries for Ruby
+= Creating extension libraries for Ruby
 
 This document explains how to make extension libraries for Ruby.
 
@@ -10,8 +10,8 @@ In C, variables have types and data do not have types.  In contrast,
 Ruby variables do not have a static type, and data themselves have
 types, so data will need to be converted between the languages.
 
-Data in Ruby are represented by the C type `VALUE'.  Each VALUE data
-has its data type.
+Objects in Ruby are represented by the C type `VALUE'.  Each VALUE
+data has its data type.
 
 To retrieve C data from a VALUE, you need to:
 
@@ -20,7 +20,7 @@ To retrieve C data from a VALUE, you need to:
 
 Converting to the wrong data type may cause serious problems.
 
-=== Data Types
+=== Ruby data types
 
 The Ruby interpreter has the following data types:
 
@@ -54,7 +54,7 @@ T_ZOMBIE    :: object awaiting finalization
 
 Most of the types are represented by C structures.
 
-=== Check Data Type of the VALUE
+=== Check type of the VALUE data
 
 The macro TYPE() defined in ruby.h shows the data type of the VALUE.
 TYPE() returns the constant number T_XXXX described above.  To handle
@@ -88,7 +88,7 @@ There are also faster check macros for fixnums and nil.
   FIXNUM_P(obj)
   NIL_P(obj)
 
-=== Convert VALUE into C Data
+=== Convert VALUE into C data
 
 The data for type T_NIL, T_FALSE, T_TRUE are nil, false, true
 respectively.  They are singletons for the data type.
@@ -143,7 +143,7 @@ Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of
 interesting bugs.
 
-=== Convert C Data into VALUE
+=== Convert C data into VALUE
 
 To convert C data to Ruby values:
 
@@ -169,14 +169,14 @@ INT2NUM() :: for arbitrary sized integers.
 INT2NUM() converts an integer into a Bignum if it is out of the FIXNUM
 range, but is a bit slower.
 
-=== Manipulating Ruby Data
+=== Manipulating Ruby object
 
 As I already mentioned, it is not recommended to modify an object's
 internal structure.  To manipulate objects, use the functions supplied
 by the Ruby interpreter. Some (not all) of the useful functions are
 listed below:
 
-==== String Functions
+==== String functions
 
 rb_str_new(const char *ptr, long len) ::
 
@@ -279,7 +279,7 @@ rb_str_modify(VALUE str) ::
   you MUST call this function before modifying the contents using
   RSTRING_PTR and/or rb_str_set_len.
 
-==== Array Functions
+==== Array functions
 
 rb_ary_new() ::
 
@@ -338,13 +338,13 @@ rb_ary_cat(VALUE ary, const VALUE *ptr, long len) ::
 
 == Extending Ruby with C
 
-=== Adding New Features to Ruby
+=== Adding new features to Ruby
 
 You can add new features (classes, methods, etc.) to the Ruby
 interpreter.  Ruby provides APIs for defining the following things:
 
 - Classes, Modules
-- Methods, Singleton Methods
+- Methods, singleton methods
 - Constants
 
 ==== Class and Module Definition
@@ -362,7 +362,7 @@ To define nested classes or modules, use the functions below:
   VALUE rb_define_class_under(VALUE outer, const char *name, VALUE super)
   VALUE rb_define_module_under(VALUE outer, const char *name)
 
-==== Method and Singleton Method Definition
+==== Method and singleton method definition
 
 To define methods or singleton methods, use these functions:
 
@@ -467,7 +467,7 @@ available), you can use:
 
   VALUE rb_current_receiver(void)
 
-==== Constant Definition
+==== Constant definition
 
 We have 2 functions to define constants:
 
@@ -477,11 +477,11 @@ We have 2 functions to define constants:
 The former is to define a constant under specified class/module.  The
 latter is to define a global constant.
 
-=== Use Ruby Features from C
+=== Use Ruby features from C
 
 There are several ways to invoke Ruby's features from C code.
 
-==== Evaluate Ruby Programs in a String
+==== Evaluate Ruby programs in a string
 
 The easiest way to use Ruby's functionality from a C program is to
 evaluate the string as Ruby program.  This function will do the job:
@@ -550,7 +550,7 @@ and to convert Ruby Symbol object to ID, use
 
   ID SYM2ID(VALUE symbol)
 
-==== Invoke Ruby Method from C
+==== Invoke Ruby method from C
 
 To invoke methods directly, you can use the function below
 
@@ -559,7 +559,7 @@ To invoke methods directly, you can use the function below
 This function invokes a method on the recv, with the method name
 specified by the symbol mid.
 
-==== Accessing the Variables and Constants
+==== Accessing the variables and constants
 
 You can access class variables and instance variables using access
 functions.  Also, global variables can be shared between both
@@ -578,9 +578,9 @@ To access the constants of the class/module:
 
 See also Constant Definition above.
 
-== Information Sharing Between Ruby and C
+== Information sharing between Ruby and C
 
-=== Ruby Constants That Can Be Accessed From C
+=== Ruby constants that can be accessed from C
 
 As stated in section 1.3,
 the following Ruby constants can be referred from C.
@@ -594,7 +594,7 @@ Qnil ::
 
   Ruby nil in C scope.
 
-=== Global Variables Shared Between C and Ruby
+=== Global variables shared between C and Ruby
 
 Information can be shared between the two environments using shared global
 variables.  To define them, you can use functions listed below:
@@ -636,7 +636,7 @@ The prototypes of the getter and setter functions are as follows:
   VALUE (*getter)(ID id);
   void (*setter)(VALUE val, ID id);
 
-=== Encapsulate C Data into a Ruby Object
+=== Encapsulate C data into a Ruby object
 
 Sometimes you need to expose your struct in the C world as a Ruby
 object.
@@ -762,7 +762,7 @@ You can allocate and wrap the structure in one step.
 
   TypedData_Make_Struct(klass, type, data_type, sval)
 
-This macro returns an allocated Data object, wrapping the pointer to
+This macro returns an allocated T_DATA object, wrapping the pointer to
 the structure, which is also allocated.  This macro works like:
 
   (sval = ZALLOC(type), TypedData_Wrap_Struct(klass, data_type, sval))
@@ -771,9 +771,65 @@ Arguments klass and data_type work like their counterparts in
 TypedData_Wrap_Struct().  A pointer to the allocated structure will
 be assigned to sval, which should be a pointer of the type specified.
 
+==== Declaratively marking/compacting struct references
+
+In the case where your struct refers to Ruby objects that are simple values,
+not wrapped in conditional logic or complex data structures an alternative
+approach to marking and reference updating is provided, by declaring offset
+references to the VALUES in your struct.
+
+Doing this allows the Ruby GC to support marking these references and GC
+compaction without the need to define the `dmark` and `dcompact` callbacks.
+
+You must define a static list of VALUE pointers to the offsets within your
+struct where the references are located, and set the "data" member to point to
+this reference list. The reference list must end with `END_REFS`
+
+Some Macros have been provided to make edge referencing easier:
+
+* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the `ruby_data_type_t` to indicate that references are being declared as edges.
+
+* <code>RUBY_REFERENCES_START(ref_list_name)</code> - Define `ref_list_name` as a list of references
+
+* <code>RUBY_REFERENCES_END</code> - Mark the end of the references list. This will take care of terminating the list correctly
+
+* <code>RUBY_REF_EDGE\(struct, member\)</code> - Declare `member` as a VALUE edge from `struct`. Use this after `RUBY_REFERENCES_START`
+
+* +REFS_LIST_PTR+ - Coerce the reference list into a format that can be
+  accepted by the existing `dmark` interface.
+
+The example below is from `Dir` (defined in `dir.c`)
+
+  // The struct being wrapped. Notice this contains 3 members of which the second
+  // is a VALUE reference to another ruby object.
+  struct dir_data {
+      DIR *dir;
+      const VALUE path;
+      rb_encoding *enc;
+  }
+
+  // Define a reference list `dir_refs` containing a single entry to `path`, and
+  // terminating with RUBY_REF_END
+  RUBY_REFERENCES_START(dir_refs)
+      REF_EDGE(dir_data, path),
+  RUBY_REFERENCES_END
+
+  // Override the "dmark" field with the defined reference list now that we
+  // no longer need a marking callback and add RUBY_TYPED_DECL_MARKING to the
+  // flags field
+  static const rb_data_type_t dir_data_type = {
+      "dir",
+      {REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
+      0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
+  };
+
+Declaring simple references declaratively in this manner allows the GC to both
+mark, and move the underlying object, and automatically update the reference to
+it during compaction.
+
 ==== Ruby object to C struct
 
-To retrieve the C pointer from the Data object, use the macro
+To retrieve the C pointer from the T_DATA object, use the macro
 TypedData_Get_Struct().
 
   TypedData_Get_Struct(obj, type, &data_type, sval)
@@ -788,7 +844,7 @@ OK, here's the example of making an extension library.  This is the
 extension to access DBMs.  The full source is included in the ext/
 directory in the Ruby's source tree.
 
-=== Make the Directory
+=== Make the directory
 
   % mkdir ext/dbm
 
@@ -956,6 +1012,9 @@ need to put
 at the top of the file.  You can use the functions below to check
 various conditions.
 
+  append_cppflags(array-of-flags[, opt]): append each flag to $CPPFLAGS if usable
+  append_cflags(array-of-flags[, opt]): append each flag to $CFLAGS if usable
+  append_ldflags(array-of-flags[, opt]): append each flag to $LDFLAGS if usable
   have_macro(macro[, headers[, opt]]): check whether macro is defined
   have_library(lib[, func[, headers[, opt]]]): check whether library containing function exists
   find_library(lib[, func, *paths]): find library from paths
@@ -984,6 +1043,10 @@ The value of the variables below will affect the Makefile.
   $LDFLAGS: included in LDFLAGS make variable (such as -L)
   $objs: list of object file names
 
+Compiler/linker flags are not portable usually, you should use
++append_cppflags+, +append_cpflags+ and +append_ldflags+ respectively
+instead of appending the above variables directly.
+
 Normally, the object files list is automatically generated by searching
 source files, but you must define them explicitly if any sources will
 be generated while building.
@@ -992,7 +1055,7 @@ If a compilation condition is not fulfilled, you should not call
 ``create_makefile''.  The Makefile will not be generated, compilation will
 not be done.
 
-=== Prepare Depend (Optional)
+=== Prepare depend (Optional)
 
 If the file named depend exists, Makefile will include that file to
 check dependencies.  You can make this file by invoking
@@ -1031,15 +1094,15 @@ You may need to rb_debug the extension.  Extensions can be linked
 statically by adding the directory name in the ext/Setup file so that
 you can inspect the extension with the debugger.
 
-=== Done! Now You Have the Extension Library
+=== Done! Now you have the extension library
 
 You can do anything you want with your library.  The author of Ruby
 will not claim any restrictions on your code depending on the Ruby API.
 Feel free to use, modify, distribute or sell your program.
 
-== Appendix A. Ruby Header and Source Files Overview
+== Appendix A. Ruby header and source files overview
 
-=== Ruby Header Files
+=== Ruby header files
 
 Everything under <tt>$repo_root/include/ruby</tt> is installed with
 <tt>make install</tt>.
@@ -1048,15 +1111,15 @@ All symbols are public API with the exception of symbols prefixed with
 +rbimpl_+ or +RBIMPL_+. They are implementation details and shouldn't
 be used by C extensions.
 
-Only <tt>$repo_root/include/ruby/*.h</tt> are allowed to be <tt>#include</tt>-d
-by C extensions. Files under <tt>$repo_root/include/ruby/internal</tt>
-should not be <tt>#include</tt>-d directly.
+Only <tt>$repo_root/include/ruby/*.h</tt> whose corresponding macros
+are defined in the <tt>$repo_root/include/ruby.h</tt> header are
+allowed to be <tt>#include</tt>-d by C extensions.
 
 Header files under <tt>$repo_root/internal/</tt> or directly under the
 root <tt>$repo_root/*.h</tt> are not make-installed.
 They are internal headers with only internal APIs.
 
-=== Ruby Language Core
+=== Ruby language core
 
 class.c    :: classes and modules
 error.c    :: exception classes and exception mechanism
@@ -1065,14 +1128,14 @@ load.c     :: library loading
 object.c   :: objects
 variable.c :: variables and constants
 
-=== Ruby Syntax Parser
+=== Ruby syntax parser
 
 parse.y       :: grammar definition
 parse.c       :: automatically generated from parse.y
 defs/keywords :: reserved keywords
 lex.c         :: automatically generated from keywords
 
-=== Ruby Evaluator (a.k.a. YARV)
+=== Ruby evaluator (a.k.a. YARV)
 
   compile.c
   eval.c
@@ -1098,7 +1161,7 @@ lex.c         :: automatically generated from keywords
     -> opt*.inc            : automatically generated
     -> vm.inc              : automatically generated
 
-=== Regular Expression Engine (Onigumo)
+=== Regular expression engine (Onigumo)
 
   regcomp.c
   regenc.c
@@ -1107,7 +1170,7 @@ lex.c         :: automatically generated from keywords
   regparse.c
   regsyntax.c
 
-=== Utility Functions
+=== Utility functions
 
 debug.c    :: debug symbols for C debugger
 dln.c      :: dynamic loading
@@ -1115,7 +1178,7 @@ st.c       :: general purpose hash table
 strftime.c :: formatting times
 util.c     :: misc utilities
 
-=== Ruby Interpreter Implementation
+=== Ruby interpreter implementation
 
   dmyext.c
   dmydln.c
@@ -1129,7 +1192,7 @@ util.c     :: misc utilities
   gem_prelude.rb
   prelude.rb
 
-=== Class Library
+=== Class library
 
 array.c      :: Array
 bignum.c     :: Bignum
@@ -1168,13 +1231,13 @@ transcode.c :: Encoding::Converter
 enc/*.c     :: encoding classes
 enc/trans/* :: codepoint mapping tables
 
-=== goruby Interpreter Implementation
+=== goruby interpreter implementation
 
   goruby.c
   golf_prelude.rb     : goruby specific libraries.
     -> golf_prelude.c : automatically generated
 
-== Appendix B. Ruby Extension API Reference
+== Appendix B. Ruby extension API reference
 
 === Types
 
@@ -1184,7 +1247,7 @@ VALUE ::
   such as struct RString, etc.  To refer the values in structures, use
   casting macros like RSTRING(obj).
 
-=== Variables and Constants
+=== Variables and constants
 
 Qnil ::
 
@@ -1198,7 +1261,7 @@ Qfalse ::
 
   false object
 
-=== C Pointer Wrapping
+=== C pointer wrapping
 
 Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval) ::
 
@@ -1218,7 +1281,7 @@ Data_Get_Struct(data, type, sval) ::
   This macro retrieves the pointer value from DATA, and assigns it to
   the variable sval.
 
-=== Checking Data Types
+=== Checking VALUE types
 
 RB_TYPE_P(value, type) ::
 
@@ -1248,7 +1311,7 @@ void Check_Type(VALUE value, int type) ::
 
   Ensures +value+ is of the given internal +type+ or raises a TypeError
 
-=== Data Type Conversion
+=== VALUE type conversion
 
 FIX2INT(value), INT2FIX(i) ::
 
@@ -1332,7 +1395,7 @@ rb_str_new2(s) ::
 
   char * -> String
 
-=== Defining Classes and Modules
+=== Defining classes and modules
 
 VALUE rb_define_class(const char *name, VALUE super) ::
 
@@ -1359,7 +1422,7 @@ void rb_extend_object(VALUE object, VALUE module) ::
 
   Extend the object with the module's attributes.
 
-=== Defining Global Variables
+=== Defining global variables
 
 void rb_define_variable(const char *name, VALUE *var) ::
 
@@ -1403,7 +1466,7 @@ void rb_gc_register_mark_object(VALUE object) ::
 
   Tells GC to protect the +object+, which may not be referenced anywhere.
 
-=== Constant Definition
+=== Constant definition
 
 void rb_define_const(VALUE klass, const char *name, VALUE val) ::
 
@@ -1415,7 +1478,7 @@ void rb_define_global_const(const char *name, VALUE val) ::
 
     rb_define_const(rb_cObject, name, val)
 
-=== Method Definition
+=== Method definition
 
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
@@ -1591,7 +1654,7 @@ int rb_respond_to(VALUE obj, ID id) ::
 
   Returns true if the object responds to the message specified by id.
 
-=== Instance Variables
+=== Instance variables
 
 VALUE rb_iv_get(VALUE obj, const char *name) ::
 
@@ -1602,7 +1665,7 @@ VALUE rb_iv_set(VALUE obj, const char *name, VALUE val) ::
 
   Sets the value of the instance variable.
 
-=== Control Structure
+=== Control structure
 
 VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (ANYARGS), VALUE data2) ::
 
@@ -1698,7 +1761,7 @@ void rb_iter_break_value(VALUE value) ::
   return the given argument value.  This function never return to the
   caller.
 
-=== Exceptions and Errors
+=== Exceptions and errors
 
 void rb_warn(const char *fmt, ...) ::
 
@@ -1771,7 +1834,7 @@ int rb_wait_for_single_fd(int fd, int events, struct timeval *timeout) ::
 
   Use a NULL +timeout+ to wait indefinitely.
 
-=== I/O Multiplexing
+=== I/O multiplexing
 
 Ruby supports I/O multiplexing based on the select(2) system call.
 The Linux select_tut(2) manpage
@@ -1823,7 +1886,7 @@ int rb_thread_fd_select(int nfds, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_
   rb_io_wait_writable, or rb_wait_for_single_fd functions since
   they can be optimized for specific platforms (currently, only Linux).
 
-=== Initialize and Start the Interpreter
+=== Initialize and start the interpreter
 
 The embedding API functions are below (not needed for extension libraries):
 
@@ -1848,7 +1911,7 @@ void ruby_script(char *name) ::
 
   Specifies the name of the script ($0).
 
-=== Hooks for the Interpreter Events
+=== Hooks for the interpreter events
 
 void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data) ::
 
@@ -1890,7 +1953,7 @@ void rb_gc_adjust_memory_usage(ssize_t diff) ::
   is decreased; a memory block is freed or a block is reallocated as
   smaller size.  This function may trigger the GC.
 
-=== Macros for Compatibility
+=== Macros for compatibility
 
 Some macros to check API compatibilities are available by default.
 
@@ -1924,6 +1987,9 @@ HAVE_RUBY_*_H ::
   Defined in ruby.h and means corresponding header is available.  For
   instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
   mere st.h.
+
+  Header files corresponding to these macros may be <tt>#include</tt>
+  directly from extension libraries.
 
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 

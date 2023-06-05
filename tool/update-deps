@@ -88,7 +88,6 @@ result.each {|k,v|
 # They can be referenced as $(top_srcdir)/filename.
 # % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
 FILES_IN_SOURCE_DIRECTORY = %w[
-  revision.h
 ]
 
 # Files built in the build directory (except extconf.h).
@@ -120,7 +119,6 @@ FILES_NEED_VPATH = %w[
   known_errors.inc
   lex.c
   miniprelude.c
-  mjit_compile.inc
   newline.c
   node_name.inc
   opt_sc.inc
@@ -129,6 +127,7 @@ FILES_NEED_VPATH = %w[
   parse.c
   parse.h
   probes.dmyh
+  revision.h
   vm.inc
   vmtc.inc
 
@@ -301,6 +300,8 @@ def read_make_deps(cwd)
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
       deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
+      next if /libyjit.o\z/ =~ target.to_s # skip YJIT Rust object (no corresponding C source)
+      next if /\.bundle\// =~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
       dir = curdir || dirstack.last
@@ -332,24 +333,25 @@ end
 #  raise ArgumentError, "can not find #{filename} (hint: #{hint0})"
 #end
 
-def read_single_cc_deps(path_i, cwd)
+def read_single_cc_deps(path_i, cwd, fn_o)
   files = {}
   compiler_wd = nil
   path_i.each_line {|line|
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
+
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
-    next if /\.erb\z/ =~ dep
-    compiler_wd ||= dep
+    next if /\.e?rb\z/ =~ dep
+    # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
+    if /\/\/\z/ =~ dep
+      compiler_wd = Pathname(dep.sub(%r{//\z}, ''))
+      next
+    end
+
     files[dep] = true
   }
-  # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
-  if %r{\A/.*//\z} =~ compiler_wd
-    files.delete compiler_wd
-    compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
-  elsif !(compiler_wd = yield)
-    raise "compiler working directory not found: #{path_i}"
-  end
+  compiler_wd ||= fn_o.to_s.start_with?("enc/") ? cwd : path_i.parent
+
   deps = []
   files.each_key {|dep|
     dep = Pathname(dep)
@@ -381,13 +383,7 @@ def read_cc_deps(cwd)
     end
     path_o = cwd + fn_o
     path_i = cwd + fn_i
-    deps[path_o] = read_single_cc_deps(path_i, cwd) do
-      if fn_o.to_s.start_with?("enc/")
-        cwd
-      else
-        path_i.parent
-      end
-    end
+    deps[path_o] = read_single_cc_deps(path_i, cwd, fn_o)
   }
   deps
 end

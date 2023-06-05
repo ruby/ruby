@@ -19,9 +19,10 @@ class Dir
   # Returns the operating system's temporary file path.
 
   def self.tmpdir
-    tmp = nil
-    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].each do |name, dir = ENV[name]|
-      next if !dir
+    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir|
+      unless dir
+        next if !(dir = ENV[name]) or dir.empty?
+      end
       dir = File.expand_path(dir)
       stat = File.stat(dir) rescue next
       case
@@ -32,12 +33,9 @@ class Dir
       when stat.world_writable? && !stat.sticky?
         warn "#{name} is world-writable: #{dir}"
       else
-        tmp = dir
-        break
+        break dir
       end
-    end
-    raise ArgumentError, "could not find a temporary directory" unless tmp
-    tmp
+    end or raise ArgumentError, "could not find a temporary directory"
   end
 
   # Dir.mktmpdir creates a temporary directory.
@@ -108,6 +106,7 @@ class Dir
     end
   end
 
+  # Temporary name generator
   module Tmpname # :nodoc:
     module_function
 
@@ -115,16 +114,23 @@ class Dir
       Dir.tmpdir
     end
 
+    # Unusable characters as path name
     UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
 
-    class << (RANDOM = Random.new)
+    # Dedicated random number generator
+    RANDOM = Random.new
+    class << RANDOM # :nodoc:
+      # Maximum random number
       MAX = 36**6 # < 0x100000000
+
+      # Returns new random string upto 6 bytes
       def next
         rand(MAX).to_s(36)
       end
     end
     private_constant :RANDOM
 
+    # Generates and yields random names to create a temporary name
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       origdir = tmpdir
       tmpdir ||= tmpdir()

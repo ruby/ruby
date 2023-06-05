@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-# :stopdoc:
 
 #--
 # This file contains all sorts of little compatibility hacks that we've
@@ -8,10 +7,13 @@
 #
 # Ruby 1.9.x has introduced some things that are awkward, and we need to
 # support them, so we define some constants to use later.
+#
+# TODO remove at RubyGems 4
 #++
 
-# TODO remove at RubyGems 4
 module Gem
+  # :stopdoc:
+
   RubyGemsVersion = VERSION
   deprecate_constant(:RubyGemsVersion)
 
@@ -24,17 +26,16 @@ module Gem
     rubylibdir
   ].freeze
 
-  unless defined?(ConfigMap)
+  if defined?(ConfigMap)
+    RbConfigPriorities.each do |key|
+      ConfigMap[key.to_sym] = RbConfig::CONFIG[key]
+    end
+  else
     ##
     # Configuration settings from ::RbConfig
     ConfigMap = Hash.new do |cm, key|
       cm[key] = RbConfig::CONFIG[key.to_s]
     end
     deprecate_constant(:ConfigMap)
-  else
-    RbConfigPriorities.each do |key|
-      ConfigMap[key.to_sym] = RbConfig::CONFIG[key]
-    end
   end
-
 end

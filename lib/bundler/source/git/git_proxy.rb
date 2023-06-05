@@ -28,10 +28,10 @@ module Bundler
         def initialize(command, path, extra_info = nil)
           @command = command
 
-          msg = String.new
-          msg << "Git error: command `#{command}` in directory #{path} has failed."
+          msg = String.new("Git error: command `#{command}`")
+          msg << " in directory #{path}" if path
+          msg << " has failed."
           msg << "\n#{extra_info}" if extra_info
-          msg << "\nIf this error persists you could try removing the cache directory '#{path}'" if path.exist?
           super msg
         end
       end
@@ -47,23 +47,27 @@ module Bundler
       # All actions required by the Git source is encapsulated in this
       # object.
       class GitProxy
-        attr_accessor :path, :uri, :ref
+        attr_accessor :path, :uri, :branch, :tag, :ref, :explicit_ref
         attr_writer :revision
 
-        def initialize(path, uri, ref, revision = nil, git = nil)
+        def initialize(path, uri, options = {}, revision = nil, git = nil)
           @path     = path
           @uri      = uri
-          @ref      = ref
+          @branch   = options["branch"]
+          @tag      = options["tag"]
+          @ref      = options["ref"]
+          @explicit_ref = branch || tag || ref
           @revision = revision
           @git      = git
+          @commit_ref = nil
         end
 
         def revision
-          @revision ||= find_local_revision
+          @revision ||= allowed_with_path { find_local_revision }
         end
 
-        def branch
-          @branch ||= allowed_with_path do
+        def current_branch
+          @current_branch ||= allowed_with_path do
             git("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
           end
         end
@@ -76,36 +80,26 @@ module Bundler
         end
 
         def version
-          git("--version").match(/(git version\s*)?((\.?\d+)+).*/)[2]
+          @version ||= full_version.match(/((\.?\d+)+).*/)[1]
         end
 
         def full_version
-          git("--version").sub("git version", "").strip
+          @full_version ||= git("--version").sub(/git version\s*/, "").strip
         end
 
         def checkout
-          return if path.exist? && has_revision_cached?
-          extra_ref = "#{ref}:#{ref}" if ref && ref.start_with?("refs/")
+          return if has_revision_cached?
 
-          Bundler.ui.info "Fetching #{URICredentialsFilter.credential_filtered_uri(uri)}"
+          Bundler.ui.info "Fetching #{credential_filtered_uri}"
 
-          configured_uri = configured_uri_for(uri).to_s
+          extra_fetch_needed = clone_needs_extra_fetch?
+          unshallow_needed = clone_needs_unshallow?
+          return unless extra_fetch_needed || unshallow_needed
 
-          unless path.exist?
-            SharedHelpers.filesystem_access(path.dirname) do |p|
-              FileUtils.mkdir_p(p)
-            end
-            git_retry "clone", "--bare", "--no-hardlinks", "--quiet", "--", configured_uri, path.to_s
-            return unless extra_ref
-          end
-
-          with_path do
-            git_retry(*["fetch", "--force", "--quiet", "--tags", "--", configured_uri, "refs/heads/*:refs/heads/*", extra_ref].compact, :dir => path)
-          end
+          git_remote_fetch(unshallow_needed ? ["--unshallow"] : depth_args)
         end
 
         def copy_to(destination, submodules = false)
-          # method 1
           unless File.exist?(destination.join(".git"))
             begin
               SharedHelpers.filesystem_access(destination.dirname) do |p|
@@ -114,7 +108,7 @@ module Bundler
               SharedHelpers.filesystem_access(destination) do |p|
                 FileUtils.rm_rf(p)
               end
-              git_retry "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
+              git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
               File.chmod(((File.stat(destination).mode | 0o777) & ~File.umask), destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
@@ -123,14 +117,10 @@ module Bundler
                 "this file and try again."
             end
           end
-          # method 2
-          git_retry "fetch", "--force", "--quiet", "--tags", path.to_s, :dir => destination
 
-          begin
-            git "reset", "--hard", @revision, :dir => destination
-          rescue GitCommandError => e
-            raise MissingGitRevisionError.new(e.command, destination, @revision, URICredentialsFilter.credential_filtered_uri(uri))
-          end
+          git "fetch", "--force", "--quiet", *extra_fetch_args, :dir => destination if @commit_ref
+
+          git "reset", "--hard", @revision, :dir => destination
 
           if submodules
             git_retry "submodule", "update", "--init", "--recursive", :dir => destination
@@ -142,14 +132,116 @@ module Bundler
 
         private
 
+        def git_remote_fetch(args)
+          command = ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+          command_with_no_credentials = check_allowed(command)
+
+          Bundler::Retry.new("`#{command_with_no_credentials}` at #{path}", [MissingGitRevisionError]).attempts do
+            out, err, status = capture(command, path)
+            return out if status.success?
+
+            if err.include?("couldn't find remote ref") || err.include?("not our ref")
+              raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
+            else
+              raise GitCommandError.new(command_with_no_credentials, path, err)
+            end
+          end
+        end
+
+        def clone_needs_extra_fetch?
+          return true if path.exist?
+
+          SharedHelpers.filesystem_access(path.dirname) do |p|
+            FileUtils.mkdir_p(p)
+          end
+
+          command = ["clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s]
+          command_with_no_credentials = check_allowed(command)
+
+          Bundler::Retry.new("`#{command_with_no_credentials}`", [MissingGitRevisionError]).attempts do
+            _, err, status = capture(command, nil)
+            return extra_ref if status.success?
+
+            if err.include?("Could not find remote branch")
+              raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
+            else
+              raise GitCommandError.new(command_with_no_credentials, path, err)
+            end
+          end
+        end
+
+        def clone_needs_unshallow?
+          return false unless path.join("shallow").exist?
+          return true if full_clone?
+
+          @revision && @revision != head_revision
+        end
+
+        def extra_ref
+          return false if not_pinned?
+          return true unless full_clone?
+
+          ref.start_with?("refs/")
+        end
+
+        def depth
+          return @depth if defined?(@depth)
+
+          @depth = if !supports_fetching_unreachable_refs?
+            nil
+          elsif not_pinned? || pinned_to_full_sha?
+            1
+          elsif ref.include?("~")
+            parsed_depth = ref.split("~").last
+            parsed_depth.to_i + 1
+          end
+        end
+
+        def refspec
+          if commit
+            @commit_ref = "refs/#{commit}-sha"
+            return "#{commit}:#{@commit_ref}"
+          end
+
+          reference = fully_qualified_ref
+
+          reference ||= if ref.include?("~")
+            ref.split("~").first
+          elsif ref.start_with?("refs/")
+            ref
+          else
+            "refs/*"
+          end
+
+          "#{reference}:#{reference}"
+        end
+
+        def commit
+          @commit ||= pinned_to_full_sha? ? ref : @revision
+        end
+
+        def fully_qualified_ref
+          if branch
+            "refs/heads/#{branch}"
+          elsif tag
+            "refs/tags/#{tag}"
+          elsif ref.nil?
+            "refs/heads/#{current_branch}"
+          end
+        end
+
+        def not_pinned?
+          branch || tag || ref.nil?
+        end
+
+        def pinned_to_full_sha?
+          ref =~ /\A\h{40}\z/
+        end
+
         def git_null(*command, dir: nil)
           check_allowed(command)
 
-          out, status = SharedHelpers.with_clean_git_env do
-            capture_and_ignore_stderr(*capture3_args_for(command, dir))
-          end
-
-          [URICredentialsFilter.credential_filtered_string(out, uri), status]
+          capture(command, dir, :ignore_err => true)
         end
 
         def git_retry(*command, dir: nil)
@@ -163,47 +255,60 @@ module Bundler
         def git(*command, dir: nil)
           command_with_no_credentials = check_allowed(command)
 
-          out, status = SharedHelpers.with_clean_git_env do
-            capture_and_filter_stderr(*capture3_args_for(command, dir))
-          end
+          out, err, status = capture(command, dir)
 
-          filtered_out = URICredentialsFilter.credential_filtered_string(out, uri)
+          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, err) unless status.success?
 
-          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, filtered_out) unless status.success?
+          Bundler.ui.warn err unless err.empty?
 
-          filtered_out
+          out
         end
 
         def has_revision_cached?
-          return unless @revision
-          with_path { git("cat-file", "-e", @revision, :dir => path) }
+          return unless @revision && path.exist?
+          git("cat-file", "-e", @revision, :dir => path)
           true
         rescue GitError
           false
         end
 
-        def remove_cache
-          FileUtils.rm_rf(path)
-        end
-
         def find_local_revision
-          allowed_with_path do
-            git("rev-parse", "--verify", ref || "HEAD", :dir => path).strip
-          end
-        rescue GitCommandError => e
-          raise MissingGitRevisionError.new(e.command, path, ref, URICredentialsFilter.credential_filtered_uri(uri))
+          return head_revision if explicit_ref.nil?
+
+          find_revision_for(explicit_ref)
         end
 
-        # Adds credentials to the URI as Fetcher#configured_uri_for does
-        def configured_uri_for(uri)
-          if /https?:/ =~ uri
+        def head_revision
+          verify("HEAD")
+        end
+
+        def find_revision_for(reference)
+          verify(reference)
+        rescue GitCommandError => e
+          raise MissingGitRevisionError.new(e.command, path, reference, credential_filtered_uri)
+        end
+
+        def verify(reference)
+          git("rev-parse", "--verify", reference, :dir => path).strip
+        end
+
+        # Adds credentials to the URI
+        def configured_uri
+          if /https?:/.match?(uri)
             remote = Bundler::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
             remote.to_s
+          elsif File.exist?(uri)
+            "file://#{uri}"
           else
-            uri
+            uri.to_s
           end
+        end
+
+        # Removes credentials from the URI
+        def credential_filtered_uri
+          URICredentialsFilter.credential_filtered_uri(uri)
         end
 
         def allow?
@@ -231,17 +336,17 @@ module Bundler
           command_with_no_credentials
         end
 
-        def capture_and_filter_stderr(*cmd)
-          require "open3"
-          return_value, captured_err, status = Open3.capture3(*cmd)
-          Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) unless captured_err.empty?
-          [return_value, status]
-        end
+        def capture(cmd, dir, ignore_err: false)
+          SharedHelpers.with_clean_git_env do
+            require "open3"
+            out, err, status = Open3.capture3(*capture3_args_for(cmd, dir))
 
-        def capture_and_ignore_stderr(*cmd)
-          require "open3"
-          return_value, _, status = Open3.capture3(*cmd)
-          [return_value, status]
+            filtered_out = URICredentialsFilter.credential_filtered_string(out, uri)
+            return [filtered_out, status] if ignore_err
+
+            filtered_err = URICredentialsFilter.credential_filtered_string(err, uri)
+            [filtered_out, filtered_err, status]
+          end
         end
 
         def capture3_args_for(cmd, dir)
@@ -254,8 +359,48 @@ module Bundler
           end
         end
 
+        def extra_clone_args
+          args = depth_args
+          return [] if args.empty?
+
+          args += ["--single-branch"]
+          args.unshift("--no-tags") if supports_cloning_with_no_tags?
+
+          # If there's a locked revision, no need to clone any specific branch
+          # or tag, since we will end up checking out that locked revision
+          # anyways.
+          return args if @revision
+
+          args += ["--branch", branch || tag] if branch || tag
+          args
+        end
+
+        def depth_args
+          return [] if full_clone?
+
+          ["--depth", depth.to_s]
+        end
+
+        def extra_fetch_args
+          extra_args = [path.to_s, *depth_args]
+          extra_args.push(@commit_ref)
+          extra_args
+        end
+
+        def full_clone?
+          depth.nil?
+        end
+
         def supports_minus_c?
           @supports_minus_c ||= Gem::Version.new(version) >= Gem::Version.new("1.8.5")
+        end
+
+        def supports_fetching_unreachable_refs?
+          @supports_fetching_unreachable_refs ||= Gem::Version.new(version) >= Gem::Version.new("2.5.0")
+        end
+
+        def supports_cloning_with_no_tags?
+          @supports_cloning_with_no_tags ||= Gem::Version.new(version) >= Gem::Version.new("2.14.0-rc0")
         end
       end
     end

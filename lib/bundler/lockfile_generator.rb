@@ -45,7 +45,7 @@ module Bundler
       # gems with the same name, but different platform
       # are ordered consistently
       specs.sort_by(&:full_name).each do |spec|
-        next if spec.name == "bundler".freeze
+        next if spec.name == "bundler"
         out << spec.to_lock
       end
     end
@@ -60,7 +60,7 @@ module Bundler
       handled = []
       definition.dependencies.sort_by(&:to_s).each do |dep|
         next if handled.include?(dep.name)
-        out << dep.to_lock
+        out << dep.to_lock << "\n"
         handled << dep.name
       end
     end

@@ -237,6 +237,17 @@ describe :kernel_require, shared: true do
       }.should complain(/circular require considered harmful/, verbose: true)
       ScratchPad.recorded.should == [:loaded]
     end
+
+    ruby_bug "#17340", ''...'3.3' do
+      it "loads a file concurrently" do
+        path = File.expand_path "concurrent_require_fixture.rb", CODE_LOADING_DIR
+        ScratchPad.record(@object)
+        -> {
+          @object.require(path)
+        }.should_not complain(/circular require considered harmful/, verbose: true)
+        ScratchPad.recorded.join
+      end
+    end
   end
 
   describe "(non-extensioned path)" do
@@ -251,7 +262,7 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
-    ruby_bug "#16926", "2.7"..."3.0" do
+    ruby_bug "#16926", ""..."3.0" do
       it "does not load a feature twice when $LOAD_PATH has been modified" do
         $LOAD_PATH.replace [CODE_LOADING_DIR]
         @object.require("load_fixture").should be_true
@@ -546,22 +557,6 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    provided = %w[complex enumerator rational thread]
-    ruby_version_is "2.7" do
-      provided << 'ruby2_keywords'
-    end
-
-    it "#{provided.join(', ')} are already required" do
-      features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-      provided.each { |feature|
-        features.should =~ /\b#{feature}\.(rb|so|jar)$/
-      }
-
-      code = provided.map { |f| "puts require #{f.inspect}\n" }.join
-      required = ruby_exe(code, options: '--disable-gems')
-      required.should == "false\n" * provided.size
-    end
-
     it "unicode_normalize is part of core and not $LOADED_FEATURES" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
       features.lines.each { |feature|
@@ -569,6 +564,25 @@ describe :kernel_require, shared: true do
       }
 
       -> { @object.require("unicode_normalize") }.should raise_error(LoadError)
+    end
+
+    ruby_version_is "3.0" do
+      it "does not load a file earlier on the $LOAD_PATH when other similar features were already loaded" do
+        Dir.chdir CODE_LOADING_DIR do
+          @object.send(@method, "../code/load_fixture").should be_true
+        end
+        ScratchPad.recorded.should == [:loaded]
+
+        $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/b"
+        # This loads because the above load was not on the $LOAD_PATH
+        @object.send(@method, "load_fixture").should be_true
+        ScratchPad.recorded.should == [:loaded, :loaded]
+
+        $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/c"
+        # This does not load because the above load was on the $LOAD_PATH
+        @object.send(@method, "load_fixture").should be_false
+        ScratchPad.recorded.should == [:loaded, :loaded]
+      end
     end
   end
 

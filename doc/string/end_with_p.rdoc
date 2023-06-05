@@ -1,0 +1,11 @@
+Returns whether +self+ ends with any of the given +strings+.
+
+Returns +true+ if any given string matches the end, +false+ otherwise:
+
+  'hello'.end_with?('ello')               #=> true
+  'hello'.end_with?('heaven', 'ello')     #=> true
+  'hello'.end_with?('heaven', 'paradise') #=> false
+  'тест'.end_with?('т')                   # => true
+  'こんにちは'.end_with?('は')              # => true
+
+Related: String#start_with?.

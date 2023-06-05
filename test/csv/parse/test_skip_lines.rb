@@ -4,7 +4,7 @@ require_relative "../helper"
 
 class TestCSVParseSkipLines < Test::Unit::TestCase
   extend DifferentOFS
-  include Helper
+  include CSVHelper
 
   def test_default
     csv = CSV.new("a,b,c\n")

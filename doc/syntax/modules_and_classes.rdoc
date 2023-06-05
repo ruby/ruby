@@ -155,8 +155,8 @@ Ruby has three types of visibility.  The default is +public+.  A public method
 may be called from any other object.
 
 The second visibility is +protected+.  When calling a protected method the
-sender must be a subclass of the receiver or the receiver must be a subclass of
-the sender.  Otherwise a NoMethodError will be raised.
+sender must inherit the Class or Module which defines the method.  Otherwise a
+NoMethodError will be raised.
 
 Protected visibility is most frequently used to define <code>==</code> and
 other comparison methods where the author does not wish to expose an object's

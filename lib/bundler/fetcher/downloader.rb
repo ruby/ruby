@@ -61,14 +61,11 @@ module Bundler
           req.basic_auth(user, password)
         end
         connection.request(uri, req)
-      rescue NoMethodError => e
-        raise unless ["undefined method", "use_ssl="].all? {|snippet| e.message.include? snippet }
-        raise LoadError.new("cannot load such file -- openssl")
       rescue OpenSSL::SSL::SSLError
         raise CertificateFailureError.new(uri)
       rescue *HTTP_ERRORS => e
         Bundler.ui.trace e
-        if e.is_a?(SocketError) || e.message =~ /host down:/
+        if e.is_a?(SocketError) || e.message.to_s.include?("host down:")
           raise NetworkDownError, "Could not reach host #{uri.host}. Check your network " \
             "connection and try again."
         else
@@ -80,7 +77,7 @@ module Bundler
       private
 
       def validate_uri_scheme!(uri)
-        return if uri.scheme =~ /\Ahttps?\z/
+        return if /\Ahttps?\z/.match?(uri.scheme)
         raise InvalidOption,
           "The request uri `#{uri}` has an invalid scheme (`#{uri.scheme}`). " \
           "Did you mean `http` or `https`?"

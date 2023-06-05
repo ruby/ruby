@@ -167,8 +167,16 @@ module OpenSSL::PKey
       # +size+::
       #   The desired key size in bits.
       def generate(size, &blk)
+        # FIPS 186-4 specifies four (L,N) pairs: (1024,160), (2048,224),
+        # (2048,256), and (3072,256).
+        #
+        # q size is derived here with compatibility with
+        # DSA_generator_parameters_ex() which previous versions of ruby/openssl
+        # used to call.
+        qsize = size >= 2048 ? 256 : 160
         dsaparams = OpenSSL::PKey.generate_parameters("DSA", {
           "dsa_paramgen_bits" => size,
+          "dsa_paramgen_q_bits" => qsize,
         }, &blk)
         OpenSSL::PKey.generate_key(dsaparams)
       end
@@ -355,7 +363,8 @@ module OpenSSL::PKey
     #    rsa.private_encrypt(string, padding) -> String
     #
     # Encrypt +string+ with the private key.  +padding+ defaults to
-    # PKCS1_PADDING. The encrypted string output can be decrypted using
+    # PKCS1_PADDING, which is known to be insecure but is kept for backwards
+    # compatibility. The encrypted string output can be decrypted using
     # #public_decrypt.
     #
     # <b>Deprecated in version 3.0</b>.
@@ -378,7 +387,8 @@ module OpenSSL::PKey
     #    rsa.public_decrypt(string, padding) -> String
     #
     # Decrypt +string+, which has been encrypted with the private key, with the
-    # public key.  +padding+ defaults to PKCS1_PADDING.
+    # public key.  +padding+ defaults to PKCS1_PADDING which is known to be
+    # insecure but is kept for backwards compatibility.
     #
     # <b>Deprecated in version 3.0</b>.
     # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw, and
@@ -399,7 +409,8 @@ module OpenSSL::PKey
     #    rsa.public_encrypt(string, padding) -> String
     #
     # Encrypt +string+ with the public key.  +padding+ defaults to
-    # PKCS1_PADDING. The encrypted string output can be decrypted using
+    # PKCS1_PADDING, which is known to be insecure but is kept for backwards
+    # compatibility. The encrypted string output can be decrypted using
     # #private_decrypt.
     #
     # <b>Deprecated in version 3.0</b>.
@@ -420,7 +431,8 @@ module OpenSSL::PKey
     #    rsa.private_decrypt(string, padding) -> String
     #
     # Decrypt +string+, which has been encrypted with the public key, with the
-    # private key. +padding+ defaults to PKCS1_PADDING.
+    # private key. +padding+ defaults to PKCS1_PADDING, which is known to be
+    # insecure but is kept for backwards compatibility.
     #
     # <b>Deprecated in version 3.0</b>.
     # Consider using PKey::PKey#encrypt and PKey::PKey#decrypt instead.

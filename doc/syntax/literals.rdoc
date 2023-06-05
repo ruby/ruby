@@ -90,15 +90,36 @@ point numbers as well.
 
 === \Rational Literals
 
-You can write a Rational number as follows (suffixed +r+):
+You can write a Rational literal using a special suffix, <tt>'r'</tt>.
 
-  12r         #=> (12/1)
-  12.3r       #=> (123/10)
+Examples:
 
-A \Rational number is exact, whereas a \Float number may be inexact.
+  1r       # => (1/1)
+  2/3r     # => (2/3)   # With denominator.
+  -1r      # => (-1/1)  # With signs.
+  -2/3r    # => (-2/3)
+  2/-3r    # => (-2/3)
+  -2/-3r   # => (2/3)
+  +1/+3r   # => (1/3)
+  1.2r     # => (6/5)   # With fractional part.
+  1_1/2_1r # => (11/21) # With embedded underscores.
+  2/4r     # => (1/2)   # Automatically reduced.
 
-  0.1r + 0.2r #=> (3/10)
-  0.1 + 0.2   #=> 0.30000000000000004
+Syntax:
+
+  <rational-literal> = <numerator> [ '/' <denominator> ] 'r'
+  <numerator> = [ <sign> ] <digits> [ <fractional-part> ]
+  <fractional-part> = '.' <digits>
+  <denominator> = [ sign ] <digits>
+  <sign> = '-' | '+'
+  <digits> = <digit> { <digit> | '_' <digit> }
+  <digit> = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+
+Note this, which is parsed as \Float numerator <tt>1.2</tt>
+divided by \Rational denominator <tt>3r</tt>,
+resulting in a \Float:
+
+  1.2/3r  # => 0.39999999999999997
 
 === \Complex Literals
 
@@ -256,6 +277,12 @@ the content.  Note that empty lines and lines consisting solely of literal tabs
 and spaces will be ignored for the purposes of determining indentation, but
 escaped tabs and spaces are considered non-indentation characters.
 
+For the purpose of measuring an indentation, a horizontal tab is regarded as a
+sequence of one to eight spaces such that the column position corresponding to
+its end is a multiple of eight.  The amount to be removed is counted in terms
+of the number of spaces.  If the boundary appears in the middle of a tab, that
+tab is not removed.
+
 A heredoc allows interpolation and escaped characters.  You may disable
 interpolation and escaping by surrounding the opening identifier with single
 quotes:
@@ -381,15 +408,15 @@ on the methods you need to implement.
 
 == \Regexp Literals
 
-A regular expression is created using "/":
+A regular expression may be created using leading and trailing
+slash (<tt>'/'</tt>) characters:
 
-  /my regular expression/
+  re = /foo/ # => /foo/
+  re.class   # => Regexp
 
-The regular expression may be followed by flags which adjust the matching
-behavior of the regular expression.  The "i" flag makes the regular expression
-case-insensitive:
-
-  /my regular expression/i
+The trailing slash may be followed by one or more _flag_ characters
+that modify the behavior.
+See {Regexp options}[rdoc-ref:Regexp@Options] for details.
 
 Interpolation may be used inside regular expressions along with escaped
 characters.  Note that a regular expression may require additional escaped
@@ -420,10 +447,10 @@ This proc will add one to its argument.
 Each of the literals in described in this section
 may use these paired delimiters:
 
-* <tt>[</tt> and </tt>]</tt>.
-* <tt>(</tt> and </tt>)</tt>.
-* <tt>{</tt> and </tt>}</tt>.
-* <tt><</tt> and </tt>></tt>.
+* <tt>[</tt> and <tt>]</tt>.
+* <tt>(</tt> and <tt>)</tt>.
+* <tt>{</tt> and <tt>}</tt>.
+* <tt><</tt> and <tt>></tt>.
 * Any other character, as both beginning and ending delimiters.
 
 These are demonstrated in the next section.
@@ -482,13 +509,23 @@ You can write a symbol with <tt>%s</tt>:
 
 === <tt>%r</tt>: Regexp Literals
 
-You can write a regular expression with <tt>%r</tt>:
+You can write a regular expression with <tt>%r</tt>;
+the character used as the leading and trailing delimiter
+may be (almost) any character:
 
-  r = %r[foo\sbar]   # => /foo\sbar/
-  'foo bar'.match(r) # => #<MatchData "foo bar">
-  r = %r[foo\sbar]i  # => /foo\sbar/i
-  'FOO BAR'.match(r) # => #<MatchData "FOO BAR">
+  %r/foo/             # => /foo/
+  %r:name/value pair: # => /name\/value pair/
 
+A few "symmetrical" character pairs may be used as delimiters:
+
+  %r[foo] # => /foo/
+  %r{foo} # => /foo/
+  %r(foo) # => /foo/
+  %r<foo> # => /foo/
+
+The trailing delimiter may be followed by one or more _flag_ characters
+that modify the behavior.
+See {Regexp options}[rdoc-ref:Regexp@Options] for details.
 
 === <tt>%x</tt>: Backtick Literals
 

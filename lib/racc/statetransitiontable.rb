@@ -216,7 +216,7 @@ module Racc
         end
         i = ii
       end
-      Regexp.compile(map, 'n')
+      Regexp.compile(map, Regexp::NOENCODING)
     end
 
     def set_table(entries, dummy, tbl, chk, ptr)

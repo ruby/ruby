@@ -1,5 +1,20 @@
 # frozen_string_literal: true
 
+# Enable deprecation warnings for test-all, so deprecated methods/constants/functions are dealt with early.
+Warning[:deprecated] = true
+
+if ENV['BACKTRACE_FOR_DEPRECATION_WARNINGS']
+  Warning.extend Module.new {
+    def warn(message, category: nil, **kwargs)
+      if category == :deprecated and $stderr.respond_to?(:puts)
+        $stderr.puts nil, message, caller, nil
+      else
+        super
+      end
+    end
+  }
+end
+
 require_relative '../envutil'
 require_relative '../colorize'
 require_relative '../leakchecker'
@@ -74,16 +89,16 @@ module Test
         end
       end
 
-      module JITFirst
+      module RJITFirst
         def group(list)
-          # JIT first
-          jit, others = list.partition {|e| /test_jit/ =~ e}
-          jit + others
+          # RJIT first
+          rjit, others = list.partition {|e| /test_rjit/ =~ e}
+          rjit + others
         end
       end
 
       class Alpha < NoSort
-        include JITFirst
+        include RJITFirst
 
         def sort_by_name(list)
           list.sort_by(&:name)
@@ -97,7 +112,7 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
-        include JITFirst
+        include RJITFirst
 
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|
@@ -200,8 +215,6 @@ module Test
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
         }.join("\n")
 
-        @failed_output = options[:stderr_on_failure] ? $stderr : $stdout
-
         @options = options
       end
 
@@ -273,10 +286,16 @@ module Test
         @jobserver = nil
         makeflags = ENV.delete("MAKEFLAGS")
         if !options[:parallel] and
-          /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ makeflags
+          /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ makeflags
           begin
-            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+            if fifo = $3
+              fifo.gsub!(/\\(?=.)/, '')
+              r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
+              w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
+            else
+              r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+              w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+            end
           rescue
             r.close if r
             nil
@@ -473,8 +492,8 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "Some worker was crashed. It seems ruby interpreter's bug"
-        warn "or, a bug of test/unit/parallel.rb. try again without -j"
+        warn "A test worker crashed. It might be an interpreter bug or"
+        warn "a bug in test/unit/parallel.rb. Try again without the -j"
         warn "option."
         warn ""
         if File.exist?('core')
@@ -684,7 +703,7 @@ module Test
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
-              quit_workers {|w| w.response_at < timeout}&.map {|w|
+              quit_workers {|w| w.response_at&.<(timeout) }&.map {|w|
                 rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
               }
             elsif _io.first.any? {|io|
@@ -710,7 +729,7 @@ module Test
           return result
         ensure
           if file = @options[:timetable_data]
-            open(file, 'w'){|f|
+            File.open(file, 'w'){|f|
               @records.each{|(worker, suite), (st, ed)|
                 f.puts '[' + [worker.dump, suite.dump, st.to_f * 1_000, ed.to_f * 1_000].join(", ") + '],'
               }
@@ -745,7 +764,19 @@ module Test
             end
             unless error.empty?
               puts "\n""Retrying hung up testcases..."
-              error.map! {|r| ::Object.const_get(r[:testcase])}
+              error = error.map do |r|
+                begin
+                  ::Object.const_get(r[:testcase])
+                rescue NameError
+                  # testcase doesn't specify the correct case, so show `r` for information
+                  require 'pp'
+
+                  $stderr.puts "Retrying is failed because the file and testcase is not consistent:"
+                  PP.pp r, $stderr
+                  @errors += 1
+                  nil
+                end
+              end.compact
               verbose = @verbose
               job_status = options[:job_status]
               options[:verbose] = @verbose = true
@@ -762,7 +793,7 @@ module Test
           unless rep.empty?
             rep.each do |r|
               if r[:error]
-                puke(*r[:error], Timeout::Error)
+                puke(*r[:error], Timeout::Error.new)
                 next
               end
               r[:report]&.each do |f|
@@ -782,6 +813,7 @@ module Test
             warn ""
             @warnings.uniq! {|w| w[1].message}
             @warnings.each do |w|
+              @errors += 1
               warn "#{w[0]}: #{w[1].message} (#{w[1].class})"
             end
             warn ""
@@ -1109,9 +1141,6 @@ module Test
         parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
-        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
-          options[:stderr_on_failure] = true
-        end
       end
 
       def complement_test_name f, orig_f
@@ -1168,6 +1197,28 @@ module Test
         }
         files.flatten!
         super(files, options)
+      end
+    end
+
+    module OutputOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        parser.separator "output options:"
+
+        options[:failed_output] = $stdout
+        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
+          options[:failed_output] = $stderr
+        end
+        parser.on '--stdout-on-failure', 'Use stdout to print failure messages', '(default)' do
+          options[:failed_output] = $stdout
+        end
+      end
+
+      def process_args(args = [])
+        return @options if @options
+        options = super
+        @failed_output = options[:failed_output]
+        options
       end
     end
 
@@ -1232,7 +1283,12 @@ module Test
             puts "#{f}: #{$!}"
           end
         }
+        @load_failed = errors.size.nonzero?
         result
+      end
+
+      def run(*)
+        super or @load_failed
       end
     end
 
@@ -1539,7 +1595,7 @@ module Test
           puts if @verbose
           $stdout.flush
 
-          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
+          unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # compiler process is wrongly considered as leak
             leakchecker.check("#{inst.class}\##{inst.__name__}")
           end
 
@@ -1630,7 +1686,7 @@ module Test
           break unless report.empty?
         end
 
-        return failures + errors if self.test_count > 0 # or return nil...
+        return (failures + errors).nonzero? # or return nil...
       rescue Interrupt
         abort 'Interrupted'
       end
@@ -1656,6 +1712,7 @@ module Test
       prepend Test::Unit::Statistics
       prepend Test::Unit::Skipping
       prepend Test::Unit::GlobOption
+      prepend Test::Unit::OutputOption
       prepend Test::Unit::RepeatOption
       prepend Test::Unit::LoadPathOption
       prepend Test::Unit::GCOption
@@ -1697,6 +1754,9 @@ module Test
             when Test::Unit::AssertionFailedError then
               @failures += 1
               "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            when Timeout::Error
+              @errors += 1
+              "Timeout:\n#{klass}##{meth}\n"
             else
               @errors += 1
               bt = Test::filter_backtrace(e.backtrace).join "\n    "

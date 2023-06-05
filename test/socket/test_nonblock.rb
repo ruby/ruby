@@ -307,11 +307,13 @@ class TestSocketNonblock < Test::Unit::TestCase
           loop { s1.sendmsg_nonblock(buf) }
         end
       end
-    rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT
+    rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT, Errno::EPROTOTYPE
       omit "UNIXSocket.pair(:SEQPACKET) not implemented on this platform: #{$!}"
     end
 
     def test_sendmsg_nonblock_no_exception
+      omit "AF_UNIX + SEQPACKET is not supported on windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+
       buf = '*' * 4096
       UNIXSocket.pair(:SEQPACKET) do |s1, s2|
         n = 0

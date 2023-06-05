@@ -58,36 +58,6 @@ describe :array_join_with_default_separator, shared: true do
     -> { ArraySpecs.empty_recursive_array.send(@method) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if the Array is tainted and non-empty" do
-      [1, 2].taint.send(@method).tainted?.should be_true
-    end
-
-    it "does not taint the result if the Array is tainted but empty" do
-      [].taint.send(@method).tainted?.should be_false
-    end
-
-    it "taints the result if the result of coercing an element is tainted" do
-      s = mock("taint")
-      s.should_receive(:to_s).and_return("str".taint)
-      [s].send(@method).tainted?.should be_true
-    end
-
-    it "untrusts the result if the Array is untrusted and non-empty" do
-      [1, 2].untrust.send(@method).untrusted?.should be_true
-    end
-
-    it "does not untrust the result if the Array is untrusted but empty" do
-      [].untrust.send(@method).untrusted?.should be_false
-    end
-
-    it "untrusts the result if the result of coercing an element is untrusted" do
-      s = mock("untrust")
-      s.should_receive(:to_s).and_return("str".untrust)
-      [s].send(@method).untrusted?.should be_true
-    end
-  end
-
   it "uses the first encoding when other strings are compatible" do
     ary1 = ArraySpecs.array_with_7bit_utf8_and_usascii_strings
     ary2 = ArraySpecs.array_with_usascii_and_7bit_utf8_strings
@@ -114,18 +84,16 @@ describe :array_join_with_default_separator, shared: true do
     -> { ary_utf8_bad_binary.send(@method) }.should raise_error(EncodingError)
   end
 
-  ruby_version_is "2.7" do
-    context "when $, is not nil" do
-      before do
-        suppress_warning do
-          $, = '*'
-        end
+  context "when $, is not nil" do
+    before do
+      suppress_warning do
+        $, = '*'
       end
+    end
 
-      it "warns" do
-        -> { [].join }.should complain(/warning: \$, is set to non-nil value/)
-        -> { [].join(nil) }.should complain(/warning: \$, is set to non-nil value/)
-      end
+    it "warns" do
+      -> { [].join }.should complain(/warning: \$, is set to non-nil value/)
+      -> { [].join(nil) }.should complain(/warning: \$, is set to non-nil value/)
     end
   end
 end
@@ -140,43 +108,5 @@ describe :array_join_with_string_separator, shared: true do
   it "uses the same separator with nested arrays" do
     [1, [2, [3, 4], 5], 6].send(@method, ":").should == "1:2:3:4:5:6"
     [1, [2, ArraySpecs::MyArray[3, 4], 5], 6].send(@method, ":").should == "1:2:3:4:5:6"
-  end
-
-  ruby_version_is ''...'2.7' do
-    describe "with a tainted separator" do
-      before :each do
-        @sep = ":".taint
-      end
-
-      it "does not taint the result if the array is empty" do
-        [].send(@method, @sep).tainted?.should be_false
-      end
-
-      it "does not taint the result if the array has only one element" do
-        [1].send(@method, @sep).tainted?.should be_false
-      end
-
-      it "taints the result if the array has two or more elements" do
-        [1, 2].send(@method, @sep).tainted?.should be_true
-      end
-    end
-
-    describe "with an untrusted separator" do
-      before :each do
-        @sep = ":".untrust
-      end
-
-      it "does not untrust the result if the array is empty" do
-        [].send(@method, @sep).untrusted?.should be_false
-      end
-
-      it "does not untrust the result if the array has only one element" do
-        [1].send(@method, @sep).untrusted?.should be_false
-      end
-
-      it "untrusts the result if the array has two or more elements" do
-        [1, 2].send(@method, @sep).untrusted?.should be_true
-      end
-    end
   end
 end

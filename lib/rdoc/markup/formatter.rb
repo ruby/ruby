@@ -263,4 +263,3 @@ class RDoc::Markup::Formatter
   end
 
 end
-

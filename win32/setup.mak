@@ -59,32 +59,27 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 !if defined(ENABLE_DEBUG_ENV)
 ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 !endif
-!if defined(MJIT_SUPPORT)
-MJIT_SUPPORT = $(MJIT_SUPPORT)
+!if defined(RJIT_SUPPORT)
+RJIT_SUPPORT = $(RJIT_SUPPORT)
 !endif
 
 # TOOLS
 <<
 !if defined(BASERUBY)
 	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
-!else
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
 !endif
-	@type << >> $(MAKEFILE)
-$(BANG)if "$$(BASERUBY)" == ""
-BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
-HAVE_BASERUBY = no
-$(BANG)elseif [($$(BASERUBY) -eexit) > nul 2> nul] == 0
-HAVE_BASERUBY = yes
-$(BANG)else
-HAVE_BASERUBY = no
-$(BANG)endif
-<<
+!if "$(RUBY_DEVEL)" == "yes"
+	RUBY_DEVEL = yes
+!endif
 !if "$(GIT)" != ""
 	@echo GIT = $(GIT)>> $(MAKEFILE)
 !endif
 !if "$(HAVE_GIT)" != ""
 	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
+!endif
+
+!if "$(WITH_GMP)" == "yes"
+	@echo>>$(MAKEFILE) USE_GMP = 1
 !endif
 
 -osname-section-:
@@ -123,16 +118,60 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 
 -headers-: nul
 
-check-psapi.h: nul
-	($(CC) -MD <<conftest.c psapi.lib -link && echo>>$(MAKEFILE) HAVE_PSAPI_H=1) & $(WIN32DIR:/=\)\rm.bat conftest.*
-#include <windows.h>
-#include <psapi.h>
-int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
+-headers-: vs2022-fp-bug
+
+# Check the bug reported at:
+# https://developercommunity.visualstudio.com/t/With-__assume-isnan-after-isinf/1515649
+# https://developercommunity.visualstudio.com/t/Prev-Issue---with-__assume-isnan-/1597317
+vs2022-fp-bug:
+	@echo checking for $(@:-= )
+	@echo <<$@.c > NUL
+/* compile with -O2 */
+#include <math.h>
+#include <float.h>
+
+#define value_finite(d) 'f'
+#define value_infinity() 'i'
+#define value_nan() 'n'
+
+#ifdef NO_ASSUME
+# define ASSUME_TRUE() (void)0
+#else
+# define ASSUME_TRUE() __assume(1)
+#endif
+
+static int
+check_value(double value)
+{
+    if (isinf(value)) {
+        return value_infinity();
+    }
+    else if (isnan(value)) {
+        return value_nan();
+    }
+
+    ASSUME_TRUE();
+    return value_finite(value);
+}
+
+int
+main(void)
+{
+    int c = check_value(nan(""));
+    printf("NaN=>%c\n", c);
+    return c != value_nan();
+}
 <<
+	@( \
+	  $(CC) -O2 $@.c && .\$@ || \
+	  set bug=%ERRORLEVEL% \
+	  echo This compiler has an optimization bug \
+	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
 
 verconf.mk: nul
+	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
 @echo off
 #define RUBY_REVISION 0
@@ -154,10 +193,14 @@ echo MAJOR = RUBY_VERSION_MAJOR
 echo MINOR = RUBY_VERSION_MINOR
 echo TEENY = RUBY_VERSION_TEENY
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
-echo RUBY_DEVEL = yes
+#include "$(@F)"
+echo ABI_VERSION = RUBY_ABI_VERSION
 #endif
 set /a MSC_VER = _MSC_VER
-#if _MSC_VER > 1900
+#if _MSC_VER >= 1920
+set /a MSC_VER_LOWER = MSC_VER/20*20+0
+set /a MSC_VER_UPPER = MSC_VER/20*20+19
+#elif _MSC_VER >= 1900
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
 #endif
@@ -245,7 +288,6 @@ AS = $(AS) -nologo
 	(echo AS = $(AS:64=) -nologo) || \
 	(echo AS = $(AS) -nologo) ) >>$(MAKEFILE)
 !endif
-	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub

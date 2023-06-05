@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative '../../shared/rational/to_i'
 
 describe "Rational#to_i" do

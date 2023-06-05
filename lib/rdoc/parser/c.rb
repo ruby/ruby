@@ -122,6 +122,11 @@ class RDoc::Parser::C < RDoc::Parser
 
   include RDoc::Text
 
+  # :stopdoc:
+  BOOL_ARG_PATTERN = /\s*+\b([01]|Q?(?:true|false)|TRUE|FALSE)\b\s*/
+  TRUE_VALUES = ['1', 'TRUE', 'true', 'Qtrue'].freeze
+  # :startdoc:
+
   ##
   # Maps C variable names to names of Ruby classes or modules
 
@@ -259,18 +264,18 @@ class RDoc::Parser::C < RDoc::Parser
     @content.scan(/rb_attr\s*\(
                    \s*(\w+),
                    \s*([\w"()]+),
-                   \s*([01]),
-                   \s*([01]),
-                   \s*\w+\);/xm) do |var_name, attr_name, read, write|
+                   #{BOOL_ARG_PATTERN},
+                   #{BOOL_ARG_PATTERN},
+                   \s*\w+\);/xmo) do |var_name, attr_name, read, write|
       handle_attr var_name, attr_name, read, write
     end
 
     @content.scan(%r%rb_define_attr\(
                              \s*([\w\.]+),
                              \s*"([^"]+)",
-                             \s*(\d+),
-                             \s*(\d+)\s*\);
-                %xm) do |var_name, attr_name, read, write|
+                             #{BOOL_ARG_PATTERN},
+                             #{BOOL_ARG_PATTERN}\);
+                %xmo) do |var_name, attr_name, read, write|
       handle_attr var_name, attr_name, read, write
     end
   end
@@ -295,94 +300,92 @@ class RDoc::Parser::C < RDoc::Parser
 
     @content.scan(
       %r(
+        (?<open>\s*\(\s*) {0}
+        (?<close>\s*\)\s*) {0}
+        (?<name>\s*"(?<class_name>\w+)") {0}
+        (?<parent>\s*(?:
+          (?<parent_name>[\w\*\s\(\)\.\->]+) |
+          rb_path2class\s*\(\s*"(?<path>[\w:]+)"\s*\)
+        )) {0}
+        (?<under>\w+) {0}
+
         (?<var_name>[\w\.]+)\s* =
         \s*rb_(?:
           define_(?:
-            class(?: # rb_define_class(class_name_1, parent_name_1)
-              \s*\(
-                \s*"(?<class_name_1>\w+)",
-                \s*(?<parent_name_1>\w+)\s*
-              \)
-            |
-              _under\s*\( # rb_define_class_under(class_under, class_name2, parent_name2...)
-                \s* (?<class_under>\w+),
-                \s* "(?<class_name_2>\w+)",
-                \s*
-                (?:
-                  (?<parent_name_2>[\w\*\s\(\)\.\->]+) |
-                  rb_path2class\("(?<path>[\w:]+)"\)
-                )
+            class(?: # rb_define_class(name, parent_name)
+              \(\s*
+                \g<name>,
+                \g<parent>
               \s*\)
+            |
+              _under\g<open> # rb_define_class_under(under, name, parent_name...)
+                \g<under>,
+                \g<name>,
+                \g<parent>
+              \g<close>
             )
           |
-            module(?: # rb_define_module(module_name_1)
-              \s*\(
-                \s*"(?<module_name_1>\w+)"\s*
-              \)
+            (?<module>)
+            module(?: # rb_define_module(name)
+              \g<open>
+                \g<name>
+              \g<close>
             |
-              _under\s*\( # rb_define_module_under(module_under, module_name_2)
-                \s*(?<module_under>\w+),
-                \s*"(?<module_name_2>\w+)"
-              \s*\)
+              _under\g<open> # rb_define_module_under(under, name)
+                \g<under>,
+                \g<name>
+              \g<close>
             )
           )
       |
-        struct_define_without_accessor\s*\( # rb_struct_define_without_accessor(class_name_3, parent_name_3, ...)
-          \s*"(?<class_name_3>\w+)",
-          \s*(?<parent_name_3>\w+),
-          \s*\w+,        # Allocation function
-          (?:\s*"\w+",)* # Attributes
-          \s*NULL
-        \)
+        (?<attributes>(?:\s*"\w+",)*\s*NULL\s*) {0}
+        struct_define(?:
+          \g<open> # rb_struct_define(name, ...)
+            \g<name>,
+        |
+          _under\g<open> # rb_struct_define_under(under, name, ...)
+            \g<under>,
+            \g<name>,
+        |
+          _without_accessor(?:
+            \g<open> # rb_struct_define_without_accessor(name, parent_name, ...)
+          |
+            _under\g<open> # rb_struct_define_without_accessor_under(under, name, parent_name, ...)
+              \g<under>,
+          )
+            \g<name>,
+            \g<parent>,
+            \s*\w+,        # Allocation function
+        )
+          \g<attributes>
+        \g<close>
       |
-        singleton_class\s*\( # rb_singleton_class(target_class_name)
-          \s*(?<target_class_name>\w+)
-        \)
+        singleton_class\g<open> # rb_singleton_class(target_class_name)
+          (?<target_class_name>\w+)
+        \g<close>
         )
       )mx
     ) do
-      class_name = $~[:class_name_1]
-      type = :class
-      if class_name
-        # rb_define_class(class_name_1, parent_name_1)
-        parent_name = $~[:parent_name_1]
-        #under = nil
-      else
-        class_name = $~[:class_name_2]
-        if class_name
-          # rb_define_class_under(class_under, class_name2, parent_name2...)
-          parent_name = $~[:parent_name_2] || $~[:path]
-          under = $~[:class_under]
-        else
-          class_name = $~[:class_name_3]
-          if class_name
-            # rb_struct_define_without_accessor(class_name_3, parent_name_3, ...)
-            parent_name = $~[:parent_name_3]
-            #under = nil
-          else
-            type = :module
-            class_name = $~[:module_name_1]
-            #parent_name = nil
-            if class_name
-              # rb_define_module(module_name_1)
-              #under = nil
-            else
-              class_name = $~[:module_name_2]
-              if class_name
-                # rb_define_module_under(module_under, module_name_1)
-                under = $~[:module_under]
-              else
-                # rb_singleton_class(target_class_name)
-                target_class_name = $~[:target_class_name]
-                handle_singleton $~[:var_name], target_class_name
-                next
-              end
-            end
-          end
-        end
+      if target_class_name = $~[:target_class_name]
+        # rb_singleton_class(target_class_name)
+        handle_singleton $~[:var_name], target_class_name
+        next
       end
 
-      handle_class_module($~[:var_name], type, class_name, parent_name, under)
+      var_name = $~[:var_name]
+      type = $~[:module] ? :module : :class
+      class_name = $~[:class_name]
+      parent_name = $~[:parent_name] || $~[:path]
+      under = $~[:under]
+      attributes = $~[:attributes]
+
+      handle_class_module(var_name, type, class_name, parent_name, under)
+      if attributes and !parent_name # rb_struct_define *not* without_accessor
+        true_flag = 'Qtrue'
+        attributes.scan(/"\K\w+(?=")/) do |attr_name|
+          handle_attr var_name, attr_name, true_flag, true_flag
+        end
+      end
     end
   end
 
@@ -677,13 +680,14 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Finds a RDoc::NormalClass or RDoc::NormalModule for +raw_name+
 
-  def find_class(raw_name, name)
+  def find_class(raw_name, name, base_name = nil)
     unless @classes[raw_name]
       if raw_name =~ /^rb_m/
         container = @top_level.add_module RDoc::NormalModule, name
       else
         container = @top_level.add_class RDoc::NormalClass, name
       end
+      container.name = base_name if base_name
 
       container.record_location @top_level
       @classes[raw_name] = container
@@ -724,7 +728,7 @@ class RDoc::Parser::C < RDoc::Parser
         ((?>/\*.*?\*/\s+))
         (static\s+)?
         void\s+
-        Init_#{class_name}\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xmi then
+        Init(?:VM)?_(?i:#{class_name})\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xm then
       comment = $1.sub(%r%Document-(?:class|module):\s+#{class_name}%, '')
     elsif @content =~ %r%Document-(?:class|module):\s+#{class_name}\s*?
                          (?:<\s+[:,\w]+)?\n((?>.*?\*/))%xm then
@@ -824,8 +828,8 @@ class RDoc::Parser::C < RDoc::Parser
 
   def handle_attr(var_name, attr_name, read, write)
     rw = ''
-    rw += 'R' if '1' == read
-    rw += 'W' if '1' == write
+    rw += 'R' if TRUE_VALUES.include?(read)
+    rw += 'W' if TRUE_VALUES.include?(write)
 
     class_name = @known_classes[var_name]
 
@@ -921,7 +925,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     return unless class_name
 
-    class_obj = find_class var_name, class_name
+    class_obj = find_class var_name, class_name, class_name[/::\K[^:]+\z/]
 
     unless class_obj then
       @options.warn 'Enclosing class or module %p is not known' % [const_name]
@@ -1025,7 +1029,8 @@ class RDoc::Parser::C < RDoc::Parser
                           elsif p_count == -1 then # argc, argv
                             rb_scan_args body
                           else
-                            "(#{(1..p_count).map { |i| "p#{i}" }.join ', '})"
+                            args = (1..p_count).map { |i| "p#{i}" }
+                            "(#{args.join ', '})"
                           end
 
 
@@ -1050,23 +1055,6 @@ class RDoc::Parser::C < RDoc::Parser
 
     @known_classes[sclass_var]     = class_name
     @singleton_classes[sclass_var] = class_name
-  end
-
-  ##
-  # Normalizes tabs in +body+
-
-  def handle_tab_width(body)
-    if /\t/ =~ body
-      tab_width = @options.tab_width
-      body.split(/\n/).map do |line|
-        1 while line.gsub!(/\t+/) do
-          ' ' * (tab_width * $&.length - $`.length % tab_width)
-        end && $~
-        line
-      end.join "\n"
-    else
-      body
-    end
   end
 
   ##

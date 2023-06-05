@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc'
+require_relative '../rdoc'
 
 ##
 # Namespace for the ri command line tool's implementation.
@@ -13,9 +13,8 @@ module RDoc::RI
 
   class Error < RDoc::Error; end
 
-  autoload :Driver, 'rdoc/ri/driver'
-  autoload :Paths,  'rdoc/ri/paths'
-  autoload :Store,  'rdoc/ri/store'
+  autoload :Driver, "#{__dir__}/ri/driver"
+  autoload :Paths,  "#{__dir__}/ri/paths"
+  autoload :Store,  "#{__dir__}/ri/store"
 
 end
-

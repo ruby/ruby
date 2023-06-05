@@ -113,6 +113,8 @@
 # define UNALIGNED_WORD_ACCESS 1
 #elif defined(__powerpc64__)
 # define UNALIGNED_WORD_ACCESS 1
+#elif defined(__POWERPC__) // __POWERPC__ is defined for ppc and ppc64 on Darwin
+# define UNALIGNED_WORD_ACCESS 1
 #elif defined(__aarch64__)
 # define UNALIGNED_WORD_ACCESS 1
 #elif defined(__mc68020__)
@@ -145,9 +147,5 @@
 # undef RBIMPL_TEST2
 # undef RBIMPL_TEST3
 #endif /* HAVE_VA_ARGS_MACRO */
-
-#ifndef USE_RVARGC
-# define USE_RVARGC 1
-#endif
 
 #endif /* RBIMPL_CONFIG_H */

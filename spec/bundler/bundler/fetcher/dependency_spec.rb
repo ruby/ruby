@@ -155,9 +155,9 @@ RSpec.describe Bundler::Fetcher::Dependency do
       end
     end
 
-    shared_examples_for "the error suggests retrying with the full index" do
-      it "should log the inability to fetch from API at debug level" do
-        expect(Bundler).to receive_message_chain(:ui, :debug).with("could not fetch from the dependency API\nit's suggested to retry using the full index via `bundle install --full-index`")
+    shared_examples_for "the error is logged" do
+      it "should log the inability to fetch from API at debug level, and mention retrying" do
+        expect(Bundler).to receive_message_chain(:ui, :debug).with("could not fetch from the dependency API, trying the full index")
         subject.specs(gem_names, full_dependency_list, last_spec_list)
       end
     end
@@ -166,25 +166,21 @@ RSpec.describe Bundler::Fetcher::Dependency do
       before { allow(subject).to receive(:dependency_specs) { raise Bundler::HTTPError.new } }
 
       it_behaves_like "the error is properly handled"
-      it_behaves_like "the error suggests retrying with the full index"
+      it_behaves_like "the error is logged"
     end
 
     context "when a GemspecError occurs" do
       before { allow(subject).to receive(:dependency_specs) { raise Bundler::GemspecError.new } }
 
       it_behaves_like "the error is properly handled"
-      it_behaves_like "the error suggests retrying with the full index"
+      it_behaves_like "the error is logged"
     end
 
     context "when a MarshalError occurs" do
       before { allow(subject).to receive(:dependency_specs) { raise Bundler::MarshalError.new } }
 
       it_behaves_like "the error is properly handled"
-
-      it "should log the inability to fetch from API and mention retrying" do
-        expect(Bundler).to receive_message_chain(:ui, :debug).with("could not fetch from the dependency API, trying the full index")
-        subject.specs(gem_names, full_dependency_list, last_spec_list)
-      end
+      it_behaves_like "the error is logged"
     end
   end
 
@@ -222,7 +218,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
     it "should fetch dependencies from RubyGems and unmarshal them" do
       expect(gem_names).to receive(:each_slice).with(rubygems_limit).and_call_original
       expect(downloader).to receive(:fetch).with(dep_api_uri).and_return(fetch_response)
-      expect(Bundler).to receive(:load_marshal).with(fetch_response.body).and_return([unmarshalled_gems])
+      expect(Bundler).to receive(:safe_load_marshal).with(fetch_response.body).and_return([unmarshalled_gems])
       expect(subject.unmarshalled_dep_gems(gem_names)).to eq([unmarshalled_gems])
     end
   end

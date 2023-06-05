@@ -200,6 +200,18 @@ VALUE rb_class_descendants(VALUE klass);
  */
 VALUE rb_class_subclasses(VALUE klass);
 
+
+/**
+ *  Returns the attached object for a singleton class.
+ *  If the given class is not a singleton class, raises a TypeError.
+ *
+ * @param[in]  klass A class.
+ * @return     The object which has the singleton class `klass`.
+ *
+ * @internal
+ */
+VALUE rb_class_attached_object(VALUE klass);
+
 /**
  * Generates an array of symbols, which are the list of method names defined in
  * the passed class.

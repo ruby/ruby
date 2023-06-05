@@ -2,12 +2,12 @@
 
 #ifdef HAVE_RB_IS_CONST_NAME
 # define get_symbol_type(type, t, name) do { \
-	ID id = rb_check_id(&name); \
-	t = (id ? rb_is_##type##_id(id) : rb_is_##type##_name(name)); \
+        ID id = rb_check_id(&name); \
+        t = (id ? rb_is_##type##_id(id) : rb_is_##type##_name(name)); \
     } while (0)
 #else
 # define get_symbol_type(type, t, name) do { \
-	t = rb_is_##type##_id(rb_to_id(name)); \
+        t = rb_is_##type##_id(rb_to_id(name)); \
     } while (0)
 #endif
 

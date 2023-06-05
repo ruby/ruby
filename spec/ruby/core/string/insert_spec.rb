@@ -41,18 +41,6 @@ describe "String#insert with index, other" do
     "abcd".insert(-3, other).should == "abXYZcd"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints self if string to insert is tainted" do
-      str = "abcd"
-      str.insert(0, "T".taint).should.tainted?
-
-      str = "abcd"
-      other = mock('T')
-      def other.to_str() "T".taint end
-      str.insert(0, other).should.tainted?
-    end
-  end
-
   it "raises a TypeError if other can't be converted to string" do
     -> { "abcd".insert(-6, Object.new)}.should raise_error(TypeError)
     -> { "abcd".insert(-6, [])        }.should raise_error(TypeError)
@@ -80,5 +68,14 @@ describe "String#insert with index, other" do
     -> do
       "あれ".insert 0, pat
     end.should raise_error(Encoding::CompatibilityError)
+  end
+
+  it "should not call subclassed string methods" do
+    cls = Class.new(String) do
+      def replace(arg)
+        raise "should not call replace"
+      end
+    end
+    cls.new("abcd").insert(0, 'X').should == "Xabcd"
   end
 end

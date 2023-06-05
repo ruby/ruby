@@ -49,6 +49,15 @@ class TestIO_Console < Test::Unit::TestCase
       assert_include(e.message, IO::NULL)
     end
   end
+
+  def test_bad_keyword
+    omit if RUBY_ENGINE == 'jruby'
+    assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
+      File.open(IO::NULL) do |f|
+        f.raw(bad: 0)
+      end
+    end
+  end
 end
 
 defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
@@ -357,6 +366,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_intr
+    # This test fails randomly on FreeBSD 13
+    # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
+    #
+    #   1) Failure:
+    # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
+    # <"25"> expected but was
+    # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
+    omit if /freebsd/ =~ RUBY_PLATFORM
+
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         require 'timeout'
@@ -431,7 +449,9 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def run_pty(src, n = 1)
     pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
 
-    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
+    args = ["-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src]
+    args.shift if args.first == "-I" # statically linked
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, *args)
   rescue RuntimeError
     omit $!
   else

@@ -35,11 +35,15 @@
 /* #define ONIG_DEBUG_COMPILE */
 /* #define ONIG_DEBUG_SEARCH */
 /* #define ONIG_DEBUG_MATCH */
+/* #define ONIG_DEBUG_MATCH_CACHE */
 /* #define ONIG_DEBUG_MEMLEAK */
 /* #define ONIG_DONT_OPTIMIZE */
 
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
+
+/* enable the match optimization by using a cache. */
+#define USE_MATCH_CACHE
 
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
@@ -49,10 +53,11 @@
 # endif
 #endif
 
+/* __POWERPC__ added to accommodate Darwin case. */
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || defined(__aarch64__) || \
+     defined(__powerpc64__) || defined(__POWERPC__) || defined(__aarch64__) || \
      defined(__mc68020__)
 #  define UNALIGNED_WORD_ACCESS 1
 # else
@@ -148,7 +153,14 @@
 
 #ifdef RUBY
 
-# define CHECK_INTERRUPT_IN_MATCH_AT rb_thread_check_ints()
+# define CHECK_INTERRUPT_IN_MATCH_AT do { \
+  msa->counter++;                         \
+  if (msa->counter >= 128) {              \
+    msa->counter = 0;                     \
+    rb_reg_check_timeout(reg, &msa->end_time);  \
+    rb_thread_check_ints();               \
+  }                                       \
+} while(0)
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -303,9 +315,13 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 #define ONIG_LAST_CODE_POINT    (~((OnigCodePoint )0))
 
+#define PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type) \
+  ((void)sizeof(char[2 * (sizeof(val) == sizeof(type)) - 1]))
+
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
 
 # define PLATFORM_GET_INC(val,p,type) do{\
+  PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type);\
   val  = *(type* )p;\
   (p) += sizeof(type);\
 } while(0)
@@ -313,7 +329,10 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #else
 
 # define PLATFORM_GET_INC(val,p,type) do{\
-  xmemcpy(&val, (p), sizeof(type));\
+  PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type);\
+  type platform_get_value;\
+  xmemcpy(&platform_get_value, (p), sizeof(type));\
+  val = platform_get_value;\
   (p) += sizeof(type);\
 } while(0)
 
@@ -371,6 +390,7 @@ typedef unsigned int  BitStatusType;
 
 
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
+#define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
 #define DIGITVAL(code)    ((code) - '0')
 #define ODIGITVAL(code)   DIGITVAL(code)
@@ -812,6 +832,7 @@ typedef intptr_t OnigStackIndex;
 
 typedef struct _OnigStackType {
   unsigned int type;
+  OnigStackIndex null_check;
   union {
     struct {
       UChar *pcode;      /* byte code position */
@@ -855,6 +876,16 @@ typedef struct _OnigStackType {
   } u;
 } OnigStackType;
 
+#ifdef USE_MATCH_CACHE
+typedef struct {
+  UChar *addr;
+  long cache_point;
+  int outer_repeat_mem;
+  long num_cache_points_at_outer_repeat;
+  long num_cache_points_in_outer_repeat;
+} OnigCacheOpcode;
+#endif
+
 typedef struct {
   void* stack_p;
   size_t stack_n;
@@ -870,8 +901,30 @@ typedef struct {
   void* state_check_buff;
   int   state_check_buff_size;
 #endif
+  int counter;
+  /* rb_hrtime_t from hrtime.h */
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+  int128_t end_time;
+#else
+  uint64_t end_time;
+#endif
+#ifdef USE_MATCH_CACHE
+  int              match_cache_status;
+  long             num_fails;
+  long             num_cache_opcodes;
+  OnigCacheOpcode* cache_opcodes;
+  long             num_cache_points;
+  uint8_t*         match_cache_buf;
+#endif
 } OnigMatchArg;
 
+#define NUM_CACHE_OPCODES_UNINIT      1
+#define NUM_CACHE_OPCODES_IMPOSSIBLE -1
+
+#define MATCH_CACHE_STATUS_UNINIT    1
+#define MATCH_CACHE_STATUS_INIT      2
+#define MATCH_CACHE_STATUS_DISABLED -1
+#define MATCH_CACHE_STATUS_ENABLED   0
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))
@@ -935,6 +988,7 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 #ifdef RUBY
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
+void rb_reg_check_timeout(regex_t *reg, void *end_time);
 #endif
 
 RUBY_SYMBOL_EXPORT_END

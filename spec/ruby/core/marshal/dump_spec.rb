@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require_relative 'fixtures/marshal_data'
 
 describe "Marshal.dump" do
@@ -103,11 +104,30 @@ describe "Marshal.dump" do
       UserMarshal.should_not_receive(:name)
       Marshal.dump(UserMarshal.new)
     end
+
+    it "raises TypeError if an Object is an instance of an anonymous class" do
+      -> { Marshal.dump(Class.new(UserMarshal).new) }.should raise_error(TypeError, /can't dump anonymous class/)
+    end
   end
 
   describe "with an object responding to #_dump" do
-    it "dumps the object returned by #marshal_dump" do
+    it "dumps the String returned by #_dump" do
       Marshal.dump(UserDefined.new).should == "\004\bu:\020UserDefined\022\004\b[\a:\nstuff;\000"
+    end
+
+    it "dumps the String in non US-ASCII and non UTF-8 encoding" do
+      object = UserDefinedString.new("a".encode("windows-1251"))
+      Marshal.dump(object).should == "\x04\bIu:\x16UserDefinedString\x06a\x06:\rencoding\"\x11Windows-1251"
+    end
+
+    it "dumps the String in multibyte encoding" do
+      object = UserDefinedString.new("a".encode("utf-32le"))
+      Marshal.dump(object).should == "\x04\bIu:\x16UserDefinedString\ta\x00\x00\x00\x06:\rencoding\"\rUTF-32LE"
+    end
+
+    it "ignores overridden name method" do
+      obj = MarshalSpec::UserDefinedWithOverriddenName.new
+      Marshal.dump(obj).should == "\x04\bu:/MarshalSpec::UserDefinedWithOverriddenName\x12\x04\b[\a:\nstuff;\x00"
     end
 
     it "raises a TypeError if _dump returns a non-string" do
@@ -116,11 +136,43 @@ describe "Marshal.dump" do
       -> { Marshal.dump(m) }.should raise_error(TypeError)
     end
 
+    it "raises TypeError if an Object is an instance of an anonymous class" do
+      -> { Marshal.dump(Class.new(UserDefined).new) }.should raise_error(TypeError, /can't dump anonymous class/)
+    end
+
     it "favors marshal_dump over _dump" do
       m = mock("marshaled")
       m.should_receive(:marshal_dump).and_return(0)
       m.should_not_receive(:_dump)
       Marshal.dump(m)
+    end
+
+    it "indexes instance variables of a String returned by #_dump at first and then indexes the object itself" do
+      class MarshalSpec::M1::A
+        def _dump(level)
+          s = "<dump>"
+          s.instance_variable_set(:@foo, "bar")
+          s
+        end
+      end
+
+      a = MarshalSpec::M1::A.new
+
+      # 0-based index of the object a = 2, that is encoded as \x07 and printed as "\a" character.
+      # Objects are serialized in the following order: Array, a, "bar".
+      # But they are indexed in different order: Array (index=0), "bar" (index=1), a (index=2)
+      # So the second occurenc of the object a is encoded as an index 2.
+      reference = "@\a"
+      Marshal.dump([a, a]).should == "\x04\b[\aIu:\x17MarshalSpec::M1::A\v<dump>\x06:\t@foo\"\bbar#{reference}"
+    end
+
+    describe "Core library classes with #_dump returning a String with instance variables" do
+      it "indexes instance variables and then a Time object itself" do
+        t = Time.utc(2022)
+        reference = "@\a"
+
+        Marshal.dump([t, t]).should == "\x04\b[\aIu:\tTime\r \x80\x1E\xC0\x00\x00\x00\x00\x06:\tzoneI\"\bUTC\x06:\x06EF#{reference}"
+      end
     end
   end
 
@@ -137,8 +189,17 @@ describe "Marshal.dump" do
       Marshal.dump(UserDefined::Nested).should == "\004\bc\030UserDefined::Nested"
     end
 
+    it "ignores overridden name method" do
+      Marshal.dump(MarshalSpec::ClassWithOverriddenName).should == "\x04\bc)MarshalSpec::ClassWithOverriddenName"
+    end
+
+    it "dumps a class with multibyte characters in name" do
+      source_object = eval("MarshalSpec::MultibyteぁあぃいClass".force_encoding(Encoding::UTF_8))
+      Marshal.dump(source_object).should == "\x04\bc,MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Class"
+    end
+
     it "raises TypeError with an anonymous Class" do
-      -> { Marshal.dump(Class.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(Class.new) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
 
     it "raises TypeError with a singleton Class" do
@@ -151,8 +212,17 @@ describe "Marshal.dump" do
       Marshal.dump(Marshal).should == "\004\bm\fMarshal"
     end
 
+    it "ignores overridden name method" do
+      Marshal.dump(MarshalSpec::ModuleWithOverriddenName).should == "\x04\bc*MarshalSpec::ModuleWithOverriddenName"
+    end
+
+    it "dumps a module with multibyte characters in name" do
+      source_object = eval("MarshalSpec::MultibyteけげこごModule".force_encoding(Encoding::UTF_8))
+      Marshal.dump(source_object).should == "\x04\bm-MarshalSpec::Multibyte\xE3\x81\x91\xE3\x81\x92\xE3\x81\x93\xE3\x81\x94Module"
+    end
+
     it "raises TypeError with an anonymous Module" do
-      -> { Marshal.dump(Module.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(Module.new) }.should raise_error(TypeError, /can't dump anonymous module/)
     end
   end
 
@@ -185,6 +255,20 @@ describe "Marshal.dump" do
         [Marshal, -2**64, "\004\bl-\n\000\000\000\000\000\000\000\000\001\000"],
       ].should be_computed_by(:dump)
     end
+
+    it "increases the object links counter" do
+      obj = Object.new
+      object_1_link = "\x06" # representing of (0-based) index=1 (by adding 5 for small Integers)
+      object_2_link = "\x07" # representing of index=2
+
+      # objects: Array, Object, Object
+      Marshal.dump([obj, obj]).should == "\x04\b[\ao:\vObject\x00@#{object_1_link}"
+
+      # objects: Array, Bignum, Object, Object
+      Marshal.dump([2**64, obj, obj]).should == "\x04\b[\bl+\n\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00o:\vObject\x00@#{object_2_link}"
+      Marshal.dump([2**48, obj, obj]).should == "\x04\b[\bl+\t\x00\x00\x00\x00\x00\x00\x01\x00o:\vObject\x00@#{object_2_link}"
+      Marshal.dump([2**32, obj, obj]).should == "\x04\b[\bl+\b\x00\x00\x00\x00\x01\x00o:\vObject\x00@#{object_2_link}"
+    end
   end
 
   describe "with a String" do
@@ -210,6 +294,11 @@ describe "Marshal.dump" do
 
     it "dumps a String subclass extended with a Module" do
       Marshal.dump(UserString.new.extend(Meths).force_encoding("binary")).should == "\004\be:\nMethsC:\017UserString\"\000"
+    end
+
+    it "ignores overridden name method when dumps a String subclass" do
+      obj = MarshalSpec::StringWithOverriddenName.new
+      Marshal.dump(obj).should == "\x04\bC:*MarshalSpec::StringWithOverriddenName\"\x00"
     end
 
     it "dumps a String with instance variables" do
@@ -267,14 +356,42 @@ describe "Marshal.dump" do
       Marshal.dump(o).should == "\x04\b/\x00\x10"
     end
 
+    it "dumps an ascii-compatible Regexp" do
+      o = Regexp.new("a".encode("us-ascii"), Regexp::FIXEDENCODING)
+      Marshal.dump(o).should == "\x04\bI/\x06a\x10\x06:\x06EF"
+
+      o = Regexp.new("a".encode("us-ascii"))
+      Marshal.dump(o).should == "\x04\bI/\x06a\x00\x06:\x06EF"
+
+      o = Regexp.new("a".encode("windows-1251"), Regexp::FIXEDENCODING)
+      Marshal.dump(o).should == "\x04\bI/\x06a\x10\x06:\rencoding\"\x11Windows-1251"
+
+      o = Regexp.new("a".encode("windows-1251"))
+      Marshal.dump(o).should == "\x04\bI/\x06a\x00\x06:\x06EF"
+    end
+
     it "dumps a UTF-8 Regexp" do
       o = Regexp.new("".force_encoding("utf-8"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\bI/\x00\x10\x06:\x06ET"
+
+      o = Regexp.new("a".force_encoding("utf-8"), Regexp::FIXEDENCODING)
+      Marshal.dump(o).should == "\x04\bI/\x06a\x10\x06:\x06ET"
+
+      o = Regexp.new("\u3042".force_encoding("utf-8"), Regexp::FIXEDENCODING)
+      Marshal.dump(o).should == "\x04\bI/\b\xE3\x81\x82\x10\x06:\x06ET"
     end
 
     it "dumps a Regexp in another encoding" do
       o = Regexp.new("".force_encoding("utf-16le"), Regexp::FIXEDENCODING)
       Marshal.dump(o).should == "\x04\bI/\x00\x10\x06:\rencoding\"\rUTF-16LE"
+
+      o = Regexp.new("a".encode("utf-16le"), Regexp::FIXEDENCODING)
+      Marshal.dump(o).should == "\x04\bI/\aa\x00\x10\x06:\rencoding\"\rUTF-16LE"
+    end
+
+    it "ignores overridden name method when dumps a Regexp subclass" do
+      obj = MarshalSpec::RegexpWithOverriddenName.new("")
+      Marshal.dump(obj).should == "\x04\bIC:*MarshalSpec::RegexpWithOverriddenName/\x00\x00\x06:\x06EF"
     end
   end
 
@@ -306,11 +423,20 @@ describe "Marshal.dump" do
     it "dumps an extended Array" do
       Marshal.dump([].extend(Meths)).should == "\004\be:\nMeths[\000"
     end
+
+    it "ignores overridden name method when dumps an Array subclass" do
+      obj = MarshalSpec::ArrayWithOverriddenName.new
+      Marshal.dump(obj).should == "\x04\bC:)MarshalSpec::ArrayWithOverriddenName[\x00"
+    end
   end
 
   describe "with a Hash" do
     it "dumps a Hash" do
       Marshal.dump({}).should == "\004\b{\000"
+    end
+
+    it "dumps a non-empty Hash" do
+      Marshal.dump({a: 1}).should == "\x04\b{\x06:\x06ai\x06"
     end
 
     it "dumps a Hash subclass" do
@@ -321,8 +447,24 @@ describe "Marshal.dump" do
       Marshal.dump(Hash.new(1)).should == "\004\b}\000i\006"
     end
 
+    ruby_version_is "3.1" do
+      it "dumps a Hash with compare_by_identity" do
+        h = {}
+        h.compare_by_identity
+
+        Marshal.dump(h).should == "\004\bC:\tHash{\x00"
+      end
+
+      it "dumps a Hash subclass with compare_by_identity" do
+        h = UserHash.new
+        h.compare_by_identity
+
+        Marshal.dump(h).should == "\x04\bC:\rUserHashC:\tHash{\x00"
+      end
+    end
+
     it "raises a TypeError with hash having default proc" do
-      -> { Marshal.dump(Hash.new {}) }.should raise_error(TypeError)
+      -> { Marshal.dump(Hash.new {}) }.should raise_error(TypeError, "can't dump hash with default proc")
     end
 
     it "dumps a Hash with instance variables" do
@@ -337,6 +479,11 @@ describe "Marshal.dump" do
 
     it "dumps an Hash subclass with a parameter to initialize" do
       Marshal.dump(UserHashInitParams.new(1)).should == "\004\bIC:\027UserHashInitParams{\000\006:\a@ai\006"
+    end
+
+    it "ignores overridden name method when dumps a Hash subclass" do
+      obj = MarshalSpec::HashWithOverriddenName.new
+      Marshal.dump(obj).should == "\x04\bC:(MarshalSpec::HashWithOverriddenName{\x00"
     end
   end
 
@@ -365,6 +512,15 @@ describe "Marshal.dump" do
       obj.b = [:Meths, s]
       Marshal.dump(obj).should == "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
       Struct.send(:remove_const, :Extended)
+    end
+
+    it "ignores overridden name method" do
+      obj = MarshalSpec::StructWithOverriddenName.new("member")
+      Marshal.dump(obj).should == "\x04\bS:*MarshalSpec::StructWithOverriddenName\x06:\x06a\"\vmember"
+    end
+
+    it "raises TypeError with an anonymous Struct" do
+      -> { Marshal.dump(Struct.new(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -397,13 +553,18 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should == "\004\bo:\x0BObject\x00"
     end
 
-    it "dumps an Object if it has a singleton class but no singleton methods" do
+    it "dumps an Object if it has a singleton class but no singleton methods and no singleton instance variables" do
       obj = Object.new
       obj.singleton_class
       Marshal.dump(obj).should == "\004\bo:\x0BObject\x00"
     end
 
-    it "raises if an Object has a singleton class and singleton methods" do
+    it "ignores overridden name method" do
+      obj = MarshalSpec::ClassWithOverriddenName.new
+      Marshal.dump(obj).should == "\x04\bo:)MarshalSpec::ClassWithOverriddenName\x00"
+    end
+
+    it "raises TypeError if an Object has a singleton class and singleton methods" do
       obj = Object.new
       def obj.foo; end
       -> {
@@ -411,9 +572,44 @@ describe "Marshal.dump" do
       }.should raise_error(TypeError, "singleton can't be dumped")
     end
 
+    it "raises TypeError if an Object has a singleton class and singleton instance variables" do
+      obj = Object.new
+      class << obj
+        @v = 1
+      end
+
+      -> {
+        Marshal.dump(obj)
+      }.should raise_error(TypeError, "singleton can't be dumped")
+    end
+
+    it "raises TypeError if an Object is an instance of an anonymous class" do
+      anonymous_class = Class.new
+      obj = anonymous_class.new
+
+      -> { Marshal.dump(obj) }.should raise_error(TypeError, /can't dump anonymous class/)
+    end
+
+    it "raises TypeError if an Object extends an anonymous module" do
+      anonymous_module = Module.new
+      obj = Object.new
+      obj.extend(anonymous_module)
+
+      -> { Marshal.dump(obj) }.should raise_error(TypeError, /can't dump anonymous class/)
+    end
+
     it "dumps a BasicObject subclass if it defines respond_to?" do
       obj = MarshalSpec::BasicObjectSubWithRespondToFalse.new
       Marshal.dump(obj).should == "\x04\bo:2MarshalSpec::BasicObjectSubWithRespondToFalse\x00"
+    end
+
+    it "dumps without marshaling any attached finalizer" do
+      obj = Object.new
+      finalizer = Object.new
+      def finalizer.noop(_)
+      end
+      ObjectSpace.define_finalizer(obj, finalizer.method(:noop))
+      Marshal.load(Marshal.dump(obj)).class.should == Object
     end
   end
 
@@ -439,6 +635,10 @@ describe "Marshal.dump" do
         load.should == range
         load.instance_variable_get(:@foo).should == 42
       end
+    end
+
+    it "raises TypeError with an anonymous Range subclass" do
+      -> { Marshal.dump(Class.new(Range).new(1, 2)) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -476,6 +676,20 @@ describe "Marshal.dump" do
       dump = Marshal.dump(@utc)
       zone = ":\tzoneI\"\bUTC\x06:\x06EF" # Last is 'F' (US-ASCII)
       dump.should == "\x04\bIu:\tTime\r#{@utc_dump}\x06#{zone}"
+    end
+
+    it "ignores overridden name method" do
+      obj = MarshalSpec::TimeWithOverriddenName.new
+      Marshal.dump(obj).should include("MarshalSpec::TimeWithOverriddenName")
+    end
+
+    it "dumps a Time subclass with multibyte characters in name" do
+      source_object = eval("MarshalSpec::MultibyteぁあぃいTime".force_encoding(Encoding::UTF_8))
+      Marshal.dump(source_object).should == "\x04\bc+MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Time"
+    end
+
+    it "raises TypeError with an anonymous Time subclass" do
+      -> { Marshal.dump(Class.new(Time).now) }.should raise_error(TypeError)
     end
   end
 
@@ -516,6 +730,23 @@ describe "Marshal.dump" do
       reloaded = Marshal.load(Marshal.dump(exc))
       reloaded.cause.should be_an_instance_of(StandardError)
       reloaded.cause.message.should == "the cause"
+    end
+
+    # NoMethodError uses an exception formatter on TruffleRuby and computes a message lazily
+    it "dumps the message for the raised NoMethodError exception" do
+      begin
+        "".foo
+      rescue => e
+      end
+
+      Marshal.dump(e).should =~ /undefined method `foo' for ("":String|an instance of String)/
+    end
+
+    it "raises TypeError if an Object is an instance of an anonymous class" do
+      anonymous_class = Class.new(Exception)
+      obj = anonymous_class.new
+
+      -> { Marshal.dump(obj) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -603,31 +834,5 @@ describe "Marshal.dump" do
   it "raises a TypeError if dumping a Mutex instance" do
     m = Mutex.new
     -> { Marshal.dump(m) }.should raise_error(TypeError)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "returns an untainted string if object is untainted" do
-      Marshal.dump(Object.new).tainted?.should be_false
-    end
-
-    it "returns a tainted string if object is tainted" do
-      Marshal.dump(Object.new.taint).tainted?.should be_true
-    end
-
-    it "returns a tainted string if nested object is tainted" do
-      Marshal.dump([[Object.new.taint]]).tainted?.should be_true
-    end
-
-    it "returns a trusted string if object is trusted" do
-      Marshal.dump(Object.new).untrusted?.should be_false
-    end
-
-    it "returns an untrusted string if object is untrusted" do
-      Marshal.dump(Object.new.untrust).untrusted?.should be_true
-    end
-
-    it "returns an untrusted string if nested object is untrusted" do
-      Marshal.dump([[Object.new.untrust]]).untrusted?.should be_true
-    end
   end
 end

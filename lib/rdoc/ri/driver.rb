@@ -1,23 +1,10 @@
 # frozen_string_literal: true
-require 'abbrev'
 require 'optparse'
 
-begin
-  require 'readline'
-rescue LoadError
-end
+require_relative '../../rdoc'
 
-begin
-  require 'win32console'
-rescue LoadError
-end
-
-require 'rdoc'
-
-##
-# For RubyGems backwards compatibility
-
-require_relative 'formatter'
+require_relative 'formatter' # For RubyGems backwards compatibility
+# TODO: Fix weird documentation with `require_relative`
 
 ##
 # The RI driver implements the command-line ri tool.
@@ -433,9 +420,6 @@ or the PAGER environment variable.
     @use_stdout  = options[:use_stdout]
     @show_all    = options[:show_all]
     @width       = options[:width]
-
-    # pager process for jruby
-    @jruby_pager_process = nil
   end
 
   ##
@@ -1052,36 +1036,6 @@ or the PAGER environment variable.
   end
 
   ##
-  # Finds the given +pager+ for jruby.  Returns an IO if +pager+ was found.
-  #
-  # Returns false if +pager+ does not exist.
-  #
-  # Returns nil if the jruby JVM doesn't support ProcessBuilder redirection
-  # (1.6 and older).
-
-  def find_pager_jruby pager
-    require 'java'
-    require 'shellwords'
-
-    return nil unless java.lang.ProcessBuilder.constants.include? :Redirect
-
-    pager = Shellwords.split pager
-
-    pb = java.lang.ProcessBuilder.new(*pager)
-    pb = pb.redirect_output java.lang.ProcessBuilder::Redirect::INHERIT
-
-    @jruby_pager_process = pb.start
-
-    input = @jruby_pager_process.output_stream
-
-    io = input.to_io
-    io.sync = true
-    io
-  rescue java.io.IOException
-    false
-  end
-
-  ##
   # Finds a store that matches +name+ which can be the name of a gem, "ruby",
   # "home" or "site".
   #
@@ -1120,6 +1074,10 @@ or the PAGER environment variable.
   def interactive
     puts "\nEnter the method name you want to look up."
 
+    begin
+      require 'readline'
+    rescue LoadError
+    end
     if defined? Readline then
       Readline.completion_proc = method :complete
       puts "You can use tab to autocomplete."
@@ -1146,17 +1104,6 @@ or the PAGER environment variable.
 
   rescue Interrupt
     exit
-  end
-
-  ##
-  # Is +file+ in ENV['PATH']?
-
-  def in_path? file
-    return true if file =~ %r%\A/% and File.exist? file
-
-    ENV['PATH'].split(File::PATH_SEPARATOR).any? do |path|
-      File.exist? File.join(path, file)
-    end
   end
 
   ##
@@ -1353,7 +1300,6 @@ or the PAGER environment variable.
         yield pager
       ensure
         pager.close
-        @jruby_pager_process.wait_for if @jruby_pager_process
       end
     else
       yield $stdout
@@ -1521,27 +1467,14 @@ or the PAGER environment variable.
   def setup_pager
     return if @use_stdout
 
-    jruby = RUBY_ENGINE == 'jruby'
-
     pagers = [ENV['RI_PAGER'], ENV['PAGER'], 'pager', 'less', 'more']
 
+    require 'shellwords'
     pagers.compact.uniq.each do |pager|
-      next unless pager
+      pager = Shellwords.split(pager)
+      next if pager.empty?
 
-      pager_cmd = pager.split(' ').first
-
-      next unless in_path? pager_cmd
-
-      if jruby then
-        case io = find_pager_jruby(pager)
-        when nil   then break
-        when false then next
-        else            io
-        end
-      else
-        io = IO.popen(pager, 'w') rescue next
-      end
-
+      io = IO.popen(pager, 'w') rescue next
       next if $? and $?.pid == io.pid and $?.exited? # pager didn't work
 
       @paging = true

@@ -69,19 +69,6 @@ describe "String#tr" do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      ["h", "hello"].each do |str|
-        tainted_str = str.dup.taint
-
-        tainted_str.tr("e", "a").should.tainted?
-
-        str.tr("e".taint, "a").should_not.tainted?
-        str.tr("e", "a".taint).should_not.tainted?
-      end
-    end
-  end
-
   # http://redmine.ruby-lang.org/issues/show/1839
   it "can replace a 7-bit ASCII character with a multibyte one" do
     a = "uber"

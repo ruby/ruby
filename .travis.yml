@@ -13,7 +13,7 @@ language: c
 
 os: linux
 
-if: commit_message !~ /^\[DOC\]/
+if: commit_message !~ /\[DOC\]/
 
 dist: focal
 
@@ -64,7 +64,6 @@ env:
         gcc-10
         g++-10
         libffi-dev
-        libgdbm-dev
         libncurses-dev
         libncursesw5-dev
         libreadline-dev
@@ -110,11 +109,11 @@ env:
         libc6:armhf
         libstdc++-10-dev:armhf
         libffi-dev:armhf
-        libgdbm-dev:armhf
         libncurses-dev:armhf
         libncursesw5-dev:armhf
         libreadline-dev:armhf
         libssl-dev:armhf
+        libyaml-dev:armhf
         linux-libc-dev:armhf
         zlib1g-dev:armhf
 
@@ -172,9 +171,9 @@ before_script:
     else
       mkdir build
     fi
-  - mkdir config_1st config_2nd
+  - mkdir config_1st config_2nd gems/src
   - chmod -R a-w .
-  - chmod -R u+w build config_1st config_2nd
+  - chmod -R u+w build config_1st config_2nd gems/src
   - cd build
   - |-
     case "$CC" in

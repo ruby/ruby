@@ -1,0 +1,479 @@
+== Encodings
+
+=== The Basics
+
+A {character encoding}[https://en.wikipedia.org/wiki/Character_encoding],
+often shortened to _encoding_, is a mapping between:
+
+- A sequence of 8-bit bytes (each byte in the range <tt>0..255</tt>).
+- Characters in a specific character set.
+
+Some character sets contain only 1-byte characters;
+{US-ASCII}[https://en.wikipedia.org/wiki/ASCII], for example, has 256 1-byte characters.
+This string, encoded in US-ASCII, has six characters that are stored as six bytes:
+
+  s = 'Hello!'.encode('US-ASCII')  # => "Hello!"
+  s.encoding                       # => #<Encoding:US-ASCII>
+  s.bytes                          # => [72, 101, 108, 108, 111, 33]
+
+Other encodings may involve multi-byte characters.
+{UTF-8}[https://en.wikipedia.org/wiki/UTF-8], for example,
+encodes more than one million characters, encoding each in one to four bytes.
+The lowest-valued of these characters correspond to ASCII characters,
+and so are 1-byte characters:
+
+  s = 'Hello!' # => "Hello!"
+  s.bytes      # => [72, 101, 108, 108, 111, 33]
+
+Other characters, such as the Euro symbol, are multi-byte:
+
+  s = "\u20ac" # => "€"
+  s.bytes      # => [226, 130, 172]
+
+=== The \Encoding \Class
+
+==== \Encoding Objects
+
+Ruby encodings are defined by constants in class \Encoding.
+There can be only one instance of \Encoding for each of these constants.
+\Method Encoding.list returns an array of \Encoding objects (one for each constant):
+
+  Encoding.list.size        # => 103
+  Encoding.list.first.class # => Encoding
+  Encoding.list.take(3)
+  # => [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>, #<Encoding:US-ASCII>]
+
+==== Names and Aliases
+
+\Method Encoding#name returns the name of an \Encoding:
+
+  Encoding::ASCII_8BIT.name  # => "ASCII-8BIT"
+  Encoding::WINDOWS_31J.name # => "Windows-31J"
+
+An \Encoding object has zero or more aliases;
+method Encoding#names returns an array containing the name and all aliases:
+
+  Encoding::ASCII_8BIT.names
+  # => ["ASCII-8BIT", "BINARY"]
+  Encoding::WINDOWS_31J.names
+  #=> ["Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK"]
+
+\Method Encoding.aliases returns a hash of all alias/name pairs:
+
+  Encoding.aliases.size # => 71
+  Encoding.aliases.take(3)
+  # => [["BINARY", "ASCII-8BIT"], ["CP437", "IBM437"], ["CP720", "IBM720"]]
+
+\Method Encoding.name_list returns an array of all the encoding names and aliases:
+
+  Encoding.name_list.size # => 175
+  Encoding.name_list.take(3)
+  # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
+
+\Method +name_list+ returns more entries than method +list+
+because it includes both the names and their aliases.
+
+\Method Encoding.find returns the \Encoding for a given name or alias, if it exists:
+
+  Encoding.find("US-ASCII")       # => #<Encoding:US-ASCII>
+  Encoding.find("US-ASCII").class # => Encoding
+
+==== Default Encodings
+
+\Method Encoding.find, above, also returns a default \Encoding
+for each of these special names:
+
+- +external+: the default external \Encoding:
+
+    Encoding.find("external") # => #<Encoding:UTF-8>
+
+- +internal+: the default internal \Encoding (may be +nil+):
+
+    Encoding.find("internal") # => nil
+
+- +locale+: the default \Encoding for a string from the environment:
+
+    Encoding.find("locale") # => #<Encoding:UTF-8>  # Linux
+    Encoding.find("locale") # => #<Encoding:IBM437> # Windows
+
+- +filesystem+: the default \Encoding for a string from the filesystem:
+
+    Encoding.find("filesystem") # => #<Encoding:UTF-8>
+
+\Method Encoding.default_external returns the default external \Encoding:
+
+  Encoding.default_external # => #<Encoding:UTF-8>
+
+\Method Encoding.default_external= sets that value:
+
+  Encoding.default_external = 'US-ASCII' # => "US-ASCII"
+  Encoding.default_external              # => #<Encoding:US-ASCII>
+
+\Method Encoding.default_internal returns the default internal \Encoding:
+
+  Encoding.default_internal # => nil
+
+\Method Encoding.default_internal= sets the default internal \Encoding:
+
+  Encoding.default_internal = 'US-ASCII' # => "US-ASCII"
+  Encoding.default_internal              # => #<Encoding:US-ASCII>
+
+==== Compatible Encodings
+
+\Method Encoding.compatible? returns whether two given objects are encoding-compatible
+(that is, whether they can be concatenated);
+returns the \Encoding of the concatenated string, or +nil+ if incompatible:
+
+  rus = "\u{442 435 441 442}"
+  eng = 'text'
+  Encoding.compatible?(rus, eng) # => #<Encoding:UTF-8>
+
+  s0 = "\xa1\xa1".force_encoding('iso-8859-1') # => "\xA1\xA1"
+  s1 = "\xa1\xa1".force_encoding('euc-jp')     # => "\x{A1A1}"
+  Encoding.compatible?(s0, s1)                 # => nil
+
+=== \String \Encoding
+
+A Ruby String object has an encoding that is an instance of class \Encoding.
+The encoding may be retrieved by method String#encoding.
+
+The default encoding for a string literal is the script encoding
+(see Encoding@Script+encoding):
+
+  's'.encoding # => #<Encoding:UTF-8>
+
+The default encoding for a string created with method String.new is:
+
+- For a \String object argument, the encoding of that string.
+- For a string literal, the script encoding (see Encoding@Script+encoding).
+
+In either case, any encoding may be specified:
+
+  s = String.new(encoding: 'UTF-8')             # => ""
+  s.encoding                                    # => #<Encoding:UTF-8>
+  s = String.new('foo', encoding: 'ASCII-8BIT') # => "foo"
+  s.encoding                                    # => #<Encoding:ASCII-8BIT>
+
+The encoding for a string may be changed:
+
+  s = "R\xC3\xA9sum\xC3\xA9"     # => "Résumé"
+  s.encoding                     # => #<Encoding:UTF-8>
+  s.force_encoding('ISO-8859-1') # => "R\xC3\xA9sum\xC3\xA9"
+  s.encoding                     # => #<Encoding:ISO-8859-1>
+
+Changing the assigned encoding does not alter the content of the string;
+it changes only the way the content is to be interpreted:
+
+  s                         # => "R\xC3\xA9sum\xC3\xA9"
+  s.force_encoding('UTF-8') # => "Résumé"
+
+The actual content of a string may also be altered;
+see {Transcoding a String}[#label-Transcoding+a+String].
+
+Here are a couple of useful query methods:
+
+  s = "abc".force_encoding("UTF-8")         # => "abc"
+  s.ascii_only?                             # => true
+  s = "abc\u{6666}".force_encoding("UTF-8") # => "abc晦"
+  s.ascii_only?                             # => false
+
+  s = "\xc2\xa1".force_encoding("UTF-8") # => "¡"
+  s.valid_encoding?                      # => true
+  s = "\xc2".force_encoding("UTF-8")     # => "\xC2"
+  s.valid_encoding?                      # => false
+
+=== \Symbol and \Regexp Encodings
+
+The string stored in a Symbol or Regexp object also has an encoding;
+the encoding may be retrieved by method Symbol#encoding or Regexp#encoding.
+
+The default encoding for these, however, is:
+
+- US-ASCII, if all characters are US-ASCII.
+- The script encoding, otherwise (see Encoding@Script+encoding).
+
+=== Filesystem \Encoding
+
+The filesystem encoding is the default \Encoding for a string from the filesystem:
+
+    Encoding.find("filesystem") # => #<Encoding:UTF-8>
+
+=== Locale \Encoding
+
+The locale encoding is the default encoding for a string from the environment,
+other than from the filesystem:
+
+  Encoding.find('locale') # => #<Encoding:IBM437>
+
+=== Stream Encodings
+
+Certain stream objects can have two encodings; these objects include instances of:
+
+- IO.
+- File.
+- ARGF.
+- StringIO.
+
+The two encodings are:
+
+- An _external_ _encoding_, which identifies the encoding of the stream.
+- An _internal_ _encoding_, which (if not +nil+) specifies the encoding
+  to be used for the string constructed from the stream.
+
+==== External \Encoding
+
+The external encoding, which is an \Encoding object, specifies how bytes read
+from the stream are to be interpreted as characters.
+
+The default external encoding is:
+
+- UTF-8 for a text stream.
+- ASCII-8BIT for a binary stream.
+
+The default external encoding is returned by method Encoding.default_external,
+and may be set by:
+
+- Ruby command-line options <tt>--external_encoding</tt> or <tt>-E</tt>.
+
+You can also set the default external encoding using method Encoding.default_external=,
+but doing so may cause problems; strings created before and after the change
+may have a different encodings.
+
+For an \IO or \File object, the external encoding may be set by:
+
+- Open options +external_encoding+ or +encoding+, when the object is created;
+  see {Open Options}[rdoc-ref:IO@Open+Options].
+
+For an \IO, \File, \ARGF, or \StringIO object, the external encoding may be set by:
+
+- \Methods +set_encoding+ or (except for \ARGF) +set_encoding_by_bom+.
+
+==== Internal \Encoding
+
+The internal encoding, which is an \Encoding object or +nil+,
+specifies how characters read from the stream
+are to be converted to characters in the internal encoding;
+those characters become a string whose encoding is set to the internal encoding.
+
+The default internal encoding is +nil+ (no conversion).
+It is returned by method Encoding.default_internal,
+and may be set by:
+
+- Ruby command-line options <tt>--internal_encoding</tt> or <tt>-E</tt>.
+
+You can also set the default internal encoding using method Encoding.default_internal=,
+but doing so may cause problems; strings created before and after the change
+may have a different encodings.
+
+For an \IO or \File object, the internal encoding may be set by:
+
+- Open options +internal_encoding+ or +encoding+, when the object is created;
+  see {Open Options}[rdoc-ref:IO@Open+Options].
+
+For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set by:
+
+- \Method +set_encoding+.
+
+=== Script \Encoding
+
+A Ruby script has a script encoding, which may be retrieved by:
+
+  __ENCODING__ # => #<Encoding:UTF-8>
+
+The default script encoding is UTF-8;
+a Ruby source file may set its script encoding with a magic comment
+on the first line of the file (or second line, if there is a shebang on the first).
+The comment must contain the word +coding+ or +encoding+,
+followed by a colon, space and the Encoding name or alias:
+
+  # encoding: ISO-8859-1
+  __ENCODING__ #=> #<Encoding:ISO-8859-1>
+
+=== Transcoding
+
+_Transcoding_ is the process of changing a sequence of characters
+from one encoding to another.
+
+As far as possible, the characters remain the same,
+but the bytes that represent them may change.
+
+The handling for characters that cannot be represented in the destination encoding
+may be specified by @Encoding+Options.
+
+==== Transcoding a \String
+
+Each of these methods transcodes a string:
+
+- String#encode: Transcodes +self+ into a new string
+  according to given encodings and options.
+- String#encode!: Like String#encode, but transcodes +self+ in place.
+- String#scrub: Transcodes +self+ into a new string
+  by replacing invalid byte sequences with a given or default replacement string.
+- String#scrub!: Like String#scrub, but transcodes +self+ in place.
+- String#unicode_normalize: Transcodes +self+ into a new string
+  according to Unicode normalization.
+- String#unicode_normalize!: Like String#unicode_normalize,
+  but transcodes +self+ in place.
+
+=== Transcoding a Stream
+
+Each of these methods may transcode a stream;
+whether it does so depends on the external and internal encodings:
+
+- IO.foreach: Yields each line of given stream to the block.
+- IO.new: Creates and returns a new \IO object for the given integer file descriptor.
+- IO.open: Creates a new \IO object.
+- IO.pipe: Creates a connected pair of reader and writer \IO objects.
+- IO.popen: Creates an \IO object to interact with a subprocess.
+- IO.read: Returns a string with all or a subset of bytes from the given stream.
+- IO.readlines: Returns an array of strings, which are the lines from the given stream.
+- IO.write: Writes a given string to the given stream.
+
+This example writes a string to a file, encoding it as ISO-8859-1,
+then reads the file into a new string, encoding it as UTF-8:
+
+  s = "R\u00E9sum\u00E9"
+  path = 't.tmp'
+  ext_enc = 'ISO-8859-1'
+  int_enc = 'UTF-8'
+
+  File.write(path, s, external_encoding: ext_enc)
+  raw_text = File.binread(path)
+
+  transcoded_text = File.read(path, external_encoding: ext_enc, internal_encoding: int_enc)
+
+  p raw_text
+  p transcoded_text
+
+Output:
+
+  "R\xE9sum\xE9"
+  "Résumé"
+
+=== \Encoding Options
+
+A number of methods in the Ruby core accept keyword arguments as encoding options.
+
+Some of the options specify or utilize a _replacement_ _string_, to be used
+in certain transcoding operations.
+A replacement string may be in any encoding that can be converted
+to the encoding of the destination string.
+
+These keyword-value pairs specify encoding options:
+
+- For an invalid byte sequence:
+
+  - <tt>:invalid: nil</tt> (default): Raise exception.
+  - <tt>:invalid: :replace</tt>: Replace each invalid byte sequence
+    with the replacement string.
+
+  Examples:
+
+    s = "\x80foo\x80"
+    s.encode('ISO-8859-3') # Raises Encoding::InvalidByteSequenceError.
+    s.encode('ISO-8859-3', invalid: :replace) # => "?foo?"
+
+- For an undefined character:
+
+  - <tt>:undef: nil</tt> (default): Raise exception.
+  - <tt>:undef: :replace</tt>: Replace each undefined character
+    with the replacement string.
+
+  Examples:
+
+    s = "\x80foo\x80"
+    "\x80".encode('UTF-8', 'ASCII-8BIT') # Raises Encoding::UndefinedConversionError.
+    s.encode('UTF-8', 'ASCII-8BIT', undef: :replace) # => "�foo�"
+
+
+- Replacement string:
+
+  - <tt>:replace: nil</tt> (default): Set replacement string to default value:
+    <tt>"\uFFFD"</tt> ("�") for a Unicode encoding, <tt>'?'</tt> otherwise.
+  - <tt>:replace: _some_string_</tt>: Set replacement string to the given +some_string+;
+    overrides +:fallback+.
+
+  Examples:
+
+    s = "\xA5foo\xA5"
+    options = {:undef => :replace, :replace => 'xyzzy'}
+    s.encode('UTF-8', 'ISO-8859-3', **options) # => "xyzzyfooxyzzy"
+
+- Replacement fallback:
+
+  One of these may be specified:
+
+  - <tt>:fallback: nil</tt> (default): No replacement fallback.
+  - <tt>:fallback: _hash_like_object_</tt>: Set replacement fallback to the given
+    +hash_like_object+; the replacement string is <tt>_hash_like_object_[X]</tt>.
+  - <tt>:fallback: _method_</tt>: Set replacement fallback to the given
+    +method+; the replacement string is <tt>_method_(X)</tt>.
+  - <tt>:fallback: _proc_</tt>: Set replacement fallback to the given
+    +proc+; the replacement string is <tt>_proc_[X]</tt>.
+
+  Examples:
+
+    s = "\u3042foo\u3043"
+
+    hash = {"\u3042" => 'xyzzy'}
+    hash.default = 'XYZZY'
+    s.encode('ASCII', fallback: h) # => "xyzzyfooXYZZY"
+
+    def (fallback = "U+%.4X").escape(x)
+      self % x.unpack("U")
+    end
+    "\u{3042}".encode("US-ASCII", fallback: fallback.method(:escape)) # => "U+3042"
+
+    proc = Proc.new {|x| x == "\u3042" ? 'xyzzy' : 'XYZZY' }
+    s.encode('ASCII', fallback: proc) # => "XYZZYfooXYZZY"
+
+- XML entities:
+
+  One of these may be specified:
+
+  - <tt>:xml: nil</tt> (default): No handling for XML entities.
+  - <tt>:xml: :text</tt>: Treat source text as XML;
+    replace each undefined character
+    with its upper-case hexdecimal numeric character reference,
+    except that:
+
+    - <tt>&</tt> is replaced with <tt>&amp;</tt>.
+    - <tt><</tt> is replaced with <tt>&lt;</tt>.
+    - <tt>></tt> is replaced with <tt>&gt;</tt>.
+
+  - <tt>:xml: :attr</tt>: Treat source text as XML attribute value;
+    replace each undefined character
+    with its upper-case hexdecimal numeric character reference,
+    except that:
+
+    - The replacement string <tt>r</tt> is double-quoted (<tt>"r"</tt>).
+    - Each embedded double-quote is replaced with <tt>&quot;</tt>.
+    - <tt>&</tt> is replaced with <tt>&amp;</tt>.
+    - <tt><</tt> is replaced with <tt>&lt;</tt>.
+    - <tt>></tt> is replaced with <tt>&gt;</tt>.
+
+  Examples:
+
+    s = 'foo"<&>"bar' + "\u3042"
+    s.encode('ASCII', xml: :text) # => "foo\"&lt;&amp;&gt;\"bar&#x3042;"
+    s.encode('ASCII', xml: :attr) # => "\"foo&quot;&lt;&amp;&gt;&quot;bar&#x3042;\""
+
+
+- Newlines:
+
+  One of these may be specified:
+
+  - <tt>:cr_newline: true</tt>: Replace each line-feed character (<tt>"\n"</tt>)
+    with a carriage-return character (<tt>"\r"</tt>).
+  - <tt>:crlf_newline: true</tt>: Replace each line-feed character (<tt>"\n"</tt>)
+    with a carriage-return/line-feed string (<tt>"\r\n"</tt>).
+  - <tt>:universal_newline: true</tt>: Replace each carriage-return
+    character (<tt>"\r"</tt>) and each carriage-return/line-feed string
+    (<tt>"\r\n"</tt>) with a line-feed character (<tt>"\n"</tt>).
+
+  Examples:
+
+    s = "\n \r \r\n"                           # => "\n \r \r\n"
+    s.encode('ASCII', cr_newline: true)        # => "\r \r \r\r"
+    s.encode('ASCII', crlf_newline: true)      # => "\r\n \r \r\r\n"
+    s.encode('ASCII', universal_newline: true) # => "\n \n \n"

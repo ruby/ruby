@@ -69,13 +69,11 @@ module Bundler
     end
 
     def self.ruby_version
-      str = String.new(RUBY_VERSION)
-      str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{Gem::Platform.local}]"
+      "#{RUBY_VERSION}p#{RUBY_PATCHLEVEL} (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{Gem::Platform.local}]"
     end
 
     def self.git_version
-      Bundler::Source::Git::GitProxy.new(nil, nil, nil).full_version
+      Bundler::Source::Git::GitProxy.new(nil, nil).full_version
     rescue Bundler::Source::Git::GitNotInstalledError
       "not installed"
     end
@@ -122,7 +120,7 @@ module Bundler
         specs = Bundler.rubygems.find_name(name)
         out << ["  #{name}", "(#{specs.map(&:version).join(",")})"] unless specs.empty?
       end
-      if (exe = caller.last.split(":").first) && exe =~ %r{(exe|bin)/bundler?\z}
+      if (exe = caller.last.split(":").first)&.match? %r{(exe|bin)/bundler?\z}
         shebang = File.read(exe).lines.first
         shebang.sub!(/^#!\s*/, "")
         unless shebang.start_with?(Gem.ruby, "/usr/bin/env ruby")

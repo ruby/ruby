@@ -6,13 +6,13 @@ RSpec.describe "bundle info" do
       build_repo2 do
         build_gem "has_metadata" do |s|
           s.metadata = {
-            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+            "bug_tracker_uri" => "https://example.com/user/bestgemever/issues",
+            "changelog_uri" => "https://example.com/user/bestgemever/CHANGELOG.md",
             "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-            "homepage_uri"      => "https://bestgemever.example.io",
-            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-            "source_code_uri"   => "https://example.com/user/bestgemever",
-            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+            "homepage_uri" => "https://bestgemever.example.io",
+            "mailing_list_uri" => "https://groups.example.com/bestgemever",
+            "source_code_uri" => "https://example.com/user/bestgemever",
+            "wiki_uri" => "https://example.com/user/bestgemever/wiki",
           }
         end
       end
@@ -21,6 +21,7 @@ RSpec.describe "bundle info" do
         source "#{file_uri_for(gem_repo2)}"
         gem "rails"
         gem "has_metadata"
+        gem "thin"
       G
     end
 
@@ -123,6 +124,30 @@ RSpec.describe "bundle info" do
         expect(out).to_not include("Homepage:")
       end
     end
+
+    context "when gem has a reverse dependency on any version" do
+      it "prints the details" do
+        bundle "info rack"
+
+        expect(out).to include("Reverse Dependencies: \n\t\tthin (1.0) depends on rack (>= 0)")
+      end
+    end
+
+    context "when gem has a reverse dependency on a specific version" do
+      it "prints the details" do
+        bundle "info actionpack"
+
+        expect(out).to include("Reverse Dependencies: \n\t\trails (2.3.2) depends on actionpack (= 2.3.2)")
+      end
+    end
+
+    context "when gem has no reverse dependencies" do
+      it "excludes the reverse dependencies field from the output" do
+        bundle "info rails"
+
+        expect(out).not_to include("Reverse Dependencies:")
+      end
+    end
   end
 
   context "with a git repo in the Gemfile" do
@@ -138,10 +163,10 @@ RSpec.describe "bundle info" do
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle "info foo"
-      expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
+      expect(out).to include("foo (1.0 #{@git.ref_for("main", 6)}")
     end
 
-    it "prints out branch names other than master" do
+    it "prints out branch names other than main" do
       update_git "foo", :branch => "omg" do |s|
         s.write "lib/foo.rb", "FOO = '1.0.omg'"
       end
@@ -190,7 +215,7 @@ RSpec.describe "bundle info" do
       G
 
       bundle "info rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>)?\z/)
+      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>.*)?\z/)
     end
   end
 

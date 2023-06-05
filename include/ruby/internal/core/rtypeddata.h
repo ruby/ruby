@@ -176,7 +176,14 @@ rbimpl_typeddata_flags {
      * This flag  is mysterious.  It seems  nobody is currently using  it.  The
      * intention of this flag is also unclear.  We need further investigations.
      */
-    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1     /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1,     /* THIS FLAG DEPENDS ON Ruby version */
+
+    /**
+     * This flag determines whether marking and compaction should be carried out
+     * using the dmark/dcompact callback functions or whether we should mark
+     * declaratively using a list of references defined inside the data struct we're wrapping
+     */
+    RUBY_TYPED_DECL_MARKING     = RUBY_FL_USER2
 };
 
 /**
@@ -347,16 +354,14 @@ struct RTypedData {
      * data.   This roughly  resembles a  Ruby level  class (apart  from method
      * definition etc.)
      */
-    const rb_data_type_t *type;
+    const rb_data_type_t *const type;
 
     /**
      * This has to be always 1.
      *
      * @internal
-     *
-     * Why, then, this is not a const ::VALUE?
      */
-    VALUE typed_flag;
+    const VALUE typed_flag;
 
     /** Pointer to the actual C level struct that you want to wrap. */
     void *data;

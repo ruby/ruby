@@ -14,6 +14,7 @@ numhash.o: $(hdrdir)/ruby/backward/2/stdalign.h
 numhash.o: $(hdrdir)/ruby/backward/2/stdarg.h
 numhash.o: $(hdrdir)/ruby/defines.h
 numhash.o: $(hdrdir)/ruby/intern.h
+numhash.o: $(hdrdir)/ruby/internal/abi.h
 numhash.o: $(hdrdir)/ruby/internal/anyargs.h
 numhash.o: $(hdrdir)/ruby/internal/arithmetic.h
 numhash.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -51,6 +52,7 @@ numhash.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 numhash.o: $(hdrdir)/ruby/internal/attr/noinline.h
 numhash.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 numhash.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+numhash.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 numhash.o: $(hdrdir)/ruby/internal/attr/pure.h
 numhash.o: $(hdrdir)/ruby/internal/attr/restrict.h
 numhash.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +112,6 @@ numhash.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 numhash.o: $(hdrdir)/ruby/internal/intern/error.h
 numhash.o: $(hdrdir)/ruby/internal/intern/eval.h
 numhash.o: $(hdrdir)/ruby/internal/intern/file.h
-numhash.o: $(hdrdir)/ruby/internal/intern/gc.h
 numhash.o: $(hdrdir)/ruby/internal/intern/hash.h
 numhash.o: $(hdrdir)/ruby/internal/intern/io.h
 numhash.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +142,6 @@ numhash.o: $(hdrdir)/ruby/internal/memory.h
 numhash.o: $(hdrdir)/ruby/internal/method.h
 numhash.o: $(hdrdir)/ruby/internal/module.h
 numhash.o: $(hdrdir)/ruby/internal/newobj.h
-numhash.o: $(hdrdir)/ruby/internal/rgengc.h
 numhash.o: $(hdrdir)/ruby/internal/scan_args.h
 numhash.o: $(hdrdir)/ruby/internal/special_consts.h
 numhash.o: $(hdrdir)/ruby/internal/static_assert.h

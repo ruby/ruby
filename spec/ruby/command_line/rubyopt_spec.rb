@@ -59,24 +59,22 @@ describe "Processing RUBYOPT" do
     ruby_exe("p $VERBOSE", escape: true).chomp.should == "true"
   end
 
-  ruby_version_is "2.7" do
-    it "suppresses deprecation warnings for '-W:no-deprecated'" do
-      ENV["RUBYOPT"] = '-W:no-deprecated'
-      result = ruby_exe('$; = ""', args: '2>&1')
-      result.should == ""
-    end
+  it "suppresses deprecation warnings for '-W:no-deprecated'" do
+    ENV["RUBYOPT"] = '-W:no-deprecated'
+    result = ruby_exe('$; = ""', args: '2>&1')
+    result.should == ""
+  end
 
-    it "suppresses experimental warnings for '-W:no-experimental'" do
-      ENV["RUBYOPT"] = '-W:no-experimental'
-      result = ruby_exe('case 0; in a; end', args: '2>&1')
-      result.should == ""
-    end
+  it "suppresses experimental warnings for '-W:no-experimental'" do
+    ENV["RUBYOPT"] = '-W:no-experimental'
+    result = ruby_exe('case 0; in a; end', args: '2>&1')
+    result.should == ""
+  end
 
-    it "suppresses deprecation and experimental warnings for '-W:no-deprecated -W:no-experimental'" do
-      ENV["RUBYOPT"] = '-W:no-deprecated -W:no-experimental'
-      result = ruby_exe('case ($; = ""); in a; end', args: '2>&1')
-      result.should == ""
-    end
+  it "suppresses deprecation and experimental warnings for '-W:no-deprecated -W:no-experimental'" do
+    ENV["RUBYOPT"] = '-W:no-deprecated -W:no-experimental'
+    result = ruby_exe('case ($; = ""); in a; end', args: '2>&1')
+    result.should == ""
   end
 
   it "requires the file for '-r'" do

@@ -1,41 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'tempfile'
 require 'irb'
 require 'rubygems' if defined?(Gem)
 
+require_relative "helper"
+
 module TestIRB
-  class TestContext < Test::Unit::TestCase
-    class TestInputMethod < ::IRB::InputMethod
-      attr_reader :list, :line_no
-
-      def initialize(list = [])
-        super("test")
-        @line_no = 0
-        @list = list
-      end
-
-      def gets
-        @list[@line_no]&.tap {@line_no += 1}
-      end
-
-      def eof?
-        @line_no >= @list.size
-      end
-
-      def encoding
-        Encoding.default_external
-      end
-
-      def reset
-        @line_no = 0
-      end
-
-      def winsize
-        [10, 20]
-      end
-    end
-
+  class TestContext < TestCase
     def setup
       IRB.init_config(nil)
       IRB.conf[:USE_SINGLELINE] = false
@@ -48,11 +19,13 @@ module TestIRB
       def Reline.get_screen_size
         [36, 80]
       end
+      save_encodings
     end
 
     def teardown
       Reline.instance_eval { undef :get_screen_size }
       Reline.define_singleton_method(:get_screen_size, @get_screen_size)
+      restore_encodings
     end
 
     def test_last_value
@@ -79,22 +52,19 @@ module TestIRB
     end
 
     def test_evaluate_with_encoding_error_without_lineno
-      pend if RUBY_ENGINE == 'truffleruby'
       assert_raise_with_message(EncodingError, /invalid symbol/) {
-        @context.evaluate(%q[{"\xAE": 1}], 1)
+        @context.evaluate(%q[:"\xAE"], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.
       }
     end
 
-    def test_evaluate_with_onigmo_warning
-      pend if RUBY_ENGINE == 'truffleruby'
-      assert_warning("(irb):1: warning: character class has duplicated range: /[aa]/\n") do
-        @context.evaluate('/[aa]/', 1)
+    def test_evaluate_still_emits_warning
+      assert_warning("(irb):1: warning: END in method; use at_exit\n") do
+        @context.evaluate(%q[def foo; END {}; end], 1)
       end
     end
 
     def test_eval_input
-      pend if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         "raise 'Foo'\n",
@@ -117,7 +87,6 @@ module TestIRB
     end
 
     def test_eval_input_raise2x
-      pend if RUBY_ENGINE == 'truffleruby'
       input = TestInputMethod.new([
         "raise 'Foo'\n",
         "raise 'Bar'\n",
@@ -135,30 +104,115 @@ module TestIRB
         ], out)
     end
 
-    def test_eval_object_without_inspect_method
-      verbose, $VERBOSE = $VERBOSE, nil
-      all_assertions do |all|
-        IRB::Inspector::INSPECTORS.invert.each_value do |mode|
-          all.for(mode) do
-            input = TestInputMethod.new([
-                "[BasicObject.new, Class.new]\n",
-              ])
-            irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-            irb.context.inspect_mode = mode
-            out, err = capture_output do
-              irb.eval_input
-            end
-            assert_empty err
-            assert_match(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
+    def test_output_to_pipe
+      require 'stringio'
+      input = TestInputMethod.new(["n=1"])
+      input.instance_variable_set(:@stdout, StringIO.new)
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      irb.context.echo_on_assignment = :truncate
+      irb.context.prompt_mode = :DEFAULT
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_equal "=> 1\n", out
+    end
+
+    {
+      successful: [
+        [false, "class Foo < Struct.new(:bar); end; Foo.new(123)\n", /#<struct bar=123>/],
+        [:p, "class Foo < Struct.new(:bar); end; Foo.new(123)\n", /#<struct bar=123>/],
+        [true, "class Foo < Struct.new(:bar); end; Foo.new(123)\n", /#<struct #<Class:.*>::Foo bar=123>/],
+        [:yaml, "123", /--- 123\n/],
+        [:marshal, "123", Marshal.dump(123)],
+      ],
+      failed: [
+        [false, "BasicObject.new", /#<NoMethodError: undefined method `to_s' for/],
+        [:p, "class Foo; undef inspect ;end; Foo.new", /#<NoMethodError: undefined method `inspect' for/],
+        [:yaml, "BasicObject.new", /#<NoMethodError: undefined method `inspect' for/],
+        [:marshal, "[Object.new, Class.new]", /#<TypeError: can't dump anonymous class #<Class:/]
+      ]
+    }.each do |scenario, cases|
+      cases.each do |inspect_mode, input, expected|
+        define_method "test_#{inspect_mode}_inspect_mode_#{scenario}" do
+          verbose, $VERBOSE = $VERBOSE, nil
+          irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new([input]))
+          irb.context.inspect_mode = inspect_mode
+          out, err = capture_output do
+            irb.eval_input
           end
+          assert_empty err
+          assert_match(expected, out)
+        ensure
+          $VERBOSE = verbose
         end
       end
+    end
+
+    def test_object_inspection_handles_basic_object
+      verbose, $VERBOSE = $VERBOSE, nil
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new(["BasicObject.new"]))
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_not_match(/NoMethodError/, out)
+      assert_match(/#<BasicObject:.*>/, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_object_inspection_falls_back_to_kernel_inspect_when_errored
+      verbose, $VERBOSE = $VERBOSE, nil
+      main = Object.new
+      main.singleton_class.module_eval <<~RUBY
+        class Foo
+          def inspect
+            raise "foo"
+          end
+        end
+      RUBY
+
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new(["Foo.new"]))
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/An error occurred when inspecting the object: #<RuntimeError: foo>/, out)
+      assert_match(/Result of Kernel#inspect: #<#<Class:.*>::Foo:/, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_object_inspection_prints_useful_info_when_kernel_inspect_also_errored
+      verbose, $VERBOSE = $VERBOSE, nil
+      main = Object.new
+      main.singleton_class.module_eval <<~RUBY
+        class Foo
+          def initialize
+            # Kernel#inspect goes through instance variables with #inspect
+            # So this will cause Kernel#inspect to fail
+            @foo = BasicObject.new
+          end
+
+          def inspect
+            raise "foo"
+          end
+        end
+      RUBY
+
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new(["Foo.new"]))
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/An error occurred when inspecting the object: #<RuntimeError: foo>/, out)
+      assert_match(/An error occurred when running Kernel#inspect: #<NoMethodError: undefined method `inspect' for/, out)
     ensure
       $VERBOSE = verbose
     end
 
     def test_default_config
-      assert_equal(true, @context.use_colorize?)
       assert_equal(true, @context.use_autocomplete?)
     end
 
@@ -203,6 +257,16 @@ module TestIRB
           "#{exp.inspect}: should not be an assignment expression"
         )
       end
+    end
+
+    def test_assignment_expression_with_local_variable
+      input = TestInputMethod.new
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      code = "a /1;x=1#/"
+      refute(irb.assignment_expression?(code), "#{code}: should not be an assignment expression")
+      irb.context.workspace.binding.eval('a = 1')
+      assert(irb.assignment_expression?(code), "#{code}: should be an assignment expression")
+      refute(irb.assignment_expression?(""), "empty code should not be an assignment expression")
     end
 
     def test_echo_on_assignment
@@ -259,7 +323,6 @@ module TestIRB
     end
 
     def test_omit_on_assignment
-      IRB.conf[:USE_COLORIZE] = false
       input = TestInputMethod.new([
         "a = [1] * 100\n",
         "a\n",
@@ -323,101 +386,103 @@ module TestIRB
     end
 
     def test_omit_multiline_on_assignment
-      IRB.conf[:USE_COLORIZE] = false
-      input = TestInputMethod.new([
-        "class A; def inspect; ([?* * 1000] * 3).join(%{\\n}); end; end; a = A.new\n",
-        "a\n"
-      ])
-      value = ([?* * 1000] * 3).join(%{\n})
-      value_first_line = (?* * 1000).to_s
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      irb.context.return_format = "=> %s\n"
+      without_colorize do
+        input = TestInputMethod.new([
+          "class A; def inspect; ([?* * 1000] * 3).join(%{\\n}); end; end; a = A.new\n",
+          "a\n"
+        ])
+        value = ([?* * 1000] * 3).join(%{\n})
+        value_first_line = (?* * 1000).to_s
+        irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+        irb.context.return_format = "=> %s\n"
 
-      irb.context.echo = true
-      irb.context.echo_on_assignment = false
-      out, err = capture_output do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("=> \n#{value}\n", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
+        irb.context.echo = true
+        irb.context.echo_on_assignment = false
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("=> \n#{value}\n", out)
+        irb.context.evaluate('A.remove_method(:inspect)', 0)
 
-      input.reset
-      irb.context.echo = true
-      irb.context.echo_on_assignment = :truncate
-      out, err = capture_output do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\n=> \n#{value}\n", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
+        input.reset
+        irb.context.echo = true
+        irb.context.echo_on_assignment = :truncate
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\n=> \n#{value}\n", out)
+        irb.context.evaluate('A.remove_method(:inspect)', 0)
 
-      input.reset
-      irb.context.echo = true
-      irb.context.echo_on_assignment = true
-      out, err = capture_output do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("=> \n#{value}\n=> \n#{value}\n", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
+        input.reset
+        irb.context.echo = true
+        irb.context.echo_on_assignment = true
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("=> \n#{value}\n=> \n#{value}\n", out)
+        irb.context.evaluate('A.remove_method(:inspect)', 0)
 
-      input.reset
-      irb.context.echo = false
-      irb.context.echo_on_assignment = false
-      out, err = capture_output do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
+        input.reset
+        irb.context.echo = false
+        irb.context.echo_on_assignment = false
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("", out)
+        irb.context.evaluate('A.remove_method(:inspect)', 0)
 
-      input.reset
-      irb.context.echo = false
-      irb.context.echo_on_assignment = :truncate
-      out, err = capture_output do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
+        input.reset
+        irb.context.echo = false
+        irb.context.echo_on_assignment = :truncate
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("", out)
+        irb.context.evaluate('A.remove_method(:inspect)', 0)
 
-      input.reset
-      irb.context.echo = false
-      irb.context.echo_on_assignment = true
-      out, err = capture_output do
-        irb.eval_input
+        input.reset
+        irb.context.echo = false
+        irb.context.echo_on_assignment = true
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("", out)
+        irb.context.evaluate('A.remove_method(:inspect)', 0)
       end
-      assert_empty err
-      assert_equal("", out)
-      irb.context.evaluate('A.remove_method(:inspect)', 0)
     end
 
     def test_echo_on_assignment_conf
       # Default
       IRB.conf[:ECHO] = nil
       IRB.conf[:ECHO_ON_ASSIGNMENT] = nil
-      IRB.conf[:USE_COLORIZE] = false
-      input = TestInputMethod.new()
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      without_colorize do
+        input = TestInputMethod.new()
+        irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
-      assert(irb.context.echo?, "echo? should be true by default")
-      assert_equal(:truncate, irb.context.echo_on_assignment?, "echo_on_assignment? should be :truncate by default")
+        assert(irb.context.echo?, "echo? should be true by default")
+        assert_equal(:truncate, irb.context.echo_on_assignment?, "echo_on_assignment? should be :truncate by default")
 
-      # Explicitly set :ECHO to false
-      IRB.conf[:ECHO] = false
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+        # Explicitly set :ECHO to false
+        IRB.conf[:ECHO] = false
+        irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
-      refute(irb.context.echo?, "echo? should be false when IRB.conf[:ECHO] is set to false")
-      assert_equal(:truncate, irb.context.echo_on_assignment?, "echo_on_assignment? should be :truncate by default")
+        refute(irb.context.echo?, "echo? should be false when IRB.conf[:ECHO] is set to false")
+        assert_equal(:truncate, irb.context.echo_on_assignment?, "echo_on_assignment? should be :truncate by default")
 
-      # Explicitly set :ECHO_ON_ASSIGNMENT to true
-      IRB.conf[:ECHO] = nil
-      IRB.conf[:ECHO_ON_ASSIGNMENT] = false
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+        # Explicitly set :ECHO_ON_ASSIGNMENT to true
+        IRB.conf[:ECHO] = nil
+        IRB.conf[:ECHO_ON_ASSIGNMENT] = false
+        irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
 
-      assert(irb.context.echo?, "echo? should be true by default")
-      refute(irb.context.echo_on_assignment?, "echo_on_assignment? should be false when IRB.conf[:ECHO_ON_ASSIGNMENT] is set to false")
+        assert(irb.context.echo?, "echo? should be true by default")
+        refute(irb.context.echo_on_assignment?, "echo_on_assignment? should be false when IRB.conf[:ECHO_ON_ASSIGNMENT] is set to false")
+      end
     end
 
     def test_multiline_output_on_default_inspector
@@ -425,31 +490,32 @@ module TestIRB
       def main.inspect
         "abc\ndef"
       end
-      IRB.conf[:USE_COLORIZE] = false
-      input = TestInputMethod.new([
-        "self"
-      ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
-      irb.context.return_format = "=> %s\n"
 
-      # The default
-      irb.context.newline_before_multiline_output = true
-      out, err = capture_output do
-        irb.eval_input
-      end
-      assert_empty err
-      assert_equal("=> \nabc\ndef\n",
-                   out)
+      without_colorize do
+        input = TestInputMethod.new([
+          "self"
+        ])
+        irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
+        irb.context.return_format = "=> %s\n"
 
-      # No newline before multiline output
-      input.reset
-      irb.context.newline_before_multiline_output = false
-      out, err = capture_output do
-        irb.eval_input
+        # The default
+        irb.context.newline_before_multiline_output = true
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("=> \nabc\ndef\n",
+                     out)
+
+        # No newline before multiline output
+        input.reset
+        irb.context.newline_before_multiline_output = false
+        out, err = capture_output do
+          irb.eval_input
+        end
+        assert_empty err
+        assert_equal("=> abc\ndef\n", out)
       end
-      assert_empty err
-      assert_equal("=> abc\ndef\n",
-                   out)
     end
 
     def test_default_return_format
@@ -485,7 +551,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
+      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -506,7 +572,6 @@ module TestIRB
     end
 
     def test_eval_input_with_invalid_byte_sequence_exception
-      pend if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         %Q{def hoge() fuga; end; def fuga() raise "A\\xF3B"; end; hoge\n},
@@ -516,7 +581,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
+      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -553,7 +618,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
+      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t... \d+ levels...\n/,
@@ -602,6 +667,26 @@ module TestIRB
       $VERBOSE = verbose
     end
 
+    def test_prompt_main_escape
+      main = Struct.new(:to_s).new("main\a\t\r\n")
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal("irb(main    )>", irb.prompt('irb(%m)>', nil, 1, 1))
+    end
+
+    def test_prompt_main_inspect_escape
+      main = Struct.new(:inspect).new("main\\n\nmain")
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal("irb(main\\n main)>", irb.prompt('irb(%M)>', nil, 1, 1))
+    end
+
+    def test_prompt_main_truncate
+      main = Struct.new(:to_s).new("a" * 100)
+      def main.inspect; to_s.inspect; end
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%m)>', nil, 1, 1))
+      assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%M)>', nil, 1, 1))
+    end
+
     def test_lineno
       input = TestInputMethod.new([
         "\n",
@@ -621,6 +706,16 @@ module TestIRB
           :*, /\b3\n/,
           :*, /\b6\n/,
         ], out)
+    end
+
+    private
+
+    def without_colorize
+      original_value = IRB.conf[:USE_COLORIZE]
+      IRB.conf[:USE_COLORIZE] = false
+      yield
+    ensure
+      IRB.conf[:USE_COLORIZE] = original_value
     end
   end
 end

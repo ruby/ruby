@@ -478,6 +478,7 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mString_included_s(VALUE self, VALUE modul) {
     VALUE result = rb_funcall(modul, i_extend, 1, mString_Extend);
+    rb_call_super(1, &modul);
     return result;
 }
 
@@ -997,10 +998,10 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     if (!allow_nan) {
         if (isinf(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
         } else if (isnan(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
         }
     }
     fbuffer_append_str(buffer, tmp);

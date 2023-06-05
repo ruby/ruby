@@ -154,6 +154,35 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal caller(0), caller(0, nil)
   end
 
+  def test_each_backtrace_location
+    i = 0
+    cl = caller_locations(1, 1)[0]; ecl = Thread.each_caller_location{|x| i+=1; break x if i == 1}
+    assert_equal(cl.to_s, ecl.to_s)
+    assert_kind_of(Thread::Backtrace::Location, ecl)
+
+    i = 0
+    ary = []
+    cllr = caller_locations(1, 2); last = Thread.each_caller_location{|x| ary << x; i+=1; break x if i == 2}
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    i = 0
+    ary = []
+    ->{->{
+      cllr = caller_locations(1, 2); last = Thread.each_caller_location{|x| ary << x; i+=1; break x if i == 2}
+    }.()}.()
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    cllr = caller_locations(1, 2); ary = Thread.to_enum(:each_caller_location).to_a[2..3]
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+
+    ecl = Thread.to_enum(:each_caller_location)
+    assert_raise(StopIteration) {
+      ecl.next
+    }
+  end
+
   def test_caller_locations_first_label
     def self.label
       caller_locations.first.label

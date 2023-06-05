@@ -42,7 +42,7 @@ numhash_aref(VALUE self, VALUE key)
     st_table *tbl = (st_table *)Check_TypedStruct(self, &numhash_type);
     if (!SPECIAL_CONST_P(key)) rb_raise(rb_eArgError, "not a special const");
     if (st_lookup(tbl, (st_data_t)key, &data))
-	return (VALUE)data;
+        return (VALUE)data;
     return Qnil;
 }
 
@@ -79,12 +79,12 @@ update_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
     VALUE ret = rb_yield_values(existing ? 2 : 1, (VALUE)*key, (VALUE)*value);
     switch (ret) {
       case Qfalse:
-	return ST_STOP;
+        return ST_STOP;
       case Qnil:
-	return ST_DELETE;
+        return ST_DELETE;
       default:
-	*value = ret;
-	return ST_CONTINUE;
+        *value = ret;
+        return ST_CONTINUE;
     }
 }
 
@@ -93,9 +93,9 @@ numhash_update(VALUE self, VALUE key)
 {
     st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
     if (st_update(table, (st_data_t)key, update_func, 0))
-	return Qtrue;
+        return Qtrue;
     else
-	return Qfalse;
+        return Qfalse;
 }
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -117,7 +117,7 @@ numhash_delete_safe(VALUE self, VALUE key)
     st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
     st_data_t val, k = (st_data_t)key;
     if (st_delete_safe(table, &k, &val, (st_data_t)self)) {
-	return val;
+        return val;
     }
     return Qnil;
 }

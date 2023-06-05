@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rubygems/optparse/lib/optparse'
+require_relative '../optparse'
 require 'time'
 
 Gem::OptionParser.accept(Time) do |s,|

@@ -79,7 +79,7 @@ module DidYouMean
     def corrections
       @corrections ||= SpellChecker
                      .new(dictionary: (RB_RESERVED_WORDS + lvar_names + method_names + ivar_names + cvar_names))
-                     .correct(name) - NAMES_TO_EXCLUDE[@name]
+                     .correct(name).uniq - NAMES_TO_EXCLUDE[@name]
     end
   end
 end

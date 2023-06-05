@@ -116,4 +116,3 @@ module RDoc::TokenStream
   end
 
 end
-

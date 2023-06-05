@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require_relative 'helper'
-require 'rdoc/markup/block_quote'
-require 'rdoc/markdown'
+require_relative '../../lib/rdoc/markup/block_quote'
+require_relative '../../lib/rdoc/markdown'
 
 class TestRDocMarkdown < RDoc::TestCase
 
@@ -761,7 +761,6 @@ with inline notes^[like this]
 and an extra note.[^2]
 
 [^1]: With a footnote
-
 [^2]: Which should be numbered correctly
     MD
 
@@ -1063,9 +1062,29 @@ and an extra note.[^2]
     assert_equal expected, doc
   end
 
+  def test_gfm_table_2
+    doc = parse <<~'MD'
+    | Cmd | Returns | Meaning
+    ----- | :-----: | -------
+    |"b"  | boolean | True if file1 is a block device
+    "c"   | boolean | True if file1 is a character device
+    |"\|" | boolean | escaped bar \| test
+    MD
+
+    head = %w[Cmd Returns Meaning]
+    align = [nil, :center, nil]
+    body = [
+      ['"b"', 'boolean', 'True if file1 is a block device'],
+      ['"c"', 'boolean', 'True if file1 is a character device'],
+      ['"|"', 'boolean', 'escaped bar | test'],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
+
+    assert_equal expected, doc
+  end
+
   def parse text
     @parser.parse text
   end
 
 end
-

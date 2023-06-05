@@ -1,11 +1,12 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'request'
-require_relative 'request/connection_pools'
-require_relative 's3_uri_signer'
-require_relative 'uri_formatter'
-require_relative 'uri'
-require_relative 'user_interaction'
+
+require_relative "../rubygems"
+require_relative "request"
+require_relative "request/connection_pools"
+require_relative "s3_uri_signer"
+require_relative "uri_formatter"
+require_relative "uri"
+require_relative "user_interaction"
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -52,7 +53,7 @@ class Gem::RemoteFetcher
   # Cached RemoteFetcher instance.
 
   def self.fetcher
-    @fetcher ||= self.new Gem.configuration[:http_proxy]
+    @fetcher ||= new Gem.configuration[:http_proxy]
   end
 
   attr_accessor :headers
@@ -72,10 +73,10 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
-    require_relative 'core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
-    require 'net/http'
-    require 'stringio'
-    require 'uri'
+    require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
+    require "net/http"
+    require "stringio"
+    require "uri"
 
     Socket.do_not_reverse_lookup = true
 
@@ -114,7 +115,7 @@ class Gem::RemoteFetcher
     cache_dir =
       if Dir.pwd == install_dir # see fetch_command
         install_dir
-      elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && (not File.exist?(install_cache_dir)))
+      elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && !File.exist?(install_cache_dir))
         install_cache_dir
       else
         File.join Gem.user_dir, "cache"
@@ -124,26 +125,30 @@ class Gem::RemoteFetcher
     local_gem_path = File.join cache_dir, gem_file_name
 
     require "fileutils"
-    FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
+    begin
+      FileUtils.mkdir_p cache_dir
+    rescue StandardError
+      nil
+    end unless File.exist? cache_dir
 
     source_uri = Gem::Uri.new(source_uri)
 
     scheme = source_uri.scheme
 
     # URI.parse gets confused by MS Windows paths with forward slashes.
-    scheme = nil if scheme =~ /^[a-z]$/i
+    scheme = nil if /^[a-z]$/i.match?(scheme)
 
     # REFACTOR: split this up and dispatch on scheme (eg download_http)
     # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner
     case scheme
-    when 'http', 'https', 's3' then
+    when "http", "https", "s3" then
       unless File.exist? local_gem_path
         begin
           verbose "Downloading gem #{gem_file_name}"
 
           remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
-          self.cache_update_path remote_gem_path, local_gem_path
+          cache_update_path remote_gem_path, local_gem_path
         rescue FetchError
           raise if spec.original_platform == spec.platform
 
@@ -153,15 +158,15 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{alternate_name}"
 
-          self.cache_update_path remote_gem_path, local_gem_path
+          cache_update_path remote_gem_path, local_gem_path
         end
       end
-    when 'file' then
+    when "file" then
       begin
         path = source_uri.path
-        path = File.dirname(path) if File.extname(path) == '.gem'
+        path = File.dirname(path) if File.extname(path) == ".gem"
 
-        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, 'gems', gem_file_name))
+        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, "gems", gem_file_name))
 
         FileUtils.cp(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
@@ -169,9 +174,9 @@ class Gem::RemoteFetcher
       end
 
       verbose "Using local gem #{local_gem_path}"
-    when nil then # TODO test for local overriding cache
+    when nil then # TODO: test for local overriding cache
       source_path = if Gem.win_platform? && source_uri.scheme &&
-                       !source_uri.path.include?(':')
+                       !source_uri.path.include?(":")
         "#{source_uri.scheme}:#{source_uri.path}"
       else
         source_uri.path
@@ -216,9 +221,9 @@ class Gem::RemoteFetcher
       head ? response : response.body
     when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
          Net::HTTPTemporaryRedirect then
-      raise FetchError.new('too many redirects', uri) if depth > 10
+      raise FetchError.new("too many redirects", uri) if depth > 10
 
-      unless location = response['Location']
+      unless location = response["Location"]
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
       location = Gem::Uri.new location
@@ -233,7 +238,7 @@ class Gem::RemoteFetcher
     end
   end
 
-  alias :fetch_https :fetch_http
+  alias_method :fetch_https, :fetch_http
 
   ##
   # Downloads +uri+ and returns it as a String.
@@ -247,7 +252,7 @@ class Gem::RemoteFetcher
 
     data = send "fetch_#{uri.scheme}", uri, mtime, head
 
-    if data and !head and uri.to_s.end_with?(".gz")
+    if data && !head && uri.to_s.end_with?(".gz")
       begin
         data = Gem::Util.gunzip data
       rescue Zlib::GzipFile::Error
@@ -280,7 +285,11 @@ class Gem::RemoteFetcher
   # passes the data.
 
   def cache_update_path(uri, path = nil, update = true)
-    mtime = path && File.stat(path).mtime rescue nil
+    mtime = begin
+              path && File.stat(path).mtime
+            rescue StandardError
+              nil
+            end
 
     data = fetch_path(uri, mtime)
 
@@ -288,7 +297,7 @@ class Gem::RemoteFetcher
       return Gem.read_binary(path)
     end
 
-    if update and path
+    if update && path
       Gem.write_binary(path, data)
     end
 
@@ -312,11 +321,11 @@ class Gem::RemoteFetcher
   end
 
   def https?(uri)
-    uri.scheme.downcase == 'https'
+    uri.scheme.casecmp("https").zero?
   end
 
   def close_all
-    @pools.each_value {|pool| pool.close_all }
+    @pools.each_value(&:close_all)
   end
 
   private

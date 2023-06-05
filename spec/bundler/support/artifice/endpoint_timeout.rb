@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint_fallback"
-
-Artifice.deactivate
+require_relative "helpers/endpoint_fallback"
 
 class EndpointTimeout < EndpointFallback
   SLEEP_TIMEOUT = 3
@@ -11,5 +9,7 @@ class EndpointTimeout < EndpointFallback
     sleep(SLEEP_TIMEOUT)
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointTimeout)

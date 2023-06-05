@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'test_optparse'
 
-module TestOptionParser::NoArg
+module TestOptionParserNoArg
   def setup
     super
     @opt.def_option "--with_underscore" do |x| @flag = x end
@@ -9,7 +9,7 @@ module TestOptionParser::NoArg
   end
 
   class Def1 < TestOptionParser
-    include NoArg
+    include TestOptionParserNoArg
     def setup
       super
       @opt.def_option("-x") {|x| @flag = x}
@@ -17,7 +17,7 @@ module TestOptionParser::NoArg
     end
   end
   class Def2 < TestOptionParser
-    include NoArg
+    include TestOptionParserNoArg
     def setup
       super
       @opt.def_option("-x", "--option") {|x| @flag = x}

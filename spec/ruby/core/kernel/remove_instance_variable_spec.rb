@@ -41,6 +41,19 @@ describe "Kernel#remove_instance_variable" do
     end.should raise_error(TypeError)
   end
 
+  it "raises a FrozenError if self is frozen" do
+    o = Object.new
+    o.freeze
+    -> { o.remove_instance_variable(:@foo) }.should raise_error(FrozenError)
+    -> { o.remove_instance_variable(:foo) }.should raise_error(NameError)
+  end
+
+  it "raises for frozen objects" do
+    -> { nil.remove_instance_variable(:@foo) }.should raise_error(FrozenError)
+    -> { nil.remove_instance_variable(:foo) }.should raise_error(NameError)
+    -> { :foo.remove_instance_variable(:@foo) }.should raise_error(FrozenError)
+  end
+
   describe "when passed a String" do
     it_behaves_like :kernel_remove_instance_variable, nil, "@greeting"
   end

@@ -11,7 +11,15 @@ class Bundler::Thor
                     end
                   end
 
-                  DidYouMean::Correctable
+                  Module.new do
+                    def to_s
+                      super + DidYouMean.formatter.message_for(corrections)
+                    end
+
+                    def corrections
+                      @corrections ||= self.class.const_get(:SpellChecker).new(self).corrections
+                    end
+                  end
                 end
 
   # Bundler::Thor::Error is raised when it's caused by wrong usage of thor classes. Those
@@ -99,17 +107,5 @@ class Bundler::Thor
   end
 
   class MalformattedArgumentError < InvocationError
-  end
-
-  if Correctable
-    if DidYouMean.respond_to?(:correct_error)
-      DidYouMean.correct_error(Bundler::Thor::UndefinedCommandError, UndefinedCommandError::SpellChecker)
-      DidYouMean.correct_error(Bundler::Thor::UnknownArgumentError, UnknownArgumentError::SpellChecker)
-    else
-      DidYouMean::SPELL_CHECKERS.merge!(
-        'Bundler::Thor::UndefinedCommandError' => UndefinedCommandError::SpellChecker,
-        'Bundler::Thor::UnknownArgumentError' => UnknownArgumentError::SpellChecker
-      )
-    end
   end
 end

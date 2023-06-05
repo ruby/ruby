@@ -87,14 +87,12 @@ module Bundler
       creation_errors = []
 
       @threads = Array.new(@size) do |i|
-        begin
-          Thread.start { process_queue(i) }.tap do |thread|
-            thread.name = "#{name} Worker ##{i}" if thread.respond_to?(:name=)
-          end
-        rescue ThreadError => e
-          creation_errors << e
-          nil
+        Thread.start { process_queue(i) }.tap do |thread|
+          thread.name = "#{name} Worker ##{i}" if thread.respond_to?(:name=)
         end
+      rescue ThreadError => e
+        creation_errors << e
+        nil
       end.compact
 
       add_interrupt_handler unless @threads.empty?

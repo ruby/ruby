@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CLEAN" "1" "December 2021" "" ""
+.TH "BUNDLE\-CLEAN" "1" "February 2023" "" ""
 .
 .SH "NAME"
 \fBbundle\-clean\fR \- Cleans up unused gems in your bundler directory
@@ -20,5 +20,5 @@ Print the changes, but do not clean the unused gems\.
 .
 .TP
 \fB\-\-force\fR
-Force a clean even if \fB\-\-path\fR is not set\.
+Forces cleaning up unused gems even if Bundler is configured to use globally installed gems\. As a consequence, removes all system gems except for the ones in the current application\.
 

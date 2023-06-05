@@ -265,6 +265,16 @@ class TestAlias < Test::Unit::TestCase
     end;
   end
 
+  class C2
+    public :system
+    alias_method :bar, :system
+    alias_method :system, :bar
+  end
+
+  def test_zsuper_alias_visibility
+    assert(C2.new.respond_to?(:system))
+  end
+
   def test_alias_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
     begin;

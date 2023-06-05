@@ -3,6 +3,10 @@
 module Test
   module Unit
     module Assertions
+      def assert_raises(*exp, &b)
+        raise NoMethodError, "use assert_raise", caller
+      end
+
       def _assertions= n # :nodoc:
         @_assertions = n
       end
@@ -107,7 +111,9 @@ module Test
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
+        # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
+        pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        # For previous versions which implemented MJIT
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
         require_relative 'memory_status'
@@ -244,7 +250,11 @@ module Test
         at_exit {
           out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
         }
-        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
+        if defined?(Test::Unit::Runner)
+          Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+        elsif defined?(Test::Unit::AutoRunner)
+          Test::Unit::AutoRunner.need_auto_run = false
+        end
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
@@ -264,7 +274,7 @@ module Test
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
 BEGIN {
-  require "test/unit";include Test::Unit::Assertions;include Test::Unit::CoreAssertions;require #{__FILE__.dump}
+  require "test/unit";include Test::Unit::Assertions;require #{__FILE__.dump};include Test::Unit::CoreAssertions
   separated_runner #{token_dump}, #{res_c&.fileno || 'nil'}
 }
 #{line -= __LINE__; src}
@@ -531,11 +541,11 @@ eom
         refute_respond_to(obj, meth, msg)
       end
 
-      # pattern_list is an array which contains regexp and :*.
+      # pattern_list is an array which contains regexp, string and :*.
       # :* means any sequence.
       #
       # pattern_list is anchored.
-      # Use [:*, regexp, :*] for non-anchored match.
+      # Use [:*, regexp/string, :*] for non-anchored match.
       def assert_pattern_list(pattern_list, actual, message=nil)
         rest = actual
         anchored = true
@@ -544,11 +554,13 @@ eom
             anchored = false
           else
             if anchored
-              match = /\A#{pattern}/.match(rest)
+              match = rest.rindex(pattern, 0)
             else
-              match = pattern.match(rest)
+              match = rest.index(pattern)
             end
-            unless match
+            if match
+              post_match = $~ ? $~.post_match : rest[match+pattern.size..-1]
+            else
               msg = message(msg) {
                 expect_msg = "Expected #{mu_pp pattern}\n"
                 if /\n[^\n]/ =~ rest
@@ -565,7 +577,7 @@ eom
               }
               assert false, msg
             end
-            rest = match.post_match
+            rest = post_match
             anchored = true
           end
         }
@@ -592,14 +604,14 @@ eom
 
       def assert_deprecated_warning(mesg = /deprecated/)
         assert_warning(mesg) do
-          Warning[:deprecated] = true
+          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
           yield
         end
       end
 
       def assert_deprecated_warn(mesg = /deprecated/)
         assert_warn(mesg) do
-          Warning[:deprecated] = true
+          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
           yield
         end
       end
@@ -691,7 +703,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
+              (err.respond_to?(:full_message) ? err.full_message(highlight: false, order: :top) : err.message)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
@@ -725,6 +737,60 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions_foreach assert_all_assertions_foreach
+
+      %w[
+        CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
+        CLOCK_MONOTONIC
+      ].find do |clk|
+        if Process.const_defined?(clk)
+          [clk.to_sym, Process.const_get(clk)].find do |clk|
+            Process.clock_gettime(clk)
+          rescue
+            # Constants may be defined but not implemented, e.g., mingw.
+          else
+            PERFORMANCE_CLOCK = clk
+          end
+        end
+      end
+
+      # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
+      # Array, Range, Enumerator::ArithmeticSequence and other
+      # Enumerable-s, and each elements should be size factors.
+      #
+      # :yield: each elements of +seq+.
+      def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        pend "No PERFORMANCE_CLOCK found" unless defined?(PERFORMANCE_CLOCK)
+
+        # Timeout testing generally doesn't work when RJIT compilation happens.
+        rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        measure = proc do |arg, message|
+          st = Process.clock_gettime(PERFORMANCE_CLOCK)
+          yield(*arg)
+          t = (Process.clock_gettime(PERFORMANCE_CLOCK) - st)
+          assert_operator 0, :<=, t, message unless rjit_enabled
+          t
+        end
+
+        first = seq.first
+        *arg = pre.call(first)
+        times = (0..(rehearsal || (2 * first))).map do
+          measure[arg, "rehearsal"].nonzero?
+        end
+        times.compact!
+        tmin, tmax = times.minmax
+        tbase = 10 ** Math.log10(tmax * ([(tmax / tmin), 2].max ** 2)).ceil
+        info = "(tmin: #{tmin}, tmax: #{tmax}, tbase: #{tbase})"
+
+        seq.each do |i|
+          next if i == first
+          t = tbase * i.fdiv(first)
+          *arg = pre.call(i)
+          message = "[#{i}]: in #{t}s #{info}"
+          Timeout.timeout(t, Timeout::Error, message) do
+            measure[arg, message]
+          end
+        end
+      end
 
       def diff(exp, act)
         require 'pp'

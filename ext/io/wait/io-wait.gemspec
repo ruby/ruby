@@ -1,27 +1,38 @@
-_VERSION = "0.2.1"
+_VERSION = "0.3.0"
 
 Gem::Specification.new do |spec|
   spec.name          = "io-wait"
   spec.version       = _VERSION
-  spec.authors       = ["Nobu Nakada"]
-  spec.email         = ["nobu@ruby-lang.org"]
+  spec.authors       = ["Nobu Nakada", "Charles Oliver Nutter"]
+  spec.email         = ["nobu@ruby-lang.org", "headius@headius.com"]
 
   spec.summary       = %q{Waits until IO is readable or writable without blocking.}
   spec.description   = %q{Waits until IO is readable or writable without blocking.}
   spec.homepage      = "https://github.com/ruby/io-wait"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
     `git ls-files -z`.split("\x0").reject do |f|
-      f.match(%r{\A(?:test|spec|features)/|\A\.(?:git|travis)})
+      File.identical?(f, __FILE__) || f.match(%r{\A(?:(?:bin|test|spec|features|rakelib)/|\.(?:git|travis|circleci)|appveyor|Rakefile)})
     end
   end
-  spec.extensions    = %w[ext/io/wait/extconf.rb]
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]
+
+  jruby = true if Gem::Platform.new('java') =~ spec.platform or RUBY_ENGINE == 'jruby'
+  spec.files.delete_if do |f|
+    f.end_with?(".java") or
+      f.start_with?("ext/") && (jruby ^ f.start_with?("ext/java/"))
+  end
+  if jruby
+    spec.platform = 'java'
+    spec.files << "lib/io/wait.jar"
+    spec.require_paths += ["ext/java/lib"]
+  else
+    spec.extensions    = %w[ext/io/wait/extconf.rb]
+  end
 end

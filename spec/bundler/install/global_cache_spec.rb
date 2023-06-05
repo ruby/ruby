@@ -205,7 +205,7 @@ RSpec.describe "global gem caching" do
   end
 
   describe "extension caching" do
-    it "works", :ruby_repo do
+    it "works" do
       skip "gets incorrect ref in path" if Gem.win_platform?
 
       build_git "very_simple_git_binary", &:add_c_extension
@@ -220,9 +220,9 @@ RSpec.describe "global gem caching" do
         gem "very_simple_path_binary", :path => "#{lib_path("very_simple_path_binary-1.0")}"
       G
 
-      gem_binary_cache = home(".bundle", "cache", "extensions", specific_local_platform.to_s, Bundler.ruby_scope,
+      gem_binary_cache = home(".bundle", "cache", "extensions", local_platform.to_s, Bundler.ruby_scope,
         Digest(:MD5).hexdigest("#{gem_repo1}/"), "very_simple_binary-1.0")
-      git_binary_cache = home(".bundle", "cache", "extensions", specific_local_platform.to_s, Bundler.ruby_scope,
+      git_binary_cache = home(".bundle", "cache", "extensions", local_platform.to_s, Bundler.ruby_scope,
         "very_simple_git_binary-1.0-#{revision}", "very_simple_git_binary-1.0")
 
       cached_extensions = Pathname.glob(home(".bundle", "cache", "extensions", "*", "*", "*", "*", "*")).sort

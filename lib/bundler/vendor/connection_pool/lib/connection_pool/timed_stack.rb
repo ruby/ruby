@@ -49,7 +49,7 @@ class Bundler::ConnectionPool::TimedStack
       @resource.broadcast
     end
   end
-  alias << push
+  alias_method :<<, :push
 
   ##
   # Retrieves a connection from the stack.  If a connection is available it is
@@ -74,7 +74,7 @@ class Bundler::ConnectionPool::TimedStack
         return connection if connection
 
         to_wait = deadline - current_time
-        raise Bundler::ConnectionPool::TimeoutError, "Waited #{timeout} sec" if to_wait <= 0
+        raise Bundler::ConnectionPool::TimeoutError, "Waited #{timeout} sec, #{length}/#{@max} available" if to_wait <= 0
         @resource.wait(@mutex, to_wait)
       end
     end
@@ -87,7 +87,7 @@ class Bundler::ConnectionPool::TimedStack
   # +:reload+ is +true+.
 
   def shutdown(reload: false, &block)
-    raise ArgumentError, "shutdown must receive a block" unless block_given?
+    raise ArgumentError, "shutdown must receive a block" unless block
 
     @mutex.synchronize do
       @shutdown_block = block

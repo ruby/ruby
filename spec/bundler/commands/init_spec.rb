@@ -7,6 +7,29 @@ RSpec.describe "bundle init" do
     expect(bundled_app_gemfile).to be_file
   end
 
+  context "with a template with permission flags not matching current process umask" do
+    let(:template_file) do
+      gemfile = Bundler.preferred_gemfile_name
+      templates_dir.join(gemfile)
+    end
+
+    let(:target_dir) { bundled_app("init_permissions_test") }
+
+    around do |example|
+      old_chmod = File.stat(template_file).mode
+      FileUtils.chmod(old_chmod | 0o111, template_file) # chmod +x
+      example.run
+      FileUtils.chmod(old_chmod, template_file)
+    end
+
+    it "honours the current process umask when generating from a template" do
+      FileUtils.mkdir(target_dir)
+      bundle :init, :dir => target_dir
+      generated_mode = File.stat(File.join(target_dir, "Gemfile")).mode & 0o111
+      expect(generated_mode).to be_zero
+    end
+  end
+
   context "when a Gemfile already exists" do
     before do
       create_file "Gemfile", <<-G
@@ -42,7 +65,7 @@ RSpec.describe "bundle init" do
   context "when the dir is not writable by the current user" do
     let(:subdir) { "child_dir" }
 
-    it "notifies the user that it can not write to it" do
+    it "notifies the user that it cannot write to it" do
       FileUtils.mkdir bundled_app(subdir)
       # chmod a-w it
       mode = File.stat(bundled_app(subdir)).mode ^ 0o222
@@ -166,6 +189,19 @@ RSpec.describe "bundle init" do
 
         expect(out).to include("Writing new gems.rb")
       end
+    end
+  end
+
+  describe "using the --gemfile" do
+    it "should use the --gemfile value to name the gemfile" do
+      custom_gemfile_name = "NiceGemfileName"
+
+      bundle :init, :gemfile => custom_gemfile_name
+
+      expect(out).to include("Writing new #{custom_gemfile_name}")
+      used_template = File.read("#{source_root}/lib/bundler/templates/Gemfile")
+      generated_gemfile = bundled_app(custom_gemfile_name).read
+      expect(generated_gemfile).to eq(used_template)
     end
   end
 end

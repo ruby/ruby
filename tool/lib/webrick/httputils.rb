@@ -112,7 +112,7 @@ module WEBrick
     def load_mime_types(file)
       # note: +file+ may be a "| command" for now; some people may
       # rely on this, but currently we do not use this method by default.
-      open(file){ |io|
+      File.open(file){ |io|
         hash = Hash.new
         io.each{ |line|
           next if /^#/ =~ line

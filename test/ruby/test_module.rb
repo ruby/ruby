@@ -572,6 +572,26 @@ class TestModule < Test::Unit::TestCase
     assert_equal(2, a2.b)
   end
 
+  def test_ancestry_of_duped_classes
+    m = Module.new
+    sc = Class.new
+    a = Class.new(sc) do
+      def b; 2 end
+      prepend m
+    end
+
+    a2 = a.dup.new
+
+    assert_kind_of Object, a2
+    assert_kind_of sc, a2
+    refute_kind_of a, a2
+    assert_kind_of m, a2
+
+    assert_kind_of Class, a2.class
+    assert_kind_of sc.singleton_class, a2.class
+    assert_same sc, a2.class.superclass
+  end
+
   def test_gc_prepend_chain
     assert_separately([], <<-EOS)
       10000.times { |i|
@@ -754,6 +774,25 @@ class TestModule < Test::Unit::TestCase
     sc.prepend m1
     sc.prepend m1
     assert_equal([:m1, :m0, :m, :sc, :m1, :m0, :c], sc.new.m)
+  end
+
+  def test_protected_include_into_included_module
+    m1 = Module.new do
+      def other_foo(other)
+        other.foo
+      end
+
+      protected
+      def foo
+        :ok
+      end
+    end
+    m2 = Module.new
+    c1 = Class.new { include m2 }
+    c2 = Class.new { include m2 }
+    m2.include(m1)
+
+    assert_equal :ok, c1.new.other_foo(c2.new)
   end
 
   def test_instance_methods
@@ -953,6 +992,15 @@ class TestModule < Test::Unit::TestCase
   def test_public_instance_methods
     assert_equal([:aClass],  AClass.public_instance_methods(false))
     assert_equal([:bClass1], BClass.public_instance_methods(false))
+  end
+
+  def test_undefined_instance_methods
+    assert_equal([],  AClass.undefined_instance_methods)
+    assert_equal([], BClass.undefined_instance_methods)
+    c = Class.new(AClass) {undef aClass}
+    assert_equal([:aClass], c.undefined_instance_methods)
+    c = Class.new(c)
+    assert_equal([], c.undefined_instance_methods)
   end
 
   def test_s_public
@@ -1280,8 +1328,6 @@ class TestModule < Test::Unit::TestCase
       end
     end
     include LangModuleSpecInObject
-    module LangModuleTop
-    end
     puts "ok" if LangModuleSpecInObject::LangModuleTop == LangModuleTop
     INPUT
 
@@ -1682,6 +1728,8 @@ class TestModule < Test::Unit::TestCase
     assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
     c = Module.new.module_eval("class X\u{df} < Module; self; end")
     assert_match(/::X\u{df}:/, c.new.to_s)
+  ensure
+    Object.send(:remove_const, "C\u{df}")
   end
 
 
@@ -2304,6 +2352,18 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:foo, removed)
   end
 
+  def test_frozen_prepend_remove_method
+    [Module, Class].each do |klass|
+      mod = klass.new do
+        prepend(Module.new)
+        def foo; end
+      end
+      mod.freeze
+      assert_raise(FrozenError, '[Bug #19166]') { mod.send(:remove_method, :foo) }
+      assert_equal([:foo], mod.instance_methods(false))
+    end
+  end
+
   def test_prepend_class_ancestors
     bug6658 = '[ruby-core:45919]'
     m = labeled_module("m")
@@ -2810,6 +2870,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_invalid_attr
     %W[
+      foo=
       foo?
       @foo
       @@foo
@@ -3114,6 +3175,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_redefinition_mismatch
+    omit "Investigating trunk-rjit failure on ci.rvm.jp" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     m = Module.new
     m.module_eval "A = 1", __FILE__, line = __LINE__
     e = assert_raise_with_message(TypeError, /is not a module/) {
@@ -3215,6 +3277,21 @@ class TestModule < Test::Unit::TestCase
     assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
+  def test_iclass_memory_leak
+    # [Bug #19550]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        mod = Module.new
+        Class.new do
+          include mod
+        end
+      end
+      1_000.times(&code)
+    PREP
+      3_000_000.times(&code)
+    CODE
+  end
+
   private
 
   def assert_top_method_is_private(method)
@@ -3222,7 +3299,7 @@ class TestModule < Test::Unit::TestCase
       methods = singleton_class.private_instance_methods(false)
       assert_include(methods, :#{method}, ":#{method} should be private")
 
-      assert_raise_with_message(NoMethodError, "private method `#{method}' called for main:Object") {
+      assert_raise_with_message(NoMethodError, /^private method `#{method}' called for /) {
         recv = self
         recv.#{method}
       }

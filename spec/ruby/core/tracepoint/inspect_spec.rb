@@ -16,6 +16,15 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:line) {}.inspect.should == '#<TracePoint:disabled>'
   end
 
+  it "shows only whether it's enabled when outside the TracePoint handler" do
+    trace = TracePoint.new(:line) {}
+    trace.enable
+
+    trace.inspect.should == '#<TracePoint:enabled>'
+
+    trace.disable
+  end
+
   it 'returns a String showing the event, path and line' do
     inspect = nil
     line = nil
@@ -98,7 +107,7 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:thread_begin) { |tp|
       next unless Thread.current == thread
       inspect ||= tp.inspect
-    }.enable do
+    }.enable(target_thread: nil) do
       thread = Thread.new {}
       thread_inspection = thread.inspect
       thread.join
@@ -114,7 +123,7 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:thread_end) { |tp|
       next unless Thread.current == thread
       inspect ||= tp.inspect
-    }.enable do
+    }.enable(target_thread: nil) do
       thread = Thread.new {}
       thread_inspection = thread.inspect
       thread.join

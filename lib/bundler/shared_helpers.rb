@@ -13,13 +13,13 @@ module Bundler
     def root
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).tap{|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path.parent
+      Pathname.new(gemfile).tap {|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path.parent
     end
 
     def default_gemfile
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).tap{|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path
+      Pathname.new(gemfile).tap {|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path
     end
 
     def default_lockfile
@@ -28,7 +28,7 @@ module Bundler
       case gemfile.basename.to_s
       when "gems.rb" then Pathname.new(gemfile.sub(/.rb$/, ".locked"))
       else Pathname.new("#{gemfile}.lock")
-      end.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+      end.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
     end
 
     def default_bundle_dir
@@ -100,7 +100,7 @@ module Bundler
     #
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
-      yield(path.dup.tap{|x| x.untaint if RUBY_VERSION < "2.7" })
+      yield(path.dup.tap {|x| x.untaint if RUBY_VERSION < "2.7" })
     rescue Errno::EACCES
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
@@ -141,7 +141,7 @@ module Bundler
       end
       return unless multiple_gemfiles
       message = "Multiple gemfiles (gems.rb and Gemfile) detected. " \
-                "Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+                "Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       Bundler.ui.warn message
     end
 
@@ -160,10 +160,10 @@ module Bundler
         " (was expecting #{old_deps.map(&:to_s)}, but the real spec has #{new_deps.map(&:to_s)})"
       raise APIResponseMismatchError,
         "Downloading #{spec.full_name} revealed dependencies not in the API or the lockfile (#{extra_deps.join(", ")})." \
-        "\nEither installing with `--full-index` or running `bundle update #{spec.name}` should fix the problem."
+        "\nRunning `bundle update #{spec.name}` should fix the problem."
     end
 
-    def pretty_dependency(dep, print_source = false)
+    def pretty_dependency(dep)
       msg = String.new(dep.name)
       msg << " (#{dep.requirement})" unless dep.requirement == Gem::Requirement.default
 
@@ -172,7 +172,6 @@ module Bundler
         msg << " " << platform_string if !platform_string.empty? && platform_string != Gem::Platform::RUBY
       end
 
-      msg << " from the `#{dep.source}` source" if print_source && dep.source
       msg
     end
 
@@ -236,7 +235,7 @@ module Bundler
 
     def search_up(*names)
       previous = nil
-      current  = File.expand_path(SharedHelpers.pwd).tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+      current  = File.expand_path(SharedHelpers.pwd).tap {|x| x.untaint if RUBY_VERSION < "2.7" }
 
       until !File.directory?(current) || current == previous
         if ENV["BUNDLER_SPEC_RUN"]
@@ -274,10 +273,10 @@ module Bundler
 
     def set_bundle_variables
       # bundler exe & lib folders have same root folder, typical gem installation
-      exe_file = File.expand_path("../../../exe/bundle", __FILE__)
+      exe_file = File.expand_path("../../exe/bundle", __dir__)
 
       # for Ruby core repository testing
-      exe_file = File.expand_path("../../../libexec/bundle", __FILE__) unless File.exist?(exe_file)
+      exe_file = File.expand_path("../../libexec/bundle", __dir__) unless File.exist?(exe_file)
 
       # bundler is a default gem, exe path is separate
       exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
@@ -285,6 +284,7 @@ module Bundler
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
       Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
+      Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__) unless RUBY_VERSION < "2.7"
     end
 
     def set_path
@@ -309,7 +309,7 @@ module Bundler
     end
 
     def bundler_ruby_lib
-      resolve_path File.expand_path("../..", __FILE__)
+      File.expand_path("..", __dir__)
     end
 
     def clean_load_path
@@ -325,7 +325,7 @@ module Bundler
 
     def resolve_path(path)
       expanded = File.expand_path(path)
-      return expanded unless File.respond_to?(:realpath) && File.exist?(expanded)
+      return expanded unless File.exist?(expanded)
 
       File.realpath(expanded)
     end

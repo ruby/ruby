@@ -1,14 +1,16 @@
 # frozen_string_literal: true
 
 # Should be done in rubygems test files?
-ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
+ENV["GEM_SKIP"] = "".freeze
 ENV.delete("RUBY_CODESIGN")
 
 Warning[:experimental] = false
 
-# Get bundled gems on load path
-Dir.glob("#{__dir__}/../.bundle/gems/*/*.gemspec")
-  .reject {|f| f =~ /minitest|test-unit|power_assert/ }
-  .map {|f| $LOAD_PATH.unshift File.join(File.dirname(f), "lib") }
+gem_path = [
+  File.realdirpath(".bundle"),
+  File.realdirpath("../.bundle", __dir__),
+]
+ENV["GEM_PATH"] = gem_path.join(File::PATH_SEPARATOR)
+ENV["GEM_HOME"] = gem_path.first
 
 require_relative '../tool/test/runner'

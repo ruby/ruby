@@ -356,7 +356,7 @@ class Bundler::Thor
     end
 
     # The method responsible for dispatching given the args.
-    def dispatch(meth, given_args, given_opts, config) #:nodoc: # rubocop:disable MethodLength
+    def dispatch(meth, given_args, given_opts, config) #:nodoc:
       meth ||= retrieve_command_name(given_args)
       command = all_commands[normalize_command_name(meth)]
 

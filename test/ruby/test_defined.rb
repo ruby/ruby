@@ -303,6 +303,20 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("super", o.x, bug8367)
   end
 
+  def test_super_in_basic_object
+    BasicObject.class_eval do
+      def a
+        defined?(super)
+      end
+    end
+
+    assert_nil(a)
+  ensure
+    BasicObject.class_eval do
+      undef_method :a if defined?(a)
+    end
+  end
+
   def test_super_toplevel
     assert_separately([], "assert_nil(defined?(super))")
   end

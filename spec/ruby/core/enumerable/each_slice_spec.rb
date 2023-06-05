@@ -57,6 +57,12 @@ describe "Enumerable#each_slice" do
     e.to_a.should == @sliced
   end
 
+  ruby_version_is "3.1" do
+    it "returns self when a block is given" do
+      @enum.each_slice(3){}.should == @enum
+    end
+  end
+
   it "gathers whole arrays as elements when each yields multiple" do
     multi = EnumerableSpecs::YieldsMulti.new
     multi.each_slice(2).to_a.should == [[[1, 2], [3, 4, 5]], [[6, 7, 8, 9]]]

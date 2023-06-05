@@ -73,19 +73,9 @@ describe "IO#advise" do
     end
   end
 
-  platform_is :linux do
+  guard -> { platform_is :linux and kernel_version_is '3.6' } do # [ruby-core:65355] tmpfs is not supported
     it "supports the willneed advice type" do
-      require 'etc'
-      uname = if Etc.respond_to?(:uname)
-                Etc.uname[:release]
-              else
-                `uname -r`.chomp
-              end
-      if (uname.split('.').map(&:to_i) <=> [3,6]) < 0
-        skip "[ruby-core:65355] tmpfs is not supported"
-      else
-        @io.advise(:willneed).should be_nil
-      end
+      @io.advise(:willneed).should be_nil
     end
   end
 

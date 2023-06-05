@@ -14,6 +14,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -51,6 +52,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +112,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -173,6 +173,7 @@ parse_depth_limit.o: $(hdrdir)/ruby/backward/2/stdalign.h
 parse_depth_limit.o: $(hdrdir)/ruby/backward/2/stdarg.h
 parse_depth_limit.o: $(hdrdir)/ruby/defines.h
 parse_depth_limit.o: $(hdrdir)/ruby/intern.h
+parse_depth_limit.o: $(hdrdir)/ruby/internal/abi.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/anyargs.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/arithmetic.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -210,6 +211,7 @@ parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/noinline.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/pure.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/restrict.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -269,7 +271,6 @@ parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/error.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/eval.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/file.h
-parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/gc.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/hash.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/io.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -300,7 +301,6 @@ parse_depth_limit.o: $(hdrdir)/ruby/internal/memory.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/method.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/module.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/newobj.h
-parse_depth_limit.o: $(hdrdir)/ruby/internal/rgengc.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/scan_args.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/special_consts.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/static_assert.h

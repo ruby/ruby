@@ -78,9 +78,6 @@ module Spec
     end
 
     def bundle(cmd, options = {}, &block)
-      with_sudo = options.delete(:sudo)
-      sudo = with_sudo == :preserve_env ? "sudo -E --preserve-env=RUBYOPT" : "sudo" if with_sudo
-
       bundle_bin = options.delete(:bundle_bin)
       bundle_bin ||= installed_bindir.join("bundle")
 
@@ -119,7 +116,7 @@ module Spec
         end
       end.join
 
-      ruby_cmd = build_ruby_cmd({ :sudo => sudo, :load_path => load_path, :requires => requires })
+      ruby_cmd = build_ruby_cmd({ :load_path => load_path, :requires => requires })
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
       sys_exec(cmd, { :env => env, :dir => dir, :raise_on_error => raise_on_error }, &block)
     end
@@ -146,8 +143,6 @@ module Spec
     end
 
     def build_ruby_cmd(options = {})
-      sudo = options.delete(:sudo)
-
       libs = options.delete(:load_path)
       lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
 
@@ -155,7 +150,7 @@ module Spec
       requires << "#{Path.spec_dir}/support/hax.rb"
       require_option = requires.map {|r| "-r#{r}" }
 
-      [sudo, Gem.ruby, *lib_option, *require_option].compact.join(" ")
+      [Gem.ruby, *lib_option, *require_option].compact.join(" ")
     end
 
     def gembin(cmd, options = {})
@@ -199,7 +194,7 @@ module Spec
         command_execution.exitstatus = if status.exited?
           status.exitstatus
         elsif status.signaled?
-          128 + status.termsig
+          exit_status_for_signal(status.termsig)
         end
       end
 
@@ -225,7 +220,7 @@ module Spec
     end
 
     def config(config = nil, path = bundled_app(".bundle/config"))
-      return YAML.load_file(path) unless config
+      return Psych.load_file(path) unless config
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, "w") do |f|
         f.puts config.to_yaml
@@ -237,33 +232,31 @@ module Spec
       config(config, home(".bundle/config"))
     end
 
-    def create_file(*args)
-      path = bundled_app(args.shift)
-      path = args.shift if args.first.is_a?(Pathname)
-      str  = args.shift || ""
+    def create_file(path, contents = "")
+      path = Pathname.new(path).expand_path(bundled_app) unless path.is_a?(Pathname)
       path.dirname.mkpath
       File.open(path.to_s, "w") do |f|
-        f.puts strip_whitespace(str)
+        f.puts strip_whitespace(contents)
       end
     end
 
     def gemfile(*args)
-      contents = args.shift
+      contents = args.pop
 
       if contents.nil?
         File.open(bundled_app_gemfile, "r", &:read)
       else
-        create_file("Gemfile", contents, *args)
+        create_file(args.pop || "Gemfile", contents)
       end
     end
 
     def lockfile(*args)
-      contents = args.shift
+      contents = args.pop
 
       if contents.nil?
         File.open(bundled_app_lock, "r", &:read)
       else
-        create_file("Gemfile.lock", contents, *args)
+        create_file(args.pop || "Gemfile.lock", contents)
       end
     end
 
@@ -274,8 +267,8 @@ module Spec
     end
 
     def install_gemfile(*args)
+      opts = args.last.is_a?(Hash) ? args.pop : {}
       gemfile(*args)
-      opts = args.last.is_a?(Hash) ? args.last : {}
       bundle :install, opts
     end
 
@@ -297,7 +290,7 @@ module Spec
           if gem_name.start_with?("bundler")
             version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
             with_built_bundler(version) {|gem_path| install_gem(gem_path, default) }
-          elsif gem_name =~ %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}
+          elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
             install_gem(gem_name, default)
           else
             install_gem("#{gem_repo}/gems/#{gem_name}.gem", default)
@@ -309,7 +302,7 @@ module Spec
     def install_gem(path, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      args = "--no-document --ignore-dependencies"
+      args = "--no-document --ignore-dependencies --verbose --local"
       args += " --default --install-dir #{system_gem_path}" if default
 
       gem_command "install #{args} '#{path}'"
@@ -421,14 +414,14 @@ module Spec
       end
     end
 
-    def cache_gems(*gems)
+    def cache_gems(*gems, gem_repo: gem_repo1)
       gems = gems.flatten
 
       FileUtils.rm_rf("#{bundled_app}/vendor/cache")
       FileUtils.mkdir_p("#{bundled_app}/vendor/cache")
 
       gems.each do |g|
-        path = "#{gem_repo1}/gems/#{g}.gem"
+        path = "#{gem_repo}/gems/#{g}.gem"
         raise "OMG `#{path}` does not exist!" unless File.exist?(path)
         FileUtils.cp(path, "#{bundled_app}/vendor/cache")
       end
@@ -439,6 +432,14 @@ module Spec
       pristine_system_gems :bundler
     end
 
+    def simulate_ruby_platform(ruby_platform)
+      old = ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+      ENV["BUNDLER_SPEC_RUBY_PLATFORM"] = ruby_platform.to_s
+      yield
+    ensure
+      ENV["BUNDLER_SPEC_RUBY_PLATFORM"] = old
+    end
+
     def simulate_platform(platform)
       old = ENV["BUNDLER_SPEC_PLATFORM"]
       ENV["BUNDLER_SPEC_PLATFORM"] = platform.to_s
@@ -447,12 +448,16 @@ module Spec
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
     end
 
-    def simulate_windows(platform = mswin)
+    def simulate_windows(platform = x86_mswin32)
+      old = ENV["BUNDLER_SPEC_WINDOWS"]
+      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
         simulate_bundler_version_when_missing_prerelease_default_gem_activation do
           yield
         end
       end
+    ensure
+      ENV["BUNDLER_SPEC_WINDOWS"] = old
     end
 
     def simulate_bundler_version_when_missing_prerelease_default_gem_activation
@@ -473,10 +478,28 @@ module Spec
       end
     end
 
-    # versions providing a bundler version finder but not including
+    def current_ruby_minor
+      Gem.ruby_version.segments.tap {|s| s.delete_at(2) }.join(".")
+    end
+
+    def next_ruby_minor
+      ruby_major_minor.map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
+    end
+
+    def previous_ruby_minor
+      return "2.7" if ruby_major_minor == [3, 0]
+
+      ruby_major_minor.map.with_index {|s, i| i == 1 ? s - 1 : s }.join(".")
+    end
+
+    def ruby_major_minor
+      Gem.ruby_version.segments[0..1]
+    end
+
+    # versions not including
     # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def rubygems_version_failing_to_activate_bundler_prereleases
-      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1") && Gem.rubygems_version >= Gem::Version.new("2.7.0")
+      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
     end
 
     def revision_for(path)
@@ -558,6 +581,11 @@ module Spec
         false
       end
       port
+    end
+
+    def exit_status_for_signal(signal_number)
+      # For details see: https://en.wikipedia.org/wiki/Exit_status#Shell_and_scripts
+      128 + signal_number
     end
 
     private

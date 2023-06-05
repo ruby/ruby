@@ -3,6 +3,9 @@ require_relative 'fixtures/classes'
 require_relative 'shared/concat'
 
 describe "String#+" do
+  it_behaves_like :string_concat_encoding, :+
+  it_behaves_like :string_concat_type_coercion, :+
+
   it "returns a new string containing the given string concatenated to self" do
     ("" + "").should == ""
     ("" + "Hello").should == "Hello"
@@ -31,19 +34,4 @@ describe "String#+" do
     ("hello" + StringSpecs::MyString.new("foo")).should be_an_instance_of(String)
     ("hello" + StringSpecs::MyString.new("")).should be_an_instance_of(String)
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self or other is tainted" do
-      strs = ["", "OK", StringSpecs::MyString.new(""), StringSpecs::MyString.new("OK")]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        strs.each do |other|
-          (str + other).tainted?.should == (str.tainted? | other.tainted?)
-        end
-      end
-    end
-  end
-
-  it_behaves_like :string_concat_encoding, :+
 end

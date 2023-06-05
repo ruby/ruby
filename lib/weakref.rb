@@ -17,7 +17,7 @@ require "delegate"
 #
 
 class WeakRef < Delegator
-  VERSION = "0.1.1"
+  VERSION = "0.1.2"
 
   ##
   # RefError is raised when a referenced object has been recycled by the
@@ -30,9 +30,6 @@ class WeakRef < Delegator
 
   ##
   # Creates a weak reference to +orig+
-  #
-  # Raises an ArgumentError if the given +orig+ is immutable, such as Symbol,
-  # Integer, or Float.
 
   def initialize(orig)
     case orig

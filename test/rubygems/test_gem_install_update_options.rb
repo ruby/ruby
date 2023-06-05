@@ -1,14 +1,15 @@
 # frozen_string_literal: true
-require_relative 'installer_test_case'
-require 'rubygems/install_update_options'
-require 'rubygems/command'
-require 'rubygems/dependency_installer'
+
+require_relative "installer_test_case"
+require "rubygems/install_update_options"
+require "rubygems/command"
+require "rubygems/dependency_installer"
 
 class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def setup
     super
 
-    @cmd = Gem::Command.new 'dummy', 'dummy',
+    @cmd = Gem::Command.new "dummy", "dummy",
                             Gem::DependencyInstaller::DEFAULT_OPTIONS
     @cmd.extend Gem::InstallUpdateOptions
     @cmd.add_install_update_options
@@ -38,7 +39,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def test_build_root
     @cmd.handle_options %w[--build-root build_root]
 
-    assert_equal File.expand_path('build_root'), @cmd.options[:build_root]
+    assert_equal File.expand_path("build_root"), @cmd.options[:build_root]
   end
 
   def test_doc
@@ -92,7 +93,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
     @cmd.handle_options %w[-P HighSecurity]
 
@@ -100,7 +101,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy_unknown
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
     @cmd.add_install_update_options
 
@@ -111,7 +112,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_user_install_enabled
-    @spec = quick_gem 'a' do |spec|
+    @spec = quick_gem "a" do |spec|
       util_make_exec spec
     end
 
@@ -124,29 +125,29 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     @installer = Gem::Installer.at @gem, @cmd.options
     @installer.install
-    assert_path_exist File.join(Gem.user_dir, 'gems')
-    assert_path_exist File.join(Gem.user_dir, 'gems', @spec.full_name)
+    assert_path_exist File.join(Gem.user_dir, "gems")
+    assert_path_exist File.join(Gem.user_dir, "gems", @spec.full_name)
   end
 
   def test_user_install_disabled_read_only
-    @spec = quick_gem 'a' do |spec|
+    @spec = quick_gem "a" do |spec|
       util_make_exec spec
     end
 
     util_build_gem @spec
     @gem = @spec.cache_file
 
-    if win_platform?
-      pend('test_user_install_disabled_read_only test skipped on MS Windows')
+    if Gem.win_platform?
+      pend("test_user_install_disabled_read_only test skipped on MS Windows")
     elsif Process.uid.zero?
-      pend('test_user_install_disabled_read_only test skipped in root privilege')
+      pend("test_user_install_disabled_read_only test skipped in root privilege")
     else
       @cmd.handle_options %w[--no-user-install]
 
       refute @cmd.options[:user_install]
 
-      FileUtils.chmod 0755, @userhome
-      FileUtils.chmod 0000, @gemhome
+      FileUtils.chmod 0o755, @userhome
+      FileUtils.chmod 0o000, @gemhome
 
       Gem.use_paths @gemhome, @userhome
 
@@ -155,11 +156,11 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       end
     end
   ensure
-    FileUtils.chmod 0755, @gemhome
+    FileUtils.chmod 0o755, @gemhome
   end
 
   def test_vendor
-    vendordir(File.join(@tempdir, 'vendor')) do
+    vendordir(File.join(@tempdir, "vendor")) do
       @cmd.handle_options %w[--vendor]
 
       assert @cmd.options[:vendor]
@@ -173,7 +174,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
         @cmd.handle_options %w[--vendor]
       end
 
-      assert_equal 'invalid option: --vendor your platform is not supported',
+      assert_equal "invalid option: --vendor your platform is not supported",
                    e.message
 
       refute @cmd.options[:vendor]

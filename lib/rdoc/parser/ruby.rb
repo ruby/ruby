@@ -8,6 +8,9 @@
 #       by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
+require 'ripper'
+require_relative 'ripper_state_lex'
+
 ##
 # Extracts code elements from a source file returning a TopLevel object
 # containing the constituent file elements.
@@ -138,9 +141,6 @@
 # Note that by default, the :method: directive will be ignored if there is a
 # standard rdocable item following it.
 
-require 'ripper'
-require_relative 'ripper_state_lex'
-
 class RDoc::Parser::Ruby < RDoc::Parser
 
   parse_files_matching(/\.rbw?$/)
@@ -164,15 +164,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def initialize(top_level, file_name, content, options, stats)
     super
 
-    if /\t/ =~ content then
-      tab_width = @options.tab_width
-      content = content.split(/\n/).map do |line|
-        1 while line.gsub!(/\t+/) {
-          ' ' * (tab_width*$&.length - $`.length % tab_width)
-        }  && $~
-        line
-      end.join("\n")
-    end
+    content = handle_tab_width(content)
 
     @size = 0
     @token_listeners = nil
@@ -397,6 +389,29 @@ class RDoc::Parser::Ruby < RDoc::Parser
     skip_tkspace_without_nl
 
     return [container, name_t, given_name, new_modules]
+  end
+
+  ##
+  # Skip opening parentheses and yield the block.
+  # Skip closing parentheses too when exists.
+
+  def skip_parentheses(&block)
+    left_tk = peek_tk
+
+    if :on_lparen == left_tk[:kind]
+      get_tk
+
+      ret = skip_parentheses(&block)
+
+      right_tk = peek_tk
+      if :on_rparen == right_tk[:kind]
+        get_tk
+      end
+
+      ret
+    else
+      yield
+    end
   end
 
   ##
@@ -833,7 +848,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       cls = parse_class_regular container, declaration_context, single,
         name_t, given_name, comment
     elsif name_t[:kind] == :on_op && name_t[:text] == '<<'
-      case name = get_class_specification
+      case name = skip_parentheses { get_class_specification }
       when 'self', container.name
         read_documentation_modifiers cls, RDoc::CLASS_MODIFIERS
         parse_statements container, SINGLE
@@ -2119,7 +2134,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       if :on_nl == tk[:kind] or (:on_kw == tk[:kind] && 'def' == tk[:text]) then
         return
       elsif :on_comment == tk[:kind] or :on_embdoc == tk[:kind] then
-        return unless tk[:text] =~ /\s*:?([\w-]+):\s*(.*)/
+        return unless tk[:text] =~ /:?\b([\w-]+):\s*(.*)/
 
         directive = $1.downcase
 

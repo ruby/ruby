@@ -5,20 +5,20 @@ RSpec.describe "bundle fund" do
     build_repo2 do
       build_gem "has_funding_and_other_metadata" do |s|
         s.metadata = {
-          "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-          "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+          "bug_tracker_uri" => "https://example.com/user/bestgemever/issues",
+          "changelog_uri" => "https://example.com/user/bestgemever/CHANGELOG.md",
           "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-          "homepage_uri"      => "https://bestgemever.example.io",
-          "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-          "funding_uri"       => "https://example.com/has_funding_and_other_metadata/funding",
-          "source_code_uri"   => "https://example.com/user/bestgemever",
-          "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+          "homepage_uri" => "https://bestgemever.example.io",
+          "mailing_list_uri" => "https://groups.example.com/bestgemever",
+          "funding_uri" => "https://example.com/has_funding_and_other_metadata/funding",
+          "source_code_uri" => "https://example.com/user/bestgemever",
+          "wiki_uri" => "https://example.com/user/bestgemever/wiki",
         }
       end
 
       build_gem "has_funding", "1.2.3" do |s|
         s.metadata = {
-          "funding_uri"       => "https://example.com/has_funding/funding",
+          "funding_uri" => "https://example.com/has_funding/funding",
         }
       end
 

@@ -1,12 +1,6 @@
 # frozen_string_literal: true
-##
-# RubyGems adds the #gem method to allow activation of specific gem versions
-# and overrides the #require method on Kernel to make gems appear as if they
-# live on the <code>$LOAD_PATH</code>.  See the documentation of these methods
-# for further detail.
 
 module Kernel
-
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
   #
@@ -39,12 +33,12 @@ module Kernel
   #   GEM_SKIP=libA:libB ruby -I../libA -I../libB ./mycode.rb
 
   def gem(gem_name, *requirements) # :doc:
-    skip_list = (ENV['GEM_SKIP'] || "").split(/:/)
+    skip_list = (ENV["GEM_SKIP"] || "").split(/:/)
     raise Gem::LoadError, "skipping #{gem_name}" if skip_list.include? gem_name
 
-    if gem_name.kind_of? Gem::Dependency
+    if gem_name.is_a? Gem::Dependency
       unless Gem::Deprecate.skip
-        warn "#{Gem.location_of_caller.join ':'}:Warning: Kernel.gem no longer "\
+        warn "#{Gem.location_of_caller.join ":"}:Warning: Kernel.gem no longer "\
           "accepts a Gem::Dependency object, please pass the name "\
           "and requirements directly"
       end
@@ -71,5 +65,4 @@ module Kernel
   end
 
   private :gem
-
 end

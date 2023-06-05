@@ -39,7 +39,7 @@ class VariableNameCheckTest < Test::Unit::TestCase
     end
 
     assert_correction :first_name, error.corrections
-    assert_match "Did you mean?  first_name", error.to_s
+    assert_match "Did you mean?  first_name", get_message(error)
   end
 
   def test_corrections_include_method_from_module
@@ -48,7 +48,7 @@ class VariableNameCheckTest < Test::Unit::TestCase
     end
 
     assert_correction :from_module, error.corrections
-    assert_match "Did you mean?  from_module", error.to_s
+    assert_match "Did you mean?  from_module", get_message(error)
   end
 
   def test_corrections_include_local_variable_name
@@ -57,7 +57,7 @@ class VariableNameCheckTest < Test::Unit::TestCase
       error = (eprson rescue $!) # Do not use @assert_raise here as it changes a scope.
 
       assert_correction :person, error.corrections
-      assert_match "Did you mean?  person", error.to_s
+      assert_match "Did you mean?  person", get_message(error)
     end
   end
 
@@ -81,30 +81,30 @@ class VariableNameCheckTest < Test::Unit::TestCase
     end
 
     assert_correction :false, false_error.corrections
-    assert_match "Did you mean?  false", false_error.to_s
+    assert_match "Did you mean?  false", get_message(false_error)
 
     assert_correction :true, true_error.corrections
-    assert_match "Did you mean?  true", true_error.to_s
+    assert_match "Did you mean?  true", get_message(true_error)
 
     assert_correction :nil, nil_error.corrections
-    assert_match "Did you mean?  nil", nil_error.to_s
+    assert_match "Did you mean?  nil", get_message(nil_error)
 
     assert_correction :__FILE__, file_error.corrections
-    assert_match "Did you mean?  __FILE__", file_error.to_s
+    assert_match "Did you mean?  __FILE__", get_message(file_error)
   end
 
   def test_suggests_yield
     error = assert_raise(NameError) { yeild }
 
     assert_correction :yield, error.corrections
-    assert_match "Did you mean?  yield", error.to_s
+    assert_match "Did you mean?  yield", get_message(error)
   end
 
   def test_corrections_include_instance_variable_name
     error = assert_raise(NameError){ @user.to_s }
 
     assert_correction :@email_address, error.corrections
-    assert_match "Did you mean?  @email_address", error.to_s
+    assert_match "Did you mean?  @email_address", get_message(error)
   end
 
   def test_corrections_include_private_method
@@ -113,7 +113,7 @@ class VariableNameCheckTest < Test::Unit::TestCase
     end
 
     assert_correction :cia_codename, error.corrections
-    assert_match "Did you mean?  cia_codename",  error.to_s
+    assert_match "Did you mean?  cia_codename",  get_message(error)
   end
 
   @@does_exist = true
@@ -122,7 +122,7 @@ class VariableNameCheckTest < Test::Unit::TestCase
     error = assert_raise(NameError){ @@doesnt_exist }
 
     assert_correction :@@does_exist, error.corrections
-    assert_match "Did you mean?  @@does_exist", error.to_s
+    assert_match "Did you mean?  @@does_exist", get_message(error)
   end
 
   def test_struct_name_error
@@ -130,11 +130,23 @@ class VariableNameCheckTest < Test::Unit::TestCase
     error = assert_raise(NameError){ value[:doesnt_exist] }
 
     assert_correction [:does_exist, :does_exist=], error.corrections
-    assert_match "Did you mean?  does_exist", error.to_s
+    assert_match "Did you mean?  does_exist", get_message(error)
   end
 
   def test_exclude_typical_incorrect_suggestions
     error = assert_raise(NameError){ foo }
     assert_empty error.corrections
+  end
+
+  def test_exclude_duplicates_with_same_name
+    error = assert_raise(NameError) do
+      eval(<<~RUBY, binding, __FILE__, __LINE__)
+        bar = 1
+        def bar;end
+        zar
+      RUBY
+    end
+
+    assert_correction [:bar], error.corrections
   end
 end

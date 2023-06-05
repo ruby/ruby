@@ -8,6 +8,10 @@ describe "String#downcase" do
     "hello".downcase.should == "hello"
   end
 
+  it "returns a String in the same encoding as self" do
+    "hELLO".encode("US-ASCII").downcase.encoding.should == Encoding::US_ASCII
+  end
+
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "ÄÖÜ".downcase.should == "äöü"
@@ -26,6 +30,10 @@ describe "String#downcase" do
   describe "ASCII-only case mapping" do
     it "does not downcase non-ASCII characters" do
       "CÅR".downcase(:ascii).should == "cÅr"
+    end
+
+    it "works with substrings" do
+      "prefix TÉ"[-2..-1].downcase(:ascii).should == "tÉ"
     end
   end
 
@@ -66,14 +74,6 @@ describe "String#downcase" do
 
   it "does not allow invalid options" do
     -> { "ABC".downcase(:invalid_option) }.should raise_error(ArgumentError)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "".taint.downcase.should.tainted?
-      "x".taint.downcase.should.tainted?
-      "X".taint.downcase.should.tainted?
-    end
   end
 
   ruby_version_is ''...'3.0' do

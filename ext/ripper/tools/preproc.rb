@@ -17,26 +17,34 @@ def main
   begin
     parser.parse!
   rescue OptionParser::ParseError => err
-    $stderr.puts err.message
-    $stderr.puts parser.help
-    exit false
-  end
-  unless ARGV.size == 1
-    abort "wrong number of arguments (#{ARGV.size} for 1)"
+    warn err.message
+    abort parser.help
   end
   out = "".dup
-  File.open(ARGV[0]) {|f|
-    prelude f, out
-    grammar f, out
-    usercode f, out
-  }
-  if output
-    File.open(output, 'w') {|f|
-      f.write out
+  if ARGV[0] == "-"
+    unless ARGV.size == 2
+      abort "wrong number of arguments (#{ARGV.size} for 2)"
+    end
+    process STDIN, out, ARGV[1]
+  else
+    unless ARGV.size == 1
+      abort "wrong number of arguments (#{ARGV.size} for 1)"
+    end
+    File.open(ARGV[0]) {|f|
+      process f, out, ARGV[0]
     }
+  end
+  if output
+    File.write(output, out)
   else
     print out
   end
+end
+
+def process(f, out, path)
+  prelude f, out
+  grammar f, out
+  usercode f, out, path
 end
 
 def prelude(f, out)
@@ -47,7 +55,7 @@ def prelude(f, out)
     when /\A%%/
       out << "%%\n"
       return
-    when /\A%token/
+    when /\A%token/, /\A} <node>/
       out << line.sub(/<\w+>/, '<val>')
     when /\A%type/
       out << line.sub(/<\w+>/, '<val>')
@@ -95,13 +103,13 @@ def grammar(f, out)
   end
 end
 
-def usercode(f, out)
+def usercode(f, out, path)
   require 'erb'
   compiler = ERB::Compiler.new('%-')
   compiler.put_cmd = compiler.insert_cmd = "out.<<"
   lineno = f.lineno
   src, = compiler.compile(f.read)
-  eval(src, binding, f.path, lineno)
+  eval(src, binding, path, lineno)
 end
 
 main

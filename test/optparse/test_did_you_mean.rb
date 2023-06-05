@@ -6,7 +6,7 @@ rescue LoadError
   return
 end
 
-class TestOptionParser::DidYouMean < TestOptionParser
+class TestOptionParserDidYouMean < TestOptionParser
   def setup
     super
     @opt.def_option("--foo", Integer) { |v| @foo = v }

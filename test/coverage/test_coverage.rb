@@ -26,6 +26,13 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_in_main_script
+    autostart_path = File.expand_path("autostart.rb", __dir__)
+    main_path = File.expand_path("main.rb", __dir__)
+
+    assert_in_out_err(['-r', autostart_path, main_path], "", ["1"], [])
+  end
+
   def test_coverage_running?
     assert_in_out_err(%w[-rcoverage], <<-"end;", ["false", "true", "true", "false"], [])
       p Coverage.running?
@@ -136,7 +143,7 @@ class TestCoverage < Test::Unit::TestCase
           f.puts 'REPEATS = 400'
           f.puts 'def add_method(target)'
           f.puts '  REPEATS.times do'
-          f.puts '    target.class_eval(<<~RUBY, __FILE__, __LINE__ + 1)'
+          f.puts '    target.class_eval(<<~RUBY)'
           f.puts '      def foo'
           f.puts '        #{"\n" * rand(REPEATS)}'
           f.puts '      end'
@@ -147,14 +154,40 @@ class TestCoverage < Test::Unit::TestCase
         end
 
         assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["[1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil]"], [], bug13305)
-          Coverage.start
+          Coverage.start(:all)
           tmp = Dir.pwd
           require tmp + '/test.rb'
           add_method(Class.new)
-          p Coverage.result[tmp + "/test.rb"]
+          p Coverage.result[tmp + "/test.rb"][:lines]
         end;
       }
     }
+  end
+
+  def test_eval_coverage
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, 1, 1, nil, 0, nil]"], [])
+      Coverage.start(eval: true, lines: true)
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb")
+      _out = String.new
+      if _out.empty?
+        _out << 'Hello World'
+      else
+        _out << 'Goodbye World'
+      end
+      RUBY
+
+      p Coverage.result["test.rb"][:lines]
+    end;
+  end
+
+  def test_coverage_supported
+    assert Coverage.supported?(:lines)
+    assert Coverage.supported?(:oneshot_lines)
+    assert Coverage.supported?(:branches)
+    assert Coverage.supported?(:methods)
+    assert Coverage.supported?(:eval)
+    refute Coverage.supported?(:all)
   end
 
   def test_nocoverage_optimized_line
@@ -178,6 +211,27 @@ class TestCoverage < Test::Unit::TestCase
     }
     assert_coverage(<<~"end;", { branches: true }, result) # Bug #15476
       nil&.foo
+    end;
+  end
+
+  def test_coverage_ensure_if_return
+    result = {
+      :branches => {
+        [:if, 0, 3, 2, 6, 5] => {
+          [:then, 1, 3, 7, 3, 7] => 0,
+          [:else, 2, 5, 4, 5, 10] => 1,
+        },
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      def flush
+      ensure
+        if $!
+        else
+          return
+        end
+      end
+      flush
     end;
   end
 
@@ -918,6 +972,20 @@ class TestCoverage < Test::Unit::TestCase
       Coverage.setup
       Coverage.suspend
       p :NG
+    end;
+  end
+
+  def test_tag_break_with_branch_coverage
+    result = {
+      :branches => {
+        [:"&.", 0, 1, 0, 1, 6] => {
+          [:then, 1, 1, 0, 1, 6] => 1,
+          [:else, 2, 1, 0, 1, 6] => 0,
+        },
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      1&.tap do break end
     end;
   end
 end

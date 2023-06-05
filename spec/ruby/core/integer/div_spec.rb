@@ -70,8 +70,8 @@ describe "Integer#div" do
     end
 
     it "returns self divided by other" do
-      @bignum.div(4).should == 2305843009213693974
-      @bignum.div(Rational(4, 1)).should == 2305843009213693974
+      @bignum.div(4).should == 4611686018427387926
+      @bignum.div(Rational(4, 1)).should == 4611686018427387926
       @bignum.div(bignum_value(2)).should == 1
 
       (-(10**50)).div(-(10**40 + 1)).should == 9999999999
@@ -124,11 +124,11 @@ describe "Integer#div" do
     end
 
     it "returns a result of integer division of self by a float argument" do
-      @bignum.div(4294967295.5).should eql(2147483648)
+      @bignum.div(4294967295.5).should eql(4294967296)
       not_supported_on :opal do
-        @bignum.div(4294967295.0).should eql(2147483648)
+        @bignum.div(4294967295.0).should eql(4294967297)
         @bignum.div(bignum_value(88).to_f).should eql(1)
-        @bignum.div(-bignum_value(88).to_f).should eql(-1)
+        @bignum.div((-bignum_value(88)).to_f).should eql(-1)
       end
     end
 

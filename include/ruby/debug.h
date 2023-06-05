@@ -207,6 +207,17 @@ typedef VALUE (*rb_debug_inspector_func_t)(const rb_debug_inspector_t *dc, void 
 VALUE rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data);
 
 /**
+ * Queries  the backtrace  object  of the  context.   This is  as  if you  call
+ * `caller_locations` at the point of debugger.
+ *
+ * @param[in]  dc  A debug context.
+ * @return     An array  of `Thread::Backtrace::Location` which  represents the
+ *             current point of execution at `dc`.
+
+ */
+VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
+
+/**
  * Queries the current receiver of the passed context's upper frame.
  *
  * @param[in]  dc           A debug context.
@@ -250,15 +261,27 @@ VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long 
 VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index);
 
 /**
- * Queries  the backtrace  object  of the  context.   This is  as  if you  call
- * `caller_locations` at the point of debugger.
+ * Queries the depth of the passed context's upper frame.
  *
- * @param[in]  dc  A debug context.
- * @return     An array  of `Thread::Backtrace::Location` which  represents the
- *             current point of execution at `dc`.
-
+ * Note that the depth is not same as the frame index because debug_inspector
+ * skips some special frames but the depth counts all frames.
+ *
+ * @param[in]  dc           A debug context.
+ * @param[in]  index        Index of the frame from top to bottom.
+ * @exception  rb_eArgError `index` out of range.
+ * @retval     The depth at `index`-th frame in Integer.
  */
-VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
+VALUE rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, long index);
+
+// A macro to recognize `rb_debug_inspector_frame_depth()` is available or not
+#define RB_DEBUG_INSPECTOR_FRAME_DEPTH(dc, index) rb_debug_inspector_frame_depth(dc, index)
+
+/**
+ * Return current frmae depth.
+ *
+ * @retval     The depth of the current frame in Integer.
+ */
+VALUE rb_debug_inspector_current_depth(void);
 
 /** @} */
 

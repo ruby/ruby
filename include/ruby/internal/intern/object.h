@@ -92,8 +92,8 @@ VALUE rb_class_new_instance_kw(int argc, const VALUE *argv, VALUE klass, int kw_
  *
  * @param[in]  lhs          Comparison left hand side.
  * @param[in]  rhs          Comparison right hand side.
- * @retval     RUBY_Qtrue   They are equal.
- * @retval     RUBY_Qfalse  Otherwise.
+ * @retval     non-zero     They are equal.
+ * @retval     0            Otherwise.
  * @note       This  function  actually  calls `lhs.eql?(rhs)`  so  you  cannot
  *             implement your class' `#eql?` method using it.
  */

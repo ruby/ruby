@@ -28,16 +28,18 @@ See also:
 
 ```console
 Usage: benchmark-driver [options] RUBY|YAML...
-    -r, --runner TYPE                Specify runner type: ips, time, memory, once (default: ips)
-    -o, --output TYPE                Specify output type: compare, simple, markdown, record (default: compare)
+    -r, --runner TYPE                Specify runner type: ips, time, memory, once, block (default: ips)
+    -o, --output TYPE                Specify output type: compare, simple, markdown, record, all (default: compare)
     -e, --executables EXECS          Ruby executables (e1::path1 arg1; e2::path2 arg2;...)
         --rbenv VERSIONS             Ruby executables in rbenv (x.x.x arg1;y.y.y arg2;...)
         --repeat-count NUM           Try benchmark NUM times and use the fastest result or the worst memory usage
         --repeat-result TYPE         Yield "best", "average" or "worst" result with --repeat-count (default: best)
+        --alternate                  Alternate executables instead of running the same executable in a row with --repeat-count
         --bundler                    Install and use gems specified in Gemfile
         --filter REGEXP              Filter out benchmarks with given regexp
         --run-duration SECONDS       Warmup estimates loop_count to run for this duration (default: 3)
-    -v, --verbose                    Verbose mode. Multiple -v options increase visibility (max: 2)
+        --timeout SECONDS            Timeout ruby command execution with timeout(1)
+    -v, --verbose                    Verbose mode. Multiple -v options increase visilibity (max: 2)
 ```
 
 ## make benchmark

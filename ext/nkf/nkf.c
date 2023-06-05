@@ -9,6 +9,7 @@
 
 #define RUBY_NKF_REVISION "$Revision$"
 #define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
+#define NKF_GEM_VERSION "0.1.3"
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
@@ -65,11 +66,11 @@ rb_encoding* rb_nkf_enc_get(const char *name)
 {
     int idx = rb_enc_find_index(name);
     if (idx < 0) {
-	nkf_encoding *nkf_enc = nkf_enc_find(name);
-	idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
-	if (idx < 0) {
-	    idx = rb_define_dummy_encoding(name);
-	}
+        nkf_encoding *nkf_enc = nkf_enc_find(name);
+        idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
+        if (idx < 0) {
+            idx = rb_define_dummy_encoding(name);
+        }
     }
     return rb_enc_from_index(idx);
 }
@@ -83,40 +84,40 @@ int nkf_split_options(const char *arg)
     int is_single_quoted = FALSE;
     int is_double_quoted = FALSE;
     for(i = 0; arg[i]; i++){
-	if(j == 255){
-	    return -1;
-	}else if(is_single_quoted){
-	    if(arg[i] == '\''){
-		is_single_quoted = FALSE;
-	    }else{
-		option[j++] = arg[i];
-	    }
-	}else if(is_escaped){
-	    is_escaped = FALSE;
-	    option[j++] = arg[i];
-	}else if(arg[i] == '\\'){
-	    is_escaped = TRUE;
-	}else if(is_double_quoted){
-	    if(arg[i] == '"'){
-		is_double_quoted = FALSE;
-	    }else{
-		option[j++] = arg[i];
-	    }
-	}else if(arg[i] == '\''){
-	    is_single_quoted = TRUE;
-	}else if(arg[i] == '"'){
-	    is_double_quoted = TRUE;
-	}else if(arg[i] == ' '){
-	    option[j] = '\0';
-	    options(option);
-	    j = 0;
-	}else{
-	    option[j++] = arg[i];
-	}
+        if(j == 255){
+            return -1;
+        }else if(is_single_quoted){
+            if(arg[i] == '\''){
+                is_single_quoted = FALSE;
+            }else{
+                option[j++] = arg[i];
+            }
+        }else if(is_escaped){
+            is_escaped = FALSE;
+            option[j++] = arg[i];
+        }else if(arg[i] == '\\'){
+            is_escaped = TRUE;
+        }else if(is_double_quoted){
+            if(arg[i] == '"'){
+                is_double_quoted = FALSE;
+            }else{
+                option[j++] = arg[i];
+            }
+        }else if(arg[i] == '\''){
+            is_single_quoted = TRUE;
+        }else if(arg[i] == '"'){
+            is_double_quoted = TRUE;
+        }else if(arg[i] == ' '){
+            option[j] = '\0';
+            options(option);
+            j = 0;
+        }else{
+            option[j++] = arg[i];
+        }
     }
     if(j){
-	option[j] = '\0';
-	options(option);
+        option[j] = '\0';
+        options(option);
     }
     return count;
 }
@@ -170,9 +171,9 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     rb_str_set_len(tmp, output_ctr);
 
     if (mimeout_f)
-	rb_enc_associate(tmp, rb_usascii_encoding());
+        rb_enc_associate(tmp, rb_usascii_encoding());
     else
-	rb_enc_associate(tmp, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
+        rb_enc_associate(tmp, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
 
     return tmp;
 }
@@ -274,7 +275,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  {de/en}crypt ROT13/47
  *
- *  === -h[123] --hiragana --katakana --katakana-hiragana
+ *  === \-h[123] --hiragana --katakana --katakana-hiragana
  *
  *  [-h1 --hiragana] Katakana to Hiragana conversion.
  *
@@ -299,7 +300,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  New line preserving line folding.
  *
- *  === -Z[0-3]
+ *  === \-Z[0-3]
  *
  *  Convert X0208 alphabet (Fullwidth Alphabets) to ASCII.
  *
@@ -318,7 +319,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  With <b>-x</b>, try to preserve X0208 kana and do not convert X0201 kana to X0208.
  *  In JIS output, ESC-(-I is used. In EUC output, SSO is used.
  *
- *  === -B[0-2]
+ *  === \-B[0-2]
  *
  *  Assume broken JIS-Kanji input, which lost ESC.
  *  Useful when your site is using old B-News Nihongo patch.
@@ -336,7 +337,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  Delete \r in line feed, Add \r in line feed.
  *
- *  === -m[BQN0]
+ *  === \-m[BQN0]
  *
  *  MIME ISO-2022-JP/ISO8859-1 decode. (DEFAULT)
  *  To see ISO8859-1 (Latin-1) -l is necessary.
@@ -365,7 +366,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  Input and output code is ISO8859-1 (Latin-1) and ISO-2022-JP.
  *  <b>-s</b>, <b>-e</b> and <b>-x</b> are not compatible with this option.
  *
- *  === -L[uwm]
+ *  === \-L[uwm]
  *
  *  new line mode
  *  Without this option, nkf doesn't convert line breaks.
@@ -500,4 +501,6 @@ Init_nkf(void)
     rb_define_const(mNKF, "NKF_VERSION", rb_str_new2(NKF_VERSION));
     /* Release date of nkf */
     rb_define_const(mNKF, "NKF_RELEASE_DATE", rb_str_new2(NKF_RELEASE_DATE));
+    /* Version of nkf library */
+    rb_define_const(mNKF, "GEM_VERSION", rb_str_new_cstr(NKF_GEM_VERSION));
 }

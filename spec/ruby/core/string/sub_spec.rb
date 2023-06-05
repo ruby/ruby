@@ -137,28 +137,6 @@ describe "String#sub with pattern, replacement" do
     "hello".sub(/./, 'hah\\').should == 'hah\\ello'
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if the original string or replacement is tainted" do
-      hello = "hello"
-      hello_t = "hello"
-      a = "a"
-      a_t = "a"
-      empty = ""
-      empty_t = ""
-
-      hello_t.taint; a_t.taint; empty_t.taint
-
-      hello_t.sub(/./, a).should.tainted?
-      hello_t.sub(/./, empty).should.tainted?
-
-      hello.sub(/./, a_t).should.tainted?
-      hello.sub(/./, empty_t).should.tainted?
-      hello.sub(//, empty_t).should.tainted?
-
-      hello.sub(//.taint, "foo").should_not.tainted?
-    end
-  end
-
   it "tries to convert pattern to a string using to_str" do
     pattern = mock('.')
     pattern.should_receive(:to_str).and_return(".")
@@ -236,6 +214,17 @@ describe "String#sub with pattern, replacement" do
     "ababa".sub(/(b)/, '\\\\\1').should == "a\\baba"
   end
 
+  it "handles a pattern in a superset encoding" do
+    result = 'abc'.force_encoding(Encoding::US_ASCII).sub('é', 'è')
+    result.should == 'abc'
+    result.encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    result = 'été'.sub('t'.force_encoding(Encoding::US_ASCII), 'u')
+    result.should == 'éué'
+    result.encoding.should == Encoding::UTF_8
+  end
 end
 
 describe "String#sub with pattern and block" do
@@ -297,28 +286,6 @@ describe "String#sub with pattern and block" do
     obj.should_receive(:to_s).and_return("ok")
     "hello".sub(/.+/) { obj }.should == "ok"
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result if the original string or replacement is tainted" do
-      hello = "hello"
-      hello_t = "hello"
-      a = "a"
-      a_t = "a"
-      empty = ""
-      empty_t = ""
-
-      hello_t.taint; a_t.taint; empty_t.taint
-
-      hello_t.sub(/./) { a }.should.tainted?
-      hello_t.sub(/./) { empty }.should.tainted?
-
-      hello.sub(/./) { a_t }.should.tainted?
-      hello.sub(/./) { empty_t }.should.tainted?
-      hello.sub(//) { empty_t }.should.tainted?
-
-      hello.sub(//.taint) { "foo" }.should_not.tainted?
-    end
-  end
 end
 
 describe "String#sub! with pattern, replacement" do
@@ -326,14 +293,6 @@ describe "String#sub! with pattern, replacement" do
     a = "hello"
     a.sub!(/[aeiou]/, '*').should equal(a)
     a.should == "h*llo"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if replacement is tainted" do
-      a = "hello"
-      a.sub!(/./.taint, "foo").should_not.tainted?
-      a.sub!(/./, "foo".taint).should.tainted?
-    end
   end
 
   it "returns nil if no modifications were made" do
@@ -350,6 +309,27 @@ describe "String#sub! with pattern, replacement" do
     -> { s.sub!(/ROAR/, "x")    }.should raise_error(FrozenError)
     -> { s.sub!(/e/, "e")       }.should raise_error(FrozenError)
     -> { s.sub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
+  end
+
+  it "handles a pattern in a superset encoding" do
+    string = 'abc'.force_encoding(Encoding::US_ASCII)
+
+    result = string.sub!('é', 'è')
+
+    result.should == nil
+    string.should == 'abc'
+    string.encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    string = 'été'
+    pattern = 't'.force_encoding(Encoding::US_ASCII)
+
+    result = string.sub!(pattern, 'u')
+
+    result.should == string
+    string.should == 'éué'
+    string.encoding.should == Encoding::UTF_8
   end
 end
 
@@ -376,14 +356,6 @@ describe "String#sub! with pattern and block" do
     end.should == "hhellollo"
 
     offsets.should == [[1, 2]]
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if block's result is tainted" do
-      a = "hello"
-      a.sub!(/./.taint) { "foo" }.should_not.tainted?
-      a.sub!(/./) { "foo".taint }.should.tainted?
-    end
   end
 
   it "returns nil if no modifications were made" do
@@ -471,28 +443,6 @@ describe "String#sub with pattern and Hash" do
     "hello".sub(/(.+)/, 'hello' => repl ).should == repl
   end
 
-  ruby_version_is ''...'2.7' do
-    it "untrusts the result if the original string is untrusted" do
-      str = "Ghana".untrust
-      str.sub(/[Aa]na/, 'ana' => '').untrusted?.should be_true
-    end
-
-    it "untrusts the result if a hash value is untrusted" do
-      str = "Ghana"
-      str.sub(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
-    end
-
-    it "taints the result if the original string is tainted" do
-      str = "Ghana".taint
-      str.sub(/[Aa]na/, 'ana' => '').tainted?.should be_true
-    end
-
-    it "taints the result if a hash value is tainted" do
-      str = "Ghana"
-      str.sub(/a$/, 'a' => 'di'.taint).tainted?.should be_true
-    end
-  end
-
 end
 
 describe "String#sub! with pattern and Hash" do
@@ -556,28 +506,6 @@ describe "String#sub! with pattern and Hash" do
   it "doesn't interpolate special sequences like \\1 for the block's return value" do
     repl = '\& \0 \1 \` \\\' \+ \\\\ foo'
     "hello".sub!(/(.+)/, 'hello' => repl ).should == repl
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "keeps untrusted state" do
-      str = "Ghana".untrust
-      str.sub!(/[Aa]na/, 'ana' => '').untrusted?.should be_true
-    end
-
-    it "untrusts self if a hash value is untrusted" do
-      str = "Ghana"
-      str.sub!(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
-    end
-
-    it "keeps tainted state" do
-      str = "Ghana".taint
-      str.sub!(/[Aa]na/, 'ana' => '').tainted?.should be_true
-    end
-
-    it "taints self if a hash value is tainted" do
-      str = "Ghana"
-      str.sub!(/a$/, 'a' => 'di'.taint).tainted?.should be_true
-    end
   end
 end
 

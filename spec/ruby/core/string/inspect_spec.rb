@@ -3,18 +3,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#inspect" do
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      "foo".taint.inspect.should.tainted?
-      "foo\n".taint.inspect.should.tainted?
-    end
-
-    it "untrusts the result if self is untrusted" do
-      "foo".untrust.inspect.should.untrusted?
-      "foo\n".untrust.inspect.should.untrusted?
-    end
-  end
-
   it "does not return a subclass instance" do
     StringSpecs::MyString.new.inspect.should be_an_instance_of(String)
   end
@@ -29,6 +17,21 @@ describe "String#inspect" do
       ["\r", '"\\r"'],
       ["\e", '"\\e"']
     ].should be_computed_by(:inspect)
+  end
+
+  it "returns a string with special characters replaced with \\<char> notation for UTF-16" do
+    pairs = [
+      ["\a", '"\\a"'],
+      ["\b", '"\\b"'],
+      ["\t", '"\\t"'],
+      ["\n", '"\\n"'],
+      ["\v", '"\\v"'],
+      ["\f", '"\\f"'],
+      ["\r", '"\\r"'],
+      ["\e", '"\\e"']
+    ].map { |str, result| [str.encode('UTF-16LE'), result] }
+
+    pairs.should be_computed_by(:inspect)
   end
 
   it "returns a string with \" and \\ escaped with a backslash" do
@@ -321,6 +324,11 @@ describe "String#inspect" do
 
   it "uses \\x notation for broken UTF-8 sequences" do
     "\xF0\x9F".inspect.should == '"\\xF0\\x9F"'
+  end
+
+  it "works for broken US-ASCII strings" do
+    s = "©".force_encoding("US-ASCII")
+    s.inspect.should == '"\xC2\xA9"'
   end
 
   describe "when default external is UTF-8" do

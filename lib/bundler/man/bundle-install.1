@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-INSTALL" "1" "December 2021" "" ""
+.TH "BUNDLE\-INSTALL" "1" "February 2023" "" ""
 .
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
@@ -68,6 +68,10 @@ The maximum number of parallel download and install jobs\. The default is the nu
 .TP
 \fB\-\-local\fR
 Do not attempt to connect to \fBrubygems\.org\fR\. Instead, Bundler will use the gems already present in Rubygems\' cache or in \fBvendor/cache\fR\. Note that if an appropriate platform\-specific gem exists on \fBrubygems\.org\fR it will not be found\.
+.
+.TP
+\fB\-\-prefer\-local\fR
+Force using locally installed gems, or gems already present in Rubygems\' cache or in \fBvendor/cache\fR, when resolving, even if newer versions are available remotely\. Only attempt to connect to \fBrubygems\.org\fR for gems that are not present locally\.
 .
 .TP
 \fB\-\-no\-cache\fR
@@ -165,35 +169,6 @@ In deployment, isolation is a more important default\. In addition, the user dep
 As a result, \fBbundle install \-\-deployment\fR installs gems to the \fBvendor/bundle\fR directory in the application\. This may be overridden using the \fB\-\-path\fR option\.
 .
 .IP "" 0
-.
-.SH "SUDO USAGE"
-By default, Bundler installs gems to the same location as \fBgem install\fR\.
-.
-.P
-In some cases, that location may not be writable by your Unix user\. In that case, Bundler will stage everything in a temporary directory, then ask you for your \fBsudo\fR password in order to copy the gems into their system location\.
-.
-.P
-From your perspective, this is identical to installing the gems directly into the system\.
-.
-.P
-You should never use \fBsudo bundle install\fR\. This is because several other steps in \fBbundle install\fR must be performed as the current user:
-.
-.IP "\(bu" 4
-Updating your \fBGemfile\.lock\fR
-.
-.IP "\(bu" 4
-Updating your \fBvendor/cache\fR, if necessary
-.
-.IP "\(bu" 4
-Checking out private git repositories using your user\'s SSH keys
-.
-.IP "" 0
-.
-.P
-Of these three, the first two could theoretically be performed by \fBchown\fRing the resulting files to \fB$SUDO_USER\fR\. The third, however, can only be performed by invoking the \fBgit\fR command as the current user\. Therefore, git gems are downloaded and installed into \fB~/\.bundle\fR rather than $GEM_HOME or $BUNDLE_PATH\.
-.
-.P
-As a result, you should run \fBbundle install\fR as the current user, and Bundler will ask for your password if it is needed to put the gems into their final location\.
 .
 .SH "INSTALLING GROUPS"
 By default, \fBbundle install\fR will install all gems in all groups in your Gemfile(5), except those declared for a different platform\.

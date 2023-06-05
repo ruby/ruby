@@ -31,17 +31,15 @@ describe "Module#deprecate_constant" do
       -> { @module.const_get :PRIVATE }.should complain(/warning: constant .+::PRIVATE is deprecated/)
     end
 
-    ruby_version_is '2.7' do
-      it "does not warn if Warning[:deprecated] is false" do
-        @module.deprecate_constant :PUBLIC1
+    it "does not warn if Warning[:deprecated] is false" do
+      @module.deprecate_constant :PUBLIC1
 
-        deprecated = Warning[:deprecated]
-        begin
-          Warning[:deprecated] = false
-          -> { @module::PUBLIC1 }.should_not complain
-        ensure
-          Warning[:deprecated] = deprecated
-        end
+      deprecated = Warning[:deprecated]
+      begin
+        Warning[:deprecated] = false
+        -> { @module::PUBLIC1 }.should_not complain
+      ensure
+        Warning[:deprecated] = deprecated
       end
     end
   end

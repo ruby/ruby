@@ -66,6 +66,7 @@
 #include <math.h>
 
 #include "internal.h"
+#include "internal/encoding.h"
 #include "internal/string.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
@@ -270,9 +271,9 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	}
 
 	if (enc &&
-	    (enc == rb_usascii_encoding() ||
-	     enc == rb_ascii8bit_encoding() ||
-	     enc == rb_locale_encoding())) {
+	    (rb_is_usascii_enc(enc) ||
+	     rb_is_ascii8bit_enc(enc) ||
+	     rb_is_locale_enc(enc))) {
 		enc = NULL;
 	}
 

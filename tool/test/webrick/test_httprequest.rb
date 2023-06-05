@@ -245,7 +245,7 @@ GET /
 
     _end_of_message_
     msg.gsub!(/^ {6}/, "")
-    open(__FILE__){|io|
+    File.open(__FILE__){|io|
       while chunk = io.read(100)
         msg << chunk.size.to_s(16) << crlf
         msg << chunk << crlf

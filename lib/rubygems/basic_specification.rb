@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # BasicSpecification is an abstract class which implements some common code
 # used by both Specification and StubSpecification.
@@ -47,7 +48,7 @@ class Gem::BasicSpecification
   # directory.
 
   def gem_build_complete_path # :nodoc:
-    File.join extension_dir, 'gem.build_complete'
+    File.join extension_dir, "gem.build_complete"
   end
 
   ##
@@ -76,8 +77,8 @@ class Gem::BasicSpecification
       @ignored = true
 
       if Gem::Platform::RUBY == platform || Gem::Platform.local === platform
-        warn "Ignoring #{full_name} because its extensions are not built. " +
-          "Try: gem pristine #{name} --version #{version}"
+        warn "Ignoring #{full_name} because its extensions are not built. " \
+             "Try: gem pristine #{name} --version #{version}"
       end
 
       return false
@@ -103,7 +104,7 @@ class Gem::BasicSpecification
 
   def extensions_dir
     Gem.default_ext_dir_for(base_dir) ||
-      File.join(base_dir, 'extensions', Gem::Platform.local.to_s,
+      File.join(base_dir, "extensions", Gem::Platform.local.to_s,
                 Gem.extension_api_version)
   end
 
@@ -131,7 +132,7 @@ class Gem::BasicSpecification
   # default Ruby platform.
 
   def full_name
-    if platform == Gem::Platform::RUBY or platform.nil?
+    if platform == Gem::Platform::RUBY || platform.nil?
       "#{name}-#{version}".dup.tap(&Gem::UNTAINT)
     else
       "#{name}-#{version}-#{platform}".dup.tap(&Gem::UNTAINT)
@@ -144,15 +145,15 @@ class Gem::BasicSpecification
 
   def full_require_paths
     @full_require_paths ||=
-    begin
-      full_paths = raw_require_paths.map do |path|
-        File.join full_gem_path, path.tap(&Gem::UNTAINT)
+      begin
+        full_paths = raw_require_paths.map do |path|
+          File.join full_gem_path, path.tap(&Gem::UNTAINT)
+        end
+
+        full_paths << extension_dir if have_extensions?
+
+        full_paths
       end
-
-      full_paths << extension_dir if have_extensions?
-
-      full_paths
-    end
   end
 
   ##
@@ -170,18 +171,14 @@ class Gem::BasicSpecification
   def to_fullpath(path)
     if activated?
       @paths_map ||= {}
-      @paths_map[path] ||=
-      begin
-        fullpath = nil
-        suffixes = Gem.suffixes
-        suffixes.find do |suf|
-          full_require_paths.find do |dir|
-            File.file?(fullpath = "#{dir}/#{path}#{suf}")
-          end
-        end ? fullpath : nil
+      Gem.suffixes.each do |suf|
+        full_require_paths.each do |dir|
+          fullpath = "#{dir}/#{path}#{suf}"
+          next unless File.file?(fullpath)
+          @paths_map[path] ||= fullpath
+        end
       end
-    else
-      nil
+      @paths_map[path]
     end
   end
 
@@ -271,7 +268,7 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
-    glob = File.join(self.lib_dirs_glob, glob)
+    glob = File.join(lib_dirs_glob, glob)
 
     Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
   end
@@ -288,17 +285,17 @@ class Gem::BasicSpecification
   # for this spec.
 
   def lib_dirs_glob
-    dirs = if self.raw_require_paths
-      if self.raw_require_paths.size > 1
-        "{#{self.raw_require_paths.join(',')}}"
+    dirs = if raw_require_paths
+      if raw_require_paths.size > 1
+        "{#{raw_require_paths.join(",")}}"
       else
-        self.raw_require_paths.first
+        raw_require_paths.first
       end
     else
       "lib" # default value for require_paths for bundler/inline
     end
 
-    "#{self.full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
+    "#{full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
   end
 
   ##
@@ -323,11 +320,15 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
-  def this; self; end
+  def this
+    self
+  end
 
   private
 
-  def have_extensions?; !extensions.empty?; end
+  def have_extensions?
+    !extensions.empty?
+  end
 
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|

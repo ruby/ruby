@@ -418,7 +418,11 @@ static VALUE
 ossl_fips_mode_get(VALUE self)
 {
 
-#ifdef OPENSSL_FIPS
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    VALUE enabled;
+    enabled = EVP_default_properties_is_fips_enabled(NULL) ? Qtrue : Qfalse;
+    return enabled;
+#elif defined(OPENSSL_FIPS)
     VALUE enabled;
     enabled = FIPS_mode() ? Qtrue : Qfalse;
     return enabled;
@@ -442,8 +446,18 @@ ossl_fips_mode_get(VALUE self)
 static VALUE
 ossl_fips_mode_set(VALUE self, VALUE enabled)
 {
-
-#ifdef OPENSSL_FIPS
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    if (RTEST(enabled)) {
+        if (!EVP_default_properties_enable_fips(NULL, 1)) {
+            ossl_raise(eOSSLError, "Turning on FIPS mode failed");
+        }
+    } else {
+        if (!EVP_default_properties_enable_fips(NULL, 0)) {
+            ossl_raise(eOSSLError, "Turning off FIPS mode failed");
+        }
+    }
+    return enabled;
+#elif defined(OPENSSL_FIPS)
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -1170,8 +1184,8 @@ Init_openssl(void)
     /*
      * Init main module
      */
-    mOSSL = rb_define_module("OpenSSL");
     rb_global_variable(&mOSSL);
+    mOSSL = rb_define_module("OpenSSL");
     rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
@@ -1198,7 +1212,10 @@ Init_openssl(void)
      * Boolean indicating whether OpenSSL is FIPS-capable or not
      */
     rb_define_const(mOSSL, "OPENSSL_FIPS",
-#ifdef OPENSSL_FIPS
+/* OpenSSL 3 is FIPS-capable even when it is installed without fips option */
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+                    Qtrue
+#elif defined(OPENSSL_FIPS)
 		    Qtrue
 #else
 		    Qfalse
@@ -1208,12 +1225,12 @@ Init_openssl(void)
     rb_define_module_function(mOSSL, "fips_mode", ossl_fips_mode_get, 0);
     rb_define_module_function(mOSSL, "fips_mode=", ossl_fips_mode_set, 1);
 
+    rb_global_variable(&eOSSLError);
     /*
      * Generic error,
      * common for all classes under OpenSSL module
      */
     eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
-    rb_global_variable(&eOSSLError);
 
     /*
      * Init debug core

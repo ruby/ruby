@@ -39,6 +39,7 @@
 #include "ruby/internal/attr/noinline.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/attr/packed_struct.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/restrict.h"
 #include "ruby/internal/attr/returns_nonnull.h"
@@ -80,10 +81,8 @@
 #undef NOINLINE
 #define NOINLINE(x) RBIMPL_ATTR_NOINLINE() x
 
-#ifndef MJIT_HEADER
-# undef ALWAYS_INLINE
-# define ALWAYS_INLINE(x) RBIMPL_ATTR_FORCEINLINE() x
-#endif
+#undef ALWAYS_INLINE
+#define ALWAYS_INLINE(x) RBIMPL_ATTR_FORCEINLINE() x
 
 #undef ERRORFUNC
 #define ERRORFUNC(mesg, x) RBIMPL_ATTR_ERROR(mesg) x
@@ -147,17 +146,14 @@
 #define NORETURN(x) RBIMPL_ATTR_NORETURN() x
 #define NORETURN_STYLE_NEW
 
-#ifndef PACKED_STRUCT
-# define PACKED_STRUCT(x) x
-#endif
+#undef PACKED_STRUCT
+#define PACKED_STRUCT(x) \
+    RBIMPL_ATTR_PACKED_STRUCT_BEGIN() x RBIMPL_ATTR_PACKED_STRUCT_END()
 
-#ifndef PACKED_STRUCT_UNALIGNED
-# if UNALIGNED_WORD_ACCESS
-#   define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
-# else
-#   define PACKED_STRUCT_UNALIGNED(x) x
-# endif
-#endif
+#undef PACKED_STRUCT_UNALIGNED
+#define PACKED_STRUCT_UNALIGNED(x) \
+    RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN() x \
+    RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END()
 
 #undef RB_UNUSED_VAR
 #define RB_UNUSED_VAR(x) x RBIMPL_ATTR_MAYBE_UNUSED()

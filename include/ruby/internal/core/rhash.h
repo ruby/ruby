@@ -54,19 +54,6 @@
  *
  * @internal
  *
- * Declaration of rb_hash_iter_lev() is at include/ruby/backward.h.
- */
-#define RHASH_ITER_LEV(h)           rb_hash_iter_lev(h)
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @internal
- *
  * Declaration of rb_hash_ifnone() is at include/ruby/backward.h.
  */
 #define RHASH_IFNONE(h)             rb_hash_ifnone(h)

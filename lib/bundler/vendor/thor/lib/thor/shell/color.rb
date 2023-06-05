@@ -105,7 +105,7 @@ class Bundler::Thor
       end
 
       def are_colors_disabled?
-        !ENV['NO_COLOR'].nil?
+        !ENV['NO_COLOR'].nil? && !ENV['NO_COLOR'].empty?
       end
 
       # Overwrite show_diff to show diff with colors if Diff::LCS is

@@ -125,7 +125,6 @@ module Bundler
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
-        spec.source.send(:fetch_gem, spec) if Bundler.settings[:cache_all_platforms] && spec.source.respond_to?(:fetch_gem, true)
         spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
       end
 
@@ -301,11 +300,7 @@ module Bundler
       e = Gem::LoadError.new "You have already activated #{activated_spec.name} #{activated_spec.version}, " \
                              "but your Gemfile requires #{spec.name} #{spec.version}. #{suggestion}"
       e.name = spec.name
-      if e.respond_to?(:requirement=)
-        e.requirement = Gem::Requirement.new(spec.version.to_s)
-      else
-        e.version_requirement = Gem::Requirement.new(spec.version.to_s)
-      end
+      e.requirement = Gem::Requirement.new(spec.version.to_s)
       raise e
     end
   end

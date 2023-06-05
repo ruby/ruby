@@ -2,10 +2,6 @@
 
 require "net/http"
 
-# We can't use artifice here because it uses rack
-
-module Artifice; end # for < 2.0, Net::HTTP::Persistent::SSLReuse
-
 class Fail < Net::HTTP
   # Net::HTTP uses a @newimpl instance variable to decide whether
   # to use a legacy implementation. Since we are subclassing
@@ -27,8 +23,7 @@ class Fail < Net::HTTP
   end
 end
 
+require_relative "helpers/artifice"
+
 # Replace Net::HTTP with our failing subclass
-::Net.class_eval do
-  remove_const(:HTTP)
-  const_set(:HTTP, ::Fail)
-end
+Artifice.replace_net_http(::Fail)

@@ -40,13 +40,14 @@ require 'socket'
 #   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
+  VERSION = "1.2.5"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
   # 128 bit mask for IPv6
   IN6MASK = 0xffffffffffffffffffffffffffffffff
   # Format string for IPv6
-  IN6FORMAT = (["%.4x"] * 8).join(':')
+  IN6FORMAT = (["%.4x"] * 8).join(':').freeze
 
   # Regexp _internally_ used for parsing IPv4 address.
   RE_IPV4ADDRLIKE = %r{
@@ -410,7 +411,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
 
-    return clone.set(begin_addr, @family)..clone.set(end_addr, @family)
+    self.class.new(begin_addr, @family)..self.class.new(end_addr, @family)
   end
 
   # Returns the prefix length in bits for the ipaddr.
@@ -509,6 +510,9 @@ class IPAddr
     @addr = addr
     if family[0]
       @family = family[0]
+      if @family == Socket::AF_INET
+        @mask_addr &= IN4MASK
+      end
     end
     return self
   end
@@ -579,6 +583,7 @@ class IPAddr
   # those, such as &, |, include? and ==, accept a string, or a packed
   # in_addr value instead of an IPAddr object.
   def initialize(addr = '::', family = Socket::AF_UNSPEC)
+    @mask_addr = nil
     if !addr.kind_of?(String)
       case family
       when Socket::AF_INET, Socket::AF_INET6
@@ -731,7 +736,7 @@ end
 unless Socket.const_defined? :AF_INET6
   class Socket < BasicSocket
     # IPv6 protocol family
-    AF_INET6 = Object.new
+    AF_INET6 = Object.new.freeze
   end
 
   class << IPSocket

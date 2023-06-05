@@ -36,10 +36,7 @@ Init_internal_ivar(void)
     VALUE newclass = rb_define_class_under(mMarshal, "InternalIVar", rb_cObject);
 
     id_normal_ivar = rb_intern_const("normal");
-#if 0
-    /* leave id_internal_ivar being 0 */
-    id_internal_ivar = rb_make_internal_id();
-#endif
+    id_internal_ivar = rb_intern_const("K");
     id_encoding_short = rb_intern_const("E");
     rb_define_method(newclass, "initialize", init, 3);
     rb_define_method(newclass, "normal", get_normal, 0);

@@ -8,7 +8,7 @@ describe "Process::Status#==" do
   end
 
   it "returns true when compared to the integer status of a terminated child" do
-    ruby_exe("Process.kill(:KILL, $$); exit(29)", exit_status: platform_is(:windows) ? 0 : nil)
+    ruby_exe("Process.kill(:KILL, $$); exit(29)", exit_status: platform_is(:windows) ? 0 : :SIGKILL)
     $?.to_i.should == $?
     $?.should == $?.to_i
   end

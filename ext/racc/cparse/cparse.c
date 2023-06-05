@@ -7,8 +7,6 @@
     This library is free software.
     You can distribute/modify this program under the same terms of ruby.
 
-    $originalId: cparse.c,v 1.8 2006/07/06 11:39:46 aamine Exp $
-
 */
 
 #include <ruby.h>
@@ -24,7 +22,7 @@
                         Important Constants
 ----------------------------------------------------------------------- */
 
-#define RACC_VERSION "1.4.15"
+#define RACC_VERSION "1.6.2"
 
 #define DEFAULT_TOKEN -1
 #define ERROR_TOKEN    1

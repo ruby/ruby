@@ -82,6 +82,24 @@ RSpec.describe Bundler::Definition do
       G
     end
 
+    it "with an explicit update" do
+      build_repo4 do
+        build_gem("ffi", "1.9.23") {|s| s.platform = "java" }
+        build_gem("ffi", "1.9.23")
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "ffi"
+      G
+
+      bundle "lock --add-platform java"
+
+      bundle "update ffi", :env => { "DEBUG" => "1" }
+
+      expect(out).to match(/because bundler is unlocking gems: \(ffi\)/)
+    end
+
     it "for a path gem with deps and no changes" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
@@ -136,7 +154,7 @@ RSpec.describe Bundler::Definition do
             only_java (1.1-java)
 
         PLATFORMS
-          #{lockfile_platforms_for(["java"] + local_platforms)}
+          #{lockfile_platforms("java")}
 
         DEPENDENCIES
           only_java
@@ -175,31 +193,6 @@ RSpec.describe Bundler::Definition do
 
   describe "initialize" do
     context "gem version promoter" do
-      context "with lockfile" do
-        before do
-          install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem "foo"
-          G
-
-          allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        end
-
-        it "should get a locked specs list when updating all" do
-          definition = Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, true)
-          locked_specs = definition.gem_version_promoter.locked_specs
-          expect(locked_specs.to_a.map(&:name)).to eq ["foo"]
-          expect(definition.instance_variable_get("@locked_specs").empty?).to eq true
-        end
-      end
-
-      context "without gemfile or lockfile" do
-        it "should not attempt to parse empty lockfile contents" do
-          definition = Bundler::Definition.new(nil, [], mock_source_list, true)
-          expect(definition.gem_version_promoter.locked_specs.to_a).to eq []
-        end
-      end
-
       context "eager unlock" do
         let(:source_list) do
           Bundler::SourceList.new.tap do |source_list|

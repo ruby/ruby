@@ -1,19 +1,19 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'deprecate'
-require_relative 'text'
+require_relative "deprecate"
+require_relative "text"
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
-
   include Gem::Text
 
   ##
@@ -68,7 +68,6 @@ module Gem::DefaultUserInteraction
   def use_ui(new_ui, &block)
     Gem::DefaultUserInteraction.use_ui(new_ui, &block)
   end
-
 end
 
 ##
@@ -91,7 +90,6 @@ end
 #   end
 
 module Gem::UserInteraction
-
   include Gem::DefaultUserInteraction
 
   ##
@@ -148,7 +146,7 @@ module Gem::UserInteraction
   ##
   # Displays the given +statement+ on the standard output (or equivalent).
 
-  def say(statement = '')
+  def say(statement = "")
     ui.say statement
   end
 
@@ -239,7 +237,7 @@ class Gem::StreamUI
     return nil, nil unless result
 
     result = result.strip.to_i - 1
-    return list[result], result
+    [list[result], result]
   end
 
   ##
@@ -258,39 +256,38 @@ class Gem::StreamUI
     end
 
     default_answer = case default
-    when nil
-      'yn'
-    when true
-      'Yn'
-    else
-      'yN'
+                     when nil
+                       "yn"
+                     when true
+                       "Yn"
+                     else
+                       "yN"
     end
 
     result = nil
 
     while result.nil? do
       result = case ask "#{question} [#{default_answer}]"
-      when /^y/i then true
-      when /^n/i then false
-      when /^$/  then default
-      else            nil
+               when /^y/i then true
+               when /^n/i then false
+               when /^$/  then default
       end
     end
 
-    return result
+    result
   end
 
   ##
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if not tty?
+    return nil unless tty?
 
     @outs.print(question + "  ")
     @outs.flush
 
     result = @ins.gets
-    result.chomp! if result
+    result&.chomp!
     result
   end
 
@@ -298,21 +295,21 @@ class Gem::StreamUI
   # Ask for a password. Does not echo response to terminal.
 
   def ask_for_password(question)
-    return nil if not tty?
+    return nil unless tty?
 
     @outs.print(question, "  ")
     @outs.flush
 
     password = _gets_noecho
     @outs.puts
-    password.chomp! if password
+    password&.chomp!
     password
   end
 
   def require_io_console
     @require_io_console ||= begin
       begin
-        require 'io/console'
+        require "io/console"
       rescue LoadError
       end
       true
@@ -428,8 +425,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -471,8 +467,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = 'complete')
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -616,18 +611,11 @@ class Gem::SilentUI < Gem::StreamUI
   # The SilentUI has no arguments as it does not use any stream.
 
   def initialize
-    reader, writer = nil, nil
-
-    reader = File.open(IO::NULL, 'r')
-    writer = File.open(IO::NULL, 'w')
-
-    super reader, writer, writer, false
+    io = NullIO.new
+    super io, io, io, false
   end
 
   def close
-    super
-    @ins.close
-    @outs.close
   end
 
   def download_reporter(*args) # :nodoc:
@@ -636,5 +624,26 @@ class Gem::SilentUI < Gem::StreamUI
 
   def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
+  end
+
+  ##
+  # An absolutely silent IO.
+
+  class NullIO
+    def puts(*args)
+    end
+
+    def print(*args)
+    end
+
+    def flush
+    end
+
+    def gets(*args)
+    end
+
+    def tty?
+      false
+    end
   end
 end

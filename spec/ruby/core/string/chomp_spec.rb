@@ -40,10 +40,8 @@ describe "String#chomp" do
       "".chomp.should == ""
     end
 
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc".taint.chomp.tainted?.should be_true
-      end
+    it "returns a String in the same encoding as self" do
+      "abc\n\n".encode("US-ASCII").chomp.encoding.should == Encoding::US_ASCII
     end
 
     ruby_version_is ''...'3.0' do
@@ -80,12 +78,6 @@ describe "String#chomp" do
       str.chomp(nil).should_not equal(str)
     end
 
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc".taint.chomp(nil).tainted?.should be_true
-      end
-    end
-
     it "returns an empty String when self is empty" do
       "".chomp(nil).should == ""
     end
@@ -112,12 +104,6 @@ describe "String#chomp" do
       "abc\r\n\r\n\r\n".chomp("").should == "abc"
     end
 
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc".taint.chomp("").tainted?.should be_true
-      end
-    end
-
     it "returns an empty String when self is empty" do
       "".chomp("").should == ""
     end
@@ -138,12 +124,6 @@ describe "String#chomp" do
 
     it "removes one trailing carriage return, newline pair" do
       "abc\r\n\r\n".chomp("\n").should == "abc\r\n"
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc".taint.chomp("\n").tainted?.should be_true
-      end
     end
 
     it "returns an empty String when self is empty" do
@@ -176,16 +156,6 @@ describe "String#chomp" do
 
     it "returns an empty String when self is empty" do
       "".chomp("abc").should == ""
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc".taint.chomp("abc").tainted?.should be_true
-      end
-
-      it "does not taint the result when the argument is tainted" do
-        "abc".chomp("abc".taint).tainted?.should be_false
-      end
     end
 
     it "returns an empty String when the argument equals self" do
@@ -232,12 +202,6 @@ describe "String#chomp!" do
       "".chomp!.should be_nil
     end
 
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc\n".taint.chomp!.tainted?.should be_true
-      end
-    end
-
     it "returns subclass instances when called on a subclass" do
       str = StringSpecs::MyString.new("hello\n").chomp!
       str.should be_an_instance_of(StringSpecs::MyString)
@@ -280,12 +244,6 @@ describe "String#chomp!" do
       "abc\r\n\r\n\r\n".chomp!("").should == "abc"
     end
 
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc\n".taint.chomp!("").tainted?.should be_true
-      end
-    end
-
     it "returns nil when self is empty" do
       "".chomp!("").should be_nil
     end
@@ -302,12 +260,6 @@ describe "String#chomp!" do
 
     it "removes one trailing carriage return, newline pair" do
       "abc\r\n\r\n".chomp!("\n").should == "abc\r\n"
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc\n".taint.chomp!("\n").tainted?.should be_true
-      end
     end
 
     it "returns nil when self is empty" do
@@ -340,16 +292,6 @@ describe "String#chomp!" do
 
     it "returns nil when self is empty" do
       "".chomp!("abc").should be_nil
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "taints the result if self is tainted" do
-        "abc".taint.chomp!("abc").tainted?.should be_true
-      end
-
-      it "does not taint the result when the argument is tainted" do
-        "abc".chomp!("abc".taint).tainted?.should be_false
-      end
     end
   end
 

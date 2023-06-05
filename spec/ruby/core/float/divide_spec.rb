@@ -36,4 +36,8 @@ describe "Float#/" do
     -> { 13.0 / "10"    }.should raise_error(TypeError)
     -> { 13.0 / :symbol }.should raise_error(TypeError)
   end
+
+  it "divides correctly by Rational numbers" do
+    (1.2345678901234567 / Rational(1, 10000000000000000000)).should == 1.2345678901234567e+19
+  end
 end

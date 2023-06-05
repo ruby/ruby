@@ -118,6 +118,18 @@ RSpec.describe "bundle cache" do
       expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
     end
 
+    it "caches builtin gems when cache_all_platforms is set" do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "json"
+      G
+
+      bundle "config set cache_all_platforms true"
+
+      bundle :cache
+      expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
+    end
+
     it "doesn't make remote request after caching the gem" do
       build_gem "builtin_gem_2", "1.0.2", :path => bundled_app("vendor/cache") do |s|
         s.summary = "This builtin_gem is bundled with Ruby"

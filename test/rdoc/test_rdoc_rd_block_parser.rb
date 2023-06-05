@@ -168,6 +168,27 @@ class TestRDocRdBlockParser < RDoc::TestCase
     tf.close!
   end
 
+=begin
+  def test_parse_include_other_format
+    @block_parser.include_path = [Dir.tmpdir]
+
+    expected =
+      doc(
+        blank_line,
+        para("include ((*worked*))"),
+        blank_line,
+        blank_line)
+
+    str = <<~STR
+    =begin nonrd
+    <<< worked
+    =end
+    STR
+
+    assert_equal(expected, @block_parser.parse str.lines.to_a)
+  end
+=end
+
   def test_parse_heading
     assert_equal doc(head(1, "H")), parse("= H")
     assert_equal doc(head(2, "H")), parse("== H")

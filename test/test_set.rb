@@ -587,10 +587,23 @@ class TC_Set < Test::Unit::TestCase
 
   def test_merge
     set = Set[1,2,3]
-
     ret = set.merge([2,4,6])
     assert_same(set, ret)
     assert_equal(Set[1,2,3,4,6], set)
+
+    set = Set[1,2,3]
+    ret = set.merge()
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3], set)
+
+    set = Set[1,2,3]
+    ret = set.merge([2,4,6], Set[4,5,6])
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3,4,5,6], set)
+
+    assert_raise(ArgumentError) {
+      Set[].merge(a: 1)
+    }
   end
 
   def test_subtract
@@ -836,5 +849,44 @@ class TC_Enumerable < Test::Unit::TestCase
 
     assert_same set, set.to_set
     assert_not_same set, set.to_set { |o| o }
+  end
+end
+
+class TC_Set_Builtin < Test::Unit::TestCase
+  private def should_omit?
+    (RUBY_VERSION.scan(/\d+/).map(&:to_i) <=> [3, 2]) < 0 ||
+      !File.exist?(File.expand_path('../prelude.rb', __dir__))
+  end
+
+  def test_Set
+    omit "skipping the test for the builtin Set" if should_omit?
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = Set.new([1, 2])
+        assert_equal('Set', set.class.name)
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = Set[1, 2]
+        assert_equal('Set', set.class.name)
+      end
+    end;
+  end
+
+  def test_to_set
+    omit "skipping the test for the builtin Enumerable#to_set" if should_omit?
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = [1, 2].to_set
+        assert_equal('Set', set.class.name)
+      end
+    end;
   end
 end

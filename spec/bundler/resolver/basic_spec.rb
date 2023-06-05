@@ -104,7 +104,7 @@ RSpec.describe "Resolving" do
     dep "chef_app_error"
     expect do
       resolve
-    end.to raise_error(Bundler::VersionConflict)
+    end.to raise_error(Bundler::SolveFailure)
   end
 
   it "raises an exception with the minimal set of conflicting dependencies" do
@@ -118,14 +118,15 @@ RSpec.describe "Resolving" do
     dep "c"
     expect do
       resolve
-    end.to raise_error(Bundler::VersionConflict, <<-E.strip)
-Bundler could not find compatible versions for gem "a":
-  In Gemfile:
-    b was resolved to 1.0, which depends on
-      a (>= 2)
+    end.to raise_error(Bundler::SolveFailure, <<~E.strip)
+      Could not find compatible versions
 
-    c was resolved to 1.0, which depends on
-      a (< 1)
+      Because every version of c depends on a < 1
+        and every version of b depends on a >= 2,
+        every version of c is incompatible with b >= 0.
+      So, because Gemfile depends on b >= 0
+        and Gemfile depends on c >= 0,
+        version solving has failed.
     E
   end
 
@@ -134,7 +135,7 @@ Bundler could not find compatible versions for gem "a":
     dep "circular_app"
 
     expect do
-      resolve
+      Bundler::SpecSet.new(resolve).sort
     end.to raise_error(Bundler::CyclicDependencyError, /please remove either gem 'bar' or gem 'foo'/i)
   end
 
@@ -174,12 +175,7 @@ Bundler could not find compatible versions for gem "a":
     dep "foo"
     dep "Ruby\0", "1.8.7"
 
-    deps = []
-    @deps.each do |d|
-      deps << Bundler::DepProxy.get_proxy(d, "ruby")
-    end
-
-    should_resolve_and_include %w[foo-1.0.0 bar-1.0.0], [[]]
+    should_resolve_and_include %w[foo-1.0.0 bar-1.0.0]
   end
 
   context "conservative" do
@@ -304,5 +300,51 @@ Bundler could not find compatible versions for gem "a":
         should_conservative_resolve_and_include [:minor, :strict], [], %w[foo-1.4.3 bar-2.2.3]
       end
     end
+  end
+
+  it "handles versions that redundantly depend on themselves" do
+    @index = build_index do
+      gem "rack", "3.0.0"
+
+      gem "standalone_migrations", "7.1.0" do
+        dep "rack", "~> 2.0"
+      end
+
+      gem "standalone_migrations", "2.0.4" do
+        dep "standalone_migrations", ">= 0"
+      end
+
+      gem "standalone_migrations", "1.0.13" do
+        dep "rack", ">= 0"
+      end
+    end
+
+    dep "rack", "~> 3.0"
+    dep "standalone_migrations"
+
+    should_resolve_as %w[rack-3.0.0 standalone_migrations-2.0.4]
+  end
+
+  it "ignores versions that incorrectly depend on themselves" do
+    @index = build_index do
+      gem "rack", "3.0.0"
+
+      gem "standalone_migrations", "7.1.0" do
+        dep "rack", "~> 2.0"
+      end
+
+      gem "standalone_migrations", "2.0.4" do
+        dep "standalone_migrations", ">= 2.0.5"
+      end
+
+      gem "standalone_migrations", "1.0.13" do
+        dep "rack", ">= 0"
+      end
+    end
+
+    dep "rack", "~> 3.0"
+    dep "standalone_migrations"
+
+    should_resolve_as %w[rack-3.0.0 standalone_migrations-1.0.13]
   end
 end

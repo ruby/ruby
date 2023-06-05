@@ -1,9 +1,14 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
 
-# == Random number formatter.
+# == \Random number formatter.
 #
-# Formats generated random numbers in many manners.
+# Formats generated random numbers in many manners. When <tt>'random/formatter'</tt>
+# is required, several methods are added to empty core module <tt>Random::Formatter</tt>,
+# making them available as Random's instance and module methods.
+#
+# Standard library SecureRandom is also extended with the module, and the methods
+# described below are available as a module methods in it.
 #
 # === Examples
 #
@@ -11,34 +16,45 @@
 #
 #   require 'random/formatter'
 #
+#   prng = Random.new
 #   prng.hex(10) #=> "52750b30ffbc7de3b362"
 #   prng.hex(10) #=> "92b15d6c8dc4beb5f559"
 #   prng.hex(13) #=> "39b290146bea6ce975c37cfc23"
+#   # or just
+#   Random.hex #=> "1aed0c631e41be7f77365415541052ee"
 #
 # Generate random base64 strings:
 #
 #   prng.base64(10) #=> "EcmTPZwWRAozdA=="
 #   prng.base64(10) #=> "KO1nIU+p9DKxGg=="
 #   prng.base64(12) #=> "7kJSM/MzBJI+75j8"
+#   Random.base64(4) #=> "bsQ3fQ=="
 #
 # Generate random binary strings:
 #
 #   prng.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   prng.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#   Random.random_bytes(6) #=> "\xA1\xE6Lr\xC43"
 #
 # Generate alphanumeric strings:
 #
 #   prng.alphanumeric(10) #=> "S8baxMJnPl"
 #   prng.alphanumeric(10) #=> "aOxAg8BAJe"
+#   Random.alphanumeric #=> "TmP9OsJHJLtaZYhP"
 #
 # Generate UUIDs:
 #
 #   prng.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
 #   prng.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+#   Random.uuid #=> "f14e0271-de96-45cc-8911-8910292a42cd"
+#
+# All methods are available in the standard library SecureRandom, too:
+#
+#   SecureRandom.hex #=> "05b45376a30c67238eb93b16499e50cf"
 
 module Random::Formatter
 
-  # Random::Formatter#random_bytes generates a random binary string.
+  # Generate a random binary string.
   #
   # The argument _n_ specifies the length of the result string.
   #
@@ -49,14 +65,16 @@ module Random::Formatter
   #
   #   require 'random/formatter'
   #
-  #   prng.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
+  #   Random.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
+  #   # or
+  #   prng = Random.new
   #   prng.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
   def random_bytes(n=nil)
     n = n ? n.to_int : 16
     gen_random(n)
   end
 
-  # Random::Formatter#hex generates a random hexadecimal string.
+  # Generate a random hexadecimal string.
   #
   # The argument _n_ specifies the length, in bytes, of the random number to be generated.
   # The length of the resulting hexadecimal string is twice of _n_.
@@ -68,13 +86,15 @@ module Random::Formatter
   #
   #   require 'random/formatter'
   #
-  #   prng.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
+  #   Random.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
+  #   # or
+  #   prng = Random.new
   #   prng.hex #=> "91dc3bfb4de5b11d029d376634589b61"
   def hex(n=nil)
     random_bytes(n).unpack1("H*")
   end
 
-  # Random::Formatter#base64 generates a random base64 string.
+  # Generate a random base64 string.
   #
   # The argument _n_ specifies the length, in bytes, of the random number
   # to be generated. The length of the result string is about 4/3 of _n_.
@@ -86,7 +106,9 @@ module Random::Formatter
   #
   #   require 'random/formatter'
   #
-  #   prng.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
+  #   Random.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
+  #   # or
+  #   prng = Random.new
   #   prng.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
   #
   # See RFC 3548 for the definition of base64.
@@ -94,7 +116,7 @@ module Random::Formatter
     [random_bytes(n)].pack("m0")
   end
 
-  # Random::Formatter#urlsafe_base64 generates a random URL-safe base64 string.
+  # Generate a random URL-safe base64 string.
   #
   # The argument _n_ specifies the length, in bytes, of the random number
   # to be generated. The length of the result string is about 4/3 of _n_.
@@ -112,7 +134,9 @@ module Random::Formatter
   #
   #   require 'random/formatter'
   #
-  #   prng.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
+  #   Random.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
+  #   # or
+  #   prng = Random.new
   #   prng.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
   #
   #   prng.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
@@ -126,12 +150,14 @@ module Random::Formatter
     s
   end
 
-  # Random::Formatter#uuid generates a random v4 UUID (Universally Unique IDentifier).
+  # Generate a random v4 UUID (Universally Unique IDentifier).
   #
   #   require 'random/formatter'
   #
-  #   prng.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
-  #   prng.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+  #   Random.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+  #   Random.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+  #   # or
+  #   prng = Random.new
   #   prng.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
   #
   # The version 4 UUID is purely random (except the version).
@@ -139,7 +165,7 @@ module Random::Formatter
   #
   # The result contains 122 random bits (15.25 random bytes).
   #
-  # See RFC 4122 for details of UUID.
+  # See RFC4122[https://datatracker.ietf.org/doc/html/rfc4122] for details of UUID.
   #
   def uuid
     ary = random_bytes(16).unpack("NnnnnN")
@@ -152,7 +178,7 @@ module Random::Formatter
     self.bytes(n)
   end
 
-  # Random::Formatter#choose generates a string that randomly draws from a
+  # Generate a string that randomly draws from a
   # source array of characters.
   #
   # The argument _source_ specifies the array of characters from which
@@ -196,7 +222,7 @@ module Random::Formatter
   end
 
   ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
-  # Random::Formatter#alphanumeric generates a random alphanumeric string.
+  # Generate a random alphanumeric string.
   #
   # The argument _n_ specifies the length, in characters, of the alphanumeric
   # string to be generated.
@@ -208,7 +234,9 @@ module Random::Formatter
   #
   #   require 'random/formatter'
   #
-  #   prng.alphanumeric     #=> "2BuBuLf3WfSKyQbR"
+  #   Random.alphanumeric     #=> "2BuBuLf3WfSKyQbR"
+  #   # or
+  #   prng = Random.new
   #   prng.alphanumeric(10) #=> "i6K93NdqiH"
   def alphanumeric(n=nil)
     n = 16 if n.nil?

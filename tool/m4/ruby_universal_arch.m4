@@ -105,9 +105,9 @@ AC_DEFUN([RUBY_UNIVERSAL_CHECK_HEADER_COND], [ dnl
   $4], [$5])
 ])dnl
 dnl
-# RUBY_UNIVERSAL_CHECK_HEADER(CPU-LIST, HEADER,
-#                      [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
-#                      [INCLUDES = DEFAULT-INCLUDES])
+dnl RUBY_UNIVERSAL_CHECK_HEADER(CPU-LIST, HEADER,
+dnl                      [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+dnl                      [INCLUDES = DEFAULT-INCLUDES])
 AC_DEFUN([RUBY_UNIVERSAL_CHECK_HEADER], [ dnl
   m4_if([$# dnl
   ], [0], [], [ dnl

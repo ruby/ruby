@@ -14,6 +14,7 @@ typeddata.o: $(hdrdir)/ruby/backward/2/stdalign.h
 typeddata.o: $(hdrdir)/ruby/backward/2/stdarg.h
 typeddata.o: $(hdrdir)/ruby/defines.h
 typeddata.o: $(hdrdir)/ruby/intern.h
+typeddata.o: $(hdrdir)/ruby/internal/abi.h
 typeddata.o: $(hdrdir)/ruby/internal/anyargs.h
 typeddata.o: $(hdrdir)/ruby/internal/arithmetic.h
 typeddata.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -51,6 +52,7 @@ typeddata.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/noinline.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+typeddata.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/pure.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/restrict.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +112,6 @@ typeddata.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/error.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/eval.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/file.h
-typeddata.o: $(hdrdir)/ruby/internal/intern/gc.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/hash.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/io.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +142,6 @@ typeddata.o: $(hdrdir)/ruby/internal/memory.h
 typeddata.o: $(hdrdir)/ruby/internal/method.h
 typeddata.o: $(hdrdir)/ruby/internal/module.h
 typeddata.o: $(hdrdir)/ruby/internal/newobj.h
-typeddata.o: $(hdrdir)/ruby/internal/rgengc.h
 typeddata.o: $(hdrdir)/ruby/internal/scan_args.h
 typeddata.o: $(hdrdir)/ruby/internal/special_consts.h
 typeddata.o: $(hdrdir)/ruby/internal/static_assert.h

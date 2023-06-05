@@ -5,13 +5,11 @@ describe "NilClass#to_s" do
     nil.to_s.should == ""
   end
 
-  ruby_version_is "2.7" do
-    it "returns a frozen string" do
-      nil.to_s.should.frozen?
-    end
+  it "returns a frozen string" do
+    nil.to_s.should.frozen?
+  end
 
-    it "always returns the same string" do
-      nil.to_s.should equal(nil.to_s)
-    end
+  it "always returns the same string" do
+    nil.to_s.should equal(nil.to_s)
   end
 end

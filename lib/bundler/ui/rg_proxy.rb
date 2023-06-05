@@ -12,7 +12,7 @@ module Bundler
       end
 
       def say(message)
-        @ui && @ui.debug(message)
+        @ui&.debug(message)
       end
     end
   end

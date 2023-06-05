@@ -20,6 +20,7 @@ static void Init_builtin_prelude(void);
 void
 rb_call_inits(void)
 {
+    CALL(default_shapes);
     CALL(Thread_Mutex);
 #if USE_TRANSIENT_HEAP
     CALL(TransientHeap);
@@ -61,6 +62,7 @@ rb_call_inits(void)
     CALL(Binding);
     CALL(Math);
     CALL(GC);
+    CALL(WeakMap);
     CALL(Enumerator);
     CALL(Ractor);
     CALL(VM);
@@ -77,6 +79,7 @@ rb_call_inits(void)
     CALL(vm_stack_canary);
     CALL(ast);
     CALL(gc_stress);
+    CALL(shape);
 
     // enable builtin loading
     CALL(builtin);
@@ -97,10 +100,16 @@ rb_call_builtin_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
+    BUILTIN(symbol);
     BUILTIN(timev);
+    BUILTIN(thread_sync);
     BUILTIN(yjit);
     BUILTIN(nilclass);
     BUILTIN(marshal);
+#if USE_RJIT
+    BUILTIN(rjit_c);
+    BUILTIN(rjit);
+#endif
     Init_builtin_prelude();
 }
 #undef CALL

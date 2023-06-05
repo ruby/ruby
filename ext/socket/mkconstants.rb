@@ -626,6 +626,7 @@ SO_SNDTIMEO	nil	Send timeout
 SO_ACCEPTCONN	nil	Socket has had listen() called on it
 SO_USELOOPBACK	nil	Bypass hardware when possible
 SO_ACCEPTFILTER	nil	There is an accept filter
+SO_USER_COOKIE	nil	Setting an identifier for ipfw purpose mainly
 SO_DONTTRUNC	nil	Retain unread data
 SO_WANTMORE	nil	Give a hint when more data is ready
 SO_WANTOOBFLAG	nil	OOB data is wanted in MSG_FLAG on receive
@@ -661,6 +662,10 @@ SO_SELECT_ERR_QUEUE     nil     Make select() detect socket error queue with err
 SO_BUSY_POLL    nil     Set the threshold in microseconds for low latency polling (Linux 3.11)
 SO_MAX_PACING_RATE      nil     Cap the rate computed by transport layer. [bytes per second] (Linux 3.13)
 SO_BPF_EXTENSIONS       nil     Query supported BPF extensions (Linux 3.14)
+SO_SETFIB       nil     Set the associated routing table for the socket (FreeBSD)
+SO_RTABLE               nil     Set the routing table for this socket (OpenBSD)
+SO_INCOMING_CPU         nil     Receive the cpu attached to the socket (Linux 3.19)
+SO_INCOMING_NAPI_ID     nil     Receive the napi ID attached to a RX queue (Linux 4.12)
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
 SOPRI_NORMAL	nil	Normal socket priority
@@ -670,9 +675,11 @@ IPX_TYPE
 
 TCP_NODELAY	nil	Don't delay sending to coalesce packets
 TCP_MAXSEG	nil	Set maximum segment size
+TCP_CONNECTION_INFO     nil     Retrieve information about this socket (macOS)
 TCP_CORK	nil	Don't send partial frames (Linux 2.2, glibc 2.2)
 TCP_DEFER_ACCEPT	nil	Don't notify a listening socket until data is ready (Linux 2.4, glibc 2.2)
 TCP_INFO	nil	Retrieve information about this socket (Linux 2.4, glibc 2.2)
+TCP_KEEPALIVE	nil	Idle time before keepalive probes are sent (macOS)
 TCP_KEEPCNT	nil	Maximum number of keepalive probes allowed before dropping a connection (Linux 2.4, glibc 2.2)
 TCP_KEEPIDLE	nil	Idle time before keepalive probes are sent (Linux 2.4, glibc 2.2)
 TCP_KEEPINTVL	nil	Time between keepalive probes (Linux 2.4, glibc 2.2)

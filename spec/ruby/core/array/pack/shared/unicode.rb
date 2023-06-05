@@ -67,8 +67,20 @@ describe :array_pack_unicode, shared: true do
     -> { [obj].pack("U") }.should raise_error(TypeError)
   end
 
-  it "ignores NULL bytes between directives" do
-    [1, 2, 3].pack("U\x00U").should == "\x01\x02"
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        [1, 2, 3].pack("U\x00U").should == "\x01\x02"
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        [1, 2, 3].pack("U\x00U")
+      }.should raise_error(ArgumentError, /unknown pack directive/)
+    end
   end
 
   it "ignores spaces between directives" do

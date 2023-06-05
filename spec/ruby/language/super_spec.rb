@@ -322,6 +322,10 @@ describe "The super keyword" do
     SuperSpecs::ZSuperWithUnderscores::B.new.m_modified(1, 2).should == [14, 2]
   end
 
+  it "should pass method arguments when called within a closure" do
+    SuperSpecs::ZSuperInBlock::B.new.m(arg: 1).should == 1
+  end
+
   describe 'when using keyword arguments' do
     before :each do
       @req  = SuperSpecs::Keywords::RequiredArguments.new

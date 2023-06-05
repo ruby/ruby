@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexPartialUpdateNoEtagNotIncremental < CompactIndexAPI
   def partial_update_no_etag
@@ -36,5 +34,7 @@ class CompactIndexPartialUpdateNoEtagNotIncremental < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexPartialUpdateNoEtagNotIncremental)

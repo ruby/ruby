@@ -556,34 +556,34 @@ describe :array_slice, shared: true do
 
       it "has beginless range and positive steps" do
         # end with zero index
-        @array.send(@method, eval("(..0).step(1)")).should == [0]
-        @array.send(@method, eval("(...0).step(1)")).should == []
+        @array.send(@method, (..0).step(1)).should == [0]
+        @array.send(@method, (...0).step(1)).should == []
 
-        @array.send(@method, eval("(..0).step(2)")).should == [0]
-        @array.send(@method, eval("(...0).step(2)")).should == []
+        @array.send(@method, (..0).step(2)).should == [0]
+        @array.send(@method, (...0).step(2)).should == []
 
-        @array.send(@method, eval("(..0).step(10)")).should == [0]
-        @array.send(@method, eval("(...0).step(10)")).should == []
+        @array.send(@method, (..0).step(10)).should == [0]
+        @array.send(@method, (...0).step(10)).should == []
 
         # end with positive index
-        @array.send(@method, eval("(..3).step(1)")).should == [0, 1, 2, 3]
-        @array.send(@method, eval("(...3).step(1)")).should == [0, 1, 2]
+        @array.send(@method, (..3).step(1)).should == [0, 1, 2, 3]
+        @array.send(@method, (...3).step(1)).should == [0, 1, 2]
 
-        @array.send(@method, eval("(..3).step(2)")).should == [0, 2]
-        @array.send(@method, eval("(...3).step(2)")).should == [0, 2]
+        @array.send(@method, (..3).step(2)).should == [0, 2]
+        @array.send(@method, (...3).step(2)).should == [0, 2]
 
-        @array.send(@method, eval("(..3).step(10)")).should == [0]
-        @array.send(@method, eval("(...3).step(10)")).should == [0]
+        @array.send(@method, (..3).step(10)).should == [0]
+        @array.send(@method, (...3).step(10)).should == [0]
 
         # end with negative index
-        @array.send(@method, eval("(..-2).step(1)")).should == [0, 1, 2, 3, 4,]
-        @array.send(@method, eval("(...-2).step(1)")).should == [0, 1, 2, 3]
+        @array.send(@method, (..-2).step(1)).should == [0, 1, 2, 3, 4,]
+        @array.send(@method, (...-2).step(1)).should == [0, 1, 2, 3]
 
-        @array.send(@method, eval("(..-2).step(2)")).should == [0, 2, 4]
-        @array.send(@method, eval("(...-2).step(2)")).should == [0, 2]
+        @array.send(@method, (..-2).step(2)).should == [0, 2, 4]
+        @array.send(@method, (...-2).step(2)).should == [0, 2]
 
-        @array.send(@method, eval("(..-2).step(10)")).should == [0]
-        @array.send(@method, eval("(...-2).step(10)")).should == [0]
+        @array.send(@method, (..-2).step(10)).should == [0]
+        @array.send(@method, (...-2).step(10)).should == [0]
       end
 
       it "has endless range and negative steps" do
@@ -770,26 +770,120 @@ describe :array_slice, shared: true do
     end
   end
 
-  ruby_version_is "2.7" do
-    it "can accept beginless ranges" do
-      a = [0, 1, 2, 3, 4, 5]
-      a.send(@method, eval("(..3)")).should == [0, 1, 2, 3]
-      a.send(@method, eval("(...3)")).should == [0, 1, 2]
-      a.send(@method, eval("(..-3)")).should == [0, 1, 2, 3]
-      a.send(@method, eval("(...-3)")).should == [0, 1, 2]
-      a.send(@method, eval("(..0)")).should == [0]
-      a.send(@method, eval("(...0)")).should == []
-      a.send(@method, eval("(..9)")).should == [0, 1, 2, 3, 4, 5]
-      a.send(@method, eval("(...9)")).should == [0, 1, 2, 3, 4, 5]
-      a.send(@method, eval("(..-9)")).should == []
-      a.send(@method, eval("(...-9)")).should == []
-    end
+  it "can accept beginless ranges" do
+    a = [0, 1, 2, 3, 4, 5]
+    a.send(@method, (..3)).should == [0, 1, 2, 3]
+    a.send(@method, (...3)).should == [0, 1, 2]
+    a.send(@method, (..-3)).should == [0, 1, 2, 3]
+    a.send(@method, (...-3)).should == [0, 1, 2]
+    a.send(@method, (..0)).should == [0]
+    a.send(@method, (...0)).should == []
+    a.send(@method, (..9)).should == [0, 1, 2, 3, 4, 5]
+    a.send(@method, (...9)).should == [0, 1, 2, 3, 4, 5]
+    a.send(@method, (..-9)).should == []
+    a.send(@method, (...-9)).should == []
+  end
 
-    it "can accept nil...nil ranges" do
-      a = [0, 1, 2, 3, 4, 5]
-      a.send(@method, eval("(nil...nil)")).should == a
-      a.send(@method, eval("(...nil)")).should == a
-      a.send(@method, eval("(nil..)")).should == a
+  ruby_version_is "3.2" do
+    describe "can be sliced with Enumerator::ArithmeticSequence" do
+      it "with infinite/inverted ranges and negative steps" do
+        @array = [0, 1, 2, 3, 4, 5]
+        @array.send(@method, (2..).step(-1)).should == [2, 1, 0]
+        @array.send(@method, (2..).step(-2)).should == [2, 0]
+        @array.send(@method, (2..).step(-3)).should == [2]
+        @array.send(@method, (2..).step(-4)).should == [2]
+
+        @array.send(@method, (-3..).step(-1)).should == [3, 2, 1, 0]
+        @array.send(@method, (-3..).step(-2)).should == [3, 1]
+        @array.send(@method, (-3..).step(-3)).should == [3, 0]
+        @array.send(@method, (-3..).step(-4)).should == [3]
+        @array.send(@method, (-3..).step(-5)).should == [3]
+
+        @array.send(@method, (..0).step(-1)).should == [5, 4, 3, 2, 1, 0]
+        @array.send(@method, (..0).step(-2)).should == [5, 3, 1]
+        @array.send(@method, (..0).step(-3)).should == [5, 2]
+        @array.send(@method, (..0).step(-4)).should == [5, 1]
+        @array.send(@method, (..0).step(-5)).should == [5, 0]
+        @array.send(@method, (..0).step(-6)).should == [5]
+        @array.send(@method, (..0).step(-7)).should == [5]
+
+        @array.send(@method, (...0).step(-1)).should == [5, 4, 3, 2, 1]
+        @array.send(@method, (...0).step(-2)).should == [5, 3, 1]
+        @array.send(@method, (...0).step(-3)).should == [5, 2]
+        @array.send(@method, (...0).step(-4)).should == [5, 1]
+        @array.send(@method, (...0).step(-5)).should == [5]
+        @array.send(@method, (...0).step(-6)).should == [5]
+
+        @array.send(@method, (...1).step(-1)).should == [5, 4, 3, 2]
+        @array.send(@method, (...1).step(-2)).should == [5, 3]
+        @array.send(@method, (...1).step(-3)).should == [5, 2]
+        @array.send(@method, (...1).step(-4)).should == [5]
+        @array.send(@method, (...1).step(-5)).should == [5]
+
+        @array.send(@method, (..-5).step(-1)).should == [5, 4, 3, 2, 1]
+        @array.send(@method, (..-5).step(-2)).should == [5, 3, 1]
+        @array.send(@method, (..-5).step(-3)).should == [5, 2]
+        @array.send(@method, (..-5).step(-4)).should == [5, 1]
+        @array.send(@method, (..-5).step(-5)).should == [5]
+        @array.send(@method, (..-5).step(-6)).should == [5]
+
+        @array.send(@method, (...-5).step(-1)).should == [5, 4, 3, 2]
+        @array.send(@method, (...-5).step(-2)).should == [5, 3]
+        @array.send(@method, (...-5).step(-3)).should == [5, 2]
+        @array.send(@method, (...-5).step(-4)).should == [5]
+        @array.send(@method, (...-5).step(-5)).should == [5]
+
+        @array.send(@method, (4..1).step(-1)).should == [4, 3, 2, 1]
+        @array.send(@method, (4..1).step(-2)).should == [4, 2]
+        @array.send(@method, (4..1).step(-3)).should == [4, 1]
+        @array.send(@method, (4..1).step(-4)).should == [4]
+        @array.send(@method, (4..1).step(-5)).should == [4]
+
+        @array.send(@method, (4...1).step(-1)).should == [4, 3, 2]
+        @array.send(@method, (4...1).step(-2)).should == [4, 2]
+        @array.send(@method, (4...1).step(-3)).should == [4]
+        @array.send(@method, (4...1).step(-4)).should == [4]
+
+        @array.send(@method, (-2..1).step(-1)).should == [4, 3, 2, 1]
+        @array.send(@method, (-2..1).step(-2)).should == [4, 2]
+        @array.send(@method, (-2..1).step(-3)).should == [4, 1]
+        @array.send(@method, (-2..1).step(-4)).should == [4]
+        @array.send(@method, (-2..1).step(-5)).should == [4]
+
+        @array.send(@method, (-2...1).step(-1)).should == [4, 3, 2]
+        @array.send(@method, (-2...1).step(-2)).should == [4, 2]
+        @array.send(@method, (-2...1).step(-3)).should == [4]
+        @array.send(@method, (-2...1).step(-4)).should == [4]
+
+        @array.send(@method, (4..-5).step(-1)).should == [4, 3, 2, 1]
+        @array.send(@method, (4..-5).step(-2)).should == [4, 2]
+        @array.send(@method, (4..-5).step(-3)).should == [4, 1]
+        @array.send(@method, (4..-5).step(-4)).should == [4]
+        @array.send(@method, (4..-5).step(-5)).should == [4]
+
+        @array.send(@method, (4...-5).step(-1)).should == [4, 3, 2]
+        @array.send(@method, (4...-5).step(-2)).should == [4, 2]
+        @array.send(@method, (4...-5).step(-3)).should == [4]
+        @array.send(@method, (4...-5).step(-4)).should == [4]
+
+        @array.send(@method, (-2..-5).step(-1)).should == [4, 3, 2, 1]
+        @array.send(@method, (-2..-5).step(-2)).should == [4, 2]
+        @array.send(@method, (-2..-5).step(-3)).should == [4, 1]
+        @array.send(@method, (-2..-5).step(-4)).should == [4]
+        @array.send(@method, (-2..-5).step(-5)).should == [4]
+
+        @array.send(@method, (-2...-5).step(-1)).should == [4, 3, 2]
+        @array.send(@method, (-2...-5).step(-2)).should == [4, 2]
+        @array.send(@method, (-2...-5).step(-3)).should == [4]
+        @array.send(@method, (-2...-5).step(-4)).should == [4]
+      end
     end
+  end
+
+  it "can accept nil...nil ranges" do
+    a = [0, 1, 2, 3, 4, 5]
+    a.send(@method, eval("(nil...nil)")).should == a
+    a.send(@method, (...nil)).should == a
+    a.send(@method, eval("(nil..)")).should == a
   end
 end

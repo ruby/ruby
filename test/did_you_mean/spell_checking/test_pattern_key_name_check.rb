@@ -15,6 +15,6 @@ class PatternKeyNameCheckTest < Test::Unit::TestCase
     end
 
     assert_correction ":foo", error.corrections
-    assert_match "Did you mean?  :foo", error.to_s
+    assert_match "Did you mean?  :foo", get_message(error)
   end
 end

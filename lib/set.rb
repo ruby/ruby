@@ -12,15 +12,11 @@
 
 
 ##
-# This library provides the Set class, which deals with a collection
-# of unordered values with no duplicates.  It is a hybrid of Array's
+# This library provides the Set class, which implements a collection
+# of unordered values with no duplicates. It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.
 #
 # The method `to_set` is added to Enumerable for convenience.
-#
-# Set implements a collection of unordered values with no duplicates.
-# This is a hybrid of Array's intuitive inter-operation facilities and
-# Hash's fast lookup.
 #
 # Set is easy to use with Enumerable objects (implementing `each`).
 # Most of the initializer methods and binary operators accept generic
@@ -66,8 +62,8 @@
 #
 #  First, what's elsewhere. \Class \Set:
 #
-# - Inherits from {class Object}[https://docs.ruby-lang.org/en/master/Object.html#class-Object-label-What-27s+Here].
-# - Includes {module Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html#module-Enumerable-label-What-27s+Here],
+# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+# - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
 #   which provides dozens of additional methods.
 #
 # In particular, class \Set does not have many methods of its own
@@ -88,138 +84,140 @@
 #
 # ### Methods for Creating a \Set
 #
-# - ::[] -
+# - ::[]:
 #   Returns a new set containing the given objects.
-# - ::new -
+# - ::new:
 #   Returns a new set containing either the given objects
 #   (if no block given) or the return values from the called block
 #   (if a block given).
 #
 # ### Methods for \Set Operations
 #
-# - [|](#method-i-7C) (aliased as #union and #+) -
+# - [|](#method-i-7C) (aliased as #union and #+):
 #   Returns a new set containing all elements from +self+
 #   and all elements from a given enumerable (no duplicates).
-# - [&](#method-i-26) (aliased as #intersection) -
+# - [&](#method-i-26) (aliased as #intersection):
 #   Returns a new set containing all elements common to +self+
 #   and a given enumerable.
-# - [-](#method-i-2D) (aliased as #difference) -
+# - [-](#method-i-2D) (aliased as #difference):
 #   Returns a copy of +self+ with all elements
 #   in a given enumerable removed.
-# - [\^](#method-i-5E) -
+# - [\^](#method-i-5E):
 #   Returns a new set containing all elements from +self+
 #   and a given enumerable except those common to both.
 #
 # ### Methods for Comparing
 #
-# - [<=>](#method-i-3C-3D-3E) -
+# - [<=>](#method-i-3C-3D-3E):
 #   Returns -1, 0, or 1 as +self+ is less than, equal to,
 #   or greater than a given object.
-# - [==](#method-i-3D-3D) -
+# - [==](#method-i-3D-3D):
 #   Returns whether +self+ and a given enumerable are equal,
 #   as determined by Object#eql?.
-# - \#compare_by_identity? -
+# - \#compare_by_identity?:
 #   Returns whether the set considers only identity
 #   when comparing elements.
 #
 # ### Methods for Querying
 #
-# - \#length (aliased as #size) -
+# - \#length (aliased as #size):
 #   Returns the count of elements.
-# - \#empty? -
+# - \#empty?:
 #   Returns whether the set has no elements.
-# - \#include? (aliased as #member? and #===) -
+# - \#include? (aliased as #member? and #===):
 #   Returns whether a given object is an element in the set.
-# - \#subset? (aliased as [<=](#method-i-3C-3D)) -
+# - \#subset? (aliased as [<=](#method-i-3C-3D)):
 #   Returns whether a given object is a subset of the set.
-# - \#proper_subset? (aliased as [<](#method-i-3C)) -
+# - \#proper_subset? (aliased as [<](#method-i-3C)):
 #   Returns whether a given enumerable is a proper subset of the set.
-# - \#superset? (aliased as [<=](#method-i-3E-3D])) -
+# - \#superset? (aliased as [>=](#method-i-3E-3D])):
 #   Returns whether a given enumerable is a superset of the set.
-# - \#proper_superset? (aliased as [>](#method-i-3E)) -
+# - \#proper_superset? (aliased as [>](#method-i-3E)):
 #   Returns whether a given enumerable is a proper superset of the set.
-# - \#disjoint? -
+# - \#disjoint?:
 #   Returns +true+ if the set and a given enumerable
 #   have no common elements, +false+ otherwise.
-# - \#intersect? -
-#   Returns +true+ if the set and a given enumerable -
+# - \#intersect?:
+#   Returns +true+ if the set and a given enumerable:
 #   have any common elements, +false+ otherwise.
-# - \#compare_by_identity? -
+# - \#compare_by_identity?:
 #   Returns whether the set considers only identity
 #   when comparing elements.
 #
 # ### Methods for Assigning
 #
-# - \#add (aliased as #<<) -
+# - \#add (aliased as #<<):
 #   Adds a given object to the set; returns +self+.
-# - \#add? -
+# - \#add?:
 #   If the given object is not an element in the set,
 #   adds it and returns +self+; otherwise, returns +nil+.
-# - \#merge -
-#   Adds each given object to the set; returns +self+.
-# - \#replace -
+# - \#merge:
+#   Merges the elements of each given enumerable object to the set; returns +self+.
+# - \#replace:
 #   Replaces the contents of the set with the contents
 #   of a given enumerable.
 #
 # ### Methods for Deleting
 #
-# - \#clear -
+# - \#clear:
 #   Removes all elements in the set; returns +self+.
-# - \#delete -
+# - \#delete:
 #   Removes a given object from the set; returns +self+.
-# - \#delete? -
+# - \#delete?:
 #   If the given object is an element in the set,
 #   removes it and returns +self+; otherwise, returns +nil+.
-# - \#subtract -
+# - \#subtract:
 #   Removes each given object from the set; returns +self+.
 # - \#delete_if - Removes elements specified by a given block.
-# - \#select! (aliased as #filter!) -
+# - \#select! (aliased as #filter!):
 #   Removes elements not specified by a given block.
-# - \#keep_if -
+# - \#keep_if:
 #   Removes elements not specified by a given block.
 # - \#reject!
 #   Removes elements specified by a given block.
 #
 # ### Methods for Converting
 #
-# - \#classify -
+# - \#classify:
 #   Returns a hash that classifies the elements,
 #   as determined by the given block.
-# - \#collect! (aliased as #map!) -
+# - \#collect! (aliased as #map!):
 #   Replaces each element with a block return-value.
-# - \#divide -
+# - \#divide:
 #   Returns a hash that classifies the elements,
 #   as determined by the given block;
 #   differs from #classify in that the block may accept
 #   either one or two arguments.
-# - \#flatten -
+# - \#flatten:
 #   Returns a new set that is a recursive flattening of +self+.
-#  \#flatten! -
+#  \#flatten!:
 #   Replaces each nested set in +self+ with the elements from that set.
-# - \#inspect (aliased as #to_s) -
+# - \#inspect (aliased as #to_s):
 #   Returns a string displaying the elements.
-# - \#join -
+# - \#join:
 #   Returns a string containing all elements, converted to strings
 #   as needed, and joined by the given record separator.
-# - \#to_a -
+# - \#to_a:
 #   Returns an array containing all set elements.
-# - \#to_set -
+# - \#to_set:
 #   Returns +self+ if given no arguments and no block;
 #   with a block given, returns a new set consisting of block
 #   return values.
 #
 # ### Methods for Iterating
 #
-# - \#each -
+# - \#each:
 #   Calls the block with each successive element; returns +self+.
 #
 # ### Other Methods
 #
-# - \#reset -
+# - \#reset:
 #   Resets the internal state; useful if an object
 #   has been modified while an element in the set.
 #
 class Set
+  VERSION = "1.0.3"
+
   include Enumerable
 
   # Creates a new set containing the given objects.
@@ -507,7 +505,7 @@ class Set
   # the element as parameter.  Returns an enumerator if no block is
   # given.
   def each(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     @hash.each_key(&block)
     self
   end
@@ -582,7 +580,7 @@ class Set
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def reject!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     delete_if(&block)
     self if size != n
@@ -591,7 +589,7 @@ class Set
   # Equivalent to Set#keep_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def select!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     keep_if(&block)
     self if size != n
@@ -600,13 +598,15 @@ class Set
   # Equivalent to Set#select!
   alias filter! select!
 
-  # Merges the elements of the given enumerable object to the set and
+  # Merges the elements of the given enumerable objects to the set and
   # returns self.
-  def merge(enum)
-    if enum.instance_of?(self.class)
-      @hash.update(enum.instance_variable_get(:@hash))
-    else
-      do_with_enum(enum) { |o| add(o) }
+  def merge(*enums, **nil)
+    enums.each do |enum|
+      if enum.instance_of?(self.class)
+        @hash.update(enum.instance_variable_get(:@hash))
+      else
+        do_with_enum(enum) { |o| add(o) }
+      end
     end
 
     self
@@ -854,7 +854,7 @@ module Enumerable
   # Needs to `require "set"` to use this method.
   def to_set(klass = Set, *args, &block)
     klass.new(self, *args, &block)
-  end
+  end unless method_defined?(:to_set)
 end
 
 autoload :SortedSet, "#{__dir__}/set/sorted_set"

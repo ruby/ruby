@@ -15,6 +15,7 @@ module Bundler
     end
 
     def self.output_fund_metadata_summary
+      return if Bundler.settings["ignore_funding_requests"]
       definition = Bundler.definition
       current_dependencies = definition.requested_dependencies
       current_specs = definition.specs
@@ -40,7 +41,7 @@ module Bundler
     end
 
     def self.verbalize_groups(groups)
-      groups.map!{|g| "'#{g}'" }
+      groups.map! {|g| "'#{g}'" }
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
       group_str = groups.size == 1 ? "group" : "groups"
@@ -109,7 +110,8 @@ module Bundler
 
       definition.gem_version_promoter.tap do |gvp|
         gvp.level = patch_level.first || :major
-        gvp.strict = options[:strict] || options["update-strict"] || options["filter-strict"]
+        gvp.strict = options[:strict] || options["filter-strict"]
+        gvp.pre = options[:pre]
       end
     end
 

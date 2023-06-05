@@ -107,14 +107,14 @@ VALUE rb_ary_new_from_args(long n, ...);
 VALUE rb_ary_new_from_values(long n, const VALUE *elts);
 
 /**
- * Allocates a  "temporary" array.   This is  a hidden  empty array.   Handy on
- * occasions.
+ * Allocates a hidden (no class) empty array.
  *
  * @param[in]  capa  Designed capacity of the array.
  * @return     A hidden, empty array.
  * @see        rb_obj_hide()
  */
-VALUE rb_ary_tmp_new(long capa);
+VALUE rb_ary_hidden_new(long capa);
+#define rb_ary_tmp_new rb_ary_hidden_new
 
 /**
  * Destroys the given array for no reason.

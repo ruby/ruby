@@ -15,7 +15,7 @@ while line = gets()
     if out_stdout
       out = STDOUT
     else
-      out = open($file, "w") if $file != ""
+      out = File.open($file, "w") if $file != ""
     end
     out.binmode
     break

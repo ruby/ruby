@@ -115,6 +115,18 @@ describe "The rescue keyword" do
     end
   end
 
+  it "converts the splatted list of exceptions using #to_a" do
+    exceptions = mock("to_a")
+    exceptions.should_receive(:to_a).and_return(exception_list)
+    caught_it = false
+    begin
+      raise SpecificExampleException, "not important"
+    rescue *exceptions
+      caught_it = true
+    end
+    caught_it.should be_true
+  end
+
   it "can combine a splatted list of exceptions with a literal list of exceptions" do
     caught_it = false
     begin
@@ -492,14 +504,12 @@ describe "The rescue keyword" do
       }.should raise_error(Exception)
     end
 
-    ruby_version_is "2.7" do
-      it "rescues with multiple assignment" do
+    it "rescues with multiple assignment" do
 
-        a, b = raise rescue [1, 2]
+      a, b = raise rescue [1, 2]
 
-        a.should == 1
-        b.should == 2
-      end
+      a.should == 1
+      b.should == 2
     end
   end
 end

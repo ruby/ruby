@@ -15,7 +15,7 @@ module Bundler::URI
   # RFC6068, the mailto URL scheme.
   #
   class MailTo < Generic
-    include REGEXP
+    include RFC2396_REGEXP
 
     # A Default port of nil for Bundler::URI::MailTo.
     DEFAULT_PORT = nil
@@ -289,5 +289,5 @@ module Bundler::URI
     alias to_rfc822text to_mailtext
   end
 
-  @@schemes['MAILTO'] = MailTo
+  register_scheme 'MAILTO', MailTo
 end

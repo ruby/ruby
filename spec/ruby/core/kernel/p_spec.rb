@@ -76,10 +76,8 @@ describe "Kernel#p" do
     -> { p(*[]) }.should output("")
   end
 
-=begin Not sure how to spec this, but wanted to note the behavior here
-  it "does not flush if receiver is not a TTY or a File" do
-  end
-=end
+  # Not sure how to spec this, but wanted to note the behavior here
+  it "does not flush if receiver is not a TTY or a File"
 end
 
 describe "Kernel.p" do

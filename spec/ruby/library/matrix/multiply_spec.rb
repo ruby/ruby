@@ -24,8 +24,8 @@ ruby_version_is ""..."3.1" do
 
     it "returns the result of multiplying the elements of self and a Bignum" do
       (@a * bignum_value).should == Matrix[
-        [9223372036854775808, 18446744073709551616],
-        [27670116110564327424, 36893488147419103232]
+        [18446744073709551616, 36893488147419103232],
+        [55340232221128654848, 73786976294838206464]
       ]
     end
 

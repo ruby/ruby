@@ -340,6 +340,10 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_udp_server
+    # http://rubyci.s3.amazonaws.com/rhel_zlinux/ruby-master/log/20230312T023302Z.fail.html.gz
+    # Errno::EHOSTUNREACH: No route to host - recvmsg(2)
+    omit if 'rhel_zlinux' == ENV['RUBYCI_NICKNAME']
+
     begin
       ifaddrs = Socket.getifaddrs
     rescue NotImplementedError
@@ -486,7 +490,7 @@ class TestSocket < Test::Unit::TestCase
         end while IO.select([r], nil, nil, 0.1).nil?
         n
       end
-      timeout = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? ? 120 : 30) # for --jit-wait
+      timeout = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 120 : 30) # for --jit-wait
       assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)
@@ -583,7 +587,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end
+  end unless RUBY_PLATFORM.include?("freebsd")
 
   def test_connect_timeout
     host = "127.0.0.1"

@@ -1,2 +1,0 @@
-- +nsec+ is the number of nanoseconds (Integer, Float, or Rational)
-  in the range <tt>0..1000000000</tt>.

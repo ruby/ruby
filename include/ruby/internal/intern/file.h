@@ -206,7 +206,7 @@ int rb_is_absolute_path(const char *path);
  *              unpredictable.  POSIX's `<sys/stat.h>` states  that "the use of
  *              this field is unspecified" then.
  */
-off_t rb_file_size(VALUE file);
+rb_off_t rb_file_size(VALUE file);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

@@ -13,6 +13,7 @@ static const rb_random_interface_t random_loop_if = {
     RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(loop)
 };
 
+RB_RANDOM_DEFINE_INIT_INT32_FUNC(loop)
 static size_t
 random_loop_memsize(const void *ptr)
 {

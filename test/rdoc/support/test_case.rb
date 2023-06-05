@@ -13,7 +13,7 @@ require 'tempfile'
 require 'tmpdir'
 require 'stringio'
 
-require 'rdoc'
+require_relative '../../../lib/rdoc'
 
 ##
 # RDoc::TestCase is an abstract TestCase to provide common setup and teardown
@@ -37,7 +37,8 @@ class RDoc::TestCase < Test::Unit::TestCase
     super
 
     @orig_home = ENV["HOME"]
-    ENV["HOME"] = Dir.tmpdir
+    FileUtils.mkdir_p(@test_home = Dir.mktmpdir("test_rdoc_"))
+    ENV["HOME"] = @test_home
 
     @top_level = nil
 
@@ -64,6 +65,7 @@ class RDoc::TestCase < Test::Unit::TestCase
 
   def teardown
     ENV["HOME"] = @orig_home if defined?(@orig_home)
+    defined?(@test_home) and FileUtils.rm_rf @test_home
 
     super
   end

@@ -1,12 +1,7 @@
 # frozen_string_literal: false
+#
 #   save-history.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB
@@ -70,10 +65,10 @@ module IRB
       end
       history_file = IRB.rc_file("_history") unless history_file
       if File.exist?(history_file)
-        open(history_file, "r:#{IRB.conf[:LC_MESSAGES].encoding}") do |f|
+        File.open(history_file, "r:#{IRB.conf[:LC_MESSAGES].encoding}") do |f|
           f.each { |l|
             l = l.chomp
-            if self.class == ReidlineInputMethod and history.last&.end_with?("\\")
+            if self.class == RelineInputMethod and history.last&.end_with?("\\")
               history.last.delete_suffix!("\\")
               history.last << "\n" << l
             else
@@ -107,13 +102,13 @@ module IRB
           raise
         end
 
-        if File.exist?(history_file) && @loaded_history_mtime &&
+        if File.exist?(history_file) &&
            File.mtime(history_file) != @loaded_history_mtime
-          history = history[@loaded_history_lines..-1]
+          history = history[@loaded_history_lines..-1] if @loaded_history_lines
           append_history = true
         end
 
-        open(history_file, "#{append_history ? 'a' : 'w'}:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
+        File.open(history_file, (append_history ? 'a' : 'w'), 0o600, encoding: IRB.conf[:LC_MESSAGES]&.encoding) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
           unless append_history
             begin

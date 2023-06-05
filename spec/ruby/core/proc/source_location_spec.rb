@@ -83,4 +83,9 @@ describe "Proc#source_location" do
 
     proc.source_location.should == nil
   end
+
+  it "works for eval with a given line" do
+    proc = eval('-> {}', nil, "foo", 100)
+    proc.source_location.should == ["foo", 100]
+  end
 end

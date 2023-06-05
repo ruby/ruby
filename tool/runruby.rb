@@ -122,19 +122,16 @@ if e = ENV["RUBYLIB"]
 end
 env["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
 
+gem_path = [abs_archdir, srcdir].map {|d| File.realdirpath(".bundle", d)}
+if e = ENV["GEM_PATH"]
+ gem_path |= e.split(File::PATH_SEPARATOR)
+end
+env["GEM_PATH"] = gem_path.join(File::PATH_SEPARATOR)
+
 libruby_so = File.join(abs_archdir, config['LIBRUBY_SO'])
 if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
-  end
-  unless runner
-    if e = config['PRELOADENV']
-      e = nil if e.empty?
-      e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
-    end
-    if e
-      env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
-    end
   end
 end
 

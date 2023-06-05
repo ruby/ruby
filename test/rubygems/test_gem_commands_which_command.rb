@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/which_command'
+
+require_relative "helper"
+require "rubygems/commands/which_command"
 
 class TestGemCommandsWhichCommand < Gem::TestCase
   def setup
@@ -19,7 +20,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     end
 
     assert_equal "#{@foo_bar.full_gem_path}/lib/foo_bar.rb\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "", @ui.error
   end
 
   def test_execute_directory
@@ -31,9 +32,9 @@ class TestGemCommandsWhichCommand < Gem::TestCase
       end
     end
 
-    assert_equal '', @ui.output
-    assert_match %r{Can.t find Ruby library file or shared library directory\n},
-                 @ui.error
+    assert_equal "", @ui.output
+    assert_match(/Can.t find Ruby library file or shared library directory\n/,
+                 @ui.error)
   end
 
   def test_execute_one_missing
@@ -50,8 +51,8 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     end
 
     assert_equal "#{@foo_bar.full_gem_path}/lib/foo_bar.rb\n", @ui.output
-    assert_match %r{Can.t find Ruby library file or shared library missinglib\n},
-                 @ui.error
+    assert_match(/Can.t find Ruby library file or shared library missinglib\n/,
+                 @ui.error)
   end
 
   def test_execute_missing
@@ -63,14 +64,14 @@ class TestGemCommandsWhichCommand < Gem::TestCase
       end
     end
 
-    assert_equal '', @ui.output
-    assert_match %r{Can.t find Ruby library file or shared library missinglib\n},
-                 @ui.error
+    assert_equal "", @ui.output
+    assert_match(/Can.t find Ruby library file or shared library missinglib\n/,
+                 @ui.error)
   end
 
   def util_foo_bar
     files = %w[lib/foo_bar.rb lib/directory/baz.rb Rakefile]
-    @foo_bar = util_spec 'foo_bar' do |gem|
+    @foo_bar = util_spec "foo_bar" do |gem|
       gem.files = files
     end
     install_specs @foo_bar

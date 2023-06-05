@@ -80,8 +80,46 @@ module Bundler::URI
       url = @query ? "#@path?#@query" : @path.dup
       url.start_with?(?/.freeze) ? url : ?/ + url
     end
+
+    #
+    # == Description
+    #
+    # Returns the authority for an HTTP uri, as defined in
+    # https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.
+    #
+    #
+    # Example:
+    #
+    #     Bundler::URI::HTTP.build(host: 'www.example.com', path: '/foo/bar').authority #=> "www.example.com"
+    #     Bundler::URI::HTTP.build(host: 'www.example.com', port: 8000, path: '/foo/bar').authority #=> "www.example.com:8000"
+    #     Bundler::URI::HTTP.build(host: 'www.example.com', port: 80, path: '/foo/bar').authority #=> "www.example.com"
+    #
+    def authority
+      if port == default_port
+        host
+      else
+        "#{host}:#{port}"
+      end
+    end
+
+    #
+    # == Description
+    #
+    # Returns the origin for an HTTP uri, as defined in
+    # https://datatracker.ietf.org/doc/html/rfc6454.
+    #
+    #
+    # Example:
+    #
+    #     Bundler::URI::HTTP.build(host: 'www.example.com', path: '/foo/bar').origin #=> "http://www.example.com"
+    #     Bundler::URI::HTTP.build(host: 'www.example.com', port: 8000, path: '/foo/bar').origin #=> "http://www.example.com:8000"
+    #     Bundler::URI::HTTP.build(host: 'www.example.com', port: 80, path: '/foo/bar').origin #=> "http://www.example.com"
+    #     Bundler::URI::HTTPS.build(host: 'www.example.com', path: '/foo/bar').origin #=> "https://www.example.com"
+    #
+    def origin
+      "#{scheme}://#{authority}"
+    end
   end
 
-  @@schemes['HTTP'] = HTTP
-
+  register_scheme 'HTTP', HTTP
 end

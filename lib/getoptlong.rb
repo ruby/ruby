@@ -6,87 +6,369 @@
 #
 # You may redistribute and/or modify this library under the same license
 # terms as Ruby.
-#
-# See GetoptLong for documentation.
-#
-# Additional documents and the latest version of `getoptlong.rb' can be
-# found at http://www.sra.co.jp/people/m-kasahr/ruby/getoptlong/
 
-# The GetoptLong class allows you to parse command line options similarly to
-# the GNU getopt_long() C library call. Note, however, that GetoptLong is a
-# pure Ruby implementation.
+# \Class \GetoptLong provides parsing both for options
+# and for regular arguments.
 #
-# GetoptLong allows for POSIX-style options like <tt>--file</tt> as well
-# as single letter options like <tt>-f</tt>
+# Using \GetoptLong, you can define options for your program.
+# The program can then capture and respond to whatever options
+# are included in the command that executes the program.
 #
-# The empty option <tt>--</tt> (two minus symbols) is used to end option
-# processing. This can be particularly important if options have optional
-# arguments.
+# A simple example: file <tt>simple.rb</tt>:
 #
-# Here is a simple example of usage:
+#   :include: ../sample/getoptlong/simple.rb
 #
-#     require 'getoptlong'
+# If you are somewhat familiar with options,
+# you may want to skip to this
+# {full example}[#class-GetoptLong-label-Full+Example].
 #
-#     opts = GetoptLong.new(
-#       [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
-#       [ '--repeat', '-n', GetoptLong::REQUIRED_ARGUMENT ],
-#       [ '--name', GetoptLong::OPTIONAL_ARGUMENT ]
-#     )
+# == Options
 #
-#     dir = nil
-#     name = nil
-#     repetitions = 1
-#     opts.each do |opt, arg|
-#       case opt
-#         when '--help'
-#           puts <<-EOF
-#     hello [OPTION] ... DIR
+# A \GetoptLong option has:
 #
+# - A string <em>option name</em>.
+# - Zero or more string <em>aliases</em> for the name.
+# - An <em>option type</em>.
+#
+# Options may be defined by calling singleton method GetoptLong.new,
+# which returns a new \GetoptLong object.
+# Options may then be processed by calling other methods
+# such as GetoptLong#each.
+#
+# === Option Name and Aliases
+#
+# In the array that defines an option,
+# the first element is the string option name.
+# Often the name takes the 'long' form, beginning with two hyphens.
+#
+# The option name may have any number of aliases,
+# which are defined by additional string elements.
+#
+# The name and each alias must be of one of two forms:
+#
+# - Two hyphens, followed by one or more letters.
+# - One hyphen, followed by a single letter.
+#
+# File <tt>aliases.rb</tt>:
+#
+#   :include: ../sample/getoptlong/aliases.rb
+#
+# An option may be cited by its name,
+# or by any of its aliases;
+# the parsed option always reports the name, not an alias:
+#
+#   $ ruby aliases.rb -a -p --xxx --aaa -x
+#
+# Output:
+#
+#   ["--xxx", ""]
+#   ["--xxx", ""]
+#   ["--xxx", ""]
+#   ["--xxx", ""]
+#   ["--xxx", ""]
+#
+#
+# An option may also be cited by an abbreviation of its name or any alias,
+# as long as that abbreviation is unique among the options.
+#
+# File <tt>abbrev.rb</tt>:
+#
+#   :include: ../sample/getoptlong/abbrev.rb
+#
+# Command line:
+#
+#   $ ruby abbrev.rb --xxx --xx --xyz --xy
+#
+# Output:
+#
+#   ["--xxx", ""]
+#   ["--xxx", ""]
+#   ["--xyz", ""]
+#   ["--xyz", ""]
+#
+# This command line raises GetoptLong::AmbiguousOption:
+#
+#   $ ruby abbrev.rb --x
+#
+# === Repetition
+#
+# An option may be cited more than once:
+#
+#   $ ruby abbrev.rb --xxx --xyz --xxx --xyz
+#
+# Output:
+#
+#   ["--xxx", ""]
+#   ["--xyz", ""]
+#   ["--xxx", ""]
+#   ["--xyz", ""]
+#
+# === Treating Remaining Options as Arguments
+#
+# A option-like token that appears
+# anywhere after the token <tt>--</tt> is treated as an ordinary argument,
+# and is not processed as an option:
+#
+#   $ ruby abbrev.rb --xxx --xyz -- --xxx --xyz
+#
+# Output:
+#
+#   ["--xxx", ""]
+#   ["--xyz", ""]
+#
+# === Option Types
+#
+# Each option definition includes an option type,
+# which controls whether the option takes an argument.
+#
+# File <tt>types.rb</tt>:
+#
+#   :include: ../sample/getoptlong/types.rb
+#
+# Note that an option type has to do with the <em>option argument</em>
+# (whether it is required, optional, or forbidden),
+# not with whether the option itself is required.
+#
+# ==== Option with Required Argument
+#
+# An option of type <tt>GetoptLong::REQUIRED_ARGUMENT</tt>
+# must be followed by an argument, which is associated with that option:
+#
+#   $ ruby types.rb --xxx foo
+#
+# Output:
+#
+#   ["--xxx", "foo"]
+#
+# If the option is not last, its argument is whatever follows it
+# (even if the argument looks like another option):
+#
+#   $ ruby types.rb --xxx --yyy
+#
+# Output:
+#
+#   ["--xxx", "--yyy"]
+#
+# If the option is last, an exception is raised:
+#
+#   $ ruby types.rb
+#   # Raises GetoptLong::MissingArgument
+#
+# ==== Option with Optional Argument
+#
+# An option of type <tt>GetoptLong::OPTIONAL_ARGUMENT</tt>
+# may be followed by an argument, which if given is associated with that option.
+#
+# If the option is last, it does not have an argument:
+#
+#   $ ruby types.rb --yyy
+#
+# Output:
+#
+#   ["--yyy", ""]
+#
+# If the option is followed by another option, it does not have an argument:
+#
+#   $ ruby types.rb --yyy --zzz
+#
+# Output:
+#
+#   ["--yyy", ""]
+#   ["--zzz", ""]
+#
+# Otherwise the option is followed by its argument, which is associated
+# with that option:
+#
+#   $ ruby types.rb --yyy foo
+#
+# Output:
+#
+#   ["--yyy", "foo"]
+#
+# ==== Option with No Argument
+#
+# An option of type <tt>GetoptLong::NO_ARGUMENT</tt> takes no argument:
+#
+#   ruby types.rb --zzz foo
+#
+# Output:
+#
+#   ["--zzz", ""]
+#
+# === ARGV
+#
+# You can process options either with method #each and a block,
+# or with method #get.
+#
+# During processing, each found option is removed, along with its argument
+# if there is one.
+# After processing, each remaining element was neither an option
+# nor the argument for an option.
+#
+# File <tt>argv.rb</tt>:
+#
+#   :include: ../sample/getoptlong/argv.rb
+#
+# Command line:
+#
+#   $ ruby argv.rb --xxx Foo --yyy Bar Baz --zzz Bat Bam
+#
+# Output:
+#
+#   Original ARGV: ["--xxx", "Foo", "--yyy", "Bar", "Baz", "--zzz", "Bat", "Bam"]
+#   ["--xxx", "Foo"]
+#   ["--yyy", "Bar"]
+#   ["--zzz", ""]
+#   Remaining ARGV: ["Baz", "Bat", "Bam"]
+#
+# === Ordering
+#
+# There are three settings that control the way the options
+# are interpreted:
+#
+# - +PERMUTE+.
+# - +REQUIRE_ORDER+.
+# - +RETURN_IN_ORDER+.
+#
+# The initial setting for a new \GetoptLong object is +REQUIRE_ORDER+
+# if environment variable +POSIXLY_CORRECT+ is defined, +PERMUTE+ otherwise.
+#
+# ==== PERMUTE Ordering
+#
+# In the +PERMUTE+ ordering, options and other, non-option,
+# arguments may appear in any order and any mixture.
+#
+# File <tt>permute.rb</tt>:
+#
+#   :include: ../sample/getoptlong/permute.rb
+#
+# Command line:
+#
+#   $ ruby permute.rb Foo --zzz Bar --xxx Baz --yyy Bat Bam --xxx Bag Bah
+#
+# Output:
+#
+#   Original ARGV: ["Foo", "--zzz", "Bar", "--xxx", "Baz", "--yyy", "Bat", "Bam", "--xxx", "Bag", "Bah"]
+#   ["--zzz", ""]
+#   ["--xxx", "Baz"]
+#   ["--yyy", "Bat"]
+#   ["--xxx", "Bag"]
+#   Remaining ARGV: ["Foo", "Bar", "Bam", "Bah"]
+#
+# ==== REQUIRE_ORDER Ordering
+#
+# In the +REQUIRE_ORDER+ ordering, all options precede all non-options;
+# that is, each word after the first non-option word
+# is treated as a non-option word (even if it begins with a hyphen).
+#
+# File <tt>require_order.rb</tt>:
+#
+#   :include: ../sample/getoptlong/require_order.rb
+#
+# Command line:
+#
+#   $ ruby require_order.rb --xxx Foo Bar --xxx Baz --yyy Bat -zzz
+#
+# Output:
+#
+#   Original ARGV: ["--xxx", "Foo", "Bar", "--xxx", "Baz", "--yyy", "Bat", "-zzz"]
+#   ["--xxx", "Foo"]
+#   Remaining ARGV: ["Bar", "--xxx", "Baz", "--yyy", "Bat", "-zzz"]
+#
+# ==== RETURN_IN_ORDER Ordering
+#
+# In the +RETURN_IN_ORDER+ ordering, every word is treated as an option.
+# A word that begins with a hyphen (or two) is treated in the usual way;
+# a word +word+ that does not so begin is treated as an option
+# whose name is an empty string, and whose value is +word+.
+#
+# File <tt>return_in_order.rb</tt>:
+#
+#   :include: ../sample/getoptlong/return_in_order.rb
+#
+# Command line:
+#
+#   $ ruby return_in_order.rb Foo --xxx Bar Baz --zzz Bat Bam
+#
+# Output:
+#
+#   Original ARGV: ["Foo", "--xxx", "Bar", "Baz", "--zzz", "Bat", "Bam"]
+#   ["", "Foo"]
+#   ["--xxx", "Bar"]
+#   ["", "Baz"]
+#   ["--zzz", ""]
+#   ["", "Bat"]
+#   ["", "Bam"]
+#   Remaining ARGV: []
+#
+# === Full Example
+#
+# File <tt>fibonacci.rb</tt>:
+#
+#   :include: ../sample/getoptlong/fibonacci.rb
+#
+# Command line:
+#
+#   $ ruby fibonacci.rb
+#
+# Output:
+#
+#   Option --number is required.
+#   Usage:
+#
+#     -n n, --number n:
+#       Compute Fibonacci number for n.
+#     -v [boolean], --verbose [boolean]:
+#       Show intermediate results; default is 'false'.
 #     -h, --help:
-#        show help
+#       Show this help.
 #
-#     --repeat x, -n x:
-#        repeat x times
+# Command line:
 #
-#     --name [name]:
-#        greet user by name, if name not supplied default is John
+#   $ ruby fibonacci.rb --number
 #
-#     DIR: The directory in which to issue the greeting.
-#           EOF
-#         when '--repeat'
-#           repetitions = arg.to_i
-#         when '--name'
-#           if arg == ''
-#             name = 'John'
-#           else
-#             name = arg
-#           end
-#       end
-#     end
+# Raises GetoptLong::MissingArgument:
 #
-#     if ARGV.length != 1
-#       puts "Missing dir argument (try --help)"
-#       exit 0
-#     end
+#   fibonacci.rb: option `--number' requires an argument
 #
-#     dir = ARGV.shift
+# Command line:
 #
-#     Dir.chdir(dir)
-#     for i in (1..repetitions)
-#       print "Hello"
-#       if name
-#         print ", #{name}"
-#       end
-#       puts
-#     end
+#   $ ruby fibonacci.rb --number 6
 #
-# Example command line:
+# Output:
 #
-#     hello -n 6 --name -- /tmp
+#   8
+#
+# Command line:
+#
+#   $ ruby fibonacci.rb --number 6 --verbose
+#
+# Output:
+#   1
+#   2
+#   3
+#   5
+#   8
+#
+# Command line:
+#
+# $ ruby fibonacci.rb --number 6 --verbose yes
+#
+# Output:
+#
+#   --verbose argument must be true or false
+#   Usage:
+#
+#     -n n, --number n:
+#       Compute Fibonacci number for n.
+#     -v [boolean], --verbose [boolean]:
+#       Show intermediate results; default is 'false'.
+#     -h, --help:
+#       Show this help.
 #
 class GetoptLong
   # Version.
-  VERSION = "0.1.1"
+  VERSION = "0.2.0"
 
   #
   # Orderings.
@@ -114,20 +396,18 @@ class GetoptLong
   class InvalidOption    < Error; end
 
   #
-  # \Set up option processing.
+  # Returns a new \GetoptLong object based on the given +arguments+.
+  # See {Options}[#class-GetoptLong-label-Options].
   #
-  # The options to support are passed to new() as an array of arrays.
-  # Each sub-array contains any number of String option names which carry
-  # the same meaning, and one of the following flags:
+  # Example:
   #
-  # GetoptLong::NO_ARGUMENT :: Option does not take an argument.
+  #   :include: ../sample/getoptlong/simple.rb
   #
-  # GetoptLong::REQUIRED_ARGUMENT :: Option always takes an argument.
+  # Raises an exception if:
   #
-  # GetoptLong::OPTIONAL_ARGUMENT :: Option may or may not take an argument.
-  #
-  # The first option name is considered to be the preferred (canonical) name.
-  # Other than that, the elements of each sub-array can be in any order.
+  # - Any of +arguments+ is not an array.
+  # - Any option name or alias is not a string.
+  # - Any option type is invalid.
   #
   def initialize(*arguments)
     #
@@ -189,54 +469,22 @@ class GetoptLong
     end
   end
 
+  # Sets the ordering; see {Ordering}[#class-GetoptLong-label-Ordering];
+  # returns the new ordering.
   #
-  # \Set the handling of the ordering of options and arguments.
-  # A RuntimeError is raised if option processing has already started.
+  # If the given +ordering+ is +PERMUTE+ and environment variable
+  # +POSIXLY_CORRECT+ is defined, sets the ordering to +REQUIRE_ORDER+;
+  # otherwise sets the ordering to +ordering+:
   #
-  # The supplied value must be a member of GetoptLong::ORDERINGS. It alters
-  # the processing of options as follows:
+  #   options = GetoptLong.new
+  #   options.ordering == GetoptLong::PERMUTE # => true
+  #   options.ordering = GetoptLong::RETURN_IN_ORDER
+  #   options.ordering == GetoptLong::RETURN_IN_ORDER # => true
+  #   ENV['POSIXLY_CORRECT'] = 'true'
+  #   options.ordering = GetoptLong::PERMUTE
+  #   options.ordering == GetoptLong::REQUIRE_ORDER # => true
   #
-  # <b>REQUIRE_ORDER</b> :
-  #
-  # Options are required to occur before non-options.
-  #
-  # Processing of options ends as soon as a word is encountered that has not
-  # been preceded by an appropriate option flag.
-  #
-  # For example, if -a and -b are options which do not take arguments,
-  # parsing command line arguments of '-a one -b two' would result in
-  # 'one', '-b', 'two' being left in ARGV, and only ('-a', '') being
-  # processed as an option/arg pair.
-  #
-  # This is the default ordering, if the environment variable
-  # POSIXLY_CORRECT is set. (This is for compatibility with GNU getopt_long.)
-  #
-  # <b>PERMUTE</b> :
-  #
-  # Options can occur anywhere in the command line parsed. This is the
-  # default behavior.
-  #
-  # Every sequence of words which can be interpreted as an option (with or
-  # without argument) is treated as an option; non-option words are skipped.
-  #
-  # For example, if -a does not require an argument and -b optionally takes
-  # an argument, parsing '-a one -b two three' would result in ('-a','') and
-  # ('-b', 'two') being processed as option/arg pairs, and 'one','three'
-  # being left in ARGV.
-  #
-  # If the ordering is set to PERMUTE but the environment variable
-  # POSIXLY_CORRECT is set, REQUIRE_ORDER is used instead. This is for
-  # compatibility with GNU getopt_long.
-  #
-  # <b>RETURN_IN_ORDER</b> :
-  #
-  # All words on the command line are processed as options. Words not
-  # preceded by a short or long option flag are passed as arguments
-  # with an option of '' (empty string).
-  #
-  # For example, if -a requires an argument but -b does not, a command line
-  # of '-a one -b two three' would result in option/arg pairs of ('-a', 'one')
-  # ('-b', ''), ('', 'two'), ('', 'three') being processed.
+  # Raises an exception if +ordering+ is invalid.
   #
   def ordering=(ordering)
     #
@@ -262,14 +510,16 @@ class GetoptLong
   end
 
   #
-  # Return ordering.
+  # Returns the ordering setting.
   #
   attr_reader :ordering
 
   #
-  # \Set options. Takes the same argument as GetoptLong.new.
+  # Replaces existing options with those given by +arguments+,
+  # which have the same form as the arguments to ::new;
+  # returns +self+.
   #
-  # Raises a RuntimeError if option processing has already started.
+  # Raises an exception if option processing has begun.
   #
   def set_options(*arguments)
     #
@@ -341,22 +591,23 @@ class GetoptLong
   end
 
   #
-  # \Set/Unset `quiet' mode.
+  # Sets quiet mode and returns the given argument:
+  #
+  # - When +false+ or +nil+, error messages are written to <tt>$stdout</tt>.
+  # - Otherwise, error messages are not written.
   #
   attr_writer :quiet
 
   #
-  # Return the flag of `quiet' mode.
+  # Returns the quiet mode setting.
   #
   attr_reader :quiet
-
-  #
-  # `quiet?' is an alias of `quiet'.
-  #
   alias quiet? quiet
 
   #
-  # Explicitly terminate option processing.
+  # Terminate option processing;
+  # returns +nil+ if processing has already terminated;
+  # otherwise returns +self+.
   #
   def terminate
     return nil if @status == STATUS_TERMINATED
@@ -376,7 +627,7 @@ class GetoptLong
   end
 
   #
-  # Returns true if option processing has terminated, false otherwise.
+  # Returns +true+ if option processing has terminated, +false+ otherwise.
   #
   def terminated?
     return @status == STATUS_TERMINATED
@@ -400,32 +651,25 @@ class GetoptLong
   protected :set_error
 
   #
-  # Examine whether an option processing is failed.
+  # Returns whether option processing has failed.
   #
   attr_reader :error
-
-  #
-  # `error?' is an alias of `error'.
-  #
   alias error? error
 
   # Return the appropriate error message in POSIX-defined format.
-  # If no error has occurred, returns nil.
+  # If no error has occurred, returns +nil+.
   #
   def error_message
     return @error_message
   end
 
   #
-  # Get next option name and its argument, as an Array of two elements.
+  # Returns the next option as a 2-element array containing:
   #
-  # The option name is always converted to the first (preferred)
-  # name given in the original options to GetoptLong.new.
+  # - The option name (the name itself, not an alias).
+  # - The option value.
   #
-  # Example: ['--option', 'value']
-  #
-  # Returns nil if the processing is complete (as determined by
-  # STATUS_TERMINATED).
+  # Returns +nil+ if there are no more options.
   #
   def get
     option_name, option_argument = nil, ''
@@ -585,21 +829,32 @@ class GetoptLong
 
     return @canonical_names[option_name], option_argument
   end
-
-  #
-  # `get_option' is an alias of `get'.
-  #
   alias get_option get
 
-  # Iterator version of `get'.
   #
-  # The block is called repeatedly with two arguments:
-  # The first is the option name.
-  # The second is the argument which followed it (if any).
-  # Example: ('--opt', 'value')
+  # Calls the given block with each option;
+  # each option is a 2-element array containing:
   #
-  # The option name is always converted to the first (preferred)
-  # name given in the original options to GetoptLong.new.
+  # - The option name (the name itself, not an alias).
+  # - The option value.
+  #
+  # Example:
+  #
+  #   :include: ../sample/getoptlong/each.rb
+  #
+  # Command line:
+  #
+  #    ruby each.rb -xxx Foo -x Bar --yyy Baz -y Bat --zzz
+  #
+  # Output:
+  #
+  #   Original ARGV: ["-xxx", "Foo", "-x", "Bar", "--yyy", "Baz", "-y", "Bat", "--zzz"]
+  #   ["--xxx", "xx"]
+  #   ["--xxx", "Bar"]
+  #   ["--yyy", "Baz"]
+  #   ["--yyy", "Bat"]
+  #   ["--zzz", ""]
+  #   Remaining ARGV: ["Foo"]
   #
   def each
     loop do
@@ -608,9 +863,5 @@ class GetoptLong
       yield option_name, option_argument
     end
   end
-
-  #
-  # `each_option' is an alias of `each'.
-  #
   alias each_option each
 end

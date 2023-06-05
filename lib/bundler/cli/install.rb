@@ -94,9 +94,8 @@ module Bundler
 
     def warn_if_root
       return if Bundler.settings[:silence_root_warning] || Gem.win_platform? || !Process.uid.zero?
-      Bundler.ui.warn "Don't run Bundler as root. Bundler can ask for sudo " \
-        "if it is needed, and installing your bundle as root will break this " \
-        "application for all non-root users on this machine.", :wrap => true
+      Bundler.ui.warn "Don't run Bundler as root. Installing your bundle as root " \
+                      "will break this application for all non-root users on this machine.", :wrap => true
     end
 
     def dependencies_count_for(definition)
@@ -135,43 +134,27 @@ module Bundler
     end
 
     def normalize_groups
-      options[:with] &&= options[:with].join(":").tr(" ", ":").split(":")
-      options[:without] &&= options[:without].join(":").tr(" ", ":").split(":")
-
       check_for_group_conflicts_in_cli_options
 
-      Bundler.settings.set_command_option :with, nil if options[:with] == []
-      Bundler.settings.set_command_option :without, nil if options[:without] == []
-
-      with = options.fetch(:with, [])
-      with |= Bundler.settings[:with].map(&:to_s)
-      with -= options[:without] if options[:without]
-
-      without = options.fetch(:without, [])
-      without |= Bundler.settings[:without].map(&:to_s)
-      without -= options[:with] if options[:with]
-
-      options[:with]    = with
-      options[:without] = without
-
-      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
-        # need to nil them out first to get around validation for backwards compatibility
-        Bundler.settings.set_command_option :without, nil
-        Bundler.settings.set_command_option :with,    nil
-        Bundler.settings.set_command_option :without, options[:without] - options[:with]
-        Bundler.settings.set_command_option :with,    options[:with]
-      end
+      # need to nil them out first to get around validation for backwards compatibility
+      Bundler.settings.set_command_option :without, nil
+      Bundler.settings.set_command_option :with,    nil
+      Bundler.settings.set_command_option :without, options[:without]
+      Bundler.settings.set_command_option :with,    options[:with]
     end
 
     def normalize_settings
       Bundler.settings.set_command_option :path, nil if options[:system]
       Bundler.settings.set_command_option_if_given :path, options[:path]
-      Bundler.settings.temporary(:path_relative_to_cwd => false) do
-        Bundler.settings.set_command_option :path, "bundle" if options["standalone"] && Bundler.settings[:path].nil?
+
+      if options["standalone"] && Bundler.settings[:path].nil? && !options["local"]
+        Bundler.settings.temporary(:path_relative_to_cwd => false) do
+          Bundler.settings.set_command_option :path, "bundle"
+        end
       end
 
       bin_option = options["binstubs"]
-      bin_option = nil if bin_option && bin_option.empty?
+      bin_option = nil if bin_option&.empty?
       Bundler.settings.set_command_option :bin, bin_option if options["binstubs"]
 
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
@@ -184,7 +167,7 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
-      normalize_groups
+      normalize_groups if options[:without] || options[:with]
 
       options[:force] = options[:redownload]
     end

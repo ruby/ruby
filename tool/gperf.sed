@@ -20,3 +20,4 @@ s/(int)([a-z_]*)&((struct \([a-zA-Z_0-9][a-zA-Z_0-9]*\)_t *\*)0)->\1_str\([1-9][
   s/ hval = / hval = (unsigned int)/
   s/ return / return (unsigned int)/
 }
+s/^\(static\) \(unsigned char gperf_downcase\)/\1 const \2/

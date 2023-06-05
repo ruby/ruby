@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The BestSet chooses the best available method to query a remote index.
 #
@@ -25,7 +26,7 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   end
 
   def find_all(req) # :nodoc:
-    pick_sets if @remote and @sets.empty?
+    pick_sets if @remote && @sets.empty?
 
     super
   rescue Gem::RemoteFetcher::FetchError => e
@@ -35,15 +36,15 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   end
 
   def prefetch(reqs) # :nodoc:
-    pick_sets if @remote and @sets.empty?
+    pick_sets if @remote && @sets.empty?
 
     super
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[BestSet', ']' do
+    q.group 2, "[BestSet", "]" do
       q.breakable
-      q.text 'sets:'
+      q.text "sets:"
 
       q.breakable
       q.pp @sets
@@ -60,10 +61,10 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   def replace_failed_api_set(error) # :nodoc:
     uri = error.original_uri
     uri = URI uri unless URI === uri
-    uri = uri + "."
+    uri += "."
 
     raise error unless api_set = @sets.find do |set|
-      Gem::Resolver::APISet === set and set.dep_uri == uri
+      Gem::Resolver::APISet === set && set.dep_uri == uri
     end
 
     index_set = Gem::Resolver::IndexSet.new api_set.source

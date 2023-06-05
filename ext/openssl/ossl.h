@@ -43,13 +43,19 @@
 #ifndef LIBRESSL_VERSION_NUMBER
 # define OSSL_IS_LIBRESSL 0
 # define OSSL_OPENSSL_PREREQ(maj, min, pat) \
-      (OPENSSL_VERSION_NUMBER >= (maj << 28) | (min << 20) | (pat << 12))
+      (OPENSSL_VERSION_NUMBER >= ((maj << 28) | (min << 20) | (pat << 12)))
 # define OSSL_LIBRESSL_PREREQ(maj, min, pat) 0
 #else
 # define OSSL_IS_LIBRESSL 1
 # define OSSL_OPENSSL_PREREQ(maj, min, pat) 0
 # define OSSL_LIBRESSL_PREREQ(maj, min, pat) \
-      (LIBRESSL_VERSION_NUMBER >= (maj << 28) | (min << 20) | (pat << 12))
+      (LIBRESSL_VERSION_NUMBER >= ((maj << 28) | (min << 20) | (pat << 12)))
+#endif
+
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+# define OSSL_3_const const
+#else
+# define OSSL_3_const /* const */
 #endif
 
 #if !defined(OPENSSL_NO_ENGINE) && !OSSL_OPENSSL_PREREQ(3, 0, 0)

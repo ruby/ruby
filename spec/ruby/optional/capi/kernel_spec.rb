@@ -412,12 +412,10 @@ describe "C-API Kernel function" do
       }.should raise_error(Exception, 'custom error')
     end
 
-    ruby_bug "#17305", ""..."2.7" do
-      it "raises TypeError if one of the passed exceptions is not a Module" do
-        -> {
-          @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
-        }.should raise_error(TypeError, /class or module required/)
-      end
+    it "raises TypeError if one of the passed exceptions is not a Module" do
+      -> {
+        @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
+      }.should raise_error(TypeError, /class or module required/)
     end
   end
 
@@ -506,6 +504,25 @@ describe "C-API Kernel function" do
     end
   end
 
+  describe "rb_eval_cmd_kw" do
+    it "evaluates a string of ruby code" do
+      @s.rb_eval_cmd_kw("1+1", [], 0).should == 2
+    end
+
+    it "calls a proc with the supplied arguments" do
+      @s.rb_eval_cmd_kw(-> *x { x.map { |i| i + 1 } }, [1, 3, 7], 0).should == [2, 4, 8]
+    end
+
+    it "calls a proc with keyword arguments if kw_splat is non zero" do
+      a_proc = -> *x, **y {
+        res = x.map { |i| i + 1 }
+        y.each { |k, v| res << k; res << v }
+        res
+      }
+      @s.rb_eval_cmd_kw(a_proc, [1, 3, 7, {a: 1, b: 2, c: 3}], 1).should == [2, 4, 8, :a, 1, :b, 2, :c, 3]
+    end
+  end
+
   describe "rb_block_proc" do
     it "converts the implicit block into a proc" do
       proc = @s.rb_block_proc { 1+1 }
@@ -567,7 +584,64 @@ describe "C-API Kernel function" do
     end
   end
 
-  describe "rb_funcall3" do
+  describe "rb_funcallv" do
+    def empty
+      42
+    end
+
+    def sum(a, b)
+      a + b
+    end
+
+    it "calls a method" do
+      @s.rb_funcallv(self, :empty, []).should == 42
+      @s.rb_funcallv(self, :sum, [1, 2]).should == 3
+    end
+  end
+
+  ruby_version_is "3.0" do
+    describe "rb_funcallv_kw" do
+      it "passes keyword arguments to the callee" do
+        def m(*args, **kwargs)
+          [args, kwargs]
+        end
+
+        @s.rb_funcallv_kw(self, :m, [{}]).should == [[], {}]
+        @s.rb_funcallv_kw(self, :m, [{a: 1}]).should == [[], {a: 1}]
+        @s.rb_funcallv_kw(self, :m, [{b: 2}, {a: 1}]).should == [[{b: 2}], {a: 1}]
+        @s.rb_funcallv_kw(self, :m, [{b: 2}, {}]).should == [[{b: 2}], {}]
+      end
+
+      it "raises TypeError if the last argument is not a Hash" do
+        def m(*args, **kwargs)
+          [args, kwargs]
+        end
+
+        -> {
+          @s.rb_funcallv_kw(self, :m, [42])
+        }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+      end
+    end
+
+    describe "rb_keyword_given_p" do
+      it "returns whether keywords were given to the C extension method" do
+        h = {a: 1}
+        empty = {}
+        @s.rb_keyword_given_p(a: 1).should == true
+        @s.rb_keyword_given_p("foo" => "bar").should == true
+        @s.rb_keyword_given_p(**h).should == true
+
+        @s.rb_keyword_given_p(h).should == false
+        @s.rb_keyword_given_p().should == false
+        @s.rb_keyword_given_p(**empty).should == false
+
+        @s.rb_funcallv_kw(@s, :rb_keyword_given_p, [{a: 1}]).should == true
+        @s.rb_funcallv_kw(@s, :rb_keyword_given_p, [{}]).should == false
+      end
+    end
+  end
+
+  describe "rb_funcallv_public" do
     before :each do
       @obj = Object.new
       class << @obj
@@ -578,10 +652,11 @@ describe "C-API Kernel function" do
     end
 
     it "calls a public method" do
-      @s.rb_funcall3(@obj, :method_public).should == :method_public
+      @s.rb_funcallv_public(@obj, :method_public).should == :method_public
     end
+
     it "does not call a private method" do
-      -> { @s.rb_funcall3(@obj, :method_private) }.should raise_error(NoMethodError, /private/)
+      -> { @s.rb_funcallv_public(@obj, :method_private) }.should raise_error(NoMethodError, /private/)
     end
   end
 
@@ -599,6 +674,7 @@ describe "C-API Kernel function" do
       @s.rb_funcall_many_args(@obj, :many_args).should == 15.downto(1).to_a
     end
   end
+
   describe 'rb_funcall_with_block' do
     before :each do
       @obj = Object.new

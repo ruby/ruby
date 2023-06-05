@@ -3,17 +3,31 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
 
 jobs:
   make:
@@ -21,56 +35,50 @@ jobs:
       matrix:
         include:
           - vs: 2019
-            os: windows-2019
-            vcvars: '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
-          # - vs: 2022
-          #   os: windows-2022
-          #   vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
+          - vs: 2022
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     name: VisualStudio ${{ matrix.vs }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      VCVARS: ${{ matrix.vcvars }}
       PATCH: C:\msys64\usr\bin\patch.exe
+      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
     steps:
       - run: md build
         working-directory:
-      - uses: msys2/setup-msys2@v2
+      - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
           update: true
           install: >-
             patch
-        if: ${{ matrix.os != 'windows-2019' }}
+        if: ${{ env.OS_VER != 'windows-2019' }}
       - name: patch path
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
+          key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+        with:
+          path: C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-installed-
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install readline zlib
-      - uses: actions/cache@v2
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
-            ${{ runner.os }}-chocolatey-
-      - name: Install libraries with chocolatey
+          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
+      - name: Install libraries with scoop
         run: |
-          # Using Choco-Install for retries, but it doesn't detect failures properly
-          # if you pass multiple package names in a single command.
-          Choco-Install -PackageName openssl
-          Choco-Install -PackageName winflexbison3
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
       - name: git config
         run: |
@@ -78,10 +86,10 @@ jobs:
           git config --global core.eol lf
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
           path: src
-      - uses: actions/cache@v2
+      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -89,6 +97,12 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
+          set VS=${{ matrix.vs }}
+          set VCVARS=${{ matrix.vcvars }}
+          if not "%VCVARS%" == "" goto :vcset
+            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          :vcset
           set | C:\msys64\usr\bin\sort > old.env
           call %VCVARS%
           set TMP=%USERPROFILE%\AppData\Local\Temp
@@ -97,25 +111,32 @@ jobs:
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
-      - name: Configure
+      - name: compiler version
+        run: cl
+      - name: link libraries
         run: |
-          ../src/win32/configure.bat --disable-install-doc --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows --with-openssl-dir="C:/Program Files/OpenSSL-Win64"
+          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+            if not %%~nI == readline mklink %%~nxI %%I
+          )
+          for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
+            ren c:\Windows\System32\%%I.dll %%I.dll_
+          )
+      - name: Configure
+        run: >-
+          ../src/win32/configure.bat --disable-install-doc
+          --with-opt-dir=C:/vcpkg/installed/x64-windows
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake
-        env:
-          YACC: win_bison
       - run: nmake test
         timeout-minutes: 5
+      - run: nmake test-spec MSPECOPT="-V -fspec"
+        timeout-minutes: 10
       - run: nmake test-all
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
         timeout-minutes: 60
-        continue-on-error: ${{ matrix.continue-on-error || false }}
-      - run: nmake test-spec
-        timeout-minutes: 10
-        continue-on-error: ${{ matrix.continue-on-error || false }}
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
         with:
           payload: |
             {
@@ -123,7 +144,7 @@ jobs:
               "env": "VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

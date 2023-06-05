@@ -33,12 +33,16 @@ class Float < Numeric
   #
   # Returns the value of +float+ as a BigDecimal.
   # The +precision+ parameter is used to determine the number of
-  # significant digits for the result (the default is Float::DIG).
+  # significant digits for the result. When +precision+ is set to +0+,
+  # the number of digits to represent the float being converted is determined
+  # automatically.
+  # The default +precision+ is +0+.
   #
   #     require 'bigdecimal'
   #     require 'bigdecimal/util'
   #
   #     0.5.to_d         # => 0.5e0
+  #     1.234.to_d       # => 0.1234e1
   #     1.234.to_d(2)    # => 0.12e1
   #
   # See also BigDecimal::new.

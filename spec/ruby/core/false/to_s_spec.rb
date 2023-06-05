@@ -5,13 +5,11 @@ describe "FalseClass#to_s" do
     false.to_s.should == "false"
   end
 
-  ruby_version_is "2.7" do
-    it "returns a frozen string" do
-      false.to_s.should.frozen?
-    end
+  it "returns a frozen string" do
+    false.to_s.should.frozen?
+  end
 
-    it "always returns the same string" do
-      false.to_s.should equal(false.to_s)
-    end
+  it "always returns the same string" do
+    false.to_s.should equal(false.to_s)
   end
 end

@@ -285,7 +285,7 @@ oletypelib_get_libattr(ITypeLib *pTypeLib, TLIBATTR **ppTLibAttr)
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, ppTLibAttr);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
-		  "failed to get library attribute(TLIBATTR) from ITypeLib");
+                  "failed to get library attribute(TLIBATTR) from ITypeLib");
     }
 }
 
@@ -588,13 +588,13 @@ foletypelib_path(VALUE self)
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
     hr = QueryPathOfRegTypeLib(&pTLibAttr->guid,
-	                       pTLibAttr->wMajorVerNum,
-			       pTLibAttr->wMinorVerNum,
-			       lcid,
-			       &bstr);
+                               pTLibAttr->wMajorVerNum,
+                               pTLibAttr->wMinorVerNum,
+                               lcid,
+                               &bstr);
     if (FAILED(hr)) {
-	pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-	ole_raise(hr, eWIN32OLERuntimeError, "failed to QueryPathOfRegTypeTypeLib");
+        pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to QueryPathOfRegTypeTypeLib");
     }
 
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
@@ -722,7 +722,7 @@ typelib_file_from_typelib(VALUE ole)
             if (ver == Qnil)
                 break;
             err = reg_open_vkey(hclsid, ver, &hversion);
-			if (err != ERROR_SUCCESS || fver > atof(StringValuePtr(ver)))
+                        if (err != ERROR_SUCCESS || fver > atof(StringValuePtr(ver)))
                 continue;
             fver = atof(StringValuePtr(ver));
             typelib = reg_get_val(hversion, NULL);
@@ -827,7 +827,8 @@ VALUE cWIN32OLE_TYPELIB;
 void
 Init_win32ole_typelib(void)
 {
-    cWIN32OLE_TYPELIB = rb_define_class("WIN32OLE_TYPELIB", rb_cObject);
+    cWIN32OLE_TYPELIB = rb_define_class_under(cWIN32OLE, "Typelib", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_TYPELIB", cWIN32OLE_TYPELIB);
     rb_define_singleton_method(cWIN32OLE_TYPELIB, "typelibs", foletypelib_s_typelibs, 0);
     rb_define_alloc_func(cWIN32OLE_TYPELIB, foletypelib_s_allocate);
     rb_define_method(cWIN32OLE_TYPELIB, "initialize", foletypelib_initialize, -2);

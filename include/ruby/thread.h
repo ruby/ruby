@@ -128,7 +128,7 @@ RBIMPL_ATTR_NONNULL((1))
  *                 your code to see if it is actually worth releasing the GVL.
  */
 void *rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
-				 rb_unblock_function_t *ubf, void *data2);
+                                 rb_unblock_function_t *ubf, void *data2);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
@@ -152,7 +152,7 @@ RBIMPL_ATTR_NONNULL((1))
  * @return         What `func` returned, or 0 in case `func` did not return.
  */
 void *rb_thread_call_without_gvl2(void *(*func)(void *), void *data1,
-				  rb_unblock_function_t *ubf, void *data2);
+                                  rb_unblock_function_t *ubf, void *data2);
 
 /*
  * XXX: unstable/unapproved - out-of-tree code should NOT not depend
@@ -189,6 +189,46 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
  * @deprecated  It seems even in the old days it made no sense...?
  */
 #define RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS_
+
+#define RUBY_INTERNAL_THREAD_EVENT_STARTED    1 << 0 /** thread started */
+#define RUBY_INTERNAL_THREAD_EVENT_READY      1 << 1 /** acquiring GVL */
+#define RUBY_INTERNAL_THREAD_EVENT_RESUMED    1 << 2 /** acquired GVL */
+#define RUBY_INTERNAL_THREAD_EVENT_SUSPENDED  1 << 3 /** released GVL */
+#define RUBY_INTERNAL_THREAD_EVENT_EXITED     1 << 4 /** thread terminated */
+#define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
+
+typedef void rb_internal_thread_event_data_t; // for future extension.
+
+typedef void (*rb_internal_thread_event_callback)(rb_event_flag_t event,
+              const rb_internal_thread_event_data_t *event_data,
+              void *user_data);
+typedef struct rb_internal_thread_event_hook rb_internal_thread_event_hook_t;
+
+/**
+ * Registers a thread event hook function.
+ *
+ * @param[in]  func    A callback.
+ * @param[in]  events  A set of events that `func` should run.
+ * @param[in]  data    Passed as-is to `func`.
+ * @return     An opaque pointer to the hook, to unregister it later.
+ * @note       This functionality is a noop on Windows.
+ * @warning    This function MUST not be called from a thread event callback.
+ */
+rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
+        rb_internal_thread_event_callback func, rb_event_flag_t events,
+        void *data);
+
+
+/**
+ * Unregister the passed hook.
+ *
+ * @param[in]  hook.  The hook to unregister.
+ * @return     Wether the hook was found and unregistered.
+ * @note       This functionality is a noop on Windows.
+ * @warning    This function MUST not be called from a thread event callback.
+*/
+bool rb_internal_thread_remove_event_hook(
+        rb_internal_thread_event_hook_t * hook);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

@@ -45,11 +45,19 @@ describe :stringio_write_string, shared: true do
     @io.pos.should eql(4)
   end
 
-  ruby_version_is ""..."2.7" do
-    it "taints self's String when the passed argument is tainted" do
-      @io.send(@method, "test".taint)
-      @io.string.tainted?.should be_true
-    end
+  it "handles concurrent writes correctly" do
+    @io = StringIO.new
+    n = 8
+    go = false
+    threads = n.times.map { |i|
+      Thread.new {
+        Thread.pass until go
+        @io.write i.to_s
+      }
+    }
+    go = true
+    threads.each(&:join)
+    @io.string.size.should == n.times.map(&:to_s).join.size
   end
 
   ruby_version_is ""..."3.0" do
@@ -57,6 +65,49 @@ describe :stringio_write_string, shared: true do
       @io.send(@method, "test".taint)
       @io.tainted?.should be_false
     end
+  end
+
+  it "handles writing non-ASCII UTF-8 after seek" do
+    @io.binmode
+    @io << "\x80"
+    @io.pos = 0
+    @io << "\x81"
+    @io.string.should == "\x812345".b
+  end
+
+  it "handles writing with position < buffer size" do
+    @io.pos = 2
+    @io.write "abc"
+    @io.string.should == "12abc"
+
+    @io.pos = 2
+    @io.write "de"
+    @io.string.should == "12dec"
+
+    @io.pos = 2
+    @io.write "fghi"
+    @io.string.should == "12fghi"
+  end
+
+  it "transcodes the given string when the external encoding is set and neither is BINARY" do
+    utf8_str = "hello"
+    io = StringIO.new.set_encoding(Encoding::UTF_16BE)
+    io.external_encoding.should == Encoding::UTF_16BE
+
+    io.send(@method, utf8_str)
+
+    expected = [0, 104, 0, 101, 0, 108, 0, 108, 0, 111] # UTF-16BE bytes for "hello"
+    io.string.bytes.should == expected
+  end
+
+  it "does not transcode the given string when the external encoding is set and the string encoding is BINARY" do
+    str = "été".b
+    io = StringIO.new.set_encoding(Encoding::UTF_16BE)
+    io.external_encoding.should == Encoding::UTF_16BE
+
+    io.send(@method, str)
+
+    io.string.bytes.should == str.bytes
   end
 end
 

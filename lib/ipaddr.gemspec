@@ -1,11 +1,23 @@
 # frozen_string_literal: true
 # coding: utf-8
-lib = File.expand_path("../lib", __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+if File.exist?(File.expand_path("ipaddr.gemspec"))
+  lib = File.expand_path("../lib", __FILE__)
+  $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+  file = File.expand_path("ipaddr.rb", lib)
+else
+  # for ruby-core
+  file = File.expand_path("../ipaddr.rb", __FILE__)
+end
+
+version = File.foreach(file).find do |line|
+  /^\s*VERSION\s*=\s*["'](.*)["']/ =~ line and break $1
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "ipaddr"
-  spec.version       = "1.2.3"
+  spec.version       = version
   spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
   spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
 

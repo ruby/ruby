@@ -4,10 +4,7 @@ require 'test/unit'
 require 'tmpdir'
 require_relative 'fileasserts'
 
-class TestFileUtils < Test::Unit::TestCase
-end
-
-module TestFileUtils::Clobber
+module TestFileUtilsClobber
   include Test::Unit::FileAssertions
 
   def my_rm_rf(path)

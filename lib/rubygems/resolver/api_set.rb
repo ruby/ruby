@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The global rubygems pool, available via the rubygems.org API.
 # Returns instances of APISpecification.
@@ -26,13 +27,13 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # API URL +dep_uri+ which is described at
   # https://guides.rubygems.org/rubygems-org-api
 
-  def initialize(dep_uri = 'https://index.rubygems.org/info/')
+  def initialize(dep_uri = "https://index.rubygems.org/info/")
     super()
 
     dep_uri = URI dep_uri unless URI === dep_uri
 
     @dep_uri = dep_uri
-    @uri     = dep_uri + '..'
+    @uri     = dep_uri + ".."
 
     @data   = Hash.new {|h,k| h[k] = [] }
     @source = Gem::Source.new @uri
@@ -75,7 +76,8 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   end
 
   def prefetch_now # :nodoc:
-    needed, @to_fetch = @to_fetch, []
+    needed = @to_fetch
+    @to_fetch = []
 
     needed.sort.each do |name|
       versions(name)
@@ -83,12 +85,12 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[APISet', ']' do
+    q.group 2, "[APISet", "]" do
       q.breakable
       q.text "URI: #{@dep_uri}"
 
       q.breakable
-      q.text 'gem names:'
+      q.text "gem names:"
       q.pp @data.keys
     end
   end

@@ -50,12 +50,10 @@ describe 'Kernel#caller' do
     locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
   end
 
-  ruby_version_is "2.7" do
-    it "works with beginless ranges" do
-      locations1 = KernelSpecs::CallerTest.locations(0)
-      locations2 = KernelSpecs::CallerTest.locations(eval("(..5)"))
-      locations2.map(&:to_s)[eval("(2..)")].should == locations1[eval("(..5)")].map(&:to_s)[eval("(2..)")]
-    end
+  it "works with beginless ranges" do
+    locations1 = KernelSpecs::CallerTest.locations(0)
+    locations2 = KernelSpecs::CallerTest.locations((..5))
+    locations2.map(&:to_s)[eval("(2..)")].should == locations1[(..5)].map(&:to_s)[eval("(2..)")]
   end
 
   guard -> { Kernel.instance_method(:tap).source_location } do

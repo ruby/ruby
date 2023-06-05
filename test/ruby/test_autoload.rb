@@ -65,6 +65,24 @@ p Foo::Bar
     }
   end
 
+  def test_autoload_p_with_static_extensions
+    require 'rbconfig'
+    omit unless RbConfig::CONFIG['EXTSTATIC'] == 'static'
+    begin
+      require 'fcntl.so'
+    rescue LoadError
+      omit('fcntl not included in the build')
+    end
+
+    assert_separately(['--disable-all'], <<~RUBY)
+      autoload :Fcntl, 'fcntl.so'
+
+      assert_equal('fcntl.so', autoload?(:Fcntl))
+      assert(Object.const_defined?(:Fcntl))
+      assert_equal('constant', defined?(Fcntl), '[Bug #19115]')
+    RUBY
+  end
+
   def test_autoload_with_unqualified_file_name # [ruby-core:69206]
     Object.send(:remove_const, :A) if Object.const_defined?(:A)
 
@@ -150,6 +168,7 @@ p Foo::Bar
   end
 
   def test_nameerror_when_autoload_did_not_define_the_constant
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     Tempfile.create(['autoload', '.rb']) {|file|
       file.puts ''
       file.close
@@ -162,6 +181,8 @@ p Foo::Bar
         remove_autoload_constant
       end
     }
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_override_autoload
@@ -443,6 +464,23 @@ p Foo::Bar
     end
   end
 
+  def test_source_location_after_require
+    bug = "Bug18624"
+    Dir.mktmpdir('autoload') do |tmpdir|
+      path = "#{tmpdir}/test-#{bug}.rb"
+      File.write(path, "C::#{bug} = __FILE__\n")
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        class C; end
+        C.autoload(:Bug18624, #{path.dump})
+        require #{path.dump}
+        assert_equal [#{path.dump}, 1], C.const_source_location(#{bug.dump})
+        assert_equal #{path.dump}, C.const_get(#{bug.dump})
+        assert_equal [#{path.dump}, 1], C.const_source_location(#{bug.dump})
+      end;
+    end
+  end
+
   def test_no_memory_leak
     assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", 'many autoloads', timeout: 60)
     begin;
@@ -462,6 +500,7 @@ p Foo::Bar
       File.write(autoload_path, '')
 
       assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        $VERBOSE = nil
         path = #{File.realpath(autoload_path).inspect}
         autoload :X, path
         assert_equal(path, Object.autoload?(:X))
@@ -490,5 +529,70 @@ p Foo::Bar
     $".replace($" - @autoload_paths)
     ::Object.class_eval {remove_const(:AutoloadTest)} if defined? Object::AutoloadTest
     TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
+  end
+
+  def test_autoload_module_gc
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "autoload_module_gc.rb")
+      File.write(autoload_path, "X = 1; Y = 2;")
+
+      x = Module.new
+      x.autoload :X, "./feature.rb"
+
+      1000.times do
+        y = Module.new
+        y.autoload :Y, "./feature.rb"
+      end
+
+      x = y = nil
+
+      # Ensure the internal data structures are cleaned up correctly / don't crash:
+      GC.start
+    end
+  end
+
+  def test_autoload_parallel_race
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "autoload_parallel_race.rb")
+      File.write(autoload_path, 'module Foo; end; module Bar; end')
+
+      assert_separately([], <<-RUBY, timeout: 100)
+        autoload_path = #{File.realpath(autoload_path).inspect}
+
+        # This should work with no errors or failures.
+        1000.times do
+          autoload :Foo, autoload_path
+          autoload :Bar, autoload_path
+
+          t1 = Thread.new {Foo}
+          t2 = Thread.new {Bar}
+
+          t1.join
+          GC.start # force GC.
+          t2.join
+
+          Object.send(:remove_const, :Foo)
+          Object.send(:remove_const, :Bar)
+
+          $LOADED_FEATURES.delete(autoload_path)
+        end
+      RUBY
+    end
+  end
+
+  def test_autoload_parent_namespace
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "some_const.rb")
+      File.write(autoload_path, 'class SomeConst; end')
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        module SomeNamespace
+          autoload :SomeConst, #{File.realpath(autoload_path).inspect}
+          assert_warning(%r{/some_const\.rb to define SomeNamespace::SomeConst but it didn't}) do
+            assert_not_nil SomeConst
+          end
+        end
+      RUBY
+    end
   end
 end

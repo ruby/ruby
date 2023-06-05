@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/query_command'
+
+require_relative "helper"
+require "rubygems/commands/query_command"
 
 module TestGemCommandsQueryCommandSetup
   def setup
@@ -22,9 +23,7 @@ class TestGemCommandsQueryCommandWithInstalledGems < Gem::TestCase
   include TestGemCommandsQueryCommandSetup
 
   def test_execute
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r]
 
@@ -41,13 +40,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_all
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r --all]
 
@@ -64,13 +61,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_all_prerelease
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r --all --prerelease]
 
@@ -87,15 +82,15 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_details
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2 do |s|
-        s.summary = 'This is a lot of text. ' * 4
-        s.authors = ['Abraham Lincoln', 'Hirohito']
-        s.homepage = 'http://a.example.com/'
+      fetcher.spec "a", 2 do |s|
+        s.summary = "This is a lot of text. " * 4
+        s.authors = ["Abraham Lincoln", "Hirohito"]
+        s.homepage = "http://a.example.com/"
       end
 
       fetcher.legacy_platform
@@ -127,13 +122,13 @@ pl (1)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_details_cleans_text
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2 do |s|
-        s.summary = 'This is a lot of text. ' * 4
+      fetcher.spec "a", 2 do |s|
+        s.summary = "This is a lot of text. " * 4
         s.authors = ["Abraham Lincoln \x01", "\x02 Hirohito"]
         s.homepage = "http://a.example.com/\x03"
       end
@@ -167,13 +162,13 @@ pl (1)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_details_truncates_summary
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2 do |s|
-        s.summary = 'This is a lot of text. ' * 10_000
+      fetcher.spec "a", 2 do |s|
+        s.summary = "This is a lot of text. " * 10_000
         s.authors = ["Abraham Lincoln \x01", "\x02 Hirohito"]
         s.homepage = "http://a.example.com/\x03"
       end
@@ -207,7 +202,7 @@ pl (1)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_installed
@@ -220,7 +215,7 @@ pl (1)
     end
 
     assert_equal "true\n", @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_installed_inverse
@@ -233,7 +228,7 @@ pl (1)
     end
 
     assert_equal "false\n", @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
 
     assert_equal 1, e.exit_code
   end
@@ -248,7 +243,7 @@ pl (1)
     end
 
     assert_equal "true\n", @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_installed_no_name
@@ -260,7 +255,7 @@ pl (1)
       end
     end
 
-    assert_equal '', @stub_ui.output
+    assert_equal "", @stub_ui.output
     assert_equal "ERROR:  You must specify a gem name\n", @stub_ui.error
 
     assert_equal 4, e.exit_code
@@ -276,7 +271,7 @@ pl (1)
     end
 
     assert_equal "false\n", @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
 
     assert_equal 1, e.exit_code
   end
@@ -291,7 +286,7 @@ pl (1)
     end
 
     assert_equal "true\n", @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_installed_version_not_installed
@@ -304,15 +299,13 @@ pl (1)
     end
 
     assert_equal "false\n", @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
 
     assert_equal 1, e.exit_code
   end
 
   def test_execute_local
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :local
 
@@ -329,13 +322,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_local_notty
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[]
 
@@ -351,13 +342,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_local_quiet
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :local
     Gem.configuration.verbose = false
@@ -372,13 +361,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_no_versions
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r --no-versions]
 
@@ -395,13 +382,11 @@ pl
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_notty
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r]
 
@@ -417,7 +402,7 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_prerelease
@@ -435,13 +420,11 @@ a (3.a)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_prerelease_local
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-l --prerelease]
 
@@ -461,9 +444,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_no_prerelease_local
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-l --no-prerelease]
 
@@ -483,9 +464,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_remote
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :remote
 
@@ -502,13 +481,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_remote_notty
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[]
 
@@ -524,13 +501,11 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_remote_quiet
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :remote
     Gem.configuration.verbose = false
@@ -545,16 +520,16 @@ pl (1 i386-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_make_entry
-    a_2_name = @specs['a-2'].original_name
+    a_2_name = @specs["a-2"].original_name
 
     @stub_fetcher.data.delete \
       "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{a_2_name}.gemspec.rz"
 
-    a2 = @specs['a-2']
+    a2 = @specs["a-2"]
     entry_tuples = [
       [Gem::NameTuple.new(a2.name, a2.version, a2.platform),
        Gem.sources.first],
@@ -564,14 +539,12 @@ pl (1 i386-linux)
 
     entry = @cmd.send :make_entry, entry_tuples, platforms
 
-    assert_equal 'a (2)', entry
+    assert_equal "a (2)", entry
   end
 
   # Test for multiple args handling!
   def test_execute_multiple_args
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[a pl]
 
@@ -579,9 +552,9 @@ pl (1 i386-linux)
       @cmd.execute
     end
 
-    assert_match %r{^a }, @stub_ui.output
-    assert_match %r{^pl }, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_match(/^a /, @stub_ui.output)
+    assert_match(/^pl /, @stub_ui.output)
+    assert_equal "", @stub_ui.error
   end
 
   def test_show_gems
@@ -592,8 +565,8 @@ pl (1 i386-linux)
       @cmd.send :show_gems, /a/i
     end
 
-    assert_match %r{^a },  @stub_ui.output
-    refute_match %r{^pl }, @stub_ui.output
+    assert_match(/^a /,  @stub_ui.output)
+    refute_match(/^pl /, @stub_ui.output)
     assert_empty @stub_ui.error
   end
 
@@ -601,9 +574,9 @@ pl (1 i386-linux)
 
   def add_gems_to_fetcher
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
     end
   end
 end
@@ -613,13 +586,13 @@ class TestGemCommandsQueryCommandWithoutInstalledGems < Gem::TestCase
 
   def test_execute_platform
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 1 do |s|
-        s.platform = 'x86-linux'
+      fetcher.spec "a", 1
+      fetcher.spec "a", 1 do |s|
+        s.platform = "x86-linux"
       end
 
-      fetcher.spec 'a', 2 do |s|
-        s.platform = 'universal-darwin'
+      fetcher.spec "a", 2 do |s|
+        s.platform = "universal-darwin"
       end
     end
 
@@ -637,13 +610,13 @@ a (2 universal-darwin, 1 ruby x86-linux)
     EOF
 
     assert_equal expected, @stub_ui.output
-    assert_equal '', @stub_ui.error
+    assert_equal "", @stub_ui.error
   end
 
   def test_execute_show_default_gems
-    spec_fetcher {|fetcher| fetcher.spec 'a', 2 }
+    spec_fetcher {|fetcher| fetcher.spec "a", 2 }
 
-    a1 = new_default_spec 'a', 1
+    a1 = new_default_spec "a", 1
     install_default_gems a1
 
     use_ui @stub_ui do
@@ -661,8 +634,8 @@ EOF
   end
 
   def test_execute_show_default_gems_with_platform
-    a1 = new_default_spec 'a', 1
-    a1.platform = 'java'
+    a1 = new_default_spec "a", 1
+    a1.platform = "java"
     install_default_gems a1
 
     use_ui @stub_ui do
@@ -681,10 +654,10 @@ EOF
 
   def test_execute_default_details
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2
+      fetcher.spec "a", 2
     end
 
-    a1 = new_default_spec 'a', 1
+    a1 = new_default_spec "a", 1
     install_default_gems a1
 
     @cmd.handle_options %w[-l -d]
@@ -711,15 +684,15 @@ a (2, 1)
 
   def test_execute_local_details
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1 do |s|
-        s.platform = 'x86-linux'
+      fetcher.spec "a", 1 do |s|
+        s.platform = "x86-linux"
       end
 
-      fetcher.spec 'a', 2 do |s|
-        s.summary = 'This is a lot of text. ' * 4
-        s.authors = ['Abraham Lincoln', 'Hirohito']
-        s.homepage = 'http://a.example.com/'
-        s.platform = 'universal-darwin'
+      fetcher.spec "a", 2 do |s|
+        s.summary = "This is a lot of text. " * 4
+        s.authors = ["Abraham Lincoln", "Hirohito"]
+        s.homepage = "http://a.example.com/"
+        s.platform = "universal-darwin"
       end
 
       fetcher.legacy_platform
@@ -766,9 +739,9 @@ pl (1)
 
   def test_execute_exact_remote
     spec_fetcher do |fetcher|
-      fetcher.spec 'coolgem-omg', 3
-      fetcher.spec 'coolgem', '4.2.1'
-      fetcher.spec 'wow_coolgem', 1
+      fetcher.spec "coolgem-omg", 3
+      fetcher.spec "coolgem", "4.2.1"
+      fetcher.spec "wow_coolgem", 1
     end
 
     @cmd.handle_options %w[--remote --exact coolgem]
@@ -789,9 +762,9 @@ coolgem (4.2.1)
 
   def test_execute_exact_local
     spec_fetcher do |fetcher|
-      fetcher.spec 'coolgem-omg', 3
-      fetcher.spec 'coolgem', '4.2.1'
-      fetcher.spec 'wow_coolgem', 1
+      fetcher.spec "coolgem-omg", 3
+      fetcher.spec "coolgem", "4.2.1"
+      fetcher.spec "wow_coolgem", 1
     end
 
     @cmd.handle_options %w[--exact coolgem]
@@ -812,13 +785,13 @@ coolgem (4.2.1)
 
   def test_execute_exact_multiple
     spec_fetcher do |fetcher|
-      fetcher.spec 'coolgem-omg', 3
-      fetcher.spec 'coolgem', '4.2.1'
-      fetcher.spec 'wow_coolgem', 1
+      fetcher.spec "coolgem-omg", 3
+      fetcher.spec "coolgem", "4.2.1"
+      fetcher.spec "wow_coolgem", 1
 
-      fetcher.spec 'othergem-omg', 3
-      fetcher.spec 'othergem', '1.2.3'
-      fetcher.spec 'wow_othergem', 1
+      fetcher.spec "othergem-omg", 3
+      fetcher.spec "othergem", "1.2.3"
+      fetcher.spec "wow_othergem", 1
     end
 
     @cmd.handle_options %w[--exact coolgem othergem]
@@ -849,9 +822,9 @@ othergem (1.2.3)
 
   def add_gems_to_fetcher
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 1
-      fetcher.download 'a', 2
-      fetcher.download 'a', '3.a'
+      fetcher.download "a", 1
+      fetcher.download "a", 2
+      fetcher.download "a", "3.a"
     end
   end
 end

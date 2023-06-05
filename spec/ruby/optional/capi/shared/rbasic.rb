@@ -10,7 +10,7 @@ describe :rbasic, shared: true do
     obj, _ = @data.call
     initial = @specs.get_flags(obj)
     obj.freeze
-    @specs.get_flags(obj).should == @freeze | initial
+    (@specs.get_flags(obj) & 0xFFFF).should == (@freeze | initial) & 0xFFFF
   end
 
   it "supports setting the FREEZE flag" do
@@ -18,40 +18,6 @@ describe :rbasic, shared: true do
     initial = @specs.get_flags(obj)
     @specs.set_flags(obj, @freeze | initial).should == @freeze | initial
     obj.should.frozen?
-  end
-
-  ruby_version_is ""..."2.7" do
-    it "reports the appropriate FREEZE and TAINT flags for the object when reading" do
-      obj, _ = @data.call
-      initial = @specs.get_flags(obj)
-      obj.taint
-      @specs.get_flags(obj).should == @taint | initial
-      obj.untaint
-      @specs.get_flags(obj).should == initial
-      obj.freeze
-      @specs.get_flags(obj).should == @freeze | initial
-
-      obj, _ = @data.call
-      obj.taint
-      obj.freeze
-      @specs.get_flags(obj).should == @freeze | @taint | initial
-    end
-
-    it "supports setting the FREEZE and TAINT flags" do
-      obj, _ = @data.call
-      initial = @specs.get_flags(obj)
-      @specs.set_flags(obj, @taint | initial).should == @taint | initial
-      obj.should.tainted?
-      @specs.set_flags(obj, initial).should == initial
-      obj.should_not.tainted?
-      @specs.set_flags(obj, @freeze | initial).should == @freeze | initial
-      obj.should.frozen?
-
-      obj, _ = @data.call
-      @specs.set_flags(obj, @freeze | @taint | initial).should == @freeze | @taint | initial
-      obj.should.tainted?
-      obj.should.frozen?
-    end
   end
 
   it "supports retrieving the (meta)class" do

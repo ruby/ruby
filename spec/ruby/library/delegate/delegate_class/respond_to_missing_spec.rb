@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 require 'delegate'
 
 describe "DelegateClass#respond_to_missing?" do

@@ -72,11 +72,30 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
   def test_generate
     top_level = @store.add_file 'file.rb'
     top_level.add_class @klass.class, @klass.name
+    @klass.add_class RDoc::NormalClass, 'Inner'
+    @klass.add_comment <<~RDOC, top_level
+    = Heading 1
+    Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+    == Heading 1.1
+    tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+    === Heading 1.1.1
+    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+    ==== Heading 1.1.1.1
+    consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+    == Heading 1.2
+    cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
+    == Heading 1.3
+    non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    === Heading 1.3.1
+    etc etc...
+    RDOC
 
     @g.generate
 
     assert_file 'index.html'
     assert_file 'Object.html'
+    assert_file 'Klass.html'
+    assert_file 'Klass/Inner.html'
     assert_file 'table_of_contents.html'
     assert_file 'js/search_index.js'
 
@@ -88,10 +107,48 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
 
     encoding = Regexp.escape Encoding::UTF_8.name
 
-    assert_match %r%<meta charset="#{encoding}">%, File.read('index.html')
-    assert_match %r%<meta charset="#{encoding}">%, File.read('Object.html')
+    assert_match %r%<meta charset="#{encoding}">%, File.binread('index.html')
+    assert_match %r%<meta charset="#{encoding}">%, File.binread('Object.html')
 
-    refute_match(/Ignored/, File.read('index.html'))
+    refute_match(/Ignored/, File.binread('index.html'))
+    summary = File.binread('index.html')[%r[<summary.*Klass\.html.*</summary>.*</details>]m]
+    assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
+
+    klass = File.binread('Klass.html')
+    klassnav = klass[%r[<div class="nav-section">.*<div id="class-metadata">]m]
+    assert_match(
+      %r[<li>\s*<details open>\s*<summary>\s*<a href=\S+>Heading 1</a>\s*</summary>\s*<ul]m,
+      klassnav
+    )
+    assert_match(
+      %r[<li>\s*<a href=\S+>Heading 1.1.1.1</a>\s*</ul>\s*</details>\s*</li>]m,
+      klassnav
+    )
+
+    assert_match(/<h1 id="class-Klass-label-Heading\+1">Heading 1(?!\.)/,
+                 klass[%r[<section class=\"description\">.*</section>]m])
+    toc = File.binread('table_of_contents.html')
+    assert_match(
+      %r[<a\s+href="Klass\.html#class-Klass-label-Heading\+1">Heading 1</a>]m,
+      toc[%r[<h2\s+id=\"classes\">.*(?=<h2\b)]m][%r[<a\s+href="Klass\.html".*(?=</li\b)]m]
+    )
+  end
+
+  def test_generate_page
+    @store.add_file 'outer.rdoc', parser: RDoc::Parser::Simple
+    @store.add_file 'outer/inner.rdoc', parser: RDoc::Parser::Simple
+    @g.generate
+    assert_file 'outer_rdoc.html'
+    assert_file 'outer/inner_rdoc.html'
+    index = File.binread('index.html')
+    re = %r[<summary><a href="\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
+    assert_match(re, index)
+    summary = index[re]
+    assert_match %r[<a href="\./outer/inner_rdoc.html">inner</a>], summary
+    re = %r[<details open><summary><a href="\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
+    assert_match(re, File.binread('outer_rdoc.html'))
+    re = %r[<details open><summary><a href="\.\./outer_rdoc\.html">outer</a></summary>.*?</details>]m
+    assert_match(re, File.binread('outer/inner_rdoc.html'))
   end
 
   def test_generate_dry_run
@@ -211,6 +268,29 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_includes method_name, '{ |%&lt;&lt;script&gt;alert(&quot;atui&quot;)&lt;/script&gt;&gt;, yield_arg| ... }'
   end
 
+  def test_generated_filename_with_html_tag
+    filename = '"><em>should be escaped'
+    begin # in @tmpdir
+      File.write(filename, '')
+    rescue SystemCallError
+      # ", <, > chars are prohibited as filename
+      return
+    else
+      File.unlink(filename)
+    end
+    @store.add_file filename
+    doc = @store.all_files.last
+    doc.parser = RDoc::Parser::Simple
+
+    @g.generate
+
+    Dir.glob("*.html", base: @tmpdir) do |html|
+      File.binread(File.join(@tmpdir, html)).scan(/.*should be escaped.*/) do |line|
+        assert_not_include line, "<em>", html
+      end
+    end
+  end
+
   def test_template_stylesheets
     css = Tempfile.create(%W'hoge .css', Dir.mktmpdir('tmp', '.'))
     File.write(css, '')
@@ -223,7 +303,23 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     @g.generate
 
     assert_file base
-    assert_include File.read('index.html'), %Q[href="./#{base}"]
+    assert_include File.binread('index.html'), %Q[href="./#{base}"]
+  end
+
+  def test_title
+    title = "RDoc Test".freeze
+    @options.title = title
+    @g.generate
+
+    assert_main_title(File.binread('index.html'), title)
+  end
+
+  def test_title_escape
+    title = %[<script>alert("RDoc")</script>].freeze
+    @options.title = title
+    @g.generate
+
+    assert_main_title(File.binread('index.html'), title)
   end
 
   ##
@@ -249,4 +345,9 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
                     "#{filename} is not hard-linked"
   end
 
+  def assert_main_title(content, title)
+    title = CGI.escapeHTML(title)
+    assert_equal(title, content[%r[<title>(.*?)<\/title>]im, 1])
+    assert_include(content[%r[<main\s[^<>]*+>\s*(.*?)</main>]im, 1], title)
+  end
 end

@@ -1,7 +1,7 @@
 prelude: |
   a = [nil] * 3
   b = Class.new{attr_writer :a, :b, :c}.new
-  c, d, e, f = nil, nil, nil, nil
+  c = d = e = f = g = h = i = nil
 benchmark:
   array2_2: "c = (a[0], a[1] = 1, 2)"
   array2_3: "c = (a[0], a[1] = 1, 2, 3)"
@@ -27,3 +27,27 @@ benchmark:
   lvar2_3p: "(d, e = 1, 2, 3; nil)"
   lvar3_2p: "(d, e, f = 1, 2; nil)"
   lvar3_3p: "(d, e, f = 1, 2, 3; nil)"
+  array2_2lv: "c = (a[0], a[1] = g, h)"
+  array2_ilv: "c = (a[0], a[1] = g, h, i)"
+  arrayi_2lv: "c = (a[0], a[1], a[2] = g, h)"
+  arrayi_ilv: "c = (a[0], a[1], a[2] = g, h, i)"
+  attr2_2lv: "c = (b.a, b.b = g, h)"
+  attr2_ilv: "c = (b.a, b.b = g, h, i)"
+  attri_2lv: "c = (b.a, b.b, b.c = g, h)"
+  attri_ilv: "c = (b.a, b.b, b.c = g, h, i)"
+  lvar2_2lv: "c = (d, e = g, h)"
+  lvar2_ilv: "c = (d, e = g, h, i)"
+  lvari_2lv: "c = (d, e, f = g, h)"
+  lvari_ilv: "c = (d, e, f = g, h, i)"
+  array2_2plv: "(a[0], a[1] = g, h; nil)"
+  array2_iplv: "(a[0], a[1] = g, h, i; nil)"
+  arrayi_2plv: "(a[0], a[1], a[2] = g, h; nil)"
+  arrayi_iplv: "(a[0], a[1], a[2] = g, h, i; nil)"
+  attr2_2plv: "(b.a, b.b = g, h; nil)"
+  attr2_iplv: "(b.a, b.b = g, h, i; nil)"
+  attri_2plv: "(b.a, b.b, b.c = g, h; nil)"
+  attri_iplv: "(b.a, b.b, b.c = g, h, i; nil)"
+  lvar2_2plv: "(d, e = g, h; nil)"
+  lvar2_iplv: "(d, e = g, h, i; nil)"
+  lvari_2plv: "(d, e, f = g, h; nil)"
+  lvari_iplv: "(d, e, f = g, h, i; nil)"

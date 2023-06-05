@@ -98,28 +98,30 @@
 
     <%- methods.each do |method| -%>
       <div id="<%= method.aref %>" class="method-detail <%= method.is_alias_for ? "method-alias" : '' %>">
-        <%- if (call_seq = method.call_seq) then -%>
-        <%-   call_seq.strip.split("\n").each_with_index do |call_seq, i| -%>
-        <div class="method-heading">
-          <span class="method-callseq">
-            <%= h(call_seq.strip.
-                  gsub( /^\w+\./m, '')).
-                  gsub(/(.*)[-=]&gt;/, '\1&rarr;') %>
-          </span>
-          <%- if i == 0 and method.token_stream then -%>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <%- if (call_seq = method.call_seq) then -%>
+          <%-   call_seq.strip.split("\n").each_with_index do |call_seq, i| -%>
+          <div class="method-heading">
+            <span class="method-callseq">
+              <%= h(call_seq.strip.
+                    gsub( /^\w+\./m, '')).
+                    gsub(/(.*)[-=]&gt;/, '\1&rarr;') %>
+            </span>
+            <%- if i == 0 and method.token_stream then -%>
+            <span class="method-click-advice">click to toggle source</span>
+            <%- end -%>
+          </div>
+          <%-   end -%>
+          <%- else -%>
+          <div class="method-heading">
+            <span class="method-name"><%= h method.name %></span><span
+              class="method-args"><%= h method.param_seq %></span>
+            <%- if method.token_stream then -%>
+            <span class="method-click-advice">click to toggle source</span>
+            <%- end -%>
+          </div>
           <%- end -%>
         </div>
-        <%-   end -%>
-        <%- else -%>
-        <div class="method-heading">
-          <span class="method-name"><%= h method.name %></span><span
-            class="method-args"><%= h method.param_seq %></span>
-          <%- if method.token_stream then -%>
-          <span class="method-click-advice">click to toggle source</span>
-          <%- end -%>
-        </div>
-        <%- end -%>
 
         <div class="method-description">
           <%- if method.comment then -%>

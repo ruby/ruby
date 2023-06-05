@@ -100,10 +100,10 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle :show
-      expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
+      expect(out).to include("foo (1.0 #{@git.ref_for("main", 6)}")
     end
 
-    it "prints out branch names other than master" do
+    it "prints out branch names other than main" do
       update_git "foo", :branch => "omg" do |s|
         s.write "lib/foo.rb", "FOO = '1.0.omg'"
       end
@@ -173,7 +173,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       G
 
       bundle "show rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>)?\z/)
+      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>.*)?\z/)
     end
   end
 

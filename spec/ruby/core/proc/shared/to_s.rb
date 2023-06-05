@@ -1,9 +1,7 @@
 describe :proc_to_s, shared: true do
-  sep = ruby_version_is("2.7") ? " " : "@"
-
   describe "for a proc created with Proc.new" do
     it "returns a description including file and line number" do
-      Proc.new { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{__LINE__ }>$/
+      Proc.new { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?) #{Regexp.escape __FILE__}:#{__LINE__ }>$/
     end
 
     it "has a binary encoding" do
@@ -13,7 +11,7 @@ describe :proc_to_s, shared: true do
 
   describe "for a proc created with lambda" do
     it "returns a description including '(lambda)' and including file and line number" do
-      -> { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{__LINE__ } \(lambda\)>$/
+      -> { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?) #{Regexp.escape __FILE__}:#{__LINE__ } \(lambda\)>$/
     end
 
     it "has a binary encoding" do
@@ -23,7 +21,7 @@ describe :proc_to_s, shared: true do
 
   describe "for a proc created with proc" do
     it "returns a description including file and line number" do
-      proc { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{__LINE__ }>$/
+      proc { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?) #{Regexp.escape __FILE__}:#{__LINE__ }>$/
     end
 
     it "has a binary encoding" do
@@ -36,7 +34,7 @@ describe :proc_to_s, shared: true do
         def hello; end
         s = method("hello").to_proc.send(@method)
         if s.include? __FILE__
-          s.should =~ /^#<Proc:([^ ]*?)#{sep}#{Regexp.escape __FILE__}:#{__LINE__ - 3} \(lambda\)>$/
+          s.should =~ /^#<Proc:([^ ]*?) #{Regexp.escape __FILE__}:#{__LINE__ - 3} \(lambda\)>$/
         else
           s.should =~ /^#<Proc:([^ ]*?) \(lambda\)>$/
         end

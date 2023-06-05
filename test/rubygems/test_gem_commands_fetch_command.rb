@@ -1,8 +1,9 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/package'
-require 'rubygems/security'
-require 'rubygems/commands/fetch_command'
+
+require_relative "helper"
+require "rubygems/package"
+require "rubygems/security"
+require "rubygems/commands/fetch_command"
 
 class TestGemCommandsFetchCommand < Gem::TestCase
   def setup
@@ -13,10 +14,10 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
-    assert_path_not_exist File.join(@tempdir, 'cache'), 'sanity check'
+    assert_path_not_exist File.join(@tempdir, "cache"), "sanity check"
 
     @cmd.options[:args] = %w[a]
 
@@ -26,24 +27,24 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a2 = specs['a-2']
+    a2 = specs["a-2"]
 
     assert_path_exist(File.join(@tempdir, a2.file_name),
                        "#{a2.full_name} not fetched")
-    assert_path_not_exist File.join(@tempdir, 'cache'),
-                       'gem repository directories must not be created'
+    assert_path_not_exist File.join(@tempdir, "cache"),
+                       "gem repository directories must not be created"
   end
 
   def test_execute_latest
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 1
+      fetcher.gem "a", 2
     end
 
-    assert_path_not_exist File.join(@tempdir, 'cache'), 'sanity check'
+    assert_path_not_exist File.join(@tempdir, "cache"), "sanity check"
 
     @cmd.options[:args] = %w[a]
-    @cmd.options[:version] = req('>= 0.1')
+    @cmd.options[:version] = req(">= 0.1")
 
     use_ui @ui do
       Dir.chdir @tempdir do
@@ -51,17 +52,17 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a2 = specs['a-2']
+    a2 = specs["a-2"]
     assert_path_exist(File.join(@tempdir, a2.file_name),
                        "#{a2.full_name} not fetched")
-    assert_path_not_exist File.join(@tempdir, 'cache'),
-                       'gem repository directories must not be created'
+    assert_path_not_exist File.join(@tempdir, "cache"),
+                       "gem repository directories must not be created"
   end
 
   def test_execute_prerelease
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.gem 'a', '2.a'
+      fetcher.gem "a", 2
+      fetcher.gem "a", "2.a"
     end
 
     @cmd.options[:args] = %w[a]
@@ -73,7 +74,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a2 = specs['a-2']
+    a2 = specs["a-2"]
 
     assert_path_exist(File.join(@tempdir, a2.file_name),
                        "#{a2.full_name} not fetched")
@@ -83,7 +84,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     a2_spec, a2 = util_gem("a", "2")
 
     a2_universal_darwin_spec, a2_universal_darwin = util_gem("a", "2") do |s|
-      s.platform = 'universal-darwin'
+      s.platform = "universal-darwin"
     end
 
     Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
@@ -103,7 +104,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @fetcher.data["#{@gem_repo}gems/#{a2_universal_darwin_spec.file_name}"] = Gem.read_binary(a2_universal_darwin)
     FileUtils.cp a2_universal_darwin, a2_universal_darwin_spec.cache_file
 
-    util_set_arch 'arm64-darwin20' do
+    util_set_arch "arm64-darwin20" do
       use_ui @ui do
         Dir.chdir @tempdir do
           @cmd.execute
@@ -117,8 +118,8 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_specific_prerelease
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.gem 'a', '2.a'
+      fetcher.gem "a", 2
+      fetcher.gem "a", "2.a"
     end
 
     @cmd.options[:args] = %w[a]
@@ -131,7 +132,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a2_pre = specs['a-2.a']
+    a2_pre = specs["a-2.a"]
 
     assert_path_exist(File.join(@tempdir, a2_pre.file_name),
                        "#{a2_pre.full_name} not fetched")
@@ -139,12 +140,12 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_version
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 1
+      fetcher.gem "a", 2
     end
 
     @cmd.options[:args] = %w[a]
-    @cmd.options[:version] = Gem::Requirement.new '1'
+    @cmd.options[:version] = Gem::Requirement.new "1"
 
     use_ui @ui do
       Dir.chdir @tempdir do
@@ -152,7 +153,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a1 = specs['a-1']
+    a1 = specs["a-1"]
 
     assert_path_exist(File.join(@tempdir, a1.file_name),
                        "#{a1.full_name} not fetched")
@@ -160,7 +161,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_version_specified_by_colon
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
+      fetcher.gem "a", 1
     end
 
     @cmd.options[:args] = %w[a:1]
@@ -171,7 +172,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a1 = specs['a-1']
+    a1 = specs["a-1"]
 
     assert_path_exist(File.join(@tempdir, a1.file_name),
                        "#{a1.full_name} not fetched")
@@ -179,7 +180,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_two_version
     @cmd.options[:args] = %w[a b]
-    @cmd.options[:version] = Gem::Requirement.new '1'
+    @cmd.options[:version] = Gem::Requirement.new "1"
 
     use_ui @ui do
       assert_raise Gem::MockGemUi::TermError, @ui.error do
@@ -196,8 +197,8 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_two_version_specified_by_colon
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'b', 1
+      fetcher.gem "a", 1
+      fetcher.gem "b", 1
     end
 
     @cmd.options[:args] = %w[a:1 b:1]
@@ -208,8 +209,8 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    a1 = specs['a-1']
-    b1 = specs['b-1']
+    a1 = specs["a-1"]
+    b1 = specs["b-1"]
 
     assert_path_exist(File.join(@tempdir, a1.file_name),
                        "#{a1.full_name} not fetched")
@@ -219,7 +220,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
   def test_execute_version_nonexistent
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', 1
+      fetcher.spec "foo", 1
     end
 
     @cmd.options[:args] = %w[foo:2]
@@ -238,7 +239,7 @@ ERROR:  Possible alternatives: foo
 
   def test_execute_nonexistent_hint_disabled
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', 1
+      fetcher.spec "foo", 1
     end
 
     @cmd.options[:args] = %w[foo:2]

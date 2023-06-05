@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-experimental, Warning[:experimental] = Warning[:experimental], false # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
-eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class NullFormatter
     def message_for(corrections)
@@ -11,14 +9,14 @@ class TestPatternMatching < Test::Unit::TestCase
   end
 
   def setup
-    if defined?(DidYouMean)
+    if defined?(DidYouMean.formatter=nil)
       @original_formatter = DidYouMean.formatter
       DidYouMean.formatter = NullFormatter.new
     end
   end
 
   def teardown
-    if defined?(DidYouMean)
+    if defined?(DidYouMean.formatter=nil)
       DidYouMean.formatter = @original_formatter
     end
   end
@@ -466,6 +464,8 @@ END
         true
       end
     end
+
+    assert_valid_syntax("1 in ^(1\n)")
   end
 
   def test_array_pattern
@@ -800,6 +800,10 @@ END
         true
       end
     end
+
+    assert_syntax_error(%q{
+      0 => [a, *a]
+    }, /duplicated variable name/)
   end
 
   def test_find_pattern
@@ -868,6 +872,10 @@ END
         false
       end
     end
+
+    assert_syntax_error(%q{
+      0 => [*a, a, b, *b]
+    }, /duplicated variable name/)
   end
 
   def test_hash_pattern
@@ -1154,6 +1162,28 @@ END
         else
           true
         end
+      end
+    end
+
+    bug18890 = assert_warning(/(?:.*:[47]: warning: unused literal ignored\n){2}/) do
+      eval("#{<<~';;;'}")
+      proc do |i|
+        case i
+        in a:
+          0 # line 4
+          a
+        in "b":
+          0 # line 7
+          b
+        else
+          false
+        end
+      end
+      ;;;
+    end
+    [{a: 42}, {b: 42}].each do |i|
+      assert_block('newline should be significant after pattern label') do
+        bug18890.call(i)
       end
     end
 
@@ -1550,20 +1580,16 @@ END
     assert_equal false, (1 in 2)
   end
 
-  def assert_experimental_warning(code)
-    w = Warning[:experimental]
+  def test_bug18990
+    {a: 0} => a:
+    assert_equal 0, a
+    {a: 0} => a:
+    assert_equal 0, a
 
-    Warning[:experimental] = false
-    assert_warn('') {eval(code)}
-
-    Warning[:experimental] = true
-    assert_warn(/is experimental/) {eval(code)}
-  ensure
-    Warning[:experimental] = w
-  end
-
-  def test_experimental_warning
-    assert_experimental_warning("case [0]; in [*, 0, *]; end")
+    {a: 0} in a:
+    assert_equal 0, a
+    {a: 0} in a:
+    assert_equal 0, a
   end
 
   ################################################################
@@ -1693,5 +1719,3 @@ END
     end
   end
 end
-END_of_GUARD
-Warning[:experimental] = experimental

@@ -44,6 +44,7 @@ module ConstantSpecs
 
   # Included in ParentA
   module ModuleB
+    LINE = __LINE__ - 1
     CS_CONST10 = :const10_9
     CS_CONST11 = :const11_2
     CS_CONST12 = :const12_1
@@ -75,12 +76,19 @@ module ConstantSpecs
     CS_CONST10 = :const10_8
   end
 
+  # Included in ContainerA
+  module ModuleIncludePrepended
+    prepend ModuleD
+
+    CS_CONST11 = :const11_8
+  end
+
   # The following classes/modules have all the constants set "statically".
   # Contrast with the classes below where the constants are set as the specs
   # are run.
 
   class ClassA
-    CS_CLASS_A_LINE = __LINE__ - 1
+    LINE = __LINE__ - 1
     CS_CONST10 = :const10_10
     CS_CONST10_LINE = __LINE__ - 1
     CS_CONST16 = :const16
@@ -167,6 +175,10 @@ module ConstantSpecs
     def self.const10; CS_CONST10; end
 
     def const10; CS_CONST10; end
+  end
+
+  class ContainerPrepend
+    include ModuleIncludePrepended
   end
 
   class ContainerA::ChildA
@@ -297,6 +309,16 @@ module ConstantSpecs
   CS_PRIVATE = :cs_private
   CS_PRIVATE_LINE = __LINE__ - 1
   private_constant :CS_PRIVATE
+end
+
+module ConstantSpecsThree
+  module ConstantSpecsTwo
+    Foo = :cs_three_foo
+  end
+end
+
+module ConstantSpecsTwo
+  Foo = :cs_two_foo
 end
 
 include ConstantSpecs::ModuleA

@@ -28,9 +28,18 @@ describe "The module keyword" do
     ModuleSpecs::Reopened.should be_true
   end
 
-  it "reopens a module included in Object" do
-    module IncludedModuleSpecs; Reopened = true; end
-    ModuleSpecs::IncludedInObject::IncludedModuleSpecs::Reopened.should be_true
+  ruby_version_is '3.2' do
+    it "does not reopen a module included in Object" do
+      module IncludedModuleSpecs; Reopened = true; end
+      ModuleSpecs::IncludedInObject::IncludedModuleSpecs.should_not == Object::IncludedModuleSpecs
+    end
+  end
+
+  ruby_version_is ''...'3.2' do
+    it "reopens a module included in Object" do
+      module IncludedModuleSpecs; Reopened = true; end
+      ModuleSpecs::IncludedInObject::IncludedModuleSpecs::Reopened.should be_true
+    end
   end
 
   it "raises a TypeError if the constant is a Class" do

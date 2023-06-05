@@ -85,7 +85,7 @@ class Bundler::Thor
         URI.send(:open, source) { |input| input.binmode.read }
       else
         source = File.expand_path(find_in_source_paths(source.to_s))
-        open(source) { |input| input.binmode.read }
+        File.open(source) { |input| input.binmode.read }
       end
 
       destination ||= if block_given?
@@ -252,7 +252,7 @@ class Bundler::Thor
     # flag<Regexp|String>:: the regexp or string to be replaced
     # replacement<String>:: the replacement, can be also given as a block
     # config<Hash>:: give :verbose => false to not log the status, and
-    #                :force => true, to force the replacement regardles of runner behavior.
+    #                :force => true, to force the replacement regardless of runner behavior.
     #
     # ==== Example
     #

@@ -4,14 +4,15 @@ RSpec.describe "real world edgecases", :realworld => true do
   def rubygems_version(name, requirement)
     ruby <<-RUBY
       require "#{spec_dir}/support/artifice/vcr"
-      require "#{entrypoint}"
-      require "#{entrypoint}/source/rubygems/remote"
-      require "#{entrypoint}/fetcher"
+      require "bundler"
+      require "bundler/source/rubygems/remote"
+      require "bundler/fetcher"
       rubygem = Bundler.ui.silence do
         source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
         fetcher = Bundler::Fetcher.new(source)
         index = fetcher.specs([#{name.dump}], nil)
-        index.search(Gem::Dependency.new(#{name.dump}, #{requirement.dump})).last
+        requirement = Gem::Requirement.create(#{requirement.dump})
+        index.search(#{name.dump}).select {|spec| requirement.satisfied_by?(spec.version) }.last
       end
       if rubygem.nil?
         raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
@@ -64,7 +65,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   it "is able to update a top-level dependency when there is a conflict on a shared transitive child" do
     # from https://github.com/rubygems/bundler/issues/5031
 
-    system_gems "bundler-2.99.0"
+    pristine_system_gems "bundler-1.99.0"
 
     gemfile <<-G
       source "https://rubygems.org"
@@ -154,7 +155,7 @@ RSpec.describe "real world edgecases", :realworld => true do
             activemodel (= 4.2.7.1)
             activerecord (= 4.2.7.1)
             activesupport (= 4.2.7.1)
-            bundler (>= 1.3.0, < 3.0)
+            bundler (>= 1.3.0, < 2.0)
             railties (= 4.2.7.1)
             sprockets-rails
           rails-deprecated_sanitizer (1.0.3)
@@ -191,12 +192,12 @@ RSpec.describe "real world edgecases", :realworld => true do
         rails (~> 4.2.7.1)
     L
 
-    bundle "lock --update paperclip", :env => { "BUNDLER_VERSION" => "2.99.0" }
+    bundle "lock --update paperclip", :env => { "BUNDLER_VERSION" => "1.99.0" }
 
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  it "outputs a helpful error message when gems have invalid gemspecs" do
+  it "outputs a helpful error message when gems have invalid gemspecs", :rubygems => "< 3.3.16" do
     install_gemfile <<-G, :standalone => true, :raise_on_error => false, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
@@ -207,15 +208,25 @@ RSpec.describe "real world edgecases", :realworld => true do
     expect(err).to include("resque-scheduler 2.2.0 has an invalid gemspec")
   end
 
+  it "outputs a helpful warning when gems have a gemspec with invalid `require_paths`", :rubygems => ">= 3.3.16" do
+    install_gemfile <<-G, :standalone => true, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
+      source 'https://rubygems.org'
+      gem "resque-scheduler", "2.2.0"
+      gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0
+      gem "ruby2_keywords", "0.0.5"
+    G
+    expect(err).to include("resque-scheduler 2.2.0 includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this").once
+  end
+
   it "doesn't hang on big gemfile" do
-    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM =~ /darwin/
+    skip "Only for ruby 2.7" unless RUBY_VERSION.start_with?("2.7")
 
     gemfile <<~G
       # frozen_string_literal: true
 
       source "https://rubygems.org"
 
-      ruby "2.7.3"
+      ruby "~> 2.7.7"
 
       gem "rails"
       gem "pg", ">= 0.18", "< 2.0"
@@ -310,17 +321,17 @@ RSpec.describe "real world edgecases", :realworld => true do
     G
 
     if Bundler.feature_flag.bundler_3_mode?
-      # Conflicts on bundler version, so fails earlier
+      # Conflicts on bundler version, so we count attempts differently
       bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }, :raise_on_error => false
-      expect(out).to display_total_steps_of(435)
+      expect(out.split("\n").grep(/backtracking to/).count).to eq(16)
     else
       bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
-      expect(out).to display_total_steps_of(1025)
+      expect(out).to include("Solution found after 7 attempts")
     end
   end
 
   it "doesn't hang on tricky gemfile" do
-    skip "Only for ruby 2.7.3" if RUBY_VERSION != "2.7.3" || RUBY_PLATFORM =~ /darwin/
+    skip "Only for ruby 2.7" unless RUBY_VERSION.start_with?("2.7")
 
     gemfile <<~G
       source 'https://rubygems.org'
@@ -338,190 +349,168 @@ RSpec.describe "real world edgecases", :realworld => true do
 
     bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
 
-    if Bundler.feature_flag.bundler_3_mode?
-      expect(out).to display_total_steps_of(890)
-    else
-      expect(out).to display_total_steps_of(891)
-    end
+    expect(out).to include("Solution found after 6 attempts")
   end
 
   it "doesn't hang on nix gemfile" do
-    skip "Only for ruby 3.0.1" if RUBY_VERSION != "3.0.1" || RUBY_PLATFORM =~ /darwin/
+    skip "Only for ruby 3.0" unless RUBY_VERSION.start_with?("3.0")
 
     gemfile <<~G
-      source "https://rubygems.org" do
-        gem "addressable"
-        gem "atk"
-        gem "awesome_print"
-        gem "bacon"
-        gem "byebug"
-        gem "cairo"
-        gem "cairo-gobject"
-        gem "camping"
-        gem "charlock_holmes"
-        gem "cld3"
-        gem "cocoapods"
-        gem "cocoapods-acknowledgements"
-        gem "cocoapods-art"
-        gem "cocoapods-bin"
-        gem "cocoapods-browser"
-        gem "cocoapods-bugsnag"
-        gem "cocoapods-check"
-        gem "cocoapods-clean"
-        gem "cocoapods-clean_build_phases_scripts"
-        gem "cocoapods-core"
-        gem "cocoapods-coverage"
-        gem "cocoapods-deintegrate"
-        gem "cocoapods-dependencies"
-        gem "cocoapods-deploy"
-        gem "cocoapods-downloader"
-        gem "cocoapods-expert-difficulty"
-        gem "cocoapods-fix-react-native"
-        gem "cocoapods-generate"
-        gem "cocoapods-git_url_rewriter"
-        gem "cocoapods-keys"
-        gem "cocoapods-no-dev-schemes"
-        gem "cocoapods-open"
-        gem "cocoapods-packager"
-        gem "cocoapods-playgrounds"
-        gem "cocoapods-plugins"
-        gem "cocoapods-prune-localizations"
-        gem "cocoapods-rome"
-        gem "cocoapods-search"
-        gem "cocoapods-sorted-search"
-        gem "cocoapods-static-swift-framework"
-        gem "cocoapods-stats"
-        gem "cocoapods-tdfire-binary"
-        gem "cocoapods-testing"
-        gem "cocoapods-trunk"
-        gem "cocoapods-try"
-        gem "cocoapods-try-release-fix"
-        gem "cocoapods-update-if-you-dare"
-        gem "cocoapods-whitelist"
-        gem "cocoapods-wholemodule"
-        gem "coderay"
-        gem "concurrent-ruby"
-        gem "curb"
-        gem "curses"
-        gem "daemons"
-        gem "dep-selector-libgecode"
-        gem "digest-sha3"
-        gem "domain_name"
-        gem "do_sqlite3"
-        gem "ethon"
-        gem "eventmachine"
-        gem "excon"
-        gem "faraday"
-        gem "ffi"
-        gem "ffi-rzmq-core"
-        gem "fog-dnsimple"
-        gem "gdk_pixbuf2"
-        gem "gio2"
-        gem "gitlab-markup"
-        gem "glib2"
-        gem "gpgme"
-        gem "gtk2"
-        gem "hashie"
-        gem "highline"
-        gem "hike"
-        gem "hitimes"
-        gem "hpricot"
-        gem "httpclient"
-        gem "http-cookie"
-        gem "iconv"
-        gem "idn-ruby"
-        gem "jbuilder"
-        gem "jekyll"
-        gem "jmespath"
-        gem "jwt"
-        gem "libv8"
-        gem "libxml-ruby"
-        gem "magic"
-        gem "markaby"
-        gem "method_source"
-        gem "mini_magick"
-        gem "msgpack"
-        gem "mysql2"
-        gem "ncursesw"
-        gem "netrc"
-        gem "net-scp"
-        gem "net-ssh"
-        gem "nokogiri"
-        gem "opus-ruby"
-        gem "ovirt-engine-sdk"
-        gem "pango"
-        gem "patron"
-        gem "pcaprub"
-        gem "pg"
-        gem "pry"
-        gem "pry-byebug"
-        gem "pry-doc"
-        gem "public_suffix"
-        gem "puma"
-        gem "rails"
-        gem "rainbow"
-        gem "rbnacl"
-        gem "rb-readline"
-        gem "re2"
-        gem "redis"
-        gem "redis-rack"
-        gem "rest-client"
-        gem "rmagick"
-        gem "rpam2"
-        gem "rspec"
-        gem "rubocop"
-        gem "rubocop-performance"
-        gem "ruby-libvirt"
-        gem "ruby-lxc"
-        gem "ruby-progressbar"
-        gem "ruby-terminfo"
-        gem "ruby-vips"
-        gem "rubyzip"
-        gem "rugged"
-        gem "sassc"
-        gem "scrypt"
-        gem "semian"
-        gem "sequel"
-        gem "sequel_pg"
-        gem "simplecov"
-        gem "sinatra"
-        gem "slop"
-        gem "snappy"
-        gem "sqlite3"
-        gem "taglib-ruby"
-        gem "thrift"
-        gem "tilt"
-        gem "tiny_tds"
-        gem "treetop"
-        gem "typhoeus"
-        gem "tzinfo"
-        gem "unf_ext"
-        gem "uuid4r"
-        gem "whois"
-        gem "zookeeper"
-      end
+      source "https://rubygems.org"
+
+      gem "addressable"
+      gem "atk"
+      gem "awesome_print"
+      gem "bacon"
+      gem "byebug"
+      gem "cairo"
+      gem "cairo-gobject"
+      gem "camping"
+      gem "charlock_holmes"
+      gem "cld3"
+      gem "cocoapods"
+      gem "cocoapods-acknowledgements"
+      gem "cocoapods-art"
+      gem "cocoapods-bin"
+      gem "cocoapods-browser"
+      gem "cocoapods-bugsnag"
+      gem "cocoapods-check"
+      gem "cocoapods-clean"
+      gem "cocoapods-clean_build_phases_scripts"
+      gem "cocoapods-core"
+      gem "cocoapods-coverage"
+      gem "cocoapods-deintegrate"
+      gem "cocoapods-dependencies"
+      gem "cocoapods-deploy"
+      gem "cocoapods-downloader"
+      gem "cocoapods-expert-difficulty"
+      gem "cocoapods-fix-react-native"
+      gem "cocoapods-generate"
+      gem "cocoapods-git_url_rewriter"
+      gem "cocoapods-keys"
+      gem "cocoapods-no-dev-schemes"
+      gem "cocoapods-open"
+      gem "cocoapods-packager"
+      gem "cocoapods-playgrounds"
+      gem "cocoapods-plugins"
+      gem "cocoapods-prune-localizations"
+      gem "cocoapods-rome"
+      gem "cocoapods-search"
+      gem "cocoapods-sorted-search"
+      gem "cocoapods-static-swift-framework"
+      gem "cocoapods-stats"
+      gem "cocoapods-tdfire-binary"
+      gem "cocoapods-testing"
+      gem "cocoapods-trunk"
+      gem "cocoapods-try"
+      gem "cocoapods-try-release-fix"
+      gem "cocoapods-update-if-you-dare"
+      gem "cocoapods-whitelist"
+      gem "cocoapods-wholemodule"
+      gem "coderay"
+      gem "concurrent-ruby"
+      gem "curb"
+      gem "curses"
+      gem "daemons"
+      gem "dep-selector-libgecode"
+      gem "digest-sha3"
+      gem "domain_name"
+      gem "do_sqlite3"
+      gem "ethon"
+      gem "eventmachine"
+      gem "excon"
+      gem "faraday"
+      gem "ffi"
+      gem "ffi-rzmq-core"
+      gem "fog-dnsimple"
+      gem "gdk_pixbuf2"
+      gem "gio2"
+      gem "gitlab-markup"
+      gem "glib2"
+      gem "gpgme"
+      gem "gtk2"
+      gem "hashie"
+      gem "highline"
+      gem "hike"
+      gem "hitimes"
+      gem "hpricot"
+      gem "httpclient"
+      gem "http-cookie"
+      gem "iconv"
+      gem "idn-ruby"
+      gem "jbuilder"
+      gem "jekyll"
+      gem "jmespath"
+      gem "jwt"
+      gem "libv8"
+      gem "libxml-ruby"
+      gem "magic"
+      gem "markaby"
+      gem "method_source"
+      gem "mini_magick"
+      gem "msgpack"
+      gem "mysql2"
+      gem "ncursesw"
+      gem "netrc"
+      gem "net-scp"
+      gem "net-ssh"
+      gem "nokogiri"
+      gem "opus-ruby"
+      gem "ovirt-engine-sdk"
+      gem "pango"
+      gem "patron"
+      gem "pcaprub"
+      gem "pg"
+      gem "pry"
+      gem "pry-byebug"
+      gem "pry-doc"
+      gem "public_suffix"
+      gem "puma"
+      gem "rails"
+      gem "rainbow"
+      gem "rbnacl"
+      gem "rb-readline"
+      gem "re2"
+      gem "redis"
+      gem "redis-rack"
+      gem "rest-client"
+      gem "rmagick"
+      gem "rpam2"
+      gem "rspec"
+      gem "rubocop"
+      gem "rubocop-performance"
+      gem "ruby-libvirt"
+      gem "ruby-lxc"
+      gem "ruby-progressbar"
+      gem "ruby-terminfo"
+      gem "ruby-vips"
+      gem "rubyzip"
+      gem "rugged"
+      gem "sassc"
+      gem "scrypt"
+      gem "semian"
+      gem "sequel"
+      gem "sequel_pg"
+      gem "simplecov"
+      gem "sinatra"
+      gem "slop"
+      gem "snappy"
+      gem "sqlite3"
+      gem "taglib-ruby"
+      gem "thrift"
+      gem "tilt"
+      gem "tiny_tds"
+      gem "treetop"
+      gem "typhoeus"
+      gem "tzinfo"
+      gem "unf_ext"
+      gem "uuid4r"
+      gem "whois"
+      gem "zookeeper"
     G
 
     bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
 
-    if Bundler.feature_flag.bundler_3_mode?
-      expect(out).to display_total_steps_of(1874)
-    else
-      expect(out).to display_total_steps_of(1922)
-    end
-  end
-
-  private
-
-  RSpec::Matchers.define :display_total_steps_of do |expected_steps|
-    match do |out|
-      out.include?("BUNDLER: Finished resolution (#{expected_steps} steps)")
-    end
-
-    failure_message do |out|
-      actual_steps = out.scan(/BUNDLER: Finished resolution \((\d+) steps\)/).first.first
-
-      "Expected resolution to finish in #{expected_steps} steps, but took #{actual_steps}"
-    end
+    expect(out).to include("Solution found after 4 attempts")
   end
 end

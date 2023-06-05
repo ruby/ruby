@@ -30,7 +30,7 @@ module Spec
     end
 
     def test_gemfile
-      @test_gemfile ||= source_root.join("tool/bundler/test_gems.rb")
+      @test_gemfile ||= tool_dir.join("test_gems.rb")
     end
 
     def rubocop_gemfile
@@ -42,7 +42,8 @@ module Spec
     end
 
     def dev_gemfile
-      @dev_gemfile ||= git_root.join("dev_gems.rb")
+      name = RUBY_VERSION.start_with?("2.6") ? "dev26_gems.rb" : "dev_gems.rb"
+      @dev_gemfile ||= tool_dir.join(name)
     end
 
     def bindir
@@ -69,10 +70,6 @@ module Spec
 
     def spec_dir
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
-    end
-
-    def api_request_limit_hack_file
-      spec_dir.join("support/api_request_limit_hax.rb")
     end
 
     def man_dir
@@ -115,6 +112,14 @@ module Spec
         local_gem_path(*path)
       else
         system_gem_path(*path)
+      end
+    end
+
+    def default_cache_path(*path)
+      if Bundler.feature_flag.global_gem_cache?
+        home(".bundle/cache", *path)
+      else
+        default_bundle_path("cache/bundler", *path)
       end
     end
 
@@ -258,6 +263,10 @@ module Spec
       end
     end
 
+    def git_root
+      ruby_core? ? source_root : source_root.parent
+    end
+
     private
 
     def git_ls_files(glob)
@@ -278,34 +287,24 @@ module Spec
       ruby_core? ? "man/bundle* man/gemfile*" : "lib/bundler/man/bundle*.1 lib/bundler/man/gemfile*.5"
     end
 
-    def git_root
-      ruby_core? ? source_root : source_root.parent
-    end
-
     def ruby_core_tarball?
       !git_root.join(".git").directory?
     end
 
     def rubocop_gemfile_basename
-      filename = if RUBY_VERSION.start_with?("2.3")
-        "rubocop23_gems"
-      elsif RUBY_VERSION.start_with?("2.4")
-        "rubocop24_gems"
-      else
-        "rubocop_gems"
-      end
-      source_root.join("tool/bundler/#{filename}.rb")
+      tool_dir.join("rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      filename = if RUBY_VERSION.start_with?("2.3")
-        "standard23_gems"
-      elsif RUBY_VERSION.start_with?("2.4")
-        "standard24_gems"
-      else
-        "standard_gems"
-      end
-      source_root.join("tool/bundler/#{filename}.rb")
+      tool_dir.join("standard_gems.rb")
+    end
+
+    def tool_dir
+      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
+    end
+
+    def templates_dir
+      lib_dir.join("bundler", "templates")
     end
 
     extend self

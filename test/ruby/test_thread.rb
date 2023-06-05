@@ -29,13 +29,19 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_inspect
+    m = Thread::Mutex.new
+    m.lock
     line = __LINE__+1
-    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start{}
+    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start do
+      m.synchronize {}
+    end
+    Thread.pass until th.stop?
     s = th.inspect
     assert_include(s, "::C\u{30b9 30ec 30c3 30c9}:")
     assert_include(s, " #{__FILE__}:#{line} ")
     assert_equal(s, th.to_s)
   ensure
+    m.unlock
     th.join
   end
 
@@ -317,7 +323,7 @@ class TestThread < Test::Unit::TestCase
       s += 1
     end
     Thread.pass until t.stop?
-    sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
+    sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
     assert_equal(1, s)
     t.wakeup
     Thread.pass while t.alive?
@@ -966,6 +972,8 @@ _eom
   end
 
   def test_thread_timer_and_interrupt
+    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
+
     bug5757 = '[ruby-dev:44985]'
     pid = nil
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
@@ -1068,7 +1076,7 @@ q.pop
         puts mth.status
         Process.kill(:INT, $$)
       }
-      sleep 0.1
+      sleep
     INPUT
   end
 
@@ -1244,6 +1252,21 @@ q.pop
     assert_predicate(status, :success?, bug9751)
   end if Process.respond_to?(:fork)
 
+  def test_fork_value
+    bug18902 = "[Bug #18902]"
+    th = Thread.start { sleep 2 }
+    begin
+      pid = fork do
+        th.value
+      end
+      _, status = Process.wait2(pid)
+      assert_predicate(status, :success?, bug18902)
+    ensure
+      th.kill
+      th.join
+    end
+  end if Process.respond_to?(:fork)
+
   def test_fork_while_locked
     m = Thread::Mutex.new
     thrs = []
@@ -1338,6 +1361,61 @@ q.pop
     t.join
   end
 
+  def test_yield_across_thread_through_enum
+    bug18649 = '[ruby-core:107980] [Bug #18649]'
+    @log = []
+
+    def self.p(arg)
+      @log << arg
+    end
+
+    def self.synchronize
+      yield
+    end
+
+    def self.execute(task)
+      success = true
+      value = reason = nil
+      end_sync = false
+
+      synchronize do
+        begin
+          p :before
+          value = task.call
+          p :never_reached
+          success = true
+        rescue StandardError => ex
+          ex = ex.class
+          p [:rescue, ex]
+          reason = ex
+          success = false
+        end
+
+        end_sync = true
+        p :end_sync
+      end
+
+      p :should_not_reach_here! unless end_sync
+      [success, value, reason]
+    end
+
+    def self.foo
+      Thread.new do
+        result = execute(-> { yield 42 })
+        p [:result, result]
+      end.join
+    end
+
+    value = to_enum(:foo).first
+    expected = [:before,
+      [:rescue, LocalJumpError],
+      :end_sync,
+      [:result, [false, nil, LocalJumpError]]]
+
+    assert_equal(expected, @log, bug18649)
+    assert_equal(42, value, bug18649)
+  end
+
   def test_thread_setname_in_initialize
     bug12290 = '[ruby-core:74963] [Bug #12290]'
     c = Class.new(Thread) {def initialize() self.name = "foo"; super; end}
@@ -1368,8 +1446,8 @@ q.pop
   def test_thread_interrupt_for_killed_thread
     opts = { timeout: 5, timeout_error: nil }
 
-    # prevent SIGABRT from slow shutdown with MJIT
-    opts[:reprieve] = 3 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    # prevent SIGABRT from slow shutdown with RJIT
+    opts[:reprieve] = 3 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false
@@ -1387,6 +1465,11 @@ q.pop
       omit "can't trap a signal from another process on Windows"
       # opt = {new_pgroup: true}
     end
+
+    if /freebsd/ =~ RUBY_PLATFORM
+      omit "[Bug #18613]"
+    end
+
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)
     {#
       n = 1000
@@ -1432,5 +1515,13 @@ q.pop
         end
       end
     };
+  end
+
+  def test_pending_interrupt?
+    t = Thread.handle_interrupt(Exception => :never) { Thread.new { Thread.stop } }
+    t.raise(StandardError)
+    assert_equal(true, t.pending_interrupt?)
+    assert_equal(true, t.pending_interrupt?(Exception))
+    assert_equal(false, t.pending_interrupt?(ArgumentError))
   end
 end

@@ -96,14 +96,14 @@ restrict return short signed sizeof static struct switch typedef union
 
   def self.feature(name)
     attr_writer "#{name}_enabled"
-    class_eval <<-EOS
+    class_eval <<~RUBY, __FILE__, __LINE__ + 1
       def enable_#{name}
         @#{name}_enabled = true
       end
       def #{name}_enabled?
         @#{name}_enabled
       end
-    EOS
+    RUBY
   end
   private_class_method :feature
 
@@ -1896,6 +1896,7 @@ Racc_arg = [
   racc_shift_n,
   racc_reduce_n,
   racc_use_result_var ]
+Ractor.make_shareable(Racc_arg) if defined?(Ractor)
 
 Racc_token_to_s_table = [
   "$end",
@@ -2064,6 +2065,7 @@ Racc_token_to_s_table = [
   "logical_or_expression",
   "conditional_expression",
   "assignment_operator" ]
+Ractor.make_shareable(Racc_token_to_s_table) if defined?(Ractor)
 
 Racc_debug_parser = false
 

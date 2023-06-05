@@ -1,153 +1,130 @@
-# NEWS for Ruby 3.2.0
+# NEWS for Ruby 3.3.0
 
 This document is a list of user-visible feature changes
-since the **3.1.0** release, except for bug fixes.
+since the **3.2.0** release, except for bug fixes.
 
 Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
-* Anonymous rest and keyword rest arguments can now be passed as
-  arguments, instead of just used in method parameters.
-  [[Feature #18351]]
-
-    ```ruby
-    def foo(*)
-      bar(*)
-    end
-    def baz(**)
-      quux(**)
-    end
-    ```
-
-* Constant assignment evaluation order for constants set on explicit
-  objects has been made consistent with single attribute assignment
-  evaluation order.  With this code:
-
-    ```ruby
-    foo::BAR = baz
-    ```
-
-  `foo` is now called before `baz`. Similarly, for multiple assignment
-  to constants,  left-to-right evaluation order is used.  With this
-  code:
-
-    ```ruby
-      foo1::BAR1, foo2::BAR2 = baz1, baz2
-    ```
-
-  The following evaluation order is now used:
-
-  1. `foo1`
-  2. `foo2`
-  3. `baz1`
-  4. `baz2`
-
-  [[Bug #15928]]
-
 ## Command line options
+
+* A new `performance` warning category was introduced.
+  They are not displayed by default even in verbose mode.
+  Turn them on with `-W:performance` or `Warning[:performance] = true`. [[Feature #19538]]
 
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
 
-* Hash
-    * Hash#shift now always returns nil if the hash is
-      empty, instead of returning the default value or
-      calling the default proc. [[Bug #16908]]
+* Array
 
-* Module
-    * Module.used_refinements has been added. [[Feature #14332]]
-    * Module#refinements has been added. [[Feature #12737]]
-    * Module#const_added has been added. [[Feature #17881]]
+    * `Array#pack` now raises ArgumentError for unknown directives. [[Bug #19150]]
 
-* Proc
-    * Proc#dup returns an instance of subclass. [[Bug #17545]]
+* Dir
 
-* Refinement
-    * Refinement#refined_class has been added. [[Feature #12737]]
+    * `Dir.for_fd` added for returning a Dir object for the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+    * `Dir.fchdir` added for changing the directory to the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+    * `Dir#chdir` added for changing the directory to the directory specified
+      by the provided `Dir` object. [[Feature #19347]]
+
+* MatchData
+
+    * MatchData#named_captures now accepts optional `symbolize_names` keyword. [[Feature #19591]]
+
+* String
+
+    * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
+    * `String#bytesplice` now accepts new arguments index/length or range of the source string to be copied.  [[Feature #19314]]
+
+* ObjectSpace::WeakKeyMap
+
+    * New core class to build collections with weak references.
+      The class use equality semantic to lookup keys like a regular hash,
+      but it doesn't hold strong references on the keys. [[Feature #18498]]
 
 ## Stdlib updates
 
-*   The following default gem are updated.
-    * RubyGems 3.4.0.dev
-    * bigdecimal 3.1.2
-    * bundler 2.4.0.dev
-    * etc 1.4.0
-    * io-console 0.5.11
-    * reline 0.3.1
-*   The following bundled gems are updated.
-    * net-imap 0.2.3
-    * typeprof 0.21.2
-*   The following default gems are now bundled gems.
+The following default gems are updated.
+
+* RubyGems 3.5.0.dev
+* bigdecimal 3.1.4
+* bundler 2.5.0.dev
+* csv 3.2.7
+* fiddle 1.1.2
+* fileutils 1.7.1
+* irb 1.7.0
+* nkf 0.1.3
+* optparse 0.4.0.pre.1
+* psych 5.1.0
+* reline 0.3.5
+* stringio 3.0.8
+* strscan 3.0.7
+* syntax_suggest 1.1.0
+* time 0.2.2
+* timeout 0.3.2
+* uri 0.12.1
+
+The following bundled gems are updated.
+
+* minitest 5.18.0
+* test-unit 3.5.9
+* rbs 3.1.0
+* typeprof 0.21.7
+* debug 1.8.0
+
+See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
+changelog for details of the default gems or bundled gems.
+
+## Supported platforms
 
 ## Compatibility issues
 
-Note: Excluding feature bug fixes.
-
-### Removed constants
-
-The following deprecated constants are removed.
-
-* `Fixnum` and `Bignum` [[Feature #12005]]
-* `Random::DEFAULT` [[Feature #17351]]
-* `Struct::Group`
-* `Struct::Passwd`
-
-### Removed methods
-
-The following deprecated methods are removed.
-
-* `Dir.exists?` [[Feature #17391]]
-* `File.exists?` [[Feature #17391]]
-* `Kernel#=~` [[Feature #15231]]
-* `Kernel#taint`, `Kernel#untaint`, `Kernel#tainted?`
-  [[Feature #16131]]
-* `Kernel#trust`, `Kernel#untrust`, `Kernel#untrusted?`
-  [[Feature #16131]]
-
 ## Stdlib compatibility issues
+
+### `ext/readline` is retired
+
+* We have `reline` that is pure Ruby implementation compatible with `ext/readline` API. We rely on `reline` in the future. If you need to use `ext/readline`, you can install `ext/readline` via rubygems.org with `gem install readline-ext`.
+* We no longer need to install libraries like `libreadline` or `libedit`.
 
 ## C API updates
 
-### Removed C APIs
-
-The following deprecated APIs are removed.
-
-* `rb_cData` variable.
-* "taintedness" and "trustedness" functions. [[Feature #16131]]
-
 ## Implementation improvements
 
-## JIT
+* `defined?(@ivar)` is optimized with Object Shapes.
 
-### MJIT
+### YJIT
 
-### YJIT: New experimental in-process JIT compiler
+* Significant performance improvements over 3.2
+  * Splat and rest arguments support has been improved.
+  * Registers are allocated for stack operations of the virtual machine.
+  * More calls with optional arguments are compiled.
+  * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
+    `Kernel#instance_of?`, `Module#===` are specially optimized.
+  * Instance variables no longer exit to the interpreter
+    with megamorphic Object Shapes.
+* Metadata for compiled code uses a lot less memory.
+* Improved code generation on ARM64
+* Option to start YJIT in paused mode and then later enable it manually
+  * `--yjit-pause` and `RubyVM::YJIT.resume`
+  * This can be used to enable YJIT only once your application is done booting
+* Exit tracing option now supports sampling
+  * `--trace-exits-sample-rate=N`
+* Multiple bug fixes
 
-## Static analysis
+### RJIT
 
-### RBS
+* Introduced a pure-Ruby JIT compiler RJIT and replaced MJIT.
+  * RJIT supports only x86\_64 architecture on Unix platforms.
+  * Unlike MJIT, it doesn't require a C compiler at runtime.
+* RJIT exists only for experimental purposes.
+  * You should keep using YJIT in production.
 
-### TypeProf
-
-## Debugger
-
-## error_highlight
-
-## IRB Autocomplete and Document Display
-
-## Miscellaneous changes
-
-[Feature #12005]: https://bugs.ruby-lang.org/issues/12005
-[Feature #12737]: https://bugs.ruby-lang.org/issues/12737
-[Feature #14332]: https://bugs.ruby-lang.org/issues/14332
-[Feature #15231]: https://bugs.ruby-lang.org/issues/15231
-[Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
-[Feature #16131]: https://bugs.ruby-lang.org/issues/16131
-[Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
-[Feature #17351]: https://bugs.ruby-lang.org/issues/17351
-[Feature #17391]: https://bugs.ruby-lang.org/issues/17391
-[Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
-[Feature #17881]: https://bugs.ruby-lang.org/issues/17881
-[Feature #18351]: https://bugs.ruby-lang.org/issues/18351
+[Feature #18498]: https://bugs.ruby-lang.org/issues/18498
+[Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Feature #19314]: https://bugs.ruby-lang.org/issues/19314
+[Feature #19347]: https://bugs.ruby-lang.org/issues/19347
+[Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19591]: https://bugs.ruby-lang.org/issues/19591

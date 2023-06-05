@@ -391,6 +391,29 @@ EOT
     end
   end
 
+  if defined?(JSON::Ext::Generator)
+    def test_string_ext_included_calls_super
+      included = false
+
+      Module.alias_method(:included_orig, :included)
+      Module.define_method(:included) do |base|
+        included_orig(base)
+        included = true
+      end
+
+      Class.new(String) do
+        include JSON::Ext::Generator::GeneratorMethods::String
+      end
+
+      assert included
+    ensure
+      if Module.private_method_defined?(:included_orig)
+        Module.alias_method(:included, :included_orig)
+        Module.remove_method(:included_orig)
+      end
+    end
+  end
+
   if defined?(Encoding)
     def test_nonutf8_encoding
       assert_equal("\"5\u{b0}\"", "5\xb0".force_encoding("iso-8859-1").to_json)

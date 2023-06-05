@@ -3,7 +3,7 @@
 class Logger
   # Default formatter for log messages.
   class Formatter
-    Format = "%s, [%s #%d] %5s -- %s: %s\n"
+    Format = "%.1s, [%s #%d] %5s -- %s: %s\n"
     DatetimeFormat = "%Y-%m-%dT%H:%M:%S.%6N"
 
     attr_accessor :datetime_format
@@ -13,8 +13,7 @@ class Logger
     end
 
     def call(severity, time, progname, msg)
-      Format % [severity[0..0], format_datetime(time), Process.pid, severity, progname,
-        msg2str(msg)]
+      sprintf(Format, severity, format_datetime(time), Process.pid, severity, progname, msg2str(msg))
     end
 
   private

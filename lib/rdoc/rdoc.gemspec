@@ -38,16 +38,12 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "CVE-2013-0256.rdoc",
     "ExampleMarkdown.md",
     "ExampleRDoc.rdoc",
-    "Gemfile",
     "History.rdoc",
     "LEGAL.rdoc",
     "LICENSE.rdoc",
     "README.rdoc",
     "RI.rdoc",
-    "Rakefile",
     "TODO.rdoc",
-    "bin/console",
-    "bin/setup",
     "exe/rdoc",
     "exe/ri",
     "lib/rdoc.rb",
@@ -223,26 +219,14 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/top_level.rb",
     "lib/rdoc/version.rb",
     "man/ri.1",
-    "rdoc.gemspec",
   ]
   # files from .gitignore
   s.files << "lib/rdoc/rd/block_parser.rb" << "lib/rdoc/rd/inline_parser.rb" << "lib/rdoc/markdown.rb" << "lib/rdoc/markdown/literals.rb"
 
   s.rdoc_options = ["--main", "README.rdoc"]
-  s.extra_rdoc_files += %w[
-    CVE-2013-0256.rdoc
-    CONTRIBUTING.rdoc
-    ExampleMarkdown.md
-    ExampleRDoc.rdoc
-    History.rdoc
-    LEGAL.rdoc
-    LICENSE.rdoc
-    README.rdoc
-    RI.rdoc
-    TODO.rdoc
-  ]
+  s.extra_rdoc_files += s.files.grep(%r[\A[^\/]+\.(?:rdoc|md)\z])
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 
   s.add_dependency 'psych', '>= 4.0.0'

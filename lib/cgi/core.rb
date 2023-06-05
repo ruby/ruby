@@ -188,17 +188,28 @@ class CGI
   # Using #header with the HTML5 tag maker will create a <header> element.
   alias :header :http_header
 
+  def _no_crlf_check(str)
+    if str
+      str = str.to_s
+      raise "A HTTP status or header field must not include CR and LF" if str =~ /[\r\n]/
+      str
+    else
+      nil
+    end
+  end
+  private :_no_crlf_check
+
   def _header_for_string(content_type) #:nodoc:
     buf = ''.dup
     if nph?()
-      buf << "#{$CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'} 200 OK#{EOL}"
+      buf << "#{_no_crlf_check($CGI_ENV['SERVER_PROTOCOL']) || 'HTTP/1.0'} 200 OK#{EOL}"
       buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
-      buf << "Server: #{$CGI_ENV['SERVER_SOFTWARE']}#{EOL}"
+      buf << "Server: #{_no_crlf_check($CGI_ENV['SERVER_SOFTWARE'])}#{EOL}"
       buf << "Connection: close#{EOL}"
     end
-    buf << "Content-Type: #{content_type}#{EOL}"
+    buf << "Content-Type: #{_no_crlf_check(content_type)}#{EOL}"
     if @output_cookies
-      @output_cookies.each {|cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
+      @output_cookies.each {|cookie| buf << "Set-Cookie: #{_no_crlf_check(cookie)}#{EOL}" }
     end
     return buf
   end # _header_for_string
@@ -213,9 +224,9 @@ class CGI
     ## NPH
     options.delete('nph') if defined?(MOD_RUBY)
     if options.delete('nph') || nph?()
-      protocol = $CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'
+      protocol = _no_crlf_check($CGI_ENV['SERVER_PROTOCOL']) || 'HTTP/1.0'
       status = options.delete('status')
-      status = HTTP_STATUS[status] || status || '200 OK'
+      status = HTTP_STATUS[status] || _no_crlf_check(status) || '200 OK'
       buf << "#{protocol} #{status}#{EOL}"
       buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
       options['server'] ||= $CGI_ENV['SERVER_SOFTWARE'] || ''
@@ -223,38 +234,38 @@ class CGI
     end
     ## common headers
     status = options.delete('status')
-    buf << "Status: #{HTTP_STATUS[status] || status}#{EOL}" if status
+    buf << "Status: #{HTTP_STATUS[status] || _no_crlf_check(status)}#{EOL}" if status
     server = options.delete('server')
-    buf << "Server: #{server}#{EOL}" if server
+    buf << "Server: #{_no_crlf_check(server)}#{EOL}" if server
     connection = options.delete('connection')
-    buf << "Connection: #{connection}#{EOL}" if connection
+    buf << "Connection: #{_no_crlf_check(connection)}#{EOL}" if connection
     type = options.delete('type')
-    buf << "Content-Type: #{type}#{EOL}" #if type
+    buf << "Content-Type: #{_no_crlf_check(type)}#{EOL}" #if type
     length = options.delete('length')
-    buf << "Content-Length: #{length}#{EOL}" if length
+    buf << "Content-Length: #{_no_crlf_check(length)}#{EOL}" if length
     language = options.delete('language')
-    buf << "Content-Language: #{language}#{EOL}" if language
+    buf << "Content-Language: #{_no_crlf_check(language)}#{EOL}" if language
     expires = options.delete('expires')
     buf << "Expires: #{CGI.rfc1123_date(expires)}#{EOL}" if expires
     ## cookie
     if cookie = options.delete('cookie')
       case cookie
       when String, Cookie
-        buf << "Set-Cookie: #{cookie}#{EOL}"
+        buf << "Set-Cookie: #{_no_crlf_check(cookie)}#{EOL}"
       when Array
         arr = cookie
-        arr.each {|c| buf << "Set-Cookie: #{c}#{EOL}" }
+        arr.each {|c| buf << "Set-Cookie: #{_no_crlf_check(c)}#{EOL}" }
       when Hash
         hash = cookie
-        hash.each_value {|c| buf << "Set-Cookie: #{c}#{EOL}" }
+        hash.each_value {|c| buf << "Set-Cookie: #{_no_crlf_check(c)}#{EOL}" }
       end
     end
     if @output_cookies
-      @output_cookies.each {|c| buf << "Set-Cookie: #{c}#{EOL}" }
+      @output_cookies.each {|c| buf << "Set-Cookie: #{_no_crlf_check(c)}#{EOL}" }
     end
     ## other headers
     options.each do |key, value|
-      buf << "#{key}: #{value}#{EOL}"
+      buf << "#{_no_crlf_check(key)}: #{_no_crlf_check(value)}#{EOL}"
     end
     return buf
   end # _header_for_hash

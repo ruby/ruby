@@ -49,8 +49,14 @@ when /linux/
     libm_so = libc_so
   else
     # glibc
-    libc_so = "libc.so.6"
-    libm_so = "libm.so.6"
+    case RUBY_PLATFORM
+    when /alpha-linux/, /ia64-linux/
+      libc_so = "libc.so.6.1"
+      libm_so = "libm.so.6.1"
+    else
+      libc_so = "libc.so.6"
+      libm_so = "libm.so.6"
+    end
   end
 when /mingw/, /mswin/
   require "rbconfig"

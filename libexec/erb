@@ -74,11 +74,6 @@ class ERB
             $DEBUG = true
           when '-r'                        # require
             require ARGV.req_arg
-          when '-S'                        # security level
-            warn 'warning: -S option of erb command is deprecated. Please do not use this.'
-            arg = ARGV.req_arg
-            raise "invalid safe_level #{arg.dump}" unless arg =~ /\A[0-1]\z/
-            safe_level = arg.to_i
           when '-T'                        # trim mode
             arg = ARGV.req_arg
             if arg == '-'
@@ -127,12 +122,7 @@ EOU
       filename = $FILENAME
       exit 2 unless src
       trim = trim_mode_opt(trim_mode, disable_percent)
-      if safe_level.nil?
-        erb = factory.new(src, trim_mode: trim)
-      else
-        # [deprecated] This will be removed at Ruby 2.7.
-        erb = factory.new(src, safe_level, trim_mode: trim)
-      end
+      erb = factory.new(src, trim_mode: trim)
       erb.filename = filename
       if output
         if number

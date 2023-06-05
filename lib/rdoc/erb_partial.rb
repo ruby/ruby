@@ -16,4 +16,3 @@ class RDoc::ERBPartial < ERB
   end
 
 end
-

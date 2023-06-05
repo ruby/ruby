@@ -12,6 +12,8 @@
 #include "ruby/util.h"
 #include <syslog.h>
 
+#define SYSLOG_VERSION "0.1.1"
+
 /* Syslog class */
 static VALUE mSyslog;
 /*
@@ -165,15 +167,15 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     syslog_ident = strdup(ident_ptr);
 
     if (NIL_P(opt)) {
-	syslog_options = LOG_PID | LOG_CONS;
+        syslog_options = LOG_PID | LOG_CONS;
     } else {
-	syslog_options = NUM2INT(opt);
+        syslog_options = NUM2INT(opt);
     }
 
     if (NIL_P(fac)) {
-	syslog_facility = LOG_USER;
+        syslog_facility = LOG_USER;
     } else {
-	syslog_facility = NUM2INT(fac);
+        syslog_facility = NUM2INT(fac);
     }
 
     openlog(syslog_ident, syslog_options, syslog_facility);
@@ -307,7 +309,7 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
     pri = *argv++;
 
     if (!FIXNUM_P(pri)) {
-	rb_raise(rb_eTypeError, "type mismatch: %"PRIsVALUE" given", rb_obj_class(pri));
+        rb_raise(rb_eTypeError, "type mismatch: %"PRIsVALUE" given", rb_obj_class(pri));
     }
 
     syslog_write(FIX2INT(pri), argc, argv);
@@ -322,14 +324,14 @@ static VALUE mSyslog_inspect(VALUE self)
     Check_Type(self, T_MODULE);
 
     if (!syslog_opened)
-	return rb_sprintf("<#%"PRIsVALUE": opened=false>", self);
+        return rb_sprintf("<#%"PRIsVALUE": opened=false>", self);
 
     return rb_sprintf("<#%"PRIsVALUE": opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
-		      self,
-		      syslog_ident,
-		      syslog_options,
-		      syslog_facility,
-		      syslog_mask);
+                      self,
+                      syslog_ident,
+                      syslog_options,
+                      syslog_facility,
+                      syslog_mask);
 }
 
 /* Returns self, for backward compatibility.
@@ -573,6 +575,8 @@ void Init_syslog(void)
 #endif
 
     /* Syslog macros */
+
+    rb_define_const(mSyslog, "VERSION", rb_str_new_cstr(SYSLOG_VERSION));
 
     rb_define_method(mSyslogMacros, "LOG_MASK", mSyslogMacros_LOG_MASK, 1);
     rb_define_method(mSyslogMacros, "LOG_UPTO", mSyslogMacros_LOG_UPTO, 1);

@@ -26,15 +26,20 @@ describe "String#reverse" do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      "".taint.reverse.should.tainted?
-      "m".taint.reverse.should.tainted?
-    end
-  end
-
   it "reverses a string with multi byte characters" do
     "微軟正黑體".reverse.should == "體黑正軟微"
+  end
+
+  it "works with a broken string" do
+    str = "微軟\xDF\xDE正黑體".force_encoding(Encoding::UTF_8)
+
+    str.valid_encoding?.should be_false
+
+    str.reverse.should == "體黑正\xDE\xDF軟微"
+  end
+
+  it "returns a String in the same encoding as self" do
+    "stressed".encode("US-ASCII").reverse.encoding.should == Encoding::US_ASCII
   end
 end
 
@@ -61,5 +66,14 @@ describe "String#reverse!" do
     str = "微軟正黑體"
     str.reverse!
     str.should == "體黑正軟微"
+  end
+
+  it "works with a broken string" do
+    str = "微軟\xDF\xDE正黑體".force_encoding(Encoding::UTF_8)
+
+    str.valid_encoding?.should be_false
+    str.reverse!
+
+    str.should == "體黑正\xDE\xDF軟微"
   end
 end

@@ -78,13 +78,15 @@ describe :file_path, shared: true do
         rm_r @dir
       end
 
-      it "raises IOError if file was opened with File::TMPFILE" do
-        begin
-          File.open(@dir, File::RDWR | File::TMPFILE) do |f|
-            -> { f.send(@method) }.should raise_error(IOError)
+      ruby_version_is ""..."3.1" do
+        it "raises IOError if file was opened with File::TMPFILE" do
+          begin
+            File.open(@dir, File::RDWR | File::TMPFILE) do |f|
+              -> { f.send(@method) }.should raise_error(IOError)
+            end
+          rescue Errno::EOPNOTSUPP, Errno::EINVAL, Errno::EISDIR
+            skip "no support from the filesystem"
           end
-        rescue Errno::EOPNOTSUPP, Errno::EINVAL, Errno::EISDIR
-          skip "no support from the filesystem"
         end
       end
     end

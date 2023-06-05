@@ -894,6 +894,7 @@ Racc_arg = [
   racc_shift_n,
   racc_reduce_n,
   racc_use_result_var ]
+Ractor.make_shareable(Racc_arg) if defined?(Ractor)
 
 Racc_token_to_s_table = [
   "$end",
@@ -1028,6 +1029,7 @@ Racc_token_to_s_table = [
   "interpolation",
   "interpolated_string_chunk",
   "chars" ]
+Ractor.make_shareable(Racc_token_to_s_table) if defined?(Ractor)
 
 Racc_debug_parser = false
 

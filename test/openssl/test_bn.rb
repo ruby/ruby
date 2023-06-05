@@ -174,6 +174,12 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(0, 59.to_bn.mod_sqr(59))
   end
 
+  def test_mod_sqrt
+    assert_equal(3, 4.to_bn.mod_sqrt(5))
+    assert_equal(0, 5.to_bn.mod_sqrt(5))
+    assert_raise(OpenSSL::BNError) { 3.to_bn.mod_sqrt(5) }
+  end
+
   def test_mod_inverse
     assert_equal(2, 3.to_bn.mod_inverse(5))
     assert_raise(OpenSSL::BNError) { 3.to_bn.mod_inverse(6) }

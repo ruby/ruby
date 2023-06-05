@@ -52,11 +52,9 @@ describe "Array#fill" do
   end
 
   it "raises an ArgumentError if 4 or more arguments are passed when no block given" do
-    -> { [].fill('a') }.should_not raise_error(ArgumentError)
-
-    -> { [].fill('a', 1) }.should_not raise_error(ArgumentError)
-
-    -> { [].fill('a', 1, 2) }.should_not raise_error(ArgumentError)
+    [].fill('a').should == []
+    [].fill('a', 1).should == []
+    [].fill('a', 1, 2).should == [nil, 'a', 'a']
     -> { [].fill('a', 1, 2, true) }.should raise_error(ArgumentError)
   end
 
@@ -65,12 +63,52 @@ describe "Array#fill" do
   end
 
   it "raises an ArgumentError if 3 or more arguments are passed when a block given" do
-    -> { [].fill() {|i|} }.should_not raise_error(ArgumentError)
-
-    -> { [].fill(1) {|i|} }.should_not raise_error(ArgumentError)
-
-    -> { [].fill(1, 2) {|i|} }.should_not raise_error(ArgumentError)
+    [].fill() {|i|}.should == []
+    [].fill(1) {|i|}.should == []
+    [].fill(1, 2) {|i|}.should == [nil, nil, nil]
     -> { [].fill(1, 2, true) {|i|} }.should raise_error(ArgumentError)
+  end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.fill { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "only changes elements before error is raised, keeping the element which raised an error." do
+    a = [1, 2, 3, 4]
+    begin
+      a.fill do |i|
+        case i
+        when 0 then -1
+        when 1 then -2
+        when 2 then raise StandardError, 'Oops'
+        else 0
+        end
+      end
+    rescue StandardError
+    end
+
+    a.should == [-1, -2, 3, 4]
+  end
+
+  it "tolerates increasing an array size during iteration" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.fill do |index|
+      ScratchPad << index
+      array << i if i < 100
+      i++
+      index
+    end
+
+    ScratchPad.recorded.should == [0, 1, 2]
   end
 end
 
@@ -169,25 +207,25 @@ describe "Array#fill with (filler, index, length)" do
     [1, 2, 3, 4, 5].fill(-2, -2, &@never_passed).should == [1, 2, 3, 4, 5]
   end
 
-  # See: http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17481
+  # See: https://blade.ruby-lang.org/ruby-core/17481
   it "does not raise an exception if the given length is negative and its absolute value does not exceed the index" do
-    -> { [1, 2, 3, 4].fill('a', 3, -1)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill('a', 3, -2)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill('a', 3, -3)}.should_not raise_error(ArgumentError)
+    [1, 2, 3, 4].fill('a', 3, -1).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill('a', 3, -2).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill('a', 3, -3).should == [1, 2, 3, 4]
 
-    -> { [1, 2, 3, 4].fill(3, -1, &@never_passed)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill(3, -2, &@never_passed)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill(3, -3, &@never_passed)}.should_not raise_error(ArgumentError)
+    [1, 2, 3, 4].fill(3, -1, &@never_passed).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill(3, -2, &@never_passed).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill(3, -3, &@never_passed).should == [1, 2, 3, 4]
   end
 
   it "does not raise an exception even if the given length is negative and its absolute value exceeds the index" do
-    -> { [1, 2, 3, 4].fill('a', 3, -4)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill('a', 3, -5)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill('a', 3, -10000)}.should_not raise_error(ArgumentError)
+    [1, 2, 3, 4].fill('a', 3, -4).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill('a', 3, -5).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill('a', 3, -10000).should == [1, 2, 3, 4]
 
-    -> { [1, 2, 3, 4].fill(3, -4, &@never_passed)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill(3, -5, &@never_passed)}.should_not raise_error(ArgumentError)
-    -> { [1, 2, 3, 4].fill(3, -10000, &@never_passed)}.should_not raise_error(ArgumentError)
+    [1, 2, 3, 4].fill(3, -4, &@never_passed).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill(3, -5, &@never_passed).should == [1, 2, 3, 4]
+    [1, 2, 3, 4].fill(3, -10000, &@never_passed).should == [1, 2, 3, 4]
   end
 
   it "tries to convert the second and third arguments to Integers using #to_int" do
@@ -203,6 +241,12 @@ describe "Array#fill with (filler, index, length)" do
 
     obj = mock('nonnumeric')
     -> { [].fill('a', obj) }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError when the length is not numeric" do
+    -> { [1, 2, 3].fill("x", 1, "foo") }.should raise_error(TypeError, /no implicit conversion of String into Integer/)
+    -> { [1, 2, 3].fill("x", 1, :"foo") }.should raise_error(TypeError, /no implicit conversion of Symbol into Integer/)
+    -> { [1, 2, 3].fill("x", 1, Object.new) }.should raise_error(TypeError, /no implicit conversion of Object into Integer/)
   end
 
   not_supported_on :opal do
@@ -323,10 +367,8 @@ describe "Array#fill with (filler, range)" do
     [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
   end
 
-  ruby_version_is "2.7" do
-    it "works with beginless ranges" do
-      [1, 2, 3, 4].fill('x', eval("(..2)")).should == ["x", "x", "x", 4]
-      [1, 2, 3, 4].fill(eval("(...2)")) { |x| x + 2 }.should == [2, 3, 3, 4]
-    end
+  it "works with beginless ranges" do
+    [1, 2, 3, 4].fill('x', (..2)).should == ["x", "x", "x", 4]
+    [1, 2, 3, 4].fill((...2)) { |x| x + 2 }.should == [2, 3, 3, 4]
   end
 end

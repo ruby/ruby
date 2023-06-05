@@ -103,6 +103,15 @@ RSpec.describe "bundle add" do
     end
   end
 
+  describe "with --path" do
+    it "adds dependency with specified path" do
+      bundle "add 'foo' --path='#{lib_path("foo-2.0")}'"
+
+      expect(bundled_app_gemfile.read).to match(/gem "foo", "~> 2.0", :path => "#{lib_path("foo-2.0")}"/)
+      expect(the_bundle).to include_gems "foo 2.0"
+    end
+  end
+
   describe "with --git" do
     it "adds dependency with specified git source" do
       bundle "add foo --git=#{lib_path("foo-2.0")}"
@@ -135,7 +144,7 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github" do
-    it "adds dependency with specified github source" do
+    it "adds dependency with specified github source", :realworld do
       bundle "add rake --github=ruby/rake"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake"})
@@ -143,7 +152,7 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github and --branch" do
-    it "adds dependency with specified github source and branch" do
+    it "adds dependency with specified github source and branch", :realworld do
       bundle "add rake --github=ruby/rake --branch=master"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :branch => "master"})
@@ -151,7 +160,7 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github and --ref" do
-    it "adds dependency with specified github source and ref" do
+    it "adds dependency with specified github source and ref", :realworld do
       bundle "add rake --github=ruby/rake --ref=5c60da8"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :ref => "5c60da8"})

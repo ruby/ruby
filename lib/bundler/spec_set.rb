@@ -7,40 +7,49 @@ module Bundler
     include Enumerable
     include TSort
 
-    def initialize(specs)
+    attr_reader :incomplete_specs
+
+    def initialize(specs, incomplete_specs = [])
       @specs = specs
+      @incomplete_specs = incomplete_specs
     end
 
-    def for(dependencies, check = false, match_current_platform = false)
-      handled = []
-      deps = dependencies.dup
+    def for(dependencies, check = false, platforms = [nil])
+      handled = ["bundler"].product(platforms).map {|k| [k, true] }.to_h
+      deps = dependencies.product(platforms)
       specs = []
 
       loop do
         break unless dep = deps.shift
-        next if handled.any?{|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
 
-        handled << dep
+        name = dep[0].name
+        platform = dep[1]
+        incomplete = false
 
-        specs_for_dep = spec_for_dependency(dep, match_current_platform)
+        key = [name, platform]
+        next if handled.key?(key)
+
+        handled[key] = true
+
+        specs_for_dep = specs_for_dependency(*dep)
         if specs_for_dep.any?
-          match_current_platform ? specs += specs_for_dep : specs |= specs_for_dep
+          specs.concat(specs_for_dep)
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            d = DepProxy.get_proxy(d, dep.__platform) unless match_current_platform
-            deps << d
+            incomplete = true if d.name != "bundler" && lookup[d.name].empty?
+            deps << [d, dep[1]]
           end
-        elsif check
-          return false
+        else
+          incomplete = true
+        end
+
+        if incomplete && check
+          @incomplete_specs += lookup[name].any? ? lookup[name] : [LazySpecification.new(name, nil, nil)]
         end
       end
 
-      if spec = lookup["bundler"].first
-        specs << spec
-      end
-
-      check ? true : specs
+      specs.uniq
     end
 
     def [](key)
@@ -50,6 +59,12 @@ module Bundler
 
     def []=(key, value)
       @specs << value
+      @lookup = nil
+      @sorted = nil
+    end
+
+    def delete(specs)
+      specs.each {|spec| @specs.delete(spec) }
       @lookup = nil
       @sorted = nil
     end
@@ -67,14 +82,9 @@ module Bundler
     end
 
     def materialize(deps)
-      materialized = self.for(deps, false, true)
+      materialized = self.for(deps, true)
 
-      materialized.map! do |s|
-        next s unless s.is_a?(LazySpecification)
-        s.source.local!
-        s.__materialize__ || s
-      end
-      SpecSet.new(materialized)
+      SpecSet.new(materialized, incomplete_specs)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
@@ -83,12 +93,21 @@ module Bundler
     def materialized_for_all_platforms
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
-        s.source.local!
         s.source.remote!
-        spec = s.__materialize__
+        spec = s.materialize_for_installation
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec
       end
+    end
+
+    def incomplete_ruby_specs?(deps)
+      return false if @specs.empty?
+
+      @incomplete_specs = []
+
+      self.for(deps, true, [Gem::Platform::RUBY])
+
+      @incomplete_specs.any?
     end
 
     def missing_specs
@@ -105,8 +124,18 @@ module Bundler
       SpecSet.new(arr)
     end
 
+    def -(other)
+      SpecSet.new(to_a - other.to_a)
+    end
+
     def find_by_name_and_platform(name, platform)
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
+    end
+
+    def delete_by_name(name)
+      @specs.reject! {|spec| spec.name == name }
+      @lookup = nil
+      @sorted = nil
     end
 
     def what_required(spec)
@@ -146,7 +175,7 @@ module Bundler
         cgems = extract_circular_gems(error)
         raise CyclicDependencyError, "Your bundle requires gems that depend" \
           " on each other, creating an infinite loop. Please remove either" \
-          " gem '#{cgems[1]}' or gem '#{cgems[0]}' and try again."
+          " gem '#{cgems[0]}' or gem '#{cgems[1]}' and try again."
       end
     end
 
@@ -157,7 +186,7 @@ module Bundler
     def lookup
       @lookup ||= begin
         lookup = Hash.new {|h, k| h[k] = [] }
-        Index.sort_specs(@specs).reverse_each do |s|
+        @specs.each do |s|
           lookup[s.name] << s
         end
         lookup
@@ -169,13 +198,12 @@ module Bundler
       @specs.sort_by(&:name).each {|s| yield s }
     end
 
-    def spec_for_dependency(dep, match_current_platform)
-      specs_for_platforms = lookup[dep.name]
-      if match_current_platform
-        GemHelpers.select_best_platform_match(specs_for_platforms.select{|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
-      else
-        GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
-      end
+    def specs_for_dependency(dep, platform)
+      specs_for_name = lookup[dep.name]
+      target_platform = dep.force_ruby_platform ? Gem::Platform::RUBY : (platform || Bundler.local_platform)
+      matching_specs = GemHelpers.select_best_platform_match(specs_for_name, target_platform)
+      matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
+      matching_specs
     end
 
     def tsort_each_child(s)

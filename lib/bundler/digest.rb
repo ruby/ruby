@@ -26,7 +26,7 @@ module Bundler
           end
           a, b, c, d, e = *words
           (16..79).each do |i|
-            w[i] = SHA1_MASK & rotate((w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16]), 1)
+            w[i] = SHA1_MASK & rotate((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]), 1)
           end
           0.upto(79) do |i|
             case i
@@ -43,7 +43,7 @@ module Bundler
               f = (b ^ c ^ d)
               k = 0xCA62C1D6
             end
-            t = SHA1_MASK & (SHA1_MASK & rotate(a, 5) + f + e + k + w[i])
+            t = SHA1_MASK & rotate(a, 5) + f + e + k + w[i]
             a, b, c, d, e = t, a, SHA1_MASK & rotate(b, 30), c, d # rubocop:disable Style/ParallelAssignment
           end
           mutated = [a, b, c, d, e]

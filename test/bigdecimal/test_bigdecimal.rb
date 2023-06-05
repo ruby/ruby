@@ -294,7 +294,11 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_allocate
-    assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
+    if RUBY_ENGINE == "truffleruby"
+      assert_raise_with_message(NoMethodError, /undefined.+allocate.+for BigDecimal/) { BigDecimal.allocate }
+    else
+      assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
+    end
   end
 
   def test_s_new
@@ -1370,8 +1374,18 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_round_half_invalid_option
-    assert_raise_with_message(ArgumentError, "invalid rounding mode: invalid") { BigDecimal('12.5').round(half: :invalid) }
-    assert_raise_with_message(ArgumentError, "invalid rounding mode: invalid") { BigDecimal('2.15').round(1, half: :invalid) }
+    assert_raise_with_message(ArgumentError, "invalid rounding mode (upp)") do
+      BigDecimal('12.5').round(half: :upp)
+    end
+    assert_raise_with_message(ArgumentError, "invalid rounding mode (evenn)") do
+      BigDecimal('2.15').round(1, half: :evenn)
+    end
+    assert_raise_with_message(ArgumentError, "invalid rounding mode (downn)") do
+      BigDecimal('2.15').round(1, half: :downn)
+    end
+    assert_raise_with_message(ArgumentError, "invalid rounding mode (42)") do
+      BigDecimal('2.15').round(1, half: 42)
+    end
   end
 
   def test_truncate
@@ -2244,6 +2258,17 @@ class TestBigDecimal < Test::Unit::TestCase
 
     minus_ullong_max = -LIMITS["ULLONG_MAX"]
     assert_equal(BigDecimal(minus_ullong_max.to_s), BigDecimal(minus_ullong_max), "[GH-200]")
+  end
+
+  def test_reminder_infinity_gh_187
+    # https://github.com/ruby/bigdecimal/issues/187
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      bd = BigDecimal("4.2")
+      assert_equal(bd.remainder(BigDecimal("+Infinity")), bd)
+      assert_equal(bd.remainder(BigDecimal("-Infinity")), bd)
+    end
   end
 
   def assert_no_memory_leak(code, *rest, **opt)

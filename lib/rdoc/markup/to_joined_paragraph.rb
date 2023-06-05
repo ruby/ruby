@@ -44,4 +44,3 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
   alias accept_table           ignore
 
 end
-

@@ -109,6 +109,12 @@ automatically and that requires `bundler` to silently remember them. Since
   appropriate platform-specific gem exists on `rubygems.org` it will not be
   found.
 
+* `--prefer-local`:
+  Force using locally installed gems, or gems already present in Rubygems' cache
+  or in `vendor/cache`, when resolving, even if newer versions are available
+  remotely. Only attempt to connect to `rubygems.org` for gems that are not
+  present locally.
+
 * `--no-cache`:
   Do not update the cache in `vendor/cache` with the newly bundled gems. This
   does not remove any gems in the cache but keeps the newly bundled gems from
@@ -217,35 +223,6 @@ will cause an error when the Gemfile(5) is modified.
    As a result, `bundle install --deployment` installs gems to
    the `vendor/bundle` directory in the application. This may be
    overridden using the `--path` option.
-
-## SUDO USAGE
-
-By default, Bundler installs gems to the same location as `gem install`.
-
-In some cases, that location may not be writable by your Unix user. In
-that case, Bundler will stage everything in a temporary directory,
-then ask you for your `sudo` password in order to copy the gems into
-their system location.
-
-From your perspective, this is identical to installing the gems
-directly into the system.
-
-You should never use `sudo bundle install`. This is because several
-other steps in `bundle install` must be performed as the current user:
-
-* Updating your `Gemfile.lock`
-* Updating your `vendor/cache`, if necessary
-* Checking out private git repositories using your user's SSH keys
-
-Of these three, the first two could theoretically be performed by
-`chown`ing the resulting files to `$SUDO_USER`. The third, however,
-can only be performed by invoking the `git` command as
-the current user. Therefore, git gems are downloaded and installed
-into `~/.bundle` rather than $GEM_HOME or $BUNDLE_PATH.
-
-As a result, you should run `bundle install` as the current user,
-and Bundler will ask for your password if it is needed to put the
-gems into their final location.
 
 ## INSTALLING GROUPS
 

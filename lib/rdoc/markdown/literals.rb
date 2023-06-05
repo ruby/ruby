@@ -29,6 +29,7 @@ class RDoc::Markdown::Literals
       @result = nil
       @failed_rule = nil
       @failing_rule_offset = -1
+      @line_offsets = nil
 
       setup_foreign_grammar
     end
@@ -38,30 +39,75 @@ class RDoc::Markdown::Literals
     attr_accessor :result, :pos
 
     def current_column(target=pos)
-      if c = string.rindex("\n", target-1)
-        return target - c - 1
+      if string[target] == "\n" && (c = string.rindex("\n", target-1) || -1)
+        return target - c
+      elsif c = string.rindex("\n", target)
+        return target - c
       end
 
       target + 1
     end
 
-    def current_line(target=pos)
-      cur_offset = 0
-      cur_line = 0
-
-      string.each_line do |line|
-        cur_line += 1
-        cur_offset += line.size
-        return cur_line if cur_offset >= target
+    def position_line_offsets
+      unless @position_line_offsets
+        @position_line_offsets = []
+        total = 0
+        string.each_line do |line|
+          total += line.size
+          @position_line_offsets << total
+        end
       end
+      @position_line_offsets
+    end
 
-      -1
+    if [].respond_to? :bsearch_index
+      def current_line(target=pos)
+        if line = position_line_offsets.bsearch_index {|x| x > target }
+          return line + 1
+        end
+        raise "Target position #{target} is outside of string"
+      end
+    else
+      def current_line(target=pos)
+        if line = position_line_offsets.index {|x| x > target }
+          return line + 1
+        end
+
+        raise "Target position #{target} is outside of string"
+      end
+    end
+
+    def current_character(target=pos)
+      if target < 0 || target >= string.size
+        raise "Target position #{target} is outside of string"
+      end
+      string[target, 1]
+    end
+
+    KpegPosInfo = Struct.new(:pos, :lno, :col, :line, :char)
+
+    def current_pos_info(target=pos)
+      l = current_line target
+      c = current_column target
+      ln = get_line(l-1)
+      chr = string[target,1]
+      KpegPosInfo.new(target, l, c, ln, chr)
     end
 
     def lines
-      lines = []
-      string.each_line { |l| lines << l }
-      lines
+      string.lines
+    end
+
+    def get_line(no)
+      loff = position_line_offsets
+      if no < 0
+        raise "Line No is out of range: #{no} < 0"
+      elsif no >= loff.size
+        raise "Line No is out of range: #{no} >= #{loff.size}"
+      end
+      lend = loff[no]-1
+      lstart = no > 0 ? loff[no-1] : 0
+      string[lstart..lend]
     end
 
 
@@ -75,6 +121,7 @@ class RDoc::Markdown::Literals
       @string = string
       @string_size = string ? string.size : 0
       @pos = pos
+      @position_line_offsets = nil
     end
 
     def show_pos
@@ -99,30 +146,22 @@ class RDoc::Markdown::Literals
     end
 
     def failure_caret
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-
-      line = lines[l-1]
-      "#{line}\n#{' ' * (c - 1)}^"
+      p = current_pos_info @failing_rule_offset
+      "#{p.line.chomp}\n#{' ' * (p.col - 1)}^"
     end
 
     def failure_character
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-      lines[l-1][c-1, 1]
+      current_character @failing_rule_offset
     end
 
     def failure_oneline
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-
-      char = lines[l-1][c-1, 1]
+      p = current_pos_info @failing_rule_offset
 
       if @failed_rule.kind_of? Symbol
         info = self.class::Rules[@failed_rule]
-        "@#{l}:#{c} failed rule '#{info.name}', got '#{char}'"
+        "@#{p.lno}:#{p.col} failed rule '#{info.name}', got '#{p.char}'"
       else
-        "@#{l}:#{c} failed rule '#{@failed_rule}', got '#{char}'"
+        "@#{p.lno}:#{p.col} failed rule '#{@failed_rule}', got '#{p.char}'"
       end
     end
 
@@ -135,10 +174,9 @@ class RDoc::Markdown::Literals
 
     def show_error(io=STDOUT)
       error_pos = @failing_rule_offset
-      line_no = current_line(error_pos)
-      col_no = current_column(error_pos)
+      p = current_pos_info(error_pos)
 
-      io.puts "On line #{line_no}, column #{col_no}:"
+      io.puts "On line #{p.lno}, column #{p.col}:"
 
       if @failed_rule.kind_of? Symbol
         info = self.class::Rules[@failed_rule]
@@ -147,10 +185,9 @@ class RDoc::Markdown::Literals
         io.puts "Failed to match rule '#{@failed_rule}'"
       end
 
-      io.puts "Got: #{string[error_pos,1].inspect}"
-      line = lines[line_no-1]
-      io.puts "=> #{line}"
-      io.print(" " * (col_no + 3))
+      io.puts "Got: #{p.char.inspect}"
+      io.puts "=> #{p.line}"
+      io.print(" " * (p.col + 2))
       io.puts "^"
     end
 
@@ -259,6 +296,7 @@ class RDoc::Markdown::Literals
     end
 
     def apply_with_args(rule, *args)
+      @result = nil
       memo_key = [rule, args]
       if m = @memoizations[memo_key][@pos]
         @pos = m.pos
@@ -292,6 +330,7 @@ class RDoc::Markdown::Literals
     end
 
     def apply(rule)
+      @result = nil
       if m = @memoizations[rule][@pos]
         @pos = m.pos
         if !m.set

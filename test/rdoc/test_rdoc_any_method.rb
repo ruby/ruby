@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocAnyMethod < XrefTestCase
 
@@ -49,6 +49,20 @@ method(a, b) { |c, d| ... }
     m.call_seq = 'foo'
 
     assert_equal 'foo', m.call_seq
+  end
+
+  def test_call_seq_alias_for
+    a = RDoc::AnyMethod.new nil, "each"
+    m = RDoc::AnyMethod.new nil, "each_line"
+
+    a.call_seq = <<-CALLSEQ
+each(foo)
+each_line(foo)
+    CALLSEQ
+
+    m.is_alias_for = a
+
+    assert_equal "each_line(foo)", m.call_seq
   end
 
   def test_full_name

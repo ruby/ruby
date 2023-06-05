@@ -41,7 +41,7 @@ module Psych
       Sequence
       Mapping
     }.each do |node|
-      class_eval %{
+      class_eval <<~RUBY, __FILE__, __LINE__ + 1
         def start_#{node.downcase}(anchor, tag, implicit, style)
           n = Nodes::#{node}.new(anchor, tag, implicit, style)
           set_start_location(n)
@@ -54,7 +54,7 @@ module Psych
           set_end_location(n)
           n
         end
-      }
+        RUBY
     end
 
     ###

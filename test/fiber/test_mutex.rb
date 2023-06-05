@@ -194,7 +194,7 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_mutex_deadlock
-    error_pattern = /No live threads left. Deadlock\?/
+    error_pattern = /lock already owned by another fiber/
 
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['in synchronize'], error_pattern, success: false
     require 'scheduler'
@@ -216,5 +216,25 @@ class TestFiberMutex < Test::Unit::TestCase
 
     thread.join
     RUBY
+  end
+
+  def test_mutex_fiber_deadlock_no_scheduler
+    thr = Thread.new do
+      loop do
+        sleep 1
+      end
+    end
+
+    mutex = Mutex.new
+    mutex.synchronize do
+      error = assert_raise ThreadError do
+        Fiber.new do
+          mutex.lock
+        end.resume
+      end
+      assert_includes error.message, "deadlock; lock already owned by another fiber belonging to the same thread"
+    end
+  ensure
+    thr&.kill&.join
   end
 end

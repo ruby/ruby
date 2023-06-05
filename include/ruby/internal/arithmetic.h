@@ -18,7 +18,8 @@
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
  *             extension libraries.  They could be written in C++98.
- * @brief      Conversion between C's arithmtic types and Ruby's numeric types.
+ * @brief      Conversion  between  C's arithmetic  types  and  Ruby's  numeric
+ *             types.
  */
 #include "ruby/internal/arithmetic/char.h"
 #include "ruby/internal/arithmetic/double.h"

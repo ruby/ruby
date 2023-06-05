@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   notifier.rb - output methods used by irb
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require_relative "output-method"

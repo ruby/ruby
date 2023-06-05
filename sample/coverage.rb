@@ -49,7 +49,7 @@ at_exit do
         end
       end
 
-      open(cfile, "w") do |out|
+      File.open(cfile, "w") do |out|
         covs.zip(sources, pcovs).each_with_index do |(cov, line, pcov), idx|
           cov += pcov || 0 if cov
           cov = (cov ? (cov == 0 ? "#####" : cov.to_s) : "-").rjust(9)

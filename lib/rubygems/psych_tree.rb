@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Gem
   if defined? ::Psych::Visitors
     class NoAliasYAMLTree < Psych::Visitors::YAMLTree
@@ -7,7 +8,7 @@ module Gem
       end unless respond_to? :create
 
       def visit_String(str)
-        return super unless str == '=' # or whatever you want
+        return super unless str == "=" # or whatever you want
 
         quote = Psych::Nodes::Scalar::SINGLE_QUOTED
         @emitter.scalar str, nil, nil, false, true, quote

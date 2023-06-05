@@ -4,7 +4,7 @@ require "bundler/settings"
 require "openssl"
 
 RSpec.describe Bundler::Env do
-  let(:git_proxy_stub) { Bundler::Source::Git::GitProxy.new(nil, nil, nil) }
+  let(:git_proxy_stub) { Bundler::Source::Git::GitProxy.new(nil, nil) }
 
   describe "#report" do
     it "prints the environment" do
@@ -34,8 +34,6 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user home" do
-        skip "needs to use a valid HOME" if Gem.win_platform? && RUBY_VERSION < "2.6.0"
-
         with_clear_paths("HOME", "/a/b/c") do
           out = described_class.report
           expect(out).to include("User Home   /a/b/c")
@@ -43,8 +41,6 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints user path" do
-        skip "needs to use a valid HOME" if Gem.win_platform? && RUBY_VERSION < "2.6.0"
-
         with_clear_paths("HOME", "/a/b/c") do
           allow(File).to receive(:exist?)
           allow(File).to receive(:exist?).with("/a/b/c/.gem").and_return(true)

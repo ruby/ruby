@@ -1,3 +1,4 @@
+/freebsd/ =~ RUBY_PLATFORM or
 assert_finish 5, %q{
   r, w = IO.pipe
   t1 = Thread.new { r.sysread(1) }
@@ -30,7 +31,8 @@ assert_finish 10, %q{
   end
 }, '[ruby-dev:32566]'
 
-assert_finish 1, %q{
+/freebsd/ =~ RUBY_PLATFORM or
+assert_finish 5, %q{
   r, w = IO.pipe
   Thread.new {
     w << "ab"
@@ -83,6 +85,7 @@ assert_normal_exit %q{
   ARGF.set_encoding "foo"
 }
 
+/freebsd/ =~ RUBY_PLATFORM or
 10.times do
   assert_normal_exit %q{
     at_exit { p :foo }

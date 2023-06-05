@@ -63,7 +63,7 @@ module Psych
       elsif string.match?(/^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/)
         require 'date'
         begin
-          class_loader.date.strptime(string, '%Y-%m-%d')
+          class_loader.date.strptime(string, '%F', Date::GREGORIAN)
         rescue ArgumentError
           string
         end
@@ -95,7 +95,7 @@ module Psych
         if string.match?(/\A[-+]?\.\Z/)
           string
         else
-          Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
+          Float(string.delete(',_').gsub(/\.([Ee]|$)/, '\1'))
         end
       elsif string.match?(integer_regex)
         parse_int string
@@ -107,7 +107,7 @@ module Psych
     ###
     # Parse and return an int from +string+
     def parse_int string
-      Integer(string.gsub(/[,_]/, ''))
+      Integer(string.delete(',_'))
     end
 
     ###

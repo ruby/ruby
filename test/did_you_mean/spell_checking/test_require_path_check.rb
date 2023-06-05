@@ -11,7 +11,7 @@ class RequirePathCheckTest < Test::Unit::TestCase
             end
 
     assert_correction 'ostruct', error.corrections
-    assert_match "Did you mean?  ostruct", error.to_s
+    assert_match "Did you mean?  ostruct", get_message(error)
   end
 
   def test_load_error_from_require_for_nested_files_has_suggestions
@@ -20,13 +20,13 @@ class RequirePathCheckTest < Test::Unit::TestCase
             end
 
     assert_correction 'net/http', error.corrections
-    assert_match "Did you mean?  net/http", error.to_s
+    assert_match "Did you mean?  net/http", get_message(error)
 
     error = assert_raise LoadError do
               require 'net-http'
             end
 
     assert_correction ['net/http', 'net/https'], error.corrections
-    assert_match "Did you mean?  net/http", error.to_s
+    assert_match "Did you mean?  net/http", get_message(error)
   end
 end

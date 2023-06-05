@@ -50,7 +50,7 @@
 #
 # === New to \Gem::OptionParser?
 #
-# See the {Tutorial}[./doc/optparse/tutorial_rdoc.html].
+# See the {Tutorial}[optparse/tutorial.rdoc].
 #
 # === Introduction
 #
@@ -420,12 +420,12 @@
 # === Further documentation
 #
 # The above examples, along with the accompanying
-# {Tutorial}[./doc/optparse/tutorial_rdoc.html],
+# {Tutorial}[optparse/tutorial.rdoc],
 # should be enough to learn how to use this class.
 # If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class Gem::OptionParser
-  Gem::OptionParser::Version = "0.2.0"
+  Gem::OptionParser::Version = "0.3.0"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -674,6 +674,29 @@ class Gem::OptionParser
       end
     end
 
+    def pretty_print_contents(q) # :nodoc:
+      if @block
+        q.text ":" + @block.source_location.join(":") + ":"
+        first = false
+      else
+        first = true
+      end
+      [@short, @long].each do |list|
+        list.each do |opt|
+          if first
+            q.text ":"
+            first = false
+          end
+          q.breakable
+          q.text opt
+        end
+      end
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.object_group(self) {pretty_print_contents(q)}
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -693,6 +716,10 @@ class Gem::OptionParser
       def self.pattern
         Object
       end
+
+      def pretty_head           # :nodoc:
+        "NoArgument"
+      end
     end
 
     #
@@ -709,6 +736,10 @@ class Gem::OptionParser
           arg = argv.shift
         end
         conv_arg(*parse_arg(arg, &method(:raise)))
+      end
+
+      def pretty_head           # :nodoc:
+        "Required"
       end
     end
 
@@ -727,18 +758,22 @@ class Gem::OptionParser
           conv_arg(arg)
         end
       end
+
+      def pretty_head           # :nodoc:
+        "Optional"
+      end
     end
 
     #
-    # Switch that takes an argument, which does not begin with '-'.
+    # Switch that takes an argument, which does not begin with '-' or is '-'.
     #
     class PlacedArgument < self
 
       #
-      # Returns nil if argument is not present or begins with '-'.
+      # Returns nil if argument is not present or begins with '-' and is not '-'.
       #
       def parse(arg, argv, &error)
-        if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
+        if !(val = arg) and (argv.empty? or /\A-./ =~ (val = argv[0]))
           return nil, block, nil
         end
         opt = (val = parse_arg(val, &error))[1]
@@ -749,6 +784,10 @@ class Gem::OptionParser
           val[0] = nil
         end
         val
+      end
+
+      def pretty_head           # :nodoc:
+        "Placed"
       end
     end
   end
@@ -779,6 +818,17 @@ class Gem::OptionParser
       @short = OptionMap.new
       @long = OptionMap.new
       @list = []
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.group(1, "(", ")") do
+        @list.each do |sw|
+          next unless Switch === sw
+          q.group(1, "(" + sw.pretty_head, ")") do
+            sw.pretty_print_contents(q)
+          end
+        end
+      end
     end
 
     #
@@ -1098,6 +1148,7 @@ XXX
     @summary_indent = indent
     @default_argv = ARGV
     @require_exact = false
+    @raise_unknown = true
     add_officious
     yield self if block_given?
   end
@@ -1174,6 +1225,9 @@ XXX
   # Whether to require that options match exactly (disallows providing
   # abbreviated long option as short option).
   attr_accessor :require_exact
+
+  # Whether to raise at unknown option.
+  attr_accessor :raise_unknown
 
   #
   # Heading banner preceding summary.
@@ -1292,6 +1346,29 @@ XXX
   #
   def help; summarize("#{banner}".sub(/\n?\z/, "\n")) end
   alias to_s help
+
+  def pretty_print(q)           # :nodoc:
+    q.object_group(self) do
+      first = true
+      if @stack.size > 2
+        @stack.each_with_index do |s, i|
+          next if i < 2
+          next if s.list.empty?
+          if first
+            first = false
+            q.text ":"
+          end
+          q.breakable
+          s.pretty_print(q)
+        end
+      end
+    end
+  end
+
+  def inspect                   # :nodoc:
+    require 'pp'
+    pretty_print_inspect
+  end
 
   #
   # Returns option summary list.
@@ -1429,7 +1506,7 @@ XXX
         style = notwice(default_style.guess(arg = o), style, 'style')
         default_pattern, conv = search(:atype, Object) unless default_pattern
       else
-        desc.push(o)
+        desc.push(o) if o && !o.empty?
       end
     end
 
@@ -1566,9 +1643,11 @@ XXX
           begin
             sw, = complete(:long, opt, true)
             if require_exact && !sw.long.include?(arg)
+              throw :terminate, arg unless raise_unknown
               raise InvalidOption, arg
             end
           rescue ParseError
+            throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
           end
           begin
@@ -1600,6 +1679,7 @@ XXX
               end
             end
           rescue ParseError
+            throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
           end
           begin
@@ -1789,12 +1869,7 @@ XXX
     end
     all_candidates.select! {|cand| cand.is_a?(String) }
     checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
-    suggestions = all_candidates & checker.correct(opt)
-    if DidYouMean.respond_to?(:formatter)
-      DidYouMean.formatter.message_for(suggestions)
-    else
-       "\nDid you mean?  #{suggestions.join("\n               ")}"
-    end
+    DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
   end
 
   def candidate(word)
@@ -1835,10 +1910,13 @@ XXX
   # directory ~/.options, then the basename with '.options' suffix
   # under XDG and Haiku standard places.
   #
-  def load(filename = nil)
+  # The optional +into+ keyword argument works exactly like that accepted in
+  # method #parse.
+  #
+  def load(filename = nil, into: nil)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      return true if load(File.expand_path(basename, '~/.options'), into: into) rescue nil
       basename << ".options"
       return [
         # XDG
@@ -1850,11 +1928,11 @@ XXX
         '~/config/settings',
       ].any? {|dir|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir)) rescue nil
+        load(File.expand_path(basename, dir), into: into) rescue nil
       }
     end
     begin
-      parse(*IO.readlines(filename).each {|s| s.chomp!})
+      parse(*File.readlines(filename, chomp: true), into: into)
       true
     rescue Errno::ENOENT, Errno::ENOTDIR
       false

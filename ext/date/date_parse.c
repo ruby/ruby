@@ -253,6 +253,8 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 #define ABBR_DAYS "sun|mon|tue|wed|thu|fri|sat"
 #define ABBR_MONTHS "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 
+#define NUMBER "(?<!\\d)\\d"
+
 #ifdef TIGHT_PARSER
 #define VALID_DAYS "(?:" DAYS ")" "|(?:tues|wednes|thurs|thur|" ABBR_DAYS ")\\.?"
 #define VALID_MONTHS "(?:" MONTHS ")" "|(?:sept|" ABBR_MONTHS ")\\.?"
@@ -411,7 +413,6 @@ VALUE
 date_zone_to_diff(VALUE str)
 {
     VALUE offset = Qnil;
-    VALUE vbuf = 0;
     long l = RSTRING_LEN(str);
     const char *s = RSTRING_PTR(str);
 
@@ -437,16 +438,26 @@ date_zone_to_diff(VALUE str)
 	    l -= w;
 	    dst = 1;
 	}
+
 	{
+	    const char *zn = s;
 	    long sl = shrunk_size(s, l);
-	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
-		char *d = ALLOCV_N(char, vbuf, sl);
-		l = shrink_space(d, s, l);
-		s = d;
+	    char shrunk_buff[MAX_WORD_LENGTH]; /* no terminator to be added */
+	    const struct zone *z = 0;
+
+	    if (sl <= 0) {
+		sl = l;
 	    }
-	}
-	if (l > 0 && l <= MAX_WORD_LENGTH) {
-	    const struct zone *z = zonetab(s, (unsigned int)l);
+	    else if (sl <= MAX_WORD_LENGTH) {
+		char *d = shrunk_buff;
+		sl = shrink_space(d, s, l);
+		zn = d;
+	    }
+
+	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
+		z = zonetab(zn, (unsigned int)sl);
+	    }
+
 	    if (z) {
 		int d = z->offset;
 		if (dst)
@@ -455,6 +466,7 @@ date_zone_to_diff(VALUE str)
 		goto ok;
 	    }
 	}
+
 	{
 	    char *p;
 	    int sign = 0;
@@ -471,27 +483,53 @@ date_zone_to_diff(VALUE str)
 		s++;
 		l--;
 
+#define out_of_range(v, min, max) ((v) < (min) || (max) < (v))
 		hour = STRTOUL(s, &p, 10);
 		if (*p == ':') {
+		    if (out_of_range(hour, 0, 23)) return Qnil;
 		    s = ++p;
 		    min = STRTOUL(s, &p, 10);
+		    if (out_of_range(min, 0, 59)) return Qnil;
 		    if (*p == ':') {
 			s = ++p;
 			sec = STRTOUL(s, &p, 10);
+			if (out_of_range(sec, 0, 59)) return Qnil;
 		    }
-		    goto num;
 		}
-		if (*p == ',' || *p == '.') {
-		    char *e = 0;
-		    p++;
-		    min = STRTOUL(p, &e, 10) * 3600;
+		else if (*p == ',' || *p == '.') {
+		    /* fractional hour */
+		    size_t n;
+		    int ov;
+		    /* no over precision for offset; 10**-7 hour = 0.36
+		     * milliseconds should be enough. */
+		    const size_t max_digits = 7; /* 36 * 10**7 < 32-bit FIXNUM_MAX */
+
+		    if (out_of_range(hour, 0, 23)) return Qnil;
+
+		    n = (s + l) - ++p;
+		    if (n > max_digits) n = max_digits;
+		    sec = ruby_scan_digits(p, n, 10, &n, &ov);
+		    if ((p += n) < s + l && *p >= ('5' + !(sec & 1)) && *p <= '9') {
+			/* round half to even */
+			sec++;
+		    }
+		    sec *= 36;
 		    if (sign) {
 			hour = -hour;
-			min = -min;
+			sec = -sec;
 		    }
-		    offset = rb_rational_new(INT2FIX(min),
-					     rb_int_positive_pow(10, (int)(e - p)));
-		    offset = f_add(INT2FIX(hour * 3600), offset);
+		    if (n <= 2) {
+			/* HH.nn or HH.n */
+			if (n == 1) sec *= 10;
+			offset = INT2FIX(sec + hour * 3600);
+		    }
+		    else {
+			VALUE denom = rb_int_positive_pow(10, (int)(n - 2));
+			offset = f_add(rb_rational_new(INT2FIX(sec), denom), INT2FIX(hour * 3600));
+			if (rb_rational_den(offset) == INT2FIX(1)) {
+			    offset = rb_rational_num(offset);
+			}
+		    }
 		    goto ok;
 		}
 		else if (l > 2) {
@@ -504,18 +542,16 @@ date_zone_to_diff(VALUE str)
 			min  = ruby_scan_digits(&s[2 - l % 2], 2, 10, &n, &ov);
 		    if (l >= 5)
 			sec  = ruby_scan_digits(&s[4 - l % 2], 2, 10, &n, &ov);
-		    goto num;
 		}
-	      num:
 		sec += min * 60 + hour * 3600;
 		if (sign) sec = -sec;
 		offset = INT2FIX(sec);
+#undef out_of_range
 	    }
 	}
     }
     RB_GC_GUARD(str);
   ok:
-    ALLOCV_END(vbuf);
     return offset;
 }
 
@@ -652,24 +688,27 @@ parse_time(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 		"("
+		   "" NUMBER "+\\s*"
 		   "(?:"
-		     "\\d+\\s*:\\s*\\d+"
 		     "(?:"
+		       ":\\s*\\d+"
+		       "(?:"
 #ifndef TIGHT_PARSER
-		       "\\s*:\\s*\\d+(?:[,.]\\d*)?"
+		         "\\s*:\\s*\\d+(?:[,.]\\d*)?"
 #else
-		       "\\s*:\\s*\\d+(?:[,.]\\d+)?"
+		         "\\s*:\\s*\\d+(?:[,.]\\d+)?"
 #endif
+		       ")?"
+		     "|"
+		       "h(?:\\s*\\d+m?(?:\\s*\\d+s?)?)?"
+		     ")"
+		     "(?:"
+		       "\\s*"
+		       "[ap](?:m\\b|\\.m\\.)"
 		     ")?"
 		   "|"
-		     "\\d+\\s*h(?:\\s*\\d+m?(?:\\s*\\d+s?)?)?"
-		   ")"
-		   "(?:"
-		     "\\s*"
 		     "[ap](?:m\\b|\\.m\\.)"
-		   ")?"
-		 "|"
-		   "\\d+\\s*[ap](?:m\\b|\\.m\\.)"
+		   ")"
 		 ")"
 		 "(?:"
 		   "\\s*"
@@ -691,6 +730,9 @@ parse_time(VALUE str, VALUE hash)
 #endif
 }
 
+#define BEGIN_ERA "\\b"
+#define END_ERA "(?!(?<!\\.)[a-z])"
+
 #ifdef TIGHT_PARSER
 static int
 parse_era1_cb(VALUE m, VALUE hash)
@@ -702,7 +744,7 @@ static int
 parse_era1(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"(a(?:d|\\.d\\.))";
+	BEGIN_ERA "(a(?:d\\b|\\.d\\.))" END_ERA;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -724,8 +766,9 @@ parse_era2_cb(VALUE m, VALUE hash)
 static int
 parse_era2(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|b(?:c|\\.c\\.))";
+    static const char pat_source[] = BEGIN_ERA
+	"(c(?:e\\b|\\.e\\.)|b(?:ce\\b|\\.c\\.e\\.)|b(?:c\\b|\\.c\\.))"
+	END_ERA;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -829,7 +872,7 @@ parse_eu(VALUE str, VALUE hash)
 		FPW_COM FPT_COM
 #endif
 #ifndef TIGHT_PARSER
-		"('?\\d+)[^-\\d\\s]*"
+		"('?" NUMBER "+)[^-\\d\\s]*"
 #else
 		"(\\d+)(?:(?:st|nd|rd|th)\\b)?"
 #endif
@@ -842,7 +885,11 @@ parse_eu(VALUE str, VALUE hash)
 		 "(?:"
 		   "\\s*"
 #ifndef TIGHT_PARSER
-		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
+		   "(?:"
+		     BEGIN_ERA
+		     "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))"
+		     END_ERA
+		   ")?"
 		   "\\s*"
 		   "('?-?\\d+(?:(?:st|nd|rd|th)\\b)?)"
 #else
@@ -919,8 +966,8 @@ parse_us(VALUE str, VALUE hash)
 		COM_FPT
 #endif
 		 "(?:"
-		   "\\s*,?"
-		   "\\s*"
+		   "\\s*+,?"
+		   "\\s*+"
 #ifndef TIGHT_PARSER
 		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
 		   "\\s*"
@@ -967,7 +1014,7 @@ parse_iso(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?[-+]?\\d+)-(\\d+)-('?-?\\d+)"
+	"('?[-+]?" NUMBER "+)-(\\d+)-('?-?\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1321,7 +1368,7 @@ parse_vms11(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?-?\\d+)-(" ABBR_MONTHS ")[^-/.]*"
+	"('?-?" NUMBER "+)-(" ABBR_MONTHS ")[^-/.]*"
 	"-('?-?\\d+)"
 #else
 	BOS
@@ -1416,7 +1463,7 @@ parse_sla(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?-?\\d+)/\\s*('?\\d+)(?:\\D\\s*('?-?\\d+))?"
+	"('?-?" NUMBER "+)/\\s*('?\\d+)(?:\\D\\s*('?-?\\d+))?"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1524,7 +1571,7 @@ parse_dot(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"('?-?\\d+)\\.\\s*('?\\d+)\\.\\s*('?-?\\d+)"
+	"('?-?" NUMBER "+)\\.\\s*('?\\d+)\\.\\s*('?-?\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1684,7 +1731,7 @@ parse_mday(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"(\\d+)(st|nd|rd|th)\\b"
+	"(" NUMBER "+)(st|nd|rd|th)\\b"
 #else
 	BOS
 	FPW_COM FPT_COM
@@ -1922,7 +1969,7 @@ parse_ddd(VALUE str, VALUE hash)
 #ifdef TIGHT_PARSER
 		BOS
 #endif
-		"([-+]?)(\\d{2,14})"
+		"([-+]?)(" NUMBER "{2,14})"
 		  "(?:"
 		    "\\s*"
 		    "t?"

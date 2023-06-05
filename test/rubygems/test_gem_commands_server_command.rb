@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/server_command'
+
+require_relative "helper"
+require "rubygems/commands/server_command"
 
 class TestGemCommandsServerCommand < Gem::TestCase
   def setup
@@ -14,6 +15,6 @@ class TestGemCommandsServerCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Install the rubygems-server}i, @ui.error
+    assert_match(/Install the rubygems-server/i, @ui.error)
   end
 end

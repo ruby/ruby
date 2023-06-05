@@ -274,6 +274,28 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.key_bindings
   end
 
+  def test_additional_key_bindings_for_auxiliary_emacs_keymaps
+    @config.read_lines(<<~'LINES'.lines)
+      set keymap emacs
+      "ab": "AB"
+      set keymap emacs-standard
+      "cd": "CD"
+      set keymap emacs-ctlx
+      "ef": "EF"
+      set keymap emacs-meta
+      "gh": "GH"
+      set editing-mode emacs # keymap changes to be emacs
+    LINES
+
+    expected = {
+      'ab'.bytes => 'AB'.bytes,
+      'cd'.bytes => 'CD'.bytes,
+      "\C-xef".bytes => 'EF'.bytes,
+      "\egh".bytes => 'GH'.bytes,
+    }
+    assert_equal expected, @config.key_bindings
+  end
+
   def test_history_size
     @config.read_lines(<<~LINES.lines)
       set history-size 5000
@@ -387,3 +409,4 @@ class Reline::Config::Test < Reline::TestCase
     ENV['HOME'] = home_backup
   end
 end
+

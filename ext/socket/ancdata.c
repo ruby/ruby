@@ -333,11 +333,11 @@ ancillary_timestamp(VALUE self)
     if (level == SOL_SOCKET && type == SCM_BINTIME &&
         RSTRING_LEN(data) == sizeof(struct bintime)) {
         struct bintime bt;
-	VALUE d, timev;
+        VALUE d, timev;
         memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
-	d = ULL2NUM(0x100000000ULL);
-	d = mul(d,d);
-	timev = add(TIMET2NUM(bt.sec), quo(ULL2NUM(bt.frac), d));
+        d = ULL2NUM(0x100000000ULL);
+        d = mul(d,d);
+        timev = add(TIMET2NUM(bt.sec), quo(ULL2NUM(bt.frac), d));
         result = rb_time_num_new(timev, Qnil);
     }
 # endif
@@ -697,7 +697,7 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
         struct ucred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
         rb_str_catf(ret, " pid=%u uid=%u gid=%u", cred.pid, cred.uid, cred.gid);
-	rb_str_cat2(ret, " (ucred)");
+        rb_str_cat2(ret, " (ucred)");
         return 1;
     }
     else {
@@ -712,7 +712,7 @@ static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
     if (level != SOL_SOCKET && type != SCM_CREDS)
-	return 0;
+        return 0;
 
     /*
      * FreeBSD has struct cmsgcred and struct sockcred.
@@ -727,46 +727,46 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 
 #if defined(HAVE_TYPE_STRUCT_CMSGCRED) /* FreeBSD */
     if (RSTRING_LEN(data) == sizeof(struct cmsgcred)) {
-	struct cmsgcred cred;
+        struct cmsgcred cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(struct cmsgcred));
         rb_str_catf(ret, " pid=%u", cred.cmcred_pid);
         rb_str_catf(ret, " uid=%u", cred.cmcred_uid);
         rb_str_catf(ret, " euid=%u", cred.cmcred_euid);
         rb_str_catf(ret, " gid=%u", cred.cmcred_gid);
-	if (cred.cmcred_ngroups) {
-	    int i;
-	    const char *sep = " groups=";
-	    for (i = 0; i < cred.cmcred_ngroups; i++) {
-		rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
-		sep = ",";
-	    }
-	}
-	rb_str_cat2(ret, " (cmsgcred)");
+        if (cred.cmcred_ngroups) {
+            int i;
+            const char *sep = " groups=";
+            for (i = 0; i < cred.cmcred_ngroups; i++) {
+                rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
+                sep = ",";
+            }
+        }
+        rb_str_cat2(ret, " (cmsgcred)");
         return 1;
     }
 #endif
 #if defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
     if ((size_t)RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
-	struct sockcred cred0, *cred;
+        struct sockcred cred0, *cred;
         memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
-	if ((size_t)RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
-	    cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
-	    memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
-	    rb_str_catf(ret, " uid=%u", cred->sc_uid);
-	    rb_str_catf(ret, " euid=%u", cred->sc_euid);
-	    rb_str_catf(ret, " gid=%u", cred->sc_gid);
-	    rb_str_catf(ret, " egid=%u", cred->sc_egid);
-	    if (cred0.sc_ngroups) {
-		int i;
-		const char *sep = " groups=";
-		for (i = 0; i < cred0.sc_ngroups; i++) {
-		    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
-		    sep = ",";
-		}
-	    }
-	    rb_str_cat2(ret, " (sockcred)");
-	    return 1;
-	}
+        if ((size_t)RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
+            cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
+            memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
+            rb_str_catf(ret, " uid=%u", cred->sc_uid);
+            rb_str_catf(ret, " euid=%u", cred->sc_euid);
+            rb_str_catf(ret, " gid=%u", cred->sc_gid);
+            rb_str_catf(ret, " egid=%u", cred->sc_egid);
+            if (cred0.sc_ngroups) {
+                int i;
+                const char *sep = " groups=";
+                for (i = 0; i < cred0.sc_ngroups; i++) {
+                    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
+                    sep = ",";
+                }
+            }
+            rb_str_cat2(ret, " (sockcred)");
+            return 1;
+        }
     }
 #endif
     return 0;
@@ -906,37 +906,37 @@ inspect_bintime_as_abstime(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct bintime)) {
         struct bintime bt;
         struct tm tm;
-	uint64_t frac_h, frac_l;
-	uint64_t scale_h, scale_l;
-	uint64_t tmp1, tmp2;
-	uint64_t res_h, res_l;
+        uint64_t frac_h, frac_l;
+        uint64_t scale_h, scale_l;
+        uint64_t tmp1, tmp2;
+        uint64_t res_h, res_l;
         char buf[32];
         memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
         LOCALTIME(bt.sec, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
 
-	/* res_h = frac * 10**19 / 2**64 */
+        /* res_h = frac * 10**19 / 2**64 */
 
-	frac_h = bt.frac >> 32;
-	frac_l = bt.frac & 0xffffffff;
+        frac_h = bt.frac >> 32;
+        frac_l = bt.frac & 0xffffffff;
 
-	scale_h = 0x8ac72304; /* 0x8ac7230489e80000 == 10**19 */
-	scale_l = 0x89e80000;
+        scale_h = 0x8ac72304; /* 0x8ac7230489e80000 == 10**19 */
+        scale_l = 0x89e80000;
 
-	res_h = frac_h * scale_h;
-	res_l = frac_l * scale_l;
+        res_h = frac_h * scale_h;
+        res_l = frac_l * scale_l;
 
-	tmp1 = frac_h * scale_l;
-	res_h += tmp1 >> 32;
-	tmp2 = res_l;
-	res_l += tmp1 & 0xffffffff;
-	if (res_l < tmp2) res_h++;
+        tmp1 = frac_h * scale_l;
+        res_h += tmp1 >> 32;
+        tmp2 = res_l;
+        res_l += tmp1 & 0xffffffff;
+        if (res_l < tmp2) res_h++;
 
-	tmp1 = frac_l * scale_h;
-	res_h += tmp1 >> 32;
-	tmp2 = res_l;
-	res_l += tmp1 & 0xffffffff;
-	if (res_l < tmp2) res_h++;
+        tmp1 = frac_l * scale_h;
+        res_h += tmp1 >> 32;
+        tmp2 = res_l;
+        res_l += tmp1 & 0xffffffff;
+        if (res_l < tmp2) res_h++;
 
         rb_str_catf(ret, " %s.%019"PRIu64, buf, res_h);
         return 1;
@@ -1136,8 +1136,8 @@ rb_sendmsg(int fd, const struct msghdr *msg, int flags)
 
 static VALUE
 bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
-		       VALUE dest_sockaddr, VALUE controls, VALUE ex,
-		       int nonblock)
+                       VALUE dest_sockaddr, VALUE controls, VALUE ex,
+                       int nonblock)
 {
     rb_io_t *fptr;
     struct msghdr mh;
@@ -1160,15 +1160,15 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     tmp = rb_str_tmp_frozen_acquire(data);
 
     if (!RB_TYPE_P(controls, T_ARRAY)) {
-	controls = rb_ary_new();
+        controls = rb_ary_new();
     }
     controls_num = RARRAY_LENINT(controls);
 
     if (controls_num) {
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-	int i;
-	size_t last_pad = 0;
-	const VALUE *controls_ptr = RARRAY_CONST_PTR(controls);
+        int i;
+        size_t last_pad = 0;
+        const VALUE *controls_ptr = RARRAY_CONST_PTR(controls);
 #if defined(__NetBSD__)
         int last_level = 0;
         int last_type = 0;
@@ -1215,9 +1215,9 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
             last_level = cmh.cmsg_level;
             last_type = cmh.cmsg_type;
 #endif
-	    last_pad = cspace - cmh.cmsg_len;
+            last_pad = cspace - cmh.cmsg_len;
         }
-	if (last_pad) {
+        if (last_pad) {
             /*
              * This code removes the last padding from msg_controllen.
              *
@@ -1242,10 +1242,10 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
             if (last_level == SOL_SOCKET && last_type == SCM_RIGHTS)
                 rb_str_set_len(controls_str, RSTRING_LEN(controls_str)-last_pad);
 #endif
-	}
-	RB_GC_GUARD(controls);
+        }
+        RB_GC_GUARD(controls);
 #else
-	rb_raise(rb_eNotImpError, "control message for sendmsg is unimplemented");
+        rb_raise(rb_eNotImpError, "control message for sendmsg is unimplemented");
 #endif
     }
 
@@ -1256,7 +1256,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #endif
 
     if (!NIL_P(dest_sockaddr))
-	SockAddrStringValue(dest_sockaddr);
+        SockAddrStringValue(dest_sockaddr);
 
     rb_io_check_closed(fptr);
 
@@ -1284,20 +1284,20 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     ss = rb_sendmsg(fptr->fd, &mh, flags);
 
     if (ss == -1) {
-	int e;
-        if (!nonblock && rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+        int e;
+        if (!nonblock && rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
-	e = errno;
-	if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
-	    if (ex == Qfalse) {
-		return sym_wait_writable;
-	    }
-	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
-				     "sendmsg(2) would block");
-	}
-	rb_syserr_fail(e, "sendmsg(2)");
+        e = errno;
+        if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
+            if (ex == Qfalse) {
+                return sym_wait_writable;
+            }
+            rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
+                                     "sendmsg(2) would block");
+        }
+        rb_syserr_fail(e, "sendmsg(2)");
     }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     RB_GC_GUARD(controls_str);
@@ -1311,20 +1311,20 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #if defined(HAVE_SENDMSG)
 VALUE
 rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags, VALUE dest_sockaddr,
-		    VALUE controls)
+                    VALUE controls)
 {
     return bsock_sendmsg_internal(sock, data, flags, dest_sockaddr, controls,
-				  Qtrue, 0);
+                                  Qtrue, 0);
 }
 #endif
 
 #if defined(HAVE_SENDMSG)
 VALUE
 rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
-			     VALUE dest_sockaddr, VALUE controls, VALUE ex)
+                             VALUE dest_sockaddr, VALUE controls, VALUE ex)
 {
     return bsock_sendmsg_internal(sock, data, flags, dest_sockaddr,
-				  controls, ex, 1);
+                                  controls, ex, 1);
 }
 #endif
 
@@ -1422,12 +1422,12 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
 {
     if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
         int *fdp, *end;
-	VALUE ary = rb_ary_new();
-	rb_ivar_set(ctl, rb_intern("unix_rights"), ary);
+        VALUE ary = rb_ary_new();
+        rb_ivar_set(ctl, rb_intern("unix_rights"), ary);
         fdp = (int *)CMSG_DATA(cmh);
         end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
-	       (char *)fdp + sizeof(int) <= msg_end) {
+               (char *)fdp + sizeof(int) <= msg_end) {
             int fd = *fdp;
             struct stat stbuf;
             VALUE io;
@@ -1443,15 +1443,15 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             rb_ary_push(ary, io);
             fdp++;
         }
-	OBJ_FREEZE(ary);
+        OBJ_FREEZE(ary);
     }
 }
 #endif
 
 static VALUE
 bsock_recvmsg_internal(VALUE sock,
-		VALUE vmaxdatlen, VALUE vflags, VALUE vmaxctllen,
-		VALUE scm_rights, VALUE ex, int nonblock)
+                VALUE vmaxdatlen, VALUE vflags, VALUE vmaxctllen,
+                VALUE scm_rights, VALUE ex, int nonblock)
 {
     rb_io_t *fptr;
     int grow_buffer;
@@ -1505,28 +1505,28 @@ bsock_recvmsg_internal(VALUE sock,
 
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (grow_buffer) {
-	int socktype;
-	socklen_t optlen = (socklen_t)sizeof(socktype);
+        int socktype;
+        socklen_t optlen = (socklen_t)sizeof(socktype);
         if (getsockopt(fptr->fd, SOL_SOCKET, SO_TYPE, (void*)&socktype, &optlen) == -1) {
-	    rb_sys_fail("getsockopt(SO_TYPE)");
-	}
-	if (socktype == SOCK_STREAM)
-	    grow_buffer = 0;
+            rb_sys_fail("getsockopt(SO_TYPE)");
+        }
+        if (socktype == SOCK_STREAM)
+            grow_buffer = 0;
     }
 #endif
 
   retry:
     if (NIL_P(dat_str))
-	dat_str = rb_str_tmp_new(maxdatlen);
+        dat_str = rb_str_tmp_new(maxdatlen);
     else
-	rb_str_resize(dat_str, maxdatlen);
+        rb_str_resize(dat_str, maxdatlen);
     datbuf = RSTRING_PTR(dat_str);
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (NIL_P(ctl_str))
-	ctl_str = rb_str_tmp_new(maxctllen);
+        ctl_str = rb_str_tmp_new(maxctllen);
     else
-	rb_str_resize(ctl_str, maxctllen);
+        rb_str_resize(ctl_str, maxctllen);
     ctlbuf = RSTRING_PTR(ctl_str);
 #endif
 
@@ -1556,20 +1556,20 @@ bsock_recvmsg_internal(VALUE sock,
     ss = rb_recvmsg(fptr->fd, &mh, flags);
 
     if (ss == -1) {
-	int e;
-        if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, Qnil)) {
+        int e;
+        if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
-	e = errno;
-	if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
+        e = errno;
+        if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
             if (ex == Qfalse) {
                 return sym_wait_readable;
             }
-	    rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvmsg(2) would block");
+            rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvmsg(2) would block");
         }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-	if (!gc_done && (e == EMFILE || e == EMSGSIZE)) {
+        if (!gc_done && (e == EMFILE || e == EMSGSIZE)) {
           /*
            * When SCM_RIGHTS hit the file descriptors limit:
            * - Linux 2.6.18 causes success with MSG_CTRUNC
@@ -1579,24 +1579,24 @@ bsock_recvmsg_internal(VALUE sock,
           gc_and_retry:
             rb_gc();
             gc_done = 1;
-	    goto retry;
+            goto retry;
         }
 #else
-	if (NIL_P(vmaxdatlen) && grow_buffer && e == EMSGSIZE)
-	    ss = (ssize_t)iov.iov_len;
-	else
+        if (NIL_P(vmaxdatlen) && grow_buffer && e == EMSGSIZE)
+            ss = (ssize_t)iov.iov_len;
+        else
 #endif
-	rb_syserr_fail(e, "recvmsg(2)");
+        rb_syserr_fail(e, "recvmsg(2)");
     }
 
     if (grow_buffer) {
-	int grown = 0;
-	if (NIL_P(vmaxdatlen) && ss != -1 && ss == (ssize_t)iov.iov_len) {
+        int grown = 0;
+        if (NIL_P(vmaxdatlen) && ss != -1 && ss == (ssize_t)iov.iov_len) {
             if (SIZE_MAX/2 < maxdatlen)
                 rb_raise(rb_eArgError, "max data length too big");
-	    maxdatlen *= 2;
-	    grown = 1;
-	}
+            maxdatlen *= 2;
+            grown = 1;
+        }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
         if (NIL_P(vmaxctllen) && (mh.msg_flags & MSG_CTRUNC)) {
 #define BIG_ENOUGH_SPACE 65536
@@ -1605,9 +1605,9 @@ bsock_recvmsg_internal(VALUE sock,
                 /* there are big space bug truncated.
                  * file descriptors limit? */
                 if (!gc_done) {
-		    rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
+                    rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
                     goto gc_and_retry;
-		}
+                }
             }
             else {
                 if (SIZE_MAX/2 < maxctllen)
@@ -1616,13 +1616,13 @@ bsock_recvmsg_internal(VALUE sock,
                 grown = 1;
             }
 #undef BIG_ENOUGH_SPACE
-	}
+        }
 #endif
-	if (grown) {
+        if (grown) {
             rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
-	    goto retry;
-	}
-	else {
+            goto retry;
+        }
+        else {
             grow_buffer = 0;
             if (flags != orig_flags) {
                 rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
@@ -1636,31 +1636,31 @@ bsock_recvmsg_internal(VALUE sock,
         dat_str = rb_str_new(datbuf, ss);
     else {
         rb_str_resize(dat_str, ss);
-	rb_obj_reveal(dat_str, rb_cString);
+        rb_obj_reveal(dat_str, rb_cString);
     }
 
     ret = rb_ary_new3(3, dat_str,
                          rsock_io_socket_addrinfo(sock, mh.msg_name, mh.msg_namelen),
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-			 INT2NUM(mh.msg_flags)
+                         INT2NUM(mh.msg_flags)
 #else
-			 Qnil
+                         Qnil
 #endif
-			 );
+                         );
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     family = rsock_getfamily(fptr);
     if (mh.msg_controllen) {
-	char *msg_end = (char *)mh.msg_control + mh.msg_controllen;
+        char *msg_end = (char *)mh.msg_control + mh.msg_controllen;
         for (cmh = CMSG_FIRSTHDR(&mh); cmh != NULL; cmh = CMSG_NXTHDR(&mh, cmh)) {
             VALUE ctl;
-	    char *ctl_end;
+            char *ctl_end;
             size_t clen;
             if (cmh->cmsg_len == 0) {
                 rb_raise(rb_eTypeError, "invalid control message (cmsg_len == 0)");
             }
             ctl_end = (char*)cmh + cmh->cmsg_len;
-	    clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
+            clen = (ctl_end <= msg_end ? ctl_end : msg_end) - (char*)CMSG_DATA(cmh);
             ctl = ancdata_new(family, cmh->cmsg_level, cmh->cmsg_type, rb_str_new((char*)CMSG_DATA(cmh), clen));
             if (request_scm_rights)
                 make_io_for_unix_rights(ctl, cmh, msg_end);
@@ -1679,7 +1679,7 @@ bsock_recvmsg_internal(VALUE sock,
 #if defined(HAVE_RECVMSG)
 VALUE
 rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE flags, VALUE clen,
-		    VALUE scm_rights)
+                    VALUE scm_rights)
 {
     VALUE ex = Qtrue;
     return bsock_recvmsg_internal(sock, dlen, flags, clen, scm_rights, ex, 0);
@@ -1689,7 +1689,7 @@ rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE flags, VALUE clen,
 #if defined(HAVE_RECVMSG)
 VALUE
 rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE flags, VALUE clen,
-			     VALUE scm_rights, VALUE ex)
+                             VALUE scm_rights, VALUE ex)
 {
     return bsock_recvmsg_internal(sock, dlen, flags, clen, scm_rights, ex, 1);
 }

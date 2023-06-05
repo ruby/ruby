@@ -91,4 +91,3 @@ class XrefTestCase < RDoc::TestCase
   end
 
 end
-

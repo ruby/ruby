@@ -1206,6 +1206,41 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_refined_protected_methods
+    assert_separately([], <<-"end;")
+    bug18806 = '[ruby-core:108705] [Bug #18806]'
+    class C; end
+
+    module R
+      refine C do
+        def refined_call_foo = foo
+        def refined_call_foo_on(other) = other.foo
+
+        protected
+
+        def foo = :foo
+      end
+    end
+
+    class C
+      using R
+
+      def call_foo = foo
+      def call_foo_on(other) = other.foo
+    end
+
+    c = C.new
+    assert_equal :foo, c.call_foo, bug18806
+    assert_equal :foo, c.call_foo_on(c), bug18806
+    assert_equal :foo, c.call_foo_on(C.new), bug18806
+
+    using R
+    assert_equal :foo, c.refined_call_foo, bug18806
+    assert_equal :foo, c.refined_call_foo_on(c), bug18806
+    assert_equal :foo, c.refined_call_foo_on(C.new), bug18806
+    end;
+  end
+
   def test_refine_basic_object
     assert_separately([], <<-"end;")
     bug10106 = '[ruby-core:64166] [Bug #10106]'

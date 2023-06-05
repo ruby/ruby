@@ -105,14 +105,6 @@ describe "Dir#children" do
     dirs.each { |d| d.encoding.should == Encoding::UTF_8 }
   end
 
-  ruby_version_is ""..."2.7" do
-    it "accepts nil options" do
-      @dir = Dir.new("#{DirSpecs.mock_dir}/deeply/nested", nil)
-      dirs = @dir.to_a.sort
-      dirs.each { |d| d.encoding.should == Encoding.find("filesystem") }
-    end
-  end
-
   it "returns children encoded with the filesystem encoding by default" do
     # This spec depends on the locale not being US-ASCII because if it is, the
     # children that are not ascii_only? will be BINARY encoded.

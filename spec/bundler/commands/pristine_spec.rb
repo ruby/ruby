@@ -2,7 +2,7 @@
 
 require "bundler/vendored_fileutils"
 
-RSpec.describe "bundle pristine", :ruby_repo do
+RSpec.describe "bundle pristine" do
   before :each do
     build_lib "baz", :path => bundled_app do |s|
       s.version = "1.0.0"
@@ -22,7 +22,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       source "#{file_uri_for(gem_repo2)}"
       gem "weakling"
       gem "very_simple_binary"
-      gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
+      gem "foo", :git => "#{lib_path("foo")}", :branch => "main"
       gem "git_with_ext", :git => "#{lib_path("git_with_ext")}"
       gem "bar", :path => "#{lib_path("bar")}"
 

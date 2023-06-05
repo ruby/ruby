@@ -10,7 +10,6 @@
  */
 #include "ruby/internal/config.h"      /* for HAVE_LIBGMP */
 #include "ruby/ruby.h"          /* for struct RBasic */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/numeric.h"   /* for INT_POSITIVE_P */
 #include "ruby_assert.h"        /* for assert */
 

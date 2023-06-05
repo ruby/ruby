@@ -7,7 +7,7 @@
 #include "ccan/check_type/check_type.h"
 
 /**
- * struct list_node - an entry in a doubly-linked list
+ * struct ccan_list_node - an entry in a doubly-linked list
  * @next: next entry (self if empty)
  * @prev: previous entry (self if empty)
  *
@@ -16,209 +16,209 @@
  *	struct child {
  *		const char *name;
  *		// Linked list of all us children.
- *		struct list_node list;
+ *		struct ccan_list_node list;
  *	};
  */
-struct list_node
+struct ccan_list_node
 {
-	struct list_node *next, *prev;
+	struct ccan_list_node *next, *prev;
 };
 
 /**
- * struct list_head - the head of a doubly-linked list
- * @h: the list_head (containing next and prev pointers)
+ * struct ccan_list_head - the head of a doubly-linked list
+ * @h: the ccan_list_head (containing next and prev pointers)
  *
  * This is used as the head of a linked list.
  * Example:
  *	struct parent {
  *		const char *name;
- *		struct list_head children;
+ *		struct ccan_list_head children;
  *		unsigned int num_children;
  *	};
  */
-struct list_head
+struct ccan_list_head
 {
-	struct list_node n;
+	struct ccan_list_node n;
 };
 
-#define LIST_LOC __FILE__  ":" stringify(__LINE__)
-#define list_debug(h, loc) ((void)loc, h)
-#define list_debug_node(n, loc) ((void)loc, n)
+#define CCAN_LIST_LOC __FILE__  ":" ccan_stringify(__LINE__)
+#define ccan_list_debug(h, loc) ((void)loc, h)
+#define ccan_list_debug_node(n, loc) ((void)loc, n)
 
 /**
- * LIST_HEAD_INIT - initializer for an empty list_head
+ * CCAN_LIST_HEAD_INIT - initializer for an empty ccan_list_head
  * @name: the name of the list.
  *
  * Explicit initializer for an empty list.
  *
  * See also:
- *	LIST_HEAD, list_head_init()
+ *	CCAN_LIST_HEAD, ccan_list_head_init()
  *
  * Example:
- *	static struct list_head my_list = LIST_HEAD_INIT(my_list);
+ *	static struct ccan_list_head my_list = CCAN_LIST_HEAD_INIT(my_list);
  */
-#define LIST_HEAD_INIT(name) { { &(name).n, &(name).n } }
+#define CCAN_LIST_HEAD_INIT(name) { { &(name).n, &(name).n } }
 
 /**
- * LIST_HEAD - define and initialize an empty list_head
+ * CCAN_LIST_HEAD - define and initialize an empty ccan_list_head
  * @name: the name of the list.
  *
- * The LIST_HEAD macro defines a list_head and initializes it to an empty
- * list.  It can be prepended by "static" to define a static list_head.
+ * The CCAN_LIST_HEAD macro defines a ccan_list_head and initializes it to an empty
+ * list.  It can be prepended by "static" to define a static ccan_list_head.
  *
  * See also:
- *	LIST_HEAD_INIT, list_head_init()
+ *	CCAN_LIST_HEAD_INIT, ccan_list_head_init()
  *
  * Example:
- *	static LIST_HEAD(my_global_list);
+ *	static CCAN_LIST_HEAD(my_global_list);
  */
-#define LIST_HEAD(name) \
-	struct list_head name = LIST_HEAD_INIT(name)
+#define CCAN_LIST_HEAD(name) \
+	struct ccan_list_head name = CCAN_LIST_HEAD_INIT(name)
 
 /**
- * list_head_init - initialize a list_head
- * @h: the list_head to set to the empty list
+ * ccan_list_head_init - initialize a ccan_list_head
+ * @h: the ccan_list_head to set to the empty list
  *
  * Example:
  *	...
  *	struct parent *parent = malloc(sizeof(*parent));
  *
- *	list_head_init(&parent->children);
+ *	ccan_list_head_init(&parent->children);
  *	parent->num_children = 0;
  */
-static inline void list_head_init(struct list_head *h)
+static inline void ccan_list_head_init(struct ccan_list_head *h)
 {
 	h->n.next = h->n.prev = &h->n;
 }
 
 /**
- * list_node_init - initialize a list_node
- * @n: the list_node to link to itself.
+ * ccan_list_node_init - initialize a ccan_list_node
+ * @n: the ccan_list_node to link to itself.
  *
- * You don't need to use this normally!  But it lets you list_del(@n)
+ * You don't need to use this normally!  But it lets you ccan_list_del(@n)
  * safely.
  */
-static inline void list_node_init(struct list_node *n)
+static inline void ccan_list_node_init(struct ccan_list_node *n)
 {
 	n->next = n->prev = n;
 }
 
 /**
- * list_add_after - add an entry after an existing node in a linked list
- * @h: the list_head to add the node to (for debugging)
- * @p: the existing list_node to add the node after
- * @n: the new list_node to add to the list.
+ * ccan_list_add_after - add an entry after an existing node in a linked list
+ * @h: the ccan_list_head to add the node to (for debugging)
+ * @p: the existing ccan_list_node to add the node after
+ * @n: the new ccan_list_node to add to the list.
  *
- * The existing list_node must already be a member of the list.
- * The new list_node does not need to be initialized; it will be overwritten.
+ * The existing ccan_list_node must already be a member of the list.
+ * The new ccan_list_node does not need to be initialized; it will be overwritten.
  *
  * Example:
  *	struct child c1, c2, c3;
- *	LIST_HEAD(h);
+ *	CCAN_LIST_HEAD(h);
  *
- *	list_add_tail(&h, &c1.list);
- *	list_add_tail(&h, &c3.list);
- *	list_add_after(&h, &c1.list, &c2.list);
+ *	ccan_list_add_tail(&h, &c1.list);
+ *	ccan_list_add_tail(&h, &c3.list);
+ *	ccan_list_add_after(&h, &c1.list, &c2.list);
  */
-#define list_add_after(h, p, n) list_add_after_(h, p, n, LIST_LOC)
-static inline void list_add_after_(struct list_head *h,
-				   struct list_node *p,
-				   struct list_node *n,
+#define ccan_list_add_after(h, p, n) ccan_list_add_after_(h, p, n, CCAN_LIST_LOC)
+static inline void ccan_list_add_after_(struct ccan_list_head *h,
+				   struct ccan_list_node *p,
+				   struct ccan_list_node *n,
 				   const char *abortstr)
 {
 	n->next = p->next;
 	n->prev = p;
 	p->next->prev = n;
 	p->next = n;
-	(void)list_debug(h, abortstr);
+	(void)ccan_list_debug(h, abortstr);
 }
 
 /**
- * list_add - add an entry at the start of a linked list.
- * @h: the list_head to add the node to
- * @n: the list_node to add to the list.
+ * ccan_list_add - add an entry at the start of a linked list.
+ * @h: the ccan_list_head to add the node to
+ * @n: the ccan_list_node to add to the list.
  *
- * The list_node does not need to be initialized; it will be overwritten.
+ * The ccan_list_node does not need to be initialized; it will be overwritten.
  * Example:
  *	struct child *child = malloc(sizeof(*child));
  *
  *	child->name = "marvin";
- *	list_add(&parent->children, &child->list);
+ *	ccan_list_add(&parent->children, &child->list);
  *	parent->num_children++;
  */
-#define list_add(h, n) list_add_(h, n, LIST_LOC)
-static inline void list_add_(struct list_head *h,
-			     struct list_node *n,
+#define ccan_list_add(h, n) ccan_list_add_(h, n, CCAN_LIST_LOC)
+static inline void ccan_list_add_(struct ccan_list_head *h,
+			     struct ccan_list_node *n,
 			     const char *abortstr)
 {
-	list_add_after_(h, &h->n, n, abortstr);
+	ccan_list_add_after_(h, &h->n, n, abortstr);
 }
 
 /**
- * list_add_before - add an entry before an existing node in a linked list
- * @h: the list_head to add the node to (for debugging)
- * @p: the existing list_node to add the node before
- * @n: the new list_node to add to the list.
+ * ccan_list_add_before - add an entry before an existing node in a linked list
+ * @h: the ccan_list_head to add the node to (for debugging)
+ * @p: the existing ccan_list_node to add the node before
+ * @n: the new ccan_list_node to add to the list.
  *
- * The existing list_node must already be a member of the list.
- * The new list_node does not need to be initialized; it will be overwritten.
+ * The existing ccan_list_node must already be a member of the list.
+ * The new ccan_list_node does not need to be initialized; it will be overwritten.
  *
  * Example:
- *	list_head_init(&h);
- *	list_add_tail(&h, &c1.list);
- *	list_add_tail(&h, &c3.list);
- *	list_add_before(&h, &c3.list, &c2.list);
+ *	ccan_list_head_init(&h);
+ *	ccan_list_add_tail(&h, &c1.list);
+ *	ccan_list_add_tail(&h, &c3.list);
+ *	ccan_list_add_before(&h, &c3.list, &c2.list);
  */
-#define list_add_before(h, p, n) list_add_before_(h, p, n, LIST_LOC)
-static inline void list_add_before_(struct list_head *h,
-				    struct list_node *p,
-				    struct list_node *n,
+#define ccan_list_add_before(h, p, n) ccan_list_add_before_(h, p, n, CCAN_LIST_LOC)
+static inline void ccan_list_add_before_(struct ccan_list_head *h,
+				    struct ccan_list_node *p,
+				    struct ccan_list_node *n,
 				    const char *abortstr)
 {
 	n->next = p;
 	n->prev = p->prev;
 	p->prev->next = n;
 	p->prev = n;
-	(void)list_debug(h, abortstr);
+	(void)ccan_list_debug(h, abortstr);
 }
 
 /**
- * list_add_tail - add an entry at the end of a linked list.
- * @h: the list_head to add the node to
- * @n: the list_node to add to the list.
+ * ccan_list_add_tail - add an entry at the end of a linked list.
+ * @h: the ccan_list_head to add the node to
+ * @n: the ccan_list_node to add to the list.
  *
- * The list_node does not need to be initialized; it will be overwritten.
+ * The ccan_list_node does not need to be initialized; it will be overwritten.
  * Example:
- *	list_add_tail(&parent->children, &child->list);
+ *	ccan_list_add_tail(&parent->children, &child->list);
  *	parent->num_children++;
  */
-#define list_add_tail(h, n) list_add_tail_(h, n, LIST_LOC)
-static inline void list_add_tail_(struct list_head *h,
-				  struct list_node *n,
+#define ccan_list_add_tail(h, n) ccan_list_add_tail_(h, n, CCAN_LIST_LOC)
+static inline void ccan_list_add_tail_(struct ccan_list_head *h,
+				  struct ccan_list_node *n,
 				  const char *abortstr)
 {
-	list_add_before_(h, &h->n, n, abortstr);
+	ccan_list_add_before_(h, &h->n, n, abortstr);
 }
 
 /**
- * list_empty - is a list empty?
- * @h: the list_head
+ * ccan_list_empty - is a list empty?
+ * @h: the ccan_list_head
  *
  * If the list is empty, returns true.
  *
  * Example:
- *	assert(list_empty(&parent->children) == (parent->num_children == 0));
+ *	assert(ccan_list_empty(&parent->children) == (parent->num_children == 0));
  */
-#define list_empty(h) list_empty_(h, LIST_LOC)
-static inline int list_empty_(const struct list_head *h, const char* abortstr)
+#define ccan_list_empty(h) ccan_list_empty_(h, CCAN_LIST_LOC)
+static inline int ccan_list_empty_(const struct ccan_list_head *h, const char* abortstr)
 {
-	(void)list_debug(h, abortstr);
+	(void)ccan_list_debug(h, abortstr);
 	return h->n.next == &h->n;
 }
 
 /**
- * list_empty_nodebug - is a list empty (and don't perform debug checks)?
- * @h: the list_head
+ * ccan_list_empty_nodebug - is a list empty (and don't perform debug checks)?
+ * @h: the ccan_list_head
  *
  * If the list is empty, returns true.
  * This differs from list_empty() in that if CCAN_LIST_DEBUG is set it
@@ -226,20 +226,20 @@ static inline int list_empty_(const struct list_head *h, const char* abortstr)
  * know what you're doing.
  *
  * Example:
- *	assert(list_empty_nodebug(&parent->children) == (parent->num_children == 0));
+ *	assert(ccan_list_empty_nodebug(&parent->children) == (parent->num_children == 0));
  */
 #ifndef CCAN_LIST_DEBUG
-#define list_empty_nodebug(h) list_empty(h)
+#define ccan_list_empty_nodebug(h) ccan_list_empty(h)
 #else
-static inline int list_empty_nodebug(const struct list_head *h)
+static inline int ccan_list_empty_nodebug(const struct ccan_list_head *h)
 {
 	return h->n.next == &h->n;
 }
 #endif
 
 /**
- * list_empty_nocheck - is a list empty?
- * @h: the list_head
+ * ccan_list_empty_nocheck - is a list empty?
+ * @h: the ccan_list_head
  *
  * If the list is empty, returns true. This doesn't perform any
  * debug check for list consistency, so it can be called without
@@ -247,29 +247,29 @@ static inline int list_empty_nodebug(const struct list_head *h)
  * checks where an incorrect result is not an issue (optimized
  * bail out path for example).
  */
-static inline bool list_empty_nocheck(const struct list_head *h)
+static inline bool ccan_list_empty_nocheck(const struct ccan_list_head *h)
 {
 	return h->n.next == &h->n;
 }
 
 /**
- * list_del - delete an entry from an (unknown) linked list.
- * @n: the list_node to delete from the list.
+ * ccan_list_del - delete an entry from an (unknown) linked list.
+ * @n: the ccan_list_node to delete from the list.
  *
  * Note that this leaves @n in an undefined state; it can be added to
  * another list, but not deleted again.
  *
  * See also:
- *	list_del_from(), list_del_init()
+ *	ccan_list_del_from(), ccan_list_del_init()
  *
  * Example:
- *	list_del(&child->list);
+ *	ccan_list_del(&child->list);
  *	parent->num_children--;
  */
-#define list_del(n) list_del_(n, LIST_LOC)
-static inline void list_del_(struct list_node *n, const char* abortstr)
+#define ccan_list_del(n) ccan_list_del_(n, CCAN_LIST_LOC)
+static inline void ccan_list_del_(struct ccan_list_node *n, const char* abortstr)
 {
-	(void)list_debug_node(n, abortstr);
+	(void)ccan_list_debug_node(n, abortstr);
 	n->next->prev = n->prev;
 	n->prev->next = n->next;
 #ifdef CCAN_LIST_DEBUG
@@ -279,80 +279,80 @@ static inline void list_del_(struct list_node *n, const char* abortstr)
 }
 
 /**
- * list_del_init - delete a node, and reset it so it can be deleted again.
- * @n: the list_node to be deleted.
+ * ccan_list_del_init - delete a node, and reset it so it can be deleted again.
+ * @n: the ccan_list_node to be deleted.
  *
- * list_del(@n) or list_del_init() again after this will be safe,
+ * ccan_list_del(@n) or ccan_list_del_init() again after this will be safe,
  * which can be useful in some cases.
  *
  * See also:
- *	list_del_from(), list_del()
+ *	ccan_list_del_from(), ccan_list_del()
  *
  * Example:
- *	list_del_init(&child->list);
+ *	ccan_list_del_init(&child->list);
  *	parent->num_children--;
  */
-#define list_del_init(n) list_del_init_(n, LIST_LOC)
-static inline void list_del_init_(struct list_node *n, const char *abortstr)
+#define ccan_list_del_init(n) ccan_list_del_init_(n, CCAN_LIST_LOC)
+static inline void ccan_list_del_init_(struct ccan_list_node *n, const char *abortstr)
 {
-	list_del_(n, abortstr);
-	list_node_init(n);
+	ccan_list_del_(n, abortstr);
+	ccan_list_node_init(n);
 }
 
 /**
- * list_del_from - delete an entry from a known linked list.
- * @h: the list_head the node is in.
- * @n: the list_node to delete from the list.
+ * ccan_list_del_from - delete an entry from a known linked list.
+ * @h: the ccan_list_head the node is in.
+ * @n: the ccan_list_node to delete from the list.
  *
  * This explicitly indicates which list a node is expected to be in,
  * which is better documentation and can catch more bugs.
  *
- * See also: list_del()
+ * See also: ccan_list_del()
  *
  * Example:
- *	list_del_from(&parent->children, &child->list);
+ *	ccan_list_del_from(&parent->children, &child->list);
  *	parent->num_children--;
  */
-static inline void list_del_from(struct list_head *h, struct list_node *n)
+static inline void ccan_list_del_from(struct ccan_list_head *h, struct ccan_list_node *n)
 {
 #ifdef CCAN_LIST_DEBUG
 	{
 		/* Thorough check: make sure it was in list! */
-		struct list_node *i;
+		struct ccan_list_node *i;
 		for (i = h->n.next; i != n; i = i->next)
 			assert(i != &h->n);
 	}
 #endif /* CCAN_LIST_DEBUG */
 
 	/* Quick test that catches a surprising number of bugs. */
-	assert(!list_empty(h));
-	list_del(n);
+	assert(!ccan_list_empty(h));
+	ccan_list_del(n);
 }
 
 /**
- * list_swap - swap out an entry from an (unknown) linked list for a new one.
- * @o: the list_node to replace from the list.
- * @n: the list_node to insert in place of the old one.
+ * ccan_list_swap - swap out an entry from an (unknown) linked list for a new one.
+ * @o: the ccan_list_node to replace from the list.
+ * @n: the ccan_list_node to insert in place of the old one.
  *
  * Note that this leaves @o in an undefined state; it can be added to
  * another list, but not deleted/swapped again.
  *
  * See also:
- *	list_del()
+ *	ccan_list_del()
  *
  * Example:
  *	struct child x1, x2;
- *	LIST_HEAD(xh);
+ *	CCAN_LIST_HEAD(xh);
  *
- *	list_add(&xh, &x1.list);
- *	list_swap(&x1.list, &x2.list);
+ *	ccan_list_add(&xh, &x1.list);
+ *	ccan_list_swap(&x1.list, &x2.list);
  */
-#define list_swap(o, n) list_swap_(o, n, LIST_LOC)
-static inline void list_swap_(struct list_node *o,
-			      struct list_node *n,
+#define ccan_list_swap(o, n) ccan_list_swap_(o, n, CCAN_LIST_LOC)
+static inline void ccan_list_swap_(struct ccan_list_node *o,
+			      struct ccan_list_node *n,
 			      const char* abortstr)
 {
-	(void)list_debug_node(o, abortstr);
+	(void)ccan_list_debug_node(o, abortstr);
 	*n = *o;
 	n->next->prev = n;
 	n->prev->next = n;
@@ -363,135 +363,135 @@ static inline void list_swap_(struct list_node *o,
 }
 
 /**
- * list_entry - convert a list_node back into the structure containing it.
- * @n: the list_node
+ * ccan_list_entry - convert a ccan_list_node back into the structure containing it.
+ * @n: the ccan_list_node
  * @type: the type of the entry
- * @member: the list_node member of the type
+ * @member: the ccan_list_node member of the type
  *
  * Example:
  *	// First list entry is children.next; convert back to child.
- *	child = list_entry(parent->children.n.next, struct child, list);
+ *	child = ccan_list_entry(parent->children.n.next, struct child, list);
  *
  * See Also:
- *	list_top(), list_for_each()
+ *	ccan_list_top(), ccan_list_for_each()
  */
-#define list_entry(n, type, member) container_of(n, type, member)
+#define ccan_list_entry(n, type, member) ccan_container_of(n, type, member)
 
 /**
- * list_top - get the first entry in a list
- * @h: the list_head
+ * ccan_list_top - get the first entry in a list
+ * @h: the ccan_list_head
  * @type: the type of the entry
- * @member: the list_node member of the type
+ * @member: the ccan_list_node member of the type
  *
  * If the list is empty, returns NULL.
  *
  * Example:
  *	struct child *first;
- *	first = list_top(&parent->children, struct child, list);
+ *	first = ccan_list_top(&parent->children, struct child, list);
  *	if (!first)
  *		printf("Empty list!\n");
  */
-#define list_top(h, type, member)					\
-	((type *)list_top_((h), list_off_(type, member)))
+#define ccan_list_top(h, type, member)					\
+	((type *)ccan_list_top_((h), ccan_list_off_(type, member)))
 
-static inline const void *list_top_(const struct list_head *h, size_t off)
+static inline const void *ccan_list_top_(const struct ccan_list_head *h, size_t off)
 {
-	if (list_empty(h))
+	if (ccan_list_empty(h))
 		return NULL;
 	return (const char *)h->n.next - off;
 }
 
 /**
- * list_pop - remove the first entry in a list
- * @h: the list_head
+ * ccan_list_pop - remove the first entry in a list
+ * @h: the ccan_list_head
  * @type: the type of the entry
- * @member: the list_node member of the type
+ * @member: the ccan_list_node member of the type
  *
  * If the list is empty, returns NULL.
  *
  * Example:
  *	struct child *one;
- *	one = list_pop(&parent->children, struct child, list);
+ *	one = ccan_list_pop(&parent->children, struct child, list);
  *	if (!one)
  *		printf("Empty list!\n");
  */
-#define list_pop(h, type, member)					\
-	((type *)list_pop_((h), list_off_(type, member)))
+#define ccan_list_pop(h, type, member)					\
+	((type *)ccan_list_pop_((h), ccan_list_off_(type, member)))
 
-static inline const void *list_pop_(const struct list_head *h, size_t off)
+static inline const void *ccan_list_pop_(const struct ccan_list_head *h, size_t off)
 {
-	struct list_node *n;
+	struct ccan_list_node *n;
 
-	if (list_empty(h))
+	if (ccan_list_empty(h))
 		return NULL;
 	n = h->n.next;
-	list_del(n);
+	ccan_list_del(n);
 	return (const char *)n - off;
 }
 
 /**
- * list_tail - get the last entry in a list
- * @h: the list_head
+ * ccan_list_tail - get the last entry in a list
+ * @h: the ccan_list_head
  * @type: the type of the entry
- * @member: the list_node member of the type
+ * @member: the ccan_list_node member of the type
  *
  * If the list is empty, returns NULL.
  *
  * Example:
  *	struct child *last;
- *	last = list_tail(&parent->children, struct child, list);
+ *	last = ccan_list_tail(&parent->children, struct child, list);
  *	if (!last)
  *		printf("Empty list!\n");
  */
-#define list_tail(h, type, member) \
-	((type *)list_tail_((h), list_off_(type, member)))
+#define ccan_list_tail(h, type, member) \
+	((type *)ccan_list_tail_((h), ccan_list_off_(type, member)))
 
-static inline const void *list_tail_(const struct list_head *h, size_t off)
+static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t off)
 {
-	if (list_empty(h))
+	if (ccan_list_empty(h))
 		return NULL;
 	return (const char *)h->n.prev - off;
 }
 
 /**
- * list_for_each - iterate through a list.
- * @h: the list_head (warning: evaluated multiple times!)
- * @i: the structure containing the list_node
- * @member: the list_node member of the structure
+ * ccan_list_for_each - iterate through a list.
+ * @h: the ccan_list_head (warning: evaluated multiple times!)
+ * @i: the structure containing the ccan_list_node
+ * @member: the ccan_list_node member of the structure
  *
  * This is a convenient wrapper to iterate @i over the entire list.  It's
  * a for loop, so you can break and continue as normal.
  *
  * Example:
- *	list_for_each(&parent->children, child, list)
+ *	ccan_list_for_each(&parent->children, child, list)
  *		printf("Name: %s\n", child->name);
  */
-#define list_for_each(h, i, member)					\
-	list_for_each_off(h, i, list_off_var_(i, member))
+#define ccan_list_for_each(h, i, member)					\
+	ccan_list_for_each_off(h, i, ccan_list_off_var_(i, member))
 
 /**
- * list_for_each_rev - iterate through a list backwards.
- * @h: the list_head
- * @i: the structure containing the list_node
- * @member: the list_node member of the structure
+ * ccan_list_for_each_rev - iterate through a list backwards.
+ * @h: the ccan_list_head
+ * @i: the structure containing the ccan_list_node
+ * @member: the ccan_list_node member of the structure
  *
  * This is a convenient wrapper to iterate @i over the entire list.  It's
  * a for loop, so you can break and continue as normal.
  *
  * Example:
- *	list_for_each_rev(&parent->children, child, list)
+ *	ccan_list_for_each_rev(&parent->children, child, list)
  *		printf("Name: %s\n", child->name);
  */
-#define list_for_each_rev(h, i, member)					\
-	list_for_each_rev_off(h, i, list_off_var_(i, member))
+#define ccan_list_for_each_rev(h, i, member)					\
+	ccan_list_for_each_rev_off(h, i, ccan_list_off_var_(i, member))
 
 /**
- * list_for_each_rev_safe - iterate through a list backwards,
+ * ccan_list_for_each_rev_safe - iterate through a list backwards,
  * maybe during deletion
- * @h: the list_head
- * @i: the structure containing the list_node
- * @nxt: the structure containing the list_node
- * @member: the list_node member of the structure
+ * @h: the ccan_list_head
+ * @i: the structure containing the ccan_list_node
+ * @nxt: the structure containing the ccan_list_node
+ * @member: the ccan_list_node member of the structure
  *
  * This is a convenient wrapper to iterate @i over the entire list backwards.
  * It's a for loop, so you can break and continue as normal.  The extra
@@ -500,74 +500,74 @@ static inline const void *list_tail_(const struct list_head *h, size_t off)
  *
  * Example:
  *	struct child *next;
- *	list_for_each_rev_safe(&parent->children, child, next, list) {
+ *	ccan_list_for_each_rev_safe(&parent->children, child, next, list) {
  *		printf("Name: %s\n", child->name);
  *	}
  */
-#define list_for_each_rev_safe(h, i, nxt, member)			\
-	list_for_each_rev_safe_off(h, i, nxt, list_off_var_(i, member))
+#define ccan_list_for_each_rev_safe(h, i, nxt, member)			\
+	ccan_list_for_each_rev_safe_off(h, i, nxt, ccan_list_off_var_(i, member))
 
 /**
- * list_for_each_safe - iterate through a list, maybe during deletion
- * @h: the list_head
- * @i: the structure containing the list_node
- * @nxt: the structure containing the list_node
- * @member: the list_node member of the structure
+ * ccan_list_for_each_safe - iterate through a list, maybe during deletion
+ * @h: the ccan_list_head
+ * @i: the structure containing the ccan_list_node
+ * @nxt: the structure containing the ccan_list_node
+ * @member: the ccan_list_node member of the structure
  *
  * This is a convenient wrapper to iterate @i over the entire list.  It's
  * a for loop, so you can break and continue as normal.  The extra variable
  * @nxt is used to hold the next element, so you can delete @i from the list.
  *
  * Example:
- *	list_for_each_safe(&parent->children, child, next, list) {
- *		list_del(&child->list);
+ *	ccan_list_for_each_safe(&parent->children, child, next, list) {
+ *		ccan_list_del(&child->list);
  *		parent->num_children--;
  *	}
  */
-#define list_for_each_safe(h, i, nxt, member)				\
-	list_for_each_safe_off(h, i, nxt, list_off_var_(i, member))
+#define ccan_list_for_each_safe(h, i, nxt, member)				\
+	ccan_list_for_each_safe_off(h, i, nxt, ccan_list_off_var_(i, member))
 
 /**
- * list_next - get the next entry in a list
- * @h: the list_head
+ * ccan_list_next - get the next entry in a list
+ * @h: the ccan_list_head
  * @i: a pointer to an entry in the list.
- * @member: the list_node member of the structure
+ * @member: the ccan_list_node member of the structure
  *
  * If @i was the last entry in the list, returns NULL.
  *
  * Example:
  *	struct child *second;
- *	second = list_next(&parent->children, first, list);
+ *	second = ccan_list_next(&parent->children, first, list);
  *	if (!second)
  *		printf("No second child!\n");
  */
-#define list_next(h, i, member)						\
-	((list_typeof(i))list_entry_or_null(list_debug(h,		\
-					    __FILE__ ":" stringify(__LINE__)), \
+#define ccan_list_next(h, i, member)						\
+	((ccan_list_typeof(i))ccan_list_entry_or_null(ccan_list_debug(h,		\
+					    __FILE__ ":" ccan_stringify(__LINE__)), \
 					    (i)->member.next,		\
-					    list_off_var_((i), member)))
+					    ccan_list_off_var_((i), member)))
 
 /**
- * list_prev - get the previous entry in a list
- * @h: the list_head
+ * ccan_list_prev - get the previous entry in a list
+ * @h: the ccan_list_head
  * @i: a pointer to an entry in the list.
- * @member: the list_node member of the structure
+ * @member: the ccan_list_node member of the structure
  *
  * If @i was the first entry in the list, returns NULL.
  *
  * Example:
- *	first = list_prev(&parent->children, second, list);
+ *	first = ccan_list_prev(&parent->children, second, list);
  *	if (!first)
  *		printf("Can't go back to first child?!\n");
  */
-#define list_prev(h, i, member)						\
-	((list_typeof(i))list_entry_or_null(list_debug(h,		\
-					    __FILE__ ":" stringify(__LINE__)), \
+#define ccan_list_prev(h, i, member)						\
+	((ccan_list_typeof(i))ccan_list_entry_or_null(ccan_list_debug(h,		\
+					    __FILE__ ":" ccan_stringify(__LINE__)), \
 					    (i)->member.prev,		\
-					    list_off_var_((i), member)))
+					    ccan_list_off_var_((i), member)))
 
 /**
- * list_append_list - empty one list onto the end of another.
+ * ccan_list_append_list - empty one list onto the end of another.
  * @to: the list to append into
  * @from: the list to empty.
  *
@@ -575,20 +575,20 @@ static inline const void *list_tail_(const struct list_head *h, size_t off)
  * @to.  After this @from will be empty.
  *
  * Example:
- *	struct list_head adopter;
+ *	struct ccan_list_head adopter;
  *
- *	list_append_list(&adopter, &parent->children);
- *	assert(list_empty(&parent->children));
+ *	ccan_list_append_list(&adopter, &parent->children);
+ *	assert(ccan_list_empty(&parent->children));
  *	parent->num_children = 0;
  */
-#define list_append_list(t, f) list_append_list_(t, f,			\
-				   __FILE__ ":" stringify(__LINE__))
-static inline void list_append_list_(struct list_head *to,
-				     struct list_head *from,
+#define ccan_list_append_list(t, f) ccan_list_append_list_(t, f,			\
+				   __FILE__ ":" ccan_stringify(__LINE__))
+static inline void ccan_list_append_list_(struct ccan_list_head *to,
+				     struct ccan_list_head *from,
 				     const char *abortstr)
 {
-	struct list_node *from_tail = list_debug(from, abortstr)->n.prev;
-	struct list_node *to_tail = list_debug(to, abortstr)->n.prev;
+	struct ccan_list_node *from_tail = ccan_list_debug(from, abortstr)->n.prev;
+	struct ccan_list_node *to_tail = ccan_list_debug(to, abortstr)->n.prev;
 
 	/* Sew in head and entire list. */
 	to->n.prev = from_tail;
@@ -597,12 +597,12 @@ static inline void list_append_list_(struct list_head *to,
 	from->n.prev = to_tail;
 
 	/* Now remove head. */
-	list_del(&from->n);
-	list_head_init(from);
+	ccan_list_del(&from->n);
+	ccan_list_head_init(from);
 }
 
 /**
- * list_prepend_list - empty one list into the start of another.
+ * ccan_list_prepend_list - empty one list into the start of another.
  * @to: the list to prepend into
  * @from: the list to empty.
  *
@@ -610,17 +610,17 @@ static inline void list_append_list_(struct list_head *to,
  * of @to.  After this @from will be empty.
  *
  * Example:
- *	list_prepend_list(&adopter, &parent->children);
- *	assert(list_empty(&parent->children));
+ *	ccan_list_prepend_list(&adopter, &parent->children);
+ *	assert(ccan_list_empty(&parent->children));
  *	parent->num_children = 0;
  */
-#define list_prepend_list(t, f) list_prepend_list_(t, f, LIST_LOC)
-static inline void list_prepend_list_(struct list_head *to,
-				      struct list_head *from,
+#define ccan_list_prepend_list(t, f) ccan_list_prepend_list_(t, f, CCAN_LIST_LOC)
+static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
+				      struct ccan_list_head *from,
 				      const char *abortstr)
 {
-	struct list_node *from_tail = list_debug(from, abortstr)->n.prev;
-	struct list_node *to_head = list_debug(to, abortstr)->n.next;
+	struct ccan_list_node *from_tail = ccan_list_debug(from, abortstr)->n.prev;
+	struct ccan_list_node *to_head = ccan_list_debug(to, abortstr)->n.next;
 
 	/* Sew in head and entire list. */
 	to->n.next = &from->n;
@@ -629,31 +629,31 @@ static inline void list_prepend_list_(struct list_head *to,
 	from_tail->next = to_head;
 
 	/* Now remove head. */
-	list_del(&from->n);
-	list_head_init(from);
+	ccan_list_del(&from->n);
+	ccan_list_head_init(from);
 }
 
 /* internal macros, do not use directly */
-#define list_for_each_off_dir_(h, i, off, dir)				\
-	for (i = list_node_to_off_(list_debug(h, LIST_LOC)->n.dir,	\
+#define ccan_list_for_each_off_dir_(h, i, off, dir)				\
+	for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir,	\
 				   (off));				\
-	list_node_from_off_((void *)i, (off)) != &(h)->n;		\
-	i = list_node_to_off_(list_node_from_off_((void *)i, (off))->dir, \
+	ccan_list_node_from_off_((void *)i, (off)) != &(h)->n;		\
+	i = ccan_list_node_to_off_(ccan_list_node_from_off_((void *)i, (off))->dir, \
 			      (off)))
 
-#define list_for_each_safe_off_dir_(h, i, nxt, off, dir)		\
-	for (i = list_node_to_off_(list_debug(h, LIST_LOC)->n.dir,	\
+#define ccan_list_for_each_safe_off_dir_(h, i, nxt, off, dir)		\
+	for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir,	\
 				   (off)),				\
-	nxt = list_node_to_off_(list_node_from_off_(i, (off))->dir,	\
+	nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir,	\
 				(off));					\
-	list_node_from_off_(i, (off)) != &(h)->n;			\
+	ccan_list_node_from_off_(i, (off)) != &(h)->n;			\
 	i = nxt,							\
-	nxt = list_node_to_off_(list_node_from_off_(i, (off))->dir,	\
+	nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir,	\
 				(off)))
 
 /**
- * list_for_each_off - iterate through a list of memory regions.
- * @h: the list_head
+ * ccan_list_for_each_off - iterate through a list of memory regions.
+ * @h: the ccan_list_head
  * @i: the pointer to a memory region which contains list node data.
  * @off: offset(relative to @i) at which list node data resides.
  *
@@ -664,125 +664,126 @@ static inline void list_prepend_list_(struct list_head *to,
  * WARNING! Being the low-level macro that it is, this wrapper doesn't know
  * nor care about the type of @i. The only assumption made is that @i points
  * to a chunk of memory that at some @offset, relative to @i, contains a
- * properly filled `struct list_node' which in turn contains pointers to
+ * properly filled `struct ccan_list_node' which in turn contains pointers to
  * memory chunks and it's turtles all the way down. With all that in mind
  * remember that given the wrong pointer/offset couple this macro will
  * happily churn all you memory until SEGFAULT stops it, in other words
  * caveat emptor.
  *
  * It is worth mentioning that one of legitimate use-cases for that wrapper
- * is operation on opaque types with known offset for `struct list_node'
+ * is operation on opaque types with known offset for `struct ccan_list_node'
  * member(preferably 0), because it allows you not to disclose the type of
  * @i.
  *
  * Example:
- *	list_for_each_off(&parent->children, child,
+ *	ccan_list_for_each_off(&parent->children, child,
  *				offsetof(struct child, list))
  *		printf("Name: %s\n", child->name);
  */
-#define list_for_each_off(h, i, off)                                    \
-	list_for_each_off_dir_((h),(i),(off),next)
+#define ccan_list_for_each_off(h, i, off)                                    \
+	ccan_list_for_each_off_dir_((h),(i),(off),next)
 
 /**
- * list_for_each_rev_off - iterate through a list of memory regions backwards
- * @h: the list_head
+ * ccan_list_for_each_rev_off - iterate through a list of memory regions backwards
+ * @h: the ccan_list_head
  * @i: the pointer to a memory region which contains list node data.
  * @off: offset(relative to @i) at which list node data resides.
  *
- * See list_for_each_off for details
+ * See ccan_list_for_each_off for details
  */
-#define list_for_each_rev_off(h, i, off)                                    \
-	list_for_each_off_dir_((h),(i),(off),prev)
+#define ccan_list_for_each_rev_off(h, i, off)                                    \
+	ccan_list_for_each_off_dir_((h),(i),(off),prev)
 
 /**
- * list_for_each_safe_off - iterate through a list of memory regions, maybe
+ * ccan_list_for_each_safe_off - iterate through a list of memory regions, maybe
  * during deletion
- * @h: the list_head
+ * @h: the ccan_list_head
  * @i: the pointer to a memory region which contains list node data.
- * @nxt: the structure containing the list_node
+ * @nxt: the structure containing the ccan_list_node
  * @off: offset(relative to @i) at which list node data resides.
  *
- * For details see `list_for_each_off' and `list_for_each_safe'
+ * For details see `ccan_list_for_each_off' and `ccan_list_for_each_safe'
  * descriptions.
  *
  * Example:
- *	list_for_each_safe_off(&parent->children, child,
+ *	ccan_list_for_each_safe_off(&parent->children, child,
  *		next, offsetof(struct child, list))
  *		printf("Name: %s\n", child->name);
  */
-#define list_for_each_safe_off(h, i, nxt, off)                          \
-	list_for_each_safe_off_dir_((h),(i),(nxt),(off),next)
+#define ccan_list_for_each_safe_off(h, i, nxt, off)                          \
+	ccan_list_for_each_safe_off_dir_((h),(i),(nxt),(off),next)
 
 /**
- * list_for_each_rev_safe_off - iterate backwards through a list of
+ * ccan_list_for_each_rev_safe_off - iterate backwards through a list of
  * memory regions, maybe during deletion
- * @h: the list_head
+ * @h: the ccan_list_head
  * @i: the pointer to a memory region which contains list node data.
- * @nxt: the structure containing the list_node
+ * @nxt: the structure containing the ccan_list_node
  * @off: offset(relative to @i) at which list node data resides.
  *
- * For details see `list_for_each_rev_off' and `list_for_each_rev_safe'
+ * For details see `ccan_list_for_each_rev_off' and `ccan_list_for_each_rev_safe'
  * descriptions.
  *
  * Example:
- *	list_for_each_rev_safe_off(&parent->children, child,
+ *	ccan_list_for_each_rev_safe_off(&parent->children, child,
  *		next, offsetof(struct child, list))
  *		printf("Name: %s\n", child->name);
  */
-#define list_for_each_rev_safe_off(h, i, nxt, off)                      \
-	list_for_each_safe_off_dir_((h),(i),(nxt),(off),prev)
+#define ccan_list_for_each_rev_safe_off(h, i, nxt, off)                      \
+	ccan_list_for_each_safe_off_dir_((h),(i),(nxt),(off),prev)
 
 /* Other -off variants. */
-#define list_entry_off(n, type, off)		\
-	((type *)list_node_from_off_((n), (off)))
+#define ccan_list_entry_off(n, type, off)		\
+	((type *)ccan_list_node_from_off_((n), (off)))
 
-#define list_head_off(h, type, off)		\
-	((type *)list_head_off((h), (off)))
+#define ccan_list_head_off(h, type, off)		\
+	((type *)ccan_list_head_off((h), (off)))
 
-#define list_tail_off(h, type, off)		\
-	((type *)list_tail_((h), (off)))
+#define ccan_list_tail_off(h, type, off)		\
+	((type *)ccan_list_tail_((h), (off)))
 
-#define list_add_off(h, n, off)                 \
-	list_add((h), list_node_from_off_((n), (off)))
+#define ccan_list_add_off(h, n, off)                 \
+	ccan_list_add((h), ccan_list_node_from_off_((n), (off)))
 
-#define list_del_off(n, off)                    \
-	list_del(list_node_from_off_((n), (off)))
+#define ccan_list_del_off(n, off)                    \
+	ccan_list_del(ccan_list_node_from_off_((n), (off)))
 
-#define list_del_from_off(h, n, off)			\
-	list_del_from(h, list_node_from_off_((n), (off)))
+#define ccan_list_del_from_off(h, n, off)			\
+	ccan_list_del_from(h, ccan_list_node_from_off_((n), (off)))
 
 /* Offset helper functions so we only single-evaluate. */
-static inline void *list_node_to_off_(struct list_node *node, size_t off)
+static inline void *ccan_list_node_to_off_(struct ccan_list_node *node, size_t off)
 {
 	return (void *)((char *)node - off);
 }
-static inline struct list_node *list_node_from_off_(void *ptr, size_t off)
+static inline struct ccan_list_node *ccan_list_node_from_off_(void *ptr, size_t off)
 {
-	return (struct list_node *)((char *)ptr + off);
+	return (struct ccan_list_node *)((char *)ptr + off);
 }
 
-/* Get the offset of the member, but make sure it's a list_node. */
-#define list_off_(type, member)					\
-	(container_off(type, member) +				\
-	 check_type(((type *)0)->member, struct list_node))
+/* Get the offset of the member, but make sure it's a ccan_list_node. */
+#define ccan_list_off_(type, member)					\
+	(ccan_container_off(type, member) +				\
+	 ccan_check_type(((type *)0)->member, struct ccan_list_node))
 
-#define list_off_var_(var, member)			\
-	(container_off_var(var, member) +		\
-	 check_type(var->member, struct list_node))
+#define ccan_list_off_var_(var, member)			\
+	(ccan_container_off_var(var, member) +		\
+	 ccan_check_type(var->member, struct ccan_list_node))
 
-#if HAVE_TYPEOF
-#define list_typeof(var) typeof(var)
+#if defined(HAVE_TYPEOF) && HAVE_TYPEOF
+#define ccan_list_typeof(var) typeof(var)
 #else
-#define list_typeof(var) void *
+#define ccan_list_typeof(var) void *
 #endif
 
 /* Returns member, or NULL if at end of list. */
-static inline void *list_entry_or_null(const struct list_head *h,
-				       const struct list_node *n,
+static inline void *ccan_list_entry_or_null(const struct ccan_list_head *h,
+				       const struct ccan_list_node *n,
 				       size_t off)
 {
 	if (n == &h->n)
 		return NULL;
 	return (char *)n - off;
 }
+
 #endif /* CCAN_LIST_H */

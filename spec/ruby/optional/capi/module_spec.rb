@@ -252,22 +252,30 @@ describe "CApiModule" do
       cls.new.method(:test_method).arity.should == 0
     end
 
-    it "returns the correct arity when argc of the method in class is -1" do
-      cls = Class.new
-      @m.rb_define_method_c_array(cls, "test_method_c_array")
-      cls.new.method(:test_method_c_array).arity.should == -1
-    end
-
-    it "returns the correct arity when argc of the method in class is -2" do
-      cls = Class.new
-      @m.rb_define_method_ruby_array(cls, "test_method_ruby_array")
-      cls.new.method(:test_method_ruby_array).arity.should == -1
+    it "returns the correct arity when argc of the method in class is 1" do
+      @m.rb_define_method_1required(42).should == 42
+      @m.method(:rb_define_method_1required).arity.should == 1
     end
 
     it "returns the correct arity when argc of the method in class is 2" do
-      cls = Class.new
-      @m.rb_define_method_2required(cls, "test_method_2required")
-      cls.new.method(:test_method_2required).arity.should == 2
+      @m.rb_define_method_2required(1, 2).should == 2
+      @m.method(:rb_define_method_2required).arity.should == 2
+    end
+
+    it "defines a method taking variable arguments as a C array if the argument count is -1" do
+      @m.rb_define_method_varargs_1(1, 3, 7, 4).should == [1, 3, 7, 4]
+    end
+
+    it "returns the correct arity when argc of the method in class is -1" do
+      @m.method(:rb_define_method_varargs_1).arity.should == -1
+    end
+
+    it "defines a method taking variable arguments as a Ruby array if the argument count is -2" do
+      @m.rb_define_method_varargs_2(1, 3, 7, 4).should == [1, 3, 7, 4]
+    end
+
+    it "returns the correct arity when argc of the method in class is -2" do
+      @m.method(:rb_define_method_varargs_2).arity.should == -1
     end
 
     it "defines a method on a module" do

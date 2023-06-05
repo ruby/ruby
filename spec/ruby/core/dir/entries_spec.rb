@@ -40,13 +40,6 @@ describe "Dir.entries" do
     dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
   end
 
-  ruby_version_is ""..."2.7" do
-    it "accepts nil options" do
-      dirs = Dir.entries("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
-      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
-    end
-  end
-
   it "returns entries encoded with the filesystem encoding by default" do
     # This spec depends on the locale not being US-ASCII because if it is, the
     # entries that are not ascii_only? will be BINARY encoded.

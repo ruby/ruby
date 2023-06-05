@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir['BSDL', 'COPYING', 'README.md', 'license_of_rb-readline', 'lib/**/*']
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.5')
+  spec.required_ruby_version = Gem::Requirement.new('>= 2.6')
 
   spec.add_dependency 'io-console', '~> 0.5'
 end

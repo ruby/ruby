@@ -26,7 +26,7 @@ class Exports
 
   def self.output(output = $output, &block)
     if output
-      open(output, 'wb', &block)
+      File.open(output, 'wb', &block)
     else
       yield STDOUT
     end
@@ -49,7 +49,7 @@ class Exports
   end
 
   def read_substitution(header, syms, winapis)
-    IO.foreach(header) do |line|
+    File.foreach(header) do |line|
       if /^#define (\w+)\((.*?)\)\s+(?:\(void\))?(rb_w32_\w+)\((.*?)\)\s*$/ =~ line and
           $2.delete(" ") == $4.delete(" ")
         export, internal = $1, $3
@@ -113,6 +113,7 @@ class Exports::Mswin < Exports
         end
         case filetype
         when /OBJECT/, /LIBRARY/
+          l.chomp!
           next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
           next unless /External/ =~ l
           next if /(?:_local_stdio_printf_options|v(f|sn?)printf(_s)?_l)\Z/ =~ l

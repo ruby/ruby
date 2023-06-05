@@ -291,6 +291,10 @@ class Reline::Windows
     end
   end
 
+  def self.with_raw_input
+    yield
+  end
+
   def self.getc
     check_input_event
     @@output_buf.shift
