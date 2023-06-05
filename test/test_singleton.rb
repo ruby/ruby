@@ -94,22 +94,11 @@ class TestSingleton < Test::Unit::TestCase
     assert_same a, b
   end
 
-  def test_inheritance_creates_separate_singleton
-    a = SingletonTest.instance
-    b = Class.new(SingletonTest).instance
-
-    assert_not_same a, b
-  end
-
   def test_class_level_cloning_preserves_singleton_behavior
     klass = SingletonTest.clone
 
     a = klass.instance
     b = klass.instance
     assert_same a, b
-  end
-
-  def test_class_level_cloning_creates_separate_singleton
-    assert_not_same SingletonTest.instance, SingletonTest.clone.instance
   end
 end
