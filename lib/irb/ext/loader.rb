@@ -42,6 +42,7 @@ module IRB # :nodoc:
     #
     # See Irb#suspend_input_method for more information.
     def source_file(path)
+      irb = irb_context.irb
       irb.suspend_name(path, File.basename(path)) do
         FileInputMethod.open(path) do |io|
           irb.suspend_input_method(io) do
@@ -66,6 +67,7 @@ module IRB # :nodoc:
     #
     # See Irb#suspend_input_method for more information.
     def load_file(path, priv = nil)
+      irb = irb_context.irb
       irb.suspend_name(path, File.basename(path)) do
 
         if priv
