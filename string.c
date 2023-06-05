@@ -1700,7 +1700,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
     VALUE flags = FL_TEST_RAW(str, flag_mask);
     int encidx = 0;
     if (STR_EMBED_P(str)) {
-        long len = RSTRING_EMBED_LEN(str);
+        long len = RSTRING_LEN(str);
 
         assert(STR_EMBED_P(dup));
         assert(str_embed_capa(dup) >= len + 1);
@@ -1743,7 +1743,7 @@ ec_str_duplicate(struct rb_execution_context_struct *ec, VALUE klass, VALUE str)
         dup = ec_str_alloc_heap(ec, klass);
     }
     else {
-        dup = ec_str_alloc_embed(ec, klass, RSTRING_EMBED_LEN(str) + TERM_LEN(str));
+        dup = ec_str_alloc_embed(ec, klass, RSTRING_LEN(str) + TERM_LEN(str));
     }
 
     return str_duplicate_setup(klass, str, dup);
@@ -1757,7 +1757,7 @@ str_duplicate(VALUE klass, VALUE str)
         dup = str_alloc_heap(klass);
     }
     else {
-       dup = str_alloc_embed(klass, RSTRING_EMBED_LEN(str) + TERM_LEN(str));
+       dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
     }
 
     return str_duplicate_setup(klass, str, dup);
@@ -10714,7 +10714,7 @@ rb_str_b(VALUE str)
         str2 = str_alloc_heap(rb_cString);
     }
     else {
-        str2 = str_alloc_embed(rb_cString, RSTRING_EMBED_LEN(str) + TERM_LEN(str));
+        str2 = str_alloc_embed(rb_cString, RSTRING_LEN(str) + TERM_LEN(str));
     }
     str_replace_shared_without_enc(str2, str);
 

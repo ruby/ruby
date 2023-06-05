@@ -43,7 +43,6 @@
 /** @cond INTERNAL_MACRO */
 #define RSTRING_NOEMBED         RSTRING_NOEMBED
 #define RSTRING_FSTR            RSTRING_FSTR
-#define RSTRING_EMBED_LEN RSTRING_EMBED_LEN
 #define RSTRING_LEN       RSTRING_LEN
 #define RSTRING_LENINT    RSTRING_LENINT
 #define RSTRING_PTR       RSTRING_PTR
@@ -362,24 +361,12 @@ RBIMPL_ATTR_ARTIFICIAL()
  *
  * @param[in]  str  String in question.
  * @return     Its length, in bytes.
- * @pre        `str`  must  be an  instance  of  ::RString,  and must  has  its
- *             ::RSTRING_NOEMBED flag off.
- *
- * @internal
- *
- * This was a macro  before.  It was inevitable to be  public, since macros are
- * global constructs.   But should it be  forever?  Now that it  is a function,
- * @shyouhei thinks  it could  just be  eliminated, hidden  into implementation
- * details.
+ * @pre        `str` must be an instance of ::RString.
  */
 static inline long
-RSTRING_EMBED_LEN(VALUE str) // TODO: delete?
+RSTRING_LEN(VALUE str)
 {
-    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
-    RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
-
-    long f = RSTRING(str)->len;
-    return f;
+    return RSTRING(str)->len;
 }
 
 RBIMPL_WARNING_PUSH()
@@ -409,28 +396,13 @@ rbimpl_rstring_getmem(VALUE str)
     else {
         /* Expecting compilers to optimize this on-stack struct away. */
         struct RString retval;
-        retval.len = RSTRING_EMBED_LEN(str);
+        retval.len = RSTRING_LEN(str);
         retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
         return retval;
     }
 }
 
 RBIMPL_WARNING_POP()
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Queries the length of the string.
- *
- * @param[in]  str  String in question.
- * @return     Its length, in bytes.
- * @pre        `str` must be an instance of ::RString.
- */
-static inline long
-RSTRING_LEN(VALUE str)
-{
-    return rbimpl_rstring_getmem(str).len;
-}
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
