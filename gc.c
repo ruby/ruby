@@ -10816,13 +10816,13 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
                 rb_size_pool_t *size_pool = &size_pools[i];
                 rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
+                size_t minimum_pages = 0;
                 if (RTEST(expand_heap)) {
-                    size_t required_pages = growth_slots / size_pool->slot_size;
-                    heap_add_pages(objspace, size_pool, heap, MAX(required_pages, heap->total_pages));
+                    int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+                    minimum_pages = growth_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
                 }
-                else {
-                    heap_add_pages(objspace, size_pool, heap, heap->total_pages);
-                }
+
+                heap_add_pages(objspace, size_pool, heap, MAX(minimum_pages, heap->total_pages));
             }
         }
 
