@@ -89,19 +89,15 @@ impl Assembler
     // A special scratch register for intermediate processing.
     // Note: right now this is only used by LeaLabel because label_ref accepts
     // a closure and we don't want it to have to capture anything.
-    const SCRATCH0: X86Opnd = X86Opnd::Reg(R11_REG);
+    const SCRATCH0: X86Opnd = X86Opnd::Reg(R9_REG);
 
-    /// List of registers that can be used for stack temps.
-    pub const TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
+    /// List of registers that can be used for Opnd::Stack.
+    pub const TEMP_REGS: [Reg; 5] = [RDI_REG, RSI_REG, RDX_REG, RCX_REG, R8_REG];
 
-    /// Get the list of registers from which we can allocate on this platform
-    pub fn get_alloc_regs() -> Vec<Reg>
-    {
-        vec![
-            RAX_REG,
-            RCX_REG,
-            RDX_REG,
-        ]
+    /// Get the list of registers that can be used for Opnd::InsnOut.
+    pub fn get_alloc_regs() -> Vec<Reg> {
+        // _C_ARG_OPNDS registers shouldn't be used to avoid conflict on C calls
+        vec![RAX_REG, R10_REG, R11_REG]
     }
 
     /// Get a list of all of the caller-save registers
@@ -814,7 +810,11 @@ mod tests {
         let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c01d8");
+        assert_disasm!(cb, "4889c049b9ffffffffffff00004c01c8", {"
+            0x0: mov rax, rax
+            0x3: movabs r9, 0xffffffffffff
+            0xd: add rax, r9
+        "});
     }
 
     #[test]
@@ -834,7 +834,11 @@ mod tests {
         let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c21d8");
+        assert_disasm!(cb, "4889c049b9ffffffffffff00004c21c8", {"
+            0x0: mov rax, rax
+            0x3: movabs r9, 0xffffffffffff
+            0xd: and rax, r9
+        "});
     }
 
     #[test]
@@ -854,7 +858,10 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_eq!(format!("{:x}", cb), "49bbffffffffffff00004c39d8");
+        assert_disasm!(cb, "49b9ffffffffffff00004c39c8", {"
+            0x0: movabs r9, 0xffffffffffff
+            0xa: cmp rax, r9
+        "});
     }
 
     #[test]
@@ -898,7 +905,11 @@ mod tests {
         let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c09d8");
+        assert_disasm!(cb, "4889c049b9ffffffffffff00004c09c8", {"
+            0x0: mov rax, rax
+            0x3: movabs r9, 0xffffffffffff
+            0xd: or rax, r9
+        "});
     }
 
     #[test]
@@ -918,7 +929,11 @@ mod tests {
         let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c29d8");
+        assert_disasm!(cb, "4889c049b9ffffffffffff00004c29c8", {"
+            0x0: mov rax, rax
+            0x3: movabs r9, 0xffffffffffff
+            0xd: sub rax, r9
+        "});
     }
 
     #[test]
@@ -938,7 +953,10 @@ mod tests {
         asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_eq!(format!("{:x}", cb), "49bbffffffffffff00004c85d8");
+        assert_disasm!(cb, "49b9ffffffffffff00004c85c8", {"
+            0x0: movabs r9, 0xffffffffffff
+            0xa: test rax, r9
+        "});
     }
 
     #[test]
@@ -958,7 +976,11 @@ mod tests {
         let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c31d8");
+        assert_disasm!(cb, "4889c049b9ffffffffffff00004c31c8", {"
+            0x0: mov rax, rax
+            0x3: movabs r9, 0xffffffffffff
+            0xd: xor rax, r9
+        "});
     }
 
     #[test]
@@ -998,7 +1020,14 @@ mod tests {
         asm.mov(Opnd::Reg(RAX_REG), result);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_eq!(format!("{:x}", cb), "488b43084885c0b814000000b900000000480f45c14889c0");
+        assert_disasm!(cb, "488b43084885c0b81400000041ba00000000490f45c24889c0", {"
+            0x0: mov rax, qword ptr [rbx + 8]
+            0x4: test rax, rax
+            0x7: mov eax, 0x14
+            0xc: mov r10d, 0
+            0x12: cmovne rax, r10
+            0x16: mov rax, rax
+        "});
     }
 
     #[test]
