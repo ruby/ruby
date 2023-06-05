@@ -1063,8 +1063,7 @@ pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
-pub const RUBY_OFFSET_RSTRING_AS_HEAP_LEN: rstring_offsets = 16;
-pub const RUBY_OFFSET_RSTRING_EMBED_LEN: rstring_offsets = 16;
+pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;
 pub type rstring_offsets = u32;
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {

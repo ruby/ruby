@@ -199,6 +199,13 @@ struct RString {
     /** Basic part, including flags and class. */
     struct RBasic basic;
 
+    /**
+     * Length of the string, not including terminating NUL character.
+     *
+     * @note  This is in bytes.
+     */
+    long len;
+
     /** String's specific fields. */
     union {
 
@@ -207,14 +214,6 @@ struct RString {
          * pattern.
          */
         struct {
-
-            /**
-             * Length of the string, not including terminating NUL character.
-             *
-             * @note  This is in bytes.
-             */
-            long len;
-
             /**
              * Pointer to  the contents of  the string.   In the old  days each
              * string had  dedicated memory  regions.  That  is no  longer true
@@ -245,7 +244,6 @@ struct RString {
 
         /** Embedded contents. */
         struct {
-            long len;
             /* This is a length 1 array because:
              *   1. GCC has a bug that does not optimize C flexible array members
              *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
@@ -375,12 +373,12 @@ RBIMPL_ATTR_ARTIFICIAL()
  * details.
  */
 static inline long
-RSTRING_EMBED_LEN(VALUE str)
+RSTRING_EMBED_LEN(VALUE str) // TODO: delete?
 {
     RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
     RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
 
-    long f = RSTRING(str)->as.embed.len;
+    long f = RSTRING(str)->len;
     return f;
 }
 
@@ -411,7 +409,7 @@ rbimpl_rstring_getmem(VALUE str)
     else {
         /* Expecting compilers to optimize this on-stack struct away. */
         struct RString retval;
-        retval.as.heap.len = RSTRING_EMBED_LEN(str);
+        retval.len = RSTRING_EMBED_LEN(str);
         retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
         return retval;
     }
@@ -431,7 +429,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline long
 RSTRING_LEN(VALUE str)
 {
-    return rbimpl_rstring_getmem(str).as.heap.len;
+    return rbimpl_rstring_getmem(str).len;
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -482,7 +480,7 @@ RSTRING_END(VALUE str)
         rb_debug_rstring_null_ptr("RSTRING_END");
     }
 
-    return &buf.as.heap.ptr[buf.as.heap.len];
+    return &buf.as.heap.ptr[buf.len];
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -516,7 +514,7 @@ RSTRING_LENINT(VALUE str)
     __extension__ ({ \
         struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
         (ptrvar) = rbimpl_str.as.heap.ptr; \
-        (lenvar) = rbimpl_str.as.heap.len; \
+        (lenvar) = rbimpl_str.len; \
     })
 #else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
