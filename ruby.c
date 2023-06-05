@@ -1801,7 +1801,10 @@ rb_f_chomp(int argc, VALUE *argv, VALUE _)
 static void
 setup_pager_env(void)
 {
-    if (!getenv("LESS")) ruby_setenv("LESS", "-R"); // Output "raw" control characters.
+    if (!getenv("LESS")) {
+        // Output "raw" control characters, and move per sections.
+        ruby_setenv("LESS", "-R +/^[A-Z].*");
+    }
 }
 
 #ifdef _WIN32
