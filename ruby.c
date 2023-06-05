@@ -306,6 +306,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
         M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
         M("--version",                              "", "print the version number, then exit"),
+        M("-y",                          ", --yydebug", "print log of parser. Backward compatibility is not guaranteed"),
         M("--help",			            "", "show this message, -h for short message"),
     };
     static const struct ruby_opt_message dumps[] = {
