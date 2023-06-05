@@ -422,23 +422,19 @@ class TestGCCompact < Test::Unit::TestCase
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
 
-    assert_separately(%w[-robjspace], "#{<<~'begin;'}\n#{<<~'end;'}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       HASH_COUNT = 500
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      before_read_barrier_faults = GC.stat(:read_barrier_faults)
-
       base_hash = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }
       ary = HASH_COUNT.times.map { base_hash.dup }
       ary.each { |h| h[:i] = 9 }
 
-      before_stat_heap = GC.stat_heap
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      after_stat_heap = GC.stat_heap
 
-      assert_operator(stats[:moved_down][:T_HASH], :>=, 500, "read barrier faults: before #{before_read_barrier_faults}, after #{GC.stat(:read_barrier_faults)}, stat_heap: before #{before_stat_heap}, after: #{after_stat_heap}, stats: #{stats}")
+      assert_operator(stats[:moved_down][:T_HASH], :>=, 500)
     end;
   end
 
