@@ -242,9 +242,6 @@ The `Regexp#match` optimization by using a cache.
 "cache opcode"
 A cachable opcode (e.g. `OP_PUSH`, `OP_REPEAT`, etc).
 It is corresponding to some cache points.
-`OP_NULL_CHECK_START` and `OP_NULL_CHECK_END_MEMST` are exceptions.
-They are counted as cache opcodes, but they have no corresponding cache points.
-They are used for resetting a match cache buffer when a null loop is detected.
 
 "cache point"
 A cachable point on matching.
@@ -258,7 +255,7 @@ We encode a match cache point to an integer value by the following equation:
 "match cache point" = "position on input string" * "total number of cache points" + "cache point"
 
 "match cache buffer"
-A bit-array for recording (caching) match cache points once arrived.
+A bit-array for memoizing (recording) match cache points once arrived.
 */
 
 /* count the total number of cache opcodes for allocating a match cache buffer. */
@@ -272,7 +269,6 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
   OnigEncoding enc = reg->enc;
   MemNumType current_repeat_mem = -1;
   long num_cache_opcodes = 0;
-  long num_cache_opcodes_at_null_check_start = -1;
 
   while (p < pend) {
     switch (*p++) {
@@ -422,24 +418,13 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	goto impossible;
       case OP_NULL_CHECK_START:
 	p += SIZE_MEMNUM;
-	if (num_cache_opcodes_at_null_check_start != -1) {
-	// A nested OP_NULL_CHECK_START is not yet supported.
-	  goto impossible;
-	}
-	num_cache_opcodes_at_null_check_start = num_cache_opcodes;
 	break;
       case OP_NULL_CHECK_END:
       case OP_NULL_CHECK_END_MEMST_PUSH:
 	p += SIZE_MEMNUM;
-	num_cache_opcodes_at_null_check_start = -1;
 	break;
       case OP_NULL_CHECK_END_MEMST:
 	p += SIZE_MEMNUM;
-	// OP_NULL_CHECK_START and OP_NULL_CHECK_END_MEMST are counted as cache opcodes.
-	if (num_cache_opcodes_at_null_check_start < num_cache_opcodes) {
-	  num_cache_opcodes += 2;
-	}
-	num_cache_opcodes_at_null_check_start = -1;
 	break;
 
       case OP_PUSH_POS:
@@ -507,8 +492,6 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
   long cache_point = 0;
   long num_cache_points_at_repeat = 0;
   OnigCacheOpcode* cache_opcodes_at_repeat = NULL;
-  UChar* null_check_start_addr = NULL;
-  OnigCacheOpcode* cache_opcodes_at_null_check_start = NULL;
 
 #  define INC_CACHE_OPCODES do {\
     cache_opcodes->addr = pbegin;\
@@ -679,32 +662,14 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
       case OP_REPEAT_INC_NG_SG:
 	goto unexpected_bytecode_error;
       case OP_NULL_CHECK_START:
-	if (cache_opcodes_at_null_check_start != NULL) {
-	  goto unexpected_bytecode_error;
-	}
 	p += SIZE_MEMNUM;
-	null_check_start_addr = pbegin;
-	cache_opcodes_at_null_check_start = cache_opcodes;
 	break;
       case OP_NULL_CHECK_END:
       case OP_NULL_CHECK_END_MEMST_PUSH:
 	p += SIZE_MEMNUM;
-	cache_opcodes_at_null_check_start = NULL;
 	break;
       case OP_NULL_CHECK_END_MEMST:
 	p += SIZE_MEMNUM;
-	{
-	  if (cache_opcodes_at_null_check_start < cache_opcodes) {
-	    *cache_opcodes = *(cache_opcodes - 1);
-	    cache_opcodes->addr = pbegin;
-	    cache_opcodes++;
-	    long num_cache_opcodes_in_null_check = (cache_opcodes - cache_opcodes_at_null_check_start);
-	    xmemmove(cache_opcodes_at_null_check_start + 1, cache_opcodes_at_null_check_start, sizeof(OnigCacheOpcode) * num_cache_opcodes_in_null_check);
-	    cache_opcodes_at_null_check_start->addr = null_check_start_addr;
-	    cache_opcodes++;
-	  }
-	  cache_opcodes_at_null_check_start = NULL;
-	}
 	break;
 
       case OP_PUSH_POS:
@@ -953,6 +918,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 #define STK_VOID                   0x0a00  /* for fill a blank */
 #define STK_ABSENT_POS             0x0b00  /* for absent */
 #define STK_ABSENT                 0x0c00  /* absent inner loop marker */
+#define STK_MATCH_CACHE_POINT      0x0d00  /* for the match cache optimization */
 
 /* stack type check mask */
 #define STK_MASK_POP_USED          0x00ff
@@ -1387,6 +1353,15 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   STACK_INC;\
 } while(0)
 
+#define STACK_PUSH_MATCH_CACHE_POINT(match_cache_point_index, match_cache_point_mask) do {\
+  STACK_ENSURE(1);\
+  stk->type = STK_MATCH_CACHE_POINT;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
+  stk->u.match_cache_point.index = (match_cache_point_index);\
+  stk->u.match_cache_point.mask = (match_cache_point_mask);\
+  STACK_INC;\
+} while(0)
+
 
 #ifdef ONIG_DEBUG
 # define STACK_BASE_CHECK(p, at) \
@@ -1396,6 +1371,23 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   }
 #else
 # define STACK_BASE_CHECK(p, at)
+#endif
+
+#ifdef ONIG_DEBUG_MATCH_CACHE
+# define MATCH_CACHE_DEBUG_MEMOIZE fprintf(stderr, "MATCH CACHE: memoize (index=%ld mask=%d)\n", stk->u.match_cache_point.index, stk->u.match_cache_point.mask);
+#else
+# define MATCH_CACHE_DEBUG_MEMOIZE ((void) 0)
+#endif
+
+#ifdef USE_MATCH_CACHE
+# define MEMOIZE_MATCH_CACHE_POINT do {\
+    if (stk->type == STK_MATCH_CACHE_POINT) {\
+      msa->match_cache_buf[stk->u.match_cache_point.index] |= stk->u.match_cache_point.mask;\
+      MATCH_CACHE_DEBUG_MEMOIZE;\
+    }\
+  } while(0)
+#else
+# define MEMOIZE_MATCH_CACHE_POINT ((void) 0)
 #endif
 
 #define STACK_POP_ONE do {\
@@ -1411,6 +1403,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       STACK_BASE_CHECK(stk, "STACK_POP"); \
       if ((stk->type & STK_MASK_POP_USED) != 0)  break;\
       ELSE_IF_STATE_CHECK_MARK(stk);\
+      MEMOIZE_MATCH_CACHE_POINT;\
     }\
     break;\
   case STACK_POP_LEVEL_MEM_START:\
@@ -1423,6 +1416,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
         mem_end_stk[stk->u.mem.num]   = stk->u.mem.end;\
       }\
       ELSE_IF_STATE_CHECK_MARK(stk);\
+      MEMOIZE_MATCH_CACHE_POINT;\
     }\
     break;\
   default:\
@@ -1442,6 +1436,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
         mem_end_stk[stk->u.mem.num]   = stk->u.mem.end;\
       }\
       ELSE_IF_STATE_CHECK_MARK(stk);\
+      MEMOIZE_MATCH_CACHE_POINT;\
     }\
     break;\
   }\
@@ -1579,7 +1574,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   }\
 } while(0)
 
-#define STACK_NULL_CHECK_MEMST(isnull,ischange,id,s,reg) do {\
+#define STACK_NULL_CHECK_MEMST(isnull,id,s,reg) do {\
   OnigStackType* k = STACK_AT((stk-1)->null_check)+1;\
   while (1) {\
     k--;\
@@ -1596,14 +1591,14 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
           while (k < stk) {\
             if (k->type == STK_MEM_START) {\
               if (k->u.mem.end == INVALID_STACK_INDEX) {\
-                (isnull) = 0; (ischange) = 1; break;\
+                (isnull) = 0; break;\
               }\
               if (BIT_STATUS_AT(reg->bt_mem_end, k->u.mem.num))\
                 endp = STACK_AT(k->u.mem.end)->u.mem.pstr;\
               else\
                 endp = (UChar* )k->u.mem.end;\
               if (STACK_AT(k->u.mem.start)->u.mem.pstr != endp) {\
-                (isnull) = 0; (ischange) = 1; break;\
+                (isnull) = 0; break;\
               }\
               else if (endp != s) {\
                 (isnull) = -1; /* empty, but position changed */ \
@@ -2078,55 +2073,6 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
     (num_cache_points_in_outer_repeat + 1) * (count - range->lower + 1) +
     cache_point;
 }
-
-static void
-reset_match_cache_on_null_check(regex_t* reg, const UChar* pstart, const UChar* pend, long pos, uint8_t* match_cache_buf, const OnigCacheOpcode* cache_opcodes, long num_cache_opcodes, long num_cache_points, const OnigStackType *stk, const OnigStackIndex *repeat_stk)
-{
-  long cache_point_start, cache_point_end;
-  long match_cache_point_start, match_cache_point_end;
-  long match_cache_point_start_index, match_cache_point_end_index;
-  uint8_t match_cache_point_start_bit, match_cache_point_end_bit;
-
-#ifdef ONIG_DEBUG_MATCH_CACHE
-  fprintf(stderr, "MATCH CACHE: reset start=%p end=%p pos=%ld cache_opcodes=%p num_cache_opcodes=%ld\n", pstart, pend, pos, cache_opcodes, num_cache_opcodes);
-#endif
-
-  cache_point_start = find_cache_point(reg, cache_opcodes, num_cache_opcodes, pstart, stk, repeat_stk);
-  cache_point_end = find_cache_point(reg, cache_opcodes, num_cache_opcodes, pend, stk, repeat_stk);
-  // Skip to reset if `pstart` or `pend` is not found.
-  // This situation occurs when there is no cache point
-  // between OP_NULL_CHECK_START and OP_NULL_CHECK_END_MEMST.
-  if (cache_point_start == -1 || cache_point_end == -1) return;
-
-  match_cache_point_start = pos * num_cache_points + cache_point_start;
-  match_cache_point_end = pos * num_cache_points + cache_point_end;
-  match_cache_point_start_index = match_cache_point_start >> 3;
-  match_cache_point_end_index = match_cache_point_end >> 3;
-  match_cache_point_start_bit = match_cache_point_start & 7;
-  match_cache_point_end_bit = match_cache_point_end & 7;
-
-#ifdef ONIG_DEBUG_MATCH_CACHE
-  fprintf(stderr, "MATCH CACHE: reset start %ld (%ld index=%ld bit=%d)\n", match_cache_point_start, cache_point_start, match_cache_point_start_index, match_cache_point_start_bit);
-  fprintf(stderr, "MATCH CACHE: reset end   %ld (%ld index=%ld bit=%d)\n", match_cache_point_end, cache_point_end, match_cache_point_end_index, match_cache_point_end_bit);
-#endif
-
-  if (match_cache_point_start_index == match_cache_point_end_index) {
-    match_cache_buf[match_cache_point_start_index] &=
-      (((1 << (8 - match_cache_point_end_bit - 1)) - 1) << (match_cache_point_end_bit + 1)) |
-      ((1 << match_cache_point_start_bit) - 1);
-  } else {
-    if (match_cache_point_start_bit) {
-      match_cache_buf[match_cache_point_start_index] &= (1 << (match_cache_point_start_bit - 1)) - 1;
-      match_cache_point_start_index++;
-    }
-    if (match_cache_point_start_index < match_cache_point_end_index) {
-      xmemset(&match_cache_buf[match_cache_point_start_index], 0, match_cache_point_end_index - match_cache_point_start_index);
-      if (match_cache_point_end_bit) {
-	match_cache_buf[match_cache_point_end_index] &= (((1 << (8 - match_cache_point_end_bit - 1)) - 1) << (match_cache_point_end_bit + 1));
-      }
-    }
-  }
-}
 #endif /* USE_MATCH_CACHE */
 
 /* match data(str - end) from position (sstart). */
@@ -2457,7 +2403,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	MATCH_CACHE_DEBUG_HIT;\
 	goto fail;\
       }\
-      msa->match_cache_buf[match_cache_point_index] |= match_cache_point_mask;\
+      STACK_PUSH_MATCH_CACHE_POINT(match_cache_point_index, match_cache_point_mask);\
     }\
   }\
 } while (0)
@@ -3538,10 +3484,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_NULL_CHECK_END_MEMST)  MOP_IN(OP_NULL_CHECK_END_MEMST);
       {
 	int isnull;
-	int ischanged = 0; // set 1 when a loop is empty but memory status is changed.
 
 	GET_MEMNUM_INC(mem, p); /* mem: null check id */
-	STACK_NULL_CHECK_MEMST(isnull, ischanged, mem, s, reg);
+	STACK_NULL_CHECK_MEMST(isnull, mem, s, reg);
 	if (isnull) {
 # ifdef ONIG_DEBUG_MATCH
 	  fprintf(stderr, "NULL_CHECK_END_MEMST: skip  id:%d, s:%"PRIuPTR" (%p)\n",
@@ -3550,31 +3495,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  if (isnull == -1) goto fail;
 	  goto null_check_found;
 	}
-# ifdef USE_MATCH_CACHE
-	if (ischanged && msa->match_cache_status == MATCH_CACHE_STATUS_ENABLED) {
-	  RelAddrType rel;
-	  OnigUChar *null_check_start;
-	  OnigUChar *null_check_end = pbegin;
-	  MemNumType mem;
-	  UChar* tmp = p;
-	  switch (*tmp++) {
-	  case OP_JUMP:
-	  case OP_PUSH:
-	    GET_RELADDR_INC(rel, tmp);
-	    null_check_start = tmp + rel;
-	    break;
-	  case OP_REPEAT_INC:
-	  case OP_REPEAT_INC_NG:
-	    GET_MEMNUM_INC(mem, tmp);
-	    // Skip OP_REPEAT (or OP_REPEAT_NG)
-	    null_check_start = STACK_AT(repeat_stk[mem])->u.repeat.pcode;
-	    break;
-	  default:
-	    goto unexpected_bytecode_error;
-	  }
-	  reset_match_cache_on_null_check(reg, null_check_start, null_check_end, (long)(s - str), msa->match_cache_buf, msa->cache_opcodes, msa->num_cache_opcodes, msa->num_cache_points, stk_base, repeat_stk);
-	}
-# endif
       }
       MOP_OUT;
       JUMP;

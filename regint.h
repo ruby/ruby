@@ -873,6 +873,12 @@ typedef struct _OnigStackType {
       UChar *abs_pstr;        /* absent start position */
       const UChar *end_pstr;  /* end position */
     } absent_pos;
+#ifdef USE_MATCH_CACHE
+    struct {
+      long index;
+      uint8_t mask;
+    } match_cache_point;
+#endif
   } u;
 } OnigStackType;
 
