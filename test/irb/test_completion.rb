@@ -310,6 +310,7 @@ module TestIRB
       assert_empty(IRB::InputCompletor.retrieve_completion_data("::A.", bind: binding))
       assert_empty(IRB::InputCompletor.retrieve_completion_data("::A(", bind: binding))
       assert_empty(IRB::InputCompletor.retrieve_completion_data("::A)", bind: binding))
+      assert_empty(IRB::InputCompletor.retrieve_completion_data("::A[", bind: binding))
     end
 
     def test_complete_reserved_words
