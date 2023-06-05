@@ -245,6 +245,8 @@ show_usage_line(const struct ruby_opt_message *m,
     const unsigned int namelen = m->namelen, secondlen = m->secondlen;
     const char *sb = highlight ? esc_bold : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
+    const char *desc = str + namelen + secondlen;
+    unsigned int desclen = (unsigned int)strcspn(desc, "\n");
     if (help && (namelen > w) && (int)(namelen + secondlen) >= columns) {
         printf("  %s" "%.*s" "%s\n", sb, namelen-1, str, se);
         if (secondlen > 1) {
@@ -254,16 +256,23 @@ show_usage_line(const struct ruby_opt_message *m,
             if (str[n] == ' ') n++;
             printf("  %s" "%.*s" "%s\n", sb, second_end-n, str+n, se);
         }
-        printf("%-*s%s\n", w + 2, "",
-               str + namelen + secondlen);
-        return;
+        printf("%-*s%.*s\n", w + 2, "", desclen, desc);
     }
-    const int wrap = help && namelen + secondlen - 1 > w;
-    printf("  %s%.*s%-*.*s%s%-*s%s\n", sb, namelen-1, str,
-           (wrap ? 0 : w - namelen + 1),
-           (help ? secondlen-1 : 0), str + namelen, se,
-           (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
-           str + namelen + secondlen);
+    else {
+        const int wrap = help && namelen + secondlen - 1 > w;
+        printf("  %s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen-1, str,
+               (wrap ? 0 : w - namelen + 1),
+               (help ? secondlen-1 : 0), str + namelen, se,
+               (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
+               desclen, desc);
+    }
+    if (help) {
+        while (desc[desclen]) {
+            desc += desclen + 1;
+            desclen = (unsigned int)strcspn(desc, "\n");
+            printf("%-*s%.*s\n", w + 2, "", desclen, desc);
+        }
+    }
 }
 
 static void
@@ -280,7 +289,8 @@ usage(const char *name, int help, int highlight, int columns)
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
     static const struct ruby_opt_message usage_msg[] = {
-        M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
+        M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)\n"
+            "(-00 for paragraph mode, -0777 for slurp mode)"),
         M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
         M("-c",		   "",			   "check syntax only"),
         M("-Cdirectory",   "",			   "cd to directory before executing your script"),
