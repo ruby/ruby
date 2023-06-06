@@ -34,7 +34,7 @@ A regexp may be used:
 
 A regexp has:
 
-- A source string, in this case <tt>'foo'</tt>:
+- A source string, in this case <tt>foo</tt>:
 
     /foo/ # => /foo/
 
@@ -134,7 +134,7 @@ The affected global variables are:
 - <tt>$~</tt>: Returns a MatchData object, or +nil+.
 - <tt>$&</tt>: Returns the matched string, or +nil+.
 - <tt>$`</tt>: Returns the string to the left of the matched string, or +nil+.
-- <tt>$'</tt>: Returns the string to the right of the matched string, or +nil+.
+- <tt>$</tt>: Returns the string to the right of the matched string, or +nil+.
 - <tt>$+</tt>: Returns the last group matched, or +nil+.
 - <tt>$1</tt>, <tt>$2</tt>, etc.: Returns the first, second, etc.,
   matched group, or +nil+.
@@ -717,8 +717,8 @@ When (and only when) a regexp contains named capture groups
 and appears before the <tt>=~</tt> operator,
 the captured substrings are assigned to local variables with corresponding names:
 
-  /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ "$3.67" #=> 0
-  dollars #=> "3"
+  /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ "$3.67" # => 0
+  dollars # => "3"
 
 === Atomic Grouping
 
@@ -739,15 +739,15 @@ Example (without atomic grouping):
 
 Analysis:
 
-1. The leading subexpression <tt>'"'</tt> in the pattern matches the first character
-   <tt>'"'</tt> in the target string.
-2. The next subexpression <tt>'.*'</tt> matches the next substring <tt>'Quote“'</tt>
+1. The leading subexpression <tt>"</tt> in the pattern matches the first character
+   <tt>"</tt> in the target string.
+2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote“</tt>
    (including the trailing double-quote).
 3. Now there is nothing left in the target string to match
-   the trailing subexpression <tt>'"'</tt> in the pattern;
+   the trailing subexpression <tt>"</tt> in the pattern;
    this would cause the overall match to fail.
-4. The matched substring is backtracked by one position: <tt>'Quote'</tt>.
-5. The final subexpression <tt>'"'</tt> now matches the final substring <tt>'"'</tt>,
+4. The matched substring is backtracked by one position: <tt>Quote</tt>.
+5. The final subexpression <tt>"</tt> now matches the final substring <tt>"</tt>,
    and the overall match succeeds.
 
 If subexpression <tt>.*</tt> is grouped atomically,
@@ -770,7 +770,7 @@ group, tries to call that the <tt>paren</tt> sub-expression again but fails,
 then matches a literal <i>)</i>:
 
     /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
-    /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' #=> 0
+    /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' # => 0
     # ^1
     #      ^2
     #           ^3
@@ -800,17 +800,7 @@ then matches a literal <i>)</i>:
 
 See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
 
-== Alternation
-
-The vertical bar metacharacter (<tt>|</tt>) combines several expressions into
-a single one that matches any of the expressions. Each expression is an
-<i>alternative</i>.
-
-    /\w(and|or)\w/.match("Feliformia") #=> #<MatchData "form" 1:"or">
-    /\w(and|or)\w/.match("furandi")    #=> #<MatchData "randi" 1:"and">
-    /\w(and|or)\w/.match("dissemblance") #=> nil
-
-== Condition
+=== Conditionals
 
 The <tt>(?(</tt><i>cond</i><tt>)</tt><i>yes</i><tt>|</tt><i>no</i><tt>)</tt>
 syntax matches _yes_ part if _cond_ is captured, otherwise matches _no_ part.
@@ -819,87 +809,140 @@ In the case _no_ part is empty, also <tt>|</tt> can be omitted.
 The _cond_ may be a backreference number or a captured name.  A backreference
 number is an absolute position, but can not be a relative position.
 
+  re = /\A(foo)?(?(1)(T)|(F))\z/
+  re.match('fooT') # => #<MatchData "fooT" 1:"foo" 2:"T" 3:nil>
+  re.match('F')    # => #<MatchData "F" 1:nil 2:nil 3:"F">
+  re.match('fooF') # => nil
+  re.match('T')    # => nil
+
+  re = /\A(?<xyzzy>foo)?(?(<xyzzy>)(T)|(F))\z/
+  re.match('fooT') # => #<MatchData "fooT" xyzzy:"foo">
+  re.match('F')    # => #<MatchData "F" xyzzy:nil>
+  re.match('fooF') # => nil
+  re.match('T')    # => nil
+
+== Alternatives
+
+The vertical bar metacharacter (<tt>|</tt>) may be used within parentheses
+to express alternatives:
+two or more subexpressions any of which may match the target string.
+
+Two alternatives:
+
+  re = /(a|b)/
+  re.match('foo') # => nil
+  re.match('bar') # => #<MatchData "b" 1:"b">
+
+Four alternatives:
+
+  re = /(a|b|c|d)/
+  re.match('shazam') # => #<MatchData "a" 1:"a">
+  re.match('cold')   # => #<MatchData "c" 1:"c">
+
+Each alternative is a subexpression, and may be complex:
+
+  re = /([a-c]|[x-z])/
+  re.match('bar') # => #<MatchData "b" 1:"b">
+  re.match('ooz') # => #<MatchData "z" 1:"z">
+
 == Anchors
 
-Anchors are metacharacter that match the zero-width positions between
-characters, <i>anchoring</i> the match to a specific position.
+An anchor is a metasequence that matches a zero-width position between
+characters in the target string.
 
-- <tt>^</tt>: Matches beginning of line
-- <tt>$</tt>: Matches end of line
+For a subexpression with no anchor,
+matching may begin anywhere in the target string:
+
+  /real/.match('surrealist') # => #<MatchData "real">
+
+For a subexpression with an anchor,
+matching must begin at the matched anchor:
+
+  /\Areal/.match('surrealist') # => nil
+
+The match below fails because although <tt>'Demand'</tt> contains </tt>'and'</tt>,
+the substring does not occur at a word boundary.
+
+  /\band/.match('Demand')
+
+In this example <tt>'and'</tt> has been anchored to a non-word
+boundary so instead of matching the first <tt>'and'</tt>,
+it matches from the fourth letter of <tt>'demand'</tt> instead:
+
+  /\Band.+/.match("Supply and demand curve") # => #<MatchData "and curve">
+
+=== Boundary Anchors
+
+Each of these anchors matches a boundary:
+
+- <tt>^</tt>: Matches the beginning of a line:
+
+    /^bar/.match("foo\nbar") # => #<MatchData "bar">
+
+- <tt>$</tt>: Matches the end of a line:
+
+    /bar$/.match("foo\nbar") # => #<MatchData "bar">
+
 - <tt>\A</tt>: Matches beginning of string.
-- <tt>\Z</tt>: Matches end of string. If string ends with a newline,
-  it matches just before newline
-- <tt>\z</tt>: Matches end of string
+- <tt>\Z</tt>: Matches end of string;
+  if string ends with a newline,  it matches just before newline.
+- <tt>\z</tt>: Matches end of string.
 - <tt>\G</tt>: Matches first matching position:
 
   In methods like <tt>String#gsub</tt> and <tt>String#scan</tt>, it changes on each iteration.
   It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
 
-      "    a b c".gsub(/ /, '_')    #=> "____a_b_c"
-      "    a b c".gsub(/\G /, '_')  #=> "____a b c"
+    "    a b c".gsub(/ /, '_')    # => "____a_b_c"
+    "    a b c".gsub(/\G /, '_')  # => "____a b c"
 
-  In methods like <tt>Regexp#match</tt> and <tt>String#match</tt> that take an (optional) offset, it matches where the search begins.
+  In methods like <tt>Regexp#match</tt> and <tt>String#match</tt>
+  that take an (optional) offset, it matches where the search begins.
 
-      "hello, world".match(/,/, 3)    #=> #<MatchData ",">
-      "hello, world".match(/\G,/, 3)  #=> nil
+    "hello, world".match(/,/, 3)    # => #<MatchData ",">
+    "hello, world".match(/\G,/, 3)  # => nil
 
-- <tt>\b</tt>: Matches word boundaries when outside brackets;
-  backspace (0x08) when inside brackets
-- <tt>\B</tt>: Matches non-word boundaries
-- <tt>(?=</tt><i>pat</i><tt>)</tt>: <i>Positive lookahead</i> assertion:
-  ensures that the following characters match <i>pat</i>, but doesn't
-  include those characters in the matched text
-- <tt>(?!</tt><i>pat</i><tt>)</tt>: <i>Negative lookahead</i> assertion:
-  ensures that the following characters do not match <i>pat</i>, but
+- <tt>\b</tt>: Matches word boundary when outside brackets;
+  backspace (0x08) when inside brackets.
+- <tt>\B</tt>: Matches non-word boundary.
+
+=== Lookahead and Lookbehind Anchors
+
+- <tt>(?=_pat_)</tt>: Positive lookahead assertion:
+  ensures that the following characters match _pat_,
+  but doesn't include those characters in the matched text.
+- <tt>(?!_pat_)</tt>: Negative lookahead assertion:
+  ensures that the following characters <i>do not</i> match _pat_,
+  but doesn't include those characters in the matched text.
+- <tt>(?<=_pat_)</tt>: Positive lookbehind assertion:
+  ensures that the preceding characters match _pat_, but
   doesn't include those characters in the matched text
-- <tt>(?<=</tt><i>pat</i><tt>)</tt>: <i>Positive lookbehind</i>
-  assertion: ensures that the preceding characters match <i>pat</i>, but
-  doesn't include those characters in the matched text
-- <tt>(?<!</tt><i>pat</i><tt>)</tt>: <i>Negative lookbehind</i>
-  assertion: ensures that the preceding characters do not match
-  <i>pat</i>, but doesn't include those characters in the matched text
+- <tt>(?<!_pat_)</tt>: Negative lookbehind assertion:
+  ensures that the preceding characters do not match
+  _pat_, but doesn't include those characters in the matched text.
 
-- <tt>\K</tt>: <i>Match reset</i>: the matched content preceding
-  <tt>\K</tt> in the regexp is excluded from the result.  For example,
-  the following two regexps are almost equivalent:
+=== Match Reset Anchor
 
-      /ab\Kc/ =~ "abc"     #=> 0
-      /(?<=ab)c/ =~ "abc"  #=> 2
+- <tt>\K</tt>: Match reset:
+  the matched content preceding <tt>\K</tt> in the regexp is excluded from the result.
+  For example, the following two regexps are almost equivalent:
 
-  These match same string and <i>$&</i> equals <tt>"c"</tt>, while the
+    /ab\Kc/ =~ "abc"     # => 0
+    /(?<=ab)c/ =~ "abc"  # => 2
+
+  These match same string and <tt>$&</tt> equals <tt>'c'</tt>, while the
   matched position is different.
 
   As are the following two regexps:
 
-      /(a)\K(b)\Kc/
-      /(?<=(?<=(a))(b))c/
-
-If a pattern isn't anchored it can begin at any point in the string:
-
-    /real/.match("surrealist") #=> #<MatchData "real">
-
-Anchoring the pattern to the beginning of the string forces the match to start
-there. 'real' doesn't occur at the beginning of the string, so now the match
-fails:
-
-    /\Areal/.match("surrealist") #=> nil
-
-The match below fails because although 'Demand' contains 'and', the pattern
-does not occur at a word boundary.
-
-    /\band/.match("Demand")
-
-Whereas in the following example 'and' has been anchored to a non-word
-boundary so instead of matching the first 'and' it matches from the fourth
-letter of 'demand' instead:
-
-    /\Band.+/.match("Supply and demand curve") #=> #<MatchData "and curve">
+    /(a)\K(b)\Kc/
+    /(?<=(?<=(a))(b))c/
 
 The pattern below uses positive lookahead and positive lookbehind to match
-text appearing in <b></b> tags without including the tags in the match:
+text appearing in <tt><b></tt>...<tt></b></tt> tags
+without including the tags in the match:
 
-    /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favours the <b>bold</b>")
-        #=> #<MatchData "bold">
+  /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
+  # => #<MatchData "bold">
 
 == Options
 
@@ -917,25 +960,25 @@ subexpression level with the
 enables options <i>on</i>, and disables options <i>off</i> for the
 expression enclosed by the parentheses:
 
-    /a(?i:b)c/.match('aBc')   #=> #<MatchData "aBc">
-    /a(?-i:b)c/i.match('ABC') #=> nil
+    /a(?i:b)c/.match('aBc')   # => #<MatchData "aBc">
+    /a(?-i:b)c/i.match('ABC') # => nil
 
 Additionally, these options can also be toggled for the remainder of the
 pattern:
 
-    /a(?i)bc/.match('abC') #=> #<MatchData "abC">
+    /a(?i)bc/.match('abC') # => #<MatchData "abC">
 
 Options may also be used with <tt>Regexp.new</tt>:
 
-    Regexp.new("abc", Regexp::IGNORECASE)                     #=> /abc/i
-    Regexp.new("abc", Regexp::MULTILINE)                      #=> /abc/m
-    Regexp.new("abc # Comment", Regexp::EXTENDED)             #=> /abc # Comment/x
-    Regexp.new("abc", Regexp::IGNORECASE | Regexp::MULTILINE) #=> /abc/mi
+    Regexp.new("abc", Regexp::IGNORECASE)                     # => /abc/i
+    Regexp.new("abc", Regexp::MULTILINE)                      # => /abc/m
+    Regexp.new("abc # Comment", Regexp::EXTENDED)             # => /abc # Comment/x
+    Regexp.new("abc", Regexp::IGNORECASE | Regexp::MULTILINE) # => /abc/mi
 
-    Regexp.new("abc", "i")           #=> /abc/i
-    Regexp.new("abc", "m")           #=> /abc/m
-    Regexp.new("abc # Comment", "x") #=> /abc # Comment/x
-    Regexp.new("abc", "im")          #=> /abc/mi
+    Regexp.new("abc", "i")           # => /abc/i
+    Regexp.new("abc", "m")           # => /abc/m
+    Regexp.new("abc # Comment", "x") # => /abc # Comment/x
+    Regexp.new("abc", "im")          # => /abc/mi
 
 == Free-Spacing Mode and Comments
 
@@ -953,7 +996,7 @@ A contrived pattern to match a number with optional decimal places:
             [[:digit:]]+ # 1 or more digits after the decimal point
         )? # The decimal point and following digits are optional
     \Z/x
-    float_pat.match('3.14') #=> #<MatchData "3.14" 1:".14">
+    float_pat.match('3.14') # => #<MatchData "3.14" 1:".14">
 
 There are a number of strategies for matching whitespace:
 
@@ -973,10 +1016,10 @@ characters.
 Regular expressions are assumed to use the source encoding. This can be
 overridden with one of the following modifiers.
 
-- <tt>/</tt><i>pat</i><tt>/u</tt>: UTF-8
-- <tt>/</tt><i>pat</i><tt>/e</tt>: EUC-JP
-- <tt>/</tt><i>pat</i><tt>/s</tt>: Windows-31J
-- <tt>/</tt><i>pat</i><tt>/n</tt>: ASCII-8BIT
+- <tt>/_pat_/u</tt>: UTF-8
+- <tt>/_pat_/e</tt>: EUC-JP
+- <tt>/_pat_/s</tt>: Windows-31J
+- <tt>/_pat_/n</tt>: ASCII-8BIT
 
 A regexp can be matched against a string when they either share an
 encoding, or the regexp's encoding is _US-ASCII_ and the string's encoding
@@ -1005,7 +1048,7 @@ Consider a string of 25 <i>a</i>s, a <i>d</i>, 4 <i>a</i>s, and a
 <i>c</i>.
 
    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-   #=> "aaaaaaaaaaaaaaaaaaaaaaaaadaaaac"
+   # => "aaaaaaaaaaaaaaaaaaaaaaaaadaaaac"
 
 The following patterns match quickly, as one would expect:
 
@@ -1040,13 +1083,13 @@ process-global configuration of timeout for Regexp matching.
 
     Regexp.timeout = 3
     s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-    /(b|a+)*c/ =~ s  #=> This raises an exception in three seconds
+    /(b|a+)*c/ =~ s  # => This raises an exception in three seconds
 
 The other is timeout keyword of Regexp.new.
 
     re = Regexp.new("(b|a+)*c", timeout: 3)
     s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-    /(b|a+)*c/ =~ s  #=> This raises an exception in three seconds
+    /(b|a+)*c/ =~ s  # => This raises an exception in three seconds
 
 When using Regexps to process untrusted input, you should use the timeout
 feature to avoid excessive backtracking. Otherwise, a malicious user can
