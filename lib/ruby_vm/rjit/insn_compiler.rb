@@ -2994,15 +2994,12 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_empty_p(jit, ctx, asm, argc, known_recv_class)
-      # Assume same offset to len embedded or not so we can use one code path to read the length
-      #assert_equal(C.RString.offsetof(:as, :heap, :len), C.RString.offsetof(:as, :embed, :len))
-
       recv_opnd = ctx.stack_pop(1)
       out_opnd = ctx.stack_push(Type::UnknownImm)
 
       asm.comment('get string length')
       asm.mov(:rax, recv_opnd)
-      str_len_opnd = [:rax, C.RString.offsetof(:as, :heap, :len)]
+      str_len_opnd = [:rax, C.RString.offsetof(:len)]
 
       asm.cmp(str_len_opnd, 0)
       asm.mov(:rax, Qfalse)

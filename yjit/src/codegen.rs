@@ -4422,18 +4422,13 @@ fn jit_rb_str_empty_p(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    const _: () = assert!(
-        RUBY_OFFSET_RSTRING_AS_HEAP_LEN == RUBY_OFFSET_RSTRING_EMBED_LEN,
-        "same offset to len embedded or not so we can use one code path to read the length",
-    );
-
     let recv_opnd = asm.stack_pop(1);
 
     asm.comment("get string length");
     let str_len_opnd = Opnd::mem(
         std::os::raw::c_long::BITS as u8,
         asm.load(recv_opnd),
-        RUBY_OFFSET_RSTRING_AS_HEAP_LEN as i32,
+        RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
     asm.cmp(str_len_opnd, Opnd::UImm(0));

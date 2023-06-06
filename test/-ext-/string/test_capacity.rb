@@ -66,7 +66,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def embed_header_size
-    2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
+    3 * RbConfig::SIZEOF['void*']
   end
 
   def max_embed_len
