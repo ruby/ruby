@@ -1054,10 +1054,15 @@ provide input to Regexp causing Denial-of-Service attack.
 Note that the timeout is not set by default because an appropriate limit
 highly depends on an application requirement and context.
 
-References:
+== References
+
+Read (online PDF books):
 
 - {Mastering Regular Expressions}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf]
-  by Jeffrey E.F. Friedl
+  by Jeffrey E.F. Friedl.
 - {Regular Expressions Cookbook}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf]
   by Jan Goyvaerts & Steven Levithan.
 
+Edit, test (interactive online editor):
+
+- {Rubular}[https://rubular.com/].
