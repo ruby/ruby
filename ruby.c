@@ -258,7 +258,7 @@ show_usage_line(const struct ruby_opt_message *m,
         }
         printf("%-*s%.*s\n", w + 2, "", desclen, desc);
     }
-    else {
+    else if (help || namelen > 1) {
         const int wrap = help && namelen + secondlen - 1 > w;
         printf("  %s%.*s%-*.*s%s%-*s%.*s\n", sb, namelen-1, str,
                (wrap ? 0 : w - namelen + 1),
@@ -291,6 +291,8 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)\n"
             "(-00 for paragraph mode, -0777 for slurp mode)"),
+        M("",		   "-0=separator",	   "specify record separator as a string"),
+        M("",		   "-0:CODEPOINT,...",	   "specify record separator as codepoints list"),
         M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
         M("-c",		   "",			   "check syntax only"),
         M("-Cdirectory",   "",			   "cd to directory before executing your script"),
@@ -319,7 +321,6 @@ usage(const char *name, int help, int highlight, int columns)
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
-    STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 25);
 
     static const struct ruby_opt_message help_msg[] = {
         M("--copyright",                            "", "print the copyright"),
