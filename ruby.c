@@ -1290,6 +1290,9 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
     char c[6];
 
     switch (s[1]) {
+      case '=':
+        rb_rs = external_str_new_cstr(s + rb_strlen_lit("0="));
+        return 0;
       case ':':
         v = scan_hex(s + rb_strlen_lit("0:"), SIZE_MAX, &numlen);
         if (!numlen) break;
