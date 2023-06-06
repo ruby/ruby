@@ -920,7 +920,14 @@ Each of these anchors matches a boundary:
   ensures that the preceding characters do not match
   _pat_, but doesn't include those characters in the matched text.
 
-=== Match Reset Anchor
+The pattern below uses positive lookahead and positive lookbehind to match
+text appearing in <tt><b></tt>...<tt></b></tt> tags
+without including the tags in the match:
+
+  /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
+  # => #<MatchData "bold">
+
+=== Match-Reset Anchor
 
 - <tt>\K</tt>: Match reset:
   the matched content preceding <tt>\K</tt> in the regexp is excluded from the result.
@@ -936,13 +943,6 @@ Each of these anchors matches a boundary:
 
     /(a)\K(b)\Kc/
     /(?<=(?<=(a))(b))c/
-
-The pattern below uses positive lookahead and positive lookbehind to match
-text appearing in <tt><b></tt>...<tt></b></tt> tags
-without including the tags in the match:
-
-  /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
-  # => #<MatchData "bold">
 
 == Options
 
