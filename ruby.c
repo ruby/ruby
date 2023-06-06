@@ -1287,7 +1287,26 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
 {
     size_t numlen;
     int v;
-    char c;
+    char c[6];
+
+    switch (s[1]) {
+      case ':':
+        v = scan_hex(s + rb_strlen_lit("0:"), SIZE_MAX, &numlen);
+        if (!numlen) break;
+
+        s += rb_strlen_lit("0:");
+        if (numlen > rb_strlen_lit("10ffff")) {
+            rb_raise(rb_eRuntimeError,
+                     "too long Unicode codepoint: %.*s%s",
+                     numlen > 20 ? 20 : (int)numlen, s,
+                     numlen > 20 ? "..." : "");
+        }
+        if (v > 0x10ffff) {
+            rb_raise(rb_eRuntimeError, "Unicode codepoint out of range: %x", v);
+        }
+        rb_rs = rb_utf8_str_new(c, rb_uv_to_utf8(c, v));
+        return s + numlen;
+    }
 
     v = scan_oct(s, 4, &numlen);
     s += numlen;
@@ -1297,8 +1316,8 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
         rb_rs = rb_str_new2("");
     }
     else {
-        c = v & 0xff;
-        rb_rs = rb_str_new(&c, 1);
+        c[0] = v & 0xff;
+        rb_rs = rb_str_new(c, 1);
     }
     return s;
 }

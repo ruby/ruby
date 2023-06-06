@@ -305,6 +305,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-00 -e) + ["p gets, gets"], "foo\nbar\n\nbaz\nzot\n\n\n", %w("foo\nbar\n\n" "baz\nzot\n\n"), [])
 
     assert_in_out_err(%w(-00 -e) + ["p gets, gets"], "foo\nbar\n\n\n\nbaz\n", %w("foo\nbar\n\n" "baz\n"), [])
+
+    assert_in_out_err(%W(-Eutf-8:utf-8 -0:85 -e) + ["p gets, gets"], "foo\nbar\u{85}\nbaz\n", %w("foo\nbar\u0085" "\nbaz\n"), [])
   end
 
   def test_autosplit
