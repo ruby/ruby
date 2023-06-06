@@ -157,7 +157,6 @@ VALUE ossl_to_der_if_possible(VALUE);
  */
 extern VALUE dOSSL;
 
-#if defined(HAVE_VA_ARGS_MACRO)
 #define OSSL_Debug(...) do { \
   if (dOSSL == Qtrue) { \
     fprintf(stderr, "OSSL_DEBUG: "); \
@@ -165,11 +164,6 @@ extern VALUE dOSSL;
     fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
   } \
 } while (0)
-
-#else
-void ossl_debug(const char *, ...);
-#define OSSL_Debug ossl_debug
-#endif
 
 /*
  * Include all parts

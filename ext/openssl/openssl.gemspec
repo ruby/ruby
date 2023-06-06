@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.extra_rdoc_files = Dir["*.md"]
   spec.rdoc_options = ["--main", "README.md"]
 
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.required_ruby_version = ">= 2.7.0"
 
   spec.metadata["msys2_mingw_dependencies"] = "openssl"
 end
