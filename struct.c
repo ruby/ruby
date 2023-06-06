@@ -455,30 +455,24 @@ struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super,
     return klass;
 }
 
+#define define_without_accessor(arg) \
+    va_list ar; \
+    VALUE members; \
+    va_start(ar, alloc); \
+    members = struct_make_members_list(ar); \
+    va_end(ar); \
+    return struct_define_without_accessor(arg, class_name, super, alloc, members);
+
 VALUE
 rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...)
 {
-    va_list ar;
-    VALUE members;
-
-    va_start(ar, alloc);
-    members = struct_make_members_list(ar);
-    va_end(ar);
-
-    return struct_define_without_accessor(outer, class_name, super, alloc, members);
+    define_without_accessor(outer)
 }
 
 VALUE
 rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_func_t alloc, ...)
 {
-    va_list ar;
-    VALUE members;
-
-    va_start(ar, alloc);
-    members = struct_make_members_list(ar);
-    va_end(ar);
-
-    return struct_define_without_accessor(0, class_name, super, alloc, members);
+    define_without_accessor(0)
 }
 
 VALUE
