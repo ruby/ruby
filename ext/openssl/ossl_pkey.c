@@ -276,9 +276,9 @@ struct pkey_blocking_generate_arg {
     EVP_PKEY_CTX *ctx;
     EVP_PKEY *pkey;
     int state;
-    int yield: 1;
-    int genparam: 1;
-    int interrupted: 1;
+    unsigned int yield: 1;
+    unsigned int genparam: 1;
+    unsigned int interrupted: 1;
 };
 
 static VALUE
