@@ -569,8 +569,17 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
                                 ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
                                 Qnil);
 }
+
+static inline VALUE
+external_str_new_cstr(const char *p)
+{
+    VALUE str = rb_utf8_str_new_cstr(p);
+    str = str_conv_enc(str, NULL, rb_default_external_encoding());
+    return str;
+}
 #else
 # define str_conv_enc(str, from, to) (str)
+# define external_str_new_cstr rb_external_str_new_cstr
 #endif
 
 void ruby_init_loadpath(void);
@@ -2697,18 +2706,6 @@ set_arg0(VALUE val, ID id, VALUE *_)
         rb_raise(rb_eRuntimeError, "$0 not initialized");
 
     rb_progname = rb_str_new_frozen(ruby_setproctitle(val));
-}
-
-static inline VALUE
-external_str_new_cstr(const char *p)
-{
-#if UTF8_PATH
-    VALUE str = rb_utf8_str_new_cstr(p);
-    str = str_conv_enc(str, NULL, rb_default_external_encoding());
-    return str;
-#else
-    return rb_external_str_new_cstr(p);
-#endif
 }
 
 static void
