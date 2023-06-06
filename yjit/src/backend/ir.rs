@@ -72,6 +72,9 @@ pub enum Opnd
     // Immediate Ruby value, may be GC'd, movable
     Value(VALUE),
 
+    /// C argument register
+    CArg(Reg),
+
     // Output of a preceding instruction in this block
     InsnOut{ idx: usize, num_bits: u8 },
 
@@ -104,6 +107,7 @@ impl fmt::Debug for Opnd {
             Value(val) => write!(fmt, "Value({val:?})"),
             Stack { idx, sp_offset, .. } => write!(fmt, "SP[{}]", *sp_offset as i32 - idx - 1),
             InsnOut { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
+            CArg(reg) => write!(fmt, "CArg({reg:?})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -143,6 +147,14 @@ impl Opnd
     /// Constructor for constant pointer operand
     pub fn const_ptr(ptr: *const u8) -> Self {
         Opnd::UImm(ptr as u64)
+    }
+
+    /// Constructor for C argument operand
+    pub fn c_arg(reg_opnd: Opnd) -> Self {
+        match reg_opnd {
+            Opnd::Reg(reg) => Opnd::CArg(reg),
+            _ => unreachable!(),
+        }
     }
 
     pub fn is_some(&self) -> bool {
@@ -1188,6 +1200,8 @@ impl Assembler
 
         // First, create the pool of registers.
         let mut pool: u32 = 0;
+        // List of registers borrowed from the pool for C arguments
+        let mut c_arg_regs: Vec<Reg> = vec![];
 
         // Mutate the pool bitmap to indicate that the register at that index
         // has been allocated and is live.
@@ -1279,8 +1293,15 @@ impl Assembler
                 }
             }
 
-            // C return values need to be mapped to the C return register
             if matches!(insn, Insn::CCall { .. }) {
+                // Release the reservation of C argument registers after use
+                if matches!(insn, Insn::CCall { .. }) {
+                    for reg in c_arg_regs.drain(..).into_iter() {
+                        dealloc_reg(&mut pool, &regs, &reg);
+                    }
+                }
+
+                // Caller-saved registers can't survive C calls since we don't spill them.
                 assert_eq!(pool, 0, "register lives past C function call");
             }
 
@@ -1356,7 +1377,7 @@ impl Assembler
                 *out = Opnd::Reg(out_reg.unwrap().with_num_bits(out_num_bits));
             }
 
-            // Replace InsnOut operands by their corresponding register
+            // Replace InsnOut and CArg operands by their corresponding register
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
@@ -1366,6 +1387,14 @@ impl Assembler
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
                         let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
+                    }
+                    Opnd::CArg(reg) => {
+                        // Reserve a conflicting C argument register in the pool
+                        if regs.contains(&reg) {
+                            take_reg(&mut pool, &regs, &reg);
+                            c_arg_regs.push(reg);
+                        }
+                        *opnd = Opnd::Reg(reg)
                     }
                     _ => {},
                 }

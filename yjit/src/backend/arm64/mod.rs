@@ -74,9 +74,10 @@ impl From<Opnd> for A64Opnd {
             Opnd::Mem(Mem { base: MemBase::InsnOut(_), .. }) => {
                 panic!("attempted to lower an Opnd::Mem with a MemBase::InsnOut base")
             },
-            Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
-            Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
-            Opnd::Stack { .. } => panic!("attempted to lower an Opnd::Stack"),
+            Opnd::CArg { .. } |
+            Opnd::InsnOut { .. } |
+            Opnd::Value(_) |
+            Opnd::Stack { .. } => panic!("attempted to lower {:?}", opnd),
             Opnd::None => panic!(
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
             ),
@@ -280,7 +281,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } | Opnd::Stack { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Stack { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -313,7 +314,7 @@ impl Assembler
         /// a certain size. If they don't then we need to load them first.
         fn split_shifted_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(_) => asm.load(opnd),
                 Opnd::UImm(uimm) => {
@@ -452,7 +453,7 @@ impl Assembler
                             _ => *opnd
                         };
 
-                        asm.load_into(C_ARG_OPNDS[idx], value);
+                        asm.load_into(Opnd::c_arg(C_ARG_OPNDS[idx]), value);
                     }
 
                     // Now we push the CCall without any arguments so that it
@@ -924,8 +925,8 @@ impl Assembler
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
                             insn_gc_offsets.push(ptr_offset);
                         },
-                        Opnd::Stack { .. } => {
-                            unreachable!("Stack operand was not lowered before arm64_emit");
+                        Opnd::CArg(_) | Opnd::Stack { .. } => {
+                            unreachable!("Attempted to lower {:?}", opnd);
                         }
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");

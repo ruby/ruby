@@ -347,7 +347,7 @@ impl Assembler
                     // Load each operand into the corresponding argument
                     // register.
                     for (idx, opnd) in opnds.into_iter().enumerate() {
-                        asm.load_into(C_ARG_OPNDS[idx], *opnd);
+                        asm.load_into(Opnd::c_arg(C_ARG_OPNDS[idx]), *opnd);
                     }
 
                     // Now we push the CCall without any arguments so that it
@@ -1054,5 +1054,22 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4983f540");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_c_arg_reg() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let rax = asm.load(Opnd::UImm(1));
+        let rcx = asm.load(Opnd::UImm(2));
+        let rdx = asm.load(Opnd::UImm(3));
+        asm.ccall(0 as _, vec![
+            rax, // -> rdi
+            rcx, // -> rsi
+            rcx, // -> rdx
+            rdx, // -> rcx (rdx has been rewritten to 2)
+        ]);
+        asm.compile_with_num_regs(&mut cb, 3);
     }
 }
