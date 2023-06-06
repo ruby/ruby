@@ -1083,6 +1083,7 @@ extern "C" {
     pub static mut rb_cFalseClass: VALUE;
     pub static mut rb_cFloat: VALUE;
     pub static mut rb_cHash: VALUE;
+    pub static mut rb_cIO: VALUE;
     pub static mut rb_cInteger: VALUE;
     pub static mut rb_cModule: VALUE;
     pub static mut rb_cNilClass: VALUE;
