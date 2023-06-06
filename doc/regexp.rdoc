@@ -708,7 +708,7 @@ When a regexp contains a named capture, there are no unnamed captures:
   /\$(?<dollars>\d+)\.(\d+)/.match("$3.67")
   # => #<MatchData "$3.67" dollars:"3">
 
-A named group may be backreferenced as <tt>\k_name_</tt>:
+A named group may be backreferenced as <tt>\k<_name_></tt>:
 
   /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
   # => #<MatchData "ototo" vowel:"o">
@@ -720,76 +720,56 @@ the captured substrings are assigned to local variables with corresponding names
   /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ "$3.67" #=> 0
   dollars #=> "3"
 
-== Grouping
-
-Parentheses also <i>group</i> the terms they enclose, allowing them to be
-quantified as one <i>atomic</i> whole.
-
-The pattern below matches a vowel followed by 2 word characters:
-
-    /[aeiou]\w{2}/.match("Caenorhabditis elegans") #=> #<MatchData "aen">
-
-Whereas the following pattern matches a vowel followed by a word character,
-twice, i.e. <tt>[aeiou]\w[aeiou]\w</tt>: 'enor'.
-
-    /([aeiou]\w){2}/.match("Caenorhabditis elegans")
-        #=> #<MatchData "enor" 1:"or">
-
-The <tt>(?:</tt>...<tt>)</tt> construct provides grouping without
-capturing. That is, it combines the terms it contains into an atomic whole
-without creating a backreference. This benefits performance at the slight
-expense of readability.
-
-The first group of parentheses captures 'n' and the second 'ti'. The second
-group is referred to later with the backreference <tt>\2</tt>:
-
-    /I(n)ves(ti)ga\2ons/.match("Investigations")
-        #=> #<MatchData "Investigations" 1:"n" 2:"ti">
-
-The first group of parentheses is now made non-capturing with '?:', so it
-still matches 'n', but doesn't create the backreference. Thus, the
-backreference <tt>\1</tt> now refers to 'ti'.
-
-    /I(?:n)ves(ti)ga\1ons/.match("Investigations")
-        #=> #<MatchData "Investigations" 1:"ti">
-
 === Atomic Grouping
 
-Grouping can be made <i>atomic</i> with
-<tt>(?></tt><i>pat</i><tt>)</tt>. This causes the subexpression <i>pat</i>
-to be matched independently of the rest of the expression such that what
-it matches becomes fixed for the remainder of the match, unless the entire
-subexpression must be abandoned and subsequently revisited. In this
-way <i>pat</i> is treated as a non-divisible whole. Atomic grouping is
-typically used to optimise patterns so as to prevent the regular
-expression engine from backtracking needlessly.
+A group may be made <i>atomic</i> with <tt>(?></tt><i>subexpression</i><tt>)</tt>.
 
-The <tt>"</tt> in the pattern below matches the first character of the string,
-then <tt>.*</tt> matches <i>Quote"</i>. This causes the overall match to fail,
-so the text matched by <tt>.*</tt> is backtracked by one position, which
-leaves the final character of the string available to match <tt>"</tt>
+This causes the subexpression to be matched
+independently of the rest of the expression,
+so that the matched substring becomes fixed for the remainder of the match,
+unless the entire subexpression must be abandoned and subsequently revisited.
 
-          /".*"/.match('"Quote"')     #=> #<MatchData "\"Quote\"">
+In this way pat is treated as a non-divisible whole.
+Atomic grouping is typically used to optimise patterns
+to prevent needless backtracking .
 
-If <tt>.*</tt> is grouped atomically, it refuses to backtrack <i>Quote"</i>,
-even though this means that the overall match fails
+Example (without atomic grouping):
 
-    /"(?>.*)"/.match('"Quote"') #=> nil
+  /".*"/.match('"Quote"') # => #<MatchData "\"Quote\"">
 
-== Subexpression Calls
+Analysis:
 
-The <tt>\g<</tt><i>name</i><tt>></tt> syntax matches the previous
-subexpression named _name_, which can be a group name or number, again.
-This differs from backreferences in that it re-executes the group rather
-than simply trying to re-match the same text.
+1. The leading subexpression <tt>'"'</tt> in the pattern matches the first character
+   <tt>'"'</tt> in the target string.
+2. The next subexpression <tt>'.*'</tt> matches the next substring <tt>'Quote“'</tt>
+   (including the trailing double-quote).
+3. Now there is nothing left in the target string to match
+   the trailing subexpression <tt>'"'</tt> in the pattern;
+   this would cause the overall match to fail.
+4. The matched substring is backtracked by one position: <tt>'Quote'</tt>.
+5. The final subexpression <tt>'"'</tt> now matches the final substring <tt>'"'</tt>,
+   and the overall match succeeds.
+
+If subexpression <tt>.*</tt> is grouped atomically,
+the backtracking is disabled, and the overall match fails:
+
+  /"(?>.*)"/.match('"Quote"') # => nil
+
+Atomic grouping can affect performance;
+see {Atomic Group}[https://www.regular-expressions.info/atomic.html].
+
+=== Subexpression Calls
+
+As seen above, a backreference number (<tt>\\_n_</tt>) or name (<tt>\k<_name_></tt>)
+gives access to a captured _substring_;
+the corresponding regexp _subexpression_ may also be accessed,
+via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
 
 This pattern matches a <i>(</i> character and assigns it to the <tt>paren</tt>
 group, tries to call that the <tt>paren</tt> sub-expression again but fails,
 then matches a literal <i>)</i>:
 
     /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
-
-
     /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' #=> 0
     # ^1
     #      ^2
@@ -817,6 +797,8 @@ then matches a literal <i>)</i>:
     Marks the end of the second recursive call
 9.  Match a literal <i>)</i>, the fourth character in the string
 10. Match the end of the string
+
+See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
 
 == Alternation
 
