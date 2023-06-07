@@ -1756,9 +1756,6 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
     int ret, ret2;
     VALUE cb_state;
     int nonblock = opts != Qfalse;
-#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
-    unsigned long err;
-#endif
 
     rb_ivar_set(self, ID_callback_state, Qnil);
 
@@ -1796,30 +1793,33 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
                 continue;
 #endif
             if (errno) rb_sys_fail(funcname);
-            ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
-                       funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl));
-
-#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
-          case SSL_ERROR_SSL:
-            err = ERR_peek_last_error();
-            if (ERR_GET_LIB(err) == ERR_LIB_SSL &&
-                ERR_GET_REASON(err) == SSL_R_CERTIFICATE_VERIFY_FAILED) {
-                const char *err_msg = ERR_reason_error_string(err),
-                      *verify_msg = X509_verify_cert_error_string(SSL_get_verify_result(ssl));
-                if (!err_msg)
-                    err_msg = "(null)";
-                if (!verify_msg)
-                    verify_msg = "(null)";
-                ossl_clear_error(); /* let ossl_raise() not append message */
-                ossl_raise(eSSLError, "%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s: %s (%s)",
-                           funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl),
-                           err_msg, verify_msg);
-            }
-#endif
             /* fallthrough */
-          default:
-            ossl_raise(eSSLError, "%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
-                       funcname, ret2, errno, peeraddr_ip_str(self), SSL_state_string_long(ssl));
+          default: {
+              VALUE error_append = Qnil;
+#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
+              unsigned long err = ERR_peek_last_error();
+              if (ERR_GET_LIB(err) == ERR_LIB_SSL &&
+                  ERR_GET_REASON(err) == SSL_R_CERTIFICATE_VERIFY_FAILED) {
+                  const char *err_msg = ERR_reason_error_string(err),
+                        *verify_msg = X509_verify_cert_error_string(SSL_get_verify_result(ssl));
+                  if (!err_msg)
+                      err_msg = "(null)";
+                  if (!verify_msg)
+                      verify_msg = "(null)";
+                  ossl_clear_error(); /* let ossl_raise() not append message */
+                  error_append = rb_sprintf(": %s (%s)", err_msg, verify_msg);
+              }
+#endif
+              ossl_raise(eSSLError,
+                         "%s%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s%"PRIsVALUE,
+                         funcname,
+                         ret2 == SSL_ERROR_SYSCALL ? " SYSCALL" : "",
+                         ret2,
+                         errno,
+                         peeraddr_ip_str(self),
+                         SSL_state_string_long(ssl),
+                         error_append);
+          }
         }
     }
 
