@@ -856,20 +856,7 @@ matching may begin anywhere in the target string:
   /real/.match('surrealist') # => #<MatchData "real">
 
 For a subexpression with an anchor,
-matching must begin at the matched anchor:
-
-  /\Areal/.match('surrealist') # => nil
-
-The match below fails because although <tt>'Demand'</tt> contains </tt>'and'</tt>,
-the substring does not occur at a word boundary.
-
-  /\band/.match('Demand')
-
-In this example <tt>'and'</tt> has been anchored to a non-word
-boundary so instead of matching the first <tt>'and'</tt>,
-it matches from the fourth letter of <tt>'demand'</tt> instead:
-
-  /\Band.+/.match("Supply and demand curve") # => #<MatchData "and curve">
+matching must begin at the matched anchor.
 
 === Boundary Anchors
 
@@ -878,47 +865,78 @@ Each of these anchors matches a boundary:
 - <tt>^</tt>: Matches the beginning of a line:
 
     /^bar/.match("foo\nbar") # => #<MatchData "bar">
+    /^ar/.match("foo\nbar")  # => nil
 
 - <tt>$</tt>: Matches the end of a line:
 
     /bar$/.match("foo\nbar") # => #<MatchData "bar">
+    /ba$/.match("foo\nbar")  # => nil
 
-- <tt>\A</tt>: Matches beginning of string.
-- <tt>\Z</tt>: Matches end of string;
-  if string ends with a newline,  it matches just before newline.
-- <tt>\z</tt>: Matches end of string.
+- <tt>\A</tt>: Matches the beginning of the string:
+
+    /\Afoo/.match('foo bar')  # => #<MatchData "foo">
+    /\Afoo/.match(' foo bar') # => nil
+
+- <tt>\Z</tt>: Matches the end of the string;
+  if string ends with a single newline,  it matches just before newline:
+
+    /foo\Z/.match('bar foo')     # => #<MatchData "foo">
+    /foo\Z/.match('foo bar')     # => nil
+    /foo\Z/.match("bar foo\n")   # => #<MatchData "foo">
+    /foo\Z/.match("bar foo\n\n") # => nil
+
+- <tt>\z</tt>: Matches the end of the string:
+
+    /foo\z/.match('bar foo')   # => #<MatchData "foo">
+    /foo\z/.match('foo bar')   # => nil
+    /foo\z/.match("bar foo\n") # => nil
+
+- <tt>\b</tt>: Matches word boundary when not inside brackets;
+  matches backspace (<tt>"0x08"</tt>) when inside brackets:
+
+    /foo\b/.match('foo bar') # => #<MatchData "foo">
+    /foo\b/.match('foobar')  # => nil
+
+- <tt>\B</tt>: Matches non-word boundary:
+
+    /foo\B/.match('foobar')  # => #<MatchData "foo">
+    /foo\B/.match('foo bar') # => nil
+
 - <tt>\G</tt>: Matches first matching position:
 
-  In methods like <tt>String#gsub</tt> and <tt>String#scan</tt>, it changes on each iteration.
+  In methods like String#gsub and String#scan, it changes on each iteration.
   It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
 
-    "    a b c".gsub(/ /, '_')    # => "____a_b_c"
-    "    a b c".gsub(/\G /, '_')  # => "____a b c"
+    "    a b c".gsub(/ /, '_')   # => "____a_b_c"
+    "    a b c".gsub(/\G /, '_') # => "____a b c"
 
-  In methods like <tt>Regexp#match</tt> and <tt>String#match</tt>
-  that take an (optional) offset, it matches where the search begins.
+  In methods like Regexp#match and String#match
+  that take an optional offset, it matches where the search begins.
 
-    "hello, world".match(/,/, 3)    # => #<MatchData ",">
-    "hello, world".match(/\G,/, 3)  # => nil
+    "hello, world".match(/,/, 3)   # => #<MatchData ",">
+    "hello, world".match(/\G,/, 3) # => nil
 
-- <tt>\b</tt>: Matches word boundary when outside brackets;
-  backspace (0x08) when inside brackets.
-- <tt>\B</tt>: Matches non-word boundary.
+=== Lookaround Anchors
 
-=== Lookahead and Lookbehind Anchors
+Lookahead anchors:
 
 - <tt>(?=_pat_)</tt>: Positive lookahead assertion:
   ensures that the following characters match _pat_,
-  but doesn't include those characters in the matched text.
+  but doesn't include those characters in the matched substring.
+
 - <tt>(?!_pat_)</tt>: Negative lookahead assertion:
   ensures that the following characters <i>do not</i> match _pat_,
-  but doesn't include those characters in the matched text.
+  but doesn't include those characters in the matched substring.
+
+Lookbehind anchors:
+
 - <tt>(?<=_pat_)</tt>: Positive lookbehind assertion:
   ensures that the preceding characters match _pat_, but
-  doesn't include those characters in the matched text
+  doesn't include those characters in the matched substring.
+
 - <tt>(?<!_pat_)</tt>: Negative lookbehind assertion:
   ensures that the preceding characters do not match
-  _pat_, but doesn't include those characters in the matched text.
+  _pat_, but doesn't include those characters in the matched substring.
 
 The pattern below uses positive lookahead and positive lookbehind to match
 text appearing in <tt><b></tt>...<tt></b></tt> tags
@@ -936,8 +954,8 @@ without including the tags in the match:
     /ab\Kc/ =~ "abc"     # => 0
     /(?<=ab)c/ =~ "abc"  # => 2
 
-  These match same string and <tt>$&</tt> equals <tt>'c'</tt>, while the
-  matched position is different.
+  These match same string and <tt>$&</tt> equals <tt>'c'</tt>,
+  while the matched position is different.
 
   As are the following two regexps:
 
