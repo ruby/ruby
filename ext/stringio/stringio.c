@@ -37,7 +37,11 @@ struct StringIO {
     rb_encoding *enc;
     long pos;
     long lineno;
+#ifdef HAVE_TYPE_ENUM_RB_IO_MODE
+    enum rb_io_mode flags;
+#else
     int flags;
+#endif
     int count;
 };
 
@@ -1744,7 +1748,12 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	enc = rb_find_encoding(ext_enc);
 	if (!enc) {
 	    rb_io_enc_t convconfig;
-	    int oflags, fmode;
+	    int oflags;
+#ifdef HAVE_TYPE_ENUM_RB_IO_MODE
+        enum rb_io_mode fmode;
+#else
+        int fmode;
+#endif
 	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
 	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);
 	    enc = convconfig.enc2;
