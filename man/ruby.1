@@ -10,7 +10,7 @@
 .Op Fl -copyright
 .Op Fl -version
 .Op Fl SUacdlnpswvy
-.Op Fl 0 Ns Op Ar octal
+.Op Fl 0 Op Bro Cm Ar octal Ns | Ns Cm Ns = Ns Ar separator Ns | Ns Cm : Ns Ar CODEPOINT Ns , Ns Ar ... Ns Brc
 .Op Fl C Ar directory
 .Op Fl E Ar external Ns Op : Ns Ar internal
 .Op Fl F Ns Op Ar pattern
@@ -150,18 +150,26 @@ script.
 Prints the version of the Ruby interpreter, and quits immediately without
 running any script.
 .Pp
-.It Fl 0 Ns Op Ar octal
+.It Fl 0 Op Bro Cm Ar octal Ns | Ns Cm Ns = Ns Ar separator Ns | Ns Cm : Ns Ar CODEPOINT Ns , Ns Ar ... Ns Brc
 (The digit
 .Dq zero . )
 Specifies the input record separator
 .Pf ( Li "$/" )
-as an octal number. If no digit is given, the null character is taken
-as the separator.  Other switches may follow the digits.
+as an octal number, an string, or a list of codepoints.  If no digit
+is given, the null character is taken as the separator.  Other
+switches may follow the digits.
 .Fl 00
 turns Ruby into paragraph mode.
 .Fl 0777
 makes Ruby read whole file at once as a single string since there is
 no legal character with that value.
+.Fl 0= Ns Ar separator
+specifies the separator as that
+.Ar separator
+as-is.
+.Fl 0: Ns Ar CODEPOINT Ns , Ns Ar ...
+specifies the separator as a string consists from that Unicode
+codepoints.
 .Pp
 .It Fl C Ar directory
 .It Fl X Ar directory
