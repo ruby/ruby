@@ -1002,6 +1002,14 @@ Example:
 
 === Case-Insensitive Mode
 
+By default, a regexp is case-sensitive:
+
+  /foo/.match('FOO')  # => nil
+
+Modifier +i+ enables case-insensitive mode:
+
+  /foo/i.match('FOO')
+  # => #<MatchData "FOO">
 
 === Multiline Mode
 
@@ -1070,31 +1078,54 @@ and so takes about 5 seconds to execute:
 
 == Encodings
 
+By default, a regexp has US-ASCII encoding:
+
+  re = /foo/
+  re.source.encoding # => #<Encoding:US-ASCII>
+  re.encoding        # => #<Encoding:US-ASCII>
+
 Regular expressions are assumed to use the source encoding. This can be
 overridden with one of the following modifiers.
 
-- <tt>/_pat_/u</tt>: UTF-8
-- <tt>/_pat_/e</tt>: EUC-JP
-- <tt>/_pat_/s</tt>: Windows-31J
 - <tt>/_pat_/n</tt>: ASCII-8BIT
 
-A regexp can be matched against a string when they either share an
-encoding, or the regexp's encoding is _US-ASCII_ and the string's encoding
-is ASCII-compatible.
+    # Same as Regexp.new('FOO', Regexp::NOENCODING)
+    /FOO/n.encoding # => #<Encoding:US-ASCII>
+
+- <tt>/_pat_/u</tt>: UTF-8
+
+    /foo/u.encoding # => #<Encoding:UTF-8>
+
+- <tt>/_pat_/e</tt>: EUC-JP
+
+    /foo/e.encoding # => #<Encoding:EUC-JP>
+
+- <tt>/_pat_/s</tt>: Windows-31J
+
+    /foo/s.encoding # => #<Encoding:Windows-31J>
+
+A regexp can be matched against a target string when either:
+
+- They have the same encoding.
+- The regexp's encoding is _US-ASCII_ and the string's encoding
+  is ASCII-compatible.
 
 If a match between incompatible encodings is attempted an
 <tt>Encoding::CompatibilityError</tt> exception is raised.
 
-The <tt>Regexp#fixed_encoding?</tt> predicate indicates whether the regexp
-has a <i>fixed</i> encoding, that is one incompatible with ASCII. A
-regexp's encoding can be explicitly fixed by supplying
-<tt>Regexp::FIXEDENCODING</tt> as the second argument of
-<tt>Regexp.new</tt>:
+Method Regexp#fixed_encoding?returns whether the regexp
+has a <i>fixed</i> encoding: one that is incompatible with ASCII.
 
-    re = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
-    re =~ "a\u3042"
-       # raises Encoding::CompatibilityError: incompatible encoding regexp match
-       #         (ISO-8859-1 regexp with UTF-8 string)
+The encoding may be explicitly fixed by including Regexp::FIXEDENCODING
+in the second argument for Regexp.new:
+
+  # Regexp with encoding ISO-8859-1.
+  re = Regexp.new("a".force_encoding('iso-8859-1'), Regexp::FIXEDENCODING)
+  re.encoding  # => #<Encoding:ISO-8859-1>
+  # Target string with encoding UTF-8.
+  s = "a\u3042"
+  s.encoding   # => #<Encoding:UTF-8>
+  re.match(s)  # Raises Encoding::CompatibilityError.
 
 == Performance
 
@@ -1109,13 +1140,13 @@ Consider a string of 25 <i>a</i>s, a <i>d</i>, 4 <i>a</i>s, and a
 
 The following patterns match quickly, as one would expect:
 
-   (start = Time.now) && /(b|a)/ =~ s && (Time.now - start)    # => 2.0e-06
-   (start = Time.now) && /(b|a+)/ =~ s && (Time.now - start)   # => 2.2e-06
-   (start = Time.now) && /(b|a+)*/ =~ s && (Time.now - start)  # => 2.3e-06
+  (start = Time.now); /(b|a)/.match(s);   (Time.now - start) # => 4.4e-06
+  (start = Time.now); /(b|a+)/.match(s);  (Time.now - start) # => 4.6e-06
+  (start = Time.now); /(b|a+)*/.match(s); (Time.now - start) # => 5.2e-06
 
 However, the following pattern takes appreciably longer:
 
-   (start = Time.now) && /(b|a+)*c/ =~ s && (Time.now - start) # => 5.9e-06
+  (start = Time.now); /(b|a+)*c/.match(s); (Time.now - start) # => 5.3e-06
 
 This happens because an atom in the regexp is quantified by both an
 immediate <tt>+</tt> and an enclosing <tt>*</tt> with nothing to
@@ -1126,33 +1157,48 @@ For an in-depth analysis, see
 {"Crafting an Efficient Expression"}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf#page=245]
 in <i>Mastering Regular Expressions</i> (3rd ed.) by Jeffrey Friedl.
 
-This particular case
-can be fixed by use of atomic grouping, which prevents the unnecessary
-backtracking:
+This particular case can be fixed by use of atomic grouping,
+which prevents the unnecessary backtracking:
 
-   (start = Time.now) && /(b|a+)*c/ =~ s && (Time.now - start)   # => 5.8e-06
-   (start = Time.now) && /(?>b|a+)*c/ =~ s && (Time.now - start) # => 1.01e-05
+  (start = Time.now); /(b|a+)*c/.match(s);   (Time.now - start) # => 4.8e-06
+  (start = Time.now); /(?>b|a+)*c/.match(s); (Time.now - start) # => 5.0e-06
 
 == Timeouts
 
-There are two APIs to set timeout. One is Regexp.timeout=, which is
-process-global configuration of timeout for Regexp matching.
+When either a regexp source or a target string comes from untrusted input,
+malicious values could become a denial-of-service attack;
+to prevent such an attack, it is wise to set a timeout.
 
-    Regexp.timeout = 3
-    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-    /(b|a+)*c/ =~ s  # => This raises an exception in three seconds
+\Regexp has two timeout values:
 
-The other is timeout keyword of Regexp.new.
+- A class default timeout, used for a regexp whose instance timeout is +nil+;
+  this default is initially +nil+, and may be set by method Regexp.timeout=:
 
-    re = Regexp.new("(b|a+)*c", timeout: 3)
-    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-    /(b|a+)*c/ =~ s  # => This raises an exception in three seconds
+    Regexp.timeout # => nil
+    Regexp.timeout = 3.0
+    Regexp.timeout # => 3.0
 
-When using Regexps to process untrusted input, you should use the timeout
-feature to avoid excessive backtracking. Otherwise, a malicious user can
-provide input to Regexp causing Denial-of-Service attack.
-Note that the timeout is not set by default because an appropriate limit
-highly depends on an application requirement and context.
+- An instance timeout, which defaults to +nil+ and may be set in Regexp.new:
+
+    re = Regexp.new('foo', timeout: 5.0)
+    re.timeout # => 5.0
+
+When regexp.timeout is +nil+, the timeout "falls through" to Regexp.timeout;
+when regexp.timeout is non-+nil+, that value control timing out:
+
+  | regexp.timeout Value | Regexp.timeout Value |            Result           |
+  |----------------------|----------------------|-----------------------------|
+  |         nil          |          nil         |       Never times out.      |
+  |         nil          |         Float        | Times out in Float seconds. |
+  |        Float         |          Any         | Times out in Float seconds. |
+
+Example:
+
+  Regexp.timeout = 2.0
+  s = 'a' * 10 + 'x'
+  re.match(s) # => nil
+  s = 'a' * 100 + 'x'
+  re.match(s) # Raises Regexp::TimeoutError.
 
 == References
 
@@ -1163,6 +1209,6 @@ Read (online PDF books):
 - {Regular Expressions Cookbook}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf]
   by Jan Goyvaerts & Steven Levithan.
 
-Edit, test (interactive online editor):
+Explore, test (interactive online editor):
 
 - {Rubular}[https://rubular.com/].
