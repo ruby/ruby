@@ -1646,9 +1646,19 @@ impl Assembler {
     }
 
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
-        assert_eq!(self.ctx.get_reg_temps(), RegTemps::default(), "temps must be spilled before ccall");
+        // Save what registers are available for the C arguments.
+        let reg_temps = self.ctx.get_reg_temps();
+        // Spill stack temp registers since they are caller-saved registers.
+        // Note that this doesn't spill stack temps that are already popped
+        // but may still be used in the C arguments.
+        self.spill_temps();
+
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
+        // For C arguments, use stack temp registers that are still alive.
+        // After the C call that may clobber them, use spilled stack temps.
+        self.ctx.set_reg_temps(reg_temps);
         self.push_insn(Insn::CCall { fptr, opnds, out });
+        self.ctx.set_reg_temps(RegTemps::default());
         out
     }
 

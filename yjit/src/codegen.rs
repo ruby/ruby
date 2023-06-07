@@ -2904,12 +2904,11 @@ fn gen_opt_aref(
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
         {
-            asm.spill_temps(); // for ccall
-            let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
-            let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
-
             // Pop the argument and the receiver
             asm.stack_pop(2);
+
+            let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
+            let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
 
             // Push the return value onto the stack
             let stack_ret = asm.stack_push(Type::Unknown);
@@ -3228,7 +3227,6 @@ fn gen_opt_mod(
         guard_two_fixnums(jit, asm, ocb);
 
         // Get the operands and destination from the stack
-        asm.spill_temps(); // for ccall (must be done before stack_pop)
         let arg1 = asm.stack_pop(1);
         let arg0 = asm.stack_pop(1);
 
@@ -3940,7 +3938,6 @@ fn jit_protected_callee_ancestry_guard(
     // Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
 
-    asm.spill_temps(); // for ccall
     let val = asm.ccall(
         rb_obj_is_kind_of as *mut u8,
         vec![
@@ -4152,19 +4149,17 @@ fn jit_rb_mod_eqq(
     }
 
     asm.comment("Module#===");
-    asm.spill_temps(); // for ccall
     // By being here, we know that the receiver is a T_MODULE or a T_CLASS, because Module#=== can
     // only live on these objects. With that, we can call rb_obj_is_kind_of() without
     // jit_prepare_routine_call() or a control frame push because it can't raise, allocate, or call
     // Ruby methods with these inputs.
     // Note the difference in approach from Kernel#is_a? because we don't get a free guard for the
     // right hand side.
-    let lhs = asm.stack_opnd(1); // the module
-    let rhs = asm.stack_opnd(0);
+    let rhs = asm.stack_pop(1);
+    let lhs = asm.stack_pop(1); // the module
     let ret = asm.ccall(rb_obj_is_kind_of as *const u8, vec![rhs, lhs]);
 
     // Return the result
-    asm.stack_pop(2);
     let stack_ret = asm.stack_push(Type::UnknownImm);
     asm.mov(stack_ret, ret);
 
@@ -4280,7 +4275,6 @@ fn jit_rb_int_div(
     guard_two_fixnums(jit, asm, ocb);
 
     asm.comment("Integer#/");
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let obj = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
@@ -4314,7 +4308,6 @@ fn jit_rb_int_aref(
     guard_two_fixnums(jit, asm, ocb);
 
     asm.comment("Integer#[]");
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let obj = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
@@ -4381,7 +4374,6 @@ fn jit_rb_str_bytesize(
 ) -> bool {
     asm.comment("String#bytesize");
 
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let recv = asm.stack_pop(1);
     let ret_opnd = asm.ccall(rb_str_bytesize as *const u8, vec![recv]);
 
@@ -5844,7 +5836,6 @@ fn gen_send_iseq(
                 move_rest_args_to_stack(array, diff, asm);
 
                 // We will now slice the array to give us a new array of the correct size
-                asm.spill_temps(); // for ccall
                 let ret = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
                 let stack_ret = asm.stack_push(Type::TArray);
                 asm.mov(stack_ret, ret);
@@ -6427,7 +6418,6 @@ fn gen_struct_aset(
 
     asm.comment("struct aset");
 
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let val = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
@@ -6748,7 +6738,6 @@ fn gen_send_general(
                         // values for the register allocator.
                         let name_opnd = asm.load(name_opnd);
 
-                        asm.spill_temps(); // for ccall
                         let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
                         asm.comment("chain_guard_send");
@@ -7403,7 +7392,6 @@ fn gen_toregexp(
     asm.mov(stack_ret, val);
 
     // Clear the temp array.
-    asm.spill_temps(); // for ccall
     asm.ccall(rb_ary_clear as *const u8, vec![ary]);
 
     Some(KeepCompiling)
@@ -7592,7 +7580,6 @@ fn gen_opt_getconstant_path(
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
         // Call function to verify the cache. It doesn't allocate or call methods.
-        asm.spill_temps(); // for ccall
         let ret_val = asm.ccall(
             rb_vm_ic_hit_p as *const u8,
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
