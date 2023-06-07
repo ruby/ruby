@@ -180,13 +180,20 @@ describe "IO.readlines" do
       platform_is :windows do
         cmd = "|cmd.exe /C echo hello&echo line2"
       end
-      lines = IO.readlines(cmd)
+
+      lines = nil
+      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+        lines = IO.readlines(cmd)
+      end
       lines.should == ["hello\n", "line2\n"]
     end
 
     platform_is_not :windows do
       it "gets data from a fork when passed -" do
-        lines = IO.readlines("|-")
+        lines = nil
+        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+          lines = IO.readlines("|-")
+        end
 
         if lines # parent
           lines.should == ["hello\n", "from a fork\n"]
@@ -196,6 +203,16 @@ describe "IO.readlines" do
           exit!
         end
       end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation given a path with a pipe" do
+      cmd = "|echo ok"
+      -> {
+        IO.readlines(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
     end
   end
 

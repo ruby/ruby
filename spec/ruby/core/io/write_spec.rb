@@ -215,6 +215,17 @@ describe "IO.write" do
         end
       end
     end
+
+    ruby_version_is "3.3" do
+      # https://bugs.ruby-lang.org/issues/19630
+      it "warns about deprecation given a path with a pipe" do
+        -> {
+          -> {
+            IO.write("|cat", "xxx")
+          }.should output_to_fd("xxx")
+        }.should complain(/IO process creation with a leading '\|'/)
+      end
+    end
   end
 end
 
