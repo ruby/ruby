@@ -2869,7 +2869,8 @@ rb_io_descriptor(VALUE io)
     }
 }
 
-int rb_io_mode(VALUE io)
+int
+rb_io_mode(VALUE io)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
