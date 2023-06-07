@@ -1005,6 +1005,15 @@ Example:
 
 === Multiline Mode
 
+By default, a Ruby regexp is in multiline mode,
+which means that anchors <tt>^</tt> and <tt>$</tt> match, respectively,
+the beginning or end of a line in the target string.
+
+Modifier +m+ therefore does not enable multiline mode -- it's already enabled.
+The modifier does, however, make one small difference:
+
+  /a.c/.match("a\nc")  # => nil
+  /a.c/m.match("a\nc") # => #<MatchData "a\nc">
 
 === Extended Mode
 
@@ -1041,8 +1050,25 @@ Regexp in extended mode:
 
 === Interpolation Mode
 
+By default, a regexp may be interplated repeatedly;
+in the +each+ loop below, the interpolated method call to +letters+
+is called three times, once for each loop iteration,
+and so takes more than 15 seconds to execute:
 
-== Encoding
+  def letters; sleep 5; /[A-Z][a-z]/; end
+  words = %w[abc def xyz]
+  start = Time.now
+  words.each {|word| word.match(/\A[#{letters}]+\z/) }
+  Time.now - start # => 15.0174892
+
+With modifier +o+, the interpolated method is called only once,
+and so takes about 5 seconds to execute:
+
+  start = Time.now
+  words.each {|word| word.match(/\A[#{letters}]+\z/o) }
+  Time.now - start # => 5.0010866
+
+== Encodings
 
 Regular expressions are assumed to use the source encoding. This can be
 overridden with one of the following modifiers.
@@ -1107,7 +1133,7 @@ backtracking:
    (start = Time.now) && /(b|a+)*c/ =~ s && (Time.now - start)   # => 5.8e-06
    (start = Time.now) && /(?>b|a+)*c/ =~ s && (Time.now - start) # => 1.01e-05
 
-== Timeout
+== Timeouts
 
 There are two APIs to set timeout. One is Regexp.timeout=, which is
 process-global configuration of timeout for Regexp matching.
