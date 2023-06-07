@@ -61,7 +61,7 @@ Each of these modifiers sets a mode for the regexp:
 - +i+: See {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
 - +m+: See {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
 - +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
-- +o+: See {Interpolation}[rdoc-ref:regexp.rdoc@Interpolation].
+- +o+: See {Interpolation Mode}[rdoc-ref:regexp.rdoc@Interpolation+Mode].
 
 Each of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
 see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
@@ -547,27 +547,27 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w?/.match('x')   # => #<MatchData "x">
     /\w?/.match('xyz') # => #<MatchData "x">
 
-- <tt>{</tt><i>n</i><tt>}</tt> - Matches exactly <i>n</i> times:
+- <tt>{</tt>_n_<tt>}</tt> - Matches exactly _n_ times:
 
     /\w{2}/.match('')    # => nil
     /\w{2}/.match('x')   # => nil
     /\w{2}/.match('xyz') # => #<MatchData "xy">
 
-- <tt>{</tt><i>min</i><tt>,}</tt> - Matches <i>min</i> or more times:
+- <tt>{</tt>_min_<tt>,}</tt> - Matches _min_ or more times:
 
     /\w{2,}/.match('')    # => nil
     /\w{2,}/.match('x')   # => nil
     /\w{2,}/.match('xy')  # => #<MatchData "xy">
     /\w{2,}/.match('xyz') # => #<MatchData "xyz">
 
-- <tt>{,</tt><i>max</i><tt>}</tt> - Matches <i>max</i> or fewer times:
+- <tt>{,</tt>_max_<tt>}</tt> - Matches _max_ or fewer times:
 
     /\w{,2}/.match('')    # => #<MatchData "">
     /\w{,2}/.match('x')   # => #<MatchData "x">
     /\w{,2}/.match('xyz') # => #<MatchData "xy">
 
-- <tt>{</tt><i>min</i><tt>,</tt><i>max</i><tt>}</tt> -
-  Matches at least <i>min</i> times and at most <i>max</i> times:
+- <tt>{</tt>_min_<tt>,</tt>_max_<tt>}</tt> -
+  Matches at least _min_ times and at most _max_ times:
 
     /\w{1,2}/.match('')    # => nil
     /\w{1,2}/.match('x')   # => #<MatchData "x">
@@ -606,7 +606,7 @@ A simple regexp has (at most) one match:
   re.match('foo')             # => nil
 
 Adding one or more pairs of parentheses, <tt>(_subexpression_)</tt>,
-defines <i>groups</i>, which may result in multiple matched substrings,
+defines _groups_, which may result in multiple matched substrings,
 called _captures_:
 
   re = /(\d\d\d\d)-(\d\d)-(\d\d)/
@@ -722,7 +722,7 @@ the captured substrings are assigned to local variables with corresponding names
 
 === Atomic Grouping
 
-A group may be made <i>atomic</i> with <tt>(?></tt><i>subexpression</i><tt>)</tt>.
+A group may be made _atomic_ with <tt>(?></tt>_subexpression_<tt>)</tt>.
 
 This causes the subexpression to be matched
 independently of the rest of the expression,
@@ -765,12 +765,8 @@ gives access to a captured _substring_;
 the corresponding regexp _subexpression_ may also be accessed,
 via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
 
-This pattern matches a <i>(</i> character and assigns it to the <tt>paren</tt>
-group, tries to call that the <tt>paren</tt> sub-expression again but fails,
-then matches a literal <i>)</i>:
-
-    /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
-    /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' # => 0
+  /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
+  /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' # => 0
     # ^1
     #      ^2
     #           ^3
@@ -782,32 +778,33 @@ then matches a literal <i>)</i>:
     #                       ^9
     #                           ^10
 
-1.  Matches at the beginning of the string, i.e. before the first
-    character.
-2.  Enters a named capture group called <tt>paren</tt>
-3.  Matches a literal <i>(</i>, the first character in the string
-4.  Calls the <tt>paren</tt> group again, i.e. recurses back to the
-    second step
-5.  Re-enters the <tt>paren</tt> group
-6.  Matches a literal <i>(</i>, the second character in the
-    string
-7.  Try to call <tt>paren</tt> a third time, but fail because
-    doing so would prevent an overall successful match
-8.  Match a literal <i>)</i>, the third character in the string.
-    Marks the end of the second recursive call
-9.  Match a literal <i>)</i>, the fourth character in the string
-10. Match the end of the string
+The pattern:
+
+1.  Matches at the beginning of the string, i.e. before the first character.
+2.  Enters a named group +paren+.
+3.  Matches the first character in the string, <tt>'('</tt>.
+4.  Calls the +paren+ group again, i.e. recurses back to the  second step.
+5.  Re-enters the +paren+ group.
+6.  Matches the second character in the string, <tt>'('</tt>.
+7.  Attempts to call +paren+ a third time,
+    but fails because doing so would prevent an overall successful match.
+8.  Matches the third character in the string, <tt>')'</tt>;
+    marks the end of the second recursive call
+9.  Matches the fourth character in the string, <tt>')'</tt>.
+10. Matches the end of the string.
 
 See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
 
 === Conditionals
 
-The <tt>(?(</tt><i>cond</i><tt>)</tt><i>yes</i><tt>|</tt><i>no</i><tt>)</tt>
-syntax matches _yes_ part if _cond_ is captured, otherwise matches _no_ part.
-In the case _no_ part is empty, also <tt>|</tt> can be omitted.
+The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
 
-The _cond_ may be a backreference number or a captured name.  A backreference
-number is an absolute position, but can not be a relative position.
+- _cond_ may be a capture number or name.
+- The match to be applied is _yes_ if_cond_ is captured;
+  otherwise the match to be applied is _no_.
+- If not needed, <tt>|_no_</tt> may be omitted.
+
+Examples:
 
   re = /\A(foo)?(?(1)(T)|(F))\z/
   re.match('fooT') # => #<MatchData "fooT" 1:"foo" 2:"T" 3:nil>
@@ -962,72 +959,88 @@ without including the tags in the match:
     /(a)\K(b)\Kc/
     /(?<=(?<=(a))(b))c/
 
-== Options
+== Comments
 
-The end delimiter for a regexp can be followed by one or more single-letter
-options which control how the pattern can match.
+A comment may be included in a regexp pattern
+using the <tt>(?#</tt>_comment_<tt>)</tt> construct,
+where _comment_ is a substring that is to be ignored.
+arbitrary text ignored by the regexp engine:
 
-- <tt>/pat/i</tt>: Ignore case
-- <tt>/pat/m</tt>: Treat a newline as a character matched by <tt>.</tt>
-- <tt>/pat/x</tt>: Ignore whitespace and comments in the pattern
-- <tt>/pat/o</tt>: Perform <tt>#{}</tt> interpolation only once
+  /foo(?#Ignore me)bar/.match('foobar') # => #<MatchData "foobar">
 
-<tt>i</tt>, <tt>m</tt>, and <tt>x</tt> can also be applied on the
-subexpression level with the
-<tt>(?</tt><i>on</i><tt>-</tt><i>off</i><tt>)</tt> construct, which
-enables options <i>on</i>, and disables options <i>off</i> for the
-expression enclosed by the parentheses:
+The comment may not include an unescaped terminator character.
 
-    /a(?i:b)c/.match('aBc')   # => #<MatchData "aBc">
-    /a(?-i:b)c/i.match('ABC') # => nil
+See also {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
 
-Additionally, these options can also be toggled for the remainder of the
-pattern:
+== Modes
 
-    /a(?i)bc/.match('abC') # => #<MatchData "abC">
+Each of these modifiers sets a mode for the regexp:
 
-Options may also be used with <tt>Regexp.new</tt>:
+- +i+: <tt>/_pattern_/i</tt> sets
+  {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
+- +m+: <tt>/_pattern_/m</tt> sets
+  {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
+- +x+: <tt>/_pattern_/x</tt> sets
+  {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
+- +o+: <tt>/_pattern_/o</tt> sets
+  {Interpolation Mode}[rdoc-ref:regexp.rdoc@Interpolation+Mode].
 
-    Regexp.new("abc", Regexp::IGNORECASE)                     # => /abc/i
-    Regexp.new("abc", Regexp::MULTILINE)                      # => /abc/m
-    Regexp.new("abc # Comment", Regexp::EXTENDED)             # => /abc # Comment/x
-    Regexp.new("abc", Regexp::IGNORECASE | Regexp::MULTILINE) # => /abc/mi
+Any, all, or none of these may be applied.
 
-    Regexp.new("abc", "i")           # => /abc/i
-    Regexp.new("abc", "m")           # => /abc/m
-    Regexp.new("abc # Comment", "x") # => /abc # Comment/x
-    Regexp.new("abc", "im")          # => /abc/mi
+Modifiers +i+, +m+, and +x+ may be applied to subexpressions:
 
-== Free-Spacing Mode and Comments
+- A preceding <tt>(?_modifier_)</tt> turns the mode "on."
+- A preceding <tt>(?-_modifier_)</tt> turns the mode "off."
 
-As mentioned above, the <tt>x</tt> option enables <i>free-spacing</i>
-mode. Literal white space inside the pattern is ignored, and the
-octothorpe (<tt>#</tt>) character introduces a comment until the end of
-the line. This allows the components of the pattern to be organized in a
-potentially more readable fashion.
+Example:
 
-A contrived pattern to match a number with optional decimal places:
+  re = /(?i)te(?-i)st/
+  re.match('test') # => #<MatchData "test">
+  re.match('TEst') # => #<MatchData "TEst">
+  re.match('TEST') # => nil
+  re.match('teST') # => nil
 
-    float_pat = /\A
-        [[:digit:]]+ # 1 or more digits before the decimal point
-        (\.          # Decimal point
-            [[:digit:]]+ # 1 or more digits after the decimal point
-        )? # The decimal point and following digits are optional
-    \Z/x
-    float_pat.match('3.14') # => #<MatchData "3.14" 1:".14">
+=== Case-Insensitive Mode
 
-There are a number of strategies for matching whitespace:
 
-* Use a pattern such as <tt>\s</tt> or <tt>\p{Space}</tt>.
-* Use escaped whitespace such as <tt>\ </tt>, i.e. a space preceded by a backslash.
-* Use a character class such as <tt>[ ]</tt>.
+=== Multiline Mode
 
-Comments can be included in a non-<tt>x</tt> pattern with the
-<tt>(?#</tt><i>comment</i><tt>)</tt> construct, where <i>comment</i> is
-arbitrary text ignored by the regexp engine.
 
-Comments in regexp literals cannot include unescaped terminator
-characters.
+=== Extended Mode
+
+Modifier +x+ enables extended mode, which means that:
+
+- Literal white space in the pattern is to be ignored.
+- Character <tt>#</tt> marks the remainder of its containing line as a comment,
+  which is also to be ignored.
+
+In extended mode, whitespace and comments may be used
+to form a self-documented regexp.
+
+Regexp not in extended mode (matches some Roman numerals):
+
+  pattern = '^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$'
+  re = /#{pattern}/
+  re.match('MCMXLIII') # => #<MatchData "MCMXLIII" 1:"CM" 2:"XL" 3:"III">
+
+Regexp in extended mode:
+
+  pattern = <<-EOT
+    ^                   # beginning of string
+    M{0,3}              # thousands - 0 to 3 Ms
+    (CM|CD|D?C{0,3})    # hundreds - 900 (CM), 400 (CD), 0-300 (0 to 3 Cs),
+                        #            or 500-800 (D, followed by 0 to 3 Cs)
+    (XC|XL|L?X{0,3})    # tens - 90 (XC), 40 (XL), 0-30 (0 to 3 Xs),
+                        #        or 50-80 (L, followed by 0 to 3 Xs)
+    (IX|IV|V?I{0,3})    # ones - 9 (IX), 4 (IV), 0-3 (0 to 3 Is),
+                        #        or 5-8 (V, followed by 0 to 3 Is)
+    $                   # end of string
+  EOT
+  re = /#{pattern}/x
+  re.match('MCMXLIII') # => #<MatchData "MCMXLIII" 1:"CM" 2:"XL" 3:"III">
+
+=== Interpolation Mode
+
 
 == Encoding
 
