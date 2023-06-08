@@ -234,6 +234,14 @@ module Bundler
     end
 
     def current_dependencies
+      filter_relevant(dependencies)
+    end
+
+    def current_locked_dependencies
+      filter_relevant(locked_dependencies)
+    end
+
+    def filter_relevant(dependencies)
       dependencies.select do |d|
         d.should_include? && !d.gem_platforms([generic_local_platform]).empty?
       end
@@ -382,13 +390,8 @@ module Bundler
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
 
       both_sources = Hash.new {|h, k| h[k] = [] }
-      @dependencies.each {|d| both_sources[d.name][0] = d }
-
-      locked_dependencies.each do |d|
-        next if @locked_specs[d.name].empty?
-
-        both_sources[d.name][1] = d
-      end
+      current_dependencies.each {|d| both_sources[d.name][0] = d }
+      current_locked_dependencies.each {|d| both_sources[d.name][1] = d }
 
       both_sources.each do |name, (dep, lock_dep)|
         next if dep.nil? || lock_dep.nil?
