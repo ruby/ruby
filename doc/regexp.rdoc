@@ -182,7 +182,7 @@ do not set global variables.
 A _metacharacter_ has a special meaning in certain contexts;
 depending on the context, these are sometimes metacharacters:
 
-  ( ) [ ] { } . ? - + * ^ \ | $
+  . ? - + * ^ \ | $ ( ) [ ] { }
 
 To match a metacharacter literally, backslash-escape it:
 
