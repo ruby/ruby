@@ -8662,7 +8662,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 
 #define SPLIT_STR(beg, len) (empty_count = split_string(result, str, beg, len, empty_count))
 
-    if (result) result = rb_ary_new();
     beg = 0;
     char *ptr = RSTRING_PTR(str);
     char *eptr = RSTRING_END(str);
@@ -8671,6 +8670,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         int skip = 1;
         unsigned int c;
 
+        if (result) result = rb_ary_new();
         end = beg;
         if (is_ascii_string(str)) {
             while (ptr < eptr) {
@@ -8730,6 +8730,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         char *sptr = RSTRING_PTR(spat);
         long slen = RSTRING_LEN(spat);
 
+        if (result) result = rb_ary_new();
         mustnot_broken(str);
         enc = rb_enc_check(str, spat);
         while (ptr < eptr &&
@@ -8751,6 +8752,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         char *str_start = ptr;
         int n;
 
+        if (result) result = rb_ary_new_capa(RSTRING_LEN(str));
         mustnot_broken(str);
         enc = rb_enc_get(str);
         while (ptr < eptr &&
@@ -8762,6 +8764,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         beg = ptr - str_start;
     }
     else {
+        if (result) result = rb_ary_new();
         long len = RSTRING_LEN(str);
         long start = beg;
         long idx;
