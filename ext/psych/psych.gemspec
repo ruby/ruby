@@ -42,7 +42,7 @@ DESCRIPTION
   s.rdoc_options = ["--main", "README.md"]
   s.extra_rdoc_files = ["README.md"]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 0")
 
   if RUBY_ENGINE == 'jruby'
