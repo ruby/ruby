@@ -1,6 +1,17 @@
 A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
-The regexp is a rich, versatile, and powerful tool for manipulating strings.
+
+The simplest notation for a regexp uses enclosing slash characters:
+
+  /foo/
+
+A regexp may be applied to a <i>target string</i>;
+The part of the string (if any) that matches the pattern is called a _match_,
+and may be said to match:
+
+  /foo/.match?('food') # => true   # 'foo' is a match.
+  /oo/.match?('food')  # => true   # 'oo' is a match.
+  /goo/.match?('food') # => false  # No match.
 
 == \Regexp Uses
 
