@@ -34,13 +34,11 @@ A regexp may be used:
 
   See section {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
 
-- As an argument for calls to certain methods in other classes and modules,
-  including String, Enumerable, and Kernel;
-  example:
+- As an argument for calls to certain methods in other classes and modules;
+  most such methods accept an argument that may be either a string
+  or the (much more powerful) regexp.
 
-    re = /[aeiouy]/ # Matches a any vowel or y.
-    s = 'abstemiously'
-    s.gsub(r, '')  # => "bstmsl"
+  See {Regexp Methods}[./Regexp/methods_rdoc.html].
 
 == \Regexp Ingredients
 

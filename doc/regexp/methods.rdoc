@@ -1,0 +1,28 @@
+== \Regexp Methods
+
+Each of these methods can accept a regexp as an argument:
+
+- Enumerable#all?
+- Enumerable#any?
+- Enumerable#grep
+- Enumerable#grep_v
+- Enumerable#none?
+- Enumerable#one?
+- Enumerable#slice_after
+- Enumerable#slice_before
+- Kernel#gsub
+- Kernel#sub
+- Regexp.new
+- String#byteindex
+- String#byterindex
+- String#gsub
+- String#gsub!
+- String#index
+- String#match
+- String#match
+- String#match?
+- String#match?
+- String#rindex
+- String#slice!
+- String#sub
+- String#sub!
