@@ -50,7 +50,7 @@ Much more will be said about the source string:
 - Metacharacters and escapes.
 - Character classes.
 - Unicode properties.
-- Repetition.
+- Quantifiers.
 - Captures.
 - Groups.
 - Alternation.
