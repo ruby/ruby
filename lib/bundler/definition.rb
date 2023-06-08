@@ -365,16 +365,15 @@ module Bundler
 
     def ensure_equivalent_gemfile_and_lockfile(explicit_flag = false)
       msg = String.new
-      msg << "You are trying to install in deployment mode after changing\n" \
-             "your Gemfile. Run `bundle install` elsewhere and add the\n" \
-             "updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control."
+      msg << "You are trying to install in deployment mode after changing your Gemfile.\n" \
+             "Run `bundle install` elsewhere and add the updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control.\n"
 
       unless explicit_flag
         suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
           "bundle config set frozen false"
         end
-        msg << "\n\nIf this is a development machine, remove the #{Bundler.default_gemfile} " \
-               "freeze \nby running `#{suggested_command}`." if suggested_command
+        msg << "If this is a development machine, remove the #{Bundler.default_gemfile} " \
+               "freeze by running `#{suggested_command}`." if suggested_command
       end
 
       added =   []
