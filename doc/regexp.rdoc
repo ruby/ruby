@@ -24,7 +24,8 @@ A regexp may be used:
   See section {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
 
 - As an argument for calls to certain methods in other classes and modules,
-  including String, Enumerable, and Kernel:
+  including String, Enumerable, and Kernel;
+  example:
 
     re = /[aeiouy]/ # Matches a any vowel or y.
     s = 'abstemiously'
@@ -38,11 +39,11 @@ A regexp has:
 
     /foo/ # => /foo/
 
-- Zero or more trailing modifiers (see below):
+- Several modes; see {Modes}[rdoc-ref:regexp.rdoc@Modes].
 
-    /foo/xim # => /foo/mix
+- A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeouts].
 
-- A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeout].
+- An encoding; see {Encodings}[rdoc-ref:regexp.rdoc@Encodings].
 
 Much more will be said about the source string:
 
@@ -64,7 +65,7 @@ Each of these modifiers sets a mode for the regexp:
 - +o+: See {Interpolation Mode}[rdoc-ref:regexp.rdoc@Interpolation+Mode].
 
 Each of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
-see {Encoding}[rdoc-ref:regexp.rdoc@Encoding].
+see {Encodings}[rdoc-ref:regexp.rdoc@Encodings].
 
 == Creating a \Regexp
 
