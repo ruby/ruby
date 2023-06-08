@@ -174,6 +174,113 @@ module Random::Formatter
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 
+  alias uuid_v4 uuid
+
+  # Generate a random v7 UUID (Universally Unique IDentifier).
+  #
+  #   require 'random/formatter'
+  #
+  #   Random.uuid_v7 # => "0188d4c3-16fe-7f96-85c7-242a7aa58f1e"
+  #   Random.uuid_v7 # => "0188d4c3-16fe-744f-86af-38fa04c62bb5"
+  #   Random.uuid_v7 # => "0188d4c3-16fe-764f-b049-c204ce0afa23"
+  #   Random.uuid_v7 # => "0188d4c3-16fe-7085-b14f-ef6415dc6f31"
+  #   #                    |<--sorted-->| |<----- random ---->|
+  #
+  #   # or
+  #   prng = Random.new
+  #   prng.uuid_v7 # => "0188ca51-5e72-7950-a11d-def7ff977c98"
+  #
+  # The version 7 UUID starts with the least significant 48 bits of a 64 bit
+  # Unix timestamp (milliseconds since the epoch) and fills the remaining bits
+  # with random data, excluding the version and variant bits.
+  #
+  # This allows version 7 UUIDs to be sorted by creation time.  Time ordered
+  # UUIDs can be used for better database index locality of newly inserted
+  # records, which may have a significant performance benefit compared to random
+  # data inserts.
+  #
+  # The result contains 74 random bits (9.25 random bytes).
+  #
+  # See draft-ietf-uuidrev-rfc4122bis[https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/]
+  # for details of UUIDv7.
+  #
+  # ==== Monotonicity
+  #
+  # By default, UUIDv7 has millisecond precision and multiple UUIDs created
+  # within the same millisecond are not time-ordered.  To create UUIDs that are
+  # time-ordered with sub-millisecond precision, up to 12 bits of additional
+  # clock precision may added with +extra_timestamp_bit_count+.  The extra
+  # timestamp precision comes at the expense of random bits.  Setting
+  # <tt>extra_timestamp_bit_count: 12</tt> provides ~244ns of precision,
+  # and only 62 random bits (7.75 random bytes).
+  #
+  #   prng = Random.new
+  #   Array.new(4) { prng.uuid_v7(extra_timestamp_bit_count: 12) }
+  #   # =>
+  #   ["0188d4c7-13da-74f9-8b53-22a786ffdd5a",
+  #    "0188d4c7-13da-753b-83a5-7fb9b2afaeea",
+  #    "0188d4c7-13da-754a-88ea-ac0baeedd8db",
+  #    "0188d4c7-13da-7557-83e1-7cad9cda0d8d"]
+  #   # |<--- sorted --->| |<-- random --->|
+  #
+  #   Array.new(4) { prng.uuid_v7(extra_timestamp_bit_count: 8) }
+  #   # =>
+  #   ["0188d4c7-3333-7a95-850a-de6edb858f7e",
+  #    "0188d4c7-3333-7ae8-842e-bc3a8b7d0cf9",
+  #    "0188d4c7-3333-7ae2-995a-9f135dc44ead",  # <- out of order
+  #    "0188d4c7-3333-7af9-87c3-8f612edac82e"]
+  #   # |<--- sorted -->||<---- random --->|
+  #
+  # Rollbacks of the system clock may also break monotonicity.  Counters and
+  # other mechanisms for stronger guarantees of monotonicity are not
+  # implemented.  Applications may need to employ the methods described in
+  # {Section 6.2}[https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-07.html#monotonicity_counters]
+  # of the specification, to enforce their own requirements.
+  #
+  def uuid_v7(extra_timestamp_bit_count: 0)
+    case (extra_timestamp_bit_count = Integer(extra_timestamp_bit_count))
+    when 0 # min timestamp precision
+      # Get the timestamp bits (don't need sub-ms)
+      ts_ms = Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)
+      # Get the random bits
+      rand_a, rand_b1, rand_b2, rand_b3 = Random.bytes(10).unpack("nnnN")
+      rand_a &= 0x0fff
+
+    when 12 # max timestamp precision
+      # Get the timestamp bits
+      Process.clock_gettime(Process::CLOCK_REALTIME, :float_millisecond)
+        .divmod(1) => ts_ms, ts_sub_ms
+      rand_a = (ts_sub_ms * 4096).floor
+      # Get the random bits (don't need rand_a)
+      rand_b1, rand_b2, rand_b3 = Random.bytes(8).unpack("nnN")
+
+    when (1..11) # all other timestamp precision
+      # Get the timestamp bits
+      rand_a_bit_count = 12 - extra_timestamp_bit_count
+      Process.clock_gettime(Process::CLOCK_REALTIME, :float_millisecond)
+        .divmod(1) => ts_ms, ts_sub_ms
+      ts_sub_ms_denominator = 2**extra_timestamp_bit_count
+      ts_sub_ms_numerator   = (ts_sub_ms * ts_sub_ms_denominator).floor
+      ts_sub_ms_bitshifted  = ts_sub_ms_numerator << rand_a_bit_count
+      # Get the random bits
+      rand_a, rand_b1, rand_b2, rand_b3 = Random.bytes(10).unpack("nnnN")
+      rand_a &= 2**rand_a_bit_count - 1 # erase bits for version and ts_sub_ms
+      rand_a |= ts_sub_ms_bitshifted
+
+    else
+      raise ArgumentError, "extra_timestamp_bit_count must be in 0..12"
+    end
+
+    "%08x-%04x-%04x-%04x-%04x%08x" % [
+      (ts_ms & 0x0000_ffff_ffff_0000) >> 16, # timestamp (middle 32 bits)
+      (ts_ms & 0x0000_0000_0000_ffff),       # timestamp  (lower 16 bits)
+      0x7000 | rand_a,                       # version, sub-ms ts, random
+      0x8000 | (rand_b1 & 0x3fff),           # variant, rand_b (first 14 bits)
+      rand_b2,                               # rand_b (middle 16 bits)
+      rand_b3                                # rand_b  (lower 32 bits)
+    ]
+  end
+
   private def gen_random(n)
     self.bytes(n)
   end

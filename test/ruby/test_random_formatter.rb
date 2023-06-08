@@ -75,6 +75,33 @@ module Random::Formatter
       assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
     end
 
+    def test_uuid_v7
+      t1 = Time.now(in: "Z").floor(3)
+      uuid = @it.uuid_v7
+      t3 = Time.now(in: "Z").floor(3)
+
+      assert_match(/\A\h{8}-\h{4}-7\h{3}-[89ab]\h{3}-\h{12}\z/, uuid)
+
+      t2 = (Integer("0x#{uuid[0..7]}#{uuid[9..12]}") / 1000r)
+        .then { Time.at(_1, in: "Z") }
+      assert_operator(t1, :<=, t2)
+      assert_operator(t2, :<=, t3)
+    end
+
+    def test_uuid_v7_extra_timestamp_bits
+      t1 = Time.now(in: "Z").floor(6)
+      uuid = @it.uuid_v7(extra_timestamp_bit_count: 12)
+      t3 = Time.now(in: "Z").floor(6)
+
+      assert_match(/\A\h{8}-\h{4}-7\h{3}-[89ab]\h{3}-\h{12}\z/, uuid)
+
+      t2 = ((Integer("0x#{uuid[0..7]}#{uuid[9..12]}") / 1000r) +
+            Integer("0x#{uuid[15..17]}") / 4_096_000r)
+        .then { Time.at(_1, in: "Z") }
+      assert_operator(t1, :<=, t2)
+      assert_operator(t2, :<=, t3)
+    end
+
     def test_alphanumeric
       65.times do |n|
         an = @it.alphanumeric(n)
