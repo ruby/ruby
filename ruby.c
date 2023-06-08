@@ -1144,6 +1144,182 @@ setup_yjit_options(const char *s)
 }
 #endif
 
+/*
+ * Following proc_*_option functions are tree kinds:
+ *
+ * - with a required argument, takes also `argc` and `argv`, and
+ *   returns the number of consumed argv including the option itself.
+ *
+ * - with a mandatory argument just after the option.
+ *
+ * - no required argument, this returns the address of
+ *   the next character after the last consumed character.
+ */
+
+/* optional */
+static const char *
+proc_W_option(ruby_cmdline_options_t *opt, const char *s, int *warning)
+{
+    if (s[1] == ':') {
+        unsigned int bits = 0;
+        static const char no_prefix[] = "no-";
+        int enable = strncmp(s += 2, no_prefix, sizeof(no_prefix)-1) != 0;
+        if (!enable) s += sizeof(no_prefix)-1;
+        size_t len = strlen(s);
+        if (NAME_MATCH_P("deprecated", s, len)) {
+            bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
+        }
+        else if (NAME_MATCH_P("experimental", s, len)) {
+            bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
+        }
+        else if (NAME_MATCH_P("performance", s, len)) {
+            bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
+        }
+        else {
+            rb_warn("unknown warning category: `%s'", s);
+        }
+        if (bits) FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
+        return 0;
+    }
+    else {
+        size_t numlen;
+        int v = 2;	/* -W as -W2 */
+
+        if (*++s) {
+            v = scan_oct(s, 1, &numlen);
+            if (numlen == 0)
+                v = 2;
+            s += numlen;
+        }
+        if (!opt->warning) {
+            switch (v) {
+              case 0:
+                ruby_verbose = Qnil;
+                break;
+              case 1:
+                ruby_verbose = Qfalse;
+                break;
+              default:
+                ruby_verbose = Qtrue;
+                break;
+            }
+        }
+        *warning = 1;
+        switch (v) {
+          case 0:
+            FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS, 0);
+            break;
+          case 1:
+            FEATURE_SET_TO(opt->warn, 1U << RB_WARN_CATEGORY_DEPRECATED, 0);
+            break;
+          default:
+            FEATURE_SET(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS);
+            break;
+        }
+        return s;
+    }
+}
+
+/* required */
+static long
+proc_e_option(ruby_cmdline_options_t *opt, const char *s, long argc, char **argv)
+{
+    long n = 1;
+    forbid_setid("-e");
+    if (!*++s) {
+        if (!--argc)
+            rb_raise(rb_eRuntimeError, "no code specified for -e");
+        s = *++argv;
+        n++;
+    }
+    if (!opt->e_script) {
+        opt->e_script = rb_str_new(0, 0);
+        if (opt->script == 0)
+            opt->script = "-e";
+    }
+    rb_str_cat2(opt->e_script, s);
+    rb_str_cat2(opt->e_script, "\n");
+    return n;
+}
+
+/* optional */
+static const char *
+proc_K_option(ruby_cmdline_options_t *opt, const char *s)
+{
+    if (*++s) {
+        const char *enc_name = 0;
+        switch (*s) {
+          case 'E': case 'e':
+            enc_name = "EUC-JP";
+            break;
+          case 'S': case 's':
+            enc_name = "Windows-31J";
+            break;
+          case 'U': case 'u':
+            enc_name = "UTF-8";
+            break;
+          case 'N': case 'n': case 'A': case 'a':
+            enc_name = "ASCII-8BIT";
+            break;
+        }
+        if (enc_name) {
+            opt->src.enc.name = rb_str_new2(enc_name);
+            if (!opt->ext.enc.name)
+                opt->ext.enc.name = opt->src.enc.name;
+        }
+        s++;
+    }
+    return s;
+}
+
+/* optional */
+static const char *
+proc_0_option(ruby_cmdline_options_t *opt, const char *s)
+{
+    size_t numlen;
+    int v;
+    char c;
+
+    v = scan_oct(s, 4, &numlen);
+    s += numlen;
+    if (v > 0377)
+        rb_rs = Qnil;
+    else if (v == 0 && numlen >= 2) {
+        rb_rs = rb_str_new2("");
+    }
+    else {
+        c = v & 0xff;
+        rb_rs = rb_str_new(&c, 1);
+    }
+    return s;
+}
+
+/* mandatory */
+static void
+proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt_name)
+{
+    char *p;
+# define set_encoding_part(type) \
+    if (!(p = strchr(s, ':'))) {                        \
+        set_##type##_encoding_once(opt, s, 0);          \
+        return;                                         \
+    }                                                   \
+    else if (p > s) {                                   \
+        set_##type##_encoding_once(opt, s, p-s);        \
+    }
+    set_encoding_part(external);
+    if (!*(s = ++p)) return;
+    set_encoding_part(internal);
+    if (!*(s = ++p)) return;
+#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
+    set_encoding_part(source);
+    if (!*(s = ++p)) return;
+#endif
+    rb_raise(rb_eRuntimeError, "extra argument for %s: %s", opt_name, s);
+# undef set_encoding_part
+    UNREACHABLE;
+}
+
 static long
 proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 {
@@ -1207,63 +1383,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             goto reswitch;
 
           case 'W':
-            if (s[1] == ':') {
-                unsigned int bits = 0;
-                static const char no_prefix[] = "no-";
-                int enable = strncmp(s += 2, no_prefix, sizeof(no_prefix)-1) != 0;
-                if (!enable) s += sizeof(no_prefix)-1;
-                size_t len = strlen(s);
-                if (NAME_MATCH_P("deprecated", s, len)) {
-                    bits = 1U << RB_WARN_CATEGORY_DEPRECATED;
-                }
-                else if (NAME_MATCH_P("experimental", s, len)) {
-                    bits = 1U << RB_WARN_CATEGORY_EXPERIMENTAL;
-                }
-                else if (NAME_MATCH_P("performance", s, len)) {
-                    bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
-                }
-                else {
-                    rb_warn("unknown warning category: `%s'", s);
-                }
-                if (bits) FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
-                break;
-            }
-            {
-                size_t numlen;
-                int v = 2;	/* -W as -W2 */
-
-                if (*++s) {
-                    v = scan_oct(s, 1, &numlen);
-                    if (numlen == 0)
-                        v = 2;
-                    s += numlen;
-                }
-                if (!opt->warning) {
-                    switch (v) {
-                      case 0:
-                        ruby_verbose = Qnil;
-                        break;
-                      case 1:
-                        ruby_verbose = Qfalse;
-                        break;
-                      default:
-                        ruby_verbose = Qtrue;
-                        break;
-                    }
-                }
-                warning = 1;
-                switch (v) {
-                  case 0:
-                    FEATURE_SET_TO(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS, 0);
-                    break;
-                  case 1:
-                    FEATURE_SET_TO(opt->warn, 1U << RB_WARN_CATEGORY_DEPRECATED, 0);
-                    break;
-                  default:
-                    FEATURE_SET(opt->warn, RB_WARN_CATEGORY_DEFAULT_BITS);
-                    break;
-                }
-            }
+            if (!(s = proc_W_option(opt, s, &warning))) break;
             goto reswitch;
 
           case 'c':
@@ -1300,19 +1420,10 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
           case 'e':
             if (envopt) goto noenvopt;
-            forbid_setid("-e");
-            if (!*++s) {
-                if (!--argc)
-                    rb_raise(rb_eRuntimeError, "no code specified for -e");
-                s = *++argv;
-            }
-            if (!opt->e_script) {
-                opt->e_script = rb_str_new(0, 0);
-                if (opt->script == 0)
-                    opt->script = "-e";
-            }
-            rb_str_cat2(opt->e_script, s);
-            rb_str_cat2(opt->e_script, "\n");
+            if (!(n = proc_e_option(opt, s, argc, argv))) break;
+            --n;
+            argc -= n;
+            argv += n;
             break;
 
           case 'r':
@@ -1364,7 +1475,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             if (!*++s && (!--argc || !(s = *++argv))) {
                 rb_raise(rb_eRuntimeError, "missing argument for -E");
             }
-            goto encoding;
+            proc_encoding_option(opt, s, "-E");
+            break;
 
           case 'U':
             set_internal_encoding_once(opt, "UTF-8", 0);
@@ -1372,29 +1484,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             goto reswitch;
 
           case 'K':
-            if (*++s) {
-                const char *enc_name = 0;
-                switch (*s) {
-                  case 'E': case 'e':
-                    enc_name = "EUC-JP";
-                    break;
-                  case 'S': case 's':
-                    enc_name = "Windows-31J";
-                    break;
-                  case 'U': case 'u':
-                    enc_name = "UTF-8";
-                    break;
-                  case 'N': case 'n': case 'A': case 'a':
-                    enc_name = "ASCII-8BIT";
-                    break;
-                }
-                if (enc_name) {
-                    opt->src.enc.name = rb_str_new2(enc_name);
-                    if (!opt->ext.enc.name)
-                        opt->ext.enc.name = opt->src.enc.name;
-                }
-                s++;
-            }
+            if (!(s = proc_K_option(opt, s))) break;
             goto reswitch;
 
           case 'I':
@@ -1409,23 +1499,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
           case '0':
             if (envopt) goto noenvopt;
-            {
-                size_t numlen;
-                int v;
-                char c;
-
-                v = scan_oct(s, 4, &numlen);
-                s += numlen;
-                if (v > 0377)
-                    rb_rs = Qnil;
-                else if (v == 0 && numlen >= 2) {
-                    rb_rs = rb_str_new2("");
-                }
-                else {
-                    c = v & 0xff;
-                    rb_rs = rb_str_new(&c, 1);
-                }
-            }
+            if (!(s = proc_0_option(opt, s))) break;
             goto reswitch;
 
           case '-':
@@ -1472,29 +1546,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 ruby_each_words(s, disable_option, &opt->features);
             }
             else if (is_option_with_arg("encoding", Qfalse, Qtrue)) {
-                char *p;
-              encoding:
-                do {
-#	define set_encoding_part(type) \
-                    if (!(p = strchr(s, ':'))) { \
-                        set_##type##_encoding_once(opt, s, 0); \
-                        break; \
-                    } \
-                    else if (p > s) { \
-                        set_##type##_encoding_once(opt, s, p-s); \
-                    }
-                    set_encoding_part(external);
-                    if (!*(s = ++p)) break;
-                    set_encoding_part(internal);
-                    if (!*(s = ++p)) break;
-#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
-                    set_encoding_part(source);
-                    if (!*(s = ++p)) break;
-#endif
-                    rb_raise(rb_eRuntimeError, "extra argument for %s: %s",
-                             (arg[1] == '-' ? "--encoding" : "-E"), s);
-#	undef set_encoding_part
-                } while (0);
+                proc_encoding_option(opt, s, "--encoding");
             }
             else if (is_option_with_arg("internal-encoding", Qfalse, Qtrue)) {
                 set_internal_encoding_once(opt, s, 0);
@@ -1569,11 +1621,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 break;
 
           default:
-            {
-                rb_raise(rb_eRuntimeError,
-                        "invalid option -%c  (-h will show valid options)",
-                        (int)(unsigned char)*s);
-            }
+            rb_raise(rb_eRuntimeError,
+                     "invalid option -%c  (-h will show valid options)",
+                     (int)(unsigned char)*s);
             goto switch_end;
 
           noenvopt:
