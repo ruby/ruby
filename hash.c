@@ -50,7 +50,7 @@
 #include "vm_sync.h"
 
 /* Flags of RHash
- * 
+ *
  * 1:     RHASH_PASS_AS_KEYWORDS
  *            The hash is flagged as Ruby 2 keywords hash.
  * 2:     RHASH_PROC_DEFAULT
