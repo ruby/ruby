@@ -1321,6 +1321,128 @@ proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt
 }
 
 static long
+proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **argv, int envopt)
+{
+    size_t n;
+    long argc0 = argc;
+# define is_option_end(c, allow_hyphen)                         \
+    (!(c) || ((allow_hyphen) && (c) == '-') || (c) == '=')
+# define check_envopt(name, allow_envopt)                               \
+    (((allow_envopt) || !envopt) ? (void)0 :                            \
+     rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
+# define need_argument(name, s, needs_arg, next_arg)                    \
+    ((*(s) ? !*++(s) : (next_arg) && (!argc || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
+     rb_raise(rb_eRuntimeError, "missing argument for --" name)         \
+     : (void)0)
+# define is_option_with_arg(name, allow_hyphen, allow_envopt)           \
+    is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue, Qtrue)
+# define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg, next_arg) \
+    (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) && \
+     (s[n] != '-' || s[n+1]) ?                                          \
+     (check_envopt(name, (allow_envopt)), s += n,                       \
+      need_argument(name, s, needs_arg, next_arg), 1) : 0)
+
+    if (strcmp("copyright", s) == 0) {
+        if (envopt) goto noenvopt_long;
+        opt->dump |= DUMP_BIT(copyright);
+    }
+    else if (is_option_with_optarg("debug", Qtrue, Qtrue, Qfalse, Qfalse)) {
+        if (s && *s) {
+            ruby_each_words(s, debug_option, &opt->features);
+        }
+        else {
+            ruby_debug = Qtrue;
+            ruby_verbose = Qtrue;
+        }
+    }
+    else if (is_option_with_arg("enable", Qtrue, Qtrue)) {
+        ruby_each_words(s, enable_option, &opt->features);
+    }
+    else if (is_option_with_arg("disable", Qtrue, Qtrue)) {
+        ruby_each_words(s, disable_option, &opt->features);
+    }
+    else if (is_option_with_arg("encoding", Qfalse, Qtrue)) {
+        proc_encoding_option(opt, s, "--encoding");
+    }
+    else if (is_option_with_arg("internal-encoding", Qfalse, Qtrue)) {
+        set_internal_encoding_once(opt, s, 0);
+    }
+    else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
+        set_external_encoding_once(opt, s, 0);
+    }
+#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
+    else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
+        set_source_encoding_once(opt, s, 0);
+    }
+#endif
+    else if (strcmp("version", s) == 0) {
+        if (envopt) goto noenvopt_long;
+        opt->dump |= DUMP_BIT(version);
+    }
+    else if (strcmp("verbose", s) == 0) {
+        opt->verbose = 1;
+        ruby_verbose = Qtrue;
+    }
+    else if (strcmp("jit", s) == 0) {
+#if !USE_RJIT
+        rb_warn("Ruby was built without JIT support");
+#else
+        FEATURE_SET(opt->features, FEATURE_BIT(jit));
+#endif
+    }
+    else if (is_option_with_optarg("rjit", '-', true, false, false)) {
+#if USE_RJIT
+        extern void rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt);
+        FEATURE_SET(opt->features, FEATURE_BIT(rjit));
+        rb_rjit_setup_options(s, &opt->rjit);
+#else
+        rb_warn("RJIT support is disabled.");
+#endif
+    }
+    else if (is_option_with_optarg("yjit", '-', true, false, false)) {
+#if USE_YJIT
+        FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+        setup_yjit_options(s);
+#else
+        rb_warn("Ruby was built without YJIT support."
+                " You may need to install rustc to build Ruby with YJIT.");
+#endif
+    }
+    else if (strcmp("yydebug", s) == 0) {
+        if (envopt) goto noenvopt_long;
+        opt->dump |= DUMP_BIT(yydebug);
+    }
+    else if (is_option_with_arg("dump", Qfalse, Qfalse)) {
+        ruby_each_words(s, dump_option, &opt->dump);
+    }
+    else if (strcmp("help", s) == 0) {
+        if (envopt) goto noenvopt_long;
+        opt->dump |= DUMP_BIT(help);
+        return 0;
+    }
+    else if (is_option_with_arg("backtrace-limit", Qfalse, Qfalse)) {
+        char *e;
+        long n = strtol(s, &e, 10);
+        if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+        rb_backtrace_length_limit = n;
+    }
+    else {
+        rb_raise(rb_eRuntimeError,
+                 "invalid option --%s  (-h will show valid options)", s);
+    }
+    return argc0 - argc + 1;
+
+  noenvopt_long:
+    rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --%s", s);
+# undef is_option_end
+# undef check_envopt
+# undef need_argument
+# undef is_option_with_arg
+# undef is_option_with_optarg
+    UNREACHABLE_RETURN(0);
+}
+
+static long
 proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 {
     long n, argc0 = argc;
@@ -1509,111 +1631,10 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             }
             s++;
 
-#	define is_option_end(c, allow_hyphen) \
-            (!(c) || ((allow_hyphen) && (c) == '-') || (c) == '=')
-#	define check_envopt(name, allow_envopt) \
-            (((allow_envopt) || !envopt) ? (void)0 : \
-             rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
-#	define need_argument(name, s, needs_arg, next_arg)			\
-            ((*(s) ? !*++(s) : (next_arg) && (!argc || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
-             rb_raise(rb_eRuntimeError, "missing argument for --" name) \
-             : (void)0)
-#	define is_option_with_arg(name, allow_hyphen, allow_envopt)	\
-            is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue, Qtrue)
-#	define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg, next_arg) \
-            (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) && \
-             (s[n] != '-' || s[n+1]) ? \
-             (check_envopt(name, (allow_envopt)), s += n, \
-              need_argument(name, s, needs_arg, next_arg), 1) : 0)
-
-            if (strcmp("copyright", s) == 0) {
-                if (envopt) goto noenvopt_long;
-                opt->dump |= DUMP_BIT(copyright);
-            }
-            else if (is_option_with_optarg("debug", Qtrue, Qtrue, Qfalse, Qfalse)) {
-                if (s && *s) {
-                    ruby_each_words(s, debug_option, &opt->features);
-                }
-                else {
-                    ruby_debug = Qtrue;
-                    ruby_verbose = Qtrue;
-                }
-            }
-            else if (is_option_with_arg("enable", Qtrue, Qtrue)) {
-                ruby_each_words(s, enable_option, &opt->features);
-            }
-            else if (is_option_with_arg("disable", Qtrue, Qtrue)) {
-                ruby_each_words(s, disable_option, &opt->features);
-            }
-            else if (is_option_with_arg("encoding", Qfalse, Qtrue)) {
-                proc_encoding_option(opt, s, "--encoding");
-            }
-            else if (is_option_with_arg("internal-encoding", Qfalse, Qtrue)) {
-                set_internal_encoding_once(opt, s, 0);
-            }
-            else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
-                set_external_encoding_once(opt, s, 0);
-            }
-#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
-            else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
-                set_source_encoding_once(opt, s, 0);
-            }
-#endif
-            else if (strcmp("version", s) == 0) {
-                if (envopt) goto noenvopt_long;
-                opt->dump |= DUMP_BIT(version);
-            }
-            else if (strcmp("verbose", s) == 0) {
-                opt->verbose = 1;
-                ruby_verbose = Qtrue;
-            }
-            else if (strcmp("jit", s) == 0) {
-#if !USE_RJIT
-                rb_warn("Ruby was built without JIT support");
-#else
-                FEATURE_SET(opt->features, FEATURE_BIT(jit));
-#endif
-            }
-            else if (is_option_with_optarg("rjit", '-', true, false, false)) {
-#if USE_RJIT
-                extern void rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt);
-                FEATURE_SET(opt->features, FEATURE_BIT(rjit));
-                rb_rjit_setup_options(s, &opt->rjit);
-#else
-                rb_warn("RJIT support is disabled.");
-#endif
-            }
-            else if (is_option_with_optarg("yjit", '-', true, false, false)) {
-#if USE_YJIT
-                FEATURE_SET(opt->features, FEATURE_BIT(yjit));
-                setup_yjit_options(s);
-#else
-                rb_warn("Ruby was built without YJIT support."
-                        " You may need to install rustc to build Ruby with YJIT.");
-#endif
-            }
-            else if (strcmp("yydebug", s) == 0) {
-                if (envopt) goto noenvopt_long;
-                opt->dump |= DUMP_BIT(yydebug);
-            }
-            else if (is_option_with_arg("dump", Qfalse, Qfalse)) {
-                ruby_each_words(s, dump_option, &opt->dump);
-            }
-            else if (strcmp("help", s) == 0) {
-                if (envopt) goto noenvopt_long;
-                opt->dump |= DUMP_BIT(help);
-                goto switch_end;
-            }
-            else if (is_option_with_arg("backtrace-limit", Qfalse, Qfalse)) {
-                char *e;
-                long n = strtol(s, &e, 10);
-                if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
-                rb_backtrace_length_limit = n;
-            }
-            else {
-                rb_raise(rb_eRuntimeError,
-                         "invalid option --%s  (-h will show valid options)", s);
-            }
+            if (!(n = proc_long_options(opt, s, argc, argv, envopt))) goto switch_end;
+            --n;
+            argc -= n;
+            argv += n;
             break;
 
           case '\r':
@@ -1631,17 +1652,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: -%c", *s);
             break;
 
-          noenvopt_long:
-            rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --%s", s);
-            break;
-
           case 0:
             break;
-#	undef is_option_end
-#	undef check_envopt
-#	undef need_argument
-#	undef is_option_with_arg
-#	undef is_option_with_optarg
         }
     }
 
