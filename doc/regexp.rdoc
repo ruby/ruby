@@ -109,8 +109,9 @@ Each of the operators Regexp#=~, String#=~, and Symbol#=~
 returns an integer offset if a match was found, +nil+ otherwise;
 each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
 
+  /bar/ =~ 'foo bar' # => 4
   'foo bar' =~ /bar/ # => 4
-  'foo bar' =~ /baz/ # => nil
+  /baz/ =~ 'foo bar' # => nil
 
 Operator NilClass#=~ returns +nil+ and does not set global variables.
 
@@ -718,7 +719,8 @@ When (and only when) a regexp contains named capture groups
 and appears before the <tt>=~</tt> operator,
 the captured substrings are assigned to local variables with corresponding names:
 
-  /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ "$3.67" # => 0
+  /\$(?<dollars>\d+)\.(?<cents>\d+)/.match('$3.67')
+  # => #<MatchData "$3.67" dollars:"3" cents:"67">
   dollars # => "3"
 
 === Atomic Grouping
@@ -766,18 +768,17 @@ gives access to a captured _substring_;
 the corresponding regexp _subexpression_ may also be accessed,
 via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
 
-  /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
-  /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' # => 0
-    # ^1
-    #      ^2
-    #           ^3
-    #                 ^4
-    #      ^5
-    #           ^6
-    #                      ^7
-    #                       ^8
-    #                       ^9
-    #                           ^10
+  /\A(?<paren>\(\g<paren>*\))*\z/.match('(())')
+  # ^1
+  #      ^2
+  #           ^3
+  #                 ^4
+  #      ^5
+  #           ^6
+  #                      ^7
+  #                       ^8
+  #                       ^9
+  #                           ^10
 
 The pattern:
 
@@ -949,8 +950,8 @@ without including the tags in the match:
   the matched content preceding <tt>\K</tt> in the regexp is excluded from the result.
   For example, the following two regexps are almost equivalent:
 
-    /ab\Kc/ =~ "abc"     # => 0
-    /(?<=ab)c/ =~ "abc"  # => 2
+    /ab\Kc/.match('abc')    # => #<MatchData "c">
+    /(?<=ab)c/.match('abc') # => #<MatchData "c">
 
   These match same string and <tt>$&</tt> equals <tt>'c'</tt>,
   while the matched position is different.
