@@ -49,6 +49,23 @@
 #include "ruby/ractor.h"
 #include "vm_sync.h"
 
+/* Flags of RHash
+ * 
+ * 1:     RHASH_PASS_AS_KEYWORDS
+ *            The hash is flagged as Ruby 2 keywords hash.
+ * 2:     RHASH_PROC_DEFAULT
+ *            The hash has a default proc (rather than a default value).
+ * 3:     RHASH_ST_TABLE_FLAG
+ *            The hash uses a ST table (rather than an AR table).
+ * 4-7:   RHASH_AR_TABLE_SIZE_MASK
+ *            The size of the AR table.
+ * 8-11:  RHASH_AR_TABLE_BOUND_MASK
+ *            The bounds of the AR table.
+ * 13-19: RHASH_LEV_MASK
+ *            The iterational level of the hash. Used to prevent modifications
+ *            to the hash during interation.
+ */
+
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
 #endif
