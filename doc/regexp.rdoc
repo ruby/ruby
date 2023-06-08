@@ -1,7 +1,7 @@
 A {regular expression}[https://en.wikipedia.org/wiki/Regular_expression]
 (also called a _regexp_) is a <i>match pattern</i> (also simply called a _pattern_).
 
-The simplest notation for a regexp uses enclosing slash characters:
+A common notation for a regexp uses enclosing slash characters:
 
   /foo/
 
@@ -21,7 +21,6 @@ A regexp may be used:
 
     re = /foo/              # => /foo/
     re.match('food')        # => #<MatchData "foo">
-    re.match('food').string # => "food"
     re.match('good')        # => nil
 
   See sections {Method match}[rdoc-ref:regexp.rdoc@Method+match]
@@ -40,13 +39,11 @@ A regexp may be used:
 
   See {Regexp Methods}[./Regexp/methods_rdoc.html].
 
-== \Regexp Ingredients
+== \Regexp Properties
 
 A regexp has:
 
-- A source string, in this case <tt>foo</tt>:
-
-    /foo/ # => /foo/
+- A source string.
 
 - Several modes; see {Modes}[rdoc-ref:regexp.rdoc@Modes].
 
