@@ -12,7 +12,28 @@ module Racc
 # without restriction.
 #++
 
-require 'racc/info'
+unless $".find {|p| p.end_with?('/racc/info.rb')}
+$".push 'racc/info.rb'
+#--
+#
+#
+#
+# Copyright (c) 1999-2006 Minero Aoki
+#
+# This program is free software.
+# You can distribute/modify this program under the same terms of ruby.
+# see the file "COPYING".
+#
+#++
+
+module Racc
+  VERSION   = '1.6.2'
+  Version = VERSION
+  Copyright = 'Copyright (c) 1999-2006 Minero Aoki'
+end
+
+end
+
 
 unless defined?(NotImplementedError)
   NotImplementedError = NotImplementError # :nodoc:
