@@ -19,8 +19,6 @@ Each of these methods can accept a regexp as an argument:
 - String#gsub!
 - String#index
 - String#match
-- String#match
-- String#match?
 - String#match?
 - String#rindex
 - String#slice!
