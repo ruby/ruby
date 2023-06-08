@@ -585,6 +585,7 @@ objspace_dump.o: $(top_srcdir)/internal/compilers.h
 objspace_dump.o: $(top_srcdir)/internal/gc.h
 objspace_dump.o: $(top_srcdir)/internal/hash.h
 objspace_dump.o: $(top_srcdir)/internal/imemo.h
+objspace_dump.o: $(top_srcdir)/internal/io.h
 objspace_dump.o: $(top_srcdir)/internal/sanitizers.h
 objspace_dump.o: $(top_srcdir)/internal/serial.h
 objspace_dump.o: $(top_srcdir)/internal/static_assert.h
