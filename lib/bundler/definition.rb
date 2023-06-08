@@ -372,7 +372,7 @@ module Bundler
         suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
           "bundle config set frozen false"
         end
-        msg << "If this is a development machine, remove the #{Bundler.default_gemfile} " \
+        msg << "If this is a development machine, remove the #{Bundler.default_gemfile.relative_path_from(SharedHelpers.pwd)} " \
                "freeze by running `#{suggested_command}`." if suggested_command
       end
 
