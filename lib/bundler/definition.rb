@@ -385,7 +385,7 @@ module Bundler
       @dependencies.each {|d| both_sources[d.name][0] = d }
 
       locked_dependencies.each do |d|
-        next if !Bundler.feature_flag.bundler_3_mode? && @locked_specs[d.name].empty?
+        next if @locked_specs[d.name].empty?
 
         both_sources[d.name][1] = d
       end

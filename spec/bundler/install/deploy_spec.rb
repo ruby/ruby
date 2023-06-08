@@ -297,7 +297,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).to eq("WIN")
     end
 
-    it "works if a gem is missing, but it's on a different platform", :bundler => "< 3" do
+    it "works if a gem is missing, but it's on a different platform" do
       build_repo2
 
       install_gemfile <<-G
