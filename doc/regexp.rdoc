@@ -207,6 +207,11 @@ To match a backslash literally, backslash-escape it:
   /\./.match('\.')  # => #<MatchData ".">
   /\\./.match('\.') # => #<MatchData "\\.">
 
+Method Regexp.escape returns an escaped string:
+
+  Regexp.escape('.?-+*^\|$()[]{}')
+  # => "\\.\\?\\-\\+\\*\\^\\\\\\|\\$\\(\\)\\[\\]\\{\\}"
+
 === Source Literals
 
 The source literal largely behaves like a double-quoted string;
@@ -474,6 +479,9 @@ Each alternative is a subexpression, and may be composed of other subexpressions
   re.match('bar') # => #<MatchData "b" 1:"b">
   re.match('ooz') # => #<MatchData "z" 1:"z">
 
+\Method Regexp.union provides a convenient way to construct
+a regexp with alternatives.
+
 === Quantifiers
 
 A simple regexp matches one character:
@@ -677,6 +685,9 @@ the captured substrings are assigned to local variables with corresponding names
   # => #<MatchData "$3.67" dollars:"3" cents:"67">
   dollars # => "3"
 
+\Method Regexp#named_captures returns a hash of the capture names and substrings;
+method Regexp#names returns an array of the capture names.
+
 ==== Atomic Grouping
 
 A group may be made _atomic_ with <tt>(?></tt>_subexpression_<tt>)</tt>.
@@ -779,7 +790,7 @@ Examples:
 ==== Unicode Properties
 
 The <tt>/\p{_property_name_}/</tt> construct (with lowercase +p+)
-matches characters using a property name,
+matches characters using a Unicode property name,
 much like a character class;
 property +Alpha+ specifies alphabetic characters:
 
@@ -1024,6 +1035,9 @@ Example:
   re.match('TEST') # => nil
   re.match('teST') # => nil
 
+\Method Regexp#options returns an integer whose value showing
+the settings for case-insensitivity mode, multiline mode, and extended mode.
+
 === Case-Insensitive Mode
 
 By default, a regexp is case-sensitive:
@@ -1034,6 +1048,8 @@ Modifier +i+ enables case-insensitive mode:
 
   /foo/i.match('FOO')
   # => #<MatchData "FOO">
+
+\Method Regexp#casefold? returns whether the mode is case-insensitive.
 
 === Multiline Mode
 
