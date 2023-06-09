@@ -7,11 +7,13 @@ A common notation for a regexp uses enclosing slash characters:
 
 A regexp may be applied to a <i>target string</i>;
 The part of the string (if any) that matches the pattern is called a _match_,
-and may be said to match:
+and may be said <i>to match</i>:
 
-  /foo/.match?('food') # => true   # 'foo' is a match.
-  /oo/.match?('food')  # => true   # 'oo' is a match.
-  /goo/.match?('food') # => false  # No match.
+  re = /red/
+  re.match?('redirect') # => true   # Match at beginning of target.
+  re.match?('bored')    # => true   # Match at end of target.
+  re.match?('credit')   # => true   # Match within target.
+  re.match?('foo')      # => false  # No match.
 
 == \Regexp Uses
 
@@ -39,39 +41,17 @@ A regexp may be used:
 
   See {Regexp Methods}[./Regexp/methods_rdoc.html].
 
-== \Regexp Properties
+== \Regexp Objects
 
-A regexp has:
+A regexp object has:
 
-- A source string.
+- A source; see {Sources}[rdoc-ref:regexp.rdoc@Sources].
 
 - Several modes; see {Modes}[rdoc-ref:regexp.rdoc@Modes].
 
 - A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeouts].
 
 - An encoding; see {Encodings}[rdoc-ref:regexp.rdoc@Encodings].
-
-Much more will be said about the source string:
-
-- Metacharacters and escapes.
-- Character classes.
-- Unicode properties.
-- Quantifiers.
-- Captures.
-- Groups.
-- Alternation.
-- Condition.
-- Anchors.
-
-Each of these modifiers sets a mode for the regexp:
-
-- +i+: See {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
-- +m+: See {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
-- +x+: See {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
-- +o+: See {Interpolation Mode}[rdoc-ref:regexp.rdoc@Interpolation+Mode].
-
-Each of the modifiers +u+, +e+, +s+, and +n+ sets the encoding for the regexp;
-see {Encodings}[rdoc-ref:regexp.rdoc@Encodings].
 
 == Creating a \Regexp
 
@@ -183,9 +163,33 @@ Examples:
 Note that Regexp#match?, String#match?, Symbol#match?, and NilClass#=~
 do not set global variables.
 
-== Metacharacters and Escapes
+== Sources
 
-A _metacharacter_ has a special meaning in certain contexts;
+As seen above, the simplest regexp uses a literal expression as its source:
+
+  re = /foo/              # => /foo/
+  re.match('food')        # => #<MatchData "foo">
+  re.match('good')        # => nil
+
+A rich collection of available _subexpressions_
+gives the regexp great power and flexibility:
+
+- {Special characters}[rdoc-ref:regexp.rdoc@Special+Characters]
+- {Source literals}[rdoc-ref:regexp.rdoc@Source+Literals]
+- {Character classes}[rdoc-ref:regexp.rdoc@Character+Classes]
+- {Shorthand character classes}[rdoc-ref:regexp.rdoc@Shorthand+Character+Classes]
+- {Anchors}[rdoc-ref:regexp.rdoc@Anchors]
+- {Alternation}[rdoc-ref:regexp.rdoc@Alternation]
+- {Quantifiers}[rdoc-ref:regexp.rdoc@Quantifiers]
+- {Groups and captures}[rdoc-ref:regexp.rdoc@Groups+and+Captures]
+- {Unicode}[rdoc-ref:regexp.rdoc@Unicode]
+- {POSIX Bracket Expressions}[rdoc-ref:regexp.rdoc@POSIX+Bracket+Expressions]
+- {Comments}[rdoc-ref:regexp.rdoc@Comments]
+
+=== Special Characters
+
+\Regexp special characters, called _metacharacters_,
+has special meanings in certain contexts;
 depending on the context, these are sometimes metacharacters:
 
   . ? - + * ^ \ | $ ( ) [ ] { }
@@ -203,20 +207,29 @@ To match a backslash literally, backslash-escape it:
   /\./.match('\.')  # => #<MatchData ".">
   /\\./.match('\.') # => #<MatchData "\\.">
 
-The source string mostly behaves like a double-quoted string, and can contain:
+=== Source Literals
 
-- Interpolated strings:
+The source literal largely behaves like a double-quoted string;
+see {String Literals}[rdoc-ref:syntax/literals.rdoc@String+Literals].
+`
+In particular, a source literal may contain interpolated expressions:
 
-    place = "東京都"
-    /#{place}/.match('Go to 東京都') # => #<MatchData "東京都">
+  s = 'foo'         # => "foo"
+  /#{s}/            # => /foo/
+  /#{s.capitalize}/ # => /Foo/
+  /#{2 + 2}/        # => /4/
 
-- Many backslash-escaped characters,
-  however, certain backslash-letter combinations function as _metasequences_
-  (see below):
+There are differences between an ordinary string literal and a source literal;
+see {Shorthand Character Classes}[rdoc-ref:regexp.rdoc@Shorthand+Character+Classes].
 
-    /\s\u{6771 4eac 90fd}/.match("Go to 東京都") # => #<MatchData " 東京都">
+- <tt>\s</tt> in an ordinary string literal is equivalent to a space character;
+  in a source literal, it's shorthand for matching a whitespace character.
+- In an ordinary string literal, these are (needlessly) escaped characters;
+  in a source literal, they are shorthands for various matching characters:
 
-== Character Classes
+    \w \W \d \D \h \H \S \R
+
+=== Character Classes
 
 A <i>character class</i> is delimited by square brackets;
 it specifies that certain characters match at a given point in the target string:
@@ -253,9 +266,10 @@ This is equivalent to:
 
     /[abh-w]/
 
-== Metasequences
+=== Shorthand Character Classes
 
-The following metacharacter and metasequences also behave like character classes:
+Each of the following metacharacters serves as a shorthand
+for a character class:
 
 - <tt>/./</tt>: Matches any character except a newline:
 
@@ -319,76 +333,450 @@ The following metacharacter and metasequences also behave like character classes
     /\R/.match("\u2028") # => #<MatchData "\u2028"> # Line separator (LSEP)
     /\R/.match("\u2029") # => #<MatchData "\u2029"> # Paragraph separator (PSEP)
 
-== POSIX Bracket Expressions
+=== Anchors
 
-A POSIX <i>bracket expression</i> is also similar to a character class.
-These expressions provide a portable alternative to the above,
-with the added benefit of encompassing non-ASCII characters:
+An anchor is a metasequence that matches a zero-width position between
+characters in the target string.
 
-- <tt>/\d/</tt> matches only ASCII decimal digits +0+ through +9+.
-- <tt>/[[:digit:]]/</tt> matches any character in the Unicode
-  <tt>Decimal Number</tt> (+Nd+) category;
-  see below.
+For a subexpression with no anchor,
+matching may begin anywhere in the target string:
 
-The POSIX bracket expressions:
+  /real/.match('surrealist') # => #<MatchData "real">
 
-- <tt>/[[:digit:]]/</tt>: Matches a {Unicode digit}[https://www.compart.com/en/unicode/category/Nd]:
+For a subexpression with an anchor,
+matching must begin at the matched anchor.
 
-    /[[:digit:]]/.match('9')       # => #<MatchData "9">
-    /[[:digit:]]/.match("\u1fbf9") # => #<MatchData "9">
+==== Boundary Anchors
 
-- <tt>/[[:xdigit:]]/</tt>: Matches a digit allowed in a hexadecimal number;
-  equivalent to <tt>[0-9a-fA-F]</tt>.
+Each of these anchors matches a boundary:
 
-- <tt>/[[:upper:]]/</tt>: Matches a {Unicode uppercase letter}[https://www.compart.com/en/unicode/category/Lu]:
+- <tt>^</tt>: Matches the beginning of a line:
 
-    /[[:upper:]]/.match('A')      # => #<MatchData "A">
-    /[[:upper:]]/.match("\u00c6") # => #<MatchData "Æ">
+    /^bar/.match("foo\nbar") # => #<MatchData "bar">
+    /^ar/.match("foo\nbar")  # => nil
 
-- <tt>/[[:lower:]]/</tt>: Matches a {Unicode lowercase letter}[https://www.compart.com/en/unicode/category/Ll]:
+- <tt>$</tt>: Matches the end of a line:
 
-    /[[:lower:]]/.match('a')      # => #<MatchData "a">
-    /[[:lower:]]/.match("\u01fd") # => #<MatchData "ǽ">
+    /bar$/.match("foo\nbar") # => #<MatchData "bar">
+    /ba$/.match("foo\nbar")  # => nil
 
-- <tt>/[[:alpha:]]/</tt>: Matches <tt>/[[:upper:]]/</tt> or <tt>/[[:lower:]]/</tt>.
+- <tt>\A</tt>: Matches the beginning of the string:
 
-- <tt>/[[:alnum:]]/</tt>: Matches <tt>/[[:alpha:]]/</tt> or <tt>/[[:digit:]]/</tt>.
+    /\Afoo/.match('foo bar')  # => #<MatchData "foo">
+    /\Afoo/.match(' foo bar') # => nil
 
-- <tt>/[[:space:]]/</tt>: Matches {Unicode space character}[https://www.compart.com/en/unicode/category/Zs]:
+- <tt>\Z</tt>: Matches the end of the string;
+  if string ends with a single newline,  it matches just before newline:
 
-    /[[:space:]]/.match(' ')      # => #<MatchData " ">
-    /[[:space:]]/.match("\u2005") # => #<MatchData " ">
+    /foo\Z/.match('bar foo')     # => #<MatchData "foo">
+    /foo\Z/.match('foo bar')     # => nil
+    /foo\Z/.match("bar foo\n")   # => #<MatchData "foo">
+    /foo\Z/.match("bar foo\n\n") # => nil
 
-- <tt>/[[:blank:]]/</tt>: Matches <tt>/[[:space:]]/</tt> or tab character:
+- <tt>\z</tt>: Matches the end of the string:
 
-    /[[:blank:]]/.match(' ')      # => #<MatchData " ">
-    /[[:blank:]]/.match("\u2005") # => #<MatchData " ">
-    /[[:blank:]]/.match("\t")     # => #<MatchData "\t">
+    /foo\z/.match('bar foo')   # => #<MatchData "foo">
+    /foo\z/.match('foo bar')   # => nil
+    /foo\z/.match("bar foo\n") # => nil
 
-- <tt>/[[:cntrl:]]/</tt>: Matches {Unicode control character}[https://www.compart.com/en/unicode/category/Cc]:
+- <tt>\b</tt>: Matches word boundary when not inside brackets;
+  matches backspace (<tt>"0x08"</tt>) when inside brackets:
 
-    /[[:cntrl:]]/.match("\u0000") # => #<MatchData "\u0000">
-    /[[:cntrl:]]/.match("\u009f") # => #<MatchData "\u009F">
+    /foo\b/.match('foo bar') # => #<MatchData "foo">
+    /foo\b/.match('foobar')  # => nil
 
-- <tt>/[[:graph:]]/</tt>: Matches any character
-  except <tt>/[[:space:]]/</tt> or <tt>/[[:cntrl:]]/</tt>.
+- <tt>\B</tt>: Matches non-word boundary:
 
-- <tt>/[[:print:]]/</tt>: Matches <tt>/[[:graph:]]/</tt> or space character.
+    /foo\B/.match('foobar')  # => #<MatchData "foo">
+    /foo\B/.match('foo bar') # => nil
 
-- <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
+- <tt>\G</tt>: Matches first matching position:
 
-Ruby also supports these (non-POSIX) bracket expressions:
+  In methods like String#gsub and String#scan, it changes on each iteration.
+  It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
 
-- <tt>/[[:ascii:]]/</tt>: Matches a character in the ASCII character set.
-- <tt>/[[:word:]]/</tt>: Matches a character in one of these Unicode character
-  categories (see below):
+    "    a b c".gsub(/ /, '_')   # => "____a_b_c"
+    "    a b c".gsub(/\G /, '_') # => "____a b c"
 
-  - +Mark+ (+M+).
-  - +Letter+ (+L+).
-  - +Number+ (+N+)
-  - <tt>Connector Punctuation</tt> (+Pc+).
+  In methods like Regexp#match and String#match
+  that take an optional offset, it matches where the search begins.
 
-== Unicode Properties
+    "hello, world".match(/,/, 3)   # => #<MatchData ",">
+    "hello, world".match(/\G,/, 3) # => nil
+
+==== Lookaround Anchors
+
+Lookahead anchors:
+
+- <tt>(?=_pat_)</tt>: Positive lookahead assertion:
+  ensures that the following characters match _pat_,
+  but doesn't include those characters in the matched substring.
+
+- <tt>(?!_pat_)</tt>: Negative lookahead assertion:
+  ensures that the following characters <i>do not</i> match _pat_,
+  but doesn't include those characters in the matched substring.
+
+Lookbehind anchors:
+
+- <tt>(?<=_pat_)</tt>: Positive lookbehind assertion:
+  ensures that the preceding characters match _pat_, but
+  doesn't include those characters in the matched substring.
+
+- <tt>(?<!_pat_)</tt>: Negative lookbehind assertion:
+  ensures that the preceding characters do not match
+  _pat_, but doesn't include those characters in the matched substring.
+
+The pattern below uses positive lookahead and positive lookbehind to match
+text appearing in <tt><b></tt>...<tt></b></tt> tags
+without including the tags in the match:
+
+  /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
+  # => #<MatchData "bold">
+
+==== Match-Reset Anchor
+
+- <tt>\K</tt>: Match reset:
+  the matched content preceding <tt>\K</tt> in the regexp is excluded from the result.
+  For example, the following two regexps are almost equivalent:
+
+    /ab\Kc/.match('abc')    # => #<MatchData "c">
+    /(?<=ab)c/.match('abc') # => #<MatchData "c">
+
+  These match same string and <tt>$&</tt> equals <tt>'c'</tt>,
+  while the matched position is different.
+
+  As are the following two regexps:
+
+    /(a)\K(b)\Kc/
+    /(?<=(?<=(a))(b))c/
+
+=== Alternation
+
+The vertical bar metacharacter (<tt>|</tt>) may be used within parentheses
+to express alternation:
+two or more subexpressions any of which may match the target string.
+
+Two alternatives:
+
+  re = /(a|b)/
+  re.match('foo') # => nil
+  re.match('bar') # => #<MatchData "b" 1:"b">
+
+Four alternatives:
+
+  re = /(a|b|c|d)/
+  re.match('shazam') # => #<MatchData "a" 1:"a">
+  re.match('cold')   # => #<MatchData "c" 1:"c">
+
+Each alternative is a subexpression, and may be composed of other subexpressions:
+
+  re = /([a-c]|[x-z])/
+  re.match('bar') # => #<MatchData "b" 1:"b">
+  re.match('ooz') # => #<MatchData "z" 1:"z">
+
+=== Quantifiers
+
+A simple regexp matches one character:
+
+  /\w/.match('Hello')  # => #<MatchData "H">
+
+An added _quantifier_ specifies how many matches are required or allowed:
+
+- <tt>*</tt> - Matches zero or more times:
+
+    /\w*/.match('')
+    # => #<MatchData "">
+    /\w*/.match('x')
+    # => #<MatchData "x">
+    /\w*/.match('xyz')
+    # => #<MatchData "yz">
+
+- <tt>+</tt> - Matches one or more times:
+
+    /\w+/.match('')    # => nil
+    /\w+/.match('x')   # => #<MatchData "x">
+    /\w+/.match('xyz') # => #<MatchData "xyz">
+
+- <tt>?</tt> - Matches zero or one times:
+
+    /\w?/.match('')    # => #<MatchData "">
+    /\w?/.match('x')   # => #<MatchData "x">
+    /\w?/.match('xyz') # => #<MatchData "x">
+
+- <tt>{</tt>_n_<tt>}</tt> - Matches exactly _n_ times:
+
+    /\w{2}/.match('')    # => nil
+    /\w{2}/.match('x')   # => nil
+    /\w{2}/.match('xyz') # => #<MatchData "xy">
+
+- <tt>{</tt>_min_<tt>,}</tt> - Matches _min_ or more times:
+
+    /\w{2,}/.match('')    # => nil
+    /\w{2,}/.match('x')   # => nil
+    /\w{2,}/.match('xy')  # => #<MatchData "xy">
+    /\w{2,}/.match('xyz') # => #<MatchData "xyz">
+
+- <tt>{,</tt>_max_<tt>}</tt> - Matches _max_ or fewer times:
+
+    /\w{,2}/.match('')    # => #<MatchData "">
+    /\w{,2}/.match('x')   # => #<MatchData "x">
+    /\w{,2}/.match('xyz') # => #<MatchData "xy">
+
+- <tt>{</tt>_min_<tt>,</tt>_max_<tt>}</tt> -
+  Matches at least _min_ times and at most _max_ times:
+
+    /\w{1,2}/.match('')    # => nil
+    /\w{1,2}/.match('x')   # => #<MatchData "x">
+    /\w{1,2}/.match('xyz') # => #<MatchData "xy">
+
+==== Greedy, Lazy, or Possessive Matching
+
+Quantifier matching may be greedy, lazy, or possessive:
+
+- In _greedy_ matching, as many occurrences as possible are matched.
+  while still allowing the overall match to succeed.
+  Greedy quantifiers: <tt>*</tt>, <tt>+</tt>, <tt>?</tt>,
+  <tt>{min, max}</tt> and its variants.
+- In _lazy_ matching, the minimum number of occurrences are matched.
+  Lazy quantifiers: <tt>*?</tt>, <tt>+?</tt>, <tt>??</tt>,
+  <tt>{min, max}?</tt> and its variants.
+- In _possessive_ matching, once a match is found, there is no backtracking;
+  that match is retained, even if it jeopardises the overall match.
+  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
+  <tt>{min, max}+</tt> and its variants.
+
+More:
+
+- About greedy and lazy matching, see
+  {Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+- About possessive matching, see
+  {Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+
+=== Groups and Captures
+
+A simple regexp has (at most) one match:
+
+  re = /\d\d\d\d-\d\d-\d\d/
+  re.match('1943-02-04')      # => #<MatchData "1943-02-04">
+  re.match('1943-02-04').size # => 1
+  re.match('foo')             # => nil
+
+Adding one or more pairs of parentheses, <tt>(_subexpression_)</tt>,
+defines _groups_, which may result in multiple matched substrings,
+called _captures_:
+
+  re = /(\d\d\d\d)-(\d\d)-(\d\d)/
+  re.match('1943-02-04')      # => #<MatchData "1943-02-04" 1:"1943" 2:"02" 3:"04">
+  re.match('1943-02-04').size # => 4
+
+The first capture is the entire matched string;
+the other captures are the matched substrings from the groups.
+
+A group may have a
+{quantifier}[rdoc-ref:regexp.rdoc@Quantifiers]:
+
+  re = /July 4(th)?/
+  re.match('July 4')   # => #<MatchData "July 4" 1:nil>
+  re.match('July 4th') # => #<MatchData "July 4th" 1:"th">
+
+  re = /(foo)*/
+  re.match('')       # => #<MatchData "" 1:nil>
+  re.match('foo')    # => #<MatchData "foo" 1:"foo">
+  re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
+
+  re = /(foo)+/
+  re.match('')       # => nil
+  re.match('foo')    # => #<MatchData "foo" 1:"foo">
+  re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
+
+The returned \MatchData object give access to matched the substrings:
+
+  re = /(\d\d\d\d)-(\d\d)-(\d\d)/
+  md = re.match('1943-02-04')
+  # => #<MatchData "1943-02-04" 1:"1943" 2:"02" 3:"04">
+  md[0] # => "1943-02-04"
+  md[1] # => "1943"
+  md[2] # => "02"
+  md[3] # => "04"
+
+==== Non-Capturing Groups
+
+A group may be made non-capturing;
+it is still a group (and, for example, can have a quantifier),
+but its matching substring is not included among the captures.
+
+A non-capturing group begins with <tt>?:</tt> (inside the parentheses):
+
+  # Don't capture the year.
+  re = /(?:\d\d\d\d)-(\d\d)-(\d\d)/
+  md = re.match('1943-02-04') # => #<MatchData "1943-02-04" 1:"02" 2:"04">
+
+==== Backreferences
+
+A group match may also be referenced within the regexp itself;
+such a reference is called a +backreference+:
+
+  /[csh](..) [csh]\1 in/.match('The cat sat in the hat')
+  # => #<MatchData "cat sat in" 1:"at">
+
+This table shows how each subexpression in the regexp above
+matches a substring in the target string:
+
+  | Subexpression in Regexp   | Matching Substring in Target String |
+  |---------------------------|-------------------------------------|
+  |       First '[csh]'       |            Character 'c'            |
+  |          '(..)'           |        First substring 'at'         |
+  |      First space ' '      |      First space character ' '      |
+  |       Second '[csh]'      |            Character 'c'            |
+  | '\1' (backreference 'at') |        Second substring 'at'        |
+  |           ' in'           |            Substring ' in'          |
+
+A regexp may contain any number of groups:
+
+- For a large number of groups:
+
+  - The ordinary <tt>\\_n_</tt> notation applies only for _n_ in range (1..9).
+  - The <tt>MatchData[_n_]</tt> notation applies for any non-negative _n_.
+
+- <tt>\0</tt> is a special backreference, referring to the entire matched string;
+  it may not be used within the regexp itself,
+  but may be used outside it (for example, in a substitution method call):
+
+    'The cat sat in the hat'.gsub(/[csh]at/, '\0s')
+    # => "The cats sats in the hats"
+
+==== Named Captures
+
+As seen above, a capture can be referred to by its number.
+A capture can also have a name,
+prefixed as <tt>?<_name_></tt> or <tt>?'_name_'></tt>,
+and the name (symbolized) may be used as an index in <tt>MatchData[]</tt>:
+
+  md = /\$(?<dollars>\d+)\.(?'cents'\d+)/.match("$3.67")
+  # => #<MatchData "$3.67" dollars:"3" cents:"67">
+  md[:dollars]  # => "3"
+  md[:cents]    # => "67"
+  # The capture numbers are still valid.
+  md[2]         # => "67"
+
+When a regexp contains a named capture, there are no unnamed captures:
+
+  /\$(?<dollars>\d+)\.(\d+)/.match("$3.67")
+  # => #<MatchData "$3.67" dollars:"3">
+
+A named group may be backreferenced as <tt>\k<_name_></tt>:
+
+  /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
+  # => #<MatchData "ototo" vowel:"o">
+
+When (and only when) a regexp contains named capture groups
+and appears before the <tt>=~</tt> operator,
+the captured substrings are assigned to local variables with corresponding names:
+
+  /\$(?<dollars>\d+)\.(?<cents>\d+)/.match('$3.67')
+  # => #<MatchData "$3.67" dollars:"3" cents:"67">
+  dollars # => "3"
+
+==== Atomic Grouping
+
+A group may be made _atomic_ with <tt>(?></tt>_subexpression_<tt>)</tt>.
+
+This causes the subexpression to be matched
+independently of the rest of the expression,
+so that the matched substring becomes fixed for the remainder of the match,
+unless the entire subexpression must be abandoned and subsequently revisited.
+
+In this way pat is treated as a non-divisible whole.
+Atomic grouping is typically used to optimise patterns
+to prevent needless backtracking .
+
+Example (without atomic grouping):
+
+  /".*"/.match('"Quote"') # => #<MatchData "\"Quote\"">
+
+Analysis:
+
+1. The leading subexpression <tt>"</tt> in the pattern matches the first character
+   <tt>"</tt> in the target string.
+2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote“</tt>
+   (including the trailing double-quote).
+3. Now there is nothing left in the target string to match
+   the trailing subexpression <tt>"</tt> in the pattern;
+   this would cause the overall match to fail.
+4. The matched substring is backtracked by one position: <tt>Quote</tt>.
+5. The final subexpression <tt>"</tt> now matches the final substring <tt>"</tt>,
+   and the overall match succeeds.
+
+If subexpression <tt>.*</tt> is grouped atomically,
+the backtracking is disabled, and the overall match fails:
+
+  /"(?>.*)"/.match('"Quote"') # => nil
+
+Atomic grouping can affect performance;
+see {Atomic Group}[https://www.regular-expressions.info/atomic.html].
+
+==== Subexpression Calls
+
+As seen above, a backreference number (<tt>\\_n_</tt>) or name (<tt>\k<_name_></tt>)
+gives access to a captured _substring_;
+the corresponding regexp _subexpression_ may also be accessed,
+via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
+
+  /\A(?<paren>\(\g<paren>*\))*\z/.match('(())')
+  # ^1
+  #      ^2
+  #           ^3
+  #                 ^4
+  #      ^5
+  #           ^6
+  #                      ^7
+  #                       ^8
+  #                       ^9
+  #                           ^10
+
+The pattern:
+
+1.  Matches at the beginning of the string, i.e. before the first character.
+2.  Enters a named group +paren+.
+3.  Matches the first character in the string, <tt>'('</tt>.
+4.  Calls the +paren+ group again, i.e. recurses back to the  second step.
+5.  Re-enters the +paren+ group.
+6.  Matches the second character in the string, <tt>'('</tt>.
+7.  Attempts to call +paren+ a third time,
+    but fails because doing so would prevent an overall successful match.
+8.  Matches the third character in the string, <tt>')'</tt>;
+    marks the end of the second recursive call
+9.  Matches the fourth character in the string, <tt>')'</tt>.
+10. Matches the end of the string.
+
+See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
+
+==== Conditionals
+
+The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
+
+- _cond_ may be a capture number or name.
+- The match to be applied is _yes_ if_cond_ is captured;
+  otherwise the match to be applied is _no_.
+- If not needed, <tt>|_no_</tt> may be omitted.
+
+Examples:
+
+  re = /\A(foo)?(?(1)(T)|(F))\z/
+  re.match('fooT') # => #<MatchData "fooT" 1:"foo" 2:"T" 3:nil>
+  re.match('F')    # => #<MatchData "F" 1:nil 2:nil 3:"F">
+  re.match('fooF') # => nil
+  re.match('T')    # => nil
+
+  re = /\A(?<xyzzy>foo)?(?(<xyzzy>)(T)|(F))\z/
+  re.match('fooT') # => #<MatchData "fooT" xyzzy:"foo">
+  re.match('F')    # => #<MatchData "F" xyzzy:nil>
+  re.match('fooF') # => nil
+  re.match('T')    # => nil
+
+=== Unicode
+
+==== Unicode Properties
 
 The <tt>/\p{_property_name_}/</tt> construct (with lowercase +p+)
 matches characters using a property name,
@@ -445,7 +833,7 @@ These are also commonly used:
 - <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned characters).
 - <tt>/\p{Assigned}/</tt>: An assigned character.
 
-=== Unicode Character Categories
+==== Unicode Character Categories
 
 A Unicode character category name:
 
@@ -517,7 +905,7 @@ Punctation:
 - {Co, Private_Use}[https://www.compart.com/en/unicode/category/Co].
 - {Cs, Surrogate}[https://www.compart.com/en/unicode/category/Cs].
 
-=== Unicode Scripts and Blocks
+==== Unicode Scripts and Blocks
 
 Among the Unicode properties are:
 
@@ -526,448 +914,76 @@ Among the Unicode properties are:
 - {Unicode blocks}[https://en.wikipedia.org/wiki/Unicode_block];
   see {supported blocks}[http://www.unicode.org/Public/UNIDATA/Blocks.txt].
 
-== Quantifiers
+=== POSIX Bracket Expressions
 
-A simple regexp matches one character:
+A POSIX <i>bracket expression</i> is also similar to a character class.
+These expressions provide a portable alternative to the above,
+with the added benefit of encompassing non-ASCII characters:
 
-  /\w/.match('Hello')  # => #<MatchData "H">
+- <tt>/\d/</tt> matches only ASCII decimal digits +0+ through +9+.
+- <tt>/[[:digit:]]/</tt> matches any character in the Unicode
+  <tt>Decimal Number</tt> (+Nd+) category;
+  see below.
 
-An added _quantifier_ specifies how many matches are required or allowed:
+The POSIX bracket expressions:
 
-- <tt>*</tt> - Matches zero or more times:
+- <tt>/[[:digit:]]/</tt>: Matches a {Unicode digit}[https://www.compart.com/en/unicode/category/Nd]:
 
-    /\w*/.match('')
-    # => #<MatchData "">
-    /\w*/.match('x')
-    # => #<MatchData "x">
-    /\w*/.match('xyz')
-    # => #<MatchData "yz">
+    /[[:digit:]]/.match('9')       # => #<MatchData "9">
+    /[[:digit:]]/.match("\u1fbf9") # => #<MatchData "9">
 
-- <tt>+</tt> - Matches one or more times:
+- <tt>/[[:xdigit:]]/</tt>: Matches a digit allowed in a hexadecimal number;
+  equivalent to <tt>[0-9a-fA-F]</tt>.
 
-    /\w+/.match('')    # => nil
-    /\w+/.match('x')   # => #<MatchData "x">
-    /\w+/.match('xyz') # => #<MatchData "xyz">
+- <tt>/[[:upper:]]/</tt>: Matches a {Unicode uppercase letter}[https://www.compart.com/en/unicode/category/Lu]:
 
-- <tt>?</tt> - Matches zero or one times:
+    /[[:upper:]]/.match('A')      # => #<MatchData "A">
+    /[[:upper:]]/.match("\u00c6") # => #<MatchData "Æ">
 
-    /\w?/.match('')    # => #<MatchData "">
-    /\w?/.match('x')   # => #<MatchData "x">
-    /\w?/.match('xyz') # => #<MatchData "x">
+- <tt>/[[:lower:]]/</tt>: Matches a {Unicode lowercase letter}[https://www.compart.com/en/unicode/category/Ll]:
 
-- <tt>{</tt>_n_<tt>}</tt> - Matches exactly _n_ times:
+    /[[:lower:]]/.match('a')      # => #<MatchData "a">
+    /[[:lower:]]/.match("\u01fd") # => #<MatchData "ǽ">
 
-    /\w{2}/.match('')    # => nil
-    /\w{2}/.match('x')   # => nil
-    /\w{2}/.match('xyz') # => #<MatchData "xy">
+- <tt>/[[:alpha:]]/</tt>: Matches <tt>/[[:upper:]]/</tt> or <tt>/[[:lower:]]/</tt>.
 
-- <tt>{</tt>_min_<tt>,}</tt> - Matches _min_ or more times:
+- <tt>/[[:alnum:]]/</tt>: Matches <tt>/[[:alpha:]]/</tt> or <tt>/[[:digit:]]/</tt>.
 
-    /\w{2,}/.match('')    # => nil
-    /\w{2,}/.match('x')   # => nil
-    /\w{2,}/.match('xy')  # => #<MatchData "xy">
-    /\w{2,}/.match('xyz') # => #<MatchData "xyz">
+- <tt>/[[:space:]]/</tt>: Matches {Unicode space character}[https://www.compart.com/en/unicode/category/Zs]:
 
-- <tt>{,</tt>_max_<tt>}</tt> - Matches _max_ or fewer times:
+    /[[:space:]]/.match(' ')      # => #<MatchData " ">
+    /[[:space:]]/.match("\u2005") # => #<MatchData " ">
 
-    /\w{,2}/.match('')    # => #<MatchData "">
-    /\w{,2}/.match('x')   # => #<MatchData "x">
-    /\w{,2}/.match('xyz') # => #<MatchData "xy">
+- <tt>/[[:blank:]]/</tt>: Matches <tt>/[[:space:]]/</tt> or tab character:
 
-- <tt>{</tt>_min_<tt>,</tt>_max_<tt>}</tt> -
-  Matches at least _min_ times and at most _max_ times:
+    /[[:blank:]]/.match(' ')      # => #<MatchData " ">
+    /[[:blank:]]/.match("\u2005") # => #<MatchData " ">
+    /[[:blank:]]/.match("\t")     # => #<MatchData "\t">
 
-    /\w{1,2}/.match('')    # => nil
-    /\w{1,2}/.match('x')   # => #<MatchData "x">
-    /\w{1,2}/.match('xyz') # => #<MatchData "xy">
+- <tt>/[[:cntrl:]]/</tt>: Matches {Unicode control character}[https://www.compart.com/en/unicode/category/Cc]:
 
-=== Greedy, Lazy, or Possessive Matching
+    /[[:cntrl:]]/.match("\u0000") # => #<MatchData "\u0000">
+    /[[:cntrl:]]/.match("\u009f") # => #<MatchData "\u009F">
 
-Quantifier matching may be greedy, lazy, or possessive:
+- <tt>/[[:graph:]]/</tt>: Matches any character
+  except <tt>/[[:space:]]/</tt> or <tt>/[[:cntrl:]]/</tt>.
 
-- In _greedy_ matching, as many occurrences as possible are matched.
-  while still allowing the overall match to succeed.
-  Greedy quantifiers: <tt>*</tt>, <tt>+</tt>, <tt>?</tt>,
-  <tt>{min, max}</tt> and its variants.
-- In _lazy_ matching, the minimum number of occurrences are matched.
-  Lazy quantifiers: <tt>*?</tt>, <tt>+?</tt>, <tt>??</tt>,
-  <tt>{min, max}?</tt> and its variants.
-- In _possessive_ matching, once a match is found, there is no backtracking;
-  that match is retained, even if it jeopardises the overall match.
-  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
-  <tt>{min, max}+</tt> and its variants.
+- <tt>/[[:print:]]/</tt>: Matches <tt>/[[:graph:]]/</tt> or space character.
 
-More:
+- <tt>/[[:punct:]]/</tt>: Matches any (Unicode punctuation character}[https://www.compart.com/en/unicode/category/Po]:
 
-- About greedy and lazy matching, see
-  {Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
-- About possessive matching, see
-  {Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+Ruby also supports these (non-POSIX) bracket expressions:
 
-== Groups and Captures
+- <tt>/[[:ascii:]]/</tt>: Matches a character in the ASCII character set.
+- <tt>/[[:word:]]/</tt>: Matches a character in one of these Unicode character
+  categories (see below):
 
-A simple regexp has (at most) one match:
+  - +Mark+ (+M+).
+  - +Letter+ (+L+).
+  - +Number+ (+N+)
+  - <tt>Connector Punctuation</tt> (+Pc+).
 
-  re = /\d\d\d\d-\d\d-\d\d/
-  re.match('1943-02-04')      # => #<MatchData "1943-02-04">
-  re.match('1943-02-04').size # => 1
-  re.match('foo')             # => nil
-
-Adding one or more pairs of parentheses, <tt>(_subexpression_)</tt>,
-defines _groups_, which may result in multiple matched substrings,
-called _captures_:
-
-  re = /(\d\d\d\d)-(\d\d)-(\d\d)/
-  re.match('1943-02-04')      # => #<MatchData "1943-02-04" 1:"1943" 2:"02" 3:"04">
-  re.match('1943-02-04').size # => 4
-
-The first capture is the entire matched string;
-the other captures are the matched substrings from the groups.
-
-A group may have a
-{quantifier}[rdoc-ref:regexp.rdoc@Quantifiers]:
-
-  re = /July 4(th)?/
-  re.match('July 4')   # => #<MatchData "July 4" 1:nil>
-  re.match('July 4th') # => #<MatchData "July 4th" 1:"th">
-
-  re = /(foo)*/
-  re.match('')       # => #<MatchData "" 1:nil>
-  re.match('foo')    # => #<MatchData "foo" 1:"foo">
-  re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
-
-  re = /(foo)+/
-  re.match('')       # => nil
-  re.match('foo')    # => #<MatchData "foo" 1:"foo">
-  re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
-
-The returned \MatchData object give access to matched the substrings:
-
-  re = /(\d\d\d\d)-(\d\d)-(\d\d)/
-  md = re.match('1943-02-04')
-  # => #<MatchData "1943-02-04" 1:"1943" 2:"02" 3:"04">
-  md[0] # => "1943-02-04"
-  md[1] # => "1943"
-  md[2] # => "02"
-  md[3] # => "04"
-
-=== Non-Capturing Groups
-
-A group may be made non-capturing;
-it is still a group (and, for example, can have a quantifier),
-but its matching substring is not included among the captures.
-
-A non-capturing group begins with <tt>?:</tt> (inside the parentheses):
-
-  # Don't capture the year.
-  re = /(?:\d\d\d\d)-(\d\d)-(\d\d)/
-  md = re.match('1943-02-04') # => #<MatchData "1943-02-04" 1:"02" 2:"04">
-
-=== Backreferences
-
-A group match may also be referenced within the regexp itself;
-such a reference is called a +backreference+:
-
-  /[csh](..) [csh]\1 in/.match('The cat sat in the hat')
-  # => #<MatchData "cat sat in" 1:"at">
-
-This table shows how each subexpression in the regexp above
-matches a substring in the target string:
-
-  | Subexpression in Regexp   | Matching Substring in Target String |
-  |---------------------------|-------------------------------------|
-  |       First '[csh]'       |            Character 'c'            |
-  |          '(..)'           |        First substring 'at'         |
-  |      First space ' '      |      First space character ' '      |
-  |       Second '[csh]'      |            Character 'c'            |
-  | '\1' (backreference 'at') |        Second substring 'at'        |
-  |           ' in'           |            Substring ' in'          |
-
-A regexp may contain any number of groups:
-
-- For a large number of groups:
-
-  - The ordinary <tt>\\_n_</tt> notation applies only for _n_ in range (1..9).
-  - The <tt>MatchData[_n_]</tt> notation applies for any non-negative _n_.
-
-- <tt>\0</tt> is a special backreference, referring to the entire matched string;
-  it may not be used within the regexp itself,
-  but may be used outside it (for example, in a substitution method call):
-
-    'The cat sat in the hat'.gsub(/[csh]at/, '\0s')
-    # => "The cats sats in the hats"
-
-=== Named Captures
-
-As seen above, a capture can be referred to by its number.
-A capture can also have a name,
-prefixed as <tt>?<_name_></tt> or <tt>?'_name_'></tt>,
-and the name (symbolized) may be used as an index in <tt>MatchData[]</tt>:
-
-  md = /\$(?<dollars>\d+)\.(?'cents'\d+)/.match("$3.67")
-  # => #<MatchData "$3.67" dollars:"3" cents:"67">
-  md[:dollars]  # => "3"
-  md[:cents]    # => "67"
-  # The capture numbers are still valid.
-  md[2]         # => "67"
-
-When a regexp contains a named capture, there are no unnamed captures:
-
-  /\$(?<dollars>\d+)\.(\d+)/.match("$3.67")
-  # => #<MatchData "$3.67" dollars:"3">
-
-A named group may be backreferenced as <tt>\k<_name_></tt>:
-
-  /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
-  # => #<MatchData "ototo" vowel:"o">
-
-When (and only when) a regexp contains named capture groups
-and appears before the <tt>=~</tt> operator,
-the captured substrings are assigned to local variables with corresponding names:
-
-  /\$(?<dollars>\d+)\.(?<cents>\d+)/.match('$3.67')
-  # => #<MatchData "$3.67" dollars:"3" cents:"67">
-  dollars # => "3"
-
-=== Atomic Grouping
-
-A group may be made _atomic_ with <tt>(?></tt>_subexpression_<tt>)</tt>.
-
-This causes the subexpression to be matched
-independently of the rest of the expression,
-so that the matched substring becomes fixed for the remainder of the match,
-unless the entire subexpression must be abandoned and subsequently revisited.
-
-In this way pat is treated as a non-divisible whole.
-Atomic grouping is typically used to optimise patterns
-to prevent needless backtracking .
-
-Example (without atomic grouping):
-
-  /".*"/.match('"Quote"') # => #<MatchData "\"Quote\"">
-
-Analysis:
-
-1. The leading subexpression <tt>"</tt> in the pattern matches the first character
-   <tt>"</tt> in the target string.
-2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote“</tt>
-   (including the trailing double-quote).
-3. Now there is nothing left in the target string to match
-   the trailing subexpression <tt>"</tt> in the pattern;
-   this would cause the overall match to fail.
-4. The matched substring is backtracked by one position: <tt>Quote</tt>.
-5. The final subexpression <tt>"</tt> now matches the final substring <tt>"</tt>,
-   and the overall match succeeds.
-
-If subexpression <tt>.*</tt> is grouped atomically,
-the backtracking is disabled, and the overall match fails:
-
-  /"(?>.*)"/.match('"Quote"') # => nil
-
-Atomic grouping can affect performance;
-see {Atomic Group}[https://www.regular-expressions.info/atomic.html].
-
-=== Subexpression Calls
-
-As seen above, a backreference number (<tt>\\_n_</tt>) or name (<tt>\k<_name_></tt>)
-gives access to a captured _substring_;
-the corresponding regexp _subexpression_ may also be accessed,
-via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
-
-  /\A(?<paren>\(\g<paren>*\))*\z/.match('(())')
-  # ^1
-  #      ^2
-  #           ^3
-  #                 ^4
-  #      ^5
-  #           ^6
-  #                      ^7
-  #                       ^8
-  #                       ^9
-  #                           ^10
-
-The pattern:
-
-1.  Matches at the beginning of the string, i.e. before the first character.
-2.  Enters a named group +paren+.
-3.  Matches the first character in the string, <tt>'('</tt>.
-4.  Calls the +paren+ group again, i.e. recurses back to the  second step.
-5.  Re-enters the +paren+ group.
-6.  Matches the second character in the string, <tt>'('</tt>.
-7.  Attempts to call +paren+ a third time,
-    but fails because doing so would prevent an overall successful match.
-8.  Matches the third character in the string, <tt>')'</tt>;
-    marks the end of the second recursive call
-9.  Matches the fourth character in the string, <tt>')'</tt>.
-10. Matches the end of the string.
-
-See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
-
-=== Conditionals
-
-The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
-
-- _cond_ may be a capture number or name.
-- The match to be applied is _yes_ if_cond_ is captured;
-  otherwise the match to be applied is _no_.
-- If not needed, <tt>|_no_</tt> may be omitted.
-
-Examples:
-
-  re = /\A(foo)?(?(1)(T)|(F))\z/
-  re.match('fooT') # => #<MatchData "fooT" 1:"foo" 2:"T" 3:nil>
-  re.match('F')    # => #<MatchData "F" 1:nil 2:nil 3:"F">
-  re.match('fooF') # => nil
-  re.match('T')    # => nil
-
-  re = /\A(?<xyzzy>foo)?(?(<xyzzy>)(T)|(F))\z/
-  re.match('fooT') # => #<MatchData "fooT" xyzzy:"foo">
-  re.match('F')    # => #<MatchData "F" xyzzy:nil>
-  re.match('fooF') # => nil
-  re.match('T')    # => nil
-
-== Alternatives
-
-The vertical bar metacharacter (<tt>|</tt>) may be used within parentheses
-to express alternatives:
-two or more subexpressions any of which may match the target string.
-
-Two alternatives:
-
-  re = /(a|b)/
-  re.match('foo') # => nil
-  re.match('bar') # => #<MatchData "b" 1:"b">
-
-Four alternatives:
-
-  re = /(a|b|c|d)/
-  re.match('shazam') # => #<MatchData "a" 1:"a">
-  re.match('cold')   # => #<MatchData "c" 1:"c">
-
-Each alternative is a subexpression, and may be complex:
-
-  re = /([a-c]|[x-z])/
-  re.match('bar') # => #<MatchData "b" 1:"b">
-  re.match('ooz') # => #<MatchData "z" 1:"z">
-
-== Anchors
-
-An anchor is a metasequence that matches a zero-width position between
-characters in the target string.
-
-For a subexpression with no anchor,
-matching may begin anywhere in the target string:
-
-  /real/.match('surrealist') # => #<MatchData "real">
-
-For a subexpression with an anchor,
-matching must begin at the matched anchor.
-
-=== Boundary Anchors
-
-Each of these anchors matches a boundary:
-
-- <tt>^</tt>: Matches the beginning of a line:
-
-    /^bar/.match("foo\nbar") # => #<MatchData "bar">
-    /^ar/.match("foo\nbar")  # => nil
-
-- <tt>$</tt>: Matches the end of a line:
-
-    /bar$/.match("foo\nbar") # => #<MatchData "bar">
-    /ba$/.match("foo\nbar")  # => nil
-
-- <tt>\A</tt>: Matches the beginning of the string:
-
-    /\Afoo/.match('foo bar')  # => #<MatchData "foo">
-    /\Afoo/.match(' foo bar') # => nil
-
-- <tt>\Z</tt>: Matches the end of the string;
-  if string ends with a single newline,  it matches just before newline:
-
-    /foo\Z/.match('bar foo')     # => #<MatchData "foo">
-    /foo\Z/.match('foo bar')     # => nil
-    /foo\Z/.match("bar foo\n")   # => #<MatchData "foo">
-    /foo\Z/.match("bar foo\n\n") # => nil
-
-- <tt>\z</tt>: Matches the end of the string:
-
-    /foo\z/.match('bar foo')   # => #<MatchData "foo">
-    /foo\z/.match('foo bar')   # => nil
-    /foo\z/.match("bar foo\n") # => nil
-
-- <tt>\b</tt>: Matches word boundary when not inside brackets;
-  matches backspace (<tt>"0x08"</tt>) when inside brackets:
-
-    /foo\b/.match('foo bar') # => #<MatchData "foo">
-    /foo\b/.match('foobar')  # => nil
-
-- <tt>\B</tt>: Matches non-word boundary:
-
-    /foo\B/.match('foobar')  # => #<MatchData "foo">
-    /foo\B/.match('foo bar') # => nil
-
-- <tt>\G</tt>: Matches first matching position:
-
-  In methods like String#gsub and String#scan, it changes on each iteration.
-  It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
-
-    "    a b c".gsub(/ /, '_')   # => "____a_b_c"
-    "    a b c".gsub(/\G /, '_') # => "____a b c"
-
-  In methods like Regexp#match and String#match
-  that take an optional offset, it matches where the search begins.
-
-    "hello, world".match(/,/, 3)   # => #<MatchData ",">
-    "hello, world".match(/\G,/, 3) # => nil
-
-=== Lookaround Anchors
-
-Lookahead anchors:
-
-- <tt>(?=_pat_)</tt>: Positive lookahead assertion:
-  ensures that the following characters match _pat_,
-  but doesn't include those characters in the matched substring.
-
-- <tt>(?!_pat_)</tt>: Negative lookahead assertion:
-  ensures that the following characters <i>do not</i> match _pat_,
-  but doesn't include those characters in the matched substring.
-
-Lookbehind anchors:
-
-- <tt>(?<=_pat_)</tt>: Positive lookbehind assertion:
-  ensures that the preceding characters match _pat_, but
-  doesn't include those characters in the matched substring.
-
-- <tt>(?<!_pat_)</tt>: Negative lookbehind assertion:
-  ensures that the preceding characters do not match
-  _pat_, but doesn't include those characters in the matched substring.
-
-The pattern below uses positive lookahead and positive lookbehind to match
-text appearing in <tt><b></tt>...<tt></b></tt> tags
-without including the tags in the match:
-
-  /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
-  # => #<MatchData "bold">
-
-=== Match-Reset Anchor
-
-- <tt>\K</tt>: Match reset:
-  the matched content preceding <tt>\K</tt> in the regexp is excluded from the result.
-  For example, the following two regexps are almost equivalent:
-
-    /ab\Kc/.match('abc')    # => #<MatchData "c">
-    /(?<=ab)c/.match('abc') # => #<MatchData "c">
-
-  These match same string and <tt>$&</tt> equals <tt>'c'</tt>,
-  while the matched position is different.
-
-  As are the following two regexps:
-
-    /(a)\K(b)\Kc/
-    /(?<=(?<=(a))(b))c/
-
-== Comments
+=== Comments
 
 A comment may be included in a regexp pattern
 using the <tt>(?#</tt>_comment_<tt>)</tt> construct,
