@@ -281,7 +281,7 @@ module Bundler
       @resolve ||= if Bundler.frozen_bundle?
         Bundler.ui.debug "Frozen, using resolution from the lockfile"
         @locked_specs
-      elsif !unlocking? && nothing_changed?
+      elsif no_resolve_needed?
         if deleted_deps.any?
           Bundler.ui.debug "Some dependencies were deleted, using a subset of the resolution from the lockfile"
           SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
@@ -475,6 +475,10 @@ module Bundler
 
     def nothing_changed?
       !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@incomplete_lockfile
+    end
+
+    def no_resolve_needed?
+      !unlocking? && nothing_changed?
     end
 
     def unlocking?

@@ -94,7 +94,7 @@ module Bundler
     definition_method :requires
 
     def lock(opts = {})
-      return if @definition.nothing_changed? && !@definition.unlocking?
+      return if @definition.no_resolve_needed?
       @definition.lock(Bundler.default_lockfile, opts[:preserve_unknown_sections])
     end
 
