@@ -3876,8 +3876,8 @@ reg_copy(VALUE copy, VALUE orig)
 
     rb_reg_initialize_check(copy);
     if ((r = onig_reg_copy(&re, RREGEXP_PTR(orig))) != 0) {
-	/* ONIGERR_MEMORY only */
-	rb_raise(rb_eRegexpError, "%s", onig_error_code_to_format(r));
+        /* ONIGERR_MEMORY only */
+        rb_raise(rb_eRegexpError, "%s", onig_error_code_to_format(r));
     }
     RREGEXP_PTR(copy) = re;
     RB_OBJ_WRITE(copy, &RREGEXP(copy)->src, RREGEXP(orig)->src);
@@ -3958,10 +3958,10 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     VALUE re = reg_extract_args(argc, argv, &args);
 
     if (NIL_P(re)) {
-	reg_init_args(self, args.str, args.enc, args.flags);
+        reg_init_args(self, args.str, args.enc, args.flags);
     }
     else {
-	reg_copy(self, re);
+        reg_copy(self, re);
     }
 
     set_timeout(&RREGEXP_PTR(self)->timelimit, args.timeout);
