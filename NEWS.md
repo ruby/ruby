@@ -75,6 +75,10 @@ The following bundled gems are updated.
 * typeprof 0.21.7
 * debug 1.8.0
 
+The following default gem is now bundled.
+
+* racc 1.7.0
+
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
 
