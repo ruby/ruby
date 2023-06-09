@@ -844,6 +844,8 @@ void onig_free(OnigRegex);
 ONIG_EXTERN
 void onig_free_body(OnigRegex);
 ONIG_EXTERN
+int onig_reg_copy(OnigRegex* reg, OnigRegex orig_reg);
+ONIG_EXTERN
 OnigPosition onig_scan(OnigRegex reg, const OnigUChar* str, const OnigUChar* end, OnigRegion* region, OnigOptionType option, int (*scan_callback)(OnigPosition, OnigPosition, OnigRegion*, void*), void* callback_arg);
 ONIG_EXTERN
 OnigPosition onig_search(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* start, const OnigUChar* range, OnigRegion* region, OnigOptionType option);
