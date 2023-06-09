@@ -677,10 +677,14 @@ module Bundler
       if missing.any?
         @locked_specs.delete(missing)
 
-        missing.first.name
-      else
-        false
+        return missing.first.name
       end
+
+      return if @dependency_changes
+
+      current_dependencies.find do |d|
+        @locked_specs[d.name].empty?
+      end&.name
     end
 
     def converge_paths

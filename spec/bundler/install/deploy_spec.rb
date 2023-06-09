@@ -312,6 +312,40 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(last_command).to be_success
     end
 
+    it "shows a good error if a gem is missing from the lockfile" do
+      build_repo4 do
+        build_gem "foo"
+        build_gem "bar"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+
+        gem "foo"
+        gem "bar"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            foo (1.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo
+          bar
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle :install, :env => { "BUNDLE_FROZEN" => "true" }, :raise_on_error => false, :artifice => "compact_index"
+      expect(err).to include("Your lock file is missing \"bar\", but the lockfile can't be updated because frozen mode is set")
+    end
+
     it "explodes if a path gem is missing" do
       build_lib "path_gem"
       install_gemfile <<-G
