@@ -473,7 +473,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       run "require 'rack'", :raise_on_error => false
       expect(err).to include strip_whitespace(<<-E).strip
-The dependencies in your gemfile changed
+The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set (Bundler::ProductionError)
 
 You have added to the Gemfile:
 * rack (= 1.0.0)
@@ -506,7 +506,7 @@ You have deleted from the Gemfile:
       simulate_new_machine
       bundle "config set --local deployment true"
       bundle "install --verbose"
-      expect(out).not_to include("You are trying to install in frozen mode after changing your Gemfile")
+      expect(out).not_to include("but the lockfile can't be updated because frozen mode is set")
       expect(out).not_to include("You have added to the Gemfile")
       expect(out).not_to include("You have deleted from the Gemfile")
       expect(out).to include("vendor/cache/foo")

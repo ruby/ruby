@@ -364,18 +364,6 @@ module Bundler
     end
 
     def ensure_equivalent_gemfile_and_lockfile(explicit_flag = false)
-      msg = String.new
-      msg << "You are trying to install in frozen mode after changing your Gemfile.\n" \
-             "Run `bundle install` elsewhere and add the updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control.\n"
-
-      unless explicit_flag
-        suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
-          "bundle config set frozen false"
-        end
-        msg << "If this is a development machine, remove the #{Bundler.default_gemfile.relative_path_from(SharedHelpers.pwd)} " \
-               "freeze by running `#{suggested_command}`." if suggested_command
-      end
-
       added =   []
       deleted = []
       changed = []
@@ -405,11 +393,20 @@ module Bundler
       end
 
       reason = change_reason
-      msg << "\n\n#{reason.split(", ").map(&:capitalize).join("\n")}"
+      msg = String.new
+      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because frozen mode is set"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
       msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
       msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n"
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control.\n"
+
+      unless explicit_flag
+        suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
+          "bundle config set frozen false"
+        end
+        msg << "If this is a development machine, remove the #{Bundler.default_gemfile.relative_path_from(SharedHelpers.pwd)} " \
+               "freeze by running `#{suggested_command}`." if suggested_command
+      end
 
       raise ProductionError, msg if added.any? || deleted.any? || changed.any? || !nothing_changed?
     end
