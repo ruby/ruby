@@ -365,7 +365,7 @@ module Bundler
 
     def ensure_equivalent_gemfile_and_lockfile(explicit_flag = false)
       msg = String.new
-      msg << "You are trying to install in deployment mode after changing your Gemfile.\n" \
+      msg << "You are trying to install in frozen mode after changing your Gemfile.\n" \
              "Run `bundle install` elsewhere and add the updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control.\n"
 
       unless explicit_flag

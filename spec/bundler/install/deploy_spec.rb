@@ -66,7 +66,7 @@ RSpec.describe "install in deployment or frozen mode" do
       G
 
       bundle "install --deployment", :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -272,7 +272,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -337,7 +337,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       ENV["BUNDLE_FROZEN"] = "1"
       bundle "install", :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -353,7 +353,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       bundle "install", :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -383,7 +383,7 @@ RSpec.describe "install in deployment or frozen mode" do
       ENV["BUNDLE_FROZEN"] = "false"
       ENV["BUNDLE_DEPLOYMENT"] = "false"
       bundle "install"
-      expect(out).not_to include("deployment mode")
+      expect(out).not_to include("frozen mode")
       expect(out).not_to include("You have added to the Gemfile")
       expect(out).not_to include("* rack-obama")
     end
@@ -396,7 +396,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile:\n* activesupport\n\n")
       expect(err).to include("You have deleted from the Gemfile:\n* rack")
       expect(err).not_to include("You have changed in the Gemfile")
@@ -410,7 +410,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `git://hubz.com`")
     end
@@ -430,7 +430,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).not_to include("You have deleted from the Gemfile")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack-1.0")}` to `no specified source`")
@@ -454,7 +454,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack")}` to `no specified source`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -506,7 +506,7 @@ You have deleted from the Gemfile:
       simulate_new_machine
       bundle "config set --local deployment true"
       bundle "install --verbose"
-      expect(out).not_to include("You are trying to install in deployment mode after changing your Gemfile")
+      expect(out).not_to include("You are trying to install in frozen mode after changing your Gemfile")
       expect(out).not_to include("You have added to the Gemfile")
       expect(out).not_to include("You have deleted from the Gemfile")
       expect(out).to include("vendor/cache/foo")

@@ -658,27 +658,27 @@ RSpec.describe "bundle update" do
       bundle "update", :all => true, :raise_on_error => false
 
       expect(last_command).to be_failure
-      expect(err).to match(/You are trying to install in deployment mode after changing your Gemfile/)
+      expect(err).to match(/You are trying to install in frozen mode after changing your Gemfile/)
       expect(err).to match(/freeze by running `bundle config set frozen false`./)
     end
 
     it "should fail loudly when frozen is set globally" do
       bundle "config set --global frozen 1"
       bundle "update", :all => true, :raise_on_error => false
-      expect(err).to match(/You are trying to install in deployment mode after changing your Gemfile/).
+      expect(err).to match(/You are trying to install in frozen mode after changing your Gemfile/).
         and match(/freeze by running `bundle config set frozen false`./)
     end
 
     it "should fail loudly when deployment is set globally" do
       bundle "config set --global deployment true"
       bundle "update", :all => true, :raise_on_error => false
-      expect(err).to match(/You are trying to install in deployment mode after changing your Gemfile/).
+      expect(err).to match(/You are trying to install in frozen mode after changing your Gemfile/).
         and match(/freeze by running `bundle config set frozen false`./)
     end
 
     it "should not suggest any command to unfreeze bundler if frozen is set through ENV" do
       bundle "update", :all => true, :raise_on_error => false, :env => { "BUNDLE_FROZEN" => "true" }
-      expect(err).to match(/You are trying to install in deployment mode after changing your Gemfile/)
+      expect(err).to match(/You are trying to install in frozen mode after changing your Gemfile/)
       expect(err).not_to match(/by running/)
     end
   end

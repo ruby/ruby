@@ -109,7 +109,7 @@ Usage: "bundle inject GEM VERSION"
         gem "rack-obama"
       G
       bundle "inject 'rack' '> 0'", :raise_on_error => false
-      expect(err).to match(/trying to install in deployment mode after changing/)
+      expect(err).to match(/trying to install in frozen mode after changing/)
 
       expect(bundled_app_lock.read).not_to match(/rack-obama/)
     end

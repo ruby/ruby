@@ -150,7 +150,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     output = bundle("install", :dir => tmp.join("foo"))
     expect(output).not_to match(/You have added to the Gemfile/)
     expect(output).not_to match(/You have deleted from the Gemfile/)
-    expect(output).not_to match(/install in deployment mode after changing/)
+    expect(output).not_to match(/install in frozen mode after changing/)
   end
 
   it "should match a lockfile without needing to re-resolve" do
