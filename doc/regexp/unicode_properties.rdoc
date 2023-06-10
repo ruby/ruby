@@ -17,41 +17,43 @@
 - <tt>/\p{Punct}/</tt>
 - <tt>/\p{Any}/</tt>
 - <tt>/\p{Assigned}/</tt>
-- <tt>/\p{C}/</tt>
-- <tt>/\p{Cf}/</tt>
-- <tt>/\p{Cn}/</tt>
-- <tt>/\p{Co}/</tt>
-- <tt>/\p{Cs}/</tt>
-- <tt>/\p{L}/</tt>
-- <tt>/\p{LC}/</tt>
-- <tt>/\p{Ll}/</tt>
-- <tt>/\p{Lm}/</tt>
-- <tt>/\p{Lo}/</tt>
-- <tt>/\p{Lt}/</tt>
-- <tt>/\p{Lu}/</tt>
-- <tt>/\p{M}/</tt>
-- <tt>/\p{Mc}/</tt>
-- <tt>/\p{Me}/</tt>
-- <tt>/\p{Mn}/</tt>
-- <tt>/\p{N}/</tt>
-- <tt>/\p{Nl}/</tt>
-- <tt>/\p{No}/</tt>
-- <tt>/\p{Pc}/</tt>
-- <tt>/\p{Pd}/</tt>
-- <tt>/\p{Pe}/</tt>
-- <tt>/\p{Pf}/</tt>
-- <tt>/\p{Pi}/</tt>
-- <tt>/\p{Po}/</tt>
-- <tt>/\p{Ps}/</tt>
-- <tt>/\p{S}/</tt>
-- <tt>/\p{Sc}/</tt>
-- <tt>/\p{Sk}/</tt>
-- <tt>/\p{Sm}/</tt>
-- <tt>/\p{So}/</tt>
-- <tt>/\p{Z}/</tt>
-- <tt>/\p{Zl}/</tt>
-- <tt>/\p{Zp}/</tt>
-- <tt>/\p{Zs}/</tt>
+- <tt>/\p{C}/</tt>, <tt>/\p{Control}/</tt>
+- <tt>/\p{Cf}/</tt>, <tt>/\p{Format}/</tt>
+- <tt>/\p{Cn}/</tt>, <tt>/\p{Unassigned}/</tt>
+- <tt>/\p{Co}/</tt>, <tt>/\p{Private_Use}/</tt>
+- <tt>/\p{Cs}/</tt>, <tt>/\p{Surrogate}/</tt>
+- <tt>/\p{L}/</tt>, <tt>/\p{Letter}/</tt>
+- <tt>/\p{LC}/</tt>, <tt>/\p{Cased_Letter}/</tt>
+- <tt>/\p{Ll}/</tt>, <tt>/\p{Lowercase_Letter}/</tt>
+- <tt>/\p{Lm}/</tt>, <tt>/\p{Modifier_Letter}/</tt>
+- <tt>/\p{Lo}/</tt>, <tt>/\p{Other_Letter}/</tt>
+- <tt>/\p{Lt}/</tt>, <tt>/\p{Titlecase_Letter}/</tt>
+- <tt>/\p{Lu}/</tt>, <tt>/\p{Uppercase_Letter}/</tt>
+- <tt>/\p{M}/</tt>, <tt>/\p{Mark}/</tt>
+- <tt>/\p{Mc}/</tt>, <tt>/\p{Spacing_Mark}/</tt>
+- <tt>/\p{Me}/</tt>, <tt>/\p{Enclosing_Mark}/</tt>
+- <tt>/\p{Mn}/</tt>, <tt>/\p{Nonspacing_Mark}/</tt>
+- <tt>/\p{N}/</tt>, <tt>/\p{Number}/</tt>
+- <tt>/\p{Nd}/</tt>, <tt>/\p{Decimal_Number}/</tt>
+- <tt>/\p{Nl}/</tt>, <tt>/\p{Letter_Number}/</tt>
+- <tt>/\p{No}/</tt>, <tt>/\p{Other_Number}/</tt>
+- <tt>/\p{P}/</tt>, <tt>/\p{Punctuation}/</tt>
+- <tt>/\p{Pc}/</tt>, <tt>/\p{Connector_Punctuation}/</tt>
+- <tt>/\p{Pd}/</tt>, <tt>/\p{Dash_Punctuation}/</tt>
+- <tt>/\p{Pe}/</tt>, <tt>/\p{Close_Punctuation}/</tt>
+- <tt>/\p{Pf}/</tt>, <tt>/\p{Final_Punctuation}/</tt>
+- <tt>/\p{Pi}/</tt>, <tt>/\p{Initial_Punctuation}/</tt>
+- <tt>/\p{Po}/</tt>, <tt>/\p{Initial_Punctuation}/</tt>
+- <tt>/\p{Ps}/</tt>, <tt>/\p{Open_Punctuation}/</tt>
+- <tt>/\p{S}/</tt>, <tt>/\p{Symbol}/</tt>
+- <tt>/\p{Sc}/</tt>, <tt>/\p{Currency_Symbol}/</tt>
+- <tt>/\p{Sk}/</tt>, <tt>/\p{Modifier_Symbol}/</tt>
+- <tt>/\p{Sm}/</tt>, <tt>/\p{Math_Symbol}/</tt>
+- <tt>/\p{So}/</tt>, <tt>/\p{Other_Symbol}/</tt>
+- <tt>/\p{Z}/</tt>, <tt/\p{Separator}/</tt>
+- <tt>/\p{Zl}/</tt>, <tt>/\p{Line_Separator}/</tt>
+- <tt>/\p{Zp}/</tt>, <tt>/\p{Paragraph_Separator}/</tt>
+- <tt>/\p{Zs}/</tt>, <tt>/\p{Space_Separator}/</tt>
 - <tt>/\p{Math}/</tt>
 - <tt>/\p{Cased}/</tt>
 - <tt>/\p{Case_Ignorable}/</tt>
