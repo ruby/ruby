@@ -34,8 +34,7 @@ class TestStringMemory < Test::Unit::TestCase
   end
 
   def test_byteslice_postfix
-    # If you freeze this string, the problem goes away.
-    string = "a" * 100_000
+    string = ("a" * 100_000).freeze
 
     allocations = capture_allocations(String) do
       string.byteslice(50_000, 100_000)
@@ -45,8 +44,7 @@ class TestStringMemory < Test::Unit::TestCase
   end
 
   def test_byteslice_postfix_twice
-    # If you freeze this string, the problem goes away.
-    string = "a" * 100_000
+    string = ("a" * 100_000).freeze
 
     allocations = capture_allocations(String) do
       string.byteslice(50_000, 100_000).byteslice(25_000, 50_000)
