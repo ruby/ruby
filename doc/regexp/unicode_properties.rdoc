@@ -1,5 +1,9 @@
 == \Regexps Based on Unicode Properties
 
+The properties shown here are those currently supported in Ruby.
+Older versions may not support all of these;
+newer versions may support additional properties.
+
 === POSIX brackets
 
 - <tt>/\p{Alpha}/</tt>
