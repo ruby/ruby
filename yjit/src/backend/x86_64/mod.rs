@@ -87,9 +87,9 @@ impl From<&Opnd> for X86Opnd {
 impl Assembler
 {
     // A special scratch register for intermediate processing.
-    // Note: right now this is only used by LeaLabel because label_ref accepts
-    // a closure and we don't want it to have to capture anything.
-    const SCRATCH0: X86Opnd = X86Opnd::Reg(R11_REG);
+    // This register is caller-saved (so we don't have to save it before using it)
+    pub const SCRATCH_REG: Reg = R11_REG;
+    const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
 
     /// List of registers that can be used for stack temps.
     pub const TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
@@ -347,7 +347,7 @@ impl Assembler
                     // Load each operand into the corresponding argument
                     // register.
                     for (idx, opnd) in opnds.into_iter().enumerate() {
-                        asm.load_into(C_ARG_OPNDS[idx], *opnd);
+                        asm.load_into(Opnd::c_arg(C_ARG_OPNDS[idx]), *opnd);
                     }
 
                     // Now we push the CCall without any arguments so that it
@@ -1054,5 +1054,119 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4983f540");
+    }
+
+    #[test]
+    fn test_reorder_c_args_no_cycle() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[0], // mov rdi, rdi (optimized away)
+            C_ARG_OPNDS[1], // mov rsi, rsi (optimized away)
+        ]);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "b800000000ffd0", {"
+            0x0: mov eax, 0
+            0x5: call rax
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_single_cycle() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // rdi and rsi form a cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov rdi, rsi
+            C_ARG_OPNDS[0], // mov rsi, rdi
+            C_ARG_OPNDS[2], // mov rdx, rdx (optimized away)
+        ]);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "4989f34889fe4c89dfb800000000ffd0", {"
+            0x0: mov r11, rsi
+            0x3: mov rsi, rdi
+            0x6: mov rdi, r11
+            0x9: mov eax, 0
+            0xe: call rax
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_two_cycles() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // rdi and rsi form a cycle, and rdx and rcx form another cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov rdi, rsi
+            C_ARG_OPNDS[0], // mov rsi, rdi
+            C_ARG_OPNDS[3], // mov rdx, rcx
+            C_ARG_OPNDS[2], // mov rcx, rdx
+        ]);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "4989f34889fe4c89df4989cb4889d14c89dab800000000ffd0", {"
+            0x0: mov r11, rsi
+            0x3: mov rsi, rdi
+            0x6: mov rdi, r11
+            0x9: mov r11, rcx
+            0xc: mov rcx, rdx
+            0xf: mov rdx, r11
+            0x12: mov eax, 0
+            0x17: call rax
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_large_cycle() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // rdi, rsi, and rdx form a cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov rdi, rsi
+            C_ARG_OPNDS[2], // mov rsi, rdx
+            C_ARG_OPNDS[0], // mov rdx, rdi
+        ]);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "4989f34889d64889fa4c89dfb800000000ffd0", {"
+            0x0: mov r11, rsi
+            0x3: mov rsi, rdx
+            0x6: mov rdx, rdi
+            0x9: mov rdi, r11
+            0xc: mov eax, 0
+            0x11: call rax
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_with_insn_out() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let rax = asm.load(Opnd::UImm(1));
+        let rcx = asm.load(Opnd::UImm(2));
+        let rdx = asm.load(Opnd::UImm(3));
+        // rcx and rdx form a cycle
+        asm.ccall(0 as _, vec![
+            rax, // mov rdi, rax
+            rcx, // mov rsi, rcx
+            rcx, // mov rdx, rcx
+            rdx, // mov rcx, rdx
+        ]);
+        asm.compile_with_num_regs(&mut cb, 3);
+
+        assert_disasm!(cb, "b801000000b902000000ba030000004889c74889ce4989cb4889d14c89dab800000000ffd0", {"
+            0x0: mov eax, 1
+            0x5: mov ecx, 2
+            0xa: mov edx, 3
+            0xf: mov rdi, rax
+            0x12: mov rsi, rcx
+            0x15: mov r11, rcx
+            0x18: mov rcx, rdx
+            0x1b: mov rdx, r11
+            0x1e: mov eax, 0
+            0x23: call rax
+        "});
     }
 }
