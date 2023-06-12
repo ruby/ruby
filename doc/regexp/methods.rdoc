@@ -10,14 +10,13 @@ Each of these Ruby core methods can accept a regexp as an argument:
 - Enumerable#one?
 - Enumerable#slice_after
 - Enumerable#slice_before
-- Kernel#gsub
-- Kernel#sub
 - Regexp#=~
 - Regexp#match
 - Regexp#match?
 - Regexp.new
 - Regexp.union
 - String#=~
+- String[]=
 - String#byteindex
 - String#byterindex
 - String#gsub
@@ -28,7 +27,7 @@ Each of these Ruby core methods can accept a regexp as an argument:
 - String#partition
 - String#rindex
 - String#rpartition
-- String#scan
+- StringString#scan
 - String#slice
 - String#slice!
 - String#split
