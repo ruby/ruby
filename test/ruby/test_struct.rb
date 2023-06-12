@@ -29,6 +29,12 @@ module TestStruct
     end
   end
 
+  def test_oversized_structs
+    klass = Struct.new(*100.times.map { |i| :"a_#{i}" })
+    struct = klass.new(*100.times.to_a)
+    assert_equal 99, struct.a_99
+  end
+
   # [ruby-dev:26247] more than 10 struct members causes segmentation fault
   def test_morethan10members
     list = %w( a b c d  e f g h  i j k l  m n o p )
