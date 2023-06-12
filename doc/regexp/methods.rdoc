@@ -1,6 +1,6 @@
 == \Regexp Methods
 
-Each of these methods can accept a regexp as an argument:
+Each of these Ruby core methods can accept a regexp as an argument:
 
 - Enumerable#all?
 - Enumerable#any?
