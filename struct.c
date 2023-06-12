@@ -1722,6 +1722,18 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     return data_class;
 }
 
+VALUE
+rb_data_define(VALUE super, ...)
+{
+    va_list ar;
+    VALUE ary;
+    va_start(ar, super);
+    ary = struct_make_members_list(ar);
+    va_end(ar);
+    if (!super) super = rb_cData;
+    return setup_data(anonymous_struct(super), ary);
+}
+
 /*
  *  call-seq:
  *    DataClass::members -> array_of_symbols
