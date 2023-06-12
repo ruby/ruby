@@ -849,7 +849,7 @@ struct_alloc(VALUE klass)
         return (VALUE)st;
     }
     else {
-        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
+        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
 
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
