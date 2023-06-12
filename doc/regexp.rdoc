@@ -99,8 +99,6 @@ each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
   'foo bar' =~ /bar/ # => 4
   /baz/ =~ 'foo bar' # => nil
 
-Operator NilClass#=~ returns +nil+ and does not set global variables.
-
 == \Method <tt>match?</tt>
 
 Each of the methods Regexp#match?, String#match?, and Symbol#match?
@@ -160,7 +158,7 @@ Examples:
   $+ # => nil
   $1 # => nil
 
-Note that Regexp#match?, String#match?, Symbol#match?, and NilClass#=~
+Note that Regexp#match?, String#match?, and Symbol#match?
 do not set global variables.
 
 == Sources
@@ -196,11 +194,10 @@ depending on the context, these are sometimes metacharacters:
 
 To match a metacharacter literally, backslash-escape it:
 
-  # Metacharacter period matches any character except newline.
-  /./.match('foo')  # => #<MatchData "f">
-  # Literal character period matches only period.
-  /\./.match('.')   # => #<MatchData ".">
-  /\./.match('foo') # => nil
+  # Matches one or more 'o' characters.
+  /o+/.match('foo')  # => #<MatchData "oo">
+  # Would match 'o+'.
+  /o\+/.match('foo') # => nil
 
 To match a backslash literally, backslash-escape it:
 
@@ -371,7 +368,8 @@ Each of these anchors matches a boundary:
     /\Afoo/.match(' foo bar') # => nil
 
 - <tt>\Z</tt>: Matches the end of the string;
-  if string ends with a single newline,  it matches just before newline:
+  if string ends with a single newline,
+  it matches just before the ending newline:
 
     /foo\Z/.match('bar foo')     # => #<MatchData "foo">
     /foo\Z/.match('foo bar')     # => nil
@@ -1123,19 +1121,21 @@ and so takes about 5 seconds to execute:
 
 == Encodings
 
-By default, a regexp has US-ASCII encoding:
+By default, a regexp with only US-ASCII characters has US-ASCII encoding:
 
   re = /foo/
   re.source.encoding # => #<Encoding:US-ASCII>
   re.encoding        # => #<Encoding:US-ASCII>
 
-Regular expressions are assumed to use the source encoding. This can be
-overridden with one of the following modifiers.
+A regular expression containing non-US-ASCII characters
+is assumed to use the source encoding.
+This can be overridden with one of the following modifiers.
 
-- <tt>/_pat_/n</tt>: ASCII-8BIT
+- <tt>/_pat_/n</tt>: US-ASCII or ASCII-8BIT
 
-    # Same as Regexp.new('FOO', Regexp::NOENCODING)
-    /FOO/n.encoding # => #<Encoding:US-ASCII>
+    /foo/n.encoding     # => #<Encoding:US-ASCII>
+    /foo\xff/n.encoding # => #<Encoding:ASCII-8BIT>
+    /foo\x7f/n.encoding # => #<Encoding:US-ASCII>
 
 - <tt>/_pat_/u</tt>: UTF-8
 
@@ -1152,14 +1152,21 @@ overridden with one of the following modifiers.
 A regexp can be matched against a target string when either:
 
 - They have the same encoding.
-- The regexp's encoding is _US-ASCII_ and the string's encoding
-  is ASCII-compatible.
+- The regexp's encoding is a fixed encoding and the string
+  contains only ASCII characters.
+  Method Regexp#fixed_encoding? returns whether the regexp
+  has a <i>fixed</i> encoding.
+
 
 If a match between incompatible encodings is attempted an
 <tt>Encoding::CompatibilityError</tt> exception is raised.
 
-Method Regexp#fixed_encoding?returns whether the regexp
-has a <i>fixed</i> encoding: one that is incompatible with ASCII.
+Example:
+
+  re = eval("# encoding: ISO-8859-1\n/foo\\xff?/")
+  re.encoding                 # => #<Encoding:ISO-8859-1>
+  re =~ "foo".encode("UTF-8") # => 0
+  re =~ "foo\u0100"           # Raises Encoding::CompatibilityError
 
 The encoding may be explicitly fixed by including Regexp::FIXEDENCODING
 in the second argument for Regexp.new:
@@ -1171,42 +1178,6 @@ in the second argument for Regexp.new:
   s = "a\u3042"
   s.encoding   # => #<Encoding:UTF-8>
   re.match(s)  # Raises Encoding::CompatibilityError.
-
-== Performance
-
-Certain pathological combinations of constructs can lead to abysmally bad
-performance.
-
-Consider a string of 25 <i>a</i>s, a <i>d</i>, 4 <i>a</i>s, and a
-<i>c</i>.
-
-   s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
-   # => "aaaaaaaaaaaaaaaaaaaaaaaaadaaaac"
-
-The following patterns match quickly, as one would expect:
-
-  (start = Time.now); /(b|a)/.match(s);   (Time.now - start) # => 4.4e-06
-  (start = Time.now); /(b|a+)/.match(s);  (Time.now - start) # => 4.6e-06
-  (start = Time.now); /(b|a+)*/.match(s); (Time.now - start) # => 5.2e-06
-
-However, the following pattern takes appreciably longer:
-
-  (start = Time.now); /(b|a+)*c/.match(s); (Time.now - start) # => 5.3e-06
-
-This happens because an atom in the regexp is quantified by both an
-immediate <tt>+</tt> and an enclosing <tt>*</tt> with nothing to
-differentiate which is in control of any particular character.
-
-The nondeterminism that results produces non-linear performance.
-For an in-depth analysis, see
-{"Crafting an Efficient Expression"}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf#page=245]
-in <i>Mastering Regular Expressions</i> (3rd ed.) by Jeffrey Friedl.
-
-This particular case can be fixed by use of atomic grouping,
-which prevents the unnecessary backtracking:
-
-  (start = Time.now); /(b|a+)*c/.match(s);   (Time.now - start) # => 4.8e-06
-  (start = Time.now); /(?>b|a+)*c/.match(s); (Time.now - start) # => 5.0e-06
 
 == Timeouts
 
