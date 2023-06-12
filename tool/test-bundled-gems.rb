@@ -52,6 +52,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       envs["RUBY_DEBUG_TEST_NO_REMOTE"] = "1"
     end
 
+  when "test-unit"
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
+
   when /\Anet-/
     toplib = gem.tr("-", "/")
 
