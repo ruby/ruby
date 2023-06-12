@@ -68,7 +68,7 @@ struct parser_st_hash_type {
 };
 
 typedef struct st_functions {
-	void *(*nonempty_memcpy)(void *dest, const void *src, size_t t, size_t n);
+        void *(*nonempty_memcpy)(void *dest, const void *src, size_t t, size_t n);
 } st_functions_t;
 
 #define ST_INDEX_BITS (SIZEOF_ST_INDEX_T * CHAR_BIT)
