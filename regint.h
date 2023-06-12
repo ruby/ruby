@@ -875,8 +875,8 @@ typedef struct _OnigStackType {
     } absent_pos;
 #ifdef USE_MATCH_CACHE
     struct {
-      long index;
-      uint8_t mask;
+      long    index;      /* index of the match cache buffer */
+      uint8_t mask;       /* bit-mask for the match cache buffer */
     } match_cache_point;
 #endif
   } u;
@@ -889,6 +889,8 @@ typedef struct {
   int outer_repeat_mem;
   long num_cache_points_at_outer_repeat;
   long num_cache_points_in_outer_repeat;
+  int atomic_nesting;
+  UChar *match_addr;
 } OnigCacheOpcode;
 #endif
 

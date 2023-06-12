@@ -255,7 +255,7 @@ We encode a match cache point to an integer value by the following equation:
 "match cache point" = "position on input string" * "total number of cache points" + "cache point"
 
 "match cache buffer"
-A bit-array for memoizing (recording) match cache points once arrived.
+A bit-array for memoizing (recording) match cache points once backtracked.
 */
 
 /* count the total number of cache opcodes for allocating a match cache buffer. */
@@ -269,6 +269,7 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
   OnigEncoding enc = reg->enc;
   MemNumType current_repeat_mem = -1;
   long num_cache_opcodes = 0;
+  int atomic_nesting = 0;
 
   while (p < pend) {
     switch (*p++) {
@@ -322,7 +323,7 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	break;
       case OP_ANYCHAR_STAR:
       case OP_ANYCHAR_ML_STAR:
-	num_cache_opcodes++;break;
+	num_cache_opcodes++; break;
       case OP_ANYCHAR_STAR_PEEK_NEXT:
       case OP_ANYCHAR_ML_STAR_PEEK_NEXT:
 	p++; num_cache_opcodes++; break;
@@ -366,7 +367,9 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
       case OP_MEMORY_END_PUSH_REC:
       case OP_MEMORY_END:
       case OP_MEMORY_END_REC:
-	p += SIZE_MEMNUM; break;
+	p += SIZE_MEMNUM;
+	if (atomic_nesting > 0) goto impossible;
+	break;
 
       case OP_KEEP:
 	break;
@@ -428,12 +431,17 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	break;
 
       case OP_PUSH_POS:
-      case OP_POP_POS:
-      case OP_PUSH_POS_NOT:
-      case OP_FAIL_POS:
-	goto impossible;
       case OP_PUSH_STOP_BT:
+	atomic_nesting++;
+	break;
+      case OP_PUSH_POS_NOT:
+	p += SIZE_RELADDR;
+	atomic_nesting++;
+	break;
+      case OP_POP_POS:
+      case OP_FAIL_POS:
       case OP_POP_STOP_BT:
+	atomic_nesting--;
 	break;
       case OP_LOOK_BEHIND:
       case OP_PUSH_LOOK_BEHIND_NOT:
@@ -491,17 +499,34 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
   MemNumType current_repeat_mem = -1;
   long cache_point = 0;
   long num_cache_points_at_repeat = 0;
+  int atomic_nesting = 0;
+  const OnigCacheOpcode* cache_opcodes_begin = cache_opcodes;
   OnigCacheOpcode* cache_opcodes_at_repeat = NULL;
 
-#  define INC_CACHE_OPCODES do {\
+# define INC_CACHE_OPCODES do {\
     cache_opcodes->addr = pbegin;\
     cache_opcodes->cache_point = cache_point - num_cache_points_at_repeat;\
     cache_opcodes->outer_repeat_mem = current_repeat_mem;\
     cache_opcodes->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;\
     cache_opcodes->num_cache_points_in_outer_repeat = 0;\
-    cache_point++;\
+    cache_opcodes->atomic_nesting = atomic_nesting;\
+    cache_point += atomic_nesting > 0 ? 2 : 1;\
     cache_opcodes++;\
-   } while (0)
+  } while (0)
+
+# define INC_ATOMIC_NESTING atomic_nesting++
+# define DEC_ATOMIC_NESTING do {\
+    UChar* match_addr = p - 1;\
+    OnigCacheOpcode* cache_opcodes_in_atomic = cache_opcodes - 1;\
+    while (\
+      cache_opcodes_in_atomic >= cache_opcodes_begin &&\
+      cache_opcodes_in_atomic->atomic_nesting == atomic_nesting\
+    ) {\
+      cache_opcodes_in_atomic->match_addr = match_addr;\
+      cache_opcodes_in_atomic--;\
+    }\
+    atomic_nesting--;\
+  } while (0)
 
   while (p < pend) {
     pbegin = p;
@@ -603,7 +628,9 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
       case OP_MEMORY_END_PUSH_REC:
       case OP_MEMORY_END:
       case OP_MEMORY_END_REC:
-	p += SIZE_MEMNUM; break;
+	p += SIZE_MEMNUM;
+	if (atomic_nesting > 0) goto unexpected_bytecode_error;
+	break;
 
       case OP_KEEP:
 	break;
@@ -673,12 +700,17 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
 	break;
 
       case OP_PUSH_POS:
-      case OP_POP_POS:
-      case OP_PUSH_POS_NOT:
-      case OP_FAIL_POS:
-	goto unexpected_bytecode_error;
       case OP_PUSH_STOP_BT:
+	INC_ATOMIC_NESTING;
+	break;
+      case OP_PUSH_POS_NOT:
+	p += SIZE_RELADDR;
+	INC_ATOMIC_NESTING;
+	break;
+      case OP_POP_POS:
+      case OP_FAIL_POS:
       case OP_POP_STOP_BT:
+	DEC_ATOMIC_NESTING;
 	break;
       case OP_LOOK_BEHIND:
       case OP_PUSH_LOOK_BEHIND_NOT:
@@ -1374,20 +1406,30 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #endif
 
 #ifdef ONIG_DEBUG_MATCH_CACHE
-# define MATCH_CACHE_DEBUG_MEMOIZE fprintf(stderr, "MATCH CACHE: memoize (index=%ld mask=%d)\n", stk->u.match_cache_point.index, stk->u.match_cache_point.mask);
+# define MATCH_CACHE_DEBUG_MEMOIZE(stkp) fprintf(stderr, "MATCH CACHE: memoize (index=%ld mask=%d)\n", stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);
 #else
-# define MATCH_CACHE_DEBUG_MEMOIZE ((void) 0)
+# define MATCH_CACHE_DEBUG_MEMOIZE(stkp) ((void) 0)
 #endif
 
 #ifdef USE_MATCH_CACHE
+# define INC_NUM_FAILS msa->num_fails++
 # define MEMOIZE_MATCH_CACHE_POINT do {\
     if (stk->type == STK_MATCH_CACHE_POINT) {\
       msa->match_cache_buf[stk->u.match_cache_point.index] |= stk->u.match_cache_point.mask;\
-      MATCH_CACHE_DEBUG_MEMOIZE;\
+      MATCH_CACHE_DEBUG_MEMOIZE(stk);\
+    }\
+  } while(0)
+# define MEMOIZE_ATOMIC_MATCH_CACHE_POINT(stkp) do {\
+    if (stkp->type == STK_MATCH_CACHE_POINT) {\
+      stkp->type = STK_VOID;\
+      atomic_match_cache_point_matched(msa->match_cache_buf, stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);\
+      MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
   } while(0)
 #else
+# define INC_NUM_FAILS ((void) 0)
 # define MEMOIZE_MATCH_CACHE_POINT ((void) 0)
+# define MEMOIZE_ATOMIC_MATCH_CACHE_POINT ((void) 0)
 #endif
 
 #define STACK_POP_ONE do {\
@@ -1458,7 +1500,11 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       mem_start_stk[stk->u.mem.num] = stk->u.mem.start;\
       mem_end_stk[stk->u.mem.num]   = stk->u.mem.end;\
     }\
+    else if (IS_TO_VOID_TARGET(stk)) {\
+      INC_NUM_FAILS;\
+    }\
     ELSE_IF_STATE_CHECK_MARK(stk);\
+    MEMOIZE_ATOMIC_MATCH_CACHE_POINT(stk);\
   }\
 } while(0)
 
@@ -1515,12 +1561,14 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     k--;\
     STACK_BASE_CHECK(k, "STACK_POS_END"); \
     if (IS_TO_VOID_TARGET(k)) {\
+      INC_NUM_FAILS;\
       k->type = STK_VOID;\
     }\
     else if (k->type == STK_POS) {\
       k->type = STK_VOID;\
       break;\
     }\
+    MEMOIZE_ATOMIC_MATCH_CACHE_POINT(k);\
   }\
 } while(0)
 
@@ -1530,12 +1578,14 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     k--;\
     STACK_BASE_CHECK(k, "STACK_STOP_BT_END"); \
     if (IS_TO_VOID_TARGET(k)) {\
+      INC_NUM_FAILS;\
       k->type = STK_VOID;\
     }\
     else if (k->type == STK_STOP_BT) {\
       k->type = STK_VOID;\
       break;\
     }\
+    MEMOIZE_ATOMIC_MATCH_CACHE_POINT(k);\
   }\
 } while(0)
 
@@ -2003,6 +2053,7 @@ stack_type_str(int stack_type)
     case STK_VOID:		return "Void  ";
     case STK_ABSENT_POS:	return "AbsPos";
     case STK_ABSENT:		return "Absent";
+    case STK_MATCH_CACHE_POINT:	return "MCache";
     default:			return "      ";
   }
 }
@@ -2024,7 +2075,7 @@ bsearch_cache_opcodes(const OnigCacheOpcode *cache_opcodes, long num_cache_opcod
 }
 
 static long
-find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_cache_opcodes, const UChar* p, const OnigStackType *stk, const OnigStackIndex *repeat_stk)
+find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_cache_opcodes, const UChar* p, const OnigStackType *stk, const OnigStackIndex *repeat_stk, const OnigCacheOpcode **cache_opcode_ptr)
 {
   long m;
   const OnigCacheOpcode* cache_opcode;
@@ -2043,6 +2094,7 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
   }
 
   cache_opcode = &cache_opcodes[m];
+  *cache_opcode_ptr = &cache_opcodes[m];
   cache_point = cache_opcode->cache_point;
   if (cache_opcode->outer_repeat_mem == -1) {
     return cache_point;
@@ -2073,6 +2125,24 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
     (num_cache_points_in_outer_repeat + 1) * (count - range->lower + 1) +
     cache_point;
 }
+
+static int atomic_match_cache_point_is_matched(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
+  if (match_cache_point_mask & 0x80) {
+    return (match_cache_buf[match_cache_point_index + 1] & 0x01) > 0;
+  } else {
+    return (match_cache_buf[match_cache_point_index] & (match_cache_point_mask << 1)) > 0;
+  }
+}
+
+static void atomic_match_cache_point_matched(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
+  match_cache_buf[match_cache_point_index] |= match_cache_point_mask;
+  if (match_cache_point_mask & 0x80) {
+    match_cache_buf[match_cache_point_index + 1] |= 0x01;
+  } else {
+    match_cache_buf[match_cache_point_index] |= match_cache_point_mask << 1;
+  }
+}
+
 #endif /* USE_MATCH_CACHE */
 
 /* match data(str - end) from position (sstart). */
@@ -2393,7 +2463,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
 #  define CHECK_MATCH_CACHE do {\
   if (msa->match_cache_status == MATCH_CACHE_STATUS_ENABLED) {\
-    long cache_point = find_cache_point(reg, msa->cache_opcodes, msa->num_cache_opcodes, pbegin, stk_base, repeat_stk);\
+    const OnigCacheOpcode *cache_opcode;\
+    long cache_point = find_cache_point(reg, msa->cache_opcodes, msa->num_cache_opcodes, pbegin, stk_base, repeat_stk, &cache_opcode);\
     if (cache_point >= 0) {\
       long match_cache_point = msa->num_cache_points * (long)(s - str) + cache_point;\
       long match_cache_point_index = match_cache_point >> 3;\
@@ -2401,7 +2472,14 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       MATCH_CACHE_DEBUG;\
       if (msa->match_cache_buf[match_cache_point_index] & match_cache_point_mask) {\
 	MATCH_CACHE_DEBUG_HIT;\
-	goto fail;\
+	if (cache_opcode->atomic_nesting == 0) goto fail;\
+	else {\
+	  if (atomic_match_cache_point_is_matched(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
+	    p = cache_opcode->match_addr;\
+            MOP_OUT;\
+            JUMP;\
+          } else goto fail;\
+        }\
       }\
       STACK_PUSH_MATCH_CACHE_POINT(match_cache_point_index, match_cache_point_mask);\
     }\
@@ -3922,7 +4000,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  fprintf(stderr, "MATCH CACHE: #cache points = %ld\n", msa->num_cache_points);
 	  fprintf(stderr, "MATCH CACHE: cache opcodes (%p):\n", msa->cache_opcodes);
 	  for (int i = 0; i < msa->num_cache_opcodes; i++) {
-	    fprintf(stderr, "MATCH CACHE:   [%p] cache_point=%ld outer_repeat_mem=%d num_cache_opcodes_at_outer_repeat=%ld num_cache_opcodes_in_outer_repeat=%ld\n", msa->cache_opcodes[i].addr, msa->cache_opcodes[i].cache_point, msa->cache_opcodes[i].outer_repeat_mem, msa->cache_opcodes[i].num_cache_points_at_outer_repeat, msa->cache_opcodes[i].num_cache_points_in_outer_repeat);
+	    fprintf(stderr, "MATCH CACHE:   [%p] cache_point=%ld outer_repeat_mem=%d num_cache_opcodes_at_outer_repeat=%ld num_cache_opcodes_in_outer_repeat=%ld atomic_nesting=%d match_addr=%p\n", msa->cache_opcodes[i].addr, msa->cache_opcodes[i].cache_point, msa->cache_opcodes[i].outer_repeat_mem, msa->cache_opcodes[i].num_cache_points_at_outer_repeat, msa->cache_opcodes[i].num_cache_points_in_outer_repeat, msa->cache_opcodes[i].atomic_nesting, msa->cache_opcodes[i].match_addr);
 	  }
 #endif
 	}
