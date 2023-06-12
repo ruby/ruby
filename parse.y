@@ -13997,7 +13997,6 @@ rb_strterm_mark(VALUE obj)
     }
 }
 #endif /* !UNIVERSAL_PARSER */
-#endif /* !RIPPER */
 
 VALUE
 rb_ruby_parser_encoding(rb_parser_t *p)
@@ -14017,6 +14016,7 @@ rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag)
     p->debug = flag;
     return flag;
 }
+#endif /* !RIPPER */
 
 #ifdef RIPPER
 int

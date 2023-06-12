@@ -84,9 +84,14 @@ rb_ast_t* rb_ruby_parser_compile_file_path(rb_parser_t *p, VALUE fname, VALUE fi
 void rb_ruby_parser_keep_tokens(rb_parser_t *p);
 rb_ast_t* rb_ruby_parser_compile_generic(rb_parser_t *p, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start);
 rb_ast_t* rb_ruby_parser_compile_string_path(rb_parser_t *p, VALUE f, VALUE s, int line);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+
 VALUE rb_ruby_parser_encoding(rb_parser_t *p);
 int rb_ruby_parser_end_seen_p(rb_parser_t *p);
 int rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag);
+
+RUBY_SYMBOL_EXPORT_END
 
 int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc);
 
