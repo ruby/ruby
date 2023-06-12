@@ -43,6 +43,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     # environment variable.
     load_path = true
 
+  when "test-unit"
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
+
   when /\Anet-/
     toplib = gem.tr("-", "/")
 
