@@ -5,7 +5,7 @@ BISON = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 
 .SUFFIXES: .y
 
-src: ripper.c eventids1.c eventids2table.c
+src: ripper.c ripper_init.c eventids1.c eventids1.h eventids2table.c
 
 ripper.o: ripper.c
 
