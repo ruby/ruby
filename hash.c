@@ -44,7 +44,6 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "symbol.h"
-#include "transient_heap.h"
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
 #include "vm_sync.h"
@@ -382,12 +381,10 @@ typedef st_index_t st_hash_t;
 
 /*
  * RHASH_AR_TABLE_P(h):
- * * as.ar == NULL or
- *   as.ar points ar_table.
- * * as.ar is allocated by transient heap or xmalloc.
+ *   RHASH_AR_TABLE points to ar_table.
  *
  * !RHASH_AR_TABLE_P(h):
- * * as.st points st_table.
+ *   RHASH_ST_TABLE points st_table.
  */
 
 #define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
