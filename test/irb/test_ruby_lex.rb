@@ -6,7 +6,7 @@ require 'ostruct'
 require_relative "helper"
 
 module TestIRB
-  class TestRubyLex < TestCase
+  class RubyLexTest < TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :nesting_level)
 
     class MockIO_AutoIndent

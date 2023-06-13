@@ -5,7 +5,7 @@ require "irb"
 require_relative "helper"
 
 module TestIRB
-  class TestRelineInputMethod < TestCase
+  class RelineInputMethodTest < TestCase
     def setup
       @conf_backup = IRB.conf.dup
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new

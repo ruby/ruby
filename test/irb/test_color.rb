@@ -6,7 +6,7 @@ require 'stringio'
 require_relative "helper"
 
 module TestIRB
-  class TestColor < TestCase
+  class ColorTest < TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     UNDERLINE = "\e[4m"

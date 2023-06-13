@@ -6,7 +6,7 @@ require 'readline'
 require_relative "helper"
 
 module TestIRB
-  class TestHistory < TestCase
+  class HistoryTest < TestCase
     def setup
       IRB.conf[:RC_NAME_GENERATOR] = nil
     end
