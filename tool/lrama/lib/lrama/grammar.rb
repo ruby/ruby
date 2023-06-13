@@ -155,16 +155,16 @@ module Lrama
         last_column = ref.last_column
 
         case
-        when ref.number == "$" && ref.type == :dollar # $$
+        when ref.value == "$" && ref.type == :dollar # $$
           # Omit "<>"
           member = tag.s_value[1..-2]
           str = "((*yyvaluep).#{member})"
-        when ref.number == "$" && ref.type == :at # @$
+        when ref.value == "$" && ref.type == :at # @$
           str = "(*yylocationp)"
         when ref.type == :dollar # $n
-          raise "$#{ref.number} can not be used in %printer."
+          raise "$#{ref.value} can not be used in %printer."
         when ref.type == :at # @n
-          raise "@#{ref.number} can not be used in %printer."
+          raise "@#{ref.value} can not be used in %printer."
         else
           raise "Unexpected. #{self}, #{ref}"
         end
@@ -190,19 +190,19 @@ module Lrama
         last_column = ref.last_column
 
         case
-        when ref.number == "$" && ref.type == :dollar # $$
+        when ref.value == "$" && ref.type == :dollar # $$
           # Omit "<>"
           member = ref.tag.s_value[1..-2]
           str = "(yyval.#{member})"
-        when ref.number == "$" && ref.type == :at # @$
+        when ref.value == "$" && ref.type == :at # @$
           str = "(yyloc)"
         when ref.type == :dollar # $n
-          i = -ref.position_in_rhs + ref.number
+          i = -ref.position_in_rhs + ref.value
           # Omit "<>"
           member = ref.tag.s_value[1..-2]
           str = "(yyvsp[#{i}].#{member})"
         when ref.type == :at # @n
-          i = -ref.position_in_rhs + ref.number
+          i = -ref.position_in_rhs + ref.value
           str = "(yylsp[#{i}])"
         else
           raise "Unexpected. #{self}, #{ref}"
@@ -226,14 +226,14 @@ module Lrama
         last_column = ref.last_column
 
         case
-        when ref.number == "$" && ref.type == :dollar # $$
+        when ref.value == "$" && ref.type == :dollar # $$
           str = "yylval"
-        when ref.number == "$" && ref.type == :at # @$
+        when ref.value == "$" && ref.type == :at # @$
           str = "yylloc"
         when ref.type == :dollar # $n
-          raise "$#{ref.number} can not be used in initial_action."
+          raise "$#{ref.value} can not be used in initial_action."
         when ref.type == :at # @n
-          raise "@#{ref.number} can not be used in initial_action."
+          raise "@#{ref.value} can not be used in initial_action."
         else
           raise "Unexpected. #{self}, #{ref}"
         end
@@ -247,7 +247,7 @@ module Lrama
 
   # type: :dollar or :at
   # ex_tag: "$<tag>1" (Optional)
-  Reference = Struct.new(:type, :number, :ex_tag, :first_column, :last_column, :referring_symbol, :position_in_rhs, keyword_init: true) do
+  Reference = Struct.new(:type, :value, :ex_tag, :first_column, :last_column, :referring_symbol, :position_in_rhs, keyword_init: true) do
     def tag
       if ex_tag
         ex_tag
@@ -382,8 +382,8 @@ module Lrama
     end
 
     def build_references(token_code)
-      token_code.references.map! do |type, number, tag, first_column, last_column|
-        Reference.new(type: type, number: number, ex_tag: tag, first_column: first_column, last_column: last_column)
+      token_code.references.map! do |type, value, tag, first_column, last_column|
+        Reference.new(type: type, value: value, ex_tag: tag, first_column: first_column, last_column: last_column)
       end
 
       token_code
@@ -627,15 +627,23 @@ module Lrama
               ref.position_in_rhs = i - 1
               next if ref.type == :at
               # $$, $n, @$, @n can be used in any actions
-              number = ref.number
 
-              if number == "$"
+              if ref.value == "$"
                 # TODO: Should be postponed after middle actions are extracted?
                 ref.referring_symbol = lhs
-              else
-                raise "Can not refer following component. #{number} >= #{i}. #{token}" if number >= i
-                rhs1[number - 1].referred = true
-                ref.referring_symbol = rhs1[number - 1]
+              elsif ref.value.is_a?(Integer)
+                raise "Can not refer following component. #{ref.value} >= #{i}. #{token}" if ref.value >= i
+                rhs1[ref.value - 1].referred = true
+                ref.referring_symbol = rhs1[ref.value - 1]
+              elsif ref.value.is_a?(String)
+                target_tokens = ([lhs] + rhs1 + [code]).compact.first(i)
+                referring_symbol_candidate = target_tokens.filter {|token| token.referred_by?(ref.value) }
+                raise "Referring symbol `#{ref.value}` is duplicated. #{token}" if referring_symbol_candidate.size >= 2
+                raise "Referring symbol `#{ref.value}` is not found. #{token}" if referring_symbol_candidate.count == 0
+
+                referring_symbol = referring_symbol_candidate.first
+                referring_symbol.referred = true
+                ref.referring_symbol = referring_symbol
               end
             end
           end
