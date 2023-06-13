@@ -1055,6 +1055,45 @@ rb_mark_and_update_generic_ivar(VALUE obj)
 #endif
 }
 
+#if USE_MMTK
+
+static int
+rb_mmtk_cleanup_generic_iv_tbl_check(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    MMTk_ObjectReference key_objref = (MMTk_ObjectReference)key;
+    // Delete gen_ivtbl for dead objects.
+    if (!mmtk_is_live_object(key_objref)) {
+        struct gen_ivtbl *tbl = (struct gen_ivtbl*)value;
+        RUBY_ASSERT(tbl != NULL);
+        xfree(tbl);
+
+        return ST_DELETE;
+    }
+
+    // Live objects should have been forwarded in mmtk-ruby.
+#if RUBY_DEBUG
+    MMTk_ObjectReference new_key = mmtk_get_forwarded_object(key_objref);
+    RUBY_ASSERT(new_key == NULL);
+#endif
+
+    return ST_CONTINUE;
+}
+
+/**
+ * Remove entries in generic_iv_tbl_ where the key is dead.
+ * Only used when using MMTk.  In vanilla Ruby, the gen_ivtbl of an object is
+ * removed from generic_iv_tbl_ in obj_free when the object dies.
+ */
+void
+rb_mmtk_cleanup_generic_iv_tbl()
+{
+    st_foreach_with_replace(generic_iv_tbl_,
+                            rb_mmtk_cleanup_generic_iv_tbl_check,
+                            NULL,
+                            0);
+}
+#endif
+
 void
 rb_mv_generic_ivar(VALUE rsrc, VALUE dst)
 {

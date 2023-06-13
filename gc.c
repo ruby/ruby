@@ -14757,12 +14757,19 @@ rb_mmtk_update_global_weak_tables_early(void)
     RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
 }
 
+// Defined in variable.c
+void rb_mmtk_cleanup_generic_iv_tbl();
+
 // This function is called after obj_free is called for dead objects during GC.
 void
 rb_mmtk_update_global_weak_tables(void)
 {
     // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
     rb_objspace_t *objspace = &rb_objspace;
+
+    // We have forwarded generic_iv_tbl entries for live objects in mmtk-ruby.
+    // We still need to remove entries for dead objects.
+    rb_mmtk_cleanup_generic_iv_tbl();
 
     // This table maps object addresses to its finalizer functions.
     // Not all keys point to live objects.
