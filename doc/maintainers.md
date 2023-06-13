@@ -320,7 +320,7 @@ have commit right, others don't.
 * https://rubygems.org/gems/un
 
 #### lib/uri.rb, lib/uri/*
-* YAMADA, Akira (akira)
+* NARUSE, Yui (naruse)
 * https://github.com/ruby/uri
 * https://rubygems.org/gems/uri
 
