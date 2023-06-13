@@ -13,8 +13,7 @@ ENV["GEM_PATH"] = [File.realpath('.bundle'), File.realpath('../.bundle', __dir__
 
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
-dummy_rake_compiler_dir = File.realpath('../dummy-rake-compiler', __FILE__)
-rubylib = [File.expand_path(dummy_rake_compiler_dir), ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
+rubylib = [gem_dir+'/lib', ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
