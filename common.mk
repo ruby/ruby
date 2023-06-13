@@ -1432,7 +1432,7 @@ no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "bundler" "minitest:~> 5" "test-unit" "rake" "hoe" "rexml" "json-schema" "test-unit-rr" "rake-compiler"
+		--install-dir .bundle --conservative "hoe" "rexml" "json-schema" "test-unit-rr" "rake-compiler"
 	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
@@ -1456,7 +1456,7 @@ no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
 yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
 	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "bundler" "rake" "rspec:~> 3"
+		--install-dir .bundle --conservative "rspec:~> 3"
 	$(ACTIONS_ENDGROUP)
 
 RSPECOPTS =
