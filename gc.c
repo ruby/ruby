@@ -10909,7 +10909,16 @@ mark_cvc_tbl_i(VALUE cvc_entry, void *data)
 
     entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
 
+#if USE_MMTK
+    // When using MMTk, objects can move, and entry->cref may have already been
+    // moved, or another GC worker may move the object as we read it.
+    // Disabling the assertion...
+    if (!rb_mmtk_enabled_p()) {
+#endif
     RUBY_ASSERT(entry->cref == 0 || (BUILTIN_TYPE((VALUE)entry->cref) == T_IMEMO && IMEMO_TYPE_P(entry->cref, imemo_cref)));
+#if USE_MMTK
+    }
+#endif
     rb_gc_mark((VALUE) entry->cref);
 
     return ID_TABLE_CONTINUE;
