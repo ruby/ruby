@@ -78,5 +78,13 @@ class URI::TestParser < Test::Unit::TestCase
     assert_equal(["http", nil, "[0::0]", nil, nil, "", nil, nil, nil], URI.split("http://[0::0]"))
     assert_equal([nil, nil, "example.com", nil, nil, "", nil, nil, nil], URI.split("//example.com"))
     assert_equal([nil, nil, "[0::0]", nil, nil, "", nil, nil, nil], URI.split("//[0::0]"))
+
+    assert_equal(["a", nil, nil, nil, nil, "", nil, nil, nil], URI.split("a:"))
+    assert_raise(URI::InvalidURIError) do
+      URI.parse("::")
+    end
+    assert_raise(URI::InvalidURIError) do
+      URI.parse("foo@example:foo")
+    end
   end
 end

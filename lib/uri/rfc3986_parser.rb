@@ -34,6 +34,7 @@ module URI
 
     SCHEME = %r[[A-Za-z][+\-.0-9A-Za-z]*+].source
     SEG = %r[(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/])].source
+    SEG_NC = %r[(?:%\h\h|[!$&-.0-9;=@A-Z_a-z~])].source
     FRAGMENT = %r[(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/?])*+].source
 
     RFC3986_URI = %r[\A
@@ -43,8 +44,8 @@ module URI
       (?<hier-part>//
         (?<authority>#{AUTHORITY})
         (?<path-abempty>(?:/\g<seg>*+)?)
-      | (?<path-absolute>/\g<seg>*+)
-      | (?<path-rootless>(?!=/)\g<seg>++)
+      | (?<path-absolute>/((?!/)\g<seg>++)?)
+      | (?<path-rootless>(?!/)\g<seg>++)
       | (?<path-empty>)
       )
       (?:\?(?<query>[^\#]*+))?
@@ -58,7 +59,7 @@ module URI
         (?<authority>#{AUTHORITY})
         (?<path-abempty>(?:/\g<seg>*+)?)
       | (?<path-absolute>/\g<seg>*+)
-      | (?<path-noscheme>(?!=[:/])\g<seg>++)
+      | (?<path-noscheme>#{SEG_NC}++(?:/\g<seg>*+)?)
       | (?<path-empty>)
       )
       (?:\?(?<query>[^#]*+))?
@@ -156,7 +157,7 @@ module URI
         USERINFO: %r[\A#{USERINFO}\z]o,
         HOST: %r[\A#{HOST}\z]o,
         ABS_PATH: %r[\A/#{SEG}*+\z]o,
-        REL_PATH: %r[\A(?!=/)#{SEG}++\z]o,
+        REL_PATH: %r[\A(?!/)#{SEG}++\z]o,
         QUERY: %r[\A(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/?])*+\z],
         FRAGMENT: %r[\A#{FRAGMENT}\z]o,
         OPAQUE: %r[\A(?:[^/].*)?\z],
