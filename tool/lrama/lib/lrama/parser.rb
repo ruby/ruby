@@ -175,8 +175,11 @@ module Lrama
       # LHS
       lhs = ts.consume!(T::Ident_Colon) # class:
       lhs.type = T::Ident
+      if named_ref = ts.consume(T::Named_Ref)
+        lhs.alias = named_ref.s_value
+      end
 
-      rhs = parse_grammar_rule_rhs(ts, grammar)
+      rhs = parse_grammar_rule_rhs(ts, grammar, lhs)
 
       grammar.add_rule(lhs: lhs, rhs: rhs, lineno: rhs.first ? rhs.first.line : lhs.line)
 
@@ -186,7 +189,7 @@ module Lrama
           # |
           bar_lineno = ts.current_token.line
           ts.next
-          rhs = parse_grammar_rule_rhs(ts, grammar)
+          rhs = parse_grammar_rule_rhs(ts, grammar, lhs)
           grammar.add_rule(lhs: lhs, rhs: rhs, lineno: rhs.first ? rhs.first.line : bar_lineno)
         when T::Semicolon
           # ;
@@ -205,13 +208,13 @@ module Lrama
       end
     end
 
-    def parse_grammar_rule_rhs(ts, grammar)
+    def parse_grammar_rule_rhs(ts, grammar, lhs)
       a = []
       prec_seen = false
       code_after_prec = false
 
       while true do
-        # TODO: Srting can be here
+        # TODO: String can be here
         case ts.current_type
         when T::Ident
           # keyword_class
@@ -244,8 +247,12 @@ module Lrama
           end
 
           code = ts.current_token
+          code.numberize_references(lhs, a)
           grammar.build_references(code)
           a << code
+          ts.next
+        when T::Named_Ref
+          ts.previous_token.alias = ts.current_token.s_value
           ts.next
         when T::Bar
           # |

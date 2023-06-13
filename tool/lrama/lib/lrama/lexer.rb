@@ -7,7 +7,7 @@ module Lrama
     include Lrama::Report::Duration
 
     # s_value is semantic value
-    Token = Struct.new(:type, :s_value, keyword_init: true) do
+    Token = Struct.new(:type, :s_value, :alias, keyword_init: true) do
       Type = Struct.new(:id, :name, keyword_init: true)
 
       attr_accessor :line, :column, :referred
@@ -16,6 +16,31 @@ module Lrama
 
       def to_s
         "#{super} line: #{line}, column: #{column}"
+      end
+
+      def referred_by?(string)
+        [self.s_value, self.alias].include?(string)
+      end
+
+      def ==(other)
+        self.class == other.class && self.type == other.type && self.s_value == other.s_value
+      end
+
+      def numberize_references(lhs, rhs)
+        self.references.map! {|ref|
+          ref_name = ref[1]
+          if ref_name.is_a?(String) && ref_name != '$'
+            value =
+              if lhs.referred_by?(ref_name)
+                '$'
+              else
+                rhs.find_index {|token| token.referred_by?(ref_name) } + 1
+              end
+            [ref[0], value, ref[2], ref[3], ref[4]]
+          else
+            ref
+          end
+        }
       end
 
       @i = 0
@@ -47,6 +72,7 @@ module Lrama
       define_type(:Number)           # 0
       define_type(:Ident_Colon)      # k_if:, k_if  : (spaces can be there)
       define_type(:Ident)            # api.pure, tNUMBER
+      define_type(:Named_Ref)        # [foo]
       define_type(:Semicolon)        # ;
       define_type(:Bar)              # |
       define_type(:String)           # "str"
@@ -166,10 +192,15 @@ module Lrama
           tokens << create_token(Token::Number, Integer(ss[0]), line, ss.pos - column)
         when ss.scan(/(<[a-zA-Z0-9_]+>)/)
           tokens << create_token(Token::Tag, ss[0], line, ss.pos - column)
+        when ss.scan(/([a-zA-Z_.][-a-zA-Z0-9_.]*)\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]\s*:/)
+          tokens << create_token(Token::Ident_Colon, ss[1], line, ss.pos - column)
+          tokens << create_token(Token::Named_Ref, ss[2], line, ss.pos - column)
         when ss.scan(/([a-zA-Z_.][-a-zA-Z0-9_.]*)\s*:/)
           tokens << create_token(Token::Ident_Colon, ss[1], line, ss.pos - column)
         when ss.scan(/([a-zA-Z_.][-a-zA-Z0-9_.]*)/)
           tokens << create_token(Token::Ident, ss[0], line, ss.pos - column)
+        when ss.scan(/\[([a-zA-Z_.][-a-zA-Z0-9_.]*)\]/)
+          tokens << create_token(Token::Named_Ref, ss[1], line, ss.pos - column)
         when ss.scan(/%expect/)
           tokens << create_token(Token::P_expect, ss[0], line, ss.pos - column)
         when ss.scan(/%define/)
@@ -257,6 +288,9 @@ module Lrama
         when ss.scan(/\$(<[a-zA-Z0-9_]+>)?(\d+)/) # $1, $2, $<long>1
           tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
           references << [:dollar, Integer(ss[2]), tag, str.length, str.length + ss[0].length - 1]
+        when ss.scan(/\$(<[a-zA-Z0-9_]+>)?([a-zA-Z_.][-a-zA-Z0-9_.]*)/) # $foo, $expr, $<long>program
+          tag = ss[1] ? create_token(Token::Tag, ss[1], line, str.length) : nil
+          references << [:dollar, ss[2], tag, str.length, str.length + ss[0].length - 1]
         when ss.scan(/@\$/) # @$
           references << [:at, "$", nil, str.length, str.length + ss[0].length - 1]
         when ss.scan(/@(\d)+/) # @1
