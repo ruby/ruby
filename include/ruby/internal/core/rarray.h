@@ -36,18 +36,6 @@
 #include "ruby/assert.h"
 
 /**
- * @private
- * @warning  Do not touch this macro.
- * @warning  It is an implementation detail.
- * @warning  The  value of  this  macro  must match  for  ruby  itself and  all
- *           extension  libraries, otherwise  serious  memory corruption  shall
- *           occur.
- */
-#ifndef USE_TRANSIENT_HEAP
-# define USE_TRANSIENT_HEAP 1
-#endif
-
-/**
  * Convenient casting macro.
  *
  * @param   obj  An object, which is in fact an ::RArray.
@@ -59,11 +47,6 @@
 #define RARRAY_EMBED_LEN_MASK  RARRAY_EMBED_LEN_MASK
 #define RARRAY_EMBED_LEN_MAX   RARRAY_EMBED_LEN_MAX
 #define RARRAY_EMBED_LEN_SHIFT RARRAY_EMBED_LEN_SHIFT
-#if USE_TRANSIENT_HEAP
-# define RARRAY_TRANSIENT_FLAG RARRAY_TRANSIENT_FLAG
-#else
-# define RARRAY_TRANSIENT_FLAG 0
-#endif
 /** @endcond */
 #define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
 #define RARRAY_CONST_PTR           rb_array_const_ptr           /**< @alias{rb_array_const_ptr} */
@@ -80,7 +63,6 @@
 
 #define RARRAY_EMBED_LEN   RARRAY_EMBED_LEN
 #define RARRAY_LENINT      RARRAY_LENINT
-#define RARRAY_TRANSIENT_P RARRAY_TRANSIENT_P
 #define RARRAY_ASET        RARRAY_ASET
 #define RARRAY_PTR         RARRAY_PTR
 /** @endcond */
@@ -132,24 +114,6 @@ enum ruby_rarray_flags {
      */
     RARRAY_EMBED_LEN_MASK  = RUBY_FL_USER9 | RUBY_FL_USER8 | RUBY_FL_USER7 | RUBY_FL_USER6 |
                                  RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3
-
-#if USE_TRANSIENT_HEAP
-    ,
-
-    /**
-     * This flag has something to do with an array's "transiency".  A transient
-     * array is an  array of young generation (of generational  GC), who stores
-     * its elements inside  of dedicated memory pages called  a transient heap.
-     * Not  every  young  generation  share  that  storage  scheme,  but  elder
-     * generations must no join.
-     *
-     * @internal
-     *
-     * 3rd parties must  not be aware that  there even is more than  one way to
-     * store array elements.  It was a bad idea to expose this to them.
-     */
-    RARRAY_TRANSIENT_FLAG  = RUBY_FL_USER13
-#endif
 };
 
 /**
@@ -249,16 +213,6 @@ VALUE *rb_ary_ptr_use_start(VALUE ary);
  */
 void rb_ary_ptr_use_end(VALUE a);
 
-#if USE_TRANSIENT_HEAP
-/**
- * Destructively converts an array of transient backend into ordinal one.
- *
- * @param[out]  a  An object of ::RArray.
- * @pre         `a` must be a transient array.
- * @post        `a` gets out of transient heap, destructively.
- */
-void rb_ary_detransient(VALUE a);
-#endif
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -331,33 +285,6 @@ RARRAY_LENINT(VALUE ary)
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Queries if the array is a transient array.
- *
- * @param[in]  ary    Array in question.
- * @retval     true   Yes it is.
- * @retval     false  No it isn't.
- * @pre        `ary` must be an instance of ::RArray.
- *
- * @internal
- *
- * @shyouhei  doesn't  understand the  benefit  of  this function  called  from
- * extension libraries.
- */
-static inline bool
-RARRAY_TRANSIENT_P(VALUE ary)
-{
-    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
-
-#if USE_TRANSIENT_HEAP
-    return RB_FL_ANY_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /**
  * @private
  *
@@ -380,9 +307,7 @@ rb_array_const_ptr_transient(VALUE a)
     }
 }
 
-#if ! USE_TRANSIENT_HEAP
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-#endif
 /**
  * @private
  *
@@ -398,11 +323,6 @@ rb_array_const_ptr(VALUE a)
 {
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
-#if USE_TRANSIENT_HEAP
-    if (RARRAY_TRANSIENT_P(a)) {
-        rb_ary_detransient(a);
-    }
-#endif
     return rb_array_const_ptr_transient(a);
 }
 
@@ -423,14 +343,6 @@ rb_array_ptr_use_start(VALUE a,
                        int allow_transient)
 {
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-
-#if USE_TRANSIENT_HEAP
-    if (!allow_transient) {
-        if (RARRAY_TRANSIENT_P(a)) {
-            rb_ary_detransient(a);
-        }
-    }
-#endif
 
     return rb_ary_ptr_use_start(a);
 }
