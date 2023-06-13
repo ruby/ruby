@@ -1653,6 +1653,17 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+#ifndef HAVE_RB_IO_DESCRIPTOR
+static int
+io_descriptor_fallback(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return fptr->fd;
+}
+#define rb_io_descriptor io_descriptor_fallback
+#endif
+
 static VALUE
 ossl_ssl_setup(VALUE self)
 {
@@ -1668,8 +1679,8 @@ ossl_ssl_setup(VALUE self)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     rb_io_check_writable(fptr);
-    if (!SSL_set_fd(ssl, TO_SOCKET(fptr->fd)))
-	ossl_raise(eSSLError, "SSL_set_fd");
+    if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(io))))
+        ossl_raise(eSSLError, "SSL_set_fd");
 
     return Qtrue;
 }
@@ -1709,21 +1720,25 @@ no_exception_p(VALUE opts)
 #endif
 
 static void
-io_wait_writable(rb_io_t *fptr)
+io_wait_writable(VALUE io)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
+    rb_io_maybe_wait_writable(errno, io, RUBY_IO_TIMEOUT_DEFAULT);
 #else
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
     rb_io_wait_writable(fptr->fd);
 #endif
 }
 
 static void
-io_wait_readable(rb_io_t *fptr)
+io_wait_readable(VALUE io)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_readable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
+    rb_io_maybe_wait_readable(errno, io, RUBY_IO_TIMEOUT_DEFAULT);
 #else
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
     rb_io_wait_readable(fptr->fd);
 #endif
 }
@@ -1732,7 +1747,6 @@ static VALUE
 ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
 {
     SSL *ssl;
-    rb_io_t *fptr;
     int ret, ret2;
     VALUE cb_state;
     int nonblock = opts != Qfalse;
@@ -1744,7 +1758,7 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
 
     GetSSL(self, ssl);
 
-    GetOpenFile(rb_attr_get(self, id_i_io), fptr);
+    VALUE io = rb_attr_get(self, id_i_io);
     for(;;){
 	ret = func(ssl);
 
@@ -1762,12 +1776,12 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
 	case SSL_ERROR_WANT_WRITE:
             if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
-            io_wait_writable(fptr);
+            io_wait_writable(io);
             continue;
 	case SSL_ERROR_WANT_READ:
             if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
-            io_wait_readable(fptr);
+            io_wait_readable(io);
             continue;
 	case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
@@ -1906,8 +1920,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     SSL *ssl;
     int ilen;
     VALUE len, str;
-    rb_io_t *fptr;
-    VALUE io, opts = Qnil;
+    VALUE opts = Qnil;
 
     if (nonblock) {
 	rb_scan_args(argc, argv, "11:", &len, &str, &opts);
@@ -1932,8 +1945,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     if (ilen == 0)
 	return str;
 
-    io = rb_attr_get(self, id_i_io);
-    GetOpenFile(io, fptr);
+    VALUE io = rb_attr_get(self, id_i_io);
 
     rb_str_locktmp(str);
     for (;;) {
@@ -1953,7 +1965,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
                 if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
             }
-            io_wait_writable(fptr);
+            io_wait_writable(io);
             continue;
           case SSL_ERROR_WANT_READ:
             if (nonblock) {
@@ -1961,7 +1973,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
                 if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
             }
-            io_wait_readable(fptr);
+            io_wait_readable(io);
             continue;
           case SSL_ERROR_SYSCALL:
             if (!ERR_peek_error()) {
@@ -2027,14 +2039,14 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
     SSL *ssl;
     rb_io_t *fptr;
     int num, nonblock = opts != Qfalse;
-    VALUE tmp, io;
+    VALUE tmp;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
 
     tmp = rb_str_new_frozen(StringValue(str));
-    io = rb_attr_get(self, id_i_io);
+    VALUE io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
 
     /* SSL_write(3ssl) manpage states num == 0 is undefined */
@@ -2050,12 +2062,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
           case SSL_ERROR_WANT_WRITE:
             if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
-            io_wait_writable(fptr);
+            io_wait_writable(io);
             continue;
           case SSL_ERROR_WANT_READ:
             if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
-            io_wait_readable(fptr);
+            io_wait_readable(io);
             continue;
           case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__

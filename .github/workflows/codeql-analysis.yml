@@ -54,7 +54,7 @@ jobs:
         sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev autoconf ruby
 
     - name: Checkout repository
-      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+      uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
     - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
       with:
@@ -65,7 +65,7 @@ jobs:
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
+      uses: github/codeql-action/init@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
       with:
         languages: ${{ matrix.language }}
 
@@ -73,10 +73,10 @@ jobs:
       run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
+      uses: github/codeql-action/autobuild@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
+      uses: github/codeql-action/analyze@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
       with:
         category: "/language:${{matrix.language}}"
         upload: False
@@ -105,6 +105,6 @@ jobs:
       if: ${{ matrix.language == 'ruby' }}
 
     - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@0225834cc549ee0ca93cb085b92954821a145866 # v2.3.5
+      uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
       with:
         sarif_file: sarif-results/${{ matrix.language }}.sarif

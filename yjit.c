@@ -40,8 +40,7 @@
 
 // Field offsets for the RString struct
 enum rstring_offsets {
-    RUBY_OFFSET_RSTRING_AS_HEAP_LEN = offsetof(struct RString, as.heap.len),
-    RUBY_OFFSET_RSTRING_EMBED_LEN = offsetof(struct RString, as.embed.len),
+    RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
 };
 
 // We need size_t to have a known size to simplify code generation and FFI.

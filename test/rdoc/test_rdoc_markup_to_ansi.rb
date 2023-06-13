@@ -367,4 +367,3 @@ bar:
   end
 
 end
-

@@ -43,7 +43,6 @@
 /** @cond INTERNAL_MACRO */
 #define RSTRING_NOEMBED         RSTRING_NOEMBED
 #define RSTRING_FSTR            RSTRING_FSTR
-#define RSTRING_EMBED_LEN RSTRING_EMBED_LEN
 #define RSTRING_LEN       RSTRING_LEN
 #define RSTRING_LENINT    RSTRING_LENINT
 #define RSTRING_PTR       RSTRING_PTR
@@ -199,6 +198,13 @@ struct RString {
     /** Basic part, including flags and class. */
     struct RBasic basic;
 
+    /**
+     * Length of the string, not including terminating NUL character.
+     *
+     * @note  This is in bytes.
+     */
+    long len;
+
     /** String's specific fields. */
     union {
 
@@ -207,14 +213,6 @@ struct RString {
          * pattern.
          */
         struct {
-
-            /**
-             * Length of the string, not including terminating NUL character.
-             *
-             * @note  This is in bytes.
-             */
-            long len;
-
             /**
              * Pointer to  the contents of  the string.   In the old  days each
              * string had  dedicated memory  regions.  That  is no  longer true
@@ -245,7 +243,6 @@ struct RString {
 
         /** Embedded contents. */
         struct {
-            long len;
             /* This is a length 1 array because:
              *   1. GCC has a bug that does not optimize C flexible array members
              *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
@@ -364,24 +361,12 @@ RBIMPL_ATTR_ARTIFICIAL()
  *
  * @param[in]  str  String in question.
  * @return     Its length, in bytes.
- * @pre        `str`  must  be an  instance  of  ::RString,  and must  has  its
- *             ::RSTRING_NOEMBED flag off.
- *
- * @internal
- *
- * This was a macro  before.  It was inevitable to be  public, since macros are
- * global constructs.   But should it be  forever?  Now that it  is a function,
- * @shyouhei thinks  it could  just be  eliminated, hidden  into implementation
- * details.
+ * @pre        `str` must be an instance of ::RString.
  */
 static inline long
-RSTRING_EMBED_LEN(VALUE str)
+RSTRING_LEN(VALUE str)
 {
-    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
-    RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
-
-    long f = RSTRING(str)->as.embed.len;
-    return f;
+    return RSTRING(str)->len;
 }
 
 RBIMPL_WARNING_PUSH()
@@ -411,28 +396,13 @@ rbimpl_rstring_getmem(VALUE str)
     else {
         /* Expecting compilers to optimize this on-stack struct away. */
         struct RString retval;
-        retval.as.heap.len = RSTRING_EMBED_LEN(str);
+        retval.len = RSTRING_LEN(str);
         retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
         return retval;
     }
 }
 
 RBIMPL_WARNING_POP()
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Queries the length of the string.
- *
- * @param[in]  str  String in question.
- * @return     Its length, in bytes.
- * @pre        `str` must be an instance of ::RString.
- */
-static inline long
-RSTRING_LEN(VALUE str)
-{
-    return rbimpl_rstring_getmem(str).as.heap.len;
-}
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
@@ -482,7 +452,7 @@ RSTRING_END(VALUE str)
         rb_debug_rstring_null_ptr("RSTRING_END");
     }
 
-    return &buf.as.heap.ptr[buf.as.heap.len];
+    return &buf.as.heap.ptr[buf.len];
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -516,7 +486,7 @@ RSTRING_LENINT(VALUE str)
     __extension__ ({ \
         struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
         (ptrvar) = rbimpl_str.as.heap.ptr; \
-        (lenvar) = rbimpl_str.as.heap.len; \
+        (lenvar) = rbimpl_str.len; \
     })
 #else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \

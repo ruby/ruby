@@ -342,4 +342,3 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
   end
 
 end
-

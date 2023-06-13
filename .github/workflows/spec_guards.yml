@@ -31,13 +31,13 @@ jobs:
         # Specs from ruby/spec should still run on all supported Ruby versions.
         # This also ensures the needed ruby_version_is guards are there, see spec/README.md.
         ruby:
-          - ruby-2.7
+          - ruby-3.0
           - ruby-3.1
           - ruby-3.2
 
     steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-      - uses: ruby/setup-ruby@8a45918450651f5e4784b6031db26f4b9f76b251 # v1.150.0
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: ruby/setup-ruby@bc1dd263b68cb5626dbb55d5c89777d79372c484 # v1.151.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none

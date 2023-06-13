@@ -10,7 +10,7 @@ module Bundler
       # Ask for X gems per API request
       API_REQUEST_SIZE = 50
 
-      attr_reader :remotes, :caches
+      attr_reader :remotes
 
       def initialize(options = {})
         @options = options
@@ -19,9 +19,12 @@ module Bundler
         @allow_remote = false
         @allow_cached = false
         @allow_local = options["allow_local"] || false
-        @caches = [cache_path, *Bundler.rubygems.gem_cache]
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+      end
+
+      def caches
+        @caches ||= [cache_path, *Bundler.rubygems.gem_cache]
       end
 
       def local_only!
@@ -324,9 +327,9 @@ module Bundler
 
       def cached_path(spec)
         global_cache_path = download_cache_path(spec)
-        @caches << global_cache_path if global_cache_path
+        caches << global_cache_path if global_cache_path
 
-        possibilities = @caches.map {|p| package_path(p, spec) }
+        possibilities = caches.map {|p| package_path(p, spec) }
         possibilities.find {|p| File.exist?(p) }
       end
 

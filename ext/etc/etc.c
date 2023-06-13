@@ -66,6 +66,16 @@ void rb_deprecate_constant(VALUE mod, const char *name);
 
 #include "constdefs.h"
 
+#ifndef HAVE_RB_IO_DESCRIPTOR
+static int
+io_descriptor_fallback(VALUE io) {
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return fptr->fd;
+}
+#define rb_io_descriptor io_descriptor_fallback
+#endif
+
 #ifdef HAVE_RUBY_ATOMIC_H
 # include "ruby/atomic.h"
 #else
@@ -941,14 +951,11 @@ io_pathconf(VALUE io, VALUE arg)
 {
     int name;
     long ret;
-    rb_io_t *fptr;
 
     name = NUM2INT(arg);
 
-    GetOpenFile(io, fptr);
-
     errno = 0;
-    ret = fpathconf(fptr->fd, name);
+    ret = fpathconf(rb_io_descriptor(io), name);
     if (ret == -1) {
         if (errno == 0) /* no limit */
             return Qnil;

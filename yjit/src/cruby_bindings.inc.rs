@@ -806,6 +806,7 @@ pub type rb_shape_t = rb_shape;
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
     pub global_cvar_state: rb_serial_t,
+    pub cref: *const rb_cref_t,
     pub class_value: VALUE,
 }
 pub const VM_CALL_ARGS_SPLAT_bit: vm_call_flag_bits = 0;
@@ -843,7 +844,6 @@ pub const RHASH_AR_TABLE_SIZE_MASK: ruby_rhash_flags = 983040;
 pub const RHASH_AR_TABLE_SIZE_SHIFT: ruby_rhash_flags = 16;
 pub const RHASH_AR_TABLE_BOUND_MASK: ruby_rhash_flags = 15728640;
 pub const RHASH_AR_TABLE_BOUND_SHIFT: ruby_rhash_flags = 20;
-pub const RHASH_TRANSIENT_FLAG: ruby_rhash_flags = 16777216;
 pub const RHASH_LEV_SHIFT: ruby_rhash_flags = 25;
 pub const RHASH_LEV_MAX: ruby_rhash_flags = 127;
 pub type ruby_rhash_flags = u32;
@@ -1062,8 +1062,7 @@ pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
-pub const RUBY_OFFSET_RSTRING_AS_HEAP_LEN: rstring_offsets = 16;
-pub const RUBY_OFFSET_RSTRING_EMBED_LEN: rstring_offsets = 16;
+pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;
 pub type rstring_offsets = u32;
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {
@@ -1083,6 +1082,7 @@ extern "C" {
     pub static mut rb_cFalseClass: VALUE;
     pub static mut rb_cFloat: VALUE;
     pub static mut rb_cHash: VALUE;
+    pub static mut rb_cIO: VALUE;
     pub static mut rb_cInteger: VALUE;
     pub static mut rb_cModule: VALUE;
     pub static mut rb_cNilClass: VALUE;

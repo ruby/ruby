@@ -7610,6 +7610,8 @@ gc_ref_update_from_offset(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static void mark_cvc_tbl(rb_objspace_t *objspace, VALUE klass);
+
 static void
 gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 {
@@ -7660,6 +7662,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         if (!RCLASS_EXT(obj)) break;
 
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
+        mark_cvc_tbl(objspace, obj);
         cc_table_mark(objspace, obj);
         for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
             gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
@@ -10877,8 +10880,13 @@ static enum rb_id_table_iterator_result
 update_cvc_tbl_i(VALUE cvc_entry, void *data)
 {
     struct rb_cvar_class_tbl_entry *entry;
+    rb_objspace_t * objspace = (rb_objspace_t *)data;
 
     entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
+
+    if (entry->cref) {
+        TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, entry->cref);
+    }
 
     entry->class_value = rb_gc_location(entry->class_value);
 
@@ -10891,6 +10899,28 @@ update_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
     struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
     if (tbl) {
         rb_id_table_foreach_values(tbl, update_cvc_tbl_i, objspace);
+    }
+}
+
+static enum rb_id_table_iterator_result
+mark_cvc_tbl_i(VALUE cvc_entry, void *data)
+{
+    struct rb_cvar_class_tbl_entry *entry;
+
+    entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
+
+    RUBY_ASSERT(entry->cref == 0 || (BUILTIN_TYPE((VALUE)entry->cref) == T_IMEMO && IMEMO_TYPE_P(entry->cref, imemo_cref)));
+    rb_gc_mark((VALUE) entry->cref);
+
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+mark_cvc_tbl(rb_objspace_t *objspace, VALUE klass)
+{
+    struct rb_id_table *tbl = RCLASS_CVC_TBL(klass);
+    if (tbl) {
+        rb_id_table_foreach_values(tbl, mark_cvc_tbl_i, objspace);
     }
 }
 
@@ -11368,13 +11398,13 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
                 rb_size_pool_t *size_pool = &size_pools[i];
                 rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
+                size_t minimum_pages = 0;
                 if (RTEST(expand_heap)) {
-                    size_t required_pages = growth_slots / size_pool->slot_size;
-                    heap_add_pages(objspace, size_pool, heap, MAX(required_pages, heap->total_pages));
+                    int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+                    minimum_pages = growth_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
                 }
-                else {
-                    heap_add_pages(objspace, size_pool, heap, heap->total_pages);
-                }
+
+                heap_add_pages(objspace, size_pool, heap, MAX(minimum_pages, heap->total_pages));
             }
         }
 

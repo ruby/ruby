@@ -562,6 +562,16 @@ class Reline::LineEditor
       @line_editor.instance_variable_get(:@screen_size).last
     end
 
+    def screen_height
+      @line_editor.instance_variable_get(:@screen_size).first
+    end
+
+    def preferred_dialog_height
+      rest_height = @line_editor.instance_variable_get(:@rest_height)
+      scroll_partial_screen = @line_editor.instance_variable_get(:@scroll_partial_screen) || 0
+      [cursor_pos.y - scroll_partial_screen, rest_height, (screen_height + 6) / 5].max
+    end
+
     def completion_journey_data
       @line_editor.instance_variable_get(:@completion_journey_data)
     end
@@ -714,7 +724,7 @@ class Reline::LineEditor
     ymax = ymax.clamp(screen_y_range.begin, screen_y_range.end)
     dialog_y = @first_line_started_from + @started_from
     cursor_y = dialog_y
-    if @highest_in_all < ymax
+    if @highest_in_all <= ymax
       scroll_down(ymax - cursor_y)
       move_cursor_up(ymax - cursor_y)
     end

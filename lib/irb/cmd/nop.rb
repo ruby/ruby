@@ -30,22 +30,18 @@ module IRB
         end
       end
 
-      def self.execute(conf, *opts, **kwargs, &block)
-        command = new(conf)
+      def self.execute(irb_context, *opts, **kwargs, &block)
+        command = new(irb_context)
         command.execute(*opts, **kwargs, &block)
       rescue CommandArgumentError => e
         puts e.message
       end
 
-      def initialize(conf)
-        @irb_context = conf
+      def initialize(irb_context)
+        @irb_context = irb_context
       end
 
       attr_reader :irb_context
-
-      def irb
-        @irb_context.irb
-      end
 
       def execute(*opts)
         #nop

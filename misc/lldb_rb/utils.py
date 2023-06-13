@@ -22,12 +22,11 @@ class RbInspector(LLDBInterface):
             rstring = rstring.Dereference()
 
         flags = rstring.GetValueForExpressionPath(".basic->flags").unsigned
+        clen = int(rstring.GetValueForExpressionPath(".len").value, 0)
         if flags & self.ruby_globals["RUBY_FL_USER1"]:
             cptr = int(rstring.GetValueForExpressionPath(".as.heap.ptr").value, 0)
-            clen = int(rstring.GetValueForExpressionPath(".as.heap.len").value, 0)
         else:
             cptr = int(rstring.GetValueForExpressionPath(".as.embed.ary").location, 0)
-            clen = int(rstring.GetValueForExpressionPath(".as.embed.len").value, 0)
 
         return cptr, clen
 

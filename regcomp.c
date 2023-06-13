@@ -5671,6 +5671,80 @@ onig_free(regex_t* reg)
   }
 }
 
+static void*
+dup_copy(const void *ptr, size_t size)
+{
+  void *newptr = xmalloc(size);
+  if (IS_NOT_NULL(newptr)) {
+    memcpy(newptr, ptr, size);
+  }
+  return newptr;
+}
+
+extern int
+onig_reg_copy(regex_t** nreg, regex_t* oreg)
+{
+  if (IS_NOT_NULL(oreg)) {
+    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+
+    *reg = *oreg;
+
+# define COPY_FAILED(mem, size) IS_NULL(reg->mem = dup_copy(reg->mem, size))
+
+    if (IS_NOT_NULL(reg->exact)) {
+      size_t exact_size = reg->exact_end - reg->exact;
+      if (COPY_FAILED(exact, exact_size))
+        goto err;
+      (reg)->exact_end = (reg)->exact + exact_size;
+    }
+
+    if (IS_NOT_NULL(reg->int_map)) {
+      if (COPY_FAILED(int_map, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
+        goto err_int_map;
+    }
+    if (IS_NOT_NULL(reg->int_map_backward)) {
+      if (COPY_FAILED(int_map_backward, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
+        goto err_int_map_backward;
+    }
+    if (IS_NOT_NULL(reg->p)) {
+      if (COPY_FAILED(p, reg->alloc))
+        goto err_p;
+    }
+    if (IS_NOT_NULL(reg->repeat_range)) {
+      if (COPY_FAILED(repeat_range, reg->repeat_range_alloc * sizeof(OnigRepeatRange)))
+        goto err_repeat_range;
+    }
+    if (IS_NOT_NULL(reg->name_table)) {
+      if (IS_NULL(reg->name_table = st_copy(reg->name_table)))
+        goto err_name_table;
+    }
+    if (IS_NOT_NULL(reg->chain)) {
+      if (onig_reg_copy(&reg->chain, reg->chain))
+        goto err_chain;
+    }
+    return 0;
+# undef COPY_FAILED
+
+  err_chain:
+    onig_st_free_table(reg->name_table);
+  err_name_table:
+    xfree(reg->repeat_range);
+  err_repeat_range:
+    xfree(reg->p);
+  err_p:
+    xfree(reg->int_map_backward);
+  err_int_map_backward:
+    xfree(reg->int_map);
+  err_int_map:
+    xfree(reg->exact);
+  err:
+    xfree(reg);
+    return ONIGERR_MEMORY;
+  }
+  return 0;
+}
+
 #ifdef RUBY
 size_t
 onig_memsize(const regex_t *reg)

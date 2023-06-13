@@ -434,7 +434,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT)
+      assert_operator(stats[:moved_down][:T_HASH], :>=, 500)
     end;
   end
 

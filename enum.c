@@ -1757,6 +1757,9 @@ DEFINE_ENUMFUNCS(all)
  *
  *  Returns whether every element meets a given criterion.
  *
+ *  If +self+ has no element, returns +true+ and argument or block
+ *  are not used.
+ *
  *  With no argument and no block,
  *  returns whether every element is truthy:
  *
@@ -1818,6 +1821,9 @@ DEFINE_ENUMFUNCS(any)
  *
  *  Returns whether any element meets a given criterion.
  *
+ *  If +self+ has no element, returns +false+ and argument or block
+ *  are not used.
+ *
  *  With no argument and no block,
  *  returns whether any element is truthy:
  *
@@ -1847,7 +1853,6 @@ DEFINE_ENUMFUNCS(any)
  *    (1..4).any? {|element| element < 1 }                    # => false
  *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 1 } # => true
  *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 0 } # => false
- *
  *
  *  Related: #all?, #none?, #one?.
  */
@@ -4884,7 +4889,7 @@ enum_compact(VALUE obj)
  *
  * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
  * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]
- * - {Searching}[rdoc-ref:Enumerable@Methods+for+Searching]
+ * - {Searching and Filtering}[rdoc-ref:Enumerable@Methods+for+Searching+and+Filtering]
  * - {Sorting}[rdoc-ref:Enumerable@Methods+for+Sorting]
  * - {Iterating}[rdoc-ref:Enumerable@Methods+for+Iterating]
  * - {And more....}[rdoc-ref:Enumerable@Other+Methods]

@@ -482,4 +482,3 @@ ChangeLog
     RDoc::Parser::ChangeLog::Git::LogEntry.new(*a)
   end
 end
-

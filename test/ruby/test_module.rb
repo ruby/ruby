@@ -2870,6 +2870,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_invalid_attr
     %W[
+      foo=
       foo?
       @foo
       @@foo

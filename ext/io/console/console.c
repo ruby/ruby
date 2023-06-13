@@ -87,7 +87,41 @@ extern VALUE rb_scheduler_timeout(struct timeval *timeout);
 # define rb_fiber_scheduler_make_timeout rb_scheduler_timeout
 #endif
 
-#define sys_fail_fptr(fptr) rb_sys_fail_str((fptr)->pathv)
+#ifndef HAVE_RB_IO_DESCRIPTOR
+static int
+io_descriptor_fallback(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return fptr->fd;
+}
+#define rb_io_descriptor io_descriptor_fallback
+#endif
+
+#ifndef HAVE_RB_IO_PATH
+static VALUE
+io_path_fallback(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return fptr->pathv;
+}
+#define rb_io_path io_path_fallback
+#endif
+
+#ifndef HAVE_RB_IO_GET_WRITE_IO
+static VALUE
+io_get_write_io_fallback(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    VALUE wio = fptr->tied_io_for_writing;
+    return wio ? wio : io;
+}
+#define rb_io_get_write_io io_get_write_io_fallback
+#endif
+
+#define sys_fail(io) rb_sys_fail_str(rb_io_path(io))
 
 #ifndef HAVE_RB_F_SEND
 #ifndef RB_PASS_CALLED_KEYWORDS
@@ -293,33 +327,21 @@ set_ttymode(int fd, conmode *t, void (*setter)(conmode *, void *), void *arg)
     return setattr(fd, &r);
 }
 
-#define GetReadFD(fptr) ((fptr)->fd)
-
-static inline int
-get_write_fd(const rb_io_t *fptr)
-{
-    VALUE wio = fptr->tied_io_for_writing;
-    rb_io_t *ofptr;
-    if (!wio) return fptr->fd;
-    GetOpenFile(wio, ofptr);
-    return ofptr->fd;
-}
-#define GetWriteFD(fptr) get_write_fd(fptr)
+#define GetReadFD(io) rb_io_descriptor(io)
+#define GetWriteFD(io) rb_io_descriptor(rb_io_get_write_io(io))
 
 #define FD_PER_IO 2
 
 static VALUE
 ttymode(VALUE io, VALUE (*func)(VALUE), VALUE farg, void (*setter)(conmode *, void *), void *arg)
 {
-    rb_io_t *fptr;
     int status = -1;
     int error = 0;
     int fd[FD_PER_IO];
     conmode t[FD_PER_IO];
     VALUE result = Qnil;
 
-    GetOpenFile(io, fptr);
-    fd[0] = GetReadFD(fptr);
+    fd[0] = GetReadFD(io);
     if (fd[0] != -1) {
 	if (set_ttymode(fd[0], t+0, setter, arg)) {
 	    status = 0;
@@ -329,7 +351,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), VALUE farg, void (*setter)(conmode *, vo
 	    fd[0] = -1;
 	}
     }
-    fd[1] = GetWriteFD(fptr);
+    fd[1] = GetWriteFD(io);
     if (fd[1] != -1 && fd[1] != fd[0]) {
 	if (set_ttymode(fd[1], t+1, setter, arg)) {
 	    status = 0;
@@ -342,14 +364,13 @@ ttymode(VALUE io, VALUE (*func)(VALUE), VALUE farg, void (*setter)(conmode *, vo
     if (status == 0) {
 	result = rb_protect(func, farg, &status);
     }
-    GetOpenFile(io, fptr);
-    if (fd[0] != -1 && fd[0] == GetReadFD(fptr)) {
+    if (fd[0] != -1 && fd[0] == GetReadFD(io)) {
 	if (!setattr(fd[0], t+0)) {
 	    error = errno;
 	    status = -1;
 	}
     }
-    if (fd[1] != -1 && fd[1] != fd[0] && fd[1] == GetWriteFD(fptr)) {
+    if (fd[1] != -1 && fd[1] != fd[0] && fd[1] == GetWriteFD(io)) {
 	if (!setattr(fd[1], t+1)) {
 	    error = errno;
 	    status = -1;
@@ -435,15 +456,11 @@ static VALUE
 console_set_raw(int argc, VALUE *argv, VALUE io)
 {
     conmode t;
-    rb_io_t *fptr;
-    int fd;
     rawmode_arg_t opts, *optp = rawmode_opt(&argc, argv, 0, 0, &opts);
-
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
+    int fd = GetReadFD(io);
+    if (!getattr(fd, &t)) sys_fail(io);
     set_rawmode(&t, optp);
-    if (!setattr(fd, &t)) sys_fail_fptr(fptr);
+    if (!setattr(fd, &t)) sys_fail(io);
     return io;
 }
 
@@ -479,14 +496,10 @@ static VALUE
 console_set_cooked(VALUE io)
 {
     conmode t;
-    rb_io_t *fptr;
-    int fd;
-
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
+    int fd = GetReadFD(io);
+    if (!getattr(fd, &t)) sys_fail(io);
     set_cookedmode(&t, NULL);
-    if (!setattr(fd, &t)) sys_fail_fptr(fptr);
+    if (!setattr(fd, &t)) sys_fail(io);
     return io;
 }
 
@@ -638,17 +651,17 @@ static VALUE
 console_set_echo(VALUE io, VALUE f)
 {
     conmode t;
-    rb_io_t *fptr;
-    int fd;
+    int fd = GetReadFD(io);
 
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
+    if (!getattr(fd, &t)) sys_fail(io);
+
     if (RTEST(f))
-	set_echo(&t, NULL);
+        set_echo(&t, NULL);
     else
-	set_noecho(&t, NULL);
-    if (!setattr(fd, &t)) sys_fail_fptr(fptr);
+        set_noecho(&t, NULL);
+
+    if (!setattr(fd, &t)) sys_fail(io);
+
     return io;
 }
 
@@ -664,12 +677,9 @@ static VALUE
 console_echo_p(VALUE io)
 {
     conmode t;
-    rb_io_t *fptr;
-    int fd;
+    int fd = GetReadFD(io);
 
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
+    if (!getattr(fd, &t)) sys_fail(io);
     return echo_p(&t) ? Qtrue : Qfalse;
 }
 
@@ -748,12 +758,9 @@ static VALUE
 console_conmode_get(VALUE io)
 {
     conmode t;
-    rb_io_t *fptr;
-    int fd;
+    int fd = GetReadFD(io);
 
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
-    if (!getattr(fd, &t)) sys_fail_fptr(fptr);
+    if (!getattr(fd, &t)) sys_fail(io);
 
     return conmode_new(cConmode, &t);
 }
@@ -770,14 +777,12 @@ static VALUE
 console_conmode_set(VALUE io, VALUE mode)
 {
     conmode *t, r;
-    rb_io_t *fptr;
-    int fd;
+    int fd = GetReadFD(io);
 
     TypedData_Get_Struct(mode, conmode, &conmode_type, t);
     r = *t;
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
-    if (!setattr(fd, &r)) sys_fail_fptr(fptr);
+
+    if (!setattr(fd, &r)) sys_fail(io);
 
     return mode;
 }
@@ -813,13 +818,9 @@ typedef CONSOLE_SCREEN_BUFFER_INFO rb_console_size_t;
 static VALUE
 console_winsize(VALUE io)
 {
-    rb_io_t *fptr;
-    int fd;
     rb_console_size_t ws;
-
-    GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
-    if (!getwinsize(fd, &ws)) sys_fail_fptr(fptr);
+    int fd = GetWriteFD(io);
+    if (!getwinsize(fd, &ws)) sys_fail(io);
     return rb_assoc_new(INT2NUM(winsize_row(&ws)), INT2NUM(winsize_col(&ws)));
 }
 
@@ -835,7 +836,6 @@ console_winsize(VALUE io)
 static VALUE
 console_set_winsize(VALUE io, VALUE size)
 {
-    rb_io_t *fptr;
     rb_console_size_t ws;
 #if defined _WIN32
     HANDLE wh;
@@ -844,20 +844,17 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
     VALUE row, col, xpixel, ypixel;
     const VALUE *sz;
-    int fd;
     long sizelen;
+    int fd;
 
-    GetOpenFile(io, fptr);
     size = rb_Array(size);
     if ((sizelen = RARRAY_LEN(size)) != 2 && sizelen != 4) {
-	rb_raise(rb_eArgError,
-		 "wrong number of arguments (given %ld, expected 2 or 4)",
-		 sizelen);
+        rb_raise(rb_eArgError, "wrong number of arguments (given %ld, expected 2 or 4)", sizelen);
     }
     sz = RARRAY_CONST_PTR(size);
     row = sz[0], col = sz[1], xpixel = ypixel = Qnil;
     if (sizelen == 4) xpixel = sz[2], ypixel = sz[3];
-    fd = GetWriteFD(fptr);
+    fd = GetWriteFD(io);
 #if defined TIOCSWINSZ
     ws.ws_row = ws.ws_col = ws.ws_xpixel = ws.ws_ypixel = 0;
 #define SET(m) ws.ws_##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
@@ -866,7 +863,7 @@ console_set_winsize(VALUE io, VALUE size)
     SET(xpixel);
     SET(ypixel);
 #undef SET
-    if (!setwinsize(fd, &ws)) sys_fail_fptr(fptr);
+    if (!setwinsize(fd, &ws)) sys_fail(io);
 #elif defined _WIN32
     wh = (HANDLE)rb_w32_get_osfhandle(fd);
 #define SET(m) new##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
@@ -904,12 +901,10 @@ console_set_winsize(VALUE io, VALUE size)
 static VALUE
 console_check_winsize_changed(VALUE io)
 {
-    rb_io_t *fptr;
     HANDLE h;
     DWORD num;
 
-    GetOpenFile(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(fptr));
+    h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
     while (GetNumberOfConsoleInputEvents(h, &num) && num > 0) {
 	INPUT_RECORD rec;
 	if (ReadConsoleInput(h, &rec, 1, &num)) {
@@ -935,15 +930,11 @@ console_check_winsize_changed(VALUE io)
 static VALUE
 console_iflush(VALUE io)
 {
-    rb_io_t *fptr;
-    int fd;
-
-    GetOpenFile(io, fptr);
-    fd = GetReadFD(fptr);
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    if (tcflush(fd, TCIFLUSH)) sys_fail_fptr(fptr);
+    int fd = GetReadFD(io);
+    if (tcflush(fd, TCIFLUSH)) sys_fail(io);
 #endif
-    (void)fd;
+
     return io;
 }
 
@@ -958,13 +949,9 @@ console_iflush(VALUE io)
 static VALUE
 console_oflush(VALUE io)
 {
-    rb_io_t *fptr;
-    int fd;
-
-    GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
+    int fd = GetWriteFD(io);
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    if (tcflush(fd, TCOFLUSH)) sys_fail_fptr(fptr);
+    if (tcflush(fd, TCOFLUSH)) sys_fail(io);
 #endif
     (void)fd;
     return io;
@@ -981,40 +968,30 @@ console_oflush(VALUE io)
 static VALUE
 console_ioflush(VALUE io)
 {
-    rb_io_t *fptr;
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    int fd1, fd2;
-#endif
+    int fd1 = GetReadFD(io);
+    int fd2 = GetWriteFD(io);
 
-    GetOpenFile(io, fptr);
-#if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    fd1 = GetReadFD(fptr);
-    fd2 = GetWriteFD(fptr);
     if (fd2 != -1 && fd1 != fd2) {
-	if (tcflush(fd1, TCIFLUSH)) sys_fail_fptr(fptr);
-	if (tcflush(fd2, TCOFLUSH)) sys_fail_fptr(fptr);
+        if (tcflush(fd1, TCIFLUSH)) sys_fail(io);
+        if (tcflush(fd2, TCOFLUSH)) sys_fail(io);
     }
     else {
-	if (tcflush(fd1, TCIOFLUSH)) sys_fail_fptr(fptr);
+        if (tcflush(fd1, TCIOFLUSH)) sys_fail(io);
     }
 #endif
+
     return io;
 }
 
 static VALUE
 console_beep(VALUE io)
 {
-    rb_io_t *fptr;
-    int fd;
-
-    GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
 #ifdef _WIN32
-    (void)fd;
     MessageBeep(0);
 #else
-    if (write(fd, "\a", 1) < 0)
-	sys_fail_fptr(fptr);
+    int fd = GetWriteFD(io);
+    if (write(fd, "\a", 1) < 0) sys_fail(io);
 #endif
     return io;
 }
@@ -1038,12 +1015,8 @@ mode_in_range(VALUE val, int high, const char *modename)
 static VALUE
 console_goto(VALUE io, VALUE y, VALUE x)
 {
-    rb_io_t *fptr;
-    int fd;
     COORD pos;
-
-    GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
+    int fd = GetWriteFD(io);
     pos.X = NUM2UINT(x);
     pos.Y = NUM2UINT(y);
     if (!SetConsoleCursorPosition((HANDLE)rb_w32_get_osfhandle(fd), pos)) {
@@ -1055,12 +1028,8 @@ console_goto(VALUE io, VALUE y, VALUE x)
 static VALUE
 console_cursor_pos(VALUE io)
 {
-    rb_io_t *fptr;
-    int fd;
     rb_console_size_t ws;
-
-    GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
+    int fd = GetWriteFD(io);
     if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
@@ -1070,13 +1039,11 @@ console_cursor_pos(VALUE io)
 static VALUE
 console_move(VALUE io, int y, int x)
 {
-    rb_io_t *fptr;
     HANDLE h;
     rb_console_size_t ws;
     COORD *pos = &ws.dwCursorPosition;
 
-    GetOpenFile(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
     if (!GetConsoleScreenBufferInfo(h, &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
@@ -1091,13 +1058,11 @@ console_move(VALUE io, int y, int x)
 static VALUE
 console_goto_column(VALUE io, VALUE val)
 {
-    rb_io_t *fptr;
     HANDLE h;
     rb_console_size_t ws;
     COORD *pos = &ws.dwCursorPosition;
 
-    GetOpenFile(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
     if (!GetConsoleScreenBufferInfo(h, &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
@@ -1120,15 +1085,13 @@ constat_clear(HANDLE handle, WORD attr, DWORD len, COORD pos)
 static VALUE
 console_erase_line(VALUE io, VALUE val)
 {
-    rb_io_t *fptr;
     HANDLE h;
     rb_console_size_t ws;
     COORD *pos = &ws.dwCursorPosition;
     DWORD w;
     int mode = mode_in_range(val, 2, "line erase");
 
-    GetOpenFile(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
     if (!GetConsoleScreenBufferInfo(h, &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
@@ -1152,15 +1115,13 @@ console_erase_line(VALUE io, VALUE val)
 static VALUE
 console_erase_screen(VALUE io, VALUE val)
 {
-    rb_io_t *fptr;
     HANDLE h;
     rb_console_size_t ws;
     COORD *pos = &ws.dwCursorPosition;
     DWORD w;
     int mode = mode_in_range(val, 3, "screen erase");
 
-    GetOpenFile(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
     if (!GetConsoleScreenBufferInfo(h, &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
@@ -1192,12 +1153,10 @@ console_erase_screen(VALUE io, VALUE val)
 static VALUE
 console_scroll(VALUE io, int line)
 {
-    rb_io_t *fptr;
     HANDLE h;
     rb_console_size_t ws;
 
-    GetOpenFile(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(fptr));
+    h = (HANDLE)rb_w32_get_osfhandle(GetWriteFD(io));
     if (!GetConsoleScreenBufferInfo(h, &ws)) {
 	rb_syserr_fail(LAST_ERROR, 0);
     }
@@ -1256,23 +1215,11 @@ static int
 direct_query(VALUE io, const struct query_args *query)
 {
     if (RB_TYPE_P(io, T_FILE)) {
-	rb_io_t *fptr;
-	VALUE wio;
-	GetOpenFile(io, fptr);
-	wio = fptr->tied_io_for_writing;
-	if (wio) {
-	    VALUE s = rb_str_new_cstr(query->qstr);
-	    rb_io_write(wio, s);
-	    rb_io_flush(wio);
-	    return 1;
-	}
-	if (write(fptr->fd, query->qstr, strlen(query->qstr)) != -1) {
-	    return 1;
-	}
-	if (fptr->fd == 0 &&
-	    write(1, query->qstr, strlen(query->qstr)) != -1) {
-	    return 1;
-	}
+        VALUE wio = rb_io_get_write_io(io);
+        VALUE s = rb_str_new_cstr(query->qstr);
+        rb_io_write(wio, s);
+        rb_io_flush(wio);
+        return 1;
     }
     return 0;
 }
@@ -1451,6 +1398,38 @@ console_clear_screen(VALUE io)
     return io;
 }
 
+#ifndef HAVE_RB_IO_OPEN_DESCRIPTOR
+static VALUE
+io_open_descriptor_fallback(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, void *encoding)
+{
+    rb_update_max_fd(descriptor);
+
+    VALUE arguments[2] = {
+        INT2NUM(descriptor),
+        INT2FIX(mode),
+    };
+
+    VALUE self = rb_class_new_instance(2, arguments, klass);
+
+    rb_io_t *fptr;
+    GetOpenFile(self, fptr);
+    fptr->pathv = path;
+    fptr->mode |= mode;
+
+    return self;
+}
+#define rb_io_open_descriptor io_open_descriptor_fallback
+#endif
+
+#ifndef HAVE_RB_IO_CLOSED_P
+static VALUE
+rb_io_closed_p(VALUE io)
+{
+    rb_io_t *fptr = RFILE(io)->fptr;
+    return fptr->fd == -1 ? Qtrue : Qfalse;
+}
+#endif
+
 /*
  * call-seq:
  *   IO.console      -> #<File:/dev/tty>
@@ -1468,34 +1447,37 @@ static VALUE
 console_dev(int argc, VALUE *argv, VALUE klass)
 {
     VALUE con = 0;
-    rb_io_t *fptr;
     VALUE sym = 0;
 
     rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
+
     if (argc) {
-	Check_Type(sym = argv[0], T_SYMBOL);
+        Check_Type(sym = argv[0], T_SYMBOL);
     }
+
+    // Force the class to be File.
     if (klass == rb_cIO) klass = rb_cFile;
+
     if (rb_const_defined(klass, id_console)) {
-	con = rb_const_get(klass, id_console);
-	if (!RB_TYPE_P(con, T_FILE) ||
-	    (!(fptr = RFILE(con)->fptr) || GetReadFD(fptr) == -1)) {
-	    rb_const_remove(klass, id_console);
-	    con = 0;
-	}
+        con = rb_const_get(klass, id_console);
+        if (!RB_TYPE_P(con, T_FILE) || RTEST(rb_io_closed_p(con))) {
+            rb_const_remove(klass, id_console);
+            con = 0;
+        }
     }
+
     if (sym) {
-	if (sym == ID2SYM(id_close) && argc == 1) {
-	    if (con) {
-		rb_io_close(con);
-		rb_const_remove(klass, id_console);
-		con = 0;
-	    }
-	    return Qnil;
-	}
+        if (sym == ID2SYM(id_close) && argc == 1) {
+            if (con) {
+                rb_io_close(con);
+                rb_const_remove(klass, id_console);
+                con = 0;
+            }
+            return Qnil;
+        }
     }
+
     if (!con) {
-	VALUE args[2];
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H || defined HAVE_SGTTY_H
 # define CONSOLE_DEVICE "/dev/tty"
 #elif defined _WIN32
@@ -1507,44 +1489,36 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 # define CONSOLE_DEVICE_FOR_READING CONSOLE_DEVICE
 #endif
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	VALUE out;
-	rb_io_t *ofptr;
+        VALUE out;
+        rb_io_t *ofptr;
 #endif
-	int fd;
+        int fd;
+        VALUE path = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
 
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_WRITING, O_RDWR, 0);
-	if (fd < 0) return Qnil;
-        rb_update_max_fd(fd);
-	args[1] = INT2FIX(O_WRONLY);
-	args[0] = INT2NUM(fd);
-	out = rb_class_new_instance(2, args, klass);
+        fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_WRITING, O_RDWR, 0);
+        if (fd < 0) return Qnil;
+        out = rb_io_open_descriptor(klass, fd, FMODE_WRITABLE | FMODE_SYNC, path, Qnil, NULL);
 #endif
-	fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_READING, O_RDWR, 0);
-	if (fd < 0) {
+        fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_READING, O_RDWR, 0);
+        if (fd < 0) {
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	    rb_io_close(out);
+            rb_io_close(out);
 #endif
-	    return Qnil;
-	}
-        rb_update_max_fd(fd);
-	args[1] = INT2FIX(O_RDWR);
-	args[0] = INT2NUM(fd);
-	con = rb_class_new_instance(2, args, klass);
-	GetOpenFile(con, fptr);
-	fptr->pathv = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
+            return Qnil;
+        }
+
+        con = rb_io_open_descriptor(klass, fd, FMODE_READWRITE | FMODE_SYNC, path, Qnil, NULL);
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	GetOpenFile(out, ofptr);
-	ofptr->pathv = fptr->pathv;
-	fptr->tied_io_for_writing = out;
-	ofptr->mode |= FMODE_SYNC;
+        rb_io_set_write_io(con, out);
 #endif
-	fptr->mode |= FMODE_SYNC;
-	rb_const_set(klass, id_console, con);
+        rb_const_set(klass, id_console, con);
     }
+
     if (sym) {
-	return rb_f_send(argc, argv, con);
+        return rb_f_send(argc, argv, con);
     }
+
     return con;
 }
 

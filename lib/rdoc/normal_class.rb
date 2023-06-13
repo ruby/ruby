@@ -90,4 +90,3 @@ class RDoc::NormalClass < RDoc::ClassModule
   end
 
 end
-

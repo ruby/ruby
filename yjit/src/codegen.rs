@@ -3871,6 +3871,7 @@ fn jit_guard_known_klass(
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_class_attached_object(known_klass)
+            && !rb_obj_is_kind_of(sample_instance, rb_cIO).test()
     } {
         // Singleton classes are attached to one specific object, so we can
         // avoid one memory access (and potentially the is_heap check) by
@@ -3882,6 +3883,8 @@ fn jit_guard_known_klass(
         // that its singleton class is empty, so we can't avoid the memory
         // access. As an example, `Object.new.singleton_class` is an object in
         // this situation.
+        // Also, guarding by identity is incorrect for IO objects because
+        // IO#reopen can be used to change the class and singleton class of IO objects!
         asm.comment("guard known object with singleton class");
         asm.cmp(obj_opnd, sample_instance.into());
         jit_chain_guard(JCC_JNE, jit, asm, ocb, max_chain_depth, counter);
@@ -4422,18 +4425,13 @@ fn jit_rb_str_empty_p(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    const _: () = assert!(
-        RUBY_OFFSET_RSTRING_AS_HEAP_LEN == RUBY_OFFSET_RSTRING_EMBED_LEN,
-        "same offset to len embedded or not so we can use one code path to read the length",
-    );
-
     let recv_opnd = asm.stack_pop(1);
 
     asm.comment("get string length");
     let str_len_opnd = Opnd::mem(
         std::os::raw::c_long::BITS as u8,
         asm.load(recv_opnd),
-        RUBY_OFFSET_RSTRING_AS_HEAP_LEN as i32,
+        RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
     asm.cmp(str_len_opnd, Opnd::UImm(0));

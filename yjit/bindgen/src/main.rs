@@ -165,6 +165,7 @@ fn main() {
         .allowlist_var("rb_cTrueClass")
         .allowlist_var("rb_cFalseClass")
         .allowlist_var("rb_cInteger")
+        .allowlist_var("rb_cIO")
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
         .allowlist_var("rb_cString")

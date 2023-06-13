@@ -25,4 +25,3 @@ class RDoc::Markup::BlankLine
   end
 
 end
-

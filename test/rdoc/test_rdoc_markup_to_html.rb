@@ -957,4 +957,3 @@ EXPECTED
     assert_include result, CGI.escapeHTML(unexpected)
   end
 end
-

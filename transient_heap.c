@@ -374,8 +374,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
 
     TH_ASSERT(RB_TYPE_P(obj, T_ARRAY)  ||
               RB_TYPE_P(obj, T_OBJECT) ||
-              RB_TYPE_P(obj, T_STRUCT) ||
-              RB_TYPE_P(obj, T_HASH)); /* supported types */
+              RB_TYPE_P(obj, T_STRUCT)); /* supported types */
 
     if (size > TRANSIENT_HEAP_ALLOC_MAX) {
         if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: [too big: %ld] %s\n", (long)size, rb_obj_info(obj));

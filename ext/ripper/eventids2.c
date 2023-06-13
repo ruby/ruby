@@ -1,3 +1,11 @@
+#include "ruby/ruby.h"
+#include "rubyparser.h"
+#define YYSTYPE_IS_DECLARED
+#include "parse.h"
+#include "eventids2.h"
+#include "internal.h"
+#include "internal/static_assert.h"
+
 typedef struct {
     ID ripper_id_backref;
     ID ripper_id_backtick;
@@ -57,7 +65,7 @@ static ripper_scanner_ids_t ripper_scanner_ids;
 
 #include "eventids2table.c"
 
-static void
+void
 ripper_init_eventids2(void)
 {
 #define set_id2(name) ripper_scanner_ids.ripper_id_##name = rb_intern_const("on_"#name)
@@ -118,7 +126,7 @@ ripper_init_eventids2(void)
 STATIC_ASSERT(k__END___range, k__END__ < SHRT_MAX);
 STATIC_ASSERT(ripper_scanner_ids_size, sizeof(ripper_scanner_ids) < SHRT_MAX);
 
-static ID
+ID
 ripper_token2eventid(enum yytokentype tok)
 {
 #define O(member) (int)offsetof(ripper_scanner_ids_t, ripper_id_##member)+1

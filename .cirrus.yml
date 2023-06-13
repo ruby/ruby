@@ -31,7 +31,6 @@ task:
       --color=always
       --tty=no
     matrix:
-      CC: clang-12
       CC: gcc-11
   id_script: id
   set_env_script:
@@ -86,9 +85,6 @@ yjit_task:
       --color=always
       --tty=no
     matrix:
-      - CC: clang-12
-        configure: --enable-yjit=dev
-        rustup_init: --default-toolchain=1.58.0
       - CC: gcc-11
         configure: --enable-yjit
   id_script: id

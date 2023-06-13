@@ -2819,6 +2819,8 @@ fiber_blocking_yield(VALUE fiber_value)
     rb_fiber_t *fiber = fiber_ptr(fiber_value);
     rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
 
+    VM_ASSERT(fiber->blocking == 0);
+
     // fiber->blocking is `unsigned int : 1`, so we use it as a boolean:
     fiber->blocking = 1;
 

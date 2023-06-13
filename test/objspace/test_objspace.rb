@@ -281,6 +281,8 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_flags
+    # Ensure that the fstring is promoted to old generation
+    4.times { GC.start }
     info = ObjectSpace.dump("foo".freeze)
     assert_match(/"wb_protected":true, "old":true/, info)
     assert_match(/"fstring":true/, info)

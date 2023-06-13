@@ -111,6 +111,7 @@ FILES_NEED_VPATH = %w[
   ext/ripper/eventids1.c
   ext/ripper/eventids2table.c
   ext/ripper/ripper.c
+  ext/ripper/ripper_init.c
   golf_prelude.c
   id.c
   id.h

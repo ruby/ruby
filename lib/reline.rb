@@ -260,7 +260,7 @@ module Reline
         pos: cursor_pos_to_render,
         contents: result,
         scrollbar: true,
-        height: 15,
+        height: [15, preferred_dialog_height].min,
         bg_color: 46,
         pointer_bg_color: 45,
         fg_color: 37,

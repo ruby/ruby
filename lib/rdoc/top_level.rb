@@ -286,4 +286,3 @@ class RDoc::TopLevel < RDoc::Context
   end
 
 end
-

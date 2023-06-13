@@ -231,4 +231,3 @@ class RDoc::Context::Section
   end
 
 end
-

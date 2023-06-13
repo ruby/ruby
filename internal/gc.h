@@ -310,6 +310,12 @@ ruby_sized_xfree_inlined(void *ptr, size_t size)
 
 # define SIZED_REALLOC_N(x, y, z, w) REALLOC_N(x, y, z)
 
+static inline void *
+ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)
+{
+    return ruby_xrealloc2(ptr, new_count, element_size);
+}
+
 #else
 
 static inline void *
@@ -332,6 +338,12 @@ ruby_sized_xfree_inlined(void *ptr, size_t size)
 
 # define SIZED_REALLOC_N(v, T, m, n) \
     ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
+
+static inline void *
+ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)
+{
+    return ruby_sized_xrealloc2(ptr, new_count, element_size, old_count);
+}
 
 #endif /* HAVE_MALLOC_USABLE_SIZE */
 

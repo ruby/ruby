@@ -245,7 +245,7 @@ By default, this RubyGems will install gem as:
   def install_executables(bin_dir)
     prog_mode = options[:prog_mode] || 0o755
 
-    executables = { "gem" => "bin" }
+    executables = { "gem" => "exe" }
     executables.each do |tool, path|
       say "Installing #{tool} executable" if @verbose
 

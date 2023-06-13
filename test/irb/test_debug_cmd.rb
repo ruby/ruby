@@ -8,7 +8,6 @@ end
 
 require "tempfile"
 require "tmpdir"
-require "envutil"
 
 require_relative "helper"
 
@@ -210,19 +209,13 @@ module TestIRB
     def run_ruby_file(&block)
       cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
       tmp_dir = Dir.mktmpdir
-      rc_file = File.open(File.join(tmp_dir, ".irbrc"), "w+")
-      rc_file.write(<<~RUBY)
-        IRB.conf[:USE_SINGLELINE] = true
-        Reline.const_set(:IOGate, Reline::GeneralIO)
-      RUBY
-      rc_file.close
 
       @commands = []
       lines = []
 
       yield
 
-      PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("IRBRC" => rc_file.to_path), *cmd) do |read, write, pid|
+      PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
         Timeout.timeout(TIMEOUT_SEC) do
           while line = safe_gets(read)
             lines << line

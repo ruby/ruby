@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = github_link
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
-  spec.required_ruby_version = '>= 2.4'
+  spec.required_ruby_version = '>= 2.5'
 
   spec.metadata = {
     "bug_tracker_uri" => "#{github_link}/issues",

@@ -7768,6 +7768,9 @@ rb_ary_drop_while(VALUE ary)
  *
  *  Returns +true+ if any element of +self+ meets a given criterion.
  *
+ *  If +self+ has no element, returns +false+ and argument or block
+ *  are not used.
+ *
  *  With no block given and no argument, returns +true+ if +self+ has any truthy element,
  *  +false+ otherwise:
  *
@@ -7828,6 +7831,9 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *    array.all?(obj) -> true or false
  *
  *  Returns +true+ if all elements of +self+ meet a given criterion.
+ *
+ *  If +self+ has no element, returns +true+ and argument or block
+ *  are not used.
  *
  *  With no block given and no argument, returns +true+ if +self+ contains only truthy elements,
  *  +false+ otherwise:

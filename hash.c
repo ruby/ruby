@@ -44,7 +44,6 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "symbol.h"
-#include "transient_heap.h"
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
 #include "vm_sync.h"
@@ -52,6 +51,23 @@
 #if USE_MMTK
 #include "internal/mmtk.h" // For mmtk_register_ppp
 #endif
+
+/* Flags of RHash
+ *
+ * 1:     RHASH_PASS_AS_KEYWORDS
+ *            The hash is flagged as Ruby 2 keywords hash.
+ * 2:     RHASH_PROC_DEFAULT
+ *            The hash has a default proc (rather than a default value).
+ * 3:     RHASH_ST_TABLE_FLAG
+ *            The hash uses a ST table (rather than an AR table).
+ * 4-7:   RHASH_AR_TABLE_SIZE_MASK
+ *            The size of the AR table.
+ * 8-11:  RHASH_AR_TABLE_BOUND_MASK
+ *            The bounds of the AR table.
+ * 13-19: RHASH_LEV_MASK
+ *            The iterational level of the hash. Used to prevent modifications
+ *            to the hash during interation.
+ */
 
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
@@ -369,12 +385,10 @@ typedef st_index_t st_hash_t;
 
 /*
  * RHASH_AR_TABLE_P(h):
- * * as.ar == NULL or
- *   as.ar points ar_table.
- * * as.ar is allocated by transient heap or xmalloc.
+ *   RHASH_AR_TABLE points to ar_table.
  *
  * !RHASH_AR_TABLE_P(h):
- * * as.st points st_table.
+ *   RHASH_ST_TABLE points st_table.
  */
 
 #define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
@@ -4456,6 +4470,9 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *  Returns +true+ if any element satisfies a given criterion;
  *  +false+ otherwise.
  *
+ *  If +self+ has no element, returns +false+ and argument or block
+ *  are not used.
+ *
  *  With no argument and no block,
  *  returns +true+ if +self+ is non-empty; +false+ if empty.
  *
@@ -4474,6 +4491,8 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.any? {|key, value| value < 3 } # => true
  *    h.any? {|key, value| value > 3 } # => false
+ *
+ *  Related: Enumerable#any?
  */
 
 static VALUE

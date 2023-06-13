@@ -1277,6 +1277,18 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_io_reopen_clobbering_singleton_class
+    assert_compiles(<<~RUBY, result: [:ok, :ok])
+      def $stderr.to_i = :i
+
+      def test = $stderr.to_i
+
+      [test, test]
+      $stderr.reopen($stderr.dup)
+      [test, test].map { :ok unless _1 == :i }
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

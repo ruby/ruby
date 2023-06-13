@@ -210,6 +210,13 @@ describe "Module#const_source_location" do
      ConstantSpecs.const_source_location(:CS_PRIVATE).should == [@constants_fixture_path, ConstantSpecs::CS_PRIVATE_LINE]
   end
 
+  it "works for eval with a given line" do
+    c = Class.new do
+      eval('self::C = 1', nil, "foo", 100)
+    end
+    c.const_source_location(:C).should == ["foo", 100]
+  end
+
   context 'autoload' do
     before :all do
       ConstantSpecs.autoload :CSL_CONST1, "#{__dir__}/notexisting.rb"

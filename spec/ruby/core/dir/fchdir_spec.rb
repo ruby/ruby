@@ -2,17 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
 ruby_version_is '3.3' do
-  has_fchdir = begin
-    dir = Dir.new('.')
-    Dir.fchdir(dir.fileno)
-    true
-  rescue NotImplementedError, NoMethodError
-    false
-  ensure
-    dir.close
-  end
-
-  guard -> { has_fchdir } do
+  guard -> { Dir.respond_to? :fchdir } do
     describe "Dir.fchdir" do
       before :all do
         DirSpecs.create_mock_dirs
@@ -67,7 +57,7 @@ ruby_version_is '3.3' do
     end
   end
 
-  guard_not -> { has_fchdir } do
+  guard_not -> { Dir.respond_to? :fchdir } do
     describe "Dir.fchdir" do
       it "raises NotImplementedError" do
         -> { Dir.fchdir 1 }.should raise_error(NotImplementedError)

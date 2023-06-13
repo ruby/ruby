@@ -17,6 +17,14 @@ body {
   background: #fafafa;
   font-family: Lato, sans-serif;
   font-weight: 300;
+
+  /* Layout */
+  display: grid;
+  grid-template-columns: auto 1fr;
+}
+
+body > :last-child {
+  grid-column: 1 / 3;
 }
 
 h1 span,
@@ -181,21 +189,25 @@ table tr:nth-child(even) td {
 /* @group Top-Level Structure */
 
 nav {
-  float: left;
-  width: 260px;
   font-family: Helvetica, sans-serif;
   font-size: 14px;
   border-right: 1px solid #ccc;
   position: sticky;
   top: 0;
   overflow: auto;
+
+  /* Layout */
+  width: 260px; /* fallback */
+  width: max(50px, 20vw);
+  min-width: 50px;
+  max-width: 80vw;
   height: calc(100vh - 100px); /* reduce the footer height */
+  resize: horizontal;
 }
 
 main {
   display: block;
-  margin: 0 2em 5em 260px;
-  padding-left: 20px;
+  margin: 1em;
   min-width: 340px;
   font-size: 16px;
 }
@@ -214,7 +226,6 @@ main h6 {
 }
 
 #validator-badges {
-  clear: both;
   margin: 1em 1em 2em;
   font-size: smaller;
 }
@@ -309,23 +320,26 @@ dl.note-list dt {
   background: url(../images/arrow_up.png) no-repeat right center;
 }
 
-.nav-section details summary {
+.nav-section details > summary {
   display: block;
 }
 
-.nav-section details summary::-webkit-details-marker {
+.nav-section details > summary::-webkit-details-marker {
   display: none;
 }
 
-.nav-section details summary:before {
+.nav-section details > summary::before {
   content: "";
 }
 
-.nav-section details summary:after {
-  content: "  \25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
+.nav-section details > summary::after {
+  content: "\25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
+  font-size: 0.8em;
+  margin-left: 0.4em;
 }
-.nav-section details[open] > summary:after {
-  content: "  \25BD"; /* WHITE DOWN-POINTING TRIANGLE */
+
+.nav-section details[open] > summary::after {
+  content: "\25BD"; /* WHITE DOWN-POINTING TRIANGLE */
 }
 
 /* @end */

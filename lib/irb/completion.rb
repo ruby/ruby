@@ -233,7 +233,7 @@ module IRB
         if doc_namespace
           candidates.find { |i| i == receiver }
         else
-          candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
+          candidates.grep(/^#{Regexp.quote(receiver)}/).collect{|e| "::" + e}
         end
 
       when /^([A-Z].*)::([^:.]*)$/

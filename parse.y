@@ -22,6 +22,27 @@
 #define YYLTYPE rb_code_location_t
 #define YYLTYPE_IS_DECLARED 1
 
+#ifdef UNIVERSAL_PARSER
+
+/* For Ripper */
+#ifdef RUBY_EXTCONF_H
+# include RUBY_EXTCONF_H
+#endif
+
+#include <errno.h>
+#include "internal/ruby_parser.h"
+#include "parser_node.h"
+#include "universal_parser.c"
+
+#ifdef RIPPER
+#undef T_NODE
+#define T_NODE 0x1b
+#define STATIC_ID2SYM p->config->static_id2sym
+#define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
+#endif
+
+#else
+
 #include "ruby/internal/config.h"
 
 #include <ctype.h>
@@ -43,10 +64,12 @@ struct lex_context;
 #include "internal/parse.h"
 #include "internal/rational.h"
 #include "internal/re.h"
+#include "internal/ruby_parser.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "node.h"
+#include "parser_node.h"
 #include "probes.h"
 #include "regenc.h"
 #include "ruby/encoding.h"
@@ -56,6 +79,129 @@ struct lex_context;
 #include "ruby/util.h"
 #include "ruby/ractor.h"
 #include "symbol.h"
+
+#ifndef RIPPER
+static void
+bignum_negate(VALUE b)
+{
+    BIGNUM_NEGATE(b);
+}
+
+static void
+rational_set_num(VALUE r, VALUE n)
+{
+    RATIONAL_SET_NUM(r, n);
+}
+
+static VALUE
+rational_get_num(VALUE obj)
+{
+    return RRATIONAL(obj)->num;
+}
+
+static void
+rcomplex_set_real(VALUE cmp, VALUE r)
+{
+    RCOMPLEX_SET_REAL(cmp, r);
+}
+
+static VALUE
+rcomplex_get_real(VALUE obj)
+{
+    return RCOMPLEX(obj)->real;
+}
+
+static void
+rcomplex_set_imag(VALUE cmp, VALUE i)
+{
+    RCOMPLEX_SET_IMAG(cmp, i);
+}
+
+static VALUE
+rcomplex_get_imag(VALUE obj)
+{
+    return RCOMPLEX(obj)->imag;
+}
+
+static bool
+hash_literal_key_p(VALUE k)
+{
+    switch (OBJ_BUILTIN_TYPE(k)) {
+      case T_NODE:
+        return false;
+      default:
+        return true;
+    }
+}
+
+static int
+literal_cmp(VALUE val, VALUE lit)
+{
+    if (val == lit) return 0;
+    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
+    return rb_iseq_cdhash_cmp(val, lit);
+}
+
+static st_index_t
+literal_hash(VALUE a)
+{
+    if (!hash_literal_key_p(a)) return (st_index_t)a;
+    return rb_iseq_cdhash_hash(a);
+}
+
+static int
+script_lines_defined(void)
+{
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+
+    return rb_const_defined_at(rb_cObject, script_lines);
+}
+
+static VALUE
+script_lines_get(void)
+{
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+
+    return rb_const_get_at(rb_cObject, script_lines);
+}
+
+static VALUE
+syntax_error_new(void)
+{
+    return rb_class_new_instance(0, 0, rb_eSyntaxError);
+}
+
+static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
+#endif /* !RIPPER */
+
+#define compile_callback rb_suppress_tracing
+VALUE rb_io_gets_internal(VALUE io);
+
+VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
+
+static int
+strterm_is_heredoc(VALUE strterm)
+{
+    return ((rb_strterm_t *)strterm)->flags & STRTERM_HEREDOC;
+}
+
+static VALUE
+new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
+{
+    rb_strterm_t *imemo = (rb_strterm_t *)rb_imemo_new(imemo_parser_strterm, v1, v2, v3, v0);
+    if (heredoc) {
+        imemo->flags |= STRTERM_HEREDOC;
+    }
+
+    return (VALUE)imemo;
+}
+#endif /* !UNIVERSAL_PARSER */
+
+#ifdef RIPPER
+#include "ripper_init.h"
+#endif
 
 enum shareability {
     shareable_none,
@@ -141,44 +287,6 @@ RBIMPL_WARNING_POP()
         {p->ruby_sourceline, (int)(p->lex.pcur - p->lex.pbeg)}, \
     }
 
-enum lex_state_bits {
-    EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */
-    EXPR_END_bit,		/* newline significant, +/- is an operator. */
-    EXPR_ENDARG_bit,		/* ditto, and unbound braces. */
-    EXPR_ENDFN_bit,		/* ditto, and unbound braces. */
-    EXPR_ARG_bit,		/* newline significant, +/- is an operator. */
-    EXPR_CMDARG_bit,		/* newline significant, +/- is an operator. */
-    EXPR_MID_bit,		/* newline significant, +/- is an operator. */
-    EXPR_FNAME_bit,		/* ignore newline, no reserved words. */
-    EXPR_DOT_bit,		/* right after `.', `&.' or `::', no reserved words. */
-    EXPR_CLASS_bit,		/* immediate after `class', no here document. */
-    EXPR_LABEL_bit,		/* flag bit, label is allowed. */
-    EXPR_LABELED_bit,		/* flag bit, just after a label. */
-    EXPR_FITEM_bit,		/* symbol literal as FNAME. */
-    EXPR_MAX_STATE
-};
-/* examine combinations */
-enum lex_state_e {
-#define DEF_EXPR(n) EXPR_##n = (1 << EXPR_##n##_bit)
-    DEF_EXPR(BEG),
-    DEF_EXPR(END),
-    DEF_EXPR(ENDARG),
-    DEF_EXPR(ENDFN),
-    DEF_EXPR(ARG),
-    DEF_EXPR(CMDARG),
-    DEF_EXPR(MID),
-    DEF_EXPR(FNAME),
-    DEF_EXPR(DOT),
-    DEF_EXPR(CLASS),
-    DEF_EXPR(LABEL),
-    DEF_EXPR(LABELED),
-    DEF_EXPR(FITEM),
-    EXPR_VALUE = EXPR_BEG,
-    EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_MID | EXPR_CLASS),
-    EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
-    EXPR_END_ANY  =  (EXPR_END | EXPR_ENDARG | EXPR_ENDFN),
-    EXPR_NONE = 0
-};
 #define IS_lex_state_for(x, ls)	((x) & (ls))
 #define IS_lex_state_all_for(x, ls) (((x) & (ls)) == (ls))
 #define IS_lex_state(ls)	IS_lex_state_for(p->lex.state, (ls))
@@ -240,18 +348,6 @@ enum {
     NUMPARAM_MAX = 9,
 };
 
-#define NUMPARAM_ID_P(id) numparam_id_p(id)
-#define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - (tNUMPARAM_1 - 1))
-#define NUMPARAM_IDX_TO_ID(idx) TOKEN2LOCALID((tNUMPARAM_1 - 1 + (idx)))
-static int
-numparam_id_p(ID id)
-{
-    if (!is_local_id(id) || id < (tNUMPARAM_1 << ID_SCOPE_SHIFT)) return 0;
-    unsigned int idx = NUMPARAM_ID_TO_IDX(id);
-    return idx > 0 && idx <= NUMPARAM_MAX;
-}
-static void numparam_name(struct parser_params *p, ID id);
-
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
 #define DVARS_TERMINAL_P(tbl) ((tbl) == DVARS_INHERIT || (tbl) == DVARS_TOPSCOPE)
@@ -263,8 +359,6 @@ typedef struct token_info {
     int nonspc;
     struct token_info *next;
 } token_info;
-
-typedef struct rb_strterm_struct rb_strterm_t;
 
 /*
     Structure of Lexer Buffer:
@@ -344,6 +438,10 @@ struct parser_params {
 
     struct lex_context ctxt;
 
+#ifdef UNIVERSAL_PARSER
+    rb_parser_config_t *config;
+#endif
+
     unsigned int command_start:1;
     unsigned int eofp: 1;
     unsigned int ruby__end__seen: 1;
@@ -388,12 +486,25 @@ struct parser_params {
 #endif
 };
 
+#define NUMPARAM_ID_P(id) numparam_id_p(p, id)
+#define NUMPARAM_ID_TO_IDX(id) (unsigned int)(((id) >> ID_SCOPE_SHIFT) - (tNUMPARAM_1 - 1))
+#define NUMPARAM_IDX_TO_ID(idx) TOKEN2LOCALID((tNUMPARAM_1 - 1 + (idx)))
+static int
+numparam_id_p(struct parser_params *p, ID id)
+{
+    if (!is_local_id(id) || id < (tNUMPARAM_1 << ID_SCOPE_SHIFT)) return 0;
+    unsigned int idx = NUMPARAM_ID_TO_IDX(id);
+    return idx > 0 && idx <= NUMPARAM_MAX;
+}
+static void numparam_name(struct parser_params *p, ID id);
+
+
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
 
 #define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
 #define STR_NEW0() rb_enc_str_new(0,0,p->enc)
 #define STR_NEW2(ptr) rb_enc_str_new((ptr),strlen(ptr),p->enc)
-#define STR_NEW3(ptr,len,e,func) parser_str_new((ptr),(len),(e),(func),p->enc)
+#define STR_NEW3(ptr,len,e,func) parser_str_new(p, (ptr),(len),(e),(func),p->enc)
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
 
 static st_table *
@@ -463,7 +574,7 @@ peek_end_expect_token_locations(struct parser_params *p)
 }
 
 static ID
-parser_token2id(enum yytokentype tok)
+parser_token2id(struct parser_params *p, enum yytokentype tok)
 {
     switch ((int) tok) {
 #define TOKEN2ID(tok) case tok: return rb_intern(#tok);
@@ -830,7 +941,6 @@ static rb_ast_id_table_t *local_tbl(struct parser_params*);
 static VALUE reg_compile(struct parser_params*, VALUE, int);
 static void reg_fragment_setenc(struct parser_params*, VALUE, int);
 static int reg_fragment_check(struct parser_params*, VALUE, int);
-static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
 
 static int literal_concat0(struct parser_params *p, VALUE head, VALUE tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
@@ -846,12 +956,12 @@ static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYP
 #define NODE_RIPPER2 NODE_OP_CDECL
 #define NEW_RIPPER2(a,b,c,loc) (VALUE)NEW_OP_CDECL(a,c,b,loc)
 
-static inline int ripper_is_node_yylval(VALUE n);
+static inline int ripper_is_node_yylval(struct parser_params *p, VALUE n);
 
 static inline VALUE
 ripper_new_yylval(struct parser_params *p, ID a, VALUE b, VALUE c)
 {
-    if (ripper_is_node_yylval(c)) c = RNODE(c)->nd_cval;
+    if (ripper_is_node_yylval(p, c)) c = RNODE(c)->nd_cval;
     add_mark_object(p, b);
     add_mark_object(p, c);
     return NEW_RIPPER(a, b, c, &NULL_LOC);
@@ -867,7 +977,7 @@ ripper_new_yylval2(struct parser_params *p, VALUE a, VALUE b, VALUE c)
 }
 
 static inline int
-ripper_is_node_yylval(VALUE n)
+ripper_is_node_yylval(struct parser_params *p, VALUE n)
 {
     return RB_TYPE_P(n, T_NODE) && nd_type_p(RNODE(n), NODE_RIPPER);
 }
@@ -875,11 +985,11 @@ ripper_is_node_yylval(VALUE n)
 #define value_expr(node) ((void)(node))
 #define remove_begin(node) (node)
 #define void_stmts(p,x) (x)
+#undef rb_dvar_defined
 #define rb_dvar_defined(id, base) 0
+#undef rb_local_defined
 #define rb_local_defined(id, base) 0
-static ID ripper_get_id(VALUE);
 #define get_id(id) ripper_get_id(id)
-static VALUE ripper_get_value(VALUE);
 #define get_value(val) ripper_get_value(val)
 #define get_num(num) (int)get_id(num)
 static VALUE assignable(struct parser_params*,VALUE);
@@ -905,14 +1015,11 @@ static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 static VALUE backref_error(struct parser_params*, NODE *, VALUE);
 #endif /* !RIPPER */
 
-/* forward declaration */
-typedef struct rb_strterm_heredoc_struct rb_strterm_heredoc_t;
-
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_reg_compile(struct parser_params* p, VALUE str, int options);
 int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
 enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
-VALUE rb_parser_lex_state_name(enum lex_state_e state);
+VALUE rb_parser_lex_state_name(struct parser_params *p, enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *p, const char *fmt, ...), 2, 3);
 YYLTYPE *rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
@@ -979,72 +1086,6 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define RE_OPTION_MASK  0xff
 #define RE_OPTION_ARG_ENCODING_NONE 32
 
-/* structs for managing terminator of string literal and heredocment */
-typedef struct rb_strterm_literal_struct {
-    union {
-        VALUE dummy;
-        long nest;
-    } u0;
-    union {
-        VALUE dummy;
-        long func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
-    } u1;
-    union {
-        VALUE dummy;
-        long paren;	    /* '(' of `%q(...)` */
-    } u2;
-    union {
-        VALUE dummy;
-        long term;	    /* ')' of `%q(...)` */
-    } u3;
-} rb_strterm_literal_t;
-
-#define HERETERM_LENGTH_BITS ((SIZEOF_VALUE - 1) * CHAR_BIT - 1)
-
-struct rb_strterm_heredoc_struct {
-    VALUE lastline;	/* the string of line that contains `<<"END"` */
-    long offset;	/* the column of END in `<<"END"` */
-    int sourceline;	/* lineno of the line that contains `<<"END"` */
-    unsigned length	/* the length of END in `<<"END"` */
-#if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
-    : HERETERM_LENGTH_BITS
-# define HERETERM_LENGTH_MAX ((1U << HERETERM_LENGTH_BITS) - 1)
-#else
-# define HERETERM_LENGTH_MAX UINT_MAX
-#endif
-    ;
-#if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
-    unsigned quote: 1;
-    unsigned func: 8;
-#else
-    uint8_t quote;
-    uint8_t func;
-#endif
-};
-STATIC_ASSERT(rb_strterm_heredoc_t, sizeof(rb_strterm_heredoc_t) <= 4 * SIZEOF_VALUE);
-
-#define STRTERM_HEREDOC IMEMO_FL_USER0
-
-struct rb_strterm_struct {
-    VALUE flags;
-    union {
-        rb_strterm_literal_t literal;
-        rb_strterm_heredoc_t heredoc;
-    } u;
-};
-
-#ifndef RIPPER
-void
-rb_strterm_mark(VALUE obj)
-{
-    rb_strterm_t *strterm = (rb_strterm_t*)obj;
-    if (RBASIC(obj)->flags & STRTERM_HEREDOC) {
-        rb_strterm_heredoc_t *heredoc = &strterm->u.heredoc;
-        rb_gc_mark(heredoc->lastline);
-    }
-}
-#endif
-
 #define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(p, yyres, yystr)
 size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
 
@@ -1060,12 +1101,11 @@ size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
 /****** Ripper *******/
 
 #ifdef RIPPER
-#define RIPPER_VERSION "0.1.0"
 
-static inline VALUE intern_sym(const char *name);
+#include "eventids1.h"
+#include "eventids2.h"
 
-#include "eventids1.c"
-#include "eventids2.c"
+extern const struct ripper_parser_ids ripper_parser_ids;
 
 static VALUE ripper_dispatch0(struct parser_params*,ID);
 static VALUE ripper_dispatch1(struct parser_params*,ID,VALUE);
@@ -1074,7 +1114,7 @@ static VALUE ripper_dispatch3(struct parser_params*,ID,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch4(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch7(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE);
-static void ripper_error(struct parser_params *p);
+void ripper_error(struct parser_params *p);
 
 #define dispatch0(n)            ripper_dispatch0(p, TOKEN_PASTE(ripper_id_, n))
 #define dispatch1(n,a)          ripper_dispatch1(p, TOKEN_PASTE(ripper_id_, n), (a))
@@ -1284,7 +1324,7 @@ endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
 # define rb_warning3L(l,fmt,a,b,c)   WARNING_CALL(WARNING_ARGS_L(l, fmt, 4), (a), (b), (c))
 # define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
-static ID id_warn, id_warning, id_gets, id_assoc;
+extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define ERR_MESG() STR_NEW2(mesg) /* to bypass Ripper DSL */
 # define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
@@ -1307,7 +1347,6 @@ static ID id_warn, id_warning, id_gets, id_assoc;
 # else
 # define WARNING_CALL rb_funcall
 # endif
-PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *fmt, ...), 2, 3);
 # define compile_error ripper_compile_error
 #else
 # define WARN_S_L(s,l) s
@@ -4754,7 +4793,7 @@ p_kw_label	: tLABEL
                             $$ = SYM2ID(node->nd_lit);
                         }
                     /*%
-                        if (ripper_is_node_yylval($2) && RNODE($2)->nd_cval) {
+                        if (ripper_is_node_yylval(p, $2) && RNODE($2)->nd_cval) {
                             VALUE label = RNODE($2)->nd_cval;
                             VALUE rval = RNODE($2)->nd_rval;
                             $$ = ripper_new_yylval(p, rb_intern_str(label), rval, label);
@@ -5173,7 +5212,7 @@ string_contents : /* none */
                     /*% ripper: string_add!($1, $2) %*/
                     /*%%%*/
                     /*%
-                        if (ripper_is_node_yylval($1) && ripper_is_node_yylval($2) &&
+                        if (ripper_is_node_yylval(p, $1) && ripper_is_node_yylval(p, $2) &&
                             !RNODE($1)->nd_cval) {
                             RNODE($1)->nd_cval = RNODE($2)->nd_cval;
                             RNODE($1)->nd_rval = add_mark_object(p, $$);
@@ -5235,11 +5274,11 @@ regexp_contents: /* none */
                         }
                     /*%
                         VALUE s1 = 1, s2 = 0, n1 = $1, n2 = $2;
-                        if (ripper_is_node_yylval(n1)) {
+                        if (ripper_is_node_yylval(p, n1)) {
                             s1 = RNODE(n1)->nd_cval;
                             n1 = RNODE(n1)->nd_rval;
                         }
-                        if (ripper_is_node_yylval(n2)) {
+                        if (ripper_is_node_yylval(p, n2)) {
                             s2 = RNODE(n2)->nd_cval;
                             n2 = RNODE(n2)->nd_rval;
                         }
@@ -6187,7 +6226,7 @@ parser_has_token(struct parser_params *p)
 }
 
 static VALUE
-code_loc_to_ary(const rb_code_location_t *loc)
+code_loc_to_ary(struct parser_params *p, const rb_code_location_t *loc)
 {
     VALUE ary = rb_ary_new_from_args(4,
         INT2NUM(loc->beg_pos.lineno), INT2NUM(loc->beg_pos.column),
@@ -6206,9 +6245,9 @@ parser_append_tokens(struct parser_params *p, VALUE str, enum yytokentype t, int
     ary = rb_ary_new2(4);
     token_id = p->token_id;
     rb_ary_push(ary, INT2FIX(token_id));
-    rb_ary_push(ary, ID2SYM(parser_token2id(t)));
+    rb_ary_push(ary, ID2SYM(parser_token2id(p, t)));
     rb_ary_push(ary, str);
-    rb_ary_push(ary, code_loc_to_ary(p->yylloc));
+    rb_ary_push(ary, code_loc_to_ary(p, p->yylloc));
     rb_obj_freeze(ary);
     rb_ary_push(p->tokens, ary);
     p->token_id++;
@@ -6263,13 +6302,6 @@ parser_dispatch_delayed_token(struct parser_params *p, enum yytokentype t, int l
 
 #define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
 
-static inline VALUE
-intern_sym(const char *name)
-{
-    ID id = rb_intern_const(name);
-    return ID2SYM(id);
-}
-
 static int
 ripper_has_scan_event(struct parser_params *p)
 {
@@ -6313,7 +6345,7 @@ ripper_dispatch_delayed_token(struct parser_params *p, enum yytokentype t)
 #endif /* RIPPER */
 
 static inline int
-is_identchar(const char *ptr, const char *MAYBE_UNUSED(ptr_end), rb_encoding *enc)
+is_identchar(struct parser_params *p, const char *ptr, const char *MAYBE_UNUSED(ptr_end), rb_encoding *enc)
 {
     return rb_enc_isalnum((unsigned char)*ptr, enc) || *ptr == '_' || !ISASCII(*ptr);
 }
@@ -6321,7 +6353,7 @@ is_identchar(const char *ptr, const char *MAYBE_UNUSED(ptr_end), rb_encoding *en
 static inline int
 parser_is_identchar(struct parser_params *p)
 {
-    return !(p)->eofp && is_identchar(p->lex.pcur-1, p->lex.pend, p->enc);
+    return !(p)->eofp && is_identchar(p, p->lex.pcur-1, p->lex.pend, p->enc);
 }
 
 static inline int
@@ -6424,7 +6456,7 @@ parser_precise_mbclen(struct parser_params *p, const char *ptr)
 }
 
 #ifndef RIPPER
-static void ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str);
+static void ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str);
 
 static inline void
 parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
@@ -6440,7 +6472,7 @@ parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
     else {
         return;
     }
-    ruby_show_error_line(p->error_buffer, yylloc, lineno, str);
+    ruby_show_error_line(p, p->error_buffer, yylloc, lineno, str);
 }
 
 static int
@@ -6470,7 +6502,7 @@ parser_yyerror0(struct parser_params *p, const char *msg)
 }
 
 static void
-ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str)
+ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str)
 {
     VALUE mesg;
     const int max_line_margin = 30;
@@ -6716,12 +6748,10 @@ static void parser_prepare(struct parser_params *p);
 static NODE *parser_append_options(struct parser_params *p, NODE *node);
 
 static VALUE
-debug_lines(VALUE fname)
+debug_lines(struct parser_params *p, VALUE fname)
 {
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-    if (rb_const_defined_at(rb_cObject, script_lines)) {
-        VALUE hash = rb_const_get_at(rb_cObject, script_lines);
+    if (script_lines_defined()) {
+        VALUE hash = script_lines_get();
         if (RB_TYPE_P(hash, T_HASH)) {
             VALUE lines = rb_ary_new();
             rb_hash_aset(hash, fname, lines);
@@ -6746,7 +6776,7 @@ yycompile0(VALUE arg)
     VALUE cov = Qfalse;
 
     if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
-        p->debug_lines = debug_lines(p->ruby_sourcefile_string);
+        p->debug_lines = debug_lines(p, p->ruby_sourcefile_string);
         if (p->debug_lines && p->ruby_sourceline > 0) {
             VALUE str = rb_default_rs;
             n = p->ruby_sourceline;
@@ -6783,7 +6813,7 @@ yycompile0(VALUE arg)
     if (n || p->error_p) {
         VALUE mesg = p->error_buffer;
         if (!mesg) {
-            mesg = rb_class_new_instance(0, 0, rb_eSyntaxError);
+            mesg = syntax_error_new();
         }
         if (!p->error_tolerant) {
             rb_set_errinfo(mesg);
@@ -6815,7 +6845,7 @@ yycompile0(VALUE arg)
 }
 
 static rb_ast_t *
-yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
+yycompile(struct parser_params *p, VALUE fname, int line)
 {
     rb_ast_t *ast;
     if (NIL_P(fname)) {
@@ -6831,9 +6861,8 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
     p->lvtbl = NULL;
 
     p->ast = ast = rb_ast_new();
-    rb_suppress_tracing(yycompile0, (VALUE)p);
+    compile_callback(yycompile0, (VALUE)p);
     p->ast = 0;
-    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
     while (p->lvtbl) {
         local_pop(p);
@@ -6844,7 +6873,7 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
 #endif /* !RIPPER */
 
 static rb_encoding *
-must_be_ascii_compatible(VALUE s)
+must_be_ascii_compatible(struct parser_params *p, VALUE s)
 {
     rb_encoding *enc = rb_enc_get(s);
     if (!rb_enc_asciicompat(enc)) {
@@ -6878,44 +6907,36 @@ lex_getline(struct parser_params *p)
 {
     VALUE line = (*p->lex.gets)(p, p->lex.input);
     if (NIL_P(line)) return line;
-    must_be_ascii_compatible(line);
+    must_be_ascii_compatible(p, line);
     if (RB_OBJ_FROZEN(line)) line = rb_str_dup(line); // needed for RubyVM::AST.of because script_lines in iseq is deep-frozen
     p->line_count++;
     return line;
 }
 
-static const rb_data_type_t parser_data_type;
-
 #ifndef RIPPER
 static rb_ast_t*
-parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
+parser_compile_string(rb_parser_t *p, VALUE fname, VALUE s, int line)
 {
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-
     p->lex.gets = lex_get_str;
     p->lex.gets_.ptr = 0;
     p->lex.input = rb_str_new_frozen(s);
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
-    return yycompile(vparser, p, fname, line);
+    return yycompile(p, fname, line);
 }
 
 rb_ast_t*
-rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
+rb_ruby_parser_compile_string_path(rb_parser_t *p, VALUE f, VALUE s, int line)
 {
-    return rb_parser_compile_string_path(vparser, rb_filesystem_str_new_cstr(f), s, line);
+    must_be_ascii_compatible(p, s);
+    return parser_compile_string(p, f, s, line);
 }
 
 rb_ast_t*
-rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
+rb_ruby_parser_compile_string(rb_parser_t *p, const char *f, VALUE s, int line)
 {
-    must_be_ascii_compatible(s);
-    return parser_compile_string(vparser, f, s, line);
+    return rb_ruby_parser_compile_string_path(p, rb_filesystem_str_new_cstr(f), s, line);
 }
-
-VALUE rb_io_gets_internal(VALUE io);
 
 static VALUE
 lex_io_gets(struct parser_params *p, VALUE io)
@@ -6924,17 +6945,13 @@ lex_io_gets(struct parser_params *p, VALUE io)
 }
 
 rb_ast_t*
-rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
+rb_ruby_parser_compile_file_path(rb_parser_t *p, VALUE fname, VALUE file, int start)
 {
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-
     p->lex.gets = lex_io_gets;
     p->lex.input = file;
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
-    return yycompile(vparser, p, fname, start);
+    return yycompile(p, fname, start);
 }
 
 static VALUE
@@ -6944,18 +6961,14 @@ lex_generic_gets(struct parser_params *p, VALUE input)
 }
 
 rb_ast_t*
-rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
+rb_ruby_parser_compile_generic(rb_parser_t *p, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
 {
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-
     p->lex.gets = lex_generic_gets;
     p->lex.gets_.call = lex_gets;
     p->lex.input = input;
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
-    return yycompile(vparser, p, fname, start);
+    return yycompile(p, fname, start);
 }
 #endif  /* !RIPPER */
 
@@ -6982,7 +6995,7 @@ enum string_type {
 };
 
 static VALUE
-parser_str_new(const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
+parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
 {
     VALUE str;
 
@@ -6990,7 +7003,7 @@ parser_str_new(const char *ptr, long len, rb_encoding *enc, int func, rb_encodin
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
         if (is_ascii_string(str)) {
         }
-        else if (rb_is_usascii_enc(enc0) && enc != rb_utf8_encoding()) {
+        else if (rb_is_usascii_enc((void *)enc0) && enc != rb_utf8_encoding()) {
             rb_enc_associate(str, rb_ascii8bit_encoding());
         }
     }
@@ -7174,7 +7187,7 @@ tok_hex(struct parser_params *p, size_t *numlen)
 {
     int c;
 
-    c = scan_hex(p->lex.pcur, 2, numlen);
+    c = (int)ruby_scan_hex(p->lex.pcur, 2, numlen);
     if (!*numlen) {
         yyerror0("invalid hex escape");
         token_flush(p);
@@ -7221,10 +7234,10 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
                  int regexp_literal, int wide)
 {
     size_t numlen;
-    int codepoint = scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
+    int codepoint = (int)ruby_scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
     p->lex.pcur += numlen;
     if (p->lex.strterm == NULL ||
-        (p->lex.strterm->flags & STRTERM_HEREDOC) ||
+        (strterm_is_heredoc((VALUE)p->lex.strterm)) ||
         (p->lex.strterm->u.literal.u1.func != str_regexp)) {
         if (wide ? (numlen == 0 || numlen > 6) : (numlen < 4))  {
             literal_flush(p, p->lex.pcur);
@@ -7363,7 +7376,7 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
         pushback(p, c);
-        c = scan_oct(p->lex.pcur, 3, &numlen);
+        c = (int)ruby_scan_oct(p->lex.pcur, 3, &numlen);
         p->lex.pcur += numlen;
         return c;
 
@@ -7773,22 +7786,16 @@ tokadd_string(struct parser_params *p,
     return c;
 }
 
-static inline rb_strterm_t *
-new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
-{
-    return (rb_strterm_t*)rb_imemo_new(imemo_parser_strterm, v1, v2, v3, v0);
-}
-
 /* imemo_parser_strterm for literal */
 #define NEW_STRTERM(func, term, paren) \
-    new_strterm((VALUE)(func), (VALUE)(paren), (VALUE)(term), 0)
+    (rb_strterm_t *)new_strterm((VALUE)(func), (VALUE)(paren), (VALUE)(term), 0, 0)
 
 #ifdef RIPPER
 static void
 flush_string_content(struct parser_params *p, rb_encoding *enc)
 {
     VALUE content = yylval.val;
-    if (!ripper_is_node_yylval(content))
+    if (!ripper_is_node_yylval(p, content))
         content = ripper_new_yylval(p, 0, 0, content);
     if (has_delayed_token(p)) {
         ptrdiff_t len = p->lex.pcur - p->lex.ptok;
@@ -8058,8 +8065,7 @@ heredoc_identifier(struct parser_params *p)
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
 
-    p->lex.strterm = new_strterm(0, 0, 0, p->lex.lastline);
-    p->lex.strterm->flags |= STRTERM_HEREDOC;
+    p->lex.strterm = (rb_strterm_t *)new_strterm(0, 0, 0, p->lex.lastline, 1);
     rb_strterm_heredoc_t *here = &p->lex.strterm->u.heredoc;
     here->offset = offset;
     here->sourceline = p->ruby_sourceline;
@@ -8092,7 +8098,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
 }
 
 static int
-dedent_string(VALUE string, int width)
+dedent_string(struct parser_params *p, VALUE string, int width)
 {
     char *str;
     long len;
@@ -8140,7 +8146,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
     while (str_node) {
         VALUE lit = str_node->nd_lit;
         if (str_node->flags & NODE_FL_NEWLINE) {
-            dedent_string(lit, indent);
+            dedent_string(p, lit, indent);
         }
         if (!prev_lit) {
             prev_lit = lit;
@@ -8184,26 +8190,6 @@ heredoc_dedent(struct parser_params *p, VALUE array)
     p->heredoc_indent = 0;
     dispatch2(heredoc_dedent, array, INT2NUM(indent));
     return array;
-}
-
-/*
- *  call-seq:
- *    Ripper.dedent_string(input, width)   -> Integer
- *
- *  USE OF RIPPER LIBRARY ONLY.
- *
- *  Strips up to +width+ leading whitespaces from +input+,
- *  and returns the stripped column width.
- */
-static VALUE
-parser_dedent_string(VALUE self, VALUE input, VALUE width)
-{
-    int wid, col;
-
-    StringValue(input);
-    wid = NUM2UINT(width);
-    col = dedent_string(input, wid);
-    return INT2NUM(col);
 }
 #endif
 
@@ -9266,14 +9252,14 @@ parse_qmark(struct parser_params *p, int space_seen)
         if (tokadd_mbchar(p, c) == -1) return 0;
     }
     else if ((rb_enc_isalnum(c, p->enc) || c == '_') &&
-             p->lex.pcur < p->lex.pend && is_identchar(p->lex.pcur, p->lex.pend, p->enc)) {
+             p->lex.pcur < p->lex.pend && is_identchar(p, p->lex.pcur, p->lex.pend, p->enc)) {
         if (space_seen) {
             const char *start = p->lex.pcur - 1, *ptr = start;
             do {
                 int n = parser_precise_mbclen(p, ptr);
                 if (n < 0) return -1;
                 ptr += n;
-            } while (ptr < p->lex.pend && is_identchar(ptr, p->lex.pend, p->enc));
+            } while (ptr < p->lex.pend && is_identchar(p, ptr, p->lex.pend, p->enc));
             rb_warn2("`?' just followed by `%.*s' is interpreted as" \
                      " a conditional operator, put a space after `?'",
                      WARN_I((int)(ptr - start)), WARN_S_L(start, (ptr - start)));
@@ -9777,7 +9763,7 @@ parser_yylex(struct parser_params *p)
     int token_seen = p->token_seen;
 
     if (p->lex.strterm) {
-        if (p->lex.strterm->flags & STRTERM_HEREDOC) {
+        if (strterm_is_heredoc((VALUE)p->lex.strterm)) {
             token_flush(p);
             return here_document(p, &p->lex.strterm->u.heredoc);
         }
@@ -10121,7 +10107,7 @@ parser_yylex(struct parser_params *p)
             if ((c != ':') ||
                 (c = peekc_n(p, 1)) == -1 ||
                 !(c == '\'' || c == '"' ||
-                  is_identchar((p->lex.pcur+1), p->lex.pend, p->enc))) {
+                  is_identchar(p, (p->lex.pcur+1), p->lex.pend, p->enc))) {
                 rb_warning0("`&' interpreted as argument prefix");
             }
             c = tAMPER;
@@ -10696,7 +10682,7 @@ literal_concat0(struct parser_params *p, VALUE head, VALUE tail)
 }
 
 static VALUE
-string_literal_head(enum node_type htype, NODE *head)
+string_literal_head(struct parser_params *p, enum node_type htype, NODE *head)
 {
     if (htype != NODE_DSTR) return Qfalse;
     if (head->nd_next) {
@@ -10735,7 +10721,7 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
     }
     switch (nd_type(tail)) {
       case NODE_STR:
-        if ((lit = string_literal_head(htype, head)) != Qfalse) {
+        if ((lit = string_literal_head(p, htype, head)) != Qfalse) {
             htype = NODE_STR;
         }
         else {
@@ -10775,7 +10761,7 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
             }
             rb_discard_node(p, tail);
         }
-        else if ((lit = string_literal_head(htype, head)) != Qfalse) {
+        else if ((lit = string_literal_head(p, htype, head)) != Qfalse) {
             if (!literal_concat0(p, lit, tail->nd_lit))
                 goto error;
             tail->nd_lit = Qnil;
@@ -11235,11 +11221,11 @@ new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 {
     VALUE src = 0, err;
     int options = 0;
-    if (ripper_is_node_yylval(re)) {
+    if (ripper_is_node_yylval(p, re)) {
         src = RNODE(re)->nd_cval;
         re = RNODE(re)->nd_rval;
     }
-    if (ripper_is_node_yylval(opt)) {
+    if (ripper_is_node_yylval(p, opt)) {
         options = (int)RNODE(opt)->nd_tag;
         opt = RNODE(opt)->nd_rval;
     }
@@ -11267,7 +11253,7 @@ static const char rb_parser_lex_state_names[][8] = {
 };
 
 static VALUE
-append_lex_state_name(enum lex_state_e state, VALUE buf)
+append_lex_state_name(struct parser_params *p, enum lex_state_e state, VALUE buf)
 {
     int i, sep = 0;
     unsigned int mask = 1;
@@ -11308,22 +11294,22 @@ rb_parser_trace_lex_state(struct parser_params *p, enum lex_state_e from,
 {
     VALUE mesg;
     mesg = rb_str_new_cstr("lex_state: ");
-    append_lex_state_name(from, mesg);
+    append_lex_state_name(p, from, mesg);
     rb_str_cat_cstr(mesg, " -> ");
-    append_lex_state_name(to, mesg);
+    append_lex_state_name(p, to, mesg);
     rb_str_catf(mesg, " at line %d\n", line);
     flush_debug_buffer(p, p->debug_output, mesg);
     return to;
 }
 
 VALUE
-rb_parser_lex_state_name(enum lex_state_e state)
+rb_parser_lex_state_name(struct parser_params *p, enum lex_state_e state)
 {
-    return rb_fstring(append_lex_state_name(state, rb_str_new(0, 0)));
+    return rb_fstring(append_lex_state_name(p, state, rb_str_new(0, 0)));
 }
 
 static void
-append_bitstack_value(stack_type stack, VALUE mesg)
+append_bitstack_value(struct parser_params *p, stack_type stack, VALUE mesg)
 {
     if (stack == 0) {
         rb_str_cat_cstr(mesg, "0");
@@ -11340,7 +11326,7 @@ rb_parser_show_bitstack(struct parser_params *p, stack_type stack,
                         const char *name, int line)
 {
     VALUE mesg = rb_sprintf("%s: ", name);
-    append_bitstack_value(stack, mesg);
+    append_bitstack_value(p, stack, mesg);
     rb_str_catf(mesg, " at line %d\n", line);
     flush_debug_buffer(p, p->debug_output, mesg);
 }
@@ -11358,13 +11344,13 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     RB_GC_GUARD(mesg);
 
     mesg = rb_str_new(0, 0);
-    append_lex_state_name(p->lex.state, mesg);
+    append_lex_state_name(p, p->lex.state, mesg);
     compile_error(p, "lex.state: %"PRIsVALUE, mesg);
     rb_str_resize(mesg, 0);
-    append_bitstack_value(p->cond_stack, mesg);
+    append_bitstack_value(p, p->cond_stack, mesg);
     compile_error(p, "cond_stack: %"PRIsVALUE, mesg);
     rb_str_resize(mesg, 0);
-    append_bitstack_value(p->cmdarg_stack, mesg);
+    append_bitstack_value(p, p->cmdarg_stack, mesg);
     compile_error(p, "cmdarg_stack: %"PRIsVALUE, mesg);
     if (p->debug_output == rb_ractor_stdout())
         p->debug_output = rb_ractor_stderr();
@@ -11527,7 +11513,7 @@ assignable(struct parser_params *p, VALUE lhs)
 #endif
 
 static int
-is_private_local_id(ID name)
+is_private_local_id(struct parser_params *p, ID name)
 {
     VALUE s;
     if (name == idUScore) return 1;
@@ -11542,7 +11528,7 @@ shadowing_lvar_0(struct parser_params *p, ID name)
 {
     if (dyna_in_block(p)) {
         if (dvar_curr(p, name)) {
-            if (is_private_local_id(name)) return 1;
+            if (is_private_local_id(p, name)) return 1;
             yyerror0("duplicated argument name");
         }
         else if (dvar_defined(p, name) || local_id(p, name)) {
@@ -11555,7 +11541,7 @@ shadowing_lvar_0(struct parser_params *p, ID name)
     }
     else {
         if (local_id(p, name)) {
-            if (is_private_local_id(name)) return 1;
+            if (is_private_local_id(p, name)) return 1;
             yyerror0("duplicated argument name");
         }
     }
@@ -11768,8 +11754,6 @@ const_decl_path(struct parser_params *p, NODE **dest)
     return n;
 }
 
-extern VALUE rb_mRubyVMFrozenCore;
-
 static NODE *
 make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTYPE *loc)
 {
@@ -11797,7 +11781,7 @@ ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const Y
 static int is_static_content(NODE *node);
 
 static VALUE
-shareable_literal_value(NODE *node)
+shareable_literal_value(struct parser_params *p, NODE *node)
 {
     if (!node) return Qnil;
     enum node_type type = nd_type(node);
@@ -11870,7 +11854,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
                 }
             }
             if (RTEST(lit)) {
-                VALUE e = shareable_literal_value(elt);
+                VALUE e = shareable_literal_value(p, elt);
                 if (!UNDEF_P(e)) {
                     rb_ary_push(lit, e);
                 }
@@ -11909,8 +11893,8 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
                 }
             }
             if (RTEST(lit)) {
-                VALUE k = shareable_literal_value(key);
-                VALUE v = shareable_literal_value(val);
+                VALUE k = shareable_literal_value(p, key);
+                VALUE v = shareable_literal_value(p, val);
                 if (!UNDEF_P(k) && !UNDEF_P(v)) {
                     rb_hash_aset(lit, k, v);
                 }
@@ -12520,15 +12504,15 @@ negate_lit(struct parser_params *p, VALUE lit)
     }
     switch (BUILTIN_TYPE(lit)) {
       case T_BIGNUM:
-        BIGNUM_NEGATE(lit);
+        bignum_negate(lit);
         lit = rb_big_norm(lit);
         break;
       case T_RATIONAL:
-        RATIONAL_SET_NUM(lit, negate_lit(p, RRATIONAL(lit)->num));
+        rational_set_num(lit, negate_lit(p, rational_get_num(lit)));
         break;
       case T_COMPLEX:
-        RCOMPLEX_SET_REAL(lit, negate_lit(p, RCOMPLEX(lit)->real));
-        RCOMPLEX_SET_IMAG(lit, negate_lit(p, RCOMPLEX(lit)->imag));
+        rcomplex_set_real(lit, negate_lit(p, rcomplex_get_real(lit)));
+        rcomplex_set_imag(lit, negate_lit(p, rcomplex_get_imag(lit)));
         break;
       case T_FLOAT:
         lit = DBL2NUM(-RFLOAT_VALUE(lit));
@@ -12827,40 +12811,14 @@ append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
     return ST_CONTINUE;
 }
 
-static bool
-hash_literal_key_p(VALUE k)
-{
-    switch (OBJ_BUILTIN_TYPE(k)) {
-      case T_NODE:
-        return false;
-      default:
-        return true;
-    }
-}
-
-static int
-literal_cmp(VALUE val, VALUE lit)
-{
-    if (val == lit) return 0;
-    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
-}
-
-static st_index_t
-literal_hash(VALUE a)
-{
-    if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
-}
-
-static const struct st_hash_type literal_type = {
-    literal_cmp,
-    literal_hash,
-};
-
 static NODE *
 remove_duplicate_keys(struct parser_params *p, NODE *hash)
 {
+    struct st_hash_type literal_type = {
+        literal_cmp,
+        literal_hash,
+    };
+
     st_table *literal_keys = st_init_table_with_size(&literal_type, hash->nd_alen / 2);
     NODE *result = 0;
     NODE *last_expr = 0;
@@ -12910,7 +12868,7 @@ new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 static void
 error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc)
 {
-    if (is_private_local_id(id)) {
+    if (is_private_local_id(p, id)) {
         return;
     }
     if (st_is_member(p->pvtbl, id)) {
@@ -13117,7 +13075,7 @@ warn_unused_var(struct parser_params *p, struct local_vars *local)
     ID *u = local->used->tbl;
     for (int i = 0; i < cnt; ++i) {
         if (!v[i] || (u[i] & LVAR_USED)) continue;
-        if (is_private_local_id(v[i])) continue;
+        if (is_private_local_id(p, v[i])) continue;
         rb_warn1L((int)u[i], "assigned but unused variable - %"PRIsWARN, rb_id2str(v[i]));
     }
 #endif
@@ -13522,6 +13480,7 @@ reg_fragment_check(struct parser_params* p, VALUE str, int options)
     return 1;
 }
 
+#ifndef UNIVERSAL_PARSER
 typedef struct {
     struct parser_params* parser;
     rb_encoding *enc;
@@ -13571,6 +13530,30 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *l
     if (!arg.succ_block) return 0;
     return arg.succ_block->nd_next;
 }
+#endif
+
+int
+rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len,
+          rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc)
+{
+    ID var;
+    NODE *node, *succ;
+
+    if (!len) return ST_CONTINUE;
+    if (rb_enc_symname_type(s, len, enc, (1U<<ID_LOCAL)) != ID_LOCAL)
+        return ST_CONTINUE;
+
+    var = intern_cstr(s, len, enc);
+    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
+        if (!lvar_defined(p, var)) return ST_CONTINUE;
+    }
+    node = node_assign(p, assignable(p, var, 0, loc), NEW_LIT(ID2SYM(var), loc), NO_LEX_CTXT, loc);
+    succ = *succ_block;
+    if (!succ) succ = NEW_BEGIN(0, loc);
+    succ = block_append(p, succ, node);
+    *succ_block = succ;
+    return ST_CONTINUE;
+}
 
 static VALUE
 parser_reg_compile(struct parser_params* p, VALUE str, int options)
@@ -13607,7 +13590,7 @@ parser_reg_compile(struct parser_params* p, VALUE str, int options, VALUE *errms
 {
     VALUE err = rb_errinfo();
     VALUE re;
-    str = ripper_is_node_yylval(str) ? RNODE(str)->nd_cval : str;
+    str = ripper_is_node_yylval(p, str) ? RNODE(str)->nd_cval : str;
     int c = rb_reg_fragment_setenc(p, str, options);
     if (c) reg_fragment_enc_error(p, str, c);
     re = rb_parser_reg_compile(p, str, options);
@@ -13621,10 +13604,8 @@ parser_reg_compile(struct parser_params* p, VALUE str, int options, VALUE *errms
 
 #ifndef RIPPER
 void
-rb_parser_set_options(VALUE vparser, int print, int loop, int chomp, int split)
+rb_ruby_parser_set_options(struct parser_params *p, int print, int loop, int chomp, int split)
 {
-    struct parser_params *p;
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
     p->do_print = print;
     p->do_loop = loop;
     p->do_chomp = chomp;
@@ -13708,12 +13689,13 @@ parser_initialize(struct parser_params *p)
 }
 
 #ifdef RIPPER
-#define parser_mark ripper_parser_mark
-#define parser_free ripper_parser_free
+#define rb_ruby_parser_mark ripper_parser_mark
+#define rb_ruby_parser_free ripper_parser_free
+#define rb_ruby_parser_memsize ripper_parser_memsize
 #endif
 
-static void
-parser_mark(void *ptr)
+void
+rb_ruby_parser_mark(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
 
@@ -13743,11 +13725,14 @@ parser_mark(void *ptr)
 #endif
 }
 
-static void
-parser_free(void *ptr)
+void
+rb_ruby_parser_free(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
+#ifdef UNIVERSAL_PARSER
+    rb_parser_config_t *config = p->config;
+#endif
 
     if (p->tokenbuf) {
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
@@ -13765,10 +13750,17 @@ parser_free(void *ptr)
         }
     }
     xfree(ptr);
+
+#ifdef UNIVERSAL_PARSER
+    config->counter--;
+    if (config->counter <= 0) {
+        rb_ruby_parser_config_free(config);
+    }
+#endif
 }
 
-static size_t
-parser_memsize(const void *ptr)
+size_t
+rb_ruby_parser_memsize(const void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local;
@@ -13782,19 +13774,33 @@ parser_memsize(const void *ptr)
     return size;
 }
 
-static const rb_data_type_t parser_data_type = {
-#ifndef RIPPER
-    "parser",
-#else
-    "ripper",
+#ifdef UNIVERSAL_PARSER
+rb_parser_config_t *
+rb_ruby_parser_config_new(void *(*malloc)(size_t size))
+{
+    return (rb_parser_config_t *)malloc(sizeof(rb_parser_config_t));
+}
+
+void
+rb_ruby_parser_config_free(rb_parser_config_t *config)
+{
+    config->free(config);
+}
 #endif
+
+#ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
+static const rb_data_type_t parser_data_type = {
+    "parser",
     {
-        parser_mark,
-        parser_free,
-        parser_memsize,
+        rb_ruby_parser_mark,
+        rb_ruby_parser_free,
+        rb_ruby_parser_memsize,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
+#endif
+#endif
 
 #ifndef RIPPER
 #undef rb_reserved_word
@@ -13803,6 +13809,143 @@ const struct kwtable *
 rb_reserved_word(const char *str, unsigned int len)
 {
     return reserved_word(str, len);
+}
+
+#ifdef UNIVERSAL_PARSER
+rb_parser_t *
+rb_ruby_parser_allocate(rb_parser_config_t *config)
+{
+    /* parser_initialize expects fields to be set to 0 */
+    rb_parser_t *p = (rb_parser_t *)config->calloc(1, sizeof(rb_parser_t));
+    p->config = config;
+    p->config->counter++;
+    return p;
+}
+
+rb_parser_t *
+rb_ruby_parser_new(rb_parser_config_t *config)
+{
+    /* parser_initialize expects fields to be set to 0 */
+    rb_parser_t *p = rb_ruby_parser_allocate(config);
+    parser_initialize(p);
+    return p;
+}
+#endif
+
+rb_parser_t *
+rb_ruby_parser_set_context(rb_parser_t *p, const struct rb_iseq_struct *base, int main)
+{
+    p->error_buffer = main ? Qfalse : Qnil;
+    p->parent_iseq = base;
+    return p;
+}
+
+void
+rb_ruby_parser_keep_script_lines(rb_parser_t *p)
+{
+    p->keep_script_lines = 1;
+}
+
+void
+rb_ruby_parser_error_tolerant(rb_parser_t *p)
+{
+    p->error_tolerant = 1;
+    // TODO
+    p->end_expect_token_locations = rb_ary_new();
+}
+
+void
+rb_ruby_parser_keep_tokens(rb_parser_t *p)
+{
+    p->keep_tokens = 1;
+    // TODO
+    p->tokens = rb_ary_new();
+}
+
+#ifndef UNIVERSAL_PARSER
+rb_ast_t*
+rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
+    return rb_ruby_parser_compile_file_path(p, fname, file, start);
+}
+
+rb_ast_t*
+rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
+    return rb_ruby_parser_compile_generic(p, lex_gets, fname, input, start);
+}
+
+rb_ast_t*
+rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
+    return rb_ruby_parser_compile_string(p, f, s, line);
+}
+
+rb_ast_t*
+rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
+    return rb_ruby_parser_compile_string_path(p, f, s, line);
+}
+
+VALUE
+rb_parser_encoding(VALUE vparser)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    return rb_ruby_parser_encoding(p);
+}
+
+VALUE
+rb_parser_end_seen_p(VALUE vparser)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    return RBOOL(rb_ruby_parser_end_seen_p(p));
+}
+
+void
+rb_parser_error_tolerant(VALUE vparser)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    rb_ruby_parser_error_tolerant(p);
+}
+
+void
+rb_parser_keep_script_lines(VALUE vparser)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    rb_ruby_parser_keep_script_lines(p);
+}
+
+void
+rb_parser_keep_tokens(VALUE vparser)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    rb_ruby_parser_keep_tokens(p);
 }
 
 VALUE
@@ -13821,164 +13964,208 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->error_buffer = main ? Qfalse : Qnil;
-    p->parent_iseq = base;
+    rb_ruby_parser_set_context(p, base, main);
     return vparser;
 }
 
 void
-rb_parser_keep_script_lines(VALUE vparser)
+rb_parser_set_options(VALUE vparser, int print, int loop, int chomp, int split)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->keep_script_lines = 1;
+    rb_ruby_parser_set_options(p, print, loop, chomp, split);
 }
 
-void
-rb_parser_error_tolerant(VALUE vparser)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->error_tolerant = 1;
-    p->end_expect_token_locations = rb_ary_new();
-}
-
-void
-rb_parser_keep_tokens(VALUE vparser)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->keep_tokens = 1;
-    p->tokens = rb_ary_new();
-}
-
-#endif
-
-#ifdef RIPPER
-#define rb_parser_end_seen_p ripper_parser_end_seen_p
-#define rb_parser_encoding ripper_parser_encoding
-#define rb_parser_get_yydebug ripper_parser_get_yydebug
-#define rb_parser_set_yydebug ripper_parser_set_yydebug
-#define rb_parser_get_debug_output ripper_parser_get_debug_output
-#define rb_parser_set_debug_output ripper_parser_set_debug_output
-static VALUE ripper_parser_end_seen_p(VALUE vparser);
-static VALUE ripper_parser_encoding(VALUE vparser);
-static VALUE ripper_parser_get_yydebug(VALUE self);
-static VALUE ripper_parser_set_yydebug(VALUE self, VALUE flag);
-static VALUE ripper_parser_get_debug_output(VALUE self);
-static VALUE ripper_parser_set_debug_output(VALUE self, VALUE output);
-
-/*
- *  call-seq:
- *    ripper.error?   -> Boolean
- *
- *  Return true if parsed source has errors.
- */
-static VALUE
-ripper_error_p(VALUE vparser)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return RBOOL(p->error_p);
-}
-#endif
-
-/*
- *  call-seq:
- *    ripper.end_seen?   -> Boolean
- *
- *  Return true if parsed source ended by +\_\_END\_\_+.
- */
-VALUE
-rb_parser_end_seen_p(VALUE vparser)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return RBOOL(p->ruby__end__seen);
-}
-
-/*
- *  call-seq:
- *    ripper.encoding   -> encoding
- *
- *  Return encoding of the source.
- */
-VALUE
-rb_parser_encoding(VALUE vparser)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    return rb_enc_from_encoding(p->enc);
-}
-
-#ifdef RIPPER
-/*
- *  call-seq:
- *    ripper.yydebug   -> true or false
- *
- *  Get yydebug.
- */
-VALUE
-rb_parser_get_yydebug(VALUE self)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    return RBOOL(p->debug);
-}
-#endif
-
-/*
- *  call-seq:
- *    ripper.yydebug = flag
- *
- *  Set yydebug.
- */
 VALUE
 rb_parser_set_yydebug(VALUE self, VALUE flag)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    p->debug = RTEST(flag);
+    rb_ruby_parser_set_yydebug(p, RTEST(flag));
     return flag;
 }
 
-/*
- *  call-seq:
- *    ripper.debug_output   -> obj
- *
- *  Get debug output.
- */
-VALUE
-rb_parser_get_debug_output(VALUE self)
+void
+rb_strterm_mark(VALUE obj)
 {
-    struct parser_params *p;
+    rb_strterm_t *strterm = (rb_strterm_t*)obj;
+    if (RBASIC(obj)->flags & STRTERM_HEREDOC) {
+        rb_strterm_heredoc_t *heredoc = &strterm->u.heredoc;
+        rb_gc_mark(heredoc->lastline);
+    }
+}
+#endif /* !UNIVERSAL_PARSER */
 
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
+VALUE
+rb_ruby_parser_encoding(rb_parser_t *p)
+{
+    return rb_enc_from_encoding(p->enc);
+}
+
+int
+rb_ruby_parser_end_seen_p(rb_parser_t *p)
+{
+    return p->ruby__end__seen;
+}
+
+int
+rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag)
+{
+    p->debug = flag;
+    return flag;
+}
+#endif /* !RIPPER */
+
+#ifdef RIPPER
+int
+rb_ruby_parser_get_yydebug(rb_parser_t *p)
+{
+    return p->debug;
+}
+
+void
+rb_ruby_parser_set_value(rb_parser_t *p, VALUE value)
+{
+    p->value = value;
+}
+
+int
+rb_ruby_parser_error_p(rb_parser_t *p)
+{
+    return p->error_p;
+}
+
+VALUE
+rb_ruby_parser_debug_output(rb_parser_t *p)
+{
     return p->debug_output;
 }
 
-/*
- *  call-seq:
- *    ripper.debug_output = obj
- *
- *  Set debug output.
- */
-VALUE
-rb_parser_set_debug_output(VALUE self, VALUE output)
+void
+rb_ruby_parser_set_debug_output(rb_parser_t *p, VALUE output)
 {
-    struct parser_params *p;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    return p->debug_output = output;
+    p->debug_output = output;
 }
+
+VALUE
+rb_ruby_parser_parsing_thread(rb_parser_t *p)
+{
+    return p->parsing_thread;
+}
+
+void
+rb_ruby_parser_set_parsing_thread(rb_parser_t *p, VALUE parsing_thread)
+{
+    p->parsing_thread = parsing_thread;
+}
+
+void
+rb_ruby_parser_ripper_initialize(rb_parser_t *p, VALUE (*gets)(struct parser_params*,VALUE), VALUE input, VALUE sourcefile_string, const char *sourcefile, int sourceline)
+{
+    p->lex.gets = gets;
+    p->lex.input = input;
+    p->eofp = 0;
+    p->ruby_sourcefile_string = sourcefile_string;
+    p->ruby_sourcefile = sourcefile;
+    p->ruby_sourceline = sourceline;
+}
+
+VALUE
+rb_ruby_parser_result(rb_parser_t *p)
+{
+    return p->result;
+}
+
+rb_encoding *
+rb_ruby_parser_enc(rb_parser_t *p)
+{
+    return p->enc;
+}
+
+VALUE
+rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p)
+{
+    return p->ruby_sourcefile_string;
+}
+
+int
+rb_ruby_parser_ruby_sourceline(rb_parser_t *p)
+{
+    return p->ruby_sourceline;
+}
+
+int
+rb_ruby_parser_lex_state(rb_parser_t *p)
+{
+    return p->lex.state;
+}
+
+void
+rb_ruby_ripper_parse0(rb_parser_t *p)
+{
+    parser_prepare(p);
+    p->ast = rb_ast_new();
+    ripper_yyparse((void*)p);
+    rb_ast_dispose(p->ast);
+    p->ast = 0;
+}
+
+int
+rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width)
+{
+    return dedent_string(p, string, width);
+}
+
+VALUE
+rb_ruby_ripper_lex_get_str(rb_parser_t *p, VALUE s)
+{
+    return lex_get_str(p, s);
+}
+
+int
+rb_ruby_ripper_initialized_p(rb_parser_t *p)
+{
+    return p->lex.input != 0;
+}
+
+void
+rb_ruby_ripper_parser_initialize(rb_parser_t *p)
+{
+    parser_initialize(p);
+}
+
+long
+rb_ruby_ripper_column(rb_parser_t *p)
+{
+    return p->lex.ptok - p->lex.pbeg;
+}
+
+long
+rb_ruby_ripper_token_len(rb_parser_t *p)
+{
+    return p->lex.pcur - p->lex.ptok;
+}
+
+VALUE
+rb_ruby_ripper_lex_lastline(rb_parser_t *p)
+{
+    return p->lex.lastline;
+}
+
+VALUE
+rb_ruby_ripper_lex_state_name(struct parser_params *p, int state)
+{
+    return rb_parser_lex_state_name(p, (enum lex_state_e)state);
+}
+
+struct parser_params*
+rb_ruby_ripper_parser_allocate(void)
+{
+    return (struct parser_params *)ruby_xcalloc(1, sizeof(struct parser_params));
+}
+#endif /* RIPPER */
 
 #ifndef RIPPER
 #ifdef YYMALLOC
@@ -14262,377 +14449,21 @@ ripper_dispatch7(struct parser_params *p, ID mid, VALUE a, VALUE b, VALUE c, VAL
     return rb_funcall(p->value, mid, 7, a, b, c, d, e, f, g);
 }
 
-static ID
-ripper_get_id(VALUE v)
-{
-    NODE *nd;
-    if (!RB_TYPE_P(v, T_NODE)) return 0;
-    nd = (NODE *)v;
-    if (!nd_type_p(nd, NODE_RIPPER)) return 0;
-    return nd->nd_vid;
-}
-
-static VALUE
-ripper_get_value(VALUE v)
-{
-    NODE *nd;
-    if (UNDEF_P(v)) return Qnil;
-    if (!RB_TYPE_P(v, T_NODE)) return v;
-    nd = (NODE *)v;
-    if (!nd_type_p(nd, NODE_RIPPER)) return Qnil;
-    return nd->nd_rval;
-}
-
-static void
+void
 ripper_error(struct parser_params *p)
 {
     p->error_p = TRUE;
 }
 
-static void
-ripper_compile_error(struct parser_params *p, const char *fmt, ...)
+VALUE
+ripper_value(struct parser_params *p)
 {
-    VALUE str;
-    va_list args;
-
-    va_start(args, fmt);
-    str = rb_vsprintf(fmt, args);
-    va_end(args);
-    rb_funcall(p->value, rb_intern("compile_error"), 1, str);
-    ripper_error(p);
-}
-
-static VALUE
-ripper_lex_get_generic(struct parser_params *p, VALUE src)
-{
-    VALUE line = rb_funcallv_public(src, id_gets, 0, 0);
-    if (!NIL_P(line) && !RB_TYPE_P(line, T_STRING)) {
-        rb_raise(rb_eTypeError,
-                 "gets returned %"PRIsVALUE" (expected String or nil)",
-                 rb_obj_class(line));
-    }
-    return line;
-}
-
-static VALUE
-ripper_lex_io_get(struct parser_params *p, VALUE src)
-{
-    return rb_io_gets(src);
-}
-
-static VALUE
-ripper_s_allocate(VALUE klass)
-{
-    struct parser_params *p;
-    VALUE self = TypedData_Make_Struct(klass, struct parser_params,
-                                       &parser_data_type, p);
-    p->value = self;
-    return self;
-}
-
-#define ripper_initialized_p(r) ((r)->lex.input != 0)
-
-/*
- *  call-seq:
- *    Ripper.new(src, filename="(ripper)", lineno=1) -> ripper
- *
- *  Create a new Ripper object.
- *  _src_ must be a String, an IO, or an Object which has #gets method.
- *
- *  This method does not starts parsing.
- *  See also Ripper#parse and Ripper.parse.
- */
-static VALUE
-ripper_initialize(int argc, VALUE *argv, VALUE self)
-{
-    struct parser_params *p;
-    VALUE src, fname, lineno;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
-    if (RB_TYPE_P(src, T_FILE)) {
-        p->lex.gets = ripper_lex_io_get;
-    }
-    else if (rb_respond_to(src, id_gets)) {
-        p->lex.gets = ripper_lex_get_generic;
-    }
-    else {
-        StringValue(src);
-        p->lex.gets = lex_get_str;
-    }
-    p->lex.input = src;
-    p->eofp = 0;
-    if (NIL_P(fname)) {
-        fname = STR_NEW2("(ripper)");
-        OBJ_FREEZE(fname);
-    }
-    else {
-        StringValueCStr(fname);
-        fname = rb_str_new_frozen(fname);
-    }
-    parser_initialize(p);
-
-    p->ruby_sourcefile_string = fname;
-    p->ruby_sourcefile = RSTRING_PTR(fname);
-    p->ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
-
-    return Qnil;
-}
-
-static VALUE
-ripper_parse0(VALUE parser_v)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(parser_v, struct parser_params, &parser_data_type, p);
-    parser_prepare(p);
-    p->ast = rb_ast_new();
-    ripper_yyparse((void*)p);
-    rb_ast_dispose(p->ast);
-    p->ast = 0;
-    return p->result;
-}
-
-static VALUE
-ripper_ensure(VALUE parser_v)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(parser_v, struct parser_params, &parser_data_type, p);
-    p->parsing_thread = Qnil;
-    return Qnil;
-}
-
-/*
- *  call-seq:
- *    ripper.parse
- *
- *  Start parsing and returns the value of the root action.
- */
-static VALUE
-ripper_parse(VALUE self)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    if (!NIL_P(p->parsing_thread)) {
-        if (p->parsing_thread == rb_thread_current())
-            rb_raise(rb_eArgError, "Ripper#parse is not reentrant");
-        else
-            rb_raise(rb_eArgError, "Ripper#parse is not multithread-safe");
-    }
-    p->parsing_thread = rb_thread_current();
-    rb_ensure(ripper_parse0, self, ripper_ensure, self);
-
-    return p->result;
-}
-
-/*
- *  call-seq:
- *    ripper.column   -> Integer
- *
- *  Return column number of current parsing line.
- *  This number starts from 0.
- */
-static VALUE
-ripper_column(VALUE self)
-{
-    struct parser_params *p;
-    long col;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    if (NIL_P(p->parsing_thread)) return Qnil;
-    col = p->lex.ptok - p->lex.pbeg;
-    return LONG2NUM(col);
-}
-
-/*
- *  call-seq:
- *    ripper.filename   -> String
- *
- *  Return current parsing filename.
- */
-static VALUE
-ripper_filename(VALUE self)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    return p->ruby_sourcefile_string;
-}
-
-/*
- *  call-seq:
- *    ripper.lineno   -> Integer
- *
- *  Return line number of current parsing line.
- *  This number starts from 1.
- */
-static VALUE
-ripper_lineno(VALUE self)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    if (NIL_P(p->parsing_thread)) return Qnil;
-    return INT2NUM(p->ruby_sourceline);
-}
-
-/*
- *  call-seq:
- *    ripper.state   -> Integer
- *
- *  Return scanner state of current token.
- */
-static VALUE
-ripper_state(VALUE self)
-{
-    struct parser_params *p;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    if (NIL_P(p->parsing_thread)) return Qnil;
-    return INT2NUM(p->lex.state);
-}
-
-/*
- *  call-seq:
- *    ripper.token   -> String
- *
- *  Return the current token string.
- */
-static VALUE
-ripper_token(VALUE self)
-{
-    struct parser_params *p;
-    long pos, len;
-
-    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    if (NIL_P(p->parsing_thread)) return Qnil;
-    pos = p->lex.ptok - p->lex.pbeg;
-    len = p->lex.pcur - p->lex.ptok;
-    return rb_str_subseq(p->lex.lastline, pos, len);
-}
-
-#ifdef RIPPER_DEBUG
-/* :nodoc: */
-static VALUE
-ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
-{
-    StringValue(msg);
-    if (UNDEF_P(obj)) {
-        rb_raise(rb_eArgError, "%"PRIsVALUE, msg);
-    }
-    return Qnil;
-}
-
-/* :nodoc: */
-static VALUE
-ripper_value(VALUE self, VALUE obj)
-{
-    return ULONG2NUM(obj);
-}
-#endif
-
-/*
- *  call-seq:
- *    Ripper.lex_state_name(integer)   -> string
- *
- *  Returns a string representation of lex_state.
- */
-static VALUE
-ripper_lex_state_name(VALUE self, VALUE state)
-{
-    return rb_parser_lex_state_name(NUM2INT(state));
-}
-
-void
-Init_ripper(void)
-{
-    ripper_init_eventids1();
-    ripper_init_eventids2();
-    id_warn = rb_intern_const("warn");
-    id_warning = rb_intern_const("warning");
-    id_gets = rb_intern_const("gets");
-    id_assoc = rb_intern_const("=>");
-
     (void)yystpcpy; /* may not used in newer bison */
 
-    InitVM(ripper);
+    return p->value;
 }
 
-void
-InitVM_ripper(void)
-{
-    VALUE Ripper;
-
-    Ripper = rb_define_class("Ripper", rb_cObject);
-    /* version of Ripper */
-    rb_define_const(Ripper, "Version", rb_usascii_str_new2(RIPPER_VERSION));
-    rb_define_alloc_func(Ripper, ripper_s_allocate);
-    rb_define_method(Ripper, "initialize", ripper_initialize, -1);
-    rb_define_method(Ripper, "parse", ripper_parse, 0);
-    rb_define_method(Ripper, "column", ripper_column, 0);
-    rb_define_method(Ripper, "filename", ripper_filename, 0);
-    rb_define_method(Ripper, "lineno", ripper_lineno, 0);
-    rb_define_method(Ripper, "state", ripper_state, 0);
-    rb_define_method(Ripper, "token", ripper_token, 0);
-    rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
-    rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
-    rb_define_method(Ripper, "yydebug", rb_parser_get_yydebug, 0);
-    rb_define_method(Ripper, "yydebug=", rb_parser_set_yydebug, 1);
-    rb_define_method(Ripper, "debug_output", rb_parser_get_debug_output, 0);
-    rb_define_method(Ripper, "debug_output=", rb_parser_set_debug_output, 1);
-    rb_define_method(Ripper, "error?", ripper_error_p, 0);
-#ifdef RIPPER_DEBUG
-    rb_define_method(Ripper, "assert_Qundef", ripper_assert_Qundef, 2);
-    rb_define_method(Ripper, "rawVALUE", ripper_value, 1);
-    rb_define_method(Ripper, "validate_object", ripper_validate_object, 1);
-#endif
-
-    rb_define_singleton_method(Ripper, "dedent_string", parser_dedent_string, 2);
-    rb_define_private_method(Ripper, "dedent_string", parser_dedent_string, 2);
-
-    rb_define_singleton_method(Ripper, "lex_state_name", ripper_lex_state_name, 1);
-
-<% @exprs.each do |expr, desc| -%>
-    /* <%=desc%> */
-    rb_define_const(Ripper, "<%=expr%>", INT2NUM(<%=expr%>));
-<% end %>
-    ripper_init_eventids1_table(Ripper);
-    ripper_init_eventids2_table(Ripper);
-
-# if 0
-    /* Hack to let RDoc document SCRIPT_LINES__ */
-
-    /*
-     * When a Hash is assigned to +SCRIPT_LINES__+ the contents of files loaded
-     * after the assignment will be added as an Array of lines with the file
-     * name as the key.
-     */
-    rb_define_global_const("SCRIPT_LINES__", Qnil);
-#endif
-
-}
 #endif /* RIPPER */
-
 /*
  * Local variables:
  * mode: c

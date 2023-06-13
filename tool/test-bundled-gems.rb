@@ -34,6 +34,16 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "typeprof"
 
   when "rbs"
+    # TODO: We should skip test file instead of test class/methods
+    skip_test_files = %w[
+      test/stdlib/Prime_test.rb
+    ]
+
+    skip_test_files.each do |file|
+      path = "#{gem_dir}/src/#{gem}/#{file}"
+      File.unlink(path) if File.exist?(path)
+    end
+
     test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests SKIP_RBS_VALIDATION=true"
     first_timeout *= 3
 
@@ -42,6 +52,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     # acitvating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
     load_path = true
+
+  when "test-unit"
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
 
   when /\Anet-/
     toplib = gem.tr("-", "/")

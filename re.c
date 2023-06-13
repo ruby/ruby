@@ -3213,6 +3213,15 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
     return result;
 }
 
+static void
+rb_reg_initialize_check(VALUE obj)
+{
+    rb_check_frozen(obj);
+    if (RREGEXP_PTR(obj)) {
+        rb_raise(rb_eTypeError, "already initialized regexp");
+    }
+}
+
 static int
 rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
                   int options, onig_errmsg_buffer err,
@@ -3223,10 +3232,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     rb_encoding *fixed_enc = 0;
     rb_encoding *a_enc = rb_ascii8bit_encoding();
 
-    rb_check_frozen(obj);
-    if (re->ptr)
-        rb_raise(rb_eTypeError, "already initialized regexp");
-    re->ptr = 0;
+    rb_reg_initialize_check(obj);
 
     if (rb_enc_dummy_p(enc)) {
         errcpy(err, "can't make regexp with dummy encoding");
@@ -3862,6 +3868,24 @@ set_timeout(rb_hrtime_t *hrt, VALUE timeout)
     double2hrtime(hrt, timeout_d);
 }
 
+static VALUE
+reg_copy(VALUE copy, VALUE orig)
+{
+    int r;
+    regex_t *re;
+
+    rb_reg_initialize_check(copy);
+    if ((r = onig_reg_copy(&re, RREGEXP_PTR(orig))) != 0) {
+        /* ONIGERR_MEMORY only */
+        rb_raise(rb_eRegexpError, "%s", onig_error_code_to_format(r));
+    }
+    RREGEXP_PTR(copy) = re;
+    RB_OBJ_WRITE(copy, &RREGEXP(copy)->src, RREGEXP(orig)->src);
+    RREGEXP_PTR(copy)->timelimit = RREGEXP_PTR(orig)->timelimit;
+    rb_enc_copy(copy, orig);
+    return copy;
+}
+
 struct reg_init_args {
     VALUE str;
     VALUE timeout;
@@ -3931,9 +3955,14 @@ static VALUE
 rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 {
     struct reg_init_args args;
+    VALUE re = reg_extract_args(argc, argv, &args);
 
-    reg_extract_args(argc, argv, &args);
-    reg_init_args(self, args.str, args.enc, args.flags);
+    if (NIL_P(re)) {
+        reg_init_args(self, args.str, args.enc, args.flags);
+    }
+    else {
+        reg_copy(self, re);
+    }
 
     set_timeout(&RREGEXP_PTR(self)->timelimit, args.timeout);
 
@@ -4356,7 +4385,7 @@ rb_reg_init_copy(VALUE copy, VALUE re)
 {
     if (!OBJ_INIT_COPY(copy, re)) return copy;
     rb_reg_check(re);
-    return rb_reg_init_str(copy, RREGEXP_SRC(re), rb_reg_options(re));
+    return reg_copy(copy, re);
 }
 
 VALUE

@@ -3165,7 +3165,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
 {
   again:
     if (NIL_P(val)) {
-       rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
+       rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
     }
 
     if (FIXNUM_P(val)) {
@@ -3440,7 +3440,7 @@ unsigned LONG_LONG
 rb_num2ull(VALUE val)
 {
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from nil");
+        rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
     }
     else if (FIXNUM_P(val)) {
         return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
@@ -3459,15 +3459,10 @@ rb_num2ull(VALUE val)
     else if (RB_BIGNUM_TYPE_P(val)) {
         return rb_big2ull(val);
     }
-    else if (RB_TYPE_P(val, T_STRING)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from string");
+    else {
+        val = rb_to_int(val);
+        return NUM2ULL(val);
     }
-    else if (RB_TYPE_P(val, T_TRUE) || RB_TYPE_P(val, T_FALSE)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from boolean");
-    }
-
-    val = rb_to_int(val);
-    return NUM2ULL(val);
 }
 
 #endif  /* HAVE_LONG_LONG */
