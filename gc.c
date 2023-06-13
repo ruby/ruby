@@ -131,7 +131,6 @@
 #include "ruby_assert.h"
 #include "ruby_atomic.h"
 #include "symbol.h"
-#include "transient_heap.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
@@ -1708,7 +1707,6 @@ RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, struct heap_page *pag
 {
     MARK_IN_BITMAP(&page->uncollectible_bits[0], obj);
     objspace->rgengc.old_objects++;
-    rb_transient_heap_promote(obj);
 
 #if RGENGC_PROFILE >= 2
     objspace->profile.total_promoted_count++;
@@ -3472,9 +3470,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         else if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
-        else if (ROBJ_TRANSIENT_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_obj_transient);
-        }
         else {
             xfree(RANY(obj)->as.object.as.heap.ivptr);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
@@ -3644,9 +3639,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) ||
             RANY(obj)->as.rstruct.as.heap.ptr == NULL) {
             RB_DEBUG_COUNTER_INC(obj_struct_embed);
-        }
-        else if (RSTRUCT_TRANSIENT_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_struct_transient);
         }
         else {
             xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
@@ -7227,12 +7219,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             for (i=0; i < len; i++) {
                 gc_mark(objspace, ptr[i]);
             }
-
-            if (LIKELY(during_gc)) {
-                if (!ARY_EMBED_P(obj) && RARRAY_TRANSIENT_P(obj)) {
-                    rb_transient_heap_mark(obj, ptr);
-                }
-            }
         }
         break;
 
@@ -7275,11 +7261,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                 uint32_t i, len = ROBJECT_IV_COUNT(obj);
                 for (i  = 0; i < len; i++) {
                     gc_mark(objspace, ptr[i]);
-                }
-
-                if (LIKELY(during_gc) &&
-                        ROBJ_TRANSIENT_P(obj)) {
-                    rb_transient_heap_mark(obj, ptr);
                 }
             }
             if (shape) {
@@ -7336,11 +7317,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
             for (i=0; i<len; i++) {
                 gc_mark(objspace, ptr[i]);
-            }
-
-            if (LIKELY(during_gc) &&
-                RSTRUCT_TRANSIENT_P(obj)) {
-                rb_transient_heap_mark(obj, ptr);
             }
         }
         break;
@@ -8106,13 +8082,6 @@ rb_gc_verify_internal_consistency(void)
     gc_verify_internal_consistency(&rb_objspace);
 }
 
-static VALUE
-gc_verify_transient_heap_internal_consistency(VALUE dmy)
-{
-    rb_transient_heap_verify();
-    return Qnil;
-}
-
 static void
 heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 {
@@ -8333,7 +8302,6 @@ gc_marks_finish(rb_objspace_t *objspace)
                   objspace->rgengc.need_major_gc ? "major" : "minor");
     }
 
-    rb_transient_heap_finish_marking();
     rb_ractor_finish_marking();
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);
@@ -9411,7 +9379,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, do_full_mark);
-    rb_transient_heap_start_marking(do_full_mark);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
     GC_ASSERT(during_gc);
@@ -9992,12 +9959,7 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
         // Object can be re-embedded
         memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_IV_COUNT(v));
         RB_FL_SET_RAW(v, ROBJECT_EMBED);
-        if (ROBJ_TRANSIENT_P(v)) {
-            ROBJ_TRANSIENT_UNSET(v);
-        }
-        else {
-            xfree(ptr);
-        }
+        xfree(ptr);
         ptr = ROBJECT(v)->as.ary;
     }
 
@@ -10679,7 +10641,6 @@ gc_update_references(rb_objspace_t *objspace)
         }
     }
     rb_vm_update_references(vm);
-    rb_transient_heap_update_references();
     rb_gc_update_global_tbl();
     global_symbols.ids = rb_gc_location(global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = rb_gc_location(global_symbols.dsymbol_fstr_hash);
@@ -13511,10 +13472,9 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                          RARRAY_LEN(obj));
             }
             else {
-                APPEND_F("[%s%s%s] len: %ld, capa:%ld ptr:%p",
+                APPEND_F("[%s%s] len: %ld, capa:%ld ptr:%p",
                          C(ARY_EMBED_P(obj),  "E"),
                          C(ARY_SHARED_P(obj), "S"),
-                         C(RARRAY_TRANSIENT_P(obj), "T"),
                          RARRAY_LEN(obj),
                          ARY_EMBED_P(obj) ? -1L : RARRAY(obj)->as.heap.aux.capa,
                          (void *)RARRAY_CONST_PTR_TRANSIENT(obj));
@@ -13962,7 +13922,6 @@ Init_GC(void)
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);
-    rb_define_singleton_method(rb_mGC, "verify_transient_heap_internal_consistency", gc_verify_transient_heap_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);

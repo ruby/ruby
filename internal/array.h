@@ -40,8 +40,6 @@ VALUE rb_ary_diff(VALUE ary1, VALUE ary2);
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
-static inline void RARY_TRANSIENT_SET(VALUE ary);
-static inline void RARY_TRANSIENT_UNSET(VALUE ary);
 
 VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
@@ -116,22 +114,6 @@ ARY_SHARED_ROOT_REFCNT(VALUE ary)
 {
     assert(ARY_SHARED_ROOT_P(ary));
     return RARRAY(ary)->as.heap.aux.capa;
-}
-
-static inline void
-RARY_TRANSIENT_SET(VALUE ary)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RARY_TRANSIENT_UNSET(VALUE ary)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#endif
 }
 
 #undef rb_ary_new_from_args
