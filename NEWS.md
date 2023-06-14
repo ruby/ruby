@@ -78,7 +78,7 @@ The following bundled gems are updated.
 
 The following default gem is now bundled.
 
-* racc 1.7.0
+* racc 1.7.1
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
