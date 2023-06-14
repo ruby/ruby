@@ -102,7 +102,7 @@ class Gem::Package::TarHeader
 
   def self.from(stream)
     header = stream.read 512
-    empty = (EMPTY_HEADER == header)
+    empty = (header == EMPTY_HEADER)
 
     fields = header.unpack UNPACK_FORMAT
 

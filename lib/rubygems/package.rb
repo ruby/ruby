@@ -155,7 +155,7 @@ class Gem::Package
       Gem::Package::FileSource.new gem
     end
 
-    return super unless Gem::Package == self
+    return super unless self == Gem::Package
     return super unless gem.present?
 
     return super unless gem.start
