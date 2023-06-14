@@ -372,7 +372,7 @@ ruby.imp: $(COMMONOBJS)
 	sort -u -o $@
 
 install: install-$(INSTALLDOC)
-docs: $(DOCTARGETS)
+docs: srcs-doc $(DOCTARGETS)
 pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
@@ -566,15 +566,15 @@ do-install-dbg: $(PROGRAM) pre-install-dbg
 post-install-dbg::
 	@$(NULLCMD)
 
-rdoc: PHONY main
+rdoc: PHONY main srcs-doc
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"
 
-html: PHONY main
+html: PHONY main srcs-doc
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"
 
-rdoc-coverage: PHONY main
+rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)"
 
@@ -1084,7 +1084,7 @@ common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newl
 
 missing-srcs: $(srcdir)/missing/des_tables.c
 
-srcs: common-srcs missing-srcs srcs-enc
+srcs: common-srcs missing-srcs srcs-enc srcs-doc
 
 EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
@@ -1659,6 +1659,12 @@ $(UNICODE_HDR_DIR)/name2ctype.h:
 	$(BOOTSTRAPRUBY) $(tooldir)/enc-unicode.rb --header \
 		$(UNICODE_SRC_DATA_DIR) $(UNICODE_SRC_EMOJI_DATA_DIR) > $@.new
 	$(MV) $@.new $@
+
+srcs-doc: $(srcdir)/doc/regexp/unicode_properties.rdoc
+$(srcdir)/doc/regexp/unicode_properties.rdoc: $(UNICODE_HDR_DIR)/name2ctype.h
+	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -o $@ \
+		$(srcdir)/template/unicode_properties.rdoc.tmpl \
+		$(UNICODE_SRC_DATA_DIR) $(UNICODE_HDR_DIR)/name2ctype.h
 
 # the next non-comment line was:
 # $(UNICODE_HDR_DIR)/casefold.h: $(tooldir)/enc-case-folding.rb \
