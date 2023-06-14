@@ -40,6 +40,15 @@ task:
     # https://github.com/rubygems/rubygems/issues/4921
     - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> "$CIRRUS_ENV"
     - cat "$CIRRUS_ENV"
+  bundled_gems_cache:
+    folder: .downloaded-cache
+    fingerprint_script:
+      sed 's/  */ /g;s/ *#.*//;/^$/d;s/\([^ ]*\) \([^ ]*\)/\1-\2.gem/;s/ .*//' gems/bundled_gems
+    populate_script:
+      sudo apt-get install wget;
+      mkdir -p .downloaded-cache;
+      sed 's/  */ /g;s/ *#.*//;/^$/d;s/\([^ ]*\) \([^ ]*\)/\1-\2.gem/;s/ .*//' gems/bundled_gems |
+      wget -P .downloaded-cache -nd -B https://rubygems.org/downloads/ -i -
   # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
   # See https://github.com/aws/containers-roadmap/issues/835
   disable_ipv6_script: sudo ./tool/disable_ipv6.sh
@@ -96,6 +105,16 @@ yjit_task:
     - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> "$CIRRUS_ENV"
     - echo RUST_BACKTRACE=1 >> "$CIRRUS_ENV"
     - cat "$CIRRUS_ENV"
+  bundled_gems_cache:
+    folder: .downloaded-cache
+    fingerprint_script:
+      sed -e 's/  */ /g;s/ *#.*//;/^$/d;s/\([^ ]*\) \([^ ]*\)/\1-\2.gem/;s/ .*//'
+          gems/bundled_gems
+    populate_script:
+      sudo apt-get install wget;
+      mkdir -p .downloaded-cache;
+      sed 's/  */ /g;s/ *#.*//;/^$/d;s/\([^ ]*\) \([^ ]*\)/\1-\2.gem/;s/ .*//' gems/bundled_gems |
+      wget -P .downloaded-cache -nd -B https://rubygems.org/downloads/ -i -
   # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
   # See https://github.com/aws/containers-roadmap/issues/835
   disable_ipv6_script: sudo ./tool/disable_ipv6.sh
