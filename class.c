@@ -1130,9 +1130,15 @@ rb_define_module_id_under(VALUE outer, ID id)
 }
 
 VALUE
+rb_iclass_alloc(VALUE klass)
+{
+    return class_alloc(T_ICLASS, klass);
+}
+
+VALUE
 rb_include_class_new(VALUE module, VALUE super)
 {
-    VALUE klass = class_alloc(T_ICLASS, rb_cClass);
+    VALUE klass = rb_iclass_alloc(rb_cClass);
 
     RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
 
@@ -1409,7 +1415,7 @@ ensure_origin(VALUE klass)
 {
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
-        origin = class_alloc(T_ICLASS, klass);
+        origin = rb_iclass_alloc(klass);
         RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
         RCLASS_SET_SUPER(klass, origin);
         RCLASS_SET_ORIGIN(klass, origin);
