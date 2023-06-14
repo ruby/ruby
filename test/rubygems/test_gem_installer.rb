@@ -2340,7 +2340,7 @@ end
   ensure
     File.class_eval do
       remove_method :write
-      alias_method :write, :original_write # rubocop:disable Lint/DuplicateMethods
+      alias_method :write, :original_write
       remove_method :original_write
     end
   end
