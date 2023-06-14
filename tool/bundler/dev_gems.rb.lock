@@ -10,7 +10,7 @@ GEM
       parallel
     power_assert (2.0.3)
     rake (13.0.6)
-    rb_sys (0.9.78)
+    rb_sys (0.9.79)
     rdiscount (2.2.7)
     ronn (0.7.3)
       hpricot (>= 0.8.2)
@@ -29,7 +29,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.12.0)
     rspec-support (3.12.0)
-    test-unit (3.5.9)
+    test-unit (3.6.0)
       power_assert
     turbo_tests (2.1.0)
       bundler (>= 2.1)
@@ -40,6 +40,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-22
+  arm64-darwin-23
   java
   universal-java-11
   universal-java-18
