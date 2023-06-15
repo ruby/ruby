@@ -10,6 +10,7 @@ env:
 
 task:
   name: Arm64 Graviton2 / $CC
+  auto_cancellation: $CIRRUS_BRANCH != 'master'
   skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
   arm_container:
     # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
