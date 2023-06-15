@@ -44,7 +44,7 @@ module Bundler
                    @bundle_worker = nil # reset it.  Not sure if necessary
                    serial_compact_index_client.dependencies(remaining_gems)
                  end
-          next_gems = deps.map {|d| d[3].map(&:first).flatten(1) }.flatten(1).uniq
+          next_gems = deps.flat_map {|d| d[3].flat_map(&:first) }.uniq
           deps.each {|dep| gem_info << dep }
           complete_gems.concat(deps.map(&:first)).uniq!
           remaining_gems = next_gems - complete_gems

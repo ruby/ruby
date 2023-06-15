@@ -91,9 +91,9 @@ module Bundler
     def spec_matches_for_glob(spec, glob)
       return spec.matches_for_glob(glob) if spec.respond_to?(:matches_for_glob)
 
-      spec.load_paths.map do |lp|
+      spec.load_paths.flat_map do |lp|
         Dir["#{lp}/#{glob}#{suffix_pattern}"]
-      end.flatten(1)
+      end
     end
 
     def stub_set_spec(stub, spec)
