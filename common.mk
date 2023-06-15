@@ -1661,7 +1661,7 @@ $(UNICODE_HDR_DIR)/name2ctype.h:
 	$(MV) $@.new $@
 
 srcs-doc: $(srcdir)/doc/regexp/unicode_properties.rdoc
-$(srcdir)/doc/regexp/unicode_properties.rdoc: $(UNICODE_HDR_DIR)/name2ctype.h
+$(srcdir)/doc/regexp/unicode_properties.rdoc: $(UNICODE_HDR_DIR)/name2ctype.h $(UNICODE_PROPERTY_FILES)
 	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -o $@ \
 		$(srcdir)/template/unicode_properties.rdoc.tmpl \
 		$(UNICODE_SRC_DATA_DIR) $(UNICODE_HDR_DIR)/name2ctype.h
