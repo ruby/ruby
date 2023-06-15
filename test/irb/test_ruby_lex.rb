@@ -95,8 +95,11 @@ module TestIRB
 
     def check_state(lines, local_variables: [])
       context = build_context(local_variables)
+      tokens = RubyLex.ripper_lex_without_warning(lines.join("\n"), context: context)
+      opens = IRB::NestingParser.open_tokens(tokens)
       ruby_lex = RubyLex.new(context)
-      _ltype, indent, _continue, code_block_open = ruby_lex.check_code_state(lines.join("\n"))
+      indent, _nesting_level = ruby_lex.calc_nesting_depth(opens)
+      code_block_open = !opens.empty? || ruby_lex.process_continue(tokens)
       [indent, code_block_open]
     end
 
@@ -164,9 +167,9 @@ module TestIRB
         Row.new(%q(    ]), 4, 4),
         Row.new(%q(  ]), 2, 2),
         Row.new(%q(]), 0, 0),
-        Row.new(%q([<<FOO]), 0, 0),
+        Row.new(%q([<<FOO]), nil, 0),
         Row.new(%q(hello), 0, 0),
-        Row.new(%q(FOO), nil, 0),
+        Row.new(%q(FOO), 0, 0),
       ]
 
       lines = []
@@ -489,12 +492,12 @@ module TestIRB
       end
     end
 
-    def test_corresponding_syntax_to_keyword_in
+    def test_typing_incomplete_include_interpreted_as_keyword_in
       input_with_correct_indents = [
         Row.new(%q(module E), nil, 2, 1),
         Row.new(%q(end), 0, 0, 0),
         Row.new(%q(class A), nil, 2, 1),
-        Row.new(%q(  in), nil, 4, 1)
+        Row.new(%q(  in), nil, 2, 1) # scenario typing `include E`
       ]
 
       lines = []
@@ -575,11 +578,19 @@ module TestIRB
     end
 
     def test_heredoc_with_indent
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
       input_with_correct_indents = [
-        Row.new(%q(<<~Q), 0, 0, 0),
-        Row.new(%q({), 0, 0, 0),
-        Row.new(%q(  #), 2, 0, 0),
-        Row.new(%q(}), 0, 0, 0)
+        Row.new(%q(<<~Q+<<~R), nil, 0, 0),
+        Row.new(%q(a), 0, 0, 0),
+        Row.new(%q(a), 0, 0, 0),
+        Row.new(%q(  b), 2, 2, 0),
+        Row.new(%q(  b), 2, 2, 0),
+        Row.new(%q(  Q), 0, 2, 0),
+        Row.new(%q(    c), 4, 4, 0),
+        Row.new(%q(    c), 4, 4, 0),
+        Row.new(%q(    R), 0, 0, 0),
       ]
 
       lines = []
@@ -592,8 +603,8 @@ module TestIRB
 
     def test_oneliner_def_in_multiple_lines
       input_with_correct_indents = [
-        Row.new(%q(def a()=[), nil, 4, 2),
-        Row.new(%q(  1,), nil, 4, 1),
+        Row.new(%q(def a()=[), nil, 2, 1),
+        Row.new(%q(  1,), nil, 2, 1),
         Row.new(%q(].), 0, 0, 0),
         Row.new(%q(to_s), nil, 0, 0),
       ]
@@ -609,13 +620,22 @@ module TestIRB
     def test_broken_heredoc
       input_with_correct_indents = [
         Row.new(%q(def foo), nil, 2, 1),
-        Row.new(%q(  <<~Q), 2, 2, 1),
+        Row.new(%q(  <<~Q), nil, 2, 1),
         Row.new(%q(  Qend), 2, 2, 1),
       ]
 
       lines = []
       input_with_correct_indents.each do |row|
         lines << row.content
+        assert_row_indenting(lines, row)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
+    def test_heredoc_keep_indent_spaces
+      (1..4).each do |indent|
+        row = Row.new(' ' * indent, indent, [2, indent].max, 1)
+        lines = ['def foo', '  <<~Q', row.content]
         assert_row_indenting(lines, row)
         assert_nesting_level(lines, row.nesting_level)
       end
@@ -746,10 +766,9 @@ module TestIRB
     end
 
     def test_unterminated_heredoc_string_literal
-      context = build_context
       ['<<A;<<B', "<<A;<<B\n", "%W[\#{<<A;<<B", "%W[\#{<<A;<<B\n"].each do |code|
         tokens = RubyLex.ripper_lex_without_warning(code)
-        string_literal = RubyLex.new(context).check_string_literal(tokens)
+        string_literal = IRB::NestingParser.open_tokens(tokens).last
         assert_equal('<<A', string_literal&.tok)
       end
     end
@@ -779,43 +798,8 @@ module TestIRB
       [reference_code, code_with_heredoc, code_with_embdoc].each do |code|
         lex = RubyLex.new(context)
         lines = code.lines
-        lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
-        assert_equal 2, lex.check_corresponding_token_depth(lines, lines.size)
-      end
-    end
-
-    def test_find_prev_spaces_with_multiline_literal
-      lex = RubyLex.new(build_context)
-      reference_code = <<~EOC.chomp
-        if true
-          1
-          hello
-          1
-          world
-        end
-      EOC
-      code_with_percent_string = <<~EOC.chomp
-        if true
-          %w[
-            hello
-          ]
-          world
-        end
-      EOC
-      code_with_quoted_string = <<~EOC.chomp
-        if true
-          '
-            hello
-          '
-          world
-        end
-      EOC
-      context = build_context
-      [reference_code, code_with_percent_string, code_with_quoted_string].each do |code|
-        lex = RubyLex.new(context)
-        lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
-        prev_spaces = (1..code.lines.size).map { |index| lex.find_prev_spaces index }
-        assert_equal [0, 2, 2, 2, 2, 0], prev_spaces
+        tokens = RubyLex.ripper_lex_without_warning(code)
+        assert_equal(2, lex.check_corresponding_token_depth(tokens, lines, lines.size - 1))
       end
     end
 
