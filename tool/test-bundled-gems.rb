@@ -25,6 +25,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command << " stdlib_test validate"
 
     first_timeout *= 3
+  elsif gem == "test-unit"
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
   end
 
   puts test_command
