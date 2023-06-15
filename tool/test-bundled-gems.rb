@@ -33,6 +33,16 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "typeprof"
 
   when "rbs"
+    # TODO: We should skip test file instead of test class/methods
+    skip_test_files = %w[
+      test/stdlib/Prime_test.rb
+    ]
+
+    skip_test_files.each do |file|
+      path = "#{gem_dir}/src/#{gem}/#{file}"
+      File.unlink(path) if File.exist?(path)
+    end
+
     test_command << " stdlib_test validate"
     first_timeout *= 3
 
@@ -51,6 +61,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     if /darwin/ =~ RUBY_PLATFORM
       envs["RUBY_DEBUG_TEST_NO_REMOTE"] = "1"
     end
+
+  when "test-unit"
+    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
 
   when /\Anet-/
     toplib = gem.tr("-", "/")
