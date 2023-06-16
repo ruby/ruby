@@ -576,8 +576,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 {
     config->counter = 0;
 
-    config->st_functions.nonempty_memcpy = nonempty_memcpy;
-
     config->malloc   = ruby_xmalloc;
     config->calloc   = ruby_xcalloc;
     config->realloc  = ruby_xrealloc;

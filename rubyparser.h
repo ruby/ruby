@@ -341,9 +341,6 @@ typedef struct rb_parser_config_struct {
      */
     int counter;
 
-    /* For parser_st */
-    st_functions_t st_functions;
-
     /* Memory */
     void *(*malloc)(size_t size);
     void *(*calloc)(size_t number, size_t size);
