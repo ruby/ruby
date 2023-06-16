@@ -115,7 +115,19 @@
 #undef RUBY
 
 #undef MEMCPY
-#define MEMCPY(tab,p1,p2,type,n) (tab->functions->nonempty_memcpy((p1), (p2), sizeof(type), (n)))
+#define MEMCPY(p1,p2,type,n) nonempty_memcpy((p1), (p2), (sizeof(type) * (n)))
+/* The multiplication should not overflow since this macro is used
+ * only with the already allocated size. */
+static inline void *
+nonempty_memcpy(void *dest, const void *src, size_t n)
+{
+    if (n) {
+        return memcpy(dest, src, n);
+    }
+    else {
+        return dest;
+    }
+}
 
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
@@ -1313,7 +1325,6 @@ st_copy(st_table *old_tab)
     st_table *new_tab;
 
     new_tab = (st_table *) malloc(sizeof(st_table));
-    new_tab->functions = old_tab->functions;
 #ifndef RUBY
     if (new_tab == NULL)
         return NULL;
@@ -1338,10 +1349,10 @@ st_copy(st_table *old_tab)
         return NULL;
     }
 #endif
-    MEMCPY(new_tab, new_tab->entries, old_tab->entries, st_table_entry,
+    MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
            get_allocated_entries(old_tab));
     if (old_tab->bins != NULL)
-        MEMCPY(new_tab, new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+        MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
     return new_tab;
 }
 
