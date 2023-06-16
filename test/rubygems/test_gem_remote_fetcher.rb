@@ -311,6 +311,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_download_local
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
     FileUtils.mv @a1_gem, @tempdir
     local_path = File.join @tempdir, @a1.file_name
     inst = nil
@@ -323,6 +324,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_download_local_space
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
     space_path = File.join @tempdir, "space path"
     FileUtils.mkdir space_path
     FileUtils.mv @a1_gem, space_path
@@ -356,6 +358,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   unless Gem.win_platform? || Process.uid.zero? # File.chmod doesn't work
     def test_download_local_read_only
+      omit "doesn't work if tempdir has +" if @tempdir.include?("+")
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
@@ -374,8 +377,10 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_equal(File.join(@tempdir, @a1.file_name),
                    inst.download(@a1, local_path))
     ensure
-      FileUtils.chmod 0o755, File.join(Gem.user_dir, "cache")
-      FileUtils.chmod 0o755, @a1.cache_dir
+      if local_path
+        FileUtils.chmod 0o755, File.join(Gem.user_dir, "cache")
+        FileUtils.chmod 0o755, @a1.cache_dir
+      end
     end
 
     def test_download_read_only
@@ -418,6 +423,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_download_same_file
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
     FileUtils.mv @a1_gem, @tempdir
     local_path = File.join @tempdir, @a1.file_name
     inst = nil
