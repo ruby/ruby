@@ -677,8 +677,9 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
     expected_path = File.join(gem_path, "#{File.basename(tmp_expired_cert_file)}.expired")
 
+    assert_include(@ui.output, "INFO:  Your certificate #{tmp_expired_cert_file} has been re-signed\n")
     assert_match(
-      /INFO:  Your certificate #{tmp_expired_cert_file} has been re-signed\nINFO:  Your expired certificate will be located at: #{expected_path}\.[0-9]+/,
+      /INFO:  Your expired certificate will be located at: #{Regexp.quote(expected_path)}\.[0-9]+/,
       @ui.output
     )
     assert_equal "", @ui.error

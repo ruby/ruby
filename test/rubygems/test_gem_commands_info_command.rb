@@ -33,12 +33,12 @@ class TestGemCommandsInfoCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{#{@gem.name} \(#{@gem.version}\)\n}, @ui.output
-    assert_match(/Authors: #{@gem.authors.join(', ')}\n/, @ui.output)
-    assert_match(/Homepage: #{@gem.homepage}\n/, @ui.output)
-    assert_match(/License: #{@gem.license}\n/, @ui.output)
-    assert_match(/Installed at: #{@gem.base_dir}\n/, @ui.output)
-    assert_match(/#{@gem.summary}\n/, @ui.output)
+    assert_include(@ui.output, "#{@gem.name} (#{@gem.version})\n")
+    assert_include(@ui.output, "Authors: #{@gem.authors.join(", ")}\n")
+    assert_include(@ui.output, "Homepage: #{@gem.homepage}\n")
+    assert_include(@ui.output, "License: #{@gem.license}\n")
+    assert_include(@ui.output, "Installed at: #{@gem.base_dir}\n")
+    assert_include(@ui.output, "#{@gem.summary}\n")
     assert_match "", @ui.error
   end
 

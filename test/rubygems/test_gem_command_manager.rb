@@ -150,7 +150,7 @@ class TestGemCommandManager < Gem::TestCase
       end
     end
 
-    assert_match(/install isn't a directory./i, @ui.error)
+    assert_match(/install isn't a directory\./i, @ui.error)
   end
 
   def test_process_args_with_c_flag_path_not_found
@@ -164,7 +164,7 @@ class TestGemCommandManager < Gem::TestCase
       end
     end
 
-    assert_match(/#{custom_start_point} isn't a directory./i, @ui.error)
+    assert_match(/#{Regexp.quote(custom_start_point)} isn't a directory\./i, @ui.error)
   end
 
   def test_process_args_bad_arg
@@ -368,7 +368,7 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     assert_equal "pew pew!\n", @ui.output
-    assert_match(/WARNING:  foo command is deprecated. It will be removed in Rubygems [0-9]+/, @ui.error)
+    assert_match(/WARNING:  foo command is deprecated\. It will be removed in Rubygems [0-9]+/, @ui.error)
   ensure
     Gem::Commands.send(:remove_const, :FooCommand)
   end
@@ -393,7 +393,7 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     assert_equal "pew pew!\n", @ui.output
-    assert_match(/WARNING:  foo command is deprecated. It will be removed in Rubygems 9.9.9/, @ui.error)
+    assert_match(/WARNING:  foo command is deprecated\. It will be removed in Rubygems 9\.9\.9/, @ui.error)
   ensure
     Gem::Commands.send(:remove_const, :FooCommand)
   end
