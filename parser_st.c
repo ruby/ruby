@@ -618,7 +618,7 @@ stat_col(void)
    entries.  The real number of entries which the table can hold is
    the nearest power of two for SIZE.  */
 st_table *
-st_init_table_with_size(const struct st_hash_type *type, st_functions_t *functions, st_index_t size)
+st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 {
     st_table *tab;
     int n;
@@ -642,7 +642,6 @@ st_init_table_with_size(const struct st_hash_type *type, st_functions_t *functio
         return NULL;
 #endif
     tab = (st_table *) malloc(sizeof (st_table));
-    tab->functions = functions;
 #ifndef RUBY
     if (tab == NULL)
         return NULL;
@@ -684,55 +683,55 @@ st_table_size(const struct st_table *tbl)
 /* Create and return table with TYPE which can hold a minimal number
    of entries (see comments for get_power2).  */
 st_table *
-st_init_table(const struct st_hash_type *type, st_functions_t *functions)
+st_init_table(const struct st_hash_type *type)
 {
-    return st_init_table_with_size(type, functions, 0);
+    return st_init_table_with_size(type, 0);
 }
 
 /* Create and return table which can hold a minimal number of
    numbers.  */
 st_table *
-st_init_numtable(st_functions_t *functions)
+st_init_numtable(void)
 {
-    return st_init_table(&type_numhash, functions);
+    return st_init_table(&type_numhash);
 }
 
 /* Create and return table which can hold SIZE numbers.  */
 st_table *
-st_init_numtable_with_size(st_functions_t *functions, st_index_t size)
+st_init_numtable_with_size(st_index_t size)
 {
-    return st_init_table_with_size(&type_numhash, functions, size);
+    return st_init_table_with_size(&type_numhash, size);
 }
 
 /* Create and return table which can hold a minimal number of
    strings.  */
 st_table *
-st_init_strtable(st_functions_t *functions)
+st_init_strtable(void)
 {
-    return st_init_table(&type_strhash, functions);
+    return st_init_table(&type_strhash);
 }
 
 /* Create and return table which can hold SIZE strings.  */
 st_table *
-st_init_strtable_with_size(st_functions_t *functions, st_index_t size)
+st_init_strtable_with_size(st_index_t size)
 {
-    return st_init_table_with_size(&type_strhash, functions, size);
+    return st_init_table_with_size(&type_strhash, size);
 }
 
 /* Create and return table which can hold a minimal number of strings
    whose character case is ignored.  */
 st_table *
-st_init_strcasetable(st_functions_t *functions)
+st_init_strcasetable(void)
 {
-    return st_init_table(&type_strcasehash, functions);
+    return st_init_table(&type_strcasehash);
 }
 
 /* Create and return table which can hold SIZE strings whose character
    case is ignored.  */
 st_table *
-st_init_strcasetable_with_size(st_functions_t *functions, st_index_t size)
+st_init_strcasetable_with_size(st_index_t size)
 {
-    return st_init_table_with_size(&type_strcasehash, functions, size);
+    return st_init_table_with_size(&type_strcasehash, size);
 }
 
 /* Make table TAB empty.  */
@@ -837,7 +836,7 @@ rebuild_table(st_table *tab)
         /* This allocation could trigger GC and compaction. If tab is the
          * gen_iv_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
-        new_tab = st_init_table_with_size(tab->type, tab->functions,
+        new_tab = st_init_table_with_size(tab->type,
                                           2 * tab->num_entries - 1);
         new_entries = new_tab->entries;
     }
