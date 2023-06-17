@@ -741,6 +741,15 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
 #undef SET_COMPILE_OPTION_NUM
 }
 
+static VALUE
+make_compile_option_from_ast(const rb_ast_body_t *ast)
+{
+    VALUE opt = rb_obj_hide(rb_ident_hash_new());
+    if (ast->frozen_string_literal >= 0) rb_hash_aset(opt, rb_sym_intern_ascii_cstr("frozen_string_literal"), RBOOL(ast->frozen_string_literal));
+    if (ast->coverage_enabled >= 0) rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), RBOOL(ast->coverage_enabled));
+    return opt;
+}
+
 static void
 rb_iseq_make_compile_option(rb_compile_option_t *option, VALUE opt)
 {
@@ -908,7 +917,7 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     else {
         new_opt = COMPILE_OPTION_DEFAULT;
     }
-    if (ast && ast->compile_option) rb_iseq_make_compile_option(&new_opt, ast->compile_option);
+    if (ast) rb_iseq_make_compile_option(&new_opt, make_compile_option_from_ast(ast));
 
     VALUE script_lines = Qnil;
 

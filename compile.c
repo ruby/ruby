@@ -1326,7 +1326,8 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     rb_ast_body_t ast;
 
     ast.root = node;
-    ast.compile_option = 0;
+    ast.frozen_string_literal = -1;
+    ast.coverage_enabled = -1;
     ast.script_lines = ISEQ_BODY(iseq)->variable.script_lines;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
@@ -8372,7 +8373,8 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
 
     rb_ast_body_t ast = {
         .root = &scope_node,
-        .compile_option = 0,
+        .frozen_string_literal = -1,
+        .coverage_enabled = -1,
         .script_lines = ISEQ_BODY(iseq)->variable.script_lines,
     };
 
