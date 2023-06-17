@@ -442,7 +442,6 @@ struct parser_params {
 #endif
     /* compile_option */
     signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
-    signed int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
 
     unsigned int command_start:1;
     unsigned int eofp: 1;
@@ -6830,11 +6829,10 @@ yycompile0(VALUE arg)
         VALUE tokens = p->tokens;
         NODE *prelude;
         NODE *body = parser_append_options(p, tree->nd_body);
-        p->coverage_enabled = cov;
         prelude = block_append(p, p->eval_tree_begin, body);
         tree->nd_body = prelude;
         p->ast->body.frozen_string_literal = p->frozen_string_literal;
-        p->ast->body.coverage_enabled = p->coverage_enabled;
+        p->ast->body.coverage_enabled = cov;
         if (p->keep_tokens) {
             rb_obj_freeze(tokens);
             rb_ast_set_tokens(p->ast, tokens);
@@ -13673,7 +13671,6 @@ parser_initialize(struct parser_params *p)
     p->node_id = 0;
     p->delayed.token = Qnil;
     p->frozen_string_literal = -1; /* not specified */
-    p->coverage_enabled = -1; /* not specified */
 #ifdef RIPPER
     p->result = Qnil;
     p->parsing_thread = Qnil;
