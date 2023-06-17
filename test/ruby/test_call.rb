@@ -105,7 +105,9 @@ class TestCall < Test::Unit::TestCase
     define_singleton_method(:a, &pr)
     ary = [10]
     assert_equal(10, a(*ary))
+  end
 
+  def test_call_bmethod_proc_restarg
     pr = proc{|*sym| sym}
     define_singleton_method(:a, &pr)
     ary = [10]
