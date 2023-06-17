@@ -441,8 +441,8 @@ struct parser_params {
     rb_parser_config_t *config;
 #endif
     /* compile_option */
-    int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
-    int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
+    signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
+    signed int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
 
     unsigned int command_start:1;
     unsigned int eofp: 1;
