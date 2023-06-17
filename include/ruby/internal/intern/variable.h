@@ -40,8 +40,15 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_mod_name(VALUE mod);
 
 /**
- * Sets the anonymous name of a module.
- * 
+ * Sets the name of a module.
+ *
+ * Non-permanently named classes can have a temporary name assigned (or
+ * cleared). In that case the name will be used for `#inspect` and `#to_s`, and
+ * nested classes/modules will be named with the temporary name as a prefix.
+ *
+ * After the module is assigned to a constant, the temporary name will be
+ * discarded, and the name will be computed based on the nesting.
+ *
  * @param[in]  mod        An instance of ::rb_cModule.
  * @param[in]  name       An instance of ::rb_cString.
  * @retval     mod

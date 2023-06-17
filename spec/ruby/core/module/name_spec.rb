@@ -6,6 +6,40 @@ describe "Module#name" do
     Module.new.name.should be_nil
   end
 
+  ruby_version_is "3.3" do
+    it "can assign a temporary name" do
+      m = Module.new
+      m.name.should be_nil
+
+      m.set_temporary_name("Foo")
+      m.name.should == "Foo"
+
+      m.set_temporary_name(nil)
+      m.name.should be_nil
+    end
+
+    it "can't assign empty string as name" do
+      m = Module.new
+      -> { m.set_temporary_name("") }.should raise_error(ArgumentError, "empty class/module name")
+    end
+
+    it "can't assign name to permanent module" do
+      -> { Object.set_temporary_name("Foo") }.should raise_error(RuntimeError, "can't change permanent name")
+    end
+
+    it "can assign a temporary name to a nested module" do
+      m = Module.new
+      module m::N; end
+      m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+
+      m::N.set_temporary_name("Foo")
+      m::N.name.should == "Foo"
+
+      m::N.set_temporary_name(nil)
+      m::N.name.should be_nil
+    end
+  end
+
   ruby_version_is ""..."3.0" do
     it "is nil when assigned to a constant in an anonymous module" do
       m = Module.new

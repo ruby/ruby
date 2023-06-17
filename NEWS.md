@@ -45,6 +45,10 @@ Note: We're only listing outstanding class updates.
       The class use equality semantic to lookup keys like a regular hash,
       but it doesn't hold strong references on the keys. [[Feature #18498]]
 
+* Module
+
+    * `Module#set_temporary_name` added for setting a temporary name for a module. [[Feature #19521]]
+
 ## Stdlib updates
 
 The following default gems are updated.
@@ -134,3 +138,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
+[Feature #19521]: https://bugs.ruby-lang.org/issues/19521

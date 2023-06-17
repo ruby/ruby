@@ -134,11 +134,68 @@ rb_mod_name(VALUE mod)
     return classname(mod, &permanent);
 }
 
+/*
+ *  call-seq:
+ *     mod.set_temporary_name(string) -> self
+ *     mod.set_temporary_name(nil) -> self
+ *
+ *  Sets the temporary name of the module +mod+. This name is used as a prefix
+ *  for the names of constants declared in +mod+. If the module is assigned a
+ *  permanent name, the temporary name is discarded.
+ *
+ *  After a permanent name is assigned, a temporary name can no longer be set,
+ *  and this method raises a RuntimeError.
+ *
+ *  If the name given is not a string or is a zero length string, this method
+ *  raises an ArgumentError.
+ *
+ *  If the given name is +nil+, the module becomes anonymous.
+ *
+ *  Example:
+ *
+ *    m = Module.new # => #<Module:0x0000000102c68f38>
+ *    m.name #=> nil
+ *
+ *    m.set_temporary_name("M") # => M
+ *    m.name #=> "M"
+ *
+ *    m.set_temporary_name(nil) # => #<Module:0x0000000102c68f38>
+ *    m.name #=> nil
+ *
+ *    n = Module.new
+ *    n.set_temporary_name("Foo")
+ *
+ *    n::M = m
+ *    n::M.name #=> "Foo::M"
+ *    N = n
+ *
+ *    N.name #=> "N"
+ *    N::M.name #=> "N::M"
+ */
+
 VALUE
 rb_mod_name_set(VALUE mod, VALUE name)
 {
-    StringValue(name);
-    RCLASS_SET_CLASSPATH(mod, name, FALSE);
+    // We don't allow setting the name if the classpath is already permanent:
+    if (RCLASS_EXT(mod)->permanent_classpath) {
+        rb_raise(rb_eRuntimeError, "can't change permanent name");
+    }
+
+    if (NIL_P(name)) {
+        // Set the temporary classpath to NULL (anonymous):
+        RCLASS_SET_CLASSPATH(mod, 0, FALSE);
+    } else {
+        // Ensure the name is a string:
+        StringValue(name);
+
+        if (RSTRING_LEN(name) == 0) {
+            rb_raise(rb_eArgError, "empty class/module name");
+        }
+
+        // Set the temporary classpath to the given name:
+        RCLASS_SET_CLASSPATH(mod, name, FALSE);
+    }
+
     return mod;
 }
 
