@@ -11141,6 +11141,7 @@ parser_st.$(OBJEXT): {$(VPATH)}parser_bits.h
 parser_st.$(OBJEXT): {$(VPATH)}parser_st.c
 parser_st.$(OBJEXT): {$(VPATH)}parser_st.h
 parser_st.$(OBJEXT): {$(VPATH)}parser_value.h
+parser_st.$(OBJEXT): {$(VPATH)}st.c
 proc.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 proc.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 proc.$(OBJEXT): $(CCAN_DIR)/list/list.h

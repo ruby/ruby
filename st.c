@@ -103,7 +103,7 @@
 #ifdef NOT_RUBY
 #include "regint.h"
 #include "st.h"
-#else
+#elif defined RUBY_EXPORT
 #include "internal.h"
 #include "internal/bits.h"
 #include "internal/hash.h"
