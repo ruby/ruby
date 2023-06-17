@@ -1626,7 +1626,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     int isolated_depth = 0;
 
     // Conditionally enable coverage depending on the current mode:
-    VALUE coverage_enabled = RBOOL(rb_get_coverage_mode() & COVERAGE_TARGET_EVAL);
+    int coverage_enabled = (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0;
 
     {
         int depth = 1;
@@ -1659,17 +1659,13 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
             rb_gc_register_mark_object(eval_default_path);
         }
         fname = eval_default_path;
-        coverage_enabled = Qfalse;
+        coverage_enabled = FALSE;
     }
 
     rb_parser_set_context(parser, parent, FALSE);
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
-        if (ast->body.compile_option == Qnil) {
-            ast->body.compile_option = rb_obj_hide(rb_ident_hash_new());
-        }
-        rb_hash_aset(ast->body.compile_option, rb_sym_intern_ascii_cstr("coverage_enabled"), coverage_enabled);
-
+        ast->body.coverage_enabled = coverage_enabled;
         iseq = rb_iseq_new_eval(&ast->body,
                                 ISEQ_BODY(parent)->location.label,
                                 fname, Qnil, line,

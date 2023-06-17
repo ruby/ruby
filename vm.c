@@ -1350,7 +1350,8 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 
     rb_node_init(&tmp_node, NODE_SCOPE, (VALUE)dyns, 0, 0);
     ast.root = &tmp_node;
-    ast.compile_option = 0;
+    ast.frozen_string_literal = -1;
+    ast.coverage_enabled = -1;
     ast.script_lines = INT2FIX(-1);
 
     if (base_iseq) {

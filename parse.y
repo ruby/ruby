@@ -416,7 +416,6 @@ struct parser_params {
     rb_encoding *enc;
     token_info *token_info;
     VALUE case_labels;
-    VALUE compile_option;
 
     VALUE debug_buffer;
     VALUE debug_output;
@@ -441,6 +440,9 @@ struct parser_params {
 #ifdef UNIVERSAL_PARSER
     rb_parser_config_t *config;
 #endif
+    /* compile_option */
+    int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
+    int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
 
     unsigned int command_start:1;
     unsigned int eofp: 1;
@@ -6773,7 +6775,7 @@ yycompile0(VALUE arg)
     int n;
     NODE *tree;
     struct parser_params *p = (struct parser_params *)arg;
-    VALUE cov = Qfalse;
+    int cov = FALSE;
 
     if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
         p->debug_lines = debug_lines(p, p->ruby_sourcefile_string);
@@ -6786,7 +6788,7 @@ yycompile0(VALUE arg)
         }
 
         if (!e_option_supplied(p)) {
-            cov = Qtrue;
+            cov = TRUE;
         }
     }
 
@@ -6825,15 +6827,14 @@ yycompile0(VALUE arg)
         tree = NEW_NIL(&NULL_LOC);
     }
     else {
-        VALUE opt = p->compile_option;
         VALUE tokens = p->tokens;
         NODE *prelude;
         NODE *body = parser_append_options(p, tree->nd_body);
-        if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
-        rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
+        p->coverage_enabled = cov;
         prelude = block_append(p, p->eval_tree_begin, body);
         tree->nd_body = prelude;
-        RB_OBJ_WRITE(p->ast, &p->ast->body.compile_option, opt);
+        p->ast->body.frozen_string_literal = p->frozen_string_literal;
+        p->ast->body.coverage_enabled = p->coverage_enabled;
         if (p->keep_tokens) {
             rb_obj_freeze(tokens);
             rb_ast_set_tokens(p->ast, tokens);
@@ -8656,7 +8657,7 @@ parser_set_token_info(struct parser_params *p, const char *name, const char *val
 }
 
 static void
-parser_set_compile_option_flag(struct parser_params *p, const char *name, const char *val)
+parser_set_frozen_string_literal(struct parser_params *p, const char *name, const char *val)
 {
     int b;
 
@@ -8668,10 +8669,7 @@ parser_set_compile_option_flag(struct parser_params *p, const char *name, const 
     b = parser_get_bool(p, name, val);
     if (b < 0) return;
 
-    if (!p->compile_option)
-        p->compile_option = rb_obj_hide(rb_ident_hash_new());
-    rb_hash_aset(p->compile_option, ID2SYM(rb_intern(name)),
-                 RBOOL(b));
+    p->frozen_string_literal = b;
 }
 
 static void
@@ -8729,7 +8727,7 @@ struct magic_comment {
 static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
-    {"frozen_string_literal", parser_set_compile_option_flag},
+    {"frozen_string_literal", parser_set_frozen_string_literal},
     {"shareable_constant_value", parser_set_shareable_constant_value},
     {"warn_indent", parser_set_token_info},
 # if WARN_PAST_SCOPE
@@ -13674,6 +13672,8 @@ parser_initialize(struct parser_params *p)
     p->lex.lpar_beg = -1; /* make lambda_beginning_p() == FALSE at first */
     p->node_id = 0;
     p->delayed.token = Qnil;
+    p->frozen_string_literal = -1; /* not specified */
+    p->coverage_enabled = -1; /* not specified */
 #ifdef RIPPER
     p->result = Qnil;
     p->parsing_thread = Qnil;
@@ -13709,7 +13709,6 @@ rb_ruby_parser_mark(void *ptr)
     rb_gc_mark(p->delayed.token);
 #ifndef RIPPER
     rb_gc_mark(p->debug_lines);
-    rb_gc_mark(p->compile_option);
     rb_gc_mark(p->error_buffer);
     rb_gc_mark(p->end_expect_token_locations);
     rb_gc_mark(p->tokens);
