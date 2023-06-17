@@ -105,6 +105,7 @@ enum parser_st_retval {ST2_CONTINUE, ST2_STOP, ST2_DELETE, ST2_CHECK, ST2_REPLAC
 size_t rb_parser_st_table_size(const struct parser_st_table *tbl);
 parser_st_table *rb_parser_st_init_table(const struct parser_st_hash_type *);
 parser_st_table *rb_parser_st_init_table_with_size(const struct parser_st_hash_type *, parser_st_index_t);
+parser_st_table *rb_parser_st_init_existing_table_with_size(parser_st_table *, const struct parser_st_hash_type *, parser_st_index_t);
 parser_st_table *rb_parser_st_init_numtable(void);
 parser_st_table *rb_parser_st_init_numtable_with_size(parser_st_index_t);
 parser_st_table *rb_parser_st_init_strtable(void);
