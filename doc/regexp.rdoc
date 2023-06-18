@@ -1137,7 +1137,8 @@ A regular expression containing non-US-ASCII characters
 is assumed to use the source encoding.
 This can be overridden with one of the following modifiers.
 
-- <tt>/_pat_/n</tt>: US-ASCII or ASCII-8BIT
+- <tt>/_pat_/n</tt>: US-ASCII if only containing US-ASCII characters,
+  otherwise ASCII-8BIT:
 
     /foo/n.encoding     # => #<Encoding:US-ASCII>
     /foo\xff/n.encoding # => #<Encoding:ASCII-8BIT>
@@ -1162,7 +1163,6 @@ A regexp can be matched against a target string when either:
   contains only ASCII characters.
   Method Regexp#fixed_encoding? returns whether the regexp
   has a <i>fixed</i> encoding.
-
 
 If a match between incompatible encodings is attempted an
 <tt>Encoding::CompatibilityError</tt> exception is raised.
