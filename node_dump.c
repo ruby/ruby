@@ -757,7 +757,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_EVSTR:
         ANN("interpolation expression");
-        ANN("format: \"..#{ [nd_lit] }..\"");
+        ANN("format: \"..#{ [nd_body] }..\"");
         ANN("example: \"foo#{ bar }baz\"");
         LAST_NODE;
         F_NODE(nd_body, "body");
