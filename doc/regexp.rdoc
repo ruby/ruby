@@ -655,7 +655,7 @@ A regexp may contain any number of groups:
 
 As seen above, a capture can be referred to by its number.
 A capture can also have a name,
-prefixed as <tt>?<_name_></tt> or <tt>?'_name_'></tt>,
+prefixed as <tt>?<_name_></tt> or <tt>?'_name_'</tt>,
 and the name (symbolized) may be used as an index in <tt>MatchData[]</tt>:
 
   md = /\$(?<dollars>\d+)\.(?'cents'\d+)/.match("$3.67")
@@ -679,9 +679,9 @@ When (and only when) a regexp contains named capture groups
 and appears before the <tt>=~</tt> operator,
 the captured substrings are assigned to local variables with corresponding names:
 
-  /\$(?<dollars>\d+)\.(?<cents>\d+)/.match('$3.67')
-  # => #<MatchData "$3.67" dollars:"3" cents:"67">
+  /\$(?<dollars>\d+)\.(?<cents>\d+)/ =~ '$3.67'
   dollars # => "3"
+  cents   # => "67"
 
 \Method Regexp#named_captures returns a hash of the capture names and substrings;
 method Regexp#names returns an array of the capture names.
@@ -1101,10 +1101,14 @@ Regexp in extended mode:
 
 === Interpolation Mode
 
-By default, a regexp may be interplated repeatedly;
-in the +each+ loop below, the interpolated method call to +letters+
-is called three times, once for each loop iteration,
-and so takes more than 15 seconds to execute:
+Modifier +o+ means that the first time a literal regexp with interpolations
+is encountered,
+the generated Regexp object is saved and used for all future evaluations
+of that literal regexp.
+Without modifier +o+, the generated Regexp is not saved,
+so each evaluation of the literal regexp generates a new Regexp object.
+
+Without modifier +o+:
 
   def letters; sleep 5; /[A-Z][a-z]/; end
   words = %w[abc def xyz]
@@ -1112,12 +1116,14 @@ and so takes more than 15 seconds to execute:
   words.each {|word| word.match(/\A[#{letters}]+\z/) }
   Time.now - start # => 15.0174892
 
-With modifier +o+, the interpolated method is called only once,
-and so takes about 5 seconds to execute:
+With modifier +o+:
 
   start = Time.now
   words.each {|word| word.match(/\A[#{letters}]+\z/o) }
   Time.now - start # => 5.0010866
+
+Note that if the literal regexp does not have interpolations,
+the +o+ behavior is the default.
 
 == Encodings
 
