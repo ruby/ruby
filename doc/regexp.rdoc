@@ -187,7 +187,7 @@ gives the regexp great power and flexibility:
 === Special Characters
 
 \Regexp special characters, called _metacharacters_,
-has special meanings in certain contexts;
+have special meanings in certain contexts;
 depending on the context, these are sometimes metacharacters:
 
   . ? - + * ^ \ | $ ( ) [ ] { }
