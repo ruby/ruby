@@ -595,7 +595,7 @@ A group may have a
   re.match('foo')    # => #<MatchData "foo" 1:"foo">
   re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
 
-The returned \MatchData object give access to matched the substrings:
+The returned \MatchData object gives access to the matched substrings:
 
   re = /(\d\d\d\d)-(\d\d)-(\d\d)/
   md = re.match('1943-02-04')
