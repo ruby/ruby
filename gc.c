@@ -7408,6 +7408,10 @@ gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
+        if (!LIKELY(during_gc)) {
+            reachable_objects_from_callback(obj);
+            return;
+        }
         rb_mmtk_mark_pin(obj);
         return;
     }
@@ -7422,6 +7426,10 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
+        if (!LIKELY(during_gc)) {
+            reachable_objects_from_callback(obj);
+            return;
+        }
         rb_mmtk_mark_movable(obj);
         return;
     }
@@ -14853,5 +14861,12 @@ rb_mmtk_run_finalizer(VALUE obj, VALUE table)
 {
     rb_objspace_t *objspace = &rb_objspace;
     run_finalizer(objspace, obj, table);
+}
+
+void
+rb_mmtk_set_during_gc(bool is_during_gc)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    during_gc = is_during_gc ? 1 : 0;
 }
 #endif

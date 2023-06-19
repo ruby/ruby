@@ -750,6 +750,8 @@ rb_mmtk_stop_the_world(MMTk_VMWorkerThread _tls)
     // We wait until the only ractor has stopped.
 
     rb_mmtk_use_mmtk_global(rb_mmtk_wait_until_ractors_stopped, NULL);
+
+    rb_mmtk_set_during_gc(true);
 }
 
 static void
@@ -765,6 +767,8 @@ rb_mmtk_resume_mutators(MMTk_VMWorkerThread tls)
 {
     rb_mmtk_assert_mmtk_worker();
     rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
+
+    rb_mmtk_set_during_gc(false);
 
     rb_mmtk_use_mmtk_global(rb_mmtk_increment_start_the_world_count, NULL);
 }
