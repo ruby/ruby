@@ -437,17 +437,23 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	p += SIZE_RELADDR;
 	lookaround_nesting++;
 	break;
+      case OP_PUSH_LOOK_BEHIND_NOT:
+	p += SIZE_RELADDR;
+	p += SIZE_LENGTH;
+	lookaround_nesting++;
+	break;
       case OP_POP_POS:
       case OP_FAIL_POS:
+      case OP_FAIL_LOOK_BEHIND_NOT:
 	lookaround_nesting--;
 	break;
       case OP_PUSH_STOP_BT:
       case OP_POP_STOP_BT:
 	break;
-
       case OP_LOOK_BEHIND:
-      case OP_PUSH_LOOK_BEHIND_NOT:
-      case OP_FAIL_LOOK_BEHIND_NOT:
+	p += SIZE_LENGTH;
+	break;
+
       case OP_PUSH_ABSENT_POS:
       case OP_ABSENT_END:
       case OP_ABSENT:
@@ -708,17 +714,23 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
 	p += SIZE_RELADDR;
 	INC_LOOKAROUND_NESTING;
 	break;
+      case OP_PUSH_LOOK_BEHIND_NOT:
+	p += SIZE_RELADDR;
+	p += SIZE_LENGTH;
+	INC_LOOKAROUND_NESTING;
+	break;
       case OP_POP_POS:
       case OP_FAIL_POS:
+      case OP_FAIL_LOOK_BEHIND_NOT:
 	DEC_LOOKAROUND_NESTING;
 	break;
       case OP_PUSH_STOP_BT:
       case OP_POP_STOP_BT:
 	break;
       case OP_LOOK_BEHIND:
-      case OP_PUSH_LOOK_BEHIND_NOT:
-      case OP_FAIL_LOOK_BEHIND_NOT:
-      case OP_PUSH_ABSENT_POS:
+	p += SIZE_LENGTH;
+        break;
+
       case OP_ABSENT_END:
       case OP_ABSENT:
 	goto unexpected_bytecode_error;

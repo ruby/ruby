@@ -1866,6 +1866,24 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_positive_look_behind
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/(?<=abc|def)(a|a)*$/ =~ "abc" + "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_match_cache_negative_look_behind
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/(?<!x)(a|a)*$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
   def test_cache_opcodes_initialize
     str = 'test1-test2-test3-test4-test_5'
     re = '^([0-9a-zA-Z\-/]*){1,256}$'
@@ -1910,7 +1928,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_send [Regexp, :linear_time?, "(a)\\1"]
 
     assert_not_send [Regexp, :linear_time?, /(?=(a))/]
-    assert_not_send [Regexp, :linear_time?, /(?>(a))/]
+    assert_not_send [Regexp, :linear_time?, /(?!(a))/]
 
     assert_raise(TypeError) {Regexp.linear_time?(nil)}
     assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
