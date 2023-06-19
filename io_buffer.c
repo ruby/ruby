@@ -3349,6 +3349,44 @@ io_buffer_not_inplace(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *    cat(buffer) -> io_buffer
+ *
+ *  Generate a new buffer concatted self and given buffers.
+ *
+ *  Example:
+ *
+ *    buffer1 = IO::Buffer.for("\x00\x01\x02")
+ *    # =>
+ *    # #<IO::Buffer 0x00007f3425738d98+3 EXTERNAL READONLY SLICE>
+ *    # 0x00000000  00 01 02                                        ...
+ *
+ *    buffer1.cat("\x03\x04\x05") # Make a new IO::Buffer
+ *    # =>
+ *    # #<IO::Buffer 0x00005601be3a5bc0+6 INTERNAL>
+ *    # 0x00000000  00 01 02 03 04 05                               ......
+*/
+static VALUE
+io_buffer_cat(VALUE self, VALUE target)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    struct rb_io_buffer *target_buffer = NULL;
+    TypedData_Get_Struct(target, struct rb_io_buffer, &rb_io_buffer_type, target_buffer);
+
+    size_t catted_size = buffer->size + target_buffer->size;
+    VALUE output = rb_io_buffer_new(NULL, catted_size, io_flags_for_size(catted_size));
+    struct rb_io_buffer *output_buffer = NULL;
+    TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
+
+    io_buffer_memcpy(output_buffer, 0, buffer->base, 0, buffer->size, buffer->size);
+    io_buffer_memcpy(output_buffer, buffer->size, target_buffer->base, 0, target_buffer->size, target_buffer->size);
+
+    return output;
+}
+
+/*
  *  Document-class: IO::Buffer
  *
  *  IO::Buffer is a low-level efficient buffer for input/output. There are three
@@ -3548,6 +3586,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "set_values", io_buffer_set_values, 3);
 
     rb_define_method(rb_cIOBuffer, "copy", io_buffer_copy, -1);
+    rb_define_method(rb_cIOBuffer, "cat", io_buffer_cat, 1);
 
     rb_define_method(rb_cIOBuffer, "get_string", io_buffer_get_string, -1);
     rb_define_method(rb_cIOBuffer, "set_string", io_buffer_set_string, -1);

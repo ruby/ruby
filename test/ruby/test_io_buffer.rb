@@ -500,4 +500,15 @@ class TestIOBuffer < Test::Unit::TestCase
   rescue NotImplementedError
     omit "Fork/shared memory is not supported."
   end
+
+  def test_cat
+    buffer1 = IO::Buffer.for("\x00\x01\x02\x03")
+    buffer2 = IO::Buffer.for("\x04\x05\x06\x07")
+
+    cat1 = buffer1.cat(buffer2)
+    assert_equal IO::Buffer.for("\x00\x01\x02\x03\x04\x05\x06\x07"), cat1
+
+    cat2 = buffer2.cat(buffer1)
+    assert_equal IO::Buffer.for("\x04\x05\x06\x07\x00\x01\x02\x03"), cat2
+  end
 end
