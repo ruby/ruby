@@ -1031,8 +1031,10 @@ Any, all, or none of these may be applied.
 
 Modifiers +i+, +m+, and +x+ may be applied to subexpressions:
 
-- A preceding <tt>(?_modifier_)</tt> turns the mode "on."
-- A preceding <tt>(?-_modifier_)</tt> turns the mode "off."
+- <tt>(?_modifier_)</tt> turns the mode "on" for ensuing subexpressions
+- <tt>(?-_modifier_)</tt> turns the mode "off" for ensuing subexpressions
+- <tt>(?_modifier_:_subexp_)</tt> turns the mode "on" for _subexp_ within the group
+- <tt>(?-_modifier_:_subexp_)</tt> turns the mode "off" for _subexp_ within the group
 
 Example:
 
