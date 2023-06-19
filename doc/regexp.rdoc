@@ -695,7 +695,7 @@ independently of the rest of the expression,
 so that the matched substring becomes fixed for the remainder of the match,
 unless the entire subexpression must be abandoned and subsequently revisited.
 
-In this way pat is treated as a non-divisible whole.
+In this way _subexpression_ is treated as a non-divisible whole.
 Atomic grouping is typically used to optimise patterns
 to prevent needless backtracking .
 
