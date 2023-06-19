@@ -783,6 +783,15 @@ Examples:
   re.match('fooF') # => nil
   re.match('T')    # => nil
 
+
+==== Absence Operator
+
+The absence operator is a special group that matches anything which does _not_ match the contained subexpressions.
+
+  /(?~real)/.match('surrealist') # => #<MatchData "surrea">
+  /(?~real)ist/.match('surrealist') # => #<MatchData "ealist">
+  /sur(?~real)ist/.match('surrealist') # => nil
+
 === Unicode
 
 ==== Unicode Properties
