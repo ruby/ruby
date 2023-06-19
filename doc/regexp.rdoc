@@ -1067,20 +1067,18 @@ Modifier +i+ enables case-insensitive mode:
 
 === Multiline Mode
 
-By default, a Ruby regexp is in multiline mode,
-which means that anchors <tt>^</tt> and <tt>$</tt> match, respectively,
-the beginning or end of a line in the target string.
+The multiline-mode in Ruby is what is commonly called a "dot-all mode":
 
-Modifier +m+ therefore does not enable multiline mode -- it's already enabled.
-The modifier does, however, make one small difference:
-
-- Without the +m+ modifier, a newline does not match subexpression <tt>.</tt>:
+- Without the +m+ modifier, the subexpression <tt>.</tt> does not match newlines:
 
     /a.c/.match("a\nc")  # => nil
 
 - With the modifier, it does match:
 
     /a.c/m.match("a\nc") # => #<MatchData "a\nc">
+
+Unlike other languages, the modifier +m+ does not affect the anchors <tt>^</tt> and <tt>$</tt>.
+These anchors always match at line-boundaries in Ruby.
 
 === Extended Mode
 
