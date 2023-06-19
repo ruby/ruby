@@ -324,7 +324,7 @@ for a character class:
     /\S/.match(" \t\r\n\f\v foo") # => #<MatchData "f">
     /\S/.match(" \t\r\n\f\v")     # => nil
 
-- <tt>/\R/</tt>: Matches a linebreak:
+- <tt>/\R/</tt>: Matches a linebreak, platform-independently:
 
     /\R/.match("\r")     # => #<MatchData "\r">     # Carriage return (CR)
     /\R/.match("\n")     # => #<MatchData "\n">     # Newline (LF)
