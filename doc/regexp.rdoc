@@ -548,8 +548,8 @@ Quantifier matching may be greedy, lazy, or possessive:
   <tt>{min, max}?</tt> and its variants.
 - In _possessive_ matching, once a match is found, there is no backtracking;
   that match is retained, even if it jeopardises the overall match.
-  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
-  <tt>{min, max}+</tt> and its variants.
+  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>.
+  Note that <tt>{min, max}</tt> and its variants do _not_ support possessive matching.
 
 More:
 
