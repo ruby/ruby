@@ -118,9 +118,9 @@ Certain regexp-oriented methods assign values to global variables:
 The affected global variables are:
 
 - <tt>$~</tt>: Returns a MatchData object, or +nil+.
-- <tt>$&</tt>: Returns the matched string, or +nil+.
-- <tt>$`</tt>: Returns the string to the left of the matched string, or +nil+.
-- <tt>$'</tt>: Returns the string to the right of the matched string, or +nil+.
+- <tt>$&</tt>: Returns the matched part of the string, or +nil+.
+- <tt>$`</tt>: Returns the part of the string to the left of the match, or +nil+.
+- <tt>$'</tt>: Returns the part of the string to the right of the match, or +nil+.
 - <tt>$+</tt>: Returns the last group matched, or +nil+.
 - <tt>$1</tt>, <tt>$2</tt>, etc.: Returns the first, second, etc.,
   matched group, or +nil+.
