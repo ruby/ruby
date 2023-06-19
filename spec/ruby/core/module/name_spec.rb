@@ -38,6 +38,16 @@ describe "Module#name" do
       m::N.set_temporary_name(nil)
       m::N.name.should be_nil
     end
+
+    it "can update the name when assigned to a constant" do
+      m = Module.new
+      m::N = Module.new
+      m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+      m::N.set_temporary_name(nil)
+
+      m::M = m::N
+      m::M.name.should =~ /\A#<Module:0x\h+>::M\z/m
+    end
   end
 
   ruby_version_is ""..."3.0" do
