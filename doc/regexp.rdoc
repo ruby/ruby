@@ -1043,6 +1043,11 @@ Example:
   re.match('TEst') # => #<MatchData "TEst">
   re.match('TEST') # => nil
   re.match('teST') # => nil
+  
+  re = /t(?i:e)st/
+  re.match('test') # => #<MatchData "test">
+  re.match('tEst') # => #<MatchData "tEst">
+  re.match('tEST') # => nil
 
 \Method Regexp#options returns an integer whose value showing
 the settings for case-insensitivity mode, multiline mode, and extended mode.
