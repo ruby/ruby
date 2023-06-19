@@ -1086,7 +1086,7 @@ Modifier +x+ enables extended mode, which means that:
 
 - Literal white space in the pattern is to be ignored.
 - Character <tt>#</tt> marks the remainder of its containing line as a comment,
-  which is also to be ignored.
+  which is also to be ignored for matching purposes.
 
 In extended mode, whitespace and comments may be used
 to form a self-documented regexp.
