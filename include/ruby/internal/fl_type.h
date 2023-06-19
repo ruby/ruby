@@ -283,7 +283,7 @@ ruby_fl_type {
 # pragma deprecated(RUBY_FL_TAINT)
 #endif
 
-                         = (1<<8),
+                         = 0,
 
     /**
      * This flag has something to do with Ractor.  Multiple Ractors run without
@@ -310,7 +310,7 @@ ruby_fl_type {
 # pragma deprecated(RUBY_FL_UNTRUSTED)
 #endif
 
-                         = (1<<8),
+                         = 0,
 
     /**
      * This flag has something to do with  object IDs.  Unlike in the old days,
