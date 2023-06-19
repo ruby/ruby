@@ -11,8 +11,8 @@ describe "Module#name" do
       m = Module.new
       m.name.should be_nil
 
-      m.set_temporary_name("Foo")
-      m.name.should == "Foo"
+      m.set_temporary_name("fake_name")
+      m.name.should == "fake_name"
 
       m.set_temporary_name(nil)
       m.name.should be_nil
@@ -24,7 +24,7 @@ describe "Module#name" do
     end
 
     it "can't assign name to permanent module" do
-      -> { Object.set_temporary_name("Foo") }.should raise_error(RuntimeError, "can't change permanent name")
+      -> { Object.set_temporary_name("fake_name") }.should raise_error(RuntimeError, "can't change permanent name")
     end
 
     it "can assign a temporary name to a nested module" do
@@ -32,8 +32,8 @@ describe "Module#name" do
       module m::N; end
       m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
 
-      m::N.set_temporary_name("Foo")
-      m::N.name.should == "Foo"
+      m::N.set_temporary_name("fake_name")
+      m::N.name.should == "fake_name"
 
       m::N.set_temporary_name(nil)
       m::N.name.should be_nil

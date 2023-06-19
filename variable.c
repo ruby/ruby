@@ -156,17 +156,17 @@ rb_mod_name(VALUE mod)
  *    m = Module.new # => #<Module:0x0000000102c68f38>
  *    m.name #=> nil
  *
- *    m.set_temporary_name("M") # => M
- *    m.name #=> "M"
+ *    m.set_temporary_name("fake_name") # => fake_name
+ *    m.name #=> "fake_name"
  *
  *    m.set_temporary_name(nil) # => #<Module:0x0000000102c68f38>
  *    m.name #=> nil
  *
  *    n = Module.new
- *    n.set_temporary_name("Foo")
+ *    n.set_temporary_name("fake_name")
  *
  *    n::M = m
- *    n::M.name #=> "Foo::M"
+ *    n::M.name #=> "fake_name::M"
  *    N = n
  *
  *    N.name #=> "N"
