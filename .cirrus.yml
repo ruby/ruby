@@ -35,6 +35,9 @@ task:
     matrix:
       CC: gcc-11
   id_script: id
+  info_script: |
+    nproc
+    free -h
   set_env_script:
     # Set `GNUMAKEFLAGS`, because the flags are GNU make specific. Note using
     # the `make` environment variable used in compilers.yml causes some rubygems
@@ -100,6 +103,9 @@ yjit_task:
       - CC: gcc-11
         configure: --enable-yjit
   id_script: id
+  info_script: |
+    nproc
+    free -h
   set_env_script:
     # Set `GNUMAKEFLAGS`, because the flags are GNU make specific. Note using
     # the `make` environment variable used in compilers.yml causes some rubygems
