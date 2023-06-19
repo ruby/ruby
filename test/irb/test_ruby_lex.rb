@@ -103,6 +103,27 @@ module TestIRB
       [indent, code_block_open]
     end
 
+    def test_interpolate_token_with_heredoc_and_unclosed_embexpr
+      code = <<~'EOC'
+        ①+<<A-②
+        #{③*<<B/④
+        #{⑤&<<C|⑥
+      EOC
+      ripper_tokens = Ripper.tokenize(code)
+      rubylex_tokens = RubyLex.ripper_lex_without_warning(code)
+      # Assert no missing part
+      assert_equal(code, rubylex_tokens.map(&:tok).join)
+      # Assert ripper tokens are not removed
+      ripper_tokens.each do |tok|
+        assert(rubylex_tokens.any? { |t| t.tok == tok && t.tok != :on_ignored_by_ripper })
+      end
+      # Assert interpolated token position
+      rubylex_tokens.each do |t|
+        row, col = t.pos
+        assert_equal t.tok, code.lines[row - 1].byteslice(col, t.tok.bytesize)
+      end
+    end
+
     def test_auto_indent
       input_with_correct_indents = [
         Row.new(%q(def each_top_level_statement), nil, 2),

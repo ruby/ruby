@@ -124,9 +124,42 @@ class RubyLex
     "#{local_variables.join('=')}=nil;" unless local_variables.empty?
   end
 
+  # Some part of the code is not included in Ripper's token.
+  # Example: DATA part, token after heredoc_beg when heredoc has unclosed embexpr.
+  # With interpolated tokens, tokens.map(&:tok).join will be equal to code.
+  def self.interpolate_ripper_ignored_tokens(code, tokens)
+    line_positions = [0]
+    code.lines.each do |line|
+      line_positions << line_positions.last + line.bytesize
+    end
+    prev_byte_pos = 0
+    interpolated = []
+    prev_line = 1
+    tokens.each do |t|
+      line, col = t.pos
+      byte_pos = line_positions[line - 1] + col
+      if prev_byte_pos < byte_pos
+        tok = code.byteslice(prev_byte_pos...byte_pos)
+        pos = [prev_line, prev_byte_pos - line_positions[prev_line - 1]]
+        interpolated << Ripper::Lexer::Elem.new(pos, :on_ignored_by_ripper, tok, 0)
+        prev_line += tok.count("\n")
+      end
+      interpolated << t
+      prev_byte_pos = byte_pos + t.tok.bytesize
+      prev_line += t.tok.count("\n")
+    end
+    if prev_byte_pos < code.bytesize
+      tok = code.byteslice(prev_byte_pos..)
+      pos = [prev_line, prev_byte_pos - line_positions[prev_line - 1]]
+      interpolated << Ripper::Lexer::Elem.new(pos, :on_ignored_by_ripper, tok, 0)
+    end
+    interpolated
+  end
+
   def self.ripper_lex_without_warning(code, context: nil)
     verbose, $VERBOSE = $VERBOSE, nil
     lvars_code = generate_local_variables_assign_code(context&.local_variables || [])
+    original_code = code
     if lvars_code
       code = "#{lvars_code}\n#{code}"
       line_no = 0
@@ -136,7 +169,8 @@ class RubyLex
 
     compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
-      lexer.scan.each_with_object([]) do |t, tokens|
+      tokens = []
+      lexer.scan.each do |t|
         next if t.pos.first == 0
         prev_tk = tokens.last
         position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
@@ -146,6 +180,7 @@ class RubyLex
           tokens << t
         end
       end
+      interpolate_ripper_ignored_tokens(original_code, tokens)
     end
   ensure
     $VERBOSE = verbose
