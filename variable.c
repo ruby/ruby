@@ -1633,14 +1633,19 @@ struct iv_itr_data {
     rb_ivar_foreach_callback_func *func;
 };
 
-static void
+/*
+ * Returns a flag to stop iterating depending on the result of +callback+.
+ */
+static bool
 iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_func *callback, struct iv_itr_data * itr_data)
 {
     switch ((enum shape_type)shape->type) {
       case SHAPE_ROOT:
-        return;
+        return false;
       case SHAPE_IVAR:
-        iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
+        ASSUME(callback);
+        if (iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data))
+            return true;
         VALUE * iv_list;
         switch (BUILTIN_TYPE(itr_data->obj)) {
           case T_OBJECT:
@@ -1657,15 +1662,22 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         }
         VALUE val = iv_list[shape->next_iv_index - 1];
         if (!UNDEF_P(val)) {
-            callback(shape->edge_name, val, itr_data->arg);
+            switch (callback(shape->edge_name, val, itr_data->arg)) {
+              case ST_CHECK:
+              case ST_CONTINUE:
+                break;
+              case ST_STOP:
+                return true;
+              default:
+                rb_bug("unreachable");
+            }
         }
-        return;
+        return false;
       case SHAPE_INITIAL_CAPACITY:
       case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
-        iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
-        return;
+        return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
         rb_bug("Unreachable");
     }
