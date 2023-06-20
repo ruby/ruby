@@ -118,9 +118,9 @@ Certain regexp-oriented methods assign values to global variables:
 The affected global variables are:
 
 - <tt>$~</tt>: Returns a MatchData object, or +nil+.
-- <tt>$&</tt>: Returns the matched string, or +nil+.
-- <tt>$`</tt>: Returns the string to the left of the matched string, or +nil+.
-- <tt>$'</tt>: Returns the string to the right of the matched string, or +nil+.
+- <tt>$&</tt>: Returns the matched part of the string, or +nil+.
+- <tt>$`</tt>: Returns the part of the string to the left of the match, or +nil+.
+- <tt>$'</tt>: Returns the part of the string to the right of the match, or +nil+.
 - <tt>$+</tt>: Returns the last group matched, or +nil+.
 - <tt>$1</tt>, <tt>$2</tt>, etc.: Returns the first, second, etc.,
   matched group, or +nil+.
@@ -187,7 +187,7 @@ gives the regexp great power and flexibility:
 === Special Characters
 
 \Regexp special characters, called _metacharacters_,
-has special meanings in certain contexts;
+have special meanings in certain contexts;
 depending on the context, these are sometimes metacharacters:
 
   . ? - + * ^ \ | $ ( ) [ ] { }
@@ -324,7 +324,7 @@ for a character class:
     /\S/.match(" \t\r\n\f\v foo") # => #<MatchData "f">
     /\S/.match(" \t\r\n\f\v")     # => nil
 
-- <tt>/\R/</tt>: Matches a linebreak:
+- <tt>/\R/</tt>: Matches a linebreak, platform-independently:
 
     /\R/.match("\r")     # => #<MatchData "\r">     # Carriage return (CR)
     /\R/.match("\n")     # => #<MatchData "\n">     # Newline (LF)
@@ -548,8 +548,8 @@ Quantifier matching may be greedy, lazy, or possessive:
   <tt>{min, max}?</tt> and its variants.
 - In _possessive_ matching, once a match is found, there is no backtracking;
   that match is retained, even if it jeopardises the overall match.
-  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>,
-  <tt>{min, max}+</tt> and its variants.
+  Possessive quantifiers: <tt>*+</tt>, <tt>++</tt>, <tt>?+</tt>.
+  Note that <tt>{min, max}</tt> and its variants do _not_ support possessive matching.
 
 More:
 
@@ -595,7 +595,7 @@ A group may have a
   re.match('foo')    # => #<MatchData "foo" 1:"foo">
   re.match('foofoo') # => #<MatchData "foofoo" 1:"foo">
 
-The returned \MatchData object give access to matched the substrings:
+The returned \MatchData object gives access to the matched substrings:
 
   re = /(\d\d\d\d)-(\d\d)-(\d\d)/
   md = re.match('1943-02-04')
@@ -695,7 +695,7 @@ independently of the rest of the expression,
 so that the matched substring becomes fixed for the remainder of the match,
 unless the entire subexpression must be abandoned and subsequently revisited.
 
-In this way pat is treated as a non-divisible whole.
+In this way _subexpression_ is treated as a non-divisible whole.
 Atomic grouping is typically used to optimise patterns
 to prevent needless backtracking .
 
@@ -782,6 +782,15 @@ Examples:
   re.match('F')    # => #<MatchData "F" xyzzy:nil>
   re.match('fooF') # => nil
   re.match('T')    # => nil
+
+
+==== Absence Operator
+
+The absence operator is a special group that matches anything which does _not_ match the contained subexpressions.
+
+  /(?~real)/.match('surrealist') # => #<MatchData "surrea">
+  /(?~real)ist/.match('surrealist') # => #<MatchData "ealist">
+  /sur(?~real)ist/.match('surrealist') # => nil
 
 === Unicode
 
@@ -1022,8 +1031,10 @@ Any, all, or none of these may be applied.
 
 Modifiers +i+, +m+, and +x+ may be applied to subexpressions:
 
-- A preceding <tt>(?_modifier_)</tt> turns the mode "on."
-- A preceding <tt>(?-_modifier_)</tt> turns the mode "off."
+- <tt>(?_modifier_)</tt> turns the mode "on" for ensuing subexpressions
+- <tt>(?-_modifier_)</tt> turns the mode "off" for ensuing subexpressions
+- <tt>(?_modifier_:_subexp_)</tt> turns the mode "on" for _subexp_ within the group
+- <tt>(?-_modifier_:_subexp_)</tt> turns the mode "off" for _subexp_ within the group
 
 Example:
 
@@ -1032,6 +1043,11 @@ Example:
   re.match('TEst') # => #<MatchData "TEst">
   re.match('TEST') # => nil
   re.match('teST') # => nil
+  
+  re = /t(?i:e)st/
+  re.match('test') # => #<MatchData "test">
+  re.match('tEst') # => #<MatchData "tEst">
+  re.match('tEST') # => nil
 
 \Method Regexp#options returns an integer whose value showing
 the settings for case-insensitivity mode, multiline mode, and extended mode.
@@ -1051,14 +1067,9 @@ Modifier +i+ enables case-insensitive mode:
 
 === Multiline Mode
 
-By default, a Ruby regexp is in multiline mode,
-which means that anchors <tt>^</tt> and <tt>$</tt> match, respectively,
-the beginning or end of a line in the target string.
+The multiline-mode in Ruby is what is commonly called a "dot-all mode":
 
-Modifier +m+ therefore does not enable multiline mode -- it's already enabled.
-The modifier does, however, make one small difference:
-
-- Without the +m+ modifier, a newline does not match subexpression <tt>.</tt>:
+- Without the +m+ modifier, the subexpression <tt>.</tt> does not match newlines:
 
     /a.c/.match("a\nc")  # => nil
 
@@ -1066,13 +1077,16 @@ The modifier does, however, make one small difference:
 
     /a.c/m.match("a\nc") # => #<MatchData "a\nc">
 
+Unlike other languages, the modifier +m+ does not affect the anchors <tt>^</tt> and <tt>$</tt>.
+These anchors always match at line-boundaries in Ruby.
+
 === Extended Mode
 
 Modifier +x+ enables extended mode, which means that:
 
 - Literal white space in the pattern is to be ignored.
 - Character <tt>#</tt> marks the remainder of its containing line as a comment,
-  which is also to be ignored.
+  which is also to be ignored for matching purposes.
 
 In extended mode, whitespace and comments may be used
 to form a self-documented regexp.
