@@ -278,7 +278,7 @@
 #  If argument +capture+ is given and not <tt>0</tt>,
 #  it should be either an capture group index (integer)
 #  or a capture group name (string or symbol);
-#  the slice is the specified capture (see Regexp@Capturing):
+#  the slice is the specified capture (see Regexp@Groups+and+Captures):
 #
 #    s = 'hello there'
 #    s[/[aeiou](.)\1/, 1] # => "l"

@@ -414,9 +414,9 @@ slash (<tt>'/'</tt>) characters:
   re = /foo/ # => /foo/
   re.class   # => Regexp
 
-The trailing slash may be followed by one or more _flag_ characters
-that modify the behavior.
-See {Regexp options}[rdoc-ref:Regexp@Options] for details.
+The trailing slash may be followed by one or more modifiers characters
+that set modes for the regexp.
+See {Regexp modes}[rdoc-ref:Regexp@Modes] for details.
 
 Interpolation may be used inside regular expressions along with escaped
 characters.  Note that a regular expression may require additional escaped
@@ -523,9 +523,9 @@ A few "symmetrical" character pairs may be used as delimiters:
   %r(foo) # => /foo/
   %r<foo> # => /foo/
 
-The trailing delimiter may be followed by one or more _flag_ characters
-that modify the behavior.
-See {Regexp options}[rdoc-ref:Regexp@Options] for details.
+The trailing delimiter may be followed by one or more modifier characters
+that set modes for the regexp.
+See {Regexp modes}[rdoc-ref:Regexp@Modes] for details.
 
 === <tt>%x</tt>: Backtick Literals
 
