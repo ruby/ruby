@@ -1206,21 +1206,13 @@ to prevent such an attack, it is wise to set a timeout.
     re.timeout # => 5.0
 
 When regexp.timeout is +nil+, the timeout "falls through" to Regexp.timeout;
-when regexp.timeout is non-+nil+, that value control timing out:
+when regexp.timeout is non-+nil+, that value controls timing out:
 
   | regexp.timeout Value | Regexp.timeout Value |            Result           |
   |----------------------|----------------------|-----------------------------|
   |         nil          |          nil         |       Never times out.      |
   |         nil          |         Float        | Times out in Float seconds. |
   |        Float         |          Any         | Times out in Float seconds. |
-
-Example:
-
-  Regexp.timeout = 2.0
-  s = 'a' * 10 + 'x'
-  re.match(s) # => nil
-  s = 'a' * 100 + 'x'
-  re.match(s) # Raises Regexp::TimeoutError.
 
 == References
 
