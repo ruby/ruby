@@ -1,0 +1,35 @@
+ProgramNode(0...37)(
+  [],
+  StatementsNode(0...37)(
+    [CaseNode(0...37)(
+       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
+       [InNode(8...20)(
+          ConstantPathNode(11...15)(
+            ConstantReadNode(11...12)(),
+            ConstantReadNode(14...15)(),
+            (12...14)
+          ),
+          StatementsNode(18...20)(
+            [SymbolNode(18...20)((18...19), (19...20), nil, "C")]
+          ),
+          (8...10),
+          nil
+        ),
+        InNode(21...33)(
+          ConstantPathNode(24...28)(
+            ConstantReadNode(24...25)(),
+            ConstantReadNode(27...28)(),
+            (25...27)
+          ),
+          StatementsNode(31...33)(
+            [SymbolNode(31...33)((31...32), (32...33), nil, "F")]
+          ),
+          (21...23),
+          nil
+        )],
+       nil,
+       (0...4),
+       (34...37)
+     )]
+  )
+)

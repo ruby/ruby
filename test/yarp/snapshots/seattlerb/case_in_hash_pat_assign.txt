@@ -1,0 +1,43 @@
+ProgramNode(0...56)(
+  [:x, :f],
+  StatementsNode(0...56)(
+    [CaseNode(0...56)(
+       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
+       [InNode(8...52)(
+          HashPatternNode(11...42)(
+            nil,
+            [AssocNode(13...28)(
+               SymbolNode(13...15)(nil, (13...14), (14...15), "b"),
+               CapturePatternNode(16...28)(
+                 ConstantReadNode(16...23)(),
+                 LocalVariableWriteNode(27...28)(:x, 0, nil, (27...28), nil),
+                 (24...26)
+               ),
+               nil
+             ),
+             AssocNode(30...36)(
+               SymbolNode(30...32)(nil, (30...31), (31...32), "d"),
+               StringNode(33...36)((33...34), (34...35), (35...36), "e"),
+               nil
+             ),
+             AssocNode(38...40)(
+               SymbolNode(38...40)(nil, (38...39), (39...40), "f"),
+               nil,
+               nil
+             )],
+            nil,
+            (11...12),
+            (41...42)
+          ),
+          StatementsNode(50...52)(
+            [SymbolNode(50...52)((50...51), (51...52), nil, "g")]
+          ),
+          (8...10),
+          (43...47)
+        )],
+       nil,
+       (0...4),
+       (53...56)
+     )]
+  )
+)

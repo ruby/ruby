@@ -1,0 +1,36 @@
+ProgramNode(0...45)(
+  [],
+  StatementsNode(0...45)(
+    [DefNode(0...45)(
+       (6...17),
+       CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 0, "x"),
+       nil,
+       StatementsNode(20...45)(
+         [CallNode(20...45)(
+            nil,
+            nil,
+            (20...32),
+            nil,
+            ArgumentsNode(33...45)(
+              [RescueModifierNode(33...45)(
+                 IntegerNode(33...35)(),
+                 (36...42),
+                 IntegerNode(43...45)()
+               )]
+            ),
+            nil,
+            nil,
+            0,
+            "other_method"
+          )]
+       ),
+       [],
+       (0...3),
+       (5...6),
+       nil,
+       nil,
+       (18...19),
+       nil
+     )]
+  )
+)

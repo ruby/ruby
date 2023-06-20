@@ -1,0 +1,26 @@
+ProgramNode(0...17)(
+  [],
+  StatementsNode(0...17)(
+    [DefNode(0...17)(
+       (4...5),
+       nil,
+       ParametersNode(6...12)(
+         [],
+         [],
+         [],
+         nil,
+         [],
+         KeywordRestParameterNode(6...12)((6...8), (8...12)),
+         nil
+       ),
+       nil,
+       [:opts],
+       (0...3),
+       nil,
+       (5...6),
+       (12...13),
+       nil,
+       (14...17)
+     )]
+  )
+)

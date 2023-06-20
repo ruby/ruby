@@ -1,0 +1,62 @@
+ProgramNode(0...43)(
+  [],
+  StatementsNode(0...43)(
+    [CallNode(0...14)(
+       nil,
+       nil,
+       (0...1),
+       (1...2),
+       ArgumentsNode(2...13)(
+         [KeywordHashNode(2...13)(
+            [AssocNode(2...13)(
+               SymbolNode(2...8)(nil, (2...7), (7...8), "state"),
+               HashNode(10...13)((10...11), [], (12...13)),
+               nil
+             )]
+          )]
+       ),
+       (13...14),
+       nil,
+       0,
+       "f"
+     ),
+     CallNode(16...29)(
+       nil,
+       nil,
+       (16...17),
+       (17...18),
+       ArgumentsNode(18...28)(
+         [KeywordHashNode(18...28)(
+            [AssocNode(18...28)(
+               SymbolNode(18...24)(nil, (18...23), (23...24), "state"),
+               HashNode(25...28)((25...26), [], (27...28)),
+               nil
+             )]
+          )]
+       ),
+       (28...29),
+       nil,
+       0,
+       "f"
+     ),
+     CallNode(31...43)(
+       nil,
+       nil,
+       (31...32),
+       (32...33),
+       ArgumentsNode(33...42)(
+         [KeywordHashNode(33...42)(
+            [AssocNode(33...42)(
+               SymbolNode(33...39)(nil, (33...38), (38...39), "state"),
+               HashNode(40...42)((40...41), [], (41...42)),
+               nil
+             )]
+          )]
+       ),
+       (42...43),
+       nil,
+       0,
+       "f"
+     )]
+  )
+)

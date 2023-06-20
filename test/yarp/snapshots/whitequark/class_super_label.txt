@@ -1,0 +1,26 @@
+ProgramNode(0...20)(
+  [],
+  StatementsNode(0...20)(
+    [ClassNode(0...20)(
+       [],
+       (0...5),
+       ConstantReadNode(6...9)(),
+       (10...11),
+       CallNode(12...15)(
+         nil,
+         nil,
+         (12...13),
+         nil,
+         ArgumentsNode(13...15)(
+           [SymbolNode(13...15)((13...14), (14...15), nil, "b")]
+         ),
+         nil,
+         nil,
+         0,
+         "a"
+       ),
+       nil,
+       (17...20)
+     )]
+  )
+)

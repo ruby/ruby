@@ -1,0 +1,19 @@
+ProgramNode(0...12)(
+  [:a],
+  StatementsNode(0...12)(
+    [MultiWriteNode(0...12)(
+       [SplatNode(0...2)(
+          (0...1),
+          LocalVariableWriteNode(1...2)(:a, 0, nil, (1...2), nil)
+        )],
+       (3...4),
+       ArrayNode(5...12)(
+         [IntegerNode(5...6)(), IntegerNode(8...9)(), IntegerNode(11...12)()],
+         nil,
+         nil
+       ),
+       nil,
+       nil
+     )]
+  )
+)

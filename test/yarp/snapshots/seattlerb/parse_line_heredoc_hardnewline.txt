@@ -1,0 +1,24 @@
+ProgramNode(0...48)(
+  [],
+  StatementsNode(0...48)(
+    [InterpolatedStringNode(0...34)(
+       (0...8),
+       [StringNode(9...28)(
+          nil,
+          (9...28),
+          nil,
+          "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n"
+        )],
+       (28...34)
+     ),
+     ClassNode(35...48)(
+       [],
+       (35...40),
+       ConstantReadNode(41...44)(),
+       nil,
+       nil,
+       nil,
+       (45...48)
+     )]
+  )
+)

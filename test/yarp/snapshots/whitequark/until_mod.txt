@@ -1,0 +1,12 @@
+ProgramNode(0...14)(
+  [],
+  StatementsNode(0...14)(
+    [UntilNode(0...14)(
+       (5...10),
+       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 0, "foo"),
+       StatementsNode(0...4)(
+         [CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 0, "meth")]
+       )
+     )]
+  )
+)

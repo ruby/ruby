@@ -1,0 +1,177 @@
+ProgramNode(0...188)(
+  [:foo, :a],
+  StatementsNode(0...188)(
+    [UntilNode(0...13)(
+       (2...7),
+       CallNode(8...13)(
+         nil,
+         nil,
+         (8...10),
+         nil,
+         nil,
+         nil,
+         BlockNode(11...13)([], nil, nil, (11...12), (12...13)),
+         0,
+         "b?"
+       ),
+       StatementsNode(0...1)(
+         [CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a")]
+       )
+     ),
+     UntilNode(15...34)(
+       (15...20),
+       CallNode(21...26)(
+         nil,
+         nil,
+         (21...23),
+         nil,
+         nil,
+         nil,
+         BlockNode(24...26)([], nil, nil, (24...25), (25...26)),
+         0,
+         "b?"
+       ),
+       StatementsNode(29...30)(
+         [CallNode(29...30)(nil, nil, (29...30), nil, nil, nil, nil, 0, "a")]
+       )
+     ),
+     WhileNode(36...55)(
+       (46...51),
+       LocalVariableReadNode(52...55)(:foo, 0),
+       StatementsNode(36...45)(
+         [LocalVariableWriteNode(36...45)(
+            :foo,
+            0,
+            CallNode(42...45)(
+              nil,
+              nil,
+              (42...45),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "bar"
+            ),
+            (36...39),
+            (40...41)
+          )]
+       )
+     ),
+     UntilNode(57...75)(
+       (59...64),
+       AndNode(65...75)(
+         CallNode(65...66)(nil, nil, (65...66), nil, nil, nil, nil, 0, "b"),
+         CallNode(70...75)(
+           nil,
+           nil,
+           (70...71),
+           nil,
+           nil,
+           nil,
+           BlockNode(72...75)([], nil, nil, (72...73), (74...75)),
+           0,
+           "a"
+         ),
+         (67...69)
+       ),
+       StatementsNode(57...58)(
+         [CallNode(57...58)(nil, nil, (57...58), nil, nil, nil, nil, 0, "a")]
+       )
+     ),
+     WhileNode(77...96)(
+       (77...82),
+       LocalVariableWriteNode(83...88)(
+         :a,
+         0,
+         CallNode(87...88)(nil, nil, (87...88), nil, nil, nil, nil, 0, "b"),
+         (83...84),
+         (85...86)
+       ),
+       StatementsNode(91...92)([LocalVariableReadNode(91...92)(:a, 0)])
+     ),
+     UntilNode(98...130)(
+       (100...105),
+       CallNode(106...130)(
+         nil,
+         nil,
+         (106...107),
+         (107...108),
+         ArgumentsNode(108...123)(
+           [InterpolatedStringNode(108...123)((108...114), [], (119...123))]
+         ),
+         (114...115),
+         BlockNode(116...130)(
+           [],
+           nil,
+           StatementsNode(125...126)(
+             [CallNode(125...126)(
+                nil,
+                nil,
+                (125...126),
+                nil,
+                nil,
+                nil,
+                nil,
+                0,
+                "c"
+              )]
+           ),
+           (116...118),
+           (127...130)
+         ),
+         0,
+         "b"
+       ),
+       StatementsNode(98...99)([LocalVariableReadNode(98...99)(:a, 0)])
+     ),
+     ModuleNode(132...188)(
+       [:foo],
+       (132...138),
+       ConstantReadNode(139...140)(),
+       StatementsNode(143...184)(
+         [LocalVariableWriteNode(143...152)(
+            :foo,
+            0,
+            CallNode(149...152)(
+              nil,
+              nil,
+              (149...152),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "exp"
+            ),
+            (143...146),
+            (147...148)
+          ),
+          WhileNode(155...184)(
+            (155...160),
+            LocalVariableReadNode(161...164)(:foo, 0),
+            StatementsNode(169...178)(
+              [LocalVariableWriteNode(169...178)(
+                 :foo,
+                 0,
+                 CallNode(175...178)(
+                   nil,
+                   nil,
+                   (175...178),
+                   nil,
+                   nil,
+                   nil,
+                   nil,
+                   0,
+                   "bar"
+                 ),
+                 (169...172),
+                 (173...174)
+               )]
+            )
+          )]
+       ),
+       (185...188)
+     )]
+  )
+)

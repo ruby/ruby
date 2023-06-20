@@ -1,0 +1,36 @@
+ProgramNode(18...90)(
+  [],
+  StatementsNode(18...90)(
+    [ClassNode(18...90)(
+       [],
+       (18...23),
+       ConstantReadNode(24...52)(),
+       nil,
+       nil,
+       StatementsNode(54...86)(
+         [DefNode(54...86)(
+            (63...65),
+            SelfNode(58...62)(),
+            nil,
+            StatementsNode(67...81)(
+              [LocalVariableWriteNode(67...81)(
+                 :così,
+                 0,
+                 SymbolNode(75...81)((75...76), (76...81), nil, "però"),
+                 (67...72),
+                 (73...74)
+               )]
+            ),
+            [:così],
+            (54...57),
+            (62...63),
+            nil,
+            nil,
+            nil,
+            (83...86)
+          )]
+       ),
+       (87...90)
+     )]
+  )
+)

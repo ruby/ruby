@@ -1,0 +1,23 @@
+ProgramNode(0...25)(
+  [],
+  StatementsNode(0...25)(
+    [CaseNode(0...25)(
+       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
+       [InNode(8...21)(
+          AlternationPatternNode(11...16)(
+            ConstantReadNode(11...12)(),
+            ConstantReadNode(15...16)(),
+            (13...14)
+          ),
+          StatementsNode(19...21)(
+            [SymbolNode(19...21)((19...20), (20...21), nil, "d")]
+          ),
+          (8...10),
+          nil
+        )],
+       nil,
+       (0...4),
+       (22...25)
+     )]
+  )
+)

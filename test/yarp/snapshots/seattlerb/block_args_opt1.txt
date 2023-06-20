@@ -1,0 +1,47 @@
+ProgramNode(0...24)(
+  [],
+  StatementsNode(0...24)(
+    [CallNode(0...24)(
+       nil,
+       nil,
+       (0...1),
+       nil,
+       nil,
+       nil,
+       BlockNode(2...24)(
+         [:a, :b],
+         BlockParametersNode(4...15)(
+           ParametersNode(5...14)(
+             [RequiredParameterNode(5...6)(:a)],
+             [OptionalParameterNode(8...14)(
+                :b,
+                (8...9),
+                (10...11),
+                IntegerNode(12...14)()
+              )],
+             [],
+             nil,
+             [],
+             nil,
+             nil
+           ),
+           [],
+           (4...5),
+           (14...15)
+         ),
+         StatementsNode(16...22)(
+           [ArrayNode(16...22)(
+              [LocalVariableReadNode(17...18)(:a, 0),
+               LocalVariableReadNode(20...21)(:b, 0)],
+              (16...17),
+              (21...22)
+            )]
+         ),
+         (2...3),
+         (23...24)
+       ),
+       0,
+       "f"
+     )]
+  )
+)

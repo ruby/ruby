@@ -1,0 +1,23 @@
+ProgramNode(0...39)(
+  [],
+  StatementsNode(0...39)(
+    [ModuleNode(0...17)(
+       [],
+       (0...6),
+       ConstantPathNode(7...12)(nil, ConstantReadNode(9...12)(), (7...9)),
+       nil,
+       (14...17)
+     ),
+     ModuleNode(19...39)(
+       [],
+       (19...25),
+       ConstantPathNode(26...34)(
+         ConstantReadNode(26...29)(),
+         ConstantReadNode(31...34)(),
+         (29...31)
+       ),
+       nil,
+       (36...39)
+     )]
+  )
+)

@@ -1,0 +1,17 @@
+ProgramNode(0...11)(
+  [],
+  StatementsNode(0...11)(
+    [ArrayNode(0...11)(
+       [IntegerNode(1...2)(),
+        KeywordHashNode(4...10)(
+          [AssocNode(4...10)(
+             IntegerNode(4...5)(),
+             IntegerNode(9...10)(),
+             (6...8)
+           )]
+        )],
+       (0...1),
+       (10...11)
+     )]
+  )
+)

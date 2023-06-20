@@ -1,0 +1,20 @@
+ProgramNode(0...22)(
+  [],
+  StatementsNode(0...22)(
+    [CallNode(0...22)(
+       InterpolatedStringNode(0...16)(
+         (0...5),
+         [StringNode(7...12)(nil, (7...12), nil, "blah\n")],
+         (12...16)
+       ),
+       (16...17),
+       (17...22),
+       nil,
+       nil,
+       nil,
+       nil,
+       0,
+       "strip"
+     )]
+  )
+)

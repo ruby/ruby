@@ -1,0 +1,249 @@
+ProgramNode(0...225)(
+  [],
+  StatementsNode(0...225)(
+    [CallNode(0...42)(
+       nil,
+       nil,
+       (0...1),
+       nil,
+       ArgumentsNode(2...42)(
+         [SymbolNode(2...6)((2...3), (3...6), nil, "foo"),
+          HashNode(8...42)(
+            (8...9),
+            [AssocNode(9...25)(
+               SymbolNode(9...13)((9...10), (10...11), (11...13), "a"),
+               CallNode(14...25)(
+                 nil,
+                 nil,
+                 (14...18),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(19...25)([], nil, nil, (19...21), (22...25)),
+                 0,
+                 "proc"
+               ),
+               nil
+             ),
+             AssocNode(27...41)(
+               SymbolNode(27...29)(nil, (27...28), (28...29), "b"),
+               CallNode(30...41)(
+                 nil,
+                 nil,
+                 (30...34),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(35...41)([], nil, nil, (35...37), (38...41)),
+                 0,
+                 "proc"
+               ),
+               nil
+             )],
+            (41...42)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "p"
+     ),
+     CallNode(44...84)(
+       nil,
+       nil,
+       (44...45),
+       nil,
+       ArgumentsNode(46...84)(
+         [SymbolNode(46...50)((46...47), (47...50), nil, "foo"),
+          HashNode(52...84)(
+            (52...53),
+            [AssocSplatNode(53...67)(
+               CallNode(56...67)(
+                 nil,
+                 nil,
+                 (56...60),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(61...67)([], nil, nil, (61...63), (64...67)),
+                 0,
+                 "proc"
+               ),
+               (53...55)
+             ),
+             AssocNode(69...83)(
+               SymbolNode(69...71)(nil, (69...70), (70...71), "b"),
+               CallNode(72...83)(
+                 nil,
+                 nil,
+                 (72...76),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(77...83)([], nil, nil, (77...79), (80...83)),
+                 0,
+                 "proc"
+               ),
+               nil
+             )],
+            (83...84)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "p"
+     ),
+     CallNode(86...129)(
+       nil,
+       nil,
+       (86...87),
+       nil,
+       ArgumentsNode(88...129)(
+         [SymbolNode(88...92)((88...89), (89...92), nil, "foo"),
+          HashNode(94...129)(
+            (94...95),
+            [AssocNode(95...112)(
+               SymbolNode(95...97)((95...96), (96...97), nil, "a"),
+               CallNode(101...112)(
+                 nil,
+                 nil,
+                 (101...105),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(106...112)([], nil, nil, (106...108), (109...112)),
+                 0,
+                 "proc"
+               ),
+               (98...100)
+             ),
+             AssocNode(114...128)(
+               SymbolNode(114...116)(nil, (114...115), (115...116), "b"),
+               CallNode(117...128)(
+                 nil,
+                 nil,
+                 (117...121),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(122...128)([], nil, nil, (122...124), (125...128)),
+                 0,
+                 "proc"
+               ),
+               nil
+             )],
+            (128...129)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "p"
+     ),
+     CallNode(131...171)(
+       nil,
+       nil,
+       (131...132),
+       nil,
+       ArgumentsNode(133...171)(
+         [SymbolNode(133...137)((133...134), (134...137), nil, "foo"),
+          HashNode(139...171)(
+            (139...140),
+            [AssocNode(140...154)(
+               SymbolNode(140...142)(nil, (140...141), (141...142), "a"),
+               CallNode(143...154)(
+                 nil,
+                 nil,
+                 (143...147),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(148...154)([], nil, nil, (148...150), (151...154)),
+                 0,
+                 "proc"
+               ),
+               nil
+             ),
+             AssocNode(156...170)(
+               SymbolNode(156...158)(nil, (156...157), (157...158), "b"),
+               CallNode(159...170)(
+                 nil,
+                 nil,
+                 (159...163),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(164...170)([], nil, nil, (164...166), (167...170)),
+                 0,
+                 "proc"
+               ),
+               nil
+             )],
+            (170...171)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "p"
+     ),
+     CallNode(173...225)(
+       nil,
+       nil,
+       (173...174),
+       nil,
+       ArgumentsNode(175...225)(
+         [SymbolNode(175...179)((175...176), (176...179), nil, "foo"),
+          HashNode(181...225)(
+            (181...182),
+            [AssocNode(182...208)(
+               CallNode(182...193)(
+                 nil,
+                 nil,
+                 (182...186),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(187...193)([], nil, nil, (187...189), (190...193)),
+                 0,
+                 "proc"
+               ),
+               CallNode(197...208)(
+                 nil,
+                 nil,
+                 (197...201),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(202...208)([], nil, nil, (202...204), (205...208)),
+                 0,
+                 "proc"
+               ),
+               (194...196)
+             ),
+             AssocNode(210...224)(
+               SymbolNode(210...212)(nil, (210...211), (211...212), "b"),
+               CallNode(213...224)(
+                 nil,
+                 nil,
+                 (213...217),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(218...224)([], nil, nil, (218...220), (221...224)),
+                 0,
+                 "proc"
+               ),
+               nil
+             )],
+            (224...225)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "p"
+     )]
+  )
+)

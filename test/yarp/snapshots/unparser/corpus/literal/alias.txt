@@ -1,0 +1,15 @@
+ProgramNode(0...31)(
+  [],
+  StatementsNode(0...31)(
+    [AliasNode(0...15)(
+       GlobalVariableReadNode(6...10)(),
+       GlobalVariableReadNode(11...15)(),
+       (0...5)
+     ),
+     AliasNode(16...31)(
+       SymbolNode(22...26)((22...23), (23...26), nil, "foo"),
+       SymbolNode(27...31)((27...28), (28...31), nil, "bar"),
+       (16...21)
+     )]
+  )
+)

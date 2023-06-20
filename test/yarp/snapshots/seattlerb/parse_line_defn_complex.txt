@@ -1,0 +1,49 @@
+ProgramNode(0...40)(
+  [],
+  StatementsNode(0...40)(
+    [DefNode(0...40)(
+       (4...5),
+       nil,
+       ParametersNode(6...7)(
+         [RequiredParameterNode(6...7)(:y)],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         nil
+       ),
+       StatementsNode(11...35)(
+         [CallNode(11...15)(
+            nil,
+            nil,
+            (11...12),
+            (12...13),
+            ArgumentsNode(13...14)([LocalVariableReadNode(13...14)(:y, 0)]),
+            (14...15),
+            nil,
+            0,
+            "p"
+          ),
+          LocalVariableOperatorWriteNode(18...24)(
+            (18...19),
+            (20...22),
+            IntegerNode(23...24)(),
+            :y,
+            :*
+          ),
+          ReturnNode(27...35)(
+            (27...33),
+            ArgumentsNode(34...35)([LocalVariableReadNode(34...35)(:y, 0)])
+          )]
+       ),
+       [:y],
+       (0...3),
+       nil,
+       (5...6),
+       (7...8),
+       nil,
+       (37...40)
+     )]
+  )
+)

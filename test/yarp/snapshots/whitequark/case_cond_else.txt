@@ -1,0 +1,34 @@
+ProgramNode(0...38)(
+  [],
+  StatementsNode(0...38)(
+    [CaseNode(0...38)(
+       nil,
+       [WhenNode(6...21)(
+          (6...10),
+          [CallNode(11...14)(
+             nil,
+             nil,
+             (11...14),
+             nil,
+             nil,
+             nil,
+             nil,
+             0,
+             "foo"
+           )],
+          StatementsNode(16...21)(
+            [StringNode(16...21)((16...17), (17...20), (20...21), "foo")]
+          )
+        )],
+       ElseNode(23...38)(
+         (23...27),
+         StatementsNode(28...33)(
+           [StringNode(28...33)((28...29), (29...32), (32...33), "bar")]
+         ),
+         (35...38)
+       ),
+       (0...4),
+       (35...38)
+     )]
+  )
+)

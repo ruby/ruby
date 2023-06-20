@@ -1,0 +1,42 @@
+ProgramNode(0...33)(
+  [],
+  StatementsNode(0...33)(
+    [CallNode(0...33)(
+       nil,
+       nil,
+       (0...2),
+       nil,
+       nil,
+       nil,
+       BlockNode(3...33)(
+         [:kw, :kw2],
+         BlockParametersNode(5...28)(
+           ParametersNode(6...26)(
+             [],
+             [],
+             [],
+             nil,
+             [KeywordParameterNode(6...14)(
+                (6...9),
+                SymbolNode(10...14)((10...11), (11...14), nil, "val")
+              ),
+              KeywordParameterNode(16...26)(
+                (16...20),
+                SymbolNode(21...26)((21...22), (22...26), nil, "val2")
+              )],
+             nil,
+             nil
+           ),
+           [],
+           (5...6),
+           (27...28)
+         ),
+         StatementsNode(29...31)([LocalVariableReadNode(29...31)(:kw, 0)]),
+         (3...4),
+         (32...33)
+       ),
+       0,
+       "bl"
+     )]
+  )
+)

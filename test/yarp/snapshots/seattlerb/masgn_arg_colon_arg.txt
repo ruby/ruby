@@ -1,0 +1,23 @@
+ProgramNode(0...11)(
+  [:a],
+  StatementsNode(0...11)(
+    [MultiWriteNode(0...11)(
+       [LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
+        CallNode(3...7)(
+          CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 0, "b"),
+          (4...6),
+          (6...7),
+          nil,
+          nil,
+          nil,
+          nil,
+          0,
+          "c="
+        )],
+       (8...9),
+       CallNode(10...11)(nil, nil, (10...11), nil, nil, nil, nil, 0, "d"),
+       nil,
+       nil
+     )]
+  )
+)

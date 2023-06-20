@@ -1,0 +1,10 @@
+a
+@a
+@@a
+$a
+$1
+$`
+CONST
+SCOPED::CONST
+::TOPLEVEL
+::TOPLEVEL::CONST

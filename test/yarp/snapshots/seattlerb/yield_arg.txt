@@ -1,0 +1,11 @@
+ProgramNode(0...8)(
+  [],
+  StatementsNode(0...8)(
+    [YieldNode(0...8)(
+       (0...5),
+       nil,
+       ArgumentsNode(6...8)([IntegerNode(6...8)()]),
+       nil
+     )]
+  )
+)

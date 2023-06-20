@@ -1,0 +1,9 @@
+<<~RUBY
+pre
+#{
+<<RUBY
+  hello
+RUBY
+}
+post
+RUBY

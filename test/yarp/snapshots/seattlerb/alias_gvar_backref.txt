@@ -1,0 +1,10 @@
+ProgramNode(0...15)(
+  [],
+  StatementsNode(0...15)(
+    [AliasNode(0...15)(
+       GlobalVariableReadNode(6...12)(),
+       BackReferenceReadNode(13...15)(),
+       (0...5)
+     )]
+  )
+)

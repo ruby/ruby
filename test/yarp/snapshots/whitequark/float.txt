@@ -1,0 +1,17 @@
+ProgramNode(0...11)(
+  [],
+  StatementsNode(0...11)(
+    [CallNode(0...5)(
+       FloatNode(1...5)(),
+       nil,
+       (0...1),
+       nil,
+       nil,
+       nil,
+       nil,
+       0,
+       "-@"
+     ),
+     FloatNode(7...11)()]
+  )
+)

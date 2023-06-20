@@ -1,0 +1,23 @@
+ProgramNode(0...32)(
+  [],
+  StatementsNode(0...32)(
+    [AliasNode(0...17)(
+       InterpolatedSymbolNode(6...11)(
+         (6...8),
+         [StringNode(8...10)(nil, (8...10), nil, "<<")],
+         (10...11)
+       ),
+       InterpolatedSymbolNode(12...17)(
+         (12...14),
+         [StringNode(14...16)(nil, (14...16), nil, ">>")],
+         (16...17)
+       ),
+       (0...5)
+     ),
+     AliasNode(19...32)(
+       SymbolNode(25...28)((25...26), (26...28), nil, "<<"),
+       SymbolNode(29...32)((29...30), (30...32), nil, ">>"),
+       (19...24)
+     )]
+  )
+)

@@ -1,0 +1,607 @@
+ProgramNode(0...746)(
+  [:b, :_, :lhs, :x, :rhs, :c, :e],
+  StatementsNode(0...746)(
+    [CaseNode(0...20)(
+       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
+       [InNode(8...16)(
+          HashPatternNode(12...16)(
+            nil,
+            [AssocNode(12...16)(
+               SymbolNode(12...16)((12...13), (13...14), (14...16), "b"),
+               nil,
+               nil
+             )],
+            nil,
+            nil,
+            nil
+          ),
+          nil,
+          (8...10),
+          nil
+        )],
+       nil,
+       (0...4),
+       (17...20)
+     ),
+     CaseNode(22...44)(
+       SymbolNode(27...29)((27...28), (28...29), nil, "a"),
+       [InNode(30...40)(
+          ArrayNode(33...40)(
+            [SymbolNode(36...37)(nil, (36...37), nil, "a"),
+             SymbolNode(38...39)(nil, (38...39), nil, "b")],
+            (33...36),
+            (39...40)
+          ),
+          nil,
+          (30...32),
+          nil
+        )],
+       nil,
+       (22...26),
+       (41...44)
+     ),
+     CaseNode(46...68)(
+       SymbolNode(51...53)((51...52), (52...53), nil, "a"),
+       [InNode(54...64)(
+          ArrayNode(57...64)(
+            [StringNode(60...61)(nil, (60...61), nil, "a"),
+             StringNode(62...63)(nil, (62...63), nil, "b")],
+            (57...60),
+            (63...64)
+          ),
+          nil,
+          (54...56),
+          nil
+        )],
+       nil,
+       (46...50),
+       (65...68)
+     ),
+     CaseNode(70...92)(
+       SymbolNode(75...77)((75...76), (76...77), nil, "a"),
+       [InNode(78...88)(
+          ArrayNode(81...88)(
+            [SymbolNode(84...85)(nil, (84...85), nil, "a"),
+             SymbolNode(86...87)(nil, (86...87), nil, "b")],
+            (81...84),
+            (87...88)
+          ),
+          nil,
+          (78...80),
+          nil
+        )],
+       nil,
+       (70...74),
+       (89...92)
+     ),
+     CaseNode(94...116)(
+       SymbolNode(99...101)((99...100), (100...101), nil, "a"),
+       [InNode(102...112)(
+          ArrayNode(105...112)(
+            [StringNode(108...109)(nil, (108...109), nil, "a"),
+             StringNode(110...111)(nil, (110...111), nil, "b")],
+            (105...108),
+            (111...112)
+          ),
+          nil,
+          (102...104),
+          nil
+        )],
+       nil,
+       (94...98),
+       (113...116)
+     ),
+     CaseNode(118...140)(
+       SymbolNode(123...125)((123...124), (124...125), nil, "a"),
+       [InNode(126...135)(
+          RangeNode(130...135)(nil, IntegerNode(133...135)(), (130...133), 1),
+          nil,
+          (126...128),
+          nil
+        )],
+       nil,
+       (118...122),
+       (137...140)
+     ),
+     CaseNode(142...163)(
+       SymbolNode(147...149)((147...148), (148...149), nil, "a"),
+       [InNode(150...158)(
+          RangeNode(154...158)(nil, IntegerNode(156...158)(), (154...156), 0),
+          nil,
+          (150...152),
+          nil
+        )],
+       nil,
+       (142...146),
+       (160...163)
+     ),
+     CaseNode(165...186)(
+       SymbolNode(170...172)((170...171), (171...172), nil, "a"),
+       [InNode(173...181)(
+          RangeNode(177...181)(IntegerNode(177...178)(), nil, (178...181), 1),
+          nil,
+          (173...175),
+          nil
+        )],
+       nil,
+       (165...169),
+       (183...186)
+     ),
+     CaseNode(188...210)(
+       SymbolNode(193...195)((193...194), (194...195), nil, "a"),
+       [InNode(196...205)(
+          RangeNode(200...205)(
+            IntegerNode(200...201)(),
+            IntegerNode(204...205)(),
+            (201...204),
+            1
+          ),
+          nil,
+          (196...198),
+          nil
+        )],
+       nil,
+       (188...192),
+       (207...210)
+     ),
+     CaseNode(212...231)(
+       SymbolNode(217...219)((217...218), (218...219), nil, "a"),
+       [InNode(220...226)(IntegerNode(224...226)(), nil, (220...222), nil)],
+       nil,
+       (212...216),
+       (228...231)
+     ),
+     CaseNode(233...253)(
+       SymbolNode(238...240)((238...239), (239...240), nil, "a"),
+       [InNode(241...249)(
+          HashPatternNode(244...249)(
+            nil,
+            [NoKeywordsParameterNode(244...249)((244...246), (246...249))],
+            nil,
+            nil,
+            nil
+          ),
+          nil,
+          (241...243),
+          nil
+        )],
+       nil,
+       (233...237),
+       (250...253)
+     ),
+     CaseNode(255...278)(
+       SymbolNode(260...262)((260...261), (261...262), nil, "a"),
+       [InNode(263...274)(
+          RegularExpressionNode(266...274)(
+            (266...267),
+            (267...273),
+            (273...274),
+            "regexp",
+            0
+          ),
+          nil,
+          (263...265),
+          nil
+        )],
+       nil,
+       (255...259),
+       (275...278)
+     ),
+     CaseNode(280...305)(
+       SymbolNode(285...287)((285...286), (286...287), nil, "a"),
+       [InNode(288...301)(
+          ArrayPatternNode(291...301)(
+            nil,
+            [SymbolNode(291...293)((291...292), (292...293), nil, "b")],
+            SplatNode(295...297)(
+              (295...296),
+              LocalVariableWriteNode(296...297)(:_, 0, nil, (296...297), nil)
+            ),
+            [SymbolNode(299...301)((299...300), (300...301), nil, "c")],
+            nil,
+            nil
+          ),
+          nil,
+          (288...290),
+          nil
+        )],
+       nil,
+       (280...284),
+       (302...305)
+     ),
+     CaseNode(307...330)(
+       SymbolNode(312...314)((312...313), (313...314), nil, "a"),
+       [InNode(315...326)(
+          ArrayPatternNode(318...326)(
+            nil,
+            [SymbolNode(318...320)((318...319), (319...320), nil, "b"),
+             ArrayPatternNode(322...326)(
+               nil,
+               [SymbolNode(323...325)((323...324), (324...325), nil, "c")],
+               nil,
+               [],
+               (322...323),
+               (325...326)
+             )],
+            nil,
+            [],
+            nil,
+            nil
+          ),
+          nil,
+          (315...317),
+          nil
+        )],
+       nil,
+       (307...311),
+       (327...330)
+     ),
+     CaseNode(332...355)(
+       SymbolNode(337...339)((337...338), (338...339), nil, "a"),
+       [InNode(340...351)(
+          ArrayPatternNode(343...351)(
+            ConstantReadNode(343...349)(),
+            [],
+            nil,
+            [],
+            (349...350),
+            (350...351)
+          ),
+          nil,
+          (340...342),
+          nil
+        )],
+       nil,
+       (332...336),
+       (352...355)
+     ),
+     CaseNode(357...393)(
+       SymbolNode(362...364)((362...363), (363...364), nil, "a"),
+       [InNode(365...389)(
+          FindPatternNode(368...389)(
+            ConstantReadNode(368...374)(),
+            SplatNode(375...379)(
+              (375...376),
+              LocalVariableWriteNode(376...379)(:lhs, 0, nil, (376...379), nil)
+            ),
+            [LocalVariableWriteNode(381...382)(:x, 0, nil, (381...382), nil)],
+            SplatNode(384...388)(
+              (384...385),
+              LocalVariableWriteNode(385...388)(:rhs, 0, nil, (385...388), nil)
+            ),
+            (374...375),
+            (388...389)
+          ),
+          nil,
+          (365...367),
+          nil
+        )],
+       nil,
+       (357...361),
+       (390...393)
+     ),
+     CaseNode(395...431)(
+       SymbolNode(400...402)((400...401), (401...402), nil, "a"),
+       [InNode(403...427)(
+          FindPatternNode(406...427)(
+            ConstantReadNode(406...412)(),
+            SplatNode(413...417)(
+              (413...414),
+              LocalVariableWriteNode(414...417)(:lhs, 0, nil, (414...417), nil)
+            ),
+            [LocalVariableWriteNode(419...420)(:x, 0, nil, (419...420), nil)],
+            SplatNode(422...426)(
+              (422...423),
+              LocalVariableWriteNode(423...426)(:rhs, 0, nil, (423...426), nil)
+            ),
+            (412...413),
+            (426...427)
+          ),
+          nil,
+          (403...405),
+          nil
+        )],
+       nil,
+       (395...399),
+       (428...431)
+     ),
+     CaseNode(433...467)(
+       SymbolNode(438...440)((438...439), (439...440), nil, "a"),
+       [InNode(441...463)(
+          ArrayPatternNode(444...463)(
+            nil,
+            [LambdaNode(445...459)(
+               [:b],
+               (445...447),
+               BlockParametersNode(447...450)(
+                 ParametersNode(448...449)(
+                   [RequiredParameterNode(448...449)(:b)],
+                   [],
+                   [],
+                   nil,
+                   [],
+                   nil,
+                   nil
+                 ),
+                 [],
+                 (447...448),
+                 (449...450)
+               ),
+               StatementsNode(453...457)([TrueNode(453...457)()])
+             ),
+             LocalVariableWriteNode(461...462)(:c, 0, nil, (461...462), nil)],
+            nil,
+            [],
+            (444...445),
+            (462...463)
+          ),
+          nil,
+          (441...443),
+          nil
+        )],
+       nil,
+       (433...437),
+       (464...467)
+     ),
+     CaseNode(469...509)(
+       SymbolNode(474...476)((474...475), (475...476), nil, "a"),
+       [InNode(477...505)(
+          ArrayPatternNode(480...505)(
+            nil,
+            [SymbolNode(481...483)((481...482), (482...483), nil, "a"),
+             LocalVariableWriteNode(485...486)(:b, 0, nil, (485...486), nil),
+             LocalVariableWriteNode(488...489)(:c, 0, nil, (488...489), nil),
+             ArrayPatternNode(491...504)(
+               nil,
+               [SymbolNode(492...494)((492...493), (493...494), nil, "d")],
+               SplatNode(496...498)(
+                 (496...497),
+                 LocalVariableWriteNode(497...498)(
+                   :e,
+                   0,
+                   nil,
+                   (497...498),
+                   nil
+                 )
+               ),
+               [NilNode(500...503)()],
+               (491...492),
+               (503...504)
+             )],
+            nil,
+            [],
+            (480...481),
+            (504...505)
+          ),
+          nil,
+          (477...479),
+          nil
+        )],
+       nil,
+       (469...473),
+       (506...509)
+     ),
+     CaseNode(511...535)(
+       SymbolNode(516...518)((516...517), (517...518), nil, "a"),
+       [InNode(519...531)(
+          ArrayPatternNode(522...531)(
+            nil,
+            [ConstantReadNode(523...524)()],
+            SplatNode(526...527)((526...527), nil),
+            [ConstantReadNode(529...530)()],
+            (522...523),
+            (530...531)
+          ),
+          nil,
+          (519...521),
+          nil
+        )],
+       nil,
+       (511...515),
+       (532...535)
+     ),
+     CaseNode(537...571)(
+       SymbolNode(542...544)((542...543), (543...544), nil, "a"),
+       [InNode(545...567)(
+          ArrayPatternNode(548...567)(
+            nil,
+            [ArrayPatternNode(549...556)(
+               nil,
+               [SymbolNode(550...552)((550...551), (551...552), nil, "b"),
+                LocalVariableWriteNode(554...555)(
+                  :c,
+                  0,
+                  nil,
+                  (554...555),
+                  nil
+                )],
+               nil,
+               [],
+               (549...550),
+               (555...556)
+             ),
+             ArrayPatternNode(558...566)(
+               nil,
+               [SymbolNode(559...561)((559...560), (560...561), nil, "d"),
+                PinnedVariableNode(563...565)(
+                  LocalVariableReadNode(564...565)(:e, 0),
+                  (563...564)
+                )],
+               nil,
+               [],
+               (558...559),
+               (565...566)
+             )],
+            nil,
+            [],
+            (548...549),
+            (566...567)
+          ),
+          nil,
+          (545...547),
+          nil
+        )],
+       nil,
+       (537...541),
+       (568...571)
+     ),
+     CaseNode(573...590)(
+       SymbolNode(578...580)((578...579), (579...580), nil, "a"),
+       [InNode(581...586)(
+          ArrayPatternNode(584...586)(
+            nil,
+            [],
+            nil,
+            [],
+            (584...585),
+            (585...586)
+          ),
+          nil,
+          (581...583),
+          nil
+        )],
+       nil,
+       (573...577),
+       (587...590)
+     ),
+     CaseNode(592...613)(
+       SymbolNode(597...599)((597...598), (598...599), nil, "a"),
+       [InNode(600...609)(
+          ArrayPatternNode(603...609)(
+            nil,
+            [PinnedExpressionNode(604...608)(
+               CallNode(606...607)(
+                 nil,
+                 nil,
+                 (606...607),
+                 nil,
+                 nil,
+                 nil,
+                 nil,
+                 0,
+                 "a"
+               ),
+               (604...605),
+               (605...606),
+               (607...608)
+             )],
+            nil,
+            [],
+            (603...604),
+            (608...609)
+          ),
+          nil,
+          (600...602),
+          nil
+        )],
+       nil,
+       (592...596),
+       (610...613)
+     ),
+     CaseNode(615...646)(
+       SymbolNode(620...622)((620...621), (621...622), nil, "a"),
+       [InNode(623...642)(
+          ArrayPatternNode(626...642)(
+            nil,
+            [PinnedVariableNode(627...630)(
+               InstanceVariableReadNode(628...630)(),
+               (627...628)
+             ),
+             PinnedVariableNode(632...635)(
+               GlobalVariableReadNode(633...635)(),
+               (632...633)
+             ),
+             PinnedVariableNode(637...641)(
+               ClassVariableReadNode(638...641)(),
+               (637...638)
+             )],
+            nil,
+            [],
+            (626...627),
+            (641...642)
+          ),
+          nil,
+          (623...625),
+          nil
+        )],
+       nil,
+       (615...619),
+       (643...646)
+     ),
+     CaseNode(648...672)(
+       SymbolNode(653...655)((653...654), (654...655), nil, "a"),
+       [InNode(656...668)(
+          XStringNode(659...668)(
+            (659...660),
+            (660...667),
+            (667...668),
+            "echo hi"
+          ),
+          nil,
+          (656...658),
+          nil
+        )],
+       nil,
+       (648...652),
+       (669...672)
+     ),
+     CaseNode(674...702)(
+       SymbolNode(679...681)((679...680), (680...681), nil, "a"),
+       [InNode(682...698)(
+          ArrayPatternNode(685...698)(
+            nil,
+            [NilNode(685...688)(), NilNode(690...693)(), NilNode(695...698)()],
+            nil,
+            [],
+            nil,
+            nil
+          ),
+          nil,
+          (682...684),
+          nil
+        )],
+       nil,
+       (674...678),
+       (699...702)
+     ),
+     CaseNode(704...727)(
+       SymbolNode(709...711)((709...710), (710...711), nil, "a"),
+       [InNode(712...723)(
+          HashPatternNode(715...723)(
+            nil,
+            [AssocNode(717...721)(
+               SymbolNode(717...721)(
+                 (717...718),
+                 (718...719),
+                 (719...721),
+                 "b"
+               ),
+               nil,
+               nil
+             )],
+            nil,
+            (715...716),
+            (722...723)
+          ),
+          nil,
+          (712...714),
+          nil
+        )],
+       nil,
+       (704...708),
+       (724...727)
+     ),
+     CaseNode(729...746)(
+       SymbolNode(734...736)((734...735), (735...736), nil, "a"),
+       [InNode(737...742)(
+          HashPatternNode(740...742)(nil, [], nil, (740...741), (741...742)),
+          nil,
+          (737...739),
+          nil
+        )],
+       nil,
+       (729...733),
+       (743...746)
+     )]
+  )
+)

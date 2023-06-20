@@ -1,0 +1,11 @@
+ProgramNode(0...9)(
+  [],
+  StatementsNode(0...9)(
+    [PostExecutionNode(0...9)(
+       StatementsNode(6...7)([IntegerNode(6...7)()]),
+       (0...3),
+       (4...5),
+       (8...9)
+     )]
+  )
+)
