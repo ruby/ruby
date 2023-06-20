@@ -804,7 +804,7 @@ describe :marshal_load, shared: true do
         [Meths, UserRegexp, Regexp]
     end
 
-    ruby_bug "#19439", ""..."3.3" do
+    ruby_bug "#19439", ""..."3.1" do
       it "restore the regexp instance variables" do
         obj = Regexp.new("hello")
         obj.instance_variable_set(:@regexp_ivar, [42])
