@@ -82,13 +82,13 @@ module TestIRB
     end
 
     def assert_nesting_level(lines, expected, local_variables: [])
-      indent, _code_block_open = check_state(lines, local_variables: local_variables)
+      nesting_level, _code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Calculated the wrong number of nesting level for:\n #{lines.join("\n")}"
-      assert_equal(expected, indent, error_message)
+      assert_equal(expected, nesting_level, error_message)
     end
 
     def assert_code_block_open(lines, expected, local_variables: [])
-      _indent, code_block_open = check_state(lines, local_variables: local_variables)
+      _nesting_level, code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Wrong result of code_block_open for:\n #{lines.join("\n")}"
       assert_equal(expected, code_block_open, error_message)
     end
@@ -98,9 +98,9 @@ module TestIRB
       tokens = RubyLex.ripper_lex_without_warning(lines.join("\n"), context: context)
       opens = IRB::NestingParser.open_tokens(tokens)
       ruby_lex = RubyLex.new(context)
-      indent, _nesting_level = ruby_lex.calc_nesting_depth(opens)
+      _indent, nesting_level = ruby_lex.calc_nesting_depth(opens)
       code_block_open = !opens.empty? || ruby_lex.process_continue(tokens)
-      [indent, code_block_open]
+      [nesting_level, code_block_open]
     end
 
     def test_interpolate_token_with_heredoc_and_unclosed_embexpr
@@ -126,34 +126,34 @@ module TestIRB
 
     def test_auto_indent
       input_with_correct_indents = [
-        Row.new(%q(def each_top_level_statement), nil, 2),
-        Row.new(%q(  initialize_input), nil, 2),
-        Row.new(%q(  catch(:TERM_INPUT) do), nil, 4),
-        Row.new(%q(    loop do), nil, 6),
-        Row.new(%q(      begin), nil, 8),
-        Row.new(%q(        prompt), nil, 8),
-        Row.new(%q(        unless l = lex), nil, 10),
-        Row.new(%q(          throw :TERM_INPUT if @line == ''), nil, 10),
+        Row.new(%q(def each_top_level_statement), 0, 2),
+        Row.new(%q(  initialize_input), 2, 2),
+        Row.new(%q(  catch(:TERM_INPUT) do), 2, 4),
+        Row.new(%q(    loop do), 4, 6),
+        Row.new(%q(      begin), 6, 8),
+        Row.new(%q(        prompt), 8, 8),
+        Row.new(%q(        unless l = lex), 8, 10),
+        Row.new(%q(          throw :TERM_INPUT if @line == ''), 10, 10),
         Row.new(%q(        else), 8, 10),
-        Row.new(%q(          @line_no += l.count("\n")), nil, 10),
-        Row.new(%q(          next if l == "\n"), nil, 10),
-        Row.new(%q(          @line.concat l), nil, 10),
-        Row.new(%q(          if @code_block_open or @ltype or @continue or @indent > 0), nil, 12),
-        Row.new(%q(            next), nil, 12),
+        Row.new(%q(          @line_no += l.count("\n")), 10, 10),
+        Row.new(%q(          next if l == "\n"), 10, 10),
+        Row.new(%q(          @line.concat l), 10, 10),
+        Row.new(%q(          if @code_block_open or @ltype or @continue or @indent > 0), 10, 12),
+        Row.new(%q(            next), 12, 12),
         Row.new(%q(          end), 10, 10),
         Row.new(%q(        end), 8, 8),
-        Row.new(%q(        if @line != "\n"), nil, 10),
-        Row.new(%q(          @line.force_encoding(@io.encoding)), nil, 10),
-        Row.new(%q(          yield @line, @exp_line_no), nil, 10),
+        Row.new(%q(        if @line != "\n"), 8, 10),
+        Row.new(%q(          @line.force_encoding(@io.encoding)), 10, 10),
+        Row.new(%q(          yield @line, @exp_line_no), 10, 10),
         Row.new(%q(        end), 8, 8),
-        Row.new(%q(        break if @io.eof?), nil, 8),
-        Row.new(%q(        @line = ''), nil, 8),
-        Row.new(%q(        @exp_line_no = @line_no), nil, 8),
+        Row.new(%q(        break if @io.eof?), 8, 8),
+        Row.new(%q(        @line = ''), 8, 8),
+        Row.new(%q(        @exp_line_no = @line_no), 8, 8),
         Row.new(%q(        ), nil, 8),
-        Row.new(%q(        @indent = 0), nil, 8),
+        Row.new(%q(        @indent = 0), 8, 8),
         Row.new(%q(      rescue TerminateLineInput), 6, 8),
-        Row.new(%q(        initialize_input), nil, 8),
-        Row.new(%q(        prompt), nil, 8),
+        Row.new(%q(        initialize_input), 8, 8),
+        Row.new(%q(        prompt), 8, 8),
         Row.new(%q(      end), 6, 6),
         Row.new(%q(    end), 4, 4),
         Row.new(%q(  end), 2, 2),
@@ -169,8 +169,8 @@ module TestIRB
 
     def test_braces_on_their_own_line
       input_with_correct_indents = [
-        Row.new(%q(if true), nil, 2),
-        Row.new(%q(  [), nil, 4),
+        Row.new(%q(if true), 0, 2),
+        Row.new(%q(  [), 2, 4),
         Row.new(%q(  ]), 2, 2),
         Row.new(%q(end), 0, 0),
       ]
@@ -184,11 +184,11 @@ module TestIRB
 
     def test_multiple_braces_in_a_line
       input_with_correct_indents = [
-        Row.new(%q([[[), nil, 6),
+        Row.new(%q([[[), 0, 6),
         Row.new(%q(    ]), 4, 4),
         Row.new(%q(  ]), 2, 2),
         Row.new(%q(]), 0, 0),
-        Row.new(%q([<<FOO]), nil, 0),
+        Row.new(%q([<<FOO]), 0, 0),
         Row.new(%q(hello), 0, 0),
         Row.new(%q(FOO), 0, 0),
       ]
@@ -202,7 +202,7 @@ module TestIRB
 
     def test_a_closed_brace_and_not_closed_brace_in_a_line
       input_with_correct_indents = [
-        Row.new(%q(p() {), nil, 2),
+        Row.new(%q(p() {), 0, 2),
         Row.new(%q(}), 0, 0),
       ]
 
@@ -215,14 +215,14 @@ module TestIRB
 
     def test_symbols
       input_with_correct_indents = [
-        Row.new(%q(:a), nil, 0),
-        Row.new(%q(:A), nil, 0),
-        Row.new(%q(:+), nil, 0),
-        Row.new(%q(:@@a), nil, 0),
-        Row.new(%q(:@a), nil, 0),
-        Row.new(%q(:$a), nil, 0),
-        Row.new(%q(:def), nil, 0),
-        Row.new(%q(:`), nil, 0),
+        Row.new(%q(:a), 0, 0),
+        Row.new(%q(:A), 0, 0),
+        Row.new(%q(:+), 0, 0),
+        Row.new(%q(:@@a), 0, 0),
+        Row.new(%q(:@a), 0, 0),
+        Row.new(%q(:$a), 0, 0),
+        Row.new(%q(:def), 0, 0),
+        Row.new(%q(:`), 0, 0),
       ]
 
       lines = []
@@ -297,7 +297,7 @@ module TestIRB
 
     def test_incomplete_coding_magic_comment
       input_with_correct_indents = [
-        Row.new(%q(#coding:u), nil, 0),
+        Row.new(%q(#coding:u), 0, 0),
       ]
 
       lines = []
@@ -309,7 +309,7 @@ module TestIRB
 
     def test_incomplete_encoding_magic_comment
       input_with_correct_indents = [
-        Row.new(%q(#encoding:u), nil, 0),
+        Row.new(%q(#encoding:u), 0, 0),
       ]
 
       lines = []
@@ -321,7 +321,7 @@ module TestIRB
 
     def test_incomplete_emacs_coding_magic_comment
       input_with_correct_indents = [
-        Row.new(%q(# -*- coding: u), nil, 0),
+        Row.new(%q(# -*- coding: u), 0, 0),
       ]
 
       lines = []
@@ -333,7 +333,7 @@ module TestIRB
 
     def test_incomplete_vim_coding_magic_comment
       input_with_correct_indents = [
-        Row.new(%q(# vim:set fileencoding=u), nil, 0),
+        Row.new(%q(# vim:set fileencoding=u), 0, 0),
       ]
 
       lines = []
@@ -345,20 +345,20 @@ module TestIRB
 
     def test_mixed_rescue
       input_with_correct_indents = [
-        Row.new(%q(def m), nil, 2),
-        Row.new(%q(  begin), nil, 4),
-        Row.new(%q(    begin), nil, 6),
-        Row.new(%q(      x = a rescue 4), nil, 6),
-        Row.new(%q(      y = [(a rescue 5)]), nil, 6),
-        Row.new(%q(      [x, y]), nil, 6),
+        Row.new(%q(def m), 0, 2),
+        Row.new(%q(  begin), 2, 4),
+        Row.new(%q(    begin), 4, 6),
+        Row.new(%q(      x = a rescue 4), 6, 6),
+        Row.new(%q(      y = [(a rescue 5)]), 6, 6),
+        Row.new(%q(      [x, y]), 6, 6),
         Row.new(%q(    rescue => e), 4, 6),
-        Row.new(%q(      raise e rescue 8), nil, 6),
+        Row.new(%q(      raise e rescue 8), 6, 6),
         Row.new(%q(    end), 4, 4),
         Row.new(%q(  rescue), 2, 4),
-        Row.new(%q(    raise rescue 11), nil, 4),
+        Row.new(%q(    raise rescue 11), 4, 4),
         Row.new(%q(  end), 2, 2),
         Row.new(%q(rescue => e), 0, 2),
-        Row.new(%q(  raise e rescue 14), nil, 2),
+        Row.new(%q(  raise e rescue 14), 2, 2),
         Row.new(%q(end), 0, 0),
       ]
 
@@ -371,24 +371,24 @@ module TestIRB
 
     def test_oneliner_method_definition
       input_with_correct_indents = [
-        Row.new(%q(class A), nil, 2),
-        Row.new(%q(  def foo0), nil, 4),
-        Row.new(%q(    3), nil, 4),
+        Row.new(%q(class A), 0, 2),
+        Row.new(%q(  def foo0), 2, 4),
+        Row.new(%q(    3), 4, 4),
         Row.new(%q(  end), 2, 2),
-        Row.new(%q(  def foo1()), nil, 4),
-        Row.new(%q(    3), nil, 4),
+        Row.new(%q(  def foo1()), 2, 4),
+        Row.new(%q(    3), 4, 4),
         Row.new(%q(  end), 2, 2),
-        Row.new(%q(  def foo2(a, b)), nil, 4),
-        Row.new(%q(    a + b), nil, 4),
+        Row.new(%q(  def foo2(a, b)), 2, 4),
+        Row.new(%q(    a + b), 4, 4),
         Row.new(%q(  end), 2, 2),
-        Row.new(%q(  def foo3 a, b), nil, 4),
-        Row.new(%q(    a + b), nil, 4),
+        Row.new(%q(  def foo3 a, b), 2, 4),
+        Row.new(%q(    a + b), 4, 4),
         Row.new(%q(  end), 2, 2),
-        Row.new(%q(  def bar0() = 3), nil, 2),
-        Row.new(%q(  def bar1(a) = a), nil, 2),
-        Row.new(%q(  def bar2(a, b) = a + b), nil, 2),
-        Row.new(%q(  def bar3() = :s), nil, 2),
-        Row.new(%q(  def bar4() = Time.now), nil, 2),
+        Row.new(%q(  def bar0() = 3), 2, 2),
+        Row.new(%q(  def bar1(a) = a), 2, 2),
+        Row.new(%q(  def bar2(a, b) = a + b), 2, 2),
+        Row.new(%q(  def bar3() = :s), 2, 2),
+        Row.new(%q(  def bar4() = Time.now), 2, 2),
         Row.new(%q(end), 0, 0),
       ]
 
@@ -401,8 +401,8 @@ module TestIRB
 
     def test_tlambda
       input_with_correct_indents = [
-        Row.new(%q(if true), nil, 2, 1),
-        Row.new(%q(  -> {), nil, 4, 2),
+        Row.new(%q(if true), 0, 2, 1),
+        Row.new(%q(  -> {), 2, 4, 2),
         Row.new(%q(  }), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
       ]
@@ -417,12 +417,12 @@ module TestIRB
 
     def test_corresponding_syntax_to_keyword_do_in_class
       input_with_correct_indents = [
-        Row.new(%q(class C), nil, 2, 1),
-        Row.new(%q(  while method_name do), nil, 4, 2),
-        Row.new(%q(    3), nil, 4, 2),
+        Row.new(%q(class C), 0, 2, 1),
+        Row.new(%q(  while method_name do), 2, 4, 2),
+        Row.new(%q(    3), 4, 4, 2),
         Row.new(%q(  end), 2, 2, 1),
-        Row.new(%q(  foo do), nil, 4, 2),
-        Row.new(%q(    3), nil, 4, 2),
+        Row.new(%q(  foo do), 2, 4, 2),
+        Row.new(%q(    3), 4, 4, 2),
         Row.new(%q(  end), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
       ]
@@ -437,41 +437,41 @@ module TestIRB
 
     def test_corresponding_syntax_to_keyword_do
       input_with_correct_indents = [
-        Row.new(%q(while i > 0), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while i > 0), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while true), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while true), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while ->{i > 0}.call), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while ->{i > 0}.call), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while ->{true}.call), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while ->{true}.call), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while i > 0 do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while i > 0 do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while true do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while true do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while ->{i > 0}.call do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while ->{i > 0}.call do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(while ->{true}.call do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(while ->{true}.call do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(foo do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(foo do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(foo true do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(foo true do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(foo ->{true} do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(foo ->{true} do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(foo ->{i > 0} do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(foo ->{i > 0} do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
       ]
 
@@ -485,8 +485,8 @@ module TestIRB
 
     def test_corresponding_syntax_to_keyword_for
       input_with_correct_indents = [
-        Row.new(%q(for i in [1]), nil, 2, 1),
-        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(for i in [1]), 0, 2, 1),
+        Row.new(%q(  puts i), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
       ]
 
@@ -500,8 +500,8 @@ module TestIRB
 
     def test_corresponding_syntax_to_keyword_for_with_do
       input_with_correct_indents = [
-        Row.new(%q(for i in [1] do), nil, 2, 1),
-        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(for i in [1] do), 0, 2, 1),
+        Row.new(%q(  puts i), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
       ]
 
@@ -515,10 +515,10 @@ module TestIRB
 
     def test_typing_incomplete_include_interpreted_as_keyword_in
       input_with_correct_indents = [
-        Row.new(%q(module E), nil, 2, 1),
+        Row.new(%q(module E), 0, 2, 1),
         Row.new(%q(end), 0, 0, 0),
-        Row.new(%q(class A), nil, 2, 1),
-        Row.new(%q(  in), nil, 2, 1) # scenario typing `include E`
+        Row.new(%q(class A), 0, 2, 1),
+        Row.new(%q(  in), 2, 2, 1) # scenario typing `include E`
       ]
 
       lines = []
@@ -531,8 +531,8 @@ module TestIRB
 
     def test_bracket_corresponding_to_times
       input_with_correct_indents = [
-        Row.new(%q(3.times { |i|), nil, 2, 1),
-        Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(3.times { |i|), 0, 2, 1),
+        Row.new(%q(  puts i), 2, 2, 1),
         Row.new(%q(}), 0, 0, 0),
       ]
 
@@ -546,8 +546,8 @@ module TestIRB
 
     def test_do_corresponding_to_times
       input_with_correct_indents = [
-        Row.new(%q(3.times do |i|), nil, 2, 1),
-        #Row.new(%q(  puts i), nil, 2, 1),
+        Row.new(%q(3.times do |i|), 0, 2, 1),
+        #Row.new(%q(  puts i), 2, 2, 1),
         #Row.new(%q(end), 0, 0, 0),
       ]
 
@@ -561,8 +561,8 @@ module TestIRB
 
     def test_bracket_corresponding_to_loop
       input_with_correct_indents = [
-        Row.new(%q(loop {), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(loop {), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(}), 0, 0, 0),
       ]
 
@@ -576,8 +576,8 @@ module TestIRB
 
     def test_do_corresponding_to_loop
       input_with_correct_indents = [
-        Row.new(%q(loop do), nil, 2, 1),
-        Row.new(%q(  3), nil, 2, 1),
+        Row.new(%q(loop do), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
         Row.new(%q(end), 0, 0, 0),
       ]
 
@@ -598,14 +598,37 @@ module TestIRB
       assert_code_block_open(lines, false, local_variables: ['a'])
     end
 
+    def test_embdoc_indent
+      input_with_correct_indents = [
+        Row.new(%q(=begin), 0, 0, 0),
+        Row.new(%q(a), 0, 0, 0),
+        Row.new(%q( b), 1, 1, 0),
+        Row.new(%q(=end), 0, 0, 0),
+        Row.new(%q(if 1), 0, 2, 1),
+        Row.new(%q(  2), 2, 2, 1),
+        Row.new(%q(=begin), 0, 0, 1),
+        Row.new(%q(a), 0, 0, 1),
+        Row.new(%q( b), 1, 1, 1),
+        Row.new(%q(=end), 0, 2, 1),
+        Row.new(%q(  3), 2, 2, 1),
+        Row.new(%q(end), 0, 0, 0),
+      ]
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_row_indenting(lines, row)
+        assert_nesting_level(lines, row.nesting_level)
+      end
+    end
+
     def test_heredoc_with_indent
       if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
         pend 'This test needs Ripper::Lexer#scan to take broken tokens'
       end
       input_with_correct_indents = [
-        Row.new(%q(<<~Q+<<~R), nil, 0, 0),
-        Row.new(%q(a), 0, 0, 0),
-        Row.new(%q(a), 0, 0, 0),
+        Row.new(%q(<<~Q+<<~R), 0, 2, 0),
+        Row.new(%q(a), 2, 2, 0),
+        Row.new(%q(a), 2, 2, 0),
         Row.new(%q(  b), 2, 2, 0),
         Row.new(%q(  b), 2, 2, 0),
         Row.new(%q(  Q), 0, 2, 0),
@@ -624,10 +647,10 @@ module TestIRB
 
     def test_oneliner_def_in_multiple_lines
       input_with_correct_indents = [
-        Row.new(%q(def a()=[), nil, 2, 1),
-        Row.new(%q(  1,), nil, 2, 1),
+        Row.new(%q(def a()=[), 0, 2, 1),
+        Row.new(%q(  1,), 2, 2, 1),
         Row.new(%q(].), 0, 0, 0),
-        Row.new(%q(to_s), nil, 0, 0),
+        Row.new(%q(to_s), 0, 0, 0),
       ]
 
       lines = []
@@ -640,11 +663,10 @@ module TestIRB
 
     def test_broken_heredoc
       input_with_correct_indents = [
-        Row.new(%q(def foo), nil, 2, 1),
-        Row.new(%q(  <<~Q), nil, 2, 1),
-        Row.new(%q(  Qend), 2, 2, 1),
+        Row.new(%q(def foo), 0, 2, 1),
+        Row.new(%q(  <<~Q), 2, 4, 1),
+        Row.new(%q(  Qend), 4, 4, 1),
       ]
-
       lines = []
       input_with_correct_indents.each do |row|
         lines << row.content
@@ -655,7 +677,7 @@ module TestIRB
 
     def test_heredoc_keep_indent_spaces
       (1..4).each do |indent|
-        row = Row.new(' ' * indent, indent, [2, indent].max, 1)
+        row = Row.new(' ' * indent, nil, [4, indent].max, 1)
         lines = ['def foo', '  <<~Q', row.content]
         assert_row_indenting(lines, row)
         assert_nesting_level(lines, row.nesting_level)
@@ -794,7 +816,7 @@ module TestIRB
       end
     end
 
-    def test_corresponding_token_depth_with_heredoc_and_embdoc
+    def test_nesting_level_with_heredoc_and_embdoc
       reference_code = <<~EOC.chomp
         if true
           hello
@@ -815,13 +837,10 @@ module TestIRB
           p(
           )
       EOC
-      context = build_context
-      [reference_code, code_with_heredoc, code_with_embdoc].each do |code|
-        lex = RubyLex.new(context)
-        lines = code.lines
-        tokens = RubyLex.ripper_lex_without_warning(code)
-        assert_equal(2, lex.check_corresponding_token_depth(tokens, lines, lines.size - 1))
-      end
+      expected = 1
+      assert_nesting_level(reference_code.lines, expected)
+      assert_nesting_level(code_with_heredoc.lines, expected)
+      assert_nesting_level(code_with_embdoc.lines, expected)
     end
 
     private

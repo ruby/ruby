@@ -80,7 +80,7 @@ class IRB::TestRendering < Yamatanooroti::TestCase
       irb(main):008:0>
       irb(main):009:0> a
       irb(main):010:0>  .a
-      irb(main):011:0>  .b
+      irb(main):011:0> .b
       => true
       irb(main):012:0>
     EOC
@@ -152,7 +152,7 @@ class IRB::TestRendering < Yamatanooroti::TestCase
       irb(main):023:0>   .c
       => true
       irb(main):024:0> (a)
-      irb(main):025:0>   &.b()
+      irb(main):025:0> &.b()
       => #<A>
       irb(main):026:0>
     EOC

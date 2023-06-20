@@ -93,16 +93,12 @@ class RubyLex
 
     if @io.respond_to?(:auto_indent) and @context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
-        if is_newline
-          tokens = self.class.ripper_lex_without_warning(lines[0..line_index].join("\n"), context: @context)
-          process_indent_level(tokens, lines)
-        else
-          code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
-          last_line = lines[line_index]&.byteslice(0, byte_pointer)
-          code += last_line if last_line
-          tokens = self.class.ripper_lex_without_warning(code, context: @context)
-          check_corresponding_token_depth(tokens, lines, line_index)
-        end
+        next nil if lines == [nil] # Workaround for exit IRB with CTRL+d
+        next nil if !is_newline && lines[line_index]&.byteslice(0, byte_pointer)&.match?(/\A\s*\z/)
+
+        code = lines[0..line_index].map { |l| "#{l}\n" }.join
+        tokens = self.class.ripper_lex_without_warning(code, context: @context)
+        process_indent_level(tokens, lines, line_index, is_newline)
       end
     end
   end
@@ -364,10 +360,16 @@ class RubyLex
   def calc_nesting_depth(opens)
     indent_level = 0
     nesting_level = 0
-    opens.each do |t|
+    opens.each_with_index do |t, index|
       case t.event
       when :on_heredoc_beg
-        # TODO: indent heredoc
+        if opens[index + 1]&.event != :on_heredoc_beg
+          if t.tok.match?(/^<<[~-]/)
+            indent_level += 1
+          else
+            indent_level = 0
+          end
+        end
       when :on_tstring_beg, :on_regexp_beg, :on_symbeg
         # can be indented if t.tok starts with `%`
       when :on_words_beg, :on_qwords_beg, :on_symbols_beg, :on_qsymbols_beg, :on_embexpr_beg
@@ -382,46 +384,70 @@ class RubyLex
     [indent_level, nesting_level]
   end
 
-  def free_indent_token(opens, line_index)
-    last_token = opens.last
-    return unless last_token
-    if last_token.event == :on_heredoc_beg && last_token.pos.first < line_index + 1
-      # accept extra indent spaces inside heredoc
-      last_token
-    end
+  FREE_INDENT_TOKENS = %i[on_tstring_beg on_backtick on_regexp_beg on_symbeg]
+
+  def free_indent_token?(token)
+    FREE_INDENT_TOKENS.include?(token&.event)
   end
 
-  def process_indent_level(tokens, lines)
-    opens = IRB::NestingParser.open_tokens(tokens)
-    indent_level, _nesting_level = calc_nesting_depth(opens)
-    indent = indent_level * 2
-    line_index = lines.size - 2
-    if free_indent_token(opens, line_index)
-      return [indent, lines[line_index][/^ */].length].max
-    end
-
-    indent
-  end
-
-  def check_corresponding_token_depth(tokens, lines, line_index)
+  def process_indent_level(tokens, lines, line_index, is_newline)
     line_results = IRB::NestingParser.parse_by_line(tokens)
     result = line_results[line_index]
-    return unless result
+    if result
+      _tokens, prev_opens, next_opens, min_depth = result
+    else
+      # When last line is empty
+      prev_opens = next_opens = line_results.last[2]
+      min_depth = next_opens.size
+    end
 
     # To correctly indent line like `end.map do`, we use shortest open tokens on each line for indent calculation.
     # Shortest open tokens can be calculated by `opens.take(min_depth)`
-    _tokens, prev_opens, opens, min_depth = result
-    indent_level, _nesting_level = calc_nesting_depth(opens.take(min_depth))
-    indent = indent_level * 2
-    free_indent_tok = free_indent_token(opens, line_index)
-    prev_line_free_indent_tok = free_indent_token(prev_opens, line_index - 1)
-    if prev_line_free_indent_tok && prev_line_free_indent_tok != free_indent_tok
-      return indent
-    elsif free_indent_tok
-      return lines[line_index][/^ */].length
+    indent_level, _nesting_level = calc_nesting_depth(prev_opens.take(min_depth))
+    indent = 2 * indent_level
+
+    preserve_indent = lines[line_index - (is_newline ? 1 : 0)][/^ */].size
+
+    prev_open_token = prev_opens.last
+    next_open_token = next_opens.last
+
+    if free_indent_token?(prev_open_token)
+      if is_newline && prev_open_token.pos[0] == line_index
+        # First newline inside free-indent token
+        indent
+      else
+        # Accept any number of indent inside free-indent token
+        preserve_indent
+      end
+    elsif prev_open_token&.event == :on_embdoc_beg || next_open_token&.event == :on_embdoc_beg
+      if prev_open_token&.event == next_open_token&.event
+        # Accept any number of indent inside embdoc content
+        preserve_indent
+      else
+        # =begin or =end
+        0
+      end
+    elsif prev_open_token&.event == :on_heredoc_beg
+      tok = prev_open_token.tok
+      if prev_opens.size <= next_opens.size
+        if is_newline && lines[line_index].empty? && line_results[line_index - 1][1].last != next_open_token
+          # First line in heredoc
+          indent
+        elsif tok.match?(/^<<~/)
+          # Accept extra indent spaces inside `<<~` heredoc
+          [indent, preserve_indent].max
+        else
+          # Accept any number of indent inside other heredoc
+          preserve_indent
+        end
+      else
+        # Heredoc close
+        prev_line_indent_level, _prev_line_nesting_level = calc_nesting_depth(prev_opens)
+        tok.match?(/^<<[~-]/) ? 2 * (prev_line_indent_level - 1) : 0
+      end
+    else
+      indent
     end
-    prev_indent_level, _prev_nesting_level = calc_nesting_depth(prev_opens)
-    indent if indent_level < prev_indent_level
   end
 
   LTYPE_TOKENS = %i[
