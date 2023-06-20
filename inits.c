@@ -80,6 +80,7 @@ rb_call_inits(void)
     CALL(ast);
     CALL(gc_stress);
     CALL(shape);
+    CALL(YARP);
 
     // enable builtin loading
     CALL(builtin);
