@@ -227,12 +227,6 @@ have commit right, others don't.
 * https://github.com/ruby/pstore
 * https://rubygems.org/gems/pstore
 
-#### lib/racc.rb, lib/racc/*
-* Aaron Patterson (tenderlove)
-* Hiroshi SHIBATA (hsbt)
-* https://github.com/ruby/racc
-* https://rubygems.org/gems/racc
-
 #### lib/readline.rb
 * aycabta
 * https://github.com/ruby/readline
@@ -407,12 +401,6 @@ have commit right, others don't.
 * https://github.com/ruby/psych
 * https://rubygems.org/gems/psych
 
-#### ext/racc
-* Aaron Patterson (tenderlove)
-* Hiroshi SHIBATA (hsbt)
-* https://github.com/ruby/racc
-* https://rubygems.org/gems/racc
-
 #### ext/stringio
 * Nobuyuki Nakada (nobu)
 * https://github.com/ruby/stringio
@@ -483,6 +471,10 @@ have commit right, others don't.
 
 ### debug
 * https://github.com/ruby/debug
+
+### racc
+* https://github.com/ruby/racc
+
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
