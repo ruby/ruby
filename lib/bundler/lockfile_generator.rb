@@ -71,7 +71,7 @@ module Bundler
     end
 
     def add_bundled_with
-      add_section("BUNDLED WITH", Bundler::VERSION)
+      add_section("BUNDLED WITH", definition.bundler_version_to_lock.to_s)
     end
 
     def add_section(name, value)

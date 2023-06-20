@@ -11,7 +11,7 @@ GEM
     power_assert (2.0.3)
     rake (13.0.6)
     rb_sys (0.9.79)
-    rdiscount (2.2.7)
+    rdiscount (2.2.7.1)
     ronn (0.7.3)
       hpricot (>= 0.8.2)
       mustache (>= 0.7.0)

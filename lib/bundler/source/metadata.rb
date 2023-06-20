@@ -10,22 +10,22 @@ module Bundler
             s.required_rubygems_version = Gem::Requirement.default
           end
 
-          idx << Gem::Specification.new do |s|
-            s.name     = "bundler"
-            s.version  = VERSION
-            s.license  = "MIT"
-            s.platform = Gem::Platform::RUBY
-            s.authors  = ["bundler team"]
-            s.bindir   = "exe"
-            s.homepage = "https://bundler.io"
-            s.summary  = "The best way to manage your application's dependencies"
-            s.executables = %w[bundle]
-            # can't point to the actual gemspec or else the require paths will be wrong
-            s.loaded_from = __dir__
-          end
-
-          if local_spec = Bundler.rubygems.find_bundler(VERSION)
+          if local_spec = Gem.loaded_specs["bundler"]
             idx << local_spec
+          else
+            idx << Gem::Specification.new do |s|
+              s.name     = "bundler"
+              s.version  = VERSION
+              s.license  = "MIT"
+              s.platform = Gem::Platform::RUBY
+              s.authors  = ["bundler team"]
+              s.bindir   = "exe"
+              s.homepage = "https://bundler.io"
+              s.summary  = "The best way to manage your application's dependencies"
+              s.executables = %w[bundle]
+              # can't point to the actual gemspec or else the require paths will be wrong
+              s.loaded_from = __dir__
+            end
           end
 
           idx.each {|s| s.source = self }
