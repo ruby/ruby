@@ -21,8 +21,11 @@ env:
 
 config_template: &CONFIG_TEMPLATE
   auto_cancellation: $CIRRUS_BRANCH != 'master'
-  only_if: $CIRRUS_CRON != ''
-  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
+  only_if: changesInclude('.cirrus.yml', 'yjit.{c,h,rb}', 'yjit/**.{mk,rs,toml}')
+  skip: >-
+    $CIRRUS_CHANGE_MESSAGE =~ '.*\[DOC\].*' ||
+    $CIRRUS_PR_LABELS =~ '.*Documentation.*' ||
+    changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')
   arm_container:
     # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC
