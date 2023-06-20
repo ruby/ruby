@@ -5331,7 +5331,7 @@ string_content	: tSTRING_CONTENT
                         $<num>$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }
-                  compstmt tSTRING_DEND
+                  compstmt string_dend
                     {
                         COND_POP();
                         CMDARG_POP();
@@ -5346,6 +5346,10 @@ string_content	: tSTRING_CONTENT
                     /*% %*/
                     /*% ripper: string_embexpr!($7) %*/
                     }
+                ;
+
+string_dend	: tSTRING_DEND
+                | END_OF_INPUT
                 ;
 
 string_dvar	: tGVAR

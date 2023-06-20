@@ -1121,6 +1121,15 @@ x = __ENCODING__
     assert_equal v1, v3
   end
 
+  def test_heredoc_unterminated_interpolation
+    code = <<~'HEREDOC'
+    <<A+1
+    #{
+    HEREDOC
+
+    assert_syntax_error(code, /can't find string "A"/)
+  end
+
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)
   end
