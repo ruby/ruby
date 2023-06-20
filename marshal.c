@@ -1738,7 +1738,6 @@ r_move_ivar(st_data_t k, st_data_t v, st_data_t d)
 
     if (rb_is_instance_id(key)) {
         rb_ivar_set(dest, key, value);
-        return ST_STOP;
     }
     return ST_CONTINUE;
 }
