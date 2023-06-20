@@ -80,6 +80,7 @@ module SyncDefaultGems
     syntax_suggest: ["ruby/syntax_suggest", "main"],
     un: "ruby/un",
     win32ole: "ruby/win32ole",
+    yarp: "ruby/yarp",
   }
 
   CLASSICAL_DEFAULT_BRANCH = "master"
@@ -396,6 +397,31 @@ module SyncDefaultGems
       rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
+    when "yarp"
+      # We don't want to remove yarp_init.c, so we temporarily move it
+      # out of the yarp dir, wipe the yarp dir, and then put it back
+      mv("yarp/yarp_init.c", ".") if File.exist? "yarp/yarp_init.c"
+      rm_rf(%w[test/yarp yarp])
+
+      # Run the YARP templating scripts
+      system("ruby #{upstream}/templates/template.rb")
+      cp_r("#{upstream}/ext/yarp", "yarp")
+      cp_r("#{upstream}/lib/.", "lib")
+      cp_r("#{upstream}/test", "test/yarp")
+      cp_r("#{upstream}/src/.", "yarp")
+
+      # Move all files in enc to be prefixed with yp_ in order
+      # to deconflict them from non-yarp enc files
+      (Dir.entries("yarp/enc/") - ["..", "."]).each do |f|
+        mv "yarp/enc/#{f}", "yarp/enc/yp_#{f}"
+      end
+
+      cp_r("#{upstream}/include/yarp/.", "yarp")
+      cp_r("#{upstream}/include/yarp.h", "yarp")
+
+      rm("yarp/extconf.rb")
+
+      mv("yarp_init.c", "yarp/")
     else
       sync_lib gem, upstream
     end
