@@ -1,0 +1,143 @@
+ProgramNode(0...142)(
+  [:a, :b, :value],
+  StatementsNode(0...142)(
+    [MatchRequiredNode(0...14)(
+       ArrayNode(0...6)(
+         [IntegerNode(1...2)(), IntegerNode(4...5)()],
+         (0...1),
+         (5...6)
+       ),
+       ArrayPatternNode(10...14)(
+         nil,
+         [LocalVariableWriteNode(10...11)(:a, 0, nil, (10...11), nil),
+          LocalVariableWriteNode(13...14)(:b, 0, nil, (13...14), nil)],
+         nil,
+         [],
+         nil,
+         nil
+       ),
+       (7...9)
+     ),
+     LocalVariableReadNode(16...17)(:a, 0),
+     MatchPredicateNode(19...33)(
+       ArrayNode(19...25)(
+         [IntegerNode(20...21)(), IntegerNode(23...24)()],
+         (19...20),
+         (24...25)
+       ),
+       ArrayPatternNode(29...33)(
+         nil,
+         [LocalVariableWriteNode(29...30)(:a, 0, nil, (29...30), nil),
+          LocalVariableWriteNode(32...33)(:b, 0, nil, (32...33), nil)],
+         nil,
+         [],
+         nil,
+         nil
+       ),
+       (26...28)
+     ),
+     LocalVariableReadNode(35...36)(:a, 0),
+     MatchRequiredNode(38...50)(
+       HashNode(38...44)(
+         (38...39),
+         [AssocNode(39...43)(
+            SymbolNode(39...41)(nil, (39...40), (40...41), "a"),
+            IntegerNode(42...43)(),
+            nil
+          )],
+         (43...44)
+       ),
+       HashPatternNode(48...50)(
+         nil,
+         [AssocNode(48...50)(
+            SymbolNode(48...50)(nil, (48...49), (49...50), "a"),
+            nil,
+            nil
+          )],
+         nil,
+         nil,
+         nil
+       ),
+       (45...47)
+     ),
+     LocalVariableReadNode(52...53)(:a, 0),
+     MatchPredicateNode(55...67)(
+       HashNode(55...61)(
+         (55...56),
+         [AssocNode(56...60)(
+            SymbolNode(56...58)(nil, (56...57), (57...58), "a"),
+            IntegerNode(59...60)(),
+            nil
+          )],
+         (60...61)
+       ),
+       HashPatternNode(65...67)(
+         nil,
+         [AssocNode(65...67)(
+            SymbolNode(65...67)(nil, (65...66), (66...67), "a"),
+            nil,
+            nil
+          )],
+         nil,
+         nil,
+         nil
+       ),
+       (62...64)
+     ),
+     LocalVariableReadNode(69...70)(:a, 0),
+     MatchRequiredNode(72...99)(
+       HashNode(72...85)(
+         (72...73),
+         [AssocNode(73...84)(
+            SymbolNode(73...77)(nil, (73...76), (76...77), "key"),
+            SymbolNode(78...84)((78...79), (79...84), nil, "value"),
+            nil
+          )],
+         (84...85)
+       ),
+       HashPatternNode(89...99)(
+         nil,
+         [AssocNode(89...99)(
+            SymbolNode(89...93)(nil, (89...92), (92...93), "key"),
+            LocalVariableWriteNode(94...99)(:value, 0, nil, (94...99), nil),
+            nil
+          )],
+         nil,
+         nil,
+         nil
+       ),
+       (86...88)
+     ),
+     LocalVariableReadNode(101...106)(:value, 0),
+     MatchPredicateNode(108...135)(
+       HashNode(108...121)(
+         (108...109),
+         [AssocNode(109...120)(
+            SymbolNode(109...113)(nil, (109...112), (112...113), "key"),
+            SymbolNode(114...120)((114...115), (115...120), nil, "value"),
+            nil
+          )],
+         (120...121)
+       ),
+       HashPatternNode(125...135)(
+         nil,
+         [AssocNode(125...135)(
+            SymbolNode(125...129)(nil, (125...128), (128...129), "key"),
+            LocalVariableWriteNode(130...135)(
+              :value,
+              0,
+              nil,
+              (130...135),
+              nil
+            ),
+            nil
+          )],
+         nil,
+         nil,
+         nil
+       ),
+       (122...124)
+     ),
+     LocalVariableReadNode(137...142)(:value, 0)]
+  )
+)

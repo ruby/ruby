@@ -1,0 +1,26 @@
+ProgramNode(0...15)(
+  [],
+  StatementsNode(0...15)(
+    [DefNode(0...15)(
+       (4...5),
+       nil,
+       ParametersNode(6...10)(
+         [],
+         [],
+         [],
+         nil,
+         [KeywordParameterNode(6...10)((6...8), IntegerNode(8...10)())],
+         nil,
+         nil
+       ),
+       nil,
+       [:k],
+       (0...3),
+       nil,
+       nil,
+       nil,
+       nil,
+       (12...15)
+     )]
+  )
+)

@@ -1,0 +1,41 @@
+ProgramNode(0...43)(
+  [],
+  StatementsNode(0...43)(
+    [DefNode(0...43)(
+       (4...7),
+       nil,
+       ParametersNode(8...19)(
+         [RequiredParameterNode(8...16)(:argument)],
+         [],
+         [],
+         RestParameterNode(18...19)((18...19), nil),
+         [],
+         nil,
+         nil
+       ),
+       StatementsNode(22...38)(
+         [CallNode(22...38)(
+            nil,
+            nil,
+            (22...25),
+            (25...26),
+            ArgumentsNode(26...37)(
+              [LocalVariableReadNode(26...34)(:argument, 0),
+               SplatNode(36...37)((36...37), nil)]
+            ),
+            (37...38),
+            nil,
+            0,
+            "bar"
+          )]
+       ),
+       [:argument, :*],
+       (0...3),
+       nil,
+       (7...8),
+       (19...20),
+       nil,
+       (40...43)
+     )]
+  )
+)

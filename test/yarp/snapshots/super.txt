@@ -1,0 +1,25 @@
+ProgramNode(0...40)(
+  [],
+  StatementsNode(0...40)(
+    [ForwardingSuperNode(0...5)(nil),
+     SuperNode(7...14)((7...12), (12...13), nil, (13...14), nil),
+     SuperNode(16...24)(
+       (16...21),
+       (21...22),
+       ArgumentsNode(22...23)([IntegerNode(22...23)()]),
+       (23...24),
+       nil
+     ),
+     SuperNode(26...40)(
+       (26...31),
+       (31...32),
+       ArgumentsNode(32...39)(
+         [IntegerNode(32...33)(),
+          IntegerNode(35...36)(),
+          IntegerNode(38...39)()]
+       ),
+       (39...40),
+       nil
+     )]
+  )
+)

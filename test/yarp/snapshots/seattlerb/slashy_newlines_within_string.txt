@@ -1,0 +1,36 @@
+ProgramNode(0...40)(
+  [],
+  StatementsNode(0...40)(
+    [CallNode(0...33)(
+       nil,
+       nil,
+       (0...4),
+       nil,
+       ArgumentsNode(5...33)(
+         [StringNode(5...33)(
+            (5...6),
+            (6...32),
+            (32...33),
+            "hello\n" + " my\n" + " dear\n" + " friend"
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "puts"
+     ),
+     CallNode(35...40)(
+       CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 0, "a"),
+       nil,
+       (37...38),
+       nil,
+       ArgumentsNode(39...40)(
+         [CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 0, "b")]
+       ),
+       nil,
+       nil,
+       0,
+       "+"
+     )]
+  )
+)

@@ -1,0 +1,40 @@
+ProgramNode(0...41)(
+  [],
+  StatementsNode(0...41)(
+    [ReturnNode(0...6)((0...6), nil),
+     ReturnNode(8...18)(
+       (8...14),
+       ArgumentsNode(15...18)(
+         [CallNode(15...18)(nil, nil, (15...18), nil, nil, nil, nil, 0, "foo")]
+       )
+     ),
+     ReturnNode(20...28)(
+       (20...26),
+       ArgumentsNode(26...28)(
+         [ParenthesesNode(26...28)(nil, (26...27), (27...28))]
+       )
+     ),
+     ReturnNode(30...41)(
+       (30...36),
+       ArgumentsNode(36...41)(
+         [ParenthesesNode(36...41)(
+            StatementsNode(37...40)(
+              [CallNode(37...40)(
+                 nil,
+                 nil,
+                 (37...40),
+                 nil,
+                 nil,
+                 nil,
+                 nil,
+                 0,
+                 "foo"
+               )]
+            ),
+            (36...37),
+            (40...41)
+          )]
+       )
+     )]
+  )
+)

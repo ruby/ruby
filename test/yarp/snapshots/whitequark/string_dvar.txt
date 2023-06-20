@@ -1,0 +1,20 @@
+ProgramNode(0...14)(
+  [],
+  StatementsNode(0...14)(
+    [InterpolatedStringNode(0...14)(
+       (0...1),
+       [EmbeddedVariableNode(1...4)(
+          (1...2),
+          InstanceVariableReadNode(2...4)()
+        ),
+        StringNode(4...5)(nil, (4...5), nil, " "),
+        EmbeddedVariableNode(5...9)((5...6), ClassVariableReadNode(6...9)()),
+        StringNode(9...10)(nil, (9...10), nil, " "),
+        EmbeddedVariableNode(10...13)(
+          (10...11),
+          GlobalVariableReadNode(11...13)()
+        )],
+       (13...14)
+     )]
+  )
+)

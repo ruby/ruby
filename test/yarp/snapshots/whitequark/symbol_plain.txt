@@ -1,0 +1,7 @@
+ProgramNode(0...12)(
+  [],
+  StatementsNode(0...12)(
+    [SymbolNode(0...6)((0...2), (2...5), (5...6), "foo"),
+     SymbolNode(8...12)((8...9), (9...12), nil, "foo")]
+  )
+)

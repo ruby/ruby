@@ -1,0 +1,29 @@
+ProgramNode(0...32)(
+  [],
+  StatementsNode(0...32)(
+    [CaseNode(0...32)(
+       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
+       [InNode(8...28)(
+          HashPatternNode(11...18)(
+            nil,
+            [AssocNode(11...18)(
+               SymbolNode(11...13)(nil, (11...12), (12...13), "b"),
+               TrueNode(14...18)(),
+               nil
+             )],
+            nil,
+            nil,
+            nil
+          ),
+          StatementsNode(26...28)(
+            [SymbolNode(26...28)((26...27), (27...28), nil, "c")]
+          ),
+          (8...10),
+          (19...23)
+        )],
+       nil,
+       (0...4),
+       (29...32)
+     )]
+  )
+)

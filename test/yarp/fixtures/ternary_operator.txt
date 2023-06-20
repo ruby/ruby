@@ -1,0 +1,13 @@
+a ? b : c
+
+a ? defined? b : defined? c
+
+empty??true:nil
+
+empty??false:nil
+
+empty??nil:nil
+
+a??nil:nil
+
+a ?var1 : var2

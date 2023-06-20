@@ -1,0 +1,45 @@
+ProgramNode(0...30)(
+  [:foo, :bar],
+  StatementsNode(0...30)(
+    [LocalVariableWriteNode(0...17)(
+       :foo,
+       0,
+       LocalVariableWriteNode(6...17)(
+         :bar,
+         0,
+         CallNode(12...17)(
+           nil,
+           nil,
+           (12...13),
+           nil,
+           ArgumentsNode(14...17)([LocalVariableReadNode(14...17)(:foo, 0)]),
+           nil,
+           nil,
+           0,
+           "m"
+         ),
+         (6...9),
+         (10...11)
+       ),
+       (0...3),
+       (4...5)
+     ),
+     LocalVariableWriteNode(19...30)(
+       :foo,
+       0,
+       CallNode(25...30)(
+         nil,
+         nil,
+         (25...26),
+         nil,
+         ArgumentsNode(27...30)([LocalVariableReadNode(27...30)(:foo, 0)]),
+         nil,
+         nil,
+         0,
+         "m"
+       ),
+       (19...22),
+       (23...24)
+     )]
+  )
+)

@@ -1,0 +1,59 @@
+ProgramNode(0...48)(
+  [:a],
+  StatementsNode(0...48)(
+    [ForNode(0...24)(
+       MultiWriteNode(4...5)(
+         [LocalVariableWriteNode(4...5)(:a, 0, nil, (4...5), nil)],
+         nil,
+         nil,
+         nil,
+         nil
+       ),
+       CallNode(9...12)(nil, nil, (9...12), nil, nil, nil, nil, 0, "foo"),
+       StatementsNode(16...19)(
+         [CallNode(16...19)(
+            nil,
+            nil,
+            (16...17),
+            nil,
+            ArgumentsNode(18...19)([LocalVariableReadNode(18...19)(:a, 0)]),
+            nil,
+            nil,
+            0,
+            "p"
+          )]
+       ),
+       (0...3),
+       (6...8),
+       (13...15),
+       (21...24)
+     ),
+     ForNode(26...48)(
+       MultiWriteNode(30...31)(
+         [LocalVariableWriteNode(30...31)(:a, 0, nil, (30...31), nil)],
+         nil,
+         nil,
+         nil,
+         nil
+       ),
+       CallNode(35...38)(nil, nil, (35...38), nil, nil, nil, nil, 0, "foo"),
+       StatementsNode(40...43)(
+         [CallNode(40...43)(
+            nil,
+            nil,
+            (40...41),
+            nil,
+            ArgumentsNode(42...43)([LocalVariableReadNode(42...43)(:a, 0)]),
+            nil,
+            nil,
+            0,
+            "p"
+          )]
+       ),
+       (26...29),
+       (32...34),
+       nil,
+       (45...48)
+     )]
+  )
+)

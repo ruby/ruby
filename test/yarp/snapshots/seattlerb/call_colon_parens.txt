@@ -1,0 +1,16 @@
+ProgramNode(0...5)(
+  [],
+  StatementsNode(0...5)(
+    [CallNode(0...5)(
+       IntegerNode(0...1)(),
+       (1...3),
+       (0...0),
+       (3...4),
+       nil,
+       (4...5),
+       nil,
+       0,
+       "call"
+     )]
+  )
+)

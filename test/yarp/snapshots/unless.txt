@@ -1,0 +1,83 @@
+ProgramNode(0...141)(
+  [],
+  StatementsNode(0...141)(
+    [UnlessNode(0...19)(
+       (0...6),
+       TrueNode(7...11)(),
+       StatementsNode(13...14)([IntegerNode(13...14)()]),
+       nil,
+       (16...19)
+     ),
+     UnlessNode(21...45)(
+       (21...27),
+       TrueNode(28...32)(),
+       StatementsNode(33...34)([IntegerNode(33...34)()]),
+       ElseNode(35...45)(
+         (35...39),
+         StatementsNode(40...41)([IntegerNode(40...41)()]),
+         (42...45)
+       ),
+       (42...45)
+     ),
+     UnlessNode(47...60)(
+       (49...55),
+       TrueNode(56...60)(),
+       StatementsNode(47...48)([IntegerNode(47...48)()]),
+       nil,
+       nil
+     ),
+     UnlessNode(62...79)(
+       (68...74),
+       TrueNode(75...79)(),
+       StatementsNode(62...67)([BreakNode(62...67)(nil, (62...67))]),
+       nil,
+       nil
+     ),
+     UnlessNode(81...97)(
+       (86...92),
+       TrueNode(93...97)(),
+       StatementsNode(81...85)([NextNode(81...85)(nil, (81...85))]),
+       nil,
+       nil
+     ),
+     UnlessNode(99...117)(
+       (106...112),
+       TrueNode(113...117)(),
+       StatementsNode(99...105)([ReturnNode(99...105)((99...105), nil)]),
+       nil,
+       nil
+     ),
+     UnlessNode(119...141)(
+       (130...136),
+       CallNode(137...141)(
+         nil,
+         nil,
+         (137...141),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "bar?"
+       ),
+       StatementsNode(119...129)(
+         [CallNode(119...129)(
+            nil,
+            nil,
+            (119...122),
+            nil,
+            ArgumentsNode(123...129)(
+              [SymbolNode(123...125)((123...124), (124...125), nil, "a"),
+               SymbolNode(127...129)((127...128), (128...129), nil, "b")]
+            ),
+            nil,
+            nil,
+            0,
+            "foo"
+          )]
+       ),
+       nil,
+       nil
+     )]
+  )
+)

@@ -1,0 +1,37 @@
+ProgramNode(0...25)(
+  [],
+  StatementsNode(0...25)(
+    [HashNode(0...6)(
+       (0...1),
+       [AssocNode(1...5)(
+          SymbolNode(1...5)(nil, (1...4), (4...5), "BAR"),
+          nil,
+          nil
+        )],
+       (5...6)
+     ),
+     HashNode(8...16)(
+       (8...9),
+       [AssocNode(9...11)(
+          SymbolNode(9...11)(nil, (9...10), (10...11), "a"),
+          nil,
+          nil
+        ),
+        AssocNode(13...15)(
+          SymbolNode(13...15)(nil, (13...14), (14...15), "b"),
+          nil,
+          nil
+        )],
+       (15...16)
+     ),
+     HashNode(18...25)(
+       (18...19),
+       [AssocNode(19...24)(
+          SymbolNode(19...24)(nil, (19...23), (23...24), "puts"),
+          nil,
+          nil
+        )],
+       (24...25)
+     )]
+  )
+)

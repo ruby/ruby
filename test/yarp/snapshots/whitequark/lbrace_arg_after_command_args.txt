@@ -1,0 +1,42 @@
+ProgramNode(0...22)(
+  [],
+  StatementsNode(0...22)(
+    [CallNode(0...22)(
+       nil,
+       nil,
+       (0...3),
+       nil,
+       ArgumentsNode(4...8)(
+         [ParenthesesNode(4...8)(
+            StatementsNode(5...7)(
+              [SymbolNode(5...7)((5...6), (6...7), nil, "a")]
+            ),
+            (4...5),
+            (7...8)
+          )]
+       ),
+       nil,
+       BlockNode(9...22)(
+         [],
+         nil,
+         StatementsNode(11...20)(
+           [CallNode(11...20)(
+              nil,
+              nil,
+              (11...12),
+              nil,
+              nil,
+              nil,
+              BlockNode(13...20)([], nil, nil, (13...15), (17...20)),
+              0,
+              "m"
+            )]
+         ),
+         (9...10),
+         (21...22)
+       ),
+       0,
+       "let"
+     )]
+  )
+)

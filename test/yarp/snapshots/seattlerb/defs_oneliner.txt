@@ -1,0 +1,38 @@
+ProgramNode(0...32)(
+  [],
+  StatementsNode(0...32)(
+    [DefNode(0...32)(
+       (9...13),
+       SelfNode(4...8)(),
+       ParametersNode(14...17)(
+         [RequiredParameterNode(14...17)(:cmd)],
+         [],
+         [],
+         nil,
+         [],
+         nil,
+         nil
+       ),
+       StatementsNode(21...32)(
+         [CallNode(21...32)(
+            nil,
+            nil,
+            (21...27),
+            (27...28),
+            ArgumentsNode(28...31)([LocalVariableReadNode(28...31)(:cmd, 0)]),
+            (31...32),
+            nil,
+            0,
+            "system"
+          )]
+       ),
+       [:cmd],
+       (0...3),
+       (8...9),
+       (13...14),
+       (17...18),
+       (19...20),
+       nil
+     )]
+  )
+)

@@ -1,0 +1,69 @@
+ProgramNode(0...94)(
+  [],
+  StatementsNode(0...94)(
+    [BeginNode(0...20)(
+       (0...5),
+       StatementsNode(6...7)(
+         [CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 0, "a")]
+       ),
+       nil,
+       nil,
+       EnsureNode(8...20)(
+         (8...14),
+         StatementsNode(15...16)(
+           [CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 0, "b")]
+         ),
+         (17...20)
+       ),
+       (17...20)
+     ),
+     BeginNode(22...46)(
+       (22...27),
+       StatementsNode(29...30)(
+         [CallNode(29...30)(nil, nil, (29...30), nil, nil, nil, nil, 0, "a")]
+       ),
+       nil,
+       nil,
+       EnsureNode(32...46)(
+         (32...38),
+         StatementsNode(40...41)(
+           [CallNode(40...41)(nil, nil, (40...41), nil, nil, nil, nil, 0, "b")]
+         ),
+         (43...46)
+       ),
+       (43...46)
+     ),
+     BeginNode(48...70)(
+       (48...53),
+       StatementsNode(54...55)(
+         [CallNode(54...55)(nil, nil, (54...55), nil, nil, nil, nil, 0, "a")]
+       ),
+       nil,
+       nil,
+       EnsureNode(57...70)(
+         (57...63),
+         StatementsNode(64...65)(
+           [CallNode(64...65)(nil, nil, (64...65), nil, nil, nil, nil, 0, "b")]
+         ),
+         (67...70)
+       ),
+       (67...70)
+     ),
+     BeginNode(72...94)(
+       (72...77),
+       StatementsNode(78...79)(
+         [CallNode(78...79)(nil, nil, (78...79), nil, nil, nil, nil, 0, "a")]
+       ),
+       nil,
+       nil,
+       EnsureNode(81...94)(
+         (81...87),
+         StatementsNode(88...89)(
+           [CallNode(88...89)(nil, nil, (88...89), nil, nil, nil, nil, 0, "b")]
+         ),
+         (91...94)
+       ),
+       (91...94)
+     )]
+  )
+)

@@ -1,0 +1,11 @@
+ProgramNode(0...11)(
+  [],
+  StatementsNode(0...11)(
+    [LambdaNode(0...11)(
+       [],
+       (0...2),
+       BlockParametersNode(2...4)(nil, [], (2...3), (3...4)),
+       nil
+     )]
+  )
+)

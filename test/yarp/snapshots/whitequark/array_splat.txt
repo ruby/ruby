@@ -1,0 +1,32 @@
+ProgramNode(0...31)(
+  [],
+  StatementsNode(0...31)(
+    [ArrayNode(0...6)(
+       [SplatNode(1...5)(
+          (1...2),
+          CallNode(2...5)(nil, nil, (2...5), nil, nil, nil, nil, 0, "foo")
+        )],
+       (0...1),
+       (5...6)
+     ),
+     ArrayNode(8...20)(
+       [IntegerNode(9...10)(),
+        SplatNode(12...16)(
+          (12...13),
+          CallNode(13...16)(nil, nil, (13...16), nil, nil, nil, nil, 0, "foo")
+        ),
+        IntegerNode(18...19)()],
+       (8...9),
+       (19...20)
+     ),
+     ArrayNode(22...31)(
+       [IntegerNode(23...24)(),
+        SplatNode(26...30)(
+          (26...27),
+          CallNode(27...30)(nil, nil, (27...30), nil, nil, nil, nil, 0, "foo")
+        )],
+       (22...23),
+       (30...31)
+     )]
+  )
+)

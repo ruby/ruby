@@ -1,0 +1,12 @@
+ProgramNode(0...15)(
+  [],
+  StatementsNode(0...15)(
+    [ArrayNode(0...15)(
+       [SymbolNode(3...4)(nil, (3...4), nil, "a"),
+        SymbolNode(5...12)(nil, (5...12), nil, "b\#{1+1}"),
+        SymbolNode(13...14)(nil, (13...14), nil, "c")],
+       (0...3),
+       (14...15)
+     )]
+  )
+)

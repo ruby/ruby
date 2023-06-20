@@ -1,0 +1,22 @@
+ProgramNode(0...12)(
+  [],
+  StatementsNode(0...12)(
+    [IfNode(0...12)(
+       (0...2),
+       CallNode(3...7)(
+         nil,
+         nil,
+         (3...4),
+         nil,
+         ArgumentsNode(5...7)([SymbolNode(5...7)((5...6), (6...7), nil, "x")]),
+         nil,
+         nil,
+         0,
+         "f"
+       ),
+       nil,
+       nil,
+       (9...12)
+     )]
+  )
+)

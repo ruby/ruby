@@ -1,0 +1,29 @@
+ProgramNode(0...26)(
+  [],
+  StatementsNode(0...26)(
+    [DefNode(0...26)(
+       (4...7),
+       nil,
+       ParametersNode(8...16)(
+         [],
+         [],
+         [],
+         nil,
+         [KeywordParameterNode(8...16)(
+            (8...11),
+            SymbolNode(12...16)((12...13), (13...16), nil, "val")
+          )],
+         nil,
+         nil
+       ),
+       StatementsNode(19...21)([LocalVariableReadNode(19...21)(:kw, 0)]),
+       [:kw],
+       (0...3),
+       nil,
+       (7...8),
+       (16...17),
+       nil,
+       (23...26)
+     )]
+  )
+)

@@ -1,0 +1,18 @@
+ProgramNode(0...13)(
+  [],
+  StatementsNode(0...13)(
+    [DefNode(0...13)(
+       (4...8),
+       nil,
+       nil,
+       nil,
+       [],
+       (0...3),
+       nil,
+       nil,
+       nil,
+       nil,
+       (10...13)
+     )]
+  )
+)

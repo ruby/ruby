@@ -1,0 +1,9 @@
+ProgramNode(0...13)(
+  [],
+  StatementsNode(0...13)(
+    [UndefNode(0...13)(
+       [SymbolNode(6...13)((6...9), (9...12), (12...13), "foo")],
+       (0...5)
+     )]
+  )
+)

@@ -1,0 +1,43 @@
+ProgramNode(0...35)(
+  [],
+  StatementsNode(0...35)(
+    [BeginNode(0...35)(
+       (0...5),
+       StatementsNode(8...9)(
+         [CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 0, "a")]
+       ),
+       RescueNode(10...31)(
+         (10...16),
+         [],
+         nil,
+         nil,
+         StatementsNode(19...20)(
+           [CallNode(19...20)(nil, nil, (19...20), nil, nil, nil, nil, 0, "b")]
+         ),
+         RescueNode(21...31)(
+           (21...27),
+           [],
+           nil,
+           nil,
+           StatementsNode(30...31)(
+             [CallNode(30...31)(
+                nil,
+                nil,
+                (30...31),
+                nil,
+                nil,
+                nil,
+                nil,
+                0,
+                "c"
+              )]
+           ),
+           nil
+         )
+       ),
+       nil,
+       nil,
+       (32...35)
+     )]
+  )
+)

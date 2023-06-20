@@ -1,0 +1,50 @@
+ProgramNode(0...116)(
+  [],
+  StatementsNode(0...116)(
+    [UndefNode(0...7)([SymbolNode(6...7)(nil, (6...7), nil, "a")], (0...5)),
+     UndefNode(9...19)(
+       [SymbolNode(15...16)(nil, (15...16), nil, "a"),
+        SymbolNode(18...19)(nil, (18...19), nil, "b")],
+       (9...14)
+     ),
+     UndefNode(21...29)(
+       [SymbolNode(27...29)(nil, (27...29), nil, "if")],
+       (21...26)
+     ),
+     UndefNode(31...40)(
+       [SymbolNode(37...40)(nil, (37...40), nil, "<=>")],
+       (31...36)
+     ),
+     UndefNode(42...50)(
+       [SymbolNode(48...50)((48...49), (49...50), nil, "a")],
+       (42...47)
+     ),
+     UndefNode(52...68)(
+       [SymbolNode(58...60)((58...59), (59...60), nil, "a"),
+        SymbolNode(62...64)((62...63), (63...64), nil, "b"),
+        SymbolNode(66...68)((66...67), (67...68), nil, "c")],
+       (52...57)
+     ),
+     UndefNode(70...82)(
+       [SymbolNode(76...82)((76...78), (78...81), (81...82), "abc")],
+       (70...75)
+     ),
+     UndefNode(84...100)(
+       [InterpolatedSymbolNode(90...100)(
+          (90...92),
+          [StringNode(92...95)(nil, (92...95), nil, "abc"),
+           EmbeddedStatementsNode(95...99)(
+             (95...97),
+             StatementsNode(97...98)([IntegerNode(97...98)()]),
+             (98...99)
+           )],
+          (99...100)
+        )],
+       (84...89)
+     ),
+     UndefNode(102...116)(
+       [SymbolNode(108...116)(nil, (108...116), nil, "Constant")],
+       (102...107)
+     )]
+  )
+)

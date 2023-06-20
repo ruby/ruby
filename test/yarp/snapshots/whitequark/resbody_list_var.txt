@@ -1,0 +1,44 @@
+ProgramNode(0...39)(
+  [:ex],
+  StatementsNode(0...39)(
+    [BeginNode(0...39)(
+       (0...5),
+       StatementsNode(7...11)(
+         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 0, "meth")]
+       ),
+       RescueNode(13...34)(
+         (13...19),
+         [CallNode(20...23)(
+            nil,
+            nil,
+            (20...23),
+            nil,
+            nil,
+            nil,
+            nil,
+            0,
+            "foo"
+          )],
+         (24...26),
+         LocalVariableWriteNode(27...29)(:ex, 0, nil, (27...29), nil),
+         StatementsNode(31...34)(
+           [CallNode(31...34)(
+              nil,
+              nil,
+              (31...34),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "bar"
+            )]
+         ),
+         nil
+       ),
+       nil,
+       nil,
+       (36...39)
+     )]
+  )
+)

@@ -1,0 +1,71 @@
+ProgramNode(0...63)(
+  [:foo],
+  StatementsNode(0...63)(
+    [MultiWriteNode(0...17)(
+       [CallNode(0...6)(
+          SelfNode(0...4)(),
+          (4...5),
+          (5...6),
+          nil,
+          nil,
+          nil,
+          nil,
+          0,
+          "A="
+        ),
+        LocalVariableWriteNode(8...11)(:foo, 0, nil, (8...11), nil)],
+       (12...13),
+       LocalVariableReadNode(14...17)(:foo, 0),
+       nil,
+       nil
+     ),
+     MultiWriteNode(19...43)(
+       [CallNode(19...25)(
+          SelfNode(19...23)(),
+          (23...24),
+          (24...25),
+          nil,
+          nil,
+          nil,
+          nil,
+          0,
+          "a="
+        ),
+        CallNode(27...37)(
+          SelfNode(27...31)(),
+          nil,
+          (31...37),
+          (31...32),
+          ArgumentsNode(32...36)(
+            [IntegerNode(32...33)(), IntegerNode(35...36)()]
+          ),
+          (36...37),
+          nil,
+          0,
+          "[]="
+        )],
+       (38...39),
+       LocalVariableReadNode(40...43)(:foo, 0),
+       nil,
+       nil
+     ),
+     MultiWriteNode(45...63)(
+       [CallNode(45...52)(
+          SelfNode(45...49)(),
+          (49...51),
+          (51...52),
+          nil,
+          nil,
+          nil,
+          nil,
+          0,
+          "a="
+        ),
+        LocalVariableWriteNode(54...57)(:foo, 0, nil, (54...57), nil)],
+       (58...59),
+       LocalVariableReadNode(60...63)(:foo, 0),
+       nil,
+       nil
+     )]
+  )
+)

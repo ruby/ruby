@@ -1,0 +1,11 @@
+ProgramNode(0...7)(
+  [:a],
+  StatementsNode(0...7)(
+    [LocalVariableOperatorAndWriteNode(0...7)(
+       (0...1),
+       (2...5),
+       IntegerNode(6...7)(),
+       :a
+     )]
+  )
+)

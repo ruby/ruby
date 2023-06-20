@@ -1,0 +1,56 @@
+ProgramNode(0...20)(
+  [:a],
+  StatementsNode(0...20)(
+    [LocalVariableWriteNode(0...20)(
+       :a,
+       0,
+       CallNode(4...20)(
+         nil,
+         nil,
+         (4...7),
+         (7...8),
+         ArgumentsNode(8...19)(
+           [CallNode(8...19)(
+              InterpolatedStringNode(8...42)(
+                (8...14),
+                [StringNode(21...26)(nil, (21...26), nil, "\n"),
+                 EmbeddedStatementsNode(26...32)(
+                   (26...28),
+                   StatementsNode(28...31)(
+                     [CallNode(28...31)(
+                        nil,
+                        nil,
+                        (28...31),
+                        nil,
+                        nil,
+                        nil,
+                        nil,
+                        0,
+                        "bar"
+                      )]
+                   ),
+                   (31...32)
+                 ),
+                 StringNode(32...36)(nil, (32...36), nil, "baz\n")],
+                (36...42)
+              ),
+              (14...15),
+              (15...19),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "chop"
+            )]
+         ),
+         (19...20),
+         nil,
+         0,
+         "foo"
+       ),
+       (0...1),
+       (2...3)
+     )]
+  )
+)

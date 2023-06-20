@@ -1,0 +1,10 @@
+ProgramNode(0...8)(
+  [],
+  StatementsNode(0...8)(
+    [ConstantPathWriteNode(0...8)(
+       ConstantReadNode(0...3)(),
+       (4...5),
+       IntegerNode(6...8)()
+     )]
+  )
+)

@@ -1,0 +1,25 @@
+ProgramNode(0...14)(
+  [:a],
+  StatementsNode(0...14)(
+    [MultiWriteNode(0...14)(
+       [LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
+        ConstantPathWriteNode(3...7)(
+          ConstantPathNode(3...7)(
+            CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 0, "b"),
+            ConstantReadNode(6...7)(),
+            (4...6)
+          ),
+          nil,
+          nil
+        )],
+       (8...9),
+       ArrayNode(10...14)(
+         [IntegerNode(10...11)(), IntegerNode(13...14)()],
+         nil,
+         nil
+       ),
+       nil,
+       nil
+     )]
+  )
+)

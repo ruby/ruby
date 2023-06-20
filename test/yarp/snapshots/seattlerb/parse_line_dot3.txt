@@ -1,0 +1,13 @@
+ProgramNode(0...15)(
+  [],
+  StatementsNode(0...15)(
+    [RangeNode(0...6)(IntegerNode(0...1)(), IntegerNode(5...6)(), (1...4), 1),
+     RangeNode(7...13)(
+       CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 0, "a"),
+       CallNode(12...13)(nil, nil, (12...13), nil, nil, nil, nil, 0, "b"),
+       (8...11),
+       1
+     ),
+     CallNode(14...15)(nil, nil, (14...15), nil, nil, nil, nil, 0, "c")]
+  )
+)

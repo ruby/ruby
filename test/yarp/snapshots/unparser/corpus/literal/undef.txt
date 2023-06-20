@@ -1,0 +1,14 @@
+ProgramNode(0...27)(
+  [],
+  StatementsNode(0...27)(
+    [UndefNode(0...10)(
+       [SymbolNode(6...10)((6...7), (7...10), nil, "foo")],
+       (0...5)
+     ),
+     UndefNode(11...27)(
+       [SymbolNode(17...21)((17...18), (18...21), nil, "foo"),
+        SymbolNode(23...27)((23...24), (24...27), nil, "bar")],
+       (11...16)
+     )]
+  )
+)

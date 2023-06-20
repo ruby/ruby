@@ -1,0 +1,23 @@
+ProgramNode(0...26)(
+  [],
+  StatementsNode(0...26)(
+    [YieldNode(0...5)((0...5), nil, nil, nil),
+     YieldNode(6...14)(
+       (6...11),
+       (11...12),
+       ArgumentsNode(12...13)(
+         [CallNode(12...13)(nil, nil, (12...13), nil, nil, nil, nil, 0, "a")]
+       ),
+       (13...14)
+     ),
+     YieldNode(15...26)(
+       (15...20),
+       (20...21),
+       ArgumentsNode(21...25)(
+         [CallNode(21...22)(nil, nil, (21...22), nil, nil, nil, nil, 0, "a"),
+          CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 0, "b")]
+       ),
+       (25...26)
+     )]
+  )
+)

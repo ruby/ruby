@@ -1,0 +1,34 @@
+ProgramNode(0...17)(
+  [],
+  StatementsNode(0...17)(
+    [CallNode(0...17)(
+       nil,
+       nil,
+       (0...3),
+       nil,
+       ArgumentsNode(4...17)(
+         [ParenthesesNode(4...17)(
+            StatementsNode(5...16)(
+              [CallNode(5...16)(
+                 nil,
+                 nil,
+                 (5...9),
+                 nil,
+                 nil,
+                 nil,
+                 BlockNode(10...16)([], nil, nil, (10...12), (13...16)),
+                 0,
+                 "proc"
+               )]
+            ),
+            (4...5),
+            (16...17)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "tap"
+     )]
+  )
+)

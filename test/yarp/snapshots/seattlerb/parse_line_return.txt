@@ -1,0 +1,31 @@
+ProgramNode(6...77)(
+  [],
+  StatementsNode(6...77)(
+    [DefNode(6...77)(
+       (10...14),
+       nil,
+       nil,
+       StatementsNode(23...67)(
+         [IfNode(23...67)(
+            (23...25),
+            TrueNode(26...30)(),
+            StatementsNode(46...55)(
+              [ReturnNode(46...55)(
+                 (46...52),
+                 ArgumentsNode(53...55)([IntegerNode(53...55)()])
+               )]
+            ),
+            nil,
+            (64...67)
+          )]
+       ),
+       [],
+       (6...9),
+       nil,
+       nil,
+       nil,
+       nil,
+       (74...77)
+     )]
+  )
+)

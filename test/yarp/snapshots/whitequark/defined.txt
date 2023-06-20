@@ -1,0 +1,23 @@
+ProgramNode(0...42)(
+  [],
+  StatementsNode(0...42)(
+    [DefinedNode(0...13)(
+       nil,
+       InstanceVariableReadNode(9...13)(),
+       nil,
+       (0...8)
+     ),
+     DefinedNode(15...27)(
+       nil,
+       CallNode(24...27)(nil, nil, (24...27), nil, nil, nil, nil, 0, "foo"),
+       nil,
+       (15...23)
+     ),
+     DefinedNode(29...42)(
+       (37...38),
+       CallNode(38...41)(nil, nil, (38...41), nil, nil, nil, nil, 0, "foo"),
+       (41...42),
+       (29...37)
+     )]
+  )
+)

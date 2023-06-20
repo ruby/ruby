@@ -1,0 +1,13 @@
+ProgramNode(0...22)(
+  [:测试],
+  StatementsNode(0...22)(
+    [GlobalVariableWriteNode(0...11)((0...7), (8...9), IntegerNode(10...11)()),
+     LocalVariableWriteNode(12...22)(
+       :测试,
+       0,
+       IntegerNode(21...22)(),
+       (12...18),
+       (19...20)
+     )]
+  )
+)

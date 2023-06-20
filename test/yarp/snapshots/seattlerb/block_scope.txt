@@ -1,0 +1,22 @@
+ProgramNode(0...10)(
+  [],
+  StatementsNode(0...10)(
+    [CallNode(0...10)(
+       nil,
+       nil,
+       (0...1),
+       nil,
+       nil,
+       nil,
+       BlockNode(2...10)(
+         [:b],
+         BlockParametersNode(4...8)(nil, [(6...7)], (4...5), (7...8)),
+         nil,
+         (2...3),
+         (9...10)
+       ),
+       0,
+       "a"
+     )]
+  )
+)

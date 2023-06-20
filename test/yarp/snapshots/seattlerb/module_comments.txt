@@ -1,0 +1,26 @@
+ProgramNode(22...75)(
+  [],
+  StatementsNode(22...75)(
+    [ModuleNode(22...75)(
+       [],
+       (22...28),
+       ConstantReadNode(29...30)(),
+       StatementsNode(44...71)(
+         [DefNode(44...71)(
+            (48...52),
+            nil,
+            nil,
+            nil,
+            [],
+            (44...47),
+            nil,
+            nil,
+            nil,
+            nil,
+            (68...71)
+          )]
+       ),
+       (72...75)
+     )]
+  )
+)

@@ -1,0 +1,35 @@
+ProgramNode(0...14)(
+  [],
+  StatementsNode(0...14)(
+    [CallNode(0...14)(
+       nil,
+       nil,
+       (0...1),
+       nil,
+       nil,
+       nil,
+       BlockNode(2...14)(
+         [:b, :c, :d],
+         BlockParametersNode(3...12)(
+           ParametersNode(4...5)(
+             [RequiredParameterNode(4...5)(:b)],
+             [],
+             [],
+             nil,
+             [],
+             nil,
+             nil
+           ),
+           [(7...8), (10...11)],
+           (3...4),
+           (11...12)
+         ),
+         nil,
+         (2...3),
+         (13...14)
+       ),
+       0,
+       "a"
+     )]
+  )
+)

@@ -1,0 +1,7 @@
+defined? 1 and defined? 2
+
+defined?(x %= 2)
+
+defined?(foo and bar)
+
+defined? 1

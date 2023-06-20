@@ -1,0 +1,30 @@
+ProgramNode(0...27)(
+  [:d],
+  StatementsNode(0...27)(
+    [CaseNode(0...27)(
+       SymbolNode(5...7)((5...6), (6...7), nil, "a"),
+       [InNode(8...23)(
+          ArrayPatternNode(11...18)(
+            ConstantPathNode(11...15)(
+              ConstantReadNode(11...12)(),
+              ConstantReadNode(14...15)(),
+              (12...14)
+            ),
+            [LocalVariableWriteNode(16...17)(:d, 0, nil, (16...17), nil)],
+            nil,
+            [],
+            (15...16),
+            (17...18)
+          ),
+          StatementsNode(21...23)(
+            [SymbolNode(21...23)((21...22), (22...23), nil, "e")]
+          ),
+          (8...10),
+          nil
+        )],
+       nil,
+       (0...4),
+       (24...27)
+     )]
+  )
+)
