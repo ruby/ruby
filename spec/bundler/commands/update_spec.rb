@@ -1239,7 +1239,7 @@ RSpec.describe "bundle update --ruby" do
 end
 
 RSpec.describe "bundle update --bundler" do
-  it "updates the bundler version in the lockfile without re-resolving" do
+  it "updates the bundler version in the lockfile" do
     build_repo4 do
       build_gem "rack", "1.0"
     end
@@ -1249,8 +1249,6 @@ RSpec.describe "bundle update --bundler" do
       gem "rack"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
-
-    FileUtils.rm_r gem_repo4
 
     bundle :update, :bundler => true, :artifice => "compact_index", :verbose => true
     expect(out).to include("Using bundler #{Bundler::VERSION}")
@@ -1473,8 +1471,8 @@ RSpec.describe "bundle update --bundler" do
          2.1.4
     L
 
-    bundle "update --bundler=2.3.9", :env => { "BUNDLE_FROZEN" => "true" }
-    expect(err).to include("Cannot write a changed lockfile while frozen")
+    bundle "update --bundler=2.3.9", :env => { "BUNDLE_FROZEN" => "true" }, :raise_on_error => false
+    expect(err).to include("An update to the version of bundler itself was requested, but the lockfile can't be updated because frozen mode is set")
   end
 end
 
