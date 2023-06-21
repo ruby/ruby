@@ -21,7 +21,6 @@ class ParseTest < Test::Unit::TestCase
   # and the line breaks based on the length of the path.
   def normalize_printed(printed)
     printed
-      .b
       .gsub(
         /SourceFileNode \s*
           \(\s* (\d+\.\.\.\d+) \s*\) \s*
@@ -99,7 +98,7 @@ class ParseTest < Test::Unit::TestCase
       assert_empty result.errors, value
 
       if File.exist?(snapshot)
-        normalized = normalize_printed(File.binread(snapshot))
+        normalized = normalize_printed(File.read(snapshot))
 
         # If the snapshot file exists, but the printed value does not match the
         # snapshot, then update the snapshot file.
