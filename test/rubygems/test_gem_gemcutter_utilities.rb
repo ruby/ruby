@@ -11,6 +11,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     super
 
     credential_setup
+    @fetcher = SignInFetcher.new
 
     # below needed for random testing, class property
     Gem.configuration.disable_default_gem_server = nil
@@ -108,6 +109,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_host
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
+    @fetcher = SignInFetcher.new(host: "http://example.com")
     util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), "http://example.com", ["http://example.com"]
 
     assert_match "Enter your http://example.com credentials.",
@@ -122,6 +124,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_host_nil
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
+    @fetcher = SignInFetcher.new(host: nil)
     util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), nil, [nil]
 
     assert_match "Enter your RubyGems.org credentials.",
@@ -135,6 +138,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_sign_in_with_host_ENV
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    @fetcher = SignInFetcher.new(host: "http://example.com")
     util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), "http://example.com"
 
     assert_match "Enter your http://example.com credentials.",
@@ -184,6 +188,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_bad_credentials
+    @fetcher.respond_with_forbidden_api_key_response
     assert_raise Gem::MockGemUi::TermError do
       util_sign_in HTTPResponseFactory.create(body: "Access Denied.", code: 403, msg: "Forbidden")
     end
@@ -206,6 +211,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
 
+    @fetcher.respond_with_require_otp
     util_sign_in(proc do
       @call_count ||= 0
       if (@call_count += 1).odd?
@@ -224,6 +230,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_incorrect_otp_code
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
 
+    @fetcher.respond_with_unauthorized_api_key_response
     assert_raise Gem::MockGemUi::TermError do
       util_sign_in HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized"), nil, [], "111111\n"
     end
@@ -241,6 +248,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
     port = 5678
     server = TCPServer.new(port)
 
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url(webauthn_verification_url)
     TCPServer.stub(:new, server) do
       Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
         util_sign_in(proc do
@@ -270,6 +279,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
     server = TCPServer.new(port)
     raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
 
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url(webauthn_verification_url)
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
         Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
@@ -298,24 +309,25 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def util_sign_in(response, host = nil, args = [], extra_input = "", webauthn_url = nil)
     email             = "you@example.com"
     password          = "secret"
-    profile_response  = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
-    webauthn_response =
-      if webauthn_url
-        HTTPResponseFactory.create(body: webauthn_url, code: 200, msg: "OK")
-      else
-        HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
-      end
+    # profile_response  = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+    # webauthn_response =
+    #   if webauthn_url
+    #     HTTPResponseFactory.create(body: webauthn_url, code: 200, msg: "OK")
+    #   else
+    #     HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
+    #   end
 
-    if host
-      ENV["RUBYGEMS_HOST"] = host
-    else
-      host = Gem.host
-    end
+    # if host
+    #   ENV["RUBYGEMS_HOST"] = host
+    # else
+    #   host = Gem.host
+    # end
 
-    @fetcher = Gem::FakeFetcher.new
-    @fetcher.data["#{host}/api/v1/api_key"] = response
-    @fetcher.data["#{host}/api/v1/profile/me.yaml"] = profile_response
-    @fetcher.data["#{host}/api/v1/webauthn_verification"] = webauthn_response
+    # @fetcher = Gem::FakeFetcher.new
+    # @fetcher.data["#{host}/api/v1/api_key"] = response
+    # @fetcher.data["#{host}/api/v1/profile/me.yaml"] = profile_response
+    # @fetcher.data["#{host}/api/v1/webauthn_verification"] = webauthn_response
+    ENV["RUBYGEMS_HOST"] = @fetcher.host
     Gem::RemoteFetcher.fetcher = @fetcher
 
     @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)
@@ -343,6 +355,50 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_verify_missing_api_key
     assert_raise Gem::MockGemUi::TermError do
       @cmd.verify_api_key :missing
+    end
+  end
+
+  class SignInFetcher < Gem::FakeFetcher
+    attr_reader :host
+
+    def initialize(host: nil)
+      super()
+      @host = host || Gem.host
+      @api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+      @data["#{@host}/api/v1/api_key"] = Gem::HTTPResponseFactory.create(body: @api_key, code: 200, msg: "OK")
+      @data["#{@host}/api/v1/profile/me.yaml"] = Gem::HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+      @data["#{@host}/api/v1/webauthn_verification"] = Gem::HTTPResponseFactory.create(
+        body: "You don't have any security devices",
+        code: 422,
+        msg: "Unprocessable Entity"
+      )
+    end
+
+    def respond_with_webauthn_url(url)
+      @data["#{@host}/api/v1/webauthn_verification"] = Gem::HTTPResponseFactory.create(body: url, code: 200, msg: "OK")
+    end
+
+    def respond_with_require_otp
+      response_fail = "You have enabled multifactor authentication"
+
+      @data["#{host}/api/v1/api_key"] = proc do
+        @call_count ||= 0
+        if (@call_count += 1).odd?
+          Gem::HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+        else
+          Gem::HTTPResponseFactory.create(body: @api_key, code: 200, msg: "OK")
+        end
+      end
+    end
+
+    def respond_with_forbidden_api_key_response
+      @data["#{host}/api/v1/api_key"] = Gem::HTTPResponseFactory.create(body: "Access Denied.", code: 403, msg: "Forbidden")
+    end
+
+    def respond_with_unauthorized_api_key_response
+      response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+
+      @data["#{host}/api/v1/api_key"] = Gem::HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
     end
   end
 end
