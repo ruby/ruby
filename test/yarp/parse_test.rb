@@ -21,6 +21,7 @@ class ParseTest < Test::Unit::TestCase
   # and the line breaks based on the length of the path.
   def normalize_printed(printed)
     printed
+      .b
       .gsub(
         /SourceFileNode \s*
           \(\s* (\d+\.\.\.\d+) \s*\) \s*
