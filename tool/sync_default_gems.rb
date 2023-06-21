@@ -80,7 +80,7 @@ module SyncDefaultGems
     syntax_suggest: ["ruby/syntax_suggest", "main"],
     un: "ruby/un",
     win32ole: "ruby/win32ole",
-    yarp: "ruby/yarp",
+    yarp: ["ruby/yarp", "main"],
   }
 
   CLASSICAL_DEFAULT_BRANCH = "master"
