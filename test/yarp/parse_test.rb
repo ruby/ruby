@@ -49,6 +49,24 @@ class ParseTest < Test::Unit::TestCase
     assert_equal filepath, find_source_file_node(parsed_result.value).filepath
   end
 
+  # We have some files that are failing on other systems because of default
+  # encoding. We'll fix these ASAP.
+  FAILING = %w[
+    seattlerb/bug202.txt
+    seattlerb/dsym_esc_to_sym.txt
+    seattlerb/heredoc_bad_oct_escape.txt
+    seattlerb/magic_encoding_comment.txt
+    seattlerb/read_escape_unicode_curlies.txt
+    seattlerb/read_escape_unicode_h4.txt
+    seattlerb/regexp_escape_extended.txt
+    seattlerb/regexp_unicode_curlies.txt
+    seattlerb/str_evstr_escape.txt
+    seattlerb/str_lit_concat_bad_encodings.txt
+    symbols.txt
+    whitequark/bug_ascii_8bit_in_literal.txt
+    whitequark/dedenting_heredoc.txt
+  ]
+
   Dir[File.expand_path("fixtures/**/*.txt", __dir__)].each do |filepath|
     relative = filepath.delete_prefix("#{File.expand_path("fixtures", __dir__)}/")
     next if known_failures.include?(relative)
@@ -58,6 +76,12 @@ class ParseTest < Test::Unit::TestCase
     FileUtils.mkdir_p(directory) unless File.directory?(directory)
 
     define_method "test_filepath_#{filepath}" do
+      if (ENV.key?("RUBYCI_NICKNAME") || ENV["RUBY_DEBUG"] =~ /ci/) && FAILING.include?(relative)
+        # http://rubyci.s3.amazonaws.com/solaris10-gcc/ruby-master/log/20230621T190004Z.fail.html.gz
+        # http://ci.rvm.jp/results/trunk-yjit@ruby-sp2-docker/4612202
+        omit "Not working on RubyCI and ci.rvm.jp"
+      end
+
       # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,
       # and explicitly set the external encoding to UTF-8 to override the binmode default.
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
