@@ -3232,6 +3232,12 @@ CODE
     assert_not_predicate(data, :valid_encoding?)
     assert_predicate(data[100..-1], :valid_encoding?)
   end
+
+  def test_slice_bang_code_range
+    str = "[Bug #19739] ABC OÜ"
+    str.slice!(/ oü$/i)
+    assert_predicate str, :ascii_only?
+  end
 end
 
 class TestString2 < TestString
