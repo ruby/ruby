@@ -69,7 +69,7 @@ class TestUpdateSuggestion < Gem::TestCase
     with_eglible_environment(cmd: @cmd) do
       Time.stub :now, 123_456_789 do
         assert @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, 123_456_789
+        assert_equal 123_456_789, Gem.configuration.last_update_check
 
         # test last check is written to config file
         assert File.read(Gem.configuration.state_file_name).match("123456789")
@@ -86,7 +86,7 @@ class TestUpdateSuggestion < Gem::TestCase
     with_eglible_environment(cmd: @cmd, rubygems_version: current_version, latest_rubygems_version: latest_version) do
       Time.stub :now, @start_time do
         refute @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, @start_time
+        assert_equal @start_time, Gem.configuration.last_update_check
       end
     end
 
@@ -100,7 +100,7 @@ class TestUpdateSuggestion < Gem::TestCase
     ) do
       Time.stub :now, @start_time + @week do
         refute @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, @start_time + @week
+        assert_equal @start_time + @week, Gem.configuration.last_update_check
       end
     end
 
@@ -117,7 +117,7 @@ class TestUpdateSuggestion < Gem::TestCase
     ) do
       Time.stub :now, @start_time + @week + @minute do
         refute @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, @start_time + @week
+        assert_equal @start_time + @week, Gem.configuration.last_update_check
       end
     end
   end
@@ -127,19 +127,19 @@ class TestUpdateSuggestion < Gem::TestCase
       # checking for first time, it is eglible and stored
       Time.stub :now, @start_time do
         assert @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, @start_time
+        assert_equal @start_time, Gem.configuration.last_update_check
       end
 
       # checking minute later is not eglible and not stored
       Time.stub :now, @start_time + @minute do
         refute @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, @start_time
+        assert_equal @start_time, Gem.configuration.last_update_check
       end
 
       # checking week later is eglible again and stored
       Time.stub :now, @start_time + @week do
         assert @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, @start_time + @week
+        assert_equal @start_time + @week, Gem.configuration.last_update_check
       end
     end
   end
