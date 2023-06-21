@@ -174,7 +174,7 @@ rb_mod_name(VALUE mod)
  */
 
 VALUE
-rb_mod_name_set(VALUE mod, VALUE name)
+rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
     // We don't allow setting the name if the classpath is already permanent:
     if (RCLASS_EXT(mod)->permanent_classpath) {

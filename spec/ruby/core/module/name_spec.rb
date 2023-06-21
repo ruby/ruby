@@ -25,7 +25,7 @@ describe "Module#name" do
 
     it "can't assign a constant name as a temporary name" do
       m = Module.new
-      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "wrong constant name Object")
+      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "name must not be valid constant name")
     end
 
     it "can't assign name to permanent module" do
