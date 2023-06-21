@@ -616,6 +616,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_new_with_size) }
   end
 
+  def C.rb_hash_resurrect
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_resurrect) }
+  end
+
   def C.rb_ivar_defined
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ivar_defined) }
   end
