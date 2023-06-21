@@ -75,12 +75,15 @@ class ParseTest < Test::Unit::TestCase
       assert_empty result.errors, value
 
       if File.exist?(snapshot)
-        expected = File.read(snapshot)
-        normalized = normalize_printed(expected)
-        if expected != normalized
+        normalized = normalize_printed(File.binread(snapshot))
+
+        # If the snapshot file exists, but the printed value does not match the
+        # snapshot, then update the snapshot file.
+        if normalized != printed
           File.write(snapshot, normalized)
           warn("Updated snapshot at #{snapshot}.")
         end
+
         # If the snapshot file exists, then assert that the printed value
         # matches the snapshot.
         assert_equal(normalized, printed)
