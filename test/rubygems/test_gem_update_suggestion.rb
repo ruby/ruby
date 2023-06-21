@@ -72,7 +72,7 @@ class TestUpdateSuggestion < Gem::TestCase
         assert_equal 123_456_789, Gem.configuration.last_update_check
 
         # test last check is written to config file
-        assert File.read(Gem.configuration.state_file_name).match("123456789")
+        assert_include File.read(Gem.configuration.state_file_name), "123456789"
       end
     end
   end
