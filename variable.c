@@ -134,6 +134,79 @@ rb_mod_name(VALUE mod)
     return classname(mod, &permanent);
 }
 
+/*
+ *  call-seq:
+ *     mod.set_temporary_name(string) -> self
+ *     mod.set_temporary_name(nil) -> self
+ *
+ *  Sets the temporary name of the module +mod+. This name is used as a prefix
+ *  for the names of constants declared in +mod+. If the module is assigned a
+ *  permanent name, the temporary name is discarded.
+ *
+ *  After a permanent name is assigned, a temporary name can no longer be set,
+ *  and this method raises a RuntimeError.
+ *
+ *  If the name given is not a string or is a zero length string, this method
+ *  raises an ArgumentError.
+ *
+ *  The temporary name must not be a valid constant name, to avoid confusion
+ *  with actual constants. If you attempt to set a temporary name that is a
+ *  a valid constant name, this method raises an ArgumentError.
+ *
+ *  If the given name is +nil+, the module becomes anonymous.
+ *
+ *  Example:
+ *
+ *    m = Module.new # => #<Module:0x0000000102c68f38>
+ *    m.name #=> nil
+ *
+ *    m.set_temporary_name("fake_name") # => fake_name
+ *    m.name #=> "fake_name"
+ *
+ *    m.set_temporary_name(nil) # => #<Module:0x0000000102c68f38>
+ *    m.name #=> nil
+ *
+ *    n = Module.new
+ *    n.set_temporary_name("fake_name")
+ *
+ *    n::M = m
+ *    n::M.name #=> "fake_name::M"
+ *    N = n
+ *
+ *    N.name #=> "nested_fake_name"
+ *    N::M.name #=> "N::M"
+ */
+
+VALUE
+rb_mod_set_temporary_name(VALUE mod, VALUE name)
+{
+    // We don't allow setting the name if the classpath is already permanent:
+    if (RCLASS_EXT(mod)->permanent_classpath) {
+        rb_raise(rb_eRuntimeError, "can't change permanent name");
+    }
+
+    if (NIL_P(name)) {
+        // Set the temporary classpath to NULL (anonymous):
+        RCLASS_SET_CLASSPATH(mod, 0, FALSE);
+    } else {
+        // Ensure the name is a string:
+        StringValue(name);
+
+        if (RSTRING_LEN(name) == 0) {
+            rb_raise(rb_eArgError, "empty class/module name");
+        }
+
+        if (rb_is_const_name(name)) {
+            rb_raise(rb_eArgError, "name must not be valid constant name");
+        }
+
+        // Set the temporary classpath to the given name:
+        RCLASS_SET_CLASSPATH(mod, name, FALSE);
+    }
+
+    return mod;
+}
+
 static VALUE
 make_temporary_path(VALUE obj, VALUE klass)
 {
