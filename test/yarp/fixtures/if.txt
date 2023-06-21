@@ -29,3 +29,14 @@ end
 if type in 1
 elsif type in B
 end
+
+if 1
+  lambda do |_|
+  end
+elsif 2
+  lambda do |_|
+  end
+else
+  lambda do |_|
+  end
+end

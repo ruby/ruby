@@ -1,6 +1,6 @@
-ProgramNode(0...293)(
+ProgramNode(0...382)(
   [],
-  StatementsNode(0...293)(
+  StatementsNode(0...382)(
     [IfNode(0...15)(
        (0...2),
        TrueNode(3...7)(),
@@ -225,6 +225,116 @@ ProgramNode(0...293)(
          nil
        ),
        (290...293)
+     ),
+     IfNode(295...382)(
+       (295...297),
+       IntegerNode(298...299)(),
+       StatementsNode(302...321)(
+         [CallNode(302...321)(
+            nil,
+            nil,
+            (302...308),
+            nil,
+            nil,
+            nil,
+            BlockNode(309...321)(
+              [:_],
+              BlockParametersNode(312...315)(
+                ParametersNode(313...314)(
+                  [RequiredParameterNode(313...314)(:_)],
+                  [],
+                  [],
+                  nil,
+                  [],
+                  nil,
+                  nil
+                ),
+                [],
+                (312...313),
+                (314...315)
+              ),
+              nil,
+              (309...311),
+              (318...321)
+            ),
+            0,
+            "lambda"
+          )]
+       ),
+       IfNode(322...382)(
+         (322...327),
+         IntegerNode(328...329)(),
+         StatementsNode(332...351)(
+           [CallNode(332...351)(
+              nil,
+              nil,
+              (332...338),
+              nil,
+              nil,
+              nil,
+              BlockNode(339...351)(
+                [:_],
+                BlockParametersNode(342...345)(
+                  ParametersNode(343...344)(
+                    [RequiredParameterNode(343...344)(:_)],
+                    [],
+                    [],
+                    nil,
+                    [],
+                    nil,
+                    nil
+                  ),
+                  [],
+                  (342...343),
+                  (344...345)
+                ),
+                nil,
+                (339...341),
+                (348...351)
+              ),
+              0,
+              "lambda"
+            )]
+         ),
+         ElseNode(352...382)(
+           (352...356),
+           StatementsNode(359...378)(
+             [CallNode(359...378)(
+                nil,
+                nil,
+                (359...365),
+                nil,
+                nil,
+                nil,
+                BlockNode(366...378)(
+                  [:_],
+                  BlockParametersNode(369...372)(
+                    ParametersNode(370...371)(
+                      [RequiredParameterNode(370...371)(:_)],
+                      [],
+                      [],
+                      nil,
+                      [],
+                      nil,
+                      nil
+                    ),
+                    [],
+                    (369...370),
+                    (371...372)
+                  ),
+                  nil,
+                  (366...368),
+                  (375...378)
+                ),
+                0,
+                "lambda"
+              )]
+           ),
+           (379...382)
+         ),
+         (379...382)
+       ),
+       (379...382)
      )]
   )
 )

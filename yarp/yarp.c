@@ -8701,7 +8701,10 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
             accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
             accept(parser, YP_TOKEN_KEYWORD_THEN);
 
+            yp_accepts_block_stack_push(parser, true);
             yp_statements_node_t *statements = parse_statements(parser, YP_CONTEXT_ELSIF);
+            yp_accepts_block_stack_pop(parser);
+
             accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
 
             yp_node_t *elsif = (yp_node_t *) yp_if_node_create(parser, &elsif_keyword, predicate, statements, NULL, &end_keyword);
@@ -8713,7 +8716,10 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
     if (match_type_p(parser, YP_TOKEN_KEYWORD_ELSE)) {
         parser_lex(parser);
         yp_token_t else_keyword = parser->previous;
+
+        yp_accepts_block_stack_push(parser, true);
         yp_statements_node_t *else_statements = parse_statements(parser, YP_CONTEXT_ELSE);
+        yp_accepts_block_stack_pop(parser);
 
         accept_any(parser, 2, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON);
         expect(parser, YP_TOKEN_KEYWORD_END, "Expected `end` to close `else` clause.");
