@@ -374,6 +374,11 @@ EOF
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
       HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"pending\",\"message\":\"Security device authentication is still pending.\"}",
+      code: 200,
+      msg: "OK"
+    )
 
     TCPServer.stub(:new, server) do
       Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
@@ -405,6 +410,11 @@ EOF
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
       HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"pending\",\"message\":\"Security device authentication is still pending.\"}",
+      code: 200,
+      msg: "OK"
+    )
 
     TCPServer.stub(:new, server) do
       Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
@@ -421,6 +431,79 @@ EOF
     assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @stub_ui.error
+    refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
+    refute_match response_success, @stub_ui.output
+  end
+
+  def test_with_webauthn_enabled_success_with_polling
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_success = "Owner added successfully."
+    port = 5678
+    server = TCPServer.new(port)
+
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
+    ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"success\",\"code\":\"Uvh6T57tkWuUnWYo\"}",
+      code: 200,
+      msg: "OK"
+    )
+
+    TCPServer.stub(:new, server) do
+      use_ui @stub_ui do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
+    ensure
+      server.close
+    end
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate " \
+      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+      "command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @stub_fetcher.last_request["OTP"]
+    assert_match response_success, @stub_ui.output
+  end
+
+  def test_with_webauthn_enabled_failure_with_polling
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_success = "Owner added successfully."
+    port = 5678
+    server = TCPServer.new(port)
+
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
+    ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"expired\",\"message\":\"The token in the link you used has either expired or been used already.\"}",
+      code: 200,
+      msg: "OK"
+    )
+
+    TCPServer.stub(:new, server) do
+      use_ui @stub_ui do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
+    ensure
+      server.close
+    end
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+
+    assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate " \
+      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+      "command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match "ERROR:  Security device verification failed: The token in the link you used has either expired " \
+      "or been used already.", @stub_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     refute_match response_success, @stub_ui.output
   end

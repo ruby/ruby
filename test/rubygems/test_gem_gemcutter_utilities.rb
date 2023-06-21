@@ -268,6 +268,52 @@ class TestGemGemcutterUtilities < Gem::TestCase
     refute_match "Signed in with API key:", @sign_in_ui.output
   end
 
+  def test_sign_in_with_webauthn_enabled_with_polling
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    port = 5678
+    server = TCPServer.new(port)
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url(webauthn_verification_url)
+    @fetcher.respond_with_webauthn_polling("Uvh6T57tkWuUnWYo")
+
+    TCPServer.stub(:new, server) do
+      util_sign_in
+    ensure
+      server.close
+    end
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate " \
+      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+      "command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
+  end
+
+  def test_sign_in_with_webauthn_enabled_with_polling_failure
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    port = 5678
+    server = TCPServer.new(port)
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url(webauthn_verification_url)
+    @fetcher.respond_with_webauthn_polling_failure
+
+    assert_raise Gem::MockGemUi::TermError do
+      TCPServer.stub(:new, server) do
+        util_sign_in
+      ensure
+        server.close
+      end
+    end
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate " \
+      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+      "command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "ERROR:  Security device verification failed: " \
+      "The token in the link you used has either expired or been used already.", @sign_in_ui.error
+  end
+
   def util_sign_in(args: [], extra_input: "")
     email             = "you@example.com"
     password          = "secret"
@@ -320,7 +366,34 @@ class TestGemGemcutterUtilities < Gem::TestCase
     end
 
     def respond_with_webauthn_url(url)
+      require "json"
       @data["#{@host}/api/v1/webauthn_verification"] = Gem::HTTPResponseFactory.create(body: url, code: 200, msg: "OK")
+      @data["#{@host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+        body: { status: "pending", message: "Security device authentication is still pending." }.to_json,
+        code: 200,
+        msg: "OK"
+      )
+    end
+
+    def respond_with_webauthn_polling(code)
+      require "json"
+      @data["#{@host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+        body: { status: "success", code: code }.to_json,
+        code: 200,
+        msg: "OK"
+      )
+    end
+
+    def respond_with_webauthn_polling_failure
+      require "json"
+      @data["#{@host}/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"] = Gem::HTTPResponseFactory.create(
+        body: {
+          status: "expired",
+          message: "The token in the link you used has either expired or been used already.",
+        }.to_json,
+        code: 200,
+        msg: "OK"
+      )
     end
 
     def respond_with_require_otp

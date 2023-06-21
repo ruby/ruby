@@ -121,6 +121,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     yank_uri = "http://example/api/v1/gems/yank"
     webauthn_uri = "http://example/api/v1/webauthn_verification"
+    status_uri = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"
     port = 5678
     server = TCPServer.new(port)
 
@@ -129,6 +130,11 @@ class TestGemCommandsYankCommand < Gem::TestCase
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
       HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
     ]
+    @fetcher.data[status_uri] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"pending\",\"message\":\"Security device authentication is still pending.\"}",
+      code: 200,
+      msg: "OK"
+    )
 
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
@@ -157,6 +163,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     yank_uri = "http://example/api/v1/gems/yank"
     webauthn_uri = "http://example/api/v1/webauthn_verification"
+    status_uri = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"
     port = 5678
     server = TCPServer.new(port)
     raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
@@ -166,6 +173,11 @@ class TestGemCommandsYankCommand < Gem::TestCase
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
       HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
     ]
+    @fetcher.data[status_uri] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"pending\",\"message\":\"Security device authentication is still pending.\"}",
+      code: 200,
+      msg: "OK"
+    )
 
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
@@ -190,6 +202,96 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_match %r{Yanking gem from http://example}, @ui.output
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @ui.error
+    refute_match "You are verified with a security device. You may close the browser window.", @ui.output
+    refute_match "Successfully yanked", @ui.output
+  end
+
+  def test_with_webauthn_enabled_success_with_polling
+    webauthn_verification_url = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    yank_uri = "http://example/api/v1/gems/yank"
+    webauthn_uri = "http://example/api/v1/webauthn_verification"
+    status_uri = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"
+    port = 5678
+    server = TCPServer.new(port)
+
+    @fetcher.data[webauthn_uri] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+    @fetcher.data[yank_uri] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
+    ]
+    @fetcher.data[status_uri] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"success\",\"code\":\"Uvh6T57tkWuUnWYo\"}",
+      code: 200,
+      msg: "OK"
+    )
+
+    @cmd.options[:args]           = %w[a]
+    @cmd.options[:added_platform] = true
+    @cmd.options[:version]        = req("= 1.0")
+
+    TCPServer.stub(:new, server) do
+      use_ui @ui do
+        @cmd.execute
+      end
+    ensure
+      server.close
+    end
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match %r{Yanking gem from http://example}, @ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate " \
+      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+      "command with the `--otp [your_code]` option.", @ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
+    assert_match "Successfully yanked", @ui.output
+  end
+
+  def test_with_webauthn_enabled_failure_with_polling
+    webauthn_verification_url = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    yank_uri = "http://example/api/v1/gems/yank"
+    webauthn_uri = "http://example/api/v1/webauthn_verification"
+    status_uri = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"
+    port = 5678
+    server = TCPServer.new(port)
+
+    @fetcher.data[webauthn_uri] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+    @fetcher.data[yank_uri] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
+    ]
+    @fetcher.data[status_uri] = Gem::HTTPResponseFactory.create(
+      body: "{\"status\":\"expired\",\"message\":\"The token in the link you used has either expired or been used already.\"}",
+      code: 200,
+      msg: "OK"
+    )
+
+    @cmd.options[:args]           = %w[a]
+    @cmd.options[:added_platform] = true
+    @cmd.options[:version]        = req("= 1.0")
+
+    error = assert_raise Gem::MockGemUi::TermError do
+      TCPServer.stub(:new, server) do
+        use_ui @ui do
+          @cmd.execute
+        end
+      ensure
+        server.close
+      end
+    end
+    assert_equal 1, error.exit_code
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+
+    assert_match @fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
+    assert_match %r{Yanking gem from http://example}, @ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate " \
+      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+      "command with the `--otp [your_code]` option.", @ui.output
+    assert_match "ERROR:  Security device verification failed: The token in the link you used has either expired " \
+      "or been used already.", @ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @ui.output
     refute_match "Successfully yanked", @ui.output
   end
