@@ -526,6 +526,7 @@ generator = BindingGenerator.new(
     rb_hash_bulk_insert
     rb_hash_new
     rb_hash_new_with_size
+    rb_hash_resurrect
     rb_ivar_get
     rb_obj_as_string_result
     rb_obj_is_kind_of
