@@ -169,7 +169,7 @@ rb_mod_name(VALUE mod)
  *    n::M.name #=> "fake_name::M"
  *    N = n
  *
- *    N.name #=> "N"
+ *    N.name #=> "nested_fake_name"
  *    N::M.name #=> "N::M"
  */
 
@@ -190,6 +190,10 @@ rb_mod_name_set(VALUE mod, VALUE name)
 
         if (RSTRING_LEN(name) == 0) {
             rb_raise(rb_eArgError, "empty class/module name");
+        }
+
+        if (rb_is_const_name(name)) {
+            rb_raise(rb_eArgError, "name must not be valid constant name");
         }
 
         // Set the temporary classpath to the given name:

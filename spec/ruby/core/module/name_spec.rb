@@ -23,6 +23,11 @@ describe "Module#name" do
       -> { m.set_temporary_name("") }.should raise_error(ArgumentError, "empty class/module name")
     end
 
+    it "can't assign a constant name as a temporary name" do
+      m = Module.new
+      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "wrong constant name Object")
+    end
+
     it "can't assign name to permanent module" do
       -> { Object.set_temporary_name("fake_name") }.should raise_error(RuntimeError, "can't change permanent name")
     end
