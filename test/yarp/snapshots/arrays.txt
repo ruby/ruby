@@ -1,6 +1,6 @@
-ProgramNode(0...502)(
+ProgramNode(0...511)(
   [],
-  StatementsNode(0...502)(
+  StatementsNode(0...511)(
     [ArrayNode(0...4)(
        [SplatNode(1...3)(
           (1...2),
@@ -691,6 +691,11 @@ ProgramNode(0...502)(
        (488...501),
        (501...502),
        "one two three"
+     ),
+     ArrayNode(504...511)(
+       [StringNode(507...510)(nil, (507...510), nil, "\\C:")],
+       (504...507),
+       (510...511)
      )]
   )
 )

@@ -6477,7 +6477,14 @@ parser_lex(yp_parser_t *parser) {
                         // If we hit escapes, then we need to treat the next token
                         // literally. In this case we'll skip past the next character and
                         // find the next breakpoint.
-                        size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, YP_UNESCAPE_ALL, false, &parser->error_list);
+
+                        yp_unescape_type_t unescape_type;
+                        if (parser->lex_modes.current->as.list.interpolation) {
+                            unescape_type = YP_UNESCAPE_ALL;
+                        } else {
+                            unescape_type = YP_UNESCAPE_MINIMAL;
+                        }
+                        size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, unescape_type, false, &parser->error_list);
 
                         // If the result is an escaped newline, then we need to
                         // track that newline.

@@ -78,3 +78,5 @@ foo[bar] = baz
 %w{one two three}
 
 %x{one two three}
+
+%w[\C:]
