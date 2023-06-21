@@ -12841,6 +12841,10 @@ yp_parser_free(yp_parser_t *parser) {
     yp_comment_list_free(&parser->comment_list);
     yp_constant_pool_free(&parser->constant_pool);
     yp_newline_list_free(&parser->newline_list);
+
+    while (parser->lex_modes.index >= YP_LEX_STACK_SIZE) {
+        lex_mode_pop(parser);
+    }
 }
 
 // Parse the Ruby source associated with the given parser and return the tree.
