@@ -2369,7 +2369,6 @@ lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
         rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    LAZY_MEMO_SET_PACKED(result);
     rb_ary_store(memos, memo_index, LONG2NUM(++count));
     return result;
 }
