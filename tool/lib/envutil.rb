@@ -262,30 +262,27 @@ module EnvUtil
   end
   module_function :with_default_internal
 
-  def with_temporary_name(mod, name, &block)
-    if Object.respond_to?(:set_temporary_name)
-      mod.set_temporary_name(name)
-    else
-      mod.singleton_class.class_eval do
+  def labeled_module(name, &block)
+    Module.new do
+      singleton_class.class_eval {
         define_method(:to_s) {name}
         alias inspect to_s
         alias name to_s
-      end
+      }
+      class_eval(&block) if block
     end
-
-    mod.class_eval(&block) if block
-
-    return mod
-  end
-  module_function :with_temporary_name
-
-  def labeled_module(name, &block)
-    with_temporary_name(Module.new, name, &block)
   end
   module_function :labeled_module
 
   def labeled_class(name, superclass = Object, &block)
-    with_temporary_name(Class.new(superclass), name, &block)
+    Class.new(superclass) do
+      singleton_class.class_eval {
+        define_method(:to_s) {name}
+        alias inspect to_s
+        alias name to_s
+      }
+      class_eval(&block) if block
+    end
   end
   module_function :labeled_class
 
