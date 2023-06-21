@@ -149,6 +149,10 @@ rb_mod_name(VALUE mod)
  *  If the name given is not a string or is a zero length string, this method
  *  raises an ArgumentError.
  *
+ *  The temporary name must not be a valid constant name, to avoid confusion
+ *  with actual constants. If you attempt to set a temporary name that is a
+ *  a valid constant name, this method raises an ArgumentError.
+ *
  *  If the given name is +nil+, the module becomes anonymous.
  *
  *  Example:
