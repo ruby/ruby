@@ -7121,6 +7121,7 @@ static void
 pushback(struct parser_params *p, int c)
 {
     if (c == -1) return;
+    p->eofp = 0;
     p->lex.pcur--;
     if (p->lex.pcur > p->lex.pbeg && p->lex.pcur[0] == '\n' && p->lex.pcur[-1] == '\r') {
         p->lex.pcur--;
@@ -9164,6 +9165,7 @@ parse_numeric(struct parser_params *p, int c)
             c = nextc(p);
             if (c != '-' && c != '+' && !ISDIGIT(c)) {
                 pushback(p, c);
+                c = nondigit;
                 nondigit = 0;
                 goto decode_num;
             }
