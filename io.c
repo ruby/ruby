@@ -8944,6 +8944,10 @@ rb_p_result(int argc, const VALUE *argv)
  *     0..4
  *     [0..4, 0..4, 0..4]
  *
+ *  Kernel#p is designed for debugging purposes.
+ *  Ruby implementations may define Kernel#p to be uninterruptible
+ *  in whole or in part.
+ *  On CRuby, Kernel#p's writing of data is uninterruptible.
  */
 
 static VALUE
