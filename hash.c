@@ -541,18 +541,6 @@ hash_verify_(VALUE hash, const char *file, int line)
 #endif
 
 static inline int
-RHASH_TABLE_NULL_P(VALUE hash)
-{
-    if (RHASH_AR_TABLE(hash) == NULL) {
-        HASH_ASSERT(RHASH_AR_TABLE_P(hash));
-        return TRUE;
-    }
-    else {
-        return FALSE;
-    }
-}
-
-static inline int
 RHASH_TABLE_EMPTY_P(VALUE hash)
 {
     return RHASH_SIZE(hash) == 0;
@@ -632,18 +620,6 @@ RHASH_AR_TABLE_CLEAR(VALUE h)
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK;
 
     memset(RHASH_AR_TABLE(h), 0, sizeof(ar_table));
-}
-
-static ar_table*
-ar_alloc_table(VALUE hash)
-{
-    ar_table *tab = RHASH_AR_TABLE(hash);
-    memset(tab, 0, sizeof(ar_table));
-
-    RHASH_AR_TABLE_SIZE_SET(hash, 0);
-    RHASH_AR_TABLE_BOUND_SET(hash, 0);
-
-    return tab;
 }
 
 NOINLINE(static int ar_equal(VALUE x, VALUE y));
@@ -773,15 +749,6 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
     return new_tab;
 }
 
-static ar_table *
-hash_ar_table(VALUE hash)
-{
-    if (RHASH_TABLE_NULL_P(hash)) {
-        ar_alloc_table(hash);
-    }
-    return RHASH_AR_TABLE(hash);
-}
-
 static int
 ar_compact_table(VALUE hash)
 {
@@ -832,7 +799,6 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
     else {
         if (UNLIKELY(bin >= RHASH_AR_TABLE_MAX_BOUND)) {
             bin = ar_compact_table(hash);
-            hash_ar_table(hash);
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
@@ -977,7 +943,6 @@ ar_update(VALUE hash, st_data_t key,
         existing = (bin != RHASH_AR_TABLE_MAX_BOUND) ? TRUE : FALSE;
     }
     else {
-        hash_ar_table(hash); /* allocate ltbl if needed */
         existing = FALSE;
     }
 
@@ -1027,7 +992,6 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
     }
 
     HASH_ASSERT(RHASH_AR_TABLE(hash));
-    hash_ar_table(hash); /* prepare ltbl */
 
     bin = ar_find_entry(hash, hash_value, key);
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
@@ -1037,7 +1001,6 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         else if (bin >= RHASH_AR_TABLE_MAX_BOUND) {
             bin = ar_compact_table(hash);
             HASH_ASSERT(RHASH_AR_TABLE(hash));
-            hash_ar_table(hash);
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
@@ -2878,11 +2841,6 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
     rb_hash_modify(hash);
 
-    if (RHASH_TABLE_NULL_P(hash)) {
-        if (iter_lev > 0) no_new_key();
-        ar_alloc_table(hash);
-    }
-
     if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
         RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
     }
@@ -4690,8 +4648,6 @@ rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
     args[1] = val;
 
     if (RHASH_AR_TABLE_P(hash)) {
-        hash_ar_table(hash);
-
         ret = ar_update(hash, (st_data_t)key, add_new_i, (st_data_t)args);
         if (ret != -1) {
             return ret;
@@ -4729,15 +4685,6 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
     HASH_ASSERT(argc % 2 == 0);
     if (argc > 0) {
         st_index_t size = argc / 2;
-
-        if (RHASH_TABLE_NULL_P(hash)) {
-            if (size <= RHASH_AR_TABLE_MAX_SIZE) {
-                hash_ar_table(hash);
-            }
-            else {
-                RHASH_TBL_RAW(hash);
-            }
-        }
 
         if (RHASH_AR_TABLE_P(hash) &&
             (RHASH_AR_TABLE_SIZE(hash) + size <= RHASH_AR_TABLE_MAX_SIZE)) {
