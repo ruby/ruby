@@ -148,7 +148,7 @@ static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
     if (FL_TEST_RAW(klass, FL_SINGLETON)) {
-        return NULL;
+        return 0;
     }
     return RCLASS_EXT(klass)->as.class.allocator;
 }

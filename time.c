@@ -5828,7 +5828,7 @@ Init_Time(void)
 
     if (debug_find_time_numguess) {
         rb_define_hooked_variable("$find_time_numguess", (VALUE *)&find_time_numguess,
-                                  find_time_numguess_getter, NULL);
+                                  find_time_numguess_getter, 0);
     }
 
     rb_cTimeTM = Init_tm(rb_cTime, "tm");

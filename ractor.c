@@ -648,7 +648,7 @@ ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_r
 static enum rb_ractor_wakeup_status
 ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, enum rb_ractor_wait_status wait_status)
 {
-    return ractor_sleep_with_cleanup(ec, cr, wait_status, NULL, NULL);
+    return ractor_sleep_with_cleanup(ec, cr, wait_status, 0, NULL);
 }
 
 // Ractor.receive

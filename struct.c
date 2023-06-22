@@ -1871,7 +1871,7 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
     }
 
     VALUE h = rb_struct_to_h(self);
-    rb_hash_update_by(h, kwargs, NULL);
+    rb_hash_update_by(h, kwargs, 0);
     return rb_class_new_instance_kw(1, &h, rb_obj_class(self), TRUE);
 }
 
