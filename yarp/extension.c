@@ -72,6 +72,7 @@ source_file_load(source_t *source, VALUE filepath) {
 
 #ifdef HAVE_MMAP
     if (!source->size) {
+        close(fd);
         source->source = "";
         return 0;
     }
