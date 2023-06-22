@@ -249,7 +249,7 @@ class_alloc(VALUE flags, VALUE klass)
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
-    RCLASS_SET_ALLOCATOR((VALUE)obj, NULL);
+    RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
     return (VALUE)obj;
 }
