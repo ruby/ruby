@@ -1521,10 +1521,12 @@ yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) 
         // index in the buffer.
         if (constant->id != 0) {
             size_t buffer_offset = offset + ((constant->id - 1) * 8);
-            size_t source_offset = yp_long_to_u32(constant->start - parser->start);
+
+            uint32_t source_offset = yp_long_to_u32(constant->start - parser->start);
+            uint32_t constant_length = yp_ulong_to_u32(constant->length);
 
             memcpy(buffer->value + buffer_offset, &source_offset, 4);
-            memcpy(buffer->value + buffer_offset + 4, &constant->length, 4);
+            memcpy(buffer->value + buffer_offset + 4, &constant_length, 4);
         }
     }
 }

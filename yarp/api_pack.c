@@ -1,4 +1,4 @@
-#include "extension.h"
+#include "yarp/extension.h"
 
 static VALUE rb_cYARP;
 static VALUE rb_cYARPPack;

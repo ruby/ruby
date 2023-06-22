@@ -3,6 +3,19 @@
 require "yarp_test_helper"
 
 class ParseTest < Test::Unit::TestCase
+  # Because we're reading the snapshots from disk, we need to make sure that
+  # they're encoded as UTF-8. When certain settings are present this might not
+  # always be the case (e.g., LANG=C or -Eascii-8bit). So here we force the
+  # default external encoding for the duration of the test.
+  def setup
+    @previous_default_external = Encoding.default_external
+    ignore_warnings { Encoding.default_external = Encoding::UTF_8 }
+  end
+
+  def teardown
+    ignore_warnings { Encoding.default_external = @previous_default_external }
+  end
+
   def test_Ruby_3_2_plus
     assert_operator RUBY_VERSION, :>=, "3.2.0", "ParseTest requires Ruby 3.2+"
   end
@@ -21,7 +34,6 @@ class ParseTest < Test::Unit::TestCase
   # and the line breaks based on the length of the path.
   def normalize_printed(printed)
     printed
-      .b
       .gsub(
         /SourceFileNode \s*
           \(\s* (\d+\.\.\.\d+) \s*\) \s*
@@ -75,7 +87,7 @@ class ParseTest < Test::Unit::TestCase
       assert_empty result.errors, value
 
       if File.exist?(snapshot)
-        normalized = normalize_printed(File.binread(snapshot))
+        normalized = normalize_printed(File.read(snapshot))
 
         # If the snapshot file exists, but the printed value does not match the
         # snapshot, then update the snapshot file.
@@ -114,5 +126,15 @@ class ParseTest < Test::Unit::TestCase
         raise ArgumentError, "Test file has invalid syntax #{filepath}"
       end
     end
+  end
+
+  private
+
+  def ignore_warnings
+    previous_verbosity = $VERBOSE
+    $VERBOSE = nil
+    yield
+  ensure
+    $VERBOSE = previous_verbosity
   end
 end

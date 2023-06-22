@@ -1,4 +1,4 @@
-#include "extension.h"
+#include "yarp/extension.h"
 
 typedef enum {
     YP_ISEQ_TYPE_TOP,

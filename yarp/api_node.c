@@ -6,7 +6,7 @@
 /* template                                                                   */
 /******************************************************************************/
 #line 2 "api_node.c.erb"
-#include "extension.h"
+#include "yarp/extension.h"
 
 extern VALUE rb_cYARP;
 extern VALUE rb_cYARPToken;
@@ -25,8 +25,9 @@ yp_string_new(yp_string_t *string, rb_encoding *encoding) {
 
 VALUE
 yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding) {
+    ID type = rb_intern(yp_token_type_to_str(token->type));
     VALUE argv[] = {
-        ID2SYM(rb_intern(yp_token_type_to_str(token->type))),
+        ID2SYM(type),
         rb_enc_str_new(token->start, token->end - token->start, encoding),
         LONG2FIX(token->start - parser->start),
         LONG2FIX(token->end - token->start)
@@ -38,7 +39,7 @@ yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding) {
 VALUE
 yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *constants) {
     switch (node->type) {
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ALIAS_NODE: {
             yp_alias_node_t *cast = (yp_alias_node_t *) node;
             VALUE argv[5];
@@ -58,7 +59,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AliasNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ALTERNATION_PATTERN_NODE: {
             yp_alternation_pattern_node_t *cast = (yp_alternation_pattern_node_t *) node;
             VALUE argv[5];
@@ -78,7 +79,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AlternationPatternNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_AND_NODE: {
             yp_and_node_t *cast = (yp_and_node_t *) node;
             VALUE argv[5];
@@ -98,7 +99,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AndNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ARGUMENTS_NODE: {
             yp_arguments_node_t *cast = (yp_arguments_node_t *) node;
             VALUE argv[3];
@@ -115,7 +116,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ArgumentsNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ARRAY_NODE: {
             yp_array_node_t *cast = (yp_array_node_t *) node;
             VALUE argv[5];
@@ -138,7 +139,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ArrayNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ARRAY_PATTERN_NODE: {
             yp_array_pattern_node_t *cast = (yp_array_pattern_node_t *) node;
             VALUE argv[8];
@@ -173,7 +174,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("ArrayPatternNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ASSOC_NODE: {
             yp_assoc_node_t *cast = (yp_assoc_node_t *) node;
             VALUE argv[5];
@@ -193,7 +194,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AssocNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ASSOC_SPLAT_NODE: {
             yp_assoc_splat_node_t *cast = (yp_assoc_splat_node_t *) node;
             VALUE argv[4];
@@ -210,7 +211,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("AssocSplatNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BACK_REFERENCE_READ_NODE: {
             VALUE argv[2];
 
@@ -220,7 +221,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("BackReferenceReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BEGIN_NODE: {
             yp_begin_node_t *cast = (yp_begin_node_t *) node;
             VALUE argv[8];
@@ -249,7 +250,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("BeginNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BLOCK_ARGUMENT_NODE: {
             yp_block_argument_node_t *cast = (yp_block_argument_node_t *) node;
             VALUE argv[4];
@@ -266,7 +267,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockArgumentNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BLOCK_NODE: {
             yp_block_node_t *cast = (yp_block_node_t *) node;
             VALUE argv[7];
@@ -295,7 +296,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BLOCK_PARAMETER_NODE: {
             yp_block_parameter_node_t *cast = (yp_block_parameter_node_t *) node;
             VALUE argv[4];
@@ -312,7 +313,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BLOCK_PARAMETERS_NODE: {
             yp_block_parameters_node_t *cast = (yp_block_parameters_node_t *) node;
             VALUE argv[6];
@@ -339,7 +340,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockParametersNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_BREAK_NODE: {
             yp_break_node_t *cast = (yp_break_node_t *) node;
             VALUE argv[4];
@@ -356,7 +357,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("BreakNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CALL_NODE: {
             yp_call_node_t *cast = (yp_call_node_t *) node;
             VALUE argv[11];
@@ -394,7 +395,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(11, argv, rb_const_get_at(rb_cYARP, rb_intern("CallNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CALL_OPERATOR_AND_WRITE_NODE: {
             yp_call_operator_and_write_node_t *cast = (yp_call_operator_and_write_node_t *) node;
             VALUE argv[5];
@@ -414,7 +415,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CALL_OPERATOR_OR_WRITE_NODE: {
             yp_call_operator_or_write_node_t *cast = (yp_call_operator_or_write_node_t *) node;
             VALUE argv[5];
@@ -434,7 +435,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CALL_OPERATOR_WRITE_NODE: {
             yp_call_operator_write_node_t *cast = (yp_call_operator_write_node_t *) node;
             VALUE argv[6];
@@ -457,7 +458,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CAPTURE_PATTERN_NODE: {
             yp_capture_pattern_node_t *cast = (yp_capture_pattern_node_t *) node;
             VALUE argv[5];
@@ -477,7 +478,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CapturePatternNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CASE_NODE: {
             yp_case_node_t *cast = (yp_case_node_t *) node;
             VALUE argv[7];
@@ -506,7 +507,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("CaseNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CLASS_NODE: {
             yp_class_node_t *cast = (yp_class_node_t *) node;
             VALUE argv[9];
@@ -541,7 +542,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(9, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_class_variable_operator_and_write_node_t *cast = (yp_class_variable_operator_and_write_node_t *) node;
             VALUE argv[5];
@@ -561,7 +562,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_class_variable_operator_or_write_node_t *cast = (yp_class_variable_operator_or_write_node_t *) node;
             VALUE argv[5];
@@ -581,7 +582,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_OPERATOR_WRITE_NODE: {
             yp_class_variable_operator_write_node_t *cast = (yp_class_variable_operator_write_node_t *) node;
             VALUE argv[6];
@@ -604,7 +605,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_READ_NODE: {
             VALUE argv[2];
 
@@ -614,7 +615,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_WRITE_NODE: {
             yp_class_variable_write_node_t *cast = (yp_class_variable_write_node_t *) node;
             VALUE argv[5];
@@ -634,7 +635,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_OPERATOR_AND_WRITE_NODE: {
             yp_constant_operator_and_write_node_t *cast = (yp_constant_operator_and_write_node_t *) node;
             VALUE argv[5];
@@ -654,7 +655,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_OPERATOR_OR_WRITE_NODE: {
             yp_constant_operator_or_write_node_t *cast = (yp_constant_operator_or_write_node_t *) node;
             VALUE argv[5];
@@ -674,7 +675,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_OPERATOR_WRITE_NODE: {
             yp_constant_operator_write_node_t *cast = (yp_constant_operator_write_node_t *) node;
             VALUE argv[6];
@@ -697,7 +698,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_NODE: {
             yp_constant_path_node_t *cast = (yp_constant_path_node_t *) node;
             VALUE argv[5];
@@ -717,7 +718,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_OPERATOR_AND_WRITE_NODE: {
             yp_constant_path_operator_and_write_node_t *cast = (yp_constant_path_operator_and_write_node_t *) node;
             VALUE argv[5];
@@ -737,7 +738,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_OPERATOR_OR_WRITE_NODE: {
             yp_constant_path_operator_or_write_node_t *cast = (yp_constant_path_operator_or_write_node_t *) node;
             VALUE argv[5];
@@ -757,7 +758,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_OPERATOR_WRITE_NODE: {
             yp_constant_path_operator_write_node_t *cast = (yp_constant_path_operator_write_node_t *) node;
             VALUE argv[6];
@@ -780,7 +781,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_WRITE_NODE: {
             yp_constant_path_write_node_t *cast = (yp_constant_path_write_node_t *) node;
             VALUE argv[5];
@@ -800,7 +801,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_CONSTANT_READ_NODE: {
             VALUE argv[2];
 
@@ -810,7 +811,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_DEF_NODE: {
             yp_def_node_t *cast = (yp_def_node_t *) node;
             VALUE argv[13];
@@ -857,7 +858,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(13, argv, rb_const_get_at(rb_cYARP, rb_intern("DefNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_DEFINED_NODE: {
             yp_defined_node_t *cast = (yp_defined_node_t *) node;
             VALUE argv[6];
@@ -880,7 +881,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("DefinedNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ELSE_NODE: {
             yp_else_node_t *cast = (yp_else_node_t *) node;
             VALUE argv[5];
@@ -900,7 +901,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ElseNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_EMBEDDED_STATEMENTS_NODE: {
             yp_embedded_statements_node_t *cast = (yp_embedded_statements_node_t *) node;
             VALUE argv[5];
@@ -920,7 +921,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("EmbeddedStatementsNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_EMBEDDED_VARIABLE_NODE: {
             yp_embedded_variable_node_t *cast = (yp_embedded_variable_node_t *) node;
             VALUE argv[4];
@@ -937,7 +938,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("EmbeddedVariableNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_ENSURE_NODE: {
             yp_ensure_node_t *cast = (yp_ensure_node_t *) node;
             VALUE argv[5];
@@ -957,7 +958,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("EnsureNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FALSE_NODE: {
             VALUE argv[2];
 
@@ -967,7 +968,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("FalseNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FIND_PATTERN_NODE: {
             yp_find_pattern_node_t *cast = (yp_find_pattern_node_t *) node;
             VALUE argv[8];
@@ -999,7 +1000,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("FindPatternNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FLOAT_NODE: {
             VALUE argv[2];
 
@@ -1009,7 +1010,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("FloatNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FOR_NODE: {
             yp_for_node_t *cast = (yp_for_node_t *) node;
             VALUE argv[9];
@@ -1041,7 +1042,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(9, argv, rb_const_get_at(rb_cYARP, rb_intern("ForNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FORWARDING_ARGUMENTS_NODE: {
             VALUE argv[2];
 
@@ -1051,7 +1052,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingArgumentsNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FORWARDING_PARAMETER_NODE: {
             VALUE argv[2];
 
@@ -1061,7 +1062,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_FORWARDING_SUPER_NODE: {
             yp_forwarding_super_node_t *cast = (yp_forwarding_super_node_t *) node;
             VALUE argv[3];
@@ -1075,7 +1076,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingSuperNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_global_variable_operator_and_write_node_t *cast = (yp_global_variable_operator_and_write_node_t *) node;
             VALUE argv[5];
@@ -1095,7 +1096,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_global_variable_operator_or_write_node_t *cast = (yp_global_variable_operator_or_write_node_t *) node;
             VALUE argv[5];
@@ -1115,7 +1116,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
             yp_global_variable_operator_write_node_t *cast = (yp_global_variable_operator_write_node_t *) node;
             VALUE argv[6];
@@ -1138,7 +1139,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_READ_NODE: {
             VALUE argv[2];
 
@@ -1148,7 +1149,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_WRITE_NODE: {
             yp_global_variable_write_node_t *cast = (yp_global_variable_write_node_t *) node;
             VALUE argv[5];
@@ -1168,7 +1169,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_HASH_NODE: {
             yp_hash_node_t *cast = (yp_hash_node_t *) node;
             VALUE argv[5];
@@ -1191,7 +1192,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("HashNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_HASH_PATTERN_NODE: {
             yp_hash_pattern_node_t *cast = (yp_hash_pattern_node_t *) node;
             VALUE argv[7];
@@ -1220,7 +1221,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("HashPatternNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_IF_NODE: {
             yp_if_node_t *cast = (yp_if_node_t *) node;
             VALUE argv[7];
@@ -1246,7 +1247,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("IfNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_IMAGINARY_NODE: {
             yp_imaginary_node_t *cast = (yp_imaginary_node_t *) node;
             VALUE argv[3];
@@ -1260,7 +1261,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ImaginaryNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_IN_NODE: {
             yp_in_node_t *cast = (yp_in_node_t *) node;
             VALUE argv[6];
@@ -1283,7 +1284,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("InNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_instance_variable_operator_and_write_node_t *cast = (yp_instance_variable_operator_and_write_node_t *) node;
             VALUE argv[5];
@@ -1303,7 +1304,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_instance_variable_operator_or_write_node_t *cast = (yp_instance_variable_operator_or_write_node_t *) node;
             VALUE argv[5];
@@ -1323,7 +1324,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE: {
             yp_instance_variable_operator_write_node_t *cast = (yp_instance_variable_operator_write_node_t *) node;
             VALUE argv[6];
@@ -1346,7 +1347,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_READ_NODE: {
             VALUE argv[2];
 
@@ -1356,7 +1357,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_WRITE_NODE: {
             yp_instance_variable_write_node_t *cast = (yp_instance_variable_write_node_t *) node;
             VALUE argv[5];
@@ -1376,7 +1377,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INTEGER_NODE: {
             VALUE argv[2];
 
@@ -1386,7 +1387,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("IntegerNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
             yp_interpolated_regular_expression_node_t *cast = (yp_interpolated_regular_expression_node_t *) node;
             VALUE argv[6];
@@ -1412,7 +1413,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedRegularExpressionNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_STRING_NODE: {
             yp_interpolated_string_node_t *cast = (yp_interpolated_string_node_t *) node;
             VALUE argv[5];
@@ -1435,7 +1436,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedStringNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_SYMBOL_NODE: {
             yp_interpolated_symbol_node_t *cast = (yp_interpolated_symbol_node_t *) node;
             VALUE argv[5];
@@ -1458,7 +1459,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedSymbolNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_X_STRING_NODE: {
             yp_interpolated_x_string_node_t *cast = (yp_interpolated_x_string_node_t *) node;
             VALUE argv[5];
@@ -1481,7 +1482,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedXStringNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_KEYWORD_HASH_NODE: {
             yp_keyword_hash_node_t *cast = (yp_keyword_hash_node_t *) node;
             VALUE argv[3];
@@ -1498,7 +1499,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordHashNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_KEYWORD_PARAMETER_NODE: {
             yp_keyword_parameter_node_t *cast = (yp_keyword_parameter_node_t *) node;
             VALUE argv[4];
@@ -1515,7 +1516,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_KEYWORD_REST_PARAMETER_NODE: {
             yp_keyword_rest_parameter_node_t *cast = (yp_keyword_rest_parameter_node_t *) node;
             VALUE argv[4];
@@ -1532,7 +1533,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordRestParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_LAMBDA_NODE: {
             yp_lambda_node_t *cast = (yp_lambda_node_t *) node;
             VALUE argv[6];
@@ -1558,7 +1559,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LambdaNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_local_variable_operator_and_write_node_t *cast = (yp_local_variable_operator_and_write_node_t *) node;
             VALUE argv[6];
@@ -1581,7 +1582,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorAndWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_local_variable_operator_or_write_node_t *cast = (yp_local_variable_operator_or_write_node_t *) node;
             VALUE argv[6];
@@ -1604,7 +1605,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorOrWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_OPERATOR_WRITE_NODE: {
             yp_local_variable_operator_write_node_t *cast = (yp_local_variable_operator_write_node_t *) node;
             VALUE argv[7];
@@ -1630,7 +1631,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
             yp_local_variable_read_node_t *cast = (yp_local_variable_read_node_t *) node;
             VALUE argv[4];
@@ -1647,7 +1648,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_WRITE_NODE: {
             yp_local_variable_write_node_t *cast = (yp_local_variable_write_node_t *) node;
             VALUE argv[7];
@@ -1673,7 +1674,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_MATCH_PREDICATE_NODE: {
             yp_match_predicate_node_t *cast = (yp_match_predicate_node_t *) node;
             VALUE argv[5];
@@ -1693,7 +1694,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("MatchPredicateNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_MATCH_REQUIRED_NODE: {
             yp_match_required_node_t *cast = (yp_match_required_node_t *) node;
             VALUE argv[5];
@@ -1713,7 +1714,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("MatchRequiredNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_MISSING_NODE: {
             VALUE argv[2];
 
@@ -1723,7 +1724,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("MissingNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_MODULE_NODE: {
             yp_module_node_t *cast = (yp_module_node_t *) node;
             VALUE argv[7];
@@ -1752,7 +1753,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("ModuleNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_MULTI_WRITE_NODE: {
             yp_multi_write_node_t *cast = (yp_multi_write_node_t *) node;
             VALUE argv[7];
@@ -1781,7 +1782,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("MultiWriteNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_NEXT_NODE: {
             yp_next_node_t *cast = (yp_next_node_t *) node;
             VALUE argv[4];
@@ -1798,7 +1799,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("NextNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_NIL_NODE: {
             VALUE argv[2];
 
@@ -1808,7 +1809,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("NilNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_NO_KEYWORDS_PARAMETER_NODE: {
             yp_no_keywords_parameter_node_t *cast = (yp_no_keywords_parameter_node_t *) node;
             VALUE argv[4];
@@ -1825,7 +1826,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("NoKeywordsParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_NUMBERED_REFERENCE_READ_NODE: {
             VALUE argv[2];
 
@@ -1835,7 +1836,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("NumberedReferenceReadNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_OPTIONAL_PARAMETER_NODE: {
             yp_optional_parameter_node_t *cast = (yp_optional_parameter_node_t *) node;
             VALUE argv[6];
@@ -1858,7 +1859,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("OptionalParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_OR_NODE: {
             yp_or_node_t *cast = (yp_or_node_t *) node;
             VALUE argv[5];
@@ -1878,7 +1879,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("OrNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_PARAMETERS_NODE: {
             yp_parameters_node_t *cast = (yp_parameters_node_t *) node;
             VALUE argv[9];
@@ -1922,7 +1923,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(9, argv, rb_const_get_at(rb_cYARP, rb_intern("ParametersNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_PARENTHESES_NODE: {
             yp_parentheses_node_t *cast = (yp_parentheses_node_t *) node;
             VALUE argv[5];
@@ -1942,7 +1943,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ParenthesesNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_PINNED_EXPRESSION_NODE: {
             yp_pinned_expression_node_t *cast = (yp_pinned_expression_node_t *) node;
             VALUE argv[6];
@@ -1965,7 +1966,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("PinnedExpressionNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_PINNED_VARIABLE_NODE: {
             yp_pinned_variable_node_t *cast = (yp_pinned_variable_node_t *) node;
             VALUE argv[4];
@@ -1982,7 +1983,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("PinnedVariableNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_POST_EXECUTION_NODE: {
             yp_post_execution_node_t *cast = (yp_post_execution_node_t *) node;
             VALUE argv[6];
@@ -2005,7 +2006,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("PostExecutionNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_PRE_EXECUTION_NODE: {
             yp_pre_execution_node_t *cast = (yp_pre_execution_node_t *) node;
             VALUE argv[6];
@@ -2028,7 +2029,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("PreExecutionNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_PROGRAM_NODE: {
             yp_program_node_t *cast = (yp_program_node_t *) node;
             VALUE argv[4];
@@ -2048,7 +2049,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ProgramNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_RANGE_NODE: {
             yp_range_node_t *cast = (yp_range_node_t *) node;
             VALUE argv[6];
@@ -2071,7 +2072,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("RangeNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_RATIONAL_NODE: {
             yp_rational_node_t *cast = (yp_rational_node_t *) node;
             VALUE argv[3];
@@ -2085,7 +2086,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("RationalNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_REDO_NODE: {
             VALUE argv[2];
 
@@ -2095,7 +2096,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("RedoNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_REGULAR_EXPRESSION_NODE: {
             yp_regular_expression_node_t *cast = (yp_regular_expression_node_t *) node;
             VALUE argv[7];
@@ -2121,7 +2122,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("RegularExpressionNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_REQUIRED_DESTRUCTURED_PARAMETER_NODE: {
             yp_required_destructured_parameter_node_t *cast = (yp_required_destructured_parameter_node_t *) node;
             VALUE argv[5];
@@ -2144,7 +2145,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("RequiredDestructuredParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_REQUIRED_PARAMETER_NODE: {
             yp_required_parameter_node_t *cast = (yp_required_parameter_node_t *) node;
             VALUE argv[3];
@@ -2158,7 +2159,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("RequiredParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_RESCUE_MODIFIER_NODE: {
             yp_rescue_modifier_node_t *cast = (yp_rescue_modifier_node_t *) node;
             VALUE argv[5];
@@ -2178,7 +2179,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("RescueModifierNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_RESCUE_NODE: {
             yp_rescue_node_t *cast = (yp_rescue_node_t *) node;
             VALUE argv[8];
@@ -2210,7 +2211,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("RescueNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_REST_PARAMETER_NODE: {
             yp_rest_parameter_node_t *cast = (yp_rest_parameter_node_t *) node;
             VALUE argv[4];
@@ -2227,7 +2228,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("RestParameterNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_RETRY_NODE: {
             VALUE argv[2];
 
@@ -2237,7 +2238,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("RetryNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_RETURN_NODE: {
             yp_return_node_t *cast = (yp_return_node_t *) node;
             VALUE argv[4];
@@ -2254,7 +2255,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ReturnNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SELF_NODE: {
             VALUE argv[2];
 
@@ -2264,7 +2265,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SelfNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SINGLETON_CLASS_NODE: {
             yp_singleton_class_node_t *cast = (yp_singleton_class_node_t *) node;
             VALUE argv[8];
@@ -2296,7 +2297,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("SingletonClassNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SOURCE_ENCODING_NODE: {
             VALUE argv[2];
 
@@ -2306,7 +2307,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceEncodingNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SOURCE_FILE_NODE: {
             yp_source_file_node_t *cast = (yp_source_file_node_t *) node;
             VALUE argv[3];
@@ -2320,7 +2321,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceFileNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SOURCE_LINE_NODE: {
             VALUE argv[2];
 
@@ -2330,7 +2331,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceLineNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SPLAT_NODE: {
             yp_splat_node_t *cast = (yp_splat_node_t *) node;
             VALUE argv[4];
@@ -2347,7 +2348,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("SplatNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_STATEMENTS_NODE: {
             yp_statements_node_t *cast = (yp_statements_node_t *) node;
             VALUE argv[3];
@@ -2364,7 +2365,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("StatementsNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_STRING_CONCAT_NODE: {
             yp_string_concat_node_t *cast = (yp_string_concat_node_t *) node;
             VALUE argv[4];
@@ -2381,7 +2382,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("StringConcatNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_STRING_NODE: {
             yp_string_node_t *cast = (yp_string_node_t *) node;
             VALUE argv[6];
@@ -2404,7 +2405,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("StringNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SUPER_NODE: {
             yp_super_node_t *cast = (yp_super_node_t *) node;
             VALUE argv[7];
@@ -2430,7 +2431,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("SuperNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_SYMBOL_NODE: {
             yp_symbol_node_t *cast = (yp_symbol_node_t *) node;
             VALUE argv[6];
@@ -2453,7 +2454,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("SymbolNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_TRUE_NODE: {
             VALUE argv[2];
 
@@ -2463,7 +2464,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("TrueNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_UNDEF_NODE: {
             yp_undef_node_t *cast = (yp_undef_node_t *) node;
             VALUE argv[4];
@@ -2483,7 +2484,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("UndefNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_UNLESS_NODE: {
             yp_unless_node_t *cast = (yp_unless_node_t *) node;
             VALUE argv[7];
@@ -2509,7 +2510,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("UnlessNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_UNTIL_NODE: {
             yp_until_node_t *cast = (yp_until_node_t *) node;
             VALUE argv[5];
@@ -2529,7 +2530,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("UntilNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_WHEN_NODE: {
             yp_when_node_t *cast = (yp_when_node_t *) node;
             VALUE argv[5];
@@ -2552,7 +2553,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("WhenNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_WHILE_NODE: {
             yp_while_node_t *cast = (yp_while_node_t *) node;
             VALUE argv[5];
@@ -2572,7 +2573,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("WhileNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_X_STRING_NODE: {
             yp_x_string_node_t *cast = (yp_x_string_node_t *) node;
             VALUE argv[6];
@@ -2595,7 +2596,7 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
 
             return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("XStringNode")));
         }
-#line 36 "api_node.c.erb"
+#line 37 "api_node.c.erb"
         case YP_NODE_YIELD_NODE: {
             yp_yield_node_t *cast = (yp_yield_node_t *) node;
             VALUE argv[6];
@@ -2623,9 +2624,9 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
     }
 }
 
-#line 93 "api_node.c.erb"
+#line 94 "api_node.c.erb"
 VALUE yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
-    ID * constants = calloc(parser->constant_pool.size, sizeof(ID));
+    ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
 
     for (size_t index = 0; index < parser->constant_pool.capacity; index++) {
         yp_constant_t constant = parser->constant_pool.constants[index];

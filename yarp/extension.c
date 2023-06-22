@@ -1,4 +1,4 @@
-#include "extension.h"
+#include "yarp/extension.h"
 
 VALUE rb_cYARP;
 VALUE rb_cYARPToken;

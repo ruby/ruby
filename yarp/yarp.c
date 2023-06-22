@@ -7544,7 +7544,11 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
             // If there are arguments on the call node, then it can't be a method
             // call ending with = or a local variable write, so it must be a
             // syntax error. In this case we'll fall through to our default
-            // handling.
+            // handling. We need to free the value that we parsed because there
+            // is no way for us to attach it to the tree at this point.
+            if (value != NULL) {
+                yp_node_destroy(parser, value);
+            }
         }
         /* fallthrough */
         default:
