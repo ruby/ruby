@@ -38,8 +38,6 @@ class Gem::Resolver
   ##
   # List of dependencies that could not be found in the configured sources.
 
-  attr_reader :missing
-
   attr_reader :stats
 
   ##
@@ -106,7 +104,6 @@ class Gem::Resolver
     @development         = false
     @development_shallow = false
     @ignore_dependencies = false
-    @missing             = []
     @skip_gems           = {}
     @soft_missing        = false
     @stats               = Gem::Resolver::Stats.new
@@ -227,7 +224,6 @@ class Gem::Resolver
   def search_for(dependency)
     possibles, all = find_possible(dependency)
     if !@soft_missing && possibles.empty?
-      @missing << dependency
       exc = Gem::UnsatisfiableDependencyError.new dependency, all
       exc.errors = @set.errors
       raise exc
@@ -274,7 +270,6 @@ class Gem::Resolver
   end
 
   def allow_missing?(dependency)
-    @missing << dependency
     @soft_missing
   end
 
