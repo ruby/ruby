@@ -68,7 +68,7 @@ The following default gems are updated.
 * strscan 3.0.7
 * syntax_suggest 1.1.0
 * time 0.2.2
-* timeout 0.3.2
+* timeout 0.4.0
 * uri 0.12.1
 
 The following bundled gems are updated.
