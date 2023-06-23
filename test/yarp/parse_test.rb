@@ -61,15 +61,16 @@ class ParseTest < Test::Unit::TestCase
     assert_equal filepath, find_source_file_node(parsed_result.value).filepath
   end
 
-  Dir[File.expand_path("fixtures/**/*.txt", __dir__)].each do |filepath|
-    relative = filepath.delete_prefix("#{File.expand_path("fixtures", __dir__)}/")
+  base = File.join(__dir__, "fixtures")
+  Dir["**/*.txt", base: base].each do |relative|
     next if known_failures.include?(relative)
 
+    filepath = File.join(base, relative)
     snapshot = File.expand_path(File.join("snapshots", relative), __dir__)
     directory = File.dirname(snapshot)
     FileUtils.mkdir_p(directory) unless File.directory?(directory)
 
-    define_method "test_filepath_#{filepath}" do
+    define_method "test_filepath_#{relative}" do
       # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,
       # and explicitly set the external encoding to UTF-8 to override the binmode default.
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
