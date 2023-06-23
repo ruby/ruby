@@ -380,7 +380,7 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
                 break;
             case '\'': { // named capture group
                 const char *start = ++parser->cursor;
-                if (!yp_regexp_char_find(parser, '\'')) {
+                if (yp_regexp_char_is_eof(parser) || !yp_regexp_char_find(parser, '\'')) {
                     return false;
                 }
 
