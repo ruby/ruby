@@ -272,13 +272,16 @@ typedef enum {
     YP_REGEXP_OPTION_STATE_ADDABLE
 } yp_regexp_option_state_t;
 
+enum {
+    option_slots = 128
+};
 // This is the set of options that are configurable on the regular expression.
-typedef yp_regexp_option_state_t yp_regexp_options_t[128];
+typedef yp_regexp_option_state_t yp_regexp_options_t[option_slots];
 
 // Initialize a new set of options to their default values.
 static void
 yp_regexp_options_init(yp_regexp_options_t *options) {
-    memset(options, YP_REGEXP_OPTION_STATE_INVALID, sizeof(yp_regexp_option_state_t) * 128);
+    memset(options, YP_REGEXP_OPTION_STATE_INVALID, sizeof(yp_regexp_option_state_t) * option_slots);
     (*options)['i'] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
     (*options)['m'] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
     (*options)['x'] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
@@ -291,6 +294,9 @@ yp_regexp_options_init(yp_regexp_options_t *options) {
 // added, false if it was already present.
 static bool
 yp_regexp_options_add(yp_regexp_options_t *options, unsigned char option) {
+    if (option >= option_slots) {
+        return false;
+    }
     switch ((*options)[option]) {
         case YP_REGEXP_OPTION_STATE_INVALID:
             return false;
@@ -306,6 +312,9 @@ yp_regexp_options_add(yp_regexp_options_t *options, unsigned char option) {
 // it was removed, false if it was already absent.
 static bool
 yp_regexp_options_remove(yp_regexp_options_t *options, unsigned char option) {
+    if (option >= option_slots) {
+        return false;
+    }
     switch ((*options)[option]) {
         case YP_REGEXP_OPTION_STATE_INVALID:
         case YP_REGEXP_OPTION_STATE_ADDABLE:
