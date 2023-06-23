@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.3.2"
+  VERSION = "0.4.0"
 
   # Internal error raised to when a timeout is triggered.
   class ExitException < Exception
