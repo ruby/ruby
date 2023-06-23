@@ -725,7 +725,8 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         return RHASH_ST_TABLE(hash);
     }
 
-    if (RHASH_AR_TABLE(hash)) {
+    RUBY_ASSERT(RHASH_AR_TABLE(hash));
+    {
         unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
 
         rb_st_init_existing_table_with_size(new_tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
@@ -737,9 +738,6 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
             st_add_direct(new_tab, pair->key, pair->val);
         }
         ar_free_and_clear_table(hash);
-    }
-    else {
-        rb_st_init_existing_table_with_size(new_tab, &objhash, 0);
     }
 
     RHASH_ST_TABLE_SET(hash, new_tab);
