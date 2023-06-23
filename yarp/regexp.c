@@ -338,6 +338,9 @@ static bool
 yp_regexp_parse_group(yp_regexp_parser_t *parser) {
     // First, parse any options for the group.
     if (yp_regexp_char_accept(parser, '?')) {
+        if (yp_regexp_char_is_eof(parser)) {
+            return false;
+        }
         yp_regexp_options_t options;
         yp_regexp_options_init(&options);
 
