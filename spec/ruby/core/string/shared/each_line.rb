@@ -122,6 +122,12 @@ describe :string_each_line, shared: true do
     out.should == ["hello\n", "world."]
   end
 
+  it "returns Strings in the same encoding as self" do
+    "one\ntwo\r\nthree".encode("US-ASCII").send(@method) do |s|
+      s.encoding.should == Encoding::US_ASCII
+    end
+  end
+
   it "raises a TypeError when the separator can't be converted to a string" do
     -> { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
     -> { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)

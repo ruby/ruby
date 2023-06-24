@@ -8,6 +8,10 @@ describe "String#downcase" do
     "hello".downcase.should == "hello"
   end
 
+  it "returns a String in the same encoding as self" do
+    "hELLO".encode("US-ASCII").downcase.encoding.should == Encoding::US_ASCII
+  end
+
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "ÄÖÜ".downcase.should == "äöü"

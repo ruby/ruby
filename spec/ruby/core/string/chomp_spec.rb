@@ -40,6 +40,10 @@ describe "String#chomp" do
       "".chomp.should == ""
     end
 
+    it "returns a String in the same encoding as self" do
+      "abc\n\n".encode("US-ASCII").chomp.encoding.should == Encoding::US_ASCII
+    end
+
     ruby_version_is ''...'3.0' do
       it "returns subclass instances when called on a subclass" do
         str = StringSpecs::MyString.new("hello\n").chomp

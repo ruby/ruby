@@ -60,6 +60,10 @@ describe "String#chop" do
       StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(String)
     end
   end
+
+  it "returns a String in the same encoding as self" do
+    "abc\n\n".encode("US-ASCII").chop.encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#chop!" do

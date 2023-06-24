@@ -9,6 +9,10 @@ describe "String#swapcase" do
    "+++---111222???".swapcase.should == "+++---111222???"
   end
 
+  it "returns a String in the same encoding as self" do
+    "Hello".encode("US-ASCII").swapcase.encoding.should == Encoding::US_ASCII
+  end
+
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äÖü".swapcase.should == "ÄöÜ"

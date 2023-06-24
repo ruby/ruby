@@ -1,5 +1,7 @@
 require_relative '../fixtures/classes'
 
+# NOTE: should be syncronized with library/stringio/initialize_spec.rb
+
 # This group of specs may ONLY contain specs that do successfully create
 # an IO instance from the file descriptor returned by #new_fd helper.
 describe :io_new, shared: true do

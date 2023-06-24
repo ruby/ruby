@@ -182,6 +182,46 @@ VALUE io_spec_rb_thread_fd_writable(VALUE self, VALUE io) {
   return Qnil;
 }
 
+VALUE io_spec_rb_thread_fd_select_read(VALUE self, VALUE io) {
+  int fd = io_spec_get_fd(io);
+
+  rb_fdset_t fds;
+  rb_fd_init(&fds);
+  rb_fd_set(fd, &fds);
+
+  int r = rb_thread_fd_select(fd + 1, &fds, NULL, NULL, NULL);
+  rb_fd_term(&fds);
+  return INT2FIX(r);
+}
+
+VALUE io_spec_rb_thread_fd_select_write(VALUE self, VALUE io) {
+  int fd = io_spec_get_fd(io);
+
+  rb_fdset_t fds;
+  rb_fd_init(&fds);
+  rb_fd_set(fd, &fds);
+
+  int r = rb_thread_fd_select(fd + 1, NULL, &fds, NULL, NULL);
+  rb_fd_term(&fds);
+  return INT2FIX(r);
+}
+
+VALUE io_spec_rb_thread_fd_select_timeout(VALUE self, VALUE io) {
+  int fd = io_spec_get_fd(io);
+
+  struct timeval timeout;
+  timeout.tv_sec = 10;
+  timeout.tv_usec = 20;
+
+  rb_fdset_t fds;
+  rb_fd_init(&fds);
+  rb_fd_set(fd, &fds);
+
+  int r = rb_thread_fd_select(fd + 1, NULL, &fds, NULL, &timeout);
+  rb_fd_term(&fds);
+  return INT2FIX(r);
+}
+
 VALUE io_spec_rb_io_binmode(VALUE self, VALUE io) {
   return rb_io_binmode(io);
 }
@@ -256,6 +296,9 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_wait_writable", io_spec_rb_io_wait_writable, 1);
   rb_define_method(cls, "rb_thread_wait_fd", io_spec_rb_thread_wait_fd, 1);
   rb_define_method(cls, "rb_thread_fd_writable", io_spec_rb_thread_fd_writable, 1);
+  rb_define_method(cls, "rb_thread_fd_select_read", io_spec_rb_thread_fd_select_read, 1);
+  rb_define_method(cls, "rb_thread_fd_select_write", io_spec_rb_thread_fd_select_write, 1);
+  rb_define_method(cls, "rb_thread_fd_select_timeout", io_spec_rb_thread_fd_select_timeout, 1);
   rb_define_method(cls, "rb_wait_for_single_fd", io_spec_rb_wait_for_single_fd, 4);
   rb_define_method(cls, "rb_io_binmode", io_spec_rb_io_binmode, 1);
   rb_define_method(cls, "rb_fd_fix_cloexec", io_spec_rb_fd_fix_cloexec, 1);

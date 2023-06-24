@@ -251,6 +251,22 @@ describe "Time.at" do
       time.to_i.should == @epoch_time
     end
 
+    it "could be UTC offset as a 'UTC' String" do
+      time = Time.at(@epoch_time, in: "UTC")
+
+      time.utc_offset.should == 0
+      time.zone.should == "UTC"
+      time.to_i.should == @epoch_time
+    end
+
+    it "could be UTC offset as a military zone A-Z" do
+      time = Time.at(@epoch_time, in: "B")
+
+      time.utc_offset.should == 3600 * 2
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
+
     it "could be a timezone object" do
       zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
       time = Time.at(@epoch_time, in: zone)

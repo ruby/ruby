@@ -8,6 +8,10 @@ describe "String#upcase" do
     "hello".upcase.should == "HELLO"
   end
 
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").upcase.encoding.should == Encoding::US_ASCII
+  end
+
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äöü".upcase.should == "ÄÖÜ"

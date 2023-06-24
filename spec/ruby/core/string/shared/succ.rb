@@ -74,6 +74,10 @@ describe :string_succ, shared: true do
       StringSpecs::MyString.new("z").send(@method).should be_an_instance_of(String)
     end
   end
+
+  it "returns a String in the same encoding as self" do
+    "z".encode("US-ASCII").send(@method).encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe :string_succ_bang, shared: true do

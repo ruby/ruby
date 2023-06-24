@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require_relative 'fixtures/marshal_data'
 
 describe "Marshal.dump" do
@@ -106,7 +107,7 @@ describe "Marshal.dump" do
   end
 
   describe "with an object responding to #_dump" do
-    it "dumps the object returned by #marshal_dump" do
+    it "dumps the object returned by #_dump" do
       Marshal.dump(UserDefined.new).should == "\004\bu:\020UserDefined\022\004\b[\a:\nstuff;\000"
     end
 
@@ -121,6 +122,34 @@ describe "Marshal.dump" do
       m.should_receive(:marshal_dump).and_return(0)
       m.should_not_receive(:_dump)
       Marshal.dump(m)
+    end
+
+    it "indexes instance variables of a String returned by #_dump at first and then indexes the object itself" do
+      class MarshalSpec::M1::A
+        def _dump(level)
+          s = "<dump>"
+          s.instance_variable_set(:@foo, "bar")
+          s
+        end
+      end
+
+      a = MarshalSpec::M1::A.new
+
+      # 0-based index of the object a = 2, that is encoded as \x07 and printed as "\a" character.
+      # Objects are serialized in the following order: Array, a, "bar".
+      # But they are indexed in different order: Array (index=0), "bar" (index=1), a (index=2)
+      # So the second occurenc of the object a is encoded as an index 2.
+      reference = "@\a"
+      Marshal.dump([a, a]).should == "\x04\b[\aIu:\x17MarshalSpec::M1::A\v<dump>\x06:\t@foo\"\bbar#{reference}"
+    end
+
+    describe "Core library classes with #_dump returning a String with instance variables" do
+      it "indexes instance variables and then a Time object itself" do
+        t = Time.utc(2022)
+        reference = "@\a"
+
+        Marshal.dump([t, t]).should == "\x04\b[\aIu:\tTime\r \x80\x1E\xC0\x00\x00\x00\x00\x06:\tzoneI\"\bUTC\x06:\x06EF#{reference}"
+      end
     end
   end
 
@@ -184,6 +213,20 @@ describe "Marshal.dump" do
         [Marshal, -2**63, "\004\bl-\t\000\000\000\000\000\000\000\200"],
         [Marshal, -2**64, "\004\bl-\n\000\000\000\000\000\000\000\000\001\000"],
       ].should be_computed_by(:dump)
+    end
+
+    it "increases the object links counter" do
+      obj = Object.new
+      object_1_link = "\x06" # representing of (0-based) index=1 (by adding 5 for small Integers)
+      object_2_link = "\x07" # representing of index=2
+
+      # objects: Array, Object, Object
+      Marshal.dump([obj, obj]).should == "\x04\b[\ao:\vObject\x00@#{object_1_link}"
+
+      # objects: Array, Bignum, Object, Object
+      Marshal.dump([2**64, obj, obj]).should == "\x04\b[\bl+\n\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00o:\vObject\x00@#{object_2_link}"
+      Marshal.dump([2**48, obj, obj]).should == "\x04\b[\bl+\t\x00\x00\x00\x00\x00\x00\x01\x00o:\vObject\x00@#{object_2_link}"
+      Marshal.dump([2**32, obj, obj]).should == "\x04\b[\bl+\b\x00\x00\x00\x00\x01\x00o:\vObject\x00@#{object_2_link}"
     end
   end
 

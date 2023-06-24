@@ -51,6 +51,10 @@ describe "String#delete_suffix" do
       s.delete_suffix('ello').should be_an_instance_of(String)
     end
   end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").delete_suffix("ello").encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#delete_suffix!" do

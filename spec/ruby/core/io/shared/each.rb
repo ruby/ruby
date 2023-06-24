@@ -77,6 +77,10 @@ describe :io_each, shared: true do
         -> { @io.send(@method, 0){} }.should raise_error(ArgumentError)
       end
     end
+
+    it "does not accept Integers that don't fit in a C off_t" do
+      -> { @io.send(@method, 2**128){} }.should raise_error(RangeError)
+    end
   end
 
   describe "when passed a String containing one space as a separator" do

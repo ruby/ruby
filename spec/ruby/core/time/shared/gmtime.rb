@@ -22,11 +22,11 @@ describe :time_gmtime, shared: true do
       time.send(@method).should equal(time)
     end
 
-    it "raises a RuntimeError if the time is not UTC" do
+    it "raises a FrozenError if the time is not UTC" do
       with_timezone("CST", -6) do
         time = Time.now
         time.freeze
-        -> { time.send(@method) }.should raise_error(RuntimeError)
+        -> { time.send(@method) }.should raise_error(FrozenError)
       end
     end
   end

@@ -262,6 +262,21 @@ describe "C-API IO function" do
     end
   end
 
+  describe "rb_thread_fd_select" do
+    it "waits until an fd is ready for reading" do
+      @w_io.write "rb_thread_fd_select"
+      @o.rb_thread_fd_select_read(@r_io).should == 1
+    end
+
+    it "waits until an fd is ready for writing" do
+      @o.rb_thread_fd_select_write(@w_io).should == 1
+    end
+
+    it "waits until an fd is ready for writing with timeout" do
+      @o.rb_thread_fd_select_timeout(@w_io).should == 1
+    end
+  end
+
   platform_is_not :windows do
     describe "rb_io_wait_readable" do
       it "returns false if there is no error condition" do

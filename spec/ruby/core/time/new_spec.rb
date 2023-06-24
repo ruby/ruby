@@ -58,11 +58,88 @@ describe "Time.new with a utc_offset argument" do
     Time.new(2000, 1, 1, 0, 0, 0, "-04:10:43").utc_offset.should == -15043
   end
 
+  ruby_bug '#13669', '3.0'...'3.1' do
+    it "returns a Time with a UTC offset specified as +HH" do
+      Time.new(2000, 1, 1, 0, 0, 0, "+05").utc_offset.should == 3600 * 5
+    end
+
+    it "returns a Time with a UTC offset specified as -HH" do
+      Time.new(2000, 1, 1, 0, 0, 0, "-05").utc_offset.should == -3600 * 5
+    end
+
+    it "returns a Time with a UTC offset specified as +HHMM" do
+      Time.new(2000, 1, 1, 0, 0, 0, "+0530").utc_offset.should == 19800
+    end
+
+    it "returns a Time with a UTC offset specified as -HHMM" do
+      Time.new(2000, 1, 1, 0, 0, 0, "-0530").utc_offset.should == -19800
+    end
+
+    it "returns a Time with a UTC offset specified as +HHMMSS" do
+      Time.new(2000, 1, 1, 0, 0, 0, "+053037").utc_offset.should == 19837
+    end
+
+    it "returns a Time with a UTC offset specified as -HHMMSS" do
+      Time.new(2000, 1, 1, 0, 0, 0, "-053037").utc_offset.should == -19837
+    end
+  end
+
   describe "with an argument that responds to #to_str" do
     it "coerces using #to_str" do
       o = mock('string')
       o.should_receive(:to_str).and_return("+05:30")
       Time.new(2000, 1, 1, 0, 0, 0, o).utc_offset.should == 19800
+    end
+  end
+
+  it "returns a Time with UTC offset specified as UTC" do
+    Time.new(2000, 1, 1, 0, 0, 0, "UTC").utc_offset.should == 0
+  end
+
+  it "returns a Time with UTC offset specified as a single letter military timezone" do
+    [
+      ["A", 3600],
+      ["B", 3600 * 2],
+      ["C", 3600 * 3],
+      ["D", 3600 * 4],
+      ["E", 3600 * 5],
+      ["F", 3600 * 6],
+      ["G", 3600 * 7],
+      ["H", 3600 * 8],
+      ["I", 3600 * 9],
+      # J is not supported
+      ["K", 3600 * 10],
+      ["L", 3600 * 11],
+      ["M", 3600 * 12],
+      ["N", 3600 * -1],
+      ["O", 3600 * -2],
+      ["P", 3600 * -3],
+      ["Q", 3600 * -4],
+      ["R", 3600 * -5],
+      ["S", 3600 * -6],
+      ["T", 3600 * -7],
+      ["U", 3600 * -8],
+      ["V", 3600 * -9],
+      ["W", 3600 * -10],
+      ["X", 3600 * -11],
+      ["Y", 3600 * -12],
+      ["Z", 0]
+    ].each do |letter, offset|
+      Time.new(2000, 1, 1, 0, 0, 0, letter).utc_offset.should == offset
+    end
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "raises ArgumentError if the string argument is J" do
+      message = '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset'
+      -> { Time.new(2000, 1, 1, 0, 0, 0, "J") }.should raise_error(ArgumentError, message)
+    end
+  end
+
+  ruby_version_is "3.1" do
+    it "raises ArgumentError if the string argument is J" do
+      message = '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: J'
+      -> { Time.new(2000, 1, 1, 0, 0, 0, "J") }.should raise_error(ArgumentError, message)
     end
   end
 
@@ -93,7 +170,12 @@ describe "Time.new with a utc_offset argument" do
   end
 
   it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding" do
-    -> { Time.new(2000, 1, 1, 0, 0, 0, "-04:10".encode("UTF-16LE")) }.should raise_error(ArgumentError)
+    # Don't check exception message - it was changed in previous CRuby versions:
+    # - "string contains null byte"
+    # - '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset'
+    -> {
+      Time.new(2000, 1, 1, 0, 0, 0, "-04:10".encode("UTF-16LE"))
+    }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds" do
@@ -106,18 +188,8 @@ describe "Time.new with a utc_offset argument" do
     -> { Time.new(2000, 1, 1, 0, 0, 0, 86400) }.should raise_error(ArgumentError)
   end
 
-  it "raises ArgumentError if the seconds argument is negative" do
-    -> { Time.new(2000, 1, 1, 0, 0, -1) }.should raise_error(ArgumentError)
-  end
-
   it "raises ArgumentError if the utc_offset argument is greater than or equal to 10e9" do
     -> { Time.new(2000, 1, 1, 0, 0, 0, 1000000000) }.should raise_error(ArgumentError)
-  end
-
-  it "raises ArgumentError if the month is greater than 12" do
-    # For some reason MRI uses a different message for month in 13-15 and month>=16
-    -> { Time.new(2000, 13, 1, 0, 0, 0, "+01:00") }.should raise_error(ArgumentError, /(mon|argument) out of range/)
-    -> { Time.new(2000, 16, 1, 0, 0, 0, "+01:00") }.should raise_error(ArgumentError, "argument out of range")
   end
 end
 

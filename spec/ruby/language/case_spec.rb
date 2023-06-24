@@ -103,7 +103,7 @@ describe "The 'case'-construct" do
     $1.should == "42"
   end
 
-  it "tests with a regexp interpolated within another regexp" do
+  it "tests with a string interpolated in a regexp" do
     digits = '\d+'
     case "foo44"
     when /oo(#{digits})/
@@ -116,7 +116,7 @@ describe "The 'case'-construct" do
     $1.should == "44"
   end
 
-  it "tests with a string interpolated in a regexp" do
+  it "tests with a regexp interpolated within another regexp" do
     digits_regexp = /\d+/
     case "foo43"
     when /oo(#{digits_regexp})/

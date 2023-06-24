@@ -216,6 +216,10 @@ describe "IO#gets" do
     @io.gets(nil, 0).should == ""
     @io.gets("", 0).should == ""
   end
+
+  it "does not accept limit that doesn't fit in a C off_t" do
+    -> { @io.gets(2**128) }.should raise_error(RangeError)
+  end
 end
 
 describe "IO#gets" do
