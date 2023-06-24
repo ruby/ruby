@@ -184,8 +184,8 @@ class RubyLex
 
   def prompt(opens, continue, line_num_offset)
     ltype = ltype_from_open_tokens(opens)
-    _indent_level, nesting_level = calc_nesting_depth(opens)
-    @prompt&.call(ltype, nesting_level, opens.any? || continue, @line_no + line_num_offset)
+    indent_level = calc_indent_level(opens)
+    @prompt&.call(ltype, indent_level, opens.any? || continue, @line_no + line_num_offset)
   end
 
   def check_code_state(code)
@@ -356,10 +356,8 @@ class RubyLex
     false
   end
 
-  # Calculates [indent_level, nesting_level]. nesting_level is used in prompt string.
-  def calc_nesting_depth(opens)
+  def calc_indent_level(opens)
     indent_level = 0
-    nesting_level = 0
     opens.each_with_index do |t, index|
       case t.event
       when :on_heredoc_beg
@@ -377,11 +375,10 @@ class RubyLex
       when :on_embdoc_beg
         indent_level = 0
       else
-        nesting_level += 1
         indent_level += 1
       end
     end
-    [indent_level, nesting_level]
+    indent_level
   end
 
   FREE_INDENT_TOKENS = %i[on_tstring_beg on_backtick on_regexp_beg on_symbeg]
@@ -403,8 +400,7 @@ class RubyLex
 
     # To correctly indent line like `end.map do`, we use shortest open tokens on each line for indent calculation.
     # Shortest open tokens can be calculated by `opens.take(min_depth)`
-    indent_level, _nesting_level = calc_nesting_depth(prev_opens.take(min_depth))
-    indent = 2 * indent_level
+    indent = 2 * calc_indent_level(prev_opens.take(min_depth))
 
     preserve_indent = lines[line_index - (is_newline ? 1 : 0)][/^ */].size
 
@@ -442,7 +438,7 @@ class RubyLex
         end
       else
         # Heredoc close
-        prev_line_indent_level, _prev_line_nesting_level = calc_nesting_depth(prev_opens)
+        prev_line_indent_level = calc_indent_level(prev_opens)
         tok.match?(/^<<[~-]/) ? 2 * (prev_line_indent_level - 1) : 0
       end
     else
