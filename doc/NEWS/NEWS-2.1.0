@@ -227,12 +227,6 @@ String
     Rake::DSL to hold the rake DSL methods and removal of support for legacy
     rake features.
 
-    For a complete list of changes since rake 0.9.6 see:
-
-    http://rake.rubyforge.org/doc/release_notes/rake-10_1_0_rdoc.html
-
-    http://rake.rubyforge.org/doc/release_notes/rake-10_0_3_rdoc.html
-
 * RbConfig
   * New constants:
     * RbConfig::SIZEOF is added to provide the size of C types.

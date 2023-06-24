@@ -424,9 +424,6 @@ with all sufficient information, see the ChangeLog file.
     This version is backwards-compatible with previous rake versions and
     contains many bug fixes.
 
-    See
-    http://rake.rubyforge.org/doc/release_notes/rake-0_9_5_rdoc.html for a list
-    of changes in rake 0.9.3, 0.9.4 and 0.9.5.
 
 * RDoc
   * RDoc has been updated to version 4.0
