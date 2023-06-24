@@ -8,6 +8,8 @@ static VALUE rb_eClosedQueueError;
 /* Mutex */
 typedef struct rb_mutex_struct {
     rb_fiber_t *fiber;
+    /* VALUE, not rb_fiber_t, because it could be dead and we need to keep it not-GGC'd*/
+    VALUE reserved_for_fiber;
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -17,6 +19,7 @@ struct sync_waiter {
     VALUE self;
     rb_thread_t *th;
     rb_fiber_t *fiber;
+    bool wants_reservation;
     struct ccan_list_node node;
 };
 
@@ -38,6 +41,8 @@ struct queue_sleep_arg {
 
 #define MUTEX_ALLOW_TRAP FL_USER1
 
+static rb_mutex_t * mutex_ptr(VALUE obj);
+
 static void
 sync_wakeup(struct ccan_list_head *head, long max)
 {
@@ -53,6 +58,17 @@ sync_wakeup(struct ccan_list_head *head, long max)
             else {
                 rb_threadptr_interrupt(cur->th);
                 cur->th->status = THREAD_RUNNABLE;
+            }
+
+            if (cur->wants_reservation) {
+                rb_mutex_t *mutex = mutex_ptr(cur->self);
+                rb_fiber_t *fiber_ptr;
+                if (cur->fiber) {
+                    fiber_ptr = cur->fiber;
+                } else {
+                    fiber_ptr = cur->th->ec->fiber_ptr;
+                }
+                RB_OBJ_WRITE(cur->self, &mutex->reserved_for_fiber, rb_fiberptr_self(fiber_ptr));
             }
 
             if (--max == 0) return;
@@ -103,7 +119,12 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fib
  *
  */
 
-#define mutex_mark ((void(*)(void*))0)
+static void
+mutex_mark_and_move(void *ptr)
+{
+    rb_mutex_t *mutex = (rb_mutex_t *)ptr;
+    rb_gc_mark_and_move(&mutex->reserved_for_fiber);
+}
 
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
@@ -140,7 +161,7 @@ mutex_memsize(const void *ptr)
 
 static const rb_data_type_t mutex_data_type = {
     "mutex",
-    {mutex_mark, mutex_free, mutex_memsize,},
+    {mutex_mark_and_move, mutex_free, mutex_memsize, mutex_mark_and_move},
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -169,6 +190,7 @@ mutex_alloc(VALUE klass)
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
 
     ccan_list_head_init(&mutex->waitq);
+    mutex->reserved_for_fiber = Qnil;
     return obj;
 }
 
@@ -236,6 +258,28 @@ mutex_locked(rb_thread_t *th, VALUE self)
     rb_mutex_t *mutex = mutex_ptr(self);
 
     thread_mutex_insert(th, mutex);
+    RB_OBJ_WRITE(mutex, &mutex->reserved_for_fiber, Qnil);
+}
+
+static bool
+mutex_has_live_reservation_p(rb_mutex_t *mutex)
+{
+    if (RB_TEST(mutex->reserved_for_fiber)) {
+        return RB_TEST(rb_fiber_alive_p(mutex->reserved_for_fiber));
+    } else {
+        return false;
+    }
+}
+
+static bool
+mutex_reservation_can_have_p(rb_mutex_t *mutex, rb_fiber_t *fiber)
+{
+    if (mutex_has_live_reservation_p(mutex)) {
+        return RB_TEST(rb_obj_equal(mutex->reserved_for_fiber, rb_fiberptr_self(fiber)));
+    } else {
+        RB_OBJ_WRITE(mutex, &mutex->reserved_for_fiber, Qnil);
+        return true;
+    }
 }
 
 /*
@@ -253,10 +297,11 @@ rb_mutex_trylock(VALUE self)
     if (mutex->fiber == 0) {
         rb_fiber_t *fiber = GET_EC()->fiber_ptr;
         rb_thread_t *th = GET_THREAD();
-        mutex->fiber = fiber;
-
-        mutex_locked(th, self);
-        return Qtrue;
+        if (mutex_reservation_can_have_p(mutex, fiber)) {
+            mutex->fiber = fiber;
+            mutex_locked(th, self);
+            return Qtrue;
+        }
     }
 
     return Qfalse;
@@ -322,12 +367,12 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
-                if (!mutex->fiber) {
+                if (!mutex->fiber && mutex_reservation_can_have_p(mutex, fiber)) {
                     mutex->fiber = fiber;
                 }
             }
             else {
-                if (!th->vm->thread_ignore_deadlock && rb_fiber_threadptr(mutex->fiber) == th) {
+                if (!th->vm->thread_ignore_deadlock && mutex->fiber && rb_fiber_threadptr(mutex->fiber) == th) {
                     rb_raise(rb_eThreadError, "deadlock; lock already owned by another fiber belonging to the same thread");
                 }
 
@@ -361,7 +406,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 ccan_list_del(&sync_waiter.node);
 
-                if (!mutex->fiber) {
+                if (!mutex->fiber && mutex_reservation_can_have_p(mutex, fiber)) {
                     mutex->fiber = fiber;
                 }
 
@@ -394,6 +439,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
     // assertion
     if (mutex_owned_p(fiber, mutex) == Qfalse) rb_bug("do_mutex_lock: mutex is not owned.");
+    RB_OBJ_WRITE(mutex, &mutex->reserved_for_fiber, Qnil);
 
     return self;
 }
@@ -447,25 +493,45 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
     mutex->fiber = 0;
     thread_mutex_remove(th, mutex);
 
-    ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
-        ccan_list_del_init(&cur->node);
+    bool has_reservtion = mutex_has_live_reservation_p(mutex);
+    if (!has_reservtion) {
+        RB_OBJ_WRITE(mutex, &mutex->reserved_for_fiber, Qnil);
+    }
 
-        if (cur->th->scheduler != Qnil && cur->fiber) {
-            rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
-            return NULL;
+    ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
+        bool should_wake;
+        if (has_reservtion) {
+            rb_fiber_t *wake_fiber;
+            if (cur->fiber) {
+                wake_fiber = cur->fiber;
+            } else {
+                wake_fiber = cur->th->ec->fiber_ptr;
+            }
+            should_wake = rb_obj_equal(mutex->reserved_for_fiber, rb_fiberptr_self(wake_fiber));
+        } else {
+            should_wake = true;
         }
-        else {
-            switch (cur->th->status) {
-                case THREAD_RUNNABLE: /* from someone else calling Thread#run */
-                case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
-                rb_threadptr_interrupt(cur->th);
+
+        if (should_wake) {
+            ccan_list_del_init(&cur->node);
+
+            if (cur->th->scheduler != Qnil && cur->fiber) {
+                rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
                 return NULL;
-                case THREAD_STOPPED: /* probably impossible */
-                rb_bug("unexpected THREAD_STOPPED");
-                case THREAD_KILLED:
-                /* not sure about this, possible in exit GC? */
-                rb_bug("unexpected THREAD_KILLED");
-                continue;
+            }
+            else {
+                switch (cur->th->status) {
+                    case THREAD_RUNNABLE: /* from someone else calling Thread#run */
+                    case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
+                    rb_threadptr_interrupt(cur->th);
+                    return NULL;
+                    case THREAD_STOPPED: /* probably impossible */
+                    rb_bug("unexpected THREAD_STOPPED");
+                    case THREAD_KILLED:
+                    /* not sure about this, possible in exit GC? */
+                    rb_bug("unexpected THREAD_KILLED");
+                    continue;
+                }
             }
         }
     }
@@ -1505,7 +1571,8 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
     struct sync_waiter sync_waiter = {
         .self = args.mutex,
         .th = ec->thread_ptr,
-        .fiber = nonblocking_fiber(ec->fiber_ptr)
+        .fiber = nonblocking_fiber(ec->fiber_ptr),
+        .wants_reservation = true,
     };
 
     ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
