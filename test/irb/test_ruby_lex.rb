@@ -82,25 +82,33 @@ module TestIRB
     end
 
     def assert_indent_level(lines, expected, local_variables: [])
-      indent_level, _code_block_open = check_state(lines, local_variables: local_variables)
+      indent_level, _continue, _code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Calculated the wrong number of indent level for:\n #{lines.join("\n")}"
       assert_equal(expected, indent_level, error_message)
     end
 
+    def assert_should_continue(lines, expected, local_variables: [])
+      _indent_level, continue, _code_block_open = check_state(lines, local_variables: local_variables)
+      error_message = "Wrong result of should_continue for:\n #{lines.join("\n")}"
+      assert_equal(expected, continue, error_message)
+    end
+
     def assert_code_block_open(lines, expected, local_variables: [])
-      _indent_level, code_block_open = check_state(lines, local_variables: local_variables)
+      _indent_level, _continue, code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Wrong result of code_block_open for:\n #{lines.join("\n")}"
       assert_equal(expected, code_block_open, error_message)
     end
 
     def check_state(lines, local_variables: [])
       context = build_context(local_variables)
-      tokens = RubyLex.ripper_lex_without_warning(lines.join("\n"), context: context)
+      code = lines.join("\n")
+      tokens = RubyLex.ripper_lex_without_warning(code, context: context)
       opens = IRB::NestingParser.open_tokens(tokens)
       ruby_lex = RubyLex.new(context)
       indent_level = ruby_lex.calc_indent_level(opens)
-      code_block_open = !opens.empty? || ruby_lex.process_continue(tokens)
-      [indent_level, code_block_open]
+      continue = ruby_lex.should_continue?(tokens)
+      terminated = ruby_lex.code_terminated?(code, tokens, opens)
+      [indent_level, continue, !terminated]
     end
 
     def test_interpolate_token_with_heredoc_and_unclosed_embexpr
@@ -235,7 +243,7 @@ module TestIRB
     def test_endless_range_at_end_of_line
       input_with_prompt = [
         PromptRow.new('001:0: :> ', %q(a = 3..)),
-        PromptRow.new('002:0: :* ', %q()),
+        PromptRow.new('002:0: :> ', %q()),
       ]
 
       lines = input_with_prompt.map(&:content)
@@ -256,7 +264,7 @@ module TestIRB
         PromptRow.new('009:0:]:* ', %q(B)),
         PromptRow.new('010:0:]:* ', %q(})),
         PromptRow.new('011:0: :> ', %q(])),
-        PromptRow.new('012:0: :* ', %q()),
+        PromptRow.new('012:0: :> ', %q()),
       ]
 
       lines = input_with_prompt.map(&:content)
@@ -285,9 +293,9 @@ module TestIRB
     def test_backtick_method
       input_with_prompt = [
         PromptRow.new('001:0: :> ', %q(self.`(arg))),
-        PromptRow.new('002:0: :* ', %q()),
+        PromptRow.new('002:0: :> ', %q()),
         PromptRow.new('003:0: :> ', %q(def `(); end)),
-        PromptRow.new('004:0: :* ', %q()),
+        PromptRow.new('004:0: :> ', %q()),
       ]
 
       lines = input_with_prompt.map(&:content)
@@ -775,6 +783,36 @@ module TestIRB
       lines = input_with_prompt.map(&:content)
       expected_prompt_list = input_with_prompt.map(&:prompt)
       assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
+    def test_should_continue
+      assert_should_continue(['a'], false)
+      assert_should_continue(['/a/'], false)
+      assert_should_continue(['a;'], false)
+      assert_should_continue(['<<A', 'A'], false)
+      assert_should_continue(['a...'], false)
+      assert_should_continue(['a\\', ''], true)
+      assert_should_continue(['a.'], true)
+      assert_should_continue(['a+'], true)
+      assert_should_continue(['a; #comment', '', '=begin', 'embdoc', '=end', ''], false)
+      assert_should_continue(['a+ #comment', '', '=begin', 'embdoc', '=end', ''], true)
+    end
+
+    def test_code_block_open_with_should_continue
+      # syntax ok
+      assert_code_block_open(['a'], false) # continue: false
+      assert_code_block_open(['a\\', ''], true) # continue: true
+
+      # recoverable syntax error code is not terminated
+      assert_code_block_open(['a+', ''], true)
+
+      # unrecoverable syntax error code is terminated
+      assert_code_block_open(['.; a+', ''], false)
+
+      # other syntax error that failed to determine if it is recoverable or not
+      assert_code_block_open(['@; a'], false)
+      assert_code_block_open(['@; a+'], true)
+      assert_code_block_open(['@; (a'], true)
     end
 
     def test_broken_percent_literal

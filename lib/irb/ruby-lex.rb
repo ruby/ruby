@@ -85,7 +85,7 @@ class RubyLex
             # Avoid appending duplicated token. Tokens that include "\n" like multiline tstring_content can exist in multiple lines.
             tokens_until_line << token if token != tokens_until_line.last
           end
-          continue = process_continue(tokens_until_line)
+          continue = should_continue?(tokens_until_line)
           prompt(next_opens, continue, line_num_offset)
         end
       end
@@ -196,7 +196,16 @@ class RubyLex
   end
 
   def code_terminated?(code, tokens, opens)
-    opens.empty? && !process_continue(tokens) && !check_code_block(code, tokens)
+    case check_code_syntax(code)
+    when :unrecoverable_error
+      true
+    when :recoverable_error
+      false
+    when :other_error
+      opens.empty? && !should_continue?(tokens)
+    when :valid
+      !should_continue?(tokens)
+    end
   end
 
   def save_prompt_to_context_io(opens, continue, line_num_offset)
@@ -227,7 +236,7 @@ class RubyLex
       return code if terminated
 
       line_offset += 1
-      continue = process_continue(tokens)
+      continue = should_continue?(tokens)
       save_prompt_to_context_io(opens, continue, line_offset)
     end
   end
@@ -246,29 +255,33 @@ class RubyLex
     end
   end
 
-  def process_continue(tokens)
-    # last token is always newline
-    if tokens.size >= 2 and tokens[-2].event == :on_regexp_end
-      # end of regexp literal
-      return false
-    elsif tokens.size >= 2 and tokens[-2].event == :on_semicolon
-      return false
-    elsif tokens.size >= 2 and tokens[-2].event == :on_kw and ['begin', 'else', 'ensure'].include?(tokens[-2].tok)
-      return false
-    elsif !tokens.empty? and tokens.last.tok == "\\\n"
-      return true
-    elsif tokens.size >= 1 and tokens[-1].event == :on_heredoc_end # "EOH\n"
-      return false
-    elsif tokens.size >= 2 and tokens[-2].state.anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2].tok !~ /\A\.\.\.?\z/
-      # end of literal except for regexp
-      # endless range at end of line is not a continue
-      return true
+  def should_continue?(tokens)
+    # Look at the last token and check if IRB need to continue reading next line.
+    # Example code that should continue: `a\` `a +` `a.`
+    # Trailing spaces, newline, comments are skipped
+    return true if tokens.last&.event == :on_sp && tokens.last.tok == "\\\n"
+
+    tokens.reverse_each do |token|
+      case token.event
+      when :on_sp, :on_nl, :on_ignored_nl, :on_comment, :on_embdoc_beg, :on_embdoc, :on_embdoc_end
+        # Skip
+      when :on_regexp_end, :on_heredoc_end, :on_semicolon
+        # State is EXPR_BEG but should not continue
+        return false
+      else
+        # Endless range should not continue
+        return false if token.event == :on_op && token.tok.match?(/\A\.\.\.?\z/)
+
+        # EXPR_DOT and most of the EXPR_BEG should continue
+        return token.state.anybits?(Ripper::EXPR_BEG | Ripper::EXPR_DOT)
+      end
     end
     false
   end
 
-  def check_code_block(code, tokens)
-    return true if tokens.empty?
+  def check_code_syntax(code)
+    lvars_code = RubyLex.generate_local_variables_assign_code(@context.local_variables)
+    code = "#{lvars_code}\n#{code}"
 
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
@@ -287,6 +300,7 @@ class RubyLex
       end
     rescue EncodingError
       # This is for a hash with invalid encoding symbol, {"\xAE": 1}
+      :unrecoverable_error
     rescue SyntaxError => e
       case e.message
       when /unterminated (?:string|regexp) meets end of file/
@@ -299,7 +313,7 @@ class RubyLex
         #
         #   example:
         #     '
-        return true
+        return :recoverable_error
       when /syntax error, unexpected end-of-input/
         # "syntax error, unexpected end-of-input, expecting keyword_end"
         #
@@ -309,7 +323,7 @@ class RubyLex
         #       if false
         #         fuga
         #       end
-        return true
+        return :recoverable_error
       when /syntax error, unexpected keyword_end/
         # "syntax error, unexpected keyword_end"
         #
@@ -319,41 +333,26 @@ class RubyLex
         #
         #   example:
         #     end
-        return false
+        return :unrecoverable_error
       when /syntax error, unexpected '\.'/
         # "syntax error, unexpected '.'"
         #
         #   example:
         #     .
-        return false
+        return :unrecoverable_error
       when /unexpected tREGEXP_BEG/
         # "syntax error, unexpected tREGEXP_BEG, expecting keyword_do or '{' or '('"
         #
         #   example:
         #     method / f /
-        return false
+        return :unrecoverable_error
+      else
+        return :other_error
       end
     ensure
       $VERBOSE = verbose
     end
-
-    last_lex_state = tokens.last.state
-
-    if last_lex_state.allbits?(Ripper::EXPR_BEG)
-      return false
-    elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
-      return false
-    end
-
-    false
+    :valid
   end
 
   def calc_indent_level(opens)
