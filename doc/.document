@@ -6,5 +6,4 @@ NEWS
 syntax
 optparse
 rdoc
-regexp/methods.rdoc
-regexp/unicode_properties.rdoc
+regexp
