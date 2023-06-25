@@ -2,16 +2,9 @@
 require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
-  BDSIZE = 0x4000000000000000.coerce(0)[0].size
-  def self.bdsize(x)
-    ((x + 1) / 8 + BDSIZE) / BDSIZE * BDSIZE
-  end
-  def bdsize(x)
-    self.class.bdsize(x)
-  end
-
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
+  LONG_MAX = RbConfig::LIMITS['LONG_MAX']
 
   def test_aref
 
@@ -96,11 +89,16 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(0, 1 << -0x40000001)
     assert_equal(0, 1 << -0x80000000)
     assert_equal(0, 1 << -0x80000001)
-    # assert_equal(bdsize(0x80000000), (1 << 0x80000000).size)
+
+    char_bit = RbConfig::LIMITS["UCHAR_MAX"].bit_length
+    size_max = RbConfig::LIMITS["SIZE_MAX"]
+    size_bit_max = size_max * char_bit
+    assert_raise_with_message(RangeError, /shift width/) {
+      1 << size_bit_max
+    }
   end
 
   def test_rshift
-    # assert_equal(bdsize(0x40000001), (1 >> -0x40000001).size)
     assert_predicate((1 >> 0x80000000), :zero?)
     assert_predicate((1 >> 0xffffffff), :zero?)
     assert_predicate((1 >> 0x100000000), :zero?)
