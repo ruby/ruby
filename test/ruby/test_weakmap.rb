@@ -178,6 +178,8 @@ class TestWeakMap < Test::Unit::TestCase
   end
 
   def test_compaction_bug_19529
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
     obj = Object.new
     100.times do |i|
       GC.compact
