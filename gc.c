@@ -12809,12 +12809,47 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 }
 #endif
 
+static int
+wmap_replace_ref(st_data_t *key, st_data_t *value, st_data_t _argp, int existing)
+{
+    *key = rb_gc_location((VALUE)*key);
+
+    VALUE *values = (VALUE *)*value;
+    VALUE size = values[0];
+
+    for (VALUE index = 1; index <= size; index++) {
+        values[index] = rb_gc_location(values[index]);
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+wmap_foreach_replace(st_data_t key, st_data_t value, st_data_t _argp, int error)
+{
+    if (rb_gc_location((VALUE)key) != (VALUE)key) {
+        return ST_REPLACE;
+    }
+
+    VALUE *values = (VALUE *)value;
+    VALUE size = values[0];
+
+    for (VALUE index = 1; index <= size; index++) {
+        VALUE val = values[index];
+        if (rb_gc_location(val) != val) {
+            return ST_REPLACE;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 wmap_compact(void *ptr)
 {
     struct weakmap *w = ptr;
     if (w->wmap2obj) rb_gc_update_tbl_refs(w->wmap2obj);
-    if (w->obj2wmap) rb_gc_update_tbl_refs(w->obj2wmap);
+    if (w->obj2wmap) st_foreach_with_replace(w->obj2wmap, wmap_foreach_replace, wmap_replace_ref, (st_data_t)NULL);
     w->final = rb_gc_location(w->final);
 }
 
@@ -12927,8 +12962,8 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
         return ST_DELETE;
     }
     if (j < i) {
-        SIZED_REALLOC_N(ptr, VALUE, j + 1, i);
-        ptr[0] = j;
+        SIZED_REALLOC_N(ptr, VALUE, j, i);
+        ptr[0] = j - 1;
         *value = (st_data_t)ptr;
     }
     return ST_CONTINUE;
