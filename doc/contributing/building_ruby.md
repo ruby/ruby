@@ -25,7 +25,8 @@
     * libffi (to build fiddle)
     * gmp (if you with to accelerate Bignum operations)
     * libexecinfo (FreeBSD)
-    * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
+    * rustc - 1.58.0 or later, if you wish to build
+      [YJIT](https://docs.ruby-lang.org/en/master/RubyVM/YJIT.html).
 
     If you installed the libraries needed for extensions (openssl, readline, libyaml, zlib) into other than the OS default place,
     typically using Homebrew on macOS, add `--with-EXTLIB-dir` options to `CONFIGURE_ARGS` environment variable.
