@@ -152,7 +152,7 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 ## 配布条件
 
-[COPYING.ja](COPYING.ja) ファイルを参照してください．
+[COPYING.ja](https://docs.ruby-lang.org/en/master/COPYING_ja.html) ファイルを参照してください．
 
 ## フィードバック
 

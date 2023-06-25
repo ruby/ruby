@@ -53,7 +53,7 @@ if you are a committer.
 
 ## How to build
 
-see [Building Ruby](doc/contributing/building_ruby.md)
+See [Building Ruby](https://docs.ruby-lang.org/en/master/contributing/building_ruby_md.html)
 
 ## Ruby home page
 
