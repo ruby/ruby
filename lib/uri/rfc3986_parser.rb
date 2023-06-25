@@ -26,11 +26,6 @@ module URI
     ]x
 
     USERINFO = /(?:%\h\h|[!$&-.0-9:;=A-Z_a-z~])*+/
-    AUTHORITY = %r[
-      (?:(?<userinfo>#{USERINFO.source})@)?
-      (?<host>#{HOST.source.delete(" \n")})
-      (?::(?<port>\d*+))?
-    ]x
 
     SCHEME = %r[[A-Za-z][+\-.0-9A-Za-z]*+].source
     SEG = %r[(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/])].source
@@ -42,7 +37,11 @@ module URI
     (?<URI>
       (?<scheme>#{SCHEME}):
       (?<hier-part>//
-        (?<authority>#{AUTHORITY})
+        (?<authority>
+          (?:(?<userinfo>#{USERINFO.source})@)?
+          (?<host>#{HOST.source.delete(" \n")})
+          (?::(?<port>\d*+))?
+        )
         (?<path-abempty>(?:/\g<seg>*+)?)
       | (?<path-absolute>/((?!/)\g<seg>++)?)
       | (?<path-rootless>(?!/)\g<seg>++)
@@ -56,7 +55,11 @@ module URI
     (?<seg>#{SEG}){0}
     (?<relative-ref>
       (?<relative-part>//
-        (?<authority>#{AUTHORITY})
+        (?<authority>
+          (?:(?<userinfo>#{USERINFO.source})@)?
+          (?<host>#{HOST.source.delete(" \n")}(?<!/))?
+          (?::(?<port>\d*+))?
+        )
         (?<path-abempty>(?:/\g<seg>*+)?)
       | (?<path-absolute>/\g<seg>*+)
       | (?<path-noscheme>#{SEG_NC}++(?:/\g<seg>*+)?)
