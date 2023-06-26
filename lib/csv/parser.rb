@@ -157,6 +157,7 @@ class CSV
         # trace(__method__, pattern, :done, :last, value) if @last_scanner
         return value if @last_scanner
 
+        # trace(__method__, pattern, :done, :nil) if value.nil?
         return nil if value.nil?
         while @scanner.eos? and read_chunk and (sub_value = @scanner.scan(pattern))
           # trace(__method__, pattern, :sub, sub_value)
