@@ -914,7 +914,7 @@ RSpec.describe ContextState, "#it_should_behave_like" do
 
   it "raises an Exception if unable to find the shared ContextState" do
     expect(MSpec).to receive(:retrieve_shared).and_return(nil)
-    expect { @state.it_should_behave_like "this" }.to raise_error(Exception)
+    expect { @state.it_should_behave_like :this }.to raise_error(Exception)
   end
 
   describe "for nested ContextState instances" do
