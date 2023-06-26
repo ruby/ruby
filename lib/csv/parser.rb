@@ -201,7 +201,8 @@ class CSV
           # trace(__method__, :rescan, start, buffer)
           string = @scanner.string
           if scanner == @scanner
-            keep = string.byteslice(start, string.bytesize - start)
+            keep = string.byteslice(start,
+                                    string.bytesize - @scanner.pos - start)
           else
             keep = string
           end

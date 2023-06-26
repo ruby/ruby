@@ -115,4 +115,12 @@ class TestCSVParseSkipLines < Test::Unit::TestCase
                  CSV.parse("a,b\r\n,\r\n",
                            :skip_lines => /^,+$/))
   end
+
+  def test_crlf_strip_no_last_crlf
+    assert_equal([["a"], ["b"]],
+                 CSV.parse("a\r\nb",
+                           row_sep: "\r\n",
+                           skip_lines: /^ *$/,
+                           strip: true))
+  end
 end
