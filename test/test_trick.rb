@@ -222,19 +222,19 @@ class TestRubyKaigi2023🥢 < Test::Unit::TestCase
   1
 
   def test_chopsticks_0
-    assert_in_out_err([], CHOPSTICKS[0], %w[Enjoy Ruby])
+    assert_in_out_err(%w[-W0], CHOPSTICKS[0], %w[Enjoy Ruby])
   end
 
   def test_chopsticks_1
-    assert_in_out_err([], CHOPSTICKS[1], %w[/:|}])
+    assert_in_out_err(%w[-W0], CHOPSTICKS[1], %w[/:|}])
   end
 
   def test_chopsticks_0_1
-    assert_in_out_err([], "#{CHOPSTICKS[0]}\n#{CHOPSTICKS[1]}", %w[RubyKaigi @Matsumoto])
+    assert_in_out_err(%w[-W0], "#{CHOPSTICKS[0]}\n#{CHOPSTICKS[1]}", %w[RubyKaigi @Matsumoto])
   end
 
   def test_chopsticks_1_0
-    assert_in_out_err([], "#{CHOPSTICKS[1]}\n#{CHOPSTICKS[0]}", %w[RubyKaigi 2023])
+    assert_in_out_err(%w[-W0], "#{CHOPSTICKS[1]}\n#{CHOPSTICKS[0]}", %w[RubyKaigi 2023])
   end
 end
 
