@@ -101,7 +101,7 @@ class CSV
         position = @scanner.pos
         offset = 0
         n_row_separator_chars = row_separator.size
-        # trace(__method__, :start, line, input)
+        # trace(__method__, :start, input)
         while true
           input.each_line(row_separator) do |line|
             @scanner.pos += line.bytesize
