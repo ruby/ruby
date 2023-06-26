@@ -1254,8 +1254,8 @@ class TestGem < Gem::TestCase
       Gem.try_activate "a_file"
     end
 
-    assert_match(/Could not find 'b' /, e.message)
-    assert_match(/at: #{a.spec_file}/, e.message)
+    assert_include(e.message, "Could not find 'b' ")
+    assert_include(e.message, "at: #{a.spec_file}")
   end
 
   def test_self_try_activate_missing_prerelease

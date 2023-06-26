@@ -22,7 +22,7 @@ static const rb_data_type_t ossl_config_type = {
     {
         0, nconf_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 CONF *

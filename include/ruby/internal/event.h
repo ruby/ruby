@@ -23,6 +23,10 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
 /* These macros are not enums because they are wider than int.*/
 
 /**

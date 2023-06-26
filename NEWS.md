@@ -45,6 +45,10 @@ Note: We're only listing outstanding class updates.
       The class use equality semantic to lookup keys like a regular hash,
       but it doesn't hold strong references on the keys. [[Feature #18498]]
 
+* Module
+
+    * `Module#set_temporary_name` added for setting a temporary name for a module. [[Feature #19521]]
+
 ## Stdlib updates
 
 The following default gems are updated.
@@ -64,20 +68,21 @@ The following default gems are updated.
 * strscan 3.0.7
 * syntax_suggest 1.1.0
 * time 0.2.2
-* timeout 0.3.2
+* timeout 0.4.0
 * uri 0.12.1
 
 The following bundled gems are updated.
 
-* minitest 5.18.0
-* test-unit 3.6.0
+* minitest 5.18.1
+* test-unit 3.6.1
+* net-imap 0.3.6
 * rbs 3.1.0
 * typeprof 0.21.7
 * debug 1.8.0
 
 The following default gem is now bundled.
 
-* racc 1.7.0
+* racc 1.7.1
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
@@ -133,3 +138,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
+[Feature #19521]: https://bugs.ruby-lang.org/issues/19521

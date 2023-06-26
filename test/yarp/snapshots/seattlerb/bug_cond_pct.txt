@@ -1,0 +1,22 @@
+ProgramNode(0...28)(
+  [],
+  StatementsNode(0...28)(
+    [CaseNode(0...28)(
+       nil,
+       [WhenNode(6...23)(
+          (6...10),
+          [RegularExpressionNode(11...23)(
+             (11...14),
+             (14...22),
+             (22...23),
+             "blahblah",
+             0
+           )],
+          nil
+        )],
+       nil,
+       (0...4),
+       (25...28)
+     )]
+  )
+)

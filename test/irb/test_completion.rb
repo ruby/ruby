@@ -5,13 +5,13 @@ require "irb"
 require_relative "helper"
 
 module TestIRB
-  class TestCompletion < TestCase
+  class CompletionTest < TestCase
     def setup
       # make sure require completion candidates are not cached
       IRB::InputCompletor.class_variable_set(:@@files_from_load_path, nil)
     end
 
-    class TestMethodCompletion < TestCompletion
+    class MethodCompletionTest < CompletionTest
       def test_complete_string
         assert_include(IRB::InputCompletor.retrieve_completion_data("'foo'.up", bind: binding), "'foo'.upcase")
         # completing 'foo bar'.up
@@ -65,7 +65,7 @@ module TestIRB
       end
     end
 
-    class TestRequireComepletion < TestCompletion
+    class RequireComepletionTest < CompletionTest
       def test_complete_require
         candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
         %w['irb/init 'irb/ruby-lex].each do |word|
@@ -139,7 +139,7 @@ module TestIRB
       end
     end
 
-    class TestVariableCompletion < TestCompletion
+    class VariableCompletionTest < CompletionTest
       def test_complete_variable
         # Bug fix issues https://github.com/ruby/irb/issues/368
         # Variables other than `str_example` and `@str_example` are defined to ensure that irb completion does not cause unintended behavior
@@ -181,7 +181,7 @@ module TestIRB
       end
     end
 
-    class TestConstantCompletion < TestCompletion
+    class ConstantCompletionTest < CompletionTest
       class Foo
         B3 = 1
         B1 = 1
@@ -198,7 +198,7 @@ module TestIRB
       end
     end
 
-    class TestPerfectMatching < TestCompletion
+    class PerfectMatchingTest < CompletionTest
       def setup
         # trigger PerfectMatchedProc to set up RDocRIDriver constant
         IRB::InputCompletor::PerfectMatchedProc.("foo", bind: binding)
@@ -289,12 +289,14 @@ module TestIRB
     end
 
     def test_complete_symbol
-      %w"UTF-16LE UTF-7".each do |enc|
+      symbols = %w"UTF-16LE UTF-7".map do |enc|
         "K".force_encoding(enc).to_sym
       rescue
       end
-      _ = :aiueo
-      assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
+      symbols += [:aiueo, :"aiu eo"]
+      candidates = IRB::InputCompletor.retrieve_completion_data(":a", bind: binding)
+      assert_include(candidates, ":aiueo")
+      assert_not_include(candidates, ":aiu eo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
       # Do not complete empty symbol for performance reason
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":", bind: binding))

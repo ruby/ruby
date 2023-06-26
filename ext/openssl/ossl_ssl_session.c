@@ -19,7 +19,7 @@ const rb_data_type_t ossl_ssl_session_type = {
     {
 	0, ossl_ssl_session_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE ossl_ssl_session_alloc(VALUE klass)

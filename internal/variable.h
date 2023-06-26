@@ -36,6 +36,22 @@ static inline bool ROBJ_TRANSIENT_P(VALUE obj);
 static inline void ROBJ_TRANSIENT_SET(VALUE obj);
 static inline void ROBJ_TRANSIENT_UNSET(VALUE obj);
 
+/**
+ * Sets the name of a module.
+ *
+ * Non-permanently named classes can have a temporary name assigned (or
+ * cleared). In that case the name will be used for `#inspect` and `#to_s`, and
+ * nested classes/modules will be named with the temporary name as a prefix.
+ *
+ * After the module is assigned to a constant, the temporary name will be
+ * discarded, and the name will be computed based on the nesting.
+ *
+ * @param[in]  mod        An instance of ::rb_cModule.
+ * @param[in]  name       An instance of ::rb_cString.
+ * @retval     mod
+ */
+VALUE rb_mod_set_temporary_name(VALUE, VALUE);
+
 struct gen_ivtbl;
 int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
 int rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg);

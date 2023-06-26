@@ -1,0 +1,63 @@
+ProgramNode(0...46)(
+  [],
+  StatementsNode(0...46)(
+    [CallNode(0...11)(
+       nil,
+       nil,
+       (0...1),
+       nil,
+       ArgumentsNode(2...11)([LambdaNode(2...11)([], (2...4), nil, nil)]),
+       nil,
+       nil,
+       0,
+       "f"
+     ),
+     CallNode(13...20)(
+       nil,
+       nil,
+       (13...14),
+       nil,
+       ArgumentsNode(15...20)([LambdaNode(15...20)([], (15...17), nil, nil)]),
+       nil,
+       nil,
+       0,
+       "f"
+     ),
+     CallNode(22...35)(
+       nil,
+       nil,
+       (22...23),
+       nil,
+       ArgumentsNode(24...35)(
+         [LambdaNode(24...35)(
+            [],
+            (24...26),
+            BlockParametersNode(26...28)(nil, [], (26...27), (27...28)),
+            nil
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "f"
+     ),
+     CallNode(37...46)(
+       nil,
+       nil,
+       (37...38),
+       nil,
+       ArgumentsNode(39...46)(
+         [LambdaNode(39...46)(
+            [],
+            (39...41),
+            BlockParametersNode(41...43)(nil, [], (41...42), (42...43)),
+            nil
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "f"
+     )]
+  )
+)

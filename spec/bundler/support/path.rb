@@ -292,11 +292,11 @@ module Spec
     end
 
     def rubocop_gemfile_basename
-      tool_dir.join("rubocop_gems.rb")
+      tool_dir.join(RUBY_VERSION.start_with?("2.6") ? "rubocop26_gems.rb" : "rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      tool_dir.join("standard_gems.rb")
+      tool_dir.join(RUBY_VERSION.start_with?("2.6") ? "standard26_gems.rb" : "standard_gems.rb")
     end
 
     def tool_dir

@@ -1,0 +1,42 @@
+ProgramNode(6...88)(
+  [:string],
+  StatementsNode(6...88)(
+    [LocalVariableWriteNode(6...31)(
+       :string,
+       0,
+       CallNode(15...31)(
+         InterpolatedStringNode(15...71)(
+           (15...25),
+           [StringNode(32...57)(
+              nil,
+              (32...57),
+              nil,
+              "        very long string\n"
+            )],
+           (57...71)
+         ),
+         (25...26),
+         (26...31),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "strip"
+       ),
+       (6...12),
+       (13...14)
+     ),
+     CallNode(77...88)(
+       nil,
+       nil,
+       (77...81),
+       nil,
+       ArgumentsNode(82...88)([LocalVariableReadNode(82...88)(:string, 0)]),
+       nil,
+       nil,
+       0,
+       "puts"
+     )]
+  )
+)

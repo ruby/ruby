@@ -1,0 +1,9 @@
+ProgramNode(0...19)(
+  [],
+  StatementsNode(0...19)(
+    [FalseNode(0...5)(),
+     NilNode(6...9)(),
+     SelfNode(10...14)(),
+     TrueNode(15...19)()]
+  )
+)

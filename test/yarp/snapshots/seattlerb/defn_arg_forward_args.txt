@@ -1,0 +1,41 @@
+ProgramNode(0...29)(
+  [],
+  StatementsNode(0...29)(
+    [DefNode(0...29)(
+       (4...5),
+       nil,
+       ParametersNode(6...12)(
+         [RequiredParameterNode(6...7)(:x)],
+         [],
+         [],
+         nil,
+         [],
+         ForwardingParameterNode(9...12)(),
+         nil
+       ),
+       StatementsNode(15...24)(
+         [CallNode(15...24)(
+            nil,
+            nil,
+            (15...16),
+            (16...17),
+            ArgumentsNode(17...23)(
+              [LocalVariableReadNode(17...18)(:x, 0),
+               ForwardingArgumentsNode(20...23)()]
+            ),
+            (23...24),
+            nil,
+            0,
+            "b"
+          )]
+       ),
+       [:x, :"..."],
+       (0...3),
+       nil,
+       (5...6),
+       (12...13),
+       nil,
+       (26...29)
+     )]
+  )
+)

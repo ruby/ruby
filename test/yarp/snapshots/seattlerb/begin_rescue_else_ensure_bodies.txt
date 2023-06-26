@@ -1,0 +1,28 @@
+ProgramNode(0...44)(
+  [],
+  StatementsNode(0...44)(
+    [BeginNode(0...44)(
+       (0...5),
+       StatementsNode(8...9)([IntegerNode(8...9)()]),
+       RescueNode(10...20)(
+         (10...16),
+         [],
+         nil,
+         nil,
+         StatementsNode(19...20)([IntegerNode(19...20)()]),
+         nil
+       ),
+       ElseNode(21...36)(
+         (21...25),
+         StatementsNode(28...29)([IntegerNode(28...29)()]),
+         (30...36)
+       ),
+       EnsureNode(30...44)(
+         (30...36),
+         StatementsNode(39...40)([IntegerNode(39...40)()]),
+         (41...44)
+       ),
+       (41...44)
+     )]
+  )
+)

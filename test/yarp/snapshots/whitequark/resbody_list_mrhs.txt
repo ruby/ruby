@@ -1,0 +1,45 @@
+ProgramNode(0...44)(
+  [],
+  StatementsNode(0...44)(
+    [BeginNode(0...44)(
+       (0...5),
+       StatementsNode(7...11)(
+         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 0, "meth")]
+       ),
+       RescueNode(13...39)(
+         (13...19),
+         [ConstantReadNode(20...29)(),
+          CallNode(31...34)(
+            nil,
+            nil,
+            (31...34),
+            nil,
+            nil,
+            nil,
+            nil,
+            0,
+            "foo"
+          )],
+         nil,
+         nil,
+         StatementsNode(36...39)(
+           [CallNode(36...39)(
+              nil,
+              nil,
+              (36...39),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "bar"
+            )]
+         ),
+         nil
+       ),
+       nil,
+       nil,
+       (41...44)
+     )]
+  )
+)

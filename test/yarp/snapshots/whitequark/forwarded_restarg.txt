@@ -1,0 +1,38 @@
+ProgramNode(0...23)(
+  [],
+  StatementsNode(0...23)(
+    [DefNode(0...23)(
+       (4...7),
+       nil,
+       ParametersNode(8...9)(
+         [],
+         [],
+         [],
+         RestParameterNode(8...9)((8...9), nil),
+         [],
+         nil,
+         nil
+       ),
+       StatementsNode(12...18)(
+         [CallNode(12...18)(
+            nil,
+            nil,
+            (12...15),
+            (15...16),
+            ArgumentsNode(16...17)([SplatNode(16...17)((16...17), nil)]),
+            (17...18),
+            nil,
+            0,
+            "bar"
+          )]
+       ),
+       [:*],
+       (0...3),
+       nil,
+       (7...8),
+       (9...10),
+       nil,
+       (20...23)
+     )]
+  )
+)

@@ -1,0 +1,30 @@
+ProgramNode(0...11)(
+  [],
+  StatementsNode(0...11)(
+    [CallNode(0...11)(
+       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a"),
+       (1...2),
+       (2...3),
+       nil,
+       ArgumentsNode(4...7)(
+         [ParenthesesNode(4...7)(
+            StatementsNode(5...6)([IntegerNode(5...6)()]),
+            (4...5),
+            (6...7)
+          )]
+       ),
+       nil,
+       BlockNode(8...11)(
+         [],
+         nil,
+         StatementsNode(9...10)(
+           [CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 0, "c")]
+         ),
+         (8...9),
+         (10...11)
+       ),
+       0,
+       "b"
+     )]
+  )
+)

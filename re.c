@@ -538,7 +538,7 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *
  *  The returned string may be used as an argument to Regexp.new,
  *  or as interpolated text for a
- *  {Regexp literal}[rdoc-ref:regexp.rdoc@Regexp+Literal]:
+ *  {Regexp interpolation}[rdoc-ref:regexp.rdoc@Interpolation+Mode]:
  *
  *    r1 = Regexp.new(s0) # => /(?ix-m:ab+c)/
  *    r2 = /#{s0}/        # => /(?ix-m:ab+c)/
@@ -3568,7 +3568,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
  *  Returns the integer index (in characters) of the first match
  *  for +self+ and +string+, or +nil+ if none;
  *  also sets the
- *  {rdoc-ref:Regexp Global Variables}[rdoc-ref:Regexp@Regexp+Global+Variables]:
+ *  {rdoc-ref:Regexp global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
  *    /at/ =~ 'input data' # => 7
  *    $~                   # => #<MatchData "at">
@@ -3581,7 +3581,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
  *  - Is a regexp literal;
  *    see {Regexp Literals}[rdoc-ref:literals.rdoc@Regexp+Literals].
  *  - Does not contain interpolations;
- *    see {Regexp Interpolation}[rdoc-ref:Regexp@Regexp+Interpolation].
+ *    see {Regexp interpolation}[rdoc-ref:Regexp@Interpolation+Mode].
  *  - Is at the left of the expression.
  *
  *  Example:
@@ -4559,7 +4559,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
  *
  *  With no argument, returns the value of <tt>$!</tt>,
  *  which is the result of the most recent pattern match
- *  (see {Regexp Global Variables}[rdoc-ref:Regexp@Regexp+Global+Variables]):
+ *  (see {Regexp global variables}[rdoc-ref:Regexp@Global+Variables]):
  *
  *    /c(.)t/ =~ 'cat'  # => 0
  *    Regexp.last_match # => #<MatchData "cat" 1:"a">

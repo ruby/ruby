@@ -1,0 +1,25 @@
+ProgramNode(0...31)(
+  [:match],
+  StatementsNode(0...31)(
+    [CallNode(0...24)(
+       RegularExpressionNode(0...15)(
+         (0...1),
+         (1...14),
+         (14...15),
+         "(?<match>bar)",
+         0
+       ),
+       nil,
+       (16...18),
+       nil,
+       ArgumentsNode(19...24)(
+         [StringNode(19...24)((19...20), (20...23), (23...24), "bar")]
+       ),
+       nil,
+       nil,
+       0,
+       "=~"
+     ),
+     LocalVariableReadNode(26...31)(:match, 0)]
+  )
+)

@@ -1,0 +1,43 @@
+ProgramNode(0...45)(
+  [],
+  StatementsNode(0...45)(
+    [DefNode(0...45)(
+       (4...7),
+       nil,
+       ParametersNode(8...20)(
+         [RequiredParameterNode(8...16)(:argument)],
+         [],
+         [],
+         nil,
+         [],
+         KeywordRestParameterNode(18...20)((18...20), nil),
+         nil
+       ),
+       StatementsNode(23...40)(
+         [CallNode(23...40)(
+            nil,
+            nil,
+            (23...26),
+            (26...27),
+            ArgumentsNode(27...39)(
+              [LocalVariableReadNode(27...35)(:argument, 0),
+               KeywordHashNode(37...39)(
+                 [AssocSplatNode(37...39)(nil, (37...39))]
+               )]
+            ),
+            (39...40),
+            nil,
+            0,
+            "bar"
+          )]
+       ),
+       [:argument, :**],
+       (0...3),
+       nil,
+       (7...8),
+       (20...21),
+       nil,
+       (42...45)
+     )]
+  )
+)

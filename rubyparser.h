@@ -309,11 +309,12 @@ typedef struct node_buffer_struct node_buffer_t;
 /* T_IMEMO/ast */
 typedef struct rb_ast_body_struct {
     const NODE *root;
-    VALUE compile_option;
     VALUE script_lines;
     // script_lines is either:
     // - a Fixnum that represents the line count of the original source, or
     // - an Array that contains the lines of the original source
+    signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
+    signed int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
@@ -339,9 +340,6 @@ typedef struct rb_parser_config_struct {
      *   We can remove this, once decuple parser and ast from Ruby GC.
      */
     int counter;
-
-    /* For parser_st */
-    st_functions_t st_functions;
 
     /* Memory */
     void *(*malloc)(size_t size);

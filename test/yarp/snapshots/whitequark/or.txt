@@ -1,0 +1,15 @@
+ProgramNode(0...22)(
+  [],
+  StatementsNode(0...22)(
+    [OrNode(0...10)(
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 0, "bar"),
+       (4...6)
+     ),
+     OrNode(12...22)(
+       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "foo"),
+       CallNode(19...22)(nil, nil, (19...22), nil, nil, nil, nil, 0, "bar"),
+       (16...18)
+     )]
+  )
+)

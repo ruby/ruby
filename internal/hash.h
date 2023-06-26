@@ -124,12 +124,14 @@ RHASH_AR_TABLE_P(VALUE h)
     return ! FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG);
 }
 
+RBIMPL_ATTR_RETURNS_NONNULL()
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
     return (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
 }
 
+RBIMPL_ATTR_RETURNS_NONNULL()
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {

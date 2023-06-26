@@ -1,0 +1,115 @@
+ProgramNode(0...197)(
+  [],
+  StatementsNode(0...197)(
+    [WhileNode(0...52)(
+       (0...5),
+       SingletonClassNode(6...40)(
+         [:a],
+         (6...11),
+         (12...14),
+         SelfNode(15...19)(),
+         StatementsNode(21...35)(
+           [LocalVariableWriteNode(21...35)(
+              :a,
+              0,
+              CallNode(25...35)(
+                nil,
+                nil,
+                (25...28),
+                nil,
+                nil,
+                nil,
+                BlockNode(29...35)([], nil, nil, (29...31), (32...35)),
+                0,
+                "tap"
+              ),
+              (21...22),
+              (23...24)
+            )]
+         ),
+         (37...40)
+       ),
+       StatementsNode(42...47)([BreakNode(42...47)(nil, (42...47))])
+     ),
+     WhileNode(54...102)(
+       (54...59),
+       SingletonClassNode(60...90)(
+         [],
+         (60...65),
+         (66...68),
+         SelfNode(69...73)(),
+         StatementsNode(75...85)(
+           [CallNode(75...85)(
+              nil,
+              nil,
+              (75...78),
+              nil,
+              nil,
+              nil,
+              BlockNode(79...85)([], nil, nil, (79...81), (82...85)),
+              0,
+              "tap"
+            )]
+         ),
+         (87...90)
+       ),
+       StatementsNode(92...97)([BreakNode(92...97)(nil, (92...97))])
+     ),
+     WhileNode(104...151)(
+       (104...109),
+       ClassNode(110...139)(
+         [:a],
+         (110...115),
+         ConstantReadNode(116...119)(),
+         nil,
+         nil,
+         StatementsNode(120...134)(
+           [LocalVariableWriteNode(120...134)(
+              :a,
+              0,
+              CallNode(124...134)(
+                nil,
+                nil,
+                (124...127),
+                nil,
+                nil,
+                nil,
+                BlockNode(128...134)([], nil, nil, (128...130), (131...134)),
+                0,
+                "tap"
+              ),
+              (120...121),
+              (122...123)
+            )]
+         ),
+         (136...139)
+       ),
+       StatementsNode(141...146)([BreakNode(141...146)(nil, (141...146))])
+     ),
+     WhileNode(153...197)(
+       (153...158),
+       ClassNode(159...185)(
+         [],
+         (159...164),
+         ConstantReadNode(165...168)(),
+         nil,
+         nil,
+         StatementsNode(170...180)(
+           [CallNode(170...180)(
+              nil,
+              nil,
+              (170...173),
+              nil,
+              nil,
+              nil,
+              BlockNode(174...180)([], nil, nil, (174...176), (177...180)),
+              0,
+              "tap"
+            )]
+         ),
+         (182...185)
+       ),
+       StatementsNode(187...192)([BreakNode(187...192)(nil, (187...192))])
+     )]
+  )
+)

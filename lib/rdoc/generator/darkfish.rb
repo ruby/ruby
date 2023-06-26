@@ -610,7 +610,7 @@ class RDoc::Generator::Darkfish
 
     @classes = @store.all_classes_and_modules.sort
     @files   = @store.all_files.sort
-    @methods = @classes.map { |m| m.method_list }.flatten.sort
+    @methods = @classes.flat_map { |m| m.method_list }.sort
     @modsort = get_sorted_module_list @classes
   end
 

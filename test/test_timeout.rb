@@ -41,25 +41,51 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_nested_timeout
+    a = nil
+    assert_raise(Timeout::Error) do
+      Timeout.timeout(0.1) {
+        Timeout.timeout(1) {
+          nil while true
+        }
+        a = 1
+      }
+    end
+    assert_nil a
+  end
+
   def test_cannot_convert_into_time_interval
     bug3168 = '[ruby-dev:41010]'
     def (n = Object.new).zero?; false; end
     assert_raise(TypeError, bug3168) {Timeout.timeout(n) { sleep 0.1 }}
   end
 
-  def test_skip_rescue
-    bug8730 = '[Bug #8730]'
+  def test_skip_rescue_standarderror
     e = nil
-    assert_raise_with_message(Timeout::Error, /execution expired/, bug8730) do
+    assert_raise_with_message(Timeout::Error, /execution expired/) do
       Timeout.timeout 0.01 do
         begin
           sleep 3
-        rescue Exception => e
+        rescue => e
           flunk "should not see any exception but saw #{e.inspect}"
         end
       end
     end
-    assert_nil(e, bug8730)
+  end
+
+  def test_raises_exception_internally
+    e = nil
+    assert_raise_with_message(Timeout::Error, /execution expired/) do
+      Timeout.timeout 0.01 do
+        begin
+          sleep 3
+        rescue Exception => exc
+          e = exc
+          raise
+        end
+      end
+    end
+    assert_equal Timeout::ExitException, e.class
   end
 
   def test_rescue_exit
@@ -127,11 +153,11 @@ class TestTimeout < Test::Unit::TestCase
     bug11344 = '[ruby-dev:49179] [Bug #11344]'
     ok = false
     assert_raise(Timeout::Error) {
-      Thread.handle_interrupt(Timeout::Error => :never) {
+      Thread.handle_interrupt(Timeout::ExitException => :never) {
         Timeout.timeout(0.01) {
           sleep 0.2
           ok = true
-          Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+          Thread.handle_interrupt(Timeout::ExitException => :on_blocking) {
             sleep 0.2
           }
         }

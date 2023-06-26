@@ -1,0 +1,147 @@
+ProgramNode(0...345)(
+  [],
+  StatementsNode(0...345)(
+    [SymbolNode(0...6)((0...2), (2...5), (5...6), "abc"),
+     InterpolatedSymbolNode(8...17)(
+       (8...10),
+       [EmbeddedStatementsNode(10...16)(
+          (10...12),
+          StatementsNode(12...15)(
+            [CallNode(12...15)(
+               nil,
+               nil,
+               (12...15),
+               nil,
+               nil,
+               nil,
+               nil,
+               0,
+               "var"
+             )]
+          ),
+          (15...16)
+        )],
+       (16...17)
+     ),
+     InterpolatedSymbolNode(19...29)(
+       (19...21),
+       [StringNode(21...24)(nil, (21...24), nil, "abc"),
+        EmbeddedStatementsNode(24...28)(
+          (24...26),
+          StatementsNode(26...27)([IntegerNode(26...27)()]),
+          (27...28)
+        )],
+       (28...29)
+     ),
+     ArrayNode(31...51)(
+       [SymbolNode(32...35)((32...33), (33...35), nil, "Υ"),
+        SymbolNode(37...40)((37...38), (38...40), nil, "ά"),
+        SymbolNode(42...45)((42...43), (43...45), nil, "ŗ"),
+        SymbolNode(47...50)((47...48), (48...50), nil, "ρ")],
+       (31...32),
+       (50...51)
+     ),
+     SymbolNode(53...56)((53...54), (54...56), nil, "-@"),
+     SymbolNode(58...60)((58...59), (59...60), nil, "-"),
+     SymbolNode(62...64)((62...63), (63...64), nil, "%"),
+     SymbolNode(66...68)((66...67), (67...68), nil, "|"),
+     SymbolNode(70...73)((70...71), (71...73), nil, "+@"),
+     SymbolNode(75...77)((75...76), (76...77), nil, "+"),
+     SymbolNode(79...81)((79...80), (80...81), nil, "/"),
+     SymbolNode(83...86)((83...84), (84...86), nil, "**"),
+     SymbolNode(88...90)((88...89), (89...90), nil, "*"),
+     SymbolNode(92...95)((92...93), (93...95), nil, "~@"),
+     ArrayNode(97...113)(
+       [IntegerNode(98...99)(),
+        FloatNode(101...104)(),
+        RationalNode(106...108)(IntegerNode(106...107)()),
+        ImaginaryNode(110...112)(IntegerNode(110...111)())],
+       (97...98),
+       (112...113)
+     ),
+     SymbolNode(115...117)((115...116), (116...117), nil, "~"),
+     SymbolNode(119...121)((119...120), (120...121), nil, "a"),
+     ArrayNode(123...132)(
+       [SymbolNode(126...127)(nil, (126...127), nil, "a"),
+        SymbolNode(128...129)(nil, (128...129), nil, "b"),
+        SymbolNode(130...131)(nil, (130...131), nil, "c")],
+       (123...126),
+       (131...132)
+     ),
+     ArrayNode(134...158)(
+       [SymbolNode(137...138)(nil, (137...138), nil, "a"),
+        SymbolNode(139...144)(nil, (139...144), nil, "b\#{1}"),
+        SymbolNode(145...150)(nil, (145...150), nil, "\#{2}c"),
+        SymbolNode(151...157)(nil, (151...157), nil, "d\#{3}f")],
+       (134...137),
+       (157...158)
+     ),
+     ArrayNode(160...184)(
+       [SymbolNode(163...164)(nil, (163...164), nil, "a"),
+        InterpolatedSymbolNode(165...170)(
+          nil,
+          [StringNode(165...166)(nil, (165...166), nil, "b"),
+           EmbeddedStatementsNode(166...170)(
+             (166...168),
+             StatementsNode(168...169)([IntegerNode(168...169)()]),
+             (169...170)
+           )],
+          nil
+        ),
+        InterpolatedSymbolNode(171...176)(
+          nil,
+          [EmbeddedStatementsNode(171...175)(
+             (171...173),
+             StatementsNode(173...174)([IntegerNode(173...174)()]),
+             (174...175)
+           ),
+           StringNode(175...176)(nil, (175...176), nil, "c")],
+          nil
+        ),
+        InterpolatedSymbolNode(177...183)(
+          nil,
+          [StringNode(177...178)(nil, (177...178), nil, "d"),
+           EmbeddedStatementsNode(178...182)(
+             (178...180),
+             StatementsNode(180...181)([IntegerNode(180...181)()]),
+             (181...182)
+           ),
+           StringNode(182...183)(nil, (182...183), nil, "f")],
+          nil
+        )],
+       (160...163),
+       (183...184)
+     ),
+     SymbolNode(186...190)((186...187), (187...190), nil, "@@a"),
+     SymbolNode(192...197)((192...193), (193...197), nil, "👍"),
+     ArrayNode(199...206)(
+       [SymbolNode(202...205)(nil, (202...205), nil, "a\\b")],
+       (199...202),
+       (205...206)
+     ),
+     SymbolNode(208...211)((208...209), (209...211), nil, "$a"),
+     SymbolNode(213...216)((213...214), (214...216), nil, "@a"),
+     SymbolNode(218...221)((218...219), (219...221), nil, "do"),
+     SymbolNode(223...225)((223...224), (224...225), nil, "&"),
+     SymbolNode(227...229)((227...228), (228...229), nil, "`"),
+     SymbolNode(231...234)((231...232), (232...234), nil, "!@"),
+     SymbolNode(236...239)((236...237), (237...239), nil, "!~"),
+     SymbolNode(241...243)((241...242), (242...243), nil, "!"),
+     SymbolNode(245...248)((245...246), (246...248), nil, "[]"),
+     SymbolNode(250...254)((250...251), (251...254), nil, "[]="),
+     SymbolNode(256...258)((256...257), (257...258), nil, "^"),
+     SymbolNode(260...263)((260...261), (261...263), nil, "=="),
+     SymbolNode(265...269)((265...266), (266...269), nil, "==="),
+     SymbolNode(271...274)((271...272), (272...274), nil, "=~"),
+     SymbolNode(276...279)((276...277), (277...279), nil, ">="),
+     SymbolNode(281...284)((281...282), (282...284), nil, ">>"),
+     SymbolNode(286...288)((286...287), (287...288), nil, ">"),
+     SymbolNode(290...294)((290...291), (291...294), nil, "<=>"),
+     SymbolNode(296...299)((296...297), (297...299), nil, "<="),
+     SymbolNode(301...304)((301...302), (302...304), nil, "<<"),
+     SymbolNode(306...308)((306...307), (307...308), nil, "<"),
+     SymbolNode(310...319)((310...311), (311...319), nil, "__LINE__"),
+     SymbolNode(321...330)((321...322), (322...330), nil, "__FILE__"),
+     SymbolNode(332...345)((332...333), (333...345), nil, "__ENCODING__")]
+  )
+)

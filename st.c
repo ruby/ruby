@@ -103,7 +103,7 @@
 #ifdef NOT_RUBY
 #include "regint.h"
 #include "st.h"
-#else
+#elif defined RUBY_EXPORT
 #include "internal.h"
 #include "internal/bits.h"
 #include "internal/hash.h"
@@ -342,7 +342,7 @@ get_power2(st_index_t size)
     unsigned int n = ST_INDEX_BITS - nlz_intptr(size);
     if (n <= MAX_POWER2)
         return n < MINIMAL_POWER2 ? MINIMAL_POWER2 : n;
-#ifndef NOT_RUBY
+#ifdef RUBY
     /* Ran out of the table entries */
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
@@ -2061,6 +2061,7 @@ st_numhash(st_data_t n)
     return (st_index_t)((n>>s1|(n<<s2)) ^ (n>>s2));
 }
 
+#ifdef RUBY
 /* Expand TAB to be suitable for holding SIZ entries in total.
    Pre-existing entries remain not deleted inside of TAB, but its bins
    are cleared to expect future reconstruction. See rehash below. */
@@ -2200,7 +2201,6 @@ st_rehash(st_table *tab)
     } while (rebuilt_p);
 }
 
-#ifdef RUBY
 static st_data_t
 st_stringify(VALUE key)
 {

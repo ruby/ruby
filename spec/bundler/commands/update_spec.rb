@@ -658,27 +658,27 @@ RSpec.describe "bundle update" do
       bundle "update", :all => true, :raise_on_error => false
 
       expect(last_command).to be_failure
-      expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m)
-      expect(err).to match(/freeze \nby running `bundle config set frozen false`./m)
+      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/)
+      expect(err).to match(/freeze by running `bundle config set frozen false`./)
     end
 
     it "should fail loudly when frozen is set globally" do
       bundle "config set --global frozen 1"
       bundle "update", :all => true, :raise_on_error => false
-      expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m).
-        and match(/freeze \nby running `bundle config set frozen false`./m)
+      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/).
+        and match(/freeze by running `bundle config set frozen false`./)
     end
 
     it "should fail loudly when deployment is set globally" do
       bundle "config set --global deployment true"
       bundle "update", :all => true, :raise_on_error => false
-      expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m).
-        and match(/freeze \nby running `bundle config set frozen false`./m)
+      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/).
+        and match(/freeze by running `bundle config set frozen false`./)
     end
 
     it "should not suggest any command to unfreeze bundler if frozen is set through ENV" do
       bundle "update", :all => true, :raise_on_error => false, :env => { "BUNDLE_FROZEN" => "true" }
-      expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m)
+      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/)
       expect(err).not_to match(/by running/)
     end
   end
@@ -1239,7 +1239,7 @@ RSpec.describe "bundle update --ruby" do
 end
 
 RSpec.describe "bundle update --bundler" do
-  it "updates the bundler version in the lockfile without re-resolving" do
+  it "updates the bundler version in the lockfile" do
     build_repo4 do
       build_gem "rack", "1.0"
     end
@@ -1249,8 +1249,6 @@ RSpec.describe "bundle update --bundler" do
       gem "rack"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
-
-    FileUtils.rm_r gem_repo4
 
     bundle :update, :bundler => true, :artifice => "compact_index", :verbose => true
     expect(out).to include("Using bundler #{Bundler::VERSION}")
@@ -1473,8 +1471,8 @@ RSpec.describe "bundle update --bundler" do
          2.1.4
     L
 
-    bundle "update --bundler=2.3.9", :env => { "BUNDLE_FROZEN" => "true" }
-    expect(err).to include("Cannot write a changed lockfile while frozen")
+    bundle "update --bundler=2.3.9", :env => { "BUNDLE_FROZEN" => "true" }, :raise_on_error => false
+    expect(err).to include("An update to the version of bundler itself was requested, but the lockfile can't be updated because frozen mode is set")
   end
 end
 

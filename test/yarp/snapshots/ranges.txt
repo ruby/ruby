@@ -1,0 +1,106 @@
+ProgramNode(0...85)(
+  [],
+  StatementsNode(0...85)(
+    [ParenthesesNode(0...6)(
+       StatementsNode(1...5)(
+         [RangeNode(1...5)(nil, IntegerNode(4...5)(), (1...4), 1)]
+       ),
+       (0...1),
+       (5...6)
+     ),
+     ParenthesesNode(8...13)(
+       StatementsNode(9...12)(
+         [RangeNode(9...12)(nil, IntegerNode(11...12)(), (9...11), 0)]
+       ),
+       (8...9),
+       (12...13)
+     ),
+     RangeNode(15...20)(
+       IntegerNode(15...16)(),
+       IntegerNode(19...20)(),
+       (16...19),
+       1
+     ),
+     CallNode(22...31)(
+       CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 0, "foo"),
+       nil,
+       (25...31),
+       (25...26),
+       ArgumentsNode(26...30)(
+         [RangeNode(26...30)(nil, IntegerNode(29...30)(), (26...29), 1)]
+       ),
+       (30...31),
+       nil,
+       0,
+       "[]"
+     ),
+     HashNode(33...48)(
+       (33...34),
+       [AssocNode(35...46)(
+          SymbolNode(35...39)(nil, (35...38), (38...39), "foo"),
+          RangeNode(40...46)(
+            nil,
+            CallNode(43...46)(
+              nil,
+              nil,
+              (43...46),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "bar"
+            ),
+            (40...43),
+            1
+          ),
+          nil
+        )],
+       (47...48)
+     ),
+     ParenthesesNode(50...56)(
+       StatementsNode(51...55)(
+         [RangeNode(51...55)(IntegerNode(51...52)(), nil, (52...55), 1)]
+       ),
+       (50...51),
+       (55...56)
+     ),
+     RangeNode(58...62)(
+       IntegerNode(58...59)(),
+       IntegerNode(61...62)(),
+       (59...61),
+       0
+     ),
+     HashNode(64...78)(
+       (64...65),
+       [AssocNode(66...76)(
+          SymbolNode(66...70)(nil, (66...69), (69...70), "foo"),
+          RangeNode(71...76)(
+            nil,
+            CallNode(73...76)(
+              nil,
+              nil,
+              (73...76),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "bar"
+            ),
+            (71...73),
+            0
+          ),
+          nil
+        )],
+       (77...78)
+     ),
+     ParenthesesNode(80...85)(
+       StatementsNode(81...84)(
+         [RangeNode(81...84)(IntegerNode(81...82)(), nil, (82...84), 0)]
+       ),
+       (80...81),
+       (84...85)
+     )]
+  )
+)

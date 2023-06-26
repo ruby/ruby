@@ -1,0 +1,26 @@
+ProgramNode(0...26)(
+  [],
+  StatementsNode(0...26)(
+    [LambdaNode(0...8)(
+       [:*],
+       (0...2),
+       BlockParametersNode(3...4)(
+         ParametersNode(3...4)(
+           [],
+           [],
+           [],
+           RestParameterNode(3...4)((3...4), nil),
+           [],
+           nil,
+           nil
+         ),
+         [],
+         nil,
+         nil
+       ),
+       nil
+     ),
+     LambdaNode(10...19)([], (10...12), nil, nil),
+     LambdaNode(21...26)([], (21...23), nil, nil)]
+  )
+)

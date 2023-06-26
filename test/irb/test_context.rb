@@ -6,7 +6,7 @@ require 'rubygems' if defined?(Gem)
 require_relative "helper"
 
 module TestIRB
-  class TestContext < TestCase
+  class ContextTest < TestCase
     def setup
       IRB.init_config(nil)
       IRB.conf[:USE_SINGLELINE] = false

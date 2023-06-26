@@ -602,9 +602,9 @@ end
   end
 
   def test_accept_verbatim_redefinable_operators
-    functions = %w[| ^ & <=> == === =~ > >= < <= << >> + - * / % ** ~ +@ -@ [] []= ` !  != !~].map { |redefinable_op|
+    functions = %w[| ^ & <=> == === =~ > >= < <= << >> + - * / % ** ~ +@ -@ [] []= ` !  != !~].flat_map { |redefinable_op|
       ["def #{redefinable_op}\n", "end\n"]
-    }.flatten
+    }
 
     verb = @RM::Verbatim.new(*functions)
 

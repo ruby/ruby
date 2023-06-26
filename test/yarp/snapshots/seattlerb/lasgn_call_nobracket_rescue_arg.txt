@@ -1,0 +1,28 @@
+ProgramNode(0...16)(
+  [:a],
+  StatementsNode(0...16)(
+    [LocalVariableWriteNode(0...16)(
+       :a,
+       0,
+       CallNode(4...16)(
+         nil,
+         nil,
+         (4...5),
+         nil,
+         ArgumentsNode(6...16)(
+           [RescueModifierNode(6...16)(
+              IntegerNode(6...7)(),
+              (8...14),
+              IntegerNode(15...16)()
+            )]
+         ),
+         nil,
+         nil,
+         0,
+         "b"
+       ),
+       (0...1),
+       (2...3)
+     )]
+  )
+)

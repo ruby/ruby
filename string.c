@@ -4378,7 +4378,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    'foo' =~ /o/ # => 1
  *    'foo' =~ /x/ # => nil
  *
- *  Note: also updates Regexp@Special+global+variables.
+ *  Note: also updates Regexp@Global+Variables.
  *
  *  If the given +object+ is not a \Regexp, returns the value
  *  returned by <tt>object =~ self</tt>.
@@ -4420,7 +4420,7 @@ static VALUE get_pat(VALUE);
  *
  *  Returns a \MatchData object (or +nil+) based on +self+ and the given +pattern+.
  *
- *  Note: also updates Regexp@Special+global+variables.
+ *  Note: also updates Regexp@Global+Variables.
  *
  *  - Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *      regexp = Regexp.new(pattern)
@@ -4469,7 +4469,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
  *
- *  Note: does not update Regexp@Special+global+variables.
+ *  Note: does not update Regexp@Global+Variables.
  *
  *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *    regexp = Regexp.new(pattern)

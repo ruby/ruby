@@ -1,0 +1,14 @@
+ProgramNode(0...11)(
+  [],
+  StatementsNode(0...11)(
+    [HashNode(0...11)(
+       (0...1),
+       [AssocNode(2...9)(
+          SymbolNode(2...6)((2...3), (3...4), (4...6), "a"),
+          SymbolNode(7...9)((7...8), (8...9), nil, "b"),
+          nil
+        )],
+       (10...11)
+     )]
+  )
+)

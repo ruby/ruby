@@ -1,0 +1,26 @@
+ProgramNode(0...16)(
+  [],
+  StatementsNode(0...16)(
+    [CallNode(0...16)(
+       nil,
+       nil,
+       (0...1),
+       (1...2),
+       ArgumentsNode(2...15)(
+         [IntegerNode(2...3)(),
+          KeywordHashNode(5...15)(
+            [AssocNode(5...10)(
+               SymbolNode(5...8)(nil, (5...7), (7...8), "kw"),
+               IntegerNode(9...10)(),
+               nil
+             ),
+             AssocSplatNode(12...15)(IntegerNode(14...15)(), (12...14))]
+          )]
+       ),
+       (15...16),
+       nil,
+       0,
+       "f"
+     )]
+  )
+)

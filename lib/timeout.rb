@@ -23,29 +23,26 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.3.2"
+  VERSION = "0.4.0"
+
+  # Internal error raised to when a timeout is triggered.
+  class ExitException < Exception
+    def exception(*)
+      self
+    end
+  end
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
-    attr_reader :thread
+    def self.handle_timeout(message)
+      exc = ExitException.new(message)
 
-    def self.catch(*args)
-      exc = new(*args)
-      exc.instance_variable_set(:@thread, Thread.current)
-      exc.instance_variable_set(:@catch_value, exc)
-      ::Kernel.catch(exc) {yield exc}
-    end
-
-    def exception(*)
-      # TODO: use Fiber.current to see if self can be thrown
-      if self.thread == Thread.current
-        bt = caller
-        begin
-          throw(@catch_value, bt)
-        rescue UncaughtThrowError
-        end
+      begin
+        yield exc
+      rescue ExitException => e
+        raise new(message) if exc.equal?(e)
+        raise
       end
-      super
     end
   end
 
@@ -195,8 +192,7 @@ module Timeout
     if klass
       perform.call(klass)
     else
-      backtrace = Error.catch(&perform)
-      raise Error, message, backtrace
+      Error.handle_timeout(message, &perform)
     end
   end
   module_function :timeout

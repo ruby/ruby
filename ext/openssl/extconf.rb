@@ -192,6 +192,12 @@ have_func("EVP_PKEY_dup(NULL)", evp_h)
 
 Logging::message "=== Checking done. ===\n"
 
+# Append flags from environment variables.
+extcflags = ENV["RUBY_OPENSSL_EXTCFLAGS"]
+append_cflags(extcflags.split) if extcflags
+extldflags = ENV["RUBY_OPENSSL_EXTLDFLAGS"]
+append_ldflags(extldflags.split) if extldflags
+
 create_header
 create_makefile("openssl")
 Logging::message "Done.\n"

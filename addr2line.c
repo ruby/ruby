@@ -8,9 +8,13 @@
 
 **********************************************************************/
 
-#if defined(__clang__)
+#if defined(__clang__) && defined(__has_warning)
+#if __has_warning("-Wgnu-empty-initializer")
 #pragma clang diagnostic ignored "-Wgnu-empty-initializer"
+#endif
+#if __has_warning("-Wgcc-compat")
 #pragma clang diagnostic ignored "-Wgcc-compat"
+#endif
 #endif
 
 #include "ruby/internal/config.h"

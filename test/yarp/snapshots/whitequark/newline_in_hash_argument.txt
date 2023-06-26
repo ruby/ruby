@@ -1,0 +1,85 @@
+ProgramNode(0...74)(
+  [:a, :b],
+  StatementsNode(0...74)(
+    [CaseNode(0...40)(
+       CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 0, "foo"),
+       [InNode(9...21)(
+          HashPatternNode(12...14)(
+            nil,
+            [AssocNode(12...14)(
+               SymbolNode(12...14)(nil, (12...13), (13...14), "a"),
+               nil,
+               nil
+             )],
+            nil,
+            nil,
+            nil
+          ),
+          StatementsNode(15...21)(
+            [IntegerNode(15...16)(), TrueNode(17...21)()]
+          ),
+          (9...11),
+          nil
+        ),
+        InNode(22...36)(
+          HashPatternNode(25...29)(
+            nil,
+            [AssocNode(25...29)(
+               SymbolNode(25...29)((25...26), (26...27), (27...29), "b"),
+               nil,
+               nil
+             )],
+            nil,
+            nil,
+            nil
+          ),
+          StatementsNode(30...36)(
+            [IntegerNode(30...31)(), TrueNode(32...36)()]
+          ),
+          (22...24),
+          nil
+        )],
+       nil,
+       (0...4),
+       (37...40)
+     ),
+     CallNode(42...58)(
+       CallNode(42...45)(nil, nil, (42...45), nil, nil, nil, nil, 0, "obj"),
+       (45...46),
+       (46...49),
+       nil,
+       ArgumentsNode(50...58)(
+         [KeywordHashNode(50...58)(
+            [AssocNode(50...58)(
+               SymbolNode(50...56)((50...51), (51...54), (54...56), "foo"),
+               IntegerNode(57...58)(),
+               nil
+             )]
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "set"
+     ),
+     CallNode(60...74)(
+       CallNode(60...63)(nil, nil, (60...63), nil, nil, nil, nil, 0, "obj"),
+       (63...64),
+       (64...67),
+       nil,
+       ArgumentsNode(68...74)(
+         [KeywordHashNode(68...74)(
+            [AssocNode(68...74)(
+               SymbolNode(68...72)(nil, (68...71), (71...72), "foo"),
+               IntegerNode(73...74)(),
+               nil
+             )]
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "set"
+     )]
+  )
+)

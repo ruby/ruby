@@ -67,10 +67,6 @@ struct parser_st_hash_type {
     parser_st_index_t (*hash)(parser_st_data_t);        /* parser_st_hash_func* */
 };
 
-typedef struct st_functions {
-        void *(*nonempty_memcpy)(void *dest, const void *src, size_t t, size_t n);
-} st_functions_t;
-
 #define ST_INDEX_BITS (SIZEOF_ST_INDEX_T * CHAR_BIT)
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR) && defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
@@ -100,7 +96,6 @@ struct parser_st_table {
     parser_st_index_t entries_start, entries_bound;
     /* Array of size 2^entry_power.  */
     parser_st_table_entry *entries;
-    st_functions_t *functions;
 };
 
 #define parser_st_is_member(table,key) rb_parser_st_lookup((table),(key),(parser_st_data_t *)0)
@@ -108,14 +103,15 @@ struct parser_st_table {
 enum parser_st_retval {ST2_CONTINUE, ST2_STOP, ST2_DELETE, ST2_CHECK, ST2_REPLACE};
 
 size_t rb_parser_st_table_size(const struct parser_st_table *tbl);
-parser_st_table *rb_parser_st_init_table(const struct parser_st_hash_type *, st_functions_t *);
-parser_st_table *rb_parser_st_init_table_with_size(const struct parser_st_hash_type *, st_functions_t *, parser_st_index_t);
-parser_st_table *rb_parser_st_init_numtable(st_functions_t *);
-parser_st_table *rb_parser_st_init_numtable_with_size(st_functions_t *, parser_st_index_t);
-parser_st_table *rb_parser_st_init_strtable(st_functions_t *);
-parser_st_table *rb_parser_st_init_strtable_with_size(st_functions_t *, parser_st_index_t);
-parser_st_table *rb_parser_st_init_strcasetable(st_functions_t *);
-parser_st_table *rb_parser_st_init_strcasetable_with_size(st_functions_t *, parser_st_index_t);
+parser_st_table *rb_parser_st_init_table(const struct parser_st_hash_type *);
+parser_st_table *rb_parser_st_init_table_with_size(const struct parser_st_hash_type *, parser_st_index_t);
+parser_st_table *rb_parser_st_init_existing_table_with_size(parser_st_table *, const struct parser_st_hash_type *, parser_st_index_t);
+parser_st_table *rb_parser_st_init_numtable(void);
+parser_st_table *rb_parser_st_init_numtable_with_size(parser_st_index_t);
+parser_st_table *rb_parser_st_init_strtable(void);
+parser_st_table *rb_parser_st_init_strtable_with_size(parser_st_index_t);
+parser_st_table *rb_parser_st_init_strcasetable(void);
+parser_st_table *rb_parser_st_init_strcasetable_with_size(parser_st_index_t);
 int rb_parser_st_delete(parser_st_table *, parser_st_data_t *, parser_st_data_t *); /* returns 0:notfound 1:deleted */
 int rb_parser_st_delete_safe(parser_st_table *, parser_st_data_t *, parser_st_data_t *, parser_st_data_t);
 int rb_parser_st_shift(parser_st_table *, parser_st_data_t *, parser_st_data_t *); /* returns 0:notfound 1:deleted */

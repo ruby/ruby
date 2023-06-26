@@ -1,0 +1,43 @@
+ProgramNode(0...22)(
+  [],
+  StatementsNode(0...22)(
+    [LambdaNode(0...11)(
+       [:a],
+       (0...2),
+       BlockParametersNode(3...7)(
+         ParametersNode(3...7)(
+           [],
+           [],
+           [],
+           nil,
+           [KeywordParameterNode(3...7)((3...5), IntegerNode(6...7)())],
+           nil,
+           nil
+         ),
+         [],
+         nil,
+         nil
+       ),
+       nil
+     ),
+     LambdaNode(13...22)(
+       [:a],
+       (13...15),
+       BlockParametersNode(16...18)(
+         ParametersNode(16...18)(
+           [],
+           [],
+           [],
+           nil,
+           [KeywordParameterNode(16...18)((16...18), nil)],
+           nil,
+           nil
+         ),
+         [],
+         nil,
+         nil
+       ),
+       nil
+     )]
+  )
+)

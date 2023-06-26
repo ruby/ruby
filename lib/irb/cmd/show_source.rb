@@ -58,9 +58,9 @@ module IRB
           tokens.chunk { |tok| tok.pos[0] }.each do |lnum, chunk|
             code = lines[0..lnum].join
             prev_tokens.concat chunk
-            continue = lex.process_continue(prev_tokens)
-            code_block_open = lex.check_code_block(code, prev_tokens)
-            if !continue && !code_block_open
+            continue = lex.should_continue?(prev_tokens)
+            syntax = lex.check_code_syntax(code)
+            if !continue && syntax == :valid
               return first_line + lnum
             end
           end

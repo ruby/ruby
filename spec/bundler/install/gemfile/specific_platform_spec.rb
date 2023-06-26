@@ -115,8 +115,6 @@ RSpec.describe "bundle install with specific platforms" do
           s.platform = "arm64-darwin"
           s.required_ruby_version = "< #{Gem.ruby_version}"
         end
-
-        build_gem "bundler", "2.1.4"
       end
 
       gemfile <<~G
@@ -137,22 +135,21 @@ RSpec.describe "bundle install with specific platforms" do
         DEPENDENCIES
           nokogiri
 
-        RUBY VERSION
-          2.5.3p105
-
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
       simulate_platform "arm64-darwin-22", &example
     end
 
     it "still installs the generic RUBY variant if necessary" do
-      bundle "update --bundler", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      expect(out).to include("Installing nokogiri 1.3.10")
     end
 
     it "still installs the generic RUBY variant if necessary, even in frozen mode" do
-      bundle "update --bundler", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
+      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
+      expect(out).to include("Installing nokogiri 1.3.10")
     end
   end
 

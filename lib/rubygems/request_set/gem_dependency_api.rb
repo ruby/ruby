@@ -790,7 +790,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     return true if @installing
 
-    unless RUBY_VERSION == version
+    unless version == RUBY_VERSION
       message = "Your Ruby version is #{RUBY_VERSION}, " \
                 "but your #{gem_deps_file} requires #{version}"
 

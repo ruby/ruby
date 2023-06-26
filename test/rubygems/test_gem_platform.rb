@@ -71,7 +71,7 @@ class TestGemPlatform < Gem::TestCase
       Gem.platforms = platforms
       class << Gem::Platform
         remove_method :match_gem?
-        alias_method :match_gem?, :original_match_gem? # rubocop:disable Lint/DuplicateMethods
+        alias_method :match_gem?, :original_match_gem?
         remove_method :original_match_gem?
       end
     end

@@ -1,0 +1,24 @@
+ProgramNode(0...12)(
+  [],
+  StatementsNode(0...12)(
+    [CallNode(0...12)(
+       nil,
+       nil,
+       (0...4),
+       nil,
+       ArgumentsNode(5...12)(
+         [KeywordHashNode(5...12)(
+            [AssocNode(5...12)(
+               SymbolNode(5...9)((5...6), (6...7), (7...9), "a"),
+               HashNode(10...12)((10...11), [], (11...12)),
+               nil
+             )]
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "puts"
+     )]
+  )
+)

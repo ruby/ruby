@@ -66,7 +66,7 @@ RSpec.describe "install in deployment or frozen mode" do
       G
 
       bundle "install --deployment", :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -272,7 +272,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -297,8 +297,12 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).to eq("WIN")
     end
 
-    it "works if a gem is missing, but it's on a different platform, and the Gemfile has no global source", :bundler => "< 3" do
+    it "works if a gem is missing, but it's on a different platform" do
+      build_repo2
+
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+
         source "#{file_uri_for(gem_repo1)}" do
           gem "rake", platform: :#{not_local_tag}
         end
@@ -306,6 +310,40 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle :install, :env => { "BUNDLE_FROZEN" => "true" }
       expect(last_command).to be_success
+    end
+
+    it "shows a good error if a gem is missing from the lockfile" do
+      build_repo4 do
+        build_gem "foo"
+        build_gem "bar"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+
+        gem "foo"
+        gem "bar"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            foo (1.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo
+          bar
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle :install, :env => { "BUNDLE_FROZEN" => "true" }, :raise_on_error => false, :artifice => "compact_index"
+      expect(err).to include("Your lock file is missing \"bar\", but the lockfile can't be updated because frozen mode is set")
     end
 
     it "explodes if a path gem is missing" do
@@ -333,7 +371,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       ENV["BUNDLE_FROZEN"] = "1"
       bundle "install", :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -349,7 +387,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       bundle "install", :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -379,7 +417,7 @@ RSpec.describe "install in deployment or frozen mode" do
       ENV["BUNDLE_FROZEN"] = "false"
       ENV["BUNDLE_DEPLOYMENT"] = "false"
       bundle "install"
-      expect(out).not_to include("deployment mode")
+      expect(out).not_to include("frozen mode")
       expect(out).not_to include("You have added to the Gemfile")
       expect(out).not_to include("* rack-obama")
     end
@@ -392,7 +430,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile:\n* activesupport\n\n")
       expect(err).to include("You have deleted from the Gemfile:\n* rack")
       expect(err).not_to include("You have changed in the Gemfile")
@@ -406,7 +444,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `git://hubz.com`")
     end
@@ -426,7 +464,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).not_to include("You have deleted from the Gemfile")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack-1.0")}` to `no specified source`")
@@ -450,7 +488,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack")}` to `no specified source`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
@@ -469,7 +507,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
       run "require 'rack'", :raise_on_error => false
       expect(err).to include strip_whitespace(<<-E).strip
-The dependencies in your gemfile changed
+The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set (Bundler::ProductionError)
 
 You have added to the Gemfile:
 * rack (= 1.0.0)
@@ -502,7 +540,7 @@ You have deleted from the Gemfile:
       simulate_new_machine
       bundle "config set --local deployment true"
       bundle "install --verbose"
-      expect(out).not_to include("You are trying to install in deployment mode after changing your Gemfile")
+      expect(out).not_to include("but the lockfile can't be updated because frozen mode is set")
       expect(out).not_to include("You have added to the Gemfile")
       expect(out).not_to include("You have deleted from the Gemfile")
       expect(out).to include("vendor/cache/foo")

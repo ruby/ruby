@@ -29,15 +29,15 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
     vm->builtin_function_table = table;
     vm->builtin_inline_index = 0;
     static const rb_compile_option_t optimization = {
-        TRUE, /* int inline_const_cache; */
-        TRUE, /* int peephole_optimization; */
-        FALSE,/* int tailcall_optimization; */
-        TRUE, /* int specialized_instruction; */
-        TRUE, /* int operands_unification; */
-        TRUE, /* int instructions_unification; */
-        TRUE, /* int stack_caching; */
-        TRUE, /* int frozen_string_literal; */
-        FALSE, /* int debug_frozen_string_literal; */
+        TRUE, /* unsigned int inline_const_cache; */
+        TRUE, /* unsigned int peephole_optimization; */
+        FALSE,/* unsigned int tailcall_optimization; */
+        TRUE, /* unsigned int specialized_instruction; */
+        TRUE, /* unsigned int operands_unification; */
+        TRUE, /* unsigned int instructions_unification; */
+        TRUE, /* unsigned int stack_caching; */
+        TRUE, /* unsigned int frozen_string_literal; */
+        FALSE, /* unsigned int debug_frozen_string_literal; */
         FALSE, /* unsigned int coverage_enabled; */
         0, /* int debug_level; */
     };

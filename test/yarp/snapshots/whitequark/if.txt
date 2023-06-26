@@ -1,0 +1,23 @@
+ProgramNode(0...38)(
+  [],
+  StatementsNode(0...38)(
+    [IfNode(0...20)(
+       (0...2),
+       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 0, "foo"),
+       StatementsNode(12...15)(
+         [CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "bar")]
+       ),
+       nil,
+       (17...20)
+     ),
+     IfNode(22...38)(
+       (22...24),
+       CallNode(25...28)(nil, nil, (25...28), nil, nil, nil, nil, 0, "foo"),
+       StatementsNode(30...33)(
+         [CallNode(30...33)(nil, nil, (30...33), nil, nil, nil, nil, 0, "bar")]
+       ),
+       nil,
+       (35...38)
+     )]
+  )
+)

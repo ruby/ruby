@@ -55,7 +55,7 @@ IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
-  next if /\A(?:Init_|InitVM_|RUBY_|ruby_|rb_|[Oo]nig|dln_|coroutine_)/ =~ n
+  next if /\A(?:Init_|InitVM_|RUBY_|ruby_|rb_|yp_|[Oo]nig|dln_|coroutine_)/ =~ n
   next if REPLACE.include?(n)
   puts col.fail("leaked") if count.zero?
   count += 1

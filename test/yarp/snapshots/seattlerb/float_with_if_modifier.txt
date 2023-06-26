@@ -1,0 +1,12 @@
+ProgramNode(0...10)(
+  [],
+  StatementsNode(0...10)(
+    [IfNode(0...10)(
+       (3...5),
+       TrueNode(6...10)(),
+       StatementsNode(0...3)([FloatNode(0...3)()]),
+       nil,
+       nil
+     )]
+  )
+)

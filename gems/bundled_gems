@@ -5,14 +5,14 @@
 # - repository-url: URL from where clone for test
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
-minitest        5.18.0  https://github.com/minitest/minitest
+minitest        5.18.1  https://github.com/minitest/minitest
 power_assert    2.0.3   https://github.com/ruby/power_assert
 rake            13.0.6  https://github.com/ruby/rake
-test-unit       3.6.0   https://github.com/test-unit/test-unit
+test-unit       3.6.1   https://github.com/test-unit/test-unit
 rexml           3.2.5   https://github.com/ruby/rexml
 rss             0.2.9   https://github.com/ruby/rss
 net-ftp         0.2.0   https://github.com/ruby/net-ftp
-net-imap        0.3.4   https://github.com/ruby/net-imap
+net-imap        0.3.6   https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.3.3   https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
@@ -20,4 +20,4 @@ prime           0.1.2   https://github.com/ruby/prime
 rbs             3.1.0   https://github.com/ruby/rbs
 typeprof        0.21.7  https://github.com/ruby/typeprof aabc019684d8b4a1ed66c2a1ca48da7bbb18dcc0
 debug           1.8.0   https://github.com/ruby/debug
-racc            1.7.0   https://github.com/ruby/racc
+racc            1.7.1   https://github.com/ruby/racc

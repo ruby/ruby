@@ -1803,20 +1803,6 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
     return r_object_for(arg, partial, ivp, extmod, type);
 }
 
-static int
-r_move_ivar(st_data_t k, st_data_t v, st_data_t d)
-{
-    ID key = (ID)k;
-    VALUE value = (VALUE)v;
-    VALUE dest = (VALUE)d;
-
-    if (rb_is_instance_id(key)) {
-        rb_ivar_set(dest, key, value);
-        return ST_DELETE;
-    }
-    return ST_CONTINUE;
-}
-
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type)
 {
@@ -2034,7 +2020,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 rb_str_set_len(str, dst - ptr);
             }
             VALUE regexp = rb_reg_new_str(str, options);
-            rb_ivar_foreach(str, r_move_ivar, regexp);
+            r_copy_ivar(regexp, str);
 
             v = r_entry0(regexp, idx, arg);
             v = r_leave(v, arg, partial);

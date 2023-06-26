@@ -48,8 +48,8 @@ class Reline::LineEditor
     PERFECT_MATCH = :perfect_match
   end
 
-  CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
-  MenuInfo = Struct.new('MenuInfo', :target, :list)
+  CompletionJourneyData = Struct.new(:preposing, :postposing, :list, :pointer)
+  MenuInfo = Struct.new(:target, :list)
 
   PROMPT_LIST_CACHE_TIMEOUT = 0.5
   MINIMUM_SCROLLBAR_HEIGHT = 1

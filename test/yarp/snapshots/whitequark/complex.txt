@@ -1,0 +1,9 @@
+ProgramNode(0...24)(
+  [],
+  StatementsNode(0...24)(
+    [ImaginaryNode(0...5)(FloatNode(0...4)()),
+     ImaginaryNode(7...13)(RationalNode(7...12)(FloatNode(7...11)())),
+     ImaginaryNode(15...18)(IntegerNode(15...17)()),
+     ImaginaryNode(20...24)(RationalNode(20...23)(IntegerNode(20...22)()))]
+  )
+)

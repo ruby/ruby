@@ -1,0 +1,23 @@
+ProgramNode(0...10)(
+  [],
+  StatementsNode(0...10)(
+    [InterpolatedStringNode(0...10)(
+       (0...1),
+       [EmbeddedStatementsNode(1...5)(
+          (1...3),
+          StatementsNode(3...4)(
+            [CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 0, "a")]
+          ),
+          (4...5)
+        ),
+        EmbeddedStatementsNode(5...9)(
+          (5...7),
+          StatementsNode(7...8)(
+            [CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 0, "b")]
+          ),
+          (8...9)
+        )],
+       (9...10)
+     )]
+  )
+)

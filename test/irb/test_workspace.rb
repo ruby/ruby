@@ -8,7 +8,7 @@ require 'irb/color'
 require_relative "helper"
 
 module TestIRB
-  class TestWorkSpace < TestCase
+  class WorkSpaceTest < TestCase
     def test_code_around_binding
       IRB.conf[:USE_COLORIZE] = false
       Tempfile.create('irb') do |f|

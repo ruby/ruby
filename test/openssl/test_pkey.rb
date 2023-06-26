@@ -82,6 +82,9 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_ed25519
+    # https://github.com/openssl/openssl/issues/20758
+    pend('Not supported on FIPS mode enabled') if OpenSSL.fips_mode
+
     # Test vector from RFC 8032 Section 7.1 TEST 2
     priv_pem = <<~EOF
     -----BEGIN PRIVATE KEY-----
@@ -127,6 +130,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_x25519
+    pend('Not supported on FIPS mode enabled') if OpenSSL.fips_mode
+
     # Test vector from RFC 7748 Section 6.1
     alice_pem = <<~EOF
     -----BEGIN PRIVATE KEY-----
@@ -153,6 +158,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_compare?
+    pend('Not supported on FIPS mode enabled') if OpenSSL.fips_mode
+
     key1 = Fixtures.pkey("rsa1024")
     key2 = Fixtures.pkey("rsa1024")
     key3 = Fixtures.pkey("rsa2048")

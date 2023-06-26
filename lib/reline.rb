@@ -17,7 +17,7 @@ module Reline
 
   class ConfigEncodingConversionError < StandardError; end
 
-  Key = Struct.new('Key', :char, :combined_char, :with_meta) do
+  Key = Struct.new(:char, :combined_char, :with_meta) do
     def match?(other)
       case other
       when Reline::Key

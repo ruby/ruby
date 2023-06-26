@@ -1,0 +1,26 @@
+ProgramNode(0...9)(
+  [],
+  StatementsNode(0...9)(
+    [CallNode(0...9)(
+       nil,
+       nil,
+       (0...1),
+       nil,
+       ArgumentsNode(2...9)(
+         [InterpolatedStringNode(2...9)(
+            (2...3),
+            [EmbeddedStatementsNode(3...8)(
+               (3...5),
+               StatementsNode(5...7)([ArrayNode(5...7)([], (5...6), (6...7))]),
+               (7...8)
+             )],
+            (8...9)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "m"
+     )]
+  )
+)

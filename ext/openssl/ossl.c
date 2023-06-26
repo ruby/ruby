@@ -369,22 +369,6 @@ ossl_get_errors(VALUE _)
  */
 VALUE dOSSL;
 
-#if !defined(HAVE_VA_ARGS_MACRO)
-void
-ossl_debug(const char *fmt, ...)
-{
-    va_list args;
-
-    if (dOSSL == Qtrue) {
-	fprintf(stderr, "OSSL_DEBUG: ");
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-	fprintf(stderr, " [CONTEXT N/A]\n");
-    }
-}
-#endif
-
 /*
  * call-seq:
  *   OpenSSL.debug -> true | false
@@ -1271,6 +1255,7 @@ Init_openssl(void)
     Init_ossl_x509();
     Init_ossl_ocsp();
     Init_ossl_engine();
+    Init_ossl_provider();
     Init_ossl_asn1();
     Init_ossl_kdf();
 

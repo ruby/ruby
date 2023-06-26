@@ -218,7 +218,7 @@ module IRB
         else
           sym = $1
           candidates = Symbol.all_symbols.collect do |s|
-            ":" + s.id2name.encode(Encoding.default_external)
+            s.inspect
           rescue EncodingError
             # ignore
           end

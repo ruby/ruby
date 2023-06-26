@@ -26,14 +26,10 @@ module URI
     ]x
 
     USERINFO = /(?:%\h\h|[!$&-.0-9:;=A-Z_a-z~])*+/
-    AUTHORITY = %r[
-      (?:(?<userinfo>#{USERINFO.source})@)?
-      (?<host>#{HOST.source.delete(" \n")})
-      (?::(?<port>\d*+))?
-    ]x
 
     SCHEME = %r[[A-Za-z][+\-.0-9A-Za-z]*+].source
     SEG = %r[(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/])].source
+    SEG_NC = %r[(?:%\h\h|[!$&-.0-9;=@A-Z_a-z~])].source
     FRAGMENT = %r[(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/?])*+].source
 
     RFC3986_URI = %r[\A
@@ -41,10 +37,14 @@ module URI
     (?<URI>
       (?<scheme>#{SCHEME}):
       (?<hier-part>//
-        (?<authority>#{AUTHORITY})
+        (?<authority>
+          (?:(?<userinfo>#{USERINFO.source})@)?
+          (?<host>#{HOST.source.delete(" \n")})
+          (?::(?<port>\d*+))?
+        )
         (?<path-abempty>(?:/\g<seg>*+)?)
-      | (?<path-absolute>/\g<seg>*+)
-      | (?<path-rootless>(?!=/)\g<seg>++)
+      | (?<path-absolute>/((?!/)\g<seg>++)?)
+      | (?<path-rootless>(?!/)\g<seg>++)
       | (?<path-empty>)
       )
       (?:\?(?<query>[^\#]*+))?
@@ -55,10 +55,14 @@ module URI
     (?<seg>#{SEG}){0}
     (?<relative-ref>
       (?<relative-part>//
-        (?<authority>#{AUTHORITY})
+        (?<authority>
+          (?:(?<userinfo>#{USERINFO.source})@)?
+          (?<host>#{HOST.source.delete(" \n")}(?<!/))?
+          (?::(?<port>\d*+))?
+        )
         (?<path-abempty>(?:/\g<seg>*+)?)
       | (?<path-absolute>/\g<seg>*+)
-      | (?<path-noscheme>(?!=[:/])\g<seg>++)
+      | (?<path-noscheme>#{SEG_NC}++(?:/\g<seg>*+)?)
       | (?<path-empty>)
       )
       (?:\?(?<query>[^#]*+))?
@@ -79,9 +83,9 @@ module URI
       uri.ascii_only? or
         raise InvalidURIError, "URI must be ascii only #{uri.dump}"
       if m = RFC3986_URI.match(uri)
-        query = m["query".freeze]
-        scheme = m["scheme".freeze]
-        opaque = m["path-rootless".freeze]
+        query = m["query"]
+        scheme = m["scheme"]
+        opaque = m["path-rootless"]
         if opaque
           opaque << "?#{query}" if query
           [ scheme,
@@ -92,35 +96,35 @@ module URI
             nil, # path
             opaque,
             nil, # query
-            m["fragment".freeze]
+            m["fragment"]
           ]
         else # normal
           [ scheme,
-            m["userinfo".freeze],
-            m["host".freeze],
-            m["port".freeze],
+            m["userinfo"],
+            m["host"],
+            m["port"],
             nil, # registry
-            (m["path-abempty".freeze] ||
-             m["path-absolute".freeze] ||
-             m["path-empty".freeze]),
+            (m["path-abempty"] ||
+             m["path-absolute"] ||
+             m["path-empty"]),
             nil, # opaque
             query,
-            m["fragment".freeze]
+            m["fragment"]
           ]
         end
       elsif m = RFC3986_relative_ref.match(uri)
         [ nil, # scheme
-          m["userinfo".freeze],
-          m["host".freeze],
-          m["port".freeze],
+          m["userinfo"],
+          m["host"],
+          m["port"],
           nil, # registry,
-          (m["path-abempty".freeze] ||
-           m["path-absolute".freeze] ||
-           m["path-noscheme".freeze] ||
-           m["path-empty".freeze]),
+          (m["path-abempty"] ||
+           m["path-absolute"] ||
+           m["path-noscheme"] ||
+           m["path-empty"]),
           nil, # opaque
-          m["query".freeze],
-          m["fragment".freeze]
+          m["query"],
+          m["fragment"]
         ]
       else
         raise InvalidURIError, "bad URI(is not URI?): #{uri.inspect}"
@@ -156,7 +160,7 @@ module URI
         USERINFO: %r[\A#{USERINFO}\z]o,
         HOST: %r[\A#{HOST}\z]o,
         ABS_PATH: %r[\A/#{SEG}*+\z]o,
-        REL_PATH: %r[\A(?!=/)#{SEG}++\z]o,
+        REL_PATH: %r[\A(?!/)#{SEG}++\z]o,
         QUERY: %r[\A(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/?])*+\z],
         FRAGMENT: %r[\A#{FRAGMENT}\z]o,
         OPAQUE: %r[\A(?:[^/].*)?\z],

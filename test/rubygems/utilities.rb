@@ -214,8 +214,9 @@ class Gem::MockBrowser
     end
   end
 
-  def self.post(uri)
-    post = Net::HTTP::Post.new(uri)
+  def self.post(uri, content_type: "application/x-www-form-urlencoded")
+    headers = { "content-type" => content_type } if content_type
+    post = Net::HTTP::Post.new(uri, headers)
     Net::HTTP.start(uri.hostname, uri.port) do |http|
       http.request(post)
     end

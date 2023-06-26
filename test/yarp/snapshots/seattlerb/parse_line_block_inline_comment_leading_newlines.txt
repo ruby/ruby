@@ -1,0 +1,8 @@
+ProgramNode(3...36)(
+  [],
+  StatementsNode(3...36)(
+    [CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 0, "a"),
+     CallNode(5...6)(nil, nil, (5...6), nil, nil, nil, nil, 0, "b"),
+     CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 0, "c")]
+  )
+)

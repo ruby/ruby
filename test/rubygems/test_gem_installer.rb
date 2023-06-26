@@ -738,9 +738,9 @@ gem 'other', version
       installer.generate_bin
 
       default_shebang = Gem.ruby
-      shebang_line = File.open("#{@gemhome}/bin/executable") {|f| f.readlines.first }
+      shebang_line = File.open("#{@gemhome}/bin/executable", &:gets)
       assert_match(/\A#!/, shebang_line)
-      assert_match(/#{default_shebang}/, shebang_line)
+      assert_include(shebang_line, default_shebang)
     end
   end
 
@@ -2340,7 +2340,7 @@ end
   ensure
     File.class_eval do
       remove_method :write
-      alias_method :write, :original_write # rubocop:disable Lint/DuplicateMethods
+      alias_method :write, :original_write
       remove_method :original_write
     end
   end

@@ -1,0 +1,79 @@
+begin; a; rescue; b; else; c; end
+
+begin; a; rescue; b; else; c; ensure; d; end
+
+begin
+a
+end
+
+begin; a; end
+
+begin a
+ end
+
+begin a; end
+
+begin
+a
+rescue
+b
+rescue
+c
+rescue
+d
+end
+
+begin
+  a
+rescue Exception => ex
+  b
+rescue AnotherException, OneMoreException => ex
+  c
+end
+
+begin
+  a
+rescue Exception => ex
+  b
+ensure
+  b
+end
+
+%!abc!
+
+begin
+a
+rescue
+b
+end
+
+begin;a;rescue;b;end
+
+begin
+a;rescue
+b;end
+
+begin
+a
+rescue Exception
+b
+end
+
+begin
+a
+rescue Exception, CustomException
+b
+end
+
+begin
+  a
+rescue Exception, CustomException => ex
+  b
+end
+
+begin
+  a
+rescue Exception => ex
+  b
+end
+

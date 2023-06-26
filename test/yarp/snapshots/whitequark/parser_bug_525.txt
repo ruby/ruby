@@ -1,0 +1,52 @@
+ProgramNode(0...32)(
+  [],
+  StatementsNode(0...32)(
+    [CallNode(0...32)(
+       nil,
+       nil,
+       (0...2),
+       nil,
+       ArgumentsNode(3...11)(
+         [KeywordHashNode(3...11)(
+            [AssocNode(3...11)(
+               SymbolNode(3...5)((3...4), (4...5), nil, "k"),
+               CallNode(9...11)(
+                 nil,
+                 nil,
+                 (9...11),
+                 nil,
+                 nil,
+                 nil,
+                 nil,
+                 0,
+                 "m2"
+               ),
+               (6...8)
+             )]
+          )]
+       ),
+       nil,
+       BlockNode(12...32)(
+         [],
+         nil,
+         StatementsNode(16...27)(
+           [CallNode(16...27)(
+              nil,
+              nil,
+              (16...18),
+              (18...19),
+              nil,
+              (19...20),
+              BlockNode(21...27)([], nil, nil, (21...23), (24...27)),
+              0,
+              "m3"
+            )]
+         ),
+         (12...14),
+         (29...32)
+       ),
+       0,
+       "m1"
+     )]
+  )
+)

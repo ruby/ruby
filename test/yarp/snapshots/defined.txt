@@ -1,0 +1,33 @@
+ProgramNode(0...78)(
+  [:x],
+  StatementsNode(0...78)(
+    [AndNode(0...25)(
+       DefinedNode(0...10)(nil, IntegerNode(9...10)(), nil, (0...8)),
+       DefinedNode(15...25)(nil, IntegerNode(24...25)(), nil, (15...23)),
+       (11...14)
+     ),
+     DefinedNode(27...43)(
+       (35...36),
+       LocalVariableOperatorWriteNode(36...42)(
+         (36...37),
+         (38...40),
+         IntegerNode(41...42)(),
+         :x,
+         :%
+       ),
+       (42...43),
+       (27...35)
+     ),
+     DefinedNode(45...66)(
+       (53...54),
+       AndNode(54...65)(
+         CallNode(54...57)(nil, nil, (54...57), nil, nil, nil, nil, 0, "foo"),
+         CallNode(62...65)(nil, nil, (62...65), nil, nil, nil, nil, 0, "bar"),
+         (58...61)
+       ),
+       (65...66),
+       (45...53)
+     ),
+     DefinedNode(68...78)(nil, IntegerNode(77...78)(), nil, (68...76))]
+  )
+)

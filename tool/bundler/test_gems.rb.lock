@@ -11,7 +11,7 @@ GEM
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     rake (13.0.1)
-    rb_sys (0.9.63)
+    rb_sys (0.9.79)
     ruby2_keywords (0.0.5)
     sinatra (2.0.8.1)
       mustermann (~> 1.0)
@@ -39,6 +39,7 @@ DEPENDENCIES
   rake (= 13.0.1)
   rb_sys
   sinatra (~> 2.0)
+  tilt (~> 2.0.11)
   webrick (= 1.7.0)
 
 BUNDLED WITH

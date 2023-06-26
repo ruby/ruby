@@ -1,0 +1,110 @@
+ProgramNode(0...120)(
+  [],
+  StatementsNode(0...120)(
+    [HashNode(0...2)((0...1), [], (1...2)),
+     HashNode(4...7)((4...5), [], (6...7)),
+     HashNode(9...27)(
+       (9...10),
+       [AssocNode(11...17)(
+          CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 0, "a"),
+          CallNode(16...17)(nil, nil, (16...17), nil, nil, nil, nil, 0, "b"),
+          (13...15)
+        ),
+        AssocNode(19...25)(
+          CallNode(19...20)(nil, nil, (19...20), nil, nil, nil, nil, 0, "c"),
+          CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 0, "d"),
+          (21...23)
+        )],
+       (26...27)
+     ),
+     HashNode(29...44)(
+       (29...30),
+       [AssocNode(31...37)(
+          CallNode(31...32)(nil, nil, (31...32), nil, nil, nil, nil, 0, "a"),
+          CallNode(36...37)(nil, nil, (36...37), nil, nil, nil, nil, 0, "b"),
+          (33...35)
+        ),
+        AssocSplatNode(39...42)(
+          CallNode(41...42)(nil, nil, (41...42), nil, nil, nil, nil, 0, "c"),
+          (39...41)
+        )],
+       (43...44)
+     ),
+     HashNode(46...79)(
+       (46...47),
+       [AssocNode(54...58)(
+          SymbolNode(54...56)(nil, (54...55), (55...56), "a"),
+          CallNode(57...58)(nil, nil, (57...58), nil, nil, nil, nil, 0, "b"),
+          nil
+        ),
+        AssocNode(66...70)(
+          SymbolNode(66...68)(nil, (66...67), (67...68), "c"),
+          CallNode(69...70)(nil, nil, (69...70), nil, nil, nil, nil, 0, "d"),
+          nil
+        )],
+       (78...79)
+     ),
+     HashNode(81...106)(
+       (81...82),
+       [AssocNode(83...87)(
+          SymbolNode(83...85)(nil, (83...84), (84...85), "a"),
+          CallNode(86...87)(nil, nil, (86...87), nil, nil, nil, nil, 0, "b"),
+          nil
+        ),
+        AssocNode(89...93)(
+          SymbolNode(89...91)(nil, (89...90), (90...91), "c"),
+          CallNode(92...93)(nil, nil, (92...93), nil, nil, nil, nil, 0, "d"),
+          nil
+        ),
+        AssocSplatNode(95...98)(
+          CallNode(97...98)(nil, nil, (97...98), nil, nil, nil, nil, 0, "e"),
+          (95...97)
+        ),
+        AssocNode(100...104)(
+          SymbolNode(100...102)(nil, (100...101), (101...102), "f"),
+          CallNode(103...104)(
+            nil,
+            nil,
+            (103...104),
+            nil,
+            nil,
+            nil,
+            nil,
+            0,
+            "g"
+          ),
+          nil
+        )],
+       (105...106)
+     ),
+     HashNode(108...120)(
+       (108...109),
+       [AssocNode(110...118)(
+          SymbolNode(110...114)((110...111), (111...112), (112...114), "a"),
+          CallNode(115...118)(
+            CallNode(116...118)(
+              nil,
+              nil,
+              (116...118),
+              nil,
+              nil,
+              nil,
+              nil,
+              0,
+              "b?"
+            ),
+            nil,
+            (115...116),
+            nil,
+            nil,
+            nil,
+            nil,
+            0,
+            "!"
+          ),
+          nil
+        )],
+       (119...120)
+     )]
+  )
+)

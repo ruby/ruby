@@ -1,0 +1,10 @@
+ProgramNode(0...15)(
+  [],
+  StatementsNode(0...15)(
+    [RescueModifierNode(0...15)(
+       CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 0, "meth"),
+       (5...11),
+       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "bar")
+     )]
+  )
+)

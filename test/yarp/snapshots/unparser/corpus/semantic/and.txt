@@ -1,0 +1,77 @@
+ProgramNode(0...77)(
+  [],
+  StatementsNode(0...77)(
+    [OrNode(0...14)(
+       RangeNode(0...5)(
+         CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a"),
+         CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 0, "b"),
+         (1...4),
+         1
+       ),
+       RangeNode(9...14)(
+         CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 0, "c"),
+         CallNode(13...14)(nil, nil, (13...14), nil, nil, nil, nil, 0, "d"),
+         (10...13),
+         1
+       ),
+       (6...8)
+     ),
+     AndNode(15...30)(
+       RangeNode(15...20)(
+         CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 0, "a"),
+         CallNode(19...20)(nil, nil, (19...20), nil, nil, nil, nil, 0, "b"),
+         (16...19),
+         1
+       ),
+       RangeNode(25...30)(
+         CallNode(25...26)(nil, nil, (25...26), nil, nil, nil, nil, 0, "c"),
+         CallNode(29...30)(nil, nil, (29...30), nil, nil, nil, nil, 0, "d"),
+         (26...29),
+         1
+       ),
+       (21...24)
+     ),
+     IfNode(32...53)(
+       (32...34),
+       OrNode(35...49)(
+         RangeNode(35...40)(
+           CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 0, "a"),
+           CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 0, "b"),
+           (36...39),
+           1
+         ),
+         RangeNode(44...49)(
+           CallNode(44...45)(nil, nil, (44...45), nil, nil, nil, nil, 0, "c"),
+           CallNode(48...49)(nil, nil, (48...49), nil, nil, nil, nil, 0, "d"),
+           (45...48),
+           1
+         ),
+         (41...43)
+       ),
+       nil,
+       nil,
+       (50...53)
+     ),
+     IfNode(55...77)(
+       (55...57),
+       AndNode(58...73)(
+         RangeNode(58...63)(
+           CallNode(58...59)(nil, nil, (58...59), nil, nil, nil, nil, 0, "a"),
+           CallNode(62...63)(nil, nil, (62...63), nil, nil, nil, nil, 0, "b"),
+           (59...62),
+           1
+         ),
+         RangeNode(68...73)(
+           CallNode(68...69)(nil, nil, (68...69), nil, nil, nil, nil, 0, "c"),
+           CallNode(72...73)(nil, nil, (72...73), nil, nil, nil, nil, 0, "d"),
+           (69...72),
+           1
+         ),
+         (64...67)
+       ),
+       nil,
+       nil,
+       (74...77)
+     )]
+  )
+)

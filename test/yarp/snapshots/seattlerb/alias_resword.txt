@@ -1,0 +1,10 @@
+ProgramNode(0...12)(
+  [],
+  StatementsNode(0...12)(
+    [AliasNode(0...12)(
+       SymbolNode(6...8)(nil, (6...8), nil, "in"),
+       SymbolNode(9...12)(nil, (9...12), nil, "out"),
+       (0...5)
+     )]
+  )
+)

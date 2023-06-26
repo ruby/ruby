@@ -111,13 +111,6 @@
 #define RB_OBJ_FREEZE_RAW    RB_OBJ_FREEZE_RAW
 #define RB_OBJ_FROZEN        RB_OBJ_FROZEN
 #define RB_OBJ_FROZEN_RAW    RB_OBJ_FROZEN_RAW
-#define RB_OBJ_INFECT        RB_OBJ_INFECT
-#define RB_OBJ_INFECT_RAW    RB_OBJ_INFECT_RAW
-#define RB_OBJ_TAINT         RB_OBJ_TAINT
-#define RB_OBJ_TAINTABLE     RB_OBJ_TAINTABLE
-#define RB_OBJ_TAINTED       RB_OBJ_TAINTED
-#define RB_OBJ_TAINTED_RAW   RB_OBJ_TAINTED_RAW
-#define RB_OBJ_TAINT_RAW     RB_OBJ_TAINT_RAW
 #define RB_OBJ_UNTRUST       RB_OBJ_TAINT
 #define RB_OBJ_UNTRUSTED     RB_OBJ_TAINTED
 /** @endcond */
@@ -283,7 +276,7 @@ ruby_fl_type {
 # pragma deprecated(RUBY_FL_TAINT)
 #endif
 
-                         = (1<<8),
+                         = 0,
 
     /**
      * This flag has something to do with Ractor.  Multiple Ractors run without
@@ -310,7 +303,7 @@ ruby_fl_type {
 # pragma deprecated(RUBY_FL_UNTRUSTED)
 #endif
 
-                         = (1<<8),
+                         = 0,
 
     /**
      * This flag has something to do with  object IDs.  Unlike in the old days,

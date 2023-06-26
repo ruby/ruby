@@ -1,0 +1,12 @@
+ProgramNode(0...15)(
+  [],
+  StatementsNode(0...15)(
+    [ModuleNode(0...15)(
+       [],
+       (0...6),
+       ConstantReadNode(7...10)(),
+       nil,
+       (12...15)
+     )]
+  )
+)

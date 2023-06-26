@@ -1,0 +1,74 @@
+ProgramNode(0...199)(
+  [],
+  StatementsNode(0...199)(
+    [AliasNode(0...15)(
+       SymbolNode(6...10)((6...7), (7...10), nil, "foo"),
+       SymbolNode(11...15)((11...12), (12...15), nil, "bar"),
+       (0...5)
+     ),
+     AliasNode(17...38)(
+       SymbolNode(23...30)((23...26), (26...29), (29...30), "abc"),
+       SymbolNode(31...38)((31...34), (34...37), (37...38), "def"),
+       (17...22)
+     ),
+     AliasNode(40...59)(
+       SymbolNode(46...52)((46...48), (48...51), (51...52), "abc"),
+       SymbolNode(53...59)((53...55), (55...58), (58...59), "def"),
+       (40...45)
+     ),
+     AliasNode(61...84)(
+       InterpolatedSymbolNode(67...77)(
+         (67...69),
+         [StringNode(69...72)(nil, (69...72), nil, "abc"),
+          EmbeddedStatementsNode(72...76)(
+            (72...74),
+            StatementsNode(74...75)([IntegerNode(74...75)()]),
+            (75...76)
+          )],
+         (76...77)
+       ),
+       SymbolNode(78...84)((78...80), (80...83), (83...84), "def"),
+       (61...66)
+     ),
+     AliasNode(86...97)(
+       GlobalVariableReadNode(92...94)(),
+       BackReferenceReadNode(95...97)(),
+       (86...91)
+     ),
+     AliasNode(99...112)(
+       SymbolNode(105...108)(nil, (105...108), nil, "foo"),
+       SymbolNode(109...112)(nil, (109...112), nil, "bar"),
+       (99...104)
+     ),
+     AliasNode(114...129)(
+       GlobalVariableReadNode(120...124)(),
+       GlobalVariableReadNode(125...129)(),
+       (114...119)
+     ),
+     AliasNode(131...143)(
+       SymbolNode(137...140)(nil, (137...140), nil, "foo"),
+       SymbolNode(141...143)(nil, (141...143), nil, "if"),
+       (131...136)
+     ),
+     AliasNode(145...158)(
+       SymbolNode(151...154)(nil, (151...154), nil, "foo"),
+       SymbolNode(155...158)(nil, (155...158), nil, "<=>"),
+       (145...150)
+     ),
+     AliasNode(160...175)(
+       SymbolNode(166...169)((166...167), (167...169), nil, "=="),
+       SymbolNode(170...175)((170...171), (171...175), nil, "eql?"),
+       (160...165)
+     ),
+     AliasNode(177...186)(
+       SymbolNode(183...184)(nil, (183...184), nil, "A"),
+       SymbolNode(185...186)(nil, (185...186), nil, "B"),
+       (177...182)
+     ),
+     AliasNode(188...199)(
+       SymbolNode(194...196)((194...195), (195...196), nil, "A"),
+       SymbolNode(197...199)((197...198), (198...199), nil, "B"),
+       (188...193)
+     )]
+  )
+)

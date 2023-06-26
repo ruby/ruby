@@ -1,0 +1,33 @@
+ProgramNode(0...11)(
+  [],
+  StatementsNode(0...11)(
+    [CallOperatorWriteNode(0...11)(
+       CallNode(0...4)(
+         ConstantReadNode(0...1)(),
+         (1...3),
+         (3...4),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "b="
+       ),
+       (5...7),
+       CallNode(8...11)(
+         nil,
+         nil,
+         (8...9),
+         nil,
+         ArgumentsNode(10...11)(
+           [CallNode(10...11)(nil, nil, (10...11), nil, nil, nil, nil, 0, "d")]
+         ),
+         nil,
+         nil,
+         0,
+         "c"
+       ),
+       :*
+     )]
+  )
+)
