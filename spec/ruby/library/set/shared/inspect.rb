@@ -1,4 +1,4 @@
-describe "set_inspect", shared: true do
+describe :set_inspect, shared: true do
   it "returns a String representation of self" do
     Set[].send(@method).should be_kind_of(String)
     Set[nil, false, true].send(@method).should be_kind_of(String)

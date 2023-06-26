@@ -1,4 +1,4 @@
-describe :net_ftp_getbinaryfile, shared: :true do
+describe :net_ftp_getbinaryfile, shared: true do
   before :each do
     @fixture_file = File.dirname(__FILE__) + "/../fixtures/getbinaryfile"
     @tmp_file = tmp("getbinaryfile")

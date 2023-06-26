@@ -53,20 +53,18 @@ describe :method_to_s, shared: true do
     MethodSpecs::A.new.method(:baz).send(@method).should.start_with? "#<Method: MethodSpecs::A#baz"
   end
 
-  ruby_version_is '3.0' do
-    it "returns a String containing the Module containing the method if object has a singleton class but method is not defined in the singleton class" do
-      obj = MethodSpecs::MySub.new
-      obj.singleton_class
-      @m = obj.method(:bar)
-      @string = @m.send(@method)
-      @string.should.start_with? "#<Method: MethodSpecs::MySub(MethodSpecs::MyMod)#bar"
+  it "returns a String containing the Module containing the method if object has a singleton class but method is not defined in the singleton class" do
+    obj = MethodSpecs::MySub.new
+    obj.singleton_class
+    @m = obj.method(:bar)
+    @string = @m.send(@method)
+    @string.should.start_with? "#<Method: MethodSpecs::MySub(MethodSpecs::MyMod)#bar"
 
-      c = MethodSpecs::MySub.dup
-      m = Module.new{def bar; end}
-      c.extend(m)
-      @string = c.method(:bar).send(@method)
-      @string.should.start_with? "#<Method: #<Class:#{c.inspect}>(#{m.inspect})#bar"
-    end
+    c = MethodSpecs::MySub.dup
+    m = Module.new{def bar; end}
+    c.extend(m)
+    @string = c.method(:bar).send(@method)
+    @string.should.start_with? "#<Method: #<Class:#{c.inspect}>(#{m.inspect})#bar"
   end
 
   it "returns a String containing the singleton class if method is defined in the singleton class" do
@@ -77,9 +75,7 @@ describe :method_to_s, shared: true do
     @string.should.start_with? "#<Method: #<MethodSpecs::MySub:0xXXXXXX>.bar"
   end
 
-  ruby_bug '#17428', ''...'3.0' do
-    it "shows the metaclass and the owner for a Module instance method retrieved from a class" do
-      String.method(:include).inspect.should.start_with?("#<Method: #<Class:String>(Module)#include")
-    end
+  it "shows the metaclass and the owner for a Module instance method retrieved from a class" do
+    String.method(:include).inspect.should.start_with?("#<Method: #<Class:String>(Module)#include")
   end
 end

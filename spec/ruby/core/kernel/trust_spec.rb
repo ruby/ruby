@@ -4,10 +4,12 @@ require_relative 'fixtures/classes'
 describe "Kernel#trust" do
   ruby_version_is ""..."3.2" do
     it "is a no-op" do
-      o = Object.new.untrust
-      o.should_not.untrusted?
-      o.trust
-      o.should_not.untrusted?
+      suppress_warning do
+        o = Object.new.untrust
+        o.should_not.untrusted?
+        o.trust
+        o.should_not.untrusted?
+      end
     end
 
     it "warns in verbose mode" do

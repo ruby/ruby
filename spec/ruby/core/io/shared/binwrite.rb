@@ -21,14 +21,12 @@ describe :io_binwrite, shared: true do
     IO.send(@method, @filename, "abcde").should == 5
   end
 
-  ruby_version_is "3.0" do
-    it "accepts options as a keyword argument" do
-      IO.send(@method, @filename, "hi", 0, flags: File::CREAT).should == 2
+  it "accepts options as a keyword argument" do
+    IO.send(@method, @filename, "hi", 0, flags: File::CREAT).should == 2
 
-      -> {
-        IO.send(@method, @filename, "hi", 0, {flags: File::CREAT})
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 2..3)")
-    end
+    -> {
+      IO.send(@method, @filename, "hi", 0, {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 2..3)")
   end
 
   it "creates a file if missing" do

@@ -8,115 +8,113 @@ describe "Pattern matching" do
     ScratchPad.record []
   end
 
-  ruby_version_is "3.0" do
-    it "can be standalone assoc operator that deconstructs value" do
-      suppress_warning do
-        eval(<<-RUBY).should == [0, 1]
-          [0, 1] => [a, b]
-          [a, b]
-        RUBY
-      end
+  it "can be standalone assoc operator that deconstructs value" do
+    suppress_warning do
+      eval(<<-RUBY).should == [0, 1]
+        [0, 1] => [a, b]
+        [a, b]
+      RUBY
+    end
+  end
+
+  describe "find pattern" do
+    it "captures preceding elements to the pattern" do
+      eval(<<~RUBY).should == [0, 1]
+        case [0, 1, 2, 3]
+        in [*pre, 2, 3]
+          pre
+        else
+          false
+        end
+      RUBY
     end
 
-    describe "find pattern" do
-      it "captures preceding elements to the pattern" do
-        eval(<<~RUBY).should == [0, 1]
-          case [0, 1, 2, 3]
-          in [*pre, 2, 3]
-            pre
-          else
-            false
-          end
-        RUBY
-      end
+    it "captures following elements to the pattern" do
+      eval(<<~RUBY).should == [2, 3]
+        case [0, 1, 2, 3]
+        in [0, 1, *post]
+          post
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "captures following elements to the pattern" do
-        eval(<<~RUBY).should == [2, 3]
-          case [0, 1, 2, 3]
-          in [0, 1, *post]
-            post
-          else
-            false
-          end
-        RUBY
-      end
+    it "captures both preceding and following elements to the pattern" do
+      eval(<<~RUBY).should == [[0, 1], [3, 4]]
+        case [0, 1, 2, 3, 4]
+        in [*pre, 2, *post]
+          [pre, post]
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "captures both preceding and following elements to the pattern" do
-        eval(<<~RUBY).should == [[0, 1], [3, 4]]
-          case [0, 1, 2, 3, 4]
-          in [*pre, 2, *post]
-            [pre, post]
-          else
-            false
-          end
-        RUBY
-      end
+    it "can capture the entirety of the pattern" do
+      eval(<<~RUBY).should == [0, 1, 2, 3, 4]
+        case [0, 1, 2, 3, 4]
+        in [*everything]
+          everything
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "can capture the entirety of the pattern" do
-        eval(<<~RUBY).should == [0, 1, 2, 3, 4]
-          case [0, 1, 2, 3, 4]
-          in [*everything]
-            everything
-          else
-            false
-          end
-        RUBY
-      end
+    it "will match an empty Array-like structure" do
+      eval(<<~RUBY).should == []
+        case []
+        in [*everything]
+          everything
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "will match an empty Array-like structure" do
-        eval(<<~RUBY).should == []
-          case []
-          in [*everything]
-            everything
-          else
-            false
-          end
-        RUBY
-      end
+    it "can be nested" do
+      eval(<<~RUBY).should == [[0, [2, 4, 6]], [[4, 16, 64]], 27]
+        case [0, [2, 4, 6], [3, 9, 27], [4, 16, 64]]
+        in [*pre, [*, 9, a], *post]
+          [pre, post, a]
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "can be nested" do
-        eval(<<~RUBY).should == [[0, [2, 4, 6]], [[4, 16, 64]], 27]
-          case [0, [2, 4, 6], [3, 9, 27], [4, 16, 64]]
-          in [*pre, [*, 9, a], *post]
-            [pre, post, a]
-          else
-            false
-          end
-        RUBY
-      end
+    it "can be nested with an array pattern" do
+      eval(<<~RUBY).should == [[4, 16, 64]]
+        case [0, [2, 4, 6], [3, 9, 27], [4, 16, 64]]
+        in [_, _, [*, 9, *], *post]
+          post
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "can be nested with an array pattern" do
-        eval(<<~RUBY).should == [[4, 16, 64]]
-          case [0, [2, 4, 6], [3, 9, 27], [4, 16, 64]]
-          in [_, _, [*, 9, *], *post]
-            post
-          else
-            false
-          end
-        RUBY
-      end
+    it "can be nested within a hash pattern" do
+      eval(<<~RUBY).should == [27]
+        case {a: [3, 9, 27]}
+        in {a: [*, 9, *post]}
+          post
+        else
+          false
+        end
+      RUBY
+    end
 
-      it "can be nested within a hash pattern" do
-        eval(<<~RUBY).should == [27]
-          case {a: [3, 9, 27]}
-          in {a: [*, 9, *post]}
-            post
-          else
-            false
-          end
-        RUBY
-      end
-
-      it "can nest hash and array patterns" do
-        eval(<<~RUBY).should == [42, 2]
-          case [0, {a: 42, b: [0, 1]}, {a: 42, b: [1, 2]}]
-          in [*, {a:, b: [1, c]}, *]
-            [a, c]
-          else
-            false
-          end
-        RUBY
-      end
+    it "can nest hash and array patterns" do
+      eval(<<~RUBY).should == [42, 2]
+        case [0, {a: 42, b: [0, 1]}, {a: 42, b: [1, 2]}]
+        in [*, {a:, b: [1, c]}, *]
+          [a, c]
+        else
+          false
+        end
+      RUBY
     end
   end
 
@@ -154,35 +152,25 @@ describe "Pattern matching" do
         @src = 'case [0, 1]; in [a, b]; end'
       end
 
-      ruby_version_is ""..."3.0" do
+      it "does not warn about pattern matching is experimental feature" do
+        -> { eval @src }.should_not complain
+      end
+    end
+
+    context 'when one-line form' do
+      before :each do
+        @src = '[0, 1] => [a, b]'
+      end
+
+      ruby_version_is ""..."3.1" do
         it "warns about pattern matching is experimental feature" do
           -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
         end
       end
 
-      ruby_version_is "3.0" do
+      ruby_version_is "3.1" do
         it "does not warn about pattern matching is experimental feature" do
           -> { eval @src }.should_not complain
-        end
-      end
-    end
-
-    context 'when one-line form' do
-      ruby_version_is '3.0' do
-        before :each do
-          @src = '[0, 1] => [a, b]'
-        end
-
-        ruby_version_is ""..."3.1" do
-          it "warns about pattern matching is experimental feature" do
-            -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
-          end
-        end
-
-        ruby_version_is "3.1" do
-          it "does not warn about pattern matching is experimental feature" do
-            -> { eval @src }.should_not complain
-          end
         end
       end
     end
@@ -687,26 +675,24 @@ describe "Pattern matching" do
       RUBY
     end
 
-    ruby_version_is "3.0" do
-      it "calls #deconstruct once for multiple patterns, caching the result" do
-        obj = Object.new
+    it "calls #deconstruct once for multiple patterns, caching the result" do
+      obj = Object.new
 
-        def obj.deconstruct
-          ScratchPad << :deconstruct
-          [0, 1]
-        end
-
-        eval(<<~RUBY).should == true
-          case obj
-          in [1, 2]
-            false
-          in [0, 1]
-            true
-          end
-        RUBY
-
-        ScratchPad.recorded.should == [:deconstruct]
+      def obj.deconstruct
+        ScratchPad << :deconstruct
+        [0, 1]
       end
+
+      eval(<<~RUBY).should == true
+        case obj
+        in [1, 2]
+          false
+        in [0, 1]
+          true
+        end
+      RUBY
+
+      ScratchPad.recorded.should == [:deconstruct]
     end
 
     it "calls #deconstruct even on objects that are already an array" do

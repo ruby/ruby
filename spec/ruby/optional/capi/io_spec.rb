@@ -175,12 +175,17 @@ describe "C-API IO function" do
     end
   end
 
-  describe "GetOpenFile" do
+  describe "rb_io_descriptor or GetOpenFile" do
     it "allows access to the system fileno" do
       @o.GetOpenFile_fd($stdin).should == 0
       @o.GetOpenFile_fd($stdout).should == 1
       @o.GetOpenFile_fd($stderr).should == 2
       @o.GetOpenFile_fd(@io).should == @io.fileno
+    end
+
+    it "raises IOError if the IO is closed" do
+      @io.close
+      -> { @o.GetOpenFile_fd(@io) }.should raise_error(IOError, "closed stream")
     end
   end
 

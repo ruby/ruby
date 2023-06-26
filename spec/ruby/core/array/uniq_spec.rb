@@ -85,16 +85,8 @@ describe "Array#uniq" do
     [false, nil, 42].uniq { :bar }.should == [false]
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instance on Array subclasses" do
-      ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(ArraySpecs::MyArray)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns Array instance on Array subclasses" do
-      ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(Array)
-    end
+  it "returns Array instance on Array subclasses" do
+    ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(Array)
   end
 
   it "properly handles an identical item even when its #eql? isn't reflexive" do

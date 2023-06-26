@@ -377,48 +377,21 @@ describe "Range#step" do
   end
 
   describe "when no block is given" do
-    ruby_version_is "3.0" do
-      it "raises an ArgumentError if step is 0" do
-        -> { (-1..1).step(0) }.should raise_error(ArgumentError)
-      end
+    it "raises an ArgumentError if step is 0" do
+      -> { (-1..1).step(0) }.should raise_error(ArgumentError)
     end
 
     describe "returned Enumerator" do
       describe "size" do
-        ruby_version_is ""..."3.0" do
-          it "raises a TypeError if step does not respond to #to_int" do
-            obj = mock("Range#step non-integer")
-            enum = (1..2).step(obj)
-            -> { enum.size }.should raise_error(TypeError)
-          end
-
-          it "raises a TypeError if #to_int does not return an Integer" do
-            obj = mock("Range#step non-integer")
-            obj.should_receive(:to_int).and_return("1")
-            enum = (1..2).step(obj)
-
-            -> { enum.size }.should raise_error(TypeError)
-          end
+        it "raises a TypeError if step does not respond to #to_int" do
+          obj = mock("Range#step non-integer")
+          -> { (1..2).step(obj) }.should raise_error(TypeError)
         end
 
-        ruby_version_is "3.0" do
-          it "raises a TypeError if step does not respond to #to_int" do
-            obj = mock("Range#step non-integer")
-            -> { (1..2).step(obj) }.should raise_error(TypeError)
-          end
-
-          it "raises a TypeError if #to_int does not return an Integer" do
-            obj = mock("Range#step non-integer")
-            obj.should_receive(:to_int).and_return("1")
-            -> { (1..2).step(obj) }.should raise_error(TypeError)
-          end
-        end
-
-        ruby_version_is ""..."3.0" do
-          it "returns Float::INFINITY for zero step" do
-            (-1..1).step(0).size.should == Float::INFINITY
-            (-1..1).step(0.0).size.should == Float::INFINITY
-          end
+        it "raises a TypeError if #to_int does not return an Integer" do
+          obj = mock("Range#step non-integer")
+          obj.should_receive(:to_int).and_return("1")
+          -> { (1..2).step(obj) }.should raise_error(TypeError)
         end
 
         it "returns the ceil of range size divided by the number of steps" do

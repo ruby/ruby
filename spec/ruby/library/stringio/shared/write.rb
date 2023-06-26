@@ -60,13 +60,6 @@ describe :stringio_write_string, shared: true do
     @io.string.size.should == n.times.map(&:to_s).join.size
   end
 
-  ruby_version_is ""..."3.0" do
-    it "does not taint self when the passed argument is tainted" do
-      @io.send(@method, "test".taint)
-      @io.tainted?.should be_false
-    end
-  end
-
   it "handles writing non-ASCII UTF-8 after seek" do
     @io.binmode
     @io << "\x80"

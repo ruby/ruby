@@ -94,26 +94,12 @@ describe "Fiber#raise" do
 end
 
 
-ruby_version_is ""..."3.0" do
-  describe "Fiber#raise" do
-    it "raises a FiberError if invoked on a transferring Fiber" do
-      require "fiber"
-      root = Fiber.current
-      fiber = Fiber.new { root.transfer }
-      fiber.transfer
-      -> { fiber.raise }.should raise_error(FiberError, "cannot resume transferred Fiber")
-    end
-  end
-end
-
-ruby_version_is "3.0" do
-  describe "Fiber#raise" do
-    it "transfers and raises on a transferring fiber" do
-      require "fiber"
-      root = Fiber.current
-      fiber = Fiber.new { root.transfer }
-      fiber.transfer
-      -> { fiber.raise "msg" }.should raise_error(RuntimeError, "msg")
-    end
+describe "Fiber#raise" do
+  it "transfers and raises on a transferring fiber" do
+    require "fiber"
+    root = Fiber.current
+    fiber = Fiber.new { root.transfer }
+    fiber.transfer
+    -> { fiber.raise "msg" }.should raise_error(RuntimeError, "msg")
   end
 end

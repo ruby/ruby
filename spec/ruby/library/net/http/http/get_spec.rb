@@ -80,15 +80,13 @@ describe "Net::HTTP.get" do
       end
     end
 
-    ruby_version_is "3.0" do # https://bugs.ruby-lang.org/issues/13882#note-6
-      it "lets the kill Thread exception goes through and does not replace it with Zlib::BufError" do
-        socket, client_thread = start_threads
-        begin
-          client_thread.kill
-          client_thread.value.should == nil
-        ensure
-          socket.close
-        end
+    it "lets the kill Thread exception goes through and does not replace it with Zlib::BufError" do
+      socket, client_thread = start_threads
+      begin
+        client_thread.kill
+        client_thread.value.should == nil
+      ensure
+        socket.close
       end
     end
   end

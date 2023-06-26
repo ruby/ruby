@@ -75,16 +75,8 @@ describe "String#squeeze" do
     -> { "hello world".squeeze(mock('x')) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(String)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(String)
   end
 end
 

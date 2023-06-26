@@ -3,13 +3,7 @@ require_relative 'fixtures/classes'
 
 describe 'TracePoint#inspect' do
   before do
-    ruby_version_is ""..."3.0" do
-      @path_prefix = '@'
-    end
-
-    ruby_version_is "3.0" do
-      @path_prefix = ' '
-    end
+    @path_prefix = ' '
   end
 
   it 'returns a string containing a human-readable TracePoint status' do

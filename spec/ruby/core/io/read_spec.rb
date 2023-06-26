@@ -23,15 +23,13 @@ describe "IO.read" do
     IO.read(p)
   end
 
-  ruby_version_is "3.0" do
-    # https://bugs.ruby-lang.org/issues/19354
-    it "accepts options as keyword arguments" do
-      IO.read(@fname, 3, 0, mode: "r+").should == @contents[0, 3]
+  # https://bugs.ruby-lang.org/issues/19354
+  it "accepts options as keyword arguments" do
+    IO.read(@fname, 3, 0, mode: "r+").should == @contents[0, 3]
 
-      -> {
-        IO.read(@fname, 3, 0, {mode: "r+"})
-      }.should raise_error(ArgumentError, /wrong number of arguments/)
-    end
+    -> {
+      IO.read(@fname, 3, 0, {mode: "r+"})
+    }.should raise_error(ArgumentError, /wrong number of arguments/)
   end
 
   it "accepts an empty options Hash" do

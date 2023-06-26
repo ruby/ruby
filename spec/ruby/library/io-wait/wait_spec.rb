@@ -24,73 +24,69 @@ describe "IO#wait" do
     @w.close unless @w.closed?
   end
 
-  ruby_version_is "3.0" do
-    context "[events, timeout] passed" do
-      ruby_version_is "3.0"..."3.2" do
-        it "returns self when the READABLE event is ready during the timeout" do
-          @w.write('data to read')
-          @r.wait(IO::READABLE, 2).should.equal?(@r)
-        end
-
-        it "returns self when the WRITABLE event is ready during the timeout" do
-          @w.wait(IO::WRITABLE, 0).should.equal?(@w)
-        end
+  context "[events, timeout] passed" do
+    ruby_version_is ""..."3.2" do
+      it "returns self when the READABLE event is ready during the timeout" do
+        @w.write('data to read')
+        @r.wait(IO::READABLE, 2).should.equal?(@r)
       end
 
-      ruby_version_is "3.2" do
-        it "returns events mask when the READABLE event is ready during the timeout" do
-          @w.write('data to read')
-          @r.wait(IO::READABLE, 2).should == IO::READABLE
-        end
+      it "returns self when the WRITABLE event is ready during the timeout" do
+        @w.wait(IO::WRITABLE, 0).should.equal?(@w)
+      end
+    end
 
-        it "returns events mask when the WRITABLE event is ready during the timeout" do
-          @w.wait(IO::WRITABLE, 0).should == IO::WRITABLE
-        end
+    ruby_version_is "3.2" do
+      it "returns events mask when the READABLE event is ready during the timeout" do
+        @w.write('data to read')
+        @r.wait(IO::READABLE, 2).should == IO::READABLE
       end
 
-      ruby_version_is "3.0" do
-        it "waits for the READABLE event to be ready" do
-          queue = Queue.new
-          thread = Thread.new { queue.pop; sleep 1; @w.write('data to read') };
+      it "returns events mask when the WRITABLE event is ready during the timeout" do
+        @w.wait(IO::WRITABLE, 0).should == IO::WRITABLE
+      end
+    end
 
-          queue.push('signal');
-          @r.wait(IO::READABLE, 2).should_not == nil
+    it "waits for the READABLE event to be ready" do
+      queue = Queue.new
+      thread = Thread.new { queue.pop; sleep 1; @w.write('data to read') };
 
-          thread.join
-        end
+      queue.push('signal');
+      @r.wait(IO::READABLE, 2).should_not == nil
 
-        it "waits for the WRITABLE event to be ready" do
-          written_bytes = IOWaitSpec.exhaust_write_buffer(@w)
+      thread.join
+    end
 
-          queue = Queue.new
-          thread = Thread.new { queue.pop; sleep 1; @r.read(written_bytes) };
+    it "waits for the WRITABLE event to be ready" do
+      written_bytes = IOWaitSpec.exhaust_write_buffer(@w)
 
-          queue.push('signal');
-          @w.wait(IO::WRITABLE, 2).should_not == nil
+      queue = Queue.new
+      thread = Thread.new { queue.pop; sleep 1; @r.read(written_bytes) };
 
-          thread.join
-        end
+      queue.push('signal');
+      @w.wait(IO::WRITABLE, 2).should_not == nil
 
-        it "returns nil when the READABLE event is not ready during the timeout" do
-          @w.wait(IO::READABLE, 0).should == nil
-        end
+      thread.join
+    end
 
-        it "returns nil when the WRITABLE event is not ready during the timeout" do
-          IOWaitSpec.exhaust_write_buffer(@w)
-          @w.wait(IO::WRITABLE, 0).should == nil
-        end
+    it "returns nil when the READABLE event is not ready during the timeout" do
+      @w.wait(IO::READABLE, 0).should == nil
+    end
 
-        it "raises IOError when io is closed (closed stream (IOError))" do
-          @io.close
-          -> { @io.wait(IO::READABLE, 0) }.should raise_error(IOError, "closed stream")
-        end
+    it "returns nil when the WRITABLE event is not ready during the timeout" do
+      IOWaitSpec.exhaust_write_buffer(@w)
+      @w.wait(IO::WRITABLE, 0).should == nil
+    end
 
-        ruby_version_is "3.2" do
-          it "raises ArgumentError when events is not positive" do
-            -> { @w.wait(0, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
-            -> { @w.wait(-1, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
-          end
-        end
+    it "raises IOError when io is closed (closed stream (IOError))" do
+      @io.close
+      -> { @io.wait(IO::READABLE, 0) }.should raise_error(IOError, "closed stream")
+    end
+
+    ruby_version_is "3.2" do
+      it "raises ArgumentError when events is not positive" do
+        -> { @w.wait(0, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
+        -> { @w.wait(-1, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
       end
     end
   end
