@@ -47,8 +47,7 @@ class Gem::Resolver
   attr_accessor :skip_gems
 
   ##
-  # When a missing dependency, don't stop. Just go on and record what was
-  # missing.
+  #
 
   attr_accessor :soft_missing
 
