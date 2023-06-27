@@ -475,23 +475,11 @@ module IRB
 
     def evaluate(line, line_no, exception: nil) # :nodoc:
       @line_no = line_no
+
       if exception
         line_no -= 1
         line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
         @workspace.local_variable_set(:_, exception)
-      end
-
-      # Transform a non-identifier alias (@, $) or keywords (next, break)
-      command, args = line.split(/\s/, 2)
-      if original = command_aliases[command.to_sym]
-        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
-        command = original
-      end
-
-      # Hook command-specific transformation
-      command_class = ExtendCommandBundle.load_command(command)
-      if command_class&.respond_to?(:transform_args)
-        line = "#{command} #{command_class.transform_args(args)}"
       end
 
       set_last_value(@workspace.evaluate(line, irb_path, line_no))

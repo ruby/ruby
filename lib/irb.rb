@@ -563,11 +563,11 @@ module IRB
             if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
               IRB.set_measure_callback
             end
-            # Assignment expression check should be done before @context.evaluate to handle code like `a /2#/ if false; a = 1`
+            # Assignment expression check should be done before evaluate_line to handle code like `a /2#/ if false; a = 1`
             is_assignment = assignment_expression?(line)
             if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
               result = nil
-              last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
+              last_proc = proc{ result = evaluate_line(line, line_no, exception: exc) }
               IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
                 _name, callback, arg = item
                 proc {
@@ -578,7 +578,7 @@ module IRB
               }.call
               @context.set_last_value(result)
             else
-              @context.evaluate(line, line_no, exception: exc)
+              evaluate_line(line, line_no, exception: exc)
             end
             if @context.echo?
               if is_assignment
@@ -602,6 +602,23 @@ module IRB
           exc = nil
         end
       end
+    end
+
+    def evaluate_line(line, line_no, exception: nil)
+      # Transform a non-identifier alias (@, $) or keywords (next, break)
+      command, args = line.split(/\s/, 2)
+      if original = @context.command_aliases[command.to_sym]
+        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
+        command = original
+      end
+
+      # Hook command-specific transformation
+      command_class = ExtendCommandBundle.load_command(command)
+      if command_class&.respond_to?(:transform_args)
+        line = "#{command} #{command_class.transform_args(args)}"
+      end
+
+      @context.evaluate(line, line_no, exception: exception)
     end
 
     def convert_invalid_byte_sequence(str, enc)
