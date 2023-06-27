@@ -9,11 +9,8 @@ module Bundler
 
       def initialize(directory)
         @directory = Pathname.new(directory).expand_path
-        info_roots.each do |dir|
-          SharedHelpers.filesystem_access(dir) do
-            FileUtils.mkdir_p(dir)
-          end
-        end
+        info_roots.each {|dir| mkdir(dir) }
+        mkdir(info_etag_root)
       end
 
       def names
@@ -22,6 +19,10 @@ module Bundler
 
       def names_path
         directory.join("names")
+      end
+
+      def names_etag_path
+        directory.join("names.etag")
       end
 
       def versions
@@ -47,6 +48,10 @@ module Bundler
 
       def versions_path
         directory.join("versions")
+      end
+
+      def versions_etag_path
+        directory.join("versions.etag")
       end
 
       def checksums
@@ -76,7 +81,18 @@ module Bundler
         end
       end
 
+      def info_etag_path(name)
+        name = name.to_s
+        info_etag_root.join("#{name}-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}")
+      end
+
       private
+
+      def mkdir(dir)
+        SharedHelpers.filesystem_access(dir) do
+          FileUtils.mkdir_p(dir)
+        end
+      end
 
       def lines(path)
         return [] unless path.file?
@@ -95,6 +111,10 @@ module Bundler
           directory.join("info"),
           directory.join("info-special-characters"),
         ]
+      end
+
+      def info_etag_root
+        directory.join("info-etags")
       end
     end
   end

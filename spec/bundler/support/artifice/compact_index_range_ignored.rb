@@ -2,9 +2,8 @@
 
 require_relative "helpers/compact_index"
 
-class CompactIndexPartialUpdate < CompactIndexAPI
-  # Stub the server to never return 304s. This simulates the behaviour of
-  # Fastly / Rubygems ignoring ETag headers.
+class CompactIndexRangeIgnored < CompactIndexAPI
+  # Stub the server to not return 304 so that we don't bypass all the logic
   def not_modified?(_checksum)
     false
   end
@@ -16,23 +15,26 @@ class CompactIndexPartialUpdate < CompactIndexAPI
     )
 
     # Verify a cached copy of the versions file exists
-    unless File.binread(cached_versions_path).start_with?("created_at: ")
+    unless File.binread(cached_versions_path).size > 0
       raise("Cached versions file should be present and have content")
     end
 
     # Verify that a partial request is made, starting from the index of the
     # final byte of the cached file.
-    unless env["HTTP_RANGE"] == "bytes=#{File.binread(cached_versions_path).bytesize - 1}-"
-      raise("Range header should be present, and start from the index of the final byte of the cache. #{env["HTTP_RANGE"].inspect}")
+    unless env.delete("HTTP_RANGE")
+      raise("Expected client to write the full response on the first try")
     end
 
     etag_response do
-      # Return the exact contents of the cache.
-      File.binread(cached_versions_path)
+      file = tmp("versions.list")
+      FileUtils.rm_f(file)
+      file = CompactIndex::VersionsFile.new(file.to_s)
+      file.create(gems)
+      file.contents
     end
   end
 end
 
 require_relative "helpers/artifice"
 
-Artifice.activate_with(CompactIndexPartialUpdate)
+Artifice.activate_with(CompactIndexRangeIgnored)
