@@ -1729,9 +1729,9 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
 #define C1 BIG_CONSTANT(0x87c37b91,0x114253d5);
 #define C2 BIG_CONSTANT(0x4cf5ad43,0x2745937f);
 #endif
-NO_SANITIZE("unsigned-integer-overflow", static inline st_index_t murmur_step(st_index_t h, st_index_t k));
-NO_SANITIZE("unsigned-integer-overflow", static inline st_index_t murmur_finish(st_index_t h));
-NO_SANITIZE("unsigned-integer-overflow", extern st_index_t st_hash(const void *ptr, size_t len, st_index_t h));
+NO_SANITIZE("undefined", static inline st_index_t murmur_step(st_index_t h, st_index_t k));
+NO_SANITIZE("undefined", static inline st_index_t murmur_finish(st_index_t h));
+NO_SANITIZE("undefined", extern st_index_t st_hash(const void *ptr, size_t len, st_index_t h));
 
 static inline st_index_t
 murmur_step(st_index_t h, st_index_t k)
@@ -1936,7 +1936,7 @@ st_hash_uint32(st_index_t h, uint32_t i)
     return murmur_step(h, i);
 }
 
-NO_SANITIZE("unsigned-integer-overflow", extern st_index_t st_hash_uint(st_index_t h, st_index_t i));
+NO_SANITIZE("undefined", extern st_index_t st_hash_uint(st_index_t h, st_index_t i));
 st_index_t
 st_hash_uint(st_index_t h, st_index_t i)
 {
@@ -2037,7 +2037,7 @@ st_locale_insensitive_strcasecmp_i(st_data_t lhs, st_data_t rhs)
     return st_locale_insensitive_strcasecmp(s1, s2);
 }
 
-NO_SANITIZE("unsigned-integer-overflow", PUREFUNC(static st_index_t strcasehash(st_data_t)));
+NO_SANITIZE("undefined", PUREFUNC(static st_index_t strcasehash(st_data_t)));
 static st_index_t
 strcasehash(st_data_t arg)
 {
