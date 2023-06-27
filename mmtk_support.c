@@ -1047,6 +1047,7 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
                             exit(EXIT_FAILURE);
                         }
                         mmtk_pre_max_heap_size = rb_mmtk_parse_heap_limit(mmtk_max_heap_size_arg, &mmtk_max_heap_parse_error);
+                        mmtk_max_heap_size = mmtk_pre_max_heap_size;
                     }
 
                     env_args += length;
