@@ -443,18 +443,6 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define USE_RGENGC 1
 
 /**
- * @private
- *
- * This is  a compile-time flag  to enable/disable incremental GC  feature.  It
- * has to  be set at  the time  ruby itself compiles.   Makes no sense  for 3rd
- * parties.  It is safe  for them to set this though;  that just doesn't change
- * anything.
- */
-#ifndef USE_RINCGC
-# define USE_RINCGC 1
-#endif
-
-/**
  * @deprecated  This macro seems  broken.  Setting this to  anything other than
  *              zero just doesn't compile.  We need to KonMari.
  */
