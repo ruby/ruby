@@ -902,7 +902,7 @@ rb_f_global_variables(void)
         int i, nmatch = rb_match_count(backref);
         buf[0] = '$';
         for (i = 1; i <= nmatch; ++i) {
-            if (!rb_match_nth_defined(i, backref)) continue;
+            if (!RTEST(rb_reg_nth_defined(i, backref))) continue;
             if (i < 10) {
                 /* probably reused, make static ID */
                 buf[1] = (char)(i + '0');
