@@ -193,6 +193,21 @@ module Bundler
       Digest(name)
     end
 
+    def checksum_for_file(path, digest)
+      return unless path.file?
+      # This must use File.read instead of Digest.file().hexdigest
+      # because we need to preserve \n line endings on windows when calculating
+      # the checksum
+      SharedHelpers.filesystem_access(path, :read) do
+        File.open(path, "rb") do |f|
+          digest = SharedHelpers.digest(digest).new
+          buf = String.new(:capacity => 16_384, :encoding => Encoding::BINARY)
+          digest << buf while f.read(16_384, buf)
+          digest.hexdigest
+        end
+      end
+    end
+
     def write_to_gemfile(gemfile_path, contents)
       filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
     end
