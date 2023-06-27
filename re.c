@@ -1935,21 +1935,37 @@ rb_reg_match_post(VALUE match)
     return str;
 }
 
-VALUE
-rb_reg_match_last(VALUE match)
+static int
+match_last_index(VALUE match)
 {
     int i;
     struct re_registers *regs;
 
-    if (NIL_P(match)) return Qnil;
+    if (NIL_P(match)) return -1;
     match_check(match);
     regs = RMATCH_REGS(match);
-    if (BEG(0) == -1) return Qnil;
+    if (BEG(0) == -1) return -1;
 
     for (i=regs->num_regs-1; BEG(i) == -1 && i > 0; i--)
         ;
-    if (i == 0) return Qnil;
-    return rb_reg_nth_match(i, match);
+    return i;
+}
+
+VALUE
+rb_reg_match_last(VALUE match)
+{
+    int i = match_last_index(match);
+    if (i <= 0) return Qnil;
+    struct re_registers *regs = RMATCH_REGS(match);
+    return rb_str_subseq(RMATCH(match)->str, BEG(i), END(i) - BEG(i));
+}
+
+VALUE
+rb_reg_last_defined(VALUE match)
+{
+    int i = match_last_index(match);
+    if (i < 0) return Qnil;
+    return RBOOL(i);
 }
 
 static VALUE
