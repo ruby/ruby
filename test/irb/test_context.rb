@@ -37,20 +37,6 @@ module TestIRB
       assert_same(obj, @context.evaluate('_', 1))
     end
 
-    def test_evaluate_with_exception
-      assert_nil(@context.evaluate("$!", 1))
-      e = assert_raise_with_message(RuntimeError, 'foo') {
-        @context.evaluate("raise 'foo'", 1)
-      }
-      assert_equal('foo', e.message)
-      assert_same(e, @context.evaluate('$!', 1, exception: e))
-      e = assert_raise(SyntaxError) {
-        @context.evaluate("1,2,3", 1, exception: e)
-      }
-      assert_match(/\A\(irb\):1:/, e.message)
-      assert_not_match(/rescue _\.class/, e.message)
-    end
-
     def test_evaluate_with_encoding_error_without_lineno
       assert_raise_with_message(EncodingError, /invalid symbol/) {
         @context.evaluate(%q[:"\xAE"], 1)

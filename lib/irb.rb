@@ -506,8 +506,6 @@ module IRB
 
     # Evaluates input for this session.
     def eval_input
-      exc = nil
-
       @scanner.set_prompt do
         |ltype, indent, continue, line_no|
         if ltype
@@ -567,18 +565,18 @@ module IRB
             is_assignment = assignment_expression?(line)
             if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
               result = nil
-              last_proc = proc{ result = evaluate_line(line, line_no, exception: exc) }
+              last_proc = proc{ result = evaluate_line(line, line_no) }
               IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
                 _name, callback, arg = item
                 proc {
-                  callback.(@context, line, line_no, arg, exception: exc) do
+                  callback.(@context, line, line_no, arg) do
                     chain.call
                   end
                 }
               }.call
               @context.set_last_value(result)
             else
-              evaluate_line(line, line_no, exception: exc)
+              evaluate_line(line, line_no)
             end
             if @context.echo?
               if is_assignment
@@ -589,22 +587,17 @@ module IRB
                 output_value
               end
             end
-          rescue Interrupt => exc
           rescue SystemExit, SignalException
             raise
-          rescue Exception => exc
-          else
-            exc = nil
-            next
+          rescue Interrupt, Exception => exc
+            handle_exception(exc)
+            @context.workspace.local_variable_set(:_, exc)
           end
-          handle_exception(exc)
-          @context.workspace.local_variable_set(:_, exc)
-          exc = nil
         end
       end
     end
 
-    def evaluate_line(line, line_no, exception: nil)
+    def evaluate_line(line, line_no)
       # Transform a non-identifier alias (@, $) or keywords (next, break)
       command, args = line.split(/\s/, 2)
       if original = @context.command_aliases[command.to_sym]
@@ -618,7 +611,7 @@ module IRB
         line = "#{command} #{command_class.transform_args(args)}"
       end
 
-      @context.evaluate(line, line_no, exception: exception)
+      @context.evaluate(line, line_no)
     end
 
     def convert_invalid_byte_sequence(str, enc)

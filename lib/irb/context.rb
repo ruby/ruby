@@ -473,15 +473,8 @@ module IRB
       @inspect_mode
     end
 
-    def evaluate(line, line_no, exception: nil) # :nodoc:
+    def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
-
-      if exception
-        line_no -= 1
-        line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
-        @workspace.local_variable_set(:_, exception)
-      end
-
       set_last_value(@workspace.evaluate(line, irb_path, line_no))
     end
 
