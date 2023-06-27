@@ -7189,7 +7189,7 @@ const char ruby_null_device[] =
  *
  *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
- *  - Includes module FileTest.
+ *  - Includes module FileTest,
  *    which provides dozens of additional methods.
  *
  *  Here, class \File provides methods that are useful for:
