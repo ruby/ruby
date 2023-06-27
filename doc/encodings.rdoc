@@ -192,7 +192,7 @@ The default encoding for these, however, is:
 
 - US-ASCII, if all characters are US-ASCII.
 - The script encoding, otherwise;
-  see {Script Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-Script+Encoding].
+  see (Script Encoding)[rdoc-ref:encodings.rdoc@Script+Encoding].
 
 === Filesystem \Encoding
 
