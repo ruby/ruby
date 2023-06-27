@@ -33,6 +33,7 @@ ripper_parser_free2(void *ptr)
 {
     struct ripper *r = (struct ripper*)ptr;
     ripper_parser_free(r->p);
+    xfree(r);
 }
 
 static size_t
