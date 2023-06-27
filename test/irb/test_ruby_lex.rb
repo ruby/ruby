@@ -101,7 +101,7 @@ module TestIRB
 
     def check_state(lines, local_variables: [])
       context = build_context(local_variables)
-      code = lines.join("\n")
+      code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
       tokens = RubyLex.ripper_lex_without_warning(code, context: context)
       opens = IRB::NestingParser.open_tokens(tokens)
       ruby_lex = RubyLex.new(context)
@@ -791,7 +791,7 @@ module TestIRB
       assert_should_continue(['a;'], false)
       assert_should_continue(['<<A', 'A'], false)
       assert_should_continue(['a...'], false)
-      assert_should_continue(['a\\', ''], true)
+      assert_should_continue(['a\\'], true)
       assert_should_continue(['a.'], true)
       assert_should_continue(['a+'], true)
       assert_should_continue(['a; #comment', '', '=begin', 'embdoc', '=end', ''], false)
@@ -801,13 +801,13 @@ module TestIRB
     def test_code_block_open_with_should_continue
       # syntax ok
       assert_code_block_open(['a'], false) # continue: false
-      assert_code_block_open(['a\\', ''], true) # continue: true
+      assert_code_block_open(['a\\'], true) # continue: true
 
       # recoverable syntax error code is not terminated
-      assert_code_block_open(['a+', ''], true)
+      assert_code_block_open(['a+'], true)
 
       # unrecoverable syntax error code is terminated
-      assert_code_block_open(['.; a+', ''], false)
+      assert_code_block_open(['.; a+'], false)
 
       # other syntax error that failed to determine if it is recoverable or not
       assert_code_block_open(['@; a'], false)
