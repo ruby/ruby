@@ -3035,18 +3035,8 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
         // We prepend a size field before the object.
         size_t mmtk_alloc_size = size_pool_size + prefix_size + suffix_size;
 
-        // Allocate the object.  The last 0 is the Default allocation semantics
-        void *addr = mmtk_alloc(GET_THREAD()->mutator, mmtk_alloc_size, MMTK_MIN_OBJ_ALIGN, 0, 0);
-
-        // Store the Ruby-level object size before the object.
-        *(size_t*)addr = size_pool_size;
-
-        // The Ruby-level object reference (i.e. VALUE) is at an offset from the MMTk-level
-        // allocation unit.
-        obj = (VALUE)addr + prefix_size;
-
-        // Call post_alloc.  This will initialize GC-specific metadata.
-        mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);
+        // Allocate the object.
+        obj = rb_mmtk_alloc_obj(mmtk_alloc_size, size_pool_size, prefix_size);
 
         // Finally, do the rest of Ruby-level initialization.
         return newobj_init(klass, flags, wb_protected, objspace, obj);

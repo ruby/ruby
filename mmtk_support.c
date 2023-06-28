@@ -13,6 +13,17 @@
 #include "ractor_core.h"
 #include "vm_core.h"
 #include "vm_sync.h"
+#include "stdatomic.h"
+
+#ifdef __GNUC__
+#define PREFETCH(addr, write_p) __builtin_prefetch(addr, write_p)
+#define EXPECT(expr, val) __builtin_expect(expr, val)
+#define ATTRIBUTE_UNUSED  __attribute__((unused))
+#else
+#define PREFETCH(addr, write_p)
+#define EXPECT(expr, val) (expr)
+#define ATTRIBUTE_UNUSED
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Workaround: Declare some data types defined elsewhere.
@@ -26,6 +37,78 @@ typedef struct rb_objspace rb_objspace_t;
 bool rb_obj_is_main_ractor(VALUE gv);
 
 ////////////////////////////////////////////////////////////////////////////////
+// Mirror some data structures from mmtk-core.
+// TODO: They should be auto-generated.
+////////////////////////////////////////////////////////////////////////////////
+
+// This really shouldn't be part of the expr(C) struct in Rust.
+typedef struct {
+    void* field1;
+    void* field2;
+} RustDynRef;
+
+struct MMTk_BumpAllocator {
+    void* tls;
+    void* cursor;
+    void* limit;
+    RustDynRef space;
+    RustDynRef plan;
+};
+
+struct MMTk_LargeObjectAllocator {
+    void* tls;
+    void* space;
+    RustDynRef plan;
+};
+
+struct MMTk_MallocAllocator {
+    void* tls;
+    void* space;
+    RustDynRef plan;
+};
+
+struct MMTk_ImmixAllocator {
+    void* tls;
+    /// Bump pointer
+    uintptr_t cursor;
+    /// Limit for bump pointer
+    uintptr_t limit;
+    void* space;
+    RustDynRef plan;
+    bool hot;
+    bool copy;
+    /// Bump pointer for large objects
+    uintptr_t large_cursor;
+    /// Limit for bump pointer for large objects
+    uintptr_t large_limit;
+    /// Is the current request for large or small?
+    bool request_for_large;
+    /// Hole-searching cursor
+    uintptr_t line1;
+    uintptr_t line2;
+};
+
+#define MMTK_MAX_BUMP_ALLOCATORS 6
+#define MMTK_MAX_LARGE_OBJECT_ALLOCATORS 2
+#define MMTK_MAX_MALLOC_ALLOCATORS 1
+#define MMTK_MAX_IMMIX_ALLOCATORS 1
+#define MMTK_MAX_FREE_LIST_ALLOCATORS 2
+#define MMTK_MAX_MARK_COMPACT_ALLOCATORS 1
+
+struct MMTk_Allocators {
+    struct MMTk_BumpAllocator        bump_pointer[MMTK_MAX_BUMP_ALLOCATORS];
+    struct MMTk_LargeObjectAllocator large_object[MMTK_MAX_LARGE_OBJECT_ALLOCATORS];
+    struct MMTk_MallocAllocator      malloc      [MMTK_MAX_MALLOC_ALLOCATORS];
+    struct MMTk_ImmixAllocator       immix       [MMTK_MAX_IMMIX_ALLOCATORS];
+    // uninteresting fields omittted.
+};
+
+struct MMTk_Mutator {
+    struct MMTk_Allocators allocators;
+    // other uninteresting fields omitted
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // Global and thread-local states.
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +116,10 @@ static bool mmtk_enable = false;
 
 RubyBindingOptions ruby_binding_options;
 MMTk_RubyUpcalls ruby_upcalls;
+
+// TODO: Generate them as constants.
+static uintptr_t mmtk_vo_bit_log_region_size;
+static uintptr_t mmtk_vo_bit_base_addr;
 
 const char *mmtk_pre_arg_plan = NULL;
 const char *mmtk_post_arg_plan = NULL;
@@ -68,8 +155,17 @@ struct rb_mmtk_address_buffer {
     size_t capa;
 };
 
+struct rb_mmtk_mutator_local {
+    struct MMTk_ImmixAllocator *immix_allocator;
+    // for prefetching
+    uintptr_t last_new_cursor;
+    // for prefetching
+    uintptr_t last_meta_addr;
+};
+
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
+RB_THREAD_LOCAL_SPECIFIER struct rb_mmtk_mutator_local rb_mmtk_mutator_local;
 #else // RB_THREAD_LOCAL_SPECIFIER
 #error We currently need language-supported TLS
 #endif // RB_THREAD_LOCAL_SPECIFIER
@@ -110,7 +206,16 @@ rb_gc_init_collection(void)
 {
     rb_thread_t *cur_thread = GET_THREAD();
     mmtk_initialize_collection((void*)cur_thread);
-    cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
+    cur_thread->mutator = rb_mmtk_bind_mutator(cur_thread);
+}
+
+void*
+rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread)
+{
+    MMTk_Mutator *mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
+    rb_mmtk_mutator_local.immix_allocator = &mutator->allocators.immix[0];
+
+    return (void*)mutator;
 }
 
 static size_t rb_mmtk_system_physical_memory(void)
@@ -175,13 +280,19 @@ rb_mmtk_main_thread_init(void)
 
 #if RACTOR_CHECK_MODE
     ruby_binding_options.ractor_check_mode = true;
-    ruby_binding_options.suffix_size = sizeof(uint32_t);
+    // Ruby only needs a uint32_t for the ractor ID.
+    // But we make the object size a multiple of alignment.
+    ruby_binding_options.suffix_size = MMTK_MIN_OBJ_ALIGN > sizeof(uint32_t) ?
+        MMTK_MIN_OBJ_ALIGN : sizeof(uint32_t);
 #else
     ruby_binding_options.ractor_check_mode = false;
     ruby_binding_options.suffix_size = 0;
 #endif
 
     mmtk_init_binding(mmtk_builder, &ruby_binding_options, &ruby_upcalls);
+
+    mmtk_vo_bit_base_addr = mmtk_get_vo_bit_base();
+    mmtk_vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -199,6 +310,99 @@ rb_mmtk_suffix_size(void)
 {
     // In RACTOR_CHECK_MODE, an additional hidden field is added to hold the Ractor ID.
     return ruby_binding_options.suffix_size;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Allocation
+////////////////////////////////////////////////////////////////////////////////
+
+static void*
+rb_mmtk_immix_alloc_fast(size_t size)
+{
+    struct rb_mmtk_mutator_local *local = &rb_mmtk_mutator_local;
+    struct MMTk_ImmixAllocator *immix_allocator = local->immix_allocator;
+    uintptr_t cursor = immix_allocator->cursor;
+    uintptr_t limit = immix_allocator->limit;
+
+    void *result = (void*)cursor;
+    uintptr_t new_cursor = cursor + size;
+
+    // Note: If the selected plan is not Immix, then both the cursor and the limit will always be
+    // 0.  In that case this function will return NULL and the caller will try the slow path.
+    if (new_cursor > limit) {
+        return NULL;
+    } else {
+        immix_allocator->cursor = new_cursor;
+        local->last_new_cursor = new_cursor; // save for prefetching
+        return result;
+    }
+}
+
+/// Wrap mmtk_alloc, but use fast path if possible.
+static void*
+rb_mmtk_alloc(size_t size)
+{
+    struct rb_mmtk_mutator_local *local = &rb_mmtk_mutator_local;
+
+    PREFETCH((void*)local->last_new_cursor, 1);
+    PREFETCH((void*)local->last_meta_addr, 1);
+
+    void *fast_result = rb_mmtk_immix_alloc_fast(size);
+    if (fast_result != NULL) {
+        return fast_result;
+    }
+
+    void *result = mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, 0);
+
+    return result;
+}
+
+#define RB_MMTK_USE_POST_ALLOC_FAST_PATH true
+#define RB_MMTK_VO_BIT_SET_NON_ATOMIC true
+
+/// Wrap mmtk_post_alloc, but use fast path if possible.
+static void
+rb_mmtk_post_alloc(VALUE obj, size_t mmtk_alloc_size)
+{
+    if (RB_MMTK_USE_POST_ALLOC_FAST_PATH) {
+        uintptr_t obj_addr = obj;
+        uintptr_t region_offset = obj_addr >> mmtk_vo_bit_log_region_size;
+        uintptr_t byte_offset = region_offset / 8;
+        uintptr_t bit_offset = region_offset % 8;
+        uintptr_t meta_byte_address = mmtk_vo_bit_base_addr + byte_offset;
+        uint8_t byte = 1 << bit_offset;
+        if (RB_MMTK_VO_BIT_SET_NON_ATOMIC) {
+            uint8_t *meta_byte_ptr = (uint8_t*)meta_byte_address;
+            *meta_byte_ptr |= byte;
+        } else {
+            volatile _Atomic uint8_t *meta_byte_ptr = (volatile _Atomic uint8_t*)meta_byte_address;
+            // relaxed: We don't use VO bits for synchronisation during mutator phase.
+            // When GC is triggered, the handshake between GC and mutator provides synchronization.
+            atomic_fetch_or_explicit(meta_byte_ptr, byte, memory_order_relaxed);
+        }
+        rb_mmtk_mutator_local.last_meta_addr = meta_byte_address;
+    } else {
+        // Call post_alloc.  This will initialize GC-specific metadata.
+        mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);
+    }
+}
+
+VALUE
+rb_mmtk_alloc_obj(size_t mmtk_alloc_size, size_t size_pool_size, size_t prefix_size)
+{
+    // Allocate the object.
+    void *addr = rb_mmtk_alloc(mmtk_alloc_size);
+
+    // Store the Ruby-level object size before the object.
+    *(size_t*)addr = size_pool_size;
+
+    // The Ruby-level object reference (i.e. VALUE) is at an offset from the MMTk-level
+    // allocation unit.
+    VALUE obj = (VALUE)addr + prefix_size;
+
+    rb_mmtk_post_alloc(obj, mmtk_alloc_size);
+
+    return obj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

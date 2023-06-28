@@ -662,7 +662,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 #if USE_MMTK
     // Threads may be reused, so we only initialize MMTk mutator once.
     if (rb_mmtk_enabled_p() && th->mutator == NULL) {
-        th->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)th);
+        th->mutator = rb_mmtk_bind_mutator((MMTk_VMMutatorThread)th);
     }
 #endif
 

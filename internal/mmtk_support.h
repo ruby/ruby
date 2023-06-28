@@ -8,6 +8,7 @@
 #endif
 
 #include "ruby/ruby.h"
+#include "internal/mmtk.h"
 
 #define MMTK_DEFAULT_PLAN "MarkSweep"
 
@@ -16,11 +17,15 @@ bool rb_mmtk_enabled_p(void);
 
 // Initialization
 void rb_gc_init_collection(void);
+void* rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread);
 void rb_mmtk_main_thread_init(void);
 
 // Object layout
 size_t rb_mmtk_prefix_size(void);
 size_t rb_mmtk_suffix_size(void);
+
+// Allocation
+VALUE rb_mmtk_alloc_obj(size_t mmtk_alloc_size, size_t size_pool_size, size_t prefix_size);
 
 // Tracing
 void rb_mmtk_mark_movable(VALUE obj);
