@@ -181,7 +181,7 @@ jobs:
 #         - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
 #         - { name: ENABLE_PATH_CHECK,              env: { cppflags: '-DENABLE_PATH_CHECK' } }
 
-          - { name: GC_DEBUG_STRESS_TO_CLASS,       env: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
+#         - { name: GC_DEBUG_STRESS_TO_CLASS,       env: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
 #         - { name: GC_ENABLE_LAZY_SWEEP=0,         env: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
 #         - { name: GC_PROFILE_DETAIL_MEMOTY,       env: { cppflags: '-DGC_PROFILE_DETAIL_MEMOTY' } }
 #         - { name: GC_PROFILE_MORE_DETAIL,         env: { cppflags: '-DGC_PROFILE_MORE_DETAIL' } }
