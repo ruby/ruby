@@ -100,7 +100,7 @@ class TestString < Test::Unit::TestCase
     return unless @cls == String
 
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {('x'*100000).__send__(:initialize, '')}
+code = proc {('x'*100_000).__send__(:initialize, '')}
 1_000.times(&code)
 PREP
 100_000.times(&code)
@@ -112,7 +112,7 @@ CODE
     return unless @cls == String
 
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {0.to_s.__send__(:initialize, capacity: 10000)}
+code = proc {0.to_s.__send__(:initialize, capacity: 100_000)}
 1_000.times(&code)
 PREP
 100_000.times(&code)
