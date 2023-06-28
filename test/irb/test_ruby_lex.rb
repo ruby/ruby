@@ -598,7 +598,6 @@ module TestIRB
     end
 
     def test_local_variables_dependent_code
-      pend if RUBY_ENGINE == 'truffleruby'
       lines = ["a /1#/ do", "2"]
       assert_indent_level(lines, 1)
       assert_code_block_open(lines, true)
@@ -707,7 +706,6 @@ module TestIRB
     end
 
     def assert_dynamic_prompt(lines, expected_prompt_list)
-      pend if RUBY_ENGINE == 'truffleruby'
       context = build_context
       ruby_lex = RubyLex.new(context)
       dynamic_prompt_executed = false

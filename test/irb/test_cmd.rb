@@ -473,7 +473,6 @@ module TestIRB
     end
 
     def test_show_source_end_finder
-      pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
         def show_source_test_method
           unless true
@@ -490,7 +489,6 @@ module TestIRB
     end
 
     def test_show_source_private_instance
-      pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
         class PrivateInstanceTest
           private def show_source_test_method
@@ -510,7 +508,6 @@ module TestIRB
 
 
     def test_show_source_private
-      pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
         class PrivateTest
           private def show_source_test_method
