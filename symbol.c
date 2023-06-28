@@ -23,7 +23,11 @@
 #include "vm_sync.h"
 #include "builtin.h"
 
-#ifndef USE_SYMBOL_GC
+#if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
+# undef USE_SYMBOL_GC
+# define USE_SYMBOL_GC 0
+#else
+# undef USE_SYMBOL_GC
 # define USE_SYMBOL_GC 1
 #endif
 #ifndef SYMBOL_DEBUG
@@ -843,12 +847,7 @@ VALUE
 rb_str_intern(VALUE str)
 {
     VALUE sym;
-#if USE_SYMBOL_GC
-    rb_encoding *enc, *ascii;
-    int type;
-#else
-    ID id;
-#endif
+
     GLOBAL_SYMBOLS_ENTER(symbols);
     {
         sym = lookup_str_sym_with_lock(symbols, str);
@@ -856,10 +855,9 @@ rb_str_intern(VALUE str)
         if (sym) {
             // ok
         }
-        else {
-#if USE_SYMBOL_GC
-            enc = rb_enc_get(str);
-            ascii = rb_usascii_encoding();
+        else if (USE_SYMBOL_GC) {
+            rb_encoding *enc = rb_enc_get(str);
+            rb_encoding *ascii = rb_usascii_encoding();
             if (enc != ascii && sym_check_asciionly(str)) {
                 str = rb_str_dup(str);
                 rb_enc_associate(str, ascii);
@@ -871,13 +869,13 @@ rb_str_intern(VALUE str)
                 OBJ_FREEZE(str);
             }
             str = rb_fstring(str);
-            type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
+            int type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
             if (type < 0) type = ID_JUNK;
             sym = dsymbol_alloc(symbols, rb_cSymbol, str, enc, type);
-#else
-            id = intern_str(str, 0);
+        }
+        else {
+            ID id = intern_str(str, 0);
             sym = ID2SYM(id);
-#endif
         }
     }
     GLOBAL_SYMBOLS_LEAVE();
