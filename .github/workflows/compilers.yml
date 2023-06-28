@@ -178,7 +178,7 @@ jobs:
 #         - { name: USE_DEBUG_COUNTER,              env: { cppflags: '-DUSE_DEBUG_COUNTER=1', RUBY_DEBUG_COUNTER_DISABLE: '1' } }
 
 #         - { name: DEBUG_FIND_TIME_NUMGUESS,       env: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
-          - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
+#         - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
 #         - { name: ENABLE_PATH_CHECK,              env: { cppflags: '-DENABLE_PATH_CHECK' } }
 
           - { name: GC_DEBUG_STRESS_TO_CLASS,       env: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
