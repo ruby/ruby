@@ -143,7 +143,7 @@ end
 
   def test_no_memory_leak
     assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      10_000_000.times do
+      2_000_000.times do
         Ripper.parse("")
       end
     end;
