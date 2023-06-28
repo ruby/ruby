@@ -5437,6 +5437,9 @@ Init_Thread(void)
     rb_thread_create_timer_thread();
 
     Init_thread_sync();
+
+    // TODO: Suppress unused function warning for now
+    if (0) rb_thread_sched_destroy(NULL);
 }
 
 int
