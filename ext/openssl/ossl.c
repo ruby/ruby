@@ -669,8 +669,8 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  *   key = OpenSSL::PKey::RSA.new 2048
  *
- *   open 'private_key.pem', 'w' do |io| io.write key.to_pem end
- *   open 'public_key.pem', 'w' do |io| io.write key.public_key.to_pem end
+ *   File.write 'private_key.pem', key.private_to_pem
+ *   File.write 'public_key.pem', key.public_to_pem
  *
  * === Exporting a Key
  *
@@ -681,11 +681,9 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *   password = 'my secure password goes here'
  *
- *   key_secure = key.export cipher, password
+ *   key_secure = key.private_to_pem cipher, password
  *
- *   open 'private.secure.pem', 'w' do |io|
- *     io.write key_secure
- *   end
+ *   File.write 'private.secure.pem', key_secure
  *
  * OpenSSL::Cipher.ciphers returns a list of available ciphers.
  *
@@ -906,10 +904,10 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   ca_key = OpenSSL::PKey::RSA.new 2048
  *   password = 'my secure password goes here'
  *
- *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
+ *   cipher = 'aes-256-cbc'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
- *     io.write ca_key.export(cipher, password)
+ *     io.write ca_key.private_to_pem(cipher, password)
  *   end
  *
  * === CA Certificate
