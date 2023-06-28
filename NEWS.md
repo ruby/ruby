@@ -56,7 +56,7 @@ The following default gems are updated.
 * RubyGems 3.5.0.dev
 * bigdecimal 3.1.4
 * bundler 2.5.0.dev
-* csv 3.2.7
+* csv 3.2.8
 * fiddle 1.1.2
 * fileutils 1.7.1
 * irb 1.7.0
