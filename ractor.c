@@ -3109,12 +3109,6 @@ obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
     return data->rec;
 }
 
-#if USE_TRANSIENT_HEAP
-void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
-void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
-void rb_struct_transient_heap_evacuate(VALUE st, int promote);
-#endif
-
 static void
 obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
 {
