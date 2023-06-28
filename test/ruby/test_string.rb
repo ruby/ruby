@@ -1375,6 +1375,7 @@ CODE
     assert_raise(TypeError) { S("foo").index(Object.new) }
 
     assert_index(nil, S("foo"), //, -100)
+    assert_index(nil, S("foo"), //, 4)
 
     assert_index(2, S("abcdbce"), /b\Kc/)
 
@@ -1562,6 +1563,7 @@ CODE
 
     m = assert_rindex(3, S("foo"), //)
     assert_equal([3, 3], m.offset(0))
+    assert_rindex(3, S("foo"), //, 4)
 
     assert_rindex(5, S("abcdbce"), /b\Kc/)
 
@@ -3380,6 +3382,7 @@ CODE
     assert_raise(TypeError) { S("foo").byteindex(Object.new) }
 
     assert_byteindex(nil, S("foo"), //, -100)
+    assert_byteindex(nil, S("foo"), //, -4)
 
     assert_byteindex(2, S("abcdbce"), /b\Kc/)
 
@@ -3427,6 +3430,7 @@ CODE
 
     m = assert_byterindex(3, S("foo"), //)
     assert_equal([3, 3], m.offset(0))
+    assert_byterindex(3, S("foo"), //, 4)
 
     assert_byterindex(5, S("abcdbce"), /b\Kc/)
 
