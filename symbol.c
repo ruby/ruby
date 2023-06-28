@@ -30,7 +30,11 @@
 # undef USE_SYMBOL_GC
 # define USE_SYMBOL_GC 1
 #endif
-#ifndef SYMBOL_DEBUG
+#if defined(SYMBOL_DEBUG) && (SYMBOL_DEBUG+0)
+# undef SYMBOL_DEBUG
+# define SYMBOL_DEBUG 1
+#else
+# undef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 0
 #endif
 #ifndef CHECK_ID_SERIAL
@@ -456,8 +460,7 @@ get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
                 if (NIL_P(result)) {
                     result = 0;
                 }
-                else {
-#if CHECK_ID_SERIAL
+                else if (CHECK_ID_SERIAL) {
                     if (id) {
                         VALUE sym = result;
                         if (t != ID_ENTRY_SYM)
@@ -469,7 +472,6 @@ get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
                             if (RSYMBOL(sym)->id != id) result = 0;
                         }
                     }
-#endif
                 }
             }
         }
@@ -504,7 +506,6 @@ rb_id_serial_to_id(rb_id_serial_t num)
     }
 }
 
-#if SYMBOL_DEBUG
 static int
 register_sym_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
@@ -515,19 +516,19 @@ register_sym_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, in
     *value = arg;
     return ST_CONTINUE;
 }
-#endif
 
 static void
 register_sym(rb_symbols_t *symbols, VALUE str, VALUE sym)
 {
     ASSERT_vm_locking();
 
-#if SYMBOL_DEBUG
-    st_update(symbols->str_sym, (st_data_t)str,
-              register_sym_update_callback, (st_data_t)sym);
-#else
-    st_add_direct(symbols->str_sym, (st_data_t)str, (st_data_t)sym);
-#endif
+    if (SYMBOL_DEBUG) {
+        st_update(symbols->str_sym, (st_data_t)str,
+                  register_sym_update_callback, (st_data_t)sym);
+    }
+    else {
+        st_add_direct(symbols->str_sym, (st_data_t)str, (st_data_t)sym);
+    }
 }
 
 static void
