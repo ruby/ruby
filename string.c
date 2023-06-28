@@ -3907,18 +3907,21 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
-/* whether given pos is valid character boundary or not
+/* Ensure that the given pos is a valid character boundary.
  * Note that in this function, "character" means a code point
  * (Unicode scalar value), not a grapheme cluster.
  */
-static bool
-str_check_byte_pos(VALUE str, long pos)
+static void
+str_ensure_byte_pos(VALUE str, long pos)
 {
     const char *s = RSTRING_PTR(str);
     const char *e = RSTRING_END(str);
     const char *p = s + pos;
     const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
-    return p == pp;
+    if (p != pp) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
 }
 
 /*
@@ -3986,10 +3989,7 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
         pos = 0;
     }
 
-    if (!str_check_byte_pos(str, pos)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
-    }
+    str_ensure_byte_pos(str, pos);
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
         if (rb_reg_search(sub, str, pos, 0) < 0) {
@@ -4316,10 +4316,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         pos = len;
     }
 
-    if (!str_check_byte_pos(str, pos)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
-    }
+    str_ensure_byte_pos(str, pos);
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
         if (rb_reg_search(sub, str, pos, 1) >= 0) {
@@ -6197,14 +6194,8 @@ str_check_beg_len(VALUE str, long *beg, long *len)
         *len = slen - *beg;
     }
     end = *beg + *len;
-    if (!str_check_byte_pos(str, *beg)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", *beg);
-    }
-    if (!str_check_byte_pos(str, end)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", end);
-    }
+    str_ensure_byte_pos(str, *beg);
+    str_ensure_byte_pos(str, end);
 }
 
 /*
