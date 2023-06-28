@@ -400,13 +400,61 @@ static VALUE ossl_ec_key_is_private(VALUE self)
 
 /*
  *  call-seq:
- *     key.export([cipher, pass_phrase]) => String
- *     key.to_pem([cipher, pass_phrase]) => String
+ *     key.export([cipher, password]) => String
+ *     key.to_pem([cipher, password]) => String
  *
- * Outputs the EC key in PEM encoding.  If _cipher_ and _pass_phrase_ are given
- * they will be used to encrypt the key.  _cipher_ must be an OpenSSL::Cipher
- * instance. Note that encryption will only be effective for a private key,
- * public keys will always be encoded in plain text.
+ * Serializes a private or public key to a PEM-encoding.
+ *
+ * [When the key contains public components only]
+ *
+ *   Serializes it into an X.509 SubjectPublicKeyInfo.
+ *   The parameters _cipher_ and _password_ are ignored.
+ *
+ *   A PEM-encoded key will look like:
+ *
+ *     -----BEGIN PUBLIC KEY-----
+ *     [...]
+ *     -----END PUBLIC KEY-----
+ *
+ *   Consider using #public_to_pem instead. This serializes the key into an
+ *   X.509 SubjectPublicKeyInfo regardless of whether it is a public key
+ *   or a private key.
+ *
+ * [When the key contains private components, and no parameters are given]
+ *
+ *   Serializes it into a SEC 1/RFC 5915 ECPrivateKey.
+ *
+ *   A PEM-encoded key will look like:
+ *
+ *     -----BEGIN EC PRIVATE KEY-----
+ *     [...]
+ *     -----END EC PRIVATE KEY-----
+ *
+ * [When the key contains private components, and _cipher_ and _password_ are given]
+ *
+ *   Serializes it into a SEC 1/RFC 5915 ECPrivateKey
+ *   and encrypts it in OpenSSL's traditional PEM encryption format.
+ *   _cipher_ must be a cipher name understood by OpenSSL::Cipher.new or an
+ *   instance of OpenSSL::Cipher.
+ *
+ *   An encrypted PEM-encoded key will look like:
+ *
+ *     -----BEGIN EC PRIVATE KEY-----
+ *     Proc-Type: 4,ENCRYPTED
+ *     DEK-Info: AES-128-CBC,733F5302505B34701FC41F5C0746E4C0
+ *
+ *     [...]
+ *     -----END EC PRIVATE KEY-----
+ *
+ *   Note that this format uses MD5 to derive the encryption key, and hence
+ *   will not be available on FIPS-compliant systems.
+ *
+ * <b>This method is kept for compatibility.</b>
+ * This should only be used when the SEC 1/RFC 5915 ECPrivateKey format is
+ * required.
+ *
+ * Consider using #public_to_pem (X.509 SubjectPublicKeyInfo) or #private_to_pem
+ * (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) instead.
  */
 static VALUE
 ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
@@ -426,7 +474,15 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     key.to_der   => String
  *
- *  See the OpenSSL documentation for i2d_ECPrivateKey_bio()
+ * Serializes a private or public key to a DER-encoding.
+ *
+ * See #to_pem for details.
+ *
+ * <b>This method is kept for compatibility.</b>
+ * This should only be used when the SEC 1/RFC 5915 ECPrivateKey format is
+ * required.
+ *
+ * Consider using #public_to_der or #private_to_der instead.
  */
 static VALUE
 ossl_ec_key_to_der(VALUE self)

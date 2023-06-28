@@ -875,6 +875,18 @@ ossl_pkey_private_to_der(int argc, VALUE *argv, VALUE self)
  *
  * Serializes the private key to PEM-encoded PKCS #8 format. See #private_to_der
  * for more details.
+ *
+ * An unencrypted PEM-encoded key will look like:
+ *
+ *   -----BEGIN PRIVATE KEY-----
+ *   [...]
+ *   -----END PRIVATE KEY-----
+ *
+ * An encrypted PEM-encoded key will look like:
+ *
+ *   -----BEGIN ENCRYPTED PRIVATE KEY-----
+ *   [...]
+ *   -----END ENCRYPTED PRIVATE KEY-----
  */
 static VALUE
 ossl_pkey_private_to_pem(int argc, VALUE *argv, VALUE self)
@@ -953,6 +965,12 @@ ossl_pkey_public_to_der(VALUE self)
  *    pkey.public_to_pem -> string
  *
  * Serializes the public key to PEM-encoded X.509 SubjectPublicKeyInfo format.
+ *
+ * A PEM-encoded key will look like:
+ *
+ *   -----BEGIN PUBLIC KEY-----
+ *   [...]
+ *   -----END PUBLIC KEY-----
  */
 static VALUE
 ossl_pkey_public_to_pem(VALUE self)
