@@ -1144,7 +1144,14 @@ missing-srcs: $(srcdir)/missing/des_tables.c
 
 srcs: common-srcs missing-srcs srcs-enc
 
-EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
+RIPPER_SRCS = $(srcdir)/ext/ripper/ripper.c \
+	      $(srcdir)/ext/ripper/ripper_init.c \
+	      $(srcdir)/ext/ripper/eventids1.h \
+	      $(srcdir)/ext/ripper/eventids1.c \
+	      $(srcdir)/ext/ripper/eventids2table.c \
+	      # RIPPER_SRCS
+
+EXT_SRCS = $(RIPPER_SRCS) \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
 	   $(srcdir)/ext/rbconfig/sizeof/limits.c \
 	   $(srcdir)/ext/socket/constdefs.c \
@@ -1260,7 +1267,9 @@ $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 # uncommon.mk: $(REVISION_H)
 # $(MKFILES): $(REVISION_H)
 
-$(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y $(srcdir)/defs/id.def $(srcdir)/ext/ripper/depend
+$(RIPPER_SRCS): $(srcdir)/parse.y $(srcdir)/defs/id.def
+$(RIPPER_SRCS): $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/ext/ripper/tools/dsl.rb
+$(RIPPER_SRCS): $(srcdir)/ext/ripper/ripper_init.c.tmpl $(srcdir)/ext/ripper/eventids2.c
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && \
 	$(CAT_DEPEND) depend | \
