@@ -149,22 +149,24 @@ literal_hash(VALUE a)
     return rb_iseq_cdhash_hash(a);
 }
 
-static int
-script_lines_defined(void)
+static ID
+script_lines(void)
 {
     ID script_lines;
     CONST_ID(script_lines, "SCRIPT_LINES__");
+    return script_lines;
+}
 
-    return rb_const_defined_at(rb_cObject, script_lines);
+static int
+script_lines_defined(void)
+{
+    return rb_const_defined_at(rb_cObject, script_lines());
 }
 
 static VALUE
 script_lines_get(void)
 {
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-
-    return rb_const_get_at(rb_cObject, script_lines);
+    return rb_const_get_at(rb_cObject, script_lines());
 }
 
 static VALUE
