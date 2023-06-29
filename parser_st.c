@@ -146,6 +146,16 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
 #undef st_locale_insensitive_strncasecmp
 #define st_locale_insensitive_strncasecmp rb_parser_st_locale_insensitive_strncasecmp
 
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+/* GCC warns about unknown sanitizer, which is annoying. */
+# undef NO_SANITIZE
+# define NO_SANITIZE(x, y) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+    __attribute__((__no_sanitize__(x))) y; \
+    _Pragma("GCC diagnostic pop")
+#endif
+
 #ifndef NO_SANITIZE
 # define NO_SANITIZE(x, y) y
 #endif
