@@ -47,14 +47,11 @@ jobs:
         language: [ 'cpp', 'ruby' ]
 
     steps:
-    - name: Install libraries
-      run: |
-        set -x
-        sudo apt-get update -q || :
-        sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev autoconf ruby
-
     - name: Checkout repository
       uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
+    - name: Install libraries
+      uses: ./.github/actions/setup/ubuntu
 
     - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
       with:

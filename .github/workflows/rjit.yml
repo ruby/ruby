@@ -53,20 +53,6 @@ jobs:
       - name: Set ENV
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - name: Install libraries
-        env:
-          arch: ${{matrix.arch}}
-        run: |
-          set -x
-          arch=${arch:+:${arch/i[3-6]86/i386}}
-          ${arch:+sudo dpkg --add-architecture ${arch#:}}
-          sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y \
-          ${arch:+cross}build-essential${arch/:/-} \
-          libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
-          zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
-          autoconf ruby libcapstone-dev
-          sudo apt-get install -q -y pkg-config${arch} || :
       - name: git config
         run: |
           git config --global advice.detachedHead 0
@@ -74,6 +60,8 @@ jobs:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.1.0
         with:
           path: src
+      - name: Install libraries
+        uses: ./src/.github/actions/setup/ubuntu
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.0.11
         with:
           path: src/.downloaded-cache
