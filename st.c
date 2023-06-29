@@ -1228,6 +1228,36 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     return 1;
 }
 
+/* Create a copy of old_tab into new_tab. */
+st_table *
+st_replace(st_table *new_tab, st_table *old_tab)
+{
+    *new_tab = *old_tab;
+    if (old_tab->bins == NULL)
+        new_tab->bins = NULL;
+    else {
+        new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
+#ifndef RUBY
+        if (new_tab->bins == NULL) {
+            return NULL;
+        }
+#endif
+    }
+    new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
+                                                 * sizeof(st_table_entry));
+#ifndef RUBY
+    if (new_tab->entries == NULL) {
+        return NULL;
+    }
+#endif
+    MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
+           get_allocated_entries(old_tab));
+    if (old_tab->bins != NULL)
+        MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+
+    return new_tab;
+}
+
 /* Create and return a copy of table OLD_TAB.  */
 st_table *
 st_copy(st_table *old_tab)
@@ -1239,30 +1269,12 @@ st_copy(st_table *old_tab)
     if (new_tab == NULL)
         return NULL;
 #endif
-    *new_tab = *old_tab;
-    if (old_tab->bins == NULL)
-        new_tab->bins = NULL;
-    else {
-        new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
-#ifndef RUBY
-        if (new_tab->bins == NULL) {
-            free(new_tab);
-            return NULL;
-        }
-#endif
-    }
-    new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
-                                                 * sizeof(st_table_entry));
-#ifndef RUBY
-    if (new_tab->entries == NULL) {
+
+    if (st_replace(new_tab, old_tab) == NULL) {
         st_free_table(new_tab);
         return NULL;
     }
-#endif
-    MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
-           get_allocated_entries(old_tab));
-    if (old_tab->bins != NULL)
-        MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+
     return new_tab;
 }
 
