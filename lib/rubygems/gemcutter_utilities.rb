@@ -3,6 +3,7 @@
 require_relative "remote_fetcher"
 require_relative "text"
 require_relative "webauthn_listener"
+require_relative "gemcutter_utilities/webauthn_poller"
 
 ##
 # Utility methods for using the RubyGems API.
@@ -259,7 +260,7 @@ module Gem::GemcutterUtilities
       url_with_port = "#{webauthn_url}?port=#{port}"
       say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
 
-      threads = [socket_thread(server), poll_thread(webauthn_url, credentials)]
+      threads = [socket_thread(server), WebauthnPoller.poll_thread(options, host, webauthn_url, credentials)]
       otp_thread = wait_for_otp_thread(*threads)
 
       threads.each(&:join)
@@ -302,35 +303,6 @@ module Gem::GemcutterUtilities
     thread
   end
 
-  def poll_thread(webauthn_url, credentials)
-    thread = Thread.new do
-      Timeout.timeout(300) do
-        loop do
-          response = webauthn_verification_poll_response(webauthn_url, credentials)
-          raise Gem::WebauthnVerificationError, response.message unless response.is_a?(Net::HTTPSuccess)
-
-          require "json"
-          parsed_response = JSON.parse(response.body)
-          case parsed_response["status"]
-          when "pending"
-            sleep 5
-          when "success"
-            Thread.current[:otp] = parsed_response["code"]
-            break
-          else
-            raise Gem::WebauthnVerificationError, parsed_response["message"]
-          end
-        end
-      end
-    rescue Gem::WebauthnVerificationError, Timeout::Error => e
-      Thread.current[:error] = e
-    end
-    thread.abort_on_exception = true
-    thread.report_on_exception = false
-
-    thread
-  end
-
   def webauthn_verification_url(credentials)
     response = rubygems_api_request(:post, "api/v1/webauthn_verification") do |request|
       if credentials.empty?
@@ -340,17 +312,6 @@ module Gem::GemcutterUtilities
       end
     end
     response.is_a?(Net::HTTPSuccess) ? response.body : nil
-  end
-
-  def webauthn_verification_poll_response(webauthn_url, credentials)
-    webauthn_token = %r{(?<=\/)[^\/]+(?=$)}.match(webauthn_url)[0]
-    rubygems_api_request(:get, "api/v1/webauthn_verification/#{webauthn_token}/status.json") do |request|
-      if credentials.empty?
-        request.add_field "Authorization", api_key
-      else
-        request.basic_auth credentials[:email], credentials[:password]
-      end
-    end
   end
 
   def pretty_host(host)
