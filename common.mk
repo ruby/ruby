@@ -1841,7 +1841,7 @@ help: PHONY
 	"  golf:                  build goruby for golfers" \
 	$(HELP_EXTRA_TASKS) \
 	"see DeveloperHowto for more detail: " \
-	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
+	"  https://github.com/ruby/ruby/wiki/Developer-How-To" \
 	$(MESSAGE_END)
 
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
