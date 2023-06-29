@@ -7296,44 +7296,71 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
     if (regexp_literal) { tokadd(p, '\\'); tokadd(p, 'u'); }
 
     if (peek(p, open_brace)) {  /* handle \u{...} form */
-        const char *second = NULL;
-        int c, last = nextc(p);
-        if (p->lex.pcur >= p->lex.pend) goto unterminated;
-        while (ISSPACE(c = *p->lex.pcur) && ++p->lex.pcur < p->lex.pend);
-        while (c != close_brace) {
-            if (c == term) goto unterminated;
-            if (second == multiple_codepoints)
-                second = p->lex.pcur;
-            if (regexp_literal) tokadd(p, last);
-            if (!tokadd_codepoint(p, encp, regexp_literal, TRUE)) {
-                break;
+        if (regexp_literal && p->lex.strterm->u.literal.u1.func == str_regexp) {
+            /*
+             * Skip parsing validation code and copy bytes as-is until term or
+             * closing brace, in order to correctly handle extended regexps where
+             * invalid unicode escapes are allowed in comments. The regexp parser
+             * does its own validation and will catch any issues.
+             */
+            int c = *p->lex.pcur;
+            tokadd(p, c);
+            for (c = *++p->lex.pcur; p->lex.pcur < p->lex.pend; c = *++p->lex.pcur) {
+                if (c == close_brace) {
+                    tokadd(p, c);
+                    ++p->lex.pcur;
+                    break;
+                }
+                else if (c == term) {
+                    break;
+                }
+                if (c == '\\' && p->lex.pcur + 1 < p->lex.pend) {
+                    tokadd(p, c);
+                    c = *++p->lex.pcur;
+                }
+                tokadd(p, c);
             }
-            while (ISSPACE(c = *p->lex.pcur)) {
-                if (++p->lex.pcur >= p->lex.pend) goto unterminated;
-                last = c;
+        }
+        else {
+            const char *second = NULL;
+            int c, last = nextc(p);
+            if (p->lex.pcur >= p->lex.pend) goto unterminated;
+            while (ISSPACE(c = *p->lex.pcur) && ++p->lex.pcur < p->lex.pend);
+            while (c != close_brace) {
+                if (c == term) goto unterminated;
+                if (second == multiple_codepoints)
+                    second = p->lex.pcur;
+                if (regexp_literal) tokadd(p, last);
+                if (!tokadd_codepoint(p, encp, regexp_literal, TRUE)) {
+                    break;
+                }
+                while (ISSPACE(c = *p->lex.pcur)) {
+                    if (++p->lex.pcur >= p->lex.pend) goto unterminated;
+                    last = c;
+                }
+                if (term == -1 && !second)
+                    second = multiple_codepoints;
             }
-            if (term == -1 && !second)
-                second = multiple_codepoints;
-        }
 
-        if (c != close_brace) {
-          unterminated:
-            token_flush(p);
-            yyerror0("unterminated Unicode escape");
-            return;
-        }
-        if (second && second != multiple_codepoints) {
-            const char *pcur = p->lex.pcur;
-            p->lex.pcur = second;
-            dispatch_scan_event(p, tSTRING_CONTENT);
-            token_flush(p);
-            p->lex.pcur = pcur;
-            yyerror0(multiple_codepoints);
-            token_flush(p);
-        }
+            if (c != close_brace) {
+              unterminated:
+                token_flush(p);
+                yyerror0("unterminated Unicode escape");
+                return;
+            }
+            if (second && second != multiple_codepoints) {
+                const char *pcur = p->lex.pcur;
+                p->lex.pcur = second;
+                dispatch_scan_event(p, tSTRING_CONTENT);
+                token_flush(p);
+                p->lex.pcur = pcur;
+                yyerror0(multiple_codepoints);
+                token_flush(p);
+            }
 
-        if (regexp_literal) tokadd(p, close_brace);
-        nextc(p);
+            if (regexp_literal) tokadd(p, close_brace);
+            nextc(p);
+        }
     }
     else {			/* handle \uxxxx form */
         if (!tokadd_codepoint(p, encp, regexp_literal, FALSE)) {
