@@ -1151,7 +1151,7 @@ RIPPER_SRCS = $(srcdir)/ext/ripper/ripper.c \
 	      $(srcdir)/ext/ripper/eventids2table.c \
 	      # RIPPER_SRCS
 
-EXT_SRCS = $(RIPPER_SRCS) \
+EXT_SRCS = ripper_srcs \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
 	   $(srcdir)/ext/rbconfig/sizeof/limits.c \
 	   $(srcdir)/ext/socket/constdefs.c \
@@ -1266,6 +1266,9 @@ $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 
 # uncommon.mk: $(REVISION_H)
 # $(MKFILES): $(REVISION_H)
+
+ripper_srcs: $(RIPPER_SRCS)
+.NOTPARALLEL: ripper_srcs
 
 $(RIPPER_SRCS): $(srcdir)/parse.y $(srcdir)/defs/id.def
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/ext/ripper/tools/dsl.rb
