@@ -1,0 +1,17 @@
+name: Setup macOS environment
+description: >-
+  Installs necessary packages via Homebrew.
+
+inputs: {} # nothing?
+
+outputs: {} # nothing?
+
+runs:
+  using: composite
+
+  steps:
+    - name: brew
+      shell: bash
+      run: |
+        brew upgrade
+        brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline

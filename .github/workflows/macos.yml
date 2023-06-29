@@ -57,10 +57,7 @@ jobs:
           path: src/.downloaded-cache
           key: downloaded-cache
       - name: Install libraries
-        run: |
-          brew upgrade
-          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-        working-directory: src
+        uses: ./src/.github/actions/setup/macos
       - name: Set ENV
         run: |
           echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
