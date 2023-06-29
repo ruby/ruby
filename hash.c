@@ -1165,7 +1165,7 @@ st_free_and_clear_table(VALUE hash)
 
     st_table *tab = RHASH_ST_TABLE(hash);
 
-    if (tab->bins != NULL) free(tab->bins);
+    free(tab->bins);
     free(tab->entries);
 
     RHASH_ST_CLEAR(hash);

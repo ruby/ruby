@@ -886,8 +886,8 @@ onig_region_free(OnigRegion* r, int free_self)
 {
   if (r) {
     if (r->allocated > 0) {
-      if (r->beg) xfree(r->beg);
-      if (r->end) xfree(r->end);
+      xfree(r->beg);
+      xfree(r->end);
       r->allocated = 0;
     }
 #ifdef USE_CAPTURE_HISTORY
@@ -965,8 +965,8 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).match_cache_buf = (uint8_t*)NULL;\
 } while(0)
 #define MATCH_ARG_FREE_MATCH_CACHE(msa) do {\
-  if ((msa).cache_opcodes != NULL) xfree((msa).cache_opcodes);\
-  if ((msa).match_cache_buf != NULL) xfree((msa).match_cache_buf);\
+  xfree((msa).cache_opcodes);\
+  xfree((msa).match_cache_buf);\
   (msa).cache_opcodes = (OnigCacheOpcode*)NULL;\
   (msa).match_cache_buf = (uint8_t*)NULL;\
 } while(0)
@@ -1031,15 +1031,15 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   } while(0)
 
 # define MATCH_ARG_FREE(msa) do {\
-  if ((msa).stack_p) xfree((msa).stack_p);\
+  xfree((msa).stack_p);\
   if ((msa).state_check_buff_size >= STATE_CHECK_BUFF_MALLOC_THRESHOLD_SIZE) { \
-    if ((msa).state_check_buff) xfree((msa).state_check_buff);\
+    xfree((msa).state_check_buff);\
   }\
   MATCH_ARG_FREE_MATCH_CACHE(msa);\
 } while(0)
 #else /* USE_COMBINATION_EXPLOSION_CHECK */
 # define MATCH_ARG_FREE(msa) do {\
-  if ((msa).stack_p) xfree((msa).stack_p);\
+  xfree((msa).stack_p);\
   MATCH_ARG_FREE_MATCH_CACHE(msa);\
 } while (0)
 #endif /* USE_COMBINATION_EXPLOSION_CHECK */
@@ -1151,7 +1151,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     int r = stack_double(&stk_base, &stk_end, &stk, stk_alloc, msa);\
     if (r != 0) {\
       STACK_SAVE;\
-      if (xmalloc_base) xfree(xmalloc_base);\
+      xfree(xmalloc_base);\
       return r;\
     }\
   }\
@@ -4044,24 +4044,24 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
  finish:
   STACK_SAVE;
-  if (xmalloc_base) xfree(xmalloc_base);
+  xfree(xmalloc_base);
   return best_len;
 
 #ifdef ONIG_DEBUG
  stack_error:
   STACK_SAVE;
-  if (xmalloc_base) xfree(xmalloc_base);
+  xfree(xmalloc_base);
   return ONIGERR_STACK_BUG;
 #endif
 
  bytecode_error:
   STACK_SAVE;
-  if (xmalloc_base) xfree(xmalloc_base);
+  xfree(xmalloc_base);
   return ONIGERR_UNDEFINED_BYTECODE;
 
  unexpected_bytecode_error:
   STACK_SAVE;
-  if (xmalloc_base) xfree(xmalloc_base);
+  xfree(xmalloc_base);
   return ONIGERR_UNEXPECTED_BYTECODE;
 }
 

@@ -13740,7 +13740,7 @@ rb_ruby_parser_free(void *ptr)
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
     }
     for (local = p->lvtbl; local; local = prev) {
-        if (local->vars) xfree(local->vars);
+        xfree(local->vars);
         prev = local->prev;
         xfree(local);
     }
