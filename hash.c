@@ -1158,6 +1158,19 @@ ar_clear(VALUE hash)
     }
 }
 
+static void
+st_free_and_clear_table(VALUE hash)
+{
+    HASH_ASSERT(RHASH_ST_TABLE_P(hash));
+
+    st_table *tab = RHASH_ST_TABLE(hash);
+
+    if (tab->bins != NULL) free(tab->bins);
+    free(tab->entries);
+
+    RHASH_ST_CLEAR(hash);
+}
+
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
 struct foreach_safe_arg {
@@ -2894,7 +2907,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
         ar_free_and_clear_table(hash);
     }
     else {
-        RHASH_ST_CLEAR(hash);
+        st_free_and_clear_table(hash);
     }
 
     hash_copy(hash, hash2);

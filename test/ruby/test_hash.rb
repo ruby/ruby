@@ -1325,7 +1325,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_replace_memory_leak
-    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}")
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
     h = ("aa".."zz").each_with_index.to_h
     10_000.times {h.dup}
     begin;
