@@ -10,7 +10,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
   end
 
   def test_ok_response_to_s
-    to_s = Gem::WebauthnListener::OkResponse.new(@host).to_s
+    to_s = Gem::GemcutterUtilities::WebauthnListener::OkResponse.new(@host).to_s
 
     expected_to_s = <<~RESPONSE
       HTTP/1.1 200 OK\r
@@ -28,7 +28,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
   end
 
   def test_no_to_s_response_to_s
-    to_s = Gem::WebauthnListener::NoContentResponse.new(@host).to_s
+    to_s = Gem::GemcutterUtilities::WebauthnListener::NoContentResponse.new(@host).to_s
 
     expected_to_s = <<~RESPONSE
       HTTP/1.1 204 No Content\r
@@ -43,7 +43,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
   end
 
   def test_method_not_allowed_response_to_s
-    to_s = Gem::WebauthnListener::MethodNotAllowedResponse.new(@host).to_s
+    to_s = Gem::GemcutterUtilities::WebauthnListener::MethodNotAllowedResponse.new(@host).to_s
 
     expected_to_s = <<~RESPONSE
       HTTP/1.1 405 Method Not Allowed\r
@@ -59,7 +59,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
   end
 
   def test_method_not_found_response_to_s
-    to_s = Gem::WebauthnListener::NotFoundResponse.new(@host).to_s
+    to_s = Gem::GemcutterUtilities::WebauthnListener::NotFoundResponse.new(@host).to_s
 
     expected_to_s = <<~RESPONSE
       HTTP/1.1 404 Not Found\r
@@ -74,7 +74,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
   end
 
   def test_bad_request_response_to_s
-    to_s = Gem::WebauthnListener::BadRequestResponse.new(@host).to_s
+    to_s = Gem::GemcutterUtilities::WebauthnListener::BadRequestResponse.new(@host).to_s
 
     expected_to_s = <<~RESPONSE
       HTTP/1.1 400 Bad Request\r

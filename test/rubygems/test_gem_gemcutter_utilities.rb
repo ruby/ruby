@@ -229,7 +229,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @fetcher.respond_with_require_otp
     @fetcher.respond_with_webauthn_url(webauthn_verification_url)
     TCPServer.stub(:new, server) do
-      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
         util_sign_in
       end
     ensure
@@ -252,7 +252,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @fetcher.respond_with_webauthn_url(webauthn_verification_url)
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
           util_sign_in
         end
       ensure

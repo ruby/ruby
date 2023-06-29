@@ -2,7 +2,7 @@
 
 require_relative "remote_fetcher"
 require_relative "text"
-require_relative "webauthn_listener"
+require_relative "gemcutter_utilities/webauthn_listener"
 require_relative "gemcutter_utilities/webauthn_poller"
 
 ##
@@ -260,7 +260,7 @@ module Gem::GemcutterUtilities
       url_with_port = "#{webauthn_url}?port=#{port}"
       say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
 
-      threads = [socket_thread(server), WebauthnPoller.poll_thread(options, host, webauthn_url, credentials)]
+      threads = [WebauthnListener.listener_thread(host, server), WebauthnPoller.poll_thread(options, host, webauthn_url, credentials)]
       otp_thread = wait_for_otp_thread(*threads)
 
       threads.each(&:join)
@@ -287,20 +287,6 @@ module Gem::GemcutterUtilities
     end
   ensure
     threads.each(&:exit)
-  end
-
-  def socket_thread(server)
-    thread = Thread.new do
-      Thread.current[:otp] = Gem::WebauthnListener.wait_for_otp_code(host, server)
-    rescue Gem::WebauthnVerificationError => e
-      Thread.current[:error] = e
-    ensure
-      server.close
-    end
-    thread.abort_on_exception = true
-    thread.report_on_exception = false
-
-    thread
   end
 
   def webauthn_verification_url(credentials)

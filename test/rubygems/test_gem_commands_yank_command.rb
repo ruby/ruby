@@ -141,7 +141,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     @cmd.options[:version]        = req("= 1.0")
 
     TCPServer.stub(:new, server) do
-      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
         use_ui @ui do
           @cmd.execute
         end
@@ -185,7 +185,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
           use_ui @ui do
             @cmd.execute
           end

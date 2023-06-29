@@ -106,7 +106,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def wait_for_otp_code
     @thread = Thread.new do
-      Thread.current[:otp] = Gem::WebauthnListener.wait_for_otp_code(Gem.host, @server)
+      Thread.current[:otp] = Gem::GemcutterUtilities::WebauthnListener.wait_for_otp_code(Gem.host, @server)
     end
     @thread.abort_on_exception = true
     @thread.report_on_exception = false
@@ -115,7 +115,7 @@ class WebauthnListenerTest < Gem::TestCase
   def wait_for_otp_code_expect_error_with_message(message)
     @thread = Thread.new do
       error = assert_raise Gem::WebauthnVerificationError do
-        Thread.current[:otp] = Gem::WebauthnListener.wait_for_otp_code(Gem.host, @server)
+        Thread.current[:otp] = Gem::GemcutterUtilities::WebauthnListener.wait_for_otp_code(Gem.host, @server)
       end
 
       assert_equal message, error.message

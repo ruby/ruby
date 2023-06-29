@@ -381,7 +381,7 @@ EOF
     )
 
     TCPServer.stub(:new, server) do
-      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
         use_ui @stub_ui do
           @cmd.add_owners("freewill", ["user-new1@example.com"])
         end
@@ -417,7 +417,7 @@ EOF
     )
 
     TCPServer.stub(:new, server) do
-      Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
         use_ui @stub_ui do
           @cmd.add_owners("freewill", ["user-new1@example.com"])
         end

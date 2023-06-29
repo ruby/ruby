@@ -445,7 +445,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     )
 
     TCPServer.stub(:new, server) do
-      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
         use_ui @ui do
           @cmd.send_gem(@path)
         end
@@ -482,7 +482,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
           use_ui @ui do
             @cmd.send_gem(@path)
           end
