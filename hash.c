@@ -1482,7 +1482,9 @@ hash_copy(VALUE ret, VALUE hash)
     else {
         HASH_ASSERT(sizeof(st_table) <= sizeof(ar_table));
 
-        RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
+        RHASH_SET_ST_FLAG(ret);
+        st_replace(RHASH_ST_TABLE(ret), RHASH_ST_TABLE(hash));
+
         rb_gc_writebarrier_remember(ret);
     }
     return ret;
@@ -1776,7 +1778,8 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
             }
             else {
                 hash = hash_alloc(klass);
-                hash_copy(hash, tmp);
+                if (!RHASH_EMPTY_P(tmp))
+                    hash_copy(hash, tmp);
                 return hash;
             }
         }

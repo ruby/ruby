@@ -109,6 +109,8 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
 #define st_add_direct rb_parser_st_add_direct
 #undef st_insert2
 #define st_insert2 rb_parser_st_insert2
+#undef st_replace
+#define st_replace rb_parser_st_replace
 #undef st_copy
 #define st_copy rb_parser_st_copy
 #undef st_delete_safe
