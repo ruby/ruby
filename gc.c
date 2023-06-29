@@ -2560,63 +2560,7 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 #define gc_event_hook(objspace, event, data) gc_event_hook_prep(objspace, event, data, (void)0)
 
 #if USE_MMTK
-static inline void
-maybe_register_finalizable(VALUE obj) {
-    // Any object that has non-trivial cleaning-up code in `obj_free`
-    // should be registered as "finalizable" to MMTk.
-    switch (RB_BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        // FIXME: Ordinary objects can be non-embedded, too,
-        // but there are just too many such objects,
-        // and few of them have large buffers.
-        // Just let them leak for now.
-        // We'll prioritize eliminating the underlying buffer of ordinary objects.
-        break;
-      case T_MODULE:
-      case T_CLASS:
-      case T_STRING:
-      case T_ARRAY:
-      case T_HASH:
-      case T_REGEXP:
-      case T_DATA:
-      case T_MATCH:
-      case T_FILE:
-      case T_ICLASS:
-      case T_BIGNUM:
-      case T_STRUCT:
-      case T_SYMBOL:
-      case T_IMEMO:
-        mmtk_add_obj_free_candidate((MMTk_ObjectReference)obj);
-        RUBY_DEBUG_LOG("Object registered for obj_free: %p: %s %s",
-            (MMTk_ObjectReference)obj,
-            rb_type_str(RB_BUILTIN_TYPE(obj)),
-            RB_BUILTIN_TYPE(obj) == T_IMEMO ? rb_imemo_name(imemo_type(obj)) :
-            rb_obj_class(obj) == 0 ? "(null klass)" :
-            rb_class2name(rb_obj_class(obj))
-            );
-        break;
-      case T_RATIONAL:
-      case T_COMPLEX:
-      case T_FLOAT:
-        // There are only counters increments for these types in `obj_free`
-        break;
-      case T_NIL:
-      case T_FIXNUM:
-      case T_TRUE:
-      case T_FALSE:
-        // These are non-heap value types.
-      case T_MOVED:
-        // Should not see this when object is just created.
-      case T_NODE:
-        // GC doesn't handle T_NODE.
-        rb_bug("maybe_register_finalizable: unexpected data type 0x%x(%p) 0x%"PRIxVALUE,
-               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
-        break;
-      default:
-        rb_bug("maybe_register_finalizable: unknown data type 0x%x(%p) 0x%"PRIxVALUE,
-               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
-    }
-}
+
 #endif
 
 static inline VALUE
@@ -2634,7 +2578,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        maybe_register_finalizable(obj);
+        rb_mmtk_maybe_register_obj_free_candidate(obj);
         rb_mmtk_maybe_register_ppp(obj);
     }
 #endif
@@ -7626,6 +7570,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_SYMBOL:
         /* Not immediates, but does not have references and singleton
          * class */
+
+#if USE_MMTK
+        // Note: When using MMTk, RSYMBOL(obj)->fstr is a reference field.
+        // It will be scanned in gc_update_object_references.
+#endif
         return;
 
       case T_NIL:
@@ -12656,7 +12605,8 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
 #if USE_MMTK
             if (rb_mmtk_enabled_p()) {
                 // This will trigger user-requested GC.
-                // After GC finishes, obj_free will be invoked on resurrected objects.
+                // `obj_free` is called during GC for dead objects.
+                // It will free underlying xmalloc-ed buffers for them.
                 mmtk_handle_user_collection_request((MMTk_VMMutatorThread)GET_THREAD());
 
                 gc_reset_malloc_info(objspace, true);

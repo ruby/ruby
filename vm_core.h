@@ -1067,7 +1067,10 @@ typedef struct rb_thread_struct {
     struct rb_ext_config ext_config;
 
 #if USE_MMTK
+    /* Point to a MMTk Mutator struct allocated by MMTk core. */
     void* mutator;
+    /* Point to a thread_local struct allocated in mmtk_support.c */
+    void* mutator_local;
 #endif
 } rb_thread_t;
 

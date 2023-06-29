@@ -659,18 +659,19 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     VM_ASSERT(th != th->vm->ractor.main_thread);
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
-#if USE_MMTK
-    // Threads may be reused, so we only initialize MMTk mutator once.
-    if (rb_mmtk_enabled_p() && th->mutator == NULL) {
-        th->mutator = rb_mmtk_bind_mutator((MMTk_VMMutatorThread)th);
-    }
-#endif
-
     // setup native thread
     thread_sched_to_running(TH_SCHED(th), th);
     ruby_thread_set_native(th);
 
     RUBY_DEBUG_LOG("got lock. th:%u", rb_th_serial(th));
+
+#if USE_MMTK
+    // We initialize MMTk-related mutator local structs.
+    if (rb_mmtk_enabled_p()) {
+        RUBY_ASSERT(th->mutator == NULL);
+        rb_mmtk_bind_mutator(th);
+    }
+#endif
 
     // setup ractor
     if (rb_ractor_status_p(th->ractor, ractor_blocking)) {
@@ -787,6 +788,17 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
+
+#if USE_MMTK
+    // Release MMTk-specific per-mutator structs.
+    // We are still holding the thread_sched, so other threads cannot inspect the following
+    // per-mutator structs.  It's safe for us to clean them up at this time.
+    if (rb_mmtk_enabled_p()) {
+        RUBY_ASSERT(th->mutator != NULL);
+        RUBY_ASSERT(th->mutator_local != NULL);
+        rb_mmtk_destroy_mutator(th);
+    }
+#endif
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         // after rb_ractor_living_threads_remove()

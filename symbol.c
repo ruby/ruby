@@ -805,6 +805,13 @@ rb_intern_str(VALUE str)
 void
 rb_gc_free_dsymbol(VALUE sym)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // With MMTk, we handle global symbol table during weak ref processing.
+        // So we don't need to unregister symbols when they are dead.
+        rb_bug("obj_free is not needed for symbols.");
+    }
+#endif
     VALUE str = RSYMBOL(sym)->fstr;
 
     if (str) {

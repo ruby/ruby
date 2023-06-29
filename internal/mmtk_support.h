@@ -17,8 +17,12 @@ bool rb_mmtk_enabled_p(void);
 
 // Initialization
 void rb_gc_init_collection(void);
-void* rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread);
+void rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread);
 void rb_mmtk_main_thread_init(void);
+
+// Flushing and de-initialization
+void rb_mmtk_flush_mutator_local_buffers(MMTk_VMMutatorThread thread);
+void rb_mmtk_destroy_mutator(MMTk_VMMutatorThread cur_thread);
 
 // Object layout
 size_t rb_mmtk_prefix_size(void);
@@ -38,6 +42,7 @@ VALUE rb_mmtk_maybe_forward(VALUE object);
 void rb_mmtk_maybe_register_ppp(VALUE obj);
 
 // Finalization and exiting
+void rb_mmtk_maybe_register_obj_free_candidate(VALUE obj);
 int rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data);
 void rb_mmtk_call_obj_free_on_exit(void);
 

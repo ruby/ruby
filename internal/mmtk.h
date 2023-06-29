@@ -166,11 +166,15 @@ MMTk_Address mmtk_last_heap_address(void);
 
 void mmtk_add_obj_free_candidate(MMTk_ObjectReference object);
 
+void mmtk_add_obj_free_candidates(const MMTk_ObjectReference *objects, size_t len);
+
 struct MMTk_RawVecOfObjRef mmtk_get_all_obj_free_candidates(void);
 
 void mmtk_free_raw_vec_of_obj_ref(struct MMTk_RawVecOfObjRef raw_vec);
 
 void mmtk_register_ppp(MMTk_ObjectReference object);
+
+void mmtk_register_ppps(const MMTk_ObjectReference *objects, size_t len);
 
 void *mmtk_get_givtbl(MMTk_ObjectReference object);
 

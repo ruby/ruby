@@ -155,12 +155,21 @@ struct rb_mmtk_address_buffer {
     size_t capa;
 };
 
+#define RB_MMTK_VALUES_BUFFER_SIZE 4096
+
+struct rb_mmtk_values_buffer {
+    VALUE objects[RB_MMTK_VALUES_BUFFER_SIZE];
+    size_t len;
+};
+
 struct rb_mmtk_mutator_local {
     struct MMTk_ImmixAllocator *immix_allocator;
     // for prefetching
     uintptr_t last_new_cursor;
     // for prefetching
     uintptr_t last_meta_addr;
+    struct rb_mmtk_values_buffer obj_free_candidates;
+    struct rb_mmtk_values_buffer ppp_buffer;
 };
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -187,6 +196,26 @@ rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
     }
 }
 
+// Helper functions for rb_mmtk_values_buffer
+static bool
+rb_mmtk_values_buffer_append(struct rb_mmtk_values_buffer *buffer, VALUE obj)
+{
+    RUBY_ASSERT(buffer != NULL);
+    buffer->objects[buffer->len] = obj;
+    buffer->len++;
+
+    return buffer->len == RB_MMTK_VALUES_BUFFER_SIZE;
+}
+
+static void
+rb_mmtk_values_buffer_clear(struct rb_mmtk_values_buffer *buffer)
+{
+    buffer->len = 0;
+
+    // Just to be safe.
+    memset(buffer->objects, 0, sizeof(buffer->objects));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Query for enabled/disabled.
 ////////////////////////////////////////////////////////////////////////////////
@@ -206,16 +235,18 @@ rb_gc_init_collection(void)
 {
     rb_thread_t *cur_thread = GET_THREAD();
     mmtk_initialize_collection((void*)cur_thread);
-    cur_thread->mutator = rb_mmtk_bind_mutator(cur_thread);
+    rb_mmtk_bind_mutator(cur_thread);
 }
 
-void*
+void
 rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread)
 {
     MMTk_Mutator *mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
-    rb_mmtk_mutator_local.immix_allocator = &mutator->allocators.immix[0];
 
-    return (void*)mutator;
+    cur_thread->mutator = mutator;
+    cur_thread->mutator_local = (void*)&rb_mmtk_mutator_local;
+
+    rb_mmtk_mutator_local.immix_allocator = &mutator->allocators.immix[0];
 }
 
 static size_t rb_mmtk_system_physical_memory(void)
@@ -293,6 +324,37 @@ rb_mmtk_main_thread_init(void)
 
     mmtk_vo_bit_base_addr = mmtk_get_vo_bit_base();
     mmtk_vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Flushing and de-initialization
+////////////////////////////////////////////////////////////////////////////////
+
+static void rb_mmtk_flush_obj_free_candidates(struct rb_mmtk_values_buffer *buffer);
+static void rb_mmtk_flush_ppp_buffer(struct rb_mmtk_values_buffer *buffer);
+
+void
+rb_mmtk_flush_mutator_local_buffers(MMTk_VMMutatorThread thread)
+{
+    struct rb_mmtk_mutator_local *local = (struct rb_mmtk_mutator_local*)thread->mutator_local;
+    rb_mmtk_flush_obj_free_candidates(&local->obj_free_candidates);
+    rb_mmtk_flush_ppp_buffer(&local->ppp_buffer);
+}
+
+void
+rb_mmtk_destroy_mutator(MMTk_VMMutatorThread cur_thread)
+{
+    // Currently a thread can only destroy its own mutator.
+    RUBY_ASSERT(cur_thread == GET_THREAD());
+    RUBY_ASSERT(cur_thread->mutator_local == &rb_mmtk_mutator_local);
+
+    rb_mmtk_flush_mutator_local_buffers(cur_thread);
+
+    MMTk_Mutator *mutator = cur_thread->mutator;
+    mmtk_destroy_mutator(mutator);
+
+    cur_thread->mutator = NULL;
+    cur_thread->mutator_local = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -539,18 +601,106 @@ rb_mmtk_is_ppp(VALUE obj) {
     }
 }
 
+static void
+rb_mmtk_flush_ppp_buffer(struct rb_mmtk_values_buffer *buffer)
+{
+    RUBY_ASSERT(buffer != NULL);
+    mmtk_register_ppps((MMTk_ObjectReference*)buffer->objects, buffer->len);
+    rb_mmtk_values_buffer_clear(buffer);
+}
+
 void
 rb_mmtk_maybe_register_ppp(VALUE obj) {
     RUBY_ASSERT(!rb_special_const_p(obj));
 
     if (rb_mmtk_is_ppp(obj)) {
-        mmtk_register_ppp((MMTk_ObjectReference)obj);
+        struct rb_mmtk_values_buffer *buffer = &rb_mmtk_mutator_local.ppp_buffer;
+        if (rb_mmtk_values_buffer_append(buffer, obj)) {
+            rb_mmtk_flush_ppp_buffer(buffer);
+        }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Finalization and exiting
 ////////////////////////////////////////////////////////////////////////////////
+
+static void
+rb_mmtk_flush_obj_free_candidates(struct rb_mmtk_values_buffer *buffer)
+{
+    RUBY_ASSERT(buffer != NULL);
+    mmtk_add_obj_free_candidates((MMTk_ObjectReference*)buffer->objects, buffer->len);
+    rb_mmtk_values_buffer_clear(buffer);
+}
+
+static void
+rb_mmtk_register_obj_free_candidate(VALUE obj)
+{
+    struct rb_mmtk_values_buffer *buffer = &rb_mmtk_mutator_local.obj_free_candidates;
+    if (rb_mmtk_values_buffer_append(buffer, obj)) {
+        rb_mmtk_flush_obj_free_candidates(buffer);
+    }
+}
+
+void
+rb_mmtk_maybe_register_obj_free_candidate(VALUE obj) {
+    // Any object that has non-trivial cleaning-up code in `obj_free`
+    // should be registered as "finalizable" to MMTk.
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        // FIXME: Ordinary objects can be non-embedded, too,
+        // but there are just too many such objects,
+        // and few of them have large buffers.
+        // Just let them leak for now.
+        // We'll prioritize eliminating the underlying buffer of ordinary objects.
+        break;
+      case T_MODULE:
+      case T_CLASS:
+      case T_STRING:
+      case T_ARRAY:
+      case T_HASH:
+      case T_REGEXP:
+      case T_DATA:
+      case T_MATCH:
+      case T_FILE:
+      case T_ICLASS:
+      case T_BIGNUM:
+      case T_STRUCT:
+      case T_IMEMO:
+        rb_mmtk_register_obj_free_candidate(obj);
+        RUBY_DEBUG_LOG("Object registered for obj_free: %p: %s %s",
+            (MMTk_ObjectReference)obj,
+            rb_type_str(RB_BUILTIN_TYPE(obj)),
+            RB_BUILTIN_TYPE(obj) == T_IMEMO ? rb_imemo_name(imemo_type(obj)) :
+            rb_obj_class(obj) == 0 ? "(null klass)" :
+            rb_class2name(rb_obj_class(obj))
+            );
+        break;
+      case T_SYMBOL:
+        // Will be unregistered from global symbol table during weak reference processing phase.
+        break;
+      case T_RATIONAL:
+      case T_COMPLEX:
+      case T_FLOAT:
+        // There are only counters increments for these types in `obj_free`
+        break;
+      case T_NIL:
+      case T_FIXNUM:
+      case T_TRUE:
+      case T_FALSE:
+        // These are non-heap value types.
+      case T_MOVED:
+        // Should not see this when object is just created.
+      case T_NODE:
+        // GC doesn't handle T_NODE.
+        rb_bug("rb_mmtk_maybe_register_obj_free_candidate: unexpected data type 0x%x(%p) 0x%"PRIxVALUE,
+               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+        break;
+      default:
+        rb_bug("rb_mmtk_maybe_register_obj_free_candidate: unknown data type 0x%x(%p) 0x%"PRIxVALUE,
+               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+    }
+}
 
 int
 rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data)
@@ -606,19 +756,36 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     rb_mmtk_call_obj_free_inner(obj, false);
 }
 
+static void
+rb_mmtk_call_obj_free_for_each_on_exit(VALUE *objects, size_t len)
+{
+    for (size_t i = 0; i < len; i++) {
+        VALUE obj = objects[i];
+        rb_mmtk_call_obj_free_inner(obj, true);
+    }
+}
+
 void
 rb_mmtk_call_obj_free_on_exit(void)
 {
-    struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_obj_free_candidates();
+    struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
+    rb_mmtk_call_obj_free_for_each_on_exit((VALUE*)registered_candidates.ptr, registered_candidates.len);
+    mmtk_free_raw_vec_of_obj_ref(registered_candidates);
 
-    for (size_t i = 0; i < resurrrected_objs.len; i++) {
-        void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
-
-        VALUE obj = (VALUE)resurrected;
-        rb_mmtk_call_obj_free_inner(obj, true);
+    rb_ractor_t *main_ractor = GET_VM()->ractor.main_ractor;
+    rb_thread_t *th = NULL;
+    ccan_list_for_each(&main_ractor->threads.set, th, lt_node) {
+        // Ruby caches native threads on some platforms,
+        // and the rb_thread_t structs can be reused while a thread is cached.
+        // Currently we destroy the mutator and the mutator_local structs when a thread exits.
+        if (th->mutator != NULL) {
+            struct rb_mmtk_mutator_local *local = (struct rb_mmtk_mutator_local*)th->mutator_local;
+            struct rb_mmtk_values_buffer *buffer = &local->obj_free_candidates;
+            rb_mmtk_call_obj_free_for_each_on_exit(buffer->objects, buffer->len);
+        } else {
+            RUBY_ASSERT(th->mutator_local == NULL);
+        }
     }
-
-    mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
 }
 
 bool
@@ -1007,8 +1174,21 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 {
     rb_mmtk_assert_mutator();
 
-    rb_thread_t *th = GET_THREAD();
-    RB_VM_SAVE_MACHINE_CONTEXT(th);
+    rb_ractor_t *main_ractor = GET_VM()->ractor.main_ractor;
+    rb_thread_t *th = NULL;
+    ccan_list_for_each(&main_ractor->threads.set, th, lt_node) {
+        // Ruby caches native threads on some platforms,
+        // and the rb_thread_t structs can be reused while a thread is cached.
+        // Currently we destroy the mutator and the mutator_local structs when a thread exits.
+        if (th->mutator != NULL) {
+            rb_mmtk_flush_mutator_local_buffers(th);
+        } else {
+            RUBY_ASSERT(th->mutator_local == NULL);
+        }
+    }
+
+    rb_thread_t *cur_th = GET_THREAD();
+    RB_VM_SAVE_MACHINE_CONTEXT(cur_th);
     rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
 
 #if USE_MMTK
