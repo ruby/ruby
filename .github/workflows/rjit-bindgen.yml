@@ -44,17 +44,6 @@ jobs:
       - name: Set ENV
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - name: Install libraries
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y \
-          build-essential \
-          libssl-dev libyaml-dev libreadline6-dev \
-          zlib1g-dev libncurses5-dev libffi-dev \
-          libclang1-10 \
-          autoconf
-          sudo apt-get install -q -y pkg-config || :
       - name: Set up Ruby
         uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
         with:
@@ -66,6 +55,8 @@ jobs:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           path: src
+      - name: Install libraries
+        uses: ./src/.github/actions/setup/ubuntu
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: src/.downloaded-cache
