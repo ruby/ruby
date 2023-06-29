@@ -47,7 +47,8 @@ static const bool ascii_printable_chars[] = {
 
 static inline bool
 char_is_ascii_printable(const char c) {
-    return ascii_printable_chars[(unsigned char) c];
+    unsigned char v = (unsigned char) c;
+    return (v < 0x80) && ascii_printable_chars[v];
 }
 
 /******************************************************************************/
