@@ -85,7 +85,7 @@ jobs:
       - run: make ${{ matrix.task }}
       - run: git diff --exit-code
         working-directory: src
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() && github.event_name == 'push' }}

@@ -115,7 +115,7 @@ jobs:
         env:
           GNUMAKEFLAGS: ""
           RUN_OPTS: ${{ matrix.run_opts }}
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           label: ${{ matrix.run_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

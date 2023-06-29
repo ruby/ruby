@@ -115,7 +115,7 @@ jobs:
           ruby ./bootstraptest/runner.rb --ruby="$(which wasmtime) run $PWD/../build/ruby --mapdir /::./ -- " --verbose "--sets=$NO_THREAD_TESTS"
         working-directory: src
 
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           label: ${{ matrix.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

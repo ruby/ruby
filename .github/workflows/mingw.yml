@@ -159,7 +159,7 @@ jobs:
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/')}}
 
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           label: ${{ matrix.msystem }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

@@ -127,7 +127,7 @@ jobs:
           TESTS: ${{ matrix.skipped_tests }}
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

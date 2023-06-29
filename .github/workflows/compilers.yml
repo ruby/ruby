@@ -267,7 +267,7 @@ jobs:
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           label: ${{ matrix.entry.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
