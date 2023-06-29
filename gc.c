@@ -1854,10 +1854,8 @@ rb_objspace_free(rb_objspace_t *objspace)
     if (is_lazy_sweeping(objspace))
         rb_bug("lazy sweeping underway when freeing object space");
 
-    if (objspace->profile.records) {
-        free(objspace->profile.records);
-        objspace->profile.records = 0;
-    }
+    free(objspace->profile.records);
+    objspace->profile.records = NULL;
 
     if (global_list) {
         struct gc_list *list, *next;
@@ -3555,7 +3553,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (RHASH_ST_TABLE_P(obj)) {
             st_table *tab = RHASH_ST_TABLE(obj);
 
-            if (tab->bins != NULL) free(tab->bins);
+            free(tab->bins);
             free(tab->entries);
         }
         break;
@@ -3829,11 +3827,7 @@ objspace_each_objects_ensure(VALUE arg)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         struct heap_page **pages = data->pages[i];
-        /* pages could be NULL if an error was raised during setup (e.g.
-         * malloc failed due to out of memory). */
-        if (pages) {
-            free(pages);
-        }
+        free(pages);
     }
 
     return Qnil;
@@ -12981,9 +12975,7 @@ gc_profile_clear(VALUE _)
     objspace->profile.size = 0;
     objspace->profile.next_index = 0;
     objspace->profile.current_record = 0;
-    if (p) {
-        free(p);
-    }
+    free(p);
     return Qnil;
 }
 

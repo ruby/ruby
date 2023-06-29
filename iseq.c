@@ -170,9 +170,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #endif
         ruby_xfree((void *)body->iseq_encoded);
         ruby_xfree((void *)body->insns_info.body);
-        if (body->insns_info.positions) ruby_xfree((void *)body->insns_info.positions);
+        ruby_xfree((void *)body->insns_info.positions);
 #if VM_INSN_INFO_TABLE_IMPL == 2
-        if (body->insns_info.succ_index_table) ruby_xfree(body->insns_info.succ_index_table);
+        ruby_xfree(body->insns_info.succ_index_table);
 #endif
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl))
             ruby_xfree((void *)body->local_table);

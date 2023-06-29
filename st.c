@@ -657,8 +657,7 @@ st_clear(st_table *tab)
 void
 st_free_table(st_table *tab)
 {
-    if (tab->bins != NULL)
-        free(tab->bins);
+    free(tab->bins);
     free(tab->entries);
     free(tab);
 }
@@ -777,8 +776,7 @@ rebuild_table(st_table *tab)
         tab->entry_power = new_tab->entry_power;
         tab->bin_power = new_tab->bin_power;
         tab->size_ind = new_tab->size_ind;
-        if (tab->bins != NULL)
-            free(tab->bins);
+        free(tab->bins);
         tab->bins = new_tab->bins;
         free(tab->entries);
         tab->entries = new_tab->entries;
@@ -2090,10 +2088,8 @@ st_expand_table(st_table *tab, st_index_t siz)
     n = get_allocated_entries(tab);
     MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
     free(tab->entries);
-    if (tab->bins != NULL)
-        free(tab->bins);
-    if (tmp->bins != NULL)
-        free(tmp->bins);
+    free(tab->bins);
+    free(tmp->bins);
     tab->entry_power = tmp->entry_power;
     tab->bin_power = tmp->bin_power;
     tab->size_ind = tmp->size_ind;
@@ -2111,10 +2107,10 @@ st_rehash_linear(st_table *tab)
     int eq_p, rebuilt_p;
     st_index_t i, j;
     st_table_entry *p, *q;
-    if (tab->bins) {
-        free(tab->bins);
-        tab->bins = NULL;
-    }
+
+    free(tab->bins);
+    tab->bins = NULL;
+
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         p = &tab->entries[i];
         if (DELETED_ENTRY_P(p))
