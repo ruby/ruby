@@ -140,7 +140,7 @@ jobs:
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
         timeout-minutes: 60
-      - uses: ./.github/actions/slack
+      - uses: ./src/.github/actions/slack
         with:
           label: VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
