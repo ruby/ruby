@@ -50,8 +50,8 @@ VALUE eRSAError;
 /*
  * call-seq:
  *   RSA.new -> rsa
- *   RSA.new(encoded_key [, passphrase]) -> rsa
- *   RSA.new(encoded_key) { passphrase } -> rsa
+ *   RSA.new(encoded_key [, password ]) -> rsa
+ *   RSA.new(encoded_key) { password } -> rsa
  *   RSA.new(size [, exponent]) -> rsa
  *
  * Generates or loads an \RSA keypair.
@@ -61,9 +61,9 @@ VALUE eRSAError;
  * #set_crt_params.
  *
  * If called with a String, tries to parse as DER or PEM encoding of an \RSA key.
- * Note that, if _passphrase_ is not specified but the key is encrypted with a
- * passphrase, \OpenSSL will prompt for it.
- * See also OpenSSL::PKey.read which can parse keys of any kinds.
+ * Note that if _password_ is not specified, but the key is encrypted with a
+ * password, \OpenSSL will prompt for it.
+ * See also OpenSSL::PKey.read which can parse keys of any kind.
  *
  * If called with a number, generates a new key pair. This form works as an
  * alias of RSA.generate.
@@ -71,7 +71,7 @@ VALUE eRSAError;
  * Examples:
  *   OpenSSL::PKey::RSA.new 2048
  *   OpenSSL::PKey::RSA.new File.read 'rsa.pem'
- *   OpenSSL::PKey::RSA.new File.read('rsa.pem'), 'my pass phrase'
+ *   OpenSSL::PKey::RSA.new File.read('rsa.pem'), 'my password'
  */
 static VALUE
 ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
@@ -217,11 +217,11 @@ can_export_rsaprivatekey(VALUE self)
 
 /*
  * call-seq:
- *   rsa.export([cipher, pass_phrase]) => PEM-format String
- *   rsa.to_pem([cipher, pass_phrase]) => PEM-format String
- *   rsa.to_s([cipher, pass_phrase]) => PEM-format String
+ *   rsa.export([cipher, password]) => PEM-format String
+ *   rsa.to_pem([cipher, password]) => PEM-format String
+ *   rsa.to_s([cipher, password]) => PEM-format String
  *
- * Outputs this keypair in PEM encoding.  If _cipher_ and _pass_phrase_ are
+ * Outputs this keypair in PEM encoding.  If _cipher_ and _password_ are
  * given they will be used to encrypt the key.  _cipher_ must be an
  * OpenSSL::Cipher instance.
  */

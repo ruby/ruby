@@ -207,7 +207,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 
     while (1) {
 	/*
-	 * when the flag is nonzero, this passphrase
+	 * when the flag is nonzero, this password
 	 * will be used to perform encryption; otherwise it will
 	 * be used to perform decryption.
 	 */
@@ -676,12 +676,12 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * Keys saved to disk without encryption are not secure as anyone who gets
  * ahold of the key may use it unless it is encrypted.  In order to securely
- * export a key you may export it with a pass phrase.
+ * export a key you may export it with a password.
  *
  *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
- *   pass_phrase = 'my secure pass phrase goes here'
+ *   password = 'my secure password goes here'
  *
- *   key_secure = key.export cipher, pass_phrase
+ *   key_secure = key.export cipher, password
  *
  *   open 'private.secure.pem', 'w' do |io|
  *     io.write key_secure
@@ -705,13 +705,13 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * === Loading an Encrypted Key
  *
- * OpenSSL will prompt you for your pass phrase when loading an encrypted key.
- * If you will not be able to type in the pass phrase you may provide it when
+ * OpenSSL will prompt you for your password when loading an encrypted key.
+ * If you will not be able to type in the password you may provide it when
  * loading the key:
  *
  *   key4_pem = File.read 'private.secure.pem'
- *   pass_phrase = 'my secure pass phrase goes here'
- *   key4 = OpenSSL::PKey.read key4_pem, pass_phrase
+ *   password = 'my secure password goes here'
+ *   key4 = OpenSSL::PKey.read key4_pem, password
  *
  * == RSA Encryption
  *
@@ -904,12 +904,12 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * not readable by other users.
  *
  *   ca_key = OpenSSL::PKey::RSA.new 2048
- *   pass_phrase = 'my secure pass phrase goes here'
+ *   password = 'my secure password goes here'
  *
  *   cipher = OpenSSL::Cipher.new 'aes-256-cbc'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
- *     io.write ca_key.export(cipher, pass_phrase)
+ *     io.write ca_key.export(cipher, password)
  *   end
  *
  * === CA Certificate
