@@ -13,5 +13,5 @@ runs:
     - name: brew
       shell: bash
       run: |
-        brew upgrade
-        brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        brew upgrade --quiet
+        brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool readline
