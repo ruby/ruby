@@ -7279,6 +7279,8 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
     return TRUE;
 }
 
+static int tokadd_mbchar(struct parser_params *p, int c);
+
 /* return value is for ?\u3042 */
 static void
 tokadd_utf8(struct parser_params *p, rb_encoding **encp,
