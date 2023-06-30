@@ -475,7 +475,29 @@ module IRB
 
     def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
-      set_last_value(@workspace.evaluate(line, irb_path, line_no))
+      result = nil
+
+      if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
+        IRB.set_measure_callback
+      end
+
+      if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
+        last_proc = proc do
+          result = @workspace.evaluate(line, irb_path, line_no)
+        end
+        IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) do |chain, item|
+          _name, callback, arg = item
+          proc do
+            callback.(self, line, line_no, arg) do
+              chain.call
+            end
+          end
+        end.call
+      else
+        result = @workspace.evaluate(line, irb_path, line_no)
+      end
+
+      set_last_value(result)
     end
 
     def inspect_last_value # :nodoc:

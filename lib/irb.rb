@@ -558,26 +558,10 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
-            if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
-              IRB.set_measure_callback
-            end
             # Assignment expression check should be done before evaluate_line to handle code like `a /2#/ if false; a = 1`
             is_assignment = assignment_expression?(line)
-            if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
-              result = nil
-              last_proc = proc{ result = evaluate_line(line, line_no) }
-              IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
-                _name, callback, arg = item
-                proc {
-                  callback.(@context, line, line_no, arg) do
-                    chain.call
-                  end
-                }
-              }.call
-              @context.set_last_value(result)
-            else
-              evaluate_line(line, line_no)
-            end
+            evaluate_line(line, line_no)
+
             if @context.echo?
               if is_assignment
                 if @context.echo_on_assignment?
