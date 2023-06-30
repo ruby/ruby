@@ -636,14 +636,23 @@ rb_mmtk_flush_obj_free_candidates(struct rb_mmtk_values_buffer *buffer)
 static void
 rb_mmtk_register_obj_free_candidate(VALUE obj)
 {
+    RUBY_DEBUG_LOG("Object registered for obj_free: %p: %s %s",
+        (void*)obj,
+        rb_type_str(RB_BUILTIN_TYPE(obj)),
+        RB_BUILTIN_TYPE(obj) == T_IMEMO ? rb_imemo_name(imemo_type(obj)) :
+        rb_obj_class(obj) == 0 ? "(null klass)" :
+        rb_class2name(rb_obj_class(obj))
+        );
+
     struct rb_mmtk_values_buffer *buffer = &rb_mmtk_mutator_local.obj_free_candidates;
     if (rb_mmtk_values_buffer_append(buffer, obj)) {
         rb_mmtk_flush_obj_free_candidates(buffer);
     }
 }
 
-void
-rb_mmtk_maybe_register_obj_free_candidate(VALUE obj) {
+static bool
+rb_mmtk_is_obj_free_candidate(VALUE obj)
+{
     // Any object that has non-trivial cleaning-up code in `obj_free`
     // should be registered as "finalizable" to MMTk.
     switch (RB_BUILTIN_TYPE(obj)) {
@@ -653,7 +662,7 @@ rb_mmtk_maybe_register_obj_free_candidate(VALUE obj) {
         // and few of them have large buffers.
         // Just let them leak for now.
         // We'll prioritize eliminating the underlying buffer of ordinary objects.
-        break;
+        return false;
       case T_MODULE:
       case T_CLASS:
       case T_STRING:
@@ -666,24 +675,29 @@ rb_mmtk_maybe_register_obj_free_candidate(VALUE obj) {
       case T_ICLASS:
       case T_BIGNUM:
       case T_STRUCT:
+        // These types need obj_free.
+        return true;
       case T_IMEMO:
-        rb_mmtk_register_obj_free_candidate(obj);
-        RUBY_DEBUG_LOG("Object registered for obj_free: %p: %s %s",
-            (MMTk_ObjectReference)obj,
-            rb_type_str(RB_BUILTIN_TYPE(obj)),
-            RB_BUILTIN_TYPE(obj) == T_IMEMO ? rb_imemo_name(imemo_type(obj)) :
-            rb_obj_class(obj) == 0 ? "(null klass)" :
-            rb_class2name(rb_obj_class(obj))
-            );
-        break;
+        switch (imemo_type(obj)) {
+          case imemo_ment:
+          case imemo_iseq:
+          case imemo_env:
+          case imemo_tmpbuf:
+          case imemo_ast:
+            // These imemos need obj_free.
+            return true;
+          default:
+            // Other imemos don't need obj_free.
+            return false;
+        }
       case T_SYMBOL:
         // Will be unregistered from global symbol table during weak reference processing phase.
-        break;
+        return false;
       case T_RATIONAL:
       case T_COMPLEX:
       case T_FLOAT:
         // There are only counters increments for these types in `obj_free`
-        break;
+        return false;
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -695,10 +709,18 @@ rb_mmtk_maybe_register_obj_free_candidate(VALUE obj) {
         // GC doesn't handle T_NODE.
         rb_bug("rb_mmtk_maybe_register_obj_free_candidate: unexpected data type 0x%x(%p) 0x%"PRIxVALUE,
                BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
-        break;
       default:
         rb_bug("rb_mmtk_maybe_register_obj_free_candidate: unknown data type 0x%x(%p) 0x%"PRIxVALUE,
                BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+    }
+    UNREACHABLE;
+}
+
+void
+rb_mmtk_maybe_register_obj_free_candidate(VALUE obj)
+{
+    if (rb_mmtk_is_obj_free_candidate(obj)) {
+        rb_mmtk_register_obj_free_candidate(obj);
     }
 }
 
