@@ -1053,16 +1053,16 @@ x = __ENCODING__
   end
 
   def test_unclosed_unicode_escape_at_eol_bug_19750
-    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}")
     begin;
-      assert_syntax_error("\\/\\\\u", /too short escape sequence/)
-      assert_syntax_error("\\/\\\\u{", /unterminated regexp meets end of file/)
-      assert_syntax_error("\\/\\\\u{\\\\n", /invalid Unicode list/)
-      assert_syntax_error("\\/a#\\\\u{\\\\n/", /invalid Unicode list/)
-      re = eval("\\/a#\\\\u{\\n$/x")
+      assert_syntax_error("/\\u", /too short escape sequence/)
+      assert_syntax_error("/\\u{", /unterminated regexp meets end of file/)
+      assert_syntax_error("/\\u{\\n", /invalid Unicode list/)
+      assert_syntax_error("/a#\\u{\\n/", /invalid Unicode list/)
+      re = eval("/a#\\u{\n$/x")
       assert_match(re, 'a')
       assert_not_match(re, 'a#')
-      re = eval("\\/a#\\\\u\\n$/x")
+      re = eval("/a#\\u\n$/x")
       assert_match(re, 'a')
       assert_not_match(re, 'a#')
     end;

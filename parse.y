@@ -7318,7 +7318,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                     tokadd(p, c);
                     c = *++p->lex.pcur;
                 }
-                tokadd(p, c);
+                tokadd_mbchar(p, c);
             }
         }
         else {
