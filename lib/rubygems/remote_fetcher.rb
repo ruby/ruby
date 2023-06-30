@@ -261,7 +261,7 @@ class Gem::RemoteFetcher
     end
 
     data
-  rescue Timeout::Error, IOError, SocketError, SystemCallError,
+  rescue Gem::Timeout::Error, IOError, SocketError, SystemCallError,
          *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
     raise FetchError.new("#{e.class}: #{e}", uri)
   end

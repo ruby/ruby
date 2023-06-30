@@ -244,7 +244,7 @@ class Gem::Request
     # HACK: work around EOFError bug in Gem::Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
-    rescue EOFError, Timeout::Error,
+    rescue EOFError, Gem::Timeout::Error,
            Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
 
       requests = @requests[connection.object_id]

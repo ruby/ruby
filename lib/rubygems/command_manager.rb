@@ -106,7 +106,7 @@ class Gem::CommandManager
   # Register all the subcommands supported by the gem command.
 
   def initialize
-    require "timeout"
+    require_relative "timeout"
     @commands = {}
 
     BUILTIN_COMMANDS.each do |name|
@@ -149,7 +149,7 @@ class Gem::CommandManager
 
   def run(args, build_args=nil)
     process_args(args, build_args)
-  rescue StandardError, Timeout::Error => ex
+  rescue StandardError, Gem::Timeout::Error => ex
     if ex.respond_to?(:detailed_message)
       msg = ex.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
     else
