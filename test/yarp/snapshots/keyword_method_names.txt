@@ -102,7 +102,7 @@ ProgramNode(0...185)(
      StringNode(123...129)((123...125), (125...128), (128...129), "abc"),
      DefNode(131...149)(
        (144...145),
-       SourceFileNode(135...143)("/fixtures/keyword_method_names.txt"),
+       SourceFileNode(135...143)("keyword_method_names.txt"),
        nil,
        nil,
        [],

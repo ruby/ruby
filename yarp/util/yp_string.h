@@ -29,9 +29,6 @@ typedef struct {
     } as;
 } yp_string_t;
 
-// Allocate a new yp_string_t.
-yp_string_t * yp_string_alloc(void);
-
 // Initialize a shared string that is based on initial input.
 void yp_string_shared_init(yp_string_t *string, const char *start, const char *end);
 

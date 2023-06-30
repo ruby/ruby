@@ -1,5 +1,42 @@
 #include "yarp/util/yp_strpbrk.h"
 
+// This is the slow path that does care about the encoding.
+static inline const char *
+yp_strpbrk_multi_byte(yp_parser_t *parser, const char *source, const char *charset, size_t maximum) {
+    size_t index = 0;
+
+    while (index < maximum) {
+        if (strchr(charset, source[index]) != NULL) {
+            return source + index;
+        }
+
+        size_t width = parser->encoding.char_width(source + index);
+        if (width == 0) {
+            return NULL;
+        }
+
+        index += width;
+    }
+
+    return NULL;
+}
+
+// This is the fast path that does not care about the encoding.
+static inline const char *
+yp_strpbrk_single_byte(const char *source, const char *charset, size_t maximum) {
+    size_t index = 0;
+
+    while (index < maximum) {
+        if (strchr(charset, source[index]) != NULL) {
+            return source + index;
+        }
+
+        index++;
+    }
+
+    return NULL;
+}
+
 // Here we have rolled our own version of strpbrk. The standard library strpbrk
 // has undefined behavior when the source string is not null-terminated. We want
 // to support strings that are not null-terminated because yp_parse does not
@@ -12,19 +49,18 @@
 // also don't want it to stop on null bytes. Ruby actually allows null bytes
 // within strings, comments, regular expressions, etc. So we need to be able to
 // skip past them.
+//
+// Finally, we want to support encodings wherein the charset could contain
+// characters that are trailing bytes of multi-byte characters. For example, in
+// Shift-JIS, the backslash character can be a trailing byte. In that case we
+// need to take a slower path and iterate one multi-byte character at a time.
 const char *
-yp_strpbrk(const char *source, const char *charset, ptrdiff_t length) {
-    if (length < 0) return NULL;
-
-    size_t index = 0;
-    size_t maximum = (size_t) length;
-
-    while (index < maximum) {
-        if (strchr(charset, source[index]) != NULL) {
-            return &source[index];
-        }
-        index++;
+yp_strpbrk(yp_parser_t *parser, const char *source, const char *charset, ptrdiff_t length) {
+    if (length <= 0) {
+        return NULL;
+    } else if (parser->encoding_changed && parser->encoding.multibyte) {
+        return yp_strpbrk_multi_byte(parser, source, charset, (size_t) length);
+    } else {
+        return yp_strpbrk_single_byte(source, charset, (size_t) length);
     }
-
-    return NULL;
 }

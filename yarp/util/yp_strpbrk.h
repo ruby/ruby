@@ -2,6 +2,7 @@
 #define YP_STRPBRK_H
 
 #include "yarp/defines.h"
+#include "yarp/parser.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -18,6 +19,11 @@
 // also don't want it to stop on null bytes. Ruby actually allows null bytes
 // within strings, comments, regular expressions, etc. So we need to be able to
 // skip past them.
-const char * yp_strpbrk(const char *source, const char *charset, ptrdiff_t length);
+//
+// Finally, we want to support encodings wherein the charset could contain
+// characters that are trailing bytes of multi-byte characters. For example, in
+// Shift-JIS, the backslash character can be a trailing byte. In that case we
+// need to take a slower path and iterate one multi-byte character at a time.
+const char * yp_strpbrk(yp_parser_t *parser, const char *source, const char *charset, ptrdiff_t length);
 
 #endif

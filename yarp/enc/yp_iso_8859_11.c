@@ -45,5 +45,6 @@ yp_encoding_t yp_encoding_iso_8859_11 = {
     .char_width = yp_encoding_single_char_width,
     .alnum_char = yp_encoding_iso_8859_11_alnum_char,
     .alpha_char = yp_encoding_iso_8859_11_alpha_char,
-    .isupper_char = yp_encoding_iso_8859_11_isupper_char
+    .isupper_char = yp_encoding_iso_8859_11_isupper_char,
+    .multibyte = false
 };

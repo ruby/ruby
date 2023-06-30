@@ -1,11 +1,5 @@
 #include "yarp/util/yp_string.h"
 
-// Allocate a new yp_string_t.
-yp_string_t *
-yp_string_alloc(void) {
-    return (yp_string_t *) malloc(sizeof(yp_string_t));
-}
-
 // Initialize a shared string that is based on initial input.
 void
 yp_string_shared_init(yp_string_t *string, const char *start, const char *end) {
