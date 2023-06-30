@@ -1057,7 +1057,7 @@ integer_unpack_num_bdigits(size_t numwords, size_t wordsize, size_t nails, int *
 
     if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
         num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
-	if (debug_integer_pack) {
+        if (debug_integer_pack) {
             int nlp_bits1;
             size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
             assert(num_bdigits == num_bdigits1);
@@ -3429,7 +3429,7 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
 
     if (numbytes <= SIZE_MAX / CHAR_BIT) {
         numwords = absint_numwords_small(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);
-	if (debug_integer_pack) {
+        if (debug_integer_pack) {
             size_t numwords0, nlz_bits0;
             numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
             assert(numwords0 == numwords);
