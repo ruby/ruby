@@ -336,6 +336,16 @@ RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
 RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
 RB_DEBUG_COUNTER(vm_sync_barrier)
 
+// Fibers
+RB_DEBUG_COUNTER(fiber_full_stack_scan) //number of fiber stacks marked by GC per GC mark
+RB_DEBUG_COUNTER(stack_scan_bytes) //total number of bytes marked by GC per GC mark
+RB_DEBUG_COUNTER(thread_full_stack_scan)
+RB_DEBUG_COUNTER(stack_barrier_met)
+RB_DEBUG_COUNTER(stack_object_count)
+RB_DEBUG_COUNTER(no_fiber_record)
+RB_DEBUG_COUNTER(stack_obj_add)
+RB_DEBUG_COUNTER(record_obj_mark)
+RB_DEBUG_COUNTER(stack_obj_remove)
 /* load (not implemented yet) */
 /*
 RB_DEBUG_COUNTER(load_files)

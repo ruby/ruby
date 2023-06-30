@@ -3165,7 +3165,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
         rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
         VM_ASSERT(sp == ec->cfp->sp);
-        rb_gc_mark_vm_stack_values((long)(sp - p), p);
+        rb_gc_mark_vm_stack_values((long)(sp - p), p, get_fiber_record(ec));
 
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
@@ -3197,8 +3197,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     if (ec->machine.stack_start && ec->machine.stack_end &&
         ec != GET_EC() /* marked for current ec at the first stage of marking */
         ) {
-        rb_gc_mark_machine_stack(ec);
-        rb_gc_mark_locations((VALUE *)&ec->machine.regs,
+            rb_gc_mark_machine_stack(ec);
+            rb_gc_mark_locations((VALUE *)&ec->machine.regs,
                              (VALUE *)(&ec->machine.regs) +
                              sizeof(ec->machine.regs) / (sizeof(VALUE)));
     }
@@ -3235,6 +3235,7 @@ thread_compact(void *ptr)
 static void
 thread_mark(void *ptr)
 {
+    RB_DEBUG_COUNTER_INC(thread_full_stack_scan);
     rb_thread_t *th = ptr;
     RUBY_MARK_ENTER("thread");
     rb_fiber_mark_self(th->ec->fiber_ptr);
