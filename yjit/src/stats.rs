@@ -296,6 +296,7 @@ make_counters! {
     invokesuper_block,
 
     invokeblock_none,
+    invokeblock_iseq_arg0_optional,
     invokeblock_iseq_arg0_has_kw,
     invokeblock_iseq_arg0_args_splat,
     invokeblock_iseq_arg0_not_array,
