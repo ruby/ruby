@@ -53,15 +53,15 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
       - name: Install libraries
         run: |
           set -ex
@@ -87,10 +87,7 @@ jobs:
         working-directory: src
       - name: Set ENV
         run: |
-          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
-      - run: ./autogen.sh
-        working-directory: src
       - name: Run configure
         run: |
           ../src/configure \
@@ -103,7 +100,6 @@ jobs:
             optflags="${{ matrix.entry.optflags }}" \
             debugflags="${{ matrix.entry.debugflags }}" \
             wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
-
       # miniruby may not be built when cross-compling
       - run: make mini ruby
       - name: Run basictest
@@ -114,8 +110,7 @@ jobs:
           NO_THREAD_TESTS="$(grep -L Thread -R ./bootstraptest | awk -F/ '{ print $NF }' | uniq | sed -n 's/test_\(.*\).rb/\1/p' | paste -s -d, -)"
           ruby ./bootstraptest/runner.rb --ruby="$(which wasmtime) run $PWD/../build/ruby --mapdir /::./ -- " --verbose "--sets=$NO_THREAD_TESTS"
         working-directory: src
-
-      - uses: ./src/.github/actions/slack
+      - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

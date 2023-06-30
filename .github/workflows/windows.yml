@@ -84,19 +84,14 @@ jobs:
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
-      - name: git config
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+      - uses: ./.github/actions/setup/directories
         with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
+          srcdir: src
+          builddir: build
       - name: setup env
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
@@ -140,7 +135,7 @@ jobs:
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
         timeout-minutes: 60
-      - uses: ./src/.github/actions/slack
+      - uses: ./.github/actions/slack
         with:
           label: VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

@@ -53,10 +53,7 @@ jobs:
     - name: Install libraries
       uses: ./.github/actions/setup/ubuntu
 
-    - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-      with:
-        path: .downloaded-cache
-        key: downloaded-cache
+    - uses: ./.github/actions/setup/directories
 
     - name: Remove an obsolete rubygems vendored file
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
@@ -65,9 +62,6 @@ jobs:
       uses: github/codeql-action/init@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
       with:
         languages: ${{ matrix.language }}
-
-    - name: Set ENV
-      run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4

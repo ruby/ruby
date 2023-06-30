@@ -38,20 +38,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       - uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
       - uses: ./.github/actions/setup/macos
         if: ${{ contains(matrix.os, 'macos') }}
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache
-      - run: ./autogen.sh
+      - uses: ./.github/actions/setup/directories
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
       - run: make all golf

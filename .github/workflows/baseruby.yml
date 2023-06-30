@@ -46,21 +46,16 @@ jobs:
           - ruby-3.2
 
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache
       - uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
-      - run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       - uses: ./.github/actions/setup/ubuntu
-      - run: ./autogen.sh
+      - uses: ./.github/actions/setup/directories
+        with:
+          makeup: true
       - run: ./configure --disable-install-doc
-      - run: make common-srcs
-      - run: make incs
       - run: make all
       - run: make test
       - uses: ./.github/actions/slack

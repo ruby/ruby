@@ -48,31 +48,16 @@ jobs:
     runs-on: ubuntu-22.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: Set ENV
-        run: |
-          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.1.0
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
-      - name: Install libraries
-        uses: ./src/.github/actions/setup/ubuntu
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.0.11
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+      - uses: ./.github/actions/setup/ubuntu
+      - uses: ./.github/actions/setup/directories
         with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
-      - name: Fixed world writable dirs
-        run: |
-          chmod -v go-w $HOME $HOME/.config
-          sudo chmod -R go-w /usr/share
-          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
-      - run: ./autogen.sh
-        working-directory: src
+          srcdir: src
+          builddir: build
+          makeup: true
       - name: Run configure
         env:
           arch: ${{matrix.arch}}
@@ -103,7 +88,7 @@ jobs:
         env:
           GNUMAKEFLAGS: ""
           RUN_OPTS: ${{ matrix.run_opts }}
-      - uses: ./src/.github/actions/slack
+      - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.run_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
