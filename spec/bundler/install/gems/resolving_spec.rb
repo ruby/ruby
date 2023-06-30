@@ -415,7 +415,7 @@ RSpec.describe "bundle install with install-time dependencies" do
             bundle "install", :raise_on_error => false
           end
 
-          nice_error = strip_whitespace(<<-E).strip
+          nice_error = <<~E.strip
             Could not find gem 'sorbet-static (= 0.5.10554)' with platforms 'arm64-darwin-21', 'aarch64-linux' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
 
             The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
@@ -521,7 +521,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
-        nice_error = strip_whitespace(<<-E).strip
+        nice_error = <<~E.strip
           Could not find compatible versions
 
           Because every version of require_ruby depends on Ruby > 9000
@@ -543,7 +543,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
-          nice_error = strip_whitespace(<<-E).strip
+          nice_error = <<~E.strip
             Could not find compatible versions
 
             Because every version of require_ruby depends on Ruby > 9000
@@ -587,7 +587,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       G
 
       expect(err).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
-      nice_error = strip_whitespace(<<-E).strip
+      nice_error = <<~E.strip
         Because every version of require_rubygems depends on RubyGems > 9000
           and Gemfile depends on require_rubygems >= 0,
           RubyGems > 9000 is required.

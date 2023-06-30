@@ -1316,7 +1316,7 @@ end
         exempts
       end
 
-      let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
+      let(:activation_warning_hack) { <<~RUBY }
         require #{spec_dir.join("support/hax").to_s.dump}
 
         Gem::Specification.send(:alias_method, :bundler_spec_activate, :activate)
@@ -1336,7 +1336,7 @@ end
         "-r#{bundled_app("activation_warning_hack.rb")} #{ENV["RUBYOPT"]}"
       end
 
-      let(:code) { strip_whitespace(<<-RUBY) }
+      let(:code) { <<~RUBY }
         require "pp"
         loaded_specs = Gem.loaded_specs.dup
         #{exemptions.inspect}.each {|s| loaded_specs.delete(s) }

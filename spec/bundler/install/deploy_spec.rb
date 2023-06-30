@@ -506,15 +506,15 @@ RSpec.describe "install in deployment or frozen mode" do
       G
 
       run "require 'rack'", :raise_on_error => false
-      expect(err).to include strip_whitespace(<<-E).strip
-The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set (Bundler::ProductionError)
+      expect(err).to include <<~E.strip
+        The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set (Bundler::ProductionError)
 
-You have added to the Gemfile:
-* rack (= 1.0.0)
-* rack-obama
+        You have added to the Gemfile:
+        * rack (= 1.0.0)
+        * rack-obama
 
-You have deleted from the Gemfile:
-* rack
+        You have deleted from the Gemfile:
+        * rack
       E
     end
   end
