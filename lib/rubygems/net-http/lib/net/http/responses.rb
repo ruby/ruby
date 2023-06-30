@@ -589,7 +589,7 @@ module Gem::Net
     HAS_BODY = true
   end
 
-  # Response class for <tt>Request Timeout</tt> responses (status code 408).
+  # Response class for <tt>Request Gem::Timeout</tt> responses (status code 408).
   #
   # The server timed out waiting for the request.
   #
@@ -980,7 +980,7 @@ module Gem::Net
     HAS_BODY = true
   end
 
-  # Response class for <tt>Gateway Timeout</tt> responses (status code 504).
+  # Response class for <tt>Gateway Gem::Timeout</tt> responses (status code 504).
   #
   # The server was acting as a gateway or proxy
   # and did not receive a timely response from the upstream server.

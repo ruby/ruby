@@ -20,7 +20,7 @@
 #
 
 require 'socket'
-require 'timeout'
+require_relative '../../../timeout/lib/timeout'
 require 'io/wait'
 
 module Gem::Net # :nodoc:
@@ -68,16 +68,16 @@ module Gem::Net # :nodoc:
   ProtocRetryError = ProtoRetriableError
 
   ##
-  # OpenTimeout, a subclass of Timeout::Error, is raised if a connection cannot
+  # OpenTimeout, a subclass of Gem::Timeout::Error, is raised if a connection cannot
   # be created within the open_timeout.
 
-  class OpenTimeout            < Timeout::Error; end
+  class OpenTimeout            < Gem::Timeout::Error; end
 
   ##
-  # ReadTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # ReadTimeout, a subclass of Gem::Timeout::Error, is raised if a chunk of the
   # response cannot be read within the read_timeout.
 
-  class ReadTimeout < Timeout::Error
+  class ReadTimeout < Gem::Timeout::Error
     def initialize(io = nil)
       @io = io
     end
@@ -93,10 +93,10 @@ module Gem::Net # :nodoc:
   end
 
   ##
-  # WriteTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # WriteTimeout, a subclass of Gem::Timeout::Error, is raised if a chunk of the
   # response cannot be written within the write_timeout.  Not raised on Windows.
 
-  class WriteTimeout < Timeout::Error
+  class WriteTimeout < Gem::Timeout::Error
     def initialize(io = nil)
       @io = io
     end

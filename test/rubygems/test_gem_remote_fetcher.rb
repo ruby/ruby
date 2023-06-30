@@ -554,7 +554,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     def fetcher.fetch_http(uri, mtime = nil, head = nil)
-      raise Timeout::Error, "timed out"
+      raise Gem::Timeout::Error, "timed out"
     end
 
     url = "http://example.com/uri"
@@ -563,7 +563,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match(/Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
+    assert_match(/Gem::Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
                  e.message)
     assert_equal url, e.uri
   end

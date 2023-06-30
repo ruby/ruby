@@ -46,7 +46,7 @@ module Gem::Net   #:nodoc:
   # == Strategies
   #
   # - If you will make only a few GET requests,
-  #   consider using {OpenURI}[https://docs.ruby-lang.org/en/master/OpenURI.html].
+  #   consider using {OpenURI}[rdoc-ref:OpenURI].
   # - If you will make only a few requests of all kinds,
   #   consider using the various singleton convenience methods in this class.
   #   Each of the following methods automatically starts and finishes
@@ -106,7 +106,7 @@ module Gem::Net   #:nodoc:
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
   # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {URI::Generic}[https://docs.ruby-lang.org/en/master/URI/Generic.html] object
+  # A Ruby {URI::Generic}[rdoc-ref:URI::Generic] object
   # represents an internet URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
@@ -1217,7 +1217,7 @@ module Gem::Net   #:nodoc:
     # - The name of an encoding.
     # - An alias for an encoding name.
     #
-    # See {Encoding}[https://docs.ruby-lang.org/en/master/Encoding.html].
+    # See {Encoding}[rdoc-ref:Encoding].
     #
     # Examples:
     #
@@ -1308,7 +1308,7 @@ module Gem::Net   #:nodoc:
     # Sets the maximum number of times to retry an idempotent request in case of
     # \Gem::Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
-    # Timeout::Error.
+    # Gem::Timeout::Error.
     # The initial value is 1.
     #
     # Argument +retries+ must be a non-negative numeric value:
@@ -1490,11 +1490,11 @@ module Gem::Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets or returns the available SSL ciphers.
-    # See {OpenSSL::SSL::SSLContext#ciphers=}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html#method-i-ciphers-3D].
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers-3D].
     attr_accessor :ciphers
 
     # Sets or returns the extra X509 certificates to be added to the certificate chain.
-    # See {OpenSSL::SSL::SSLContext#add_certificate}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html#method-i-add_certificate].
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
     attr_accessor :extra_chain_cert
 
     # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
@@ -1504,15 +1504,15 @@ module Gem::Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets or returns the SSL version.
-    # See {OpenSSL::SSL::SSLContext#ssl_version=}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html#method-i-ssl_version-3D].
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version-3D].
     attr_accessor :ssl_version
 
     # Sets or returns the minimum SSL version.
-    # See {OpenSSL::SSL::SSLContext#min_version=}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html#method-i-min_version-3D].
+    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version-3D].
     attr_accessor :min_version
 
     # Sets or returns the maximum SSL version.
-    # See {OpenSSL::SSL::SSLContext#max_version=}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html#method-i-max_version-3D].
+    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version-3D].
     attr_accessor :max_version
 
     # Sets or returns the callback for the server certification verification.
@@ -1528,7 +1528,7 @@ module Gem::Net   #:nodoc:
 
     # Sets or returns whether to verify that the server certificate is valid
     # for the hostname.
-    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[https://docs.ruby-lang.org/en/master/OpenSSL/SSL/SSLContext.html#attribute-i-verify_mode].
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#attribute-i-verify_mode].
     attr_accessor :verify_hostname
 
     # Returns the X509 certificate chain (an array of strings)
@@ -1598,7 +1598,7 @@ module Gem::Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
+      s = Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
         begin
           TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
         rescue => e
@@ -2358,7 +2358,7 @@ module Gem::Net   #:nodoc:
              Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE, Errno::ETIMEDOUT,
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
-             Timeout::Error => exception
+             Gem::Timeout::Error => exception
         if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket
