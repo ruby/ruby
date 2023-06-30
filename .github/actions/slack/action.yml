@@ -18,8 +18,7 @@ inputs:
       Human-readable description of the run, something like "DEBUG=1".
       This need not be unique among runs.
 
-outputs:
-  # Nothing?
+outputs: {} # Nothing?
 
 runs:
   using: composite
