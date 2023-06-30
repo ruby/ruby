@@ -43,33 +43,25 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
       - name: Install libraries
-        uses: ./src/.github/actions/setup/macos
+        uses: ./.github/actions/setup/macos
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
       - name: Set ENV
         run: |
-          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
           for lib in openssl@1.1 readline; do
             CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
           done
           echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV
-      - run: ./autogen.sh
-        working-directory: src
       - name: Run configure
         run: ../src/configure -C --disable-install-doc
-      - run: make incs
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
       - run: make
@@ -92,7 +84,7 @@ jobs:
           PRECHECK_BUNDLED_GEMS: "no"
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: ./src/.github/actions/slack
+      - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

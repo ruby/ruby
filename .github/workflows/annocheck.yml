@@ -94,25 +94,15 @@ jobs:
     steps:
       - run: id
         working-directory:
-      - run: mkdir build
-        working-directory:
-      - name: setenv
-        run: |
-          echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+      - uses: ./.github/actions/setup/directories
         with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
-      - name: autogen
-        run: |
-          if [ ! -f ./autogen.sh ]; then
-            ls -la
-          fi
-          ./autogen.sh
-        working-directory: src
+          srcdir: src
+          builddir: build
+          makeup: true
       - name: Run configure
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
@@ -122,8 +112,6 @@ jobs:
             matrix.entry.crosshost || '"${default_cc}${append_cc:+ $append_cc}"'
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
-      - run: make extract-extlibs
-      - run: make incs
       - run: make showflags
       - run: make
       - run: make test
@@ -136,8 +124,7 @@ jobs:
       #   env:
       #     CHECK_LEAKS: true
       - run: make test-annocheck
-
-      - uses: ./src/.github/actions/slack
+      - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.entry.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

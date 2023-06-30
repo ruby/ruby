@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: ./.github/actions/setup/directories
       - name: Check if C-sources are US-ASCII
         run: |
           grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
@@ -39,14 +40,6 @@ jobs:
       - id: gems
         run: true
         if: ${{ github.ref == 'refs/heads/master' }}
-
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache-${{ github.sha }}
-          restore-keys: |
-            downloaded-cache
-        if: steps.gems.outcome == 'success'
 
       - name: Download previous gems list
         run: |

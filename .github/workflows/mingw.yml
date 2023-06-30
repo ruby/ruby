@@ -56,28 +56,10 @@ jobs:
       fail-fast: false
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: git config
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-        with:
-          path: src
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
       - name: Set up Ruby & MSYS2
         uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
         with:
           ruby-version: ${{ matrix.base_ruby }}
-      - name: set env
-        run: |
-          echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
 
       - name: where check
         run: |
@@ -91,6 +73,7 @@ jobs:
             echo '##['endgroup']'
           done
           $result
+        working-directory:
 
       - name: version check
         run: |
@@ -103,38 +86,34 @@ jobs:
             echo '##['endgroup']'
           done
           $result
+        working-directory:
 
-      - name: autogen
-        run: |
-          ./autogen.sh
-        working-directory: src
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
 
       - name: configure
         run: >
           ../src/configure --disable-install-doc --prefix=/.
           --build=$CHOST --host=$CHOST --target=$CHOST
 
-      - name: update
-        run: |
-          make incs
-
-      - name: download gems
-        run: |
-          make update-gems
-
       - name: make all
         timeout-minutes: 30
-        run: |
-          make
+        run: make
 
       - name: make install
-        run: |
-          make DESTDIR=../install install-nodoc
+        run: make DESTDIR=../install install-nodoc
 
       - name: test
         timeout-minutes: 30
-        run: |
-          make test
+        run: make test
         env:
           GNUMAKEFLAGS: ""
           RUBY_TESTOPTS: "-v --tty=no"

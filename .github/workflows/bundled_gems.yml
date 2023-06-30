@@ -31,24 +31,13 @@ jobs:
     name: update ${{ github.workflow }}
     runs-on: ubuntu-latest
     steps:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
+      - uses: ./.github/actions/setup/directories
 
       - name: Set ENV
         run: |
-          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
           echo "TODAY=$(date +%F)" >> $GITHUB_ENV
-
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache-${{ github.sha }}
-          restore-keys: |
-            downloaded-cache
 
       - name: Download previous gems list
         run: |

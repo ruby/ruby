@@ -215,28 +215,18 @@ jobs:
     steps:
       - run: id
         working-directory:
-      - run: mkdir build
-        working-directory:
-      - name: setenv
-        run: |
-          echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+      - uses: ./.github/actions/setup/directories
         with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
+          srcdir: src
+          builddir: build
+          makeup: true
       - name: Install Rust
         if: ${{ matrix.entry.rust }}
         run: sudo apt-get update && sudo apt install -y rustc
-      - name: autogen
-        run: |
-          if [ ! -f ./autogen.sh ]; then
-            ls -la
-          fi
-          ./autogen.sh
-        working-directory: src
       - name: Run configure
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
@@ -249,8 +239,6 @@ jobs:
       - name: Add to ext/Setup # statically link just the etc extension
         run: mkdir ext && echo etc >> ext/Setup
         if: ${{ matrix.entry.name == 'ext/Setup' }}
-      - run: make extract-extlibs
-      - run: make incs
       - run: make showflags
       - run: make
       - run: make test
@@ -267,7 +255,7 @@ jobs:
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
-      - uses: ./src/.github/actions/slack
+      - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.entry.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

@@ -1,0 +1,111 @@
+name: Setup directories etc.
+description: >-
+  Set up the source code and build directories (plus some
+  environmental tweaks)
+
+inputs:
+  srcdir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Directory to (re-)checkout source codes.  This will be created
+      if absent.  If there is no `configure` file that is also
+      generated inside.
+
+  builddir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Where binaries and other generated contents go.  This will be
+      created if absent.
+
+  makeup:
+    required: false
+    type: boolean
+    # Note that `default: false` evaluates to a string constant
+    # `'false'`, which is a truthy value :sigh:
+    # https://github.com/actions/runner/issues/2238
+    default: ''
+    description: >-
+      If set to true, additionally runs `make up`.
+
+outputs: {} # nothing?
+
+runs:
+  using: composite
+
+  steps:
+    # Note that `shell: bash` works on both Windows and Linux, but not
+    # `shell: sh`.  This is because GitHub hosted Windows runners have
+    # their bash manually installed.
+    - shell: bash
+      run: |
+        mkdir -p ${{ inputs.srcdir }}
+        mkdir -p ${{ inputs.builddir }}
+
+    # Did you know that actions/checkout works without git(1)?  We are
+    # checking that here.
+    - id: which
+      shell: bash
+      run: |
+        echo "git=`command -v git`" >> "$GITHUB_OUTPUT"
+        echo "sudo=`command -v sudo`" >> "$GITHUB_OUTPUT"
+        echo "autoreconf=`command -v autoreconf`" >> "$GITHUB_OUTPUT"
+
+    - if: steps.which.outputs.git
+      shell: bash
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+        git config --global advice.detachedHead 0
+        git config --global init.defaultBranch garbage
+
+    - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      with:
+        path: ${{ inputs.srcdir }}
+
+    - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+      with:
+        path: ${{ inputs.srcdir }}/.downloaded-cache
+        key: downloaded-cache
+
+    - if: steps.which.outputs.autoreconf
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: ./autogen.sh
+
+    # This is for MinGW.
+    - if: runner.os == 'Windows'
+      shell: bash
+      run: echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
+
+    - if: runner.os == 'Linux'
+      shell: bash
+      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> "$GITHUB_ENV"
+
+    # macOS' GNU make is so old that they doesn't understand `GNUMAKEFLAGS`.
+    - if: runner.os == 'macOS'
+      shell: bash
+      run: echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> "$GITHUB_ENV"
+
+    - if: inputs.makeup
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: |
+        touch config.status
+        touch rbconfig.time
+        sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
+        make up
+
+    # Cleanup, runs even on failure
+    - if: always() && inputs.makeup
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: rm -f config.status Makefile rbconfig.rb .rbconfig.time
+
+    - if: steps.which.outputs.sudo
+      shell: bash
+      run: |
+        sudo chmod -R go-w /usr/share
+        chmod -v go-w $HOME $HOME/.config || :
+        sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
