@@ -45,5 +45,6 @@ yp_encoding_t yp_encoding_windows_1252 = {
     .char_width = yp_encoding_single_char_width,
     .alnum_char = yp_encoding_windows_1252_alnum_char,
     .alpha_char = yp_encoding_windows_1252_alpha_char,
-    .isupper_char = yp_encoding_windows_1252_isupper_char
+    .isupper_char = yp_encoding_windows_1252_isupper_char,
+    .multibyte = false
 };

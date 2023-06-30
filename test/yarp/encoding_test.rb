@@ -55,6 +55,21 @@ class EncodingTest < Test::Unit::TestCase
     assert_equal Encoding.find("utf-8"), actual
   end
 
+  # This test may be a little confusing. Basically when we use our strpbrk, it
+  # takes into account the encoding of the file.
+  def test_strpbrk_multibyte
+    result = YARP.parse(<<~RUBY)
+      # encoding: Shift_JIS
+      %w[\x81\x5c]
+    RUBY
+
+    assert(result.errors.empty?)
+    assert_equal(
+      (+"\x81\x5c").force_encoding(Encoding::Shift_JIS),
+      result.value.statements.body.first.elements.first.unescaped
+    )
+  end
+
   def test_utf_8_variations
     %w[
       utf-8-unix

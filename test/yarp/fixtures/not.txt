@@ -18,3 +18,16 @@ not foo and
 
 
   bar
+
+not(foo
+
+
+)
+
+not(
+
+
+foo
+
+
+  )

@@ -534,12 +534,11 @@ module YARP
       end
     end
 
-    attr_reader :source, :offsets, :filepath
+    attr_reader :source, :filepath
 
     def initialize(source, filepath = "")
       @source = source
       @filepath = filepath || ""
-      @offsets = find_offsets(source)
     end
 
     def result
@@ -561,7 +560,8 @@ module YARP
       result_value[0][0].value.prepend("\xEF\xBB\xBF") if bom
 
       result_value.each_with_index do |(token, lex_state), index|
-        (lineno, column) = find_location(token.location.start_offset)
+        lineno = token.location.start_line
+        column = token.location.start_column
         column -= index == 0 ? 6 : 3 if bom && lineno == 1
 
         event = RIPPER.fetch(token.type)
@@ -702,38 +702,6 @@ module YARP
 
       ParseResult.new(tokens, result.comments, result.errors, result.warnings)
     end
-
-    private
-
-    # YARP keeps locations around in the form of ranges of byte offsets from the
-    # start of the file. Ripper keeps locations around in the form of line and
-    # column numbers. To match the output, we keep a cache of the offsets at the
-    # beginning of each line.
-    def find_offsets(source)
-      last_offset = 0
-      offsets = [0]
-
-      source.each_line do |line|
-        last_offset += line.bytesize
-        offsets << last_offset
-      end
-
-      offsets
-    end
-
-    # Given a byte offset, find the line number and column number that it maps
-    # to. We use a binary search over the cached offsets to find the line number
-    # that the offset is on, and then subtract the offset of the previous line
-    # to find the column number.
-    def find_location(value)
-      line_number = offsets.bsearch_index { |offset| offset > value }
-      line_offset = offsets[line_number - 1] if line_number
-
-      [
-        line_number || offsets.length - 1,
-        value - (line_offset || offsets.last)
-      ]
-    end
   end
 
   # The constant that wraps the behavior of the lexer to match Ripper's output
@@ -745,5 +713,40 @@ module YARP
   # same way, it's going to always return the NONE state.
   def self.lex_compat(source, filepath = "")
     LexCompat.new(source, filepath).result
+  end
+
+  # This lexes with the Ripper lex. It drops any space events but otherwise
+  # returns the same tokens. Raises SyntaxError if the syntax in source is
+  # invalid.
+  def self.lex_ripper(source)
+    previous = []
+    results = []
+
+    Ripper.lex(source, raise_errors: true).each do |token|
+      case token[1]
+      when :on_sp
+        # skip
+      when :on_tstring_content
+        if previous[1] == :on_tstring_content &&
+            (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
+          previous[2] << token[2]
+        else
+          results << token
+          previous = token
+        end
+      when :on_words_sep
+        if previous[1] == :on_words_sep
+          previous[2] << token[2]
+        else
+          results << token
+          previous = token
+        end
+      else
+        results << token
+        previous = token
+      end
+    end
+
+    results
   end
 end

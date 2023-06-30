@@ -1,16 +1,19 @@
 #include "yarp.h"
+#include "yarp/version.h"
 
-#define YP_STRINGIZE0(expr) #expr
-#define YP_STRINGIZE(expr) YP_STRINGIZE0(expr)
-#define YP_VERSION_MACRO YP_STRINGIZE(YP_VERSION_MAJOR) "." YP_STRINGIZE(YP_VERSION_MINOR) "." YP_STRINGIZE(YP_VERSION_PATCH)
-
-#define YP_TAB_WHITESPACE_SIZE 8
-
+// The YARP version and the serialization format.
 const char *
 yp_version(void) {
-    return YP_VERSION_MACRO;
+    return YP_VERSION;
 }
 
+// In heredocs, tabs automatically complete up to the next 8 spaces. This is
+// defined in CRuby as TAB_WIDTH.
+#define YP_TAB_WHITESPACE_SIZE 8
+
+// Debugging logging will provide you will additional debugging functions as
+// well as automatically replace some functions with their debugging
+// counterparts.
 #ifndef YP_DEBUG_LOGGING
 #define YP_DEBUG_LOGGING 0
 #endif
@@ -442,6 +445,7 @@ not_provided(yp_parser_t *parser) {
     return (yp_token_t) { .type = YP_TOKEN_NOT_PROVIDED, .start = parser->start, .end = parser->start };
 }
 
+#define YP_EMPTY_STRING ((yp_string_t) { .type = YP_STRING_SHARED, .as.shared.start = NULL, .as.shared.end = NULL })
 #define YP_LOCATION_NULL_VALUE(parser) ((yp_location_t) { .start = parser->start, .end = parser->start })
 #define YP_LOCATION_TOKEN_VALUE(token) ((yp_location_t) { .start = (token)->start, .end = (token)->end })
 #define YP_LOCATION_NODE_VALUE(node) ((yp_location_t) { .start = (node)->location.start, .end = (node)->location.end })
@@ -675,7 +679,9 @@ yp_array_pattern_node_node_list_create(yp_parser_t *parser, yp_node_list_t *node
         .constant = NULL,
         .rest = NULL,
         .requireds = YP_EMPTY_NODE_LIST,
-        .posts = YP_EMPTY_NODE_LIST
+        .posts = YP_EMPTY_NODE_LIST,
+        .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
     // For now we're going to just copy over each pointer manually. This could be
@@ -684,7 +690,7 @@ yp_array_pattern_node_node_list_create(yp_parser_t *parser, yp_node_list_t *node
     for (size_t index = 0; index < nodes->size; index++) {
         yp_node_t *child = nodes->nodes[index];
 
-        if (child->type == YP_NODE_SPLAT_NODE) {
+        if (!found_rest && child->type == YP_NODE_SPLAT_NODE) {
             node->rest = child;
             found_rest = true;
         } else if (found_rest) {
@@ -710,7 +716,9 @@ yp_array_pattern_node_rest_create(yp_parser_t *parser, yp_node_t *rest) {
         .constant = NULL,
         .rest = rest,
         .requireds = YP_EMPTY_NODE_LIST,
-        .posts = YP_EMPTY_NODE_LIST
+        .posts = YP_EMPTY_NODE_LIST,
+        .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
     return node;
@@ -1885,7 +1893,9 @@ yp_find_pattern_node_create(yp_parser_t *parser, yp_node_list_t *nodes) {
         .constant = NULL,
         .left = left,
         .right = right,
-        .requireds = YP_EMPTY_NODE_LIST
+        .requireds = YP_EMPTY_NODE_LIST,
+        .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
     // For now we're going to just copy over each pointer manually. This could be
@@ -2018,7 +2028,9 @@ yp_hash_pattern_node_node_list_create(yp_parser_t *parser, yp_node_list_t *assoc
         },
         .constant = NULL,
         .kwrest = NULL,
-        .assocs = YP_EMPTY_NODE_LIST
+        .assocs = YP_EMPTY_NODE_LIST,
+        .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
     for (size_t index = 0; index < assocs->size; index++) {
@@ -3709,7 +3721,8 @@ yp_string_node_create(yp_parser_t *parser, const yp_token_t *opening, const yp_t
         },
         .opening_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .content_loc = YP_LOCATION_TOKEN_VALUE(content),
-        .closing_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(closing)
+        .closing_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
+        .unescaped = YP_EMPTY_STRING
     };
 
     return node;
@@ -3766,7 +3779,8 @@ yp_symbol_node_create(yp_parser_t *parser, const yp_token_t *opening, const yp_t
         },
         .opening_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .value_loc = YP_LOCATION_TOKEN_VALUE(value),
-        .closing_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(closing)
+        .closing_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
+        .unescaped = YP_EMPTY_STRING
     };
 
     return node;
@@ -3788,7 +3802,7 @@ yp_symbol_node_label_create(yp_parser_t *parser, const yp_token_t *token) {
             ptrdiff_t length = label.end - label.start;
             assert(length >= 0);
 
-            yp_unescape_manipulate_string(label.start, (size_t) length, &node->unescaped, YP_UNESCAPE_ALL, &parser->error_list);
+            yp_unescape_manipulate_string(parser, label.start, (size_t) length, &node->unescaped, YP_UNESCAPE_ALL, &parser->error_list);
             break;
         }
         case YP_TOKEN_MISSING: {
@@ -4073,7 +4087,8 @@ yp_xstring_node_create(yp_parser_t *parser, const yp_token_t *opening, const yp_
         },
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
         .content_loc = YP_LOCATION_TOKEN_VALUE(content),
-        .closing_loc = YP_LOCATION_TOKEN_VALUE(closing)
+        .closing_loc = YP_LOCATION_TOKEN_VALUE(closing),
+        .unescaped = YP_EMPTY_STRING
     };
 
     return node;
@@ -4113,6 +4128,7 @@ yp_yield_node_create(yp_parser_t *parser, const yp_token_t *keyword, const yp_lo
 }
 
 
+#undef YP_EMPTY_STRING
 #undef YP_LOCATION_NULL_VALUE
 #undef YP_LOCATION_TOKEN_VALUE
 #undef YP_LOCATION_NODE_VALUE
@@ -4331,6 +4347,17 @@ peek(yp_parser_t *parser) {
     }
 }
 
+// Get the next string of length len in the source starting from parser->current.end.
+// If the string extends beyond the end of the source, return the empty string ""
+static inline const char*
+peek_string(yp_parser_t *parser, size_t len) {
+    if (parser->current.end + len <= parser->end) {
+        return parser->current.end;
+    } else {
+        return "";
+    }
+}
+
 // If the character to be read matches the given value, then returns true and
 // advanced the current pointer.
 static inline bool
@@ -4342,22 +4369,53 @@ match(yp_parser_t *parser, char value) {
     return false;
 }
 
+// Skip to the next newline character or NUL byte.
+static inline const char *
+next_newline(const char *cursor, ptrdiff_t length) {
+    assert(length >= 0);
+
+    // Note that it's okay for us to use memchr here to look for \n because none
+    // of the encodings that we support have \n as a component of a multi-byte
+    // character.
+    return memchr(cursor, '\n', (size_t) length);
+}
+
+// Find the start of the encoding comment. This is effectively an inlined
+// version of strnstr with some modifications.
+static inline const char *
+parser_lex_encoding_comment_start(yp_parser_t *parser, const char *cursor, ptrdiff_t remaining) {
+    assert(remaining >= 0);
+    size_t length = (size_t) remaining;
+
+    size_t key_length = strlen("coding:");
+    if (key_length > length) return NULL;
+
+    const char *cursor_limit = cursor + length - key_length + 1;
+    while ((cursor = yp_memchr(parser, cursor, 'c', (size_t) (cursor_limit - cursor))) != NULL) {
+        if (
+            (strncmp(cursor, "coding", key_length - 1) == 0) &&
+            (cursor[key_length - 1] == ':' || cursor[key_length - 1] == '=')
+        ) {
+            return cursor + key_length;
+        }
+
+        cursor++;
+    }
+
+    return NULL;
+}
+
 // Here we're going to check if this is a "magic" comment, and perform whatever
 // actions are necessary for it here.
 static void
 parser_lex_encoding_comment(yp_parser_t *parser) {
     const char *start = parser->current.start + 1;
-    const char *end = memchr(start, '\n', (size_t) (parser->end - start));
+    const char *end = next_newline(start, parser->end - start);
     if (end == NULL) end = parser->end;
 
     // These are the patterns we're going to match to find the encoding comment.
     // This is definitely not complete or even really correct.
-    const char *encoding_start = NULL;
-    if ((encoding_start = yp_strnstr(start, "coding:", (size_t) (end - start))) != NULL) {
-        encoding_start += 7;
-    } else if ((encoding_start = yp_strnstr(start, "coding=", (size_t) (end - start))) != NULL) {
-        encoding_start += 7;
-    }
+    const char *encoding_start = parser_lex_encoding_comment_start(parser, start, end - start);
 
     // If we didn't find anything that matched our patterns, then return. Note
     // that this does a _very_ poor job of actually finding the encoding, and
@@ -4370,7 +4428,7 @@ parser_lex_encoding_comment(yp_parser_t *parser) {
 
     // Now determine the end of the encoding string. This is either the end of
     // the line, the first whitespace character, or a punctuation mark.
-    const char *encoding_end = yp_strpbrk(encoding_start, " \t\f\r\v\n;,", end - encoding_start);
+    const char *encoding_end = yp_strpbrk(parser, encoding_start, " \t\f\r\v\n;,", end - encoding_start);
     encoding_end = encoding_end == NULL ? end : encoding_end;
 
     // Finally, we can determine the width of the encoding string.
@@ -4392,7 +4450,7 @@ parser_lex_encoding_comment(yp_parser_t *parser) {
     // Extensions like utf-8 can contain extra encoding details like,
     // utf-8-dos, utf-8-linux, utf-8-mac. We treat these all as utf-8 should
     // treat any encoding starting utf-8 as utf-8.
-    if (strncasecmp(encoding_start, "utf-8", 5) == 0) {
+    if ((encoding_start + 5 <= parser->end) && (yp_strncasecmp(encoding_start, "utf-8", 5) == 0)) {
         // We don't need to do anything here because the default encoding is
         // already UTF-8. We'll just return.
         return;
@@ -4401,7 +4459,7 @@ parser_lex_encoding_comment(yp_parser_t *parser) {
     // Next, we're going to loop through each of the encodings that we handle
     // explicitly. If we found one that we understand, we'll use that value.
 #define ENCODING(value, prebuilt) \
-    if (width == sizeof(value) - 1 && strncasecmp(encoding_start, value, sizeof(value) - 1) == 0) { \
+    if (width == sizeof(value) - 1 && encoding_start + width <= parser->end && yp_strncasecmp(encoding_start, value, width) == 0) { \
         parser->encoding = prebuilt; \
         parser->encoding_changed |= true; \
         if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser); \
@@ -4866,7 +4924,8 @@ static yp_token_type_t
 lex_keyword(yp_parser_t *parser, const char *value, yp_lex_state_t state, yp_token_type_t type, yp_token_type_t modifier_type) {
     yp_lex_state_t last_state = parser->lex_state;
 
-    if (strncmp(parser->current.start, value, strlen(value)) == 0) {
+    const size_t vlen = strlen(value);
+    if (parser->current.start + vlen <= parser->end && strncmp(parser->current.start, value, vlen) == 0) {
         if (parser->lex_state & YP_LEX_STATE_FNAME) {
             lex_state_set(parser, YP_LEX_STATE_ENDFN);
         } else {
@@ -5275,7 +5334,7 @@ parser_comment(yp_parser_t *parser, yp_comment_type_t type) {
 static yp_token_type_t
 lex_embdoc(yp_parser_t *parser) {
     // First, lex out the EMBDOC_BEGIN token.
-    const char *newline = memchr(parser->current.end, '\n', (size_t) (parser->end - parser->current.end));
+    const char *newline = next_newline(parser->current.end, parser->end - parser->current.end);
 
     if (newline == NULL) {
         parser->current.end = parser->end;
@@ -5300,7 +5359,7 @@ lex_embdoc(yp_parser_t *parser) {
         // token here.
         if (strncmp(parser->current.end, "=end", 4) == 0 &&
                 (parser->current.end + 4 == parser->end || yp_char_is_whitespace(parser->current.end[4]))) {
-            const char *newline = memchr(parser->current.end, '\n', (size_t) (parser->end - parser->current.end));
+            const char *newline = next_newline(parser->current.end, parser->end - parser->current.end);
 
             if (newline == NULL) {
                 parser->current.end = parser->end;
@@ -5320,7 +5379,7 @@ lex_embdoc(yp_parser_t *parser) {
 
         // Otherwise, we'll parse until the end of the line and return a line of
         // embedded documentation.
-        const char *newline = memchr(parser->current.end, '\n', (size_t) (parser->end - parser->current.end));
+        const char *newline = next_newline(parser->current.end, parser->end - parser->current.end);
 
         if (newline == NULL) {
             parser->current.end = parser->end;
@@ -5466,9 +5525,9 @@ parser_lex(yp_parser_t *parser) {
                     LEX(YP_TOKEN_EOF);
 
                 case '#': { // comments
-                    const char *ending = memchr(parser->current.end, '\n', (size_t) (parser->end - parser->current.end));
+                    const char *ending = next_newline(parser->current.end, parser->end - parser->current.end);
                     while (ending && ending < parser->end && *ending != '\n') {
-                        ending = memchr(ending + 1, '\n', (size_t) (parser->end - ending));
+                        ending = next_newline(ending + 1, parser->end - ending);
                     }
 
                     parser->current.end = ending == NULL ? parser->end : ending + 1;
@@ -5540,7 +5599,7 @@ parser_lex(yp_parser_t *parser) {
                         // Otherwise we'll return a regular newline.
                         if (next_content[0] == '#') {
                             // Here we look for a "." or "&." following a "\n".
-                            const char *following = memchr(next_content, '\n', (size_t) (parser->end - next_content));
+                            const char *following = next_newline(next_content, parser->end - next_content);
 
                             while (following && (following < parser->end)) {
                                 following++;
@@ -5552,7 +5611,7 @@ parser_lex(yp_parser_t *parser) {
 
                                 // If there is a comment, then we need to find the end of the
                                 // comment and continue searching from there.
-                                following = memchr(following, '\n', (size_t) (parser->end - following));
+                                following = next_newline(following, parser->end - following);
                             }
 
                             // If the lex state was ignored, or we hit a '.' or a '&.',
@@ -5785,7 +5844,7 @@ parser_lex(yp_parser_t *parser) {
 
                 // = => =~ == === =begin
                 case '=':
-                    if (current_token_starts_line(parser) && strncmp(parser->current.end, "begin", 5) == 0 && yp_char_is_whitespace(parser->current.end[5])) {
+                    if (current_token_starts_line(parser) && strncmp(peek_string(parser, 5), "begin", 5) == 0 && yp_char_is_whitespace(peek_at(parser, 5))) {
                         yp_token_type_t type = lex_embdoc(parser);
 
                         if (type == YP_TOKEN_EOF) {
@@ -5848,19 +5907,21 @@ parser_lex(yp_parser_t *parser) {
                             const char *ident_start = parser->current.end;
                             size_t width = 0;
 
-                            if (quote == YP_HEREDOC_QUOTE_NONE && (width = char_is_identifier(parser, parser->current.end)) == 0) {
+                            if (parser->current.end >= parser->end) {
+                                parser->current.end = end;
+                            } else if (quote == YP_HEREDOC_QUOTE_NONE && (width = char_is_identifier(parser, parser->current.end)) == 0) {
                                 parser->current.end = end;
                             } else {
                                 if (quote == YP_HEREDOC_QUOTE_NONE) {
                                     parser->current.end += width;
 
-                                    while ((width = char_is_identifier(parser, parser->current.end))) {
+                                    while ((parser->current.end < parser->end) && (width = char_is_identifier(parser, parser->current.end))) {
                                         parser->current.end += width;
                                     }
                                 } else {
                                     // If we have quotes, then we're going to go until we find the
                                     // end quote.
-                                    while (parser->current.end < parser->end && quote != (yp_heredoc_quote_t) (*parser->current.end)) {
+                                    while ((parser->current.end < parser->end) && quote != (yp_heredoc_quote_t) (*parser->current.end)) {
                                         parser->current.end++;
                                     }
                                 }
@@ -5882,7 +5943,7 @@ parser_lex(yp_parser_t *parser) {
                                 });
 
                                 if (parser->heredoc_end == NULL) {
-                                    const char *body_start = (const char *) memchr(parser->current.end, '\n', (size_t) (parser->end - parser->current.end));
+                                    const char *body_start = next_newline(parser->current.end, parser->end - parser->current.end);
 
                                     if (body_start == NULL) {
                                         // If there is no newline after the heredoc identifier, then
@@ -6465,13 +6526,13 @@ parser_lex(yp_parser_t *parser) {
             // Here we'll get a list of the places where strpbrk should break,
             // and then find the first one.
             const char *breakpoints = parser->lex_modes.current->as.list.breakpoints;
-            const char *breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+            const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
                 switch (*breakpoint) {
                     case '\0':
                         // If we hit a null byte, skip directly past it.
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     case '\\': {
                         // If we hit escapes, then we need to treat the next token
@@ -6492,7 +6553,7 @@ parser_lex(yp_parser_t *parser) {
                             yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
                         }
 
-                        breakpoint = yp_strpbrk(breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                        breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         break;
                     }
                     case ' ':
@@ -6517,7 +6578,7 @@ parser_lex(yp_parser_t *parser) {
                             // that looked like an interpolated class or instance variable
                             // like "#@" but wasn't actually. In this case we'll just skip
                             // to the next breakpoint.
-                            breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+                            breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                             break;
                         }
                     }
@@ -6526,7 +6587,7 @@ parser_lex(yp_parser_t *parser) {
                         if (*breakpoint == parser->lex_modes.current->as.list.incrementor) {
                             // If we've hit the incrementor, then we need to skip past it and
                             // find the next breakpoint.
-                            breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                             parser->lex_modes.current->as.list.nesting++;
                             break;
                         }
@@ -6537,7 +6598,7 @@ parser_lex(yp_parser_t *parser) {
                         // If this terminator doesn't actually close the list, then we need
                         // to continue on past it.
                         if (parser->lex_modes.current->as.list.nesting > 0) {
-                            breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                             parser->lex_modes.current->as.list.nesting--;
                             break;
                         }
@@ -6577,13 +6638,13 @@ parser_lex(yp_parser_t *parser) {
             // regular expression. We'll use strpbrk to find the first of these
             // characters.
             const char *breakpoints = parser->lex_modes.current->as.regexp.breakpoints;
-            const char *breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+            const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
                 switch (*breakpoint) {
                     case '\0':
                         // If we hit a null byte, skip directly past it.
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     case '\\': {
                         // If we hit escapes, then we need to treat the next token
@@ -6597,7 +6658,7 @@ parser_lex(yp_parser_t *parser) {
                             yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
                         }
 
-                        breakpoint = yp_strpbrk(breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                        breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         break;
                     }
                     case '#': {
@@ -6613,7 +6674,7 @@ parser_lex(yp_parser_t *parser) {
                             // that looked like an interpolated class or instance variable
                             // like "#@" but wasn't actually. In this case we'll just skip
                             // to the next breakpoint.
-                            breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+                            breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                             break;
                         }
                     }
@@ -6622,7 +6683,7 @@ parser_lex(yp_parser_t *parser) {
                         if (*breakpoint == parser->lex_modes.current->as.regexp.incrementor) {
                             // If we've hit the incrementor, then we need to skip past it and
                             // find the next breakpoint.
-                            breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                             parser->lex_modes.current->as.regexp.nesting++;
                             break;
                         }
@@ -6635,7 +6696,7 @@ parser_lex(yp_parser_t *parser) {
                             if (parser->lex_modes.current->as.regexp.terminator != '\n') {
                                 // If the terminator is not a newline, then we
                                 // can set the next breakpoint and continue.
-                                breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                                breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                                 break;
                             }
 
@@ -6646,7 +6707,7 @@ parser_lex(yp_parser_t *parser) {
                         assert(*breakpoint == parser->lex_modes.current->as.regexp.terminator);
 
                         if (parser->lex_modes.current->as.regexp.nesting > 0) {
-                            breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                             parser->lex_modes.current->as.regexp.nesting--;
                             break;
                         }
@@ -6694,7 +6755,7 @@ parser_lex(yp_parser_t *parser) {
             // These are the places where we need to split up the content of the
             // string. We'll use strpbrk to find the first of these characters.
             const char *breakpoints = parser->lex_modes.current->as.string.breakpoints;
-            const char *breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+            const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
                 // If we hit the incrementor, then we'll increment then nesting and
@@ -6704,7 +6765,7 @@ parser_lex(yp_parser_t *parser) {
                     *breakpoint == parser->lex_modes.current->as.string.incrementor
                 ) {
                     parser->lex_modes.current->as.string.nesting++;
-                    breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                     continue;
                 }
 
@@ -6715,7 +6776,7 @@ parser_lex(yp_parser_t *parser) {
                     // If this terminator doesn't actually close the string, then we need
                     // to continue on past it.
                     if (parser->lex_modes.current->as.string.nesting > 0) {
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         parser->lex_modes.current->as.string.nesting--;
                         continue;
                     }
@@ -6762,7 +6823,7 @@ parser_lex(yp_parser_t *parser) {
                 if (*breakpoint == '\n') {
                     if (parser->heredoc_end == NULL) {
                         yp_newline_list_append(&parser->newline_list, breakpoint);
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         continue;
                     } else {
                         parser->current.end = breakpoint + 1;
@@ -6774,7 +6835,7 @@ parser_lex(yp_parser_t *parser) {
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     case '\\': {
                         // If we hit escapes, then we need to treat the next token
@@ -6789,7 +6850,7 @@ parser_lex(yp_parser_t *parser) {
                             yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
                         }
 
-                        breakpoint = yp_strpbrk(breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                        breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         break;
                     }
                     case '#': {
@@ -6802,7 +6863,7 @@ parser_lex(yp_parser_t *parser) {
                         // looked like an interpolated class or instance variable like "#@"
                         // but wasn't actually. In this case we'll just skip to the next
                         // breakpoint.
-                        breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
                     default:
@@ -6844,7 +6905,7 @@ parser_lex(yp_parser_t *parser) {
                     start += yp_strspn_inline_whitespace(start, parser->end - start);
                 }
 
-                if (strncmp(start, ident_start, ident_length) == 0) {
+                if ((start + ident_length <= parser->end) && (strncmp(start, ident_start, ident_length) == 0)) {
                     bool matched = true;
                     bool at_end = false;
 
@@ -6888,13 +6949,13 @@ parser_lex(yp_parser_t *parser) {
                 breakpoints[2] = '\0';
             }
 
-            const char *breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+            const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
                 switch (*breakpoint) {
                     case '\0':
                         // Skip directly past the null character.
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     case '\n': {
                         yp_newline_list_append(&parser->newline_list, breakpoint);
@@ -6939,7 +7000,7 @@ parser_lex(yp_parser_t *parser) {
 
                         // Otherwise we hit a newline and it wasn't followed by a
                         // terminator, so we can continue parsing.
-                        breakpoint = yp_strpbrk(breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     }
                     case '\\': {
@@ -6956,7 +7017,7 @@ parser_lex(yp_parser_t *parser) {
                                 yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
                             }
 
-                            breakpoint = yp_strpbrk(breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                            breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         }
                         break;
                     }
@@ -6970,7 +7031,7 @@ parser_lex(yp_parser_t *parser) {
                         // that looked like an interpolated class or instance variable
                         // like "#@" but wasn't actually. In this case we'll just skip
                         // to the next breakpoint.
-                        breakpoint = yp_strpbrk(parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
                         break;
                     }
                     default:
@@ -7007,7 +7068,7 @@ yp_regular_expression_node_create_and_unescape(yp_parser_t *parser, const yp_tok
     ptrdiff_t length = content->end - content->start;
     assert(length >= 0);
 
-    yp_unescape_manipulate_string(content->start, (size_t) length, &node->unescaped, unescape_type, &parser->error_list);
+    yp_unescape_manipulate_string(parser, content->start, (size_t) length, &node->unescaped, unescape_type, &parser->error_list);
     return node;
 }
 
@@ -7018,7 +7079,7 @@ yp_symbol_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *openin
     ptrdiff_t length = content->end - content->start;
     assert(length >= 0);
 
-    yp_unescape_manipulate_string(content->start, (size_t) length, &node->unescaped, unescape_type, &parser->error_list);
+    yp_unescape_manipulate_string(parser, content->start, (size_t) length, &node->unescaped, unescape_type, &parser->error_list);
     return node;
 }
 
@@ -7029,7 +7090,7 @@ yp_string_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *openin
     ptrdiff_t length = content->end - content->start;
     assert(length >= 0);
 
-    yp_unescape_manipulate_string(content->start, (size_t) length, &node->unescaped, unescape_type, &parser->error_list);
+    yp_unescape_manipulate_string(parser, content->start, (size_t) length, &node->unescaped, unescape_type, &parser->error_list);
     return node;
 }
 
@@ -7040,7 +7101,7 @@ yp_xstring_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *openi
     ptrdiff_t length = content->end - content->start;
     assert(length >= 0);
 
-    yp_unescape_manipulate_string(content->start, (size_t) length, &node->unescaped, YP_UNESCAPE_ALL, &parser->error_list);
+    yp_unescape_manipulate_string(parser, content->start, (size_t) length, &node->unescaped, YP_UNESCAPE_ALL, &parser->error_list);
     return node;
 }
 
@@ -7505,10 +7566,10 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
                 // the previous method name in, and append an =.
                 size_t length = yp_string_length(&call->name);
 
-                char *name = malloc(length + 2);
+                char *name = calloc(length + 2, sizeof(char));
                 if (name == NULL) return NULL;
 
-                sprintf(name, "%.*s=", (int) length, yp_string_source(&call->name));
+                yp_snprintf(name, length + 2, "%.*s=", (int) length, yp_string_source(&call->name));
 
                 // Now switch the name to the new string.
                 yp_string_free(&call->name);
@@ -8954,9 +9015,11 @@ parse_string_part(yp_parser_t *parser) {
 
 static yp_node_t *
 parse_symbol(yp_parser_t *parser, yp_lex_mode_t *lex_mode, yp_lex_state_t next_state) {
+    bool lex_string = lex_mode->mode == YP_LEX_STRING;
+    bool lex_interpolation = lex_string && lex_mode->as.string.interpolation;
     yp_token_t opening = parser->previous;
 
-    if (lex_mode->mode != YP_LEX_STRING) {
+    if (!lex_string) {
         if (next_state != YP_LEX_STATE_NONE) {
             lex_state_set(parser, next_state);
         }
@@ -8990,9 +9053,9 @@ parse_symbol(yp_parser_t *parser, yp_lex_mode_t *lex_mode, yp_lex_state_t next_s
     }
 
     // If we weren't in a string in the previous check then we have to be now.
-    assert(lex_mode->mode == YP_LEX_STRING);
+    assert(lex_string);
 
-    if (lex_mode->as.string.interpolation) {
+    if (lex_interpolation) {
         yp_interpolated_symbol_node_t *interpolated = yp_interpolated_symbol_node_create(parser, &opening, NULL, &opening);
 
         while (!match_any_type_p(parser, 2, YP_TOKEN_STRING_END, YP_TOKEN_EOF)) {
@@ -9043,9 +9106,10 @@ parse_undef_argument(yp_parser_t *parser) {
             return (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, YP_UNESCAPE_ALL);
         }
         case YP_TOKEN_SYMBOL_BEGIN: {
-            yp_lex_mode_t *lex_mode = parser->lex_modes.current;
+            yp_lex_mode_t lex_mode = *parser->lex_modes.current;
             parser_lex(parser);
-            return parse_symbol(parser, lex_mode, YP_LEX_STATE_NONE);
+
+            return parse_symbol(parser, &lex_mode, YP_LEX_STATE_NONE);
         }
         default:
             yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Expected a bare word or symbol argument.");
@@ -9075,10 +9139,10 @@ parse_alias_argument(yp_parser_t *parser, bool first) {
             return (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &parser->previous, &closing, YP_UNESCAPE_ALL);
         }
         case YP_TOKEN_SYMBOL_BEGIN: {
-            yp_lex_mode_t *lex_mode = parser->lex_modes.current;
+            yp_lex_mode_t lex_mode = *parser->lex_modes.current;
             parser_lex(parser);
 
-            return parse_symbol(parser, lex_mode, first ? YP_LEX_STATE_FNAME | YP_LEX_STATE_FITEM : YP_LEX_STATE_NONE);
+            return parse_symbol(parser, &lex_mode, first ? YP_LEX_STATE_FNAME | YP_LEX_STATE_FITEM : YP_LEX_STATE_NONE);
         }
         case YP_TOKEN_BACK_REFERENCE:
             parser_lex(parser);
@@ -9177,7 +9241,7 @@ parse_heredoc_common_whitespace(yp_parser_t *parser, yp_node_list_t *nodes) {
                     common_whitespace = cur_whitespace;
                 }
 
-                cur_char = memchr(cur_char + 1, '\n', (size_t) (parser->end - (cur_char + 1)));
+                cur_char = next_newline(cur_char + 1, parser->end - (cur_char + 1));
                 if (cur_char) cur_char++;
             }
         }
@@ -9252,7 +9316,7 @@ parse_heredoc_dedent(yp_parser_t *parser, yp_node_t *node, yp_heredoc_quote_t qu
 
             // At this point we have dedented all that we need to, so we need to find
             // the next newline.
-            const char *breakpoint = memchr(source_cursor, '\n', (size_t) (source_end - source_cursor));
+            const char *breakpoint = next_newline(source_cursor, source_end - source_cursor);
 
             if (breakpoint == NULL) {
                 // If there isn't another newline, then we can just move the rest of the
@@ -9293,92 +9357,106 @@ parse_pattern_constant_path(yp_parser_t *parser, yp_node_t *node) {
     // If there is a [ or ( that follows, then this is part of a larger pattern
     // expression. We'll parse the inner pattern here, then modify the returned
     // inner pattern with our constant path attached.
-    if (match_any_type_p(parser, 2, YP_TOKEN_BRACKET_LEFT, YP_TOKEN_PARENTHESIS_LEFT)) {
-        yp_token_t opening;
-        yp_token_t closing;
-        yp_node_t *inner = NULL;
-
-        if (accept(parser, YP_TOKEN_BRACKET_LEFT)) {
-            opening = parser->previous;
-
-            accept(parser, YP_TOKEN_NEWLINE);
-
-            if (!accept(parser, YP_TOKEN_BRACKET_RIGHT)) {
-                inner = parse_pattern(parser, true, "Expected a pattern expression after the [ operator.");
-                accept(parser, YP_TOKEN_NEWLINE);
-
-                expect(parser, YP_TOKEN_BRACKET_RIGHT, "Expected a ] to close the pattern expression.");
-            }
-
-            closing = parser->previous;
-        } else {
-            parser_lex(parser);
-            opening = parser->previous;
-
-            if (!accept(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
-                inner = parse_pattern(parser, true, "Expected a pattern expression after the ( operator.");
-                expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected a ) to close the pattern expression.");
-            }
-
-            closing = parser->previous;
-        }
-
-        if (inner) {
-            // Now that we have the inner pattern, check to see if it's an array, find,
-            // or hash pattern. If it is, then we'll attach our constant path to it. If
-            // it's not, then we'll create an array pattern.
-            switch (inner->type) {
-                case YP_NODE_ARRAY_PATTERN_NODE: {
-                    yp_array_pattern_node_t *pattern_node = (yp_array_pattern_node_t *)inner;
-                    pattern_node->base.location.start = node->location.start;
-                    pattern_node->base.location.end = closing.end;
-
-                    pattern_node->constant = node;
-                    pattern_node->opening_loc = (yp_location_t) { .start = opening.start, .end = opening.end };
-                    pattern_node->closing_loc = (yp_location_t) { .start = closing.start, .end = closing.end };
-
-                    node = (yp_node_t *)pattern_node;
-                    break;
-                }
-                case YP_NODE_FIND_PATTERN_NODE: {
-                    yp_find_pattern_node_t *pattern_node = (yp_find_pattern_node_t *) inner;
-                    pattern_node->base.location.start = node->location.start;
-                    pattern_node->base.location.end = closing.end;
-
-                    pattern_node->constant = node;
-                    pattern_node->opening_loc = (yp_location_t) { .start = opening.start, .end = opening.end };
-                    pattern_node->closing_loc = (yp_location_t) { .start = closing.start, .end = closing.end };
-
-                    node = (yp_node_t *) pattern_node;
-                    break;
-                }
-                case YP_NODE_HASH_PATTERN_NODE: {
-                    yp_hash_pattern_node_t *pattern_node = (yp_hash_pattern_node_t *)inner;
-                    pattern_node->base.location.start = node->location.start;
-                    pattern_node->base.location.end = closing.end;
-
-                    pattern_node->constant = node;
-                    pattern_node->opening_loc = (yp_location_t) { .start = opening.start, .end = opening.end };
-                    pattern_node->closing_loc = (yp_location_t) { .start = closing.start, .end = closing.end };
-
-                    node = (yp_node_t *) pattern_node;
-                    break;
-                }
-                default: {
-                    yp_array_pattern_node_t *pattern_node = yp_array_pattern_node_constant_create(parser, node, &opening, &closing);
-                    yp_array_pattern_node_requireds_append(pattern_node, inner);
-                    node = (yp_node_t *)pattern_node;
-                    break;
-                }
-            }
-        } else {
-            // If there was no inner pattern, then we have something like Foo() or
-            // Foo[]. In that case we'll create an array pattern with no requireds.
-            node = (yp_node_t *)yp_array_pattern_node_constant_create(parser, node, &opening, &closing);
-        }
+    if (!match_any_type_p(parser, 2, YP_TOKEN_BRACKET_LEFT, YP_TOKEN_PARENTHESIS_LEFT)) {
+        return node;
     }
 
-    return node;
+    yp_token_t opening;
+    yp_token_t closing;
+    yp_node_t *inner = NULL;
+
+    if (accept(parser, YP_TOKEN_BRACKET_LEFT)) {
+        opening = parser->previous;
+        accept(parser, YP_TOKEN_NEWLINE);
+
+        if (!accept(parser, YP_TOKEN_BRACKET_RIGHT)) {
+            inner = parse_pattern(parser, true, "Expected a pattern expression after the [ operator.");
+            accept(parser, YP_TOKEN_NEWLINE);
+            expect(parser, YP_TOKEN_BRACKET_RIGHT, "Expected a ] to close the pattern expression.");
+        }
+
+        closing = parser->previous;
+    } else {
+        parser_lex(parser);
+        opening = parser->previous;
+
+        if (!accept(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
+            inner = parse_pattern(parser, true, "Expected a pattern expression after the ( operator.");
+            expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected a ) to close the pattern expression.");
+        }
+
+        closing = parser->previous;
+    }
+
+    if (!inner) {
+        // If there was no inner pattern, then we have something like Foo() or
+        // Foo[]. In that case we'll create an array pattern with no requireds.
+        return (yp_node_t *) yp_array_pattern_node_constant_create(parser, node, &opening, &closing);
+    }
+
+    // Now that we have the inner pattern, check to see if it's an array, find,
+    // or hash pattern. If it is, then we'll attach our constant path to it if
+    // it doesn't already have a constant. If it's not one of those node types
+    // or it does have a constant, then we'll create an array pattern.
+    switch (inner->type) {
+        case YP_NODE_ARRAY_PATTERN_NODE: {
+            yp_array_pattern_node_t *pattern_node = (yp_array_pattern_node_t *) inner;
+
+            if (pattern_node->constant == NULL) {
+                pattern_node->base.location.start = node->location.start;
+                pattern_node->base.location.end = closing.end;
+
+                pattern_node->constant = node;
+                pattern_node->opening_loc = (yp_location_t) { .start = opening.start, .end = opening.end };
+                pattern_node->closing_loc = (yp_location_t) { .start = closing.start, .end = closing.end };
+
+                return (yp_node_t *) pattern_node;
+            }
+
+            break;
+        }
+        case YP_NODE_FIND_PATTERN_NODE: {
+            yp_find_pattern_node_t *pattern_node = (yp_find_pattern_node_t *) inner;
+
+            if (pattern_node->constant == NULL) {
+                pattern_node->base.location.start = node->location.start;
+                pattern_node->base.location.end = closing.end;
+
+                pattern_node->constant = node;
+                pattern_node->opening_loc = (yp_location_t) { .start = opening.start, .end = opening.end };
+                pattern_node->closing_loc = (yp_location_t) { .start = closing.start, .end = closing.end };
+
+                return (yp_node_t *) pattern_node;
+            }
+
+            break;
+        }
+        case YP_NODE_HASH_PATTERN_NODE: {
+            yp_hash_pattern_node_t *pattern_node = (yp_hash_pattern_node_t *) inner;
+
+            if (pattern_node->constant == NULL) {
+                pattern_node->base.location.start = node->location.start;
+                pattern_node->base.location.end = closing.end;
+
+                pattern_node->constant = node;
+                pattern_node->opening_loc = (yp_location_t) { .start = opening.start, .end = opening.end };
+                pattern_node->closing_loc = (yp_location_t) { .start = closing.start, .end = closing.end };
+
+                return (yp_node_t *) pattern_node;
+            }
+
+            break;
+        }
+        default:
+            break;
+    }
+
+    // If we got here, then we didn't return one of the inner patterns by
+    // attaching its constant. In this case we'll create an array pattern and
+    // attach our constant to it.
+    yp_array_pattern_node_t *pattern_node = yp_array_pattern_node_constant_create(parser, node, &opening, &closing);
+    yp_array_pattern_node_requireds_append(pattern_node, inner);
+    return (yp_node_t *) pattern_node;
 }
 
 // Parse a rest pattern.
@@ -9897,8 +9975,6 @@ parse_pattern(yp_parser_t *parser, bool top_pattern, const char *message) {
 // Parse an expression that begins with the previous node that we just lexed.
 static inline yp_node_t *
 parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
-    yp_lex_mode_t *lex_mode = parser->lex_modes.current;
-
     switch (parser->current.type) {
         case YP_TOKEN_BRACKET_LEFT_ARRAY: {
             parser_lex(parser);
@@ -11015,7 +11091,10 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     lex_state_set(parser, YP_LEX_STATE_FNAME | YP_LEX_STATE_FITEM);
                     parser_lex(parser);
                     name = parse_undef_argument(parser);
-                    if (name->type == YP_NODE_MISSING_NODE) break;
+                    if (name->type == YP_NODE_MISSING_NODE) {
+                        yp_node_destroy(parser, name);
+                        break;
+                    }
 
                     yp_undef_node_append(undef, name);
                 }
@@ -11043,6 +11122,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     receiver = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, "Expected expression after `not`.");
 
                     if (!parser->recovering) {
+                        accept(parser, YP_TOKEN_NEWLINE);
                         expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected ')' after 'not' expression.");
                         arguments.closing_loc = ((yp_location_t) { .start = parser->previous.start, .end = parser->previous.end });
                     }
@@ -11727,9 +11807,12 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             return (yp_node_t *) node;
         }
         case YP_TOKEN_STRING_BEGIN: {
+            assert(parser->lex_modes.current->mode == YP_LEX_STRING);
+            bool lex_interpolation = parser->lex_modes.current->as.string.interpolation;
+
+            yp_token_t opening = parser->current;
             parser_lex(parser);
 
-            yp_token_t opening = parser->previous;
             yp_node_t *node;
 
             if (accept(parser, YP_TOKEN_STRING_END)) {
@@ -11754,7 +11837,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 };
 
                 return (yp_node_t *) yp_symbol_node_create(parser, &opening, &content, &parser->previous);
-            } else if (!lex_mode->as.string.interpolation) {
+            } else if (!lex_interpolation) {
                 // If we don't accept interpolation then we expect the string to start
                 // with a single string content node.
                 expect(parser, YP_TOKEN_STRING_CONTENT, "Expected string content after opening delimiter.");
@@ -11858,9 +11941,12 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 return node;
             }
         }
-        case YP_TOKEN_SYMBOL_BEGIN:
+        case YP_TOKEN_SYMBOL_BEGIN: {
+            yp_lex_mode_t lex_mode = *parser->lex_modes.current;
             parser_lex(parser);
-            return parse_symbol(parser, lex_mode, YP_LEX_STATE_END);
+
+            return parse_symbol(parser, &lex_mode, YP_LEX_STATE_END);
+        }
         default:
             if (context_recoverable(parser, &parser->current)) {
                 parser->recovering = true;
@@ -12482,82 +12568,8 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
                     return path;
                 }
-                case YP_TOKEN_AMPERSAND:
-                case YP_TOKEN_BACKTICK:
-                case YP_TOKEN_BANG:
-                case YP_TOKEN_BANG_EQUAL:
-                case YP_TOKEN_BANG_TILDE:
-                case YP_TOKEN_CARET:
-                case YP_TOKEN_EQUAL_EQUAL:
-                case YP_TOKEN_EQUAL_EQUAL_EQUAL:
-                case YP_TOKEN_EQUAL_TILDE:
-                case YP_TOKEN_GREATER:
-                case YP_TOKEN_GREATER_EQUAL:
-                case YP_TOKEN_GREATER_GREATER:
-                case YP_TOKEN_HEREDOC_START:
-                case YP_TOKEN_IGNORED_NEWLINE:
-                case YP_TOKEN_KEYWORD_ALIAS:
-                case YP_TOKEN_KEYWORD_AND:
-                case YP_TOKEN_KEYWORD_BEGIN:
-                case YP_TOKEN_KEYWORD_BEGIN_UPCASE:
-                case YP_TOKEN_KEYWORD_BREAK:
-                case YP_TOKEN_KEYWORD_CASE:
-                case YP_TOKEN_KEYWORD_CLASS:
-                case YP_TOKEN_KEYWORD_DEF:
-                case YP_TOKEN_KEYWORD_DEFINED:
-                case YP_TOKEN_KEYWORD_DO:
-                case YP_TOKEN_KEYWORD_ELSE:
-                case YP_TOKEN_KEYWORD_ELSIF:
-                case YP_TOKEN_KEYWORD_END:
-                case YP_TOKEN_KEYWORD_END_UPCASE:
-                case YP_TOKEN_KEYWORD_ENSURE:
-                case YP_TOKEN_KEYWORD_FALSE:
-                case YP_TOKEN_KEYWORD_FOR:
-                case YP_TOKEN_KEYWORD_IF:
-                case YP_TOKEN_KEYWORD_IN:
-                case YP_TOKEN_KEYWORD_NEXT:
-                case YP_TOKEN_KEYWORD_NIL:
-                case YP_TOKEN_KEYWORD_NOT:
-                case YP_TOKEN_KEYWORD_OR:
-                case YP_TOKEN_KEYWORD_REDO:
-                case YP_TOKEN_KEYWORD_RESCUE:
-                case YP_TOKEN_KEYWORD_RETRY:
-                case YP_TOKEN_KEYWORD_RETURN:
-                case YP_TOKEN_KEYWORD_SELF:
-                case YP_TOKEN_KEYWORD_SUPER:
-                case YP_TOKEN_KEYWORD_THEN:
-                case YP_TOKEN_KEYWORD_TRUE:
-                case YP_TOKEN_KEYWORD_UNDEF:
-                case YP_TOKEN_KEYWORD_UNLESS:
-                case YP_TOKEN_KEYWORD_UNTIL:
-                case YP_TOKEN_KEYWORD_WHEN:
-                case YP_TOKEN_KEYWORD_WHILE:
-                case YP_TOKEN_KEYWORD_YIELD:
-                case YP_TOKEN_KEYWORD___ENCODING__:
-                case YP_TOKEN_KEYWORD___FILE__:
-                case YP_TOKEN_KEYWORD___LINE__:
-                case YP_TOKEN_LESS:
-                case YP_TOKEN_LESS_EQUAL:
-                case YP_TOKEN_LESS_EQUAL_GREATER:
-                case YP_TOKEN_LESS_LESS:
-                case YP_TOKEN_MINUS:
-                case YP_TOKEN_PERCENT:
-                case YP_TOKEN_PERCENT_LOWER_I:
-                case YP_TOKEN_PERCENT_LOWER_W:
-                case YP_TOKEN_PERCENT_LOWER_X:
-                case YP_TOKEN_PERCENT_UPPER_I:
-                case YP_TOKEN_PERCENT_UPPER_W:
-                case YP_TOKEN_PIPE:
-                case YP_TOKEN_PLUS:
-                case YP_TOKEN_REGEXP_BEGIN:
-                case YP_TOKEN_SLASH:
-                case YP_TOKEN_STAR:
-                case YP_TOKEN_STAR_STAR:
-                case YP_TOKEN_TILDE:
-                case YP_TOKEN_UCOLON_COLON:
-                case YP_TOKEN_UDOT_DOT:
-                case YP_TOKEN_UDOT_DOT_DOT:
-                case YP_TOKEN___END__:
+                case YP_CASE_OPERATOR:
+                case YP_CASE_KEYWORD:
                 case YP_TOKEN_IDENTIFIER: {
                     parser_lex(parser);
 
@@ -12805,7 +12817,7 @@ yp_parser_init(yp_parser_t *parser, const char *source, size_t size, const char 
     } else if (size >= 2 && source[0] == '#' && source[1] == '!') {
         // If the first two bytes of the source are a shebang, then we'll indicate
         // that the encoding comment is at the end of the shebang.
-        const char *encoding_comment_start = memchr(source, '\n', size);
+        const char *encoding_comment_start = next_newline(source, (ptrdiff_t) size);
         if (encoding_comment_start) {
             parser->encoding_comment_start = encoding_comment_start + 1;
         }
@@ -12891,6 +12903,3 @@ yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer) {
 #undef YP_CASE_KEYWORD
 #undef YP_CASE_OPERATOR
 #undef YP_CASE_WRITABLE
-#undef YP_STRINGIZE
-#undef YP_STRINGIZE0
-#undef YP_VERSION_MACRO
