@@ -705,6 +705,63 @@ module TestIRB
       end
     end
 
+    def test_pasted_code_keep_base_indent_spaces
+      input_with_correct_indents = [
+        Row.new(%q(    def foo), 0, 6, 1),
+        Row.new(%q(        if bar), 6, 10, 2),
+        Row.new(%q(          [1), 10, 12, 3),
+        Row.new(%q(          ]+[["a), 10, 14, 4),
+        Row.new(%q(b" + `c), 0, 14, 4),
+        Row.new(%q(d` + /e), 0, 14, 4),
+        Row.new(%q(f/ + :"g), 0, 14, 4),
+        Row.new(%q(h".tap do), 0, 16, 5),
+        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(              end), 14, 14, 4),
+        Row.new(%q(            ]), 12, 12, 3),
+        Row.new(%q(          ]), 10, 10, 2),
+        Row.new(%q(        end), 8, 6, 1),
+        Row.new(%q(    end), 4, 0, 0),
+      ]
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_row_indenting(lines, row)
+        assert_indent_level(lines, row.indent_level)
+      end
+    end
+
+    def test_pasted_code_keep_base_indent_spaces_with_heredoc
+      input_with_correct_indents = [
+        Row.new(%q(    def foo), 0, 6, 1),
+        Row.new(%q(        if bar), 6, 10, 2),
+        Row.new(%q(          [1), 10, 12, 3),
+        Row.new(%q(          ]+[["a), 10, 14, 4),
+        Row.new(%q(b" + <<~A + <<-B + <<C), 0, 16, 5),
+        Row.new(%q(                a#{), 16, 16, 5),
+        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(                }), 16, 16, 5),
+        Row.new(%q(              A), 14, 16, 5),
+        Row.new(%q(                b#{), 16, 16, 5),
+        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(                }), 16, 16, 5),
+        Row.new(%q(              B), 14, 0, 0),
+        Row.new(%q(c#{), 0, 0, 0),
+        Row.new(%q(1), 0, 0, 0),
+        Row.new(%q(}), 0, 0, 0),
+        Row.new(%q(C), 0, 14, 4),
+        Row.new(%q(            ]), 12, 12, 3),
+        Row.new(%q(          ]), 10, 10, 2),
+        Row.new(%q(        end), 8, 6, 1),
+        Row.new(%q(    end), 4, 0, 0),
+      ]
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_row_indenting(lines, row)
+        assert_indent_level(lines, row.indent_level)
+      end
+    end
+
     def assert_dynamic_prompt(lines, expected_prompt_list)
       context = build_context
       ruby_lex = RubyLex.new(context)
