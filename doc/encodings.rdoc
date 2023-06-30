@@ -146,7 +146,7 @@ The default encoding for a string created with method String.new is:
 
 - For a \String object argument, the encoding of that string.
 - For a string literal, the script encoding;
-  see {Script Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-Script+Encoding].
+  see {Script Encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].
 
 In either case, any encoding may be specified:
 
