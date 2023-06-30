@@ -6117,7 +6117,9 @@ fn gen_invokeblock(
         // Not supporting vm_callee_setup_block_arg_arg0_splat for now
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
         let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
-        if argc == 1 && unsafe { get_iseq_flags_has_lead(comptime_iseq) && !get_iseq_flags_ambiguous_param0(comptime_iseq) } {
+        if argc == 1 && unsafe {
+                (get_iseq_flags_has_lead(comptime_iseq) || get_iseq_body_param_opt_num(comptime_iseq) > 1) &&
+                !get_iseq_flags_ambiguous_param0(comptime_iseq) } {
             gen_counter_incr!(asm, invokeblock_iseq_arg0_splat);
             return CantCompile;
         }
