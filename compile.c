@@ -13313,16 +13313,12 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 #endif
             pinned_list_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
-#if !USE_LAZY_LOAD
+            if (!USE_LAZY_LOAD || GET_VM()->builtin_function_table) {
 #if IBF_ISEQ_DEBUG
-            fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", (void *)iseq);
+                fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", (void *)iseq);
 #endif
-            rb_ibf_load_iseq_complete(iseq);
-#else
-            if (GET_VM()->builtin_function_table) {
                 rb_ibf_load_iseq_complete(iseq);
             }
-#endif /* !USE_LAZY_LOAD */
 
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_iseq: iseq=%p loaded %p\n",
@@ -13379,9 +13375,9 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
         rb_raise(rb_eRuntimeError, "broken binary format");
     }
 
-#if USE_LAZY_LOAD
-    str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-#endif
+    if (USE_LAZY_LOAD) {
+        str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+    }
 
     ibf_load_setup_bytes(load, loader_obj, StringValuePtr(str), RSTRING_LEN(str));
     RB_OBJ_WRITE(loader_obj, &load->str, str);
