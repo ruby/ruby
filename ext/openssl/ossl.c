@@ -272,23 +272,28 @@ VALUE
 ossl_make_error(VALUE exc, VALUE str)
 {
     unsigned long e;
+    const char *data;
+    int flags;
 
-    e = ERR_peek_last_error();
+    if (NIL_P(str))
+        str = rb_str_new(NULL, 0);
+
+#ifdef HAVE_ERR_GET_ERROR_ALL
+    e = ERR_peek_last_error_all(NULL, NULL, NULL, &data, &flags);
+#else
+    e = ERR_peek_last_error_line_data(NULL, NULL, &data, &flags);
+#endif
     if (e) {
-	const char *msg = ERR_reason_error_string(e);
+        const char *msg = ERR_reason_error_string(e);
 
-	if (NIL_P(str)) {
-	    if (msg) str = rb_str_new_cstr(msg);
-	}
-	else {
-	    if (RSTRING_LEN(str)) rb_str_cat2(str, ": ");
-	    rb_str_cat2(str, msg ? msg : "(null)");
-	}
-	ossl_clear_error();
+        if (RSTRING_LEN(str)) rb_str_cat_cstr(str, ": ");
+        rb_str_cat_cstr(str, msg ? msg : "(null)");
+        if (flags & ERR_TXT_STRING && data)
+            rb_str_catf(str, " (%s)", data);
+        ossl_clear_error();
     }
 
-    if (NIL_P(str)) str = rb_str_new(0, 0);
-    return rb_exc_new3(exc, str);
+    return rb_exc_new_str(exc, str);
 }
 
 void
