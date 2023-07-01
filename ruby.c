@@ -1449,7 +1449,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_arg("backtrace-limit", Qfalse, Qtrue)) {
         char *e;
         long n = strtol(s, &e, 10);
-        if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+        if (errno == ERANGE || n < -1 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
         opt->backtrace_length_limit = (int)n;
     }
     else {
