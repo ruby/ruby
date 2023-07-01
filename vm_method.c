@@ -1133,6 +1133,7 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
                                                     me->def->type, me->def, 0, NULL);
     if (newme == me) {
         me->def->no_redef_warning = TRUE;
+        METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
     }
     else {
         method_definition_addref(me->def);
