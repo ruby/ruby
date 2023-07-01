@@ -552,6 +552,9 @@ struct rb_iseq_struct {
 #define USE_LAZY_LOAD 0
 #endif
 
+#if !USE_LAZY_LOAD
+static inline const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq) {return 0;}
+#endif
 const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
 
 static inline const rb_iseq_t *
