@@ -72,7 +72,7 @@ class WebauthnPollerTest < Gem::TestCase
       msg: "OK"
     )
 
-    assert_raises Timeout::Error do
+    assert_raise Timeout::Error do
       Timeout.timeout(0.1) do
         Gem::GemcutterUtilities::WebauthnPoller.new({}, @host).poll_for_otp(@webauthn_url, @credentials)
       end
@@ -86,7 +86,7 @@ class WebauthnPollerTest < Gem::TestCase
       msg: "Unauthorized"
     )
 
-    error = assert_raises Gem::WebauthnVerificationError do
+    error = assert_raise Gem::WebauthnVerificationError do
       Gem::GemcutterUtilities::WebauthnPoller.new({}, @host).poll_for_otp(@webauthn_url, @credentials)
     end
 
@@ -100,7 +100,7 @@ class WebauthnPollerTest < Gem::TestCase
       msg: "OK"
     )
 
-    error = assert_raises Gem::WebauthnVerificationError do
+    error = assert_raise Gem::WebauthnVerificationError do
       Gem::GemcutterUtilities::WebauthnPoller.new({}, @host).poll_for_otp(@webauthn_url, @credentials)
     end
 
@@ -114,7 +114,7 @@ class WebauthnPollerTest < Gem::TestCase
       msg: "OK"
     )
 
-    error = assert_raises Gem::WebauthnVerificationError do
+    error = assert_raise Gem::WebauthnVerificationError do
       Gem::GemcutterUtilities::WebauthnPoller.new({}, @host).poll_for_otp(@webauthn_url, @credentials)
     end
 
