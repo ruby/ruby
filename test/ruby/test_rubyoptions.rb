@@ -74,7 +74,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_backtrace_limit
     assert_in_out_err(%w(--backtrace-limit), "", [], /missing argument for --backtrace-limit/)
     assert_in_out_err(%w(--backtrace-limit= 1), "", [], /missing argument for --backtrace-limit/)
-    assert_in_out_err(%w(--backtrace-limit=-1), "", [], /wrong limit for backtrace length/)
+    assert_in_out_err(%w(--backtrace-limit=-2), "", [], /wrong limit for backtrace length/)
     code = 'def f(n);n > 0 ? f(n-1) : raise;end;f(5)'
     assert_in_out_err(%w(--backtrace-limit=1), code, [],
                       [/.*unhandled exception\n/, /^\tfrom .*\n/,
