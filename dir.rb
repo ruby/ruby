@@ -1,11 +1,69 @@
-# Objects of class Dir are directory streams representing
-# directories in the underlying file system. They provide a variety
-# of ways to list directories and their contents. See also File.
+# An object of class \Dir represents a directory in the underlying file systems.
 #
-# The directory used in these examples contains the two regular files
-# (<code>config.h</code> and <code>main.rb</code>), the parent
-# directory (<code>..</code>), and the directory itself
-# (<code>.</code>).
+# == About the Examples
+#
+# The file tree for the examples on this page:
+#
+#   example/
+#   ├── config.h
+#   ├── lib/
+#   │   ├── song/
+#   │   │   └── karaoke.rb
+#   │   └── song.rb
+#   └── main.rb
+#
+# == \Dir As \Array-Like
+#
+# A \Dir object is in some ways array-like:
+#
+# - It has instance methods #children, #each, and #each_child.
+# - It includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here].
+#
+# == \Dir As Stream-Like
+#
+# A \Dir object is in some ways stream-like.
+#
+# The stream is initially open for reading,
+# but may be closed (method Dir#close),
+# and will be closed on block exit if created by Dir.open called with a block.
+#
+# The stream has a _position_, which is an index of an entry in the directory:
+#
+# - The initial position is zero.
+# - \Method #tell (aliased as #pos) returns the position.
+# - \Method #pos= sets the position (but ignores a value outside the stream),
+#   and returns the position.
+# - \Method #seek is like #pos, but returns +self+ (convenient for chaining).
+# - \Method #read, if not at end-of-stream, reads the next entry and increments
+#   the position;
+#   if at end-of-stream, does not increment the position.
+# - \Method #rewind sets the position to zero.
+#
+# Example:
+#
+#   dir = Dir.new('example') # => #<Dir:example>
+#   dir.pos                  # => 0
+#
+#   dir.read # => "."
+#   dir.read # => ".."
+#   dir.read # => "config.h"
+#   dir.read # => "lib"
+#   dir.read # => "main.rb"
+#   dir.pos  # => 5
+#   dir.read # => nil
+#   dir.pos  # => 5
+#
+#   dir.rewind # => #<Dir:example>
+#   dir.pos    # => 0
+#
+#   dir.pos = 3 # => 3
+#   dir.pos     # => 3
+#
+#   dir.seek(4) # => #<Dir:example>
+#   dir.pos     # => 4
+#
+#   dir.close # => nil
+#   dir.read  # Raises IOError.
 #
 # == What's Here
 #
@@ -80,20 +138,26 @@
 #   closing it upon block exit.
 # - ::unlink (aliased as ::delete and ::rmdir): Removes the given directory.
 # - #inspect: Returns a string description of +self+.
+#
 class Dir
-  # call-seq:
-  #    Dir.open( string ) -> aDir
-  #    Dir.open( string, encoding: enc ) -> aDir
-  #    Dir.open( string ) {| aDir | block } -> anObject
-  #    Dir.open( string, encoding: enc ) {| aDir | block } -> anObject
+  # Creates a new \Dir object _dir_ for the directory at +dirpath+.
   #
-  # The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
-  # If not specified, the filesystem encoding is used.
+  # With no block, the method equivalent to Dir.new(dirpath, encoding):
   #
-  # With no block, <code>open</code> is a synonym for Dir::new. If a
-  # block is present, it is passed <i>aDir</i> as a parameter. The
-  # directory is closed at the end of the block, and Dir::open returns
-  # the value of the block.
+  #   Dir.open('.') # => #<Dir:.>
+  #
+  # With a block given, the block is called with the created _dir_;
+  # on block exit _dir_ is closed and the block's value is returned:
+  #
+  #   Dir.open('.') {|dir| dir.inspect } # => "#<Dir:.>"
+  #
+  # The value given with optional keyword argument +encoding+
+  # specifies the encoding for the directory entry names;
+  # if +nil+ (the default), the file system's encoding is used:
+  #
+  #   Dir.open('.').read.encoding                       # => #<Encoding:UTF-8>
+  #   Dir.open('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #
   def self.open(name, encoding: nil, &block)
     dir = Primitive.dir_s_open(name, encoding)
     if block
@@ -107,115 +171,106 @@ class Dir
     end
   end
 
-  # call-seq:
-  #    Dir.new( string ) -> aDir
-  #    Dir.new( string, encoding: enc ) -> aDir
+  # Returns a new \Dir object for the directory at +dirpath+:
   #
-  # Returns a new directory object for the named directory.
+  #   Dir.new('.') # => #<Dir:.>
   #
-  # The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
-  # If not specified, the filesystem encoding is used.
+  # The value given with optional keyword argument +encoding+
+  # specifies the encoding for the directory entry names;
+  # if +nil+ (the default), the file system's encoding is used:
+  #
+  #   Dir.new('.').read.encoding                     # => #<Encoding:UTF-8>
+  #   Dir.new('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #
   def initialize(name, encoding: nil)
     Primitive.dir_initialize(name, encoding)
   end
 
-  # call-seq:
-  #    Dir[ string [, string ...] [, base: path] [, sort: true] ] -> array
+  # Calls Dir.glob with argument <tt>*dirpaths</tt>
+  # and the values of keyword arguments +base+ and +sort+;
+  # returns the array of selected entry names.
   #
-  # Equivalent to calling
-  # <code>Dir.glob([</code><i>string,...</i><code>], 0)</code>.
   def self.[](*args, base: nil, sort: true)
     Primitive.dir_s_aref(args, base, sort)
   end
 
-  # call-seq:
-  #    Dir.glob( pattern, [flags], [base: path] [, sort: true] )                       -> array
-  #    Dir.glob( pattern, [flags], [base: path] [, sort: true] ) { |filename| block }  -> nil
+  # Forms an array of the entry names selected by the arguments.
   #
-  # Expands +pattern+, which is a pattern string or an Array of pattern
-  # strings, and returns an array containing the matching filenames.
-  # If a block is given, calls the block once for each matching filename,
-  # passing the filename as a parameter to the block.
+  # Argument +pattern+ is a pattern string or an array of pattern strings.
   #
-  # The optional +base+ keyword argument specifies the base directory for
-  # interpreting relative pathnames instead of the current working directory.
-  # As the results are not prefixed with the base directory name in this
-  # case, you will need to prepend the base directory name if you want real
-  # paths.
+  # With no block, returns an array of selected entry names;
+  # with a block, calls the block with each selected entry name.
   #
-  # The results which matched single wildcard or character set are sorted in
-  # binary ascending order, unless +false+ is given as the optional +sort+
-  # keyword argument.  The order of an Array of pattern strings and braces
-  # are preserved.
+  # Each pattern string (which is _not_ a regexp) is expanded
+  # according to certain metacharacters:
   #
-  # Note that the pattern is not a regexp, it's closer to a shell glob.
-  # See File::fnmatch for the meaning of the +flags+ parameter.
-  # Case sensitivity depends on your system (+File::FNM_CASEFOLD+ is ignored).
+  # - <tt>'*'</tt>: Matches any substring in an entry name,
+  #   similar in meaning to regexp <tt>/.*/mx</tt>;
+  #   may be restricted by other values in the pattern strings:
   #
-  # <code>*</code>::
-  #   Matches any file. Can be restricted by other values in the glob.
-  #   Equivalent to <code>/.*/mx</code> in regexp.
+  #   - <tt>'*'</tt> matches all entry names.
+  #   - <tt>'c*'</tt> matches entry names beginning with <tt>'c'</tt>.
+  #   - <tt>'*c'</tt> matches entry names ending with <tt>'c'</tt>.
+  #   - <tt>'\*c\*'</tt> matches entry names that contain <tt>'c'</tt>,
+  #     even at the beginning or end.
   #
-  #   <code>*</code>::     Matches all files
-  #   <code>c*</code>::    Matches all files beginning with <code>c</code>
-  #   <code>*c</code>::    Matches all files ending with <code>c</code>
-  #   <code>\*c\*</code>:: Match all files that have <code>c</code> in them
-  #                        (including at the beginning or end).
+  #   Does not match Unix-like hidden entry names ("dotfiles").
+  #   To include those in the matched entry names,
+  #   use flag File::FNM_DOTMATCH or something like <tt>'{*,.*}'</tt>.
   #
-  #   Note, this will not match Unix-like hidden files (dotfiles).  In order
-  #   to include those in the match results, you must use the
-  #   File::FNM_DOTMATCH flag or something like <code>"{*,.*}"</code>.
+  #  - <tt>'**'</tt>: Matches entry names recursively if followed by <tt>'/'</tt>.
+  #    If the string pattern contains any other characters,
+  #    it is equivalent to <tt>'*'</tt>.
   #
-  # <code>**</code>::
-  #   Matches directories recursively if followed by <code>/</code>.  If
-  #   this path segment contains any other characters, it is the same as the
-  #   usual <code>*</code>.
+  # - <tt>'?'</tt> Matches any single character;
+  #   similar in meaning to regexp <tt>/.{1}/</tt>.
   #
-  # <code>?</code>::
-  #   Matches any one character. Equivalent to <code>/.{1}/</code> in regexp.
+  # - <tt>'[_set_]'</tt>: Matches any one character in the string _set_;
+  #   behaves like a {Regexp character class}[rdoc-ref:regexp.rdoc@Character+Classes],
+  #   including set negation (<tt>'[^a-z]'</tt>).
   #
-  # <code>[set]</code>::
-  #   Matches any one character in +set+.  Behaves exactly like character sets
-  #   in Regexp, including set negation (<code>[^a-z]</code>).
+  # - <tt>'{_abc_,_xyz_}'</tt>:
+  #   Matches either string _abc_ or string _xyz_;
+  #   behaves like {Regexp alternation}[rdoc-ref:regexp.rdoc@Alternation],
+  #   More than two alternatives may be given.
   #
-  # <code>{p,q}</code>::
-  #   Matches either literal <code>p</code> or literal <code>q</code>.
-  #   Equivalent to pattern alternation in regexp.
+  # - <tt>\\</tt>: Escapes the following metacharacter.
   #
-  #   Matching literals may be more than one character in length.  More than
-  #   two literals may be specified.
+  #   Note that on Windows, the backslash character may not be used
+  #   in a string pattern:
+  #   <tt>Dir['c:\\foo*']</tt> will not work, use <tt>Dir['c:/foo*']</tt> instead.
   #
-  # <code>\\</code>::
-  #   Escapes the next metacharacter.
+  # If optional keyword argument +base+ is given,
+  # each pattern string specifies entries relative to the specified directory;
+  # the default is <tt>'.'</tt>.
+  # The base directory is not prepended to the entry names in the result.
   #
-  #   Note that this means you cannot use backslash on windows as part of a
-  #   glob, i.e.  <code>Dir["c:\\foo*"]</code> will not work, use
-  #   <code>Dir["c:/foo*"]</code> instead.
+  # If optional keyword +sort+ is given, its value specifies whether
+  # the array is to be sorted;
+  # the default is +true+.
   #
   # Examples:
   #
-  #    Dir["config.?"]                     #=> ["config.h"]
-  #    Dir.glob("config.?")                #=> ["config.h"]
-  #    Dir.glob("*.[a-z][a-z]")            #=> ["main.rb"]
-  #    Dir.glob("*.[^r]*")                 #=> ["config.h"]
-  #    Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
-  #    Dir.glob("*")                       #=> ["config.h", "main.rb"]
-  #    Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "config.h", "main.rb"]
-  #    Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
+  #   Dir.glob('config.?')              # => ["config.h"]
+  #   Dir.glob('*.[a-z][a-z]')          # => ["main.rb"]
+  #   Dir.glob('*.[^r]*')               # => ["config.h"]
+  #   Dir.glob('*.{rb,h}')              # => ["main.rb", "config.h"]
+  #   Dir.glob('*')                     # => ["config.h", "lib", "main.rb"]
+  #   Dir.glob('*', File::FNM_DOTMATCH) # => [".", "config.h", "lib", "main.rb"]
+  #   Dir.glob(["*.rb", "*.h"])         # => ["main.rb", "config.h"]
   #
-  #    Dir.glob("**/*.rb")                 #=> ["main.rb",
-  #                                        #    "lib/song.rb",
-  #                                        #    "lib/song/karaoke.rb"]
   #
-  #    Dir.glob("**/*.rb", base: "lib")    #=> ["song.rb",
-  #                                        #    "song/karaoke.rb"]
+  #   Dir.glob('**/*.rb')
+  #   => ["lib/song/karaoke.rb", "lib/song.rb", "main.rb"]
   #
-  #    Dir.glob("**/lib")                  #=> ["lib"]
+  #   Dir.glob('**/*.rb', base: 'lib')  #   => ["song/karaoke.rb", "song.rb"]
   #
-  #    Dir.glob("**/lib/**/*.rb")          #=> ["lib/song.rb",
-  #                                        #    "lib/song/karaoke.rb"]
+  #   Dir.glob('**/lib')                # => ["lib"]
   #
-  #    Dir.glob("**/lib/*.rb")             #=> ["lib/song.rb"]
+  #   Dir.glob('**/lib/**/*.rb')        # => ["lib/song/karaoke.rb", "lib/song.rb"]
+  #
+  #   Dir.glob('**/lib/*.rb')           # => ["lib/song.rb"]
+  #
   def self.glob(pattern, _flags = 0, flags: _flags, base: nil, sort: true)
     Primitive.dir_s_glob(pattern, flags, base, sort)
   end
