@@ -694,21 +694,6 @@ module Psych
     dump_tags[klass] = tag
   end
 
-  # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
-  def self.warn_with_uplevel(message, uplevel: 1)
-    at = parse_caller(caller[uplevel]).join(':')
-    warn "#{at}: #{message}"
-  end
-
-  def self.parse_caller(at)
-    if /^(.+?):(\d+)(?::in `.*')?/ =~ at
-      file = $1
-      line = $2.to_i
-      [file, line]
-    end
-  end
-  private_class_method :warn_with_uplevel, :parse_caller
-
   class << self
     if defined?(Ractor)
       require 'forwardable'
