@@ -445,7 +445,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     )
 
     TCPServer.stub(:new, server) do
-      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:otp] = "Uvh6T57tkWuUnWYo" }) do
         use_ui @ui do
           @cmd.send_gem(@path)
         end
@@ -467,7 +467,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     response_success = "Successfully registered gem: freewill (1.0.0)"
     port = 5678
     server = TCPServer.new(port)
-    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+    error = Gem::WebauthnVerificationError.new("Something went wrong")
 
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
@@ -482,7 +482,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
           use_ui @ui do
             @cmd.send_gem(@path)
           end

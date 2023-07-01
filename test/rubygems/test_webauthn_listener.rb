@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require "rubygems/webauthn_listener"
+require "rubygems/gemcutter_utilities/webauthn_listener"
+require "rubygems/gemcutter_utilities"
 
 class WebauthnListenerTest < Gem::TestCase
   def setup
@@ -14,6 +15,22 @@ class WebauthnListenerTest < Gem::TestCase
     @thread.kill.join if @thread
     @server&.close
     super
+  end
+
+  def test_listener_thread_retreives_otp_code
+    thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
+    Gem::MockBrowser.get URI("http://localhost:#{@port}?code=xyz")
+
+    thread.join
+    assert_equal "xyz", thread[:otp]
+  end
+
+  def test_listener_thread_sets_error
+    thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
+    Gem::MockBrowser.post URI("http://localhost:#{@port}?code=xyz")
+
+    thread.join
+    assert_equal "Security device verification failed: Invalid HTTP method POST received.", thread[:error].message
   end
 
   def test_wait_for_otp_code_get_follows_options
@@ -106,7 +123,7 @@ class WebauthnListenerTest < Gem::TestCase
 
   def wait_for_otp_code
     @thread = Thread.new do
-      Thread.current[:otp] = Gem::GemcutterUtilities::WebauthnListener.wait_for_otp_code(Gem.host, @server)
+      Thread.current[:otp] = Gem::GemcutterUtilities::WebauthnListener.new(Gem.host).wait_for_otp_code(@server)
     end
     @thread.abort_on_exception = true
     @thread.report_on_exception = false
@@ -115,7 +132,7 @@ class WebauthnListenerTest < Gem::TestCase
   def wait_for_otp_code_expect_error_with_message(message)
     @thread = Thread.new do
       error = assert_raise Gem::WebauthnVerificationError do
-        Thread.current[:otp] = Gem::GemcutterUtilities::WebauthnListener.wait_for_otp_code(Gem.host, @server)
+        Thread.current[:otp] = Gem::GemcutterUtilities::WebauthnListener.new(Gem.host).wait_for_otp_code(@server)
       end
 
       assert_equal message, error.message

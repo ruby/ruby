@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require "rubygems/webauthn_listener/response"
+require "rubygems/gemcutter_utilities/webauthn_listener/response"
 
 class WebauthnListenerResponseTest < Gem::TestCase
   def setup

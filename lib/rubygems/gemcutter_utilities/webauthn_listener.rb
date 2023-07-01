@@ -18,8 +18,10 @@ require_relative "webauthn_listener/response"
 #
 # Example usage:
 #
-#   server = TCPServer.new(0)
-#   otp = Gem::WebauthnListener.wait_for_otp_code("https://rubygems.example", server)
+#   thread = Gem::WebauthnListener.listener_thread("https://rubygems.example", server)
+#   thread.join
+#   otp = thread[:otp]
+#   error = thread[:error]
 #
 
 module Gem::GemcutterUtilities
@@ -32,7 +34,7 @@ module Gem::GemcutterUtilities
 
     def self.listener_thread(host, server)
       thread = Thread.new do
-        Thread.current[:otp] = wait_for_otp_code(host, server)
+        Thread.current[:otp] = new(host).wait_for_otp_code(server)
       rescue Gem::WebauthnVerificationError => e
         Thread.current[:error] = e
       ensure
@@ -44,11 +46,7 @@ module Gem::GemcutterUtilities
       thread
     end
 
-    def self.wait_for_otp_code(host, server)
-      new(host).fetch_otp_from_connection(server)
-    end
-
-    def fetch_otp_from_connection(server)
+    def wait_for_otp_code(server)
       loop do
         socket = server.accept
         request_line = socket.gets

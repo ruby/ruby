@@ -381,7 +381,7 @@ EOF
     )
 
     TCPServer.stub(:new, server) do
-      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:otp] = "Uvh6T57tkWuUnWYo" }) do
         use_ui @stub_ui do
           @cmd.add_owners("freewill", ["user-new1@example.com"])
         end
@@ -403,7 +403,7 @@ EOF
     response_success = "Owner added successfully."
     port = 5678
     server = TCPServer.new(port)
-    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+    error = Gem::WebauthnVerificationError.new("Something went wrong")
 
     @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
@@ -417,7 +417,7 @@ EOF
     )
 
     TCPServer.stub(:new, server) do
-      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
         use_ui @stub_ui do
           @cmd.add_owners("freewill", ["user-new1@example.com"])
         end

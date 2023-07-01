@@ -141,7 +141,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     @cmd.options[:version]        = req("= 1.0")
 
     TCPServer.stub(:new, server) do
-      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:otp] = "Uvh6T57tkWuUnWYo" }) do
         use_ui @ui do
           @cmd.execute
         end
@@ -166,7 +166,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     status_uri = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY/status.json"
     port = 5678
     server = TCPServer.new(port)
-    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+    error = Gem::WebauthnVerificationError.new("Something went wrong")
 
     @fetcher.data[webauthn_uri] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
     @fetcher.data[yank_uri] = [
@@ -185,7 +185,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
           use_ui @ui do
             @cmd.execute
           end

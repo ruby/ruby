@@ -229,7 +229,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @fetcher.respond_with_require_otp
     @fetcher.respond_with_webauthn_url(webauthn_verification_url)
     TCPServer.stub(:new, server) do
-      Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+      Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:otp] = "Uvh6T57tkWuUnWYo" }) do
         util_sign_in
       end
     ensure
@@ -246,13 +246,13 @@ class TestGemGemcutterUtilities < Gem::TestCase
     webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
     port = 5678
     server = TCPServer.new(port)
-    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+    error = Gem::WebauthnVerificationError.new("Something went wrong")
 
     @fetcher.respond_with_require_otp
     @fetcher.respond_with_webauthn_url(webauthn_verification_url)
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::GemcutterUtilities::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
           util_sign_in
         end
       ensure
