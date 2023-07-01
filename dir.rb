@@ -208,30 +208,56 @@ class Dir
   #   similar in meaning to regexp <tt>/.*/mx</tt>;
   #   may be restricted by other values in the pattern strings:
   #
-  #   - <tt>'*'</tt> matches all entry names.
-  #   - <tt>'c*'</tt> matches entry names beginning with <tt>'c'</tt>.
-  #   - <tt>'*c'</tt> matches entry names ending with <tt>'c'</tt>.
-  #   - <tt>'\*c\*'</tt> matches entry names that contain <tt>'c'</tt>,
-  #     even at the beginning or end.
+  #   - <tt>'*'</tt> matches all entry names:
   #
-  #   Does not match Unix-like hidden entry names ("dotfiles").
+  #       # We're in the ruby project.
+  #       File.basename(Dir.pwd) # => "ruby"
+  #       Dir.glob('*').take(3)  # => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+  #
+  #   - <tt>'C*'</tt> matches entry names beginning with <tt>'c'</tt>:
+  #
+  #       Dir.glob('c*').take(3) # => ["CONTRIBUTING.md", "COPYING", "COPYING.ja"]
+  #
+  #   - <tt>'*c'</tt> matches entry names ending with <tt>'c'</tt>:
+  #
+  #       Dir.glob('*c').take(3) # => ["addr2line.c", "array.c", "ast.c"]
+  #
+  #   - <tt>'\*c\*'</tt> matches entry names that contain <tt>'c'</tt>,
+  #     even at the beginning or end:
+  #
+  #       Dir.glob('*c*').take(3) # => ["CONTRIBUTING.md", "COPYING", "COPYING.ja"]
+  #
+  #   Does not match Unix-like hidden entry names ("dot files").
   #   To include those in the matched entry names,
   #   use flag File::FNM_DOTMATCH or something like <tt>'{*,.*}'</tt>.
   #
-  #  - <tt>'**'</tt>: Matches entry names recursively if followed by <tt>'/'</tt>.
-  #    If the string pattern contains any other characters,
+  #  - <tt>'**'</tt>: Matches entry names recursively
+  #    if followed by  the slash character <tt>'/'</tt>:
+  #
+  #      Dir.glob('**/').take(3) # => ["basictest/", "benchmark/", "benchmark/gc/"]
+  #
+  #    If the string pattern contains other characters
+  #    or is not followed by a slash character,
   #    it is equivalent to <tt>'*'</tt>.
   #
   # - <tt>'?'</tt> Matches any single character;
-  #   similar in meaning to regexp <tt>/.{1}/</tt>.
+  #   similar in meaning to regexp <tt>/.{1}/</tt>:
+  #
+  #     Dir.glob('io.?') # => ["io.c"]
   #
   # - <tt>'[_set_]'</tt>: Matches any one character in the string _set_;
   #   behaves like a {Regexp character class}[rdoc-ref:regexp.rdoc@Character+Classes],
-  #   including set negation (<tt>'[^a-z]'</tt>).
+  #   including set negation (<tt>'[^a-z]'</tt>):
+  #
+  #     Dir.glob('*.[a-z][a-z]').take(3)
+  #     # => ["CONTRIBUTING.md", "COPYING.ja", "KNOWNBUGS.rb"]
   #
   # - <tt>'{_abc_,_xyz_}'</tt>:
   #   Matches either string _abc_ or string _xyz_;
-  #   behaves like {Regexp alternation}[rdoc-ref:regexp.rdoc@Alternation],
+  #   behaves like {Regexp alternation}[rdoc-ref:regexp.rdoc@Alternation]:
+  #
+  #     Dir.glob('{LEGAL,BSDL}') # => ["LEGAL", "BSDL"]
+  #
   #   More than two alternatives may be given.
   #
   # - <tt>\\</tt>: Escapes the following metacharacter.
@@ -251,6 +277,8 @@ class Dir
   #
   # Examples:
   #
+  #   # We're in the example directory.
+  #   File.basename(Dir.pwd) # => "example"
   #   Dir.glob('config.?')              # => ["config.h"]
   #   Dir.glob('*.[a-z][a-z]')          # => ["main.rb"]
   #   Dir.glob('*.[^r]*')               # => ["config.h"]
@@ -258,7 +286,6 @@ class Dir
   #   Dir.glob('*')                     # => ["config.h", "lib", "main.rb"]
   #   Dir.glob('*', File::FNM_DOTMATCH) # => [".", "config.h", "lib", "main.rb"]
   #   Dir.glob(["*.rb", "*.h"])         # => ["main.rb", "config.h"]
-  #
   #
   #   Dir.glob('**/*.rb')
   #   => ["lib/song/karaoke.rb", "lib/song.rb", "main.rb"]
