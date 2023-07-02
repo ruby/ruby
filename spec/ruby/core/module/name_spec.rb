@@ -7,15 +7,37 @@ describe "Module#name" do
   end
 
   ruby_version_is "3.3" do
-    it "can assign a temporary name" do
+    it "can assign, reassign, and clear a temporary name in a module object" do
       m = Module.new
       m.name.should be_nil
 
-      m.set_temporary_name("fake_name")
-      m.name.should == "fake_name"
+      m.set_temporary_name("tmp-name-1")
+      m.name.should == "tmp-name-1"
+
+      m.set_temporary_name("tmp-name-2")
+      m.name.should == "tmp-name-2"
 
       m.set_temporary_name(nil)
       m.name.should be_nil
+    end
+
+    it "can assign, reassign, and clear a temporary name in a class object" do
+      c = Class.new
+      c.name.should be_nil
+
+      c.set_temporary_name("tmp-name-1")
+      c.name.should == "tmp-name-1"
+
+      c.set_temporary_name("tmp-name-2")
+      c.name.should == "tmp-name-2"
+
+      c.set_temporary_name(nil)
+      c.name.should be_nil
+    end
+
+    it "returns the receiver" do
+      m = Module.new
+      m.set_temporary_name("foo").should equal(m)
     end
 
     it "can't assign empty string as name" do
@@ -28,7 +50,7 @@ describe "Module#name" do
       -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "name must not be valid constant name")
     end
 
-    it "can't assign name to permanent module" do
+    it "can't assign a temporary name to a module with a permanent name" do
       -> { Object.set_temporary_name("fake_name") }.should raise_error(RuntimeError, "can't change permanent name")
     end
 
@@ -52,6 +74,65 @@ describe "Module#name" do
 
       m::M = m::N
       m::M.name.should =~ /\A#<Module:0x\h+>::M\z/m
+    end
+
+    it "does not update the names of nested modules on temporary name reset" do
+      m = Module.new
+      m.set_temporary_name("foo")
+
+      m::N = Module.new
+      m::N.name.should == "foo::N"
+
+      m.set_temporary_name("bar")
+      m::N.name.should == "foo::N"
+
+      m.set_temporary_name(nil)
+      m::N.name.should == "foo::N"
+    end
+
+    it "uses a reset temporary name as prefix in further constant assignments" do
+      m = Module.new
+      m.set_temporary_name("foo")
+
+      m::X = Module.new
+      m::X.name.should == "foo::X"
+
+      m.set_temporary_name("bar")
+      m::Y = Module.new
+      m::Y.name.should == "bar::Y"
+
+      m.set_temporary_name(nil)
+      m::Z = Module.new
+      m::Z.name.should =~ /\A#<Module:0x\h+>::Z\z/
+    end
+
+    it "does not set a prefix in constant assignment for modules with a temporary name" do
+      m = Module.new
+      m.set_temporary_name("m")
+
+      n = Module.new
+      n.set_temporary_name("n")
+
+      n::X = m
+      n::X.name.should == "m"
+    end
+
+    it "does not set a prefix in constant assignments for modules with a permanent name" do
+      m = Module.new
+      m.set_temporary_name("m")
+
+      m::K = Kernel
+      m::K.name.should == "Kernel"
+    end
+
+    it "is replaced by a permanent name" do
+      m = Module.new
+      m.set_temporary_name("foo")
+
+      ConstantNameToBecomePermanentName = m
+      m.name.should == "ConstantNameToBecomePermanentName"
+    ensure
+      Object.send(:remove_const, :ConstantNameToBecomePermanentName)
     end
   end
 

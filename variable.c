@@ -139,9 +139,23 @@ rb_mod_name(VALUE mod)
  *     mod.set_temporary_name(string) -> self
  *     mod.set_temporary_name(nil) -> self
  *
- *  Sets the temporary name of the module +mod+. This name is used as a prefix
- *  for the names of constants declared in +mod+. If the module is assigned a
- *  permanent name, the temporary name is discarded.
+ *  Sets a temporary name in +mod+, and returns the receiver.
+ *
+ *  The temporary name is used as a prefix for the names of class and module
+ *  objects later assigned to constants in +mod+, as long as they are anonymous.
+ *
+ *  Temporary names can be reset by calling this method again. If that happens,
+ *  existing prefixes in nested modules, if any, are left as they are. Anonymous
+ *  modules assigned to constants will get the new prefix from then on.
+ *
+ *  Temporary names can be cleared by invoking this method with +nil+.
+ *
+ *  If the receiver gets ever assigned to a constant stored in a module with a
+ *  permanent name, the temporary name is replaced by a name derived from said
+ *  module and the constant. This permanent name cannot ever be changed again.
+ *
+ *  After a permanent name is set, any nested class or module that does not have
+ *  a permanent name itself gets a permanent name in turn. This is recursive.
  *
  *  After a permanent name is assigned, a temporary name can no longer be set,
  *  and this method raises a RuntimeError.
@@ -151,7 +165,7 @@ rb_mod_name(VALUE mod)
  *
  *  The temporary name must not be a valid constant name, to avoid confusion
  *  with actual constants. If you attempt to set a temporary name that is a
- *  a valid constant name, this method raises an ArgumentError.
+ *  valid constant name, this method raises an ArgumentError.
  *
  *  If the given name is +nil+, the module becomes anonymous.
  *
@@ -160,20 +174,20 @@ rb_mod_name(VALUE mod)
  *    m = Module.new # => #<Module:0x0000000102c68f38>
  *    m.name #=> nil
  *
- *    m.set_temporary_name("fake_name") # => fake_name
- *    m.name #=> "fake_name"
+ *    m.set_temporary_name("tmp-name-M") # => tmp-name-M
+ *    m.name #=> "tmp-name-M"
  *
  *    m.set_temporary_name(nil) # => #<Module:0x0000000102c68f38>
  *    m.name #=> nil
  *
  *    n = Module.new
- *    n.set_temporary_name("fake_name")
+ *    n.set_temporary_name("tmp-name-N") # => tmp-name-N
  *
  *    n::M = m
- *    n::M.name #=> "fake_name::M"
- *    N = n
+ *    n::M.name #=> "tmp-name-N::M"
  *
- *    N.name #=> "nested_fake_name"
+ *    N = n
+ *    N.name #=> "N"
  *    N::M.name #=> "N::M"
  */
 
