@@ -1,8 +1,19 @@
-# An object of class \Dir represents a directory in the underlying file systems.
+# An object of class \Dir represents a directory in the underlying file system.
+#
+# It consists mainly of:
+#
+# - A string _path_, given when the object is created,
+#   that specifies a directory in the underlying file system;
+#   method #path returns the path.
+# - A collection of string <i>entry names</i>,
+#   each of which is the name of a directory or file in the underlying file system;
+#   the entry names may be retrieved
+#   in an {array-like fashion}[rdoc-ref:Dir@Dir+As+Array-Like]
+#   or in a {stream-like fashion}[rdoc-ref:Dir@Dir+As+Stream-Like].
 #
 # == About the Examples
 #
-# The file tree for the examples on this page:
+# Some examples on this page use this file tree:
 #
 #   example/
 #   ├── config.h
@@ -11,6 +22,8 @@
 #   │   │   └── karaoke.rb
 #   │   └── song.rb
 #   └── main.rb
+#
+# Others use the file tree for the Ruby project itself.
 #
 # == \Dir As \Array-Like
 #
