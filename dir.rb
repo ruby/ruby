@@ -13,7 +13,7 @@
 #
 # == About the Examples
 #
-# Some examples on this page use this file tree:
+# Some examples on this page use this simple file tree:
 #
 #   example/
 #   ├── config.h
@@ -23,7 +23,8 @@
 #   │   └── song.rb
 #   └── main.rb
 #
-# Others use the file tree for the Ruby project itself.
+# Others use the file tree for the
+# {Ruby project itself}[https://github.com/ruby/ruby].
 #
 # == \Dir As \Array-Like
 #
@@ -37,12 +38,14 @@
 # A \Dir object is in some ways stream-like.
 #
 # The stream is initially open for reading,
-# but may be closed (method Dir#close),
+# but may be closed manually (using method #close),
 # and will be closed on block exit if created by Dir.open called with a block.
+# The closed stream may not be further manipulated,
+# and may not be reopened.
 #
-# The stream has a _position_, which is an index of an entry in the directory:
+# The stream has a _position_, which is the index of an entry in the directory:
 #
-# - The initial position is zero.
+# - The initial position is zero (before the first entry).
 # - \Method #tell (aliased as #pos) returns the position.
 # - \Method #pos= sets the position (but ignores a value outside the stream),
 #   and returns the position.
@@ -52,7 +55,7 @@
 #   if at end-of-stream, does not increment the position.
 # - \Method #rewind sets the position to zero.
 #
-# Example:
+# Examples (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
 #
 #   dir = Dir.new('example') # => #<Dir:example>
 #   dir.pos                  # => 0
@@ -153,6 +156,12 @@
 # - #inspect: Returns a string description of +self+.
 #
 class Dir
+  # call-seq:
+  #   Dir.open(dirpath) -> dir
+  #   Dir.open(dirpath, encoding: nil) -> dir
+  #   Dir.open(dirpath) {|dir| ... } -> object
+  #   Dir.open(dirpath, encoding: nil) {|dir| ... } -> object
+  #
   # Creates a new \Dir object _dir_ for the directory at +dirpath+.
   #
   # With no block, the method equivalent to Dir.new(dirpath, encoding):
@@ -184,6 +193,10 @@ class Dir
     end
   end
 
+  # call-seq:
+  #   Dir.new(dirpath) -> dir
+  #   Dir.new(dirpath, encoding: nil) -> dir
+  #
   # Returns a new \Dir object for the directory at +dirpath+:
   #
   #   Dir.new('.') # => #<Dir:.>
@@ -192,14 +205,17 @@ class Dir
   # specifies the encoding for the directory entry names;
   # if +nil+ (the default), the file system's encoding is used:
   #
-  #   Dir.new('.').read.encoding                     # => #<Encoding:UTF-8>
+  #   Dir.new('.').read.encoding                       # => #<Encoding:UTF-8>
   #   Dir.new('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
   #
   def initialize(name, encoding: nil)
     Primitive.dir_initialize(name, encoding)
   end
 
-  # Calls Dir.glob with argument <tt>*dirpaths</tt>
+  # call-seq:
+  #   Dir[*patterns, base: nil, sort: true] -> array
+  #
+  # Calls Dir.glob with argument +patterns+
   # and the values of keyword arguments +base+ and +sort+;
   # returns the array of selected entry names.
   #
@@ -207,15 +223,35 @@ class Dir
     Primitive.dir_s_aref(args, base, sort)
   end
 
-  # Forms an array of the entry names selected by the arguments.
+  # call-seq:
+  #   Dir.glob(*patterns, _flags = 0, flags: _flags, base: nil, sort: true) -> array
+  #   Dir.glob(*patterns, _flags = 0, flags: _flags, base: nil, sort: true) {|entry_name| ... } -> nil
   #
-  # Argument +pattern+ is a pattern string or an array of pattern strings.
+  # Forms an array _entry_names_ of the entry names selected by the arguments.
   #
-  # With no block, returns an array of selected entry names;
-  # with a block, calls the block with each selected entry name.
+  # Argument +patterns+ is a pattern string or an array of pattern strings;
+  # note that these are not regexps.
   #
-  # Each pattern string (which is _not_ a regexp) is expanded
-  # according to certain metacharacters:
+  # With no block, returns array _entry_names_;
+  # example (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
+  #
+  #   Dir.glob('*') # => ["config.h", "lib", "main.rb"]
+  #
+  # with a block, calls the block with each of the _entry_names_
+  # and returns +nil+:
+  #
+  #   Dir.glob('*') {|entry_name| puts entry_name } # => nil
+  #
+  # Output:
+  #
+  #   config.h
+  #   lib
+  #   main.rb
+  #
+  # Each pattern string is expanded
+  # according to certain metacharacters;
+  # examples below use the
+  # {Ruby project file tree}[https://github.com/ruby/ruby]:
   #
   # - <tt>'*'</tt>: Matches any substring in an entry name,
   #   similar in meaning to regexp <tt>/.*/mx</tt>;
@@ -223,11 +259,9 @@ class Dir
   #
   #   - <tt>'*'</tt> matches all entry names:
   #
-  #       # We're in the ruby project.
-  #       File.basename(Dir.pwd) # => "ruby"
   #       Dir.glob('*').take(3)  # => ["BSDL", "CONTRIBUTING.md", "COPYING"]
   #
-  #   - <tt>'C*'</tt> matches entry names beginning with <tt>'c'</tt>:
+  #   - <tt>'c*'</tt> matches entry names beginning with <tt>'c'</tt>:
   #
   #       Dir.glob('c*').take(3) # => ["CONTRIBUTING.md", "COPYING", "COPYING.ja"]
   #
@@ -242,7 +276,7 @@ class Dir
   #
   #   Does not match Unix-like hidden entry names ("dot files").
   #   To include those in the matched entry names,
-  #   use flag File::FNM_DOTMATCH or something like <tt>'{*,.*}'</tt>.
+  #   use flag IO::FNM_DOTMATCH or something like <tt>'{*,.*}'</tt>.
   #
   #  - <tt>'**'</tt>: Matches entry names recursively
   #    if followed by  the slash character <tt>'/'</tt>:
@@ -288,7 +322,7 @@ class Dir
   # the array is to be sorted;
   # the default is +true+.
   #
-  # Examples:
+  # More examples (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
   #
   #   # We're in the example directory.
   #   File.basename(Dir.pwd) # => "example"
