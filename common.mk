@@ -1731,10 +1731,14 @@ $(UNICODE_HDR_DIR)/name2ctype.h:
 	$(MV) $@.new $@
 
 srcs-doc: $(srcdir)/doc/regexp/unicode_properties.rdoc
-$(srcdir)/doc/regexp/unicode_properties.rdoc: $(UNICODE_HDR_DIR)/name2ctype.h $(UNICODE_PROPERTY_FILES)
+$(srcdir)/doc/regexp/$(ALWAYS_UPDATE_UNICODE:yes=unicode_properties.rdoc): \
+	$(UNICODE_HDR_DIR)/name2ctype.h $(UNICODE_PROPERTY_FILES)
+
+$(srcdir)/doc/regexp/unicode_properties.rdoc:
 	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ \
 		$(srcdir)/template/unicode_properties.rdoc.tmpl \
-		$(UNICODE_SRC_DATA_DIR) $(UNICODE_HDR_DIR)/name2ctype.h
+		$(UNICODE_SRC_DATA_DIR) $(UNICODE_HDR_DIR)/name2ctype.h || \
+	$(TOUCH) $@
 
 # the next non-comment line was:
 # $(UNICODE_HDR_DIR)/casefold.h: $(tooldir)/enc-case-folding.rb \
