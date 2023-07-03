@@ -8,6 +8,7 @@ require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"
 require_relative "output-method"
+require_relative "history"
 
 module IRB
   # A class that wraps the current state of the irb session, including the
@@ -149,6 +150,27 @@ module IRB
       end
 
       @command_aliases = IRB.conf[:COMMAND_ALIASES]
+    end
+
+    def save_history=(val)
+      IRB.conf[:SAVE_HISTORY] = val
+      if val
+        (IRB.conf[:MAIN_CONTEXT] || self).init_save_history
+      end
+    end
+
+    def save_history
+      IRB.conf[:SAVE_HISTORY]
+    end
+
+    # A copy of the default <code>IRB.conf[:HISTORY_FILE]</code>
+    def history_file
+      IRB.conf[:HISTORY_FILE]
+    end
+
+    # Set <code>IRB.conf[:HISTORY_FILE]</code> to the given +hist+.
+    def history_file=(hist)
+      IRB.conf[:HISTORY_FILE] = hist
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -553,6 +575,12 @@ module IRB
     def transform_args?(command)
       command = command_aliases.fetch(command.to_sym, command)
       ExtendCommandBundle.load_command(command)&.respond_to?(:transform_args)
+    end
+
+    def init_save_history# :nodoc:
+      unless (class<<@io;self;end).include?(HistorySavingAbility)
+        @io.extend(HistorySavingAbility)
+      end
     end
   end
 end
