@@ -21,8 +21,6 @@ env:
 
 config_template: &CONFIG_TEMPLATE
   auto_cancellation: $CIRRUS_BRANCH != 'master'
-  only_if: $CIRRUS_CRON != ''
-  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
   arm_container:
     # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC
@@ -68,6 +66,8 @@ task:
   env:
     matrix:
       CC: gcc-11
+  only_if: $CIRRUS_CRON != ''
+  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
   << : *CONFIG_TEMPLATE
   make_extract-extlibs_script: make extract-extlibs
   make_incs_script: make incs
@@ -91,6 +91,7 @@ yjit_task:
     - sudo apt-get update -y
     - sudo apt-get install -y curl
     - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y $rustup_init"
+  only_if: "changesInclude('yjit.*', 'yjit/**')"
   << : *CONFIG_TEMPLATE
   make_miniruby_script: make miniruby
   make_bindgen_script: |
