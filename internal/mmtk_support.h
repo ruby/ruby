@@ -75,6 +75,7 @@ void rb_mmtk_assert_mutator(void);
 
 // Vanilla GC timing
 void rb_mmtk_gc_probe(bool enter);
+void rb_mmtk_gc_probe_slowpath(bool enter);
 
 // Commandline options parsing
 void rb_mmtk_pre_process_opts(int argc, char **argv);

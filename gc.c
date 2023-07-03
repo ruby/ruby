@@ -2454,8 +2454,25 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
 {
     GC_ASSERT(heap->free_pages == NULL);
 
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+        // Do not count the following `gc_continue` into "GC time".
+        // In MMTk, we count the allocation slow path, including acquiring additional pages,
+        // as part of the "mutator time".  The following `gc_continue` serves the same purpose,
+        // i.e. making more available to the allocator.
+        // To make a fare comparison, we exclude this portion from the "GC time".
+        rb_mmtk_gc_probe_slowpath(true);
+    }
+#endif
+
     /* Continue incremental marking or lazy sweeping, if in any of those steps. */
     gc_continue(objspace, size_pool, heap);
+
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+        rb_mmtk_gc_probe_slowpath(false);
+    }
+#endif
 
     /* If we still don't have a free page and not allowed to create a new page,
      * we should start a new GC cycle. */

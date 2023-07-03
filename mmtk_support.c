@@ -138,6 +138,7 @@ static const int rb_mmtk_heap_limit_percentage = 80;
 // DEBUG: Vanilla GC timing
 static struct gc_timing {
     bool enabled;
+    bool in_alloc_slow_path;
     uint64_t gc_time_ns;
     struct timespec last_enabled;
     struct timespec last_gc_start;
@@ -1168,6 +1169,10 @@ rb_mmtk_gc_probe(bool enter)
         return;
     }
 
+    if (g_vanilla_timing.in_alloc_slow_path) {
+        return;
+    }
+
     if (enter) {
         // Note: Vanilla GC also has timing facilities exposed with `GC.stat[:time]`.
         // But that uses `current_process_time` which uses `CLOCK_PROCESS_CPUTIME_ID`
@@ -1180,6 +1185,13 @@ rb_mmtk_gc_probe(bool enter)
         uint64_t elapsed = elapsed_ns(&now, &g_vanilla_timing.last_gc_start);
         g_vanilla_timing.gc_time_ns += elapsed;
     }
+}
+
+// Use this to exclude the allocation slow path from the STW time.
+void
+rb_mmtk_gc_probe_slowpath(bool enter)
+{
+    g_vanilla_timing.in_alloc_slow_path = enter;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
