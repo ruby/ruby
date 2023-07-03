@@ -135,6 +135,17 @@ bool obj_free_on_exit_started = false;
 // Use up to 80% of memory for the heap
 static const int rb_mmtk_heap_limit_percentage = 80;
 
+// DEBUG: Vanilla GC timing
+static struct gc_timing {
+    bool enabled;
+    uint64_t gc_time_ns;
+    struct timespec last_enabled;
+    struct timespec last_gc_start;
+    uint64_t last_num_of_gc;
+    uint64_t last_vanilla_mark;
+    uint64_t last_vanilla_sweep;
+} g_vanilla_timing;
+
 struct RubyMMTKGlobal {
     pthread_mutex_t mutex;
     pthread_cond_t cond_world_stopped;
@@ -1043,11 +1054,22 @@ rb_mmtk_enabled(VALUE _)
 VALUE
 rb_mmtk_harness_begin(VALUE _)
 {
-    if (!rb_mmtk_enabled_p()) {
-        rb_raise(rb_eRuntimeError, "Debug harness can only be used when MMTk is enabled, re-run with --mmtk.");
+    if (rb_mmtk_enabled_p()) {
+        mmtk_harness_begin((MMTk_VMMutatorThread)GET_THREAD());
+    } else {
+        g_vanilla_timing.last_num_of_gc = rb_gc_count();
+        rb_mmtk_get_vanilla_times(&g_vanilla_timing.last_vanilla_mark, &g_vanilla_timing.last_vanilla_sweep);
+        g_vanilla_timing.enabled = true;
+        clock_gettime(CLOCK_MONOTONIC, &g_vanilla_timing.last_enabled);
     }
-    mmtk_harness_begin((MMTk_VMMutatorThread)GET_THREAD());
+
     return Qnil;
+}
+
+static uint64_t elapsed_ns(struct timespec *now, struct timespec *then) {
+    uint64_t diff_s = now->tv_sec - then->tv_sec;
+    uint64_t elapsed = diff_s * 1000000000 + now->tv_nsec - then->tv_nsec;
+    return elapsed;
 }
 
 /*
@@ -1062,10 +1084,39 @@ rb_mmtk_harness_begin(VALUE _)
 VALUE
 rb_mmtk_harness_end(VALUE _)
 {
-    if (!rb_mmtk_enabled_p()) {
-        rb_raise(rb_eRuntimeError, "Debug harness can only be used when MMTk is enabled, re-run with --mmtk.");
+    if (rb_mmtk_enabled_p()) {
+        mmtk_harness_end((MMTk_VMMutatorThread)GET_THREAD());
+    } else {
+        g_vanilla_timing.enabled = false;
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        uint64_t total_time_ns = elapsed_ns(&now, &g_vanilla_timing.last_enabled);
+        uint64_t gc_time_ns = g_vanilla_timing.gc_time_ns;
+        uint64_t stw_time_ns = total_time_ns - gc_time_ns;
+
+        double total_time_ms = total_time_ns / 1000000.0;
+        double gc_time_ms = gc_time_ns / 1000000.0;
+        double stw_time_ms = stw_time_ns / 1000000.0;
+
+        size_t num_of_gc = rb_gc_count() - g_vanilla_timing.last_num_of_gc;
+
+        uint64_t cur_vanilla_mark, cur_vanilla_sweep;
+        rb_mmtk_get_vanilla_times(&cur_vanilla_mark, &cur_vanilla_sweep);
+        uint64_t vanilla_mark = cur_vanilla_mark - g_vanilla_timing.last_vanilla_mark;
+        uint64_t vanilla_sweep = cur_vanilla_sweep - g_vanilla_timing.last_vanilla_sweep;
+        uint64_t vanilla_time = vanilla_mark + vanilla_sweep;
+
+        double vanilla_time_ms = vanilla_time / 1000000.0;
+        double vanilla_mark_ms = vanilla_mark / 1000000.0;
+        double vanilla_sweep_ms = vanilla_sweep / 1000000.0;
+
+        fprintf(stderr, "======== Begin vanilla GC timing report (mmtk-ruby) ========\n");
+        fprintf(stderr, "%10s %18s %18s %18s %18s %18s\n", "GC", "time.other", "time.stw", "v.time.gc", "v.time.mark", "v.time.sweep");
+        fprintf(stderr, "%10zu %18lf %18lf %18lf %18lf %18lf\n", num_of_gc, stw_time_ms, gc_time_ms, vanilla_time_ms, vanilla_mark_ms, vanilla_sweep_ms);
+        fprintf(stderr, "Total time: %lf ms\n", total_time_ms);
+        fprintf(stderr, "======== End vanilla GC timing report (mmtk-ruby) ========\n");
     }
-    mmtk_harness_end((MMTk_VMMutatorThread)GET_THREAD());
+
     return Qnil;
 }
 
@@ -1103,6 +1154,31 @@ rb_mmtk_panic_if_multiple_ractor(const char *msg)
     if (rb_multi_ractor_p()) {
         fprintf(stderr, "Panic: %s is not implememted for multiple ractors.\n", msg);
         abort();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Vanilla GC timing
+////////////////////////////////////////////////////////////////////////////////
+
+void
+rb_mmtk_gc_probe(bool enter)
+{
+    if (!g_vanilla_timing.enabled) {
+        return;
+    }
+
+    if (enter) {
+        // Note: Vanilla GC also has timing facilities exposed with `GC.stat[:time]`.
+        // But that uses `current_process_time` which uses `CLOCK_PROCESS_CPUTIME_ID`
+        // while MMTk uses Rust's `std::time::Instant` which uses `CLOCK_MONOTONIC`.
+        // To be fair, we reimplmenet the probing and use `CLOCK_MONOTONIC` instead.
+        clock_gettime(CLOCK_MONOTONIC, &g_vanilla_timing.last_gc_start);
+    } else {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        uint64_t elapsed = elapsed_ns(&now, &g_vanilla_timing.last_gc_start);
+        g_vanilla_timing.gc_time_ns += elapsed;
     }
 }
 

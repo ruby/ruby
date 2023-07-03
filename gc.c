@@ -10097,12 +10097,20 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     gc_report(1, objspace, "gc_enter: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));
     gc_record(objspace, 0, gc_enter_event_cstr(event));
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER, 0); /* TODO: which parameter should be passed? */
+
+#if USE_MMTK
+    rb_mmtk_gc_probe(true);
+#endif
 }
 
 static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
+
+#if USE_MMTK
+    rb_mmtk_gc_probe(false);
+#endif
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passed? */
     gc_record(objspace, 1, gc_enter_event_cstr(event));
@@ -14808,5 +14816,12 @@ rb_mmtk_set_during_gc(bool is_during_gc)
 {
     rb_objspace_t *objspace = &rb_objspace;
     during_gc = is_during_gc ? 1 : 0;
+}
+
+void
+rb_mmtk_get_vanilla_times(uint64_t *mark, uint64_t *sweep)
+{
+    *mark = rb_objspace.profile.marking_time_ns;
+    *sweep = rb_objspace.profile.sweeping_time_ns;
 }
 #endif

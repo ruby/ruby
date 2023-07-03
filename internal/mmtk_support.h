@@ -73,6 +73,9 @@ VALUE rb_mmtk_harness_end(VALUE _);
 void rb_mmtk_assert_mmtk_worker(void);
 void rb_mmtk_assert_mutator(void);
 
+// Vanilla GC timing
+void rb_mmtk_gc_probe(bool enter);
+
 // Commandline options parsing
 void rb_mmtk_pre_process_opts(int argc, char **argv);
 void rb_mmtk_post_process_opts(const char *arg);
