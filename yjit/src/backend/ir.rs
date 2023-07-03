@@ -1381,7 +1381,7 @@ impl Assembler
                     let mut opnd_iter = insn.opnd_iter();
 
                     if let Some(Opnd::InsnOut{ idx, .. }) = opnd_iter.next() {
-                        if live_ranges[*idx] == index {
+                        if shifted_live_ranges[*idx] == index {
                             if let Some(Opnd::Reg(reg)) = asm.insns[*idx].out_opnd() {
                                 out_reg = Some(take_reg(&mut pool, &regs, reg));
                             }
