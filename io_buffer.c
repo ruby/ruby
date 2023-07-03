@@ -2285,12 +2285,12 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     rb_encoding *encoding = rb_ascii8bit_encoding();
 
     if (argc >= 1) {
-        ssize_t offset_int = NUM2SSIZET(argv[0]);
-        if (offset_int < 0) {
-            offset_int = size + offset_int;
-            if (offset_int < 0) offset_int = 0;
+        ssize_t offset_signed = NUM2SSIZET(argv[0]);
+        if (offset_signed < 0) {
+            offset_signed = size + offset_signed;
+            if (offset_signed < 0) offset_signed = 0;
         }
-        offset = offset_int;
+        offset = offset_signed;
     }
 
     if (argc >= 2 && !RB_NIL_P(argv[1])) {
