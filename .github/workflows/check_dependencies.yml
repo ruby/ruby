@@ -35,20 +35,31 @@ jobs:
       matrix:
         os: [ubuntu-20.04]
       fail-fast: true
+
     runs-on: ${{ matrix.os }}
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
       - uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
+
       - uses: ./.github/actions/setup/macos
         if: ${{ contains(matrix.os, 'macos') }}
+
       - uses: ./.github/actions/setup/directories
+
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+
       - run: make all golf
+
       - run: ruby tool/update-deps --fix
+
       - run: git diff --no-ext-diff --ignore-submodules --exit-code
+
       - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.os }} / Dependencies need to update

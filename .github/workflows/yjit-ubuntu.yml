@@ -32,30 +32,41 @@ permissions:
 jobs:
   cargo:
     name: Rust cargo test
+
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
       #- run: cargo test --offline
+
       - run: RUST_BACKTRACE=1 cargo test
         working-directory: yjit
+
       # Also compile and test with all features enabled
       - run: RUST_BACKTRACE=1 cargo test --all-features
         working-directory: yjit
+
       # Check that we can build in release mode too
       - run: cargo build --release
         working-directory: yjit
+
   lint:
     name: Rust lint
+
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
         working-directory: yjit
+
   make:
     strategy:
       fail-fast: false
@@ -87,6 +98,7 @@ jobs:
           - test_task: 'yjit-bench'
             configure: '--enable-yjit=dev'
             yjit_bench_opts: '--yjit-stats'
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
@@ -94,37 +106,51 @@ jobs:
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
+
     runs-on: ubuntu-20.04
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
       - uses: ./.github/actions/setup/ubuntu
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
+
       - name: Install Rust
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal
+
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
+
       - run: make incs
+
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
       - run: make
+
       - name: Create dummy files in build dir
         run: |
           ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
+
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
+
       # Check that the binary was built with YJIT
       - name: Check YJIT enabled
         run: ./miniruby --yjit -v | grep "+YJIT"
+
       - name: make ${{ matrix.test_task }}
         run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS"
         timeout-minutes: 60
@@ -134,12 +160,14 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
         continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
+
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
         run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
         env:
           BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
+
       - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}

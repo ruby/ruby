@@ -33,8 +33,11 @@ permissions:
 jobs:
   baseruby:
     name: BASERUBY
+
     runs-on: ubuntu-20.04
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     strategy:
       matrix:
         ruby:
@@ -50,14 +53,21 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
+
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
       - uses: ./.github/actions/setup/ubuntu
+
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
+
       - run: ./configure --disable-install-doc
+
       - run: make all
+
       - run: make test
+
       - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.ruby }}

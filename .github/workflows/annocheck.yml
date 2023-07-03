@@ -33,11 +33,15 @@ permissions:
 jobs:
   compile:
     name: gcc-11 annocheck
+
     runs-on: ubuntu-latest
+
     container:
       image: ghcr.io/ruby/ruby-ci-image:gcc-11
       options: --user root
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     env:
       # -g0 disables backtraces when SEGV.  Do not set that.
       debugflags: '-ggdb3'
@@ -69,32 +73,44 @@ jobs:
     steps:
       - run: id
         working-directory:
+
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
+
       - name: Run configure
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
           --with-gcc="gcc-11 -fcf-protection -Wa,--generate-missing-build-notes=yes"
           --enable-shared
+
       - run: make showflags
+
       - run: make
+
       - run: make test
+
       - run: make install
+
       - run: make test-tool
+
       ### test-all doesn't work: https://github.com/ruby/ruby/actions/runs/4340112185/jobs/7578344307
       # - run: make test-all TESTS='-- ruby -ext-'
+
       ### test-spec doesn't work: https://github.com/ruby/ruby/actions/runs/4340193212/jobs/7578505652
       # - run: make test-spec
       #   env:
       #     CHECK_LEAKS: true
+
       - run: make test-annocheck
+
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

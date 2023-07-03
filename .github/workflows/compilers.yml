@@ -206,27 +206,36 @@ jobs:
 #         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
 
     name: ${{ matrix.entry.name }}
+
     runs-on: ubuntu-latest
+
     container:
       image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-16' }}
       options: --user root
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     env: ${{ matrix.entry.env || matrix.env }}
+
     steps:
       - run: id
         working-directory:
+
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
+
       - name: Install Rust
         if: ${{ matrix.entry.rust }}
         run: sudo apt-get update && sudo apt install -y rustc
+
       - name: Run configure
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
@@ -236,22 +245,31 @@ jobs:
             matrix.entry.crosshost || '"${default_cc}${append_cc:+ $append_cc}"'
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
+
       - name: Add to ext/Setup # statically link just the etc extension
         run: mkdir ext && echo etc >> ext/Setup
         if: ${{ matrix.entry.name == 'ext/Setup' }}
+
       - run: make showflags
+
       - run: make
+
       - run: make test
+
       - run: make install
         if: ${{ matrix.entry.check }}
+
       - run: make test-tool
         if: ${{ matrix.entry.check }}
+
       - run: make test-all TESTS='-- ruby -ext-'
         if: ${{ matrix.entry.check }}
+
       - run: make test-spec
         env:
           CHECK_LEAKS: true
         if: ${{ matrix.entry.check }}
+
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
