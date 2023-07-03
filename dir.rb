@@ -49,7 +49,7 @@
 # - \Method #tell (aliased as #pos) returns the position.
 # - \Method #pos= sets the position (but ignores a value outside the stream),
 #   and returns the position.
-# - \Method #seek is like #pos, but returns +self+ (convenient for chaining).
+# - \Method #seek is like #pos=, but returns +self+ (convenient for chaining).
 # - \Method #read, if not at end-of-stream, reads the next entry and increments
 #   the position;
 #   if at end-of-stream, does not increment the position.
@@ -237,7 +237,7 @@ class Dir
   #
   #   Dir.glob('*') # => ["config.h", "lib", "main.rb"]
   #
-  # with a block, calls the block with each of the _entry_names_
+  # With a block, calls the block with each of the _entry_names_
   # and returns +nil+:
   #
   #   Dir.glob('*') {|entry_name| puts entry_name } # => nil
@@ -288,7 +288,7 @@ class Dir
   #    it is equivalent to <tt>'*'</tt>.
   #
   # - <tt>'?'</tt> Matches any single character;
-  #   similar in meaning to regexp <tt>/.{1}/</tt>:
+  #   similar in meaning to regexp <tt>/./</tt>:
   #
   #     Dir.glob('io.?') # => ["io.c"]
   #
