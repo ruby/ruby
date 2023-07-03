@@ -37,9 +37,13 @@ jobs:
           - vs: 2019
           - vs: 2022
       fail-fast: false
+
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     name: VisualStudio ${{ matrix.vs }}
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       PATCH: C:\msys64\usr\bin\patch.exe
@@ -48,9 +52,11 @@ jobs:
       # where OpenSSL's default modules directory is incorrectly set to C:\vcpkg\packages\openssl_x64-windows\bin
       # cf. https://github.com/ruby/openssl/pull/635#issuecomment-1596833720
       OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
+
     steps:
       - run: md build
         working-directory:
+
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
@@ -58,10 +64,12 @@ jobs:
           install: >-
             patch
         if: ${{ env.OS_VER != 'windows-2019' }}
+
       - name: patch path
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
+
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: C:\vcpkg\downloads
@@ -69,6 +77,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
+
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: C:\vcpkg\installed
@@ -76,22 +85,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
             ${{ runner.os }}-vcpkg-installed-
+
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
+
       - name: Install libraries with scoop
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
         shell: pwsh
+
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
+
       - name: setup env
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
@@ -110,8 +124,10 @@ jobs:
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
+
       - name: compiler version
         run: cl
+
       - name: link libraries
         run: |
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
@@ -120,21 +136,29 @@ jobs:
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
             ren c:\Windows\System32\%%I.dll %%I.dll_
           )
+
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=C:/vcpkg/installed/x64-windows
+
       - run: nmake incs
+
       - run: nmake extract-extlibs
+
       - run: nmake
+
       - run: nmake test
         timeout-minutes: 5
+
       - run: nmake test-spec MSPECOPT="-V -fspec"
         timeout-minutes: 10
+
       - run: nmake test-all
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS }} --job-status=normal
         timeout-minutes: 60
+
       - uses: ./.github/actions/slack
         with:
           label: VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}

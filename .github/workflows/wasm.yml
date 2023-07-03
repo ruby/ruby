@@ -43,6 +43,7 @@ jobs:
 #         - { name: O4,           optflags: '-O3', debugflags: ''  , wasmoptflags: '-O4' }
 #         - { name: Oz,           optflags: '-Oz', debugflags: ''  , wasmoptflags: '-Oz' }
       fail-fast: false
+
     env:
       RUBY_TESTOPTS: '-q --tty=no'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -50,18 +51,23 @@ jobs:
       WASI_SDK_VERSION_MINOR: 0
       BINARYEN_VERSION: 109
       WASMTIME_VERSION: v0.33.0
+
     runs-on: ubuntu-20.04
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
+
       - name: Install libraries
         run: |
           set -ex
@@ -85,9 +91,11 @@ jobs:
           wget -O - "$binaryen_url" | tar xfz -
           sudo ln -fs "$PWD/binaryen-version_${BINARYEN_VERSION}/bin/wasm-opt" /usr/local/bin/wasm-opt
         working-directory: src
+
       - name: Set ENV
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
+
       - name: Run configure
         run: |
           ../src/configure \
@@ -100,16 +108,20 @@ jobs:
             optflags="${{ matrix.entry.optflags }}" \
             debugflags="${{ matrix.entry.debugflags }}" \
             wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
+
       # miniruby may not be built when cross-compling
       - run: make mini ruby
+
       - name: Run basictest
         run: wasmtime run ./../build/miniruby --mapdir /::./ -- basictest/test.rb
         working-directory: src
+
       - name: Run bootstraptest (no thread)
         run: |
           NO_THREAD_TESTS="$(grep -L Thread -R ./bootstraptest | awk -F/ '{ print $NF }' | uniq | sed -n 's/test_\(.*\).rb/\1/p' | paste -s -d, -)"
           ruby ./bootstraptest/runner.rb --ruby="$(which wasmtime) run $PWD/../build/ruby --mapdir /::./ -- " --verbose "--sets=$NO_THREAD_TESTS"
         working-directory: src
+
       - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.name }}

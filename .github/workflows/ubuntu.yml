@@ -48,24 +48,31 @@ jobs:
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
       fail-fast: false
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
+
     runs-on: ubuntu-20.04
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
       - uses: ./.github/actions/setup/ubuntu
         with:
           arch: ${{ matrix.arch }}
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
+
       - name: Run configure
         env:
           arch: ${{ matrix.arch }}
@@ -73,13 +80,17 @@ jobs:
         run: >-
           $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
+
       - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
       - run: $SETARCH make
+
       - name: Create dummy files in build dir
         run: |
           $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
+
       - name: make ${{ matrix.test_task }}
         run: >-
           $SETARCH make -s ${{ matrix.test_task }}
@@ -91,6 +102,7 @@ jobs:
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
+
       - name: make skipped tests
         run: |
           $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
@@ -100,6 +112,7 @@ jobs:
           TESTS: ${{ matrix.skipped_tests }}
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
       - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}

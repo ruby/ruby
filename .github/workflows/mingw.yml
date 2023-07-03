@@ -35,7 +35,9 @@ permissions:
 jobs:
   make:
     runs-on: windows-2022
+
     name: ${{ github.workflow }} (${{ matrix.msystem }})
+
     env:
       MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: x86_64
@@ -45,6 +47,7 @@ jobs:
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
       LDFLAGS: '-pipe'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
     strategy:
       matrix:
         include:
@@ -54,7 +57,9 @@ jobs:
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
       fail-fast: false
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     steps:
       - name: Set up Ruby & MSYS2
         uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0

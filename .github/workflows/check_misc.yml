@@ -12,20 +12,27 @@ jobs:
   checks:
     permissions:
       contents: write # for Git to git push
+
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
       - uses: ./.github/actions/setup/directories
+
       - name: Check if C-sources are US-ASCII
         run: |
           grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+
       - name: Check for trailing spaces
         run: |
           git grep -I -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs' && exit 1 || :
           git grep -n '^[	 ][	 ]*$' -- '*.md' && exit 1 || :
+
       - name: Check for bash specific substitution in configure.ac
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
+
       - name: Check for header macros
         run: |
           fail=
@@ -79,6 +86,7 @@ jobs:
           git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
         continue-on-error: true
         if: ${{ steps.gems.outcome == 'success' }}
+
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
