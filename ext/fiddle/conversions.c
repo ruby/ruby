@@ -1,6 +1,25 @@
 #include <fiddle.h>
 
 VALUE
+rb_fiddle_type_bool(void)
+{
+    if (sizeof(bool) == sizeof(char)) {
+        return INT2NUM(TYPE_UCHAR);
+    } else if (sizeof(bool) == sizeof(short)) {
+        return INT2NUM(TYPE_USHORT);
+    } else if (sizeof(bool) == sizeof(int)) {
+        return INT2NUM(TYPE_UINT);
+    } else if (sizeof(bool) == sizeof(long)) {
+        return INT2NUM(TYPE_ULONG);
+    } else {
+        rb_raise(rb_eNotImpError,
+                 "bool isn't supported: %u",
+                 (unsigned int)sizeof(bool));
+        return RUBY_Qnil;
+    }
+}
+
+VALUE
 rb_fiddle_type_ensure(VALUE type)
 {
     VALUE original_type = type;
@@ -44,6 +63,7 @@ rb_fiddle_type_ensure(VALUE type)
         ID ptrdiff_t_id;
         ID intptr_t_id;
         ID uintptr_t_id;
+        ID bool_id;
         RUBY_CONST_ID(void_id, "void");
         RUBY_CONST_ID(voidp_id, "voidp");
         RUBY_CONST_ID(char_id, "char");
@@ -74,6 +94,7 @@ rb_fiddle_type_ensure(VALUE type)
         RUBY_CONST_ID(ptrdiff_t_id, "ptrdiff_t");
         RUBY_CONST_ID(intptr_t_id, "intptr_t");
         RUBY_CONST_ID(uintptr_t_id, "uintptr_t");
+        RUBY_CONST_ID(bool_id, "bool");
         if (type_id == void_id) {
             return INT2NUM(TYPE_VOID);
         }
@@ -143,6 +164,9 @@ rb_fiddle_type_ensure(VALUE type)
         }
         else if (type_id == uintptr_t_id) {
             return INT2NUM(TYPE_UINTPTR_T);
+        }
+        else if (type_id == bool_id) {
+            return rb_fiddle_type_bool();
         }
         else {
             type = original_type;
