@@ -47,7 +47,7 @@ jobs:
           mkdir -p .downloaded-cache
           ln -s .downloaded-cache/$data .
           curl -O -R -z ./$data https://stdgems.org/$data
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Make default gems list
         run: |
@@ -66,19 +66,19 @@ jobs:
             f.puts gems
           end
         shell: ruby --disable=gems {0}
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb default
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Check diffs
         id: diff
         run: |
           git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
         continue-on-error: true
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
