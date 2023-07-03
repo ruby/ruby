@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include <fiddle.h>
 
 VALUE
