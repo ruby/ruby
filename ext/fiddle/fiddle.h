@@ -118,7 +118,7 @@
 #define TYPE_UINT   -TYPE_INT
 #define TYPE_LONG  5
 #define TYPE_ULONG  -TYPE_LONG
-#if HAVE_LONG_LONG
+#ifdef HAVE_LONG_LONG
 #define TYPE_LONG_LONG 6
 #define TYPE_ULONG_LONG -TYPE_LONG_LONG
 #endif
