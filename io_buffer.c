@@ -2253,6 +2253,8 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
  *
  *  Read a chunk or all of the buffer into a string, in the specified
  *  +encoding+. If no encoding is provided +Encoding::BINARY+ is used.
+ *  If the given offset is negative, it is regarded as counting backward
+ *  from the end of the buffer.
  *
  *    buffer = IO::Buffer.for('test')
  *    buffer.get_string
@@ -2261,6 +2263,10 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
  *    # => "st"
  *    buffer.get_string(2, 1)
  *    # => "s"
+ *    buffer.get_string(-3)
+ *    # => "est"
+ *    buffer.get_string(-1000, 2)
+ *    # => "te"
  */
 static VALUE
 io_buffer_get_string(int argc, VALUE *argv, VALUE self)
@@ -2279,7 +2285,12 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     rb_encoding *encoding = rb_ascii8bit_encoding();
 
     if (argc >= 1) {
-        offset = NUM2SIZET(argv[0]);
+        long offset_int = NUM2LONG(argv[0]);
+        if (offset_int < 0) {
+            offset_int = size + offset_int;
+            if (offset_int < 0) offset_int = 0;
+        }
+        offset = offset_int;
     }
 
     if (argc >= 2 && !RB_NIL_P(argv[1])) {

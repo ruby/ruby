@@ -253,6 +253,14 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal Encoding::BINARY, chunk.encoding
   end
 
+  def test_get_string_with_negative_offset
+    buffer = IO::Buffer.for('foobar')
+    assert_equal 'r', buffer.get_string(-1)
+    assert_equal 'bar', buffer.get_string(-3)
+    assert_equal 'oob', buffer.get_string(-5, 3)
+    assert_equal 'foo', buffer.get_string(-1000, 3)
+  end
+
   # We check that values are correctly round tripped.
   RANGES = {
     :U8 => [0, 2**8-1],
