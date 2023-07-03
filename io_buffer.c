@@ -2285,7 +2285,7 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     rb_encoding *encoding = rb_ascii8bit_encoding();
 
     if (argc >= 1) {
-        long offset_int = NUM2LONG(argv[0]);
+        ssize_t offset_int = NUM2SSIZET(argv[0]);
         if (offset_int < 0) {
             offset_int = size + offset_int;
             if (offset_int < 0) offset_int = 0;
