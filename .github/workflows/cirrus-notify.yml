@@ -1,6 +1,6 @@
 on:
   check_suite:
-    type: ['completed']
+    types: ['completed']
 name: Cirrus CI failure notification
 
 permissions:
