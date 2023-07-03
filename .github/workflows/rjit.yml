@@ -70,23 +70,23 @@ jobs:
           $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 30
         env:
-          GNUMAKEFLAGS: ""
-          RUBY_TESTOPTS: "-v --tty=no"
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
           RUN_OPTS: ${{ matrix.run_opts }}
       - name: make test-all
         run: |
           $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 40
         env:
-          GNUMAKEFLAGS: ""
-          RUBY_TESTOPTS: "-v --tty=no"
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
           RUN_OPTS: ${{ matrix.run_opts }}
       - name: make test-spec
         run: |
           $SETARCH make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 10
         env:
-          GNUMAKEFLAGS: ""
+          GNUMAKEFLAGS: ''
           RUN_OPTS: ${{ matrix.run_opts }}
       - uses: ./.github/actions/slack
         with:
