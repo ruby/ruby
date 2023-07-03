@@ -41,7 +41,7 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     name: VisualStudio ${{ matrix.vs }}
     env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       PATCH: C:\msys64\usr\bin\patch.exe
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
       # FIXME: This is a workaround for the vcpkg's issue present as of openssl 3.1.1
@@ -133,7 +133,7 @@ jobs:
         timeout-minutes: 10
       - run: nmake test-all
         env:
-          RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS }} --job-status=normal
         timeout-minutes: 60
       - uses: ./.github/actions/slack
         with:

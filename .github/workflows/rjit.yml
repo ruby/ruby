@@ -42,7 +42,7 @@ jobs:
         arch: ['']
       fail-fast: false
     env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
       SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
     runs-on: ubuntu-22.04
@@ -60,7 +60,7 @@ jobs:
           makeup: true
       - name: Run configure
         env:
-          arch: ${{matrix.arch}}
+          arch: ${{ matrix.arch }}
         run: >-
           $SETARCH ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}

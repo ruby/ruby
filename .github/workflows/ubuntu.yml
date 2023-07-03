@@ -49,7 +49,7 @@ jobs:
           - test_task: test-bundled-gems
       fail-fast: false
     env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
     runs-on: ubuntu-20.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
@@ -60,7 +60,7 @@ jobs:
           sparse-checkout: /.github
       - uses: ./.github/actions/setup/ubuntu
         with:
-          arch: ${{matrix.arch}}
+          arch: ${{ matrix.arch }}
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
@@ -68,8 +68,8 @@ jobs:
           makeup: true
       - name: Run configure
         env:
-          arch: ${{matrix.arch}}
-          configure: ${{matrix.configure}}
+          arch: ${{ matrix.arch }}
+          configure: ${{ matrix.configure }}
         run: >-
           $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}

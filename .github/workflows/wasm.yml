@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
     env:
       RUBY_TESTOPTS: '-q --tty=no'
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       WASI_SDK_VERSION_MAJOR: 14
       WASI_SDK_VERSION_MINOR: 0
       BINARYEN_VERSION: 109
