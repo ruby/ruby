@@ -33,7 +33,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ["check"] # "test-bundler-parallel", "test-bundled-gems"
+        test_task: ['check'] # "test-bundler-parallel", "test-bundled-gems"
         os:
           - macos-11
           - macos-12
@@ -70,18 +70,18 @@ jobs:
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
         timeout-minutes: 40
         env:
-          RUBY_TESTOPTS: "-q --tty=no"
+          RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
-          PRECHECK_BUNDLED_GEMS: "no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          PRECHECK_BUNDLED_GEMS: 'no'
       - name: make skipped tests
         run: |
           make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
         env:
-          GNUMAKEFLAGS: ""
-          RUBY_TESTOPTS: "-v --tty=no"
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
           TESTS: ${{ matrix.skipped_tests }}
-          PRECHECK_BUNDLED_GEMS: "no"
+          PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
       - uses: ./.github/actions/slack

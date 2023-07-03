@@ -61,32 +61,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: "yjit-bindgen"
-            hint: "To fix: use patch in logs"
-            configure: "--with-gcc=clang-12 --enable-yjit=dev"
+          - test_task: 'yjit-bindgen'
+            hint: 'To fix: use patch in logs'
+            configure: '--with-gcc=clang-12 --enable-yjit=dev'
 
-          - test_task: "check"
+          - test_task: 'check'
             # YJIT should be automatically built in release mode on x86-64 Linux with rustc present
             #configure: "--enable-yjit RUSTC='rustc +1.58.0'"
             configure: "RUSTC='rustc +1.58.0'"
-            rust_version: "1.58.0"
+            rust_version: '1.58.0'
 
-          - test_task: "check"
-            configure: "--enable-yjit=dev"
+          - test_task: 'check'
+            configure: '--enable-yjit=dev'
 
-          - test_task: "check"
-            configure: "--enable-yjit=dev"
-            yjit_opts: "--yjit-call-threshold=1 --yjit-verify-ctx"
+          - test_task: 'check'
+            configure: '--enable-yjit=dev'
+            yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx'
 
-          - test_task: "test-all TESTS=--repeat-count=2"
-            configure: "--enable-yjit=dev"
+          - test_task: 'test-all TESTS=--repeat-count=2'
+            configure: '--enable-yjit=dev'
 
-          - test_task: "test-bundled-gems"
-            configure: "--enable-yjit=dev"
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-yjit=dev'
 
-          - test_task: "yjit-bench"
-            configure: "--enable-yjit=dev"
-            yjit_bench_opts: "--yjit-stats"
+          - test_task: 'yjit-bench'
+            configure: '--enable-yjit=dev'
+            yjit_bench_opts: '--yjit-stats'
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUN_OPTS: ${{ matrix.yjit_opts }}
@@ -129,10 +129,10 @@ jobs:
         run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS"
         timeout-minutes: 60
         env:
-          RUBY_TESTOPTS: "-q --tty=no"
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
-          PRECHECK_BUNDLED_GEMS: "no"
-          SYNTAX_SUGGEST_TIMEOUT: "5"
+          RUBY_TESTOPTS: '-q --tty=no'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          PRECHECK_BUNDLED_GEMS: 'no'
+          SYNTAX_SUGGEST_TIMEOUT: '5'
         continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
         run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"

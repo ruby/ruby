@@ -81,7 +81,7 @@ jobs:
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
-              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-gaps"
+              TEST_ANNOCHECK_OPTS: '--skip-pie --skip-gaps'
             check: true
 
     name: ${{ matrix.entry.name }}
