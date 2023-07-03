@@ -81,9 +81,9 @@ jobs:
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
           path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
+          key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
+            ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-installed-
 
       - name: Install libraries with vcpkg
@@ -111,7 +111,7 @@ jobs:
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
           set VS=${{ matrix.vs }}
-          set VCVARS=${{ matrix.vcvars }}
+          set VCVARS=${{ matrix.vcvars || '' }}
           if not "%VCVARS%" == "" goto :vcset
             set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
             if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
@@ -156,7 +156,7 @@ jobs:
 
       - run: nmake test-all
         env:
-          RUBY_TESTOPTS: -j${{ env.TEST_JOBS }} --job-status=normal
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
         timeout-minutes: 60
 
       - uses: ./.github/actions/slack
