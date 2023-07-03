@@ -53,7 +53,7 @@ env:
     --without-gmp
 
   CONFIGURE_TTY: never
-  GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+  GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
   RUBY_DEBUG: ci rgengc
   RUBY_TESTOPTS: >-
     -q

@@ -44,7 +44,7 @@ jobs:
       CXXFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
       LDFLAGS: '-pipe'
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
     strategy:
       matrix:
         include:
@@ -117,7 +117,7 @@ jobs:
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
-        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test'}}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test' }}
 
       - name: test-all
         timeout-minutes: 45
@@ -130,13 +130,13 @@ jobs:
             --retry --job-status=normal --show-skip --timeout-scale=1.5
             ${{ matrix.test-all-opts }}
           BUNDLER_VERSION:
-        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/')}}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/') }}
 
       - name: test-spec
         timeout-minutes: 10
         run: |
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
-        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/')}}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/') }}
 
       - uses: ./src/.github/actions/slack
         with:

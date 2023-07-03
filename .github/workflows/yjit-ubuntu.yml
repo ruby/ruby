@@ -88,7 +88,7 @@ jobs:
             configure: '--enable-yjit=dev'
             yjit_bench_opts: '--yjit-stats'
     env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       RUBY_DEBUG: ci
