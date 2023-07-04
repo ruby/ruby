@@ -62,7 +62,6 @@ PStore:: Implements a file based persistence mechanism based on a Hash
 Readline:: Wrapper for Readline extencion and Reline
 Reline:: GNU Readline and Editline by pure Ruby implementation.
 Resolv::  Thread-aware DNS resolver library in Ruby
-resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
 SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
@@ -129,3 +128,4 @@ Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
 NKF:: Ruby extension for Network Kanji Filter
 Syslog:: Ruby interface for the POSIX system logging facility
+resolv-replace.rb:: Replace Socket DNS with Resolv
