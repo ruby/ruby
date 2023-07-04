@@ -916,8 +916,8 @@ dir_tell(VALUE dir)
  *   seek(position) -> self
  *
  * Sets the position in +self+ and returns +self+.
- * The value of +position+ should have been returned from an earlier call to #telldir;
- * if not, the return values from subsequent calls to #readdir are unspecified.
+ * The value of +position+ should have been returned from an earlier call to #tell;
+ * if not, the return values from subsequent calls to #read are unspecified.
  *
  * See {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like].
  *
@@ -950,12 +950,9 @@ dir_seek(VALUE dir, VALUE pos)
  * call-seq:
  *   pos = position -> integer
  *
- * Sets the position in +self+ and returns +position+;
- * the new position is:
- *
- * - The given integer +position+, if it is in +self+.
- * - End-of-stream, if +position+ too large.
- * - Zero, if +position+ is negative.
+ * Sets the position in +self+ and returns +position+.
+ * The value of +position+ should have been returned from an earlier call to #tell;
+ * if not, the return values from subsequent calls to #read are unspecified.
  *
  * See {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like].
  *
