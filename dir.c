@@ -598,11 +598,10 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
  *
  *   d0 = Dir.new('..')
  *   d1 = Dir.for_fd(d0.fileno)
+ *
+ * Note that the returned +d1+ does not have an associated path:
+ *
  *   d0.path # => '..'
- *   d0.chdir{Dir.pwd} == d1.chdir{Dir.pwd} # => true
- *
- * Note that the returned \Dir does not have an associated path:
- *
  *   d1.path # => nil
  *
  * This method uses the
@@ -916,12 +915,9 @@ dir_tell(VALUE dir)
  * call-seq:
  *   seek(position) -> self
  *
- * Sets the position in +self+ and returns +self+;
- * the new position is:
- *
- * - The given integer +position+, if it is in +self+.
- * - End-of-stream, if +position+ too large.
- * - Zero, if +position+ is negative.
+ * Sets the position in +self+ and returns +self+.
+ * The value of +position+ should have been returned from an earlier call to #telldir;
+ * if not, the return values from subsequent calls to #readdir are unspecified.
  *
  * See {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like].
  *
@@ -1282,7 +1278,7 @@ fchdir_restore(VALUE v)
  * function defined by POSIX 2008;
  * the method is not implemented on non-POSIX platforms (raises NotImplementedError).
  *
- * Raises an exception of the file descriptor is not valid.
+ * Raises an exception if the file descriptor is not valid.
  *
  * In a multi-threaded program an error is raised if a thread attempts
  * to open a +chdir+ block while another thread has one open,
