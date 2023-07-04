@@ -58,6 +58,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when /\Anet-/
     toplib = gem.tr("-", "/")
 
+  when "resolv-replace"
+    next # resolv-replace did not have tests
   end
 
   if load_path
