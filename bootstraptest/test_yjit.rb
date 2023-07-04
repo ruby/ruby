@@ -3973,3 +3973,11 @@ assert_equal 'true', %q{
     true
   end
 } unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
+# Regresssion test: register allocator on expandarray
+assert_equal '[]', %q{
+  func = proc { [] }
+  proc do
+    _x, _y = func.call
+  end.call
+}
