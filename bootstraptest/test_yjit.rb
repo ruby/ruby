@@ -1,3 +1,13 @@
+# Regression test for yielding with autosplat to block with
+# optional parameters. https://github.com/Shopify/yjit/issues/313
+assert_equal '[:a, :b, :a, :b]', %q{
+  def yielder(arg) = yield(arg) + yield(arg)
+
+  yielder([:a, :b]) do |c = :c, d = :d|
+    [c, d]
+  end
+}
+
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
   def local_setting_cmp(five)
