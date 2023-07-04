@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "vendored_persistent"
+require_relative "vendored_timeout"
 require "cgi"
 require "securerandom"
 require "zlib"
@@ -287,7 +288,7 @@ module Bundler
     end
 
     HTTP_ERRORS = [
-      Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
+      Gem::Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
       Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
       Gem::Net::HTTPBadResponse, Gem::Net::HTTPHeaderSyntaxError, Gem::Net::ProtocolError,
       Gem::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
