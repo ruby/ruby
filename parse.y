@@ -7864,7 +7864,7 @@ flush_string_content(struct parser_params *p, rb_encoding *enc)
 }
 #endif
 
-RUBY_FUNC_EXPORTED const unsigned int ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
+RUBY_FUNC_EXPORTED const uint_least32_t ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
 /* this can be shared with ripper, since it's independent from struct
  * parser_params. */
 #ifndef RIPPER
@@ -7876,7 +7876,7 @@ RUBY_FUNC_EXPORTED const unsigned int ruby_global_name_punct_bits[(0x7e - 0x20 +
         BIT(':', idx) | BIT('<', idx) | BIT('>', idx) | BIT('\"', idx) | \
         BIT('&', idx) | BIT('`', idx) | BIT('\'', idx) | BIT('+', idx) | \
         BIT('0', idx))
-const unsigned int ruby_global_name_punct_bits[] = {
+const uint_least32_t ruby_global_name_punct_bits[] = {
     SPECIAL_PUNCT(0),
     SPECIAL_PUNCT(1),
     SPECIAL_PUNCT(2),
