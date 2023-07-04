@@ -154,7 +154,7 @@ require_relative "irb/easter-egg"
 #
 #     IRB.conf[:EVAL_HISTORY] = <number>
 #
-# See IRB::Context#eval_history= and History class. The history of command
+# See IRB::Context#eval_history= and EvalHistory class. The history of command
 # results is not permanently saved in any file.
 #
 # == Customizing the IRB Prompt

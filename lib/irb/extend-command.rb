@@ -316,7 +316,7 @@ module IRB # :nodoc:
     CE = ContextExtender # :nodoc:
 
     @EXTEND_COMMANDS = [
-      [:eval_history=, "ext/history.rb"],
+      [:eval_history=, "ext/eval_history.rb"],
       [:use_tracer=, "ext/tracer.rb"],
       [:use_loader=, "ext/use-loader.rb"],
     ]

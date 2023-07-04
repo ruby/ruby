@@ -40,14 +40,14 @@ module IRB # :nodoc:
     #
     # If +no+ is +nil+, execution result history isn't used (default).
     #
-    # History values are available via <code>__</code> variable, see
-    # IRB::History.
+    # EvalHistory values are available via <code>__</code> variable, see
+    # IRB::EvalHistory.
     def eval_history=(no)
       if no
         if defined?(@eval_history) && @eval_history
           @eval_history_values.size(no)
         else
-          @eval_history_values = History.new(no)
+          @eval_history_values = EvalHistory.new(no)
           IRB.conf[:__TMP__EHV__] = @eval_history_values
           @workspace.evaluate("__ = IRB.conf[:__TMP__EHV__]")
           IRB.conf.delete(:__TMP_EHV__)
@@ -89,7 +89,7 @@ module IRB # :nodoc:
   #    __[1]
   #    # => 10
   #
-  class History
+  class EvalHistory
 
     def initialize(size = 16)  # :nodoc:
       @size = size
