@@ -63,6 +63,42 @@ class TestTimeout < Test::Unit::TestCase
     assert_nil a
   end
 
+  class MyNewErrorOuter < StandardError; end
+  class MyNewErrorInner < StandardError; end
+
+  # DOES NOT fail with
+  # -        raise new(message) if exc.equal?(e)
+  # +        raise new(message) if exc.class == e.class
+  def test_nested_timeout_error_identity
+    begin
+      Timeout.timeout(0.1, MyNewErrorOuter) {
+        Timeout.timeout(1, MyNewErrorInner) {
+          nil while true
+        }
+      }
+    rescue => e
+      assert e.class == MyNewErrorOuter
+    end
+  end
+
+  # DOES fail with
+  # -        raise new(message) if exc.equal?(e)
+  # +        raise new(message) if exc.class == e.class
+  def test_nested_timeout_which_error_bubbles_up
+    raised_exception = nil
+    begin
+      Timeout.timeout(0.1) {
+        Timeout.timeout(1) {
+          raise Timeout::ExitException.new("inner message")
+        }
+      }
+    rescue Exception => e
+      raised_exception = e
+    end
+
+    assert_equal 'inner message', e.message
+  end
+
   def test_cannot_convert_into_time_interval
     bug3168 = '[ruby-dev:41010]'
     def (n = Object.new).zero?; false; end
