@@ -5590,10 +5590,12 @@ fn gen_send_iseq(
         }
     }
 
-    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg()
+    // Also known as "autosplat" inside setup_parameters_complex()
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
     let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
-         get_iseq_flags_has_lead(iseq) && !get_iseq_flags_ambiguous_param0(iseq)
+         (get_iseq_flags_has_lead(iseq) || opt_num > 1)
+             && !get_iseq_flags_ambiguous_param0(iseq)
     };
     if block_arg0_splat {
         // If block_arg0_splat, we still need side exits after splat, but
@@ -5606,6 +5608,13 @@ fn gen_send_iseq(
         // but doing_kw_call means it's not a simple ISEQ.
         if doing_kw_call {
             gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_has_kw);
+            return None;
+        }
+        // The block_arg0_splat implementation cannot deal with optional parameters.
+        // This is a setup_parameters_complex() situation and interacts with the
+        // starting position of the callee.
+        if opt_num > 1 {
+            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_optional);
             return None;
         }
     }
