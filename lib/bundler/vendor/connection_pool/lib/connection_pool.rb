@@ -1,4 +1,4 @@
-require "timeout"
+require_relative "../../../vendored_timeout"
 require_relative "connection_pool/version"
 
 class Bundler::ConnectionPool
@@ -6,7 +6,7 @@ class Bundler::ConnectionPool
 
   class PoolShuttingDownError < ::Bundler::ConnectionPool::Error; end
 
-  class TimeoutError < ::Timeout::Error; end
+  class TimeoutError < ::Gem::Timeout::Error; end
 end
 
 # Generic connection pool class for sharing a limited number of objects or network connections
