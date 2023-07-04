@@ -639,6 +639,16 @@ RSpec.describe "Bundler.setup" do
       expect(err).to be_empty
     end
 
+    it "doesn't fail in frozen mode when bundler is a Gemfile dependency" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "bundler"
+      G
+
+      bundle "install --verbose", :env => { "BUNDLE_FROZEN" => "true" }
+      expect(err).to be_empty
+    end
+
     it "doesn't re-resolve when deleting dependencies" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
