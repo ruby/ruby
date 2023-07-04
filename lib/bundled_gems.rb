@@ -9,6 +9,7 @@ module Gem
       rinda
       nkf
       syslog
+      drb
     ]
   end
 end

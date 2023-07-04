@@ -40,7 +40,6 @@ CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
-DRb:: Distributed object system for Ruby
 English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 ErrorHighlight:: Highlight error location in your code
@@ -129,3 +128,4 @@ Rinda:: The Linda distributed computing paradigm in Ruby
 NKF:: Ruby extension for Network Kanji Filter
 Syslog:: Ruby interface for the POSIX system logging facility
 resolv-replace.rb:: Replace Socket DNS with Resolv
+DRb:: Distributed object system for Ruby

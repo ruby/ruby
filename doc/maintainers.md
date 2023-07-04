@@ -119,11 +119,6 @@ have commit right, others don't.
 * https://github.com/ruby/digest
 * https://rubygems.org/gems/digest
 
-#### lib/drb.rb, lib/drb/*
-* Masatoshi SEKI (seki)
-* https://github.com/ruby/drb
-* https://rubygems.org/gems/drb
-
 #### lib/erb.rb
 * Masatoshi SEKI (seki)
 * Takashi Kokubun (k0kubun)
@@ -461,6 +456,9 @@ have commit right, others don't.
 
 ### resolv-replace
 * https://github.com/ruby/resolv-replace
+
+### drb
+* https://github.com/ruby/drb
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
