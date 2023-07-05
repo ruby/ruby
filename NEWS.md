@@ -122,6 +122,7 @@ changelog for details of the default gems or bundled gems.
   * This can be used to enable YJIT only once your application is done booting
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
+* The default value for `--yjit-exec-mem-size` is changed from 64 to 128.
 * Multiple bug fixes
 
 ### RJIT
