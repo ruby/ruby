@@ -731,6 +731,24 @@ begin
       EOC
     end
 
+    def test_auto_indent_multibyte_insert_line
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write "if true\n"
+      write "あいうえお\n"
+      4.times { write "\C-b\C-b\C-b\C-b\e\r" }
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> if true
+        prompt>   あ
+        prompt>   い
+        prompt>   う
+        prompt>   え
+        prompt>   お
+        prompt>
+      EOC
+    end
+
     def test_newline_after_wrong_indent
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write "if 1\n    aa"

@@ -1645,7 +1645,7 @@ class Reline::LineEditor
       @line = ' ' * new_indent + @line.lstrip
 
       new_indent = nil
-      result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, (new_lines[-2].size + 1), false)
+      result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, (new_lines[@line_index - 1].bytesize + 1), false)
       if result
         new_indent = result
       end
