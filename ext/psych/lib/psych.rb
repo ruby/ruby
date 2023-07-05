@@ -696,9 +696,6 @@ module Psych
 
   class << self
     if defined?(Ractor)
-      require 'forwardable'
-      extend Forwardable
-
       class Config
         attr_accessor :load_tags, :dump_tags, :domain_types
         def initialize
@@ -712,7 +709,29 @@ module Psych
         Ractor.current[:PsychConfig] ||= Config.new
       end
 
-      def_delegators :config, :load_tags, :dump_tags, :domain_types, :load_tags=, :dump_tags=, :domain_types=
+      def load_tags
+        config.load_tags
+      end
+
+      def dump_tags
+        config.dump_tags
+      end
+
+      def domain_types
+        config.domain_types
+      end
+
+      def load_tags=(value)
+        config.load_tags = value
+      end
+
+      def dump_tags=(value)
+        config.dump_tags = value
+      end
+
+      def domain_types=(value)
+        config.domain_types = value
+      end
     else
       attr_accessor :load_tags
       attr_accessor :dump_tags
