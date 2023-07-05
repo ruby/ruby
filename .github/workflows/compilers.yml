@@ -168,7 +168,7 @@ jobs:
 #         - { name: VM_CHECK_MODE,                  env: { cppflags: '-DVM_CHECK_MODE' } }
 
 #         - { name: USE_EMBED_CI=0,                 env: { cppflags: '-DUSE_EMBED_CI=0' } }
-          - { name: USE_FLONUM=0,                   env: { cppflags: '-DUSE_FLONUM=0' } }
+          - { name: USE_FLONUM=0,                   env: { cppflags: '-DUSE_FLONUM=0', append_configure: '--disable-yjit' } }
 #         - { name: USE_GC_MALLOC_OBJ_INFO_DETAILS, env: { cppflags: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' } }
 #         - { name: USE_LAZY_LOAD,                  env: { cppflags: '-DUSE_LAZY_LOAD' } }
 #         - { name: USE_SYMBOL_GC=0,                env: { cppflags: '-DUSE_SYMBOL_GC=0' } }
