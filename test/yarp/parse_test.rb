@@ -45,11 +45,6 @@ class ParseTest < Test::Unit::TestCase
     end
   end
 
-  def test_parse_dollar0
-    parsed_result = YARP.parse("$0", "-e")
-    assert_equal 2, parsed_result.value.location.length
-  end
-
   def test_parse_takes_file_path
     filepath = "filepath.rb"
     parsed_result = YARP.parse("def foo; __FILE__; end", filepath)
@@ -120,6 +115,26 @@ class ParseTest < Test::Unit::TestCase
         end
       rescue SyntaxError
         raise ArgumentError, "Test file has invalid syntax #{filepath}"
+      end
+    end
+  end
+
+  Dir["*.txt", base: base].each do |relative|
+    # We test every snippet (separated by \n\n) in isolation
+    # to ensure the parser does not try to read bytes further than the end of each snippet
+    define_method "test_individual_snippets_#{relative}" do
+      filepath = File.join(base, relative)
+
+      # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,
+      # and explicitly set the external encoding to UTF-8 to override the binmode default.
+      file_contents = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
+
+      file_contents.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
+        snippet = snippet.rstrip
+        result = YARP.parse(snippet, relative)
+        assert_empty result.errors
+
+        assert_equal_nodes(result.value, YARP.load(snippet, YARP.dump(snippet, relative)))
       end
     end
   end
