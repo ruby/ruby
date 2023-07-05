@@ -39,18 +39,20 @@ describe "BigDecimal#to_s" do
     @bigneg.to_s("+").should_not =~ /^\+.*/
   end
 
-  it "inserts a space every n chars, if integer n is supplied" do
-    re =\
-      /\A0\.314 159 265 358 979 323 846 264 338 327 950 288 419 716 939 937E1\z/i
-    @bigdec.to_s(3).should =~ re
+  ruby_version_is ""..."3.3" do
+    it "inserts a space every n chars, if integer n is supplied" do
+      re =\
+        /\A0\.314 159 265 358 979 323 846 264 338 327 950 288 419 716 939 937E1\z/i
+      @bigdec.to_s(3).should =~ re
 
-    str1 = '-123.45678 90123 45678 9'
-    BigDecimal("-123.45678901234567890").to_s('5F').should ==  str1
-    BigDecimal('1000010').to_s('5F').should == "10000 10.0"
-    # trailing zeroes removed
-    BigDecimal("1.00000000000").to_s('1F').should == "1.0"
-    # 0 is treated as no spaces
-    BigDecimal("1.2345").to_s('0F').should == "1.2345"
+      str1 = '-123.45678 90123 45678 9'
+      BigDecimal("-123.45678901234567890").to_s('5F').should ==  str1
+      BigDecimal('1000010').to_s('5F').should == "10000 10.0"
+      # trailing zeroes removed
+      BigDecimal("1.00000000000").to_s('1F').should == "1.0"
+      # 0 is treated as no spaces
+      BigDecimal("1.2345").to_s('0F').should == "1.2345"
+    end
   end
 
   it "can return a leading space for values > 0" do
