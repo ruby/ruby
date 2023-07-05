@@ -14729,14 +14729,6 @@ rb_mmtk_on_overloaded_cme_delete(st_data_t key, st_data_t value, void *arg)
 void
 rb_mmtk_update_global_weak_tables_early(void)
 {
-    // Update the fstring_table, and remove dead objects.
-    rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
-                              false,
-                              true,
-                              rb_mmtk_on_fstring_table_delete,
-                              NULL);
-
-    RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
 }
 
 // Defined in variable.c
@@ -14752,6 +14744,15 @@ rb_mmtk_update_global_weak_tables(void)
     // We have forwarded generic_iv_tbl entries for live objects in mmtk-ruby.
     // We still need to remove entries for dead objects.
     rb_mmtk_cleanup_generic_iv_tbl();
+
+    // Update the fstring_table, and remove dead objects.
+    rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
+                              false,
+                              true,
+                              rb_mmtk_on_fstring_table_delete,
+                              NULL);
+
+    RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
 
     // This table maps object addresses to its finalizer functions.
     // Not all keys point to live objects.
