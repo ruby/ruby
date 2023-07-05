@@ -8,6 +8,7 @@ class Reline::Test < Reline::TestCase
   end
 
   def setup
+    Reline.send(:test_mode)
     Reline.output_modifier_proc = nil
     Reline.completion_proc = nil
     Reline.prompt_proc = nil

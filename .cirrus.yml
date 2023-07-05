@@ -90,10 +90,6 @@ yjit_task:
     matrix:
       - CC: gcc-11
         configure: --enable-yjit
-  install_rust_script:
-    - sudo apt-get update -y
-    - sudo apt-get install -y curl
-    - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y $rustup_init"
   << : *CONFIG_TEMPLATE
   make_miniruby_script: make miniruby
   make_bindgen_script: |
@@ -110,4 +106,5 @@ yjit_task:
   make_test_script: make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
   make_test_all_script: make test-all RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx" TESTOPTS="$RUBY_TESTOPTS"
   make_test_spec_script: make test-spec RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
-  clippy_script: cd yjit && cargo clippy --all-targets --all-features
+  # Cirrus Rust environments don't have enough permission to run `rustup component add clippy`.
+  # clippy_script: cd yjit && rustup component add clippy && cargo clippy --all-targets --all-features

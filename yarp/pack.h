@@ -3,8 +3,8 @@
 
 #include "yarp/defines.h"
 
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum yp_pack_version {
     YP_PACK_VERSION_3_2_0

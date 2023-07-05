@@ -2230,7 +2230,7 @@ utf_8_codepoint(const unsigned char *c, size_t *width) {
 
         codepoint = (state != 0) ?
             (byte & 0x3fu) | (codepoint << 6) :
-            (0xff >> type) & (byte);
+            (0xffu >> type) & (byte);
 
         state = utf_8_dfa[256 + (state * 16) + type];
         if (!state) {
@@ -2312,5 +2312,6 @@ yp_encoding_t yp_encoding_utf_8 = {
     .char_width = yp_encoding_utf_8_char_width,
     .alnum_char = yp_encoding_utf_8_alnum_char,
     .alpha_char = yp_encoding_utf_8_alpha_char,
-    .isupper_char = yp_encoding_utf_8_isupper_char
+    .isupper_char = yp_encoding_utf_8_isupper_char,
+    .multibyte = true
 };

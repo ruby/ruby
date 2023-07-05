@@ -20,13 +20,12 @@ module YARP
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
 
-    # def initialize: (new_name: Node, old_name: Node, keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(new_name, old_name, keyword_loc, start_offset, length)
+    # def initialize: (new_name: Node, old_name: Node, keyword_loc: Location, location: Location) -> void
+    def initialize(new_name, old_name, keyword_loc, location)
       @new_name = new_name
       @old_name = old_name
       @keyword_loc = keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -46,6 +45,11 @@ module YARP
     def deconstruct_keys(keys)
       { new_name: new_name, old_name: old_name, keyword_loc: keyword_loc, location: location }
     end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
   end
 
   # Represents an alternation pattern in pattern matching.
@@ -62,13 +66,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (left: Node, right: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(left, right, operator_loc, start_offset, length)
+    # def initialize: (left: Node, right: Node, operator_loc: Location, location: Location) -> void
+    def initialize(left, right, operator_loc, location)
       @left = left
       @right = right
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -88,6 +91,11 @@ module YARP
     def deconstruct_keys(keys)
       { left: left, right: right, operator_loc: operator_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `&&` operator or the `and` keyword.
@@ -104,13 +112,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (left: Node, right: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(left, right, operator_loc, start_offset, length)
+    # def initialize: (left: Node, right: Node, operator_loc: Location, location: Location) -> void
+    def initialize(left, right, operator_loc, location)
       @left = left
       @right = right
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -130,6 +137,11 @@ module YARP
     def deconstruct_keys(keys)
       { left: left, right: right, operator_loc: operator_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents a set of arguments to a method or a keyword.
@@ -140,11 +152,10 @@ module YARP
     # attr_reader arguments: Array[Node]
     attr_reader :arguments
 
-    # def initialize: (arguments: Array[Node], start_offset: Integer, length: Integer) -> void
-    def initialize(arguments, start_offset, length)
+    # def initialize: (arguments: Array[Node], location: Location) -> void
+    def initialize(arguments, location)
       @arguments = arguments
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -181,13 +192,12 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (elements: Array[Node], opening_loc: Location?, closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(elements, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (elements: Array[Node], opening_loc: Location?, closing_loc: Location?, location: Location) -> void
+    def initialize(elements, opening_loc, closing_loc, location)
       @elements = elements
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -206,6 +216,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { elements: elements, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
+    end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
     end
   end
 
@@ -244,16 +264,15 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (constant: Node?, requireds: Array[Node], rest: Node?, posts: Array[Node], opening_loc: Location?, closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(constant, requireds, rest, posts, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (constant: Node?, requireds: Array[Node], rest: Node?, posts: Array[Node], opening_loc: Location?, closing_loc: Location?, location: Location) -> void
+    def initialize(constant, requireds, rest, posts, opening_loc, closing_loc, location)
       @constant = constant
       @requireds = requireds
       @rest = rest
       @posts = posts
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -273,6 +292,16 @@ module YARP
     def deconstruct_keys(keys)
       { constant: constant, requireds: requireds, rest: rest, posts: posts, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents a hash key/value pair.
@@ -289,13 +318,12 @@ module YARP
     # attr_reader operator_loc: Location?
     attr_reader :operator_loc
 
-    # def initialize: (key: Node, value: Node?, operator_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(key, value, operator_loc, start_offset, length)
+    # def initialize: (key: Node, value: Node?, operator_loc: Location?, location: Location) -> void
+    def initialize(key, value, operator_loc, location)
       @key = key
       @value = value
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -315,6 +343,11 @@ module YARP
     def deconstruct_keys(keys)
       { key: key, value: value, operator_loc: operator_loc, location: location }
     end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents a splat in a hash literal.
@@ -328,12 +361,11 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (value: Node?, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(value, operator_loc, start_offset, length)
+    # def initialize: (value: Node?, operator_loc: Location, location: Location) -> void
+    def initialize(value, operator_loc, location)
       @value = value
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -353,6 +385,11 @@ module YARP
     def deconstruct_keys(keys)
       { value: value, operator_loc: operator_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents reading a reference to a field in the previous match.
@@ -360,10 +397,9 @@ module YARP
   #     $'
   #     ^^
   class BackReferenceReadNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -410,16 +446,15 @@ module YARP
     # attr_reader end_keyword_loc: Location?
     attr_reader :end_keyword_loc
 
-    # def initialize: (begin_keyword_loc: Location?, statements: Node?, rescue_clause: Node?, else_clause: Node?, ensure_clause: Node?, end_keyword_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(begin_keyword_loc, statements, rescue_clause, else_clause, ensure_clause, end_keyword_loc, start_offset, length)
+    # def initialize: (begin_keyword_loc: Location?, statements: Node?, rescue_clause: Node?, else_clause: Node?, ensure_clause: Node?, end_keyword_loc: Location?, location: Location) -> void
+    def initialize(begin_keyword_loc, statements, rescue_clause, else_clause, ensure_clause, end_keyword_loc, location)
       @begin_keyword_loc = begin_keyword_loc
       @statements = statements
       @rescue_clause = rescue_clause
       @else_clause = else_clause
       @ensure_clause = ensure_clause
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -439,6 +474,16 @@ module YARP
     def deconstruct_keys(keys)
       { begin_keyword_loc: begin_keyword_loc, statements: statements, rescue_clause: rescue_clause, else_clause: else_clause, ensure_clause: ensure_clause, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def begin_keyword: () -> String?
+    def begin_keyword
+      begin_keyword_loc&.slice
+    end
+
+    # def end_keyword: () -> String?
+    def end_keyword
+      end_keyword_loc&.slice
+    end
   end
 
   # Represents block method arguments.
@@ -452,12 +497,11 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (expression: Node?, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(expression, operator_loc, start_offset, length)
+    # def initialize: (expression: Node?, operator_loc: Location, location: Location) -> void
+    def initialize(expression, operator_loc, location)
       @expression = expression
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -476,6 +520,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { expression: expression, operator_loc: operator_loc, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -499,15 +548,14 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (locals: Array[Symbol], parameters: Node?, statements: Node?, opening_loc: Location, closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(locals, parameters, statements, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (locals: Array[Symbol], parameters: Node?, statements: Node?, opening_loc: Location, closing_loc: Location, location: Location) -> void
+    def initialize(locals, parameters, statements, opening_loc, closing_loc, location)
       @locals = locals
       @parameters = parameters
       @statements = statements
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -527,6 +575,16 @@ module YARP
     def deconstruct_keys(keys)
       { locals: locals, parameters: parameters, statements: statements, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # Represents a block parameter to a method, block, or lambda definition.
@@ -541,12 +599,11 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (name_loc: Location?, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, start_offset, length)
+    # def initialize: (name_loc: Location?, operator_loc: Location, location: Location) -> void
+    def initialize(name_loc, operator_loc, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -565,6 +622,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, location: location }
+    end
+
+    # def name: () -> String?
+    def name
+      name_loc&.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -589,14 +656,13 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (parameters: Node?, locals: Array[Location], opening_loc: Location?, closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(parameters, locals, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (parameters: Node?, locals: Array[Location], opening_loc: Location?, closing_loc: Location?, location: Location) -> void
+    def initialize(parameters, locals, opening_loc, closing_loc, location)
       @parameters = parameters
       @locals = locals
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -616,6 +682,16 @@ module YARP
     def deconstruct_keys(keys)
       { parameters: parameters, locals: locals, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents the use of the `break` keyword.
@@ -629,12 +705,11 @@ module YARP
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
 
-    # def initialize: (arguments: Node?, keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(arguments, keyword_loc, start_offset, length)
+    # def initialize: (arguments: Node?, keyword_loc: Location, location: Location) -> void
+    def initialize(arguments, keyword_loc, location)
       @arguments = arguments
       @keyword_loc = keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -653,6 +728,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { arguments: arguments, keyword_loc: keyword_loc, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
     end
   end
 
@@ -703,8 +783,8 @@ module YARP
     # attr_reader name: String
     attr_reader :name
 
-    # def initialize: (receiver: Node?, operator_loc: Location?, message_loc: Location?, opening_loc: Location?, arguments: Node?, closing_loc: Location?, block: Node?, flags: Integer, name: String, start_offset: Integer, length: Integer) -> void
-    def initialize(receiver, operator_loc, message_loc, opening_loc, arguments, closing_loc, block, flags, name, start_offset, length)
+    # def initialize: (receiver: Node?, operator_loc: Location?, message_loc: Location?, opening_loc: Location?, arguments: Node?, closing_loc: Location?, block: Node?, flags: Integer, name: String, location: Location) -> void
+    def initialize(receiver, operator_loc, message_loc, opening_loc, arguments, closing_loc, block, flags, name, location)
       @receiver = receiver
       @operator_loc = operator_loc
       @message_loc = message_loc
@@ -714,8 +794,7 @@ module YARP
       @block = block
       @flags = flags
       @name = name
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -735,6 +814,26 @@ module YARP
     def deconstruct_keys(keys)
       { receiver: receiver, operator_loc: operator_loc, message_loc: message_loc, opening_loc: opening_loc, arguments: arguments, closing_loc: closing_loc, block: block, flags: flags, name: name, location: location }
     end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
+
+    # def message: () -> String?
+    def message
+      message_loc&.slice
+    end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents the use of the `&&=` operator on a call.
@@ -751,13 +850,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (target: Node, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(target, operator_loc, value, start_offset, length)
+    # def initialize: (target: Node, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(target, operator_loc, value, location)
       @target = target
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -777,6 +875,11 @@ module YARP
     def deconstruct_keys(keys)
       { target: target, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||=` operator on a call.
@@ -793,13 +896,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (target: Node, value: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(target, value, operator_loc, start_offset, length)
+    # def initialize: (target: Node, value: Node, operator_loc: Location, location: Location) -> void
+    def initialize(target, value, operator_loc, location)
       @target = target
       @value = value
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -818,6 +920,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { target: target, value: value, operator_loc: operator_loc, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -838,14 +945,13 @@ module YARP
     # attr_reader operator_id: Symbol
     attr_reader :operator_id
 
-    # def initialize: (target: Node, operator_loc: Location, value: Node, operator_id: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(target, operator_loc, value, operator_id, start_offset, length)
+    # def initialize: (target: Node, operator_loc: Location, value: Node, operator_id: Symbol, location: Location) -> void
+    def initialize(target, operator_loc, value, operator_id, location)
       @target = target
       @operator_loc = operator_loc
       @value = value
       @operator_id = operator_id
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -865,6 +971,11 @@ module YARP
     def deconstruct_keys(keys)
       { target: target, operator_loc: operator_loc, value: value, operator_id: operator_id, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents assigning to a local variable in pattern matching.
@@ -881,13 +992,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (value: Node, target: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(value, target, operator_loc, start_offset, length)
+    # def initialize: (value: Node, target: Node, operator_loc: Location, location: Location) -> void
+    def initialize(value, target, operator_loc, location)
       @value = value
       @target = target
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -906,6 +1016,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { value: value, target: target, operator_loc: operator_loc, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -931,15 +1046,14 @@ module YARP
     # attr_reader end_keyword_loc: Location
     attr_reader :end_keyword_loc
 
-    # def initialize: (predicate: Node?, conditions: Array[Node], consequent: Node?, case_keyword_loc: Location, end_keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(predicate, conditions, consequent, case_keyword_loc, end_keyword_loc, start_offset, length)
+    # def initialize: (predicate: Node?, conditions: Array[Node], consequent: Node?, case_keyword_loc: Location, end_keyword_loc: Location, location: Location) -> void
+    def initialize(predicate, conditions, consequent, case_keyword_loc, end_keyword_loc, location)
       @predicate = predicate
       @conditions = conditions
       @consequent = consequent
       @case_keyword_loc = case_keyword_loc
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -958,6 +1072,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { predicate: predicate, conditions: conditions, consequent: consequent, case_keyword_loc: case_keyword_loc, end_keyword_loc: end_keyword_loc, location: location }
+    end
+
+    # def case_keyword: () -> String
+    def case_keyword
+      case_keyword_loc.slice
+    end
+
+    # def end_keyword: () -> String
+    def end_keyword
+      end_keyword_loc.slice
     end
   end
 
@@ -987,8 +1111,8 @@ module YARP
     # attr_reader end_keyword_loc: Location
     attr_reader :end_keyword_loc
 
-    # def initialize: (locals: Array[Symbol], class_keyword_loc: Location, constant_path: Node, inheritance_operator_loc: Location?, superclass: Node?, statements: Node?, end_keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(locals, class_keyword_loc, constant_path, inheritance_operator_loc, superclass, statements, end_keyword_loc, start_offset, length)
+    # def initialize: (locals: Array[Symbol], class_keyword_loc: Location, constant_path: Node, inheritance_operator_loc: Location?, superclass: Node?, statements: Node?, end_keyword_loc: Location, location: Location) -> void
+    def initialize(locals, class_keyword_loc, constant_path, inheritance_operator_loc, superclass, statements, end_keyword_loc, location)
       @locals = locals
       @class_keyword_loc = class_keyword_loc
       @constant_path = constant_path
@@ -996,8 +1120,7 @@ module YARP
       @superclass = superclass
       @statements = statements
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1017,6 +1140,21 @@ module YARP
     def deconstruct_keys(keys)
       { locals: locals, class_keyword_loc: class_keyword_loc, constant_path: constant_path, inheritance_operator_loc: inheritance_operator_loc, superclass: superclass, statements: statements, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def class_keyword: () -> String
+    def class_keyword
+      class_keyword_loc.slice
+    end
+
+    # def inheritance_operator: () -> String?
+    def inheritance_operator
+      inheritance_operator_loc&.slice
+    end
+
+    # def end_keyword: () -> String
+    def end_keyword
+      end_keyword_loc.slice
+    end
   end
 
   # Represents the use of the `&&=` operator for assignment to a class variable.
@@ -1033,13 +1171,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1059,6 +1196,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||=` operator for assignment to a class variable.
@@ -1075,13 +1222,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1100,6 +1246,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -1120,14 +1276,13 @@ module YARP
     # attr_reader operator: Symbol
     attr_reader :operator
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, operator, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, operator, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @operator = operator
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1147,6 +1302,11 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, operator: operator, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
   end
 
   # Represents referencing a class variable.
@@ -1154,10 +1314,9 @@ module YARP
   #     @@foo
   #     ^^^^^
   class ClassVariableReadNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1193,13 +1352,12 @@ module YARP
     # attr_reader operator_loc: Location?
     attr_reader :operator_loc
 
-    # def initialize: (name_loc: Location, value: Node?, operator_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, value, operator_loc, start_offset, length)
+    # def initialize: (name_loc: Location, value: Node?, operator_loc: Location?, location: Location) -> void
+    def initialize(name_loc, value, operator_loc, location)
       @name_loc = name_loc
       @value = value
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1219,6 +1377,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, value: value, operator_loc: operator_loc, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents the use of the `&&=` operator for assignment to a constant.
@@ -1235,13 +1403,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1261,6 +1428,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||=` operator for assignment to a constant.
@@ -1277,13 +1454,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1302,6 +1478,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -1322,14 +1508,13 @@ module YARP
     # attr_reader operator: Symbol
     attr_reader :operator
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, operator, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, operator, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @operator = operator
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1349,6 +1534,11 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, operator: operator, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
   end
 
   # Represents accessing a constant through a path of `::` operators.
@@ -1365,13 +1555,12 @@ module YARP
     # attr_reader delimiter_loc: Location
     attr_reader :delimiter_loc
 
-    # def initialize: (parent: Node?, child: Node, delimiter_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(parent, child, delimiter_loc, start_offset, length)
+    # def initialize: (parent: Node?, child: Node, delimiter_loc: Location, location: Location) -> void
+    def initialize(parent, child, delimiter_loc, location)
       @parent = parent
       @child = child
       @delimiter_loc = delimiter_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1391,6 +1580,11 @@ module YARP
     def deconstruct_keys(keys)
       { parent: parent, child: child, delimiter_loc: delimiter_loc, location: location }
     end
+
+    # def delimiter: () -> String
+    def delimiter
+      delimiter_loc.slice
+    end
   end
 
   # Represents the use of the `&&=` operator for assignment to a constant path.
@@ -1407,13 +1601,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (target: Node, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(target, operator_loc, value, start_offset, length)
+    # def initialize: (target: Node, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(target, operator_loc, value, location)
       @target = target
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1433,6 +1626,11 @@ module YARP
     def deconstruct_keys(keys)
       { target: target, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||=` operator for assignment to a constant path.
@@ -1449,13 +1647,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (target: Node, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(target, operator_loc, value, start_offset, length)
+    # def initialize: (target: Node, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(target, operator_loc, value, location)
       @target = target
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1474,6 +1671,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { target: target, operator_loc: operator_loc, value: value, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -1494,14 +1696,13 @@ module YARP
     # attr_reader operator: Symbol
     attr_reader :operator
 
-    # def initialize: (target: Node, operator_loc: Location, value: Node, operator: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(target, operator_loc, value, operator, start_offset, length)
+    # def initialize: (target: Node, operator_loc: Location, value: Node, operator: Symbol, location: Location) -> void
+    def initialize(target, operator_loc, value, operator, location)
       @target = target
       @operator_loc = operator_loc
       @value = value
       @operator = operator
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1540,13 +1741,12 @@ module YARP
     # attr_reader value: Node?
     attr_reader :value
 
-    # def initialize: (target: Node, operator_loc: Location?, value: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(target, operator_loc, value, start_offset, length)
+    # def initialize: (target: Node, operator_loc: Location?, value: Node?, location: Location) -> void
+    def initialize(target, operator_loc, value, location)
       @target = target
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1566,6 +1766,11 @@ module YARP
     def deconstruct_keys(keys)
       { target: target, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents referencing a constant.
@@ -1573,10 +1778,9 @@ module YARP
   #     Foo
   #     ^^^
   class ConstantReadNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1637,8 +1841,8 @@ module YARP
     # attr_reader end_keyword_loc: Location?
     attr_reader :end_keyword_loc
 
-    # def initialize: (name_loc: Location, receiver: Node?, parameters: Node?, statements: Node?, locals: Array[Symbol], def_keyword_loc: Location, operator_loc: Location?, lparen_loc: Location?, rparen_loc: Location?, equal_loc: Location?, end_keyword_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, start_offset, length)
+    # def initialize: (name_loc: Location, receiver: Node?, parameters: Node?, statements: Node?, locals: Array[Symbol], def_keyword_loc: Location, operator_loc: Location?, lparen_loc: Location?, rparen_loc: Location?, equal_loc: Location?, end_keyword_loc: Location?, location: Location) -> void
+    def initialize(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location)
       @name_loc = name_loc
       @receiver = receiver
       @parameters = parameters
@@ -1650,8 +1854,7 @@ module YARP
       @rparen_loc = rparen_loc
       @equal_loc = equal_loc
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1670,6 +1873,41 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, receiver: receiver, parameters: parameters, statements: statements, locals: locals, def_keyword_loc: def_keyword_loc, operator_loc: operator_loc, lparen_loc: lparen_loc, rparen_loc: rparen_loc, equal_loc: equal_loc, end_keyword_loc: end_keyword_loc, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def def_keyword: () -> String
+    def def_keyword
+      def_keyword_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
+
+    # def lparen: () -> String?
+    def lparen
+      lparen_loc&.slice
+    end
+
+    # def rparen: () -> String?
+    def rparen
+      rparen_loc&.slice
+    end
+
+    # def equal: () -> String?
+    def equal
+      equal_loc&.slice
+    end
+
+    # def end_keyword: () -> String?
+    def end_keyword
+      end_keyword_loc&.slice
     end
   end
 
@@ -1690,14 +1928,13 @@ module YARP
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
 
-    # def initialize: (lparen_loc: Location?, value: Node, rparen_loc: Location?, keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(lparen_loc, value, rparen_loc, keyword_loc, start_offset, length)
+    # def initialize: (lparen_loc: Location?, value: Node, rparen_loc: Location?, keyword_loc: Location, location: Location) -> void
+    def initialize(lparen_loc, value, rparen_loc, keyword_loc, location)
       @lparen_loc = lparen_loc
       @value = value
       @rparen_loc = rparen_loc
       @keyword_loc = keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1717,6 +1954,21 @@ module YARP
     def deconstruct_keys(keys)
       { lparen_loc: lparen_loc, value: value, rparen_loc: rparen_loc, keyword_loc: keyword_loc, location: location }
     end
+
+    # def lparen: () -> String?
+    def lparen
+      lparen_loc&.slice
+    end
+
+    # def rparen: () -> String?
+    def rparen
+      rparen_loc&.slice
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
   end
 
   # Represents an `else` clause in a `case`, `if`, or `unless` statement.
@@ -1733,13 +1985,12 @@ module YARP
     # attr_reader end_keyword_loc: Location?
     attr_reader :end_keyword_loc
 
-    # def initialize: (else_keyword_loc: Location, statements: Node?, end_keyword_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(else_keyword_loc, statements, end_keyword_loc, start_offset, length)
+    # def initialize: (else_keyword_loc: Location, statements: Node?, end_keyword_loc: Location?, location: Location) -> void
+    def initialize(else_keyword_loc, statements, end_keyword_loc, location)
       @else_keyword_loc = else_keyword_loc
       @statements = statements
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1759,6 +2010,16 @@ module YARP
     def deconstruct_keys(keys)
       { else_keyword_loc: else_keyword_loc, statements: statements, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def else_keyword: () -> String
+    def else_keyword
+      else_keyword_loc.slice
+    end
+
+    # def end_keyword: () -> String?
+    def end_keyword
+      end_keyword_loc&.slice
+    end
   end
 
   # Represents an interpolated set of statements.
@@ -1775,13 +2036,12 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (opening_loc: Location, statements: Node?, closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, statements, closing_loc, start_offset, length)
+    # def initialize: (opening_loc: Location, statements: Node?, closing_loc: Location, location: Location) -> void
+    def initialize(opening_loc, statements, closing_loc, location)
       @opening_loc = opening_loc
       @statements = statements
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1801,6 +2061,16 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, statements: statements, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # Represents an interpolated variable.
@@ -1814,12 +2084,11 @@ module YARP
     # attr_reader variable: Node
     attr_reader :variable
 
-    # def initialize: (operator_loc: Location, variable: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(operator_loc, variable, start_offset, length)
+    # def initialize: (operator_loc: Location, variable: Node, location: Location) -> void
+    def initialize(operator_loc, variable, location)
       @operator_loc = operator_loc
       @variable = variable
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1838,6 +2107,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { operator_loc: operator_loc, variable: variable, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -1859,13 +2133,12 @@ module YARP
     # attr_reader end_keyword_loc: Location
     attr_reader :end_keyword_loc
 
-    # def initialize: (ensure_keyword_loc: Location, statements: Node?, end_keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(ensure_keyword_loc, statements, end_keyword_loc, start_offset, length)
+    # def initialize: (ensure_keyword_loc: Location, statements: Node?, end_keyword_loc: Location, location: Location) -> void
+    def initialize(ensure_keyword_loc, statements, end_keyword_loc, location)
       @ensure_keyword_loc = ensure_keyword_loc
       @statements = statements
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1885,6 +2158,16 @@ module YARP
     def deconstruct_keys(keys)
       { ensure_keyword_loc: ensure_keyword_loc, statements: statements, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def ensure_keyword: () -> String
+    def ensure_keyword
+      ensure_keyword_loc.slice
+    end
+
+    # def end_keyword: () -> String
+    def end_keyword
+      end_keyword_loc.slice
+    end
   end
 
   # Represents the use of the literal `false` keyword.
@@ -1892,10 +2175,9 @@ module YARP
   #     false
   #     ^^^^^
   class FalseNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1946,16 +2228,15 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (constant: Node?, left: Node, requireds: Array[Node], right: Node, opening_loc: Location?, closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(constant, left, requireds, right, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (constant: Node?, left: Node, requireds: Array[Node], right: Node, opening_loc: Location?, closing_loc: Location?, location: Location) -> void
+    def initialize(constant, left, requireds, right, opening_loc, closing_loc, location)
       @constant = constant
       @left = left
       @requireds = requireds
       @right = right
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -1975,6 +2256,16 @@ module YARP
     def deconstruct_keys(keys)
       { constant: constant, left: left, requireds: requireds, right: right, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents a floating point number literal.
@@ -1982,10 +2273,9 @@ module YARP
   #     1.0
   #     ^^^
   class FloatNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2033,8 +2323,8 @@ module YARP
     # attr_reader end_keyword_loc: Location
     attr_reader :end_keyword_loc
 
-    # def initialize: (index: Node, collection: Node, statements: Node?, for_keyword_loc: Location, in_keyword_loc: Location, do_keyword_loc: Location?, end_keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(index, collection, statements, for_keyword_loc, in_keyword_loc, do_keyword_loc, end_keyword_loc, start_offset, length)
+    # def initialize: (index: Node, collection: Node, statements: Node?, for_keyword_loc: Location, in_keyword_loc: Location, do_keyword_loc: Location?, end_keyword_loc: Location, location: Location) -> void
+    def initialize(index, collection, statements, for_keyword_loc, in_keyword_loc, do_keyword_loc, end_keyword_loc, location)
       @index = index
       @collection = collection
       @statements = statements
@@ -2042,8 +2332,7 @@ module YARP
       @in_keyword_loc = in_keyword_loc
       @do_keyword_loc = do_keyword_loc
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2063,6 +2352,26 @@ module YARP
     def deconstruct_keys(keys)
       { index: index, collection: collection, statements: statements, for_keyword_loc: for_keyword_loc, in_keyword_loc: in_keyword_loc, do_keyword_loc: do_keyword_loc, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def for_keyword: () -> String
+    def for_keyword
+      for_keyword_loc.slice
+    end
+
+    # def in_keyword: () -> String
+    def in_keyword
+      in_keyword_loc.slice
+    end
+
+    # def do_keyword: () -> String?
+    def do_keyword
+      do_keyword_loc&.slice
+    end
+
+    # def end_keyword: () -> String
+    def end_keyword
+      end_keyword_loc.slice
+    end
   end
 
   # Represents forwarding all arguments to this method to another method.
@@ -2072,10 +2381,9 @@ module YARP
   #       ^^^^^^^^
   #     end
   class ForwardingArgumentsNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2103,10 +2411,9 @@ module YARP
   #             ^^^
   #     end
   class ForwardingParameterNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2136,11 +2443,10 @@ module YARP
     # attr_reader block: Node?
     attr_reader :block
 
-    # def initialize: (block: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(block, start_offset, length)
+    # def initialize: (block: Node?, location: Location) -> void
+    def initialize(block, location)
       @block = block
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2176,13 +2482,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2202,6 +2507,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||=` operator for assignment to a global variable.
@@ -2218,13 +2533,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2243,6 +2557,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -2263,14 +2587,13 @@ module YARP
     # attr_reader operator: Symbol
     attr_reader :operator
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, operator, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, operator, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @operator = operator
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2290,6 +2613,11 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, operator: operator, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
   end
 
   # Represents referencing a global variable.
@@ -2297,10 +2625,9 @@ module YARP
   #     $foo
   #     ^^^^
   class GlobalVariableReadNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2336,13 +2663,12 @@ module YARP
     # attr_reader value: Node?
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location?, value: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location?, value: Node?, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2362,6 +2688,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents a hash literal.
@@ -2378,13 +2714,12 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (opening_loc: Location, elements: Array[Node], closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, elements, closing_loc, start_offset, length)
+    # def initialize: (opening_loc: Location, elements: Array[Node], closing_loc: Location, location: Location) -> void
+    def initialize(opening_loc, elements, closing_loc, location)
       @opening_loc = opening_loc
       @elements = elements
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2403,6 +2738,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, elements: elements, closing_loc: closing_loc, location: location }
+    end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
     end
   end
 
@@ -2429,15 +2774,14 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (constant: Node?, assocs: Array[Node], kwrest: Node?, opening_loc: Location?, closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(constant, assocs, kwrest, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (constant: Node?, assocs: Array[Node], kwrest: Node?, opening_loc: Location?, closing_loc: Location?, location: Location) -> void
+    def initialize(constant, assocs, kwrest, opening_loc, closing_loc, location)
       @constant = constant
       @assocs = assocs
       @kwrest = kwrest
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2456,6 +2800,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { constant: constant, assocs: assocs, kwrest: kwrest, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
+    end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
     end
   end
 
@@ -2482,15 +2836,14 @@ module YARP
     # attr_reader end_keyword_loc: Location?
     attr_reader :end_keyword_loc
 
-    # def initialize: (if_keyword_loc: Location?, predicate: Node, statements: Node?, consequent: Node?, end_keyword_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(if_keyword_loc, predicate, statements, consequent, end_keyword_loc, start_offset, length)
+    # def initialize: (if_keyword_loc: Location?, predicate: Node, statements: Node?, consequent: Node?, end_keyword_loc: Location?, location: Location) -> void
+    def initialize(if_keyword_loc, predicate, statements, consequent, end_keyword_loc, location)
       @if_keyword_loc = if_keyword_loc
       @predicate = predicate
       @statements = statements
       @consequent = consequent
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2510,6 +2863,16 @@ module YARP
     def deconstruct_keys(keys)
       { if_keyword_loc: if_keyword_loc, predicate: predicate, statements: statements, consequent: consequent, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def if_keyword: () -> String?
+    def if_keyword
+      if_keyword_loc&.slice
+    end
+
+    # def end_keyword: () -> String?
+    def end_keyword
+      end_keyword_loc&.slice
+    end
   end
 
   # Represents an imaginary number literal.
@@ -2520,11 +2883,10 @@ module YARP
     # attr_reader numeric: Node
     attr_reader :numeric
 
-    # def initialize: (numeric: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(numeric, start_offset, length)
+    # def initialize: (numeric: Node, location: Location) -> void
+    def initialize(numeric, location)
       @numeric = numeric
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2563,14 +2925,13 @@ module YARP
     # attr_reader then_loc: Location?
     attr_reader :then_loc
 
-    # def initialize: (pattern: Node, statements: Node?, in_loc: Location, then_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(pattern, statements, in_loc, then_loc, start_offset, length)
+    # def initialize: (pattern: Node, statements: Node?, in_loc: Location, then_loc: Location?, location: Location) -> void
+    def initialize(pattern, statements, in_loc, then_loc, location)
       @pattern = pattern
       @statements = statements
       @in_loc = in_loc
       @then_loc = then_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2590,6 +2951,16 @@ module YARP
     def deconstruct_keys(keys)
       { pattern: pattern, statements: statements, in_loc: in_loc, then_loc: then_loc, location: location }
     end
+
+    # def in: () -> String
+    def in
+      in_loc.slice
+    end
+
+    # def then: () -> String?
+    def then
+      then_loc&.slice
+    end
   end
 
   # Represents the use of the `&&=` operator for assignment to an instance variable.
@@ -2606,13 +2977,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2632,6 +3002,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||=` operator for assignment to an instance variable.
@@ -2648,13 +3028,12 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2673,6 +3052,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -2693,14 +3082,13 @@ module YARP
     # attr_reader operator: Symbol
     attr_reader :operator
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, operator, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, operator: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, operator, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @operator = operator
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2720,6 +3108,11 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, operator: operator, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
   end
 
   # Represents referencing an instance variable.
@@ -2727,10 +3120,9 @@ module YARP
   #     @foo
   #     ^^^^
   class InstanceVariableReadNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2766,13 +3158,12 @@ module YARP
     # attr_reader operator_loc: Location?
     attr_reader :operator_loc
 
-    # def initialize: (name_loc: Location, value: Node?, operator_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, value, operator_loc, start_offset, length)
+    # def initialize: (name_loc: Location, value: Node?, operator_loc: Location?, location: Location) -> void
+    def initialize(name_loc, value, operator_loc, location)
       @name_loc = name_loc
       @value = value
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2792,6 +3183,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, value: value, operator_loc: operator_loc, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents an integer number literal.
@@ -2799,10 +3200,9 @@ module YARP
   #     1
   #     ^
   class IntegerNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2841,14 +3241,13 @@ module YARP
     # attr_reader flags: Integer
     attr_reader :flags
 
-    # def initialize: (opening_loc: Location, parts: Array[Node], closing_loc: Location, flags: Integer, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, parts, closing_loc, flags, start_offset, length)
+    # def initialize: (opening_loc: Location, parts: Array[Node], closing_loc: Location, flags: Integer, location: Location) -> void
+    def initialize(opening_loc, parts, closing_loc, flags, location)
       @opening_loc = opening_loc
       @parts = parts
       @closing_loc = closing_loc
       @flags = flags
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2868,6 +3267,16 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, parts: parts, closing_loc: closing_loc, flags: flags, location: location }
     end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # Represents a string literal that contains interpolation.
@@ -2884,13 +3293,12 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (opening_loc: Location?, parts: Array[Node], closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, parts, closing_loc, start_offset, length)
+    # def initialize: (opening_loc: Location?, parts: Array[Node], closing_loc: Location?, location: Location) -> void
+    def initialize(opening_loc, parts, closing_loc, location)
       @opening_loc = opening_loc
       @parts = parts
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2910,6 +3318,16 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, parts: parts, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents a symbol literal that contains interpolation.
@@ -2926,13 +3344,12 @@ module YARP
     # attr_reader closing_loc: Location?
     attr_reader :closing_loc
 
-    # def initialize: (opening_loc: Location?, parts: Array[Node], closing_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, parts, closing_loc, start_offset, length)
+    # def initialize: (opening_loc: Location?, parts: Array[Node], closing_loc: Location?, location: Location) -> void
+    def initialize(opening_loc, parts, closing_loc, location)
       @opening_loc = opening_loc
       @parts = parts
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2952,6 +3369,16 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, parts: parts, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents an xstring literal that contains interpolation.
@@ -2968,13 +3395,12 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (opening_loc: Location, parts: Array[Node], closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, parts, closing_loc, start_offset, length)
+    # def initialize: (opening_loc: Location, parts: Array[Node], closing_loc: Location, location: Location) -> void
+    def initialize(opening_loc, parts, closing_loc, location)
       @opening_loc = opening_loc
       @parts = parts
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -2994,6 +3420,16 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, parts: parts, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # Represents a hash literal without opening and closing braces.
@@ -3004,11 +3440,10 @@ module YARP
     # attr_reader elements: Array[Node]
     attr_reader :elements
 
-    # def initialize: (elements: Array[Node], start_offset: Integer, length: Integer) -> void
-    def initialize(elements, start_offset, length)
+    # def initialize: (elements: Array[Node], location: Location) -> void
+    def initialize(elements, location)
       @elements = elements
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3046,12 +3481,11 @@ module YARP
     # attr_reader value: Node?
     attr_reader :value
 
-    # def initialize: (name_loc: Location, value: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, value, start_offset, length)
+    # def initialize: (name_loc: Location, value: Node?, location: Location) -> void
+    def initialize(name_loc, value, location)
       @name_loc = name_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3071,6 +3505,11 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
   end
 
   # Represents a keyword rest parameter to a method, block, or lambda definition.
@@ -3085,12 +3524,11 @@ module YARP
     # attr_reader name_loc: Location?
     attr_reader :name_loc
 
-    # def initialize: (operator_loc: Location, name_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(operator_loc, name_loc, start_offset, length)
+    # def initialize: (operator_loc: Location, name_loc: Location?, location: Location) -> void
+    def initialize(operator_loc, name_loc, location)
       @operator_loc = operator_loc
       @name_loc = name_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3109,6 +3547,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { operator_loc: operator_loc, name_loc: name_loc, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
+
+    # def name: () -> String?
+    def name
+      name_loc&.slice
     end
   end
 
@@ -3129,14 +3577,13 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (locals: Array[Symbol], opening_loc: Location, parameters: Node?, statements: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(locals, opening_loc, parameters, statements, start_offset, length)
+    # def initialize: (locals: Array[Symbol], opening_loc: Location, parameters: Node?, statements: Node?, location: Location) -> void
+    def initialize(locals, opening_loc, parameters, statements, location)
       @locals = locals
       @opening_loc = opening_loc
       @parameters = parameters
       @statements = statements
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3155,6 +3602,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { locals: locals, opening_loc: opening_loc, parameters: parameters, statements: statements, location: location }
+    end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
     end
   end
 
@@ -3175,14 +3627,13 @@ module YARP
     # attr_reader constant_id: Symbol
     attr_reader :constant_id
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, constant_id: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, constant_id, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, constant_id: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, constant_id, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @constant_id = constant_id
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3201,6 +3652,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, constant_id: constant_id, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -3221,14 +3682,13 @@ module YARP
     # attr_reader constant_id: Symbol
     attr_reader :constant_id
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, constant_id: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, constant_id, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, constant_id: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, constant_id, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @constant_id = constant_id
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3247,6 +3707,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, constant_id: constant_id, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -3270,15 +3740,14 @@ module YARP
     # attr_reader operator_id: Symbol
     attr_reader :operator_id
 
-    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, constant_id: Symbol, operator_id: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(name_loc, operator_loc, value, constant_id, operator_id, start_offset, length)
+    # def initialize: (name_loc: Location, operator_loc: Location, value: Node, constant_id: Symbol, operator_id: Symbol, location: Location) -> void
+    def initialize(name_loc, operator_loc, value, constant_id, operator_id, location)
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
       @constant_id = constant_id
       @operator_id = operator_id
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3298,6 +3767,16 @@ module YARP
     def deconstruct_keys(keys)
       { name_loc: name_loc, operator_loc: operator_loc, value: value, constant_id: constant_id, operator_id: operator_id, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents reading a local variable. Note that this requires that a local
@@ -3313,12 +3792,11 @@ module YARP
     # attr_reader depth: Integer
     attr_reader :depth
 
-    # def initialize: (constant_id: Symbol, depth: Integer, start_offset: Integer, length: Integer) -> void
-    def initialize(constant_id, depth, start_offset, length)
+    # def initialize: (constant_id: Symbol, depth: Integer, location: Location) -> void
+    def initialize(constant_id, depth, location)
       @constant_id = constant_id
       @depth = depth
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3360,15 +3838,14 @@ module YARP
     # attr_reader operator_loc: Location?
     attr_reader :operator_loc
 
-    # def initialize: (constant_id: Symbol, depth: Integer, value: Node?, name_loc: Location, operator_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(constant_id, depth, value, name_loc, operator_loc, start_offset, length)
+    # def initialize: (constant_id: Symbol, depth: Integer, value: Node?, name_loc: Location, operator_loc: Location?, location: Location) -> void
+    def initialize(constant_id, depth, value, name_loc, operator_loc, location)
       @constant_id = constant_id
       @depth = depth
       @value = value
       @name_loc = name_loc
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3388,6 +3865,16 @@ module YARP
     def deconstruct_keys(keys)
       { constant_id: constant_id, depth: depth, value: value, name_loc: name_loc, operator_loc: operator_loc, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents the use of the modifier `in` operator.
@@ -3404,13 +3891,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (value: Node, pattern: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(value, pattern, operator_loc, start_offset, length)
+    # def initialize: (value: Node, pattern: Node, operator_loc: Location, location: Location) -> void
+    def initialize(value, pattern, operator_loc, location)
       @value = value
       @pattern = pattern
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3430,6 +3916,11 @@ module YARP
     def deconstruct_keys(keys)
       { value: value, pattern: pattern, operator_loc: operator_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `=>` operator.
@@ -3446,13 +3937,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (value: Node, pattern: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(value, pattern, operator_loc, start_offset, length)
+    # def initialize: (value: Node, pattern: Node, operator_loc: Location, location: Location) -> void
+    def initialize(value, pattern, operator_loc, location)
       @value = value
       @pattern = pattern
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3472,15 +3962,19 @@ module YARP
     def deconstruct_keys(keys)
       { value: value, pattern: pattern, operator_loc: operator_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents a node that is missing from the source and results in a syntax
   # error.
   class MissingNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3522,15 +4016,14 @@ module YARP
     # attr_reader end_keyword_loc: Location
     attr_reader :end_keyword_loc
 
-    # def initialize: (locals: Array[Symbol], module_keyword_loc: Location, constant_path: Node, statements: Node?, end_keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(locals, module_keyword_loc, constant_path, statements, end_keyword_loc, start_offset, length)
+    # def initialize: (locals: Array[Symbol], module_keyword_loc: Location, constant_path: Node, statements: Node?, end_keyword_loc: Location, location: Location) -> void
+    def initialize(locals, module_keyword_loc, constant_path, statements, end_keyword_loc, location)
       @locals = locals
       @module_keyword_loc = module_keyword_loc
       @constant_path = constant_path
       @statements = statements
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3549,6 +4042,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { locals: locals, module_keyword_loc: module_keyword_loc, constant_path: constant_path, statements: statements, end_keyword_loc: end_keyword_loc, location: location }
+    end
+
+    # def module_keyword: () -> String
+    def module_keyword
+      module_keyword_loc.slice
+    end
+
+    # def end_keyword: () -> String
+    def end_keyword
+      end_keyword_loc.slice
     end
   end
 
@@ -3572,15 +4075,14 @@ module YARP
     # attr_reader rparen_loc: Location?
     attr_reader :rparen_loc
 
-    # def initialize: (targets: Array[Node], operator_loc: Location?, value: Node?, lparen_loc: Location?, rparen_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(targets, operator_loc, value, lparen_loc, rparen_loc, start_offset, length)
+    # def initialize: (targets: Array[Node], operator_loc: Location?, value: Node?, lparen_loc: Location?, rparen_loc: Location?, location: Location) -> void
+    def initialize(targets, operator_loc, value, lparen_loc, rparen_loc, location)
       @targets = targets
       @operator_loc = operator_loc
       @value = value
       @lparen_loc = lparen_loc
       @rparen_loc = rparen_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3600,6 +4102,21 @@ module YARP
     def deconstruct_keys(keys)
       { targets: targets, operator_loc: operator_loc, value: value, lparen_loc: lparen_loc, rparen_loc: rparen_loc, location: location }
     end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
+
+    # def lparen: () -> String?
+    def lparen
+      lparen_loc&.slice
+    end
+
+    # def rparen: () -> String?
+    def rparen
+      rparen_loc&.slice
+    end
   end
 
   # Represents the use of the `next` keyword.
@@ -3613,12 +4130,11 @@ module YARP
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
 
-    # def initialize: (arguments: Node?, keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(arguments, keyword_loc, start_offset, length)
+    # def initialize: (arguments: Node?, keyword_loc: Location, location: Location) -> void
+    def initialize(arguments, keyword_loc, location)
       @arguments = arguments
       @keyword_loc = keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3638,6 +4154,11 @@ module YARP
     def deconstruct_keys(keys)
       { arguments: arguments, keyword_loc: keyword_loc, location: location }
     end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
   end
 
   # Represents the use of the `nil` keyword.
@@ -3645,10 +4166,9 @@ module YARP
   #     nil
   #     ^^^
   class NilNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3682,12 +4202,11 @@ module YARP
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
 
-    # def initialize: (operator_loc: Location, keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(operator_loc, keyword_loc, start_offset, length)
+    # def initialize: (operator_loc: Location, keyword_loc: Location, location: Location) -> void
+    def initialize(operator_loc, keyword_loc, location)
       @operator_loc = operator_loc
       @keyword_loc = keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3707,6 +4226,16 @@ module YARP
     def deconstruct_keys(keys)
       { operator_loc: operator_loc, keyword_loc: keyword_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
   end
 
   # Represents reading a numbered reference to a capture in the previous match.
@@ -3714,10 +4243,9 @@ module YARP
   #     $1
   #     ^^
   class NumberedReferenceReadNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3757,14 +4285,13 @@ module YARP
     # attr_reader value: Node
     attr_reader :value
 
-    # def initialize: (constant_id: Symbol, name_loc: Location, operator_loc: Location, value: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(constant_id, name_loc, operator_loc, value, start_offset, length)
+    # def initialize: (constant_id: Symbol, name_loc: Location, operator_loc: Location, value: Node, location: Location) -> void
+    def initialize(constant_id, name_loc, operator_loc, value, location)
       @constant_id = constant_id
       @name_loc = name_loc
       @operator_loc = operator_loc
       @value = value
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3784,6 +4311,16 @@ module YARP
     def deconstruct_keys(keys)
       { constant_id: constant_id, name_loc: name_loc, operator_loc: operator_loc, value: value, location: location }
     end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents the use of the `||` operator or the `or` keyword.
@@ -3800,13 +4337,12 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (left: Node, right: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(left, right, operator_loc, start_offset, length)
+    # def initialize: (left: Node, right: Node, operator_loc: Location, location: Location) -> void
+    def initialize(left, right, operator_loc, location)
       @left = left
       @right = right
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3825,6 +4361,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { left: left, right: right, operator_loc: operator_loc, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -3855,8 +4396,8 @@ module YARP
     # attr_reader block: Node?
     attr_reader :block
 
-    # def initialize: (requireds: Array[Node], optionals: Array[Node], posts: Array[Node], rest: Node?, keywords: Array[Node], keyword_rest: Node?, block: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(requireds, optionals, posts, rest, keywords, keyword_rest, block, start_offset, length)
+    # def initialize: (requireds: Array[Node], optionals: Array[Node], posts: Array[Node], rest: Node?, keywords: Array[Node], keyword_rest: Node?, block: Node?, location: Location) -> void
+    def initialize(requireds, optionals, posts, rest, keywords, keyword_rest, block, location)
       @requireds = requireds
       @optionals = optionals
       @posts = posts
@@ -3864,8 +4405,7 @@ module YARP
       @keywords = keywords
       @keyword_rest = keyword_rest
       @block = block
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3901,13 +4441,12 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (statements: Node?, opening_loc: Location, closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(statements, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (statements: Node?, opening_loc: Location, closing_loc: Location, location: Location) -> void
+    def initialize(statements, opening_loc, closing_loc, location)
       @statements = statements
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3926,6 +4465,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { statements: statements, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
+    end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
     end
   end
 
@@ -3947,14 +4496,13 @@ module YARP
     # attr_reader rparen_loc: Location
     attr_reader :rparen_loc
 
-    # def initialize: (expression: Node, operator_loc: Location, lparen_loc: Location, rparen_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(expression, operator_loc, lparen_loc, rparen_loc, start_offset, length)
+    # def initialize: (expression: Node, operator_loc: Location, lparen_loc: Location, rparen_loc: Location, location: Location) -> void
+    def initialize(expression, operator_loc, lparen_loc, rparen_loc, location)
       @expression = expression
       @operator_loc = operator_loc
       @lparen_loc = lparen_loc
       @rparen_loc = rparen_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -3974,6 +4522,21 @@ module YARP
     def deconstruct_keys(keys)
       { expression: expression, operator_loc: operator_loc, lparen_loc: lparen_loc, rparen_loc: rparen_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
+
+    # def lparen: () -> String
+    def lparen
+      lparen_loc.slice
+    end
+
+    # def rparen: () -> String
+    def rparen
+      rparen_loc.slice
+    end
   end
 
   # Represents the use of the `^` operator for pinning a variable in a pattern
@@ -3988,12 +4551,11 @@ module YARP
     # attr_reader operator_loc: Location
     attr_reader :operator_loc
 
-    # def initialize: (variable: Node, operator_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(variable, operator_loc, start_offset, length)
+    # def initialize: (variable: Node, operator_loc: Location, location: Location) -> void
+    def initialize(variable, operator_loc, location)
       @variable = variable
       @operator_loc = operator_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4012,6 +4574,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { variable: variable, operator_loc: operator_loc, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
     end
   end
 
@@ -4032,14 +4599,13 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (statements: Node?, keyword_loc: Location, opening_loc: Location, closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(statements, keyword_loc, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (statements: Node?, keyword_loc: Location, opening_loc: Location, closing_loc: Location, location: Location) -> void
+    def initialize(statements, keyword_loc, opening_loc, closing_loc, location)
       @statements = statements
       @keyword_loc = keyword_loc
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4058,6 +4624,21 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { statements: statements, keyword_loc: keyword_loc, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
     end
   end
 
@@ -4078,14 +4659,13 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (statements: Node?, keyword_loc: Location, opening_loc: Location, closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(statements, keyword_loc, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (statements: Node?, keyword_loc: Location, opening_loc: Location, closing_loc: Location, location: Location) -> void
+    def initialize(statements, keyword_loc, opening_loc, closing_loc, location)
       @statements = statements
       @keyword_loc = keyword_loc
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4105,6 +4685,21 @@ module YARP
     def deconstruct_keys(keys)
       { statements: statements, keyword_loc: keyword_loc, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
     end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # The top level node of any parse tree.
@@ -4115,12 +4710,11 @@ module YARP
     # attr_reader statements: Node
     attr_reader :statements
 
-    # def initialize: (locals: Array[Symbol], statements: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(locals, statements, start_offset, length)
+    # def initialize: (locals: Array[Symbol], statements: Node, location: Location) -> void
+    def initialize(locals, statements, location)
       @locals = locals
       @statements = statements
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4162,14 +4756,13 @@ module YARP
     # attr_reader flags: Integer
     attr_reader :flags
 
-    # def initialize: (left: Node?, right: Node?, operator_loc: Location, flags: Integer, start_offset: Integer, length: Integer) -> void
-    def initialize(left, right, operator_loc, flags, start_offset, length)
+    # def initialize: (left: Node?, right: Node?, operator_loc: Location, flags: Integer, location: Location) -> void
+    def initialize(left, right, operator_loc, flags, location)
       @left = left
       @right = right
       @operator_loc = operator_loc
       @flags = flags
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4189,6 +4782,11 @@ module YARP
     def deconstruct_keys(keys)
       { left: left, right: right, operator_loc: operator_loc, flags: flags, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents a rational number literal.
@@ -4199,11 +4797,10 @@ module YARP
     # attr_reader numeric: Node
     attr_reader :numeric
 
-    # def initialize: (numeric: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(numeric, start_offset, length)
+    # def initialize: (numeric: Node, location: Location) -> void
+    def initialize(numeric, location)
       @numeric = numeric
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4230,10 +4827,9 @@ module YARP
   #     redo
   #     ^^^^
   class RedoNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4275,15 +4871,14 @@ module YARP
     # attr_reader flags: Integer
     attr_reader :flags
 
-    # def initialize: (opening_loc: Location, content_loc: Location, closing_loc: Location, unescaped: String, flags: Integer, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, content_loc, closing_loc, unescaped, flags, start_offset, length)
+    # def initialize: (opening_loc: Location, content_loc: Location, closing_loc: Location, unescaped: String, flags: Integer, location: Location) -> void
+    def initialize(opening_loc, content_loc, closing_loc, unescaped, flags, location)
       @opening_loc = opening_loc
       @content_loc = content_loc
       @closing_loc = closing_loc
       @unescaped = unescaped
       @flags = flags
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4303,6 +4898,21 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, content_loc: content_loc, closing_loc: closing_loc, unescaped: unescaped, flags: flags, location: location }
     end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def content: () -> String
+    def content
+      content_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # Represents a destructured required parameter node.
@@ -4320,13 +4930,12 @@ module YARP
     # attr_reader closing_loc: Location
     attr_reader :closing_loc
 
-    # def initialize: (parameters: Array[Node], opening_loc: Location, closing_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(parameters, opening_loc, closing_loc, start_offset, length)
+    # def initialize: (parameters: Array[Node], opening_loc: Location, closing_loc: Location, location: Location) -> void
+    def initialize(parameters, opening_loc, closing_loc, location)
       @parameters = parameters
       @opening_loc = opening_loc
       @closing_loc = closing_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4346,6 +4955,16 @@ module YARP
     def deconstruct_keys(keys)
       { parameters: parameters, opening_loc: opening_loc, closing_loc: closing_loc, location: location }
     end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
+    end
   end
 
   # Represents a required parameter to a method, block, or lambda definition.
@@ -4357,11 +4976,10 @@ module YARP
     # attr_reader constant_id: Symbol
     attr_reader :constant_id
 
-    # def initialize: (constant_id: Symbol, start_offset: Integer, length: Integer) -> void
-    def initialize(constant_id, start_offset, length)
+    # def initialize: (constant_id: Symbol, location: Location) -> void
+    def initialize(constant_id, location)
       @constant_id = constant_id
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4397,13 +5015,12 @@ module YARP
     # attr_reader rescue_expression: Node
     attr_reader :rescue_expression
 
-    # def initialize: (expression: Node, keyword_loc: Location, rescue_expression: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(expression, keyword_loc, rescue_expression, start_offset, length)
+    # def initialize: (expression: Node, keyword_loc: Location, rescue_expression: Node, location: Location) -> void
+    def initialize(expression, keyword_loc, rescue_expression, location)
       @expression = expression
       @keyword_loc = keyword_loc
       @rescue_expression = rescue_expression
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4422,6 +5039,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { expression: expression, keyword_loc: keyword_loc, rescue_expression: rescue_expression, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
     end
   end
 
@@ -4451,16 +5073,15 @@ module YARP
     # attr_reader consequent: Node?
     attr_reader :consequent
 
-    # def initialize: (keyword_loc: Location, exceptions: Array[Node], operator_loc: Location?, exception: Node?, statements: Node?, consequent: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, exceptions, operator_loc, exception, statements, consequent, start_offset, length)
+    # def initialize: (keyword_loc: Location, exceptions: Array[Node], operator_loc: Location?, exception: Node?, statements: Node?, consequent: Node?, location: Location) -> void
+    def initialize(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location)
       @keyword_loc = keyword_loc
       @exceptions = exceptions
       @operator_loc = operator_loc
       @exception = exception
       @statements = statements
       @consequent = consequent
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4480,6 +5101,16 @@ module YARP
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, exceptions: exceptions, operator_loc: operator_loc, exception: exception, statements: statements, consequent: consequent, location: location }
     end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
+    end
   end
 
   # Represents a rest parameter to a method, block, or lambda definition.
@@ -4494,12 +5125,11 @@ module YARP
     # attr_reader name_loc: Location?
     attr_reader :name_loc
 
-    # def initialize: (operator_loc: Location, name_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(operator_loc, name_loc, start_offset, length)
+    # def initialize: (operator_loc: Location, name_loc: Location?, location: Location) -> void
+    def initialize(operator_loc, name_loc, location)
       @operator_loc = operator_loc
       @name_loc = name_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4519,6 +5149,16 @@ module YARP
     def deconstruct_keys(keys)
       { operator_loc: operator_loc, name_loc: name_loc, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
+
+    # def name: () -> String?
+    def name
+      name_loc&.slice
+    end
   end
 
   # Represents the use of the `retry` keyword.
@@ -4526,10 +5166,9 @@ module YARP
   #     retry
   #     ^^^^^
   class RetryNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4562,12 +5201,11 @@ module YARP
     # attr_reader arguments: Node?
     attr_reader :arguments
 
-    # def initialize: (keyword_loc: Location, arguments: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, arguments, start_offset, length)
+    # def initialize: (keyword_loc: Location, arguments: Node?, location: Location) -> void
+    def initialize(keyword_loc, arguments, location)
       @keyword_loc = keyword_loc
       @arguments = arguments
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4587,6 +5225,11 @@ module YARP
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, arguments: arguments, location: location }
     end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
   end
 
   # Represents the `self` keyword.
@@ -4594,10 +5237,9 @@ module YARP
   #     self
   #     ^^^^
   class SelfNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4642,16 +5284,15 @@ module YARP
     # attr_reader end_keyword_loc: Location
     attr_reader :end_keyword_loc
 
-    # def initialize: (locals: Array[Symbol], class_keyword_loc: Location, operator_loc: Location, expression: Node, statements: Node?, end_keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(locals, class_keyword_loc, operator_loc, expression, statements, end_keyword_loc, start_offset, length)
+    # def initialize: (locals: Array[Symbol], class_keyword_loc: Location, operator_loc: Location, expression: Node, statements: Node?, end_keyword_loc: Location, location: Location) -> void
+    def initialize(locals, class_keyword_loc, operator_loc, expression, statements, end_keyword_loc, location)
       @locals = locals
       @class_keyword_loc = class_keyword_loc
       @operator_loc = operator_loc
       @expression = expression
       @statements = statements
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4671,6 +5312,21 @@ module YARP
     def deconstruct_keys(keys)
       { locals: locals, class_keyword_loc: class_keyword_loc, operator_loc: operator_loc, expression: expression, statements: statements, end_keyword_loc: end_keyword_loc, location: location }
     end
+
+    # def class_keyword: () -> String
+    def class_keyword
+      class_keyword_loc.slice
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
+
+    # def end_keyword: () -> String
+    def end_keyword
+      end_keyword_loc.slice
+    end
   end
 
   # Represents the use of the `__ENCODING__` keyword.
@@ -4678,10 +5334,9 @@ module YARP
   #     __ENCODING__
   #     ^^^^^^^^^^^^
   class SourceEncodingNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4711,11 +5366,10 @@ module YARP
     # attr_reader filepath: String
     attr_reader :filepath
 
-    # def initialize: (filepath: String, start_offset: Integer, length: Integer) -> void
-    def initialize(filepath, start_offset, length)
+    # def initialize: (filepath: String, location: Location) -> void
+    def initialize(filepath, location)
       @filepath = filepath
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4742,10 +5396,9 @@ module YARP
   #     __LINE__
   #     ^^^^^^^^
   class SourceLineNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4778,12 +5431,11 @@ module YARP
     # attr_reader expression: Node?
     attr_reader :expression
 
-    # def initialize: (operator_loc: Location, expression: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(operator_loc, expression, start_offset, length)
+    # def initialize: (operator_loc: Location, expression: Node?, location: Location) -> void
+    def initialize(operator_loc, expression, location)
       @operator_loc = operator_loc
       @expression = expression
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4803,6 +5455,11 @@ module YARP
     def deconstruct_keys(keys)
       { operator_loc: operator_loc, expression: expression, location: location }
     end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
   end
 
   # Represents a set of statements contained within some scope.
@@ -4813,11 +5470,10 @@ module YARP
     # attr_reader body: Array[Node]
     attr_reader :body
 
-    # def initialize: (body: Array[Node], start_offset: Integer, length: Integer) -> void
-    def initialize(body, start_offset, length)
+    # def initialize: (body: Array[Node], location: Location) -> void
+    def initialize(body, location)
       @body = body
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4850,12 +5506,11 @@ module YARP
     # attr_reader right: Node
     attr_reader :right
 
-    # def initialize: (left: Node, right: Node, start_offset: Integer, length: Integer) -> void
-    def initialize(left, right, start_offset, length)
+    # def initialize: (left: Node, right: Node, location: Location) -> void
+    def initialize(left, right, location)
       @left = left
       @right = right
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4901,14 +5556,13 @@ module YARP
     # attr_reader unescaped: String
     attr_reader :unescaped
 
-    # def initialize: (opening_loc: Location?, content_loc: Location, closing_loc: Location?, unescaped: String, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, content_loc, closing_loc, unescaped, start_offset, length)
+    # def initialize: (opening_loc: Location?, content_loc: Location, closing_loc: Location?, unescaped: String, location: Location) -> void
+    def initialize(opening_loc, content_loc, closing_loc, unescaped, location)
       @opening_loc = opening_loc
       @content_loc = content_loc
       @closing_loc = closing_loc
       @unescaped = unescaped
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4927,6 +5581,21 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, content_loc: content_loc, closing_loc: closing_loc, unescaped: unescaped, location: location }
+    end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def content: () -> String
+    def content
+      content_loc.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
     end
   end
 
@@ -4953,15 +5622,14 @@ module YARP
     # attr_reader block: Node?
     attr_reader :block
 
-    # def initialize: (keyword_loc: Location, lparen_loc: Location?, arguments: Node?, rparen_loc: Location?, block: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, lparen_loc, arguments, rparen_loc, block, start_offset, length)
+    # def initialize: (keyword_loc: Location, lparen_loc: Location?, arguments: Node?, rparen_loc: Location?, block: Node?, location: Location) -> void
+    def initialize(keyword_loc, lparen_loc, arguments, rparen_loc, block, location)
       @keyword_loc = keyword_loc
       @lparen_loc = lparen_loc
       @arguments = arguments
       @rparen_loc = rparen_loc
       @block = block
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -4980,6 +5648,21 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, lparen_loc: lparen_loc, arguments: arguments, rparen_loc: rparen_loc, block: block, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
+
+    # def lparen: () -> String?
+    def lparen
+      lparen_loc&.slice
+    end
+
+    # def rparen: () -> String?
+    def rparen
+      rparen_loc&.slice
     end
   end
 
@@ -5003,14 +5686,13 @@ module YARP
     # attr_reader unescaped: String
     attr_reader :unescaped
 
-    # def initialize: (opening_loc: Location?, value_loc: Location, closing_loc: Location?, unescaped: String, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, value_loc, closing_loc, unescaped, start_offset, length)
+    # def initialize: (opening_loc: Location?, value_loc: Location, closing_loc: Location?, unescaped: String, location: Location) -> void
+    def initialize(opening_loc, value_loc, closing_loc, unescaped, location)
       @opening_loc = opening_loc
       @value_loc = value_loc
       @closing_loc = closing_loc
       @unescaped = unescaped
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5030,6 +5712,21 @@ module YARP
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, value_loc: value_loc, closing_loc: closing_loc, unescaped: unescaped, location: location }
     end
+
+    # def opening: () -> String?
+    def opening
+      opening_loc&.slice
+    end
+
+    # def value: () -> String
+    def value
+      value_loc.slice
+    end
+
+    # def closing: () -> String?
+    def closing
+      closing_loc&.slice
+    end
   end
 
   # Represents the use of the literal `true` keyword.
@@ -5037,10 +5734,9 @@ module YARP
   #     true
   #     ^^^^
   class TrueNode < Node
-    # def initialize: (start_offset: Integer, length: Integer) -> void
-    def initialize(start_offset, length)
-      @start_offset = start_offset
-      @length = length
+    # def initialize: (location: Location) -> void
+    def initialize(location)
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5073,12 +5769,11 @@ module YARP
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
 
-    # def initialize: (names: Array[Node], keyword_loc: Location, start_offset: Integer, length: Integer) -> void
-    def initialize(names, keyword_loc, start_offset, length)
+    # def initialize: (names: Array[Node], keyword_loc: Location, location: Location) -> void
+    def initialize(names, keyword_loc, location)
       @names = names
       @keyword_loc = keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5097,6 +5792,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { names: names, keyword_loc: keyword_loc, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
     end
   end
 
@@ -5123,15 +5823,14 @@ module YARP
     # attr_reader end_keyword_loc: Location?
     attr_reader :end_keyword_loc
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, consequent: Node?, end_keyword_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, predicate, statements, consequent, end_keyword_loc, start_offset, length)
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, consequent: Node?, end_keyword_loc: Location?, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, consequent, end_keyword_loc, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
       @consequent = consequent
       @end_keyword_loc = end_keyword_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5150,6 +5849,16 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, predicate: predicate, statements: statements, consequent: consequent, end_keyword_loc: end_keyword_loc, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
+
+    # def end_keyword: () -> String?
+    def end_keyword
+      end_keyword_loc&.slice
     end
   end
 
@@ -5170,13 +5879,12 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, predicate, statements, start_offset, length)
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5196,6 +5904,11 @@ module YARP
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, predicate: predicate, statements: statements, location: location }
     end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
   end
 
   # case true
@@ -5212,13 +5925,12 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, conditions: Array[Node], statements: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, conditions, statements, start_offset, length)
+    # def initialize: (keyword_loc: Location, conditions: Array[Node], statements: Node?, location: Location) -> void
+    def initialize(keyword_loc, conditions, statements, location)
       @keyword_loc = keyword_loc
       @conditions = conditions
       @statements = statements
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5237,6 +5949,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, conditions: conditions, statements: statements, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
     end
   end
 
@@ -5257,13 +5974,12 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, predicate, statements, start_offset, length)
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5282,6 +5998,11 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, predicate: predicate, statements: statements, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
     end
   end
 
@@ -5302,14 +6023,13 @@ module YARP
     # attr_reader unescaped: String
     attr_reader :unescaped
 
-    # def initialize: (opening_loc: Location, content_loc: Location, closing_loc: Location, unescaped: String, start_offset: Integer, length: Integer) -> void
-    def initialize(opening_loc, content_loc, closing_loc, unescaped, start_offset, length)
+    # def initialize: (opening_loc: Location, content_loc: Location, closing_loc: Location, unescaped: String, location: Location) -> void
+    def initialize(opening_loc, content_loc, closing_loc, unescaped, location)
       @opening_loc = opening_loc
       @content_loc = content_loc
       @closing_loc = closing_loc
       @unescaped = unescaped
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5328,6 +6048,21 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { opening_loc: opening_loc, content_loc: content_loc, closing_loc: closing_loc, unescaped: unescaped, location: location }
+    end
+
+    # def opening: () -> String
+    def opening
+      opening_loc.slice
+    end
+
+    # def content: () -> String
+    def content
+      content_loc.slice
+    end
+
+    # def closing: () -> String
+    def closing
+      closing_loc.slice
     end
   end
 
@@ -5348,14 +6083,13 @@ module YARP
     # attr_reader rparen_loc: Location?
     attr_reader :rparen_loc
 
-    # def initialize: (keyword_loc: Location, lparen_loc: Location?, arguments: Node?, rparen_loc: Location?, start_offset: Integer, length: Integer) -> void
-    def initialize(keyword_loc, lparen_loc, arguments, rparen_loc, start_offset, length)
+    # def initialize: (keyword_loc: Location, lparen_loc: Location?, arguments: Node?, rparen_loc: Location?, location: Location) -> void
+    def initialize(keyword_loc, lparen_loc, arguments, rparen_loc, location)
       @keyword_loc = keyword_loc
       @lparen_loc = lparen_loc
       @arguments = arguments
       @rparen_loc = rparen_loc
-      @start_offset = start_offset
-      @length = length
+      @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
@@ -5374,6 +6108,21 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { keyword_loc: keyword_loc, lparen_loc: lparen_loc, arguments: arguments, rparen_loc: rparen_loc, location: location }
+    end
+
+    # def keyword: () -> String
+    def keyword
+      keyword_loc.slice
+    end
+
+    # def lparen: () -> String?
+    def lparen
+      lparen_loc&.slice
+    end
+
+    # def rparen: () -> String?
+    def rparen
+      rparen_loc&.slice
     end
   end
 
@@ -5411,6 +6160,24 @@ module YARP
 
     # o - only interpolates values into the regular expression once
     ONCE = 1 << 7
+  end
+
+  # A class that knows how to walk down the tree. None of the individual visit
+  # methods are implemented on this visitor, so it forces the consumer to
+  # implement each one that they need. For a default implementation that
+  # continues walking the tree, see the Visitor class.
+  class BasicVisitor
+    def visit(node)
+      node&.accept(self)
+    end
+
+    def visit_all(nodes)
+      nodes.map { |node| visit(node) }
+    end
+
+    def visit_child_nodes(node)
+      visit_all(node.child_nodes)
+    end
   end
 
   class Visitor < BasicVisitor
@@ -5797,638 +6564,638 @@ module YARP
     private
 
     # Create a new Location object
-    def Location(start_offset = 0, length = 0)
-      Location.new(start_offset, length)
+    def Location(source = nil, start_offset = 0, length = 0)
+      Location.new(source, start_offset, length)
     end
 
     # Create a new AliasNode node
-    def AliasNode(new_name, old_name, keyword_loc)
-      AliasNode.new(new_name, old_name, keyword_loc, 0, 0)
+    def AliasNode(new_name, old_name, keyword_loc, location = Location())
+      AliasNode.new(new_name, old_name, keyword_loc, location)
     end
 
     # Create a new AlternationPatternNode node
-    def AlternationPatternNode(left, right, operator_loc)
-      AlternationPatternNode.new(left, right, operator_loc, 0, 0)
+    def AlternationPatternNode(left, right, operator_loc, location = Location())
+      AlternationPatternNode.new(left, right, operator_loc, location)
     end
 
     # Create a new AndNode node
-    def AndNode(left, right, operator_loc)
-      AndNode.new(left, right, operator_loc, 0, 0)
+    def AndNode(left, right, operator_loc, location = Location())
+      AndNode.new(left, right, operator_loc, location)
     end
 
     # Create a new ArgumentsNode node
-    def ArgumentsNode(arguments)
-      ArgumentsNode.new(arguments, 0, 0)
+    def ArgumentsNode(arguments, location = Location())
+      ArgumentsNode.new(arguments, location)
     end
 
     # Create a new ArrayNode node
-    def ArrayNode(elements, opening_loc, closing_loc)
-      ArrayNode.new(elements, opening_loc, closing_loc, 0, 0)
+    def ArrayNode(elements, opening_loc, closing_loc, location = Location())
+      ArrayNode.new(elements, opening_loc, closing_loc, location)
     end
 
     # Create a new ArrayPatternNode node
-    def ArrayPatternNode(constant, requireds, rest, posts, opening_loc, closing_loc)
-      ArrayPatternNode.new(constant, requireds, rest, posts, opening_loc, closing_loc, 0, 0)
+    def ArrayPatternNode(constant, requireds, rest, posts, opening_loc, closing_loc, location = Location())
+      ArrayPatternNode.new(constant, requireds, rest, posts, opening_loc, closing_loc, location)
     end
 
     # Create a new AssocNode node
-    def AssocNode(key, value, operator_loc)
-      AssocNode.new(key, value, operator_loc, 0, 0)
+    def AssocNode(key, value, operator_loc, location = Location())
+      AssocNode.new(key, value, operator_loc, location)
     end
 
     # Create a new AssocSplatNode node
-    def AssocSplatNode(value, operator_loc)
-      AssocSplatNode.new(value, operator_loc, 0, 0)
+    def AssocSplatNode(value, operator_loc, location = Location())
+      AssocSplatNode.new(value, operator_loc, location)
     end
 
     # Create a new BackReferenceReadNode node
-    def BackReferenceReadNode()
-      BackReferenceReadNode.new(0, 0)
+    def BackReferenceReadNode(location = Location())
+      BackReferenceReadNode.new(location)
     end
 
     # Create a new BeginNode node
-    def BeginNode(begin_keyword_loc, statements, rescue_clause, else_clause, ensure_clause, end_keyword_loc)
-      BeginNode.new(begin_keyword_loc, statements, rescue_clause, else_clause, ensure_clause, end_keyword_loc, 0, 0)
+    def BeginNode(begin_keyword_loc, statements, rescue_clause, else_clause, ensure_clause, end_keyword_loc, location = Location())
+      BeginNode.new(begin_keyword_loc, statements, rescue_clause, else_clause, ensure_clause, end_keyword_loc, location)
     end
 
     # Create a new BlockArgumentNode node
-    def BlockArgumentNode(expression, operator_loc)
-      BlockArgumentNode.new(expression, operator_loc, 0, 0)
+    def BlockArgumentNode(expression, operator_loc, location = Location())
+      BlockArgumentNode.new(expression, operator_loc, location)
     end
 
     # Create a new BlockNode node
-    def BlockNode(locals, parameters, statements, opening_loc, closing_loc)
-      BlockNode.new(locals, parameters, statements, opening_loc, closing_loc, 0, 0)
+    def BlockNode(locals, parameters, statements, opening_loc, closing_loc, location = Location())
+      BlockNode.new(locals, parameters, statements, opening_loc, closing_loc, location)
     end
 
     # Create a new BlockParameterNode node
-    def BlockParameterNode(name_loc, operator_loc)
-      BlockParameterNode.new(name_loc, operator_loc, 0, 0)
+    def BlockParameterNode(name_loc, operator_loc, location = Location())
+      BlockParameterNode.new(name_loc, operator_loc, location)
     end
 
     # Create a new BlockParametersNode node
-    def BlockParametersNode(parameters, locals, opening_loc, closing_loc)
-      BlockParametersNode.new(parameters, locals, opening_loc, closing_loc, 0, 0)
+    def BlockParametersNode(parameters, locals, opening_loc, closing_loc, location = Location())
+      BlockParametersNode.new(parameters, locals, opening_loc, closing_loc, location)
     end
 
     # Create a new BreakNode node
-    def BreakNode(arguments, keyword_loc)
-      BreakNode.new(arguments, keyword_loc, 0, 0)
+    def BreakNode(arguments, keyword_loc, location = Location())
+      BreakNode.new(arguments, keyword_loc, location)
     end
 
     # Create a new CallNode node
-    def CallNode(receiver, operator_loc, message_loc, opening_loc, arguments, closing_loc, block, flags, name)
-      CallNode.new(receiver, operator_loc, message_loc, opening_loc, arguments, closing_loc, block, flags, name, 0, 0)
+    def CallNode(receiver, operator_loc, message_loc, opening_loc, arguments, closing_loc, block, flags, name, location = Location())
+      CallNode.new(receiver, operator_loc, message_loc, opening_loc, arguments, closing_loc, block, flags, name, location)
     end
 
     # Create a new CallOperatorAndWriteNode node
-    def CallOperatorAndWriteNode(target, operator_loc, value)
-      CallOperatorAndWriteNode.new(target, operator_loc, value, 0, 0)
+    def CallOperatorAndWriteNode(target, operator_loc, value, location = Location())
+      CallOperatorAndWriteNode.new(target, operator_loc, value, location)
     end
 
     # Create a new CallOperatorOrWriteNode node
-    def CallOperatorOrWriteNode(target, value, operator_loc)
-      CallOperatorOrWriteNode.new(target, value, operator_loc, 0, 0)
+    def CallOperatorOrWriteNode(target, value, operator_loc, location = Location())
+      CallOperatorOrWriteNode.new(target, value, operator_loc, location)
     end
 
     # Create a new CallOperatorWriteNode node
-    def CallOperatorWriteNode(target, operator_loc, value, operator_id)
-      CallOperatorWriteNode.new(target, operator_loc, value, operator_id, 0, 0)
+    def CallOperatorWriteNode(target, operator_loc, value, operator_id, location = Location())
+      CallOperatorWriteNode.new(target, operator_loc, value, operator_id, location)
     end
 
     # Create a new CapturePatternNode node
-    def CapturePatternNode(value, target, operator_loc)
-      CapturePatternNode.new(value, target, operator_loc, 0, 0)
+    def CapturePatternNode(value, target, operator_loc, location = Location())
+      CapturePatternNode.new(value, target, operator_loc, location)
     end
 
     # Create a new CaseNode node
-    def CaseNode(predicate, conditions, consequent, case_keyword_loc, end_keyword_loc)
-      CaseNode.new(predicate, conditions, consequent, case_keyword_loc, end_keyword_loc, 0, 0)
+    def CaseNode(predicate, conditions, consequent, case_keyword_loc, end_keyword_loc, location = Location())
+      CaseNode.new(predicate, conditions, consequent, case_keyword_loc, end_keyword_loc, location)
     end
 
     # Create a new ClassNode node
-    def ClassNode(locals, class_keyword_loc, constant_path, inheritance_operator_loc, superclass, statements, end_keyword_loc)
-      ClassNode.new(locals, class_keyword_loc, constant_path, inheritance_operator_loc, superclass, statements, end_keyword_loc, 0, 0)
+    def ClassNode(locals, class_keyword_loc, constant_path, inheritance_operator_loc, superclass, statements, end_keyword_loc, location = Location())
+      ClassNode.new(locals, class_keyword_loc, constant_path, inheritance_operator_loc, superclass, statements, end_keyword_loc, location)
     end
 
     # Create a new ClassVariableOperatorAndWriteNode node
-    def ClassVariableOperatorAndWriteNode(name_loc, operator_loc, value)
-      ClassVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def ClassVariableOperatorAndWriteNode(name_loc, operator_loc, value, location = Location())
+      ClassVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new ClassVariableOperatorOrWriteNode node
-    def ClassVariableOperatorOrWriteNode(name_loc, operator_loc, value)
-      ClassVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def ClassVariableOperatorOrWriteNode(name_loc, operator_loc, value, location = Location())
+      ClassVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new ClassVariableOperatorWriteNode node
-    def ClassVariableOperatorWriteNode(name_loc, operator_loc, value, operator)
-      ClassVariableOperatorWriteNode.new(name_loc, operator_loc, value, operator, 0, 0)
+    def ClassVariableOperatorWriteNode(name_loc, operator_loc, value, operator, location = Location())
+      ClassVariableOperatorWriteNode.new(name_loc, operator_loc, value, operator, location)
     end
 
     # Create a new ClassVariableReadNode node
-    def ClassVariableReadNode()
-      ClassVariableReadNode.new(0, 0)
+    def ClassVariableReadNode(location = Location())
+      ClassVariableReadNode.new(location)
     end
 
     # Create a new ClassVariableWriteNode node
-    def ClassVariableWriteNode(name_loc, value, operator_loc)
-      ClassVariableWriteNode.new(name_loc, value, operator_loc, 0, 0)
+    def ClassVariableWriteNode(name_loc, value, operator_loc, location = Location())
+      ClassVariableWriteNode.new(name_loc, value, operator_loc, location)
     end
 
     # Create a new ConstantOperatorAndWriteNode node
-    def ConstantOperatorAndWriteNode(name_loc, operator_loc, value)
-      ConstantOperatorAndWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def ConstantOperatorAndWriteNode(name_loc, operator_loc, value, location = Location())
+      ConstantOperatorAndWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new ConstantOperatorOrWriteNode node
-    def ConstantOperatorOrWriteNode(name_loc, operator_loc, value)
-      ConstantOperatorOrWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def ConstantOperatorOrWriteNode(name_loc, operator_loc, value, location = Location())
+      ConstantOperatorOrWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new ConstantOperatorWriteNode node
-    def ConstantOperatorWriteNode(name_loc, operator_loc, value, operator)
-      ConstantOperatorWriteNode.new(name_loc, operator_loc, value, operator, 0, 0)
+    def ConstantOperatorWriteNode(name_loc, operator_loc, value, operator, location = Location())
+      ConstantOperatorWriteNode.new(name_loc, operator_loc, value, operator, location)
     end
 
     # Create a new ConstantPathNode node
-    def ConstantPathNode(parent, child, delimiter_loc)
-      ConstantPathNode.new(parent, child, delimiter_loc, 0, 0)
+    def ConstantPathNode(parent, child, delimiter_loc, location = Location())
+      ConstantPathNode.new(parent, child, delimiter_loc, location)
     end
 
     # Create a new ConstantPathOperatorAndWriteNode node
-    def ConstantPathOperatorAndWriteNode(target, operator_loc, value)
-      ConstantPathOperatorAndWriteNode.new(target, operator_loc, value, 0, 0)
+    def ConstantPathOperatorAndWriteNode(target, operator_loc, value, location = Location())
+      ConstantPathOperatorAndWriteNode.new(target, operator_loc, value, location)
     end
 
     # Create a new ConstantPathOperatorOrWriteNode node
-    def ConstantPathOperatorOrWriteNode(target, operator_loc, value)
-      ConstantPathOperatorOrWriteNode.new(target, operator_loc, value, 0, 0)
+    def ConstantPathOperatorOrWriteNode(target, operator_loc, value, location = Location())
+      ConstantPathOperatorOrWriteNode.new(target, operator_loc, value, location)
     end
 
     # Create a new ConstantPathOperatorWriteNode node
-    def ConstantPathOperatorWriteNode(target, operator_loc, value, operator)
-      ConstantPathOperatorWriteNode.new(target, operator_loc, value, operator, 0, 0)
+    def ConstantPathOperatorWriteNode(target, operator_loc, value, operator, location = Location())
+      ConstantPathOperatorWriteNode.new(target, operator_loc, value, operator, location)
     end
 
     # Create a new ConstantPathWriteNode node
-    def ConstantPathWriteNode(target, operator_loc, value)
-      ConstantPathWriteNode.new(target, operator_loc, value, 0, 0)
+    def ConstantPathWriteNode(target, operator_loc, value, location = Location())
+      ConstantPathWriteNode.new(target, operator_loc, value, location)
     end
 
     # Create a new ConstantReadNode node
-    def ConstantReadNode()
-      ConstantReadNode.new(0, 0)
+    def ConstantReadNode(location = Location())
+      ConstantReadNode.new(location)
     end
 
     # Create a new DefNode node
-    def DefNode(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc)
-      DefNode.new(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, 0, 0)
+    def DefNode(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location = Location())
+      DefNode.new(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location)
     end
 
     # Create a new DefinedNode node
-    def DefinedNode(lparen_loc, value, rparen_loc, keyword_loc)
-      DefinedNode.new(lparen_loc, value, rparen_loc, keyword_loc, 0, 0)
+    def DefinedNode(lparen_loc, value, rparen_loc, keyword_loc, location = Location())
+      DefinedNode.new(lparen_loc, value, rparen_loc, keyword_loc, location)
     end
 
     # Create a new ElseNode node
-    def ElseNode(else_keyword_loc, statements, end_keyword_loc)
-      ElseNode.new(else_keyword_loc, statements, end_keyword_loc, 0, 0)
+    def ElseNode(else_keyword_loc, statements, end_keyword_loc, location = Location())
+      ElseNode.new(else_keyword_loc, statements, end_keyword_loc, location)
     end
 
     # Create a new EmbeddedStatementsNode node
-    def EmbeddedStatementsNode(opening_loc, statements, closing_loc)
-      EmbeddedStatementsNode.new(opening_loc, statements, closing_loc, 0, 0)
+    def EmbeddedStatementsNode(opening_loc, statements, closing_loc, location = Location())
+      EmbeddedStatementsNode.new(opening_loc, statements, closing_loc, location)
     end
 
     # Create a new EmbeddedVariableNode node
-    def EmbeddedVariableNode(operator_loc, variable)
-      EmbeddedVariableNode.new(operator_loc, variable, 0, 0)
+    def EmbeddedVariableNode(operator_loc, variable, location = Location())
+      EmbeddedVariableNode.new(operator_loc, variable, location)
     end
 
     # Create a new EnsureNode node
-    def EnsureNode(ensure_keyword_loc, statements, end_keyword_loc)
-      EnsureNode.new(ensure_keyword_loc, statements, end_keyword_loc, 0, 0)
+    def EnsureNode(ensure_keyword_loc, statements, end_keyword_loc, location = Location())
+      EnsureNode.new(ensure_keyword_loc, statements, end_keyword_loc, location)
     end
 
     # Create a new FalseNode node
-    def FalseNode()
-      FalseNode.new(0, 0)
+    def FalseNode(location = Location())
+      FalseNode.new(location)
     end
 
     # Create a new FindPatternNode node
-    def FindPatternNode(constant, left, requireds, right, opening_loc, closing_loc)
-      FindPatternNode.new(constant, left, requireds, right, opening_loc, closing_loc, 0, 0)
+    def FindPatternNode(constant, left, requireds, right, opening_loc, closing_loc, location = Location())
+      FindPatternNode.new(constant, left, requireds, right, opening_loc, closing_loc, location)
     end
 
     # Create a new FloatNode node
-    def FloatNode()
-      FloatNode.new(0, 0)
+    def FloatNode(location = Location())
+      FloatNode.new(location)
     end
 
     # Create a new ForNode node
-    def ForNode(index, collection, statements, for_keyword_loc, in_keyword_loc, do_keyword_loc, end_keyword_loc)
-      ForNode.new(index, collection, statements, for_keyword_loc, in_keyword_loc, do_keyword_loc, end_keyword_loc, 0, 0)
+    def ForNode(index, collection, statements, for_keyword_loc, in_keyword_loc, do_keyword_loc, end_keyword_loc, location = Location())
+      ForNode.new(index, collection, statements, for_keyword_loc, in_keyword_loc, do_keyword_loc, end_keyword_loc, location)
     end
 
     # Create a new ForwardingArgumentsNode node
-    def ForwardingArgumentsNode()
-      ForwardingArgumentsNode.new(0, 0)
+    def ForwardingArgumentsNode(location = Location())
+      ForwardingArgumentsNode.new(location)
     end
 
     # Create a new ForwardingParameterNode node
-    def ForwardingParameterNode()
-      ForwardingParameterNode.new(0, 0)
+    def ForwardingParameterNode(location = Location())
+      ForwardingParameterNode.new(location)
     end
 
     # Create a new ForwardingSuperNode node
-    def ForwardingSuperNode(block)
-      ForwardingSuperNode.new(block, 0, 0)
+    def ForwardingSuperNode(block, location = Location())
+      ForwardingSuperNode.new(block, location)
     end
 
     # Create a new GlobalVariableOperatorAndWriteNode node
-    def GlobalVariableOperatorAndWriteNode(name_loc, operator_loc, value)
-      GlobalVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def GlobalVariableOperatorAndWriteNode(name_loc, operator_loc, value, location = Location())
+      GlobalVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new GlobalVariableOperatorOrWriteNode node
-    def GlobalVariableOperatorOrWriteNode(name_loc, operator_loc, value)
-      GlobalVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def GlobalVariableOperatorOrWriteNode(name_loc, operator_loc, value, location = Location())
+      GlobalVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new GlobalVariableOperatorWriteNode node
-    def GlobalVariableOperatorWriteNode(name_loc, operator_loc, value, operator)
-      GlobalVariableOperatorWriteNode.new(name_loc, operator_loc, value, operator, 0, 0)
+    def GlobalVariableOperatorWriteNode(name_loc, operator_loc, value, operator, location = Location())
+      GlobalVariableOperatorWriteNode.new(name_loc, operator_loc, value, operator, location)
     end
 
     # Create a new GlobalVariableReadNode node
-    def GlobalVariableReadNode()
-      GlobalVariableReadNode.new(0, 0)
+    def GlobalVariableReadNode(location = Location())
+      GlobalVariableReadNode.new(location)
     end
 
     # Create a new GlobalVariableWriteNode node
-    def GlobalVariableWriteNode(name_loc, operator_loc, value)
-      GlobalVariableWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def GlobalVariableWriteNode(name_loc, operator_loc, value, location = Location())
+      GlobalVariableWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new HashNode node
-    def HashNode(opening_loc, elements, closing_loc)
-      HashNode.new(opening_loc, elements, closing_loc, 0, 0)
+    def HashNode(opening_loc, elements, closing_loc, location = Location())
+      HashNode.new(opening_loc, elements, closing_loc, location)
     end
 
     # Create a new HashPatternNode node
-    def HashPatternNode(constant, assocs, kwrest, opening_loc, closing_loc)
-      HashPatternNode.new(constant, assocs, kwrest, opening_loc, closing_loc, 0, 0)
+    def HashPatternNode(constant, assocs, kwrest, opening_loc, closing_loc, location = Location())
+      HashPatternNode.new(constant, assocs, kwrest, opening_loc, closing_loc, location)
     end
 
     # Create a new IfNode node
-    def IfNode(if_keyword_loc, predicate, statements, consequent, end_keyword_loc)
-      IfNode.new(if_keyword_loc, predicate, statements, consequent, end_keyword_loc, 0, 0)
+    def IfNode(if_keyword_loc, predicate, statements, consequent, end_keyword_loc, location = Location())
+      IfNode.new(if_keyword_loc, predicate, statements, consequent, end_keyword_loc, location)
     end
 
     # Create a new ImaginaryNode node
-    def ImaginaryNode(numeric)
-      ImaginaryNode.new(numeric, 0, 0)
+    def ImaginaryNode(numeric, location = Location())
+      ImaginaryNode.new(numeric, location)
     end
 
     # Create a new InNode node
-    def InNode(pattern, statements, in_loc, then_loc)
-      InNode.new(pattern, statements, in_loc, then_loc, 0, 0)
+    def InNode(pattern, statements, in_loc, then_loc, location = Location())
+      InNode.new(pattern, statements, in_loc, then_loc, location)
     end
 
     # Create a new InstanceVariableOperatorAndWriteNode node
-    def InstanceVariableOperatorAndWriteNode(name_loc, operator_loc, value)
-      InstanceVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def InstanceVariableOperatorAndWriteNode(name_loc, operator_loc, value, location = Location())
+      InstanceVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new InstanceVariableOperatorOrWriteNode node
-    def InstanceVariableOperatorOrWriteNode(name_loc, operator_loc, value)
-      InstanceVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, 0, 0)
+    def InstanceVariableOperatorOrWriteNode(name_loc, operator_loc, value, location = Location())
+      InstanceVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, location)
     end
 
     # Create a new InstanceVariableOperatorWriteNode node
-    def InstanceVariableOperatorWriteNode(name_loc, operator_loc, value, operator)
-      InstanceVariableOperatorWriteNode.new(name_loc, operator_loc, value, operator, 0, 0)
+    def InstanceVariableOperatorWriteNode(name_loc, operator_loc, value, operator, location = Location())
+      InstanceVariableOperatorWriteNode.new(name_loc, operator_loc, value, operator, location)
     end
 
     # Create a new InstanceVariableReadNode node
-    def InstanceVariableReadNode()
-      InstanceVariableReadNode.new(0, 0)
+    def InstanceVariableReadNode(location = Location())
+      InstanceVariableReadNode.new(location)
     end
 
     # Create a new InstanceVariableWriteNode node
-    def InstanceVariableWriteNode(name_loc, value, operator_loc)
-      InstanceVariableWriteNode.new(name_loc, value, operator_loc, 0, 0)
+    def InstanceVariableWriteNode(name_loc, value, operator_loc, location = Location())
+      InstanceVariableWriteNode.new(name_loc, value, operator_loc, location)
     end
 
     # Create a new IntegerNode node
-    def IntegerNode()
-      IntegerNode.new(0, 0)
+    def IntegerNode(location = Location())
+      IntegerNode.new(location)
     end
 
     # Create a new InterpolatedRegularExpressionNode node
-    def InterpolatedRegularExpressionNode(opening_loc, parts, closing_loc, flags)
-      InterpolatedRegularExpressionNode.new(opening_loc, parts, closing_loc, flags, 0, 0)
+    def InterpolatedRegularExpressionNode(opening_loc, parts, closing_loc, flags, location = Location())
+      InterpolatedRegularExpressionNode.new(opening_loc, parts, closing_loc, flags, location)
     end
 
     # Create a new InterpolatedStringNode node
-    def InterpolatedStringNode(opening_loc, parts, closing_loc)
-      InterpolatedStringNode.new(opening_loc, parts, closing_loc, 0, 0)
+    def InterpolatedStringNode(opening_loc, parts, closing_loc, location = Location())
+      InterpolatedStringNode.new(opening_loc, parts, closing_loc, location)
     end
 
     # Create a new InterpolatedSymbolNode node
-    def InterpolatedSymbolNode(opening_loc, parts, closing_loc)
-      InterpolatedSymbolNode.new(opening_loc, parts, closing_loc, 0, 0)
+    def InterpolatedSymbolNode(opening_loc, parts, closing_loc, location = Location())
+      InterpolatedSymbolNode.new(opening_loc, parts, closing_loc, location)
     end
 
     # Create a new InterpolatedXStringNode node
-    def InterpolatedXStringNode(opening_loc, parts, closing_loc)
-      InterpolatedXStringNode.new(opening_loc, parts, closing_loc, 0, 0)
+    def InterpolatedXStringNode(opening_loc, parts, closing_loc, location = Location())
+      InterpolatedXStringNode.new(opening_loc, parts, closing_loc, location)
     end
 
     # Create a new KeywordHashNode node
-    def KeywordHashNode(elements)
-      KeywordHashNode.new(elements, 0, 0)
+    def KeywordHashNode(elements, location = Location())
+      KeywordHashNode.new(elements, location)
     end
 
     # Create a new KeywordParameterNode node
-    def KeywordParameterNode(name_loc, value)
-      KeywordParameterNode.new(name_loc, value, 0, 0)
+    def KeywordParameterNode(name_loc, value, location = Location())
+      KeywordParameterNode.new(name_loc, value, location)
     end
 
     # Create a new KeywordRestParameterNode node
-    def KeywordRestParameterNode(operator_loc, name_loc)
-      KeywordRestParameterNode.new(operator_loc, name_loc, 0, 0)
+    def KeywordRestParameterNode(operator_loc, name_loc, location = Location())
+      KeywordRestParameterNode.new(operator_loc, name_loc, location)
     end
 
     # Create a new LambdaNode node
-    def LambdaNode(locals, opening_loc, parameters, statements)
-      LambdaNode.new(locals, opening_loc, parameters, statements, 0, 0)
+    def LambdaNode(locals, opening_loc, parameters, statements, location = Location())
+      LambdaNode.new(locals, opening_loc, parameters, statements, location)
     end
 
     # Create a new LocalVariableOperatorAndWriteNode node
-    def LocalVariableOperatorAndWriteNode(name_loc, operator_loc, value, constant_id)
-      LocalVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, constant_id, 0, 0)
+    def LocalVariableOperatorAndWriteNode(name_loc, operator_loc, value, constant_id, location = Location())
+      LocalVariableOperatorAndWriteNode.new(name_loc, operator_loc, value, constant_id, location)
     end
 
     # Create a new LocalVariableOperatorOrWriteNode node
-    def LocalVariableOperatorOrWriteNode(name_loc, operator_loc, value, constant_id)
-      LocalVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, constant_id, 0, 0)
+    def LocalVariableOperatorOrWriteNode(name_loc, operator_loc, value, constant_id, location = Location())
+      LocalVariableOperatorOrWriteNode.new(name_loc, operator_loc, value, constant_id, location)
     end
 
     # Create a new LocalVariableOperatorWriteNode node
-    def LocalVariableOperatorWriteNode(name_loc, operator_loc, value, constant_id, operator_id)
-      LocalVariableOperatorWriteNode.new(name_loc, operator_loc, value, constant_id, operator_id, 0, 0)
+    def LocalVariableOperatorWriteNode(name_loc, operator_loc, value, constant_id, operator_id, location = Location())
+      LocalVariableOperatorWriteNode.new(name_loc, operator_loc, value, constant_id, operator_id, location)
     end
 
     # Create a new LocalVariableReadNode node
-    def LocalVariableReadNode(constant_id, depth)
-      LocalVariableReadNode.new(constant_id, depth, 0, 0)
+    def LocalVariableReadNode(constant_id, depth, location = Location())
+      LocalVariableReadNode.new(constant_id, depth, location)
     end
 
     # Create a new LocalVariableWriteNode node
-    def LocalVariableWriteNode(constant_id, depth, value, name_loc, operator_loc)
-      LocalVariableWriteNode.new(constant_id, depth, value, name_loc, operator_loc, 0, 0)
+    def LocalVariableWriteNode(constant_id, depth, value, name_loc, operator_loc, location = Location())
+      LocalVariableWriteNode.new(constant_id, depth, value, name_loc, operator_loc, location)
     end
 
     # Create a new MatchPredicateNode node
-    def MatchPredicateNode(value, pattern, operator_loc)
-      MatchPredicateNode.new(value, pattern, operator_loc, 0, 0)
+    def MatchPredicateNode(value, pattern, operator_loc, location = Location())
+      MatchPredicateNode.new(value, pattern, operator_loc, location)
     end
 
     # Create a new MatchRequiredNode node
-    def MatchRequiredNode(value, pattern, operator_loc)
-      MatchRequiredNode.new(value, pattern, operator_loc, 0, 0)
+    def MatchRequiredNode(value, pattern, operator_loc, location = Location())
+      MatchRequiredNode.new(value, pattern, operator_loc, location)
     end
 
     # Create a new MissingNode node
-    def MissingNode()
-      MissingNode.new(0, 0)
+    def MissingNode(location = Location())
+      MissingNode.new(location)
     end
 
     # Create a new ModuleNode node
-    def ModuleNode(locals, module_keyword_loc, constant_path, statements, end_keyword_loc)
-      ModuleNode.new(locals, module_keyword_loc, constant_path, statements, end_keyword_loc, 0, 0)
+    def ModuleNode(locals, module_keyword_loc, constant_path, statements, end_keyword_loc, location = Location())
+      ModuleNode.new(locals, module_keyword_loc, constant_path, statements, end_keyword_loc, location)
     end
 
     # Create a new MultiWriteNode node
-    def MultiWriteNode(targets, operator_loc, value, lparen_loc, rparen_loc)
-      MultiWriteNode.new(targets, operator_loc, value, lparen_loc, rparen_loc, 0, 0)
+    def MultiWriteNode(targets, operator_loc, value, lparen_loc, rparen_loc, location = Location())
+      MultiWriteNode.new(targets, operator_loc, value, lparen_loc, rparen_loc, location)
     end
 
     # Create a new NextNode node
-    def NextNode(arguments, keyword_loc)
-      NextNode.new(arguments, keyword_loc, 0, 0)
+    def NextNode(arguments, keyword_loc, location = Location())
+      NextNode.new(arguments, keyword_loc, location)
     end
 
     # Create a new NilNode node
-    def NilNode()
-      NilNode.new(0, 0)
+    def NilNode(location = Location())
+      NilNode.new(location)
     end
 
     # Create a new NoKeywordsParameterNode node
-    def NoKeywordsParameterNode(operator_loc, keyword_loc)
-      NoKeywordsParameterNode.new(operator_loc, keyword_loc, 0, 0)
+    def NoKeywordsParameterNode(operator_loc, keyword_loc, location = Location())
+      NoKeywordsParameterNode.new(operator_loc, keyword_loc, location)
     end
 
     # Create a new NumberedReferenceReadNode node
-    def NumberedReferenceReadNode()
-      NumberedReferenceReadNode.new(0, 0)
+    def NumberedReferenceReadNode(location = Location())
+      NumberedReferenceReadNode.new(location)
     end
 
     # Create a new OptionalParameterNode node
-    def OptionalParameterNode(constant_id, name_loc, operator_loc, value)
-      OptionalParameterNode.new(constant_id, name_loc, operator_loc, value, 0, 0)
+    def OptionalParameterNode(constant_id, name_loc, operator_loc, value, location = Location())
+      OptionalParameterNode.new(constant_id, name_loc, operator_loc, value, location)
     end
 
     # Create a new OrNode node
-    def OrNode(left, right, operator_loc)
-      OrNode.new(left, right, operator_loc, 0, 0)
+    def OrNode(left, right, operator_loc, location = Location())
+      OrNode.new(left, right, operator_loc, location)
     end
 
     # Create a new ParametersNode node
-    def ParametersNode(requireds, optionals, posts, rest, keywords, keyword_rest, block)
-      ParametersNode.new(requireds, optionals, posts, rest, keywords, keyword_rest, block, 0, 0)
+    def ParametersNode(requireds, optionals, posts, rest, keywords, keyword_rest, block, location = Location())
+      ParametersNode.new(requireds, optionals, posts, rest, keywords, keyword_rest, block, location)
     end
 
     # Create a new ParenthesesNode node
-    def ParenthesesNode(statements, opening_loc, closing_loc)
-      ParenthesesNode.new(statements, opening_loc, closing_loc, 0, 0)
+    def ParenthesesNode(statements, opening_loc, closing_loc, location = Location())
+      ParenthesesNode.new(statements, opening_loc, closing_loc, location)
     end
 
     # Create a new PinnedExpressionNode node
-    def PinnedExpressionNode(expression, operator_loc, lparen_loc, rparen_loc)
-      PinnedExpressionNode.new(expression, operator_loc, lparen_loc, rparen_loc, 0, 0)
+    def PinnedExpressionNode(expression, operator_loc, lparen_loc, rparen_loc, location = Location())
+      PinnedExpressionNode.new(expression, operator_loc, lparen_loc, rparen_loc, location)
     end
 
     # Create a new PinnedVariableNode node
-    def PinnedVariableNode(variable, operator_loc)
-      PinnedVariableNode.new(variable, operator_loc, 0, 0)
+    def PinnedVariableNode(variable, operator_loc, location = Location())
+      PinnedVariableNode.new(variable, operator_loc, location)
     end
 
     # Create a new PostExecutionNode node
-    def PostExecutionNode(statements, keyword_loc, opening_loc, closing_loc)
-      PostExecutionNode.new(statements, keyword_loc, opening_loc, closing_loc, 0, 0)
+    def PostExecutionNode(statements, keyword_loc, opening_loc, closing_loc, location = Location())
+      PostExecutionNode.new(statements, keyword_loc, opening_loc, closing_loc, location)
     end
 
     # Create a new PreExecutionNode node
-    def PreExecutionNode(statements, keyword_loc, opening_loc, closing_loc)
-      PreExecutionNode.new(statements, keyword_loc, opening_loc, closing_loc, 0, 0)
+    def PreExecutionNode(statements, keyword_loc, opening_loc, closing_loc, location = Location())
+      PreExecutionNode.new(statements, keyword_loc, opening_loc, closing_loc, location)
     end
 
     # Create a new ProgramNode node
-    def ProgramNode(locals, statements)
-      ProgramNode.new(locals, statements, 0, 0)
+    def ProgramNode(locals, statements, location = Location())
+      ProgramNode.new(locals, statements, location)
     end
 
     # Create a new RangeNode node
-    def RangeNode(left, right, operator_loc, flags)
-      RangeNode.new(left, right, operator_loc, flags, 0, 0)
+    def RangeNode(left, right, operator_loc, flags, location = Location())
+      RangeNode.new(left, right, operator_loc, flags, location)
     end
 
     # Create a new RationalNode node
-    def RationalNode(numeric)
-      RationalNode.new(numeric, 0, 0)
+    def RationalNode(numeric, location = Location())
+      RationalNode.new(numeric, location)
     end
 
     # Create a new RedoNode node
-    def RedoNode()
-      RedoNode.new(0, 0)
+    def RedoNode(location = Location())
+      RedoNode.new(location)
     end
 
     # Create a new RegularExpressionNode node
-    def RegularExpressionNode(opening_loc, content_loc, closing_loc, unescaped, flags)
-      RegularExpressionNode.new(opening_loc, content_loc, closing_loc, unescaped, flags, 0, 0)
+    def RegularExpressionNode(opening_loc, content_loc, closing_loc, unescaped, flags, location = Location())
+      RegularExpressionNode.new(opening_loc, content_loc, closing_loc, unescaped, flags, location)
     end
 
     # Create a new RequiredDestructuredParameterNode node
-    def RequiredDestructuredParameterNode(parameters, opening_loc, closing_loc)
-      RequiredDestructuredParameterNode.new(parameters, opening_loc, closing_loc, 0, 0)
+    def RequiredDestructuredParameterNode(parameters, opening_loc, closing_loc, location = Location())
+      RequiredDestructuredParameterNode.new(parameters, opening_loc, closing_loc, location)
     end
 
     # Create a new RequiredParameterNode node
-    def RequiredParameterNode(constant_id)
-      RequiredParameterNode.new(constant_id, 0, 0)
+    def RequiredParameterNode(constant_id, location = Location())
+      RequiredParameterNode.new(constant_id, location)
     end
 
     # Create a new RescueModifierNode node
-    def RescueModifierNode(expression, keyword_loc, rescue_expression)
-      RescueModifierNode.new(expression, keyword_loc, rescue_expression, 0, 0)
+    def RescueModifierNode(expression, keyword_loc, rescue_expression, location = Location())
+      RescueModifierNode.new(expression, keyword_loc, rescue_expression, location)
     end
 
     # Create a new RescueNode node
-    def RescueNode(keyword_loc, exceptions, operator_loc, exception, statements, consequent)
-      RescueNode.new(keyword_loc, exceptions, operator_loc, exception, statements, consequent, 0, 0)
+    def RescueNode(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location = Location())
+      RescueNode.new(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location)
     end
 
     # Create a new RestParameterNode node
-    def RestParameterNode(operator_loc, name_loc)
-      RestParameterNode.new(operator_loc, name_loc, 0, 0)
+    def RestParameterNode(operator_loc, name_loc, location = Location())
+      RestParameterNode.new(operator_loc, name_loc, location)
     end
 
     # Create a new RetryNode node
-    def RetryNode()
-      RetryNode.new(0, 0)
+    def RetryNode(location = Location())
+      RetryNode.new(location)
     end
 
     # Create a new ReturnNode node
-    def ReturnNode(keyword_loc, arguments)
-      ReturnNode.new(keyword_loc, arguments, 0, 0)
+    def ReturnNode(keyword_loc, arguments, location = Location())
+      ReturnNode.new(keyword_loc, arguments, location)
     end
 
     # Create a new SelfNode node
-    def SelfNode()
-      SelfNode.new(0, 0)
+    def SelfNode(location = Location())
+      SelfNode.new(location)
     end
 
     # Create a new SingletonClassNode node
-    def SingletonClassNode(locals, class_keyword_loc, operator_loc, expression, statements, end_keyword_loc)
-      SingletonClassNode.new(locals, class_keyword_loc, operator_loc, expression, statements, end_keyword_loc, 0, 0)
+    def SingletonClassNode(locals, class_keyword_loc, operator_loc, expression, statements, end_keyword_loc, location = Location())
+      SingletonClassNode.new(locals, class_keyword_loc, operator_loc, expression, statements, end_keyword_loc, location)
     end
 
     # Create a new SourceEncodingNode node
-    def SourceEncodingNode()
-      SourceEncodingNode.new(0, 0)
+    def SourceEncodingNode(location = Location())
+      SourceEncodingNode.new(location)
     end
 
     # Create a new SourceFileNode node
-    def SourceFileNode(filepath)
-      SourceFileNode.new(filepath, 0, 0)
+    def SourceFileNode(filepath, location = Location())
+      SourceFileNode.new(filepath, location)
     end
 
     # Create a new SourceLineNode node
-    def SourceLineNode()
-      SourceLineNode.new(0, 0)
+    def SourceLineNode(location = Location())
+      SourceLineNode.new(location)
     end
 
     # Create a new SplatNode node
-    def SplatNode(operator_loc, expression)
-      SplatNode.new(operator_loc, expression, 0, 0)
+    def SplatNode(operator_loc, expression, location = Location())
+      SplatNode.new(operator_loc, expression, location)
     end
 
     # Create a new StatementsNode node
-    def StatementsNode(body)
-      StatementsNode.new(body, 0, 0)
+    def StatementsNode(body, location = Location())
+      StatementsNode.new(body, location)
     end
 
     # Create a new StringConcatNode node
-    def StringConcatNode(left, right)
-      StringConcatNode.new(left, right, 0, 0)
+    def StringConcatNode(left, right, location = Location())
+      StringConcatNode.new(left, right, location)
     end
 
     # Create a new StringNode node
-    def StringNode(opening_loc, content_loc, closing_loc, unescaped)
-      StringNode.new(opening_loc, content_loc, closing_loc, unescaped, 0, 0)
+    def StringNode(opening_loc, content_loc, closing_loc, unescaped, location = Location())
+      StringNode.new(opening_loc, content_loc, closing_loc, unescaped, location)
     end
 
     # Create a new SuperNode node
-    def SuperNode(keyword_loc, lparen_loc, arguments, rparen_loc, block)
-      SuperNode.new(keyword_loc, lparen_loc, arguments, rparen_loc, block, 0, 0)
+    def SuperNode(keyword_loc, lparen_loc, arguments, rparen_loc, block, location = Location())
+      SuperNode.new(keyword_loc, lparen_loc, arguments, rparen_loc, block, location)
     end
 
     # Create a new SymbolNode node
-    def SymbolNode(opening_loc, value_loc, closing_loc, unescaped)
-      SymbolNode.new(opening_loc, value_loc, closing_loc, unescaped, 0, 0)
+    def SymbolNode(opening_loc, value_loc, closing_loc, unescaped, location = Location())
+      SymbolNode.new(opening_loc, value_loc, closing_loc, unescaped, location)
     end
 
     # Create a new TrueNode node
-    def TrueNode()
-      TrueNode.new(0, 0)
+    def TrueNode(location = Location())
+      TrueNode.new(location)
     end
 
     # Create a new UndefNode node
-    def UndefNode(names, keyword_loc)
-      UndefNode.new(names, keyword_loc, 0, 0)
+    def UndefNode(names, keyword_loc, location = Location())
+      UndefNode.new(names, keyword_loc, location)
     end
 
     # Create a new UnlessNode node
-    def UnlessNode(keyword_loc, predicate, statements, consequent, end_keyword_loc)
-      UnlessNode.new(keyword_loc, predicate, statements, consequent, end_keyword_loc, 0, 0)
+    def UnlessNode(keyword_loc, predicate, statements, consequent, end_keyword_loc, location = Location())
+      UnlessNode.new(keyword_loc, predicate, statements, consequent, end_keyword_loc, location)
     end
 
     # Create a new UntilNode node
-    def UntilNode(keyword_loc, predicate, statements)
-      UntilNode.new(keyword_loc, predicate, statements, 0, 0)
+    def UntilNode(keyword_loc, predicate, statements, location = Location())
+      UntilNode.new(keyword_loc, predicate, statements, location)
     end
 
     # Create a new WhenNode node
-    def WhenNode(keyword_loc, conditions, statements)
-      WhenNode.new(keyword_loc, conditions, statements, 0, 0)
+    def WhenNode(keyword_loc, conditions, statements, location = Location())
+      WhenNode.new(keyword_loc, conditions, statements, location)
     end
 
     # Create a new WhileNode node
-    def WhileNode(keyword_loc, predicate, statements)
-      WhileNode.new(keyword_loc, predicate, statements, 0, 0)
+    def WhileNode(keyword_loc, predicate, statements, location = Location())
+      WhileNode.new(keyword_loc, predicate, statements, location)
     end
 
     # Create a new XStringNode node
-    def XStringNode(opening_loc, content_loc, closing_loc, unescaped)
-      XStringNode.new(opening_loc, content_loc, closing_loc, unescaped, 0, 0)
+    def XStringNode(opening_loc, content_loc, closing_loc, unescaped, location = Location())
+      XStringNode.new(opening_loc, content_loc, closing_loc, unescaped, location)
     end
 
     # Create a new YieldNode node
-    def YieldNode(keyword_loc, lparen_loc, arguments, rparen_loc)
-      YieldNode.new(keyword_loc, lparen_loc, arguments, rparen_loc, 0, 0)
+    def YieldNode(keyword_loc, lparen_loc, arguments, rparen_loc, location = Location())
+      YieldNode.new(keyword_loc, lparen_loc, arguments, rparen_loc, location)
     end
   end
 end

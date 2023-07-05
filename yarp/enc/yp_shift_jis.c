@@ -77,5 +77,6 @@ yp_encoding_t yp_encoding_shift_jis = {
     .char_width = yp_encoding_shift_jis_char_width,
     .alnum_char = yp_encoding_shift_jis_alnum_char,
     .alpha_char = yp_encoding_shift_jis_alpha_char,
-    .isupper_char = yp_encoding_shift_jis_isupper_char
+    .isupper_char = yp_encoding_shift_jis_isupper_char,
+    .multibyte = true
 };
