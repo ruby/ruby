@@ -93,10 +93,10 @@ jobs:
           - { name: clang-12,  env: { default_cc: clang-12 } }
           - { name: clang-11,  env: { default_cc: clang-11 } }
           - { name: clang-10,  env: { default_cc: clang-10 } }
-          - { name: clang-9,   env: { default_cc: clang-9 } }
-          - { name: clang-8,   env: { default_cc: clang-8 } }
-          - { name: clang-7,   env: { default_cc: clang-7 } }
-          - { name: clang-6.0, env: { default_cc: clang-6.0 } }
+          - { name: clang-9,   env: { default_cc: clang-9,   append_configure: '--disable-yjit' } }
+          - { name: clang-8,   env: { default_cc: clang-8,   append_configure: '--disable-yjit' } }
+          - { name: clang-7,   env: { default_cc: clang-7,   append_configure: '--disable-yjit' } }
+          - { name: clang-6.0, env: { default_cc: clang-6.0, append_configure: '--disable-yjit' } }
           - name: 'clang-16 LTO'
             container: clang-16
             env:
