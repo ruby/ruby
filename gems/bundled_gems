@@ -31,3 +31,4 @@ resolv-replace  0.1.1   https://github.com/ruby/resolv-replace
 drb             2.1.1   https://github.com/ruby/drb
 mutex_m         0.1.2   https://github.com/ruby/mutex_m
 csv             3.2.7   https://github.com/ruby/csv
+base64          0.1.1   https://github.com/ruby/base64
