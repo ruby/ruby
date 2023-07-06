@@ -941,6 +941,15 @@ rb_mmtk_update_weak_table(st_table *table,
 {
     if (!table || table->num_entries == 0) return;
 
+    // HACK: The way we update non-address-hashed tables will be unsound if we run `obj_free` in
+    // parallel or before we update the weak table.  When deleting entries from st_table,
+    // st_general_foreach will try to compare elements by value.  But if `obj_free` has been called
+    // on dead objects, it may destroy the object (for example, freeing the underlying off-heap
+    // buffer of strings), making them unable to be compared by value.  Creating another hash table
+    // and replacing the existing one has a performance overhead, but is correct.  We should find a
+    // more efficient way to delete dead objects from a hash table.
+    addr_hashed = true;
+
     if (addr_hashed) {
         // The has table uses the address of the key object as key.
         // If a key object is moved, its hash is changed as well.
