@@ -17,6 +17,8 @@ module Bundler
 
       specs = @definition.specs_for(groups)
 
+      bundled_load_paths = Bundler.rubygems.bundled_stubs.map(&:load_paths).flatten
+
       SharedHelpers.set_bundle_environment
       Bundler.rubygems.replace_entrypoints(specs)
 
@@ -27,6 +29,8 @@ module Bundler
         Bundler.rubygems.mark_loaded(spec)
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
+
+      load_paths = load_paths.concat(bundled_load_paths).uniq
 
       Bundler.rubygems.add_to_load_path(load_paths)
 

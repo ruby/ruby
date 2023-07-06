@@ -357,7 +357,6 @@ module Bundler
     # of the world.
     def replace_entrypoints(specs)
       specs_by_name = add_default_gems_to(specs)
-      specs_by_name = add_bundled_gems_to(specs_by_name)
 
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
@@ -380,16 +379,6 @@ module Bundler
 
         specs << default_spec
         specs_by_name[default_spec_name] = default_spec
-      end
-
-      specs_by_name
-    end
-
-    def add_bundled_gems_to(specs_by_name)
-      Bundler.rubygems.bundled_stubs.each do |spec|
-        bundled_spec_name = spec.name
-        next if specs_by_name.key?(bundled_spec_name)
-        specs_by_name[bundled_spec_name] = spec
       end
 
       specs_by_name
