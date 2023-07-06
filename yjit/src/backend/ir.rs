@@ -1646,19 +1646,25 @@ impl Assembler {
     }
 
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
-        // Save what registers are available for the C arguments.
-        let reg_temps = self.ctx.get_reg_temps();
+        let old_temps = self.ctx.get_reg_temps(); // with registers
         // Spill stack temp registers since they are caller-saved registers.
         // Note that this doesn't spill stack temps that are already popped
         // but may still be used in the C arguments.
         self.spill_temps();
+        let new_temps = self.ctx.get_reg_temps(); // all spilled
 
+        // Temporarily manipulate RegTemps so that we can use registers
+        // to pass stack operands that are already spilled above.
+        self.ctx.set_reg_temps(old_temps);
+
+        // Call a C function
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
-        // For C arguments, use stack temp registers that are still alive.
-        // After the C call that may clobber them, use spilled stack temps.
-        self.ctx.set_reg_temps(reg_temps);
         self.push_insn(Insn::CCall { fptr, opnds, out });
-        self.ctx.set_reg_temps(RegTemps::default());
+
+        // Registers in old_temps may be clobbered by the above C call,
+        // so rollback the manipulated RegTemps to a spilled version.
+        self.ctx.set_reg_temps(new_temps);
+
         out
     }
 
