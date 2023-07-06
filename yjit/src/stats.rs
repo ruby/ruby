@@ -369,6 +369,7 @@ make_counters! {
     binding_set,
 
     vm_insns_count,
+    compiled_iseq_entry,
     compiled_iseq_count,
     compiled_blockid_count,
     compiled_block_count,
