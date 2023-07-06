@@ -29,14 +29,14 @@ ruby_version_is "3.3" do
 
     it "can't assign a constant name as a temporary name" do
       m = Module.new
-      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "name must not be valid constant path")
+      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "the temporary name must not be a constant path to avoid confusion")
     end
 
     it "can't assign a constant path as a temporary name" do
       m = Module.new
-      -> { m.set_temporary_name("A::B") }.should raise_error(ArgumentError, "name must not be valid constant path")
-      -> { m.set_temporary_name("::A") }.should raise_error(ArgumentError, "name must not be valid constant path")
-      -> { m.set_temporary_name("::A::B") }.should raise_error(ArgumentError, "name must not be valid constant path")
+      -> { m.set_temporary_name("A::B") }.should raise_error(ArgumentError, "the temporary name must not be a constant path to avoid confusion")
+      -> { m.set_temporary_name("::A") }.should raise_error(ArgumentError, "the temporary name must not be a constant path to avoid confusion")
+      -> { m.set_temporary_name("::A::B") }.should raise_error(ArgumentError, "the temporary name must not be a constant path to avoid confusion")
     end
 
     it "can't assign name to permanent module" do

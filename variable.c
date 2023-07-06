@@ -230,7 +230,7 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
         }
 
         if (is_constant_path(name)) {
-            rb_raise(rb_eArgError, "name must not be valid constant path");
+            rb_raise(rb_eArgError, "the temporary name must not be a constant path to avoid confusion");
         }
 
         // Set the temporary classpath to the given name:
