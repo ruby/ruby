@@ -17548,6 +17548,7 @@ variable.$(OBJEXT): {$(VPATH)}rubyparser.h
 variable.$(OBJEXT): {$(VPATH)}shape.h
 variable.$(OBJEXT): {$(VPATH)}st.h
 variable.$(OBJEXT): {$(VPATH)}subst.h
+variable.$(OBJEXT): {$(VPATH)}symbol.h
 variable.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 variable.$(OBJEXT): {$(VPATH)}thread_native.h
 variable.$(OBJEXT): {$(VPATH)}transient_heap.h
