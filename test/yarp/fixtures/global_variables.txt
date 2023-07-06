@@ -36,6 +36,8 @@ $DEBUG
 
 $FILENAME
 
+$0
+
 $-0
 
 $LOADED_FEATURES
@@ -79,6 +81,8 @@ $-K
 :$DEBUG
 
 :$FILENAME
+
+:$0
 
 :$-0
 

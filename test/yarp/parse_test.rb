@@ -42,6 +42,11 @@ class ParseTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_dollar0
+    parsed_result = YARP.parse("$0", "-e")
+    assert_equal 2, parsed_result.value.location.length
+  end
+
   def test_parse_takes_file_path
     filepath = "filepath.rb"
     parsed_result = YARP.parse("def foo; __FILE__; end", filepath)
