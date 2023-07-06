@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/module'
 
 ruby_version_is "3.3" do
   describe "Module#set_temporary_name" do
@@ -14,6 +13,15 @@ ruby_version_is "3.3" do
       m.name.should be_nil
     end
 
+    it "can assign a temporary name which is not a valid constant path" do
+      m = Module.new
+      m.set_temporary_name("a::B")
+      m.name.should == "a::B"
+
+      m.set_temporary_name("Template['foo.rb']")
+      m.name.should == "Template['foo.rb']"
+    end
+
     it "can't assign empty string as name" do
       m = Module.new
       -> { m.set_temporary_name("") }.should raise_error(ArgumentError, "empty class/module name")
@@ -21,7 +29,14 @@ ruby_version_is "3.3" do
 
     it "can't assign a constant name as a temporary name" do
       m = Module.new
-      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "name must not be valid constant name")
+      -> { m.set_temporary_name("Object") }.should raise_error(ArgumentError, "name must not be valid constant path")
+    end
+
+    it "can't assign a constant path as a temporary name" do
+      m = Module.new
+      -> { m.set_temporary_name("A::B") }.should raise_error(ArgumentError, "name must not be valid constant path")
+      -> { m.set_temporary_name("::A") }.should raise_error(ArgumentError, "name must not be valid constant path")
+      -> { m.set_temporary_name("::A::B") }.should raise_error(ArgumentError, "name must not be valid constant path")
     end
 
     it "can't assign name to permanent module" do
