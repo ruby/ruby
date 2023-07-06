@@ -10,6 +10,9 @@ module Gem
       nkf
       syslog
       drb
+      mutex_m
+      csv
+      base64
     ]
   end
 end
