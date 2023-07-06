@@ -4868,7 +4868,7 @@ lex_global_variable(yp_parser_t *parser) {
             parser->current.end++;
             size_t width;
 
-            if ((width = char_is_identifier(parser, parser->current.end)) > 0) {
+            if (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0) {
                 do {
                     parser->current.end += width;
                 } while (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0);

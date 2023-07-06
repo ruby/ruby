@@ -44,6 +44,10 @@ module YARP
       @length = length
     end
 
+    def inspect
+      "#<YARP::Location @start_offset=#{@start_offset} @length=#{@length}>"
+    end
+
     # The source code that this location represents.
     def slice
       source.slice(start_offset, length)
