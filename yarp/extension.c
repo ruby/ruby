@@ -613,28 +613,6 @@ profile_file(VALUE self, VALUE filepath) {
     return Qnil;
 }
 
-// The function takes a source string and returns a Ruby array containing the
-// offsets of every newline in the string. (It also includes a 0 at the
-// beginning to indicate the position of the first line.) It accepts a string as
-// its only argument and returns an array of integers.
-static VALUE
-newlines(VALUE self, VALUE string) {
-    yp_parser_t parser;
-    size_t length = RSTRING_LEN(string);
-    yp_parser_init(&parser, RSTRING_PTR(string), length, NULL);
-
-    yp_node_t *node = yp_parse(&parser);
-    yp_node_destroy(&parser, node);
-
-    VALUE result = rb_ary_new_capa(parser.newline_list.size);
-    for (size_t index = 0; index < parser.newline_list.size; index++) {
-        rb_ary_push(result, INT2FIX(parser.newline_list.offsets[index]));
-    }
-
-    yp_parser_free(&parser);
-    return result;
-}
-
 /******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
@@ -683,7 +661,6 @@ Init_yarp(void) {
     rb_define_singleton_method(rb_cYARP, "unescape_all", unescape_all, 1);
     rb_define_singleton_method(rb_cYARP, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cYARP, "profile_file", profile_file, 1);
-    rb_define_singleton_method(rb_cYARP, "newlines", newlines, 1);
 
     // Next, initialize the pack API.
     Init_yarp_pack();
