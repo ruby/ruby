@@ -1386,16 +1386,14 @@ rb_dir_getwd(void)
 }
 
 /*
- *  call-seq:
- *     Dir.getwd -> string
- *     Dir.pwd -> string
+ * call-seq:
+ *   Dir.pwd -> string
  *
- *  Returns the path to the current working directory of this process as
- *  a string.
+ * Returns the path to the current working directory:
  *
- *     Dir.chdir("/tmp")   #=> 0
- *     Dir.getwd           #=> "/tmp"
- *     Dir.pwd             #=> "/tmp"
+ *   Dir.chdir("/tmp") # => 0
+ *   Dir.pwd           # => "/tmp"
+ *
  */
 static VALUE
 dir_s_getwd(VALUE dir)
@@ -1425,13 +1423,16 @@ check_dirname(VALUE dir)
 
 #if defined(HAVE_CHROOT)
 /*
- *  call-seq:
- *     Dir.chroot( string ) -> 0
+ * call-seq:
+ *   Dir.chroot(dirpath) -> 0
  *
- *  Changes this process's idea of the file system root. Only a
- *  privileged process may make this call. Not available on all
- *  platforms. On Unix systems, see <code>chroot(2)</code> for more
- *  information.
+ * Changes the root directory of the calling process to that specified in +dirpath+.
+ * The new root directory is used for pathnames beginning with <tt>'/'</tt>.
+ * The root directory is inherited by all children of the calling process.
+ *
+ * Only a privileged process may call +chroot+.
+ *
+ * See {Linux chroot}[https://man7.org/linux/man-pages/man2/chroot.2.html].
  */
 static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
@@ -1460,18 +1461,20 @@ nogvl_mkdir(void *ptr)
 }
 
 /*
- *  call-seq:
- *     Dir.mkdir( string [, integer] ) -> 0
+ * call-seq:
+ *   Dir.mkdir(dirpath, permissions = 0775) -> 0
  *
- *  Makes a new directory named by <i>string</i>, with permissions
- *  specified by the optional parameter <i>anInteger</i>. The
- *  permissions may be modified by the value of File::umask, and are
- *  ignored on NT. Raises a SystemCallError if the directory cannot be
- *  created. See also the discussion of permissions in the class
- *  documentation for File.
+ * Creates a directory in the underlying file system
+ * at +dirpath+ with the given +permissions+;
+ * returns zero:
  *
- *    Dir.mkdir(File.join(Dir.home, ".foo"), 0700) #=> 0
+ *   Dir.mkdir('foo')
+ *   File.stat(Dir.new('foo')).mode.to_s(8)[1..4] # => "0755"
+ *   Dir.mkdir('bar', 0644)
+ *   File.stat(Dir.new('bar')).mode.to_s(8)[1..4] # => "0644"
  *
+ * See {File Permissions}[rdoc-ref:File@File+Permissions].
+ * Note that argument +permissions+ is ignored on Windows.
  */
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
@@ -1505,13 +1508,14 @@ nogvl_rmdir(void *ptr)
 }
 
 /*
- *  call-seq:
- *     Dir.delete( string ) -> 0
- *     Dir.rmdir( string ) -> 0
- *     Dir.unlink( string ) -> 0
+ * call-seq:
+ *   Dir.rmdir(dirpath) -> 0
  *
- *  Deletes the named directory. Raises a subclass of SystemCallError
- *  if the directory isn't empty.
+ * Removes the directory at +dirpath+ from the underlying file system:
+ *
+ *   Dir.rmdir('foo') # => 0
+ *
+ * Raises an exception if the directory is not empty.
  */
 static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
@@ -3236,26 +3240,35 @@ dir_open_dir(int argc, VALUE *argv)
 
 
 /*
- *  call-seq:
- *     Dir.foreach( dirname ) {| filename | block }                 -> nil
- *     Dir.foreach( dirname, encoding: enc ) {| filename | block }  -> nil
- *     Dir.foreach( dirname )                                       -> an_enumerator
- *     Dir.foreach( dirname, encoding: enc )                        -> an_enumerator
+ * call-seq:
+ *   Dir.foreach(dirpath, encoding: 'UTF-8') {|entry_name| ... }  -> nil
  *
- *  Calls the block once for each entry in the named directory, passing
- *  the filename of each entry as a parameter to the block.
+ * Calls the block with each entry name in the directory at +dirpath+;
+ * sets the given encoding onto each passed +entry_name+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *   Dir.foreach('/example') {|entry_name| p entry_name }
  *
- *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+ * Output:
  *
- *  <em>produces:</em>
+ *   "config.h"
+ *   "lib"
+ *   "main.rb"
+ *   ".."
+ *   "."
  *
- *     Got .
- *     Got ..
- *     Got config.h
- *     Got main.rb
+ * Encoding:
  *
+ *   Dir.foreach('/example') {|entry_name| p entry_name.encoding; break }
+ *   Dir.foreach('/example', encoding: 'US-ASCII') {|entry_name| p entry_name.encoding; break }
+ *
+ * Output:
+ *
+ *   #<Encoding:UTF-8>
+ *   #<Encoding:US-ASCII>
+ *
+ * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
+ *
+ * Returns an enumerator if no block is given.
  */
 static VALUE
 dir_foreach(int argc, VALUE *argv, VALUE io)
@@ -3277,19 +3290,21 @@ dir_collect(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     Dir.entries( dirname )                -> array
- *     Dir.entries( dirname, encoding: enc ) -> array
+ * call-seq:
+ *   Dir.entries(dirname, encoding: 'UTF-8') -> array
  *
- *  Returns an array containing all of the filenames in the given
- *  directory. Will raise a SystemCallError if the named directory
- *  doesn't exist.
+ * Returns an array of the entry names in the directory at +dirpath+;
+ * sets the given encoding onto each returned entry name:
  *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the
- *  directory. If not specified, the filesystem encoding is used.
+ *   Dir.entries('/example') # => ["config.h", "lib", "main.rb", "..", "."]
+ *   Dir.entries('/example').first.encoding
+ *   # => #<Encoding:UTF-8>
+ *   Dir.entries('/example', encoding: 'US-ASCII').first.encoding
+ *   # => #<Encoding:US-ASCII>
  *
- *     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
+ * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
  *
+ * Raises an exception if the directory does not exist.
  */
 static VALUE
 dir_entries(int argc, VALUE *argv, VALUE io)
@@ -3307,25 +3322,12 @@ dir_each_child(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     Dir.each_child( dirname ) {| filename | block }                 -> nil
- *     Dir.each_child( dirname, encoding: enc ) {| filename | block }  -> nil
- *     Dir.each_child( dirname )                                       -> an_enumerator
- *     Dir.each_child( dirname, encoding: enc )                        -> an_enumerator
+ * call-seq:
+ *   Dir.each_child(dirpath) {|entry_name| ... } -> nil
+ *   Dir.each_child(dirpath, encoding: 'UTF-8') {|entry_name| ... }  -> nil
  *
- *  Calls the block once for each entry except for "." and ".." in the
- *  named directory, passing the filename of each entry as a parameter
- *  to the block.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     Dir.each_child("testdir") {|x| puts "Got #{x}" }
- *
- *  <em>produces:</em>
- *
- *     Got config.h
- *     Got main.rb
- *
+ * Like Dir.foreach, except that entries <tt>'.'</tt> and <tt>'..'</tt>
+ * are not included.
  */
 static VALUE
 dir_s_each_child(int argc, VALUE *argv, VALUE io)
@@ -3339,25 +3341,23 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
 }
 
 /*
- *  call-seq:
- *     dir.each_child {| filename | block }  -> dir
- *     dir.each_child                        -> an_enumerator
+ * call-seq:
+ *   each_child {|entry_name| ... } -> self
  *
- *  Calls the block once for each entry except for "." and ".." in
- *  this directory, passing the filename of each entry as a parameter
- *  to the block.
+ * Calls the block with each entry name in +self+
+ * except <tt>'.'</tt> and <tt>'..'</tt>:
  *
- *  If no block is given, an enumerator is returned instead.
+ *   dir = Dir.new('/example')
+ *   dir.each_child {|entry_name| p entry_name }
  *
- *     d = Dir.new("testdir")
- *     d.each_child  {|x| puts "Got #{x}" }
+ * Output:
  *
- *  <em>produces:</em>
+ *   "config.h"
+ *   "lib"
+ *   "main.rb"
  *
- *     Got config.h
- *     Got main.rb
- *
- */
+ * If no block is given, returns an enumerator.
+  */
 static VALUE
 dir_each_child_m(VALUE dir)
 {
@@ -3366,14 +3366,14 @@ dir_each_child_m(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     dir.children  -> array
+ * call-seq:
+ *   children -> array
  *
- *  Returns an array containing all of the filenames except for "."
- *  and ".." in this directory.
+ * Returns an array of the entry names in +self+
+ * except for <tt>'.'</tt> and <tt>'..'</tt>:
  *
- *     d = Dir.new("testdir")
- *     d.children   #=> ["config.h", "main.rb"]
+ *   dir = Dir.new('/example')
+ *   dir.children # => ["config.h", "lib", "main.rb"]
  *
  */
 static VALUE
@@ -3385,19 +3385,23 @@ dir_collect_children(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     Dir.children( dirname )                -> array
- *     Dir.children( dirname, encoding: enc ) -> array
+ * call-seq:
+ *   Dir.children(dirpath) -> array
+ *   Dir.children(dirpath, encoding: 'UTF-8') -> array
  *
- *  Returns an array containing all of the filenames except for "."
- *  and ".." in the given directory. Will raise a SystemCallError if
- *  the named directory doesn't exist.
+ * Returns an array of the entry names in the directory at +dirpath+
+ * except for <tt>'.'</tt> and <tt>'..'</tt>;
+ * sets the given encoding onto each returned entry name:
  *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the
- *  directory. If not specified, the filesystem encoding is used.
+ *   Dir.children('/example') # => ["config.h", "lib", "main.rb"]
+ *   Dir.children('/example').first.encoding
+ *   # => #<Encoding:UTF-8>
+ *   Dir.children('/example', encoding: 'US-ASCII').first.encoding
+ *   # => #<Encoding:US-ASCII>
  *
- *     Dir.children("testdir")   #=> ["config.h", "main.rb"]
+ * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
  *
+ * Raises an exception if the directory does not exist.
  */
 static VALUE
 dir_s_children(int argc, VALUE *argv, VALUE io)
@@ -3471,12 +3475,13 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
- *  call-seq:
- *    Dir.home()       -> "/home/me"
- *    Dir.home("root") -> "/root"
+ * call-seq:
+ *   Dir.home(user_name = nil) -> dirpath
  *
- *  Returns the home directory of the current user or the named user
- *  if given.
+ *   Dir.home         # => "/home/me"
+ *   Dir.home('root') # => "/root"
+ *
+ * Raises ArgumentError if +user_name+ is not a user name.
  */
 static VALUE
 dir_s_home(int argc, VALUE *argv, VALUE obj)
@@ -3501,10 +3506,14 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
 #if 0
 /*
  * call-seq:
- *   Dir.exist?(file_name)   ->  true or false
+ *   Dir.exist?(dirpath) ->  true or false
  *
- * Returns <code>true</code> if the named file is a directory,
- * <code>false</code> otherwise.
+ * Returns whether +dirpath+ is a directory in the underlying file system:
+ *
+ *   Dir.exist?('/example')         # => true
+ *   Dir.exist?('/nosuch')          # => false
+ *   Dir.exist?('/example/main.rb') # => false
+ *
  *
  */
 VALUE
@@ -3546,10 +3555,18 @@ nogvl_dir_empty_p(void *ptr)
 
 /*
  * call-seq:
- *   Dir.empty?(path_name)  ->  true or false
+ *   Dir.empty?(dirpath) ->  true or false
  *
- * Returns <code>true</code> if the named file is an empty directory,
- * <code>false</code> if it is not a directory or non-empty.
+ * Returns whether +dirpath+ specifies an empty directory:
+ *
+ *   dirpath = '/tmp/foo'
+ *   Dir.mkdir(dirpath)
+ *   Dir.empty?(dirpath)            # => true
+ *   Dir.empty?('/example')         # => false
+ *   Dir.empty?('/example/main.rb') # => false
+ *
+ * Raises an exception if +dirpath+ does not specify a directory or file
+ * in the underlying file system.
  */
 static VALUE
 rb_dir_s_empty_p(VALUE obj, VALUE dirname)
