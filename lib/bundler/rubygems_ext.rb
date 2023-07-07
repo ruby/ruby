@@ -74,8 +74,12 @@ module Gem
       end
 
       if Gem.respond_to?(:bundled_gems)
-        Gem.bundled_gems.map do |name|
-          Gem::Specification.find_by_name(name)
+        Gem.bundled_gems.map do |name, version|
+          if Gem::Specification.respond_to?(:find_by_full_name)
+            Gem::Specification.find_by_full_name("#{name}-#{version}")
+          else
+            Gem::Specification.find_by_name(name)
+          end
         rescue Gem::MissingSpecError
         end.compact
       else
