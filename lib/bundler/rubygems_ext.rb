@@ -68,23 +68,18 @@ module Gem
     # Returns a Gem::StubSpecification for bundled gems
 
     def self.bundled_stubs
-      begin
-        require "bundled_gems"
-      rescue LoadError
-      end
+      require "bundled_gems"
 
-      if Gem.respond_to?(:bundled_gems)
-        Gem.bundled_gems.map do |name, version|
-          if Gem::Specification.respond_to?(:find_by_full_name)
-            Gem::Specification.find_by_full_name("#{name}-#{version}")
-          else
-            Gem::Specification.find_by_name(name)
-          end
-        rescue Gem::MissingSpecError
-        end.compact
-      else
-        []
-      end
+      Gem.bundled_gems.map do |name, version|
+        if Gem::Specification.respond_to?(:find_by_full_name)
+          Gem::Specification.find_by_full_name("#{name}-#{version}")
+        else
+          Gem::Specification.find_by_name(name)
+        end
+      rescue Gem::MissingSpecError
+      end.compact
+    rescue LoadError
+      []
     end
 
     alias_method :rg_extension_dir, :extension_dir
