@@ -3291,7 +3291,7 @@ dir_collect(VALUE dir)
 
 /*
  * call-seq:
- *   Dir.entries(dirname, encoding: UTF-8) -> array
+ *   Dir.entries(dirname, encoding: 'UTF-8') -> array
  *
  * Returns an array of the entry names in the directory at +dirpath+;
  * sets the given encoding onto each passed entry_name:
