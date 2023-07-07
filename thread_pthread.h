@@ -90,19 +90,18 @@ struct rb_thread_sched {
     int wait_yield;
 };
 
-RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  # ifdef __APPLE__
-    // on Darwin, TLS can not be accessed across .so
-    struct rb_execution_context_struct *rb_current_ec(void);
-    void rb_current_ec_set(struct rb_execution_context_struct *);
-  # else
-    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
+# ifdef __APPLE__
+// on Darwin, TLS can not be accessed across .so
+struct rb_execution_context_struct *rb_current_ec(void);
+void rb_current_ec_set(struct rb_execution_context_struct *);
+# else
+RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
 
-    // for RUBY_DEBUG_LOG()
-    RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
-    #define RUBY_NT_SERIAL 1
-  # endif
+// for RUBY_DEBUG_LOG()
+RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
+#define RUBY_NT_SERIAL 1
+# endif
 #else
 typedef pthread_key_t native_tls_key_t;
 
@@ -123,6 +122,5 @@ native_tls_set(native_tls_key_t key, void *ptr)
 
 RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 #endif
-RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_THREAD_PTHREAD_H */
