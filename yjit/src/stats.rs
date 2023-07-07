@@ -202,7 +202,7 @@ pub(crate) use ptr_to_counter;
 
 // Declare all the counters we track
 make_counters! {
-    exec_instructions,
+    exec_instruction,
 
     send_keywords,
     send_klass_megamorphic,
@@ -369,7 +369,6 @@ make_counters! {
     binding_set,
 
     vm_insns_count,
-    failed_insns_count,
     compiled_iseq_entry,
     compiled_iseq_count,
     compiled_blockid_count,

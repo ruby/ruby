@@ -162,9 +162,7 @@ module RubyVM::YJIT
 
     # Number of instructions that finish executing in YJIT.
     # See :count-placement: about the subtraction.
-    # We add failed_insns_count because it's in side_exits
-    # but not in exec_instructions.
-    retired_in_yjit = stats[:exec_instructions] + stats[:failed_insns_count] - side_exits
+    retired_in_yjit = stats[:exec_instruction] - side_exits
 
     # Average length of instruction sequences executed by YJIT
     avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0
@@ -318,14 +316,13 @@ module RubyVM::YJIT
       out.puts "code_gc_count:         " + format_number(13, stats[:code_gc_count])
       out.puts "num_gc_obj_refs:       " + format_number(13, stats[:num_gc_obj_refs])
       out.puts "object_shape_count:    " + format_number(13, stats[:object_shape_count])
-      out.puts "failed_insns_count:    " + format_number(13, stats[:failed_insns_count])
       out.puts "side_exit_count:       " + format_number(13, stats[:side_exit_count])
       out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
       out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count]) if stats.key?(:total_insns_count)
       if stats.key?(:vm_insns_count)
         out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
       end
-      out.puts "exec_instructions:     " + format_number(13, stats[:exec_instructions])
+      out.puts "exec_instruction:      " + format_number(13, stats[:exec_instruction])
       if stats.key?(:ratio_in_yjit)
         out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
       end
