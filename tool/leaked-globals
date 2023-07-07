@@ -44,6 +44,7 @@ ARGV.reject! do |n|
     true
   end
 end
+
 # darwin's ld64 seems to require exception handling personality functions to be
 # extern, so we allow the Rust one.
 REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
@@ -55,6 +56,7 @@ IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
+  next if n.start_with?("___asan_")
   next if /\A(?:Init_|InitVM_|RUBY_|ruby_|rb_|yp_|[Oo]nig|dln_|coroutine_)/ =~ n
   next if REPLACE.include?(n)
   puts col.fail("leaked") if count.zero?
