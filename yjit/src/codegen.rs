@@ -853,7 +853,7 @@ pub fn gen_single_block(
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
             // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr(&mut asm, Counter::yjit_insns_count);
+            gen_counter_incr(&mut asm, Counter::exec_instructions);
 
             // Add a comment for the name of the YARV instruction
             asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));

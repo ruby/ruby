@@ -225,7 +225,7 @@ irb(main):001:0> RubyVM::YJIT.runtime_stats
 
 Some of the counters include:
 
-:yjit_insns_count - how many Ruby bytecode instructions have been executed
+:exec_instruction - how many Ruby bytecode instructions have been executed 
 :binding_allocations - number of bindings allocated
 :binding_set - number of variables set via a binding
 :code_gc_count - number of garbage collections of compiled code since process start
