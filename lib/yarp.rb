@@ -143,13 +143,14 @@ module YARP
   # the AST, any comments that were encounters, and any errors that were
   # encountered.
   class ParseResult
-    attr_reader :value, :comments, :errors, :warnings
+    attr_reader :value, :comments, :errors, :warnings, :source
 
-    def initialize(value, comments, errors, warnings)
+    def initialize(value, comments, errors, warnings, source)
       @value = value
       @comments = comments
       @errors = errors
       @warnings = warnings
+      @source = source
     end
 
     def deconstruct_keys(keys)
@@ -223,6 +224,10 @@ module YARP
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
+  end
+
+  def self.newlines(source)
+    YARP.parse(source).source.offsets
   end
 end
 

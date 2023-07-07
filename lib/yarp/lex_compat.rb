@@ -700,7 +700,7 @@ module YARP
         raise StandardError, "Lost tokens when performing lex_compat"
       end
 
-      ParseResult.new(tokens, result.comments, result.errors, result.warnings)
+      ParseResult.new(tokens, result.comments, result.errors, result.warnings, [])
     end
   end
 

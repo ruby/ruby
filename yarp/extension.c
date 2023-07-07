@@ -391,10 +391,11 @@ lex_input(input_t *input, const char *filepath) {
         lex_data.tokens,
         parser_comments(&parser, source),
         parser_errors(&parser, lex_data.encoding, source),
-        parser_warnings(&parser, lex_data.encoding, source)
+        parser_warnings(&parser, lex_data.encoding, source),
+        source
     };
 
-    VALUE result = rb_class_new_instance(4, result_argv, rb_cYARPParseResult);
+    VALUE result = rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
 
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
@@ -446,10 +447,11 @@ parse_input(input_t *input, const char *filepath) {
         yp_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
         parser_errors(&parser, encoding, source),
-        parser_warnings(&parser, encoding, source)
+        parser_warnings(&parser, encoding, source),
+        source
     };
 
-    VALUE result = rb_class_new_instance(4, result_argv, rb_cYARPParseResult);
+    VALUE result = rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
 
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
