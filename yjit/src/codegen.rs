@@ -853,7 +853,7 @@ pub fn gen_single_block(
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
             // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr(&mut asm, Counter::exec_instruction);
+            gen_counter_incr(&mut asm, Counter::yjit_insns_count);
 
             // Add a comment for the name of the YARV instruction
             asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
@@ -866,6 +866,9 @@ pub fn gen_single_block(
 
             // Call the code generation function
             status = gen_fn(&mut jit, &mut asm, ocb);
+        } else {
+            // Count bytecode instructions that are not supported by YJIT.
+            gen_counter_incr(&mut asm, Counter::failed_insns_count);
         }
 
         // If we can't compile this instruction
