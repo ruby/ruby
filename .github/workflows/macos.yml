@@ -37,6 +37,9 @@ jobs:
         os:
           - macos-11
           - macos-12
+        configure:
+          - ''
+          - '--enable-shared'
       fail-fast: false
 
     env:
@@ -62,7 +65,7 @@ jobs:
           makeup: true
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
