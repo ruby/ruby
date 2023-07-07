@@ -265,9 +265,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `ssl_verify_mode` (`BUNDLE_SSL_VERIFY_MODE`):
    The SSL verification mode Bundler uses when making HTTPS requests.
    Defaults to verify peer.
-* `suppress_install_using_messages` (`BUNDLE_SUPPRESS_INSTALL_USING_MESSAGES`):
-   Avoid printing `Using ...` messages during installation when the version of
-   a gem has not changed.
 * `system_bindir` (`BUNDLE_SYSTEM_BINDIR`):
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):

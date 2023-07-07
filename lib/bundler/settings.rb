@@ -43,7 +43,6 @@ module Bundler
       setup_makes_kernel_gem_public
       silence_deprecations
       silence_root_warning
-      suppress_install_using_messages
       update_requires_all_flag
     ].freeze
 
