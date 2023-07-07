@@ -3476,7 +3476,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 
 /*
  * call-seq:
- *   Dir.home(user_name = ENV['USERNAME'] || ENV['LOGNAME']) -> dirpath
+ *   Dir.home(user_name = nil) -> dirpath
  *
  *   Dir.home         # => "/home/me"
  *   Dir.home('root') # => "/root"
