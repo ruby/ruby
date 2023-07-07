@@ -10,6 +10,7 @@ class TestBundledGems < Test::Unit::TestCase
 
           require "bundled_gems"
           Gem.bundled_gems.each do |name, version|
+            next if ["nkf", "syslog"].include?(name) # We can't install native extension
             Gem.install name, version
           end
           Gem.install "rexml", "3.2.5"
@@ -36,6 +37,7 @@ class TestBundledGems < Test::Unit::TestCase
           Bundler.ui.silence { Bundler.setup }
 
           Gem.bundled_gems.each do |name, version|
+            next if ["nkf", "syslog"].include?(name)
             assert_include $LOAD_PATH.join(":"), "#{name}-#{version}/lib"
           end
 
@@ -56,6 +58,7 @@ class TestBundledGems < Test::Unit::TestCase
 
           require "bundled_gems"
           Gem.bundled_gems.each do |name, version|
+            next if ["nkf", "syslog"].include?(name) # We can't install native extension
             Gem.install name, version
           end
           Gem.install "rexml", "3.2.5"
@@ -95,6 +98,7 @@ class TestBundledGems < Test::Unit::TestCase
           end
           load "bundled_gems.rb"
           Gem.bundled_gems.each do |name, version|
+            next if ["nkf", "syslog"].include?(name) # We can't install native extension
             assert_not_include $LOAD_PATH.join(":"), "#{name}-#{version}/lib"
           end
 
