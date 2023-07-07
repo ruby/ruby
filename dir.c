@@ -3387,7 +3387,7 @@ dir_collect_children(VALUE dir)
 /*
  * call-seq:
  *   Dir.children(dirpath) -> array
- *   Dir.children(dirpath, encoding: UTF-8) -> array
+ *   Dir.children(dirpath, encoding: 'UTF-8') -> array
  *
  * Returns an array of the entry names in the directory at +dirpath+
  * except for <tt>'.'</tt> and <tt>'..'</tt>;
