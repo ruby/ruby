@@ -12,6 +12,19 @@
 
 #define MMTK_DEFAULT_PLAN "MarkSweep"
 
+#define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
+#define MMTK_ALLOCATION_SEMANTICS_LOS 1
+#define MMTK_MAX_IMMIX_OBJECT_SIZE 16384
+
+// Special imemo data structures.
+
+// String's underlying buffer.
+typedef struct {
+    VALUE flags; /* imemo header */
+    size_t capa;
+    char ary[]; // The actual content.
+} rb_mmtk_strbuf_t;
+
 // Enabled?
 bool rb_mmtk_enabled_p(void);
 
@@ -61,6 +74,10 @@ rb_mmtk_update_weak_table(st_table *table,
 
 void rb_mmtk_update_global_weak_tables_early(void);
 void rb_mmtk_update_global_weak_tables(void);
+
+// String buffer implementation
+rb_mmtk_strbuf_t *rb_mmtk_new_strbuf(size_t capa);
+char* rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf);
 
 // MMTk-specific Ruby module (GC::MMTk)
 void rb_mmtk_define_gc_mmtk_module(void);
