@@ -3512,7 +3512,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
  *
  *   Dir.exist?('/example')         # => true
  *   Dir.exist?('/nosuch')          # => false
- *   Dir.exist?('/example.main.rb') # => false
+ *   Dir.exist?('/example/main.rb') # => false
  *
  *
  */
