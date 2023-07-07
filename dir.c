@@ -3345,7 +3345,7 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
  *   each_child {|entry_name| ... } -> self
  *
  * Calls the block with each entry name in +self+
- * except <tt>'.'</tt> and <tt>'..'</tt>
+ * except <tt>'.'</tt> and <tt>'..'</tt>:
  *
  *   dir = Dir.new('/example')
  *   dir.each_child {|entry_name| p entry_name }
