@@ -297,7 +297,7 @@ class Reline::History::Test < Reline::TestCase
   end
 
   def get_default_internal_encoding
-    if encoding = Reline::IOGate.encoding
+    if encoding = Reline.core.encoding
       encoding
     elsif RUBY_PLATFORM =~ /mswin|mingw/
       Encoding.default_internal || Encoding::UTF_8

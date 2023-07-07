@@ -490,7 +490,7 @@ begin
     end
 
     def test_enable_bracketed_paste
-      omit if Reline::IOGate.win?
+      omit if Reline.core.io_gate.win?
       write_inputrc <<~LINES
         set enable-bracketed-paste on
       LINES
@@ -877,7 +877,7 @@ begin
     end
 
     def test_with_newline
-      omit if Reline::IOGate.win?
+      omit if Reline.core.io_gate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
       start_terminal(40, 50, ['bash', '-c', cmd])
       sleep 1

@@ -85,7 +85,7 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_encoding_is_ascii
     @config.reset
-    Reline::IOGate.reset(encoding: Encoding::US_ASCII)
+    Reline.core.io_gate.reset(encoding: Encoding::US_ASCII)
     @config = Reline::Config.new
 
     assert_equal true, @config.convert_meta
@@ -93,7 +93,7 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_encoding_is_not_ascii
     @config.reset
-    Reline::IOGate.reset(encoding: Encoding::UTF_8)
+    Reline.core.io_gate.reset(encoding: Encoding::UTF_8)
     @config = Reline::Config.new
 
     assert_equal nil, @config.convert_meta

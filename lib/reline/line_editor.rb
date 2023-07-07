@@ -60,6 +60,10 @@ class Reline::LineEditor
     reset_variables(encoding: encoding)
   end
 
+  def io_gate
+    Reline::IOGate
+  end
+
   def set_pasting_state(in_pasting)
     @in_pasting = in_pasting
   end

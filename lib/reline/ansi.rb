@@ -206,7 +206,7 @@ class Reline::ANSI
   end
 
   def self.in_pasting?
-    @@in_bracketed_paste_mode or (not Reline::IOGate.empty_buffer?)
+    @@in_bracketed_paste_mode or (not empty_buffer?)
   end
 
   def self.empty_buffer?
