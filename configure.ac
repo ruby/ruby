@@ -3790,23 +3790,13 @@ AS_IF([test "$cross_compiling" = no],
     )
 )
 
-dnl Needs newer objcopy in order to localize symbols added by rustc
-YJIT_OBJCOPY_OK=no
-AS_CASE(["$OBJCOPY"], [""|:], [], [
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])], [
-        AS_IF([$OBJCOPY --wildcard --keep-global-symbol='*main' --localize-symbol='__*' conftest.$OBJEXT 2>/dev/null], [
-            YJIT_OBJCOPY_OK=yes
-        ])
-    ])
-])
-
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$YJIT_TARGET_OK:$YJIT_RUSTC_OK:$YJIT_OBJCOPY_OK"],
-        [yes:yes:yes], [
+    [AS_CASE(["$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
+        [yes:yes], [
             YJIT_SUPPORT=yes
         ],
         [YJIT_SUPPORT=no]
@@ -3820,9 +3810,6 @@ AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-    )
-    AS_IF([test x"$YJIT_OBJCOPY_OK" = yno],
-        AC_MSG_ERROR([$OBJCOPY does not recognize --wildcard option or something])
     )
 
     AS_CASE(["${YJIT_SUPPORT}"],
