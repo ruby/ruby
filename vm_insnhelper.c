@@ -5528,6 +5528,42 @@ vm_sendish(
     return val;
 }
 
+VALUE
+rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
+{
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    VM_EXEC(ec, val);
+    return val;
+}
+
+VALUE
+rb_vm_opt_send_without_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd)
+{
+    VALUE bh = VM_BLOCK_HANDLER_NONE;
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    VM_EXEC(ec, val);
+    return val;
+}
+
+VALUE
+rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
+{
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    VM_EXEC(ec, val);
+    return val;
+}
+
+VALUE
+rb_vm_invokeblock(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd)
+{
+    VALUE bh = VM_BLOCK_HANDLER_NONE;
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
+    VM_EXEC(ec, val);
+    return val;
+}
+
 /* object.c */
 VALUE rb_nil_to_s(VALUE);
 VALUE rb_true_to_s(VALUE);

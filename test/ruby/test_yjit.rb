@@ -548,7 +548,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_getblockparamproxy
     # Currently two side exits as OPTIMIZED_METHOD_TYPE_CALL is unimplemented
-    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: { opt_send_without_block: 2 })
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy])
       def foo &blk
         p blk.call
         p blk.call
@@ -607,7 +607,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_send_kwargs
     # For now, this side-exits when calls include keyword args
-    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/A", exits: {opt_send_without_block: 1})
+    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/A")
       def internal_method(**kw)
         "#{kw.size}##{kw.keys.map { |k| "#{k}:#{kw[k]}" }.join(",")}"
       end
@@ -647,7 +647,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_send_kwargs_splat
     # For now, this side-exits when calling with a splat
-    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/B", exits: {opt_send_without_block: 1})
+    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/B")
       def internal_method(**kw)
         "#{kw.size}##{kw.keys.map { |k| "#{k}:#{kw[k]}" }.join(",")}"
       end
