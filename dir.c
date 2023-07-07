@@ -3324,7 +3324,7 @@ dir_each_child(VALUE dir)
 /*
  * call-seq:
  *   Dir.each_child(dirpath) {|entry_name| ... } -> nil
- *   Dir.each_child(dirpath, encoding: UTF-8) {|entry_name| ... }  -> nil
+ *   Dir.each_child(dirpath, encoding: 'UTF-8') {|entry_name| ... }  -> nil
  *
  * Like Dir.foreach, except that entries <tt>'.'</tt> and <tt>'..'</tt>
  * are not included.
