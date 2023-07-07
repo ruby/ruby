@@ -3244,7 +3244,7 @@ dir_open_dir(int argc, VALUE *argv)
  *   Dir.foreach(dirpath, encoding: 'UTF-8') {|entry_name| ... }  -> nil
  *
  * Calls the block with each entry name in the directory at +dirpath+;
- * sets the given encoding onto each passed entry_name:
+ * sets the given encoding onto each passed +entry_name+:
  *
  *   Dir.foreach('/example') {|entry_name| p entry_name }
  *
