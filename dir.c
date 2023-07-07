@@ -3294,7 +3294,7 @@ dir_collect(VALUE dir)
  *   Dir.entries(dirname, encoding: 'UTF-8') -> array
  *
  * Returns an array of the entry names in the directory at +dirpath+;
- * sets the given encoding onto each passed entry_name:
+ * sets the given encoding onto each returned entry name:
  *
  *   Dir.entries('/example') # => ["config.h", "lib", "main.rb", "..", "."]
  *   Dir.entries('/example').first.encoding
@@ -3391,7 +3391,7 @@ dir_collect_children(VALUE dir)
  *
  * Returns an array of the entry names in the directory at +dirpath+
  * except for <tt>'.'</tt> and <tt>'..'</tt>;
- * sets the given encoding onto each passed entry_name:
+ * sets the given encoding onto each returned entry name:
  *
  *   Dir.children('/example') # => ["config.h", "lib", "main.rb"]
  *   Dir.children('/example').first.encoding
