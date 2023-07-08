@@ -345,8 +345,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #undef ISSPACE
 #define ISSPACE(c)  ((p->config->isspace)(c))
-#undef ISASCII
-#define ISASCII(c)  ((p->config->isascii)(c))
 #undef ISCNTRL
 #define ISCNTRL(c)  ((p->config->iscntrl)(c))
 #undef ISALPHA
