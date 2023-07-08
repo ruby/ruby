@@ -791,7 +791,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->strtod      = ruby_strtod;
 
     config->isspace = rb_isspace;
-    config->isascii = rb_isascii;
     config->iscntrl = rb_iscntrl;
     config->isalpha = rb_isalpha;
     config->isdigit = rb_isdigit;
