@@ -588,7 +588,6 @@ typedef struct rb_parser_config_struct {
 
     /* ctype */
     int (*isspace)(int c);
-    int (*isascii)(int c);
     int (*iscntrl)(int c);
     int (*isalpha)(int c);
     int (*isdigit)(int c);
