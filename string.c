@@ -3861,6 +3861,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
+    rb_encoding *enc = STR_ENC_GET(str);
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
@@ -3885,7 +3886,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
             return Qnil;
         }
         pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-                         rb_enc_check(str, sub), single_byte_optimizable(str));
+                         enc, single_byte_optimizable(str));
 
         if (rb_reg_search(sub, str, pos, 0) < 0) {
             return Qnil;
@@ -4182,7 +4183,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        /* enc = rb_get_check(str, sub); */
+        /* enc = rb_enc_check(str, sub); */
         pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
                          enc, single_byte_optimizable(str));
 
