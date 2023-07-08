@@ -237,6 +237,20 @@ begin
       EOC
     end
 
+    def test_esc_input
+      omit if Reline::IOGate.win?
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def\C-aabc")
+      write("\e") # single ESC
+      sleep 1
+      write("A")
+      write("B\eAC") # ESC + A (M-A, specified ed_unassigned in Reline::KeyActor::Emacs)
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> abcABCdef
+      EOC
+    end
+
     def test_prompt_with_escape_sequence
       ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
