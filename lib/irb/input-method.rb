@@ -256,8 +256,6 @@ module IRB
   end
 
   class RelineInputMethod < InputMethod
-    include Reline
-
     # Creates a new input method object using Reline
     def initialize
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
@@ -401,10 +399,10 @@ module IRB
       mod_key = RUBY_PLATFORM.match?(/darwin/) ? "Option" : "Alt"
       message = "Press #{mod_key}+d to read the full document"
       contents = [message] + doc.accept(formatter).split("\n")
-      contents = contents.take(preferred_dialog_height) if respond_to?(:preferred_dialog_height)
+      contents = contents.take(Reline.preferred_dialog_height) if Reline.respond_to?(:preferred_dialog_height)
 
       y = cursor_pos_to_render.y
-      DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
+      Reline::DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
     }
 
     # Reads the next line from this input method.
@@ -415,8 +413,8 @@ module IRB
       Reline.output = @stdout
       Reline.prompt_proc = @prompt_proc
       Reline.auto_indent_proc = @auto_indent_proc if @auto_indent_proc
-      if l = readmultiline(@prompt, false, &@check_termination_proc)
-        HISTORY.push(l) if !l.empty?
+      if l = Reline.readmultiline(@prompt, false, &@check_termination_proc)
+        Reline::HISTORY.push(l) if !l.empty?
         @line[@line_no += 1] = l + "\n"
       else
         @eof = true
