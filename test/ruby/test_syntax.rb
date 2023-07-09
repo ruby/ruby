@@ -1580,6 +1580,51 @@ eom
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
 
+    k2 = Class.new do
+      class_eval('def id(x) = x')
+      class_eval('def and1(x, y) = x and y')
+      class_eval('def and2(x, y) = id(x) and id(y)')
+      class_eval('def or1(x, y) = x or y')
+      class_eval('def or2(x, y) = id(x) or id(y)')
+      class_eval('def cond_raise(cond, otherwise = nil) = cond ? raise : otherwise')
+      class_eval('def and_rescued(x, y) = cond_raise(x, true) and cond_raise(y) rescue "ok"')
+      class_eval('def or_rescued(x, y) = cond_raise(x, false) or cond_raise(y) rescue "ok"')
+    end
+    assert_equal("ok", k2.new.and1(true, "ok"))
+    assert_equal(false, k2.new.and1(false, "ok"))
+    assert_equal("ok", k2.new.and2(true, "ok"))
+    assert_equal(false, k2.new.and2(false, "ok"))
+    assert_equal(true, k2.new.or1(true, "ok"))
+    assert_equal("ok", k2.new.or1(false, "ok"))
+    assert_equal(true, k2.new.or2(true, "ok"))
+    assert_equal("ok", k2.new.or2(false, "ok"))
+    assert_equal("ok", k2.new.and_rescued(true, false))
+    assert_equal("ok", k2.new.and_rescued(false, true))
+    assert_equal("ok", k2.new.or_rescued(true, false))
+    assert_equal("ok", k2.new.or_rescued(false, true))
+
+    obj = Object.new
+    def obj.id(x) = x
+    def obj.and1(x, y) = x and y
+    def obj.and2(x, y) = id(x) and id(y)
+    def obj.or1(x, y) = x or y
+    def obj.or2(x, y) = id(x) or id(y)
+    def obj.cond_raise(cond, otherwise = nil) = cond ? raise : otherwise
+    def obj.and_rescued(x, y) = cond_raise(x, true) and cond_raise(y) rescue "ok"
+    def obj.or_rescued(x, y) = cond_raise(x, false) or cond_raise(y) rescue "ok"
+    assert_equal("ok", obj.and1(true, "ok"))
+    assert_equal(false, obj.and1(false, "ok"))
+    assert_equal("ok", obj.and2(true, "ok"))
+    assert_equal(false, obj.and2(false, "ok"))
+    assert_equal(true, obj.or1(true, "ok"))
+    assert_equal("ok", obj.or1(false, "ok"))
+    assert_equal(true, obj.or2(true, "ok"))
+    assert_equal("ok", obj.or2(false, "ok"))
+    assert_equal("ok", obj.and_rescued(true, false))
+    assert_equal("ok", obj.and_rescued(false, true))
+    assert_equal("ok", obj.or_rescued(true, false))
+    assert_equal("ok", obj.or_rescued(false, true))
+
     error = /setter method cannot be defined in an endless method definition/
     assert_syntax_error('def foo=() = 42', error)
     assert_syntax_error('def obj.foo=() = 42', error)
