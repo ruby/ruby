@@ -19,6 +19,18 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_allows_zero_seconds
+    assert_nothing_raised do
+      assert_equal :ok, Timeout.timeout(0){:ok}
+    end
+  end
+
+  def test_allows_nil_seconds
+    assert_nothing_raised do
+      assert_equal :ok, Timeout.timeout(nil){:ok}
+    end
+  end
+
   def test_included
     c = Class.new do
       include Timeout
