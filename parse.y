@@ -201,6 +201,87 @@ new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
 }
 #endif /* !UNIVERSAL_PARSER */
 
+static inline int
+parse_isascii(int c)
+{
+    return '\0' <= c && c <= '\x7f';
+}
+
+#undef ISASCII
+#define ISASCII parse_isascii
+
+static inline int
+parse_isspace(int c)
+{
+    return c == ' ' || ('\t' <= c && c <= '\r');
+}
+
+#undef ISSPACE
+#define ISSPACE parse_isspace
+
+static inline int
+parse_iscntrl(int c)
+{
+    return ('\0' <= c && c < ' ') || c == '\x7f';
+}
+
+#undef ISCNTRL
+#define ISCNTRL(c) parse_iscntrl(c)
+
+static inline int
+parse_isupper(int c)
+{
+    return 'A' <= c && c <= 'Z';
+}
+
+static inline int
+parse_islower(int c)
+{
+    return 'a' <= c && c <= 'z';
+}
+
+static inline int
+parse_isalpha(int c)
+{
+    return parse_isupper(c) || parse_islower(c);
+}
+
+#undef ISALPHA
+#define ISALPHA(c) parse_isalpha(c)
+
+static inline int
+parse_isdigit(int c)
+{
+    return '0' <= c && c <= '9';
+}
+
+#undef ISDIGIT
+#define ISDIGIT(c) parse_isdigit(c)
+
+static inline int
+parse_isalnum(int c)
+{
+    return parse_isalpha(c) || parse_isdigit(c);
+}
+
+#undef ISALNUM
+#define ISALNUM(c) parse_isalnum(c)
+
+static inline int
+parse_isxdigit(int c)
+{
+    return parse_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
+}
+
+#undef ISXDIGIT
+#define ISXDIGIT(c) parse_isxdigit(c)
+
+#undef STRCASECMP
+#define STRCASECMP st_locale_insensitive_strcasecmp
+
+#undef STRNCASECMP
+#define STRNCASECMP st_locale_insensitive_strncasecmp
+
 #ifdef RIPPER
 #include "ripper_init.h"
 #endif
@@ -6350,17 +6431,6 @@ ripper_dispatch_delayed_token(struct parser_params *p, enum yytokentype t)
 }
 #define dispatch_delayed_token(p, t) ripper_dispatch_delayed_token(p, t)
 #endif /* RIPPER */
-
-static inline int
-parse_isascii(int c)
-{
-    return '\0' <= c && c <= '\x7f';
-}
-
-#ifdef ISASCII
-#undef ISASCII
-#define ISASCII parse_isascii
-#endif
 
 static inline int
 is_identchar(struct parser_params *p, const char *ptr, const char *MAYBE_UNUSED(ptr_end), rb_encoding *enc)
