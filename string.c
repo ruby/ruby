@@ -3807,6 +3807,7 @@ strseq_core(const char *str_ptr, const char *str_ptr_end, long str_len,
     return pos + offset;
 }
 
+/* found index in byte */
 #define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
 
 static long
@@ -4068,6 +4069,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 }
 #endif
 
+/* found index in byte */
 static long
 rb_str_rindex(VALUE str, VALUE sub, long pos)
 {
@@ -4097,7 +4099,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
-    return rb_str_sublen(str, str_rindex(str, sub, s, enc));
+    return str_rindex(str, sub, s, enc);
 }
 
 /*
@@ -4197,7 +4199,10 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     else {
         StringValue(sub);
         pos = rb_str_rindex(str, sub, pos);
-        if (pos >= 0) return LONG2NUM(pos);
+        if (pos >= 0) {
+            pos = rb_str_sublen(str, pos);
+            return LONG2NUM(pos);
+        }
     }
     return Qnil;
 }
@@ -10425,7 +10430,6 @@ rb_str_rpartition(VALUE str, VALUE sep)
         if (pos < 0) {
             goto failed;
         }
-        pos = rb_str_offset(str, pos);
     }
 
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
