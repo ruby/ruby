@@ -10941,7 +10941,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 context_push(parser, YP_CONTEXT_DEF);
                 statements = (yp_node_t *) yp_statements_node_create(parser);
 
-                yp_node_t *statement = parse_expression(parser, YP_BINDING_POWER_ASSIGNMENT + 1, "Expected to be able to parse body of endless method definition.");
+                yp_node_t *statement = parse_expression(parser, YP_BINDING_POWER_DEFINED + 1, "Expected to be able to parse body of endless method definition.");
 
                 if (accept(parser, YP_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
                     yp_token_t rescue_keyword = parser->previous;
