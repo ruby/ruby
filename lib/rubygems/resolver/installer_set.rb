@@ -148,6 +148,8 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       res << Gem::Resolver::InstalledSpecification.new(self, gemspec)
     end unless @ignore_installed
 
+    matching_local = []
+
     if consider_local?
       matching_local = @local.values.select do |spec, _|
         req.match? spec
@@ -169,7 +171,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       end
     end
 
-    res.concat @remote_set.find_all req if consider_remote?
+    res.concat @remote_set.find_all req if consider_remote? && matching_local.empty?
 
     res
   end
