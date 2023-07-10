@@ -2925,10 +2925,7 @@ VALUE
 rb_ractor_make_shareable_copy(VALUE obj)
 {
     VALUE copy = ractor_copy(obj);
-    rb_obj_traverse(copy,
-                    make_shareable_check_shareable,
-                    null_leave, mark_shareable);
-    return copy;
+    return rb_ractor_make_shareable(copy);
 }
 
 VALUE
