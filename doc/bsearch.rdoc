@@ -29,7 +29,7 @@ Find-any mode:: method +bsearch+ some element, if any, for which
 The block should not mix the modes by sometimes returning +true+ or +false+
 and other times returning a numeric value, but this is not checked.
 
-<b>Find-Minimum Mode</b>
+=== Find-Minimum Mode
 
 In find-minimum mode, the block must return +true+ or +false+.
 The further requirement (though not checked) is that
@@ -72,7 +72,7 @@ This would not make sense:
 
   a.map {|x| x == 7 } # => [false, false, true, false, false]
 
-<b>Find-Any Mode</b>
+=== Find-Any Mode
 
 In find-any mode, the block must return a numeric value.
 The further requirement (though not checked) is that
