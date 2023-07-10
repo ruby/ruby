@@ -354,6 +354,7 @@ make_counters! {
     expandarray_rhs_too_small,
 
     gbp_wb_required,
+    gbpp_not_gc_guarded,
     gbpp_block_param_modified,
     gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
