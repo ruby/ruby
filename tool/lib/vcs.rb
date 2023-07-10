@@ -154,8 +154,7 @@ class VCS
   alias dryrun? dryrun
   alias debug? debug
 
-  NullDevice = defined?(IO::NULL) ? IO::NULL :
-    %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
+  NullDevice = IO::NULL
 
   # returns
   # * the last revision of the current branch

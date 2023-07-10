@@ -5256,7 +5256,7 @@ rb_io_close_on_exec_p(VALUE io)
  *
  *  Sets a close-on-exec flag.
  *
- *     f = open("/dev/null")
+ *     f = File.open(File::NULL)
  *     f.close_on_exec = true
  *     system("cat", "/proc/self/fd/#{f.fileno}") # cat: /proc/self/fd/3: No such file or directory
  *     f.closed?                #=> false
@@ -9634,11 +9634,11 @@ rb_io_autoclose_p(VALUE io)
  *
  *  Sets auto-close flag.
  *
- *     f = open("/dev/null")
+ *     f = File.open(File::NULL)
  *     IO.for_fd(f.fileno).close
  *     f.gets # raises Errno::EBADF
  *
- *     f = open("/dev/null")
+ *     f = File.open(File::NULL)
  *     g = IO.for_fd(f.fileno)
  *     g.autoclose = false
  *     g.close

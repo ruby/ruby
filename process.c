@@ -4804,11 +4804,11 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  A filename can be specified as a hash value.
  *
- *    pid = spawn(command, :in=>"/dev/null") # read mode
- *    pid = spawn(command, :out=>"/dev/null") # write mode
+ *    pid = spawn(command, :in=>File::NULL) # read mode
+ *    pid = spawn(command, :out=>File::NULL) # write mode
  *    pid = spawn(command, :err=>"log") # write mode
- *    pid = spawn(command, [:out, :err]=>"/dev/null") # write mode
- *    pid = spawn(command, 3=>"/dev/null") # read mode
+ *    pid = spawn(command, [:out, :err]=>File::NULL) # write mode
+ *    pid = spawn(command, 3=>File::NULL) # read mode
  *
  *  For stdout and stderr (and combination of them),
  *  it is opened in write mode.
@@ -6834,7 +6834,7 @@ static int rb_daemon(int nochdir, int noclose);
  *  nochdir is true (i.e. non false), it changes the current
  *  working directory to the root ("/"). Unless the argument
  *  noclose is true, daemon() will redirect standard input,
- *  standard output and standard error to /dev/null.
+ *  standard output and standard error to null device.
  *  Return zero on success, or raise one of Errno::*.
  */
 
@@ -6853,6 +6853,8 @@ proc_daemon(int argc, VALUE *argv, VALUE _)
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 }
+
+extern const char ruby_null_device[];
 
 static int
 rb_daemon(int nochdir, int noclose)
@@ -6877,7 +6879,7 @@ rb_daemon(int nochdir, int noclose)
     if (!nochdir)
         err = chdir("/");
 
-    if (!noclose && (n = rb_cloexec_open("/dev/null", O_RDWR, 0)) != -1) {
+    if (!noclose && (n = rb_cloexec_open(ruby_null_device, O_RDWR, 0)) != -1) {
         rb_update_max_fd(n);
         (void)dup2(n, 0);
         (void)dup2(n, 1);

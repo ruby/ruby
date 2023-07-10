@@ -4971,7 +4971,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  *
  *  Returns the string representation of the path
  *
- *     File.path("/dev/null")          #=> "/dev/null"
+ *     File.path(File::NULL)           #=> "/dev/null"
  *     File.path(Pathname.new("/tmp")) #=> "/tmp"
  *
  */
@@ -6086,7 +6086,7 @@ rb_stat_z(VALUE obj)
  *  the file otherwise.
  *
  *     File.stat("testfile").size?   #=> 66
- *     File.stat("/dev/null").size?  #=> nil
+ *     File.stat(File::NULL).size?   #=> nil
  *
  */
 
