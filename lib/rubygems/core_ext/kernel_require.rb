@@ -38,6 +38,7 @@ module Kernel
 
     RUBYGEMS_ACTIVATION_MONITOR.synchronize do
       path = path.to_path if path.respond_to? :to_path
+      path = String.try_convert(path) || path
 
       if spec = Gem.find_unresolved_default_spec(path)
         # Ensure -I beats a default gem
