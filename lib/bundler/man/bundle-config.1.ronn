@@ -182,6 +182,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `disable_local_revision_check` (`BUNDLE_DISABLE_LOCAL_REVISION_CHECK`):
    Allow Bundler to use a local git override without checking if the revision
    present in the lockfile is present in the repository.
+* `disable_bundled_gems_load_path` (`BUNDLE_DISABLE_BUNDLED_GEMS_LOAD_PATH`):
+   Stop to add the `bundled_gems` load paths to `$LOAD_PATH` under the
+   Bundler environment.
 * `disable_shared_gems` (`BUNDLE_DISABLE_SHARED_GEMS`):
    Stop Bundler from accessing gems installed to RubyGems' normal location.
 * `disable_version_check` (`BUNDLE_DISABLE_VERSION_CHECK`):

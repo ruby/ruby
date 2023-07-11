@@ -31,7 +31,7 @@ module Bundler
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
 
-      load_paths.concat(bundled_load_paths).uniq!
+      load_paths.concat(bundled_load_paths).uniq! unless Bundler.settings[:disable_bundled_gems_load_path]
 
       Bundler.rubygems.add_to_load_path(load_paths)
 
