@@ -7649,6 +7649,7 @@ fn gen_getblockparamproxy(
     // When a block handler is present, it should always be a GC-guarded
     // pointer (VM_BH_ISEQ_BLOCK_P)
     if comptime_handler.as_u64() != 0 && comptime_handler.as_u64() & 0x3 != 0x1 {
+        incr_counter!(gbpp_not_gc_guarded);
         return None;
     }
 
