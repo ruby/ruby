@@ -19,6 +19,11 @@ require_relative "match_metadata"
 require_relative "force_platform"
 require_relative "match_platform"
 
+begin
+  require "bundled_gems"
+rescue LoadError
+end
+
 # Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
 # versions and ignore patchlevels
 # (https://github.com/rubygems/rubygems/pull/5472,
@@ -68,18 +73,18 @@ module Gem
     # Returns a Gem::StubSpecification for bundled gems
 
     def self.bundled_stubs
-      require "bundled_gems"
-    rescue LoadError
-      []
-    else
-      Gem.bundled_gems.map do |name, version|
-        if Gem::Specification.respond_to?(:find_by_full_name)
-          Gem::Specification.find_by_full_name("#{name}-#{version}")
-        else
-          Gem::Specification.find_by_name(name)
-        end
-      rescue Gem::MissingSpecError
-      end.compact
+      if Gem.respond_to?(:bundled_stubs)
+        Gem.bundled_gems.map do |name, version|
+          if Gem::Specification.respond_to?(:find_by_full_name)
+            Gem::Specification.find_by_full_name("#{name}-#{version}")
+          else
+            Gem::Specification.find_by_name(name)
+          end
+        rescue Gem::MissingSpecError
+        end.compact
+      else
+        []
+      end
     end
 
     alias_method :rg_extension_dir, :extension_dir
