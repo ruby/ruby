@@ -268,9 +268,7 @@ module IRB
       @stdin = ::IO.open(STDIN.to_i, :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
       @stdout = ::IO.open(STDOUT.to_i, 'w', :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
 
-      if Reline.respond_to?("basic_word_break_characters=")
-        Reline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
-      end
+      Reline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
       Reline.completion_append_character = nil
       Reline.completer_quote_characters = ''
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
@@ -399,7 +397,7 @@ module IRB
       mod_key = RUBY_PLATFORM.match?(/darwin/) ? "Option" : "Alt"
       message = "Press #{mod_key}+d to read the full document"
       contents = [message] + doc.accept(formatter).split("\n")
-      contents = contents.take(Reline.preferred_dialog_height) if Reline.respond_to?(:preferred_dialog_height)
+      contents = contents.take(Reline.preferred_dialog_height)
 
       y = cursor_pos_to_render.y
       Reline::DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
@@ -456,11 +454,7 @@ module IRB
     def inspect
       config = Reline::Config.new
       str = "RelineInputMethod with Reline #{Reline::VERSION}"
-      if config.respond_to?(:inputrc_path)
-        inputrc_path = File.expand_path(config.inputrc_path)
-      else
-        inputrc_path = File.expand_path(ENV['INPUTRC'] || '~/.inputrc')
-      end
+      inputrc_path = File.expand_path(config.inputrc_path)
       str += " and #{inputrc_path}" if File.exist?(inputrc_path)
       str
     end
