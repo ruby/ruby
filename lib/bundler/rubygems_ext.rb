@@ -69,7 +69,9 @@ module Gem
 
     def self.bundled_stubs
       require "bundled_gems"
-
+    rescue LoadError
+      []
+    else
       Gem.bundled_gems.map do |name, version|
         if Gem::Specification.respond_to?(:find_by_full_name)
           Gem::Specification.find_by_full_name("#{name}-#{version}")
@@ -78,8 +80,6 @@ module Gem
         end
       rescue Gem::MissingSpecError
       end.compact
-    rescue LoadError
-      []
     end
 
     alias_method :rg_extension_dir, :extension_dir
