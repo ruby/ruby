@@ -73,7 +73,7 @@ module Gem
     # Returns a Gem::StubSpecification for bundled gems
 
     def self.bundled_stubs
-      if Gem.respond_to?(:bundled_stubs)
+      if Gem.respond_to?(:bundled_gems)
         Gem.bundled_gems.map do |name, version|
           if Gem::Specification.respond_to?(:find_by_full_name)
             Gem::Specification.find_by_full_name("#{name}-#{version}")
