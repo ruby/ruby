@@ -182,6 +182,9 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\.
 .
 .IP "\(bu" 4
+\fBdisable_bundled_gems_load_path\fR (\fBBUNDLE_DISABLE_BUNDLED_GEMS_LOAD_PATH\fR): Stop to add the \fBbundled_gems\fR load paths to \fB$LOAD_PATH\fR under the Bundler environment\.
+.
+.IP "\(bu" 4
 \fBdisable_checksum_validation\fR (\fBBUNDLE_DISABLE_CHECKSUM_VALIDATION\fR): Allow installing gems even if they do not match the checksum provided by RubyGems\.
 .
 .IP "\(bu" 4
@@ -192,9 +195,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBdisable_local_revision_check\fR (\fBBUNDLE_DISABLE_LOCAL_REVISION_CHECK\fR): Allow Bundler to use a local git override without checking if the revision present in the lockfile is present in the repository\.
-.
-.IP "\(bu" 4
-\fBdisable_bundled_gems_load_path\fR (\fBBUNDLE_DISABLE_BUNDLED_GEMS_LOAD_PATH\fR): Stop to add the \fBbundled_gems\fR load paths to \fB$LOAD_PATH\fR under the Bundler environment\.
 .
 .IP "\(bu" 4
 \fBdisable_shared_gems\fR (\fBBUNDLE_DISABLE_SHARED_GEMS\fR): Stop Bundler from accessing gems installed to RubyGems\' normal location\.
