@@ -66,23 +66,4 @@ YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp
 // Returns a string representation of the given token type.
 YP_EXPORTED_FUNCTION const char * yp_token_type_to_str(yp_token_type_t token_type);
 
-// This reprsents a line, column position in the parsed source code
-// The layouts of this struct should not change because they mirror
-// rb_code_position_struct in ruby/ruby which allows us to type pun
-typedef struct yp_code_position_struct {
-    int lineno;
-    int column;
-} yp_code_position_t;
-
-// This reprsents a begin and end of anything in the AST that has a
-// location from the parsed source code.
-// The layouts of this struct should not change because they mirror
-// rb_code_position_struct in ruby/ruby which allows us to type pun
-typedef struct yp_code_location_struct {
-    yp_code_position_t beg_pos;
-    yp_code_position_t end_pos;
-} yp_code_location_t;
-
-yp_code_location_t yp_location_for_node(yp_parser_t *parser, yp_node_t *node);
-
 #endif
