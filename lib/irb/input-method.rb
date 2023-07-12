@@ -397,7 +397,7 @@ module IRB
       mod_key = RUBY_PLATFORM.match?(/darwin/) ? "Option" : "Alt"
       message = "Press #{mod_key}+d to read the full document"
       contents = [message] + doc.accept(formatter).split("\n")
-      contents = contents.take(Reline.preferred_dialog_height)
+      contents = contents.take(preferred_dialog_height)
 
       y = cursor_pos_to_render.y
       Reline::DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
