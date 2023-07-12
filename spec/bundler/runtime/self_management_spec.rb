@@ -103,6 +103,25 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
     end
 
+    it "installs BUNDLE_VERSION version when using bundle config version x.y.z" do
+      lockfile_bundled_with(Bundler::VERSION.gsub(/\.dev/, ""))
+
+      bundle "config set --local version #{previous_minor}"
+      bundle "install", :artifice => "vcr"
+      expect(out).to include("Bundler #{Bundler::VERSION} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
+    end
+
+    it "does not try to install when using bundle config version global" do
+      lockfile_bundled_with(previous_minor)
+
+      bundle "config set version global"
+      bundle "install", :artifice => "vcr"
+      expect(out).not_to match(/restarting using that version/)
+
+      bundle "-v"
+      expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
+    end
+
     private
 
     def lockfile_bundled_with(version)
