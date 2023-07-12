@@ -4427,7 +4427,7 @@ module YARP
     end
   end
 
-  # Represents a parentesized expression
+  # Represents a parenthesized expression
   #
   #     (10 + 34)
   #     ^^^^^^^^^
