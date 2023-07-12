@@ -1,5 +1,15 @@
 return if mmtk?
 
+# Regression test for yielding with autosplat to block with
+# optional parameters. https://github.com/Shopify/yjit/issues/313
+assert_equal '[:a, :b, :a, :b]', %q{
+  def yielder(arg) = yield(arg) + yield(arg)
+
+  yielder([:a, :b]) do |c = :c, d = :d|
+    [c, d]
+  end
+}
+
 # Regression test for GC mishap while doing shape transition
 assert_equal '[:ok]', %q{
   # [Bug #19601]
@@ -3965,3 +3975,11 @@ assert_equal 'true', %q{
     true
   end
 } unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
+# Regresssion test: register allocator on expandarray
+assert_equal '[]', %q{
+  func = proc { [] }
+  proc do
+    _x, _y = func.call
+  end.call
+}

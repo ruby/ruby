@@ -3,7 +3,6 @@
 require_relative "helper"
 require "rubygems/request"
 require "ostruct"
-require "base64"
 
 unless Gem::HAVE_OPENSSL
   warn "Skipping Gem::Request tests.  openssl not found."
@@ -19,6 +18,12 @@ class TestGemRequest < Gem::TestCase
 
   def make_request(uri, request_class, last_modified, proxy)
     Gem::Request.create_with_proxy uri, request_class, last_modified, proxy
+  end
+
+  # This method is same code as Base64.encode64
+  # We should not use Base64.encode64 because we need to avoid gem activation.
+  def base64_encode64(bin)
+    [bin].pack("m")
   end
 
   def setup
@@ -209,7 +214,7 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64("user:pass")}".strip, auth_header
+    assert_equal "Basic #{base64_encode64("user:pass")}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
@@ -226,7 +231,7 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64("user:{DEScede}pass")}".strip, auth_header
+    assert_equal "Basic #{base64_encode64("user:{DEScede}pass")}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
@@ -243,7 +248,7 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64("{DEScede}pass:x-oauth-basic")}".strip, auth_header
+    assert_equal "Basic #{base64_encode64("{DEScede}pass:x-oauth-basic")}".strip, auth_header
     assert_includes @ui.output, "GET https://REDACTED:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"
   end
 

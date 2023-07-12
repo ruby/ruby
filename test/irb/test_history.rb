@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'irb'
-require 'irb/ext/save-history'
 require 'readline'
 
 require_relative "helper"

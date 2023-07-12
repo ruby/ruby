@@ -3,10 +3,12 @@
 require "yarp_test_helper"
 
 class ParseTest < Test::Unit::TestCase
-  # Because we're reading the snapshots from disk, we need to make sure that
-  # they're encoded as UTF-8. When certain settings are present this might not
-  # always be the case (e.g., LANG=C or -Eascii-8bit). So here we force the
-  # default external encoding for the duration of the test.
+  # When we pretty-print the trees to compare against the snapshots, we want to
+  # be certain that we print with the same external encoding. This is because
+  # methods like Symbol#inspect take into account external encoding and it could
+  # change how the snapshot is generated. On machines with certain settings
+  # (like LANG=C or -Eascii-8bit) this could have been changed. So here we're
+  # going to force it to be UTF-8 to keep the snapshots consistent.
   def setup
     @previous_default_external = Encoding.default_external
     ignore_warnings { Encoding.default_external = Encoding::UTF_8 }
@@ -29,20 +31,6 @@ class ParseTest < Test::Unit::TestCase
     seattlerb/pct_w_heredoc_interp_nested.txt
   ]
 
-  # Because the filepath in SourceFileNodes is different from one maching to the
-  # next, PP.pp(sexp, +"", 79) can have different results: both the path itself
-  # and the line breaks based on the length of the path.
-  def normalize_printed(printed)
-    printed
-      .gsub(
-        /SourceFileNode \s*
-          \(\s* (\d+\.\.\.\d+) \s*\) \s*
-          \(\s* ("[^"]*")      \s*\)
-        /mx,
-        'SourceFileNode(\1)(\2)')
-      .gsub(__dir__, "")
-  end
-
   def find_source_file_node(node)
     if node.is_a?(YARP::SourceFileNode)
       node
@@ -52,6 +40,11 @@ class ParseTest < Test::Unit::TestCase
         return source_file_node if source_file_node
       end
     end
+  end
+
+  def test_parse_dollar0
+    parsed_result = YARP.parse("$0", "-e")
+    assert_equal 2, parsed_result.value.location.length
   end
 
   def test_parse_takes_file_path
@@ -79,27 +72,26 @@ class ParseTest < Test::Unit::TestCase
       # that is invalid Ruby.
       refute_nil Ripper.sexp_raw(source)
 
-      # Next, parse the source and print the value.
-      result = YARP.parse_file(filepath)
-      value = result.value
-      printed = normalize_printed(PP.pp(value, +"", 79))
-
       # Next, assert that there were no errors during parsing.
-      assert_empty result.errors, value
+      result = YARP.parse(source, relative)
+      assert_empty result.errors
+
+      # Next, pretty print the source.
+      printed = PP.pp(result.value, +"", 79)
 
       if File.exist?(snapshot)
-        normalized = normalize_printed(File.read(snapshot))
+        saved = File.read(snapshot)
 
         # If the snapshot file exists, but the printed value does not match the
         # snapshot, then update the snapshot file.
-        if normalized != printed
-          File.write(snapshot, normalized)
+        if printed != saved
+          File.write(snapshot, printed)
           warn("Updated snapshot at #{snapshot}.")
         end
 
         # If the snapshot file exists, then assert that the printed value
         # matches the snapshot.
-        assert_equal(normalized, printed)
+        assert_equal(saved, printed)
       else
         # If the snapshot file does not yet exist, then write it out now.
         File.write(snapshot, printed)
@@ -108,11 +100,11 @@ class ParseTest < Test::Unit::TestCase
 
       # Next, assert that the value can be serialized and deserialized without
       # changing the shape of the tree.
-      assert_equal_nodes(value, YARP.load(source, YARP.dump(source, filepath)))
+      assert_equal_nodes(result.value, YARP.load(source, YARP.dump(source, relative)))
 
       # Next, assert that the newlines are in the expected places.
       expected_newlines = [0]
-      source.b.scan("\n") { expected_newlines << $~.offset(0)[0] }
+      source.b.scan("\n") { expected_newlines << $~.offset(0)[0] + 1 }
       assert_equal expected_newlines, YARP.newlines(source)
 
       # Finally, assert that we can lex the source and get the same tokens as

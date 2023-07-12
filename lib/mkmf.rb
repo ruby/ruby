@@ -2699,7 +2699,7 @@ MESSAGE
   when $mswin
     $nmake = ?m if /nmake/i =~ make
   end
-  $ignore_error = $nmake ? '' : ' 2> /dev/null || true'
+  $ignore_error = " 2> #{File::NULL} || #{$mswin ? 'exit /b0' : 'true'}"
 
   RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
     $srcdir = arg_config("--srcdir", File.dirname($0))

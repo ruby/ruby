@@ -138,12 +138,12 @@ Here is a list of the most commonly-used guards:
 #### Version guards
 
 ```ruby
-ruby_version_is ""..."2.6" do
-  # Specs for RUBY_VERSION < 2.6
+ruby_version_is ""..."3.2" do
+  # Specs for RUBY_VERSION < 3.2
 end
 
-ruby_version_is "2.6" do
-  # Specs for RUBY_VERSION >= 2.6
+ruby_version_is "3.2" do
+  # Specs for RUBY_VERSION >= 3.2
 end
 ```
 
@@ -191,11 +191,11 @@ end
 #### Combining guards
 
 ```ruby
-guard -> { platform_is :windows and ruby_version_is ""..."2.6" } do
-  # Windows and RUBY_VERSION < 2.6
+guard -> { platform_is :windows and ruby_version_is ""..."3.2" } do
+  # Windows and RUBY_VERSION < 3.2
 end
 
-guard_not -> { platform_is :windows and ruby_version_is ""..."2.6" } do
+guard_not -> { platform_is :windows and ruby_version_is ""..."3.2" } do
   # The opposite
 end
 ```

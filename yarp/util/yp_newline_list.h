@@ -9,12 +9,12 @@
 #ifndef YP_NEWLINE_LIST_H
 #define YP_NEWLINE_LIST_H
 
-#include <assert.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdlib.h>
-
 #include "yarp/defines.h"
+
+#include <assert.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 // A list of offsets of newlines in a string. The offsets are assumed to be
 // sorted/inserted in ascending order.

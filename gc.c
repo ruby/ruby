@@ -498,7 +498,7 @@ int ruby_rgengc_debug;
 #endif
 
 #ifndef GC_DEBUG_STRESS_TO_CLASS
-#define GC_DEBUG_STRESS_TO_CLASS 0
+#define GC_DEBUG_STRESS_TO_CLASS RUBY_DEBUG
 #endif
 
 #ifndef RGENGC_OBJ_INFO
@@ -1054,8 +1054,10 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define ruby_gc_stress_mode     objspace->gc_stress_mode
 #if GC_DEBUG_STRESS_TO_CLASS
 #define stress_to_class         objspace->stress_to_class
+#define set_stress_to_class(c)  (stress_to_class = (c))
 #else
-#define stress_to_class         0
+#define stress_to_class         (objspace, 0)
+#define set_stress_to_class(c)  (objspace, (c))
 #endif
 
 #if 0
@@ -1917,10 +1919,8 @@ rb_objspace_free(rb_objspace_t *objspace)
     if (is_lazy_sweeping(objspace))
         rb_bug("lazy sweeping underway when freeing object space");
 
-    if (objspace->profile.records) {
-        free(objspace->profile.records);
-        objspace->profile.records = 0;
-    }
+    free(objspace->profile.records);
+    objspace->profile.records = NULL;
 
     if (global_list) {
         struct gc_list *list, *next;
@@ -2975,14 +2975,12 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
     RB_DEBUG_COUNTER_INC(obj_newobj);
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
 
-#if GC_DEBUG_STRESS_TO_CLASS
     if (UNLIKELY(stress_to_class)) {
         long i, cnt = RARRAY_LEN(stress_to_class);
         for (i = 0; i < cnt; ++i) {
             if (klass == RARRAY_AREF(stress_to_class, i)) rb_memerror();
         }
     }
-#endif
 
     size_t size_pool_idx = size_pool_idx_for_size(alloc_size);
 
@@ -3861,7 +3859,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (RHASH_ST_TABLE_P(obj)) {
             st_table *tab = RHASH_ST_TABLE(obj);
 
-            if (tab->bins != NULL) free(tab->bins);
+            free(tab->bins);
             free(tab->entries);
         }
         break;
@@ -4147,11 +4145,7 @@ objspace_each_objects_ensure(VALUE arg)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         struct heap_page **pages = data->pages[i];
-        /* pages could be NULL if an error was raised during setup (e.g.
-         * malloc failed due to out of memory). */
-        if (pages) {
-            free(pages);
-        }
+        free(pages);
     }
 
     return Qnil;
@@ -13656,9 +13650,7 @@ gc_profile_clear(VALUE _)
     objspace->profile.size = 0;
     objspace->profile.next_index = 0;
     objspace->profile.current_record = 0;
-    if (p) {
-        free(p);
-    }
+    free(p);
     return Qnil;
 }
 
@@ -14499,7 +14491,6 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 
 #endif /* GC_DEBUG */
 
-#if GC_DEBUG_STRESS_TO_CLASS
 /*
  *  call-seq:
  *    GC.add_stress_to_class(class[, ...])
@@ -14513,7 +14504,7 @@ rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
     rb_objspace_t *objspace = &rb_objspace;
 
     if (!stress_to_class) {
-        stress_to_class = rb_ary_hidden_new(argc);
+        set_stress_to_class(rb_ary_hidden_new(argc));
     }
     rb_ary_cat(stress_to_class, argv, argc);
     return self;
@@ -14538,12 +14529,11 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
             rb_ary_delete_same(stress_to_class, argv[i]);
         }
         if (RARRAY_LEN(stress_to_class) == 0) {
-            stress_to_class = 0;
+            set_stress_to_class(0);
         }
     }
     return Qnil;
 }
-#endif
 
 /*
  * Document-module: ObjectSpace
@@ -14669,10 +14659,10 @@ Init_GC(void)
         rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
     }
 
-#if GC_DEBUG_STRESS_TO_CLASS
-    rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
-    rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
-#endif
+    if (GC_DEBUG_STRESS_TO_CLASS) {
+        rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
+        rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
+    }
 
 #if USE_MMTK
     rb_mmtk_define_gc_mmtk_module();

@@ -20,11 +20,9 @@ describe "String#lstrip" do
     "   こにちわ "[1...-1].lstrip.should == "こにちわ"
   end
 
-  ruby_version_is '3.0' do
-    it "strips leading \\0" do
-     "\x00hello".lstrip.should == "hello"
-     "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
-    end
+  it "strips leading \\0" do
+   "\x00hello".lstrip.should == "hello"
+   "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
   end
 end
 
@@ -47,12 +45,10 @@ describe "String#lstrip!" do
     "  ".lstrip.should == ""
   end
 
-  ruby_version_is '3.0' do
-    it "removes leading NULL bytes and whitespace" do
-      a = "\000 \000hello\000 \000"
-      a.lstrip!
-      a.should == "hello\000 \000"
-    end
+  it "removes leading NULL bytes and whitespace" do
+    a = "\000 \000hello\000 \000"
+    a.lstrip!
+    a.should == "hello\000 \000"
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do

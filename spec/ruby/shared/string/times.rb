@@ -32,20 +32,10 @@ describe :string_times, shared: true do
     @object.call("", max_long).should == ""
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances" do
-      @object.call(MyString.new("cool"), 0).should be_an_instance_of(MyString)
-      @object.call(MyString.new("cool"), 1).should be_an_instance_of(MyString)
-      @object.call(MyString.new("cool"), 2).should be_an_instance_of(MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances" do
-      @object.call(MyString.new("cool"), 0).should be_an_instance_of(String)
-      @object.call(MyString.new("cool"), 1).should be_an_instance_of(String)
-      @object.call(MyString.new("cool"), 2).should be_an_instance_of(String)
-    end
+  it "returns String instances" do
+    @object.call(MyString.new("cool"), 0).should be_an_instance_of(String)
+    @object.call(MyString.new("cool"), 1).should be_an_instance_of(String)
+    @object.call(MyString.new("cool"), 2).should be_an_instance_of(String)
   end
 
   it "returns a String in the same encoding as self" do

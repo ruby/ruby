@@ -1375,7 +1375,7 @@ fn guard_object_is_array(
     }
 
     let object_reg = match object {
-        Opnd::Reg(_) => object,
+        Opnd::InsnOut { .. } => object,
         _ => asm.load(object),
     };
     guard_object_is_heap(asm, object_reg, object_opnd, counter);
@@ -1407,7 +1407,7 @@ fn guard_object_is_string(
     }
 
     let object_reg = match object {
-        Opnd::Reg(_) => object,
+        Opnd::InsnOut { .. } => object,
         _ => asm.load(object),
     };
     guard_object_is_heap(asm, object_reg, object_opnd, counter);
@@ -1954,7 +1954,7 @@ fn gen_get_ivar(
 
     // If recv isn't already a register, load it.
     let recv = match recv {
-        Opnd::Reg(_) => recv,
+        Opnd::InsnOut { .. } => recv,
         _ => asm.load(recv),
     };
 
@@ -2904,12 +2904,11 @@ fn gen_opt_aref(
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
         {
-            asm.spill_temps(); // for ccall
-            let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
-            let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
-
             // Pop the argument and the receiver
             asm.stack_pop(2);
+
+            let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
+            let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
 
             // Push the return value onto the stack
             let stack_ret = asm.stack_push(Type::Unknown);
@@ -3228,7 +3227,6 @@ fn gen_opt_mod(
         guard_two_fixnums(jit, asm, ocb);
 
         // Get the operands and destination from the stack
-        asm.spill_temps(); // for ccall (must be done before stack_pop)
         let arg1 = asm.stack_pop(1);
         let arg0 = asm.stack_pop(1);
 
@@ -3910,7 +3908,7 @@ fn jit_guard_known_klass(
 
         // If obj_opnd isn't already a register, load it.
         let obj_opnd = match obj_opnd {
-            Opnd::Reg(_) => obj_opnd,
+            Opnd::InsnOut { .. } => obj_opnd,
             _ => asm.load(obj_opnd),
         };
         let klass_opnd = Opnd::mem(64, obj_opnd, RUBY_OFFSET_RBASIC_KLASS);
@@ -3940,7 +3938,6 @@ fn jit_protected_callee_ancestry_guard(
     // Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
 
-    asm.spill_temps(); // for ccall
     let val = asm.ccall(
         rb_obj_is_kind_of as *mut u8,
         vec![
@@ -4152,19 +4149,17 @@ fn jit_rb_mod_eqq(
     }
 
     asm.comment("Module#===");
-    asm.spill_temps(); // for ccall
     // By being here, we know that the receiver is a T_MODULE or a T_CLASS, because Module#=== can
     // only live on these objects. With that, we can call rb_obj_is_kind_of() without
     // jit_prepare_routine_call() or a control frame push because it can't raise, allocate, or call
     // Ruby methods with these inputs.
     // Note the difference in approach from Kernel#is_a? because we don't get a free guard for the
     // right hand side.
-    let lhs = asm.stack_opnd(1); // the module
-    let rhs = asm.stack_opnd(0);
+    let rhs = asm.stack_pop(1);
+    let lhs = asm.stack_pop(1); // the module
     let ret = asm.ccall(rb_obj_is_kind_of as *const u8, vec![rhs, lhs]);
 
     // Return the result
-    asm.stack_pop(2);
     let stack_ret = asm.stack_push(Type::UnknownImm);
     asm.mov(stack_ret, ret);
 
@@ -4280,7 +4275,6 @@ fn jit_rb_int_div(
     guard_two_fixnums(jit, asm, ocb);
 
     asm.comment("Integer#/");
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let obj = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
@@ -4314,7 +4308,6 @@ fn jit_rb_int_aref(
     guard_two_fixnums(jit, asm, ocb);
 
     asm.comment("Integer#[]");
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let obj = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
@@ -4381,7 +4374,6 @@ fn jit_rb_str_bytesize(
 ) -> bool {
     asm.comment("String#bytesize");
 
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let recv = asm.stack_pop(1);
     let ret_opnd = asm.ccall(rb_str_bytesize as *const u8, vec![recv]);
 
@@ -5209,7 +5201,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
 
     // Pull out the embed flag to check if it's an embedded array.
     let array_reg = match array_opnd {
-        Opnd::Reg(_) => array_opnd,
+        Opnd::InsnOut { .. } => array_opnd,
         _ => asm.load(array_opnd),
     };
     let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
@@ -5223,7 +5215,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
     asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
 
     let array_reg = match array_opnd {
-        Opnd::Reg(_) => array_opnd,
+        Opnd::InsnOut { .. } => array_opnd,
         _ => asm.load(array_opnd),
     };
     let array_len_opnd = Opnd::mem(
@@ -5590,10 +5582,12 @@ fn gen_send_iseq(
         }
     }
 
-    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg()
+    // Also known as "autosplat" inside setup_parameters_complex()
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
     let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
-         get_iseq_flags_has_lead(iseq) && !get_iseq_flags_ambiguous_param0(iseq)
+         (get_iseq_flags_has_lead(iseq) || opt_num > 1)
+             && !get_iseq_flags_ambiguous_param0(iseq)
     };
     if block_arg0_splat {
         // If block_arg0_splat, we still need side exits after splat, but
@@ -5606,6 +5600,13 @@ fn gen_send_iseq(
         // but doing_kw_call means it's not a simple ISEQ.
         if doing_kw_call {
             gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_has_kw);
+            return None;
+        }
+        // The block_arg0_splat implementation cannot deal with optional parameters.
+        // This is a setup_parameters_complex() situation and interacts with the
+        // starting position of the callee.
+        if opt_num > 1 {
+            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_optional);
             return None;
         }
     }
@@ -5835,7 +5836,6 @@ fn gen_send_iseq(
                 move_rest_args_to_stack(array, diff, asm);
 
                 // We will now slice the array to give us a new array of the correct size
-                asm.spill_temps(); // for ccall
                 let ret = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
                 let stack_ret = asm.stack_push(Type::TArray);
                 asm.mov(stack_ret, ret);
@@ -6418,7 +6418,6 @@ fn gen_struct_aset(
 
     asm.comment("struct aset");
 
-    asm.spill_temps(); // for ccall (must be done before stack_pop)
     let val = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
@@ -6739,7 +6738,6 @@ fn gen_send_general(
                         // values for the register allocator.
                         let name_opnd = asm.load(name_opnd);
 
-                        asm.spill_temps(); // for ccall
                         let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
                         asm.comment("chain_guard_send");
@@ -7394,7 +7392,6 @@ fn gen_toregexp(
     asm.mov(stack_ret, val);
 
     // Clear the temp array.
-    asm.spill_temps(); // for ccall
     asm.ccall(rb_ary_clear as *const u8, vec![ary]);
 
     Some(KeepCompiling)
@@ -7583,7 +7580,6 @@ fn gen_opt_getconstant_path(
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
         // Call function to verify the cache. It doesn't allocate or call methods.
-        asm.spill_temps(); // for ccall
         let ret_val = asm.ccall(
             rb_vm_ic_hit_p as *const u8,
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
@@ -7653,6 +7649,7 @@ fn gen_getblockparamproxy(
     // When a block handler is present, it should always be a GC-guarded
     // pointer (VM_BH_ISEQ_BLOCK_P)
     if comptime_handler.as_u64() != 0 && comptime_handler.as_u64() & 0x3 != 0x1 {
+        incr_counter!(gbpp_not_gc_guarded);
         return None;
     }
 

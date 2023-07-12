@@ -2925,10 +2925,7 @@ VALUE
 rb_ractor_make_shareable_copy(VALUE obj)
 {
     VALUE copy = ractor_copy(obj);
-    rb_obj_traverse(copy,
-                    make_shareable_check_shareable,
-                    null_leave, mark_shareable);
-    return copy;
+    return rb_ractor_make_shareable(copy);
 }
 
 VALUE
@@ -3108,12 +3105,6 @@ obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
     }
     return data->rec;
 }
-
-#if USE_TRANSIENT_HEAP
-void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
-void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
-void rb_struct_transient_heap_evacuate(VALUE st, int promote);
-#endif
 
 static void
 obj_refer_only_shareables_p_i(VALUE obj, void *ptr)

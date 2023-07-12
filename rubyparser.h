@@ -586,17 +586,6 @@ typedef struct rb_parser_config_struct {
     unsigned long (*scan_digits)(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
     double (*strtod)(const char *s00, char **se);
 
-    /* ctype */
-    int (*isspace)(int c);
-    int (*isascii)(int c);
-    int (*iscntrl)(int c);
-    int (*isalpha)(int c);
-    int (*isdigit)(int c);
-    int (*isalnum)(int c);
-    int (*isxdigit)(int c);
-    int (*strcasecmp)(const char *s1, const char *s2);
-    int (*strncasecmp)(const char *s1, const char *s2, size_t n);
-
     /* Misc */
     VALUE (*rbool)(VALUE);
     int (*undef_p)(VALUE);

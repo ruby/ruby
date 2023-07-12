@@ -109,6 +109,8 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
 #define st_add_direct rb_parser_st_add_direct
 #undef st_insert2
 #define st_insert2 rb_parser_st_insert2
+#undef st_replace
+#define st_replace rb_parser_st_replace
 #undef st_copy
 #define st_copy rb_parser_st_copy
 #undef st_delete_safe
@@ -143,6 +145,16 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
 #define st_locale_insensitive_strcasecmp rb_parser_st_locale_insensitive_strcasecmp
 #undef st_locale_insensitive_strncasecmp
 #define st_locale_insensitive_strncasecmp rb_parser_st_locale_insensitive_strncasecmp
+
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+/* GCC warns about unknown sanitizer, which is annoying. */
+# undef NO_SANITIZE
+# define NO_SANITIZE(x, y) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+    __attribute__((__no_sanitize__(x))) y; \
+    _Pragma("GCC diagnostic pop")
+#endif
 
 #ifndef NO_SANITIZE
 # define NO_SANITIZE(x, y) y

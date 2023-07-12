@@ -2689,7 +2689,7 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
  * A space at the start of s returns positive values with a leading space.
  *
  * If s contains a number, a space is inserted after each group of that many
- * fractional digits.
+ * digits, starting from '.' and counting outwards.
  *
  * If s ends with an 'E', engineering notation (0.xxxxEnn) is used.
  *
@@ -2697,14 +2697,14 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
  *
  * Examples:
  *
- *   BigDecimal('-123.45678901234567890').to_s('5F')
- *     #=> '-123.45678 90123 45678 9'
+ *   BigDecimal('-1234567890123.45678901234567890').to_s('5F')
+ *     #=> '-123 45678 90123.45678 90123 45678 9'
  *
- *   BigDecimal('123.45678901234567890').to_s('+8F')
- *     #=> '+123.45678901 23456789'
+ *   BigDecimal('1234567890123.45678901234567890').to_s('+8F')
+ *     #=> '+12345 67890123.45678901 23456789'
  *
- *   BigDecimal('123.45678901234567890').to_s(' F')
- *     #=> ' 123.4567890123456789'
+ *   BigDecimal('1234567890123.45678901234567890').to_s(' F')
+ *     #=> ' 1234567890123.4567890123456789'
  */
 static VALUE
 BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
@@ -6706,95 +6706,90 @@ VpToFString(Real *a, char *buf, size_t buflen, size_t fFmt, int fPlus)
 /* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n;
-    DECDIG m, e, nn;
+    DECDIG m, e;
     char *p = buf;
-    size_t plen = buflen;
+    size_t plen = buflen, delim = fFmt;
     ssize_t ex;
 
     if (VpToSpecialString(a, buf, buflen, fPlus)) return;
 
-#define ADVANCE(n) do { \
-    if (plen < n) goto overflow; \
-    p += n; \
-    plen -= n; \
+#define APPEND(c, group) do { \
+    if (plen < 1) goto overflow; \
+    if (group && delim == 0) { \
+        *p = ' '; \
+        p += 1; \
+        plen -= 1; \
+    } \
+    if (plen < 1) goto overflow; \
+    *p = c; \
+    p += 1; \
+    plen -= 1; \
+    if (group) delim = (delim + 1) % fFmt; \
 } while (0)
 
 
     if (BIGDECIMAL_NEGATIVE_P(a)) {
-        *p = '-';
-        ADVANCE(1);
+        APPEND('-', false);
     }
     else if (fPlus == 1) {
-        *p = ' ';
-        ADVANCE(1);
+        APPEND(' ', false);
     }
     else if (fPlus == 2) {
-        *p = '+';
-        ADVANCE(1);
+        APPEND('+', false);
     }
 
     n  = a->Prec;
     ex = a->exponent;
     if (ex <= 0) {
-        *p = '0'; ADVANCE(1);
-        *p = '.'; ADVANCE(1);
-        while (ex < 0) {
-            for (i=0; i < BASE_FIG; ++i) {
-                *p = '0'; ADVANCE(1);
-            }
-            ++ex;
+        APPEND('0', false);
+        APPEND('.', false);
+    }
+    while (ex < 0) {
+        for (i=0; i < BASE_FIG; ++i) {
+            APPEND('0', fFmt > 0);
         }
-        ex = -1;
+        ++ex;
     }
 
     for (i = 0; i < n; ++i) {
-        --ex;
-        if (i == 0 && ex >= 0) {
-            size_t n = snprintf(p, plen, "%lu", (unsigned long)a->frac[i]);
-            if (n > plen) goto overflow;
-            ADVANCE(n);
-        }
-        else {
-            m = BASE1;
-            e = a->frac[i];
-            while (m) {
-                nn = e / m;
-                *p = (char)(nn + '0');
-                ADVANCE(1);
-                e = e - nn * m;
+        m = BASE1;
+        e = a->frac[i];
+        if (i == 0 && ex > 0) {
+            for (delim = 0; e / m == 0; delim++) {
                 m /= 10;
             }
+            if (fFmt > 0) {
+              delim = 2*fFmt - (ex * BASE_FIG - delim) % fFmt;
+            }
         }
-        if (ex == 0) {
-            *p = '.';
-            ADVANCE(1);
+        while (m && (e || (i < n - 1) || ex > 0)) {
+            APPEND((char)(e / m + '0'), fFmt > 0);
+            e %= m;
+            m /= 10;
+        }
+        if (--ex == 0) {
+            APPEND('.', false);
+            delim = fFmt;
         }
     }
-    while (--ex>=0) {
-        m = BASE;
-        while (m /= 10) {
-            *p = '0';
-            ADVANCE(1);
+
+    while (ex > 0) {
+        for (i=0; i < BASE_FIG; ++i) {
+            APPEND('0', fFmt > 0);
         }
-        if (ex == 0) {
-            *p = '.';
-            ADVANCE(1);
+        if (--ex == 0) {
+            APPEND('.', false);
         }
     }
 
     *p = '\0';
-    while (p - 1 > buf && p[-1] == '0') {
-        *(--p) = '\0';
-        ++plen;
-    }
     if (p - 1 > buf && p[-1] == '.') {
         snprintf(p, plen, "0");
     }
-    if (fFmt) VpFormatSt(buf, fFmt);
 
   overflow:
     return;
-#undef ADVANCE
+#undef APPEND
 }
 
 /*

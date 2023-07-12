@@ -4553,7 +4553,8 @@ module RubyVM::RJIT
       # Check if we need the arg0 splat handling of vm_callee_setup_block_arg
       arg_setup_block = (calling.block_handler == :captured) # arg_setup_type: arg_setup_block (invokeblock)
       block_arg0_splat = arg_setup_block && argc == 1 &&
-        iseq.body.param.flags.has_lead && !iseq.body.param.flags.ambiguous_param0
+        (iseq.body.param.flags.has_lead || opt_num > 1) &&
+        !iseq.body.param.flags.ambiguous_param0
       if block_arg0_splat
         # If block_arg0_splat, we still need side exits after splat, but
         # doing push_splat_args here disallows it. So bail out.
@@ -4565,6 +4566,13 @@ module RubyVM::RJIT
         # but doing_kw_call means it's not a simple ISEQ.
         if doing_kw_call
           asm.incr_counter(:invokeblock_iseq_arg0_has_kw)
+          return CantCompile
+        end
+        # The block_arg0_splat implementation cannot deal with optional parameters.
+        # This is a setup_parameters_complex() situation and interacts with the
+        # starting position of the callee.
+        if opt_num > 1
+          asm.incr_counter(:invokeblock_iseq_arg0_optional)
           return CantCompile
         end
       end

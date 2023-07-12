@@ -18,11 +18,9 @@ describe "Kernel#initialize_clone" do
     a.send(:initialize_clone, b)
   end
 
-  ruby_version_is "3.0" do
-    it "accepts a :freeze keyword argument for obj.clone(freeze: value)" do
-      a = Object.new
-      b = Object.new
-      a.send(:initialize_clone, b, freeze: true).should == a
-    end
+  it "accepts a :freeze keyword argument for obj.clone(freeze: value)" do
+    a = Object.new
+    b = Object.new
+    a.send(:initialize_clone, b, freeze: true).should == a
   end
 end

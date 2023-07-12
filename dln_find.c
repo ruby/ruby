@@ -75,7 +75,7 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
             ".";
     }
     buf = dln_find_1(fname, path, buf, size, 1 DLN_FIND_EXTRA_ARG);
-    if (envpath) free(envpath);
+    free(envpath);
     return buf;
 }
 

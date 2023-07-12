@@ -1162,6 +1162,19 @@ ar_clear(VALUE hash)
     }
 }
 
+static void
+st_free_and_clear_table(VALUE hash)
+{
+    HASH_ASSERT(RHASH_ST_TABLE_P(hash));
+
+    st_table *tab = RHASH_ST_TABLE(hash);
+
+    free(tab->bins);
+    free(tab->entries);
+
+    RHASH_ST_CLEAR(hash);
+}
+
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
 struct foreach_safe_arg {
@@ -1464,13 +1477,32 @@ rb_hash_new_capa(long capa)
 static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
-    if (!RHASH_EMPTY_P(hash)) {
-        if (RHASH_AR_TABLE_P(hash)) {
+    if (RHASH_AR_TABLE_P(hash)) {
+        if (RHASH_AR_TABLE_P(ret)) {
             ar_copy(ret, hash);
         }
         else {
-            RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
+            st_table *tab = RHASH_ST_TABLE(ret);
+            rb_st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
+
+            int bound = RHASH_AR_TABLE_BOUND(hash);
+            for (int i = 0; i < bound; i++) {
+                if (ar_cleared_entry(hash, i)) continue;
+
+                ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
+                st_add_direct(tab, pair->key, pair->val);
+                RB_OBJ_WRITTEN(ret, Qundef, pair->key);
+                RB_OBJ_WRITTEN(ret, Qundef, pair->val);
+            }
         }
+    }
+    else {
+        HASH_ASSERT(sizeof(st_table) <= sizeof(ar_table));
+
+        RHASH_SET_ST_FLAG(ret);
+        st_replace(RHASH_ST_TABLE(ret), RHASH_ST_TABLE(hash));
+
+        rb_gc_writebarrier_remember(ret);
     }
     return ret;
 }
@@ -1763,7 +1795,8 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
             }
             else {
                 hash = hash_alloc(klass);
-                hash_copy(hash, tmp);
+                if (!RHASH_EMPTY_P(tmp))
+                    hash_copy(hash, tmp);
                 return hash;
             }
         }
@@ -2878,34 +2911,10 @@ rb_hash_replace(VALUE hash, VALUE hash2)
         ar_free_and_clear_table(hash);
     }
     else {
-        RHASH_ST_CLEAR(hash);
+        st_free_and_clear_table(hash);
     }
 
-    if (RHASH_AR_TABLE_P(hash2)) {
-        if (RHASH_AR_TABLE_P(hash)) {
-            ar_copy(hash, hash2);
-        }
-        else {
-            st_table *tab = RHASH_ST_TABLE(hash);
-            rb_st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash2));
-
-            int bound = RHASH_AR_TABLE_BOUND(hash2);
-            for (int i = 0; i < bound; i++) {
-                if (ar_cleared_entry(hash2, i)) continue;
-
-                ar_table_pair *pair = RHASH_AR_TABLE_REF(hash2, i);
-                st_add_direct(tab, pair->key, pair->val);
-                RB_OBJ_WRITTEN(hash, Qundef, pair->key);
-                RB_OBJ_WRITTEN(hash, Qundef, pair->val);
-            }
-        }
-    }
-    else {
-        HASH_ASSERT(sizeof(st_table) <= sizeof(ar_table));
-
-        RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
-        rb_gc_writebarrier_remember(hash);
-    }
+    hash_copy(hash, hash2);
 
     return hash;
 }

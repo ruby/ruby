@@ -6,11 +6,14 @@ on:
 jobs:
   automerge:
     runs-on: ubuntu-latest
+
     if: ${{ github.actor == 'dependabot[bot]' }}
+
     steps:
       - name: Dependabot metadata
-        uses: dependabot/fetch-metadata@cd6e996708b8cfe0b639401134a3b9a3177be7b2 # v1.5.1
+        uses: dependabot/fetch-metadata@c9c4182bf1b97f5224aee3906fd373f6b61b4526 # v1.6.0
         id: metadata
+
       - name: Wait for status checks
         uses: lewagon/wait-on-check-action@e106e5c43e8ca1edea6383a39a01c5ca495fd812 # v1.3.1
         with:
@@ -18,9 +21,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           check-regexp: 'make \(check, .*\)'
           wait-interval: 30
+
       - name: Auto-merge for Dependabot PRs
-        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'}}
+        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch' }}
         run: gh pr merge --auto --rebase "$PR_URL"
         env:
-          PR_URL: ${{github.event.pull_request.html_url}}
+          PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.MATZBOT_GITHUB_TOKEN }}

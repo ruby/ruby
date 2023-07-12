@@ -154,7 +154,7 @@ require_relative "irb/easter-egg"
 #
 #     IRB.conf[:EVAL_HISTORY] = <number>
 #
-# See IRB::Context#eval_history= and History class. The history of command
+# See IRB::Context#eval_history= and EvalHistory class. The history of command
 # results is not permanently saved in any file.
 #
 # == Customizing the IRB Prompt
@@ -506,8 +506,6 @@ module IRB
 
     # Evaluates input for this session.
     def eval_input
-      exc = nil
-
       @scanner.set_prompt do
         |ltype, indent, continue, line_no|
         if ltype
@@ -560,26 +558,10 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
-            if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
-              IRB.set_measure_callback
-            end
-            # Assignment expression check should be done before @context.evaluate to handle code like `a /2#/ if false; a = 1`
+            # Assignment expression check should be done before evaluate_line to handle code like `a /2#/ if false; a = 1`
             is_assignment = assignment_expression?(line)
-            if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
-              result = nil
-              last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
-              IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) { |chain, item|
-                _name, callback, arg = item
-                proc {
-                  callback.(@context, line, line_no, arg, exception: exc) do
-                    chain.call
-                  end
-                }
-              }.call
-              @context.set_last_value(result)
-            else
-              @context.evaluate(line, line_no, exception: exc)
-            end
+            evaluate_line(line, line_no)
+
             if @context.echo?
               if is_assignment
                 if @context.echo_on_assignment?
@@ -589,19 +571,31 @@ module IRB
                 output_value
               end
             end
-          rescue Interrupt => exc
           rescue SystemExit, SignalException
             raise
-          rescue Exception => exc
-          else
-            exc = nil
-            next
+          rescue Interrupt, Exception => exc
+            handle_exception(exc)
+            @context.workspace.local_variable_set(:_, exc)
           end
-          handle_exception(exc)
-          @context.workspace.local_variable_set(:_, exc)
-          exc = nil
         end
       end
+    end
+
+    def evaluate_line(line, line_no)
+      # Transform a non-identifier alias (@, $) or keywords (next, break)
+      command, args = line.split(/\s/, 2)
+      if original = @context.command_aliases[command.to_sym]
+        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
+        command = original
+      end
+
+      # Hook command-specific transformation
+      command_class = ExtendCommandBundle.load_command(command)
+      if command_class&.respond_to?(:transform_args)
+        line = "#{command} #{command_class.transform_args(args)}"
+      end
+
+      @context.evaluate(line, line_no)
     end
 
     def convert_invalid_byte_sequence(str, enc)
@@ -973,7 +967,7 @@ class Binding
   #     Cooked potato: true
   #
   #
-  # See IRB@IRB+Usage for more information.
+  # See IRB@Usage for more information.
   def irb(show_code: true)
     IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)

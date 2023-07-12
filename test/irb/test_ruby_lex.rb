@@ -101,7 +101,7 @@ module TestIRB
 
     def check_state(lines, local_variables: [])
       context = build_context(local_variables)
-      code = lines.join("\n")
+      code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
       tokens = RubyLex.ripper_lex_without_warning(code, context: context)
       opens = IRB::NestingParser.open_tokens(tokens)
       ruby_lex = RubyLex.new(context)
@@ -598,7 +598,6 @@ module TestIRB
     end
 
     def test_local_variables_dependent_code
-      pend if RUBY_ENGINE == 'truffleruby'
       lines = ["a /1#/ do", "2"]
       assert_indent_level(lines, 1)
       assert_code_block_open(lines, true)
@@ -706,8 +705,64 @@ module TestIRB
       end
     end
 
+    def test_pasted_code_keep_base_indent_spaces
+      input_with_correct_indents = [
+        Row.new(%q(    def foo), 0, 6, 1),
+        Row.new(%q(        if bar), 6, 10, 2),
+        Row.new(%q(          [1), 10, 12, 3),
+        Row.new(%q(          ]+[["a), 10, 14, 4),
+        Row.new(%q(b" + `c), 0, 14, 4),
+        Row.new(%q(d` + /e), 0, 14, 4),
+        Row.new(%q(f/ + :"g), 0, 14, 4),
+        Row.new(%q(h".tap do), 0, 16, 5),
+        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(              end), 14, 14, 4),
+        Row.new(%q(            ]), 12, 12, 3),
+        Row.new(%q(          ]), 10, 10, 2),
+        Row.new(%q(        end), 8, 6, 1),
+        Row.new(%q(    end), 4, 0, 0),
+      ]
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_row_indenting(lines, row)
+        assert_indent_level(lines, row.indent_level)
+      end
+    end
+
+    def test_pasted_code_keep_base_indent_spaces_with_heredoc
+      input_with_correct_indents = [
+        Row.new(%q(    def foo), 0, 6, 1),
+        Row.new(%q(        if bar), 6, 10, 2),
+        Row.new(%q(          [1), 10, 12, 3),
+        Row.new(%q(          ]+[["a), 10, 14, 4),
+        Row.new(%q(b" + <<~A + <<-B + <<C), 0, 16, 5),
+        Row.new(%q(                a#{), 16, 16, 5),
+        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(                }), 16, 16, 5),
+        Row.new(%q(              A), 14, 16, 5),
+        Row.new(%q(                b#{), 16, 16, 5),
+        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(                }), 16, 16, 5),
+        Row.new(%q(              B), 14, 0, 0),
+        Row.new(%q(c#{), 0, 0, 0),
+        Row.new(%q(1), 0, 0, 0),
+        Row.new(%q(}), 0, 0, 0),
+        Row.new(%q(C), 0, 14, 4),
+        Row.new(%q(            ]), 12, 12, 3),
+        Row.new(%q(          ]), 10, 10, 2),
+        Row.new(%q(        end), 8, 6, 1),
+        Row.new(%q(    end), 4, 0, 0),
+      ]
+      lines = []
+      input_with_correct_indents.each do |row|
+        lines << row.content
+        assert_row_indenting(lines, row)
+        assert_indent_level(lines, row.indent_level)
+      end
+    end
+
     def assert_dynamic_prompt(lines, expected_prompt_list)
-      pend if RUBY_ENGINE == 'truffleruby'
       context = build_context
       ruby_lex = RubyLex.new(context)
       dynamic_prompt_executed = false
@@ -791,7 +846,7 @@ module TestIRB
       assert_should_continue(['a;'], false)
       assert_should_continue(['<<A', 'A'], false)
       assert_should_continue(['a...'], false)
-      assert_should_continue(['a\\', ''], true)
+      assert_should_continue(['a\\'], true)
       assert_should_continue(['a.'], true)
       assert_should_continue(['a+'], true)
       assert_should_continue(['a; #comment', '', '=begin', 'embdoc', '=end', ''], false)
@@ -801,13 +856,13 @@ module TestIRB
     def test_code_block_open_with_should_continue
       # syntax ok
       assert_code_block_open(['a'], false) # continue: false
-      assert_code_block_open(['a\\', ''], true) # continue: true
+      assert_code_block_open(['a\\'], true) # continue: true
 
       # recoverable syntax error code is not terminated
-      assert_code_block_open(['a+', ''], true)
+      assert_code_block_open(['a+'], true)
 
       # unrecoverable syntax error code is terminated
-      assert_code_block_open(['.; a+', ''], false)
+      assert_code_block_open(['.; a+'], false)
 
       # other syntax error that failed to determine if it is recoverable or not
       assert_code_block_open(['@; a'], false)

@@ -3,5 +3,5 @@
 module Bundler
   WINDOWS = RbConfig::CONFIG["host_os"] =~ /(msdos|mswin|djgpp|mingw)/
   FREEBSD = RbConfig::CONFIG["host_os"].to_s.include?("bsd")
-  NULL    = WINDOWS ? "NUL" : "/dev/null"
+  NULL    = File::NULL
 end

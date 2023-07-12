@@ -8,13 +8,7 @@ describe "Warning.[]=" do
 
   describe ":experimental" do
     before do
-      ruby_version_is ""..."3.0" do
-        @src = 'case [0, 1]; in [a, b]; end'
-      end
-
-      ruby_version_is "3.0" do
-        @src = 'warn "This is experimental warning.", category: :experimental'
-      end
+      @src = 'warn "This is experimental warning.", category: :experimental'
     end
 
     it "emits and suppresses warnings for :experimental" do

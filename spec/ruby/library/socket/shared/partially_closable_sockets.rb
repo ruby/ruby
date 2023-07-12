@@ -1,4 +1,4 @@
-describe "partially closable sockets", shared: true do
+describe :partially_closable_sockets, shared: true do
   it "if the write end is closed then the other side can read past EOF without blocking" do
     @s1.write("foo")
     @s1.close_write

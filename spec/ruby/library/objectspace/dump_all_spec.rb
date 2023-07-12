@@ -55,27 +55,25 @@ describe "ObjectSpace.dump_all" do
     stdout.should == "File\ntrue\n"
   end
 
-  ruby_version_is "3.0" do
-    it "dumps Ruby heap to a temporary file when passed output: :nil" do
-      stdout = ruby_exe(<<~RUBY, options: "-robjspace")
-      string = "abc"
-      file = ObjectSpace.dump_all(output: nil)
+  it "dumps Ruby heap to a temporary file when passed output: :nil" do
+    stdout = ruby_exe(<<~RUBY, options: "-robjspace")
+    string = "abc"
+    file = ObjectSpace.dump_all(output: nil)
 
-      begin
-        file.flush
-        file.rewind
-        content = file.read
+    begin
+      file.flush
+      file.rewind
+      content = file.read
 
-        puts file.class
-        puts content.include?('"value":"abc"')
-      ensure
-        file.close
-        File.unlink file.path
-      end
-      RUBY
-
-      stdout.should == "File\ntrue\n"
+      puts file.class
+      puts content.include?('"value":"abc"')
+    ensure
+      file.close
+      File.unlink file.path
     end
+    RUBY
+
+    stdout.should == "File\ntrue\n"
   end
 
   it "dumps Ruby heap to stdout when passed output: :stdout" do

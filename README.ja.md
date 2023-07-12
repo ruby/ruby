@@ -26,7 +26,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 *   ダイナミックローディング (アーキテクチャによる)
 *   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， macOS，
     Haikuなどの上でも動く cf.
-    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
+    https://docs.ruby-lang.org/en/master/maintainers_md.html#label-Platform+Maintainers
 
 
 ## 入手法

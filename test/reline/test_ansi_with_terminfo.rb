@@ -5,7 +5,7 @@ class Reline::ANSI::TestWithTerminfo < Reline::TestCase
   def setup
     Reline.send(:test_mode, ansi: true)
     @config = Reline::Config.new
-    Reline::IOGate.set_default_key_bindings(@config, allow_terminfo: true)
+    Reline.core.io_gate.set_default_key_bindings(@config, allow_terminfo: true)
   end
 
   def teardown

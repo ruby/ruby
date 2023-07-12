@@ -6,12 +6,12 @@
 #ifndef YP_CONSTANT_POOL_H
 #define YP_CONSTANT_POOL_H
 
+#include "yarp/defines.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "yarp/defines.h"
 
 typedef uint32_t yp_constant_id_t;
 

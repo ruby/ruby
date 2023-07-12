@@ -125,21 +125,19 @@ describe "NoMethodError#message" do
     end
   end
 
-  ruby_version_is "3.0" do
-    it "uses #name to display the receiver if it is a class or a module" do
-      klass = Class.new { def self.name; "MyClass"; end }
-      begin
-        klass.foo
-      rescue NoMethodError => error
-        error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
-      end
+  it "uses #name to display the receiver if it is a class or a module" do
+    klass = Class.new { def self.name; "MyClass"; end }
+    begin
+      klass.foo
+    rescue NoMethodError => error
+      error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
+    end
 
-      mod = Module.new { def self.name; "MyModule"; end }
-      begin
-        mod.foo
-      rescue NoMethodError => error
-        error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
-      end
+    mod = Module.new { def self.name; "MyModule"; end }
+    begin
+      mod.foo
+    rescue NoMethodError => error
+      error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
     end
   end
 end

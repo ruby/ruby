@@ -47,7 +47,8 @@ static const bool ascii_printable_chars[] = {
 
 static inline bool
 char_is_ascii_printable(const char c) {
-    return ascii_printable_chars[(unsigned char) c];
+    unsigned char v = (unsigned char) c;
+    return (v < 0x80) && ascii_printable_chars[v];
 }
 
 /******************************************************************************/
@@ -437,14 +438,14 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
 // \c? or \C-?    delete, ASCII 7Fh (DEL)
 //
 YP_EXPORTED_FUNCTION void
-yp_unescape_manipulate_string(const char *value, size_t length, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list) {
+yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t length, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list) {
     if (unescape_type == YP_UNESCAPE_NONE) {
         // If we're not unescaping then we can reference the source directly.
         yp_string_shared_init(string, value, value + length);
         return;
     }
 
-    const char *backslash = memchr(value, '\\', length);
+    const char *backslash = yp_memchr(parser, value, '\\', length);
 
     if (backslash == NULL) {
         // Here there are no escapes, so we can reference the source directly.
@@ -508,7 +509,7 @@ yp_unescape_manipulate_string(const char *value, size_t length, yp_string_t *str
         }
 
         if (end > cursor) {
-            backslash = memchr(cursor, '\\', (size_t) (end - cursor));
+            backslash = yp_memchr(parser, cursor, '\\', (size_t) (end - cursor));
         } else {
             backslash = NULL;
         }

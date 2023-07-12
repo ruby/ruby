@@ -567,7 +567,7 @@ main .method-click-advice {
   line-height: 20px;
   background: url(../images/zoom.png) no-repeat right top;
 }
-main .method-heading:hover .method-click-advice {
+main .method-header:hover .method-click-advice {
   visibility: visible;
 }
 

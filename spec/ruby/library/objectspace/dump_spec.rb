@@ -23,29 +23,27 @@ describe "ObjectSpace.dump" do
     string.should include('"value":"abc"')
   end
 
-  ruby_version_is "3.0" do
-    it "dumps to a temporary file when passed output: :file" do
-      file = ObjectSpace.dump("abc", output: :file)
-      file.should be_kind_of(File)
+  it "dumps to a temporary file when passed output: :file" do
+    file = ObjectSpace.dump("abc", output: :file)
+    file.should be_kind_of(File)
 
-      file.rewind
-      content = file.read
-      content.should include('"value":"abc"')
-    ensure
-      file.close
-      File.unlink file.path
-    end
+    file.rewind
+    content = file.read
+    content.should include('"value":"abc"')
+  ensure
+    file.close
+    File.unlink file.path
+  end
 
-    it "dumps to a temporary file when passed output: :nil" do
-      file = ObjectSpace.dump("abc", output: nil)
-      file.should be_kind_of(File)
+  it "dumps to a temporary file when passed output: :nil" do
+    file = ObjectSpace.dump("abc", output: nil)
+    file.should be_kind_of(File)
 
-      file.rewind
-      file.read.should include('"value":"abc"')
-    ensure
-      file.close
-      File.unlink file.path
-    end
+    file.rewind
+    file.read.should include('"value":"abc"')
+  ensure
+    file.close
+    File.unlink file.path
   end
 
   it "dumps to stdout when passed output: :stdout" do
@@ -53,19 +51,17 @@ describe "ObjectSpace.dump" do
     stdout.should include('"value":"abc"')
   end
 
-  ruby_version_is "3.0" do
-    it "dumps to provided IO when passed output: IO" do
-      filename = tmp("io_read.txt")
-      io = File.open(filename, "w+")
-      result = ObjectSpace.dump("abc", output: io)
-      result.should.equal? io
+  it "dumps to provided IO when passed output: IO" do
+    filename = tmp("io_read.txt")
+    io = File.open(filename, "w+")
+    result = ObjectSpace.dump("abc", output: io)
+    result.should.equal? io
 
-      io.rewind
-      io.read.should include('"value":"abc"')
-    ensure
-      io.close
-      rm_r filename
-    end
+    io.rewind
+    io.read.should include('"value":"abc"')
+  ensure
+    io.close
+    rm_r filename
   end
 
   it "raises ArgumentError when passed not supported :output value" do

@@ -260,7 +260,7 @@ describe "Dir.glob" do
     Dir.glob('**/.*', base: "deeply/nested").sort.should == expected
   end
 
-  # 2.7 and 3.0 include a "." entry for every dir: ["directory/.", "directory/structure/.", ...]
+  # < 3.1 include a "." entry for every dir: ["directory/.", "directory/structure/.", ...]
   ruby_version_is '3.1' do
     it "handles **/.* with base keyword argument and FNM_DOTMATCH" do
       expected = %w[

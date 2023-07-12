@@ -50,8 +50,13 @@ fiddle_handle_memsize(const void *ptr)
 }
 
 static const rb_data_type_t fiddle_handle_data_type = {
-    "fiddle/handle",
-    {0, fiddle_handle_free, fiddle_handle_memsize,},
+    .wrap_struct_name = "fiddle/handle",
+    .function = {
+        .dmark = 0,
+        .dfree = fiddle_handle_free,
+        .dsize = fiddle_handle_memsize
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED,
 };
 
 /*

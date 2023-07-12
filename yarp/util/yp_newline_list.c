@@ -31,7 +31,7 @@ yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
     }
 
     assert(cursor >= list->start);
-    list->offsets[list->size++] = (size_t) (cursor - list->start);
+    list->offsets[list->size++] = (size_t) (cursor - list->start + 1);
 
     return true;
 }

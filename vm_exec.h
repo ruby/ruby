@@ -40,10 +40,6 @@ typedef rb_iseq_t *ISEQ;
 #define throwdebug if(0)ruby_debug_printf
 /* #define throwdebug ruby_debug_printf */
 
-#ifndef USE_INSNS_COUNTER
-#define USE_INSNS_COUNTER 0
-#endif
-
 /************************************************/
 #if defined(DISPATCH_XXX)
 error !
@@ -80,8 +76,7 @@ error !
                         (reg_cfp->pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded), \
                         RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
                         rb_iseq_line_no(reg_cfp->iseq, reg_pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded)); \
-  } \
-  if (USE_INSNS_COUNTER) vm_insns_counter_count_insn(BIN(insn));
+  }
 
 #define INSN_DISPATCH_SIG(insn)
 

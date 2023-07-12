@@ -3,12 +3,14 @@ require_relative 'lib/colorize'
 
 until ARGV.empty?
   case ARGV[0]
-  when /\ASYMBOL_PREFIX=(.*)/
+  when /\A SYMBOL_PREFIX=(.*)/x
     SYMBOL_PREFIX = $1
-  when /\ANM=(.*)/              # may be multiple words
+  when /\A NM=(.*)/x            # may be multiple words
     NM = $1
-  when /\APLATFORM=(.+)?/
+  when /\A PLATFORM=(.+)?/x
     platform = $1
+  when /\A SOEXT=(.+)?/x
+    soext = $1
   else
     break
   end
@@ -44,18 +46,35 @@ ARGV.reject! do |n|
     true
   end
 end
+
 # darwin's ld64 seems to require exception handling personality functions to be
 # extern, so we allow the Rust one.
 REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
 
 print "Checking leaked global symbols..."
 STDOUT.flush
+soext = /\.#{soext}(?:$|\.)/ if soext
+so = soext =~ ARGV.first if ARGV.size == 1
 IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
+  line.chomp!
+  next so = nil if line.empty?
+  if so.nil? and line.chomp!(":")
+    so = soext =~ line || false
+    next
+  end
   n, t, = line.split
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
-  next if /\A(?:Init_|InitVM_|RUBY_|ruby_|rb_|yp_|[Oo]nig|dln_|coroutine_)/ =~ n
+  next if !so and n.start_with?("___asan_")
+  case n
+  when /\A(?:Init_|InitVM_|yp_|[Oo]nig|dln_|coroutine_)/
+    next
+  when /\Aruby_static_id_/
+    next unless so
+  when /\A(?:RUBY_|ruby_|rb_)/
+    next unless so and /_(threadptr|ec)_/ =~ n
+  end
   next if REPLACE.include?(n)
   puts col.fail("leaked") if count.zero?
   count += 1

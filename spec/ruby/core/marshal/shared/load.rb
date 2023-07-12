@@ -623,6 +623,14 @@ describe :marshal_load, shared: true do
       value.map(&:encoding).should == [Encoding::UTF_8, Encoding::UTF_8, Encoding::UTF_8]
       value.should == [*expected, expected[0]]
     end
+
+    it "raises ArgumentError when end of byte sequence reached before symbol characters end" do
+      Marshal.dump(:hello).should == "\x04\b:\nhello"
+
+      -> {
+        Marshal.send(@method, "\x04\b:\nhel")
+      }.should raise_error(ArgumentError, "marshal data too short")
+    end
   end
 
   describe "for a String" do
@@ -684,6 +692,14 @@ describe :marshal_load, shared: true do
       result = Marshal.send(@method, data)
       result.encoding.should == Encoding::BINARY
       result.should == str
+    end
+
+    it "raises ArgumentError when end of byte sequence reached before string characters end" do
+      Marshal.dump("hello").should == "\x04\b\"\nhello"
+
+      -> {
+        Marshal.send(@method, "\x04\b\"\nhel")
+      }.should raise_error(ArgumentError, "marshal data too short")
     end
   end
 
@@ -819,6 +835,14 @@ describe :marshal_load, shared: true do
         Marshal.send(@method, "\x04\bo:\tFile\001\001:\001\005@path\"\x10/etc/passwd")
       end.should raise_error(ArgumentError)
     end
+
+    it "raises ArgumentError when end of byte sequence reached before class name end" do
+      Marshal.dump(Object.new).should == "\x04\bo:\vObject\x00"
+
+      -> {
+        Marshal.send(@method, "\x04\bo:\vObj")
+      }.should raise_error(ArgumentError, "marshal data too short")
+    end
   end
 
   describe "for an object responding to #marshal_dump and #marshal_load" do
@@ -908,6 +932,14 @@ describe :marshal_load, shared: true do
       regexp.encoding.should == Encoding::UTF_32LE
       regexp.source.should == "a".encode("utf-32le")
     end
+
+    it "raises ArgumentError when end of byte sequence reached before source string end" do
+      Marshal.dump(/hello world/).should == "\x04\bI/\x10hello world\x00\x06:\x06EF"
+
+      -> {
+        Marshal.send(@method, "\x04\bI/\x10hel")
+      }.should raise_error(ArgumentError, "marshal data too short")
+    end
   end
 
   describe "for a Float" do
@@ -928,6 +960,14 @@ describe :marshal_load, shared: true do
     it "loads a Float 1.1867345e+22" do
       obj = 1.1867345e+22
       Marshal.send(@method, "\004\bf\0361.1867344999999999e+22\000\344@").should == obj
+    end
+
+    it "raises ArgumentError when end of byte sequence reached before float string representation end" do
+      Marshal.dump(1.3).should == "\x04\bf\b1.3"
+
+      -> {
+        Marshal.send(@method, "\004\bf\v1")
+      }.should raise_error(ArgumentError, "marshal data too short")
     end
   end
 
@@ -1114,6 +1154,14 @@ describe :marshal_load, shared: true do
     it "raises ArgumentError if given a nonexistent class" do
       -> { Marshal.send(@method, "\x04\bc\vStrung") }.should raise_error(ArgumentError)
     end
+
+    it "raises ArgumentError when end of byte sequence reached before class name end" do
+      Marshal.dump(String).should == "\x04\bc\vString"
+
+      -> {
+        Marshal.send(@method, "\x04\bc\vStr")
+      }.should raise_error(ArgumentError, "marshal data too short")
+    end
   end
 
   describe "for a Module" do
@@ -1127,6 +1175,14 @@ describe :marshal_load, shared: true do
 
     it "loads an old module" do
       Marshal.send(@method, "\x04\bM\vKernel").should == Kernel
+    end
+
+    it "raises ArgumentError when end of byte sequence reached before module name end" do
+      Marshal.dump(Kernel).should == "\x04\bm\vKernel"
+
+      -> {
+        Marshal.send(@method, "\x04\bm\vKer")
+      }.should raise_error(ArgumentError, "marshal data too short")
     end
   end
 

@@ -2,11 +2,10 @@
 #define YP_CHAR_H
 
 #include "yarp/defines.h"
+#include "yarp/util/yp_newline_list.h"
 
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "yarp/util/yp_newline_list.h"
 
 // Returns the number of characters at the start of the string that are
 // whitespace. Disallows searching past the given maximum number of characters.

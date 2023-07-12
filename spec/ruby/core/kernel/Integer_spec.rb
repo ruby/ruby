@@ -145,7 +145,7 @@ describe :kernel_integer, shared: true do
   end
 end
 
-describe "Integer() given a String", shared: true do
+describe :kernel_integer_string, shared: true do
   it "raises an ArgumentError if the String is a null byte" do
     -> { Integer("\0") }.should raise_error(ArgumentError)
   end
@@ -348,7 +348,7 @@ describe "Integer() given a String", shared: true do
   end
 end
 
-describe "Integer() given a String and base", shared: true do
+describe :kernel_integer_string_base, shared: true do
   it "raises an ArgumentError if the String is a null byte" do
     -> { Integer("\0", 2) }.should raise_error(ArgumentError)
   end
@@ -784,9 +784,9 @@ describe "Kernel.Integer" do
 
   # TODO: fix these specs
   it_behaves_like :kernel_integer, :Integer, Kernel
-  it_behaves_like "Integer() given a String", :Integer
+  it_behaves_like :kernel_integer_string, :Integer
 
-  it_behaves_like "Integer() given a String and base", :Integer
+  it_behaves_like :kernel_integer_string_base, :Integer
 
   it "is a public method" do
     Kernel.Integer(10).should == 10
@@ -798,9 +798,9 @@ describe "Kernel#Integer" do
 
   # TODO: fix these specs
   it_behaves_like :kernel_integer, :Integer, Object.new
-  it_behaves_like "Integer() given a String", :Integer
+  it_behaves_like :kernel_integer_string, :Integer
 
-  it_behaves_like "Integer() given a String and base", :Integer
+  it_behaves_like :kernel_integer_string_base, :Integer
 
   it "is a private method" do
     Kernel.should have_private_instance_method(:Integer)

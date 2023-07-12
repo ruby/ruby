@@ -478,7 +478,7 @@ static void
 backtrace_free(void *ptr)
 {
    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-   if (bt->backtrace) ruby_xfree(bt->backtrace);
+   ruby_xfree(bt->backtrace);
    ruby_xfree(bt);
 }
 

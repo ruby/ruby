@@ -2,14 +2,13 @@
 #define YARP_REGEXP_H
 
 #include "yarp/defines.h"
-
 #include "yarp/parser.h"
+#include "yarp/util/yp_string_list.h"
+#include "yarp/util/yp_string.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-
-#include "yarp/util/yp_string_list.h"
-#include "yarp/util/yp_string.h"
 
 // Parse a regular expression and extract the names of all of the named capture
 // groups.

@@ -672,6 +672,30 @@ vm_getspecial(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, 
     return val;
 }
 
+static inline VALUE
+vm_backref_defined(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t type)
+{
+    VALUE backref = lep_svar_get(ec, lep, VM_SVAR_BACKREF);
+    int nth = 0;
+
+    if (type & 0x01) {
+        switch (type >> 1) {
+          case '&':
+          case '`':
+          case '\'':
+            break;
+          case '+':
+            return rb_reg_last_defined(backref);
+          default:
+            rb_bug("unexpected back-ref");
+        }
+    }
+    else {
+        nth = (int)(type >> 1);
+    }
+    return rb_reg_nth_defined(nth, backref);
+}
+
 PUREFUNC(static rb_callable_method_entry_t *check_method_entry(VALUE obj, int can_be_svar));
 static rb_callable_method_entry_t *
 check_method_entry(VALUE obj, int can_be_svar)
@@ -5064,10 +5088,8 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
             }
         }
         break;
-      case DEFINED_REF:{
-        return vm_getspecial(ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil;
-        break;
-      }
+      case DEFINED_REF:
+        return RTEST(vm_backref_defined(ec, GET_LEP(), FIX2INT(obj)));
       default:
         rb_bug("unimplemented defined? type (VM)");
         break;

@@ -48,6 +48,14 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 
+static const bool debug_integer_pack = (
+#ifdef DEBUG_INTEGER_PACK
+    DEBUG_INTEGER_PACK+0
+#else
+    RUBY_DEBUG
+#endif
+    ) != 0;
+
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 #ifndef SIZEOF_BDIGIT_DBL
@@ -1049,15 +1057,13 @@ integer_unpack_num_bdigits(size_t numwords, size_t wordsize, size_t nails, int *
 
     if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
         num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
-#ifdef DEBUG_INTEGER_PACK
-        {
+        if (debug_integer_pack) {
             int nlp_bits1;
             size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
             assert(num_bdigits == num_bdigits1);
             assert(*nlp_bits_ret == nlp_bits1);
             (void)num_bdigits1;
         }
-#endif
     }
     else {
         num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, nlp_bits_ret);
@@ -3423,15 +3429,13 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
 
     if (numbytes <= SIZE_MAX / CHAR_BIT) {
         numwords = absint_numwords_small(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);
-#ifdef DEBUG_INTEGER_PACK
-        {
+        if (debug_integer_pack) {
             size_t numwords0, nlz_bits0;
             numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
             assert(numwords0 == numwords);
             assert(nlz_bits0 == nlz_bits);
             (void)numwords0;
         }
-#endif
     }
     else {
         numwords = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);

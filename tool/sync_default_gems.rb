@@ -419,6 +419,8 @@ module SyncDefaultGems
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
 
+      rm("yarp/config.h")
+      File.write("yarp/config.h", "#include \"ruby/config.h\"\n")
       rm("yarp/extconf.rb")
 
       mv("yarp_init.c", "yarp/")

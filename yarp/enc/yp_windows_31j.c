@@ -77,5 +77,6 @@ yp_encoding_t yp_encoding_windows_31j = {
     .char_width = yp_encoding_windows_31j_char_width,
     .alnum_char = yp_encoding_windows_31j_alnum_char,
     .alpha_char = yp_encoding_windows_31j_alpha_char,
-    .isupper_char = yp_encoding_windows_31j_isupper_char
+    .isupper_char = yp_encoding_windows_31j_isupper_char,
+    .multibyte = true
 };

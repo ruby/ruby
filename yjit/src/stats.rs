@@ -296,6 +296,7 @@ make_counters! {
     invokesuper_block,
 
     invokeblock_none,
+    invokeblock_iseq_arg0_optional,
     invokeblock_iseq_arg0_has_kw,
     invokeblock_iseq_arg0_args_splat,
     invokeblock_iseq_arg0_not_array,
@@ -353,6 +354,7 @@ make_counters! {
     expandarray_rhs_too_small,
 
     gbp_wb_required,
+    gbpp_not_gc_guarded,
     gbpp_block_param_modified,
     gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
@@ -368,6 +370,7 @@ make_counters! {
     binding_set,
 
     vm_insns_count,
+    compiled_iseq_entry,
     compiled_iseq_count,
     compiled_blockid_count,
     compiled_block_count,

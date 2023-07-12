@@ -76,6 +76,7 @@ foo => Foo(*bar, baz, *qux)
 foo => Foo[]
 foo => Foo[1]
 foo => Foo[1, 2, 3]
+foo => Foo[Foo[]]
 foo => Foo[bar]
 foo => Foo[*bar, baz]
 foo => Foo[bar, *baz]

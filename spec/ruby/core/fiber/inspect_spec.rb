@@ -18,11 +18,9 @@ describe "Fiber#inspect" do
       inspected.should =~ /\A#<Fiber:0x\h+ .+ \(resumed\)>\z/
     end
 
-    ruby_version_is "3.0" do
-      it "is resumed for a Fiber which was transferred" do
-        inspected = Fiber.new { Fiber.current.inspect }.transfer
-        inspected.should =~ /\A#<Fiber:0x\h+ .+ \(resumed\)>\z/
-      end
+    it "is resumed for a Fiber which was transferred" do
+      inspected = Fiber.new { Fiber.current.inspect }.transfer
+      inspected.should =~ /\A#<Fiber:0x\h+ .+ \(resumed\)>\z/
     end
 
     it "is suspended for a Fiber which was resumed and yielded" do

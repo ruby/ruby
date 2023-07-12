@@ -29,8 +29,8 @@ module Reline
           encoding = Encoding::UTF_8
         end
         Reline::GeneralIO.reset(encoding: encoding) unless ansi
-        send(:core).config.instance_variable_set(:@test_mode, true)
-        send(:core).config.reset
+        core.config.instance_variable_set(:@test_mode, true)
+        core.config.reset
     end
 
     def test_reset

@@ -367,7 +367,7 @@ class RubyLex
             indent_level = 0
           end
         end
-      when :on_tstring_beg, :on_regexp_beg, :on_symbeg
+      when :on_tstring_beg, :on_regexp_beg, :on_symbeg, :on_backtick
         # can be indented if t.tok starts with `%`
       when :on_words_beg, :on_qwords_beg, :on_symbols_beg, :on_qsymbols_beg, :on_embexpr_beg
         # can be indented but not indented in current implementation
@@ -384,6 +384,26 @@ class RubyLex
 
   def free_indent_token?(token)
     FREE_INDENT_TOKENS.include?(token&.event)
+  end
+
+  # Calculates the difference of pasted code's indent and indent calculated from tokens
+  def indent_difference(lines, line_results, line_index)
+    loop do
+      _tokens, prev_opens, _next_opens, min_depth = line_results[line_index]
+      open_token = prev_opens.last
+      if !open_token || (open_token.event != :on_heredoc_beg && !free_indent_token?(open_token))
+        # If the leading whitespace is an indent, return the difference
+        indent_level = calc_indent_level(prev_opens.take(min_depth))
+        calculated_indent = 2 * indent_level
+        actual_indent = lines[line_index][/^ */].size
+        return actual_indent - calculated_indent
+      elsif open_token.event == :on_heredoc_beg && open_token.tok.match?(/^<<[^-~]/)
+        return 0
+      end
+      # If the leading whitespace is not an indent but part of a multiline token
+      # Calculate base_indent of the multiline token's beginning line
+      line_index = open_token.pos[0] - 1
+    end
   end
 
   def process_indent_level(tokens, lines, line_index, is_newline)
@@ -406,10 +426,20 @@ class RubyLex
     prev_open_token = prev_opens.last
     next_open_token = next_opens.last
 
+    # Calculates base indent for pasted code on the line where prev_open_token is located
+    # irb(main):001:1*   if a # base_indent is 2, indent calculated from tokens is 0
+    # irb(main):002:1*         if b # base_indent is 6, indent calculated from tokens is 2
+    # irb(main):003:0>           c # base_indent is 6, indent calculated from tokens is 4
+    if prev_open_token
+      base_indent = [0, indent_difference(lines, line_results, prev_open_token.pos[0] - 1)].max
+    else
+      base_indent = 0
+    end
+
     if free_indent_token?(prev_open_token)
       if is_newline && prev_open_token.pos[0] == line_index
         # First newline inside free-indent token
-        indent
+        base_indent + indent
       else
         # Accept any number of indent inside free-indent token
         preserve_indent
@@ -427,10 +457,10 @@ class RubyLex
       if prev_opens.size <= next_opens.size
         if is_newline && lines[line_index].empty? && line_results[line_index - 1][1].last != next_open_token
           # First line in heredoc
-          indent
+          tok.match?(/^<<[-~]/) ? base_indent + indent : indent
         elsif tok.match?(/^<<~/)
           # Accept extra indent spaces inside `<<~` heredoc
-          [indent, preserve_indent].max
+          [base_indent + indent, preserve_indent].max
         else
           # Accept any number of indent inside other heredoc
           preserve_indent
@@ -438,10 +468,10 @@ class RubyLex
       else
         # Heredoc close
         prev_line_indent_level = calc_indent_level(prev_opens)
-        tok.match?(/^<<[~-]/) ? 2 * (prev_line_indent_level - 1) : 0
+        tok.match?(/^<<[~-]/) ? base_indent + 2 * (prev_line_indent_level - 1) : 0
       end
     else
-      indent
+      base_indent + indent
     end
   end
 

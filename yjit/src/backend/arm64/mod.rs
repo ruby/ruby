@@ -74,6 +74,7 @@ impl From<Opnd> for A64Opnd {
             Opnd::Mem(Mem { base: MemBase::InsnOut(_), .. }) => {
                 panic!("attempted to lower an Opnd::Mem with a MemBase::InsnOut base")
             },
+            Opnd::CArg(_) => panic!("attempted to lower an Opnd::CArg"),
             Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
             Opnd::Stack { .. } => panic!("attempted to lower an Opnd::Stack"),
@@ -185,9 +186,10 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 
 impl Assembler
 {
-    // A special scratch register for intermediate processing.
+    // Special scratch registers for intermediate processing.
     // This register is caller-saved (so we don't have to save it before using it)
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(X16_REG);
+    pub const SCRATCH_REG: Reg = X16_REG;
+    const SCRATCH0: A64Opnd = A64Opnd::Reg(Assembler::SCRATCH_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
 
     /// List of registers that can be used for stack temps.
@@ -280,7 +282,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } | Opnd::Stack { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Stack { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -313,7 +315,7 @@ impl Assembler
         /// a certain size. If they don't then we need to load them first.
         fn split_shifted_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(_) => asm.load(opnd),
                 Opnd::UImm(uimm) => {
@@ -452,7 +454,7 @@ impl Assembler
                             _ => *opnd
                         };
 
-                        asm.load_into(C_ARG_OPNDS[idx], value);
+                        asm.load_into(Opnd::c_arg(C_ARG_OPNDS[idx]), value);
                     }
 
                     // Now we push the CCall without any arguments so that it
@@ -924,6 +926,9 @@ impl Assembler
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
                             insn_gc_offsets.push(ptr_offset);
                         },
+                        Opnd::CArg { .. } => {
+                            unreachable!("C argument operand was not lowered before arm64_emit");
+                        }
                         Opnd::Stack { .. } => {
                             unreachable!("Stack operand was not lowered before arm64_emit");
                         }

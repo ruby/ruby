@@ -149,22 +149,24 @@ literal_hash(VALUE a)
     return rb_iseq_cdhash_hash(a);
 }
 
-static int
-script_lines_defined(void)
+static ID
+script_lines(void)
 {
     ID script_lines;
     CONST_ID(script_lines, "SCRIPT_LINES__");
+    return script_lines;
+}
 
-    return rb_const_defined_at(rb_cObject, script_lines);
+static int
+script_lines_defined(void)
+{
+    return rb_const_defined_at(rb_cObject, script_lines());
 }
 
 static VALUE
 script_lines_get(void)
 {
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-
-    return rb_const_get_at(rb_cObject, script_lines);
+    return rb_const_get_at(rb_cObject, script_lines());
 }
 
 static VALUE
@@ -198,6 +200,87 @@ new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
     return (VALUE)imemo;
 }
 #endif /* !UNIVERSAL_PARSER */
+
+static inline int
+parse_isascii(int c)
+{
+    return '\0' <= c && c <= '\x7f';
+}
+
+#undef ISASCII
+#define ISASCII parse_isascii
+
+static inline int
+parse_isspace(int c)
+{
+    return c == ' ' || ('\t' <= c && c <= '\r');
+}
+
+#undef ISSPACE
+#define ISSPACE parse_isspace
+
+static inline int
+parse_iscntrl(int c)
+{
+    return ('\0' <= c && c < ' ') || c == '\x7f';
+}
+
+#undef ISCNTRL
+#define ISCNTRL(c) parse_iscntrl(c)
+
+static inline int
+parse_isupper(int c)
+{
+    return 'A' <= c && c <= 'Z';
+}
+
+static inline int
+parse_islower(int c)
+{
+    return 'a' <= c && c <= 'z';
+}
+
+static inline int
+parse_isalpha(int c)
+{
+    return parse_isupper(c) || parse_islower(c);
+}
+
+#undef ISALPHA
+#define ISALPHA(c) parse_isalpha(c)
+
+static inline int
+parse_isdigit(int c)
+{
+    return '0' <= c && c <= '9';
+}
+
+#undef ISDIGIT
+#define ISDIGIT(c) parse_isdigit(c)
+
+static inline int
+parse_isalnum(int c)
+{
+    return parse_isalpha(c) || parse_isdigit(c);
+}
+
+#undef ISALNUM
+#define ISALNUM(c) parse_isalnum(c)
+
+static inline int
+parse_isxdigit(int c)
+{
+    return parse_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
+}
+
+#undef ISXDIGIT
+#define ISXDIGIT(c) parse_isxdigit(c)
+
+#undef STRCASECMP
+#define STRCASECMP st_locale_insensitive_strcasecmp
+
+#undef STRNCASECMP
+#define STRNCASECMP st_locale_insensitive_strncasecmp
 
 #ifdef RIPPER
 #include "ripper_init.h"
@@ -7279,6 +7362,8 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
     return TRUE;
 }
 
+static int tokadd_mbchar(struct parser_params *p, int c);
+
 /* return value is for ?\u3042 */
 static void
 tokadd_utf8(struct parser_params *p, rb_encoding **encp,
@@ -7296,44 +7381,71 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
     if (regexp_literal) { tokadd(p, '\\'); tokadd(p, 'u'); }
 
     if (peek(p, open_brace)) {  /* handle \u{...} form */
-        const char *second = NULL;
-        int c, last = nextc(p);
-        if (p->lex.pcur >= p->lex.pend) goto unterminated;
-        while (ISSPACE(c = *p->lex.pcur) && ++p->lex.pcur < p->lex.pend);
-        while (c != close_brace) {
-            if (c == term) goto unterminated;
-            if (second == multiple_codepoints)
-                second = p->lex.pcur;
-            if (regexp_literal) tokadd(p, last);
-            if (!tokadd_codepoint(p, encp, regexp_literal, TRUE)) {
-                break;
+        if (regexp_literal && p->lex.strterm->u.literal.u1.func == str_regexp) {
+            /*
+             * Skip parsing validation code and copy bytes as-is until term or
+             * closing brace, in order to correctly handle extended regexps where
+             * invalid unicode escapes are allowed in comments. The regexp parser
+             * does its own validation and will catch any issues.
+             */
+            int c = *p->lex.pcur;
+            tokadd(p, c);
+            for (c = *++p->lex.pcur; p->lex.pcur < p->lex.pend; c = *++p->lex.pcur) {
+                if (c == close_brace) {
+                    tokadd(p, c);
+                    ++p->lex.pcur;
+                    break;
+                }
+                else if (c == term) {
+                    break;
+                }
+                if (c == '\\' && p->lex.pcur + 1 < p->lex.pend) {
+                    tokadd(p, c);
+                    c = *++p->lex.pcur;
+                }
+                tokadd_mbchar(p, c);
             }
-            while (ISSPACE(c = *p->lex.pcur)) {
-                if (++p->lex.pcur >= p->lex.pend) goto unterminated;
-                last = c;
+        }
+        else {
+            const char *second = NULL;
+            int c, last = nextc(p);
+            if (p->lex.pcur >= p->lex.pend) goto unterminated;
+            while (ISSPACE(c = *p->lex.pcur) && ++p->lex.pcur < p->lex.pend);
+            while (c != close_brace) {
+                if (c == term) goto unterminated;
+                if (second == multiple_codepoints)
+                    second = p->lex.pcur;
+                if (regexp_literal) tokadd(p, last);
+                if (!tokadd_codepoint(p, encp, regexp_literal, TRUE)) {
+                    break;
+                }
+                while (ISSPACE(c = *p->lex.pcur)) {
+                    if (++p->lex.pcur >= p->lex.pend) goto unterminated;
+                    last = c;
+                }
+                if (term == -1 && !second)
+                    second = multiple_codepoints;
             }
-            if (term == -1 && !second)
-                second = multiple_codepoints;
-        }
 
-        if (c != close_brace) {
-          unterminated:
-            token_flush(p);
-            yyerror0("unterminated Unicode escape");
-            return;
-        }
-        if (second && second != multiple_codepoints) {
-            const char *pcur = p->lex.pcur;
-            p->lex.pcur = second;
-            dispatch_scan_event(p, tSTRING_CONTENT);
-            token_flush(p);
-            p->lex.pcur = pcur;
-            yyerror0(multiple_codepoints);
-            token_flush(p);
-        }
+            if (c != close_brace) {
+              unterminated:
+                token_flush(p);
+                yyerror0("unterminated Unicode escape");
+                return;
+            }
+            if (second && second != multiple_codepoints) {
+                const char *pcur = p->lex.pcur;
+                p->lex.pcur = second;
+                dispatch_scan_event(p, tSTRING_CONTENT);
+                token_flush(p);
+                p->lex.pcur = pcur;
+                yyerror0(multiple_codepoints);
+                token_flush(p);
+            }
 
-        if (regexp_literal) tokadd(p, close_brace);
-        nextc(p);
+            if (regexp_literal) tokadd(p, close_brace);
+            nextc(p);
+        }
     }
     else {			/* handle \uxxxx form */
         if (!tokadd_codepoint(p, encp, regexp_literal, FALSE)) {
@@ -7833,7 +7945,7 @@ flush_string_content(struct parser_params *p, rb_encoding *enc)
 }
 #endif
 
-RUBY_FUNC_EXPORTED const unsigned int ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
+RUBY_FUNC_EXPORTED const uint_least32_t ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
 /* this can be shared with ripper, since it's independent from struct
  * parser_params. */
 #ifndef RIPPER
@@ -7845,7 +7957,7 @@ RUBY_FUNC_EXPORTED const unsigned int ruby_global_name_punct_bits[(0x7e - 0x20 +
         BIT(':', idx) | BIT('<', idx) | BIT('>', idx) | BIT('\"', idx) | \
         BIT('&', idx) | BIT('`', idx) | BIT('\'', idx) | BIT('+', idx) | \
         BIT('0', idx))
-const unsigned int ruby_global_name_punct_bits[] = {
+const uint_least32_t ruby_global_name_punct_bits[] = {
     SPECIAL_PUNCT(0),
     SPECIAL_PUNCT(1),
     SPECIAL_PUNCT(2),
@@ -13740,7 +13852,7 @@ rb_ruby_parser_free(void *ptr)
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
     }
     for (local = p->lvtbl; local; local = prev) {
-        if (local->vars) xfree(local->vars);
+        xfree(local->vars);
         prev = local->prev;
         xfree(local);
     }

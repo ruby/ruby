@@ -1,6 +1,6 @@
 on:
   check_suite:
-    type: ['completed']
+    types: ['completed']
 name: Cirrus CI failure notification
 
 permissions:
@@ -16,7 +16,9 @@ jobs:
       && github.event.check_suite.conclusion != 'neutral'
       && github.event.check_suite.conclusion != 'skipped'
       && github.event.check_suite.head_branch == 'master'
+
     runs-on: ubuntu-latest
+
     steps:
       - uses: octokit/request-action@89697eb6635e52c6e1e5559f15b5c91ba5100cb0 # v2.1.9
         id: get_failed_check_run
@@ -25,14 +27,17 @@ jobs:
           mediaType: '{"previews": ["antiope"]}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
+
       - name: Dump check_runs
         env:
           CHECK_RUNS: ${{ steps.get_failed_check_run.outputs.data }}
         run: echo "$CHECK_RUNS"
+
       - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
         with:
           payload: |
