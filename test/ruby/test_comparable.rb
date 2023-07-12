@@ -115,9 +115,9 @@ class TestComparable < Test::Unit::TestCase
     assert_raise_with_message(*exc) {@o.clamp(-1...0)}
     assert_raise_with_message(*exc) {@o.clamp(...2)}
 
-    assert_raise_with_message(ArgumentError, 'min argument must be less than or equal to max argument') {
-      @o.clamp(2..1)
-    }
+    exc = [ArgumentError, 'min argument must be less than or equal to max argument']
+    assert_raise_with_message(*exc) {@o.clamp(2, 1)}
+    assert_raise_with_message(*exc) {@o.clamp(2..1)}
   end
 
   def test_err
