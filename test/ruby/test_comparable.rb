@@ -74,6 +74,30 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(false, @o.between?(-2, -1))
     assert_equal(true, @o.between?(-1, 1))
     assert_equal(true, @o.between?(0, 0))
+
+    assert_raise_with_message(ArgumentError, 'min argument must be less than or equal to max argument') {
+      @o.between?(2, 1)
+    }
+  end
+
+  def test_between_with_range
+    cmp->(x) do 0 <=> x end
+    assert_equal(false, @o.between?(1..2))
+    assert_equal(false, @o.between?(-2..-1))
+    assert_equal(true, @o.between?(-1..1))
+    assert_equal(true, @o.between?(0..0))
+    assert_equal(false, @o.between?(0...0))
+    assert_equal(true, @o.between?(..0))
+    assert_equal(false, @o.between?(...0))
+    assert_equal(true, @o.between?(0..))
+    assert_equal(true, @o.between?(0...))
+    assert_equal(false, @o.between?(1..))
+    assert_equal(false, @o.between?(..-1))
+    assert_equal(false, @o.between?(...0))
+
+    assert_raise_with_message(ArgumentError, 'min argument must be less than or equal to max argument') {
+      @o.between?(2..1)
+    }
   end
 
   def test_clamp
