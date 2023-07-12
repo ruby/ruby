@@ -276,11 +276,13 @@ parse_isxdigit(int c)
 #undef ISXDIGIT
 #define ISXDIGIT(c) parse_isxdigit(c)
 
+#include "parser_st.h"
+
 #undef STRCASECMP
-#define STRCASECMP st_locale_insensitive_strcasecmp
+#define STRCASECMP rb_parser_st_locale_insensitive_strcasecmp
 
 #undef STRNCASECMP
-#define STRNCASECMP st_locale_insensitive_strncasecmp
+#define STRNCASECMP rb_parser_st_locale_insensitive_strncasecmp
 
 #ifdef RIPPER
 #include "ripper_init.h"
