@@ -3412,7 +3412,6 @@ yp_required_destructured_parameter_node_closing_set(yp_required_destructured_par
 // Allocate a new RequiredParameterNode node.
 static yp_required_parameter_node_t *
 yp_required_parameter_node_create(yp_parser_t *parser, const yp_token_t *token) {
-    assert(token->type == YP_TOKEN_MISSING || token->type == YP_TOKEN_IDENTIFIER);
     yp_required_parameter_node_t *node = YP_ALLOC_NODE(parser, yp_required_parameter_node_t);
 
     *node = (yp_required_parameter_node_t) {
@@ -8244,8 +8243,27 @@ parse_parameters(
                 }
                 break;
             }
-            case YP_TOKEN_IDENTIFIER: {
+            case YP_TOKEN_CLASS_VARIABLE:
+            case YP_TOKEN_IDENTIFIER:
+            case YP_TOKEN_CONSTANT:
+            case YP_TOKEN_INSTANCE_VARIABLE:
+            case YP_TOKEN_GLOBAL_VARIABLE: {
                 parser_lex(parser);
+                switch (parser->previous.type) {
+                    case YP_TOKEN_CONSTANT:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a constant");
+                        break;
+                    case YP_TOKEN_INSTANCE_VARIABLE:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be an instance variable");
+                        break;
+                    case YP_TOKEN_GLOBAL_VARIABLE:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a global variable");
+                        break;
+                    case YP_TOKEN_CLASS_VARIABLE:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a class variable");
+                        break;
+                    default: break;
+                }
 
                 if (parser->current.type == YP_TOKEN_EQUAL) {
                     update_parameter_state(parser, &parser->current, &order);
@@ -8387,22 +8405,6 @@ parse_parameters(
                 yp_parameters_node_keyword_rest_set(params, param);
                 break;
             }
-            case YP_TOKEN_CONSTANT:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a constant");
-                break;
-            case YP_TOKEN_INSTANCE_VARIABLE:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be an instance variable");
-                break;
-            case YP_TOKEN_GLOBAL_VARIABLE:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a global variable");
-                break;
-            case YP_TOKEN_CLASS_VARIABLE:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a class variable");
-                break;
             default:
                 if (parser->previous.type == YP_TOKEN_COMMA) {
                     if (allows_trailing_comma) {
@@ -8427,6 +8429,13 @@ parse_parameters(
     } while (looping && accept(parser, YP_TOKEN_COMMA));
 
     yp_do_loop_stack_pop(parser);
+
+    // If we don't have any parameters, return `NULL` instead of an empty `ParametersNode`.
+    if (params->base.location.start == params->base.location.end) {
+        yp_node_destroy(parser, (yp_node_t *) params);
+        return NULL;
+    }
+
     return params;
 }
 
