@@ -805,15 +805,13 @@ module Bundler
 
     def converge_specs(specs)
       converged = []
-
-      deps = @dependencies.select do |dep|
-        specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
-      end
+      deps = []
 
       @specs_that_changed_sources = []
 
       specs.each do |s|
         dep = @dependencies.find {|d| s.satisfies?(d) }
+        deps << dep if dep && (!dep.source || s.source.include?(dep.source))
 
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         s.source = if dep&.source
