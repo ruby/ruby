@@ -46,6 +46,14 @@ module Bundler
         out << "  specs:\n"
       end
 
+      def to_gemfile
+        specifiers = %w[ref branch tag submodules glob].map do |opt|
+          "#{opt}: #{options[opt]}" if options[opt]
+        end
+
+        uri_with_specifiers(specifiers)
+      end
+
       def hash
         [self.class, uri, ref, branch, name, version, glob, submodules].hash
       end
@@ -80,7 +88,12 @@ module Bundler
           ""
         end
 
-        specifiers = [rev, glob_for_display].compact
+        uri_with_specifiers([rev, glob_for_display])
+      end
+
+      def uri_with_specifiers(specifiers)
+        specifiers.compact!
+
         suffix =
           if specifiers.any?
             " (#{specifiers.join(", ")})"

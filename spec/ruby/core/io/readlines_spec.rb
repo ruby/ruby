@@ -117,14 +117,12 @@ describe "IO#readlines" do
       @io.readlines(chomp: true).should == IOSpecs.lines_without_newline_characters
     end
 
-    ruby_version_is "3.0" do
-      it "raises exception when options passed as Hash" do
-        -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
+    it "raises exception when options passed as Hash" do
+      -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
 
-        -> {
-          @io.readlines("\n", 1, { chomp: true })
-        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
-      end
+      -> {
+        @io.readlines("\n", 1, { chomp: true })
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 

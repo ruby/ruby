@@ -27,18 +27,9 @@ describe "Range#initialize" do
     -> { @range.send(:initialize, 1, 3, 5, 7, 9) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ""..."3.0" do
-    it "raises a NameError if called on an already initialized Range" do
-      -> { (0..1).send(:initialize, 1, 3) }.should raise_error(NameError)
-      -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(NameError)
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "raises a FrozenError if called on an already initialized Range" do
-      -> { (0..1).send(:initialize, 1, 3) }.should raise_error(FrozenError)
-      -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(FrozenError)
-    end
+  it "raises a FrozenError if called on an already initialized Range" do
+    -> { (0..1).send(:initialize, 1, 3) }.should raise_error(FrozenError)
+    -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(FrozenError)
   end
 
   it "raises an ArgumentError if arguments don't respond to <=>" do

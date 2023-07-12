@@ -11,20 +11,28 @@ permissions:
 jobs:
   checks:
     permissions:
-      contents: write  # for Git to git push
+      contents: write # for Git to git push
+
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
+      - uses: ./.github/actions/setup/directories
+
       - name: Check if C-sources are US-ASCII
         run: |
           grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+
       - name: Check for trailing spaces
         run: |
           git grep -I -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs' && exit 1 || :
           git grep -n '^[	 ][	 ]*$' -- '*.md' && exit 1 || :
+
       - name: Check for bash specific substitution in configure.ac
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
+
       - name: Check for header macros
         run: |
           fail=
@@ -40,21 +48,13 @@ jobs:
         run: true
         if: ${{ github.ref == 'refs/heads/master' }}
 
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache-${{ github.sha }}
-          restore-keys: |
-            downloaded-cache
-        if: steps.gems.outcome == 'success'
-
       - name: Download previous gems list
         run: |
           data=default_gems.json
           mkdir -p .downloaded-cache
           ln -s .downloaded-cache/$data .
           curl -O -R -z ./$data https://stdgems.org/$data
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Make default gems list
         run: |
@@ -73,19 +73,20 @@ jobs:
             f.puts gems
           end
         shell: ruby --disable=gems {0}
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb default
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Check diffs
         id: diff
         run: |
           git diff --color --no-ext-diff --ignore-submodules --exit-code NEWS.md
         continue-on-error: true
-        if: steps.gems.outcome == 'success'
+        if: ${{ steps.gems.outcome == 'success' }}
+
       - name: Commit
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
@@ -97,16 +98,7 @@ jobs:
           GIT_COMMITTER_NAME: git
         if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
 
-      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
+      - uses: ./.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() && github.event_name == 'push' }}

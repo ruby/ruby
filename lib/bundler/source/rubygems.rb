@@ -123,6 +123,7 @@ module Bundler
         end
       end
       alias_method :name, :identifier
+      alias_method :to_gemfile, :identifier
 
       def specs
         @specs ||= begin

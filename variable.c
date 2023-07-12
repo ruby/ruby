@@ -35,6 +35,7 @@
 #include "ruby/util.h"
 #include "transient_heap.h"
 #include "shape.h"
+#include "symbol.h"
 #include "variable.h"
 #include "vm_core.h"
 #include "ractor_core.h"
@@ -138,6 +139,38 @@ rb_mod_name(VALUE mod)
     return classname(mod, &permanent);
 }
 
+// Similar to logic in rb_mod_const_get()
+static bool
+is_constant_path(VALUE name)
+{
+    const char *path = RSTRING_PTR(name);
+    const char *pend = RSTRING_END(name);
+    rb_encoding *enc = rb_enc_get(name);
+
+    const char *p = path;
+
+    if (p >= pend || !*p) {
+        return false;
+    }
+
+    while (p < pend) {
+        if (p + 2 <= pend && p[0] == ':' && p[1] == ':') {
+            p += 2;
+        }
+
+        const char *pbeg = p;
+        while (p < pend && *p != ':') p++;
+
+        if (pbeg == p) return false;
+
+        if (rb_enc_symname_type(pbeg, p - pbeg, enc, 0) != ID_CONST) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /*
  *  call-seq:
  *     mod.set_temporary_name(string) -> self
@@ -200,8 +233,8 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
             rb_raise(rb_eArgError, "empty class/module name");
         }
 
-        if (rb_is_const_name(name)) {
-            rb_raise(rb_eArgError, "name must not be valid constant name");
+        if (is_constant_path(name)) {
+            rb_raise(rb_eArgError, "the temporary name must not be a constant path to avoid confusion");
         }
 
         // Set the temporary classpath to the given name:
@@ -906,7 +939,7 @@ rb_f_global_variables(void)
         int i, nmatch = rb_match_count(backref);
         buf[0] = '$';
         for (i = 1; i <= nmatch; ++i) {
-            if (!rb_match_nth_defined(i, backref)) continue;
+            if (!RTEST(rb_reg_nth_defined(i, backref))) continue;
             if (i < 10) {
                 /* probably reused, make static ID */
                 buf[1] = (char)(i + '0');

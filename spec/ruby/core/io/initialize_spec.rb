@@ -27,17 +27,15 @@ describe "IO#initialize" do
     @io.fileno.should == fd
   end
 
-  ruby_version_is "3.0" do
-    it "accepts options as keyword arguments" do
-      fd = new_fd @name, "w:utf-8"
+  it "accepts options as keyword arguments" do
+    fd = new_fd @name, "w:utf-8"
 
-      @io.send(:initialize, fd, "w", flags: File::CREAT)
-      @io.fileno.should == fd
+    @io.send(:initialize, fd, "w", flags: File::CREAT)
+    @io.fileno.should == fd
 
-      -> {
-        @io.send(:initialize, fd, "w", {flags: File::CREAT})
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
-    end
+    -> {
+      @io.send(:initialize, fd, "w", {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
   end
 
   it "raises a TypeError when passed an IO" do

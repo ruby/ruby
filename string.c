@@ -3837,7 +3837,9 @@ strseq_core(const char *str_ptr, const char *str_ptr_end, long str_len,
     return pos + offset;
 }
 
+/* found index in byte */
 #define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
+#define rb_str_byteindex(str, sub, offset) rb_strseq_index(str, sub, offset, 1)
 
 static long
 rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
@@ -3891,34 +3893,28 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
+    rb_encoding *enc = STR_ENC_GET(str);
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        long slen = str_strlen(str, enc); /* str's enc */
         pos = NUM2LONG(initpos);
-    }
-    else {
-        pos = 0;
-    }
-    if (pos < 0) {
-        pos += str_strlen(str, NULL);
-        if (pos < 0) {
+        if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
             }
             return Qnil;
         }
     }
+    else {
+        pos = 0;
+    }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        if (pos > str_strlen(str, NULL))
-            return Qnil;
         pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-                         rb_enc_check(str, sub), single_byte_optimizable(str));
+                         enc, single_byte_optimizable(str));
 
-        if (rb_reg_search(sub, str, pos, 0) < 0) {
-            return Qnil;
-        }
-        else {
+        if (rb_reg_search(sub, str, pos, 0) >= 0) {
             VALUE match = rb_backref_get();
             struct re_registers *regs = RMATCH_REGS(match);
             pos = rb_str_sublen(str, BEG(0));
@@ -3928,25 +3924,29 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     else {
         StringValue(sub);
         pos = rb_str_index(str, sub, pos);
-        pos = rb_str_sublen(str, pos);
+        if (pos >= 0) {
+            pos = rb_str_sublen(str, pos);
+            return LONG2NUM(pos);
+        }
     }
-
-    if (pos == -1) return Qnil;
-    return LONG2NUM(pos);
+    return Qnil;
 }
 
-/* whether given pos is valid character boundary or not
+/* Ensure that the given pos is a valid character boundary.
  * Note that in this function, "character" means a code point
  * (Unicode scalar value), not a grapheme cluster.
  */
-static bool
-str_check_byte_pos(VALUE str, long pos)
+static void
+str_ensure_byte_pos(VALUE str, long pos)
 {
     const char *s = RSTRING_PTR(str);
     const char *e = RSTRING_END(str);
     const char *p = s + pos;
     const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
-    return p == pp;
+    if (p != pp) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", pos);
+    }
 }
 
 /*
@@ -3998,33 +3998,23 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
-    }
-    else {
-        pos = 0;
-    }
-    if (pos < 0) {
-        pos += RSTRING_LEN(str);
-        if (pos < 0) {
+        if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
             }
             return Qnil;
         }
     }
-
-    if (!str_check_byte_pos(str, pos)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
+    else {
+        pos = 0;
     }
 
+    str_ensure_byte_pos(str, pos);
+
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        if (pos > RSTRING_LEN(str))
-            return Qnil;
-        if (rb_reg_search(sub, str, pos, 0) < 0) {
-            return Qnil;
-        }
-        else {
+        if (rb_reg_search(sub, str, pos, 0) >= 0) {
             VALUE match = rb_backref_get();
             struct re_registers *regs = RMATCH_REGS(match);
             pos = BEG(0);
@@ -4033,11 +4023,10 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     }
     else {
         StringValue(sub);
-        pos = rb_strseq_index(str, sub, pos, 1);
+        pos = rb_str_byteindex(str, sub, pos);
+        if (pos >= 0) return LONG2NUM(pos);
     }
-
-    if (pos == -1) return Qnil;
-    return LONG2NUM(pos);
+    return Qnil;
 }
 
 #ifdef HAVE_MEMRCHR
@@ -4096,6 +4085,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 }
 #endif
 
+/* found index in byte */
 static long
 rb_str_rindex(VALUE str, VALUE sub, long pos)
 {
@@ -4125,7 +4115,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
-    return rb_str_sublen(str, str_rindex(str, sub, s, enc));
+    return str_rindex(str, sub, s, enc);
 }
 
 /*
@@ -4189,20 +4179,17 @@ static VALUE
 rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
-    VALUE vpos;
+    VALUE initpos;
     rb_encoding *enc = STR_ENC_GET(str);
     long pos, len = str_strlen(str, enc); /* str's enc */
 
-    if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
-        pos = NUM2LONG(vpos);
-        if (pos < 0) {
-            pos += len;
-            if (pos < 0) {
-                if (RB_TYPE_P(sub, T_REGEXP)) {
-                    rb_backref_set(Qnil);
-                }
-                return Qnil;
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = NUM2LONG(initpos);
+        if (pos < 0 && (pos += len) < 0) {
+            if (RB_TYPE_P(sub, T_REGEXP)) {
+                rb_backref_set(Qnil);
             }
+            return Qnil;
         }
         if (pos > len) pos = len;
     }
@@ -4211,7 +4198,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        /* enc = rb_get_check(str, sub); */
+        /* enc = rb_enc_check(str, sub); */
         pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
                          enc, single_byte_optimizable(str));
 
@@ -4225,7 +4212,10 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     else {
         StringValue(sub);
         pos = rb_str_rindex(str, sub, pos);
-        if (pos >= 0) return LONG2NUM(pos);
+        if (pos >= 0) {
+            pos = rb_str_sublen(str, pos);
+            return LONG2NUM(pos);
+        }
     }
     return Qnil;
 }
@@ -4325,19 +4315,16 @@ static VALUE
 rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
-    VALUE vpos;
+    VALUE initpos;
     long pos, len = RSTRING_LEN(str);
 
-    if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
-        pos = NUM2LONG(vpos);
-        if (pos < 0) {
-            pos += len;
-            if (pos < 0) {
-                if (RB_TYPE_P(sub, T_REGEXP)) {
-                    rb_backref_set(Qnil);
-                }
-                return Qnil;
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = NUM2LONG(initpos);
+        if (pos < 0 && (pos += len) < 0) {
+            if (RB_TYPE_P(sub, T_REGEXP)) {
+                rb_backref_set(Qnil);
             }
+            return Qnil;
         }
         if (pos > len) pos = len;
     }
@@ -4345,10 +4332,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         pos = len;
     }
 
-    if (!str_check_byte_pos(str, pos)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
-    }
+    str_ensure_byte_pos(str, pos);
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
         if (rb_reg_search(sub, str, pos, 1) >= 0) {
@@ -5596,7 +5580,7 @@ static long
 rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 {
     if (BUILTIN_TYPE(pat) == T_STRING) {
-        pos = rb_strseq_index(str, pat, pos, 1);
+        pos = rb_str_byteindex(str, pat, pos);
         if (set_backref_str) {
             if (pos >= 0) {
                 str = rb_str_new_frozen_String(str);
@@ -6226,14 +6210,8 @@ str_check_beg_len(VALUE str, long *beg, long *len)
         *len = slen - *beg;
     }
     end = *beg + *len;
-    if (!str_check_byte_pos(str, *beg)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", *beg);
-    }
-    if (!str_check_byte_pos(str, end)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", end);
-    }
+    str_ensure_byte_pos(str, *beg);
+    str_ensure_byte_pos(str, end);
 }
 
 /*
@@ -10462,7 +10440,6 @@ rb_str_rpartition(VALUE str, VALUE sep)
         if (pos < 0) {
             goto failed;
         }
-        pos = rb_str_offset(str, pos);
     }
 
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),

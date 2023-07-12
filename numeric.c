@@ -948,7 +948,7 @@ num_negative_p(VALUE num)
  *  So you should know its esoteric system. See following:
  *
  *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
- *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
+ *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
  *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  *
  *  You can create a \Float object explicitly with:

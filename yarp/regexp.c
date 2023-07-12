@@ -269,51 +269,74 @@ yp_regexp_parse_expression(yp_regexp_parser_t *parser);
 typedef enum {
     YP_REGEXP_OPTION_STATE_INVALID,
     YP_REGEXP_OPTION_STATE_TOGGLEABLE,
-    YP_REGEXP_OPTION_STATE_ADDABLE
+    YP_REGEXP_OPTION_STATE_ADDABLE,
+    YP_REGEXP_OPTION_STATE_ADDED,
+    YP_REGEXP_OPTION_STATE_REMOVED
 } yp_regexp_option_state_t;
 
+// These are the options that are configurable on the regular expression (or
+// from within a group).
+#define YP_REGEXP_OPTION_STATE_SLOT_MINIMUM 'a'
+#define YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM 'x'
+#define YP_REGEXP_OPTION_STATE_SLOTS (YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM + 1)
+
 // This is the set of options that are configurable on the regular expression.
-typedef yp_regexp_option_state_t yp_regexp_options_t[128];
+typedef struct { unsigned char values[YP_REGEXP_OPTION_STATE_SLOTS]; } yp_regexp_options_t;
 
 // Initialize a new set of options to their default values.
 static void
 yp_regexp_options_init(yp_regexp_options_t *options) {
-    memset(options, YP_REGEXP_OPTION_STATE_INVALID, sizeof(yp_regexp_option_state_t) * 128);
-    (*options)['i'] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
-    (*options)['m'] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
-    (*options)['x'] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
-    (*options)['d'] = YP_REGEXP_OPTION_STATE_ADDABLE;
-    (*options)['a'] = YP_REGEXP_OPTION_STATE_ADDABLE;
-    (*options)['u'] = YP_REGEXP_OPTION_STATE_ADDABLE;
+    memset(options, YP_REGEXP_OPTION_STATE_INVALID, sizeof(uint8_t) * YP_REGEXP_OPTION_STATE_SLOTS);
+    options->values['i' - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
+    options->values['m' - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
+    options->values['x' - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM] = YP_REGEXP_OPTION_STATE_TOGGLEABLE;
+    options->values['d' - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM] = YP_REGEXP_OPTION_STATE_ADDABLE;
+    options->values['a' - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM] = YP_REGEXP_OPTION_STATE_ADDABLE;
+    options->values['u' - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM] = YP_REGEXP_OPTION_STATE_ADDABLE;
 }
 
 // Attempt to add the given option to the set of options. Returns true if it was
 // added, false if it was already present.
 static bool
-yp_regexp_options_add(yp_regexp_options_t *options, unsigned char option) {
-    switch ((*options)[option]) {
-        case YP_REGEXP_OPTION_STATE_INVALID:
-            return false;
-        case YP_REGEXP_OPTION_STATE_TOGGLEABLE:
-        case YP_REGEXP_OPTION_STATE_ADDABLE:
-            (*options)[option] = YP_REGEXP_OPTION_STATE_INVALID;
-            return true;
+yp_regexp_options_add(yp_regexp_options_t *options, unsigned char key) {
+    if (key >= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
+        key -= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM;
+
+        switch (options->values[key]) {
+            case YP_REGEXP_OPTION_STATE_INVALID:
+            case YP_REGEXP_OPTION_STATE_REMOVED:
+                return false;
+            case YP_REGEXP_OPTION_STATE_TOGGLEABLE:
+            case YP_REGEXP_OPTION_STATE_ADDABLE:
+                options->values[key] = YP_REGEXP_OPTION_STATE_ADDED;
+                return true;
+            case YP_REGEXP_OPTION_STATE_ADDED:
+                return true;
+        }
     }
+
     return false;
 }
 
 // Attempt to remove the given option from the set of options. Returns true if
 // it was removed, false if it was already absent.
 static bool
-yp_regexp_options_remove(yp_regexp_options_t *options, unsigned char option) {
-    switch ((*options)[option]) {
-        case YP_REGEXP_OPTION_STATE_INVALID:
-        case YP_REGEXP_OPTION_STATE_ADDABLE:
-            return false;
-        case YP_REGEXP_OPTION_STATE_TOGGLEABLE:
-            (*options)[option] = YP_REGEXP_OPTION_STATE_INVALID;
-            return true;
+yp_regexp_options_remove(yp_regexp_options_t *options, unsigned char key) {
+    if (key >= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
+        key -= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM;
+
+        switch (options->values[key]) {
+            case YP_REGEXP_OPTION_STATE_INVALID:
+            case YP_REGEXP_OPTION_STATE_ADDABLE:
+                return false;
+            case YP_REGEXP_OPTION_STATE_TOGGLEABLE:
+            case YP_REGEXP_OPTION_STATE_ADDED:
+            case YP_REGEXP_OPTION_STATE_REMOVED:
+                options->values[key] = YP_REGEXP_OPTION_STATE_REMOVED;
+                return true;
+        }
     }
+
     return false;
 }
 
@@ -351,7 +374,7 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
             case '#': { // inline comments
                 bool found = yp_regexp_char_find(parser, ')');
                 // the close paren we found is escaped, we need to find another
-                while (parser->start <= parser->cursor - 2 && *(parser->cursor - 2) == '\\') {
+                while (found && (parser->start <= parser->cursor - 2) && (*(parser->cursor - 2) == '\\')) {
                     found = yp_regexp_char_find(parser, ')');
                 }
                 return found;

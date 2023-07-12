@@ -7,16 +7,8 @@ describe "String#dump" do
     "foo".freeze.dump.should_not.frozen?
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns a subclass instance" do
-      StringSpecs::MyString.new.dump.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns a String instance" do
-      StringSpecs::MyString.new.dump.should be_an_instance_of(String)
-    end
+  it "returns a String instance" do
+    StringSpecs::MyString.new.dump.should be_an_instance_of(String)
   end
 
   it "wraps string with \"" do

@@ -446,16 +446,17 @@ RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
 
 #ifdef __APPLE__
-  rb_execution_context_t *
-  rb_current_ec(void)
-  {
-      return ruby_current_ec;
-  }
-  void
-  rb_current_ec_set(rb_execution_context_t *ec)
-  {
-      ruby_current_ec = ec;
-  }
+rb_execution_context_t *
+rb_current_ec(void)
+{
+    return ruby_current_ec;
+}
+
+void
+rb_current_ec_set(rb_execution_context_t *ec)
+{
+    ruby_current_ec = ec;
+}
 #endif
 
 #else

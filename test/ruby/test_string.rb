@@ -100,7 +100,7 @@ class TestString < Test::Unit::TestCase
     return unless @cls == String
 
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {('x'*100000).__send__(:initialize, '')}
+code = proc {('x'*100_000).__send__(:initialize, '')}
 1_000.times(&code)
 PREP
 100_000.times(&code)
@@ -112,7 +112,7 @@ CODE
     return unless @cls == String
 
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {0.to_s.__send__(:initialize, capacity: 10000)}
+code = proc {0.to_s.__send__(:initialize, capacity: 100_000)}
 1_000.times(&code)
 PREP
 100_000.times(&code)
@@ -1339,54 +1339,54 @@ CODE
   end
 
   def test_index
-    assert_equal(0, S("hello").index(?h))
-    assert_equal(1, S("hello").index(S("ell")))
-    assert_equal(2, S("hello").index(/ll./))
+    assert_index(0, S("hello"), ?h)
+    assert_index(1, S("hello"), S("ell"))
+    assert_index(2, S("hello"), /ll./)
 
-    assert_equal(3, S("hello").index(?l, 3))
-    assert_equal(3, S("hello").index(S("l"), 3))
-    assert_equal(3, S("hello").index(/l./, 3))
+    assert_index(3, S("hello"), ?l, 3)
+    assert_index(3, S("hello"), S("l"), 3)
+    assert_index(3, S("hello"), /l./, 3)
 
-    assert_nil(S("hello").index(?z, 3))
-    assert_nil(S("hello").index(S("z"), 3))
-    assert_nil(S("hello").index(/z./, 3))
+    assert_index(nil, S("hello"), ?z, 3)
+    assert_index(nil, S("hello"), S("z"), 3)
+    assert_index(nil, S("hello"), /z./, 3)
 
-    assert_nil(S("hello").index(?z))
-    assert_nil(S("hello").index(S("z")))
-    assert_nil(S("hello").index(/z./))
+    assert_index(nil, S("hello"), ?z)
+    assert_index(nil, S("hello"), S("z"))
+    assert_index(nil, S("hello"), /z./)
 
-    assert_equal(0, S("").index(S("")))
-    assert_equal(0, S("").index(//))
-    assert_nil(S("").index(S("hello")))
-    assert_nil(S("").index(/hello/))
-    assert_equal(0, S("hello").index(S("")))
-    assert_equal(0, S("hello").index(//))
+    assert_index(0, S(""), S(""))
+    assert_index(0, S(""), //)
+    assert_index(nil, S(""), S("hello"))
+    assert_index(nil, S(""), /hello/)
+    assert_index(0, S("hello"), S(""))
+    assert_index(0, S("hello"), //)
 
     s = S("long") * 1000 << "x"
-    assert_nil(s.index(S("y")))
-    assert_equal(4 * 1000, s.index(S("x")))
+    assert_index(nil, s, S("y"))
+    assert_index(4 * 1000, s, S("x"))
     s << "yx"
-    assert_equal(4 * 1000, s.index(S("x")))
-    assert_equal(4 * 1000, s.index(S("xyx")))
+    assert_index(4 * 1000, s, S("x"))
+    assert_index(4 * 1000, s, S("xyx"))
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(3, S("foobarbarbaz").index(o))
+    assert_index(3, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").index(Object.new) }
 
-    assert_nil(S("foo").index(//, -100))
-    assert_nil($~)
+    assert_index(nil, S("foo"), //, -100)
+    assert_index(nil, S("foo"), //, 4)
 
-    assert_equal(2, S("abcdbce").index(/b\Kc/))
+    assert_index(2, S("abcdbce"), /b\Kc/)
 
-    assert_equal(0, S("こんにちは").index(?こ))
-    assert_equal(1, S("こんにちは").index(S("んにち")))
-    assert_equal(2, S("こんにちは").index(/にち./))
+    assert_index(0, S("こんにちは"), ?こ)
+    assert_index(1, S("こんにちは"), S("んにち"))
+    assert_index(2, S("こんにちは"), /にち./)
 
-    assert_equal(0, S("にんにちは").index(?に, 0))
-    assert_equal(2, S("にんにちは").index(?に, 1))
-    assert_equal(2, S("にんにちは").index(?に, 2))
-    assert_nil(S("にんにちは").index(?に, 3))
+    assert_index(0, S("にんにちは"), ?に, 0)
+    assert_index(2, S("にんにちは"), ?に, 1)
+    assert_index(2, S("にんにちは"), ?に, 2)
+    assert_index(nil, S("にんにちは"), ?に, 3)
   end
 
   def test_insert
@@ -1533,57 +1533,57 @@ CODE
   end
 
   def test_rindex
-    assert_equal(3, S("hello").rindex(?l))
-    assert_equal(6, S("ell, hello").rindex(S("ell")))
-    assert_equal(7, S("ell, hello").rindex(/ll./))
+    assert_rindex(3, S("hello"), ?l)
+    assert_rindex(6, S("ell, hello"), S("ell"))
+    assert_rindex(7, S("ell, hello"), /ll./)
 
-    assert_equal(3, S("hello,lo").rindex(?l, 3))
-    assert_equal(3, S("hello,lo").rindex(S("l"), 3))
-    assert_equal(3, S("hello,lo").rindex(/l./, 3))
+    assert_rindex(3, S("hello,lo"), ?l, 3)
+    assert_rindex(3, S("hello,lo"), S("l"), 3)
+    assert_rindex(3, S("hello,lo"), /l./, 3)
 
-    assert_nil(S("hello").rindex(?z,     3))
-    assert_nil(S("hello").rindex(S("z"), 3))
-    assert_nil(S("hello").rindex(/z./,   3))
+    assert_rindex(nil, S("hello"), ?z,     3)
+    assert_rindex(nil, S("hello"), S("z"), 3)
+    assert_rindex(nil, S("hello"), /z./,   3)
 
-    assert_nil(S("hello").rindex(?z))
-    assert_nil(S("hello").rindex(S("z")))
-    assert_nil(S("hello").rindex(/z./))
+    assert_rindex(nil, S("hello"), ?z)
+    assert_rindex(nil, S("hello"), S("z"))
+    assert_rindex(nil, S("hello"), /z./)
 
-    assert_equal(5, S("hello").rindex(S("")))
-    assert_equal(5, S("hello").rindex(S(""), 5))
-    assert_equal(4, S("hello").rindex(S(""), 4))
-    assert_equal(0, S("hello").rindex(S(""), 0))
+    assert_rindex(5, S("hello"), S(""))
+    assert_rindex(5, S("hello"), S(""), 5)
+    assert_rindex(4, S("hello"), S(""), 4)
+    assert_rindex(0, S("hello"), S(""), 0)
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(6, S("foobarbarbaz").rindex(o))
+    assert_rindex(6, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").rindex(Object.new) }
 
-    assert_nil(S("foo").rindex(//, -100))
-    assert_nil($~)
+    assert_rindex(nil, S("foo"), //, -100)
 
-    assert_equal(3, S("foo").rindex(//))
-    assert_equal([3, 3], $~.offset(0))
+    m = assert_rindex(3, S("foo"), //)
+    assert_equal([3, 3], m.offset(0))
+    assert_rindex(3, S("foo"), //, 4)
 
-    assert_equal(5, S("abcdbce").rindex(/b\Kc/))
+    assert_rindex(5, S("abcdbce"), /b\Kc/)
 
-    assert_equal(2, S("こんにちは").rindex(?に))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは")))
-    assert_equal(6, S("にちは、こんにちは").rindex(/にち./))
+    assert_rindex(2, S("こんにちは"), ?に)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"))
+    assert_rindex(6, S("にちは、こんにちは"), /にち./)
 
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), 7))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), -2))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), 6))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), -3))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), 5))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), -4))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), 1))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), 0))
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), 7)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), -2)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), 6)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), -3)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), 5)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), -4)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), 1)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), 0)
 
-    assert_equal(0, S("こんにちは").rindex(S("こんにちは")))
-    assert_nil(S("こんにち").rindex(S("こんにちは")))
-    assert_nil(S("こ").rindex(S("こんにちは")))
-    assert_nil(S("").rindex(S("こんにちは")))
+    assert_rindex(0, S("こんにちは"), S("こんにちは"))
+    assert_rindex(nil, S("こんにち"), S("こんにちは"))
+    assert_rindex(nil, S("こ"), S("こんにちは"))
+    assert_rindex(nil, S(""), S("こんにちは"))
   end
 
   def test_rjust
@@ -3346,111 +3346,114 @@ CODE
   end
 
   def test_byteindex
-    assert_equal(0, S("hello").byteindex(?h))
-    assert_equal(1, S("hello").byteindex(S("ell")))
-    assert_equal(2, S("hello").byteindex(/ll./))
+    assert_byteindex(0, S("hello"), ?h)
+    assert_byteindex(1, S("hello"), S("ell"))
+    assert_byteindex(2, S("hello"), /ll./)
 
-    assert_equal(3, S("hello").byteindex(?l, 3))
-    assert_equal(3, S("hello").byteindex(S("l"), 3))
-    assert_equal(3, S("hello").byteindex(/l./, 3))
+    assert_byteindex(3, S("hello"), ?l, 3)
+    assert_byteindex(3, S("hello"), S("l"), 3)
+    assert_byteindex(3, S("hello"), /l./, 3)
 
-    assert_nil(S("hello").byteindex(?z, 3))
-    assert_nil(S("hello").byteindex(S("z"), 3))
-    assert_nil(S("hello").byteindex(/z./, 3))
+    assert_byteindex(nil, S("hello"), ?z, 3)
+    assert_byteindex(nil, S("hello"), S("z"), 3)
+    assert_byteindex(nil, S("hello"), /z./, 3)
 
-    assert_nil(S("hello").byteindex(?z))
-    assert_nil(S("hello").byteindex(S("z")))
-    assert_nil(S("hello").byteindex(/z./))
+    assert_byteindex(nil, S("hello"), ?z)
+    assert_byteindex(nil, S("hello"), S("z"))
+    assert_byteindex(nil, S("hello"), /z./)
 
-    assert_equal(0, S("").byteindex(S("")))
-    assert_equal(0, S("").byteindex(//))
-    assert_nil(S("").byteindex(S("hello")))
-    assert_nil(S("").byteindex(/hello/))
-    assert_equal(0, S("hello").byteindex(S("")))
-    assert_equal(0, S("hello").byteindex(//))
+    assert_byteindex(0, S(""), S(""))
+    assert_byteindex(0, S(""), //)
+    assert_byteindex(nil, S(""), S("hello"))
+    assert_byteindex(nil, S(""), /hello/)
+    assert_byteindex(0, S("hello"), S(""))
+    assert_byteindex(0, S("hello"), //)
 
     s = S("long") * 1000 << "x"
-    assert_nil(s.byteindex(S("y")))
-    assert_equal(4 * 1000, s.byteindex(S("x")))
+    assert_byteindex(nil, s, S("y"))
+    assert_byteindex(4 * 1000, s, S("x"))
     s << "yx"
-    assert_equal(4 * 1000, s.byteindex(S("x")))
-    assert_equal(4 * 1000, s.byteindex(S("xyx")))
+    assert_byteindex(4 * 1000, s, S("x"))
+    assert_byteindex(4 * 1000, s, S("xyx"))
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(3, S("foobarbarbaz").byteindex(o))
+    assert_byteindex(3, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").byteindex(Object.new) }
 
-    assert_nil(S("foo").byteindex(//, -100))
-    assert_nil($~)
+    assert_byteindex(nil, S("foo"), //, -100)
+    assert_byteindex(nil, S("foo"), //, -4)
 
-    assert_equal(2, S("abcdbce").byteindex(/b\Kc/))
+    assert_byteindex(2, S("abcdbce"), /b\Kc/)
 
-    assert_equal(0, S("こんにちは").byteindex(?こ))
-    assert_equal(3, S("こんにちは").byteindex(S("んにち")))
-    assert_equal(6, S("こんにちは").byteindex(/にち./))
+    assert_byteindex(0, S("こんにちは"), ?こ)
+    assert_byteindex(3, S("こんにちは"), S("んにち"))
+    assert_byteindex(6, S("こんにちは"), /にち./)
 
-    assert_equal(0, S("にんにちは").byteindex(?に, 0))
+    assert_byteindex(0, S("にんにちは"), ?に, 0)
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 1) }
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 5) }
-    assert_equal(6, S("にんにちは").byteindex(?に, 6))
-    assert_equal(6, S("にんにちは").byteindex(S("に"), 6))
-    assert_equal(6, S("にんにちは").byteindex(/に./, 6))
+    assert_byteindex(6, S("にんにちは"), ?に, 6)
+    assert_byteindex(6, S("にんにちは"), S("に"), 6)
+    assert_byteindex(6, S("にんにちは"), /に./, 6)
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 7) }
+
+    s = S("foobarbarbaz")
+    assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
   def test_byterindex
-    assert_equal(3, S("hello").byterindex(?l))
-    assert_equal(6, S("ell, hello").byterindex(S("ell")))
-    assert_equal(7, S("ell, hello").byterindex(/ll./))
+    assert_byterindex(3, S("hello"), ?l)
+    assert_byterindex(6, S("ell, hello"), S("ell"))
+    assert_byterindex(7, S("ell, hello"), /ll./)
 
-    assert_equal(3, S("hello,lo").byterindex(?l, 3))
-    assert_equal(3, S("hello,lo").byterindex(S("l"), 3))
-    assert_equal(3, S("hello,lo").byterindex(/l./, 3))
+    assert_byterindex(3, S("hello,lo"), ?l, 3)
+    assert_byterindex(3, S("hello,lo"), S("l"), 3)
+    assert_byterindex(3, S("hello,lo"), /l./, 3)
 
-    assert_nil(S("hello").byterindex(?z,     3))
-    assert_nil(S("hello").byterindex(S("z"), 3))
-    assert_nil(S("hello").byterindex(/z./,   3))
+    assert_byterindex(nil, S("hello"), ?z,     3)
+    assert_byterindex(nil, S("hello"), S("z"), 3)
+    assert_byterindex(nil, S("hello"), /z./,   3)
 
-    assert_nil(S("hello").byterindex(?z))
-    assert_nil(S("hello").byterindex(S("z")))
-    assert_nil(S("hello").byterindex(/z./))
+    assert_byterindex(nil, S("hello"), ?z)
+    assert_byterindex(nil, S("hello"), S("z"))
+    assert_byterindex(nil, S("hello"), /z./)
 
-    assert_equal(5, S("hello").byterindex(S("")))
-    assert_equal(5, S("hello").byterindex(S(""), 5))
-    assert_equal(4, S("hello").byterindex(S(""), 4))
-    assert_equal(0, S("hello").byterindex(S(""), 0))
+    assert_byterindex(5, S("hello"), S(""))
+    assert_byterindex(5, S("hello"), S(""), 5)
+    assert_byterindex(4, S("hello"), S(""), 4)
+    assert_byterindex(0, S("hello"), S(""), 0)
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(6, S("foobarbarbaz").byterindex(o))
+    assert_byterindex(6, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").byterindex(Object.new) }
 
-    assert_nil(S("foo").byterindex(//, -100))
-    assert_nil($~)
+    assert_byterindex(nil, S("foo"), //, -100)
 
-    assert_equal(3, S("foo").byterindex(//))
-    assert_equal([3, 3], $~.offset(0))
+    m = assert_byterindex(3, S("foo"), //)
+    assert_equal([3, 3], m.offset(0))
+    assert_byterindex(3, S("foo"), //, 4)
 
-    assert_equal(5, S("abcdbce").byterindex(/b\Kc/))
+    assert_byterindex(5, S("abcdbce"), /b\Kc/)
 
-    assert_equal(6, S("こんにちは").byterindex(?に))
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは")))
-    assert_equal(18, S("にちは、こんにちは").byterindex(/にち./))
+    assert_byterindex(6, S("こんにちは"), ?に)
+    assert_byterindex(18, S("にちは、こんにちは"), S("にちは"))
+    assert_byterindex(18, S("にちは、こんにちは"), /にち./)
 
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 19) }
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), -2) }
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), 18))
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), -3))
+    assert_byterindex(18, S("にちは、こんにちは"), S("にちは"), 18)
+    assert_byterindex(18, S("にちは、こんにちは"), S("にちは"), -3)
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 17) }
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), -4) }
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 1) }
-    assert_equal(0, S("にちは、こんにちは").byterindex(S("にちは"), 0))
+    assert_byterindex(0, S("にちは、こんにちは"), S("にちは"), 0)
 
-    assert_equal(0, S("こんにちは").byterindex(S("こんにちは")))
-    assert_nil(S("こんにち").byterindex(S("こんにちは")))
-    assert_nil(S("こ").byterindex(S("こんにちは")))
-    assert_nil(S("").byterindex(S("こんにちは")))
+    assert_byterindex(0, S("こんにちは"), S("こんにちは"))
+    assert_byterindex(nil, S("こんにち"), S("こんにちは"))
+    assert_byterindex(nil, S("こ"), S("こんにちは"))
+    assert_byterindex(nil, S(""), S("こんにちは"))
   end
 
   def test_bytesplice
@@ -3539,6 +3542,42 @@ CODE
 
   def assert_bytesplice_raise(e, s, *args)
     assert_raise(e) { s.send(:bytesplice, *args) }
+  end
+
+  def assert_index_like(method, expected, string, match, *rest)
+    message = "#{method} with string does not affect $~"
+    /.*/ =~ message
+    md_before = $~
+    assert_equal(expected, string.__send__(method, match, *rest))
+    md_after = $~
+    case match
+    when Regexp
+      if expected
+        assert_not_nil(md_after)
+        assert_not_same(md_before, md_after)
+      else
+        assert_nil(md_after)
+      end
+    else
+      assert_same(md_before, md_after)
+    end
+    md_after
+  end
+
+  def assert_index(expected, string, match, *rest)
+    assert_index_like(:index, expected, string, match, *rest)
+  end
+
+  def assert_rindex(expected, string, match, *rest)
+    assert_index_like(:rindex, expected, string, match, *rest)
+  end
+
+  def assert_byteindex(expected, string, match, *rest)
+    assert_index_like(:byteindex, expected, string, match, *rest)
+  end
+
+  def assert_byterindex(expected, string, match, *rest)
+    assert_index_like(:byterindex, expected, string, match, *rest)
   end
 end
 

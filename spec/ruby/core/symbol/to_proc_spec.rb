@@ -12,38 +12,19 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  ruby_version_is ""..."3.0" do
-    it "returns a Proc with #lambda? false" do
-      pr = :to_s.to_proc
-      pr.should_not.lambda?
-    end
-
-    it "produces a Proc with arity -1" do
-      pr = :to_s.to_proc
-      pr.arity.should == -1
-    end
-
-    it "produces a Proc that always returns [[:rest]] for #parameters" do
-      pr = :to_s.to_proc
-      pr.parameters.should == [[:rest]]
-    end
+  it "returns a Proc with #lambda? true" do
+    pr = :to_s.to_proc
+    pr.should.lambda?
   end
 
-  ruby_version_is "3.0" do
-    it "returns a Proc with #lambda? true" do
-      pr = :to_s.to_proc
-      pr.should.lambda?
-    end
+  it "produces a Proc with arity -2" do
+    pr = :to_s.to_proc
+    pr.arity.should == -2
+  end
 
-    it "produces a Proc with arity -2" do
-      pr = :to_s.to_proc
-      pr.arity.should == -2
-    end
-
-    it "produces a Proc that always returns [[:req], [:rest]] for #parameters" do
-      pr = :to_s.to_proc
-      pr.parameters.should == [[:req], [:rest]]
-    end
+  it "produces a Proc that always returns [[:req], [:rest]] for #parameters" do
+    pr = :to_s.to_proc
+    pr.parameters.should == [[:req], [:rest]]
   end
 
   ruby_version_is "3.2" do

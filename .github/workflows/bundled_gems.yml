@@ -2,17 +2,17 @@ name: bundled_gems
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ['master']
     paths:
       - '.github/workflows/bundled_gems.yml'
       - 'gems/bundled_gems'
   pull_request:
-    branches: [ "master" ]
+    branches: ['master']
     paths:
       - '.github/workflows/bundled_gems.yml'
       - 'gems/bundled_gems'
   merge_group:
-    branches: [ "master" ]
+    branches: ['master']
     paths:
       - '.github/workflows/bundled_gems.yml'
       - 'gems/bundled_gems'
@@ -20,35 +20,28 @@ on:
     - cron: '45 6 * * *'
   workflow_dispatch:
 
-permissions:  # added using https://github.com/step-security/secure-workflows
+permissions: # added using https://github.com/step-security/secure-workflows
   contents: read
 
 jobs:
   update:
     permissions:
-      contents: write  # for Git to git push
+      contents: write # for Git to git push
+
     if: ${{ github.event_name != 'schedule' || github.repository == 'ruby/ruby' }}
+
     name: update ${{ github.workflow }}
+
     runs-on: ubuntu-latest
+
     steps:
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
+      - uses: ./.github/actions/setup/directories
 
       - name: Set ENV
         run: |
-          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
           echo "TODAY=$(date +%F)" >> $GITHUB_ENV
-
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-        with:
-          path: .downloaded-cache
-          key: downloaded-cache-${{ github.sha }}
-          restore-keys: |
-            downloaded-cache
 
       - name: Download previous gems list
         run: |
@@ -73,10 +66,7 @@ jobs:
         continue-on-error: true
 
       - name: Install libraries
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev autoconf ruby
+        uses: ./.gituhb/actions/setup/ubuntu
         if: ${{ steps.diff.outcome == 'failure' }}
 
       - name: Build
@@ -97,8 +87,8 @@ jobs:
           git add -- gems/bundled_gems
         timeout-minutes: 30
         env:
-          RUBY_TESTOPTS: "-q --tty=no"
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+          RUBY_TESTOPTS: '-q --tty=no'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
         if: ${{ steps.diff.outcome == 'failure' }}
 
       - name: Show diffs
@@ -123,16 +113,7 @@ jobs:
           GIT_COMMITTER_NAME: git
         if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.show.outcome == 'failure' }}
 
-      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
+      - uses: ./.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / update",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() && github.event_name == 'push' }}

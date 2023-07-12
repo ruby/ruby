@@ -343,25 +343,6 @@ struct rb_imemo_tmpbuf_struct {
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 
-#undef ISSPACE
-#define ISSPACE(c)  ((p->config->isspace)(c))
-#undef ISASCII
-#define ISASCII(c)  ((p->config->isascii)(c))
-#undef ISCNTRL
-#define ISCNTRL(c)  ((p->config->iscntrl)(c))
-#undef ISALPHA
-#define ISALPHA(c)  ((p->config->isalpha)(c))
-#undef ISDIGIT
-#define ISDIGIT(c)  ((p->config->isdigit)(c))
-#undef ISALNUM
-#define ISALNUM(c)  ((p->config->isalnum)(c))
-#undef ISXDIGIT
-#define ISXDIGIT(c) ((p->config->isxdigit)(c))
-#undef STRCASECMP
-#define STRCASECMP p->config->strcasecmp
-#undef STRNCASECMP
-#define STRNCASECMP p->config->strncasecmp
-
 #undef RBOOL
 #define RBOOL p->config->rbool
 #undef UNDEF_P

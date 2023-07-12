@@ -13,7 +13,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   context "with configured credentials" do
     it "adds username and password to URI" do
       Bundler.settings.temporary(uri => "u:p") do
-        allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
+        allow(subject).to receive(:git_local).with("--version").and_return("git version 2.14.0")
         expect(subject).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
@@ -21,7 +21,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     it "adds username and password to URI for host" do
       Bundler.settings.temporary("github.com" => "u:p") do
-        allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
+        allow(subject).to receive(:git_local).with("--version").and_return("git version 2.14.0")
         expect(subject).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
@@ -29,7 +29,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     it "does not add username and password to mismatched URI" do
       Bundler.settings.temporary("https://u:p@github.com/rubygems/rubygems-mismatch.git" => "u:p") do
-        allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
+        allow(subject).to receive(:git_local).with("--version").and_return("git version 2.14.0")
         expect(subject).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
@@ -39,7 +39,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
       Bundler.settings.temporary("github.com" => "u:p") do
         original = "https://orig:info@github.com/rubygems/rubygems.git"
         subject = described_class.new(Pathname("path"), original, "HEAD")
-        allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
+        allow(subject).to receive(:git_local).with("--version").and_return("git version 2.14.0")
         expect(subject).to receive(:capture).with([*base_clone_args, "--", original, path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
@@ -49,7 +49,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   describe "#version" do
     context "with a normal version number" do
       before do
-        expect(subject).to receive(:git).with("--version").
+        expect(subject).to receive(:git_local).with("--version").
           and_return("git version 1.2.3")
       end
 
@@ -64,7 +64,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a OSX version number" do
       before do
-        expect(subject).to receive(:git).with("--version").
+        expect(subject).to receive(:git_local).with("--version").
           and_return("git version 1.2.3 (Apple Git-BS)")
       end
 
@@ -79,7 +79,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a msysgit version number" do
       before do
-        expect(subject).to receive(:git).with("--version").
+        expect(subject).to receive(:git_local).with("--version").
           and_return("git version 1.2.3.msysgit.0")
       end
 
@@ -96,7 +96,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   describe "#full_version" do
     context "with a normal version number" do
       before do
-        expect(subject).to receive(:git).with("--version").
+        expect(subject).to receive(:git_local).with("--version").
           and_return("git version 1.2.3")
       end
 
@@ -107,7 +107,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a OSX version number" do
       before do
-        expect(subject).to receive(:git).with("--version").
+        expect(subject).to receive(:git_local).with("--version").
           and_return("git version 1.2.3 (Apple Git-BS)")
       end
 
@@ -118,7 +118,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a msysgit version number" do
       before do
-        expect(subject).to receive(:git).with("--version").
+        expect(subject).to receive(:git_local).with("--version").
           and_return("git version 1.2.3.msysgit.0")
       end
 

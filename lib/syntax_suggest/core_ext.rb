@@ -21,7 +21,7 @@ if SyntaxError.method_defined?(:detailed_message)
       attr_reader :string
     end
 
-    # SyntaxSuggest.record_dir [Private]
+    # SyntaxSuggest.module_for_detailed_message [Private]
     #
     # Used to monkeypatch SyntaxError via Module.prepend
     def self.module_for_detailed_message

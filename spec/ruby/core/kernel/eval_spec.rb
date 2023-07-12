@@ -159,37 +159,18 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is ""..."3.0" do
-    it "uses the filename of the binding if none is provided" do
-      eval("__FILE__").should == "(eval)"
-      suppress_warning {eval("__FILE__", binding)}.should == __FILE__
-      eval("__FILE__", binding, "success").should == "success"
-      suppress_warning {eval("eval '__FILE__', binding")}.should == "(eval)"
-      suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
-      suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
-    end
-
-    it 'uses the given binding file and line for __FILE__ and __LINE__' do
-      suppress_warning {
-        eval("[__FILE__, __LINE__]", binding).should == [__FILE__, __LINE__]
-      }
-    end
+  it "uses (eval) filename if none is provided" do
+    eval("__FILE__").should == "(eval)"
+    eval("__FILE__", binding).should == "(eval)"
+    eval("__FILE__", binding, "success").should == "success"
+    eval("eval '__FILE__', binding").should == "(eval)"
+    eval("eval '__FILE__', binding", binding).should == "(eval)"
+    eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
+    eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
   end
 
-  ruby_version_is "3.0" do
-    it "uses (eval) filename if none is provided" do
-      eval("__FILE__").should == "(eval)"
-      eval("__FILE__", binding).should == "(eval)"
-      eval("__FILE__", binding, "success").should == "success"
-      eval("eval '__FILE__', binding").should == "(eval)"
-      eval("eval '__FILE__', binding", binding).should == "(eval)"
-      eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
-      eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
-    end
-
-    it 'uses (eval) for __FILE__ and 1 for __LINE__ with a binding argument' do
-      eval("[__FILE__, __LINE__]", binding).should == ["(eval)", 1]
-    end
+  it 'uses (eval) for __FILE__ and 1 for __LINE__ with a binding argument' do
+    eval("[__FILE__, __LINE__]", binding).should == ["(eval)", 1]
   end
 
   # Found via Rubinius bug github:#149

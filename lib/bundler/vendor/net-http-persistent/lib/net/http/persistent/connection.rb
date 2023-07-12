@@ -25,6 +25,7 @@ class Bundler::Persistent::Net::HTTP::Persistent::Connection # :nodoc:
   ensure
     reset
   end
+  alias_method :close, :finish
 
   def reset
     @last_use = Bundler::Persistent::Net::HTTP::Persistent::EPOCH

@@ -269,23 +269,12 @@ def parse_block(data)
   blocks << constname
 end
 
-# shim for Ruby 1.8
-unless {}.respond_to?(:key)
-  class Hash
-    alias key index
-  end
-end
-
 $const_cache = {}
 # make_const(property, pairs, name): Prints a 'static const' structure for a
 # given property, group of paired codepoints, and a human-friendly name for
 # the group
 def make_const(prop, data, name)
-  if name.empty?
-    puts "\n/* '#{prop}' */"
-  else
-    puts "\n/* '#{prop}': #{name} */"
-  end
+  puts "\n/* '#{prop}': #{name} */" # comment used to generate documentation
   if origprop = $const_cache.key(data)
     puts "#define CR_#{prop} CR_#{origprop}"
   else
@@ -437,8 +426,6 @@ define_posix_props(data)
 POSIX_NAMES.each do |name|
   if name == 'XPosixPunct'
     make_const(name, data[name], "[[:Punct:]]")
-  elsif name == 'Punct'
-    make_const(name, data[name], "")
   else
     make_const(name, data[name], "[[:#{name}:]]")
   end

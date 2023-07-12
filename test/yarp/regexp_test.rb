@@ -101,6 +101,10 @@ class RegexpTest < Test::Unit::TestCase
     refute_nil(YARP.named_captures("(?#foo)"))
   end
 
+  def test_comments_with_escaped_parentheses
+    refute_nil(YARP.named_captures("(?#foo\\)\\))"))
+  end
+
   def test_non_capturing_groups
     refute_nil(YARP.named_captures("(?:foo)"))
   end

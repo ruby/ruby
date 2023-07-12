@@ -98,5 +98,79 @@ RSpec.describe "bundle install" do
       bundle "info zebra"
       expect(out).to include("* zebra (2.0 #{revision_for(lib_path("gems"))[0..6]})")
     end
+
+    it "should always sort dependencies in the same order" do
+      # This Gemfile + lockfile had a problem where the first
+      # `bundle install` would change the order, but the second would
+      # change it back.
+
+      # NOTE: both gems MUST have the same path! It has to be two gems in one repo.
+
+      test = build_git "test", "1.0.0", :path => lib_path("test-and-other")
+      other = build_git "other", "1.0.0", :path => lib_path("test-and-other")
+      test_ref = test.ref_for("HEAD")
+      other_ref = other.ref_for("HEAD")
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+
+        gem "test", git: #{test.path.to_s.inspect}
+        gem "other", ref: #{other_ref.inspect}, git: #{other.path.to_s.inspect}
+      G
+
+      lockfile <<-L
+        GIT
+          remote: #{test.path}
+          revision: #{test_ref}
+          specs:
+            test (1.0.0)
+
+        GIT
+          remote: #{other.path}
+          revision: #{other_ref}
+          ref: #{other_ref}
+          specs:
+            other (1.0.0)
+
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          other!
+          test!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      original_lockfile = lockfile
+
+      # If GH#6743 is present, the first `bundle install` will change the
+      # lockfile, by flipping the order (`other` would be moved to the top).
+      #
+      # The second `bundle install` would then change the lockfile back
+      # to the original.
+      #
+      # The fix makes it so it may change it once, but it will not change
+      # it a second time.
+      #
+      # So, we run `bundle install` once, and store the value of the
+      # modified lockfile.
+      bundle :install
+      modified_lockfile = lockfile
+
+      # If GH#6743 is present, the second `bundle install` would change the
+      # lockfile back to what it was originally.
+      #
+      # This `expect` makes sure it doesn't change a second time.
+      bundle :install
+      expect(lockfile).to eq(modified_lockfile)
+
+      expect(out).to include("Bundle complete!")
+    end
   end
 end

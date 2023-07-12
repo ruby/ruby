@@ -48,65 +48,49 @@ jobs:
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
       fail-fast: false
+
     env:
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
-      SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
+
     runs-on: ubuntu-20.04
+
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: Set ENV
-        run: |
-          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - name: Install libraries
-        env:
-          arch: ${{matrix.arch}}
-        run: |
-          set -x
-          arch=${arch:+:${arch/i[3-6]86/i386}}
-          ${arch:+sudo dpkg --add-architecture ${arch#:}}
-          sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y \
-          ${arch:+cross}build-essential${arch/:/-} \
-          libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
-          zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
-          autoconf ruby
-          sudo apt-get install -q -y pkg-config${arch} || :
-      - name: git config
-        run: |
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
-          path: src
-      - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/ubuntu
         with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
-      - name: Fixed world writable dirs
-        run: |
-          chmod -v go-w $HOME $HOME/.config
-          sudo chmod -R go-w /usr/share
-          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
-      - run: ./autogen.sh
-        working-directory: src
+          arch: ${{ matrix.arch }}
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
       - name: Run configure
         env:
-          arch: ${{matrix.arch}}
-          configure: ${{matrix.configure}}
+          arch: ${{ matrix.arch }}
+          configure: ${{ matrix.configure }}
         run: >-
           $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
-      - run: $SETARCH make incs
+
       - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
       - run: $SETARCH make
+
       - name: Create dummy files in build dir
         run: |
           $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
+
       - name: make ${{ matrix.test_task }}
         run: >-
           $SETARCH make -s ${{ matrix.test_task }}
@@ -114,30 +98,24 @@ jobs:
             ${{ contains(matrix.test_task, 'bundle') && '' || 'RUBYOPT=-w' }}
         timeout-minutes: 40
         env:
-          RUBY_TESTOPTS: "-q --tty=no"
+          RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
-          PRECHECK_BUNDLED_GEMS: "no"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          PRECHECK_BUNDLED_GEMS: 'no'
+
       - name: make skipped tests
         run: |
           $SETARCH make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
         env:
-          GNUMAKEFLAGS: ""
-          RUBY_TESTOPTS: "-v --tty=no"
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
           TESTS: ${{ matrix.skipped_tests }}
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
+
+      - uses: ./.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
+          label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() && github.event_name == 'push' }}
 

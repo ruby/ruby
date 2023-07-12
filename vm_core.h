@@ -552,22 +552,21 @@ struct rb_iseq_struct {
 
 #define ISEQ_BODY(iseq) ((iseq)->body)
 
-#ifndef USE_LAZY_LOAD
+#if !defined(USE_LAZY_LOAD) || !(USE_LAZY_LOAD+0)
 #define USE_LAZY_LOAD 0
 #endif
 
-#if USE_LAZY_LOAD
-const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
+#if !USE_LAZY_LOAD
+static inline const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq) {return 0;}
 #endif
+const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
 
 static inline const rb_iseq_t *
 rb_iseq_check(const rb_iseq_t *iseq)
 {
-#if USE_LAZY_LOAD
-    if (ISEQ_BODY(iseq) == NULL) {
+    if (USE_LAZY_LOAD && ISEQ_BODY(iseq) == NULL) {
         rb_iseq_complete((rb_iseq_t *)iseq);
     }
-#endif
     return iseq;
 }
 

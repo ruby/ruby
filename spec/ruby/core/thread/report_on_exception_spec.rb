@@ -61,34 +61,32 @@ describe "Thread#report_on_exception=" do
       }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
     end
 
-    ruby_version_is "3.0" do
-      it "prints a backtrace on $stderr in the regular backtrace order" do
-        line_raise = __LINE__ + 2
-        def foo
-          raise RuntimeError, "Thread#report_on_exception specs backtrace order"
-        end
+    it "prints a backtrace on $stderr in the regular backtrace order" do
+      line_raise = __LINE__ + 2
+      def foo
+        raise RuntimeError, "Thread#report_on_exception specs backtrace order"
+      end
 
-        line_call_foo = __LINE__ + 5
-        go = false
-        t = Thread.new {
-          Thread.current.report_on_exception = true
-          Thread.pass until go
-          foo
-        }
+      line_call_foo = __LINE__ + 5
+      go = false
+      t = Thread.new {
+        Thread.current.report_on_exception = true
+        Thread.pass until go
+        foo
+      }
 
-        -> {
-          go = true
-          Thread.pass while t.alive?
-        }.should output("", <<ERR)
+      -> {
+        go = true
+        Thread.pass while t.alive?
+      }.should output("", <<ERR)
 #{t.inspect} terminated with exception (report_on_exception is true):
 #{__FILE__}:#{line_raise}:in `foo': Thread#report_on_exception specs backtrace order (RuntimeError)
-\tfrom #{__FILE__}:#{line_call_foo}:in `block (5 levels) in <top (required)>'
+\tfrom #{__FILE__}:#{line_call_foo}:in `block (4 levels) in <top (required)>'
 ERR
 
-        -> {
-          t.join
-        }.should raise_error(RuntimeError, "Thread#report_on_exception specs backtrace order")
-      end
+      -> {
+        t.join
+      }.should raise_error(RuntimeError, "Thread#report_on_exception specs backtrace order")
     end
 
     it "prints the backtrace even if the thread was killed just after Thread#raise" do

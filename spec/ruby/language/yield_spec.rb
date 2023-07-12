@@ -186,31 +186,14 @@ describe "The yield call" do
 end
 
 describe "Using yield in a singleton class literal" do
-  ruby_version_is ""..."3.0" do
-    it 'emits a deprecation warning' do
-      code = <<~RUBY
-        def m
-          class << Object.new
-            yield
-          end
-        end
-        m { :ok }
-      RUBY
+  it 'raises a SyntaxError' do
+    code = <<~RUBY
+      class << Object.new
+        yield
+      end
+    RUBY
 
-      -> { eval(code) }.should complain(/warning: `yield' in class syntax will not be supported from Ruby 3.0/)
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it 'raises a SyntaxError' do
-      code = <<~RUBY
-        class << Object.new
-          yield
-        end
-      RUBY
-
-      -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
-    end
+    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
   end
 end
 

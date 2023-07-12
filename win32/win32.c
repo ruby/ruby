@@ -2369,10 +2369,8 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct di
         //
         // first set up the structure to return
         //
-        if (dirp->dirstr.d_name)
-            free(dirp->dirstr.d_name);
-        if (dirp->dirstr.d_altname)
-            free(dirp->dirstr.d_altname);
+        free(dirp->dirstr.d_name);
+        free(dirp->dirstr.d_altname);
         dirp->dirstr.d_altname = 0;
         dirp->dirstr.d_altlen = 0;
         conv(dirp->curr, dirp->curr + lstrlenW(dirp->curr) + 1, &dirp->dirstr, enc);
@@ -2478,14 +2476,10 @@ void
 rb_w32_closedir(DIR *dirp)
 {
     if (dirp) {
-        if (dirp->dirstr.d_name)
-            free(dirp->dirstr.d_name);
-        if (dirp->dirstr.d_altname)
-            free(dirp->dirstr.d_altname);
-        if (dirp->start)
-            free(dirp->start);
-        if (dirp->bits)
-            free(dirp->bits);
+        free(dirp->dirstr.d_name);
+        free(dirp->dirstr.d_altname);
+        free(dirp->start);
+        free(dirp->bits);
         free(dirp);
     }
 }
@@ -4378,8 +4372,8 @@ freeifaddrs(struct ifaddrs *ifp)
 {
     while (ifp) {
         struct ifaddrs *next = ifp->ifa_next;
-        if (ifp->ifa_addr) ruby_xfree(ifp->ifa_addr);
-        if (ifp->ifa_name) ruby_xfree(ifp->ifa_name);
+        ruby_xfree(ifp->ifa_addr);
+        ruby_xfree(ifp->ifa_name);
         ruby_xfree(ifp);
         ifp = next;
     }
@@ -7593,7 +7587,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
         }
     }
     RB_GC_GUARD(str);
-    if (wbuffer) free(wbuffer);
+    free(wbuffer);
     return (long)reslen;
 }
 

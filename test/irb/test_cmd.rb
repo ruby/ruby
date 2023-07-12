@@ -252,6 +252,34 @@ module TestIRB
       assert_empty(c.class_variables)
     end
 
+    def test_measure_keeps_previous_value
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> ',
+            PROMPT_N: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: false
+      }
+
+      c = Class.new(Object)
+      out, err = execute_lines(
+        "measure\n",
+        "3\n",
+        "_\n",
+        conf: conf,
+        main: c
+      )
+
+      assert_empty err
+      assert_match(/\ATIME is added\.\n=> nil\nprocessing time: .+\n=> 3\nprocessing time: .+\n=> 3/, out)
+      assert_empty(c.class_variables)
+    end
+
     def test_measure_enabled_by_rc
       conf = {
         PROMPT: {
@@ -473,7 +501,6 @@ module TestIRB
     end
 
     def test_show_source_end_finder
-      pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
         def show_source_test_method
           unless true
@@ -490,7 +517,6 @@ module TestIRB
     end
 
     def test_show_source_private_instance
-      pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
         class PrivateInstanceTest
           private def show_source_test_method
@@ -510,7 +536,6 @@ module TestIRB
 
 
     def test_show_source_private
-      pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
         class PrivateTest
           private def show_source_test_method

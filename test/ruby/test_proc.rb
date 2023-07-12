@@ -1321,6 +1321,32 @@ class TestProc < Test::Unit::TestCase
     assert_empty(pr.parameters.map{|_,n|n}.compact)
   end
 
+  def test_proc_autosplat_with_multiple_args_with_ruby2_keywords_splat_bug_19759
+    def self.yielder_ab(splat)
+      yield([:a, :b], *splat)
+    end
+
+    res = yielder_ab([[:aa, :bb], Hash.ruby2_keywords_hash({k: :k})]) do |a, b, k:|
+      [a, b, k]
+    end
+    assert_equal([[:a, :b], [:aa, :bb], :k], res)
+
+    def self.yielder(splat)
+      yield(*splat)
+    end
+    res = yielder([ [:a, :b] ]){|a, b, **| [a, b]}
+    assert_equal([:a, :b], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({}) ]){|a, b, **| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({c: 1}) ]){|a, b, **| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({}) ]){|a, b, **nil| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+  end
+
   def test_parameters_lambda
     assert_equal([], proc {}.parameters(lambda: true))
     assert_equal([], proc {||}.parameters(lambda: true))

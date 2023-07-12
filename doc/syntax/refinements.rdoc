@@ -279,6 +279,6 @@ Refinements in descendants have higher precedence than those of ancestors.
 
 == Further Reading
 
-See https://bugs.ruby-lang.org/projects/ruby-master/wiki/RefinementsSpec for the
+See https://github.com/ruby/ruby/wiki/Refinements-Spec for the
 current specification for implementing refinements.  The specification also
 contains more details.

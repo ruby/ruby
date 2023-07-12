@@ -48,11 +48,9 @@ describe "MatchData#[]" do
     /(.)(.)(\d+)(\d)/.match("THX1138.")[nil..nil].should == %w|HX1138 H X 113 8|
   end
 
-  ruby_version_is "3.0" do
-    it "returns instances of String when given a String subclass" do
-      str = MatchDataSpecs::MyString.new("THX1138.")
-      /(.)(.)(\d+)(\d)/.match(str)[0..-1].each { |m| m.should be_an_instance_of(String) }
-    end
+  it "returns instances of String when given a String subclass" do
+    str = MatchDataSpecs::MyString.new("THX1138.")
+    /(.)(.)(\d+)(\d)/.match(str)[0..-1].each { |m| m.should be_an_instance_of(String) }
   end
 end
 

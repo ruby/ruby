@@ -168,16 +168,14 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
-  ruby_version_is "3.0" do
-    it "accepts options as a keyword argument" do
-      @fh = File.new(@file, 'w', 0755, flags: @flags)
-      @fh.should be_kind_of(File)
-      @fh.close
+  it "accepts options as a keyword argument" do
+    @fh = File.new(@file, 'w', 0755, flags: @flags)
+    @fh.should be_kind_of(File)
+    @fh.close
 
-      -> {
-        @fh = File.new(@file, 'w', 0755, {flags: @flags})
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
-    end
+    -> {
+      @fh = File.new(@file, 'w', 0755, {flags: @flags})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   it "bitwise-ORs mode and flags option" do

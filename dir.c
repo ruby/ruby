@@ -590,23 +590,24 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
 
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
 /*
- *  call-seq:
- *     Dir.for_fd(integer) -> aDir
+ * call-seq:
+ *   Dir.for_fd(fd) -> dir
  *
- *  Returns a Dir representing the directory specified by the given
- *  directory file descriptor. Note that the returned Dir will not
- *  have an associated path.
+ * Returns a new \Dir object representing the directory specified by the given
+ * integer directory file descriptor +fd+:
  *
- *     d1 = Dir.new('..')
- *     d2 = Dir.for_fd(d1.fileno)
- *     d1.path # => '..'
- *     d2.path # => nil
- *     d1.chdir{Dir.pwd} == d2.chdir{Dir.pwd} # => true
+ *   d0 = Dir.new('..')
+ *   d1 = Dir.for_fd(d0.fileno)
  *
- *  This method uses fdopendir() function defined by POSIX 2008.
- *  NotImplementedError is raised on other platforms, such as Windows,
- *  which doesn't provide the function.
+ * Note that the returned +d1+ does not have an associated path:
  *
+ *   d0.path # => '..'
+ *   d1.path # => nil
+ *
+ * This method uses the
+ * {fdopendir()}[https://www.man7.org/linux/man-pages/man3/fdopendir.3p.html]
+ * function defined by POSIX 2008;
+ * the method is not implemented on non-POSIX platforms (raises NotImplementedError).
  */
 static VALUE
 dir_s_for_fd(VALUE klass, VALUE fd)
@@ -653,10 +654,13 @@ dir_check(VALUE dir)
 
 
 /*
- *  call-seq:
- *     dir.inspect -> string
+ * call-seq:
+ *   inspect -> string
  *
- *  Return a string describing this Dir object.
+ * Returns a string description of +self+:
+ *
+ *   Dir.new('example').inspect # => "#<Dir:example>"
+ *
  */
 static VALUE
 dir_inspect(VALUE dir)
@@ -690,18 +694,18 @@ dir_inspect(VALUE dir)
 
 #ifdef HAVE_DIRFD
 /*
- *  call-seq:
- *     dir.fileno -> integer
+ * call-seq:
+ *   fileno -> integer
  *
- *  Returns the file descriptor used in <em>dir</em>.
+ * Returns the file descriptor used in <em>dir</em>.
  *
- *     d = Dir.new("..")
- *     d.fileno   #=> 8
+ *   d = Dir.new('..')
+ *   d.fileno # => 8
  *
- *  This method uses dirfd() function defined by POSIX 2008.
- *  NotImplementedError is raised on other platforms, such as Windows,
- *  which doesn't provide the function.
- *
+ * This method uses the
+ * {dirfd()}[https://www.man7.org/linux/man-pages/man3/dirfd.3.html]
+ * function defined by POSIX 2008;
+ * the method is not implemented on non-POSIX platforms (raises NotImplementedError).
  */
 static VALUE
 dir_fileno(VALUE dir)
@@ -720,14 +724,14 @@ dir_fileno(VALUE dir)
 #endif
 
 /*
- *  call-seq:
- *     dir.path -> string or nil
- *     dir.to_path -> string or nil
+ * call-seq:
+ *   path -> string or nil
  *
- *  Returns the path parameter passed to <em>dir</em>'s constructor.
+ * Returns the +dirpath+ string that was used to create +self+
+ * (or +nil+ if created by method Dir.for_fd):
  *
- *     d = Dir.new("..")
- *     d.path   #=> ".."
+ *   Dir.new('example').path # => "example"
+ *
  */
 static VALUE
 dir_path(VALUE dir)
@@ -781,16 +785,18 @@ to_be_skipped(const struct dirent *dp)
 }
 
 /*
- *  call-seq:
- *     dir.read -> string or nil
+ * call-seq:
+ *   read -> string or nil
  *
- *  Reads the next entry from <em>dir</em> and returns it as a string.
- *  Returns <code>nil</code> at the end of the stream.
+ * Reads and returns the next entry name from +self+;
+ * returns +nil+ if at end-of-stream;
+ * see {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like]:
  *
- *     d = Dir.new("testdir")
- *     d.read   #=> "."
- *     d.read   #=> ".."
- *     d.read   #=> "config.h"
+ *   dir = Dir.new('example')
+ *   dir.read # => "."
+ *   dir.read # => ".."
+ *   dir.read # => "config.h"
+ *
  */
 static VALUE
 dir_read(VALUE dir)
@@ -819,24 +825,23 @@ dir_yield(VALUE arg, VALUE path)
 }
 
 /*
- *  call-seq:
- *     dir.each { |filename| block }  -> dir
- *     dir.each                       -> an_enumerator
+ * call-seq:
+ *   each {|entry_name| ... } -> self
  *
- *  Calls the block once for each entry in this directory, passing the
- *  filename of each entry as a parameter to the block.
+ * Calls the block with each entry name in +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *   Dir.new('example').each {|entry_name| p entry_name }
  *
- *     d = Dir.new("testdir")
- *     d.each  {|x| puts "Got #{x}" }
+ * Output:
+
+ *   "."
+ *   ".."
+ *   "config.h"
+ *   "lib"
+ *   "main.rb"
  *
- *  <em>produces:</em>
+ * With no block given, returns an Enumerator.
  *
- *     Got .
- *     Got ..
- *     Got config.h
- *     Got main.rb
  */
 static VALUE
 dir_each(VALUE dir)
@@ -879,16 +884,17 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
 
 #ifdef HAVE_TELLDIR
 /*
- *  call-seq:
- *     dir.pos -> integer
- *     dir.tell -> integer
+ * call-seq:
+ *   tell -> integer
  *
- *  Returns the current position in <em>dir</em>. See also Dir#seek.
+ * Returns the current position of +self+;
+ * see {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like]:
  *
- *     d = Dir.new("testdir")
- *     d.tell   #=> 0
- *     d.read   #=> "."
- *     d.tell   #=> 12
+ *   dir = Dir.new('example')
+ *   dir.tell  # => 0
+ *   dir.read  # => "."
+ *   dir.tell  # => 1
+ *
  */
 static VALUE
 dir_tell(VALUE dir)
@@ -906,18 +912,24 @@ dir_tell(VALUE dir)
 
 #ifdef HAVE_SEEKDIR
 /*
- *  call-seq:
- *     dir.seek( integer ) -> dir
+ * call-seq:
+ *   seek(position) -> self
  *
- *  Seeks to a particular location in <em>dir</em>. <i>integer</i>
- *  must be a value returned by Dir#tell.
+ * Sets the position in +self+ and returns +self+.
+ * The value of +position+ should have been returned from an earlier call to #tell;
+ * if not, the return values from subsequent calls to #read are unspecified.
  *
- *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
- *     d.read                   #=> "."
- *     i = d.tell               #=> 12
- *     d.read                   #=> ".."
- *     d.seek(i)                #=> #<Dir:0x401b3c40>
- *     d.read                   #=> ".."
+ * See {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like].
+ *
+ * Examples:
+ *
+ *   dir = Dir.new('example')
+ *   dir.pos      # => 0
+ *   dir.seek(3)  # => #<Dir:example>
+ *   dir.pos      # => 3
+ *   dir.seek(30) # => #<Dir:example>
+ *   dir.pos      # => 5
+ *
  */
 static VALUE
 dir_seek(VALUE dir, VALUE pos)
@@ -935,17 +947,24 @@ dir_seek(VALUE dir, VALUE pos)
 
 #ifdef HAVE_SEEKDIR
 /*
- *  call-seq:
- *     dir.pos = integer  -> integer
+ * call-seq:
+ *   pos = position -> integer
  *
- *  Synonym for Dir#seek, but returns the position parameter.
+ * Sets the position in +self+ and returns +position+.
+ * The value of +position+ should have been returned from an earlier call to #tell;
+ * if not, the return values from subsequent calls to #read are unspecified.
  *
- *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
- *     d.read                   #=> "."
- *     i = d.pos                #=> 12
- *     d.read                   #=> ".."
- *     d.pos = i                #=> 12
- *     d.read                   #=> ".."
+ * See {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like].
+ *
+ * Examples:
+ *
+ *   dir = Dir.new('example')
+ *   dir.pos      # => 0
+ *   dir.pos = 3  # => 3
+ *   dir.pos      # => 3
+ *   dir.pos = 30 # => 30
+ *   dir.pos      # => 5
+ *
  */
 static VALUE
 dir_set_pos(VALUE dir, VALUE pos)
@@ -958,15 +977,19 @@ dir_set_pos(VALUE dir, VALUE pos)
 #endif
 
 /*
- *  call-seq:
- *     dir.rewind -> dir
+ * call-seq:
+ *   rewind -> self
  *
- *  Repositions <em>dir</em> to the first entry.
+ * Sets the position in +self+ to zero;
+ * see {Dir As Stream-Like}[rdoc-ref:Dir@Dir+As+Stream-Like]:
  *
- *     d = Dir.new("testdir")
- *     d.read     #=> "."
- *     d.rewind   #=> #<Dir:0x401b3fb0>
- *     d.read     #=> "."
+ *   dir = Dir.new('example')
+ *   dir.read    # => "."
+ *   dir.read    # => ".."
+ *   dir.pos     # => 2
+ *   dir.rewind  # => #<Dir:example>
+ *   dir.pos     # => 0
+ *
  */
 static VALUE
 dir_rewind(VALUE dir)
@@ -979,14 +1002,18 @@ dir_rewind(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     dir.close -> nil
+ * call-seq:
+ *   close -> nil
  *
- *  Closes the directory stream.
- *  Calling this method on closed Dir object is ignored since Ruby 2.3.
+ * Closes the stream in +self+, if it is open, and returns +nil+;
+ * ignored if +self+ is already closed:
  *
- *     d = Dir.new("testdir")
- *     d.close   #=> nil
+ *   dir = Dir.new('example')
+ *   dir.read     # => "."
+ *   dir.close     # => nil
+ *   dir.close     # => nil
+ *   dir.read # Raises IOError.
+ *
  */
 static VALUE
 dir_close(VALUE dir)
@@ -1050,44 +1077,67 @@ chdir_restore(VALUE v)
 }
 
 /*
- *  call-seq:
- *     Dir.chdir( [ string] ) -> 0
- *     Dir.chdir( [ string] ) {| path | block }  -> anObject
+ * call-seq:
+ *   Dir.chdir(new_dirpath) -> 0
+ *   Dir.chdir -> 0
+ *   Dir.chdir(new_dirpath) {|new_dirpath| ... } -> object
+ *   Dir.chdir {|cur_dirpath| ... } -> object
  *
- *  Changes the current working directory of the process to the given
- *  string. When called without an argument, changes the directory to
- *  the value of the environment variable <code>HOME</code>, or
- *  <code>LOGDIR</code>. SystemCallError (probably Errno::ENOENT) if
- *  the target directory does not exist.
+ * Changes the current working directory.
  *
- *  If a block is given, it is passed the name of the new current
- *  directory, and the block is executed with that as the current
- *  directory. The original working directory is restored when the block
- *  exits. The return value of <code>chdir</code> is the value of the
- *  block. <code>chdir</code> blocks can be nested, but in a
- *  multi-threaded program an error will be raised if a thread attempts
- *  to open a <code>chdir</code> block while another thread has one
- *  open or a call to <code>chdir</code> without a block occurs inside
- *  a block passed to <code>chdir</code> (even in the same thread).
+ * With argument +new_dirpath+ and no block,
+ * changes to the given +dirpath+:
  *
- *     Dir.chdir("/var/spool/mail")
- *     puts Dir.pwd
- *     Dir.chdir("/tmp") do
- *       puts Dir.pwd
- *       Dir.chdir("/usr") do
- *         puts Dir.pwd
- *       end
- *       puts Dir.pwd
+ *   Dir.pwd         # => "/example"
+ *   Dir.chdir('..') # => 0
+ *   Dir.pwd         # => "/"
+ *
+ * With no argument and no block:
+ *
+ * - Changes to the value of environment variable +HOME+ if defined.
+ * - Otherwise changes to the value of environment variable +LOGDIR+ if defined.
+ * - Otherwise makes no change.
+ *
+ * With argument +new_dirpath+ and a block, temporarily changes the working directory:
+ *
+ * - Calls the block with the argument.
+ * - Changes to the given directory.
+ * - Executes the block
+ * - Restores the previous working directory.
+ * - Returns the block's return value.
+ *
+ * Example:
+ *
+ *   Dir.chdir('/var/spool/mail')
+ *   Dir.pwd   # => "/var/spool/mail"
+ *   Dir.chdir('/tmp') do
+ *     Dir.pwd # => "/tmp"
+ *   end
+ *   Dir.pwd   # => "/var/spool/mail"
+ *
+ * With no argument and a block,
+ * calls the block with the current working directory (string)
+ * and returns the block's return value.
+ *
+ * Calls to \Dir.chdir with blocks may be nested:
+ *
+ *   Dir.chdir('/var/spool/mail')
+ *   Dir.pwd     # => "/var/spool/mail"
+ *   Dir.chdir('/tmp') do
+ *     Dir.pwd   # => "/tmp"
+ *     Dir.chdir('/usr') do
+ *       Dir.pwd # => "/usr"
  *     end
- *     puts Dir.pwd
+ *     Dir.pwd   # => "/tmp"
+ *   end
+ *   Dir.pwd     # => "/var/spool/mail"
  *
- *  <em>produces:</em>
+ * In a multi-threaded program an error is raised if a thread attempts
+ * to open a +chdir+ block while another thread has one open,
+ * or a call to +chdir+ without a block occurs inside
+ * a block passed to +chdir+ (even in the same thread).
  *
- *     /var/spool/mail
- *     /tmp
- *     /usr
- *     /tmp
- *     /var/spool/mail
+ * Raises an exception if the target directory does not exist.
  */
 static VALUE
 dir_s_chdir(int argc, VALUE *argv, VALUE obj)
@@ -1181,52 +1231,56 @@ fchdir_restore(VALUE v)
 }
 
 /*
- *  call-seq:
- *     Dir.fchdir( integer ) -> 0
- *     Dir.fchdir( integer ) { block }  -> anObject
+ * call-seq:
+ *   Dir.fchdir(fd) -> 0
+ *   Dir.fchdir(fd) { ... } -> object
  *
- *  Changes the current working directory of the process to the directory
- *  specified by the given file descriptor integer. If the file descriptor
- *  is not valid, raises SystemCallError.  One reason to use
- *  <code>fchdir</code> instead of <code>chdir</code> is when passing
- *  directory file descriptors over a UNIX socket or to child processes,
- *  to avoid TOCTOU (time-of-check to time-of-use) vulnerabilities.
+ * Changes the current working directory to the directory
+ * specified by the integer file descriptor +fd+.
  *
- *  If a block is given, the current working directory is changed for the
- *  duration of the block, and the original working directory is restored
- *  when the block exits. The return value of <code>fchdir</code> is the
- *  value of the block. <code>fchdir</code> and <code>chdir</code> blocks
- *  can be nested, but in a multi-threaded program an error will be raised
- *  if a thread attempts to open a <code>fchdir</code> or <code>chdir</code>
- *  block while another thread has one open or a call to <code>fchdir</code>
- *  or <code>chdir</code> without a block occurs inside a block passed to
- *  <code>fchdir</code> or <code>chdir</code> (even in the same thread).
+ * When passing a file descriptor over a UNIX socket or to a child process,
+ * using +fchdir+ instead of +chdir+ avoids the
+ * {time-of-check to time-of-use vulnerability}[https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use]
  *
- *  When generating directory file descriptors from a +Dir+ instance,
- *  make sure the +Dir+ instance is not garbage collected before the
- *  directory file descriptor is passed to another process.  Otherwise,
- *  the directory file descriptor will be closed before it is passed.
+ * With no block, changes to the directory given by +fd+:
  *
- *     dir  = Dir.new("/var/spool/mail")
- *     dir2  = Dir.new("/usr")
- *     fd  = dir.fileno
- *     fd2  = dir2.fileno
- *     Dir.fchdir(fd) do
- *       puts Dir.pwd
- *       Dir.fchdir(fd2) do
- *         puts Dir.pwd
- *       end
- *       puts Dir.pwd
- *     end
- *     puts Dir.pwd
+ *   Dir.chdir('/var/spool/mail')
+ *   Dir.pwd # => "/var/spool/mail"
+ *   dir  = Dir.new('/usr')
+ *   fd = dir.fileno
+ *   Dir.fchdir(fd) do
+ *     Dir.pwd # => "/usr"
+ *   end
+ *   Dir.pwd # => "/var/spool/mail"
  *
- *  <em>produces:</em>
+ * With a block, temporarily changes the working directory:
  *
- *     /var/spool/mail
- *     /tmp
- *     /usr
- *     /tmp
- *     /var/spool/mail
+ * - Calls the block with the argument.
+ * - Changes to the given directory.
+ * - Executes the block
+ * - Restores the previous working directory.
+ * - Returns the block's return value.
+ *
+ * Example:
+ *
+ *   Dir.chdir('/var/spool/mail')
+ *   Dir.pwd # => "/var/spool/mail"
+ *   Dir.chdir('/tmp') do
+ *     Dir.pwd # => "/tmp"
+ *   end
+ *   Dir.pwd # => "/var/spool/mail"
+ *
+ * This method uses the
+ * {fchdir()}[https://www.man7.org/linux/man-pages/man3/fchdir.3p.html]
+ * function defined by POSIX 2008;
+ * the method is not implemented on non-POSIX platforms (raises NotImplementedError).
+ *
+ * Raises an exception if the file descriptor is not valid.
+ *
+ * In a multi-threaded program an error is raised if a thread attempts
+ * to open a +chdir+ block while another thread has one open,
+ * or a call to +chdir+ without a block occurs inside
+ * a block passed to +chdir+ (even in the same thread).
  */
 static VALUE
 dir_s_fchdir(VALUE klass, VALUE fd_value)
@@ -1262,14 +1316,16 @@ dir_s_fchdir(VALUE klass, VALUE fd_value)
 #endif
 
 /*
- *  call-seq:
- *     dir.chdir -> nil
+ * call-seq:
+ *   chdir -> nil
  *
- *  Changes the current working directory to the receiver.
+ * Changes the current working directory to the path of +self+:
  *
- *     # Assume current directory is /path
- *     Dir.new("testdir").chdir
- *     Dir.pwd # => '/path/testdir'
+ *   Dir.pwd # => "/"
+ *   dir = Dir.new('example')
+ *   dir.chdir
+ *   dir.pwd # => "/example"
+ *
  */
 static VALUE
 dir_chdir(VALUE dir)
@@ -1330,16 +1386,14 @@ rb_dir_getwd(void)
 }
 
 /*
- *  call-seq:
- *     Dir.getwd -> string
- *     Dir.pwd -> string
+ * call-seq:
+ *   Dir.pwd -> string
  *
- *  Returns the path to the current working directory of this process as
- *  a string.
+ * Returns the path to the current working directory:
  *
- *     Dir.chdir("/tmp")   #=> 0
- *     Dir.getwd           #=> "/tmp"
- *     Dir.pwd             #=> "/tmp"
+ *   Dir.chdir("/tmp") # => 0
+ *   Dir.pwd           # => "/tmp"
+ *
  */
 static VALUE
 dir_s_getwd(VALUE dir)
@@ -1369,13 +1423,16 @@ check_dirname(VALUE dir)
 
 #if defined(HAVE_CHROOT)
 /*
- *  call-seq:
- *     Dir.chroot( string ) -> 0
+ * call-seq:
+ *   Dir.chroot(dirpath) -> 0
  *
- *  Changes this process's idea of the file system root. Only a
- *  privileged process may make this call. Not available on all
- *  platforms. On Unix systems, see <code>chroot(2)</code> for more
- *  information.
+ * Changes the root directory of the calling process to that specified in +dirpath+.
+ * The new root directory is used for pathnames beginning with <tt>'/'</tt>.
+ * The root directory is inherited by all children of the calling process.
+ *
+ * Only a privileged process may call +chroot+.
+ *
+ * See {Linux chroot}[https://man7.org/linux/man-pages/man2/chroot.2.html].
  */
 static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
@@ -1404,18 +1461,20 @@ nogvl_mkdir(void *ptr)
 }
 
 /*
- *  call-seq:
- *     Dir.mkdir( string [, integer] ) -> 0
+ * call-seq:
+ *   Dir.mkdir(dirpath, permissions = 0775) -> 0
  *
- *  Makes a new directory named by <i>string</i>, with permissions
- *  specified by the optional parameter <i>anInteger</i>. The
- *  permissions may be modified by the value of File::umask, and are
- *  ignored on NT. Raises a SystemCallError if the directory cannot be
- *  created. See also the discussion of permissions in the class
- *  documentation for File.
+ * Creates a directory in the underlying file system
+ * at +dirpath+ with the given +permissions+;
+ * returns zero:
  *
- *    Dir.mkdir(File.join(Dir.home, ".foo"), 0700) #=> 0
+ *   Dir.mkdir('foo')
+ *   File.stat(Dir.new('foo')).mode.to_s(8)[1..4] # => "0755"
+ *   Dir.mkdir('bar', 0644)
+ *   File.stat(Dir.new('bar')).mode.to_s(8)[1..4] # => "0644"
  *
+ * See {File Permissions}[rdoc-ref:File@File+Permissions].
+ * Note that argument +permissions+ is ignored on Windows.
  */
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
@@ -1449,13 +1508,14 @@ nogvl_rmdir(void *ptr)
 }
 
 /*
- *  call-seq:
- *     Dir.delete( string ) -> 0
- *     Dir.rmdir( string ) -> 0
- *     Dir.unlink( string ) -> 0
+ * call-seq:
+ *   Dir.rmdir(dirpath) -> 0
  *
- *  Deletes the named directory. Raises a subclass of SystemCallError
- *  if the directory isn't empty.
+ * Removes the directory at +dirpath+ from the underlying file system:
+ *
+ *   Dir.rmdir('foo') # => 0
+ *
+ * Raises an exception if the directory is not empty.
  */
 static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
@@ -3180,26 +3240,35 @@ dir_open_dir(int argc, VALUE *argv)
 
 
 /*
- *  call-seq:
- *     Dir.foreach( dirname ) {| filename | block }                 -> nil
- *     Dir.foreach( dirname, encoding: enc ) {| filename | block }  -> nil
- *     Dir.foreach( dirname )                                       -> an_enumerator
- *     Dir.foreach( dirname, encoding: enc )                        -> an_enumerator
+ * call-seq:
+ *   Dir.foreach(dirpath, encoding: 'UTF-8') {|entry_name| ... }  -> nil
  *
- *  Calls the block once for each entry in the named directory, passing
- *  the filename of each entry as a parameter to the block.
+ * Calls the block with each entry name in the directory at +dirpath+;
+ * sets the given encoding onto each passed +entry_name+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *   Dir.foreach('/example') {|entry_name| p entry_name }
  *
- *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+ * Output:
  *
- *  <em>produces:</em>
+ *   "config.h"
+ *   "lib"
+ *   "main.rb"
+ *   ".."
+ *   "."
  *
- *     Got .
- *     Got ..
- *     Got config.h
- *     Got main.rb
+ * Encoding:
  *
+ *   Dir.foreach('/example') {|entry_name| p entry_name.encoding; break }
+ *   Dir.foreach('/example', encoding: 'US-ASCII') {|entry_name| p entry_name.encoding; break }
+ *
+ * Output:
+ *
+ *   #<Encoding:UTF-8>
+ *   #<Encoding:US-ASCII>
+ *
+ * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
+ *
+ * Returns an enumerator if no block is given.
  */
 static VALUE
 dir_foreach(int argc, VALUE *argv, VALUE io)
@@ -3221,19 +3290,21 @@ dir_collect(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     Dir.entries( dirname )                -> array
- *     Dir.entries( dirname, encoding: enc ) -> array
+ * call-seq:
+ *   Dir.entries(dirname, encoding: 'UTF-8') -> array
  *
- *  Returns an array containing all of the filenames in the given
- *  directory. Will raise a SystemCallError if the named directory
- *  doesn't exist.
+ * Returns an array of the entry names in the directory at +dirpath+;
+ * sets the given encoding onto each returned entry name:
  *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the
- *  directory. If not specified, the filesystem encoding is used.
+ *   Dir.entries('/example') # => ["config.h", "lib", "main.rb", "..", "."]
+ *   Dir.entries('/example').first.encoding
+ *   # => #<Encoding:UTF-8>
+ *   Dir.entries('/example', encoding: 'US-ASCII').first.encoding
+ *   # => #<Encoding:US-ASCII>
  *
- *     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
+ * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
  *
+ * Raises an exception if the directory does not exist.
  */
 static VALUE
 dir_entries(int argc, VALUE *argv, VALUE io)
@@ -3251,25 +3322,12 @@ dir_each_child(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     Dir.each_child( dirname ) {| filename | block }                 -> nil
- *     Dir.each_child( dirname, encoding: enc ) {| filename | block }  -> nil
- *     Dir.each_child( dirname )                                       -> an_enumerator
- *     Dir.each_child( dirname, encoding: enc )                        -> an_enumerator
+ * call-seq:
+ *   Dir.each_child(dirpath) {|entry_name| ... } -> nil
+ *   Dir.each_child(dirpath, encoding: 'UTF-8') {|entry_name| ... }  -> nil
  *
- *  Calls the block once for each entry except for "." and ".." in the
- *  named directory, passing the filename of each entry as a parameter
- *  to the block.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     Dir.each_child("testdir") {|x| puts "Got #{x}" }
- *
- *  <em>produces:</em>
- *
- *     Got config.h
- *     Got main.rb
- *
+ * Like Dir.foreach, except that entries <tt>'.'</tt> and <tt>'..'</tt>
+ * are not included.
  */
 static VALUE
 dir_s_each_child(int argc, VALUE *argv, VALUE io)
@@ -3283,25 +3341,23 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
 }
 
 /*
- *  call-seq:
- *     dir.each_child {| filename | block }  -> dir
- *     dir.each_child                        -> an_enumerator
+ * call-seq:
+ *   each_child {|entry_name| ... } -> self
  *
- *  Calls the block once for each entry except for "." and ".." in
- *  this directory, passing the filename of each entry as a parameter
- *  to the block.
+ * Calls the block with each entry name in +self+
+ * except <tt>'.'</tt> and <tt>'..'</tt>:
  *
- *  If no block is given, an enumerator is returned instead.
+ *   dir = Dir.new('/example')
+ *   dir.each_child {|entry_name| p entry_name }
  *
- *     d = Dir.new("testdir")
- *     d.each_child  {|x| puts "Got #{x}" }
+ * Output:
  *
- *  <em>produces:</em>
+ *   "config.h"
+ *   "lib"
+ *   "main.rb"
  *
- *     Got config.h
- *     Got main.rb
- *
- */
+ * If no block is given, returns an enumerator.
+  */
 static VALUE
 dir_each_child_m(VALUE dir)
 {
@@ -3310,14 +3366,14 @@ dir_each_child_m(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     dir.children  -> array
+ * call-seq:
+ *   children -> array
  *
- *  Returns an array containing all of the filenames except for "."
- *  and ".." in this directory.
+ * Returns an array of the entry names in +self+
+ * except for <tt>'.'</tt> and <tt>'..'</tt>:
  *
- *     d = Dir.new("testdir")
- *     d.children   #=> ["config.h", "main.rb"]
+ *   dir = Dir.new('/example')
+ *   dir.children # => ["config.h", "lib", "main.rb"]
  *
  */
 static VALUE
@@ -3329,19 +3385,23 @@ dir_collect_children(VALUE dir)
 }
 
 /*
- *  call-seq:
- *     Dir.children( dirname )                -> array
- *     Dir.children( dirname, encoding: enc ) -> array
+ * call-seq:
+ *   Dir.children(dirpath) -> array
+ *   Dir.children(dirpath, encoding: 'UTF-8') -> array
  *
- *  Returns an array containing all of the filenames except for "."
- *  and ".." in the given directory. Will raise a SystemCallError if
- *  the named directory doesn't exist.
+ * Returns an array of the entry names in the directory at +dirpath+
+ * except for <tt>'.'</tt> and <tt>'..'</tt>;
+ * sets the given encoding onto each returned entry name:
  *
- *  The optional <i>encoding</i> keyword argument specifies the encoding of the
- *  directory. If not specified, the filesystem encoding is used.
+ *   Dir.children('/example') # => ["config.h", "lib", "main.rb"]
+ *   Dir.children('/example').first.encoding
+ *   # => #<Encoding:UTF-8>
+ *   Dir.children('/example', encoding: 'US-ASCII').first.encoding
+ *   # => #<Encoding:US-ASCII>
  *
- *     Dir.children("testdir")   #=> ["config.h", "main.rb"]
+ * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
  *
+ * Raises an exception if the directory does not exist.
  */
 static VALUE
 dir_s_children(int argc, VALUE *argv, VALUE io)
@@ -3415,12 +3475,13 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
- *  call-seq:
- *    Dir.home()       -> "/home/me"
- *    Dir.home("root") -> "/root"
+ * call-seq:
+ *   Dir.home(user_name = nil) -> dirpath
  *
- *  Returns the home directory of the current user or the named user
- *  if given.
+ *   Dir.home         # => "/home/me"
+ *   Dir.home('root') # => "/root"
+ *
+ * Raises ArgumentError if +user_name+ is not a user name.
  */
 static VALUE
 dir_s_home(int argc, VALUE *argv, VALUE obj)
@@ -3445,10 +3506,14 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
 #if 0
 /*
  * call-seq:
- *   Dir.exist?(file_name)   ->  true or false
+ *   Dir.exist?(dirpath) ->  true or false
  *
- * Returns <code>true</code> if the named file is a directory,
- * <code>false</code> otherwise.
+ * Returns whether +dirpath+ is a directory in the underlying file system:
+ *
+ *   Dir.exist?('/example')         # => true
+ *   Dir.exist?('/nosuch')          # => false
+ *   Dir.exist?('/example/main.rb') # => false
+ *
  *
  */
 VALUE
@@ -3490,10 +3555,18 @@ nogvl_dir_empty_p(void *ptr)
 
 /*
  * call-seq:
- *   Dir.empty?(path_name)  ->  true or false
+ *   Dir.empty?(dirpath) ->  true or false
  *
- * Returns <code>true</code> if the named file is an empty directory,
- * <code>false</code> if it is not a directory or non-empty.
+ * Returns whether +dirpath+ specifies an empty directory:
+ *
+ *   dirpath = '/tmp/foo'
+ *   Dir.mkdir(dirpath)
+ *   Dir.empty?(dirpath)            # => true
+ *   Dir.empty?('/example')         # => false
+ *   Dir.empty?('/example/main.rb') # => false
+ *
+ * Raises an exception if +dirpath+ does not specify a directory or file
+ * in the underlying file system.
  */
 static VALUE
 rb_dir_s_empty_p(VALUE obj, VALUE dirname)

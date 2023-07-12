@@ -72,15 +72,13 @@ describe "Kernel#open" do
     -> { open }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "3.0" do
-    it "accepts options as keyword arguments" do
-      @file = open(@name, "r", 0666, flags: File::CREAT)
-      @file.should be_kind_of(File)
+  it "accepts options as keyword arguments" do
+    @file = open(@name, "r", 0666, flags: File::CREAT)
+    @file.should be_kind_of(File)
 
-      -> {
-        open(@name, "r", 0666, {flags: File::CREAT})
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
-    end
+    -> {
+      open(@name, "r", 0666, {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   describe "when given an object that responds to to_open" do
@@ -158,28 +156,14 @@ describe "Kernel#open" do
     open(@name, nil, nil) { |f| f.gets }.should == @content
   end
 
-  ruby_version_is ""..."3.0" do
-    it "works correctly when redefined by open-uri" do
-      code = <<~RUBY
+  it "is not redefined by open-uri" do
+    code = <<~RUBY
+      before = Kernel.instance_method(:open)
       require 'open-uri'
-      obj = Object.new
-      def obj.to_open; self; end
-      p open(obj) == obj
-      RUBY
-      ruby_exe(code, args: "2>&1").should == "true\n"
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "is not redefined by open-uri" do
-      code = <<~RUBY
-        before = Kernel.instance_method(:open)
-        require 'open-uri'
-        after = Kernel.instance_method(:open)
-        p before == after
-      RUBY
-      ruby_exe(code, args: "2>&1").should == "true\n"
-    end
+      after = Kernel.instance_method(:open)
+      p before == after
+    RUBY
+    ruby_exe(code, args: "2>&1").should == "true\n"
   end
 end
 

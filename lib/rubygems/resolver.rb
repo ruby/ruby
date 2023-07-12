@@ -38,8 +38,6 @@ class Gem::Resolver
   ##
   # List of dependencies that could not be found in the configured sources.
 
-  attr_reader :missing
-
   attr_reader :stats
 
   ##
@@ -49,8 +47,7 @@ class Gem::Resolver
   attr_accessor :skip_gems
 
   ##
-  # When a missing dependency, don't stop. Just go on and record what was
-  # missing.
+  #
 
   attr_accessor :soft_missing
 
@@ -106,7 +103,6 @@ class Gem::Resolver
     @development         = false
     @development_shallow = false
     @ignore_dependencies = false
-    @missing             = []
     @skip_gems           = {}
     @soft_missing        = false
     @stats               = Gem::Resolver::Stats.new
@@ -187,8 +183,7 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    locking_dg = Molinillo::DependencyGraph.new
-    Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }, locking_dg).tsort.map(&:payload).compact
+    Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.map(&:payload).compact
   rescue Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
@@ -228,7 +223,6 @@ class Gem::Resolver
   def search_for(dependency)
     possibles, all = find_possible(dependency)
     if !@soft_missing && possibles.empty?
-      @missing << dependency
       exc = Gem::UnsatisfiableDependencyError.new dependency, all
       exc.errors = @set.errors
       raise exc
@@ -275,7 +269,6 @@ class Gem::Resolver
   end
 
   def allow_missing?(dependency)
-    @missing << dependency
     @soft_missing
   end
 

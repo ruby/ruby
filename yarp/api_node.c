@@ -9,13 +9,14 @@
 #include "yarp/extension.h"
 
 extern VALUE rb_cYARP;
+extern VALUE rb_cYARPSource;
 extern VALUE rb_cYARPToken;
 extern VALUE rb_cYARPLocation;
 
 static VALUE
-location_new(yp_parser_t *parser, const char *start, const char *end) {
-    VALUE argv[] = { LONG2FIX(start - parser->start), LONG2FIX(end - start) };
-    return rb_class_new_instance(2, argv, rb_cYARPLocation);
+location_new(yp_parser_t *parser, const char *start, const char *end, VALUE source) {
+    VALUE argv[] = { source, LONG2FIX(start - parser->start), LONG2FIX(end - start) };
+    return rb_class_new_instance(3, argv, rb_cYARPLocation);
 }
 
 static VALUE
@@ -23,254 +24,219 @@ yp_string_new(yp_string_t *string, rb_encoding *encoding) {
     return rb_enc_str_new(yp_string_source(string), yp_string_length(string), encoding);
 }
 
-VALUE
-yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding) {
-    ID type = rb_intern(yp_token_type_to_str(token->type));
-    VALUE argv[] = {
-        ID2SYM(type),
-        rb_enc_str_new(token->start, token->end - token->start, encoding),
-        LONG2FIX(token->start - parser->start),
-        LONG2FIX(token->end - token->start)
-    };
-
-    return rb_class_new_instance(4, argv, rb_cYARPToken);
-}
-
-VALUE
-yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *constants) {
+static VALUE
+yp_node_new(yp_parser_t *parser, yp_node_t *node, VALUE source, rb_encoding *encoding, ID *constants) {
     switch (node->type) {
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ALIAS_NODE: {
             yp_alias_node_t *cast = (yp_alias_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // new_name
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->new_name, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->new_name, source, encoding, constants);
 
             // old_name
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->old_name, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->old_name, source, encoding, constants);
 
             // keyword_loc
-            argv[2] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[2] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AliasNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("AliasNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ALTERNATION_PATTERN_NODE: {
             yp_alternation_pattern_node_t *cast = (yp_alternation_pattern_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // left
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, source, encoding, constants);
 
             // right
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AlternationPatternNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("AlternationPatternNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_AND_NODE: {
             yp_and_node_t *cast = (yp_and_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // left
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, source, encoding, constants);
 
             // right
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AndNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("AndNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ARGUMENTS_NODE: {
             yp_arguments_node_t *cast = (yp_arguments_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // arguments
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->arguments.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->arguments.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->arguments.nodes[index], source, encoding, constants));
             }
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ArgumentsNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ArgumentsNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ARRAY_NODE: {
             yp_array_node_t *cast = (yp_array_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // elements
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->elements.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->elements.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->elements.nodes[index], source, encoding, constants));
             }
 
             // opening_loc
-            argv[1] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[1] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ArrayNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ArrayNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ARRAY_PATTERN_NODE: {
             yp_array_pattern_node_t *cast = (yp_array_pattern_node_t *) node;
-            VALUE argv[8];
+            VALUE argv[7];
 
             // constant
-            argv[0] = cast->constant == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->constant, encoding, constants);
+            argv[0] = cast->constant == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->constant, source, encoding, constants);
 
             // requireds
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->requireds.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->requireds.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->requireds.nodes[index], source, encoding, constants));
             }
 
             // rest
-            argv[2] = cast->rest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->rest, encoding, constants);
+            argv[2] = cast->rest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->rest, source, encoding, constants);
 
             // posts
             argv[3] = rb_ary_new();
             for (size_t index = 0; index < cast->posts.size; index++) {
-                rb_ary_push(argv[3], yp_node_new(parser, cast->posts.nodes[index], encoding, constants));
+                rb_ary_push(argv[3], yp_node_new(parser, cast->posts.nodes[index], source, encoding, constants));
             }
 
             // opening_loc
-            argv[4] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[4] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[5] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[5] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[6] = LONG2FIX(node->location.start - parser->start);
-            argv[7] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("ArrayPatternNode")));
+            argv[6] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("ArrayPatternNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ASSOC_NODE: {
             yp_assoc_node_t *cast = (yp_assoc_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // key
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->key, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->key, source, encoding, constants);
 
             // value
-            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator_loc
-            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("AssocNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("AssocNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ASSOC_SPLAT_NODE: {
             yp_assoc_splat_node_t *cast = (yp_assoc_splat_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // value
-            argv[0] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[0] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("AssocSplatNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("AssocSplatNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BACK_REFERENCE_READ_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("BackReferenceReadNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("BackReferenceReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BEGIN_NODE: {
             yp_begin_node_t *cast = (yp_begin_node_t *) node;
-            VALUE argv[8];
+            VALUE argv[7];
 
             // begin_keyword_loc
-            argv[0] = cast->begin_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->begin_keyword_loc.start, cast->begin_keyword_loc.end);
+            argv[0] = cast->begin_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->begin_keyword_loc.start, cast->begin_keyword_loc.end, source);
 
             // statements
-            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // rescue_clause
-            argv[2] = cast->rescue_clause == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->rescue_clause, encoding, constants);
+            argv[2] = cast->rescue_clause == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->rescue_clause, source, encoding, constants);
 
             // else_clause
-            argv[3] = cast->else_clause == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->else_clause, encoding, constants);
+            argv[3] = cast->else_clause == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->else_clause, source, encoding, constants);
 
             // ensure_clause
-            argv[4] = cast->ensure_clause == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->ensure_clause, encoding, constants);
+            argv[4] = cast->ensure_clause == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->ensure_clause, source, encoding, constants);
 
             // end_keyword_loc
-            argv[5] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[5] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[6] = LONG2FIX(node->location.start - parser->start);
-            argv[7] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("BeginNode")));
+            argv[6] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("BeginNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BLOCK_ARGUMENT_NODE: {
             yp_block_argument_node_t *cast = (yp_block_argument_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // expression
-            argv[0] = cast->expression == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->expression, encoding, constants);
+            argv[0] = cast->expression == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->expression, source, encoding, constants);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockArgumentNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockArgumentNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BLOCK_NODE: {
             yp_block_node_t *cast = (yp_block_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // locals
             argv[0] = rb_ary_new();
@@ -279,109 +245,101 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // parameters
-            argv[1] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, encoding, constants);
+            argv[1] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, source, encoding, constants);
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // opening_loc
-            argv[3] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[3] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[4] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[4] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BLOCK_PARAMETER_NODE: {
             yp_block_parameter_node_t *cast = (yp_block_parameter_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // name_loc
-            argv[0] = cast->name_loc.start == NULL ? Qnil : location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = cast->name_loc.start == NULL ? Qnil : location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockParameterNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BLOCK_PARAMETERS_NODE: {
             yp_block_parameters_node_t *cast = (yp_block_parameters_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // parameters
-            argv[0] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, encoding, constants);
+            argv[0] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, source, encoding, constants);
 
             // locals
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->locals.size; index++) {
                 yp_location_t location = cast->locals.locations[index];
-                rb_ary_push(argv[1], location_new(parser, location.start, location.end));
+                rb_ary_push(argv[1], location_new(parser, location.start, location.end, source));
             }
 
             // opening_loc
-            argv[2] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[2] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[3] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[3] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockParametersNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("BlockParametersNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_BREAK_NODE: {
             yp_break_node_t *cast = (yp_break_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // arguments
-            argv[0] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, encoding, constants);
+            argv[0] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, source, encoding, constants);
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("BreakNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("BreakNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CALL_NODE: {
             yp_call_node_t *cast = (yp_call_node_t *) node;
-            VALUE argv[11];
+            VALUE argv[10];
 
             // receiver
-            argv[0] = cast->receiver == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->receiver, encoding, constants);
+            argv[0] = cast->receiver == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->receiver, source, encoding, constants);
 
             // operator_loc
-            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // message_loc
-            argv[2] = cast->message_loc.start == NULL ? Qnil : location_new(parser, cast->message_loc.start, cast->message_loc.end);
+            argv[2] = cast->message_loc.start == NULL ? Qnil : location_new(parser, cast->message_loc.start, cast->message_loc.end, source);
 
             // opening_loc
-            argv[3] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[3] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // arguments
-            argv[4] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, encoding, constants);
+            argv[4] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, source, encoding, constants);
 
             // closing_loc
-            argv[5] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[5] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // block
-            argv[6] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, encoding, constants);
+            argv[6] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, source, encoding, constants);
 
             // flags
             argv[7] = ULONG2NUM(cast->flags);
@@ -390,127 +348,115 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             argv[8] = yp_string_new(&cast->name, encoding);
 
             // location
-            argv[9] = LONG2FIX(node->location.start - parser->start);
-            argv[10] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(11, argv, rb_const_get_at(rb_cYARP, rb_intern("CallNode")));
+            argv[9] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(10, argv, rb_const_get_at(rb_cYARP, rb_intern("CallNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CALL_OPERATOR_AND_WRITE_NODE: {
             yp_call_operator_and_write_node_t *cast = (yp_call_operator_and_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorAndWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CALL_OPERATOR_OR_WRITE_NODE: {
             yp_call_operator_or_write_node_t *cast = (yp_call_operator_or_write_node_t *) node;
+            VALUE argv[4];
+
+            // target
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
+
+            // value
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
+
+            // operator_loc
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorOrWriteNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_CALL_OPERATOR_WRITE_NODE: {
+            yp_call_operator_write_node_t *cast = (yp_call_operator_write_node_t *) node;
             VALUE argv[5];
 
             // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
-
-            // value
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorOrWriteNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_CALL_OPERATOR_WRITE_NODE: {
-            yp_call_operator_write_node_t *cast = (yp_call_operator_write_node_t *) node;
-            VALUE argv[6];
-
-            // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
-
-            // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator_id
             argv[3] = rb_id2sym(constants[cast->operator_id - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CallOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CAPTURE_PATTERN_NODE: {
             yp_capture_pattern_node_t *cast = (yp_capture_pattern_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // value
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // target
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("CapturePatternNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("CapturePatternNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CASE_NODE: {
             yp_case_node_t *cast = (yp_case_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // predicate
-            argv[0] = cast->predicate == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->predicate, encoding, constants);
+            argv[0] = cast->predicate == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->predicate, source, encoding, constants);
 
             // conditions
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->conditions.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->conditions.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->conditions.nodes[index], source, encoding, constants));
             }
 
             // consequent
-            argv[2] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, encoding, constants);
+            argv[2] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, source, encoding, constants);
 
             // case_keyword_loc
-            argv[3] = location_new(parser, cast->case_keyword_loc.start, cast->case_keyword_loc.end);
+            argv[3] = location_new(parser, cast->case_keyword_loc.start, cast->case_keyword_loc.end, source);
 
             // end_keyword_loc
-            argv[4] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[4] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("CaseNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("CaseNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CLASS_NODE: {
             yp_class_node_t *cast = (yp_class_node_t *) node;
-            VALUE argv[9];
+            VALUE argv[8];
 
             // locals
             argv[0] = rb_ary_new();
@@ -519,314 +465,284 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // class_keyword_loc
-            argv[1] = location_new(parser, cast->class_keyword_loc.start, cast->class_keyword_loc.end);
+            argv[1] = location_new(parser, cast->class_keyword_loc.start, cast->class_keyword_loc.end, source);
 
             // constant_path
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->constant_path, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->constant_path, source, encoding, constants);
 
             // inheritance_operator_loc
-            argv[3] = cast->inheritance_operator_loc.start == NULL ? Qnil : location_new(parser, cast->inheritance_operator_loc.start, cast->inheritance_operator_loc.end);
+            argv[3] = cast->inheritance_operator_loc.start == NULL ? Qnil : location_new(parser, cast->inheritance_operator_loc.start, cast->inheritance_operator_loc.end, source);
 
             // superclass
-            argv[4] = cast->superclass == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->superclass, encoding, constants);
+            argv[4] = cast->superclass == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->superclass, source, encoding, constants);
 
             // statements
-            argv[5] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[5] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // end_keyword_loc
-            argv[6] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[6] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[7] = LONG2FIX(node->location.start - parser->start);
-            argv[8] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(9, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassNode")));
+            argv[7] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_class_variable_operator_and_write_node_t *cast = (yp_class_variable_operator_and_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorAndWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_class_variable_operator_or_write_node_t *cast = (yp_class_variable_operator_or_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorOrWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorOrWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_OPERATOR_WRITE_NODE: {
             yp_class_variable_operator_write_node_t *cast = (yp_class_variable_operator_write_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator
             argv[3] = rb_id2sym(constants[cast->operator - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_READ_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableReadNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CLASS_VARIABLE_WRITE_NODE: {
             yp_class_variable_write_node_t *cast = (yp_class_variable_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // value
-            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator_loc
-            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ClassVariableWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_OPERATOR_AND_WRITE_NODE: {
             yp_constant_operator_and_write_node_t *cast = (yp_constant_operator_and_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorAndWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_OPERATOR_OR_WRITE_NODE: {
             yp_constant_operator_or_write_node_t *cast = (yp_constant_operator_or_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorOrWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorOrWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_OPERATOR_WRITE_NODE: {
             yp_constant_operator_write_node_t *cast = (yp_constant_operator_write_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator
             argv[3] = rb_id2sym(constants[cast->operator - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_NODE: {
             yp_constant_path_node_t *cast = (yp_constant_path_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // parent
-            argv[0] = cast->parent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parent, encoding, constants);
+            argv[0] = cast->parent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parent, source, encoding, constants);
 
             // child
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->child, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->child, source, encoding, constants);
 
             // delimiter_loc
-            argv[2] = location_new(parser, cast->delimiter_loc.start, cast->delimiter_loc.end);
+            argv[2] = location_new(parser, cast->delimiter_loc.start, cast->delimiter_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_OPERATOR_AND_WRITE_NODE: {
             yp_constant_path_operator_and_write_node_t *cast = (yp_constant_path_operator_and_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorAndWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_OPERATOR_OR_WRITE_NODE: {
             yp_constant_path_operator_or_write_node_t *cast = (yp_constant_path_operator_or_write_node_t *) node;
+            VALUE argv[4];
+
+            // target
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
+
+            // operator_loc
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // value
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorOrWriteNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_CONSTANT_PATH_OPERATOR_WRITE_NODE: {
+            yp_constant_path_operator_write_node_t *cast = (yp_constant_path_operator_write_node_t *) node;
             VALUE argv[5];
 
             // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorOrWriteNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_CONSTANT_PATH_OPERATOR_WRITE_NODE: {
-            yp_constant_path_operator_write_node_t *cast = (yp_constant_path_operator_write_node_t *) node;
-            VALUE argv[6];
-
-            // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
-
-            // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator
             argv[3] = rb_id2sym(constants[cast->operator - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_PATH_WRITE_NODE: {
             yp_constant_path_write_node_t *cast = (yp_constant_path_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // target
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->target, source, encoding, constants);
 
             // operator_loc
-            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantPathWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_CONSTANT_READ_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantReadNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("ConstantReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_DEF_NODE: {
             yp_def_node_t *cast = (yp_def_node_t *) node;
-            VALUE argv[13];
+            VALUE argv[12];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // receiver
-            argv[1] = cast->receiver == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->receiver, encoding, constants);
+            argv[1] = cast->receiver == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->receiver, source, encoding, constants);
 
             // parameters
-            argv[2] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, encoding, constants);
+            argv[2] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, source, encoding, constants);
 
             // statements
-            argv[3] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[3] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // locals
             argv[4] = rb_ary_new();
@@ -835,708 +751,636 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // def_keyword_loc
-            argv[5] = location_new(parser, cast->def_keyword_loc.start, cast->def_keyword_loc.end);
+            argv[5] = location_new(parser, cast->def_keyword_loc.start, cast->def_keyword_loc.end, source);
 
             // operator_loc
-            argv[6] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[6] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // lparen_loc
-            argv[7] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end);
+            argv[7] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end, source);
 
             // rparen_loc
-            argv[8] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end);
+            argv[8] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end, source);
 
             // equal_loc
-            argv[9] = cast->equal_loc.start == NULL ? Qnil : location_new(parser, cast->equal_loc.start, cast->equal_loc.end);
+            argv[9] = cast->equal_loc.start == NULL ? Qnil : location_new(parser, cast->equal_loc.start, cast->equal_loc.end, source);
 
             // end_keyword_loc
-            argv[10] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[10] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[11] = LONG2FIX(node->location.start - parser->start);
-            argv[12] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(13, argv, rb_const_get_at(rb_cYARP, rb_intern("DefNode")));
+            argv[11] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(12, argv, rb_const_get_at(rb_cYARP, rb_intern("DefNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_DEFINED_NODE: {
             yp_defined_node_t *cast = (yp_defined_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // lparen_loc
-            argv[0] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end);
+            argv[0] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end, source);
 
             // value
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // rparen_loc
-            argv[2] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end);
+            argv[2] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end, source);
 
             // keyword_loc
-            argv[3] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[3] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("DefinedNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("DefinedNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_ELSE_NODE: {
             yp_else_node_t *cast = (yp_else_node_t *) node;
-            VALUE argv[5];
-
-            // else_keyword_loc
-            argv[0] = location_new(parser, cast->else_keyword_loc.start, cast->else_keyword_loc.end);
-
-            // statements
-            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
-
-            // end_keyword_loc
-            argv[2] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ElseNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_EMBEDDED_STATEMENTS_NODE: {
-            yp_embedded_statements_node_t *cast = (yp_embedded_statements_node_t *) node;
-            VALUE argv[5];
-
-            // opening_loc
-            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
-
-            // statements
-            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
-
-            // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("EmbeddedStatementsNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_EMBEDDED_VARIABLE_NODE: {
-            yp_embedded_variable_node_t *cast = (yp_embedded_variable_node_t *) node;
             VALUE argv[4];
 
-            // operator_loc
-            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // variable
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->variable, encoding, constants);
-
-            // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("EmbeddedVariableNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_ENSURE_NODE: {
-            yp_ensure_node_t *cast = (yp_ensure_node_t *) node;
-            VALUE argv[5];
-
-            // ensure_keyword_loc
-            argv[0] = location_new(parser, cast->ensure_keyword_loc.start, cast->ensure_keyword_loc.end);
+            // else_keyword_loc
+            argv[0] = location_new(parser, cast->else_keyword_loc.start, cast->else_keyword_loc.end, source);
 
             // statements
-            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // end_keyword_loc
-            argv[2] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[2] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("EnsureNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ElseNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
+        case YP_NODE_EMBEDDED_STATEMENTS_NODE: {
+            yp_embedded_statements_node_t *cast = (yp_embedded_statements_node_t *) node;
+            VALUE argv[4];
+
+            // opening_loc
+            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
+
+            // statements
+            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
+
+            // closing_loc
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("EmbeddedStatementsNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_EMBEDDED_VARIABLE_NODE: {
+            yp_embedded_variable_node_t *cast = (yp_embedded_variable_node_t *) node;
+            VALUE argv[3];
+
+            // operator_loc
+            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // variable
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->variable, source, encoding, constants);
+
+            // location
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("EmbeddedVariableNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_ENSURE_NODE: {
+            yp_ensure_node_t *cast = (yp_ensure_node_t *) node;
+            VALUE argv[4];
+
+            // ensure_keyword_loc
+            argv[0] = location_new(parser, cast->ensure_keyword_loc.start, cast->ensure_keyword_loc.end, source);
+
+            // statements
+            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
+
+            // end_keyword_loc
+            argv[2] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("EnsureNode")));
+        }
+#line 25 "api_node.c.erb"
         case YP_NODE_FALSE_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("FalseNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("FalseNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_FIND_PATTERN_NODE: {
             yp_find_pattern_node_t *cast = (yp_find_pattern_node_t *) node;
-            VALUE argv[8];
+            VALUE argv[7];
 
             // constant
-            argv[0] = cast->constant == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->constant, encoding, constants);
+            argv[0] = cast->constant == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->constant, source, encoding, constants);
 
             // left
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->left, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->left, source, encoding, constants);
 
             // requireds
             argv[2] = rb_ary_new();
             for (size_t index = 0; index < cast->requireds.size; index++) {
-                rb_ary_push(argv[2], yp_node_new(parser, cast->requireds.nodes[index], encoding, constants));
+                rb_ary_push(argv[2], yp_node_new(parser, cast->requireds.nodes[index], source, encoding, constants));
             }
 
             // right
-            argv[3] = yp_node_new(parser, (yp_node_t *) cast->right, encoding, constants);
+            argv[3] = yp_node_new(parser, (yp_node_t *) cast->right, source, encoding, constants);
 
             // opening_loc
-            argv[4] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[4] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[5] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[5] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[6] = LONG2FIX(node->location.start - parser->start);
-            argv[7] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("FindPatternNode")));
+            argv[6] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("FindPatternNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_FLOAT_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("FloatNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("FloatNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_FOR_NODE: {
             yp_for_node_t *cast = (yp_for_node_t *) node;
-            VALUE argv[9];
+            VALUE argv[8];
 
             // index
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->index, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->index, source, encoding, constants);
 
             // collection
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->collection, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->collection, source, encoding, constants);
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // for_keyword_loc
-            argv[3] = location_new(parser, cast->for_keyword_loc.start, cast->for_keyword_loc.end);
+            argv[3] = location_new(parser, cast->for_keyword_loc.start, cast->for_keyword_loc.end, source);
 
             // in_keyword_loc
-            argv[4] = location_new(parser, cast->in_keyword_loc.start, cast->in_keyword_loc.end);
+            argv[4] = location_new(parser, cast->in_keyword_loc.start, cast->in_keyword_loc.end, source);
 
             // do_keyword_loc
-            argv[5] = cast->do_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->do_keyword_loc.start, cast->do_keyword_loc.end);
+            argv[5] = cast->do_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->do_keyword_loc.start, cast->do_keyword_loc.end, source);
 
             // end_keyword_loc
-            argv[6] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[6] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[7] = LONG2FIX(node->location.start - parser->start);
-            argv[8] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(9, argv, rb_const_get_at(rb_cYARP, rb_intern("ForNode")));
+            argv[7] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("ForNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_FORWARDING_ARGUMENTS_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingArgumentsNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingArgumentsNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_FORWARDING_PARAMETER_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingParameterNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_FORWARDING_SUPER_NODE: {
             yp_forwarding_super_node_t *cast = (yp_forwarding_super_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // block
-            argv[0] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, encoding, constants);
+            argv[0] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, source, encoding, constants);
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingSuperNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ForwardingSuperNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_global_variable_operator_and_write_node_t *cast = (yp_global_variable_operator_and_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorAndWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_global_variable_operator_or_write_node_t *cast = (yp_global_variable_operator_or_write_node_t *) node;
+            VALUE argv[4];
+
+            // name_loc
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
+
+            // operator_loc
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // value
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorOrWriteNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
+            yp_global_variable_operator_write_node_t *cast = (yp_global_variable_operator_write_node_t *) node;
             VALUE argv[5];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorOrWriteNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
-            yp_global_variable_operator_write_node_t *cast = (yp_global_variable_operator_write_node_t *) node;
-            VALUE argv[6];
-
-            // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
-
-            // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator
             argv[3] = rb_id2sym(constants[cast->operator - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_READ_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableReadNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_GLOBAL_VARIABLE_WRITE_NODE: {
             yp_global_variable_write_node_t *cast = (yp_global_variable_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("GlobalVariableWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_HASH_NODE: {
             yp_hash_node_t *cast = (yp_hash_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // opening_loc
-            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // elements
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->elements.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->elements.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->elements.nodes[index], source, encoding, constants));
             }
 
             // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("HashNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("HashNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_HASH_PATTERN_NODE: {
             yp_hash_pattern_node_t *cast = (yp_hash_pattern_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // constant
-            argv[0] = cast->constant == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->constant, encoding, constants);
+            argv[0] = cast->constant == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->constant, source, encoding, constants);
 
             // assocs
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->assocs.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->assocs.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->assocs.nodes[index], source, encoding, constants));
             }
 
             // kwrest
-            argv[2] = cast->kwrest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->kwrest, encoding, constants);
+            argv[2] = cast->kwrest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->kwrest, source, encoding, constants);
 
             // opening_loc
-            argv[3] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[3] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[4] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[4] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("HashPatternNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("HashPatternNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_IF_NODE: {
             yp_if_node_t *cast = (yp_if_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // if_keyword_loc
-            argv[0] = cast->if_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->if_keyword_loc.start, cast->if_keyword_loc.end);
+            argv[0] = cast->if_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->if_keyword_loc.start, cast->if_keyword_loc.end, source);
 
             // predicate
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, source, encoding, constants);
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // consequent
-            argv[3] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, encoding, constants);
+            argv[3] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, source, encoding, constants);
 
             // end_keyword_loc
-            argv[4] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[4] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("IfNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("IfNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_IMAGINARY_NODE: {
             yp_imaginary_node_t *cast = (yp_imaginary_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // numeric
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->numeric, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->numeric, source, encoding, constants);
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ImaginaryNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("ImaginaryNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_IN_NODE: {
             yp_in_node_t *cast = (yp_in_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // pattern
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->pattern, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->pattern, source, encoding, constants);
 
             // statements
-            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[1] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // in_loc
-            argv[2] = location_new(parser, cast->in_loc.start, cast->in_loc.end);
+            argv[2] = location_new(parser, cast->in_loc.start, cast->in_loc.end, source);
 
             // then_loc
-            argv[3] = cast->then_loc.start == NULL ? Qnil : location_new(parser, cast->then_loc.start, cast->then_loc.end);
+            argv[3] = cast->then_loc.start == NULL ? Qnil : location_new(parser, cast->then_loc.start, cast->then_loc.end, source);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("InNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_instance_variable_operator_and_write_node_t *cast = (yp_instance_variable_operator_and_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorAndWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_instance_variable_operator_or_write_node_t *cast = (yp_instance_variable_operator_or_write_node_t *) node;
+            VALUE argv[4];
+
+            // name_loc
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
+
+            // operator_loc
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // value
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorOrWriteNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE: {
+            yp_instance_variable_operator_write_node_t *cast = (yp_instance_variable_operator_write_node_t *) node;
             VALUE argv[5];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorOrWriteNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE: {
-            yp_instance_variable_operator_write_node_t *cast = (yp_instance_variable_operator_write_node_t *) node;
-            VALUE argv[6];
-
-            // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
-
-            // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator
             argv[3] = rb_id2sym(constants[cast->operator - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_READ_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableReadNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INSTANCE_VARIABLE_WRITE_NODE: {
             yp_instance_variable_write_node_t *cast = (yp_instance_variable_write_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // value
-            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // operator_loc
-            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableWriteNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("InstanceVariableWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INTEGER_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("IntegerNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("IntegerNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
             yp_interpolated_regular_expression_node_t *cast = (yp_interpolated_regular_expression_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // opening_loc
-            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // parts
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->parts.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], source, encoding, constants));
             }
 
             // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // flags
             argv[3] = ULONG2NUM(cast->flags);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedRegularExpressionNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedRegularExpressionNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_STRING_NODE: {
             yp_interpolated_string_node_t *cast = (yp_interpolated_string_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // opening_loc
-            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // parts
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->parts.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], source, encoding, constants));
             }
 
             // closing_loc
-            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedStringNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedStringNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_SYMBOL_NODE: {
             yp_interpolated_symbol_node_t *cast = (yp_interpolated_symbol_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // opening_loc
-            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // parts
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->parts.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], source, encoding, constants));
             }
 
             // closing_loc
-            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedSymbolNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedSymbolNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_INTERPOLATED_X_STRING_NODE: {
             yp_interpolated_x_string_node_t *cast = (yp_interpolated_x_string_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // opening_loc
-            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // parts
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->parts.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->parts.nodes[index], source, encoding, constants));
             }
 
             // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedXStringNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("InterpolatedXStringNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_KEYWORD_HASH_NODE: {
             yp_keyword_hash_node_t *cast = (yp_keyword_hash_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // elements
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->elements.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->elements.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->elements.nodes[index], source, encoding, constants));
             }
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordHashNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordHashNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_KEYWORD_PARAMETER_NODE: {
             yp_keyword_parameter_node_t *cast = (yp_keyword_parameter_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // value
-            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[1] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordParameterNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_KEYWORD_REST_PARAMETER_NODE: {
             yp_keyword_rest_parameter_node_t *cast = (yp_keyword_rest_parameter_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // operator_loc
-            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // name_loc
-            argv[1] = cast->name_loc.start == NULL ? Qnil : location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[1] = cast->name_loc.start == NULL ? Qnil : location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordRestParameterNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("KeywordRestParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_LAMBDA_NODE: {
             yp_lambda_node_t *cast = (yp_lambda_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // locals
             argv[0] = rb_ary_new();
@@ -1545,79 +1389,73 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // opening_loc
-            argv[1] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[1] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // parameters
-            argv[2] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, encoding, constants);
+            argv[2] = cast->parameters == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->parameters, source, encoding, constants);
 
             // statements
-            argv[3] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[3] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LambdaNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("LambdaNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_OPERATOR_AND_WRITE_NODE: {
             yp_local_variable_operator_and_write_node_t *cast = (yp_local_variable_operator_and_write_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // constant_id
             argv[3] = rb_id2sym(constants[cast->constant_id - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorAndWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorAndWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_OPERATOR_OR_WRITE_NODE: {
             yp_local_variable_operator_or_write_node_t *cast = (yp_local_variable_operator_or_write_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // constant_id
             argv[3] = rb_id2sym(constants[cast->constant_id - 1]);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorOrWriteNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorOrWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_OPERATOR_WRITE_NODE: {
             yp_local_variable_operator_write_node_t *cast = (yp_local_variable_operator_write_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // name_loc
-            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[0] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // constant_id
             argv[3] = rb_id2sym(constants[cast->constant_id - 1]);
@@ -1626,15 +1464,13 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             argv[4] = rb_id2sym(constants[cast->operator_id - 1]);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorWriteNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableOperatorWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
             yp_local_variable_read_node_t *cast = (yp_local_variable_read_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // constant_id
             argv[0] = rb_id2sym(constants[cast->constant_id - 1]);
@@ -1643,15 +1479,13 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             argv[1] = ULONG2NUM(cast->depth);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableReadNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_LOCAL_VARIABLE_WRITE_NODE: {
             yp_local_variable_write_node_t *cast = (yp_local_variable_write_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // constant_id
             argv[0] = rb_id2sym(constants[cast->constant_id - 1]);
@@ -1660,74 +1494,66 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             argv[1] = ULONG2NUM(cast->depth);
 
             // value
-            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // name_loc
-            argv[3] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[3] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[4] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[4] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableWriteNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("LocalVariableWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_MATCH_PREDICATE_NODE: {
             yp_match_predicate_node_t *cast = (yp_match_predicate_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // value
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // pattern
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->pattern, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->pattern, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("MatchPredicateNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("MatchPredicateNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_MATCH_REQUIRED_NODE: {
             yp_match_required_node_t *cast = (yp_match_required_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // value
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // pattern
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->pattern, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->pattern, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("MatchRequiredNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("MatchRequiredNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_MISSING_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("MissingNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("MissingNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_MODULE_NODE: {
             yp_module_node_t *cast = (yp_module_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // locals
             argv[0] = rb_ary_new();
@@ -1736,303 +1562,275 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // module_keyword_loc
-            argv[1] = location_new(parser, cast->module_keyword_loc.start, cast->module_keyword_loc.end);
+            argv[1] = location_new(parser, cast->module_keyword_loc.start, cast->module_keyword_loc.end, source);
 
             // constant_path
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->constant_path, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->constant_path, source, encoding, constants);
 
             // statements
-            argv[3] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[3] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // end_keyword_loc
-            argv[4] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[4] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("ModuleNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("ModuleNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_MULTI_WRITE_NODE: {
             yp_multi_write_node_t *cast = (yp_multi_write_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // targets
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->targets.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->targets.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->targets.nodes[index], source, encoding, constants));
             }
 
             // operator_loc
-            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[1] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[2] = cast->value == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // lparen_loc
-            argv[3] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end);
+            argv[3] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end, source);
 
             // rparen_loc
-            argv[4] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end);
+            argv[4] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("MultiWriteNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("MultiWriteNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_NEXT_NODE: {
             yp_next_node_t *cast = (yp_next_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // arguments
-            argv[0] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, encoding, constants);
+            argv[0] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, source, encoding, constants);
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("NextNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("NextNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_NIL_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("NilNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("NilNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_NO_KEYWORDS_PARAMETER_NODE: {
             yp_no_keywords_parameter_node_t *cast = (yp_no_keywords_parameter_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // operator_loc
-            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("NoKeywordsParameterNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("NoKeywordsParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_NUMBERED_REFERENCE_READ_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("NumberedReferenceReadNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("NumberedReferenceReadNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_OPTIONAL_PARAMETER_NODE: {
             yp_optional_parameter_node_t *cast = (yp_optional_parameter_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // constant_id
             argv[0] = rb_id2sym(constants[cast->constant_id - 1]);
 
             // name_loc
-            argv[1] = location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[1] = location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // value
-            argv[3] = yp_node_new(parser, (yp_node_t *) cast->value, encoding, constants);
+            argv[3] = yp_node_new(parser, (yp_node_t *) cast->value, source, encoding, constants);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("OptionalParameterNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("OptionalParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_OR_NODE: {
             yp_or_node_t *cast = (yp_or_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // left
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, source, encoding, constants);
 
             // right
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("OrNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("OrNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_PARAMETERS_NODE: {
             yp_parameters_node_t *cast = (yp_parameters_node_t *) node;
-            VALUE argv[9];
+            VALUE argv[8];
 
             // requireds
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->requireds.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->requireds.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->requireds.nodes[index], source, encoding, constants));
             }
 
             // optionals
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->optionals.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->optionals.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->optionals.nodes[index], source, encoding, constants));
             }
 
             // posts
             argv[2] = rb_ary_new();
             for (size_t index = 0; index < cast->posts.size; index++) {
-                rb_ary_push(argv[2], yp_node_new(parser, cast->posts.nodes[index], encoding, constants));
+                rb_ary_push(argv[2], yp_node_new(parser, cast->posts.nodes[index], source, encoding, constants));
             }
 
             // rest
-            argv[3] = cast->rest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->rest, encoding, constants);
+            argv[3] = cast->rest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->rest, source, encoding, constants);
 
             // keywords
             argv[4] = rb_ary_new();
             for (size_t index = 0; index < cast->keywords.size; index++) {
-                rb_ary_push(argv[4], yp_node_new(parser, cast->keywords.nodes[index], encoding, constants));
+                rb_ary_push(argv[4], yp_node_new(parser, cast->keywords.nodes[index], source, encoding, constants));
             }
 
             // keyword_rest
-            argv[5] = cast->keyword_rest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->keyword_rest, encoding, constants);
+            argv[5] = cast->keyword_rest == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->keyword_rest, source, encoding, constants);
 
             // block
-            argv[6] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, encoding, constants);
+            argv[6] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, source, encoding, constants);
 
             // location
-            argv[7] = LONG2FIX(node->location.start - parser->start);
-            argv[8] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(9, argv, rb_const_get_at(rb_cYARP, rb_intern("ParametersNode")));
+            argv[7] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("ParametersNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_PARENTHESES_NODE: {
             yp_parentheses_node_t *cast = (yp_parentheses_node_t *) node;
+            VALUE argv[4];
+
+            // statements
+            argv[0] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
+
+            // opening_loc
+            argv[1] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
+
+            // closing_loc
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
+
+            // location
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ParenthesesNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_PINNED_EXPRESSION_NODE: {
+            yp_pinned_expression_node_t *cast = (yp_pinned_expression_node_t *) node;
+            VALUE argv[5];
+
+            // expression
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->expression, source, encoding, constants);
+
+            // operator_loc
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // lparen_loc
+            argv[2] = location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end, source);
+
+            // rparen_loc
+            argv[3] = location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end, source);
+
+            // location
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("PinnedExpressionNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_PINNED_VARIABLE_NODE: {
+            yp_pinned_variable_node_t *cast = (yp_pinned_variable_node_t *) node;
+            VALUE argv[3];
+
+            // variable
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->variable, source, encoding, constants);
+
+            // operator_loc
+            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+            // location
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("PinnedVariableNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_POST_EXECUTION_NODE: {
+            yp_post_execution_node_t *cast = (yp_post_execution_node_t *) node;
             VALUE argv[5];
 
             // statements
-            argv[0] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
-
-            // opening_loc
-            argv[1] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
-
-            // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
-
-            // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("ParenthesesNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_PINNED_EXPRESSION_NODE: {
-            yp_pinned_expression_node_t *cast = (yp_pinned_expression_node_t *) node;
-            VALUE argv[6];
-
-            // expression
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->expression, encoding, constants);
-
-            // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // lparen_loc
-            argv[2] = location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end);
-
-            // rparen_loc
-            argv[3] = location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end);
-
-            // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("PinnedExpressionNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_PINNED_VARIABLE_NODE: {
-            yp_pinned_variable_node_t *cast = (yp_pinned_variable_node_t *) node;
-            VALUE argv[4];
-
-            // variable
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->variable, encoding, constants);
-
-            // operator_loc
-            argv[1] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
-
-            // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("PinnedVariableNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_POST_EXECUTION_NODE: {
-            yp_post_execution_node_t *cast = (yp_post_execution_node_t *) node;
-            VALUE argv[6];
-
-            // statements
-            argv[0] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[0] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // opening_loc
-            argv[2] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[2] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[3] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[3] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("PostExecutionNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("PostExecutionNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_PRE_EXECUTION_NODE: {
             yp_pre_execution_node_t *cast = (yp_pre_execution_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // statements
-            argv[0] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[0] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // opening_loc
-            argv[2] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[2] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[3] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[3] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("PreExecutionNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("PreExecutionNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_PROGRAM_NODE: {
             yp_program_node_t *cast = (yp_program_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // locals
             argv[0] = rb_ary_new();
@@ -2041,74 +1839,66 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // statements
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ProgramNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ProgramNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_RANGE_NODE: {
             yp_range_node_t *cast = (yp_range_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // left
-            argv[0] = cast->left == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->left, encoding, constants);
+            argv[0] = cast->left == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->left, source, encoding, constants);
 
             // right
-            argv[1] = cast->right == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->right, encoding, constants);
+            argv[1] = cast->right == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->right, source, encoding, constants);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // flags
             argv[3] = ULONG2NUM(cast->flags);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("RangeNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("RangeNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_RATIONAL_NODE: {
             yp_rational_node_t *cast = (yp_rational_node_t *) node;
-            VALUE argv[3];
-
-            // numeric
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->numeric, encoding, constants);
-
-            // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("RationalNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_REDO_NODE: {
             VALUE argv[2];
 
-            // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
+            // numeric
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->numeric, source, encoding, constants);
 
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("RedoNode")));
+            // location
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("RationalNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
+        case YP_NODE_REDO_NODE: {
+            VALUE argv[1];
+
+            // location
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("RedoNode")));
+        }
+#line 25 "api_node.c.erb"
         case YP_NODE_REGULAR_EXPRESSION_NODE: {
             yp_regular_expression_node_t *cast = (yp_regular_expression_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // opening_loc
-            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // content_loc
-            argv[1] = location_new(parser, cast->content_loc.start, cast->content_loc.end);
+            argv[1] = location_new(parser, cast->content_loc.start, cast->content_loc.end, source);
 
             // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // unescaped
             argv[3] = yp_string_new(&cast->unescaped, encoding);
@@ -2117,158 +1907,140 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             argv[4] = ULONG2NUM(cast->flags);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("RegularExpressionNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("RegularExpressionNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_REQUIRED_DESTRUCTURED_PARAMETER_NODE: {
             yp_required_destructured_parameter_node_t *cast = (yp_required_destructured_parameter_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // parameters
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->parameters.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->parameters.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->parameters.nodes[index], source, encoding, constants));
             }
 
             // opening_loc
-            argv[1] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[1] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("RequiredDestructuredParameterNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("RequiredDestructuredParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_REQUIRED_PARAMETER_NODE: {
             yp_required_parameter_node_t *cast = (yp_required_parameter_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // constant_id
             argv[0] = rb_id2sym(constants[cast->constant_id - 1]);
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("RequiredParameterNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("RequiredParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_RESCUE_MODIFIER_NODE: {
             yp_rescue_modifier_node_t *cast = (yp_rescue_modifier_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // expression
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->expression, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->expression, source, encoding, constants);
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // rescue_expression
-            argv[2] = yp_node_new(parser, (yp_node_t *) cast->rescue_expression, encoding, constants);
+            argv[2] = yp_node_new(parser, (yp_node_t *) cast->rescue_expression, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("RescueModifierNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("RescueModifierNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_RESCUE_NODE: {
             yp_rescue_node_t *cast = (yp_rescue_node_t *) node;
-            VALUE argv[8];
+            VALUE argv[7];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // exceptions
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->exceptions.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->exceptions.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->exceptions.nodes[index], source, encoding, constants));
             }
 
             // operator_loc
-            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = cast->operator_loc.start == NULL ? Qnil : location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // exception
-            argv[3] = cast->exception == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->exception, encoding, constants);
+            argv[3] = cast->exception == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->exception, source, encoding, constants);
 
             // statements
-            argv[4] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[4] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // consequent
-            argv[5] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, encoding, constants);
+            argv[5] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, source, encoding, constants);
 
             // location
-            argv[6] = LONG2FIX(node->location.start - parser->start);
-            argv[7] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("RescueNode")));
+            argv[6] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("RescueNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_REST_PARAMETER_NODE: {
             yp_rest_parameter_node_t *cast = (yp_rest_parameter_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // operator_loc
-            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // name_loc
-            argv[1] = cast->name_loc.start == NULL ? Qnil : location_new(parser, cast->name_loc.start, cast->name_loc.end);
+            argv[1] = cast->name_loc.start == NULL ? Qnil : location_new(parser, cast->name_loc.start, cast->name_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("RestParameterNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("RestParameterNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_RETRY_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("RetryNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("RetryNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_RETURN_NODE: {
             yp_return_node_t *cast = (yp_return_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // arguments
-            argv[1] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, encoding, constants);
+            argv[1] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, source, encoding, constants);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("ReturnNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("ReturnNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SELF_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SelfNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("SelfNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SINGLETON_CLASS_NODE: {
             yp_singleton_class_node_t *cast = (yp_singleton_class_node_t *) node;
-            VALUE argv[8];
+            VALUE argv[7];
 
             // locals
             argv[0] = rb_ary_new();
@@ -2277,355 +2049,348 @@ yp_node_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding, ID *con
             }
 
             // class_keyword_loc
-            argv[1] = location_new(parser, cast->class_keyword_loc.start, cast->class_keyword_loc.end);
+            argv[1] = location_new(parser, cast->class_keyword_loc.start, cast->class_keyword_loc.end, source);
 
             // operator_loc
-            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[2] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // expression
-            argv[3] = yp_node_new(parser, (yp_node_t *) cast->expression, encoding, constants);
+            argv[3] = yp_node_new(parser, (yp_node_t *) cast->expression, source, encoding, constants);
 
             // statements
-            argv[4] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[4] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // end_keyword_loc
-            argv[5] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[5] = location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[6] = LONG2FIX(node->location.start - parser->start);
-            argv[7] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(8, argv, rb_const_get_at(rb_cYARP, rb_intern("SingletonClassNode")));
+            argv[6] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("SingletonClassNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SOURCE_ENCODING_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceEncodingNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceEncodingNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SOURCE_FILE_NODE: {
             yp_source_file_node_t *cast = (yp_source_file_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // filepath
             argv[0] = yp_string_new(&cast->filepath, encoding);
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceFileNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceFileNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SOURCE_LINE_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceLineNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("SourceLineNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SPLAT_NODE: {
             yp_splat_node_t *cast = (yp_splat_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // operator_loc
-            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end);
+            argv[0] = location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
             // expression
-            argv[1] = cast->expression == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->expression, encoding, constants);
+            argv[1] = cast->expression == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->expression, source, encoding, constants);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("SplatNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("SplatNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_STATEMENTS_NODE: {
             yp_statements_node_t *cast = (yp_statements_node_t *) node;
-            VALUE argv[3];
+            VALUE argv[2];
 
             // body
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->body.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->body.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->body.nodes[index], source, encoding, constants));
             }
 
             // location
-            argv[1] = LONG2FIX(node->location.start - parser->start);
-            argv[2] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("StatementsNode")));
+            argv[1] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("StatementsNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_STRING_CONCAT_NODE: {
             yp_string_concat_node_t *cast = (yp_string_concat_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // left
-            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, encoding, constants);
+            argv[0] = yp_node_new(parser, (yp_node_t *) cast->left, source, encoding, constants);
 
             // right
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->right, source, encoding, constants);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("StringConcatNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("StringConcatNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_STRING_NODE: {
             yp_string_node_t *cast = (yp_string_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // opening_loc
-            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // content_loc
-            argv[1] = location_new(parser, cast->content_loc.start, cast->content_loc.end);
+            argv[1] = location_new(parser, cast->content_loc.start, cast->content_loc.end, source);
 
             // closing_loc
-            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // unescaped
             argv[3] = yp_string_new(&cast->unescaped, encoding);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("StringNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("StringNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_SUPER_NODE: {
             yp_super_node_t *cast = (yp_super_node_t *) node;
-            VALUE argv[7];
-
-            // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
-
-            // lparen_loc
-            argv[1] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end);
-
-            // arguments
-            argv[2] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, encoding, constants);
-
-            // rparen_loc
-            argv[3] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end);
-
-            // block
-            argv[4] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, encoding, constants);
-
-            // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("SuperNode")));
-        }
-#line 37 "api_node.c.erb"
-        case YP_NODE_SYMBOL_NODE: {
-            yp_symbol_node_t *cast = (yp_symbol_node_t *) node;
             VALUE argv[6];
 
+            // keyword_loc
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
+
+            // lparen_loc
+            argv[1] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end, source);
+
+            // arguments
+            argv[2] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, source, encoding, constants);
+
+            // rparen_loc
+            argv[3] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end, source);
+
+            // block
+            argv[4] = cast->block == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->block, source, encoding, constants);
+
+            // location
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("SuperNode")));
+        }
+#line 25 "api_node.c.erb"
+        case YP_NODE_SYMBOL_NODE: {
+            yp_symbol_node_t *cast = (yp_symbol_node_t *) node;
+            VALUE argv[5];
+
             // opening_loc
-            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = cast->opening_loc.start == NULL ? Qnil : location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // value_loc
-            argv[1] = location_new(parser, cast->value_loc.start, cast->value_loc.end);
+            argv[1] = location_new(parser, cast->value_loc.start, cast->value_loc.end, source);
 
             // closing_loc
-            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = cast->closing_loc.start == NULL ? Qnil : location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // unescaped
             argv[3] = yp_string_new(&cast->unescaped, encoding);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("SymbolNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("SymbolNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_TRUE_NODE: {
-            VALUE argv[2];
+            VALUE argv[1];
 
             // location
-            argv[0] = LONG2FIX(node->location.start - parser->start);
-            argv[1] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(2, argv, rb_const_get_at(rb_cYARP, rb_intern("TrueNode")));
+            argv[0] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(1, argv, rb_const_get_at(rb_cYARP, rb_intern("TrueNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_UNDEF_NODE: {
             yp_undef_node_t *cast = (yp_undef_node_t *) node;
-            VALUE argv[4];
+            VALUE argv[3];
 
             // names
             argv[0] = rb_ary_new();
             for (size_t index = 0; index < cast->names.size; index++) {
-                rb_ary_push(argv[0], yp_node_new(parser, cast->names.nodes[index], encoding, constants));
+                rb_ary_push(argv[0], yp_node_new(parser, cast->names.nodes[index], source, encoding, constants));
             }
 
             // keyword_loc
-            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[1] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // location
-            argv[2] = LONG2FIX(node->location.start - parser->start);
-            argv[3] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("UndefNode")));
+            argv[2] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(3, argv, rb_const_get_at(rb_cYARP, rb_intern("UndefNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_UNLESS_NODE: {
             yp_unless_node_t *cast = (yp_unless_node_t *) node;
-            VALUE argv[7];
+            VALUE argv[6];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // predicate
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, source, encoding, constants);
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // consequent
-            argv[3] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, encoding, constants);
+            argv[3] = cast->consequent == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->consequent, source, encoding, constants);
 
             // end_keyword_loc
-            argv[4] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end);
+            argv[4] = cast->end_keyword_loc.start == NULL ? Qnil : location_new(parser, cast->end_keyword_loc.start, cast->end_keyword_loc.end, source);
 
             // location
-            argv[5] = LONG2FIX(node->location.start - parser->start);
-            argv[6] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(7, argv, rb_const_get_at(rb_cYARP, rb_intern("UnlessNode")));
+            argv[5] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("UnlessNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_UNTIL_NODE: {
             yp_until_node_t *cast = (yp_until_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // predicate
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, source, encoding, constants);
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("UntilNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("UntilNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_WHEN_NODE: {
             yp_when_node_t *cast = (yp_when_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // conditions
             argv[1] = rb_ary_new();
             for (size_t index = 0; index < cast->conditions.size; index++) {
-                rb_ary_push(argv[1], yp_node_new(parser, cast->conditions.nodes[index], encoding, constants));
+                rb_ary_push(argv[1], yp_node_new(parser, cast->conditions.nodes[index], source, encoding, constants));
             }
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("WhenNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("WhenNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_WHILE_NODE: {
             yp_while_node_t *cast = (yp_while_node_t *) node;
-            VALUE argv[5];
+            VALUE argv[4];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // predicate
-            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, encoding, constants);
+            argv[1] = yp_node_new(parser, (yp_node_t *) cast->predicate, source, encoding, constants);
 
             // statements
-            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, encoding, constants);
+            argv[2] = cast->statements == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->statements, source, encoding, constants);
 
             // location
-            argv[3] = LONG2FIX(node->location.start - parser->start);
-            argv[4] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("WhileNode")));
+            argv[3] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(4, argv, rb_const_get_at(rb_cYARP, rb_intern("WhileNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_X_STRING_NODE: {
             yp_x_string_node_t *cast = (yp_x_string_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // opening_loc
-            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end);
+            argv[0] = location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
             // content_loc
-            argv[1] = location_new(parser, cast->content_loc.start, cast->content_loc.end);
+            argv[1] = location_new(parser, cast->content_loc.start, cast->content_loc.end, source);
 
             // closing_loc
-            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end);
+            argv[2] = location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
             // unescaped
             argv[3] = yp_string_new(&cast->unescaped, encoding);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("XStringNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("XStringNode")));
         }
-#line 37 "api_node.c.erb"
+#line 25 "api_node.c.erb"
         case YP_NODE_YIELD_NODE: {
             yp_yield_node_t *cast = (yp_yield_node_t *) node;
-            VALUE argv[6];
+            VALUE argv[5];
 
             // keyword_loc
-            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end);
+            argv[0] = location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
             // lparen_loc
-            argv[1] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end);
+            argv[1] = cast->lparen_loc.start == NULL ? Qnil : location_new(parser, cast->lparen_loc.start, cast->lparen_loc.end, source);
 
             // arguments
-            argv[2] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, encoding, constants);
+            argv[2] = cast->arguments == NULL ? Qnil : yp_node_new(parser, (yp_node_t *) cast->arguments, source, encoding, constants);
 
             // rparen_loc
-            argv[3] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end);
+            argv[3] = cast->rparen_loc.start == NULL ? Qnil : location_new(parser, cast->rparen_loc.start, cast->rparen_loc.end, source);
 
             // location
-            argv[4] = LONG2FIX(node->location.start - parser->start);
-            argv[5] = LONG2FIX(node->location.end - node->location.start);
-
-            return rb_class_new_instance(6, argv, rb_const_get_at(rb_cYARP, rb_intern("YieldNode")));
+            argv[4] = location_new(parser, node->location.start, node->location.end, source);
+            return rb_class_new_instance(5, argv, rb_const_get_at(rb_cYARP, rb_intern("YieldNode")));
         }
         default:
             rb_raise(rb_eRuntimeError, "unknown node type: %d", node->type);
     }
 }
 
-#line 94 "api_node.c.erb"
+#line 80 "api_node.c.erb"
+VALUE
+yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding, VALUE source) {
+    ID type = rb_intern(yp_token_type_to_str(token->type));
+    VALUE location = location_new(parser, token->start, token->end, source);
+
+    VALUE argv[] = {
+        ID2SYM(type),
+        rb_enc_str_new(token->start, token->end - token->start, encoding),
+        location
+    };
+
+    return rb_class_new_instance(3, argv, rb_cYARPToken);
+}
+
+// Create a YARP::Source object from the given parser.
+VALUE
+yp_source_new(yp_parser_t *parser) {
+    VALUE source = rb_str_new(parser->start, parser->end - parser->start);
+    VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
+
+    for (size_t index = 0; index < parser->newline_list.size; index++) {
+        rb_ary_push(offsets, INT2FIX(parser->newline_list.offsets[index]));
+    }
+
+    VALUE source_argv[] = { source, offsets };
+    return rb_class_new_instance(2, source_argv, rb_cYARPSource);
+}
+
 VALUE yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
+    VALUE source = yp_source_new(parser);
     ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
 
     for (size_t index = 0; index < parser->constant_pool.capacity; index++) {
@@ -2636,7 +2401,7 @@ VALUE yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
         }
     }
 
-    VALUE res_node = yp_node_new(parser, node, encoding, constants);
+    VALUE res_node = yp_node_new(parser, node, source, encoding, constants);
     free(constants);
     return res_node;
 }

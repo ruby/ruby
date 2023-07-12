@@ -164,7 +164,7 @@ module URI
         QUERY: %r[\A(?:%\h\h|[!$&-.0-9:;=@A-Z_a-z~/?])*+\z],
         FRAGMENT: %r[\A#{FRAGMENT}\z]o,
         OPAQUE: %r[\A(?:[^/].*)?\z],
-        PORT: /\A[\x09\x0a\x0c\x0d ]*\d*[\x09\x0a\x0c\x0d ]*\z/,
+        PORT: /\A[\x09\x0a\x0c\x0d ]*+\d*[\x09\x0a\x0c\x0d ]*\z/,
       }
     end
 

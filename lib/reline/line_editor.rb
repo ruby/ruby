@@ -60,6 +60,10 @@ class Reline::LineEditor
     reset_variables(encoding: encoding)
   end
 
+  def io_gate
+    Reline::IOGate
+  end
+
   def set_pasting_state(in_pasting)
     @in_pasting = in_pasting
   end
@@ -1510,11 +1514,13 @@ class Reline::LineEditor
       return if key.char >= 128 # maybe, first byte of multi byte
       method_symbol = @config.editing_mode.get_method(key.combined_char)
       if key.with_meta and method_symbol == :ed_unassigned
-        # split ESC + key
-        method_symbol = @config.editing_mode.get_method("\e".ord)
-        process_key("\e".ord, method_symbol)
-        method_symbol = @config.editing_mode.get_method(key.char)
-        process_key(key.char, method_symbol)
+        if @config.editing_mode_is?(:vi_command, :vi_insert)
+          # split ESC + key in vi mode
+          method_symbol = @config.editing_mode.get_method("\e".ord)
+          process_key("\e".ord, method_symbol)
+          method_symbol = @config.editing_mode.get_method(key.char)
+          process_key(key.char, method_symbol)
+        end
       else
         process_key(key.combined_char, method_symbol)
       end
@@ -1645,7 +1651,7 @@ class Reline::LineEditor
       @line = ' ' * new_indent + @line.lstrip
 
       new_indent = nil
-      result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, (new_lines[-2].size + 1), false)
+      result = @auto_indent_proc.(new_lines[0..-2], @line_index - 1, (new_lines[@line_index - 1].bytesize + 1), false)
       if result
         new_indent = result
       end
@@ -3286,4 +3292,7 @@ class Reline::LineEditor
     @mark_pointer = new_pointer
   end
   alias_method :exchange_point_and_mark, :em_exchange_mark
+
+  private def em_meta_next(key)
+  end
 end

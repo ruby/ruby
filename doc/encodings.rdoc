@@ -137,15 +137,16 @@ returns the \Encoding of the concatenated string, or +nil+ if incompatible:
 A Ruby String object has an encoding that is an instance of class \Encoding.
 The encoding may be retrieved by method String#encoding.
 
-The default encoding for a string literal is the script encoding
-(see Encoding@Script+encoding):
+The default encoding for a string literal is the script encoding;
+see (Script Encoding)[rdoc-ref:encodings.rdoc@Script+Encoding].
 
   's'.encoding # => #<Encoding:UTF-8>
 
 The default encoding for a string created with method String.new is:
 
 - For a \String object argument, the encoding of that string.
-- For a string literal, the script encoding (see Encoding@Script+encoding).
+- For a string literal, the script encoding;
+  see {Script Encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].
 
 In either case, any encoding may be specified:
 
@@ -190,7 +191,8 @@ the encoding may be retrieved by method Symbol#encoding or Regexp#encoding.
 The default encoding for these, however, is:
 
 - US-ASCII, if all characters are US-ASCII.
-- The script encoding, otherwise (see Encoding@Script+encoding).
+- The script encoding, otherwise;
+  see (Script Encoding)[rdoc-ref:encodings.rdoc@Script+Encoding].
 
 === Filesystem \Encoding
 

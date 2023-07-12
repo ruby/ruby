@@ -79,15 +79,13 @@ describe "Module#private_class_method" do
     end.should raise_error(NameError)
   end
 
-  ruby_version_is "3.0" do
-    context "when single argument is passed and is an array" do
-      it "sets the visibility of the given methods to private" do
-        c = Class.new do
-          def self.foo() "foo" end
-          private_class_method [:foo]
-        end
-        -> { c.foo }.should raise_error(NoMethodError)
+  context "when single argument is passed and is an array" do
+    it "sets the visibility of the given methods to private" do
+      c = Class.new do
+        def self.foo() "foo" end
+        private_class_method [:foo]
       end
+      -> { c.foo }.should raise_error(NoMethodError)
     end
   end
 end

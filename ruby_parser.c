@@ -790,16 +790,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->scan_digits = ruby_scan_digits;
     config->strtod      = ruby_strtod;
 
-    config->isspace = rb_isspace;
-    config->isascii = rb_isascii;
-    config->iscntrl = rb_iscntrl;
-    config->isalpha = rb_isalpha;
-    config->isdigit = rb_isdigit;
-    config->isalnum = rb_isalnum;
-    config->isxdigit = rb_isxdigit;
-    config->strcasecmp = st_locale_insensitive_strcasecmp;
-    config->strncasecmp = st_locale_insensitive_strncasecmp;
-
     config->rbool = rbool;
     config->undef_p = undef_p;
     config->rtest = rtest;

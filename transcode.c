@@ -1715,8 +1715,7 @@ rb_econv_close(rb_econv_t *ec)
     }
     for (i = 0; i < ec->num_trans; i++) {
         rb_transcoding_close(ec->elems[i].tc);
-        if (ec->elems[i].out_buf_start)
-            xfree(ec->elems[i].out_buf_start);
+        xfree(ec->elems[i].out_buf_start);
     }
     xfree(ec->in_buf_start);
     xfree(ec->elems);

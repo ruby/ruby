@@ -65,8 +65,12 @@ struct rb_callinfo {
     VALUE argc;
 };
 
-#ifndef USE_EMBED_CI
+#if !defined(USE_EMBED_CI) || (USE_EMBED_CI+0)
+#undef USE_EMBED_CI
 #define USE_EMBED_CI 1
+#else
+#undef USE_EMBED_CI
+#define USE_EMBED_CI 0
 #endif
 
 #if SIZEOF_VALUE == 8
@@ -96,7 +100,9 @@ struct rb_callinfo {
 static inline bool
 vm_ci_packed_p(const struct rb_callinfo *ci)
 {
-#if USE_EMBED_CI
+    if (!USE_EMBED_CI) {
+        return 0;
+    }
     if (LIKELY(((VALUE)ci) & 0x01)) {
         return 1;
     }
@@ -104,9 +110,6 @@ vm_ci_packed_p(const struct rb_callinfo *ci)
         VM_ASSERT(IMEMO_TYPE_P(ci, imemo_callinfo));
         return 0;
     }
-#else
-    return 0;
-#endif
 }
 
 static inline bool
@@ -196,12 +199,10 @@ vm_ci_dump(const struct rb_callinfo *ci)
 static inline const struct rb_callinfo *
 vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
-#if USE_EMBED_CI
-    if (VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
+    if (USE_EMBED_CI && VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
         RB_DEBUG_COUNTER_INC(ci_packed);
         return vm_ci_new_id(mid, flag, argc, kwarg);
     }
-#endif
 
     const bool debug = 0;
     if (debug) ruby_debug_printf("%s:%d ", file, line);

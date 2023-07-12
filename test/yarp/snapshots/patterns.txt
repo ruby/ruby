@@ -1,6 +1,6 @@
-ProgramNode(0...3725)(
+ProgramNode(0...3743)(
   [:bar, :baz, :qux, :b, :a],
-  StatementsNode(0...3725)(
+  StatementsNode(0...3743)(
     [MatchRequiredNode(0...10)(
        CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
        LocalVariableWriteNode(7...10)(:bar, 0, nil, (7...10), nil),
@@ -279,7 +279,7 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       SourceFileNode(291...299)("/fixtures/patterns.txt"),
+       SourceFileNode(291...299)("patterns.txt"),
        (288...290)
      ),
      MatchRequiredNode(300...315)(
@@ -817,8 +817,8 @@ ProgramNode(0...3725)(
          "foo"
        ),
        RangeNode(824...844)(
-         SourceFileNode(824...832)("/fixtures/patterns.txt"),
-         SourceFileNode(836...844)("/fixtures/patterns.txt"),
+         SourceFileNode(824...832)("patterns.txt"),
+         SourceFileNode(836...844)("patterns.txt"),
          (833...835),
          0
        ),
@@ -1420,7 +1420,7 @@ ProgramNode(0...3725)(
        ),
        (1282...1284)
      ),
-     MatchRequiredNode(1298...1313)(
+     MatchRequiredNode(1298...1315)(
        CallNode(1298...1301)(
          nil,
          nil,
@@ -1432,64 +1432,28 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1305...1313)(
+       ArrayPatternNode(1305...1315)(
          ConstantReadNode(1305...1308)(),
-         [LocalVariableWriteNode(1309...1312)(
-            :bar,
-            0,
+         [ArrayPatternNode(1309...1314)(
+            ConstantReadNode(1309...1312)(),
+            [],
             nil,
-            (1309...1312),
-            nil
+            [],
+            (1312...1313),
+            (1313...1314)
           )],
          nil,
          [],
          (1308...1309),
-         (1312...1313)
+         (1314...1315)
        ),
        (1302...1304)
      ),
-     MatchRequiredNode(1314...1335)(
-       CallNode(1314...1317)(
+     MatchRequiredNode(1316...1331)(
+       CallNode(1316...1319)(
          nil,
          nil,
-         (1314...1317),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ArrayPatternNode(1321...1335)(
-         ConstantReadNode(1321...1324)(),
-         [],
-         SplatNode(1325...1329)(
-           (1325...1326),
-           LocalVariableWriteNode(1326...1329)(
-             :bar,
-             0,
-             nil,
-             (1326...1329),
-             nil
-           )
-         ),
-         [LocalVariableWriteNode(1331...1334)(
-            :baz,
-            0,
-            nil,
-            (1331...1334),
-            nil
-          )],
-         (1324...1325),
-         (1334...1335)
-       ),
-       (1318...1320)
-     ),
-     MatchRequiredNode(1336...1357)(
-       CallNode(1336...1339)(
-         nil,
-         nil,
-         (1336...1339),
+         (1316...1319),
          nil,
          nil,
          nil,
@@ -1497,36 +1461,101 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1343...1357)(
-         ConstantReadNode(1343...1346)(),
-         [LocalVariableWriteNode(1347...1350)(
+       ArrayPatternNode(1323...1331)(
+         ConstantReadNode(1323...1326)(),
+         [LocalVariableWriteNode(1327...1330)(
             :bar,
             0,
             nil,
-            (1347...1350),
+            (1327...1330),
             nil
           )],
-         SplatNode(1352...1356)(
-           (1352...1353),
-           LocalVariableWriteNode(1353...1356)(
+         nil,
+         [],
+         (1326...1327),
+         (1330...1331)
+       ),
+       (1320...1322)
+     ),
+     MatchRequiredNode(1332...1353)(
+       CallNode(1332...1335)(
+         nil,
+         nil,
+         (1332...1335),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ArrayPatternNode(1339...1353)(
+         ConstantReadNode(1339...1342)(),
+         [],
+         SplatNode(1343...1347)(
+           (1343...1344),
+           LocalVariableWriteNode(1344...1347)(
+             :bar,
+             0,
+             nil,
+             (1344...1347),
+             nil
+           )
+         ),
+         [LocalVariableWriteNode(1349...1352)(
+            :baz,
+            0,
+            nil,
+            (1349...1352),
+            nil
+          )],
+         (1342...1343),
+         (1352...1353)
+       ),
+       (1336...1338)
+     ),
+     MatchRequiredNode(1354...1375)(
+       CallNode(1354...1357)(
+         nil,
+         nil,
+         (1354...1357),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ArrayPatternNode(1361...1375)(
+         ConstantReadNode(1361...1364)(),
+         [LocalVariableWriteNode(1365...1368)(
+            :bar,
+            0,
+            nil,
+            (1365...1368),
+            nil
+          )],
+         SplatNode(1370...1374)(
+           (1370...1371),
+           LocalVariableWriteNode(1371...1374)(
              :baz,
              0,
              nil,
-             (1353...1356),
+             (1371...1374),
              nil
            )
          ),
          [],
-         (1346...1347),
-         (1356...1357)
+         (1364...1365),
+         (1374...1375)
        ),
-       (1340...1342)
+       (1358...1360)
      ),
-     MatchRequiredNode(1358...1385)(
-       CallNode(1358...1361)(
+     MatchRequiredNode(1376...1403)(
+       CallNode(1376...1379)(
          nil,
          nil,
-         (1358...1361),
+         (1376...1379),
          nil,
          nil,
          nil,
@@ -1534,45 +1563,45 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       FindPatternNode(1365...1385)(
-         ConstantReadNode(1365...1368)(),
-         SplatNode(1369...1373)(
-           (1369...1370),
-           LocalVariableWriteNode(1370...1373)(
+       FindPatternNode(1383...1403)(
+         ConstantReadNode(1383...1386)(),
+         SplatNode(1387...1391)(
+           (1387...1388),
+           LocalVariableWriteNode(1388...1391)(
              :bar,
              0,
              nil,
-             (1370...1373),
+             (1388...1391),
              nil
            )
          ),
-         [LocalVariableWriteNode(1375...1378)(
+         [LocalVariableWriteNode(1393...1396)(
             :baz,
             0,
             nil,
-            (1375...1378),
+            (1393...1396),
             nil
           )],
-         SplatNode(1380...1384)(
-           (1380...1381),
-           LocalVariableWriteNode(1381...1384)(
+         SplatNode(1398...1402)(
+           (1398...1399),
+           LocalVariableWriteNode(1399...1402)(
              :qux,
              0,
              nil,
-             (1381...1384),
+             (1399...1402),
              nil
            )
          ),
-         (1368...1369),
-         (1384...1385)
+         (1386...1387),
+         (1402...1403)
        ),
-       (1362...1364)
+       (1380...1382)
      ),
-     MatchRequiredNode(1387...1398)(
-       CallNode(1387...1390)(
+     MatchRequiredNode(1405...1416)(
+       CallNode(1405...1408)(
          nil,
          nil,
-         (1387...1390),
+         (1405...1408),
          nil,
          nil,
          nil,
@@ -1580,16 +1609,16 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1394...1398)(
+       ArrayPatternNode(1412...1416)(
          nil,
          [],
-         SplatNode(1394...1398)(
-           (1394...1395),
-           LocalVariableWriteNode(1395...1398)(
+         SplatNode(1412...1416)(
+           (1412...1413),
+           LocalVariableWriteNode(1413...1416)(
              :bar,
              0,
              nil,
-             (1395...1398),
+             (1413...1416),
              nil
            )
          ),
@@ -1597,13 +1626,13 @@ ProgramNode(0...3725)(
          nil,
          nil
        ),
-       (1391...1393)
+       (1409...1411)
      ),
-     MatchRequiredNode(1399...1420)(
-       CallNode(1399...1402)(
+     MatchRequiredNode(1417...1438)(
+       CallNode(1417...1420)(
          nil,
          nil,
-         (1399...1402),
+         (1417...1420),
          nil,
          nil,
          nil,
@@ -1611,43 +1640,43 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1406...1420)(
+       ArrayPatternNode(1424...1438)(
          nil,
          [],
-         SplatNode(1406...1410)(
-           (1406...1407),
-           LocalVariableWriteNode(1407...1410)(
+         SplatNode(1424...1428)(
+           (1424...1425),
+           LocalVariableWriteNode(1425...1428)(
              :bar,
              0,
              nil,
-             (1407...1410),
+             (1425...1428),
              nil
            )
          ),
-         [LocalVariableWriteNode(1412...1415)(
+         [LocalVariableWriteNode(1430...1433)(
             :baz,
             0,
             nil,
-            (1412...1415),
+            (1430...1433),
             nil
           ),
-          LocalVariableWriteNode(1417...1420)(
+          LocalVariableWriteNode(1435...1438)(
             :qux,
             0,
             nil,
-            (1417...1420),
+            (1435...1438),
             nil
           )],
          nil,
          nil
        ),
-       (1403...1405)
+       (1421...1423)
      ),
-     MatchRequiredNode(1421...1442)(
-       CallNode(1421...1424)(
+     MatchRequiredNode(1439...1460)(
+       CallNode(1439...1442)(
          nil,
          nil,
-         (1421...1424),
+         (1439...1442),
          nil,
          nil,
          nil,
@@ -1655,42 +1684,42 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1428...1442)(
+       ArrayPatternNode(1446...1460)(
          nil,
-         [LocalVariableWriteNode(1428...1431)(
+         [LocalVariableWriteNode(1446...1449)(
             :bar,
             0,
             nil,
-            (1428...1431),
+            (1446...1449),
             nil
           )],
-         SplatNode(1433...1437)(
-           (1433...1434),
-           LocalVariableWriteNode(1434...1437)(
+         SplatNode(1451...1455)(
+           (1451...1452),
+           LocalVariableWriteNode(1452...1455)(
              :baz,
              0,
              nil,
-             (1434...1437),
+             (1452...1455),
              nil
            )
          ),
-         [LocalVariableWriteNode(1439...1442)(
+         [LocalVariableWriteNode(1457...1460)(
             :qux,
             0,
             nil,
-            (1439...1442),
+            (1457...1460),
             nil
           )],
          nil,
          nil
        ),
-       (1425...1427)
+       (1443...1445)
      ),
-     MatchRequiredNode(1443...1464)(
-       CallNode(1443...1446)(
+     MatchRequiredNode(1461...1482)(
+       CallNode(1461...1464)(
          nil,
          nil,
-         (1443...1446),
+         (1461...1464),
          nil,
          nil,
          nil,
@@ -1698,29 +1727,29 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1450...1464)(
+       ArrayPatternNode(1468...1482)(
          nil,
-         [LocalVariableWriteNode(1450...1453)(
+         [LocalVariableWriteNode(1468...1471)(
             :bar,
             0,
             nil,
-            (1450...1453),
+            (1468...1471),
             nil
           ),
-          LocalVariableWriteNode(1455...1458)(
+          LocalVariableWriteNode(1473...1476)(
             :baz,
             0,
             nil,
-            (1455...1458),
+            (1473...1476),
             nil
           )],
-         SplatNode(1460...1464)(
-           (1460...1461),
-           LocalVariableWriteNode(1461...1464)(
+         SplatNode(1478...1482)(
+           (1478...1479),
+           LocalVariableWriteNode(1479...1482)(
              :qux,
              0,
              nil,
-             (1461...1464),
+             (1479...1482),
              nil
            )
          ),
@@ -1728,13 +1757,13 @@ ProgramNode(0...3725)(
          nil,
          nil
        ),
-       (1447...1449)
+       (1465...1467)
      ),
-     MatchRequiredNode(1465...1487)(
-       CallNode(1465...1468)(
+     MatchRequiredNode(1483...1505)(
+       CallNode(1483...1486)(
          nil,
          nil,
-         (1465...1468),
+         (1483...1486),
          nil,
          nil,
          nil,
@@ -1742,45 +1771,45 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       FindPatternNode(1472...1487)(
+       FindPatternNode(1490...1505)(
          nil,
-         SplatNode(1472...1476)(
-           (1472...1473),
-           LocalVariableWriteNode(1473...1476)(
+         SplatNode(1490...1494)(
+           (1490...1491),
+           LocalVariableWriteNode(1491...1494)(
              :bar,
              0,
              nil,
-             (1473...1476),
+             (1491...1494),
              nil
            )
          ),
-         [LocalVariableWriteNode(1478...1481)(
+         [LocalVariableWriteNode(1496...1499)(
             :baz,
             0,
             nil,
-            (1478...1481),
+            (1496...1499),
             nil
           )],
-         SplatNode(1483...1487)(
-           (1483...1484),
-           LocalVariableWriteNode(1484...1487)(
+         SplatNode(1501...1505)(
+           (1501...1502),
+           LocalVariableWriteNode(1502...1505)(
              :qux,
              0,
              nil,
-             (1484...1487),
+             (1502...1505),
              nil
            )
          ),
          nil,
          nil
        ),
-       (1469...1471)
+       (1487...1489)
      ),
-     MatchRequiredNode(1489...1498)(
-       CallNode(1489...1492)(
+     MatchRequiredNode(1507...1516)(
+       CallNode(1507...1510)(
          nil,
          nil,
-         (1489...1492),
+         (1507...1510),
          nil,
          nil,
          nil,
@@ -1788,21 +1817,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1496...1498)(
+       ArrayPatternNode(1514...1516)(
          nil,
          [],
          nil,
          [],
-         (1496...1497),
-         (1497...1498)
+         (1514...1515),
+         (1515...1516)
        ),
-       (1493...1495)
+       (1511...1513)
      ),
-     MatchRequiredNode(1499...1516)(
-       CallNode(1499...1502)(
+     MatchRequiredNode(1517...1534)(
+       CallNode(1517...1520)(
          nil,
          nil,
-         (1499...1502),
+         (1517...1520),
          nil,
          nil,
          nil,
@@ -1810,49 +1839,49 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1506...1516)(
+       ArrayPatternNode(1524...1534)(
          nil,
-         [ArrayPatternNode(1507...1515)(
+         [ArrayPatternNode(1525...1533)(
             nil,
-            [ArrayPatternNode(1508...1514)(
+            [ArrayPatternNode(1526...1532)(
                nil,
-               [ArrayPatternNode(1509...1513)(
+               [ArrayPatternNode(1527...1531)(
                   nil,
-                  [ArrayPatternNode(1510...1512)(
+                  [ArrayPatternNode(1528...1530)(
                      nil,
                      [],
                      nil,
                      [],
-                     (1510...1511),
-                     (1511...1512)
+                     (1528...1529),
+                     (1529...1530)
                    )],
                   nil,
                   [],
-                  (1509...1510),
-                  (1512...1513)
+                  (1527...1528),
+                  (1530...1531)
                 )],
                nil,
                [],
-               (1508...1509),
-               (1513...1514)
+               (1526...1527),
+               (1531...1532)
              )],
             nil,
             [],
-            (1507...1508),
-            (1514...1515)
+            (1525...1526),
+            (1532...1533)
           )],
          nil,
          [],
-         (1506...1507),
-         (1515...1516)
+         (1524...1525),
+         (1533...1534)
        ),
-       (1503...1505)
+       (1521...1523)
      ),
-     MatchRequiredNode(1518...1531)(
-       CallNode(1518...1521)(
+     MatchRequiredNode(1536...1549)(
+       CallNode(1536...1539)(
          nil,
          nil,
-         (1518...1521),
+         (1536...1539),
          nil,
          nil,
          nil,
@@ -1860,30 +1889,30 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1525...1531)(
+       ArrayPatternNode(1543...1549)(
          nil,
          [],
-         SplatNode(1526...1530)(
-           (1526...1527),
-           LocalVariableWriteNode(1527...1530)(
+         SplatNode(1544...1548)(
+           (1544...1545),
+           LocalVariableWriteNode(1545...1548)(
              :bar,
              0,
              nil,
-             (1527...1530),
+             (1545...1548),
              nil
            )
          ),
          [],
-         (1525...1526),
-         (1530...1531)
+         (1543...1544),
+         (1548...1549)
        ),
-       (1522...1524)
+       (1540...1542)
      ),
-     MatchRequiredNode(1532...1555)(
-       CallNode(1532...1535)(
+     MatchRequiredNode(1550...1573)(
+       CallNode(1550...1553)(
          nil,
          nil,
-         (1532...1535),
+         (1550...1553),
          nil,
          nil,
          nil,
@@ -1891,86 +1920,43 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1539...1555)(
+       ArrayPatternNode(1557...1573)(
          nil,
          [],
-         SplatNode(1540...1544)(
-           (1540...1541),
-           LocalVariableWriteNode(1541...1544)(
+         SplatNode(1558...1562)(
+           (1558...1559),
+           LocalVariableWriteNode(1559...1562)(
              :bar,
              0,
              nil,
-             (1541...1544),
+             (1559...1562),
              nil
            )
          ),
-         [LocalVariableWriteNode(1546...1549)(
-            :baz,
-            0,
-            nil,
-            (1546...1549),
-            nil
-          ),
-          LocalVariableWriteNode(1551...1554)(
-            :qux,
-            0,
-            nil,
-            (1551...1554),
-            nil
-          )],
-         (1539...1540),
-         (1554...1555)
-       ),
-       (1536...1538)
-     ),
-     MatchRequiredNode(1556...1579)(
-       CallNode(1556...1559)(
-         nil,
-         nil,
-         (1556...1559),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ArrayPatternNode(1563...1579)(
-         nil,
          [LocalVariableWriteNode(1564...1567)(
-            :bar,
+            :baz,
             0,
             nil,
             (1564...1567),
             nil
-          )],
-         SplatNode(1569...1573)(
-           (1569...1570),
-           LocalVariableWriteNode(1570...1573)(
-             :baz,
-             0,
-             nil,
-             (1570...1573),
-             nil
-           )
-         ),
-         [LocalVariableWriteNode(1575...1578)(
+          ),
+          LocalVariableWriteNode(1569...1572)(
             :qux,
             0,
             nil,
-            (1575...1578),
+            (1569...1572),
             nil
           )],
-         (1563...1564),
-         (1578...1579)
+         (1557...1558),
+         (1572...1573)
        ),
-       (1560...1562)
+       (1554...1556)
      ),
-     MatchRequiredNode(1580...1603)(
-       CallNode(1580...1583)(
+     MatchRequiredNode(1574...1597)(
+       CallNode(1574...1577)(
          nil,
          nil,
-         (1580...1583),
+         (1574...1577),
          nil,
          nil,
          nil,
@@ -1978,43 +1964,42 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       ArrayPatternNode(1587...1603)(
+       ArrayPatternNode(1581...1597)(
          nil,
-         [LocalVariableWriteNode(1588...1591)(
+         [LocalVariableWriteNode(1582...1585)(
             :bar,
             0,
             nil,
-            (1588...1591),
+            (1582...1585),
             nil
-          ),
-          LocalVariableWriteNode(1593...1596)(
-            :baz,
+          )],
+         SplatNode(1587...1591)(
+           (1587...1588),
+           LocalVariableWriteNode(1588...1591)(
+             :baz,
+             0,
+             nil,
+             (1588...1591),
+             nil
+           )
+         ),
+         [LocalVariableWriteNode(1593...1596)(
+            :qux,
             0,
             nil,
             (1593...1596),
             nil
           )],
-         SplatNode(1598...1602)(
-           (1598...1599),
-           LocalVariableWriteNode(1599...1602)(
-             :qux,
-             0,
-             nil,
-             (1599...1602),
-             nil
-           )
-         ),
-         [],
-         (1587...1588),
-         (1602...1603)
+         (1581...1582),
+         (1596...1597)
        ),
-       (1584...1586)
+       (1578...1580)
      ),
-     MatchRequiredNode(1604...1628)(
-       CallNode(1604...1607)(
+     MatchRequiredNode(1598...1621)(
+       CallNode(1598...1601)(
          nil,
          nil,
-         (1604...1607),
+         (1598...1601),
          nil,
          nil,
          nil,
@@ -2022,526 +2007,570 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       FindPatternNode(1611...1628)(
+       ArrayPatternNode(1605...1621)(
          nil,
-         SplatNode(1612...1616)(
-           (1612...1613),
-           LocalVariableWriteNode(1613...1616)(
-             :bar,
-             0,
-             nil,
-             (1613...1616),
-             nil
-           )
-         ),
-         [LocalVariableWriteNode(1618...1621)(
-            :baz,
-            0,
-            nil,
-            (1618...1621),
-            nil
-          )],
-         SplatNode(1623...1627)(
-           (1623...1624),
-           LocalVariableWriteNode(1624...1627)(
-             :qux,
-             0,
-             nil,
-             (1624...1627),
-             nil
-           )
-         ),
-         (1611...1612),
-         (1627...1628)
-       ),
-       (1608...1610)
-     ),
-     MatchPredicateNode(1630...1640)(
-       CallNode(1630...1633)(
-         nil,
-         nil,
-         (1630...1633),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       LocalVariableWriteNode(1637...1640)(:bar, 0, nil, (1637...1640), nil),
-       (1634...1636)
-     ),
-     MatchPredicateNode(1641...1649)(
-       CallNode(1641...1644)(
-         nil,
-         nil,
-         (1641...1644),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       IntegerNode(1648...1649)(),
-       (1645...1647)
-     ),
-     MatchPredicateNode(1650...1660)(
-       CallNode(1650...1653)(
-         nil,
-         nil,
-         (1650...1653),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       FloatNode(1657...1660)(),
-       (1654...1656)
-     ),
-     MatchPredicateNode(1661...1670)(
-       CallNode(1661...1664)(
-         nil,
-         nil,
-         (1661...1664),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ImaginaryNode(1668...1670)(IntegerNode(1668...1669)()),
-       (1665...1667)
-     ),
-     MatchPredicateNode(1671...1680)(
-       CallNode(1671...1674)(
-         nil,
-         nil,
-         (1671...1674),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       RationalNode(1678...1680)(IntegerNode(1678...1679)()),
-       (1675...1677)
-     ),
-     MatchPredicateNode(1681...1692)(
-       CallNode(1681...1684)(
-         nil,
-         nil,
-         (1681...1684),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       SymbolNode(1688...1692)((1688...1689), (1689...1692), nil, "foo"),
-       (1685...1687)
-     ),
-     MatchPredicateNode(1693...1707)(
-       CallNode(1693...1696)(
-         nil,
-         nil,
-         (1693...1696),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       SymbolNode(1700...1707)(
-         (1700...1703),
-         (1703...1706),
-         (1706...1707),
-         "foo"
-       ),
-       (1697...1699)
-     ),
-     MatchPredicateNode(1708...1721)(
-       CallNode(1708...1711)(
-         nil,
-         nil,
-         (1708...1711),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       InterpolatedSymbolNode(1715...1721)(
-         (1715...1717),
-         [StringNode(1717...1720)(nil, (1717...1720), nil, "foo")],
-         (1720...1721)
-       ),
-       (1712...1714)
-     ),
-     MatchPredicateNode(1722...1734)(
-       CallNode(1722...1725)(
-         nil,
-         nil,
-         (1722...1725),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       RegularExpressionNode(1729...1734)(
-         (1729...1730),
-         (1730...1733),
-         (1733...1734),
-         "foo",
-         0
-       ),
-       (1726...1728)
-     ),
-     MatchPredicateNode(1735...1747)(
-       CallNode(1735...1738)(
-         nil,
-         nil,
-         (1735...1738),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       XStringNode(1742...1747)(
-         (1742...1743),
-         (1743...1746),
-         (1746...1747),
-         "foo"
-       ),
-       (1739...1741)
-     ),
-     MatchPredicateNode(1748...1762)(
-       CallNode(1748...1751)(
-         nil,
-         nil,
-         (1748...1751),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       XStringNode(1755...1762)(
-         (1755...1758),
-         (1758...1761),
-         (1761...1762),
-         "foo"
-       ),
-       (1752...1754)
-     ),
-     MatchPredicateNode(1763...1777)(
-       CallNode(1763...1766)(
-         nil,
-         nil,
-         (1763...1766),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ArrayNode(1770...1777)(
-         [SymbolNode(1773...1776)(nil, (1773...1776), nil, "foo")],
-         (1770...1773),
-         (1776...1777)
-       ),
-       (1767...1769)
-     ),
-     MatchPredicateNode(1778...1792)(
-       CallNode(1778...1781)(
-         nil,
-         nil,
-         (1778...1781),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ArrayNode(1785...1792)(
-         [SymbolNode(1788...1791)(nil, (1788...1791), nil, "foo")],
-         (1785...1788),
-         (1791...1792)
-       ),
-       (1782...1784)
-     ),
-     MatchPredicateNode(1793...1807)(
-       CallNode(1793...1796)(
-         nil,
-         nil,
-         (1793...1796),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ArrayNode(1800...1807)(
-         [StringNode(1803...1806)(nil, (1803...1806), nil, "foo")],
-         (1800...1803),
-         (1806...1807)
-       ),
-       (1797...1799)
-     ),
-     MatchPredicateNode(1808...1822)(
-       CallNode(1808...1811)(
-         nil,
-         nil,
-         (1808...1811),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       ArrayNode(1815...1822)(
-         [StringNode(1818...1821)(nil, (1818...1821), nil, "foo")],
-         (1815...1818),
-         (1821...1822)
-       ),
-       (1812...1814)
-     ),
-     MatchPredicateNode(1823...1837)(
-       CallNode(1823...1826)(
-         nil,
-         nil,
-         (1823...1826),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       StringNode(1830...1837)(
-         (1830...1833),
-         (1833...1836),
-         (1836...1837),
-         "foo"
-       ),
-       (1827...1829)
-     ),
-     MatchPredicateNode(1838...1852)(
-       CallNode(1838...1841)(
-         nil,
-         nil,
-         (1838...1841),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       StringNode(1845...1852)(
-         (1845...1848),
-         (1848...1851),
-         (1851...1852),
-         "foo"
-       ),
-       (1842...1844)
-     ),
-     MatchPredicateNode(1853...1865)(
-       CallNode(1853...1856)(
-         nil,
-         nil,
-         (1853...1856),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       StringNode(1860...1865)(
-         (1860...1861),
-         (1861...1864),
-         (1864...1865),
-         "foo"
-       ),
-       (1857...1859)
-     ),
-     MatchPredicateNode(1866...1876)(
-       CallNode(1866...1869)(
-         nil,
-         nil,
-         (1866...1869),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       NilNode(1873...1876)(),
-       (1870...1872)
-     ),
-     MatchPredicateNode(1877...1888)(
-       CallNode(1877...1880)(
-         nil,
-         nil,
-         (1877...1880),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       SelfNode(1884...1888)(),
-       (1881...1883)
-     ),
-     MatchPredicateNode(1889...1900)(
-       CallNode(1889...1892)(
-         nil,
-         nil,
-         (1889...1892),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       TrueNode(1896...1900)(),
-       (1893...1895)
-     ),
-     MatchPredicateNode(1901...1913)(
-       CallNode(1901...1904)(
-         nil,
-         nil,
-         (1901...1904),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       FalseNode(1908...1913)(),
-       (1905...1907)
-     ),
-     MatchPredicateNode(1914...1929)(
-       CallNode(1914...1917)(
-         nil,
-         nil,
-         (1914...1917),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       SourceFileNode(1921...1929)("/fixtures/patterns.txt"),
-       (1918...1920)
-     ),
-     MatchPredicateNode(1930...1945)(
-       CallNode(1930...1933)(
-         nil,
-         nil,
-         (1930...1933),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       SourceLineNode(1937...1945)(),
-       (1934...1936)
-     ),
-     MatchPredicateNode(1946...1965)(
-       CallNode(1946...1949)(
-         nil,
-         nil,
-         (1946...1949),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       SourceEncodingNode(1953...1965)(),
-       (1950...1952)
-     ),
-     MatchPredicateNode(1966...1983)(
-       CallNode(1966...1969)(
-         nil,
-         nil,
-         (1966...1969),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       LambdaNode(1973...1983)(
-         [],
-         (1973...1975),
-         nil,
-         StatementsNode(1978...1981)(
-           [LocalVariableReadNode(1978...1981)(:bar, 1)]
-         )
-       ),
-       (1970...1972)
-     ),
-     CaseNode(1985...2010)(
-       CallNode(1990...1993)(
-         nil,
-         nil,
-         (1990...1993),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "foo"
-       ),
-       [InNode(1995...2006)(
-          LocalVariableWriteNode(1998...2001)(
+         [LocalVariableWriteNode(1606...1609)(
             :bar,
             0,
             nil,
-            (1998...2001),
+            (1606...1609),
+            nil
+          ),
+          LocalVariableWriteNode(1611...1614)(
+            :baz,
+            0,
+            nil,
+            (1611...1614),
+            nil
+          )],
+         SplatNode(1616...1620)(
+           (1616...1617),
+           LocalVariableWriteNode(1617...1620)(
+             :qux,
+             0,
+             nil,
+             (1617...1620),
+             nil
+           )
+         ),
+         [],
+         (1605...1606),
+         (1620...1621)
+       ),
+       (1602...1604)
+     ),
+     MatchRequiredNode(1622...1646)(
+       CallNode(1622...1625)(
+         nil,
+         nil,
+         (1622...1625),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       FindPatternNode(1629...1646)(
+         nil,
+         SplatNode(1630...1634)(
+           (1630...1631),
+           LocalVariableWriteNode(1631...1634)(
+             :bar,
+             0,
+             nil,
+             (1631...1634),
+             nil
+           )
+         ),
+         [LocalVariableWriteNode(1636...1639)(
+            :baz,
+            0,
+            nil,
+            (1636...1639),
+            nil
+          )],
+         SplatNode(1641...1645)(
+           (1641...1642),
+           LocalVariableWriteNode(1642...1645)(
+             :qux,
+             0,
+             nil,
+             (1642...1645),
+             nil
+           )
+         ),
+         (1629...1630),
+         (1645...1646)
+       ),
+       (1626...1628)
+     ),
+     MatchPredicateNode(1648...1658)(
+       CallNode(1648...1651)(
+         nil,
+         nil,
+         (1648...1651),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       LocalVariableWriteNode(1655...1658)(:bar, 0, nil, (1655...1658), nil),
+       (1652...1654)
+     ),
+     MatchPredicateNode(1659...1667)(
+       CallNode(1659...1662)(
+         nil,
+         nil,
+         (1659...1662),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       IntegerNode(1666...1667)(),
+       (1663...1665)
+     ),
+     MatchPredicateNode(1668...1678)(
+       CallNode(1668...1671)(
+         nil,
+         nil,
+         (1668...1671),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       FloatNode(1675...1678)(),
+       (1672...1674)
+     ),
+     MatchPredicateNode(1679...1688)(
+       CallNode(1679...1682)(
+         nil,
+         nil,
+         (1679...1682),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ImaginaryNode(1686...1688)(IntegerNode(1686...1687)()),
+       (1683...1685)
+     ),
+     MatchPredicateNode(1689...1698)(
+       CallNode(1689...1692)(
+         nil,
+         nil,
+         (1689...1692),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       RationalNode(1696...1698)(IntegerNode(1696...1697)()),
+       (1693...1695)
+     ),
+     MatchPredicateNode(1699...1710)(
+       CallNode(1699...1702)(
+         nil,
+         nil,
+         (1699...1702),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       SymbolNode(1706...1710)((1706...1707), (1707...1710), nil, "foo"),
+       (1703...1705)
+     ),
+     MatchPredicateNode(1711...1725)(
+       CallNode(1711...1714)(
+         nil,
+         nil,
+         (1711...1714),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       SymbolNode(1718...1725)(
+         (1718...1721),
+         (1721...1724),
+         (1724...1725),
+         "foo"
+       ),
+       (1715...1717)
+     ),
+     MatchPredicateNode(1726...1739)(
+       CallNode(1726...1729)(
+         nil,
+         nil,
+         (1726...1729),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       InterpolatedSymbolNode(1733...1739)(
+         (1733...1735),
+         [StringNode(1735...1738)(nil, (1735...1738), nil, "foo")],
+         (1738...1739)
+       ),
+       (1730...1732)
+     ),
+     MatchPredicateNode(1740...1752)(
+       CallNode(1740...1743)(
+         nil,
+         nil,
+         (1740...1743),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       RegularExpressionNode(1747...1752)(
+         (1747...1748),
+         (1748...1751),
+         (1751...1752),
+         "foo",
+         0
+       ),
+       (1744...1746)
+     ),
+     MatchPredicateNode(1753...1765)(
+       CallNode(1753...1756)(
+         nil,
+         nil,
+         (1753...1756),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       XStringNode(1760...1765)(
+         (1760...1761),
+         (1761...1764),
+         (1764...1765),
+         "foo"
+       ),
+       (1757...1759)
+     ),
+     MatchPredicateNode(1766...1780)(
+       CallNode(1766...1769)(
+         nil,
+         nil,
+         (1766...1769),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       XStringNode(1773...1780)(
+         (1773...1776),
+         (1776...1779),
+         (1779...1780),
+         "foo"
+       ),
+       (1770...1772)
+     ),
+     MatchPredicateNode(1781...1795)(
+       CallNode(1781...1784)(
+         nil,
+         nil,
+         (1781...1784),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ArrayNode(1788...1795)(
+         [SymbolNode(1791...1794)(nil, (1791...1794), nil, "foo")],
+         (1788...1791),
+         (1794...1795)
+       ),
+       (1785...1787)
+     ),
+     MatchPredicateNode(1796...1810)(
+       CallNode(1796...1799)(
+         nil,
+         nil,
+         (1796...1799),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ArrayNode(1803...1810)(
+         [SymbolNode(1806...1809)(nil, (1806...1809), nil, "foo")],
+         (1803...1806),
+         (1809...1810)
+       ),
+       (1800...1802)
+     ),
+     MatchPredicateNode(1811...1825)(
+       CallNode(1811...1814)(
+         nil,
+         nil,
+         (1811...1814),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ArrayNode(1818...1825)(
+         [StringNode(1821...1824)(nil, (1821...1824), nil, "foo")],
+         (1818...1821),
+         (1824...1825)
+       ),
+       (1815...1817)
+     ),
+     MatchPredicateNode(1826...1840)(
+       CallNode(1826...1829)(
+         nil,
+         nil,
+         (1826...1829),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       ArrayNode(1833...1840)(
+         [StringNode(1836...1839)(nil, (1836...1839), nil, "foo")],
+         (1833...1836),
+         (1839...1840)
+       ),
+       (1830...1832)
+     ),
+     MatchPredicateNode(1841...1855)(
+       CallNode(1841...1844)(
+         nil,
+         nil,
+         (1841...1844),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       StringNode(1848...1855)(
+         (1848...1851),
+         (1851...1854),
+         (1854...1855),
+         "foo"
+       ),
+       (1845...1847)
+     ),
+     MatchPredicateNode(1856...1870)(
+       CallNode(1856...1859)(
+         nil,
+         nil,
+         (1856...1859),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       StringNode(1863...1870)(
+         (1863...1866),
+         (1866...1869),
+         (1869...1870),
+         "foo"
+       ),
+       (1860...1862)
+     ),
+     MatchPredicateNode(1871...1883)(
+       CallNode(1871...1874)(
+         nil,
+         nil,
+         (1871...1874),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       StringNode(1878...1883)(
+         (1878...1879),
+         (1879...1882),
+         (1882...1883),
+         "foo"
+       ),
+       (1875...1877)
+     ),
+     MatchPredicateNode(1884...1894)(
+       CallNode(1884...1887)(
+         nil,
+         nil,
+         (1884...1887),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       NilNode(1891...1894)(),
+       (1888...1890)
+     ),
+     MatchPredicateNode(1895...1906)(
+       CallNode(1895...1898)(
+         nil,
+         nil,
+         (1895...1898),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       SelfNode(1902...1906)(),
+       (1899...1901)
+     ),
+     MatchPredicateNode(1907...1918)(
+       CallNode(1907...1910)(
+         nil,
+         nil,
+         (1907...1910),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       TrueNode(1914...1918)(),
+       (1911...1913)
+     ),
+     MatchPredicateNode(1919...1931)(
+       CallNode(1919...1922)(
+         nil,
+         nil,
+         (1919...1922),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       FalseNode(1926...1931)(),
+       (1923...1925)
+     ),
+     MatchPredicateNode(1932...1947)(
+       CallNode(1932...1935)(
+         nil,
+         nil,
+         (1932...1935),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       SourceFileNode(1939...1947)("patterns.txt"),
+       (1936...1938)
+     ),
+     MatchPredicateNode(1948...1963)(
+       CallNode(1948...1951)(
+         nil,
+         nil,
+         (1948...1951),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       SourceLineNode(1955...1963)(),
+       (1952...1954)
+     ),
+     MatchPredicateNode(1964...1983)(
+       CallNode(1964...1967)(
+         nil,
+         nil,
+         (1964...1967),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       SourceEncodingNode(1971...1983)(),
+       (1968...1970)
+     ),
+     MatchPredicateNode(1984...2001)(
+       CallNode(1984...1987)(
+         nil,
+         nil,
+         (1984...1987),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       LambdaNode(1991...2001)(
+         [],
+         (1991...1993),
+         nil,
+         StatementsNode(1996...1999)(
+           [LocalVariableReadNode(1996...1999)(:bar, 1)]
+         )
+       ),
+       (1988...1990)
+     ),
+     CaseNode(2003...2028)(
+       CallNode(2008...2011)(
+         nil,
+         nil,
+         (2008...2011),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "foo"
+       ),
+       [InNode(2013...2024)(
+          LocalVariableWriteNode(2016...2019)(
+            :bar,
+            0,
+            nil,
+            (2016...2019),
             nil
           ),
           nil,
-          (1995...1997),
-          (2002...2006)
+          (2013...2015),
+          (2020...2024)
         )],
        nil,
-       (1985...1989),
-       (2007...2010)
+       (2003...2007),
+       (2025...2028)
      ),
-     CaseNode(2011...2034)(
-       CallNode(2016...2019)(
+     CaseNode(2029...2052)(
+       CallNode(2034...2037)(
          nil,
          nil,
-         (2016...2019),
+         (2034...2037),
          nil,
          nil,
          nil,
@@ -2549,21 +2578,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2021...2030)(
-          IntegerNode(2024...2025)(),
+       [InNode(2039...2048)(
+          IntegerNode(2042...2043)(),
           nil,
-          (2021...2023),
-          (2026...2030)
+          (2039...2041),
+          (2044...2048)
         )],
        nil,
-       (2011...2015),
-       (2031...2034)
+       (2029...2033),
+       (2049...2052)
      ),
-     CaseNode(2035...2060)(
-       CallNode(2040...2043)(
+     CaseNode(2053...2078)(
+       CallNode(2058...2061)(
          nil,
          nil,
-         (2040...2043),
+         (2058...2061),
          nil,
          nil,
          nil,
@@ -2571,21 +2600,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2045...2056)(
-          FloatNode(2048...2051)(),
+       [InNode(2063...2074)(
+          FloatNode(2066...2069)(),
           nil,
-          (2045...2047),
-          (2052...2056)
+          (2063...2065),
+          (2070...2074)
         )],
        nil,
-       (2035...2039),
-       (2057...2060)
+       (2053...2057),
+       (2075...2078)
      ),
-     CaseNode(2061...2085)(
-       CallNode(2066...2069)(
+     CaseNode(2079...2103)(
+       CallNode(2084...2087)(
          nil,
          nil,
-         (2066...2069),
+         (2084...2087),
          nil,
          nil,
          nil,
@@ -2593,21 +2622,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2071...2081)(
-          ImaginaryNode(2074...2076)(IntegerNode(2074...2075)()),
+       [InNode(2089...2099)(
+          ImaginaryNode(2092...2094)(IntegerNode(2092...2093)()),
           nil,
-          (2071...2073),
-          (2077...2081)
+          (2089...2091),
+          (2095...2099)
         )],
        nil,
-       (2061...2065),
-       (2082...2085)
+       (2079...2083),
+       (2100...2103)
      ),
-     CaseNode(2086...2110)(
-       CallNode(2091...2094)(
+     CaseNode(2104...2128)(
+       CallNode(2109...2112)(
          nil,
          nil,
-         (2091...2094),
+         (2109...2112),
          nil,
          nil,
          nil,
@@ -2615,21 +2644,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2096...2106)(
-          RationalNode(2099...2101)(IntegerNode(2099...2100)()),
+       [InNode(2114...2124)(
+          RationalNode(2117...2119)(IntegerNode(2117...2118)()),
           nil,
-          (2096...2098),
-          (2102...2106)
+          (2114...2116),
+          (2120...2124)
         )],
        nil,
-       (2086...2090),
-       (2107...2110)
+       (2104...2108),
+       (2125...2128)
      ),
-     CaseNode(2111...2137)(
-       CallNode(2116...2119)(
+     CaseNode(2129...2155)(
+       CallNode(2134...2137)(
          nil,
          nil,
-         (2116...2119),
+         (2134...2137),
          nil,
          nil,
          nil,
@@ -2637,21 +2666,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2121...2133)(
-          SymbolNode(2124...2128)((2124...2125), (2125...2128), nil, "foo"),
+       [InNode(2139...2151)(
+          SymbolNode(2142...2146)((2142...2143), (2143...2146), nil, "foo"),
           nil,
-          (2121...2123),
-          (2129...2133)
+          (2139...2141),
+          (2147...2151)
         )],
        nil,
-       (2111...2115),
-       (2134...2137)
+       (2129...2133),
+       (2152...2155)
      ),
-     CaseNode(2138...2167)(
-       CallNode(2143...2146)(
+     CaseNode(2156...2185)(
+       CallNode(2161...2164)(
          nil,
          nil,
-         (2143...2146),
+         (2161...2164),
          nil,
          nil,
          nil,
@@ -2659,26 +2688,26 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2148...2163)(
-          SymbolNode(2151...2158)(
-            (2151...2154),
-            (2154...2157),
-            (2157...2158),
+       [InNode(2166...2181)(
+          SymbolNode(2169...2176)(
+            (2169...2172),
+            (2172...2175),
+            (2175...2176),
             "foo"
           ),
           nil,
-          (2148...2150),
-          (2159...2163)
+          (2166...2168),
+          (2177...2181)
         )],
        nil,
-       (2138...2142),
-       (2164...2167)
+       (2156...2160),
+       (2182...2185)
      ),
-     CaseNode(2168...2196)(
-       CallNode(2173...2176)(
+     CaseNode(2186...2214)(
+       CallNode(2191...2194)(
          nil,
          nil,
-         (2173...2176),
+         (2191...2194),
          nil,
          nil,
          nil,
@@ -2686,25 +2715,25 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2178...2192)(
-          InterpolatedSymbolNode(2181...2187)(
-            (2181...2183),
-            [StringNode(2183...2186)(nil, (2183...2186), nil, "foo")],
-            (2186...2187)
+       [InNode(2196...2210)(
+          InterpolatedSymbolNode(2199...2205)(
+            (2199...2201),
+            [StringNode(2201...2204)(nil, (2201...2204), nil, "foo")],
+            (2204...2205)
           ),
           nil,
-          (2178...2180),
-          (2188...2192)
+          (2196...2198),
+          (2206...2210)
         )],
        nil,
-       (2168...2172),
-       (2193...2196)
+       (2186...2190),
+       (2211...2214)
      ),
-     CaseNode(2197...2224)(
-       CallNode(2202...2205)(
+     CaseNode(2215...2242)(
+       CallNode(2220...2223)(
          nil,
          nil,
-         (2202...2205),
+         (2220...2223),
          nil,
          nil,
          nil,
@@ -2712,27 +2741,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2207...2220)(
-          RegularExpressionNode(2210...2215)(
-            (2210...2211),
-            (2211...2214),
-            (2214...2215),
+       [InNode(2225...2238)(
+          RegularExpressionNode(2228...2233)(
+            (2228...2229),
+            (2229...2232),
+            (2232...2233),
             "foo",
             0
           ),
           nil,
-          (2207...2209),
-          (2216...2220)
+          (2225...2227),
+          (2234...2238)
         )],
        nil,
-       (2197...2201),
-       (2221...2224)
+       (2215...2219),
+       (2239...2242)
      ),
-     CaseNode(2225...2252)(
-       CallNode(2230...2233)(
+     CaseNode(2243...2270)(
+       CallNode(2248...2251)(
          nil,
          nil,
-         (2230...2233),
+         (2248...2251),
          nil,
          nil,
          nil,
@@ -2740,26 +2769,26 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2235...2248)(
-          XStringNode(2238...2243)(
-            (2238...2239),
-            (2239...2242),
-            (2242...2243),
+       [InNode(2253...2266)(
+          XStringNode(2256...2261)(
+            (2256...2257),
+            (2257...2260),
+            (2260...2261),
             "foo"
           ),
           nil,
-          (2235...2237),
-          (2244...2248)
+          (2253...2255),
+          (2262...2266)
         )],
        nil,
-       (2225...2229),
-       (2249...2252)
+       (2243...2247),
+       (2267...2270)
      ),
-     CaseNode(2253...2282)(
-       CallNode(2258...2261)(
+     CaseNode(2271...2300)(
+       CallNode(2276...2279)(
          nil,
          nil,
-         (2258...2261),
+         (2276...2279),
          nil,
          nil,
          nil,
@@ -2767,26 +2796,26 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2263...2278)(
-          XStringNode(2266...2273)(
-            (2266...2269),
-            (2269...2272),
-            (2272...2273),
+       [InNode(2281...2296)(
+          XStringNode(2284...2291)(
+            (2284...2287),
+            (2287...2290),
+            (2290...2291),
             "foo"
           ),
           nil,
-          (2263...2265),
-          (2274...2278)
+          (2281...2283),
+          (2292...2296)
         )],
        nil,
-       (2253...2257),
-       (2279...2282)
+       (2271...2275),
+       (2297...2300)
      ),
-     CaseNode(2283...2312)(
-       CallNode(2288...2291)(
+     CaseNode(2301...2330)(
+       CallNode(2306...2309)(
          nil,
          nil,
-         (2288...2291),
+         (2306...2309),
          nil,
          nil,
          nil,
@@ -2794,25 +2823,25 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2293...2308)(
-          ArrayNode(2296...2303)(
-            [SymbolNode(2299...2302)(nil, (2299...2302), nil, "foo")],
-            (2296...2299),
-            (2302...2303)
+       [InNode(2311...2326)(
+          ArrayNode(2314...2321)(
+            [SymbolNode(2317...2320)(nil, (2317...2320), nil, "foo")],
+            (2314...2317),
+            (2320...2321)
           ),
           nil,
-          (2293...2295),
-          (2304...2308)
+          (2311...2313),
+          (2322...2326)
         )],
        nil,
-       (2283...2287),
-       (2309...2312)
+       (2301...2305),
+       (2327...2330)
      ),
-     CaseNode(2313...2342)(
-       CallNode(2318...2321)(
+     CaseNode(2331...2360)(
+       CallNode(2336...2339)(
          nil,
          nil,
-         (2318...2321),
+         (2336...2339),
          nil,
          nil,
          nil,
@@ -2820,25 +2849,25 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2323...2338)(
-          ArrayNode(2326...2333)(
-            [SymbolNode(2329...2332)(nil, (2329...2332), nil, "foo")],
-            (2326...2329),
-            (2332...2333)
+       [InNode(2341...2356)(
+          ArrayNode(2344...2351)(
+            [SymbolNode(2347...2350)(nil, (2347...2350), nil, "foo")],
+            (2344...2347),
+            (2350...2351)
           ),
           nil,
-          (2323...2325),
-          (2334...2338)
+          (2341...2343),
+          (2352...2356)
         )],
        nil,
-       (2313...2317),
-       (2339...2342)
+       (2331...2335),
+       (2357...2360)
      ),
-     CaseNode(2343...2372)(
-       CallNode(2348...2351)(
+     CaseNode(2361...2390)(
+       CallNode(2366...2369)(
          nil,
          nil,
-         (2348...2351),
+         (2366...2369),
          nil,
          nil,
          nil,
@@ -2846,25 +2875,25 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2353...2368)(
-          ArrayNode(2356...2363)(
-            [StringNode(2359...2362)(nil, (2359...2362), nil, "foo")],
-            (2356...2359),
-            (2362...2363)
+       [InNode(2371...2386)(
+          ArrayNode(2374...2381)(
+            [StringNode(2377...2380)(nil, (2377...2380), nil, "foo")],
+            (2374...2377),
+            (2380...2381)
           ),
           nil,
-          (2353...2355),
-          (2364...2368)
+          (2371...2373),
+          (2382...2386)
         )],
        nil,
-       (2343...2347),
-       (2369...2372)
+       (2361...2365),
+       (2387...2390)
      ),
-     CaseNode(2373...2402)(
-       CallNode(2378...2381)(
+     CaseNode(2391...2420)(
+       CallNode(2396...2399)(
          nil,
          nil,
-         (2378...2381),
+         (2396...2399),
          nil,
          nil,
          nil,
@@ -2872,25 +2901,25 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2383...2398)(
-          ArrayNode(2386...2393)(
-            [StringNode(2389...2392)(nil, (2389...2392), nil, "foo")],
-            (2386...2389),
-            (2392...2393)
+       [InNode(2401...2416)(
+          ArrayNode(2404...2411)(
+            [StringNode(2407...2410)(nil, (2407...2410), nil, "foo")],
+            (2404...2407),
+            (2410...2411)
           ),
           nil,
-          (2383...2385),
-          (2394...2398)
+          (2401...2403),
+          (2412...2416)
         )],
        nil,
-       (2373...2377),
-       (2399...2402)
+       (2391...2395),
+       (2417...2420)
      ),
-     CaseNode(2403...2432)(
-       CallNode(2408...2411)(
+     CaseNode(2421...2450)(
+       CallNode(2426...2429)(
          nil,
          nil,
-         (2408...2411),
+         (2426...2429),
          nil,
          nil,
          nil,
@@ -2898,26 +2927,26 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2413...2428)(
-          StringNode(2416...2423)(
-            (2416...2419),
-            (2419...2422),
-            (2422...2423),
+       [InNode(2431...2446)(
+          StringNode(2434...2441)(
+            (2434...2437),
+            (2437...2440),
+            (2440...2441),
             "foo"
           ),
           nil,
-          (2413...2415),
-          (2424...2428)
+          (2431...2433),
+          (2442...2446)
         )],
        nil,
-       (2403...2407),
-       (2429...2432)
+       (2421...2425),
+       (2447...2450)
      ),
-     CaseNode(2433...2462)(
-       CallNode(2438...2441)(
+     CaseNode(2451...2480)(
+       CallNode(2456...2459)(
          nil,
          nil,
-         (2438...2441),
+         (2456...2459),
          nil,
          nil,
          nil,
@@ -2925,26 +2954,26 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2443...2458)(
-          StringNode(2446...2453)(
-            (2446...2449),
-            (2449...2452),
-            (2452...2453),
+       [InNode(2461...2476)(
+          StringNode(2464...2471)(
+            (2464...2467),
+            (2467...2470),
+            (2470...2471),
             "foo"
           ),
           nil,
-          (2443...2445),
-          (2454...2458)
+          (2461...2463),
+          (2472...2476)
         )],
        nil,
-       (2433...2437),
-       (2459...2462)
+       (2451...2455),
+       (2477...2480)
      ),
-     CaseNode(2463...2490)(
-       CallNode(2468...2471)(
+     CaseNode(2481...2508)(
+       CallNode(2486...2489)(
          nil,
          nil,
-         (2468...2471),
+         (2486...2489),
          nil,
          nil,
          nil,
@@ -2952,26 +2981,26 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2473...2486)(
-          StringNode(2476...2481)(
-            (2476...2477),
-            (2477...2480),
-            (2480...2481),
+       [InNode(2491...2504)(
+          StringNode(2494...2499)(
+            (2494...2495),
+            (2495...2498),
+            (2498...2499),
             "foo"
           ),
           nil,
-          (2473...2475),
-          (2482...2486)
+          (2491...2493),
+          (2500...2504)
         )],
        nil,
-       (2463...2467),
-       (2487...2490)
+       (2481...2485),
+       (2505...2508)
      ),
-     CaseNode(2491...2516)(
-       CallNode(2496...2499)(
+     CaseNode(2509...2534)(
+       CallNode(2514...2517)(
          nil,
          nil,
-         (2496...2499),
+         (2514...2517),
          nil,
          nil,
          nil,
@@ -2979,21 +3008,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2501...2512)(
-          NilNode(2504...2507)(),
+       [InNode(2519...2530)(
+          NilNode(2522...2525)(),
           nil,
-          (2501...2503),
-          (2508...2512)
+          (2519...2521),
+          (2526...2530)
         )],
        nil,
-       (2491...2495),
-       (2513...2516)
+       (2509...2513),
+       (2531...2534)
      ),
-     CaseNode(2517...2543)(
-       CallNode(2522...2525)(
+     CaseNode(2535...2561)(
+       CallNode(2540...2543)(
          nil,
          nil,
-         (2522...2525),
+         (2540...2543),
          nil,
          nil,
          nil,
@@ -3001,21 +3030,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2527...2539)(
-          SelfNode(2530...2534)(),
+       [InNode(2545...2557)(
+          SelfNode(2548...2552)(),
           nil,
-          (2527...2529),
-          (2535...2539)
+          (2545...2547),
+          (2553...2557)
         )],
        nil,
-       (2517...2521),
-       (2540...2543)
+       (2535...2539),
+       (2558...2561)
      ),
-     CaseNode(2544...2570)(
-       CallNode(2549...2552)(
+     CaseNode(2562...2588)(
+       CallNode(2567...2570)(
          nil,
          nil,
-         (2549...2552),
+         (2567...2570),
          nil,
          nil,
          nil,
@@ -3023,21 +3052,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2554...2566)(
-          TrueNode(2557...2561)(),
+       [InNode(2572...2584)(
+          TrueNode(2575...2579)(),
           nil,
-          (2554...2556),
-          (2562...2566)
+          (2572...2574),
+          (2580...2584)
         )],
        nil,
-       (2544...2548),
-       (2567...2570)
+       (2562...2566),
+       (2585...2588)
      ),
-     CaseNode(2571...2598)(
-       CallNode(2576...2579)(
+     CaseNode(2589...2616)(
+       CallNode(2594...2597)(
          nil,
          nil,
-         (2576...2579),
+         (2594...2597),
          nil,
          nil,
          nil,
@@ -3045,21 +3074,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2581...2594)(
-          FalseNode(2584...2589)(),
+       [InNode(2599...2612)(
+          FalseNode(2602...2607)(),
           nil,
-          (2581...2583),
-          (2590...2594)
+          (2599...2601),
+          (2608...2612)
         )],
        nil,
-       (2571...2575),
-       (2595...2598)
+       (2589...2593),
+       (2613...2616)
      ),
-     CaseNode(2599...2629)(
-       CallNode(2604...2607)(
+     CaseNode(2617...2647)(
+       CallNode(2622...2625)(
          nil,
          nil,
-         (2604...2607),
+         (2622...2625),
          nil,
          nil,
          nil,
@@ -3067,21 +3096,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2609...2625)(
-          SourceFileNode(2612...2620)("/fixtures/patterns.txt"),
+       [InNode(2627...2643)(
+          SourceFileNode(2630...2638)("patterns.txt"),
           nil,
-          (2609...2611),
-          (2621...2625)
+          (2627...2629),
+          (2639...2643)
         )],
        nil,
-       (2599...2603),
-       (2626...2629)
+       (2617...2621),
+       (2644...2647)
      ),
-     CaseNode(2630...2660)(
-       CallNode(2635...2638)(
+     CaseNode(2648...2678)(
+       CallNode(2653...2656)(
          nil,
          nil,
-         (2635...2638),
+         (2653...2656),
          nil,
          nil,
          nil,
@@ -3089,21 +3118,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2640...2656)(
-          SourceLineNode(2643...2651)(),
+       [InNode(2658...2674)(
+          SourceLineNode(2661...2669)(),
           nil,
-          (2640...2642),
-          (2652...2656)
+          (2658...2660),
+          (2670...2674)
         )],
        nil,
-       (2630...2634),
-       (2657...2660)
+       (2648...2652),
+       (2675...2678)
      ),
-     CaseNode(2661...2695)(
-       CallNode(2666...2669)(
+     CaseNode(2679...2713)(
+       CallNode(2684...2687)(
          nil,
          nil,
-         (2666...2669),
+         (2684...2687),
          nil,
          nil,
          nil,
@@ -3111,21 +3140,21 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2671...2691)(
-          SourceEncodingNode(2674...2686)(),
+       [InNode(2689...2709)(
+          SourceEncodingNode(2692...2704)(),
           nil,
-          (2671...2673),
-          (2687...2691)
+          (2689...2691),
+          (2705...2709)
         )],
        nil,
-       (2661...2665),
-       (2692...2695)
+       (2679...2683),
+       (2710...2713)
      ),
-     CaseNode(2696...2728)(
-       CallNode(2701...2704)(
+     CaseNode(2714...2746)(
+       CallNode(2719...2722)(
          nil,
          nil,
-         (2701...2704),
+         (2719...2722),
          nil,
          nil,
          nil,
@@ -3133,28 +3162,28 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2706...2724)(
-          LambdaNode(2709...2719)(
+       [InNode(2724...2742)(
+          LambdaNode(2727...2737)(
             [],
-            (2709...2711),
+            (2727...2729),
             nil,
-            StatementsNode(2714...2717)(
-              [LocalVariableReadNode(2714...2717)(:bar, 1)]
+            StatementsNode(2732...2735)(
+              [LocalVariableReadNode(2732...2735)(:bar, 1)]
             )
           ),
           nil,
-          (2706...2708),
-          (2720...2724)
+          (2724...2726),
+          (2738...2742)
         )],
        nil,
-       (2696...2700),
-       (2725...2728)
+       (2714...2718),
+       (2743...2746)
      ),
-     CaseNode(2730...2762)(
-       CallNode(2735...2738)(
+     CaseNode(2748...2780)(
+       CallNode(2753...2756)(
          nil,
          nil,
-         (2735...2738),
+         (2753...2756),
          nil,
          nil,
          nil,
@@ -3162,16 +3191,16 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2740...2758)(
-          IfNode(2743...2753)(
-            (2747...2749),
-            LocalVariableReadNode(2750...2753)(:baz, 0),
-            StatementsNode(2743...2746)(
-              [LocalVariableWriteNode(2743...2746)(
+       [InNode(2758...2776)(
+          IfNode(2761...2771)(
+            (2765...2767),
+            LocalVariableReadNode(2768...2771)(:baz, 0),
+            StatementsNode(2761...2764)(
+              [LocalVariableWriteNode(2761...2764)(
                  :bar,
                  0,
                  nil,
-                 (2743...2746),
+                 (2761...2764),
                  nil
                )]
             ),
@@ -3179,18 +3208,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (2740...2742),
-          (2754...2758)
+          (2758...2760),
+          (2772...2776)
         )],
        nil,
-       (2730...2734),
-       (2759...2762)
+       (2748...2752),
+       (2777...2780)
      ),
-     CaseNode(2763...2793)(
-       CallNode(2768...2771)(
+     CaseNode(2781...2811)(
+       CallNode(2786...2789)(
          nil,
          nil,
-         (2768...2771),
+         (2786...2789),
          nil,
          nil,
          nil,
@@ -3198,27 +3227,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2773...2789)(
-          IfNode(2776...2784)(
-            (2778...2780),
-            LocalVariableReadNode(2781...2784)(:baz, 0),
-            StatementsNode(2776...2777)([IntegerNode(2776...2777)()]),
+       [InNode(2791...2807)(
+          IfNode(2794...2802)(
+            (2796...2798),
+            LocalVariableReadNode(2799...2802)(:baz, 0),
+            StatementsNode(2794...2795)([IntegerNode(2794...2795)()]),
             nil,
             nil
           ),
           nil,
-          (2773...2775),
-          (2785...2789)
+          (2791...2793),
+          (2803...2807)
         )],
        nil,
-       (2763...2767),
-       (2790...2793)
+       (2781...2785),
+       (2808...2811)
      ),
-     CaseNode(2794...2826)(
-       CallNode(2799...2802)(
+     CaseNode(2812...2844)(
+       CallNode(2817...2820)(
          nil,
          nil,
-         (2799...2802),
+         (2817...2820),
          nil,
          nil,
          nil,
@@ -3226,27 +3255,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2804...2822)(
-          IfNode(2807...2817)(
-            (2811...2813),
-            LocalVariableReadNode(2814...2817)(:baz, 0),
-            StatementsNode(2807...2810)([FloatNode(2807...2810)()]),
+       [InNode(2822...2840)(
+          IfNode(2825...2835)(
+            (2829...2831),
+            LocalVariableReadNode(2832...2835)(:baz, 0),
+            StatementsNode(2825...2828)([FloatNode(2825...2828)()]),
             nil,
             nil
           ),
           nil,
-          (2804...2806),
-          (2818...2822)
+          (2822...2824),
+          (2836...2840)
         )],
        nil,
-       (2794...2798),
-       (2823...2826)
+       (2812...2816),
+       (2841...2844)
      ),
-     CaseNode(2827...2858)(
-       CallNode(2832...2835)(
+     CaseNode(2845...2876)(
+       CallNode(2850...2853)(
          nil,
          nil,
-         (2832...2835),
+         (2850...2853),
          nil,
          nil,
          nil,
@@ -3254,29 +3283,29 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2837...2854)(
-          IfNode(2840...2849)(
-            (2843...2845),
-            LocalVariableReadNode(2846...2849)(:baz, 0),
-            StatementsNode(2840...2842)(
-              [ImaginaryNode(2840...2842)(IntegerNode(2840...2841)())]
+       [InNode(2855...2872)(
+          IfNode(2858...2867)(
+            (2861...2863),
+            LocalVariableReadNode(2864...2867)(:baz, 0),
+            StatementsNode(2858...2860)(
+              [ImaginaryNode(2858...2860)(IntegerNode(2858...2859)())]
             ),
             nil,
             nil
           ),
           nil,
-          (2837...2839),
-          (2850...2854)
+          (2855...2857),
+          (2868...2872)
         )],
        nil,
-       (2827...2831),
-       (2855...2858)
+       (2845...2849),
+       (2873...2876)
      ),
-     CaseNode(2859...2890)(
-       CallNode(2864...2867)(
+     CaseNode(2877...2908)(
+       CallNode(2882...2885)(
          nil,
          nil,
-         (2864...2867),
+         (2882...2885),
          nil,
          nil,
          nil,
@@ -3284,29 +3313,29 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2869...2886)(
-          IfNode(2872...2881)(
-            (2875...2877),
-            LocalVariableReadNode(2878...2881)(:baz, 0),
-            StatementsNode(2872...2874)(
-              [RationalNode(2872...2874)(IntegerNode(2872...2873)())]
+       [InNode(2887...2904)(
+          IfNode(2890...2899)(
+            (2893...2895),
+            LocalVariableReadNode(2896...2899)(:baz, 0),
+            StatementsNode(2890...2892)(
+              [RationalNode(2890...2892)(IntegerNode(2890...2891)())]
             ),
             nil,
             nil
           ),
           nil,
-          (2869...2871),
-          (2882...2886)
+          (2887...2889),
+          (2900...2904)
         )],
        nil,
-       (2859...2863),
-       (2887...2890)
+       (2877...2881),
+       (2905...2908)
      ),
-     CaseNode(2891...2924)(
-       CallNode(2896...2899)(
+     CaseNode(2909...2942)(
+       CallNode(2914...2917)(
          nil,
          nil,
-         (2896...2899),
+         (2914...2917),
          nil,
          nil,
          nil,
@@ -3314,14 +3343,14 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2901...2920)(
-          IfNode(2904...2915)(
-            (2909...2911),
-            LocalVariableReadNode(2912...2915)(:baz, 0),
-            StatementsNode(2904...2908)(
-              [SymbolNode(2904...2908)(
-                 (2904...2905),
-                 (2905...2908),
+       [InNode(2919...2938)(
+          IfNode(2922...2933)(
+            (2927...2929),
+            LocalVariableReadNode(2930...2933)(:baz, 0),
+            StatementsNode(2922...2926)(
+              [SymbolNode(2922...2926)(
+                 (2922...2923),
+                 (2923...2926),
                  nil,
                  "foo"
                )]
@@ -3330,18 +3359,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (2901...2903),
-          (2916...2920)
+          (2919...2921),
+          (2934...2938)
         )],
        nil,
-       (2891...2895),
-       (2921...2924)
+       (2909...2913),
+       (2939...2942)
      ),
-     CaseNode(2925...2961)(
-       CallNode(2930...2933)(
+     CaseNode(2943...2979)(
+       CallNode(2948...2951)(
          nil,
          nil,
-         (2930...2933),
+         (2948...2951),
          nil,
          nil,
          nil,
@@ -3349,15 +3378,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2935...2957)(
-          IfNode(2938...2952)(
-            (2946...2948),
-            LocalVariableReadNode(2949...2952)(:baz, 0),
-            StatementsNode(2938...2945)(
-              [SymbolNode(2938...2945)(
-                 (2938...2941),
-                 (2941...2944),
-                 (2944...2945),
+       [InNode(2953...2975)(
+          IfNode(2956...2970)(
+            (2964...2966),
+            LocalVariableReadNode(2967...2970)(:baz, 0),
+            StatementsNode(2956...2963)(
+              [SymbolNode(2956...2963)(
+                 (2956...2959),
+                 (2959...2962),
+                 (2962...2963),
                  "foo"
                )]
             ),
@@ -3365,18 +3394,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (2935...2937),
-          (2953...2957)
+          (2953...2955),
+          (2971...2975)
         )],
        nil,
-       (2925...2929),
-       (2958...2961)
+       (2943...2947),
+       (2976...2979)
      ),
-     CaseNode(2962...2997)(
-       CallNode(2967...2970)(
+     CaseNode(2980...3015)(
+       CallNode(2985...2988)(
          nil,
          nil,
-         (2967...2970),
+         (2985...2988),
          nil,
          nil,
          nil,
@@ -3384,33 +3413,33 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(2972...2993)(
-          IfNode(2975...2988)(
-            (2982...2984),
-            LocalVariableReadNode(2985...2988)(:baz, 0),
-            StatementsNode(2975...2981)(
-              [InterpolatedSymbolNode(2975...2981)(
-                 (2975...2977),
-                 [StringNode(2977...2980)(nil, (2977...2980), nil, "foo")],
-                 (2980...2981)
+       [InNode(2990...3011)(
+          IfNode(2993...3006)(
+            (3000...3002),
+            LocalVariableReadNode(3003...3006)(:baz, 0),
+            StatementsNode(2993...2999)(
+              [InterpolatedSymbolNode(2993...2999)(
+                 (2993...2995),
+                 [StringNode(2995...2998)(nil, (2995...2998), nil, "foo")],
+                 (2998...2999)
                )]
             ),
             nil,
             nil
           ),
           nil,
-          (2972...2974),
-          (2989...2993)
+          (2990...2992),
+          (3007...3011)
         )],
        nil,
-       (2962...2966),
-       (2994...2997)
+       (2980...2984),
+       (3012...3015)
      ),
-     CaseNode(2998...3032)(
-       CallNode(3003...3006)(
+     CaseNode(3016...3050)(
+       CallNode(3021...3024)(
          nil,
          nil,
-         (3003...3006),
+         (3021...3024),
          nil,
          nil,
          nil,
@@ -3418,15 +3447,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3008...3028)(
-          IfNode(3011...3023)(
-            (3017...3019),
-            LocalVariableReadNode(3020...3023)(:baz, 0),
-            StatementsNode(3011...3016)(
-              [RegularExpressionNode(3011...3016)(
-                 (3011...3012),
-                 (3012...3015),
-                 (3015...3016),
+       [InNode(3026...3046)(
+          IfNode(3029...3041)(
+            (3035...3037),
+            LocalVariableReadNode(3038...3041)(:baz, 0),
+            StatementsNode(3029...3034)(
+              [RegularExpressionNode(3029...3034)(
+                 (3029...3030),
+                 (3030...3033),
+                 (3033...3034),
                  "foo",
                  0
                )]
@@ -3435,18 +3464,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3008...3010),
-          (3024...3028)
+          (3026...3028),
+          (3042...3046)
         )],
        nil,
-       (2998...3002),
-       (3029...3032)
+       (3016...3020),
+       (3047...3050)
      ),
-     CaseNode(3033...3067)(
-       CallNode(3038...3041)(
+     CaseNode(3051...3085)(
+       CallNode(3056...3059)(
          nil,
          nil,
-         (3038...3041),
+         (3056...3059),
          nil,
          nil,
          nil,
@@ -3454,15 +3483,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3043...3063)(
-          IfNode(3046...3058)(
-            (3052...3054),
-            LocalVariableReadNode(3055...3058)(:baz, 0),
-            StatementsNode(3046...3051)(
-              [XStringNode(3046...3051)(
-                 (3046...3047),
-                 (3047...3050),
-                 (3050...3051),
+       [InNode(3061...3081)(
+          IfNode(3064...3076)(
+            (3070...3072),
+            LocalVariableReadNode(3073...3076)(:baz, 0),
+            StatementsNode(3064...3069)(
+              [XStringNode(3064...3069)(
+                 (3064...3065),
+                 (3065...3068),
+                 (3068...3069),
                  "foo"
                )]
             ),
@@ -3470,18 +3499,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3043...3045),
-          (3059...3063)
+          (3061...3063),
+          (3077...3081)
         )],
        nil,
-       (3033...3037),
-       (3064...3067)
+       (3051...3055),
+       (3082...3085)
      ),
-     CaseNode(3068...3104)(
-       CallNode(3073...3076)(
+     CaseNode(3086...3122)(
+       CallNode(3091...3094)(
          nil,
          nil,
-         (3073...3076),
+         (3091...3094),
          nil,
          nil,
          nil,
@@ -3489,15 +3518,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3078...3100)(
-          IfNode(3081...3095)(
-            (3089...3091),
-            LocalVariableReadNode(3092...3095)(:baz, 0),
-            StatementsNode(3081...3088)(
-              [XStringNode(3081...3088)(
-                 (3081...3084),
-                 (3084...3087),
-                 (3087...3088),
+       [InNode(3096...3118)(
+          IfNode(3099...3113)(
+            (3107...3109),
+            LocalVariableReadNode(3110...3113)(:baz, 0),
+            StatementsNode(3099...3106)(
+              [XStringNode(3099...3106)(
+                 (3099...3102),
+                 (3102...3105),
+                 (3105...3106),
                  "foo"
                )]
             ),
@@ -3505,18 +3534,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3078...3080),
-          (3096...3100)
+          (3096...3098),
+          (3114...3118)
         )],
        nil,
-       (3068...3072),
-       (3101...3104)
+       (3086...3090),
+       (3119...3122)
      ),
-     CaseNode(3105...3141)(
-       CallNode(3110...3113)(
+     CaseNode(3123...3159)(
+       CallNode(3128...3131)(
          nil,
          nil,
-         (3110...3113),
+         (3128...3131),
          nil,
          nil,
          nil,
@@ -3524,33 +3553,33 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3115...3137)(
-          IfNode(3118...3132)(
-            (3126...3128),
-            LocalVariableReadNode(3129...3132)(:baz, 0),
-            StatementsNode(3118...3125)(
-              [ArrayNode(3118...3125)(
-                 [SymbolNode(3121...3124)(nil, (3121...3124), nil, "foo")],
-                 (3118...3121),
-                 (3124...3125)
+       [InNode(3133...3155)(
+          IfNode(3136...3150)(
+            (3144...3146),
+            LocalVariableReadNode(3147...3150)(:baz, 0),
+            StatementsNode(3136...3143)(
+              [ArrayNode(3136...3143)(
+                 [SymbolNode(3139...3142)(nil, (3139...3142), nil, "foo")],
+                 (3136...3139),
+                 (3142...3143)
                )]
             ),
             nil,
             nil
           ),
           nil,
-          (3115...3117),
-          (3133...3137)
+          (3133...3135),
+          (3151...3155)
         )],
        nil,
-       (3105...3109),
-       (3138...3141)
+       (3123...3127),
+       (3156...3159)
      ),
-     CaseNode(3142...3178)(
-       CallNode(3147...3150)(
+     CaseNode(3160...3196)(
+       CallNode(3165...3168)(
          nil,
          nil,
-         (3147...3150),
+         (3165...3168),
          nil,
          nil,
          nil,
@@ -3558,33 +3587,33 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3152...3174)(
-          IfNode(3155...3169)(
-            (3163...3165),
-            LocalVariableReadNode(3166...3169)(:baz, 0),
-            StatementsNode(3155...3162)(
-              [ArrayNode(3155...3162)(
-                 [SymbolNode(3158...3161)(nil, (3158...3161), nil, "foo")],
-                 (3155...3158),
-                 (3161...3162)
+       [InNode(3170...3192)(
+          IfNode(3173...3187)(
+            (3181...3183),
+            LocalVariableReadNode(3184...3187)(:baz, 0),
+            StatementsNode(3173...3180)(
+              [ArrayNode(3173...3180)(
+                 [SymbolNode(3176...3179)(nil, (3176...3179), nil, "foo")],
+                 (3173...3176),
+                 (3179...3180)
                )]
             ),
             nil,
             nil
           ),
           nil,
-          (3152...3154),
-          (3170...3174)
+          (3170...3172),
+          (3188...3192)
         )],
        nil,
-       (3142...3146),
-       (3175...3178)
+       (3160...3164),
+       (3193...3196)
      ),
-     CaseNode(3179...3215)(
-       CallNode(3184...3187)(
+     CaseNode(3197...3233)(
+       CallNode(3202...3205)(
          nil,
          nil,
-         (3184...3187),
+         (3202...3205),
          nil,
          nil,
          nil,
@@ -3592,33 +3621,33 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3189...3211)(
-          IfNode(3192...3206)(
-            (3200...3202),
-            LocalVariableReadNode(3203...3206)(:baz, 0),
-            StatementsNode(3192...3199)(
-              [ArrayNode(3192...3199)(
-                 [StringNode(3195...3198)(nil, (3195...3198), nil, "foo")],
-                 (3192...3195),
-                 (3198...3199)
+       [InNode(3207...3229)(
+          IfNode(3210...3224)(
+            (3218...3220),
+            LocalVariableReadNode(3221...3224)(:baz, 0),
+            StatementsNode(3210...3217)(
+              [ArrayNode(3210...3217)(
+                 [StringNode(3213...3216)(nil, (3213...3216), nil, "foo")],
+                 (3210...3213),
+                 (3216...3217)
                )]
             ),
             nil,
             nil
           ),
           nil,
-          (3189...3191),
-          (3207...3211)
+          (3207...3209),
+          (3225...3229)
         )],
        nil,
-       (3179...3183),
-       (3212...3215)
+       (3197...3201),
+       (3230...3233)
      ),
-     CaseNode(3216...3252)(
-       CallNode(3221...3224)(
+     CaseNode(3234...3270)(
+       CallNode(3239...3242)(
          nil,
          nil,
-         (3221...3224),
+         (3239...3242),
          nil,
          nil,
          nil,
@@ -3626,33 +3655,33 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3226...3248)(
-          IfNode(3229...3243)(
-            (3237...3239),
-            LocalVariableReadNode(3240...3243)(:baz, 0),
-            StatementsNode(3229...3236)(
-              [ArrayNode(3229...3236)(
-                 [StringNode(3232...3235)(nil, (3232...3235), nil, "foo")],
-                 (3229...3232),
-                 (3235...3236)
+       [InNode(3244...3266)(
+          IfNode(3247...3261)(
+            (3255...3257),
+            LocalVariableReadNode(3258...3261)(:baz, 0),
+            StatementsNode(3247...3254)(
+              [ArrayNode(3247...3254)(
+                 [StringNode(3250...3253)(nil, (3250...3253), nil, "foo")],
+                 (3247...3250),
+                 (3253...3254)
                )]
             ),
             nil,
             nil
           ),
           nil,
-          (3226...3228),
-          (3244...3248)
+          (3244...3246),
+          (3262...3266)
         )],
        nil,
-       (3216...3220),
-       (3249...3252)
+       (3234...3238),
+       (3267...3270)
      ),
-     CaseNode(3253...3289)(
-       CallNode(3258...3261)(
+     CaseNode(3271...3307)(
+       CallNode(3276...3279)(
          nil,
          nil,
-         (3258...3261),
+         (3276...3279),
          nil,
          nil,
          nil,
@@ -3660,15 +3689,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3263...3285)(
-          IfNode(3266...3280)(
-            (3274...3276),
-            LocalVariableReadNode(3277...3280)(:baz, 0),
-            StatementsNode(3266...3273)(
-              [StringNode(3266...3273)(
-                 (3266...3269),
-                 (3269...3272),
-                 (3272...3273),
+       [InNode(3281...3303)(
+          IfNode(3284...3298)(
+            (3292...3294),
+            LocalVariableReadNode(3295...3298)(:baz, 0),
+            StatementsNode(3284...3291)(
+              [StringNode(3284...3291)(
+                 (3284...3287),
+                 (3287...3290),
+                 (3290...3291),
                  "foo"
                )]
             ),
@@ -3676,18 +3705,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3263...3265),
-          (3281...3285)
+          (3281...3283),
+          (3299...3303)
         )],
        nil,
-       (3253...3257),
-       (3286...3289)
+       (3271...3275),
+       (3304...3307)
      ),
-     CaseNode(3290...3326)(
-       CallNode(3295...3298)(
+     CaseNode(3308...3344)(
+       CallNode(3313...3316)(
          nil,
          nil,
-         (3295...3298),
+         (3313...3316),
          nil,
          nil,
          nil,
@@ -3695,15 +3724,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3300...3322)(
-          IfNode(3303...3317)(
-            (3311...3313),
-            LocalVariableReadNode(3314...3317)(:baz, 0),
-            StatementsNode(3303...3310)(
-              [StringNode(3303...3310)(
-                 (3303...3306),
-                 (3306...3309),
-                 (3309...3310),
+       [InNode(3318...3340)(
+          IfNode(3321...3335)(
+            (3329...3331),
+            LocalVariableReadNode(3332...3335)(:baz, 0),
+            StatementsNode(3321...3328)(
+              [StringNode(3321...3328)(
+                 (3321...3324),
+                 (3324...3327),
+                 (3327...3328),
                  "foo"
                )]
             ),
@@ -3711,18 +3740,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3300...3302),
-          (3318...3322)
+          (3318...3320),
+          (3336...3340)
         )],
        nil,
-       (3290...3294),
-       (3323...3326)
+       (3308...3312),
+       (3341...3344)
      ),
-     CaseNode(3327...3361)(
-       CallNode(3332...3335)(
+     CaseNode(3345...3379)(
+       CallNode(3350...3353)(
          nil,
          nil,
-         (3332...3335),
+         (3350...3353),
          nil,
          nil,
          nil,
@@ -3730,15 +3759,15 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3337...3357)(
-          IfNode(3340...3352)(
-            (3346...3348),
-            LocalVariableReadNode(3349...3352)(:baz, 0),
-            StatementsNode(3340...3345)(
-              [StringNode(3340...3345)(
-                 (3340...3341),
-                 (3341...3344),
-                 (3344...3345),
+       [InNode(3355...3375)(
+          IfNode(3358...3370)(
+            (3364...3366),
+            LocalVariableReadNode(3367...3370)(:baz, 0),
+            StatementsNode(3358...3363)(
+              [StringNode(3358...3363)(
+                 (3358...3359),
+                 (3359...3362),
+                 (3362...3363),
                  "foo"
                )]
             ),
@@ -3746,18 +3775,18 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3337...3339),
-          (3353...3357)
+          (3355...3357),
+          (3371...3375)
         )],
        nil,
-       (3327...3331),
-       (3358...3361)
+       (3345...3349),
+       (3376...3379)
      ),
-     CaseNode(3362...3394)(
-       CallNode(3367...3370)(
+     CaseNode(3380...3412)(
+       CallNode(3385...3388)(
          nil,
          nil,
-         (3367...3370),
+         (3385...3388),
          nil,
          nil,
          nil,
@@ -3765,27 +3794,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3372...3390)(
-          IfNode(3375...3385)(
-            (3379...3381),
-            LocalVariableReadNode(3382...3385)(:baz, 0),
-            StatementsNode(3375...3378)([NilNode(3375...3378)()]),
+       [InNode(3390...3408)(
+          IfNode(3393...3403)(
+            (3397...3399),
+            LocalVariableReadNode(3400...3403)(:baz, 0),
+            StatementsNode(3393...3396)([NilNode(3393...3396)()]),
             nil,
             nil
           ),
           nil,
-          (3372...3374),
-          (3386...3390)
+          (3390...3392),
+          (3404...3408)
         )],
        nil,
-       (3362...3366),
-       (3391...3394)
+       (3380...3384),
+       (3409...3412)
      ),
-     CaseNode(3395...3428)(
-       CallNode(3400...3403)(
+     CaseNode(3413...3446)(
+       CallNode(3418...3421)(
          nil,
          nil,
-         (3400...3403),
+         (3418...3421),
          nil,
          nil,
          nil,
@@ -3793,27 +3822,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3405...3424)(
-          IfNode(3408...3419)(
-            (3413...3415),
-            LocalVariableReadNode(3416...3419)(:baz, 0),
-            StatementsNode(3408...3412)([SelfNode(3408...3412)()]),
+       [InNode(3423...3442)(
+          IfNode(3426...3437)(
+            (3431...3433),
+            LocalVariableReadNode(3434...3437)(:baz, 0),
+            StatementsNode(3426...3430)([SelfNode(3426...3430)()]),
             nil,
             nil
           ),
           nil,
-          (3405...3407),
-          (3420...3424)
+          (3423...3425),
+          (3438...3442)
         )],
        nil,
-       (3395...3399),
-       (3425...3428)
+       (3413...3417),
+       (3443...3446)
      ),
-     CaseNode(3429...3462)(
-       CallNode(3434...3437)(
+     CaseNode(3447...3480)(
+       CallNode(3452...3455)(
          nil,
          nil,
-         (3434...3437),
+         (3452...3455),
          nil,
          nil,
          nil,
@@ -3821,27 +3850,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3439...3458)(
-          IfNode(3442...3453)(
-            (3447...3449),
-            LocalVariableReadNode(3450...3453)(:baz, 0),
-            StatementsNode(3442...3446)([TrueNode(3442...3446)()]),
+       [InNode(3457...3476)(
+          IfNode(3460...3471)(
+            (3465...3467),
+            LocalVariableReadNode(3468...3471)(:baz, 0),
+            StatementsNode(3460...3464)([TrueNode(3460...3464)()]),
             nil,
             nil
           ),
           nil,
-          (3439...3441),
-          (3454...3458)
+          (3457...3459),
+          (3472...3476)
         )],
        nil,
-       (3429...3433),
-       (3459...3462)
+       (3447...3451),
+       (3477...3480)
      ),
-     CaseNode(3463...3497)(
-       CallNode(3468...3471)(
+     CaseNode(3481...3515)(
+       CallNode(3486...3489)(
          nil,
          nil,
-         (3468...3471),
+         (3486...3489),
          nil,
          nil,
          nil,
@@ -3849,27 +3878,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3473...3493)(
-          IfNode(3476...3488)(
-            (3482...3484),
-            LocalVariableReadNode(3485...3488)(:baz, 0),
-            StatementsNode(3476...3481)([FalseNode(3476...3481)()]),
+       [InNode(3491...3511)(
+          IfNode(3494...3506)(
+            (3500...3502),
+            LocalVariableReadNode(3503...3506)(:baz, 0),
+            StatementsNode(3494...3499)([FalseNode(3494...3499)()]),
             nil,
             nil
           ),
           nil,
-          (3473...3475),
-          (3489...3493)
+          (3491...3493),
+          (3507...3511)
         )],
        nil,
-       (3463...3467),
-       (3494...3497)
+       (3481...3485),
+       (3512...3515)
      ),
-     CaseNode(3498...3535)(
-       CallNode(3503...3506)(
+     CaseNode(3516...3553)(
+       CallNode(3521...3524)(
          nil,
          nil,
-         (3503...3506),
+         (3521...3524),
          nil,
          nil,
          nil,
@@ -3877,29 +3906,29 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3508...3531)(
-          IfNode(3511...3526)(
-            (3520...3522),
-            LocalVariableReadNode(3523...3526)(:baz, 0),
-            StatementsNode(3511...3519)(
-              [SourceFileNode(3511...3519)("/fixtures/patterns.txt")]
+       [InNode(3526...3549)(
+          IfNode(3529...3544)(
+            (3538...3540),
+            LocalVariableReadNode(3541...3544)(:baz, 0),
+            StatementsNode(3529...3537)(
+              [SourceFileNode(3529...3537)("patterns.txt")]
             ),
             nil,
             nil
           ),
           nil,
-          (3508...3510),
-          (3527...3531)
+          (3526...3528),
+          (3545...3549)
         )],
        nil,
-       (3498...3502),
-       (3532...3535)
+       (3516...3520),
+       (3550...3553)
      ),
-     CaseNode(3536...3573)(
-       CallNode(3541...3544)(
+     CaseNode(3554...3591)(
+       CallNode(3559...3562)(
          nil,
          nil,
-         (3541...3544),
+         (3559...3562),
          nil,
          nil,
          nil,
@@ -3907,27 +3936,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3546...3569)(
-          IfNode(3549...3564)(
-            (3558...3560),
-            LocalVariableReadNode(3561...3564)(:baz, 0),
-            StatementsNode(3549...3557)([SourceLineNode(3549...3557)()]),
+       [InNode(3564...3587)(
+          IfNode(3567...3582)(
+            (3576...3578),
+            LocalVariableReadNode(3579...3582)(:baz, 0),
+            StatementsNode(3567...3575)([SourceLineNode(3567...3575)()]),
             nil,
             nil
           ),
           nil,
-          (3546...3548),
-          (3565...3569)
+          (3564...3566),
+          (3583...3587)
         )],
        nil,
-       (3536...3540),
-       (3570...3573)
+       (3554...3558),
+       (3588...3591)
      ),
-     CaseNode(3574...3615)(
-       CallNode(3579...3582)(
+     CaseNode(3592...3633)(
+       CallNode(3597...3600)(
          nil,
          nil,
-         (3579...3582),
+         (3597...3600),
          nil,
          nil,
          nil,
@@ -3935,27 +3964,27 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3584...3611)(
-          IfNode(3587...3606)(
-            (3600...3602),
-            LocalVariableReadNode(3603...3606)(:baz, 0),
-            StatementsNode(3587...3599)([SourceEncodingNode(3587...3599)()]),
+       [InNode(3602...3629)(
+          IfNode(3605...3624)(
+            (3618...3620),
+            LocalVariableReadNode(3621...3624)(:baz, 0),
+            StatementsNode(3605...3617)([SourceEncodingNode(3605...3617)()]),
             nil,
             nil
           ),
           nil,
-          (3584...3586),
-          (3607...3611)
+          (3602...3604),
+          (3625...3629)
         )],
        nil,
-       (3574...3578),
-       (3612...3615)
+       (3592...3596),
+       (3630...3633)
      ),
-     CaseNode(3616...3655)(
-       CallNode(3621...3624)(
+     CaseNode(3634...3673)(
+       CallNode(3639...3642)(
          nil,
          nil,
-         (3621...3624),
+         (3639...3642),
          nil,
          nil,
          nil,
@@ -3963,17 +3992,17 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       [InNode(3626...3651)(
-          IfNode(3629...3646)(
-            (3640...3642),
-            LocalVariableReadNode(3643...3646)(:baz, 0),
-            StatementsNode(3629...3639)(
-              [LambdaNode(3629...3639)(
+       [InNode(3644...3669)(
+          IfNode(3647...3664)(
+            (3658...3660),
+            LocalVariableReadNode(3661...3664)(:baz, 0),
+            StatementsNode(3647...3657)(
+              [LambdaNode(3647...3657)(
                  [],
-                 (3629...3631),
+                 (3647...3649),
                  nil,
-                 StatementsNode(3634...3637)(
-                   [LocalVariableReadNode(3634...3637)(:bar, 1)]
+                 StatementsNode(3652...3655)(
+                   [LocalVariableReadNode(3652...3655)(:bar, 1)]
                  )
                )]
             ),
@@ -3981,20 +4010,20 @@ ProgramNode(0...3725)(
             nil
           ),
           nil,
-          (3626...3628),
-          (3647...3651)
+          (3644...3646),
+          (3665...3669)
         )],
        nil,
-       (3616...3620),
-       (3652...3655)
+       (3634...3638),
+       (3670...3673)
      ),
-     IfNode(3657...3671)(
-       (3657...3659),
-       MatchPredicateNode(3660...3667)(
-         CallNode(3660...3661)(
+     IfNode(3675...3689)(
+       (3675...3677),
+       MatchPredicateNode(3678...3685)(
+         CallNode(3678...3679)(
            nil,
            nil,
-           (3660...3661),
+           (3678...3679),
            nil,
            nil,
            nil,
@@ -4002,25 +4031,25 @@ ProgramNode(0...3725)(
            0,
            "a"
          ),
-         ArrayPatternNode(3665...3667)(
+         ArrayPatternNode(3683...3685)(
            nil,
            [],
            nil,
            [],
-           (3665...3666),
-           (3666...3667)
+           (3683...3684),
+           (3684...3685)
          ),
-         (3662...3664)
+         (3680...3682)
        ),
        nil,
        nil,
-       (3668...3671)
+       (3686...3689)
      ),
-     MatchRequiredNode(3673...3685)(
-       CallNode(3673...3674)(
+     MatchRequiredNode(3691...3703)(
+       CallNode(3691...3692)(
          nil,
          nil,
-         (3673...3674),
+         (3691...3692),
          nil,
          nil,
          nil,
@@ -4028,21 +4057,21 @@ ProgramNode(0...3725)(
          0,
          "a"
        ),
-       ArrayPatternNode(3678...3685)(
+       ArrayPatternNode(3696...3703)(
          nil,
-         [LocalVariableWriteNode(3682...3683)(:b, 0, nil, (3682...3683), nil)],
+         [LocalVariableWriteNode(3700...3701)(:b, 0, nil, (3700...3701), nil)],
          nil,
          [],
-         (3678...3679),
-         (3684...3685)
+         (3696...3697),
+         (3702...3703)
        ),
-       (3675...3677)
+       (3693...3695)
      ),
-     MatchPredicateNode(3687...3725)(
-       CallNode(3687...3690)(
+     MatchPredicateNode(3705...3743)(
+       CallNode(3705...3708)(
          nil,
          nil,
-         (3687...3690),
+         (3705...3708),
          nil,
          nil,
          nil,
@@ -4050,39 +4079,39 @@ ProgramNode(0...3725)(
          0,
          "foo"
        ),
-       HashPatternNode(3694...3725)(
-         ConstantReadNode(3694...3695)(),
-         [AssocNode(3699...3723)(
-            SymbolNode(3699...3703)(nil, (3699...3702), (3702...3703), "bar"),
-            HashPatternNode(3704...3723)(
-              ConstantReadNode(3704...3705)(),
-              [AssocNode(3711...3719)(
-                 SymbolNode(3711...3717)(
+       HashPatternNode(3712...3743)(
+         ConstantReadNode(3712...3713)(),
+         [AssocNode(3717...3741)(
+            SymbolNode(3717...3721)(nil, (3717...3720), (3720...3721), "bar"),
+            HashPatternNode(3722...3741)(
+              ConstantReadNode(3722...3723)(),
+              [AssocNode(3729...3737)(
+                 SymbolNode(3729...3735)(
                    nil,
-                   (3711...3716),
-                   (3716...3717),
+                   (3729...3734),
+                   (3734...3735),
                    "value"
                  ),
-                 LocalVariableWriteNode(3718...3719)(
+                 LocalVariableWriteNode(3736...3737)(
                    :a,
                    0,
                    nil,
-                   (3718...3719),
+                   (3736...3737),
                    nil
                  ),
                  nil
                )],
               nil,
-              (3705...3706),
-              (3722...3723)
+              (3723...3724),
+              (3740...3741)
             ),
             nil
           )],
          nil,
-         (3695...3696),
-         (3724...3725)
+         (3713...3714),
+         (3742...3743)
        ),
-       (3691...3693)
+       (3709...3711)
      )]
   )
 )

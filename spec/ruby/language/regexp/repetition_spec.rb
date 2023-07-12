@@ -87,9 +87,7 @@ describe "Regexps with repetition" do
       /a+?*/.match("a")[0].should == "a"
       /(a+?)*/.match("a")[0].should == "a"
 
-      ruby_bug '#17341', ''...'3.0' do
-        /a+?*/.match("aa")[0].should == "aa"
-      end
+      /a+?*/.match("aa")[0].should == "aa"
       /(a+?)*/.match("aa")[0].should == "aa"
 
       # a+?+ should not be reduced, it should be equivalent to (a+?)+
@@ -100,9 +98,7 @@ describe "Regexps with repetition" do
       /a+?+/.match("a")[0].should == "a"
       /(a+?)+/.match("a")[0].should == "a"
 
-      ruby_bug '#17341', ''...'3.0' do
-        /a+?+/.match("aa")[0].should == "aa"
-      end
+      /a+?+/.match("aa")[0].should == "aa"
       /(a+?)+/.match("aa")[0].should == "aa"
 
       # both a**? and a+*? should be equivalent to (a+)??

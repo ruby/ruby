@@ -166,36 +166,13 @@ describe "Proc.new without a block" do
     -> { ProcSpecs.new_proc_subclass_in_method }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ""..."3.0" do
-    it "can be created if invoked from within a method with a block" do
-      -> { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
+  it "raises an ArgumentError when passed no block" do
+    def some_method
+      Proc.new
     end
 
-    it "can be created if invoked on a subclass from within a method with a block" do
-      -> { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
-    end
-
-
-    it "can be create when called with no block" do
-      def some_method
-        Proc.new
-      end
-
-      -> {
-        some_method { "hello" }
-      }.should complain(/Capturing the given block using Proc.new is deprecated/)
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "raises an ArgumentError when passed no block" do
-      def some_method
-        Proc.new
-      end
-
-      -> { ProcSpecs.new_proc_in_method { "hello" } }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
-      -> { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
-      -> { some_method { "hello" } }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
-    end
+    -> { ProcSpecs.new_proc_in_method { "hello" } }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
+    -> { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
+    -> { some_method { "hello" } }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
   end
 end

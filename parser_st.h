@@ -137,6 +137,7 @@ void rb_parser_st_add_direct(parser_st_table *, parser_st_data_t, parser_st_data
 void rb_parser_st_free_table(parser_st_table *);
 void rb_parser_st_cleanup_safe(parser_st_table *, parser_st_data_t);
 void rb_parser_st_clear(parser_st_table *);
+parser_st_table *rb_parser_st_replace(parser_st_table *, parser_st_table *);
 parser_st_table *rb_parser_st_copy(parser_st_table *);
 CONSTFUNC(int rb_parser_st_numcmp(parser_st_data_t, parser_st_data_t));
 CONSTFUNC(parser_st_index_t rb_parser_st_numhash(parser_st_data_t));

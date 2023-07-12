@@ -165,11 +165,9 @@ describe "String#scan with pattern and block" do
     end
   end
 
-  ruby_version_is '3.0' do
-    it "yields String instances for subclasses" do
-      a = []
-      StringSpecs::MyString.new("abc").scan(/./) { |s| a << s.class }
-      a.should == [String, String, String]
-    end
+  it "yields String instances for subclasses" do
+    a = []
+    StringSpecs::MyString.new("abc").scan(/./) { |s| a << s.class }
+    a.should == [String, String, String]
   end
 end

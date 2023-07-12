@@ -15,16 +15,8 @@ describe "Array#take_while" do
     [1, 2, false, 4].take_while{ |element| element }.should == [1, 2]
   end
 
-  ruby_version_is ''...'3.0' do
-    it 'returns a subclass instance for Array subclasses' do
-      ArraySpecs::MyArray[1, 2, 3, 4, 5].take_while { |n| n < 4 }.should be_an_instance_of(ArraySpecs::MyArray)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it 'returns a Array instance for Array subclasses' do
-      ArraySpecs::MyArray[1, 2, 3, 4, 5].take_while { |n| n < 4 }.should be_an_instance_of(Array)
-    end
+  it 'returns a Array instance for Array subclasses' do
+    ArraySpecs::MyArray[1, 2, 3, 4, 5].take_while { |n| n < 4 }.should be_an_instance_of(Array)
   end
 end
 

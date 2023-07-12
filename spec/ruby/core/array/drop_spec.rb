@@ -50,15 +50,7 @@ describe "Array#drop" do
     -> { [1, 2].drop(obj) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it 'returns a subclass instance for Array subclasses' do
-      ArraySpecs::MyArray[1, 2, 3, 4, 5].drop(1).should be_an_instance_of(ArraySpecs::MyArray)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it 'returns a Array instance for Array subclasses' do
-      ArraySpecs::MyArray[1, 2, 3, 4, 5].drop(1).should be_an_instance_of(Array)
-    end
+  it 'returns a Array instance for Array subclasses' do
+    ArraySpecs::MyArray[1, 2, 3, 4, 5].drop(1).should be_an_instance_of(Array)
   end
 end

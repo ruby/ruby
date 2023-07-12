@@ -1415,9 +1415,13 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_equal('-123.45678 90123 45678 9', BigDecimal('-123.45678901234567890').to_s('5F'))
-    assert_equal('+123.45678901 23456789', BigDecimal('123.45678901234567890').to_s('+8F'))
-    assert_equal(' 123.4567890123456789', BigDecimal('123.45678901234567890').to_s(' F'))
+    assert_equal('0.0', BigDecimal('0').to_s)
+    assert_equal('-123 45678 90123.45678 90123 45678 9', BigDecimal('-1234567890123.45678901234567890').to_s('5F'))
+    assert_equal('+12345 67890123.45678901 23456789', BigDecimal('1234567890123.45678901234567890').to_s('+8F'))
+    assert_equal(' 1234567890123.4567890123456789', BigDecimal('1234567890123.45678901234567890').to_s(' F'))
+    assert_equal('100 000 000 000.000 000 000 01', BigDecimal('100000000000.00000000001').to_s('3F'))
+    assert_equal('0.0 0 0 0 0 0 0 0 0 0 0 0 1', BigDecimal('0.0000000000001').to_s('1F'))
+    assert_equal('+1000000 0000000.0', BigDecimal('10000000000000').to_s('+7F'))
     assert_equal('0.1234567890123456789e3', BigDecimal('123.45678901234567890').to_s)
     assert_equal('0.12345 67890 12345 6789e3', BigDecimal('123.45678901234567890').to_s(5))
   end

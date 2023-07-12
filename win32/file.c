@@ -372,8 +372,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         result = append_wstr(result, wpath_pos + 1, user_length_in_path(wpath_pos + 1, wpath_len - 1),
                              path_cp, path_encoding);
 
-        if (wpath)
-            free(wpath);
+        free(wpath);
 
         rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
     }
@@ -390,7 +389,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             const long dir_len = RSTRING_LEN(dir);
 #if SIZEOF_INT < SIZEOF_LONG
             if ((long)(int)dir_len != dir_len) {
-                if (wpath) free(wpath);
+                free(wpath);
                 rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
                          dir_len);
             }
@@ -452,11 +451,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             result = rb_str_new_cstr("can't find user ");
             result = append_wstr(result, wdir_pos + 1, user_length_in_path(wdir_pos + 1, wdir_len - 1),
                                  path_cp, path_encoding);
-            if (wpath)
-                free(wpath);
-
-            if (wdir)
-                free(wdir);
+            free(wpath);
+            free(wdir);
 
             rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
         }
@@ -573,17 +569,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     result = append_wstr(result, wfullpath, size, path_cp, path_encoding);
 
     /* TODO: better cleanup */
-    if (buffer)
-        xfree(buffer);
-
-    if (wpath)
-        free(wpath);
-
-    if (wdir)
-        free(wdir);
-
-    if (whome)
-        xfree(whome);
+    xfree(buffer);
+    free(wpath);
+    free(wdir);
+    xfree(whome);
 
     if (wfullpath != wfullpath_buffer)
         xfree(wfullpath);

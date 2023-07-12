@@ -28,6 +28,10 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.homepage = "https://ruby.github.io/rdoc"
   s.licenses = ["Ruby"]
 
+  s.metadata["homepage_uri"] = s.homepage
+  s.metadata["source_code_uri"] = "https://github.com/ruby/rdoc"
+  s.metadata["changelog_uri"] = "#{s.metadata["source_code_uri"]}/releases"
+
   s.bindir = "exe"
   s.executables = ["rdoc", "ri"]
   s.require_paths = ["lib"]
