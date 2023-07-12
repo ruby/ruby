@@ -14,8 +14,6 @@
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#else
-char *getlogin(void);
 #endif
 
 #ifdef HAVE_GETPWENT
@@ -56,6 +54,7 @@ static VALUE sGroup;
 #  include <stdlib.h>
 # endif
 #endif
+char *getlogin(void);
 
 #define RUBY_ETC_VERSION "1.4.2"
 
