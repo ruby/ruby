@@ -581,8 +581,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*make_backtrace)(void);
 
     /* Util */
-    unsigned long (*scan_hex)(const char *start, size_t len, size_t *retlen);
-    unsigned long (*scan_oct)(const char *start, size_t len, size_t *retlen);
     unsigned long (*scan_digits)(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
     double (*strtod)(const char *s00, char **se);
 

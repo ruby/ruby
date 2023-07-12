@@ -785,8 +785,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->make_backtrace = rb_make_backtrace;
 
-    config->scan_hex    = ruby_scan_hex;
-    config->scan_oct    = ruby_scan_oct;
     config->scan_digits = ruby_scan_digits;
     config->strtod      = ruby_strtod;
 

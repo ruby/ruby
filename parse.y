@@ -282,6 +282,65 @@ parse_isxdigit(int c)
 #undef STRNCASECMP
 #define STRNCASECMP st_locale_insensitive_strncasecmp
 
+static const signed char parse_digit36_to_number_table[] = {
+    /*     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /*0*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*1*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*2*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*3*/  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1,
+    /*4*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
+    /*5*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
+    /*6*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
+    /*7*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
+    /*8*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*9*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*a*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*b*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*c*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*d*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*e*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+};
+
+static unsigned long
+parse_scan_hex(const char *start, size_t len, size_t *retlen)
+{
+    register const char *s = start;
+    register unsigned long retval = 0;
+    signed char d;
+    size_t i = 0;
+
+    for (i = 0; i < len; i++) {
+        d = parse_digit36_to_number_table[(unsigned char)*s];
+        if (d < 0 || 15 < d) {
+            break;
+        }
+        retval <<= 4;
+        retval |= d;
+        s++;
+    }
+    *retlen = (size_t)(s - start);
+    return retval;
+}
+
+static unsigned long
+parse_scan_oct(const char *start, size_t len, size_t *retlen)
+{
+    register const char *s = start;
+    register unsigned long retval = 0;
+    size_t i;
+
+    for (i = 0; i < len; i++) {
+        if ((s[0] < '0') || ('7' < s[0])) {
+            break;
+        }
+        retval <<= 3;
+        retval |= *s++ - '0';
+    }
+    *retlen = (size_t)(s - start);
+    return retval;
+}
+
 #ifdef RIPPER
 #include "ripper_init.h"
 #endif
@@ -7274,7 +7333,7 @@ tok_hex(struct parser_params *p, size_t *numlen)
 {
     int c;
 
-    c = (int)ruby_scan_hex(p->lex.pcur, 2, numlen);
+    c = (int)parse_scan_hex(p->lex.pcur, 2, numlen);
     if (!*numlen) {
         yyerror0("invalid hex escape");
         token_flush(p);
@@ -7321,7 +7380,7 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
                  int regexp_literal, int wide)
 {
     size_t numlen;
-    int codepoint = (int)ruby_scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
+    int codepoint = (int)parse_scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
     p->lex.pcur += numlen;
     if (p->lex.strterm == NULL ||
         (strterm_is_heredoc((VALUE)p->lex.strterm)) ||
@@ -7492,7 +7551,7 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
         pushback(p, c);
-        c = (int)ruby_scan_oct(p->lex.pcur, 3, &numlen);
+        c = (int)parse_scan_oct(p->lex.pcur, 3, &numlen);
         p->lex.pcur += numlen;
         return c;
 
@@ -7607,7 +7666,7 @@ tokadd_escape(struct parser_params *p, rb_encoding **encp)
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
         {
-            ruby_scan_oct(--p->lex.pcur, 3, &numlen);
+            parse_scan_oct(--p->lex.pcur, 3, &numlen);
             if (numlen == 0) goto eof;
             p->lex.pcur += numlen;
             tokcopy(p, (int)numlen + 1);
