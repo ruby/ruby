@@ -198,7 +198,7 @@ VM_CAPTURED_BLOCK_TO_CFP(const struct rb_captured_block *captured)
 {
     rb_control_frame_t *cfp = ((rb_control_frame_t *)((VALUE *)(captured) - 3));
     VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_EC(), cfp));
-    VM_ASSERT(sizeof(rb_control_frame_t)/sizeof(VALUE) == 8 + VM_DEBUG_BP_CHECK ? 1 : 0);
+    VM_ASSERT(sizeof(rb_control_frame_t)/sizeof(VALUE) == 7 + VM_DEBUG_BP_CHECK ? 1 : 0);
     return cfp;
 }
 
@@ -1393,7 +1393,7 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
 static VALUE
 invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_callable_method_entry_t *me, VALUE type, int opt_pc)
 {
-    /* bmethod */
+    /* bmethod call from outside the VM */
     int arg_size = ISEQ_BODY(iseq)->param.size;
     VALUE ret;
 
@@ -1403,7 +1403,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                   VM_GUARDED_PREV_EP(captured->ep),
                   (VALUE)me,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
-                  ec->cfp->sp + arg_size,
+                  ec->cfp->sp + 1 /* self */ + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size,
                   ISEQ_BODY(iseq)->stack_max);
 
@@ -1424,7 +1424,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
                          const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me)
 {
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
-    int i, opt_pc;
+    int opt_pc;
     VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
     rb_control_frame_t *cfp = ec->cfp;
     VALUE *sp = cfp->sp;
@@ -1443,14 +1443,18 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
         use_argv = vm_argv_ruby_array(av, argv, &flags, &argc, kw_splat);
     }
 
-    CHECK_VM_STACK_OVERFLOW(cfp, argc);
+    CHECK_VM_STACK_OVERFLOW(cfp, argc + 1);
     vm_check_canary(ec, sp);
-    cfp->sp = sp + argc;
-    for (i=0; i<argc; i++) {
-        sp[i] = use_argv[i];
-    }
 
-    opt_pc = vm_yield_setup_args(ec, iseq, argc, sp, flags, passed_block_handler,
+    VALUE *stack_argv = sp;
+    if (me) {
+        *sp = self; // bemthods need `self` on the VM stack
+        stack_argv++;
+    }
+    cfp->sp = stack_argv + argc;
+    MEMCPY(stack_argv, use_argv, VALUE, argc); // restrict: new stack space
+
+    opt_pc = vm_yield_setup_args(ec, iseq, argc, stack_argv, flags, passed_block_handler,
                                  (is_lambda ? arg_setup_method : arg_setup_block));
     cfp->sp = sp;
 
