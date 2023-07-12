@@ -11138,6 +11138,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.c
 parse.$(OBJEXT): {$(VPATH)}parse.h
 parse.$(OBJEXT): {$(VPATH)}parse.y
 parse.$(OBJEXT): {$(VPATH)}parser_node.h
+parse.$(OBJEXT): {$(VPATH)}parser_st.h
 parse.$(OBJEXT): {$(VPATH)}probes.dmyh
 parse.$(OBJEXT): {$(VPATH)}probes.h
 parse.$(OBJEXT): {$(VPATH)}ractor.h
