@@ -109,6 +109,9 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       bundle "config set --local version #{previous_minor}"
       bundle "install", :artifice => "vcr"
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
+
+      bundle "-v"
+      expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{previous_minor}" : previous_minor)
     end
 
     it "does not try to install when using bundle config version global" do
