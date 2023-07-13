@@ -390,8 +390,8 @@ module Bundler
       both_sources.each do |name, (dep, lock_dep)|
         next if dep.nil? || lock_dep.nil?
 
-        gemfile_source = dep.source || sources.default_source
-        lock_source = lock_dep.source || sources.default_source
+        gemfile_source = dep.source || default_source
+        lock_source = lock_dep.source || default_source
         next if lock_source.include?(gemfile_source)
 
         gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
@@ -815,7 +815,7 @@ module Bundler
 
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         s.source = if dep
-          gemfile_source = dep.source || sources.default_source
+          gemfile_source = dep.source || default_source
 
           @specs_that_changed_sources << s if gemfile_source != lockfile_source
           deps << dep if !dep.source || lockfile_source.include?(dep.source)
@@ -875,7 +875,7 @@ module Bundler
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
         all_requirements = source_map.all_requirements
         all_requirements = pin_locally_available_names(all_requirements) if @prefer_local
-        { :default => sources.default_source }.merge(all_requirements)
+        { :default => default_source }.merge(all_requirements)
       else
         { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
@@ -884,7 +884,7 @@ module Bundler
         source_requirements[dep.name] = sources.metadata_source
       end
 
-      default_bundler_source = source_requirements["bundler"] || sources.default_source
+      default_bundler_source = source_requirements["bundler"] || default_source
 
       if @unlocking_bundler
         default_bundler_source.add_dependency_names("bundler")
@@ -895,6 +895,10 @@ module Bundler
 
       verify_changed_sources!
       source_requirements
+    end
+
+    def default_source
+      sources.default_source
     end
 
     def verify_changed_sources!
