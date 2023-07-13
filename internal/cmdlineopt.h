@@ -27,7 +27,8 @@ typedef struct ruby_cmdline_options {
     struct rb_rjit_options rjit;
 #endif
 
-    int sflag, xflag;
+    signed int sflag: 2;
+    unsigned int xflag: 1;
     unsigned int warning: 1;
     unsigned int verbose: 1;
     unsigned int do_loop: 1;
