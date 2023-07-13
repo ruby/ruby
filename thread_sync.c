@@ -855,17 +855,17 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *
  *	producer = Thread.new do
  *	  5.times do |i|
- *	     sleep rand(i) # simulate expense
- *	     queue << i
- *	     puts "#{i} produced"
+ *	    sleep rand(i) # simulate expense
+ *	    queue << i
+ *	    puts "#{i} produced"
  *	  end
  *	end
  *
  *	consumer = Thread.new do
  *	  5.times do |i|
- *	     value = queue.pop
- *	     sleep rand(i/2) # simulate expense
- *	     puts "consumed #{value}"
+ *	    value = queue.pop
+ *	    sleep rand(i/2) # simulate expense
+ *	    puts "consumed #{value}"
  *	  end
  *	end
  *
