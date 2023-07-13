@@ -3115,6 +3115,11 @@ str_subseq(VALUE str, long beg, long len)
     }
     else {
         str2 = str_new_shared(rb_cString, str);
+        // MMTk: Vanilla Ruby should do the following assertion for strings just like for arrays
+        // in `ary_make_partial`.  If the following assertion existed, we could figure out erailer
+        // that `str_new_shared` may compute the "embed capa max" differently from what we do here.
+        assert(!STR_EMBED_P(str2));
+
         ENC_CODERANGE_CLEAR(str2);
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING_LEN(str2) > len) {

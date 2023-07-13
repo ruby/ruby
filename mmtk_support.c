@@ -682,7 +682,6 @@ rb_mmtk_is_obj_free_candidate(VALUE obj)
         return false;
       case T_MODULE:
       case T_CLASS:
-      case T_ARRAY:
       case T_HASH:
       case T_REGEXP:
       case T_DATA:
@@ -711,6 +710,9 @@ rb_mmtk_is_obj_free_candidate(VALUE obj)
         return false;
       case T_STRING:
         // We use imemo:mmtk_strbuf (rb_mmtk_strbuf_t) as the underlying buffer.
+        return false;
+      case T_ARRAY:
+        // We use imemo:mmtk_objbuf (rb_mmtk_objbuf_t) as the underlying buffer.
         return false;
       case T_RATIONAL:
       case T_COMPLEX:
@@ -1009,6 +1011,7 @@ rb_mmtk_update_weak_table(st_table *table,
         }
     }
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 // String buffer implementation
 ////////////////////////////////////////////////////////////////////////////////
@@ -1029,6 +1032,28 @@ char*
 rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf)
 {
     return strbuf->ary;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Object buffer implementation
+////////////////////////////////////////////////////////////////////////////////
+
+rb_mmtk_objbuf_t*
+rb_mmtk_new_objbuf(size_t capa)
+{
+    VALUE flags = T_IMEMO | (imemo_mmtk_objbuf << FL_USHIFT);
+    size_t payload_size = offsetof(rb_mmtk_objbuf_t, ary) + capa * sizeof(VALUE);
+    if (payload_size % MMTK_MIN_OBJ_ALIGN != 0) {
+        payload_size = (payload_size + MMTK_MIN_OBJ_ALIGN - 1) & ~(MMTK_MIN_OBJ_ALIGN - 1);
+    }
+    VALUE obj = rb_mmtk_newobj_raw(capa, flags, true, payload_size);
+    return (rb_mmtk_objbuf_t*)obj;
+}
+
+VALUE*
+rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf)
+{
+    return objbuf->ary;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

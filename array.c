@@ -232,6 +232,52 @@ rb_ary_size_as_embedded(VALUE ary)
 }
 
 
+#if USE_MMTK
+
+void
+rb_mmtk_ary_set_objbuf(VALUE ary, VALUE objbuf)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+    RB_OBJ_WRITE(ary, RARRAY_EXT(ary), objbuf);
+}
+
+// Attach a heap array with a newly allocated imemo:mmtk_objbuf and copy over the contents
+// Note that `ary` may be an existing array and `src` may point into `ary` or its existing
+// buffer.  Do not modify `ary` until the new strbuf is fully written.
+// Note: capa is the number of elements in the newly created buffer.
+//       copy_len is the number of elements to copy, not the number of bytes.
+static inline void
+rb_mmtk_ary_new_objbuf_copy(VALUE ary, size_t capa, const VALUE *src, size_t copy_len)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+
+    // When using MMTk, as.heap.ptr points to the ary field of a rb_mmtk_objbuf_t
+    // which is allocated in the heap as an imemo:mmtk_objbuf.
+    rb_mmtk_objbuf_t *objbuf = rb_mmtk_new_objbuf(capa);
+    VALUE *elems = rb_mmtk_objbuf_to_elems(objbuf);
+
+    if (src != NULL) {
+        RUBY_ASSERT(capa >= copy_len);
+        for (size_t i = 0; i < copy_len; i++) {
+            // TODO: use array copy write barrier after enabling StickyImmix.
+            elems[i] = src[i];
+        }
+    }
+
+    RARRAY(ary)->as.heap.ptr = elems;
+    rb_mmtk_ary_set_objbuf(ary, (VALUE)objbuf);
+}
+
+// Attach a heap array with a newly allocated empty imemo:mmtk_objbuf.
+static inline void
+rb_mmtk_ary_new_objbuf(VALUE ary, size_t capa)
+{
+    rb_mmtk_ary_new_objbuf_copy(ary, capa, NULL, 0);
+}
+
+#endif
+
+
 #if ARRAY_DEBUG
 #define ary_verify(ary) ary_verify_(ary, __FILE__, __LINE__)
 
@@ -367,6 +413,13 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 static VALUE *
 ary_heap_alloc(VALUE ary, size_t capa)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // rb_mmtk_ary_new_objbuf should be a drop-in replacement.
+        // But rb_mmtk_ary_new_objbuf_copy should be used when copying/reallocating/resizing.
+        rb_bug("ary_heap_alloc should not be called when using MMTk.");
+    }
+#endif
     VALUE *ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * capa);
 
     if (ptr != NULL) {
@@ -383,6 +436,15 @@ ary_heap_alloc(VALUE ary, size_t capa)
 static void
 ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, the underlying buffer is an imemo:mmtk_objbuf which will be GC-ed.
+        // We clear its objbuf field just to be safe.
+        rb_mmtk_ary_set_objbuf(ary, 0);
+        return;
+    }
+#endif
+
     if (RARRAY_TRANSIENT_P(ary)) {
         /* ignore it */
     }
@@ -394,6 +456,15 @@ ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
 static void
 ary_heap_free(VALUE ary)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, the underlying buffer is an imemo:mmtk_objbuf which will be GC-ed.
+        // We clear its objbuf field just to be safe.
+        rb_mmtk_ary_set_objbuf(ary, 0);
+        return;
+    }
+#endif
+
     if (RARRAY_TRANSIENT_P(ary)) {
         RARY_TRANSIENT_UNSET(ary);
     }
@@ -408,6 +479,9 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
     size_t alloc_capa = new_capa;
     size_t old_capa = ARY_HEAP_CAPA(ary);
 
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
     if (RARRAY_TRANSIENT_P(ary)) {
         if (new_capa <= old_capa) {
             /* do nothing */
@@ -428,6 +502,14 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
     else {
         SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, old_capa);
     }
+#if USE_MMTK
+    } else {
+        // Transient arrays should not exist when using MMTk.
+        RUBY_ASSERT(!RARRAY_TRANSIENT_P(ary));\
+        size_t copy_len = new_capa < old_capa ? new_capa : old_capa;
+        rb_mmtk_ary_new_objbuf_copy(ary, new_capa, ARY_HEAP_PTR(ary), copy_len);
+    }
+#endif
     ary_verify(ary);
 
     return alloc_capa;
@@ -516,11 +598,20 @@ ary_resize_capa(VALUE ary, long capacity)
         size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             VALUE *ptr = ary_heap_alloc(ary, capacity);
 
             MEMCPY(ptr, ARY_EMBED_PTR(ary), VALUE, len);
             FL_UNSET_EMBED(ary);
             ARY_SET_PTR(ary, ptr);
+#if USE_MMTK
+            } else {
+                rb_mmtk_ary_new_objbuf_copy(ary, capacity, ARY_EMBED_PTR(ary), len);
+                FL_UNSET_EMBED(ary);
+            }
+#endif
             ARY_SET_HEAP_LEN(ary, len);
         }
         else {
@@ -658,20 +749,37 @@ rb_ary_cancel_sharing(VALUE ary)
         else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
             long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root);
             FL_UNSET_SHARED(ary);
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                // The objbuf of the current array must be the same as that of the shared root.
+                RUBY_ASSERT(RARRAY_EXT(ary)->objbuf == RARRAY_EXT(shared_root)->objbuf);
+            }
+#endif
             ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared_root));
             ARY_SET_CAPA(ary, shared_len);
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
                 MEMMOVE(ptr, ptr+shift, VALUE, len);
             });
+            // MMTk: It looks like the following `FL_SET_EMBED` will effectively "kill" the
+            // `shared_root`.  Its "embed length" was cleared in `FL_UNSET_EMBED` when
+            // `shared_root` became a "heap" array.
             FL_SET_EMBED(shared_root);
             rb_ary_decrement_share(shared_root);
         }
         else {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             VALUE *ptr = ary_heap_alloc(ary, len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
+            ARY_SET_PTR(ary, ptr);
+#if USE_MMTK
+            } else {
+                rb_mmtk_ary_new_objbuf_copy(ary, len, ARY_HEAP_PTR(ary), len);
+            }
+#endif
             rb_ary_unshare(ary);
             ARY_SET_CAPA(ary, len);
-            ARY_SET_PTR(ary, ptr);
         }
 
         rb_gc_writebarrier_remember(ary);
@@ -777,6 +885,16 @@ static VALUE
 ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (size < sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t)) {
+            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_arrayext_t.
+            size = sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
+        }
+    }
+#endif
+
     assert(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
@@ -788,12 +906,38 @@ ary_alloc_embed(VALUE klass, long capa)
     return (VALUE)ary;
 }
 
+#if USE_MMTK
+// How large is the array allocated with ary_alloc_heap
+static inline size_t
+rb_mmtk_ary_heap_size(void)
+{
+    // The main RArray plus the arrayext.
+    size_t size = sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
+
+    // Align up to the next size class.
+    if (size < 80) {
+        size = 80;
+    }
+
+    return size;
+}
+#endif
+
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
+    size_t size = sizeof(struct RString);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, we include a trailing rb_mmtk_arrayext_t.
+        size = rb_mmtk_ary_heap_size();
+    }
+#endif
+
     NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     sizeof(struct RArray), 0);
+                     size, 0);
     return (VALUE)ary;
 }
 
@@ -826,8 +970,16 @@ ary_new(VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         assert(!ARY_EMBED_P(ary));
 
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         ptr = ary_heap_alloc(ary, capa);
         ARY_SET_PTR(ary, ptr);
+#if USE_MMTK
+        } else {
+            rb_mmtk_ary_new_objbuf(ary, capa);
+        }
+#endif
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -889,6 +1041,16 @@ static VALUE
 ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (size < sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t)) {
+            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_arrayext_t.
+            size = sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
+        }
+    }
+#endif
+
     assert(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
@@ -903,9 +1065,18 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
+    size_t size = sizeof(struct RString);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, we include a trailing rb_mmtk_arrayext_t.
+        size = rb_mmtk_ary_heap_size();
+    }
+#endif
+
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-            sizeof(struct RArray), ec);
+            size, ec);
     return (VALUE)ary;
 }
 
@@ -931,8 +1102,16 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         assert(!ARY_EMBED_P(ary));
 
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         ptr = ary_heap_alloc(ary, capa);
         ARY_SET_PTR(ary, ptr);
+#if USE_MMTK
+        } else {
+            rb_mmtk_ary_new_objbuf(ary, capa);
+        }
+#endif
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -973,6 +1152,14 @@ rb_ary_hidden_new_fill(long capa)
 void
 rb_ary_free(VALUE ary)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // Arrays are not candidates of `obj_free` when using MMTk.
+        // Its underlying buffer is an imemo:mmtk_objbuf and is managed by GC.
+        rb_bug("rb_ary_free should not be called when using MMTk.");
+    }
+#endif
+
     if (ARY_OWNS_HEAP_P(ary)) {
         if (USE_DEBUG_COUNTER &&
             !ARY_SHARED_ROOT_P(ary) &&
@@ -1041,18 +1228,34 @@ ary_make_shared(VALUE ary)
         FL_SET_SHARED_ROOT(shared);
 
         if (ARY_EMBED_P(ary)) {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             /* Cannot use ary_heap_alloc because we don't want to allocate
              * on the transient heap. */
             VALUE *ptr = ALLOC_N(VALUE, capa);
             ARY_SET_PTR(shared, ptr);
             ary_memcpy(shared, 0, len, RARRAY_CONST_PTR(ary));
-
             FL_UNSET_EMBED(ary);
-            ARY_SET_HEAP_LEN(ary, len);
             ARY_SET_PTR(ary, ptr);
+#if USE_MMTK
+            } else {
+                rb_mmtk_ary_new_objbuf_copy(shared, capa, RARRAY_CONST_PTR(ary), len);
+                FL_UNSET_EMBED(ary);
+                ARY_SET_PTR(ary, ARY_HEAP_PTR(shared));
+                rb_mmtk_ary_set_objbuf(ary, RARRAY_EXT(shared)->objbuf);
+            }
+#endif
+            ARY_SET_HEAP_LEN(ary, len);
         }
         else {
             ARY_SET_PTR(shared, RARRAY_CONST_PTR(ary));
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                // `shared` will reference the same objbuf as `ary`, too.
+                rb_mmtk_ary_set_objbuf(shared, RARRAY_EXT(ary)->objbuf);
+            }
+#endif
         }
 
         ARY_SET_LEN(shared, capa);
@@ -1318,7 +1521,16 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
-    const size_t rarray_embed_capa_max = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
+#if USE_MMTK
+    // RArray instance is bigger when using MMTk.
+    const long rarray_heap_size = rb_mmtk_enabled_p() ?
+        rb_mmtk_ary_heap_size() :
+        sizeof(struct RArray);
+#else
+    const long rarray_heap_size = sizeof(struct RArray);
+#endif
+
+    const size_t rarray_embed_capa_max = (rarray_heap_size - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
 
     if ((size_t)len <= rarray_embed_capa_max && ary_embeddable_p(len)) {
         VALUE result = ary_alloc_embed(klass, len);
@@ -1333,6 +1545,11 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         assert(!ARY_EMBED_P(result));
 
         ARY_SET_PTR(result, RARRAY_CONST_PTR_TRANSIENT(ary));
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            rb_mmtk_ary_set_objbuf(result, RARRAY_EXT(ary)->objbuf);
+        }
+#endif
         ARY_SET_LEN(result, RARRAY_LEN(ary));
         rb_ary_set_shared(result, shared);
 
@@ -1680,6 +1897,10 @@ make_room_for_unshift(VALUE ary, const VALUE *head, VALUE *sharedp, int argc, lo
         MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
         head = sharedp + argc + room;
     }
+    // MMTk: The `make_room_for_unshift` function is only called from
+    // `ary_ensure_room_for_unshift`, directly or indirectly via `ary_modify_for_unshift`.
+    // In either case, `head` and `sharedp` points into the same buffer.
+    // So we don't need to set RARRAY_EXT(ary)->objbuf here.
     ARY_SET_PTR(ary, head - argc);
     assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
 
@@ -1737,15 +1958,25 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     }
     else {
         VALUE shared_root = ARY_SHARED_ROOT(ary);
+        // MMTk: The shared root doesn't record its capacity.  Its `.as.heap.aux.capa` field
+        // records a reference count for sharing.
         long capa = RARRAY_LEN(shared_root);
 
         if (! ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
+            // MMTk: `shared_root` is not "occupied", so there are other array instances sharing
+            // the same `shared_root`.  We have to make `ary` "independent" before modifying.
+            // `ary_modify_for_unshift` will "cancel sharing" and modify `ary` in place.
             return ary_modify_for_unshift(ary, argc);
         }
         else if (new_len > capa) {
+            // MMTk: `shared_root` is "occupied", but its capacity is not big enough.
+            // `ary_modify_for_unshift` will "cancel sharing" and modify `ary` in place.
             return ary_modify_for_unshift(ary, argc);
         }
         else {
+            // MMTk: `shared_root` is "occupied", and its capacity is big enough.
+            // The following code modifies the underyling buffer of the `shared_root` directly.
+            // It should be safe to do so because `ary` is the only user of the shared root.
             const VALUE * head = RARRAY_CONST_PTR_TRANSIENT(ary);
             void *sharedp = (void *)RARRAY_CONST_PTR_TRANSIENT(shared_root);
 
@@ -2361,7 +2592,14 @@ rb_ary_resize(VALUE ary, long len)
         MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len); /* WB: no new reference */
         ARY_SET_EMBED_LEN(ary, len);
 
+#if USE_MMTK
+        // No need to free when using MMTk because the buffer is an imemo:objbuf in the GC heap.
+        if (!rb_mmtk_enabled_p()) {
+#endif
         if (is_malloc_ptr) ruby_sized_xfree((void *)ptr, ptr_capa);
+#if USE_MMTK
+        }
+#endif
     }
     else {
         if (olen > len + ARY_DEFAULT_SIZE) {
@@ -3523,11 +3761,25 @@ rb_ary_sort_bang(VALUE ary)
                     ary_heap_free(ary);
                 }
                 ARY_SET_PTR(ary, ARY_HEAP_PTR(tmp));
+#if USE_MMTK
+                if (rb_mmtk_enabled_p()) {
+                    // Take over its objbuf, too.
+                    rb_mmtk_ary_set_objbuf(ary, RARRAY_EXT(tmp)->objbuf);
+                }
+#endif
                 ARY_SET_HEAP_LEN(ary, len);
                 ARY_SET_CAPA(ary, ARY_HEAP_LEN(tmp));
             }
             /* tmp was lost ownership for the ptr */
             FL_UNSET(tmp, FL_FREEZE);
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                // `tmp` will lose ownership of the underlying buffer, too.
+                // It is not necessary to clear ``RARRAY_EXT(tmp)->strbuf` because GC will not scan
+                // the `strbuf` field if `tmp` is embedded.  But we clear it just to be safe.
+                rb_mmtk_ary_set_objbuf(tmp, 0);
+            }
+#endif
             FL_SET_EMBED(tmp);
             ARY_SET_EMBED_LEN(tmp, 0);
             FL_SET(tmp, FL_FREEZE);
@@ -4658,6 +4910,9 @@ rb_ary_replace(VALUE copy, VALUE orig)
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
         long len = ARY_EMBED_LEN(orig);
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         VALUE *ptr = ary_heap_alloc(copy, len);
 
         FL_UNSET_EMBED(copy);
@@ -4668,6 +4923,14 @@ rb_ary_replace(VALUE copy, VALUE orig)
         // No allocation and exception expected that could leave `copy` in a
         // bad state from the edits above.
         ary_memcpy(copy, 0, len, RARRAY_CONST_PTR_TRANSIENT(orig));
+#if USE_MMTK
+        } else {
+            rb_mmtk_ary_new_objbuf_copy(copy, len, ARY_EMBED_PTR(orig), len);
+            FL_UNSET_EMBED(copy);
+            ARY_SET_LEN(copy, len);
+            ARY_SET_CAPA(copy, len);
+        }
+#endif
     }
     /* Otherwise, orig is on heap and copy does not have enough space to embed
      * the contents of orig. */
@@ -4676,6 +4939,11 @@ rb_ary_replace(VALUE copy, VALUE orig)
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ARY_HEAP_PTR(orig));
         ARY_SET_LEN(copy, ARY_HEAP_LEN(orig));
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            rb_mmtk_ary_set_objbuf(copy, RARRAY_EXT(orig)->objbuf);
+        }
+#endif
         rb_ary_set_shared(copy, shared_root);
     }
     ary_verify(copy);

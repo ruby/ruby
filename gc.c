@@ -3135,6 +3135,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(callcache);
         IMEMO_NAME(constcache);
         IMEMO_NAME(mmtk_strbuf);
+        IMEMO_NAME(mmtk_objbuf);
 #undef IMEMO_NAME
     }
     return "unknown";
@@ -4015,6 +4016,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_constcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
             break;
+#if USE_MMTK
+          case imemo_mmtk_strbuf:
+            rb_bug("imemo_mmtk_strbuf is not a candidate of obj_free");
+            break;
+          case imemo_mmtk_objbuf:
+            rb_bug("imemo_mmtk_objbuf is not a candidate of obj_free");
+            break;
+#endif
         }
         return TRUE;
 
@@ -7542,8 +7551,20 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             RUBY_ASSERT(rb_mmtk_enabled_p());
 
             // imemo_mmtk_strbuf does not nave any children.
-            return;
         }
+        return;
+      case imemo_mmtk_objbuf:
+        {
+            // imemo_mmtk_objbuf is only used by mmtk.
+            RUBY_ASSERT(rb_mmtk_enabled_p());
+
+            rb_mmtk_objbuf_t *objbuf = (rb_mmtk_objbuf_t*)obj;
+            size_t capa = objbuf->capa;
+            for (size_t i = 0; i < capa; i++) {
+                gc_mark(objspace, objbuf->ary[i]);
+            }
+        }
+        return;
 #endif
 #if VM_CHECK_MODE > 0
       default:
@@ -7669,6 +7690,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_ARRAY:
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // MMTk guarantees to call both `gc_mark_children` and `gc_update_object_references`
+            // when visiting an object.  We do everything in `gc_update_object_references`.
+            break;
+        }
+#endif
         if (ARY_SHARED_P(obj)) {
             VALUE root = ARY_SHARED_ROOT(obj);
             gc_mark(objspace, root);
@@ -10551,10 +10579,19 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
         long len = RARRAY_LEN(v);
 
         if (len > 0) {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p() || ARY_EMBED_P(v)) {
+            // When using MMTk, we only scan embedded arrays here.
+            // If not embedded, we scan the `RARRAY_EXT(v)` field, and the GC will transitively
+            // scan objects reached from there.
+#endif
             VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(v);
             for (long i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
             }
+#if USE_MMTK
+            }
+#endif
         }
 
         if (rb_gc_obj_slot_size(v) >= rb_ary_size_as_embedded(v)) {
@@ -10563,6 +10600,20 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
             }
         }
     }
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (!ARY_EMBED_P(v)) {
+            // If the array is not embedded, it has a hidde `objbuf` field that needs to be traced.
+            // We also update the `ptr` to point to the new location.
+            VALUE old_objbuf = RARRAY_EXT(v)->objbuf;
+            UPDATE_IF_MOVED(objspace, RARRAY_EXT(v)->objbuf);
+            VALUE new_objbuf = RARRAY_EXT(v)->objbuf;
+            size_t offset = RARRAY(v)->as.heap.ptr - rb_mmtk_objbuf_to_elems((rb_mmtk_objbuf_t*)old_objbuf);
+            RARRAY(v)->as.heap.ptr = rb_mmtk_objbuf_to_elems((rb_mmtk_objbuf_t*)new_objbuf) + offset;
+        }
+    }
+#endif
 }
 
 static void
@@ -10817,8 +10868,20 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
             RUBY_ASSERT(rb_mmtk_enabled_p());
 
             // imemo_mmtk_strbuf does not nave any children.
-            break;
         }
+        break;
+      case imemo_mmtk_objbuf:
+        {
+            // imemo_mmtk_objbuf is only used by mmtk.
+            RUBY_ASSERT(rb_mmtk_enabled_p());
+
+            rb_mmtk_objbuf_t *objbuf = (rb_mmtk_objbuf_t*)obj;
+            size_t capa = objbuf->capa;
+            for (size_t i = 0; i < capa; i++) {
+                UPDATE_IF_MOVED(objspace, objbuf->ary[i]);
+            }
+        }
+        break;
 #endif
       default:
         rb_bug("not reachable %d", imemo_type(obj));

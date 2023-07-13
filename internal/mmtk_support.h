@@ -25,6 +25,13 @@ typedef struct {
     char ary[]; // The actual content.
 } rb_mmtk_strbuf_t;
 
+// Object, Arrry and Struct's underlying buffer.
+typedef struct {
+    VALUE flags; /* imemo header */
+    size_t capa;
+    VALUE ary[]; // The actual content.
+} rb_mmtk_objbuf_t;
+
 // Enabled?
 bool rb_mmtk_enabled_p(void);
 
@@ -78,6 +85,10 @@ void rb_mmtk_update_global_weak_tables(void);
 // String buffer implementation
 rb_mmtk_strbuf_t *rb_mmtk_new_strbuf(size_t capa);
 char* rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf);
+
+// Object buffer implementation
+rb_mmtk_objbuf_t* rb_mmtk_new_objbuf(size_t capa);
+VALUE* rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf);
 
 // MMTk-specific Ruby module (GC::MMTk)
 void rb_mmtk_define_gc_mmtk_module(void);
