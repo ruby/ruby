@@ -351,7 +351,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 }
 
 static VALUE *
-ary_heap_alloc(VALUE ary, size_t capa)
+ary_heap_alloc(size_t capa)
 {
     return ALLOC_N(VALUE, capa);
 }
@@ -405,7 +405,7 @@ ary_resize_capa(VALUE ary, long capacity)
         size_t new_capa = capacity;
         if (ARY_EMBED_P(ary)) {
             long len = ARY_EMBED_LEN(ary);
-            VALUE *ptr = ary_heap_alloc(ary, capacity);
+            VALUE *ptr = ary_heap_alloc(capacity);
 
             MEMCPY(ptr, ARY_EMBED_PTR(ary), VALUE, len);
             FL_UNSET_EMBED(ary);
@@ -556,7 +556,7 @@ rb_ary_cancel_sharing(VALUE ary)
             rb_ary_decrement_share(shared_root);
         }
         else {
-            VALUE *ptr = ary_heap_alloc(ary, len);
+            VALUE *ptr = ary_heap_alloc(len);
             MEMCPY(ptr, ARY_HEAP_PTR(ary), VALUE, len);
             rb_ary_unshare(ary);
             ARY_SET_CAPA(ary, len);
@@ -696,7 +696,7 @@ empty_ary_alloc(VALUE klass)
 static VALUE
 ary_new(VALUE klass, long capa)
 {
-    VALUE ary,*ptr;
+    VALUE ary;
 
     if (capa < 0) {
         rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -715,8 +715,7 @@ ary_new(VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         assert(!ARY_EMBED_P(ary));
 
-        ptr = ary_heap_alloc(ary, capa);
-        ARY_SET_PTR(ary, ptr);
+        ARY_SET_PTR(ary, ary_heap_alloc(capa));
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -801,7 +800,7 @@ ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 static VALUE
 ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
 {
-    VALUE ary,*ptr;
+    VALUE ary;
 
     if (capa < 0) {
         rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -820,8 +819,7 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
         ARY_SET_CAPA(ary, capa);
         assert(!ARY_EMBED_P(ary));
 
-        ptr = ary_heap_alloc(ary, capa);
-        ARY_SET_PTR(ary, ptr);
+        ARY_SET_PTR(ary, ary_heap_alloc(capa));
         ARY_SET_HEAP_LEN(ary, 0);
     }
 
@@ -921,9 +919,7 @@ ary_make_shared(VALUE ary)
         FL_SET_SHARED_ROOT(shared);
 
         if (ARY_EMBED_P(ary)) {
-            /* Cannot use ary_heap_alloc because we don't want to allocate
-             * on the transient heap. */
-            VALUE *ptr = ALLOC_N(VALUE, capa);
+            VALUE *ptr = ary_heap_alloc(capa);
             ARY_SET_PTR(shared, ptr);
             ary_memcpy(shared, 0, len, RARRAY_CONST_PTR(ary));
 
@@ -4537,7 +4533,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
      * contents of orig. */
     else if (ARY_EMBED_P(orig)) {
         long len = ARY_EMBED_LEN(orig);
-        VALUE *ptr = ary_heap_alloc(copy, len);
+        VALUE *ptr = ary_heap_alloc(len);
 
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ptr);
