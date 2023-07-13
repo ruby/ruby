@@ -203,7 +203,7 @@ describe "The defined? keyword when called with a method name" do
     it "warns about the void context when parsing it" do
       -> {
         eval "defined?(DefinedSpecs.side_effects / 2); 42"
-      }.should complain("(eval):1: warning: possibly useless use of defined? in void context\n", verbose: true)
+      }.should complain(/warning: possibly useless use of defined\? in void context/, verbose: true)
     end
   end
 end

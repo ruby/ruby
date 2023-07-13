@@ -1431,25 +1431,25 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_argument_error_location
-    body = <<-'END_OF_BODY'
-    eval <<-'EOS'
-    $line_lambda = __LINE__; $f = lambda do
-      _x = 1
-    end
-    $line_method = __LINE__; def foo
-      _x = 1
-    end
-    begin
-      $f.call(1)
-    rescue ArgumentError => e
-      assert_equal "(eval):#{$line_lambda.to_s}:in `block in <main>'", e.backtrace.first
-    end
-    begin
-      foo(1)
-    rescue ArgumentError => e
-      assert_equal "(eval):#{$line_method}:in `foo'", e.backtrace.first
-    end
-    EOS
+    body = <<~'END_OF_BODY'
+      eval <<~'EOS', nil, "main.rb"
+        $line_lambda = __LINE__; $f = lambda do
+          _x = 1
+        end
+        $line_method = __LINE__; def foo
+          _x = 1
+        end
+        begin
+          $f.call(1)
+        rescue ArgumentError => e
+          assert_equal "main.rb:#{$line_lambda}:in `block in <main>'", e.backtrace.first
+        end
+        begin
+          foo(1)
+        rescue ArgumentError => e
+          assert_equal "main.rb:#{$line_method}:in `foo'", e.backtrace.first
+        end
+      EOS
     END_OF_BODY
 
     assert_separately [], body
