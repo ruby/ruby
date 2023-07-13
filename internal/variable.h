@@ -15,10 +15,6 @@
 #include "ruby/ruby.h"          /* for VALUE */
 #include "shape.h"              /* for rb_shape_t */
 
-/* global variable */
-
-#define ROBJECT_TRANSIENT_FLAG    FL_USER2
-
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
 void rb_gc_update_global_tbl(void);

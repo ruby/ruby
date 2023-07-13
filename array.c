@@ -57,8 +57,6 @@ VALUE rb_cArray;
  *                they cannot be modified. Not updating the reference count
  *                improves copy-on-write performance. Their reference count is
  *                assumed to be infinity.
- * 13:  RARRAY_TRANSIENT_FLAG
- *          The buffer of the array is allocated on the transient heap.
  * 14:  RARRAY_PTR_IN_USE_FLAG
  *          The buffer of the array is in use. This is only used during
  *          debugging.
@@ -387,7 +385,6 @@ rb_ary_make_embedded(VALUE ary)
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
 
-        // FL_SET_EMBED also unsets the transient flag
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
 
