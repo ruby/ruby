@@ -84,6 +84,9 @@ class TestRubyOptions < Test::Unit::TestCase
                        /^\t \.{3} \d+ levels\.{3}\n/])
     assert_kind_of(Integer, Thread::Backtrace.limit)
     assert_in_out_err(%w(--backtrace-limit=1), "p Thread::Backtrace.limit", ['1'], [])
+    env = {"RUBYOPT" => "--backtrace-limit=5"}
+    assert_in_out_err([env], "p Thread::Backtrace.limit", ['5'], [])
+    assert_in_out_err([env, "--backtrace-limit=1"], "p Thread::Backtrace.limit", ['1'], [])
   end
 
   def test_warning
