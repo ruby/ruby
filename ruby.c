@@ -811,10 +811,10 @@ toplevel_context(rb_binding_t *bind)
     return &bind->block;
 }
 
-static void
-process_sflag(int *sflag)
+static int
+process_sflag(int sflag)
 {
-    if (*sflag > 0) {
+    if (sflag > 0) {
         long n;
         const VALUE *args;
         VALUE argv = rb_argv;
@@ -871,8 +871,9 @@ process_sflag(int *sflag)
         while (n--) {
             rb_ary_shift(argv);
         }
-        *sflag = -1;
+        return -1;
     }
+    return sflag;
 }
 
 static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt);
@@ -2203,7 +2204,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #undef SET_COMPILE_OPTION
     }
     ruby_set_argv(argc, argv);
-    process_sflag(&opt->sflag);
+    opt->sflag = process_sflag(opt->sflag);
 
     if (opt->e_script) {
         VALUE progname = rb_progname;
@@ -2233,7 +2234,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
     else {
         VALUE f;
-        f = open_load_file(script_name, &opt->xflag);
+        int xflag = opt->xflag;
+        f = open_load_file(script_name, &xflag);
+        opt->xflag = xflag != 0;
         rb_parser_set_context(parser, 0, f == rb_stdin);
         ast = load_file(parser, opt->script_name, f, 1, opt);
     }
@@ -2265,7 +2268,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         return Qfalse;
     }
 
-    process_sflag(&opt->sflag);
+    opt->sflag = process_sflag(opt->sflag);
     opt->xflag = 0;
 
     if (dump & DUMP_BIT(syntax)) {
@@ -2636,7 +2639,9 @@ void *
 rb_parser_load_file(VALUE parser, VALUE fname_v)
 {
     ruby_cmdline_options_t opt;
-    VALUE f = open_load_file(fname_v, &cmdline_options_init(&opt)->xflag);
+    int xflag = 0;
+    VALUE f = open_load_file(fname_v, &xflag);
+    cmdline_options_init(&opt)->xflag = xflag != 0;
     return load_file(parser, fname_v, f, 0, &opt);
 }
 
