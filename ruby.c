@@ -887,6 +887,14 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     VALUE argstr, argary;
     void *ptr;
 
+    VALUE src_enc_name = opt->src.enc.name;
+    VALUE ext_enc_name = opt->ext.enc.name;
+    VALUE int_enc_name = opt->intern.enc.name;
+    ruby_features_t feat = opt->features;
+    ruby_features_t warn = opt->warn;
+
+    opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
+
     while (ISSPACE(*s)) s++;
     if (!*s) return;
     argstr = rb_str_tmp_new((len = strlen(s)) + (envopt!=0));
@@ -921,6 +929,18 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
             --argv;
         }
     }
+
+    if (src_enc_name) {
+        opt->src.enc.name = src_enc_name;
+    }
+    if (ext_enc_name) {
+        opt->ext.enc.name = ext_enc_name;
+    }
+    if (int_enc_name) {
+        opt->intern.enc.name = int_enc_name;
+    }
+    FEATURE_SET_RESTORE(opt->features, feat);
+    FEATURE_SET_RESTORE(opt->warn, warn);
 
     ruby_xfree(ptr);
     /* get rid of GC */
@@ -2003,22 +2023,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argv += i;
 
     if (FEATURE_SET_P(opt->features, rubyopt) && (s = getenv("RUBYOPT"))) {
-        VALUE src_enc_name = opt->src.enc.name;
-        VALUE ext_enc_name = opt->ext.enc.name;
-        VALUE int_enc_name = opt->intern.enc.name;
-        ruby_features_t feat = opt->features;
-        ruby_features_t warn = opt->warn;
-
-        opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
         moreswitches(s, opt, 1);
-        if (src_enc_name)
-            opt->src.enc.name = src_enc_name;
-        if (ext_enc_name)
-            opt->ext.enc.name = ext_enc_name;
-        if (int_enc_name)
-            opt->intern.enc.name = int_enc_name;
-        FEATURE_SET_RESTORE(opt->features, feat);
-        FEATURE_SET_RESTORE(opt->warn, warn);
     }
 
     if (opt->src.enc.name)
