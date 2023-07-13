@@ -331,61 +331,14 @@ rb_array_const_ptr(VALUE a)
  *
  * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
  * directly.
- *
- * @param[in]  a                An object of ::RArray.
- * @param[in]  allow_transient  Whether `a` can be transient or not.
- * @return     Its backend storage.
- * @post       `a` is not a transient array unless `allow_transient`.
  */
-static inline VALUE *
-rb_array_ptr_use_start(VALUE a,
-                       RBIMPL_ATTR_MAYBE_UNUSED()
-                       int allow_transient)
-{
-    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-
-    return rb_ary_ptr_use_start(a);
-}
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- *
- * @param[in]  a                An object of ::RArray.
- * @param[in]  allow_transient  Whether `a` can be transient or not.
- */
-static inline void
-rb_array_ptr_use_end(VALUE a,
-                     RBIMPL_ATTR_MAYBE_UNUSED()
-                     int allow_transient)
-{
-    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-    rb_ary_ptr_use_end(a);
-}
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- */
-#define RBIMPL_RARRAY_STMT(flag, ary, var, expr) do {        \
+#define RBIMPL_RARRAY_STMT(ary, var, expr) do {        \
     RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);                 \
     const VALUE rbimpl_ary = (ary);                          \
-    VALUE *var = rb_array_ptr_use_start(rbimpl_ary, (flag)); \
+    VALUE *var = rb_ary_ptr_use_start(rbimpl_ary); \
     expr;                                                   \
-    rb_array_ptr_use_end(rbimpl_ary, (flag));                \
+    rb_ary_ptr_use_end(rbimpl_ary);                \
 } while (0)
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- */
-#define RARRAY_PTR_USE_END(a) rb_array_ptr_use_end(a, 0)
 
 /**
  * Declares a section of code where raw pointers are used.  In case you need to
@@ -413,7 +366,7 @@ rb_array_ptr_use_end(VALUE a,
  * them use it...  Maybe some transition path can be implemented later.
  */
 #define RARRAY_PTR_USE(ary, ptr_name, expr)     \
-    RBIMPL_RARRAY_STMT(0, ary, ptr_name, expr)
+    RBIMPL_RARRAY_STMT(ary, ptr_name, expr)
 
 /**
  * Identical to #RARRAY_PTR_USE, except the pointer can be a transient one.
@@ -423,7 +376,7 @@ rb_array_ptr_use_end(VALUE a,
  * @param  expr      The expression that touches `ptr_name`.
  */
 #define RARRAY_PTR_USE_TRANSIENT(ary, ptr_name, expr)   \
-    RBIMPL_RARRAY_STMT(1, ary, ptr_name, expr)
+    RBIMPL_RARRAY_STMT(ary, ptr_name, expr)
 
 /**
  * Wild  use of  a  C  pointer.  This  function  accesses  the backend  storage
