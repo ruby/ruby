@@ -20,8 +20,11 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 # define RJIT_STATS RUBY_DEBUG
 #endif
 
-#if YJIT_STATS
-#define YJIT_COLLECT_USAGE_INSN(insn) rb_yjit_collect_vm_usage_insn(insn)
+#if USE_YJIT // We want vm_insns_count on any YJIT-enabled build
+// Increment vm_insns_count for --yjit-stats. We increment this even when
+// --yjit or --yjit-stats is not used because branching to skip it is slower.
+// We also don't use ATOMIC_INC for performance, allowing inaccuracy on Ractors.
+#define YJIT_COLLECT_USAGE_INSN(insn) rb_vm_insns_count++
 #else
 #define YJIT_COLLECT_USAGE_INSN(insn) // none
 #endif
