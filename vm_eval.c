@@ -1613,7 +1613,23 @@ rb_each(VALUE obj)
     return rb_call(obj, idEach, 0, 0, CALL_FCALL);
 }
 
-static VALUE eval_default_path;
+static VALUE eval_default_path = Qfalse;
+
+static VALUE
+get_eval_default_path(void)
+{
+    int location_lineno;
+    VALUE location_path = rb_source_location(&location_lineno);
+    if (!NIL_P(location_path)) {
+        return rb_fstring(rb_sprintf("(eval at %"PRIsVALUE":%d)", location_path, location_lineno));
+    }
+
+    if (!eval_default_path) {
+        eval_default_path = rb_fstring_lit("(eval)");
+        rb_gc_register_mark_object(eval_default_path);
+    }
+    return eval_default_path;
+}
 
 static const rb_iseq_t *
 eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
@@ -1653,11 +1669,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
         if (!NIL_P(fname)) fname = rb_fstring(fname);
     }
     else {
-        if (!eval_default_path) {
-            eval_default_path = rb_fstring_lit("(eval)");
-            rb_gc_register_mark_object(eval_default_path);
-        }
-        fname = eval_default_path;
+        fname = get_eval_default_path();
         coverage_enabled = FALSE;
     }
 
@@ -1969,7 +1981,7 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
         return yield_under(self, singleton, 1, &self, kw_splat);
     }
     else {
-        VALUE file = Qundef;
+        VALUE file = Qnil;
         int line = 1;
         VALUE code;
 
@@ -1982,6 +1994,11 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
             file = argv[1];
             if (!NIL_P(file)) StringValue(file);
         }
+
+        if (NIL_P(file)) {
+            file = get_eval_default_path();
+        }
+
         return eval_under(self, singleton, code, file, line);
     }
 }
@@ -2508,9 +2525,16 @@ rb_current_realfilepath(void)
         if (path == eval_default_path) {
             return Qnil;
         }
-        else {
-            return path;
+
+        // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
+        if (RSTRING_LEN(path) > 9) {
+            if (RSTRING_PTR(path)[RSTRING_LEN(path) - 1] == ')' &&
+                memcmp(RSTRING_PTR(path), "(eval at ", 9) == 0) {
+                return Qnil;
+            }
         }
+
+        return path;
     }
     return Qnil;
 }

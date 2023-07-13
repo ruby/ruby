@@ -1310,7 +1310,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def test_backtrace_in_eval
     bug = '[ruby-core:84434] [Bug #14229]'
-    assert_in_out_err(['-e', 'eval("raise")'], "", [], /^\(eval\):1:/, bug)
+    assert_in_out_err(['-e', 'eval("raise")'], "", [], /^\(eval at .*\):1:/, bug)
   end
 
   def test_full_message
