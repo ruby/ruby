@@ -7184,7 +7184,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         }
         else {
             long i, len = RARRAY_LEN(obj);
-            const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(obj);
+            const VALUE *ptr = RARRAY_CONST_PTR(obj);
             for (i=0; i < len; i++) {
                 gc_mark(objspace, ptr[i]);
             }
@@ -9902,7 +9902,7 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
         long len = RARRAY_LEN(v);
 
         if (len > 0) {
-            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(v);
+            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR(v);
             for (long i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
             }
@@ -13448,7 +13448,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                          C(ARY_SHARED_P(obj), "S"),
                          RARRAY_LEN(obj),
                          ARY_EMBED_P(obj) ? -1L : RARRAY(obj)->as.heap.aux.capa,
-                         (void *)RARRAY_CONST_PTR_TRANSIENT(obj));
+                         (void *)RARRAY_CONST_PTR(obj));
             }
             break;
           case T_STRING: {

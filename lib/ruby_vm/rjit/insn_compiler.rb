@@ -5810,7 +5810,7 @@ module RubyVM::RJIT
       asm.cmovz(len_reg, [array_reg, C.RArray.offsetof(:as, :heap, :len)])
     end
 
-    # Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+    # Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
     def jit_array_ptr(asm, array_reg, ary_opnd) # clobbers array_reg
       asm.comment('get array pointer for embedded or heap')
 

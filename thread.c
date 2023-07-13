@@ -589,7 +589,7 @@ thread_do_start_proc(rb_thread_t *th)
         if (args_len < 8) {
             /* free proc.args if the length is enough small */
             args_ptr = ALLOCA_N(VALUE, args_len);
-            MEMCPY((VALUE *)args_ptr, RARRAY_CONST_PTR_TRANSIENT(args), VALUE, args_len);
+            MEMCPY((VALUE *)args_ptr, RARRAY_CONST_PTR(args), VALUE, args_len);
             th->invoke_arg.proc.args = Qnil;
         }
         else {

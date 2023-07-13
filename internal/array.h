@@ -54,7 +54,7 @@ static inline VALUE
 rb_ary_entry_internal(VALUE ary, long offset)
 {
     long len = RARRAY_LEN(ary);
-    const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
     if (len == 0) return Qnil;
     if (offset < 0) {
         offset += len;
@@ -138,7 +138,7 @@ RARRAY_AREF(VALUE ary, long i)
 {
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
-    return RARRAY_CONST_PTR_TRANSIENT(ary)[i];
+    return RARRAY_CONST_PTR(ary)[i];
 }
 
 #endif /* INTERNAL_ARRAY_H */
