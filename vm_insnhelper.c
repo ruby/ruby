@@ -1874,7 +1874,7 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
         len = 1;
     }
     else {
-        ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        ptr = RARRAY_CONST_PTR(ary);
         len = (rb_num_t)RARRAY_LEN(ary);
     }
 
@@ -2564,7 +2564,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
     bool ret = false;
 
     if (!NIL_P(ary)) {
-        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        const VALUE *ptr = RARRAY_CONST_PTR(ary);
         long len = RARRAY_LEN(ary);
         int argc = calling->argc;
 

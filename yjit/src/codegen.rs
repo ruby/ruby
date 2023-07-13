@@ -5228,7 +5228,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
     asm.csel_nz(emb_len_opnd, array_len_opnd)
 }
 
-// Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+// Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
 fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
     asm.comment("get array pointer for embedded or heap");
 

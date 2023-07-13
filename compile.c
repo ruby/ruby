@@ -1416,9 +1416,9 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
     VALUE catch_table_ary = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
     if (NIL_P(catch_table_ary)) return;
     unsigned int i, tlen = (unsigned int)RARRAY_LEN(catch_table_ary);
-    const VALUE *tptr = RARRAY_CONST_PTR_TRANSIENT(catch_table_ary);
+    const VALUE *tptr = RARRAY_CONST_PTR(catch_table_ary);
     for (i = 0; i < tlen; i++) {
-        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
+        const VALUE *ptr = RARRAY_CONST_PTR(tptr[i]);
         LINK_ELEMENT *end = (LINK_ELEMENT *)(ptr[2] & ~1);
         LINK_ELEMENT *cont = (LINK_ELEMENT *)(ptr[4] & ~1);
         LINK_ELEMENT *e;
@@ -1874,7 +1874,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
             opt_table = ALLOC_N(VALUE, i+1);
 
-            MEMCPY(opt_table, RARRAY_CONST_PTR_TRANSIENT(labels), VALUE, i+1);
+            MEMCPY(opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
             for (j = 0; j < i+1; j++) {
                 opt_table[j] &= ~1;
             }
@@ -2640,14 +2640,14 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     ISEQ_BODY(iseq)->catch_table = NULL;
     if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) return COMPILE_OK;
     tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
-    tptr = RARRAY_CONST_PTR_TRANSIENT(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
+    tptr = RARRAY_CONST_PTR(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
 
     if (tlen > 0) {
         struct iseq_catch_table *table = xmalloc(iseq_catch_table_bytes(tlen));
         table->size = tlen;
 
         for (i = 0; i < table->size; i++) {
-            ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
+            ptr = RARRAY_CONST_PTR(tptr[i]);
             entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
             entry->type = (enum rb_catch_type)(ptr[0] & 0xffff);
             entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
@@ -4735,7 +4735,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                     rb_ary_cat(ary, elem, 2);
                 }
                 VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
-                rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
+                rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
                 hash = rb_obj_hide(hash);
                 OBJ_FREEZE(hash);
 

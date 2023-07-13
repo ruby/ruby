@@ -50,7 +50,6 @@
 /** @endcond */
 #define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
 #define RARRAY_CONST_PTR           rb_array_const_ptr           /**< @alias{rb_array_const_ptr} */
-#define RARRAY_CONST_PTR_TRANSIENT rb_array_const_ptr_transient /**< @alias{rb_array_const_ptr_transient} */
 
 /** @cond INTERNAL_MACRO */
 #if defined(__fcc__) || defined(__fcc_version) || \
@@ -295,7 +294,7 @@ RBIMPL_ATTR_PURE_UNLESS_DEBUG()
  * @return     Its backend storage.
  */
 static inline const VALUE *
-rb_array_const_ptr_transient(VALUE a)
+rb_array_const_ptr(VALUE a)
 {
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
@@ -305,25 +304,6 @@ rb_array_const_ptr_transient(VALUE a)
     else {
         return FIX_CONST_VALUE_PTR(RARRAY(a)->as.heap.ptr);
     }
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-/**
- * @private
- *
- * This is  an implementation  detail of  RARRAY_PTR().  People  do not  use it
- * directly.
- *
- * @param[in]  a  An object of ::RArray.
- * @return     Its backend storage.
- * @post       `a` is not a transient array.
- */
-static inline const VALUE *
-rb_array_const_ptr(VALUE a)
-{
-    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-
-    return rb_array_const_ptr_transient(a);
 }
 
 /**
@@ -420,6 +400,6 @@ RARRAY_ASET(VALUE ary, long i, VALUE v)
  * remains as  it is due to  that.  If we could  warn such usages we  can set a
  * transition path, but currently no way is found to do so.
  */
-#define RARRAY_AREF(a, i) RARRAY_CONST_PTR_TRANSIENT(a)[i]
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
 
 #endif /* RBIMPL_RARRAY_H */
