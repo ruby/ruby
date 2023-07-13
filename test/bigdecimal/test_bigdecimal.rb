@@ -2275,6 +2275,12 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_bsearch_for_bigdecimal
+    assert_raise(TypeError) {
+      (BigDecimal('0.5')..BigDecimal('2.25')).bsearch
+    }
+  end
+
   def assert_no_memory_leak(code, *rest, **opt)
     code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
     super(["-rbigdecimal"],
