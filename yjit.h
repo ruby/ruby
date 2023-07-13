@@ -30,7 +30,6 @@ bool rb_yjit_compile_new_iseqs(void);
 unsigned rb_yjit_call_threshold(void);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
-void rb_yjit_collect_vm_usage_insn(int insn);
 void rb_yjit_collect_binding_alloc(void);
 void rb_yjit_collect_binding_set(void);
 bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec);
@@ -53,7 +52,6 @@ static inline bool rb_yjit_compile_new_iseqs(void) { return false; }
 static inline unsigned rb_yjit_call_threshold(void) { return UINT_MAX; }
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
 static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
-static inline void rb_yjit_collect_vm_usage_insn(int insn) {}
 static inline void rb_yjit_collect_binding_alloc(void) {}
 static inline void rb_yjit_collect_binding_set(void) {}
 static inline bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec) { return false; }
