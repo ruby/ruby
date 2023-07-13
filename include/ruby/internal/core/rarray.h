@@ -369,18 +369,8 @@ rb_array_const_ptr(VALUE a)
     RBIMPL_RARRAY_STMT(ary, ptr_name, expr)
 
 /**
- * Identical to #RARRAY_PTR_USE, except the pointer can be a transient one.
- *
- * @param  ary       An object of ::RArray.
- * @param  ptr_name  A variable name which points the C array in `expr`.
- * @param  expr      The expression that touches `ptr_name`.
- */
-#define RARRAY_PTR_USE_TRANSIENT(ary, ptr_name, expr)   \
-    RBIMPL_RARRAY_STMT(ary, ptr_name, expr)
-
-/**
  * Wild  use of  a  C  pointer.  This  function  accesses  the backend  storage
- * directly.   This is  slower  than  #RARRAY_PTR_USE_TRANSIENT.  It  exercises
+ * directly.   This is  slower  than  #RARRAY_PTR_USE.  It  exercises
  * extra manoeuvres  to protect our generational  GC.  Use of this  function is
  * considered archaic.  Use a modern way instead.
  *
@@ -415,7 +405,7 @@ RARRAY_PTR(VALUE ary)
 static inline void
 RARRAY_ASET(VALUE ary, long i, VALUE v)
 {
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr,
+    RARRAY_PTR_USE(ary, ptr,
         RB_OBJ_WRITE(ary, &ptr[i], v));
 }
 
