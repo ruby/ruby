@@ -165,7 +165,6 @@ jobs:
 #         - { name: SYMBOL_DEBUG,                   env: { cppflags: '-DSYMBOL_DEBUG' } }
 
 #         - { name: RGENGC_CHECK_MODE,              env: { cppflags: '-DRGENGC_CHECK_MODE' } }
-#         - { name: TRANSIENT_HEAP_CHECK_MODE,      env: { cppflags: '-DTRANSIENT_HEAP_CHECK_MODE' } }
 #         - { name: VM_CHECK_MODE,                  env: { cppflags: '-DVM_CHECK_MODE' } }
 
 #         - { name: USE_EMBED_CI=0,                 env: { cppflags: '-DUSE_EMBED_CI=0' } }

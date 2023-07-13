@@ -207,7 +207,6 @@ RB_DEBUG_COUNTER(gc_isptr_maybe)
  * * [attr]
  *   * _ptr: R?? is not embed.
  *   * _embed: R?? is embed.
- *   * _transient: R?? uses transient heap.
  * * type specific attr.
  *   * str_shared: str is shared.
  *   * str_nofree:        nofree
