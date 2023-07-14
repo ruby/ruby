@@ -47,6 +47,10 @@ module IRB
       false
     end
 
+    def support_history_saving?
+      false
+    end
+
     # For debug message
     def inspect
       'Abstract InputMethod'
@@ -230,6 +234,10 @@ module IRB
         true
       end
 
+      def support_history_saving?
+        true
+      end
+
       # Returns the current line number for #io.
       #
       # #line counts the number of times #gets is called.
@@ -256,6 +264,7 @@ module IRB
   end
 
   class RelineInputMethod < InputMethod
+    HISTORY = Reline::HISTORY
     # Creates a new input method object using Reline
     def initialize
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
@@ -457,6 +466,10 @@ module IRB
       inputrc_path = File.expand_path(config.inputrc_path)
       str += " and #{inputrc_path}" if File.exist?(inputrc_path)
       str
+    end
+
+    def support_history_saving?
+      true
     end
   end
 
