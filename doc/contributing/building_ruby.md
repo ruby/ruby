@@ -60,12 +60,13 @@
 
         ``` shell
         git clone https://github.com/ruby/ruby.git
+        cd ruby
         ```
 
         Generate the configure file:
 
         ``` shell
-        cd ruby && ./autogen.sh
+        ./autogen.sh
         ```
 
 2. Create a `build` directory separate from the source directory:
