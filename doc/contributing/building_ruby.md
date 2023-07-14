@@ -65,7 +65,7 @@
         Generate the configure file:
 
         ``` shell
-        ./autogen.sh
+        cd ruby && ./autogen.sh
         ```
 
 2. Create a `build` directory separate from the source directory:
