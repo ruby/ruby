@@ -86,7 +86,8 @@ The YJIT `ruby` binary can be built with either GCC or Clang. It can be built ei
 ```sh
 # Configure in release mode for maximum performance, build and install
 ./autogen.sh
-./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
+mkdir build && cd build
+../configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
@@ -95,7 +96,8 @@ or
 ```sh
 # Configure in lower-performance dev (debug) mode for development, build and install
 ./autogen.sh
-./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
+mkdir build && cd build
+../configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
@@ -104,7 +106,8 @@ Dev mode includes extended YJIT statistics, but can be slow. For only statistics
 ```sh
 # Configure in extended-stats mode without slow runtime checks, build and install
 ./autogen.sh
-./configure --enable-yjit=stats --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
+mkdir build && cd build
+../configure --enable-yjit=stats --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
