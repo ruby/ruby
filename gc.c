@@ -8792,7 +8792,6 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
         if (is_incremental_marking(objspace)) rb_bug("gc_writebarrier_generational: called while incremental marking: %s -> %s", obj_info(a), obj_info(b));
     }
 
-#if 1
     /* mark `a' and remember (default behavior) */
     if (!rgengc_remembered(objspace, a)) {
         RB_VM_LOCK_ENTER_NO_BARRIER();
@@ -8802,19 +8801,6 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
         RB_VM_LOCK_LEAVE_NO_BARRIER();
         gc_report(1, objspace, "gc_writebarrier_generational: %s (remembered) -> %s\n", obj_info(a), obj_info(b));
     }
-#else
-    /* mark `b' and remember */
-    MARK_IN_BITMAP(GET_HEAP_MARK_BITS(b), b);
-    if (RVALUE_WB_UNPROTECTED(b)) {
-        gc_remember_unprotected(objspace, b);
-    }
-    else {
-        RVALUE_AGE_SET_OLD(objspace, b);
-        rgengc_remember(objspace, b);
-    }
-
-    gc_report(1, objspace, "gc_writebarrier_generational: %s -> %s (remembered)\n", obj_info(a), obj_info(b));
-#endif
 
     check_rvalue_consistency(a);
     check_rvalue_consistency(b);
