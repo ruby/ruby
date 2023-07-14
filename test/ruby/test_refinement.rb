@@ -1798,7 +1798,7 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([int_refinement, str_refinement], m.refinements)
   end
 
-  def test_refined_class
+  def test_target
     refinements = Module.new {
       refine Integer do
       end
@@ -1806,7 +1806,9 @@ class TestRefinement < Test::Unit::TestCase
       refine String do
       end
     }.refinements
+    assert_equal(Integer, refinements[0].target)
     assert_equal(Integer, refinements[0].refined_class)
+    assert_equal(String, refinements[1].target)
     assert_equal(String, refinements[1].refined_class)
   end
 
