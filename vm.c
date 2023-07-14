@@ -387,7 +387,7 @@ jit_compile(rb_execution_context_t *ec)
 
     // Trigger JIT compilation as needed
     if (yjit_enabled) {
-        if (body->total_calls == rb_yjit_call_threshold())  {
+        if (rb_yjit_threshold_hit(iseq)) {
             rb_yjit_compile_iseq(iseq, ec);
         }
     }
