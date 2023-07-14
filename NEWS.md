@@ -56,6 +56,11 @@ Note: We're only listing outstanding class updates.
       for long running applications. The actual optimizations performed are entirely
       implementation specific and may change in the future without notice. [[Feature #18885]
 
+* Refinement
+
+    * Add Refinement#target as an alternative of Refinement#refined_class.
+      Refinement#refined_class is deprecated and will be removed in Ruby 3.4. [[Feature #19714]]
+
 ## Stdlib updates
 
 The following default gems are updated.
