@@ -262,7 +262,7 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
   ADD_SEND_R((seq), (line_node), (id), (argc), NULL, (VALUE)INT2FIX(0), NULL)
 
 #define ADD_SEND_WITH_FLAG(seq, line_node, id, argc, flag) \
-  ADD_SEND_R((seq), (line_node), (id), (argc), NULL, (VALUE)(flag), NULL)
+  ADD_SEND_R((seq), (line_node), (id), (argc), NULL, (VALUE)(INT2FIX(flag)), NULL)
 
 #define ADD_SEND_WITH_BLOCK(seq, line_node, id, argc, block) \
   ADD_SEND_R((seq), (line_node), (id), (argc), (block), (VALUE)INT2FIX(0), NULL)
@@ -8688,7 +8688,7 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     }
     ADD_INSN1(ret, node, dupn, FIXNUM_INC(argc, 1 + boff));
     flag |= asgnflag;
-    ADD_SEND_WITH_FLAG(ret, node, idAREF, argc, INT2FIX(flag));
+    ADD_SEND_WITH_FLAG(ret, node, idAREF, argc, flag);
 
     if (id == idOROP || id == idANDOP) {
         /* a[x] ||= y  or  a[x] &&= y
@@ -8728,12 +8728,12 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
                 ADD_INSN(ret, node, pop);
                 ADD_INSN(ret, node, pop);
             }
-            ADD_SEND_WITH_FLAG(ret, node, idASET, argc, INT2FIX(flag));
+            ADD_SEND_WITH_FLAG(ret, node, idASET, argc, flag);
         }
         else {
             if (boff > 0)
                 ADD_INSN(ret, node, swap);
-            ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+            ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), flag);
         }
         ADD_INSN(ret, node, pop);
         ADD_INSNL(ret, node, jump, lfin);
@@ -8763,12 +8763,12 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
                 ADD_INSN(ret, node, pop);
                 ADD_INSN(ret, node, pop);
             }
-            ADD_SEND_WITH_FLAG(ret, node, idASET, argc, INT2FIX(flag));
+            ADD_SEND_WITH_FLAG(ret, node, idASET, argc, flag);
         }
         else {
             if (boff > 0)
                 ADD_INSN(ret, node, swap);
-            ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+            ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), flag);
         }
         ADD_INSN(ret, node, pop);
     }
@@ -8846,7 +8846,7 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         ADD_INSNL(ret, node, branchnil, lskip);
     }
     ADD_INSN(ret, node, dup);
-    ADD_SEND_WITH_FLAG(ret, node, vid, INT2FIX(0), INT2FIX(asgnflag));
+    ADD_SEND_WITH_FLAG(ret, node, vid, INT2FIX(0), asgnflag);
 
     if (atype == idOROP || atype == idANDOP) {
         if (!popped) {
@@ -8866,7 +8866,7 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_INSN(ret, node, swap);
             ADD_INSN1(ret, node, topn, INT2FIX(1));
         }
-        ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
+        ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), asgnflag);
         ADD_INSNL(ret, node, jump, lfin);
 
         ADD_LABEL(ret, lcfin);
@@ -8883,7 +8883,7 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_INSN(ret, node, swap);
             ADD_INSN1(ret, node, topn, INT2FIX(1));
         }
-        ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
+        ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), asgnflag);
     }
     if (lskip && popped) {
         ADD_LABEL(ret, lskip);
@@ -9435,7 +9435,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_INSN1(ret, node, topn, INT2FIX(1));
             if (flag & VM_CALL_ARGS_SPLAT) {
                 ADD_INSN1(ret, node, putobject, INT2FIX(-1));
-                ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
+                ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), asgnflag);
             }
             ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 3));
             ADD_INSN (ret, node, pop);
@@ -9443,7 +9443,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         else if (flag & VM_CALL_ARGS_SPLAT) {
             ADD_INSN(ret, node, dup);
             ADD_INSN1(ret, node, putobject, INT2FIX(-1));
-            ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
+            ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), asgnflag);
             ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2));
             ADD_INSN (ret, node, pop);
         }
@@ -9455,7 +9455,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         ADD_SEQ(ret, recv);
         ADD_SEQ(ret, args);
     }
-    ADD_SEND_WITH_FLAG(ret, node, mid, argc, INT2FIX(flag));
+    ADD_SEND_WITH_FLAG(ret, node, mid, argc, flag);
     qcall_branch_end(iseq, ret, else_label, branches, node, node);
     ADD_INSN(ret, node, pop);
     return COMPILE_OK;
