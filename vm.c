@@ -3977,6 +3977,12 @@ Init_VM(void)
          */
         rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
 
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // Now that the VM says it's time to enable GC, we enable GC for MMTk, too.
+            mmtk_enable_collection();
+        }
+#endif
         rb_objspace_gc_enable(vm->objspace);
     }
     vm_init_redefined_flag();
@@ -4042,7 +4048,12 @@ Init_BareVM(void)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        rb_gc_init_collection();
+        // The threading system is ready.  Initialize collection.
+        mmtk_initialize_collection(th);
+        // Bind the main thread.
+        rb_mmtk_bind_mutator(th);
+        // Temporarily disable GC.
+        mmtk_disable_collection();
     }
 #endif
 }

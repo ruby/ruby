@@ -12605,6 +12605,17 @@ objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_s
 static bool
 objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_xmalloc_increase_body(new_size, old_size);
+        // Note: It is not safe to trigger GC during xmalloc.  xmalloc may happen when the header
+        // object is allocated but other disjoint parts allocated by xmalloc have not been assigned
+        // to the fields of the object.  If GC is triggered at this time, the GC may try to scan
+        // incomplete objects and crash.
+        return true;
+    }
+#endif
+
     if (new_size > old_size) {
         ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
 #if RGENGC_ESTIMATE_OLDMALLOC
