@@ -197,7 +197,6 @@ jobs:
 #         - { name: RGENGC_ESTIMATE_OLDMALLOC,      env: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
 #         - { name: RGENGC_FORCE_MAJOR_GC,          env: { cppflags: '-DRGENGC_FORCE_MAJOR_GC' } }
 #         - { name: RGENGC_OBJ_INFO,                env: { cppflags: '-DRGENGC_OBJ_INFO' } }
-#         - { name: RGENGC_OLD_NEWOBJ_CHECK,        env: { cppflags: '-DRGENGC_OLD_NEWOBJ_CHECK' } }
 #         - { name: RGENGC_PROFILE,                 env: { cppflags: '-DRGENGC_PROFILE' } }
 
 #         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
