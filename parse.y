@@ -11335,7 +11335,7 @@ id_is_var(struct parser_params *p, ID id)
 static VALUE
 new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 {
-    VALUE src = 0, err;
+    VALUE src = 0, err = 0;
     int options = 0;
     if (ripper_is_node_yylval(p, re)) {
         src = RNODE(re)->nd_cval;
