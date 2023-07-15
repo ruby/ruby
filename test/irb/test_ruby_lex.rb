@@ -256,13 +256,13 @@ module TestIRB
         PromptRow.new('001:0:":* ', %q(<<A+%W[#{<<B)),
         PromptRow.new('002:0:":* ', %q(#{<<C+%W[)),
         PromptRow.new('003:0:":* ', %q(a)),
-        PromptRow.new('004:0:]:* ', %q(C)),
-        PromptRow.new('005:0:]:* ', %q(a)),
+        PromptRow.new('004:2:]:* ', %q(C)),
+        PromptRow.new('005:2:]:* ', %q(a)),
         PromptRow.new('006:0:":* ', %q(]})),
         PromptRow.new('007:0:":* ', %q(})),
         PromptRow.new('008:0:":* ', %q(A)),
-        PromptRow.new('009:0:]:* ', %q(B)),
-        PromptRow.new('010:0:]:* ', %q(})),
+        PromptRow.new('009:2:]:* ', %q(B)),
+        PromptRow.new('010:1:]:* ', %q(})),
         PromptRow.new('011:0: :> ', %q(])),
         PromptRow.new('012:0: :> ', %q()),
       ]
@@ -737,16 +737,16 @@ module TestIRB
         Row.new(%q(          [1), 10, 12, 3),
         Row.new(%q(          ]+[["a), 10, 14, 4),
         Row.new(%q(b" + <<~A + <<-B + <<C), 0, 16, 5),
-        Row.new(%q(                a#{), 16, 16, 5),
-        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(                a#{), 16, 18, 6),
+        Row.new(%q(                  1), 18, 18, 6),
         Row.new(%q(                }), 16, 16, 5),
         Row.new(%q(              A), 14, 16, 5),
-        Row.new(%q(                b#{), 16, 16, 5),
-        Row.new(%q(                1), 16, 16, 5),
+        Row.new(%q(                b#{), 16, 18, 6),
+        Row.new(%q(                  1), 18, 18, 6),
         Row.new(%q(                }), 16, 16, 5),
         Row.new(%q(              B), 14, 0, 0),
-        Row.new(%q(c#{), 0, 0, 0),
-        Row.new(%q(1), 0, 0, 0),
+        Row.new(%q(c#{), 0, 2, 1),
+        Row.new(%q(  1), 2, 2, 1),
         Row.new(%q(}), 0, 0, 0),
         Row.new(%q(C), 0, 14, 4),
         Row.new(%q(            ]), 12, 12, 3),
@@ -799,7 +799,7 @@ module TestIRB
     def test_dynamic_prompt_with_double_newline_breaking_code
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(if true)),
-        PromptRow.new('002:1: :* ', %q(%)),
+        PromptRow.new('002:2: :* ', %q(%)),
         PromptRow.new('003:1: :* ', %q(;end)),
         PromptRow.new('004:1: :* ', %q(;hello)),
         PromptRow.new('005:0: :> ', %q(end)),
@@ -813,12 +813,12 @@ module TestIRB
     def test_dynamic_prompt_with_multiline_literal
       input_with_prompt = [
         PromptRow.new('001:1: :* ', %q(if true)),
-        PromptRow.new('002:1:]:* ', %q(  %w[)),
-        PromptRow.new('003:1:]:* ', %q(  a)),
+        PromptRow.new('002:2:]:* ', %q(  %w[)),
+        PromptRow.new('003:2:]:* ', %q(  a)),
         PromptRow.new('004:1: :* ', %q(  ])),
         PromptRow.new('005:1: :* ', %q(  b)),
-        PromptRow.new('006:1:]:* ', %q(  %w[)),
-        PromptRow.new('007:1:]:* ', %q(  c)),
+        PromptRow.new('006:2:]:* ', %q(  %w[)),
+        PromptRow.new('007:2:]:* ', %q(  c)),
         PromptRow.new('008:1: :* ', %q(  ])),
         PromptRow.new('009:0: :> ', %q(end)),
       ]
@@ -830,8 +830,8 @@ module TestIRB
 
     def test_dynamic_prompt_with_blank_line
       input_with_prompt = [
-        PromptRow.new('001:0:]:* ', %q(%w[)),
-        PromptRow.new('002:0:]:* ', %q()),
+        PromptRow.new('001:1:]:* ', %q(%w[)),
+        PromptRow.new('002:1:]:* ', %q()),
         PromptRow.new('003:0: :> ', %q(])),
       ]
 
