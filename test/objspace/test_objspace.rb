@@ -216,6 +216,13 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(c3,       ObjectSpace.allocation_generation(o3))
       assert_equal(self.class.name, ObjectSpace.allocation_class_path(o3))
       assert_equal(__method__,      ObjectSpace.allocation_method_id(o3))
+
+      # [Bug #19482]
+      EnvUtil.under_gc_stress do
+        100.times do
+          Class.new
+        end
+      end
     }
   end
 
