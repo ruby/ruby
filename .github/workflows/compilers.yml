@@ -80,9 +80,6 @@ jobs:
           - { name: gcc-9,     env: { default_cc: gcc-9 } }
           - { name: gcc-8,     env: { default_cc: gcc-8 } }
           - { name: gcc-7,     env: { default_cc: gcc-7 } }
-          - { name: gcc-6,     env: { default_cc: gcc-6 } }
-          - { name: gcc-5,     env: { default_cc: gcc-5 } }
-          - { name: gcc-4.8,   env: { default_cc: gcc-4.8 } }
           - name: 'gcc-11 LTO'
             container: gcc-11
             env:
@@ -112,9 +109,6 @@ jobs:
           - { name: clang-8,   env: { default_cc: clang-8 } }
           - { name: clang-7,   env: { default_cc: clang-7 } }
           - { name: clang-6.0, env: { default_cc: clang-6.0 } }
-          - { name: clang-5.0, env: { default_cc: clang-5.0 } }
-          - { name: clang-4.0, env: { default_cc: clang-4.0 } }
-          - { name: clang-3.9, env: { default_cc: clang-3.9 } }
           - name: 'clang-14 LTO'
             container: clang-14
             env:
