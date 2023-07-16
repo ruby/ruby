@@ -142,6 +142,24 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal message, buffer.get_string(0, message.bytesize)
   end
 
+  def test_resize_zero_internal
+    buffer = IO::Buffer.new(1)
+
+    buffer.resize(0)
+    assert_equal 0, buffer.size
+
+    buffer.resize(1)
+    assert_equal 1, buffer.size
+  end
+
+  def test_resize_zero_external
+    buffer = IO::Buffer.for('1')
+
+    assert_raise IO::Buffer::AccessError do
+      buffer.resize(0)
+    end
+  end
+
   def test_compare_same_size
     buffer1 = IO::Buffer.new(1)
     assert_equal buffer1, buffer1
