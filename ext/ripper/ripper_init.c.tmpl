@@ -109,18 +109,19 @@ static VALUE
 ripper_s_allocate(VALUE klass)
 {
     struct ripper *r;
-
-    VALUE self = TypedData_Make_Struct(klass, struct ripper,
-                                       &parser_data_type, r);
+    struct parser_params* p;
 
 #ifdef UNIVERSAL_PARSER
     rb_parser_config_t *config;
     config = rb_ruby_parser_config_new(ruby_xmalloc);
     rb_parser_config_initialize(config);
-    r->p = rb_ruby_parser_allocate(config);
+    p = rb_ruby_parser_allocate(config);
 #else
-    r->p = rb_ruby_ripper_parser_allocate();
+    p = rb_ruby_ripper_parser_allocate();
 #endif
+    VALUE self = TypedData_Make_Struct(klass, struct ripper,
+                                       &parser_data_type, r);
+    r->p = p;
     rb_ruby_parser_set_value(r->p, self);
     return self;
 }
