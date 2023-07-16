@@ -90,10 +90,6 @@ yjit_task:
     matrix:
       - CC: gcc-11
         configure: --enable-yjit
-  install_rust_script:
-    - sudo apt-get update -y
-    - sudo apt-get install -y curl
-    - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y $rustup_init"
   << : *CONFIG_TEMPLATE
   make_miniruby_script: make miniruby
   make_bindgen_script: |
