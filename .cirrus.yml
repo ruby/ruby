@@ -17,7 +17,7 @@ env:
     --color=always
     --tty=no
   RUST_BACKTRACE: 1
-  INIT_ENV: ':'
+  INIT_ENV:
 
 config_template: &CONFIG_TEMPLATE
   skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
@@ -38,6 +38,7 @@ config_template: &CONFIG_TEMPLATE
   set_env_script:
     # Set `GNUMAKEFLAGS`, because the flags are GNU make specific.
     - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> "$CIRRUS_ENV"
+    - '[ -z "$INIT_ENV" ] || printenv | sort | comm -13 - <(set -x; source $INIT_ENV && printenv | sort) | tee -a "$CIRRUS_ENV"'
     - cat "$CIRRUS_ENV"
   bundled_gems_cache:
     folder: .downloaded-cache
@@ -53,7 +54,6 @@ config_template: &CONFIG_TEMPLATE
   disable_ipv6_script: sudo ./tool/disable_ipv6.sh
   autogen_script: ./autogen.sh
   configure_script: >-
-    $INIT_ENV &&
     ./configure -C
     --enable-debug-env
     --disable-install-doc
@@ -82,7 +82,7 @@ task:
 yjit_task:
   name: Arm64 Graviton2 / $CC YJIT
   env:
-    INIT_ENV: source $HOME/.cargo/env
+    INIT_ENV: $HOME/.cargo/env
     matrix:
       - CC: gcc-11
         configure: --enable-yjit
@@ -91,18 +91,18 @@ yjit_task:
     - sudo apt-get install -y curl
     - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y $rustup_init"
   << : *CONFIG_TEMPLATE
-  make_miniruby_script: $INIT_ENV && make miniruby
+  make_miniruby_script: make miniruby
   make_bindgen_script: |
     if [[ "$CC" = "clang-12" ]]; then
-      $INIT_ENV && make yjit-bindgen
+      make yjit-bindgen
     else
       echo "only running bindgen on clang image"
     fi
   boot_miniruby_script: ./miniruby --yjit-call-threshold=1 -e0
   test_dump_insns_script: ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
   output_stats_script: ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
-  full_build_script: $INIT_ENV && make
-  cargo_test_script: $INIT_ENV && cd yjit && cargo test
-  make_test_script: $INIT_ENV && make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
-  make_test_all_script: $INIT_ENV && make test-all RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx" TESTOPTS="$RUBY_TESTOPTS"
-  make_test_spec_script: $INIT_ENV && make test-spec RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
+  full_build_script: make
+  cargo_test_script: cd yjit && cargo test
+  make_test_script: make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
+  make_test_all_script: make test-all RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx" TESTOPTS="$RUBY_TESTOPTS"
+  make_test_spec_script: make test-spec RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
