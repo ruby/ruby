@@ -554,9 +554,8 @@ rb_math_log(int argc, const VALUE *argv)
         double b = math_log_split(base, &numbits_2);
         /* check for pole error */
         if (d == 0.0) {
-            if (b > 0.0) return DBL2NUM(HUGE_VAL);
-            if (b < 0.0) return DBL2NUM(-HUGE_VAL);
-            return DBL2NUM(nan(""));
+            // Already DomainError if b < 0.0
+            return b ? DBL2NUM(-HUGE_VAL) : DBL2NUM(NAN);
         }
         else if (b == 0.0) {
             return DBL2NUM(-0.0);
