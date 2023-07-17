@@ -281,14 +281,14 @@ rb_vmdebug_stack_dump_th(VALUE thval)
 
 #if VMDEBUG > 2
 
-/* copy from vm.c */
+/* copy from vm_insnhelper.c */
 static const VALUE *
 vm_base_ptr(const rb_control_frame_t *cfp)
 {
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     const VALUE *bp = prev_cfp->sp + ISEQ_BODY(cfp->iseq)->local_table_size + VM_ENV_DATA_SIZE;
 
-    if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD) {
+    if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD || VM_FRAME_BMETHOD_P(cfp)) {
         bp += 1;
     }
     return bp;

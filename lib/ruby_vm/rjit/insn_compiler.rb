@@ -5618,7 +5618,6 @@ module RubyVM::RJIT
       sp_reg = iseq ? SP : :rax
       asm.lea(sp_reg, [SP, C.VALUE.size * sp_offset])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:sp)], sp_reg)
-      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:__bp__)], sp_reg) # TODO: get rid of this!!
 
       # cfp->jit_return is used only for ISEQs
       if iseq
