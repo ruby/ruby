@@ -737,7 +737,7 @@ Init_native_thread(rb_thread_t *main_th)
         rb_bug("pthread_key_create failed (ruby_current_ec_key)");
     }
 #endif
-    posix_signal(SIGVTALRM, null_func);
+    ruby_posix_signal(SIGVTALRM, null_func);
 
     // setup main thread
     main_th->nt->thread_id = pthread_self();

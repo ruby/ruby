@@ -628,7 +628,7 @@ ruby_signal(int signum, sighandler_t handler)
 }
 
 sighandler_t
-posix_signal(int signum, sighandler_t handler)
+ruby_posix_signal(int signum, sighandler_t handler)
 {
     return ruby_signal(signum, handler);
 }
