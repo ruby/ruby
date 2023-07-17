@@ -2690,11 +2690,11 @@ EOS
 
   def test_warmup_promote_all_objects_to_oldgen
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
     begin;
       obj = Object.new
 
-      Process.warmup
-      refute_include(ObjectSpace.dump(obj), '"old":true')
+      assert_not_include(ObjectSpace.dump(obj), '"old":true')
       Process.warmup
       assert_include(ObjectSpace.dump(obj), '"old":true')
     end;
