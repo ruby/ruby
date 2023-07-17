@@ -3483,7 +3483,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  default:
 	    goto unexpected_bytecode_error;
 	  }
-	  reset_match_cache(reg, addr, pbegin, (long)(s - str), msa->match_cache, msa->cache_index_table, msa->num_cache_table ,msa->num_cache_opcode);
+	  reset_match_cache(reg, addr, pbegin, (long)(s - str), msa->match_cache, msa->cache_index_table, msa->num_cache_opcode, msa->num_cache_table);
 	}
 # endif
       }
