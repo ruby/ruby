@@ -4,7 +4,6 @@ require 'test/unit'
 require 'tempfile'
 require 'timeout'
 require 'rbconfig'
-require 'objspace'
 
 class TestProcess < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
