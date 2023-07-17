@@ -3274,6 +3274,21 @@ class TestModule < Test::Unit::TestCase
     assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
+  def test_iclass_memory_leak
+    # [Bug #19550]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        mod = Module.new
+        Class.new do
+          include mod
+        end
+      end
+      1_000.times(&code)
+    PREP
+      3_000_000.times(&code)
+    CODE
+  end
+
   private
 
   def assert_top_method_is_private(method)
