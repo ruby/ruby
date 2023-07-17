@@ -961,27 +961,27 @@ check_reserved_signal_(const char *name, size_t name_len)
 
     if (prev) {
         ssize_t RB_UNUSED_VAR(err);
+        static const int stderr_fd = 2;
 #define NOZ(name, str) name[sizeof(str)-1] = str
         static const char NOZ(msg1, " received in ");
         static const char NOZ(msg2, " handler\n");
 
 #ifdef HAVE_WRITEV
         struct iovec iov[4];
-
-        iov[0].iov_base = (void *)name;
-        iov[0].iov_len = name_len;
-        iov[1].iov_base = (void *)msg1;
-        iov[1].iov_len = sizeof(msg1);
-        iov[2].iov_base = (void *)prev;
-        iov[2].iov_len = strlen(prev);
-        iov[3].iov_base = (void *)msg2;
-        iov[3].iov_len = sizeof(msg2);
-        err = writev(2, iov, 4);
+        int i = 0;
+# define W(str, len) \
+        iov[i++] = (struct iovec){.iov_base = (void *)(str), .iov_len = (len)}
 #else
-        err = write(2, name, name_len);
-        err = write(2, msg1, sizeof(msg1));
-        err = write(2, prev, strlen(prev));
-        err = write(2, msg2, sizeof(msg2));
+# define W(str, len) err = write(stderr_fd, (str), (len))
+#endif
+
+        W(name, name_len);
+        W(msg1, sizeof(msg1));
+        W(prev, strlen(prev));
+        W(msg2, sizeof(msg2));
+# undef W
+#ifdef HAVE_WRITEV
+        err = writev(stderr_fd, iov, i);
 #endif
         ruby_abort();
     }
