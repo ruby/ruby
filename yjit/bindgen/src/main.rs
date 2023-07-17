@@ -394,6 +394,7 @@ fn main() {
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_iseq_encoded_size")
+        .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")
         .allowlist_function("rb_get_iseq_body_parent_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")

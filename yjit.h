@@ -27,7 +27,7 @@
 // Expose these as declarations since we are building YJIT.
 bool rb_yjit_enabled_p(void);
 bool rb_yjit_compile_new_iseqs(void);
-unsigned rb_yjit_call_threshold(void);
+bool rb_yjit_threshold_hit(const rb_iseq_t *const iseq);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
 void rb_yjit_collect_binding_alloc(void);
@@ -49,7 +49,7 @@ void rb_yjit_tracing_invalidate_all(void);
 
 static inline bool rb_yjit_enabled_p(void) { return false; }
 static inline bool rb_yjit_compile_new_iseqs(void) { return false; }
-static inline unsigned rb_yjit_call_threshold(void) { return UINT_MAX; }
+static inline bool rb_yjit_threshold_hit(const rb_iseq_t *const iseq) { return false; }
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
 static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
 static inline void rb_yjit_collect_binding_alloc(void) {}
