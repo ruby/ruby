@@ -691,8 +691,6 @@ static VALUE convert_encoding(VALUE source)
  *
  * Creates a new JSON::Ext::Parser instance for the string _source_.
  *
- * Creates a new JSON::Ext::Parser instance for the string _source_.
- *
  * It will be configured by the _opts_ hash. _opts_ can have the following
  * keys:
  *
