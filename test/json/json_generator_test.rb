@@ -391,7 +391,7 @@ EOT
     end
   end
 
-  if defined?(JSON::Ext::Generator)
+  if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
     def test_string_ext_included_calls_super
       included = false
 
