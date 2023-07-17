@@ -2926,7 +2926,11 @@ escape_asis:
           case '#':
             if (extended_mode && !in_char_class) {
                 /* consume and ignore comment in extended regexp */
-                while ((p < end) && ((c = *p++) != '\n'));
+                while ((p < end) && ((c = *p++) != '\n')) {
+                    if ((c & 0x80) && !*encp && enc == rb_utf8_encoding()) {
+                        *encp = enc;
+                    }
+                }
                 break;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
@@ -2961,6 +2965,9 @@ escape_asis:
                         switch (c = *p++) {
                           default:
                             if (!(c & 0x80)) break;
+                            if (!*encp && enc == rb_utf8_encoding()) {
+                                *encp = enc;
+                            }
                             --p;
                             /* fallthrough */
                           case '\\':

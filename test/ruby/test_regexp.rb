@@ -200,6 +200,13 @@ class TestRegexp < Test::Unit::TestCase
     RUBY
   end
 
+  def test_utf8_comment_in_usascii_extended_regexp_bug_19455
+    assert_separately([], <<-RUBY)
+      assert_equal(Encoding::UTF_8, /(?#\u1000)/x.encoding)
+      assert_equal(Encoding::UTF_8, /#\u1000/x.encoding)
+    RUBY
+  end
+
   def test_union
     assert_equal :ok, begin
       Regexp.union(
