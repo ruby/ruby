@@ -2689,18 +2689,25 @@ EOS
   end if Process.respond_to?(:_fork)
 
   def test_warmup_promote_all_objects_to_oldgen
-    obj = Object.new
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      obj = Object.new
 
-    refute_includes(ObjectSpace.dump(obj), '"old":true')
-    Process.warmup
-    assert_includes(ObjectSpace.dump(obj), '"old":true')
+      Process.warmup
+      refute_include(ObjectSpace.dump(obj), '"old":true')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"old":true')
+    end;
   end
 
   def test_warmup_run_major_gc_and_compact
-    major_gc_count = GC.stat(:major_gc_count)
-    compact_count = GC.stat(:compact_count)
-    Process.warmup
-    assert_equal major_gc_count + 1, GC.stat(:major_gc_count)
-    assert_equal compact_count + 1, GC.stat(:compact_count)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      major_gc_count = GC.stat(:major_gc_count)
+      compact_count = GC.stat(:compact_count)
+      Process.warmup
+      assert_equal major_gc_count + 1, GC.stat(:major_gc_count)
+      assert_equal compact_count + 1, GC.stat(:compact_count)
+    end;
   end
 end
