@@ -108,10 +108,7 @@ ripper_lex_io_get(struct parser_params *p, VALUE src)
 static VALUE
 ripper_s_allocate(VALUE klass)
 {
-    struct ripper *r;
-
-    VALUE self = TypedData_Make_Struct(klass, struct ripper,
-                                       &parser_data_type, r);
+    struct ripper *r = (struct ripper *)ruby_xcalloc(1, sizeof(struct ripper));
 
 #ifdef UNIVERSAL_PARSER
     rb_parser_config_t *config;
@@ -121,6 +118,8 @@ ripper_s_allocate(VALUE klass)
 #else
     r->p = rb_ruby_ripper_parser_allocate();
 #endif
+    VALUE self = TypedData_Wrap_Struct(klass, &parser_data_type, r);
+
     rb_ruby_parser_set_value(r->p, self);
     return self;
 }
