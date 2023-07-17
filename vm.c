@@ -386,8 +386,7 @@ jit_compile(rb_execution_context_t *ec)
     }
 
     // Don't try to compile the function if it's already compiled
-    if (body->jit_func)
-    {
+    if (body->jit_func) {
         return body->jit_func;
     }
 
