@@ -1409,11 +1409,17 @@ iter_lev_in_ivar_set(VALUE hash, int lev)
     rb_ivar_set_internal(hash, id_hash_iter_lev, INT2FIX(lev));
 }
 
-static int
+static inline int
 iter_lev_in_flags(VALUE hash)
 {
     unsigned int u = (unsigned int)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
     return (int)u;
+}
+
+static inline void
+iter_lev_in_flags_set(VALUE hash, int lev)
+{
+    RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
 }
 
 static int
@@ -1439,7 +1445,7 @@ hash_iter_lev_inc(VALUE hash)
     }
     else {
         lev += 1;
-        RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
+        iter_lev_in_flags_set(hash, lev);
         if (lev == RHASH_LEV_MAX) {
             iter_lev_in_ivar_set(hash, lev);
         }
@@ -1457,7 +1463,7 @@ hash_iter_lev_dec(VALUE hash)
     }
     else {
         HASH_ASSERT(lev > 0);
-        RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((lev-1) << RHASH_LEV_SHIFT));
+        iter_lev_in_flags_set(hash, lev - 1);
     }
 }
 
