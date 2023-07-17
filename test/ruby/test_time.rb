@@ -1403,11 +1403,8 @@ class TestTime < Test::Unit::TestCase
       else
         RbConfig::SIZEOF["void*"] # Same size as VALUE
       end
-    expect =
-      GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] +
-        sizeof_timew +
-        RbConfig::SIZEOF["void*"] * 4 + 5 + # vtm
-        1 # tzmode, tm_got
+    sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
+    expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
     assert_equal expect, ObjectSpace.memsize_of(t)
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
