@@ -295,19 +295,9 @@ module JSON
   #
   def generate(obj, opts = nil)
     if State === opts
-      state, opts = opts, nil
+      state = opts
     else
-      state = State.new
-    end
-    if opts
-      if opts.respond_to? :to_hash
-        opts = opts.to_hash
-      elsif opts.respond_to? :to_h
-        opts = opts.to_h
-      else
-        raise TypeError, "can't convert #{opts.class} into Hash"
-      end
-      state = state.configure(opts)
+      state = State.new(opts)
     end
     state.generate(obj)
   end
@@ -334,19 +324,9 @@ module JSON
   #   JSON.fast_generate(a)
   def fast_generate(obj, opts = nil)
     if State === opts
-      state, opts = opts, nil
+      state = opts
     else
-      state = JSON.create_fast_state
-    end
-    if opts
-      if opts.respond_to? :to_hash
-        opts = opts.to_hash
-      elsif opts.respond_to? :to_h
-        opts = opts.to_h
-      else
-        raise TypeError, "can't convert #{opts.class} into Hash"
-      end
-      state.configure(opts)
+      state = JSON.create_fast_state.configure(opts)
     end
     state.generate(obj)
   end
