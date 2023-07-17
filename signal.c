@@ -880,10 +880,10 @@ check_stack_overflow(int sig, const void *addr)
 #endif
 
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
-NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
+NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len, int signo));
 /* noinine to reduce stack usage in signal handers */
 
-#define check_reserved_signal(name) check_reserved_signal_(name, sizeof(name)-1)
+#define check_reserved_signal(name) check_reserved_signal_(name, sizeof(name)-1, sig)
 
 #ifdef SIGBUS
 
@@ -955,7 +955,7 @@ ruby_abort(void)
 }
 
 static void
-check_reserved_signal_(const char *name, size_t name_len)
+check_reserved_signal_(const char *name, size_t name_len, int signo)
 {
     const char *prev = ATOMIC_PTR_EXCHANGE(received_signal, name);
 
@@ -975,6 +975,11 @@ check_reserved_signal_(const char *name, size_t name_len)
 # define W(str, len) err = write(stderr_fd, (str), (len))
 #endif
 
+#if __has_feature(address_sanitizer) || \
+    __has_feature(memory_sanitizer) || \
+    defined(HAVE_VALGRIND_MEMCHECK_H)
+        ruby_posix_signal(signo, SIG_DFL);
+#endif
         W(name, name_len);
         W(msg1, sizeof(msg1));
         W(prev, strlen(prev));
