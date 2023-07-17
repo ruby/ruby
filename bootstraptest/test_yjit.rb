@@ -1151,6 +1151,38 @@ assert_equal '42', %q{
   run
 }
 
+# splatting an empty array on a specialized method
+assert_equal 'ok', %q{
+  def run
+    "ok".to_s(*[])
+  end
+
+  run
+  run
+}
+
+# splatting an single element array on a specialized method
+assert_equal '[1]', %q{
+  def run
+    [].<<(*[1])
+  end
+
+  run
+  run
+}
+
+# specialized method with wrong args
+assert_equal 'ok', %q{
+  def run(x)
+    "bad".to_s(123) if x
+  rescue
+    :ok
+  end
+
+  run(false)
+  run(true)
+}
+
 # getinstancevariable on Symbol
 assert_equal '[nil, nil]', %q{
   # @foo to exercise the getinstancevariable instruction

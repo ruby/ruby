@@ -4580,10 +4580,12 @@ fn gen_send_cfunc(
     }
 
     // Delegate to codegen for C methods if we have it.
-    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 {
+    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
+        let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, ctx, asm, ocb, ci, cme, block, argc, recv_known_klass) {
+                assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jump_to_next_insn(jit, ctx, asm, ocb);
