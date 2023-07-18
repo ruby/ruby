@@ -395,8 +395,7 @@ cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
             ccs = (struct rb_class_cc_entries *)ccs_data;
         }
         else {
-            ccs = vm_ccs_create(klass, cme);
-            rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+            ccs = vm_ccs_create(klass, cc_tbl, mid, cme);
         }
 
         for (int i=0; i<ccs->len; i++) {
