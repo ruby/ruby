@@ -73,6 +73,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*update_global_weak_tables)(void);
     void *(*get_original_givtbl)(MMTk_ObjectReference object);
     void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
+    size_t (*vm_allocated_bytes)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
@@ -136,6 +137,8 @@ void mmtk_initialize_collection(MMTk_VMThread tls);
 
 void mmtk_enable_collection(void);
 
+void mmtk_disable_collection(void);
+
 const char *mmtk_plan_name(void);
 
 size_t mmtk_used_bytes(void);
@@ -181,5 +184,7 @@ void *mmtk_get_givtbl(MMTk_ObjectReference object);
 size_t mmtk_get_vo_bit_log_region_size(void);
 
 size_t mmtk_get_vo_bit_base(void);
+
+void mmtk_gc_poll(MMTk_VMMutatorThread tls);
 
 #endif /* MMTK_H */

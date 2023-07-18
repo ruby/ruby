@@ -36,7 +36,6 @@ typedef struct {
 bool rb_mmtk_enabled_p(void);
 
 // Initialization
-void rb_gc_init_collection(void);
 void rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread);
 void rb_mmtk_main_thread_init(void);
 
@@ -104,6 +103,9 @@ void rb_mmtk_assert_mutator(void);
 // Vanilla GC timing
 void rb_mmtk_gc_probe(bool enter);
 void rb_mmtk_gc_probe_slowpath(bool enter);
+
+// xmalloc accounting
+void rb_mmtk_xmalloc_increase_body(size_t new_size, size_t old_size);
 
 // Commandline options parsing
 void rb_mmtk_pre_process_opts(int argc, char **argv);
