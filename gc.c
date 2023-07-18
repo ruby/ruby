@@ -3713,10 +3713,8 @@ Init_heap(void)
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
-    heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
-
-    /* Give other size pools allocatable pages. */
-    for (int i = 1; i < SIZE_POOL_COUNT; i++) {
+    /* Set size pools allocatable pages. */
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
         size_pool->allocatable_pages = gc_params.heap_init_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
