@@ -183,7 +183,7 @@ class JSONAdditionTest < Test::Unit::TestCase
   def test_bigdecimal
     assert_equal BigDecimal('3.141', 23), JSON(JSON(BigDecimal('3.141', 23)), :create_additions => true)
     assert_equal BigDecimal('3.141', 666), JSON(JSON(BigDecimal('3.141', 666)), :create_additions => true)
-  end
+  end if defined?(::BigDecimal)
 
   def test_ostruct
     o = OpenStruct.new
