@@ -638,7 +638,11 @@ rb_ec_setup_exception(const rb_execution_context_t *ec, VALUE mesg, VALUE cause)
 	cause = get_ec_errinfo(ec);
     }
     if (cause != mesg) {
-	rb_ivar_set(mesg, id_cause, cause);
+        if (THROW_DATA_P(cause)) {
+            cause = Qnil;
+        }
+
+        rb_ivar_set(mesg, id_cause, cause);
     }
 }
 
