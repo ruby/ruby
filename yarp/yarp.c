@@ -6505,14 +6505,26 @@ parser_lex(yp_parser_t *parser) {
             }
         }
         case YP_LEX_LIST:
+            if (parser->next_start != NULL) {
+                parser->current.end = parser->next_start;
+                parser->next_start = NULL;
+            }
+
             // First we'll set the beginning of the token.
             parser->current.start = parser->current.end;
 
             // If there's any whitespace at the start of the list, then we're
             // going to trim it off the beginning and create a new token.
             size_t whitespace;
-            if ((whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list)) > 0) {
+
+            bool should_stop = parser->heredoc_end;
+
+            if ((whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list, should_stop)) > 0) {
                 parser->current.end += whitespace;
+                if (parser->current.end[-1] == '\n') {
+                    // mutates next_start
+                    parser_flush_heredoc_end(parser);
+                }
                 LEX(YP_TOKEN_WORDS_SEP);
             }
 
