@@ -11767,7 +11767,15 @@ void
 ruby_sized_xfree(void *x, size_t size)
 {
     if (x) {
-	objspace_xfree(&rb_objspace, x, size);
+        /* It's possible for a C extension's pthread destructor function set by pthread_key_create
+         * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
+         * that case. */
+        if (GET_VM()) {
+            objspace_xfree(&rb_objspace, x, size);
+        }
+        else {
+            ruby_mimfree(x);
+        }
     }
 }
 
