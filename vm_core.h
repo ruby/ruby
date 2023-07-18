@@ -817,7 +817,7 @@ typedef struct rb_control_frame_struct {
     const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc or forwarded block handler */
 
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[7] */
+    VALUE *bp_check;		/* cfp[6] */
 #endif
     // Return address for YJIT code
     void *jit_return;
