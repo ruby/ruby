@@ -1412,6 +1412,16 @@ eom
     assert_normal_exit('END {return}')
   end
 
+  def test_return_in_BEGIN_in_eval
+    # `BEGIN` in `eval` is allowed, even inside a method, and `return`
+    # from that block exits from that method without `LocalJumpError`.
+    obj = Object.new
+    def obj.ok
+      eval("BEGIN {return :ok}")
+    end
+    assert_equal :ok, assert_nothing_raised(LocalJumpError) {obj.ok}
+  end
+
   def test_syntax_error_in_rescue
     bug12613 = '[ruby-core:76531] [Bug #12613]'
     assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)
