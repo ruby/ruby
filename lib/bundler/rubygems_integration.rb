@@ -225,23 +225,31 @@ module Bundler
       end
     end
 
-    def reverse_rubygems_kernel_mixin
-      # Disable rubygems' gem activation system
-      if Gem.respond_to?(:discover_gems_on_require=)
-        Gem.discover_gems_on_require = false
-      else
-        kernel = (class << ::Kernel; self; end)
-        [kernel, ::Kernel].each do |k|
-          if k.private_method_defined?(:gem_original_require)
-            redefine_method(k, :require, k.instance_method(:gem_original_require))
+    def replace_require(specs)
+      bundled_gems = %w[
+        abbrev observer getoptlong resolv-replace rinda
+        nkf syslog drb mutex_m csv base64
+      ]
+      kernel = (class << ::Kernel; self; end)
+      [kernel, ::Kernel].each do |kernel_class|
+        redefine_method(kernel_class, :require) do |file|
+          if bundled_gems.include?(file)
+            unless specs.to_a.map(&:name).include?(file)
+              target_file = begin
+                              Bundler.default_gemfile.basename
+                            rescue GemfileNotFound
+                              "inline Gemfile"
+                            end
+              warn "#{file} is not part of the bundle." \
+              " Add it to your #{target_file}."
+            end
           end
+          kernel_class.send(:gem_original_require, file)
         end
       end
     end
 
     def replace_gem(specs, specs_by_name)
-      reverse_rubygems_kernel_mixin
-
       executables = nil
 
       kernel = (class << ::Kernel; self; end)
@@ -358,6 +366,7 @@ module Bundler
     def replace_entrypoints(specs)
       specs_by_name = add_default_gems_to(specs)
 
+      replace_require(specs)
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
       replace_bin_path(specs_by_name)
