@@ -14,10 +14,21 @@ class Reline::ANSI
     'kcud1' => :ed_next_history,
     'kcuf1' => :ed_next_char,
     'kcub1' => :ed_prev_char,
-    'cuu' => :ed_prev_history,
-    'cud' => :ed_next_history,
-    'cuf' => :ed_next_char,
-    'cub' => :ed_prev_char,
+  }
+
+  ANSI_CURSOR_KEY_BINDINGS = {
+    # Up
+    'A' => [:ed_prev_history, {}],
+    # Down
+    'B' => [:ed_next_history, {}],
+    # Right
+    'C' => [:ed_next_char, { ctrl: :em_next_word, meta: :em_next_word }],
+    # Left
+    'D' => [:ed_prev_char, { ctrl: :ed_prev_word, meta: :ed_prev_word }],
+    # End
+    'F' => [:ed_move_to_end, {}],
+    # Home
+    'H' => [:ed_move_to_beg, {}],
   }
 
   if Reline::Terminfo.enabled?
@@ -33,21 +44,11 @@ class Reline::ANSI
   end
 
   def self.set_default_key_bindings(config, allow_terminfo: true)
+    set_default_key_bindings_ansi_cursor(config)
     if allow_terminfo && Reline::Terminfo.enabled?
       set_default_key_bindings_terminfo(config)
     else
       set_default_key_bindings_comprehensive_list(config)
-    end
-    {
-      # extended entries of terminfo
-      [27, 91, 49, 59, 53, 67] => :em_next_word, # Ctrl+→, extended entry
-      [27, 91, 49, 59, 53, 68] => :ed_prev_word, # Ctrl+←, extended entry
-      [27, 91, 49, 59, 51, 67] => :em_next_word, # Meta+→, extended entry
-      [27, 91, 49, 59, 51, 68] => :ed_prev_word, # Meta+←, extended entry
-    }.each_pair do |key, func|
-      config.add_default_key_binding_by_keymap(:emacs, key, func)
-      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
-      config.add_default_key_binding_by_keymap(:vi_command, key, func)
     end
     {
       [27, 91, 90] => :completion_journey_up, # S-Tab
@@ -64,18 +65,33 @@ class Reline::ANSI
     end
   end
 
+  def self.set_default_key_bindings_ansi_cursor(config)
+    ANSI_CURSOR_KEY_BINDINGS.each do |char, (default_func, modifiers)|
+      bindings = [["\e[#{char}", default_func]] # CSI + char
+      if modifiers[:ctrl]
+        # CSI + ctrl_key_modifier + char
+        bindings << ["\e[1;5#{char}", modifiers[:ctrl]]
+      end
+      if modifiers[:meta]
+        # CSI + meta_key_modifier + char
+        bindings << ["\e[1;3#{char}", modifiers[:meta]]
+        # Meta(ESC) + CSI + char
+        bindings << ["\e\e[#{char}", modifiers[:meta]]
+      end
+      bindings.each do |sequence, func|
+        key = sequence.bytes
+        config.add_default_key_binding_by_keymap(:emacs, key, func)
+        config.add_default_key_binding_by_keymap(:vi_insert, key, func)
+        config.add_default_key_binding_by_keymap(:vi_command, key, func)
+      end
+    end
+  end
+
   def self.set_default_key_bindings_terminfo(config)
     key_bindings = CAPNAME_KEY_BINDINGS.map do |capname, key_binding|
       begin
         key_code = Reline::Terminfo.tigetstr(capname)
-        case capname
-        # Escape sequences that omit the move distance and are set to defaults
-        # value 1 may be sometimes sent by pressing the arrow-key.
-        when 'cuu', 'cud', 'cuf', 'cub'
-          [ key_code.sub(/%p1%d/, '').bytes, key_binding ]
-        else
-          [ key_code.bytes, key_binding ]
-        end
+        [ key_code.bytes, key_binding ]
       rescue Reline::Terminfo::TerminfoError
         # capname is undefined
       end
@@ -94,14 +110,8 @@ class Reline::ANSI
       [27, 91, 49, 126] => :ed_move_to_beg, # Home
       [27, 91, 52, 126] => :ed_move_to_end, # End
       [27, 91, 51, 126] => :key_delete,     # Del
-      [27, 91, 65] => :ed_prev_history,     # ↑
-      [27, 91, 66] => :ed_next_history,     # ↓
-      [27, 91, 67] => :ed_next_char,        # →
-      [27, 91, 68] => :ed_prev_char,        # ←
 
       # KDE
-      [27, 91, 72] => :ed_move_to_beg,      # Home
-      [27, 91, 70] => :ed_move_to_end,      # End
       # Del is 0x08
       [27, 71, 65] => :ed_prev_history,     # ↑
       [27, 71, 66] => :ed_next_history,     # ↓
@@ -117,12 +127,6 @@ class Reline::ANSI
       [27, 79, 70] => :ed_move_to_end,      # End
       # Del is 0x08
       # Arrow keys are the same of KDE
-
-      # iTerm2
-      [27, 27, 91, 67] => :em_next_word,    # Option+→, extended entry
-      [27, 27, 91, 68] => :ed_prev_word,    # Option+←, extended entry
-      [195, 166] => :em_next_word,          # Option+f
-      [195, 162] => :ed_prev_word,          # Option+b
 
       [27, 79, 65] => :ed_prev_history,     # ↑
       [27, 79, 66] => :ed_next_history,     # ↓
