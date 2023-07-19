@@ -3509,8 +3509,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (!rb_data_free(objspace, obj)) return false;
         break;
       case T_MATCH:
-        if (RANY(obj)->as.match.rmatch) {
-            struct rmatch *rm = RANY(obj)->as.match.rmatch;
+        {
+            struct rmatch *rm = &RMATCH_EXT(obj)->rmatch;
 #if USE_DEBUG_COUNTER
             if (rm->regs.num_regs >= 8) {
                 RB_DEBUG_COUNTER_INC(obj_match_ge8);
@@ -3525,7 +3525,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             onig_region_free(&rm->regs, 0);
             if (rm->char_offset)
                 xfree(rm->char_offset);
-            xfree(rm);
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
         }
@@ -4841,8 +4840,8 @@ obj_memsize_of(VALUE obj, int use_all_types)
         if (use_all_types) size += rb_objspace_data_type_memsize(obj);
         break;
       case T_MATCH:
-        if (RMATCH(obj)->rmatch) {
-            struct rmatch *rm = RMATCH(obj)->rmatch;
+        {
+            struct rmatch *rm = &RMATCH_EXT(obj)->rmatch;
             size += onig_region_memsize(&rm->regs);
             size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
             size += sizeof(struct rmatch);
