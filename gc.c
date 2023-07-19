@@ -4844,7 +4844,6 @@ obj_memsize_of(VALUE obj, int use_all_types)
             struct rmatch *rm = &RMATCH_EXT(obj)->rmatch;
             size += onig_region_memsize(&rm->regs);
             size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
-            size += sizeof(struct rmatch);
         }
         break;
       case T_FILE:
