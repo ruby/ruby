@@ -147,8 +147,6 @@ RSpec.describe "bundle install" do
            #{Bundler::VERSION}
       L
 
-      original_lockfile = lockfile
-
       # If GH#6743 is present, the first `bundle install` will change the
       # lockfile, by flipping the order (`other` would be moved to the top).
       #

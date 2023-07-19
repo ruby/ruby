@@ -475,6 +475,40 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[b-1], inst.installed_gems.map {|s| s.full_name }
   end
 
+  def test_install_local_dependency_no_network_for_target_gem
+    a1, a1_gem = util_gem "a", "1"
+    _, b1_gem = util_gem "b", "1" do |s|
+      s.add_dependency "a"
+    end
+
+    util_setup_spec_fetcher(a1)
+
+    a1_data = Gem.read_binary(a1_gem)
+    @fetcher.data["http://gems.example.com/gems/a-1.gem"] = a1_data
+
+    # compact index is available
+    compact_index_response = Net::HTTPResponse.new "1.1", 200, "OK"
+    compact_index_response.uri = URI("http://gems.example.com")
+    @fetcher.data["http://gems.example.com/"] = compact_index_response
+
+    # but private local gem not present there
+    @fetcher.data["http://gems.example.com/info/b"] =
+      proc do
+        raise "should not happen"
+      end
+
+    FileUtils.mv b1_gem, @tempdir
+
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new
+      inst.install "b-1.gem"
+    end
+
+    assert_equal %w[a-1 b-1], inst.installed_gems.map(&:full_name)
+  end
+
   def test_install_local_subdir
     util_setup_gems
 
