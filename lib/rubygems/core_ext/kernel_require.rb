@@ -44,20 +44,16 @@ module Kernel
         resolved_path = begin
           rp = nil
           load_path_check_index = Gem.load_path_insert_index - Gem.activated_gem_paths
-          Gem.suffixes.each do |s|
-            $LOAD_PATH[0...load_path_check_index].each do |lp|
+          Gem.suffixes.find do |s|
+            $LOAD_PATH[0...load_path_check_index].find do |lp|
               safe_lp = lp.dup.tap(&Gem::UNTAINT)
               if File.symlink? safe_lp # for backward compatibility
                 next
               end
 
               full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
-              if File.file?(full_path)
-                rp = full_path
-                break
-              end
+              rp = full_path if File.file?(full_path)
             end
-            break if rp
           end
           rp
         end
