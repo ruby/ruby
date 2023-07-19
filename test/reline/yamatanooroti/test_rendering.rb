@@ -1591,6 +1591,20 @@ begin
       EOC
     end
 
+    def test_exit_with_ctrl_d
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      begin
+        write("\C-d")
+        close
+      rescue EOFError
+        # EOFError is raised when process terminated.
+      end
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt>
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
