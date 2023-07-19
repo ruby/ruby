@@ -247,7 +247,11 @@ module Bundler
           end
           kernel_class.send(:no_warning_require, file)
         end
-        kernel_class.send(:public, :require)
+        if kernel_class == ::Kernel
+          kernel_class.send(:private, :require)
+        else
+          kernel_class.send(:public, :require)
+        end
       end
     end
 
