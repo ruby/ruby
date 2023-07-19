@@ -2,7 +2,7 @@
 require_relative "helper"
 require "rubygems/deprecate"
 
-class TestDeprecate < Gem::TestCase
+class TestGemDeprecate < Gem::TestCase
   def setup
     super
 

@@ -145,6 +145,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
     pend "cargo not present" unless $?.success?
     pend "ruby.h is not provided by ruby repo" if ruby_repo?
+    pend "rust toolchain of mingw is broken" if mingw_windows?
   end
 
   def assert_ffi_handle(bundle, name)

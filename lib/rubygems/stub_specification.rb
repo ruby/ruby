@@ -183,7 +183,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   ##
   # The full Gem::Specification for this gem, loaded from evalling its gemspec
 
-  def to_spec
+  def spec
     @spec ||= if @data
       loaded = Gem.loaded_specs[name]
       loaded if loaded && loaded.version == version
@@ -191,6 +191,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     @spec ||= Gem::Specification.load(loaded_from)
   end
+  alias_method :to_spec, :spec
 
   ##
   # Is this StubSpecification valid? i.e. have we found a stub line, OR does

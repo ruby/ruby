@@ -89,7 +89,7 @@ module Bundler
 
   class << self
     def configure
-      @configured ||= configure_gem_home_and_path
+      @configure ||= configure_gem_home_and_path
     end
 
     def ui
@@ -581,7 +581,7 @@ EOF
       @bin_path = nil
       @bundler_major_version = nil
       @bundle_path = nil
-      @configured = nil
+      @configure = nil
       @configured_bundle_path = nil
       @definition = nil
       @load = nil

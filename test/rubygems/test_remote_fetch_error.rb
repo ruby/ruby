@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "helper"
 
-class TestRemoteFetchError < Gem::TestCase
+class TestGemRemoteFetchError < Gem::TestCase
   def test_password_redacted
     error = Gem::RemoteFetcher::FetchError.new("There was an error fetching", "https://user:secret@gemsource.org")
     refute_match %r{secret}, error.to_s

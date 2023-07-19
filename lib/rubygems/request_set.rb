@@ -107,7 +107,7 @@ class Gem::RequestSet
     @requests            = []
     @sets                = []
     @soft_missing        = false
-    @sorted              = nil
+    @sorted_requests     = nil
     @specs               = nil
     @vendor_set          = nil
     @source_set          = nil
@@ -424,7 +424,7 @@ class Gem::RequestSet
   end
 
   def sorted_requests
-    @sorted ||= strongly_connected_components.flatten
+    @sorted_requests ||= strongly_connected_components.flatten
   end
 
   def specs
