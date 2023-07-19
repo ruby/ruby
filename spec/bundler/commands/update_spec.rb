@@ -772,7 +772,7 @@ RSpec.describe "bundle update" do
     end
   end
 
-  it "shows the previous version of the gem when updated from rubygems source", :bundler => "< 3" do
+  it "shows the previous version of the gem when updated from rubygems source" do
     build_repo2
 
     install_gemfile <<-G
@@ -780,7 +780,7 @@ RSpec.describe "bundle update" do
       gem "activesupport"
     G
 
-    bundle "update", :all => true
+    bundle "update", :all => true, :verbose => true
     expect(out).to include("Using activesupport 2.3.5")
 
     update_repo2 do
@@ -791,32 +791,28 @@ RSpec.describe "bundle update" do
     expect(out).to include("Installing activesupport 3.0 (was 2.3.5)")
   end
 
-  context "with suppress_install_using_messages set" do
-    before { bundle "config set suppress_install_using_messages true" }
-
-    it "only prints `Using` for versions that have changed" do
-      build_repo4 do
-        build_gem "bar"
-        build_gem "foo"
-      end
-
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo4)}"
-        gem "bar"
-        gem "foo"
-      G
-
-      bundle "update", :all => true
-      expect(out).to match(/Resolving dependencies\.\.\.\.*\nBundle updated!/)
-
-      update_repo4 do
-        build_gem "foo", "2.0"
-      end
-
-      bundle "update", :all => true
-      out.sub!("Removing foo (1.0)\n", "")
-      expect(out).to match(/Resolving dependencies\.\.\.\.*\nFetching foo 2\.0 \(was 1\.0\)\nInstalling foo 2\.0 \(was 1\.0\)\nBundle updated/)
+  it "only prints `Using` for versions that have changed" do
+    build_repo4 do
+      build_gem "bar"
+      build_gem "foo"
     end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "bar"
+      gem "foo"
+    G
+
+    bundle "update", :all => true
+    expect(out).to match(/Resolving dependencies\.\.\.\.*\nBundle updated!/)
+
+    update_repo4 do
+      build_gem "foo", "2.0"
+    end
+
+    bundle "update", :all => true
+    out.sub!("Removing foo (1.0)\n", "")
+    expect(out).to match(/Resolving dependencies\.\.\.\.*\nFetching foo 2\.0 \(was 1\.0\)\nInstalling foo 2\.0 \(was 1\.0\)\nBundle updated/)
   end
 
   it "shows error message when Gemfile.lock is not preset and gem is specified" do
@@ -1386,7 +1382,7 @@ RSpec.describe "bundle update --bundler" do
       gem "rack"
     G
 
-    bundle :update, :bundler => "2.3.0.dev"
+    bundle :update, :bundler => "2.3.0.dev", :verbose => "true"
 
     # Only updates properly on modern RubyGems.
 
@@ -1423,7 +1419,7 @@ RSpec.describe "bundle update --bundler" do
       gem "rack"
     G
 
-    bundle :update, :bundler => "2.3.9", :raise_on_error => false
+    bundle :update, :bundler => "2.3.9", :raise_on_error => false, :verbose => true
 
     expect(out).not_to include("Fetching gem metadata from https://rubygems.org/")
 

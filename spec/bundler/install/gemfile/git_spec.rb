@@ -30,6 +30,13 @@ RSpec.describe "bundle install with git sources" do
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes :size => 1
     end
 
+    it "does not write to cache on bundler/setup" do
+      cache_path = default_bundle_path.join("cache")
+      FileUtils.rm_rf(cache_path)
+      ruby "require 'bundler/setup'"
+      expect(cache_path).not_to exist
+    end
+
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
       simulate_new_machine
       bundle "config set global_gem_cache true"
