@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require_relative "remote_fetcher"
 require_relative "text"
+require_relative "webauthn_listener"
 
 ##
 # Utility methods for using the RubyGems API.
@@ -82,7 +83,7 @@ module Gem::GemcutterUtilities
   #
   # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
-  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, &block)
+  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, credentials: {}, &block)
     require "net/http"
 
     self.host = host if host
@@ -105,7 +106,7 @@ module Gem::GemcutterUtilities
     response = request_with_otp(method, uri, &block)
 
     if mfa_unauthorized?(response)
-      ask_otp
+      fetch_otp(credentials)
       response = request_with_otp(method, uri, &block)
     end
 
@@ -167,11 +168,12 @@ module Gem::GemcutterUtilities
     mfa_params   = get_mfa_params(profile)
     all_params   = scope_params.merge(mfa_params)
     warning      = profile["warning"]
+    credentials  = { email: email, password: password }
 
     say "#{warning}\n" if warning
 
     response = rubygems_api_request(:post, "api/v1/api_key",
-                                    sign_in_host, scope: scope) do |request|
+                                    sign_in_host, credentials: credentials, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
       request.body = URI.encode_www_form({ name: key_name }.merge(all_params))
@@ -250,9 +252,49 @@ module Gem::GemcutterUtilities
     end
   end
 
-  def ask_otp
-    say "You have enabled multi-factor authentication. Please enter OTP code."
-    options[:otp] = ask "Code: "
+  def fetch_otp(credentials)
+    options[:otp] = if webauthn_url = webauthn_verification_url(credentials)
+      wait_for_otp(webauthn_url)
+    else
+      say "You have enabled multi-factor authentication. Please enter OTP code."
+      ask "Code: "
+    end
+  end
+
+  def wait_for_otp(webauthn_url)
+    server = TCPServer.new 0
+    port = server.addr[1].to_s
+
+    thread = Thread.new do
+      Thread.current[:otp] = Gem::WebauthnListener.wait_for_otp_code(host, server)
+    rescue Gem::WebauthnVerificationError => e
+      Thread.current[:error] = e
+    end
+    thread.abort_on_exception = true
+    thread.report_on_exception = false
+
+    url_with_port = "#{webauthn_url}?port=#{port}"
+    say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
+
+    thread.join
+    if error = thread[:error]
+      alert_error error.message
+      terminate_interaction(1)
+    end
+
+    say "You are verified with a security device. You may close the browser window."
+    thread[:otp]
+  end
+
+  def webauthn_verification_url(credentials)
+    response = rubygems_api_request(:post, "api/v1/webauthn_verification") do |request|
+      if credentials.empty?
+        request.add_field "Authorization", api_key
+      else
+        request.basic_auth credentials[:email], credentials[:password]
+      end
+    end
+    response.is_a?(Net::HTTPSuccess) ? response.body : nil
   end
 
   def pretty_host(host)
