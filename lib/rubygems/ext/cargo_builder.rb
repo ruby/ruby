@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../shellwords"
+
 # This class is used by rubygems to build Rust extensions. It is a thin-wrapper
 # over the `cargo rustc` command which takes care of building Rust code in a way
 # that Ruby can use.
@@ -73,8 +75,6 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   end
 
   def cargo_command(cargo_toml, dest_path, args = [], crate_name = nil)
-    require "shellwords"
-
     cmd = []
     cmd += [cargo, "rustc"]
     cmd += ["--crate-type", "cdylib"]

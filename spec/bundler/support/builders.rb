@@ -208,10 +208,8 @@ module Spec
       update_repo(gem_repo4, &blk)
     end
 
-    def update_repo2
-      update_repo gem_repo2 do
-        yield if block_given?
-      end
+    def update_repo2(&blk)
+      update_repo(gem_repo2, &blk)
     end
 
     def build_security_repo

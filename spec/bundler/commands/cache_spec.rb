@@ -291,7 +291,7 @@ RSpec.describe "bundle cache" do
       G
       subject
       expect(exitstatus).to eq(16)
-      expect(err).to include("deployment mode")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* rack-obama")
       bundle "env"

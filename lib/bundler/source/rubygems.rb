@@ -381,7 +381,6 @@ module Bundler
           idx = @allow_local ? installed_specs.dup : Index.new
 
           Dir["#{cache_path}/*.gem"].each do |gemfile|
-            next if /^bundler\-[\d\.]+?\.gem/.match?(gemfile)
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
             s.source = self
             idx << s
