@@ -773,6 +773,8 @@ native_thread_destroy(rb_thread_t *th)
 
 #if USE_THREAD_CACHE
 static rb_thread_t *register_cached_thread_and_wait(void *);
+#else
+# define register_cached_thread_and_wait(altstack) ((void)(altstack), NULL)
 #endif
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
@@ -1113,9 +1115,7 @@ thread_start_func_1(void *th_ptr)
 #else
         thread_start_func_2(th, &stack_start);
 #endif
-    } while (USE_THREAD_CACHE &&
-             /* cache thread */
-             (th = register_cached_thread_and_wait(RB_ALTSTACK(altstack))) != 0);
+    } while ((th = register_cached_thread_and_wait(RB_ALTSTACK(altstack))) != 0);
     if (!USE_THREAD_CACHE) {
         RB_ALTSTACK_FREE(altstack);
     }
@@ -1187,6 +1187,8 @@ register_cached_thread_and_wait(void *altstack)
 #  if defined(HAVE_WORKING_FORK)
 static void thread_cache_reset(void) { }
 #  endif
+#define thread_cache_lock *(rb_nativethread_lock_t *)NULL
+#define cached_thread_head *(struct ccan_list_head *)NULL
 #endif
 
 static int
