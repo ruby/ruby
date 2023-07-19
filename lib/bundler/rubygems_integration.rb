@@ -232,7 +232,8 @@ module Bundler
       ]
       kernel = (class << ::Kernel; self; end)
       [kernel, ::Kernel].each do |kernel_class|
-        redefine_method(kernel_class, :require) do |file|
+        kernel_class.send(:alias_method, :no_warning_require, :require)
+        kernel_class.send(:define_method, :require) do |file|
           if bundled_gems.include?(file)
             unless specs.to_a.map(&:name).include?(file)
               target_file = begin
@@ -244,8 +245,9 @@ module Bundler
               " Add it to your #{target_file}."
             end
           end
-          kernel_class.send(:gem_original_require, file)
+          kernel_class.send(:no_warning_require, file)
         end
+        kernel_class.send(:public, :require)
       end
     end
 
