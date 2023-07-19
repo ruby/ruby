@@ -217,6 +217,7 @@ module Bundler
     rescue BundlerError => e
       @resolve = nil
       @resolver = nil
+      @resolution_packages = nil
       @specs = nil
       @gem_version_promoter = nil
 
@@ -361,10 +362,8 @@ module Bundler
              "updated #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} to version control."
 
       unless explicit_flag
-        suggested_command = if Bundler.settings.locations("frozen").keys.&([:global, :local]).any?
-          "bundle config unset frozen"
-        elsif Bundler.settings.locations("deployment").keys.&([:global, :local]).any?
-          "bundle config unset deployment"
+        suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
+          "bundle config set frozen false"
         end
         msg << "\n\nIf this is a development machine, remove the #{Bundler.default_gemfile} " \
                "freeze \nby running `#{suggested_command}`." if suggested_command
@@ -886,7 +885,8 @@ module Bundler
       if preserve_unknown_sections
         sections_to_ignore = LockfileParser.sections_to_ignore(@locked_bundler_version)
         sections_to_ignore += LockfileParser.unknown_sections_in_lockfile(current)
-        sections_to_ignore += LockfileParser::ENVIRONMENT_VERSION_SECTIONS
+        sections_to_ignore << LockfileParser::RUBY
+        sections_to_ignore << LockfileParser::BUNDLED unless @unlocking_bundler
         pattern = /#{Regexp.union(sections_to_ignore)}\n(\s{2,}.*\n)+/
         whitespace_cleanup = /\n{2,}/
         current = current.gsub(pattern, "\n").gsub(whitespace_cleanup, "\n\n").strip

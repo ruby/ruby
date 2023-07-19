@@ -302,7 +302,7 @@ module Spec
     def install_gem(path, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      args = "--no-document --ignore-dependencies"
+      args = "--no-document --ignore-dependencies --verbose --local"
       args += " --default --install-dir #{system_gem_path}" if default
 
       gem_command "install #{args} '#{path}'"
