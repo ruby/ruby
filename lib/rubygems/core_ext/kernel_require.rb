@@ -36,9 +36,7 @@ module Kernel
   def require(path) # :doc:
     return gem_original_require(path) unless Gem.discover_gems_on_require
 
-    begin
-      RUBYGEMS_ACTIVATION_MONITOR.enter
-
+    RUBYGEMS_ACTIVATION_MONITOR.synchronize do
       path = path.to_path if path.respond_to? :to_path
 
       if spec = Gem.find_unresolved_default_spec(path)
@@ -49,13 +47,8 @@ module Kernel
           Gem.suffixes.each do |s|
             $LOAD_PATH[0...load_path_check_index].each do |lp|
               safe_lp = lp.dup.tap(&Gem::UNTAINT)
-              begin
-                if File.symlink? safe_lp # for backward compatibility
-                  next
-                end
-              rescue SecurityError
-                RUBYGEMS_ACTIVATION_MONITOR.exit
-                raise
+              if File.symlink? safe_lp # for backward compatibility
+                next
               end
 
               full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
@@ -69,20 +62,15 @@ module Kernel
           rp
         end
 
-        begin
-          Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease)
-        rescue StandardError
-          RUBYGEMS_ACTIVATION_MONITOR.exit
-          raise
-        end unless resolved_path
+        Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease) unless
+          resolved_path
       end
 
       # If there are no unresolved deps, then we can use just try
       # normal require handle loading a gem from the rescue below.
 
       if Gem::Specification.unresolved_deps.empty?
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(path)
+        next
       end
 
       # If +path+ is for a gem that has already been loaded, don't
@@ -92,8 +80,7 @@ module Kernel
       # TODO request access to the C implementation of this to speed up RubyGems
 
       if Gem::Specification.find_active_stub_by_path(path)
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(path)
+        next
       end
 
       # Attempt to find +path+ in any unresolved gems...
@@ -124,7 +111,6 @@ module Kernel
         names = found_specs.map(&:name).uniq
 
         if names.size > 1
-          RUBYGEMS_ACTIVATION_MONITOR.exit
           raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ", "}"
         end
 
@@ -135,26 +121,20 @@ module Kernel
         unless valid
           le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
           le.name = names.first
-          RUBYGEMS_ACTIVATION_MONITOR.exit
           raise le
         end
 
         valid.activate
       end
+    end
 
-      RUBYGEMS_ACTIVATION_MONITOR.exit
+    begin
       gem_original_require(path)
     rescue LoadError => load_error
-      if load_error.path == path
-        RUBYGEMS_ACTIVATION_MONITOR.enter
+      if load_error.path == path &&
+         RUBYGEMS_ACTIVATION_MONITOR.synchronize { Gem.try_activate(path) }
 
-        begin
-          require_again = Gem.try_activate(path)
-        ensure
-          RUBYGEMS_ACTIVATION_MONITOR.exit
-        end
-
-        return gem_original_require(path) if require_again
+        return gem_original_require(path)
       end
 
       raise load_error
