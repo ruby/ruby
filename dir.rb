@@ -397,8 +397,6 @@ class Dir
   #
   #     pattern = '{LEGAL,BSDL}'
   #     Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
-  #     Pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
-  #     pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
   #
   # - File::FNM_NOESCAPE:
   #   specifies that escaping with the backslash character <tt>'\'</tt>
