@@ -45,6 +45,12 @@ int yp_snprintf(char *dest, YP_ATTRIBUTE_UNUSED size_t size, const char *format,
 #if defined(HAVE_SNPRINTF)
     // We use snprintf if it's available
 #   define yp_snprintf snprintf
+
+#else
+    // In case snprintf isn't present on the system, we provide our own that simply
+    // forwards to the less-safe sprintf.
+#   define yp_snprintf(dest, size, ...) sprintf((dest), __VA_ARGS__)
+
 #endif
 
 #endif
