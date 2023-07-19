@@ -12391,7 +12391,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 YP_ATTRIBUTE_UNUSED bool captured_group_names =
                     yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures);
 
-                // We assert that the the regex was successfully parsed
+                // We assert that the regex was successfully parsed
                 assert(captured_group_names);
 
                 for (size_t index = 0; index < named_captures.length; index++) {

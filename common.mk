@@ -124,7 +124,6 @@ YARP_FILES = yarp/api_node.$(OBJEXT) \
 		yarp/util/yp_list.$(OBJEXT) \
 		yarp/util/yp_memchr.$(OBJEXT) \
 		yarp/util/yp_newline_list.$(OBJEXT) \
-		yarp/util/yp_snprintf.$(OBJEXT) \
 		yarp/util/yp_state_stack.$(OBJEXT) \
 		yarp/util/yp_string.$(OBJEXT) \
 		yarp/util/yp_string_list.$(OBJEXT) \
@@ -19665,10 +19664,6 @@ yarp/util/yp_newline_list.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/util/yp_newline_list.$(OBJEXT): $(top_srcdir)/yarp/util/yp_newline_list.c
 yarp/util/yp_newline_list.$(OBJEXT): $(top_srcdir)/yarp/util/yp_newline_list.h
 yarp/util/yp_newline_list.$(OBJEXT): {$(VPATH)}config.h
-yarp/util/yp_snprintf.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/util/yp_snprintf.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/util/yp_snprintf.$(OBJEXT): $(top_srcdir)/yarp/util/yp_snprintf.c
-yarp/util/yp_snprintf.$(OBJEXT): {$(VPATH)}config.h
 yarp/util/yp_state_stack.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/util/yp_state_stack.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/util/yp_state_stack.$(OBJEXT): $(top_srcdir)/yarp/util/yp_state_stack.c
