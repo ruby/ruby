@@ -1230,7 +1230,7 @@ rb_mmtk_xmalloc_increase_body(size_t new_size, size_t old_size)
 }
 
 static size_t
-rb_mmtk_vm_allocated_bytes()
+rb_mmtk_vm_live_bytes()
 {
     return g_xmalloc_accounting.malloc_total;
 }
@@ -1445,7 +1445,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_global_weak_tables,
     rb_mmtk_get_original_givtbl,
     rb_mmtk_move_givtbl,
-    rb_mmtk_vm_allocated_bytes,
+    rb_mmtk_vm_live_bytes,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
