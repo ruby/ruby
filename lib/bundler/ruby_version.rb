@@ -107,7 +107,7 @@ module Bundler
       ruby_engine_version = RUBY_ENGINE == "ruby" ? ruby_version : RUBY_ENGINE_VERSION.dup
       patchlevel = RUBY_PATCHLEVEL.to_s
 
-      @ruby_version ||= RubyVersion.new(ruby_version, patchlevel, ruby_engine, ruby_engine_version)
+      @system ||= RubyVersion.new(ruby_version, patchlevel, ruby_engine, ruby_engine_version)
     end
 
     private

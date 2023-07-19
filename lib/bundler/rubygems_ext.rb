@@ -66,7 +66,9 @@ module Gem
 
     alias_method :rg_extension_dir, :extension_dir
     def extension_dir
-      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
+      # following instance variable is already used in original method
+      # and that is the reason to prefix it with bundler_ and add rubocop exception
+      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name) # rubocop:disable Naming/MemoizedInstanceVariableName
         unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
         File.expand_path(File.join(extensions_dir, unique_extension_dir))
       else
@@ -203,9 +205,9 @@ module Gem
         protected
 
         def _requirements_sorted?
-          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          return @_requirements_sorted if defined?(@_requirements_sorted)
           strings = as_list
-          @_are_requirements_sorted = strings == strings.sort
+          @_requirements_sorted = strings == strings.sort
         end
 
         def _with_sorted_requirements

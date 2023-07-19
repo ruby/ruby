@@ -122,7 +122,7 @@ module Bundler
     end
 
     def to_s
-      @__to_s ||= if platform == Gem::Platform::RUBY
+      @to_s ||= if platform == Gem::Platform::RUBY
         "#{name} (#{version})"
       else
         "#{name} (#{version}-#{platform})"

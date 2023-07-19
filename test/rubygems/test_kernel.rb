@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "helper"
 
-class TestKernel < Gem::TestCase
+class TestGemKernel < Gem::TestCase
   def setup
     super
 

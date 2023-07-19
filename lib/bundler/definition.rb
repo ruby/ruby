@@ -668,8 +668,16 @@ module Bundler
     def check_missing_lockfile_specs
       all_locked_specs = @locked_specs.map(&:name) << "bundler"
 
-      @locked_specs.any? do |s|
+      missing = @locked_specs.select do |s|
         s.dependencies.any? {|dep| !all_locked_specs.include?(dep.name) }
+      end
+
+      if missing.any?
+        @locked_specs.delete(missing)
+
+        true
+      else
+        false
       end
     end
 

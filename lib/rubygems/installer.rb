@@ -388,7 +388,7 @@ class Gem::Installer
   # we'll be installing into.
 
   def installed_specs
-    @specs ||= begin
+    @installed_specs ||= begin
       specs = []
 
       Gem::Util.glob_files_in_dir("*.gemspec", File.join(gem_home, "specifications")).each do |path|

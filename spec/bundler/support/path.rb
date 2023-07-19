@@ -71,10 +71,6 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
-    def api_request_limit_hack_file
-      spec_dir.join("support/api_request_limit_hax.rb")
-    end
-
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
