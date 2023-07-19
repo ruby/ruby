@@ -24,10 +24,19 @@ module Psych
     # "ambiguity" in the emitted document
     def test_y_is_quoted
       assert_match(/"y"/, Psych.dump("y"))
+      assert_match(/"Y"/, Psych.dump("Y"))
     end
 
     def test_n_is_quoted
       assert_match(/"n"/, Psych.dump("n"))
+      assert_match(/"N"/, Psych.dump("N"))
+    end
+
+    def test_all_yaml_1_1_booleans_are_quoted
+      yaml_1_1_booleans = %w[y Y yes Yes YES n N no No NO true True TRUE false False FALSE on On ON off Off OFF] # from https://yaml.org/type/bool.html
+      yaml_1_1_booleans.each do |boolean|
+        assert_match(/"#{boolean}"|'#{boolean}'/, Psych.dump(boolean))
+      end
     end
 
     def test_string_with_newline
