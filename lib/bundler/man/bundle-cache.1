@@ -13,7 +13,7 @@
 alias: \fBpackage\fR, \fBpack\fR
 .
 .SH "DESCRIPTION"
-Copy all of the \fB\.gem\fR files needed to run the application into the \fBvendor/cache\fR directory\. In the future, when running [bundle install(1)][bundle\-install], use the gems in the cache in preference to the ones on \fBrubygems\.org\fR\.
+Copy all of the \fB\.gem\fR files needed to run the application into the \fBvendor/cache\fR directory\. In the future, when running \fBbundle install(1)\fR \fIbundle\-install\.1\.html\fR, use the gems in the cache in preference to the ones on \fBrubygems\.org\fR\.
 .
 .SH "GIT AND PATH GEMS"
 The \fBbundle cache\fR command can also package \fB:git\fR and \fB:path\fR dependencies besides \.gem files\. This needs to be explicitly enabled via the \fB\-\-all\fR option\. Once used, the \fB\-\-all\fR option will be remembered\.
@@ -22,7 +22,7 @@ The \fBbundle cache\fR command can also package \fB:git\fR and \fB:path\fR depen
 When using gems that have different packages for different platforms, Bundler supports caching of gems for other platforms where the Gemfile has been resolved (i\.e\. present in the lockfile) in \fBvendor/cache\fR\. This needs to be enabled via the \fB\-\-all\-platforms\fR option\. This setting will be remembered in your local bundler configuration\.
 .
 .SH "REMOTE FETCHING"
-By default, if you run \fBbundle install(1)\fR](bundle\-install\.1\.html) after running bundle cache(1) \fIbundle\-cache\.1\.html\fR, bundler will still connect to \fBrubygems\.org\fR to check whether a platform\-specific gem exists for any of the gems in \fBvendor/cache\fR\.
+By default, if you run \fBbundle install(1)\fR \fIbundle\-install\.1\.html\fR after running bundle cache(1) \fIbundle\-cache\.1\.html\fR, bundler will still connect to \fBrubygems\.org\fR to check whether a platform\-specific gem exists for any of the gems in \fBvendor/cache\fR\.
 .
 .P
 For instance, consider this Gemfile(5):

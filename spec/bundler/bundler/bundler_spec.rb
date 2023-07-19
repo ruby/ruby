@@ -28,14 +28,42 @@ RSpec.describe Bundler do
       expect(Bundler.safe_load_marshal(data)).to eq(simple_structure)
     end
 
-    it "loads Gem::Version" do
-      gem_version = Gem::Version.new("3.7.2")
-      data = Marshal.dump(gem_version)
-      expect(Bundler.safe_load_marshal(data)).to eq(gem_version)
-    end
-
     it "loads Gem::Specification" do
-      gem_spec = Gem::Specification.new("name", "3.7.2")
+      gem_spec = Gem::Specification.new do |s|
+        s.name = "bundler"
+        s.version = Gem::Version.new("2.4.7")
+        s.installed_by_version = Gem::Version.new("0")
+        s.authors = ["André Arko",
+                     "Samuel Giddins",
+                     "Colby Swandale",
+                     "Hiroshi Shibata",
+                     "David Rodríguez",
+                     "Grey Baker",
+                     "Stephanie Morillo",
+                     "Chris Morris",
+                     "James Wen",
+                     "Tim Moore",
+                     "André Medeiros",
+                     "Jessica Lynn Suttles",
+                     "Terence Lee",
+                     "Carl Lerche",
+                     "Yehuda Katz"]
+        s.date = Time.utc(2023, 2, 15)
+        s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
+        s.email = ["team@bundler.io"]
+        s.homepage = "https://bundler.io"
+        s.metadata = { "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
+                       "changelog_uri" => "https://github.com/rubygems/rubygems/blob/master/bundler/CHANGELOG.md",
+                       "homepage_uri" => "https://bundler.io/",
+                       "source_code_uri" => "https://github.com/rubygems/rubygems/tree/master/bundler" }
+        s.require_paths = ["lib"]
+        s.required_ruby_version = Gem::Requirement.new([">= 2.6.0"])
+        s.required_rubygems_version = Gem::Requirement.new([">= 3.0.1"])
+        s.rubygems_version = "3.4.7"
+        s.specification_version = 4
+        s.summary = "The best way to manage your application's dependencies"
+        s.license = false
+      end
       data = Marshal.dump(gem_spec)
       expect(Bundler.safe_load_marshal(data)).to eq(gem_spec)
     end

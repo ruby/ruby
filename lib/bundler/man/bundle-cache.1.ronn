@@ -10,7 +10,7 @@ alias: `package`, `pack`
 ## DESCRIPTION
 
 Copy all of the `.gem` files needed to run the application into the
-`vendor/cache` directory. In the future, when running [bundle install(1)][bundle-install],
+`vendor/cache` directory. In the future, when running [`bundle install(1)`](bundle-install.1.html),
 use the gems in the cache in preference to the ones on `rubygems.org`.
 
 ## GIT AND PATH GEMS
@@ -29,7 +29,7 @@ bundler configuration.
 
 ## REMOTE FETCHING
 
-By default, if you run `bundle install(1)`](bundle-install.1.html) after running
+By default, if you run [`bundle install(1)`](bundle-install.1.html) after running
 [bundle cache(1)](bundle-cache.1.html), bundler will still connect to `rubygems.org`
 to check whether a platform-specific gem exists for any of the gems
 in `vendor/cache`.
