@@ -84,7 +84,7 @@ module Bundler
       "BUNDLE_REDIRECT" => 5,
       "BUNDLE_RETRY" => 3,
       "BUNDLE_TIMEOUT" => 10,
-      "BUNDLE_VERSION" => "local",
+      "BUNDLE_VERSION" => "lockfile",
     }.freeze
 
     def initialize(root = nil)
