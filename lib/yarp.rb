@@ -141,6 +141,27 @@ module YARP
     end
   end
 
+  # A class that knows how to walk down the tree. None of the individual visit
+  # methods are implemented on this visitor, so it forces the consumer to
+  # implement each one that they need. For a default implementation that
+  # continues walking the tree, see the Visitor class.
+  class BasicVisitor
+    def visit(node)
+      node&.accept(self)
+    end
+
+    def visit_all(nodes)
+      nodes.map { |node| visit(node) }
+    end
+
+    def visit_child_nodes(node)
+      visit_all(node.child_nodes)
+    end
+  end
+
+  class Visitor < BasicVisitor
+  end
+
   # This represents the result of a call to ::parse or ::parse_file. It contains
   # the AST, any comments that were encounters, and any errors that were
   # encountered.
@@ -165,6 +186,44 @@ module YARP
 
     def failure?
       !success?
+    end
+
+    class MarkNewlinesVisitor < YARP::Visitor
+      def initialize(newline_marked)
+        @newline_marked = newline_marked
+      end
+
+      def visit_block_node(node)
+        old_newline_marked = @newline_marked
+        @newline_marked = Array.new(old_newline_marked.size, false)
+        begin
+          super(node)
+        ensure
+          @newline_marked = old_newline_marked
+        end
+      end
+      alias_method :visit_lambda_node, :visit_block_node
+
+      def visit_if_node(node)
+        node.set_newline_flag(@newline_marked)
+        super(node)
+      end
+      alias_method :visit_unless_node, :visit_if_node
+
+      def visit_statements_node(node)
+        node.body.each do |child|
+          child.set_newline_flag(@newline_marked)
+        end
+        super(node)
+      end
+    end
+    private_constant :MarkNewlinesVisitor
+
+    def mark_newlines
+      newline_marked = Array.new(1 + @source.offsets.size, false)
+      visitor = MarkNewlinesVisitor.new(newline_marked)
+      value.accept(visitor)
+      value
     end
   end
 
@@ -207,10 +266,23 @@ module YARP
   class Node
     attr_reader :location
 
+    def newline?
+      @newline ? true : false
+    end
+
+    def set_newline_flag(newline_marked)
+      line = location.start_line
+      unless newline_marked[line]
+        newline_marked[line] = true
+        @newline = true
+      end
+    end
+
     def pretty_print(q)
       q.group do
         q.text(self.class.name.split("::").last)
         location.pretty_print(q)
+        q.text("[Li:#{location.start_line}]") if newline?
         q.text("(")
         q.nest(2) do
           deconstructed = deconstruct_keys([])
@@ -222,6 +294,12 @@ module YARP
         q.breakable("")
         q.text(")")
       end
+    end
+  end
+
+  class BeginNode < Node
+    def set_newline_flag(newline_marked)
+      # Never marking BeginNode, mark the StatementsNode statements instead
     end
   end
 
