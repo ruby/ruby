@@ -240,14 +240,14 @@ should be considered for matching:
 
 Flag File::FNM_EXTGLOB flag enables the pattern extension
 <tt>'{_a_,_b_}'</tt>, which matches pattern _a_ and pattern _b_;
-  behaves like
-  a {regexp union}[https://docs.ruby-lang.org/en/master/Regexp.html#method-c-union]
-  (e.g., <tt>'(?:_a_|_b_)'</tt>):
+behaves like
+a {regexp union}[https://docs.ruby-lang.org/en/master/Regexp.html#method-c-union]
+(e.g., <tt>'(?:_a_|_b_)'</tt>):
 
-    pattern = '{LEGAL,BSDL}'
-    Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
-    Pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
-    pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
+  pattern = '{LEGAL,BSDL}'
+  Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
+  Pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
+  pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
 
 ==== Flag File::FNM_NOESCAPE
 
