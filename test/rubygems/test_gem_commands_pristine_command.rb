@@ -545,7 +545,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       fp.puts "puts __FILE__"
     end
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |fp|
-      fp.puts "puts __FILE__"
+      fp.puts "# do nothing"
     end
     write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"

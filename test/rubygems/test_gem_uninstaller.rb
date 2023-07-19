@@ -172,7 +172,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def test_remove_plugins
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
-      io.write "puts __FILE__"
+      io.write "# do nothing"
     end
 
     @spec.files += %w[lib/rubygems_plugin.rb]
@@ -189,7 +189,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def test_remove_plugins_with_install_dir
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
-      io.write "puts __FILE__"
+      io.write "# do nothing"
     end
 
     @spec.files += %w[lib/rubygems_plugin.rb]
@@ -207,7 +207,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def test_regenerate_plugins_for
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
-      io.write "puts __FILE__"
+      io.write "# do nothing"
     end
 
     @spec.files += %w[lib/rubygems_plugin.rb]
@@ -634,7 +634,7 @@ create_makefile '#{@spec.name}'
 
   def test_uninstall_keeps_plugins_up_to_date
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
-      io.write "puts __FILE__"
+      io.write "# do nothing"
     end
 
     plugin_path = File.join Gem.plugindir, "a_plugin.rb"

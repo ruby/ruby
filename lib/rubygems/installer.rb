@@ -342,6 +342,8 @@ class Gem::Installer
 
     Gem::Specification.add_spec(spec)
 
+    load_plugin
+
     run_post_install_hooks
 
     spec
@@ -1001,5 +1003,18 @@ TEXT
     else
       ""
     end
+  end
+
+  def load_plugin
+    specs = Gem::Specification.find_all_by_name(spec.name)
+    # If old version already exists, this plugin isn't loaded
+    # immediately. It's for avoiding a case that multiple versions
+    # are loaded at the same time.
+    return unless specs.size == 1
+
+    plugin_files = spec.plugins.map do |plugin|
+      File.join(@plugins_dir, "#{spec.name}_plugin#{File.extname(plugin)}")
+    end
+    Gem.load_plugin_files(plugin_files)
   end
 end

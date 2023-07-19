@@ -26,6 +26,7 @@ module Bundler
     KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten.freeze
 
     ENVIRONMENT_VERSION_SECTIONS = [BUNDLED, RUBY].freeze
+    deprecate_constant(:ENVIRONMENT_VERSION_SECTIONS)
 
     def self.sections_in_lockfile(lockfile_contents)
       lockfile_contents.scan(/^\w[\w ]*$/).uniq

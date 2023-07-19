@@ -39,6 +39,39 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle :install
       expect(the_bundle).to include_gems "rack 1.0"
     end
+
+    it "installs gems by default to vendor/bundle" do
+      bundle :lock
+      bundle "install --deployment"
+      expect(out).to include("vendor/bundle")
+    end
+
+    it "installs gems to custom path if specified" do
+      bundle :lock
+      bundle "install --path vendor/bundle2 --deployment"
+      expect(out).to include("vendor/bundle2")
+    end
+
+    it "works with the --frozen flag" do
+      bundle :lock
+      bundle "install --frozen"
+    end
+
+    it "explodes with the --deployment flag if you make a change and don't check in the lockfile" do
+      bundle :lock
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+        gem "rack-obama"
+      G
+
+      bundle "install --deployment", :raise_on_error => false
+      expect(err).to include("deployment mode")
+      expect(err).to include("You have added to the Gemfile")
+      expect(err).to include("* rack-obama")
+      expect(err).not_to include("You have deleted from the Gemfile")
+      expect(err).not_to include("You have changed in the Gemfile")
+    end
   end
 
   it "still works if you are not in the app directory and specify --gemfile" do
@@ -202,29 +235,35 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "install"
     end
 
-    it "installs gems by default to vendor/bundle", :bundler => "< 3" do
-      bundle "install --deployment"
+    it "installs gems by default to vendor/bundle" do
+      bundle "config set deployment true"
+      bundle "install"
       expect(out).to include("vendor/bundle")
     end
 
-    it "installs gems to custom path if specified", :bundler => "< 3" do
-      bundle "install --path vendor/bundle2 --deployment"
+    it "installs gems to custom path if specified" do
+      bundle "config set path vendor/bundle2"
+      bundle "config set deployment true"
+      bundle "install"
       expect(out).to include("vendor/bundle2")
     end
 
-    it "works with the --deployment flag if you didn't change anything", :bundler => "< 3" do
-      bundle "install --deployment"
+    it "installs gems to custom path if specified, even when configured through ENV" do
+      bundle "config set deployment true"
+      bundle "install", :env => { "BUNDLE_PATH" => "vendor/bundle2" }
+      expect(out).to include("vendor/bundle2")
     end
 
-    it "works with the --frozen flag if you didn't change anything", :bundler => "< 3" do
-      bundle "install --frozen"
+    it "works with the `frozen` setting" do
+      bundle "config set frozen true"
+      bundle "install"
     end
 
     it "works with BUNDLE_FROZEN if you didn't change anything" do
       bundle :install, :env => { "BUNDLE_FROZEN" => "true" }
     end
 
-    it "explodes with the --deployment flag if you make a change and don't check in the lockfile" do
+    it "explodes with the `deployment` setting if you make a change and don't check in the lockfile" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -285,7 +324,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("The path `#{lib_path("path_gem-1.0")}` does not exist.")
     end
 
-    it "can have --frozen set via an environment variable", :bundler => "< 3" do
+    it "can have --frozen set via an environment variable" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -317,13 +356,13 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).not_to include("You have changed in the Gemfile")
     end
 
-    it "installs gems by default to vendor/bundle when deployment mode is set via an environment variable", :bundler => "< 3" do
+    it "installs gems by default to vendor/bundle when deployment mode is set via an environment variable" do
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       bundle "install"
       expect(out).to include("vendor/bundle")
     end
 
-    it "installs gems to custom path when deployment mode is set via an environment variable ", :bundler => "< 3" do
+    it "installs gems to custom path when deployment mode is set via an environment variable " do
       ENV["BUNDLE_DEPLOYMENT"] = "true"
       ENV["BUNDLE_PATH"] = "vendor/bundle2"
       bundle "install"
