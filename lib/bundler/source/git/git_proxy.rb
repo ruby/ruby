@@ -67,8 +67,8 @@ module Bundler
         end
 
         def current_branch
-          @current_branch ||= allowed_with_path do
-            git("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
+          @current_branch ||= with_path do
+            git_local("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
           end
         end
 
@@ -84,7 +84,7 @@ module Bundler
         end
 
         def full_version
-          @full_version ||= git("--version").sub(/git version\s*/, "").strip
+          @full_version ||= git_local("--version").sub(/git version\s*/, "").strip
         end
 
         def checkout
@@ -253,15 +253,15 @@ module Bundler
         end
 
         def git(*command, dir: nil)
-          command_with_no_credentials = check_allowed(command)
+          run_command(*command, :dir => dir) do |unredacted_command|
+            check_allowed(unredacted_command)
+          end
+        end
 
-          out, err, status = capture(command, dir)
-
-          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, err) unless status.success?
-
-          Bundler.ui.warn err unless err.empty?
-
-          out
+        def git_local(*command, dir: nil)
+          run_command(*command, :dir => dir) do |unredacted_command|
+            redact_and_check_presence(unredacted_command)
+          end
         end
 
         def has_revision_cached?
@@ -330,10 +330,28 @@ module Bundler
         end
 
         def check_allowed(command)
-          require "shellwords"
-          command_with_no_credentials = URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
+          command_with_no_credentials = redact_and_check_presence(command)
           raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
           command_with_no_credentials
+        end
+
+        def redact_and_check_presence(command)
+          raise GitNotInstalledError.new unless Bundler.git_present?
+
+          require "shellwords"
+          URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
+        end
+
+        def run_command(*command, dir: nil)
+          command_with_no_credentials = yield(command)
+
+          out, err, status = capture(command, dir)
+
+          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, err) unless status.success?
+
+          Bundler.ui.warn err unless err.empty?
+
+          out
         end
 
         def capture(cmd, dir, ignore_err: false)

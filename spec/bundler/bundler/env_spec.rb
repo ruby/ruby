@@ -217,7 +217,7 @@ RSpec.describe Bundler::Env do
 
     context "when the git version is OS specific" do
       it "includes OS specific information with the version number" do
-        expect(git_proxy_stub).to receive(:git).with("--version").
+        expect(git_proxy_stub).to receive(:git_local).with("--version").
           and_return("git version 1.2.3 (Apple Git-BS)")
         expect(Bundler::Source::Git::GitProxy).to receive(:new).and_return(git_proxy_stub)
 

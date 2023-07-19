@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GEMFILE" "5" "February 2023" "" ""
+.TH "GEMFILE" "5" "July 2023" "" ""
 .
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
@@ -702,7 +702,7 @@ If you wish to use Bundler to help install dependencies for a gem while it is be
 The \fBgemspec\fR method adds any runtime dependencies as gem requirements in the default group\. It also adds development dependencies as gem requirements in the \fBdevelopment\fR group\. Finally, it adds a gem requirement on your project (\fBpath: \'\.\'\fR)\. In conjunction with \fBBundler\.setup\fR, this allows you to require project files in your test code as you would if the project were installed as a gem; you need not manipulate the load path manually or require project files via relative paths\.
 .
 .P
-The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR, and \fB:development_group\fR options, which control where bundler looks for the \fB\.gemspec\fR, the glob it uses to look for the gemspec (defaults to: "{,\fI,\fR/*}\.gemspec"), what named \fB\.gemspec\fR it uses (if more than one is present), and which group development dependencies are included in\.
+The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR, and \fB:development_group\fR options, which control where bundler looks for the \fB\.gemspec\fR, the glob it uses to look for the gemspec (defaults to: \fB{,*,*/*}\.gemspec\fR), what named \fB\.gemspec\fR it uses (if more than one is present), and which group development dependencies are included in\.
 .
 .P
 When a \fBgemspec\fR dependency encounters version conflicts during resolution, the local version under development will always be selected \-\- even if there are remote versions that better match other requirements for the \fBgemspec\fR gem\.

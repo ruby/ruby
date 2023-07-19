@@ -394,8 +394,8 @@ module Bundler
         lock_source = lock_dep.source || sources.default_source
         next if lock_source.include?(gemfile_source)
 
-        gemfile_source_name = dep.source ? gemfile_source.identifier : "no specified source"
-        lockfile_source_name = lock_dep.source ? lock_source.identifier : "no specified source"
+        gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
+        lockfile_source_name = lock_dep.source ? lock_source.to_gemfile : "no specified source"
         changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
       end
 
@@ -700,7 +700,7 @@ module Bundler
       return if @dependency_changes
 
       current_dependencies.find do |d|
-        @locked_specs[d.name].empty?
+        @locked_specs[d.name].empty? && d.name != "bundler"
       end&.name
     end
 
@@ -941,6 +941,7 @@ module Bundler
                 Bundler.local_platform == Gem::Platform::RUBY ||
                 !platforms.include?(Gem::Platform::RUBY) ||
                 (@new_platform && platforms.last == Gem::Platform::RUBY) ||
+                @path_changes ||
                 @dependency_changes ||
                 !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
 
