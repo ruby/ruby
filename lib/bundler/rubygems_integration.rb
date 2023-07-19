@@ -226,6 +226,8 @@ module Bundler
     end
 
     def replace_require(specs)
+      return if ::Kernel.respond_to?(:no_warning_require)
+
       bundled_gems = %w[
         abbrev observer getoptlong resolv-replace rinda
         nkf syslog drb mutex_m csv base64
