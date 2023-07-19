@@ -186,6 +186,41 @@ class Gem::HTTPResponseFactory
   end
 end
 
+##
+# A Gem::MockBrowser is used in tests to mock a browser in that it can
+# send HTTP requests to the defined URI.
+#
+# Example:
+#
+#   # Sends a get request to http://localhost:5678
+#   Gem::MockBrowser.get URI("http://localhost:5678")
+#
+# See RubyGems' tests for more examples of MockBrowser.
+#
+
+class Gem::MockBrowser
+  def self.options(uri)
+    options = Net::HTTP::Options.new(uri)
+    Net::HTTP.start(uri.hostname, uri.port) do |http|
+      http.request(options)
+    end
+  end
+
+  def self.get(uri)
+    get = Net::HTTP::Get.new(uri)
+    Net::HTTP.start(uri.hostname, uri.port) do |http|
+      http.request(get)
+    end
+  end
+
+  def self.post(uri)
+    post = Net::HTTP::Post.new(uri)
+    Net::HTTP.start(uri.hostname, uri.port) do |http|
+      http.request(post)
+    end
+  end
+end
+
 # :stopdoc:
 class Gem::RemoteFetcher
   def self.fetcher=(fetcher)

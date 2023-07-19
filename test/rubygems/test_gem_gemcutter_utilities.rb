@@ -230,10 +230,77 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
-  def util_sign_in(response, host = nil, args = [], extra_input = "")
-    email            = "you@example.com"
-    password         = "secret"
-    profile_response = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+  def test_sign_in_with_webauthn_enabled
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication"
+    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    port = 5678
+    server = TCPServer.new(port)
+
+    TCPServer.stub(:new, server) do
+      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+        util_sign_in(proc do
+          @call_count ||= 0
+          if (@call_count += 1).odd?
+            HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+          else
+            HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+          end
+        end, nil, [], "", webauthn_verification_url)
+      end
+    ensure
+      server.close
+    end
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
+  end
+
+  def test_sign_in_with_webauthn_enabled_with_error
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication"
+    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    port = 5678
+    server = TCPServer.new(port)
+    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+
+    error = assert_raise Gem::MockGemUi::TermError do
+      TCPServer.stub(:new, server) do
+        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+          util_sign_in(proc do
+            @call_count ||= 0
+            if (@call_count += 1).odd?
+              HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+            else
+              HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+            end
+          end, nil, [], "", webauthn_verification_url)
+        end
+      ensure
+        server.close
+      end
+    end
+    assert_equal 1, error.exit_code
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "ERROR:  Security device verification failed: Something went wrong", @sign_in_ui.error
+    refute_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
+    refute_match "Signed in with API key:", @sign_in_ui.output
+  end
+
+  def util_sign_in(response, host = nil, args = [], extra_input = "", webauthn_url = nil)
+    email             = "you@example.com"
+    password          = "secret"
+    profile_response  = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+    webauthn_response =
+      if webauthn_url
+        HTTPResponseFactory.create(body: webauthn_url, code: 200, msg: "OK")
+      else
+        HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
+      end
 
     if host
       ENV["RUBYGEMS_HOST"] = host
@@ -244,6 +311,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @fetcher = Gem::FakeFetcher.new
     @fetcher.data["#{host}/api/v1/api_key"] = response
     @fetcher.data["#{host}/api/v1/profile/me.yaml"] = profile_response
+    @fetcher.data["#{host}/api/v1/webauthn_verification"] = webauthn_response
     Gem::RemoteFetcher.fetcher = @fetcher
 
     @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)
