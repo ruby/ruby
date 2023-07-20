@@ -233,6 +233,7 @@ module Bundler
       [kernel, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
         kernel_class.send(:define_method, :require) do |file|
+          file.tr!("/", "-")
           if (::Gem::BUNDLED_GEMS.keys - specs.to_a.map(&:name)).include?(file)
             target_file = begin
                             Bundler.default_gemfile.basename

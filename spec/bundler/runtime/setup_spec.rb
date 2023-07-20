@@ -1547,8 +1547,12 @@ end
   end
 
   it "warn with bundled gems when it's loaded" do
+    build_repo4 do
+      build_gem "rack"
+    end
+
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
 
@@ -1561,9 +1565,12 @@ end
   end
 
   it "don't warn with bundled gems when it's declared in Gemfile" do
+    build_repo4 do
+      build_gem "csv"
+    end
+
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "#{file_uri_for(gem_repo4)}"
       gem "csv"
     G
 
@@ -1573,5 +1580,29 @@ end
     R
 
     expect(err).to be_empty
+  end
+
+  it "warn foo-bar style gems correct name" do
+    build_repo4 do
+      build_gem "net-imap" do |s|
+        s.write "lib/net/imap.rb", "NET_IMAP = '0.0.1'"
+      end
+      build_gem "csv"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "csv"
+    G
+
+    ruby <<-R
+      require 'bundler/setup'
+      begin
+        require 'net/imap'
+      rescue LoadError
+      end
+    R
+
+    expect(err).to include("net-imap is not part of the default gems")
   end
 end
