@@ -5050,10 +5050,13 @@ module YARP
   # Represents a rescue statement.
   #
   #     begin
-  #     rescue
-  #       foo
+  #     rescue Foo, *splat, Bar => ex
   #     ^^^^^^
+  #       foo
   #     end
+  #
+  # `Foo, *splat, Bar` are in the `exceptions` field.
+  # `ex` is in the `exception` field.
   class RescueNode < Node
     # attr_reader keyword_loc: Location
     attr_reader :keyword_loc
