@@ -27,6 +27,7 @@ module Spec
         build_gem "git"
         build_gem "puma"
         build_gem "minitest"
+        build_gem "csv"
 
         build_gem "rack", %w[0.9.1 1.0.0] do |s|
           s.executables = "rackup"
