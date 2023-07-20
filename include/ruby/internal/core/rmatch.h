@@ -68,7 +68,7 @@ struct rmatch_offset {
 };
 
 /** Represents a match. */
-struct rmatch {
+struct rb_matchext_struct {
     /**
      * "Registers"  of a  match.   This  is a  quasi-opaque  struct that  holds
      * execution result of a match.  Roughly resembles `&~`.
@@ -81,6 +81,8 @@ struct rmatch {
     /** Number of ::rmatch_offset that ::rmatch::char_offset holds. */
     int char_offset_num_allocated;
 };
+
+typedef struct rb_matchext_struct rb_matchext_t;
 
 /**
  * Regular expression  execution context.  When a  regular expression "matches"
@@ -102,15 +104,12 @@ struct RMatch {
     VALUE str;
 
     /**
-     * The result of this match.
-     */
-    struct rmatch *rmatch;
-
-    /**
      * The expression of this match.
      */
     VALUE regexp;  /* RRegexp */
 };
+
+#define RMATCH_EXT(m) ((rb_matchext_t *)((char *)(m) + sizeof(struct RMatch)))
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
@@ -139,8 +138,7 @@ static inline struct re_registers *
 RMATCH_REGS(VALUE match)
 {
     RBIMPL_ASSERT_TYPE(match, RUBY_T_MATCH);
-    RBIMPL_ASSERT_OR_ASSUME(RMATCH(match)->rmatch != NULL);
-    return &RMATCH(match)->rmatch->regs;
+    return &RMATCH_EXT(match)->regs;
 }
 
 #endif /* RBIMPL_RMATCH_H */
