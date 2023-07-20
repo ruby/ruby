@@ -3510,7 +3510,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         break;
       case T_MATCH:
         {
-            struct rmatch *rm = &RMATCH_EXT(obj)->rmatch;
+            rb_matchext_t *rm = RMATCH_EXT(obj);
 #if USE_DEBUG_COUNTER
             if (rm->regs.num_regs >= 8) {
                 RB_DEBUG_COUNTER_INC(obj_match_ge8);
@@ -4841,7 +4841,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
         break;
       case T_MATCH:
         {
-            struct rmatch *rm = &RMATCH_EXT(obj)->rmatch;
+            rb_matchext_t *rm = RMATCH_EXT(obj);
             size += onig_region_memsize(&rm->regs);
             size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
         }
