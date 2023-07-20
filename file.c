@@ -7054,10 +7054,10 @@ const char ruby_null_device[] =
  *  When mode is an integer it must be one or more of the following constants,
  *  which may be combined by the bitwise OR operator <tt>|</tt>:
  *
- *  - +File::RDONLY+: Open for reading only.
- *  - +File::WRONLY+: Open for writing only.
- *  - +File::RDWR+: Open for reading and writing.
- *  - +File::APPEND+: Open for appending only.
+ *  - +File::RDONLY: Open for reading only.
+ *  - +File::WRONLY: Open for writing only.
+ *  - +File::RDWR: Open for reading and writing.
+ *  - +File::APPEND: Open for appending only.
  *
  *  Examples:
  *
@@ -7070,8 +7070,8 @@ const char ruby_null_device[] =
  *
  *  These constants may also be ORed into the integer mode:
  *
- *  - +File::CREAT+: Create file if it does not exist.
- *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
+ *  - +File::CREAT: Create file if it does not exist.
+ *  - +File::EXCL: Raise an exception if +File::CREAT is given and the file exists.
  *
  *  === \Data Mode Specified as an \Integer
  *
@@ -7079,10 +7079,10 @@ const char ruby_null_device[] =
  *  When the stream access mode is given as an integer,
  *  the data mode is always text, never binary.
  *
- *  Note that although there is a constant +File::BINARY+,
+ *  Note that although there is a constant +File::BINARY,
  *  setting its value in an integer stream mode has no effect;
  *  this is because, as documented in File::Constants,
- *  the +File::BINARY+ value disables line code conversion,
+ *  the +File::BINARY value disables line code conversion,
  *  but does not change the external encoding.
  *
  *  === Encodings
@@ -7431,93 +7431,395 @@ Init_File(void)
     /*
      * Document-module: File::Constants
      *
-     * File::Constants provides file-related constants.  All possible
-     * file constants are listed in the documentation but they may not all
-     * be present on your platform.
+     * \Module \File::Constants defines file-related constants.
      *
-     * If the underlying platform doesn't define a constant the corresponding
-     * Ruby constant is not defined.
+     * There are two families of constants here:
      *
-     * Your platform documentations (e.g. man open(2)) may describe more
-     * detailed information.
+     * - Those having to do with {file access}[rdoc-ref:File::Constants@File+Access].
+     * - Those having to do with {file globbing}[rdoc-ref:File::Constants@File+Globbing].
+     *
+     * \File constants defined for the local process may be retrieved
+     * with method File::Constants.constants:
+     *
+     *   File::Constants.constants.take(5)
+         # => [:RDONLY, :WRONLY, :RDWR, :APPEND, :CREAT]
+     *
+     * == \File Access
+     *
+     * \File-access constants may be used with optional argument +mode+ in calls
+     * to the following methods:
+     *
+     * - File.new.
+     * - File.open.
+     * - IO.for_fd.
+     * - IO.new.
+     * - IO.open.
+     * - IO.popen.
+     * - IO.reopen.
+     * - IO.sysopen.
+     * - StringIO.new.
+     * - StringIO.open.
+     * - StringIO#reopen.
+     *
+     * === Read/Write Access
+     *
+     * Read-write access for a stream
+     * may be specified by a file-access constant.
+     *
+     * The constant may be specified as part of a bitwise OR of other such constants.
+     *
+     * Any combination of the constants in this section may be specified.
+     *
+     * ==== File::RDONLY
+     *
+     * Flag File::RDONLY specifies the the stream should be opened for reading only:
+     *
+     *   filepath = '/tmp/t.tmp'
+     *   f = File.new(filepath, File::RDONLY)
+     *   f.write('Foo') # Raises IOError (not opened for writing).
+     *
+     * ==== File::WRONLY
+     *
+     * Flag File::WRONLY specifies that the stream should be opened for writing only:
+     *
+     *   f = File.new(filepath, File::WRONLY)
+     *   f.read # Raises IOError (not opened for reading).
+     *
+     * ==== File::RDWR
+     *
+     * Flag File::RDWR specifies that the stream should be pened
+     * for both reading and writing:
+     *
+     *   f = File.new(filepath, File::RDWR)
+     *   f.write('Foo') # => 3
+     *   f.rewind       # => 0
+     *   f.read         # => "Foo"
+     *
+     * === \File Positioning
+     *
+     * ==== File::APPEND
+     *
+     * Flag File::APPEND specifies that the stream should be opened
+     * in append mode.
+     *
+     * Before each write operation, the position is set to end-of-stream.
+     * The modification of the position and the following write operation
+     * are performed as a single atomic step.
+     *
+     * ==== File::TRUNC
+     *
+     * Flag File::TRUNC specifies that the stream should be truncated
+     * at its beginning.
+     * If the file exists and is successfully opened for writing,
+     * it is to be truncated to position zero;
+     * its ctime and mtime are updated.
+     *
+     * There is no effect on a FIFO special file or a terminal device.
+     * The effect on other file types is implementation-defined.
+     * The result of using File::TRUNC with File::RDONLY is undefined.
+     *
+     * === Creating and Preserving
+     *
+     * ==== File::CREAT
+     *
+     * Flag File::CREAT specifies that the stream should be created
+     * if it does not already exist.
+     *
+     * If the file exists:
+     *
+     *   - Raise an exception if File::EXCL is also specified.
+     *   - Otherwise, do nothing.
+     *
+     *
+     * If the file does not exist, create it.
+     * Upon successful completion, the atime, ctime, and mtime of the file are updated,
+     * and the ctime and mtime of the parent directory are updated.
+     *
+     * May be used with optional argument +mode+ in calls to:
+     *
+     * - File.new.
+     * - File.open.
+     *
+     * ==== File::EXCL
+     *
+     * Flag File::EXCL specifies that the stream should not already exist;
+     * If flags File::CREAT and File::EXCL are both specified
+     * and the stream already exists, an exception is raised.
+     *
+     * The checks for the existence of the file and for the creation of the file
+     * are atomic with respect to other threads executing accessing the same path
+     * in the same directory with File::EXCL and File::CREAT specified.
+     *
+     * If both File::EXCL and File::CREAT are specified and path names a symbolic link,
+     * an exception is raised regardless of the contents of the symbolic link.
+     *
+     * If File::EXCL is specified and File::CREAT is not specified,
+     * the result is undefined.
+     *
+     * === Locking
+     *
+     * Four file constants relate to stream locking;
+     * see File#flock:
+     *
+     * ==== File::LOCK_EX
+     *
+     * Flag File::LOCK_EX specifies an exclusive lock;
+     * only one process a a time may lock the stream.
+
+     * ==== File::LOCK_NB
+     *
+     * Flag File::LOCK_NB specifies non-blocking locking for the stream;
+     * may be combined with File::LOCK_EX or File::LOCK_SH.
+     *
+     * ==== File::LOCK_SH
+     *
+     * Flag File::LOCK_SH specifies that multiple processes may lock
+     * the stream at the same time.
+     *
+     * ==== File::LOCK_UN
+     *
+     * Flag File::LOCK_UN specifies that the stream is not to be locked.
+     *
+     * === Posix \File \Constants
+     *
+     * Some file-access constants are defined only on Posix-compliant systems;
+     * those are:
+     *
+     * - File::DIRECT.
+     * - File::DSYNC.
+     * - File::NOATIME.
+     * - File::NOCTTY.
+     * - File::NOFOLLOW.
+     * - File::RSYNC.
+     * - File::SYNC.
+     * - File::TMPFILE.
+     *
+     * ==== File::RSYNC
+     *
+     * Flag File::RSYNC specifies that read operations on the stream
+     * complete at the same level of integrity as specified by
+     * flags File::DSYNC and File::SYNC flags.
+     * If both File::DSYNC and File::RSYNC are specified,
+     * operations on the stream complete as defined
+     * by synchronized I/O data integrity completion.
+     * If both File::SYNC and File::RSYNC are specified,
+     * operations on the stream complete
+     * as defined by synchronized I/O file integrity completion.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::SYNC
+     *
+     * Flag File::SYNC specifies that write operations on the stream
+     * complete at the same level of integrity as specified
+     * by synchronized I/O file integrity completion.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::DSYNC
+     *
+     * Write operations for the stream complete as defined by synchronized I/O.
+     * Data integrity completion.
+     *
+     * If both the File::SYNC and File::DSYNC are specified,
+     * the effect is as if only the File::SYNC flag was specified.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::NOCTTY
+     *
+     * Flag File::NOCTTY specifies that if the stram is a terminal device,
+     * that device does not become the controlling terminal for the process.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::DIRECT.
+     *
+     * Flag File::DIRECT requests that cache effects of the I/O to and from the stream
+     * be minimized.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::NOATIME.
+     *
+     * Flag File::NOATIME specifies that act of opening the stream
+     * should not modify its access time (atime).
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::NOFOLLOW.
+     *
+     * Flag File::NOFOLLOW specifies that if path is a symbolic link,
+     * it should not be followed.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * ==== File::TMPFILE.
+     *
+     * Flag File::TMPFILE specifies that the opened stream
+     * should be a new temporary file.
+     *
+     * Defined only for POSIX-compliant systems.
+     *
+     * === Other File-Access \Constants
+     *
+     * ==== File::NONBLOCK
+     *
+     * When opening a FIFO with flags File::RDONLY or File::WRONLY:
+     *
+     * - If File::NONBLOCK is specified,
+     *   a read-only opened stream returns without delay.
+     *   A write-only opened stream returns an error
+     *   if no process currently has the file open for reading.
+     *
+     * - If File::NONBLOCK is not specified,
+     *   read-only opened stream blocks the calling thread
+     *   until a thread opens the file for writing.
+     *   A write-only stream blocks the calling thread until a thread opens the file
+     *   for reading.
+     *
+     * When opening a block special or character special file
+     * that supports non-blocking opens:
+     *
+     * - If File::NONBLOCK is specified, the opened stream returns without blocking
+     *   for the device to be ready or available.
+     *   Subsequent behavior of the device is device-specific.
+     *
+     * - If File::NONBLOCK is not specified, opened stream blocks the calling thread
+     *   until the device is ready or available before returning.
+     *
+     * - Otherwise, the behavior of File::NONBLOCK is unspecified.
+     *
+     * If path refers to a {STREAMS device}[https://en.wikipedia.org/wiki/STREAMS],
+     * the flags may be constructed from File::NONBLOCK
+     * along with File::RDONLYj, File::WRONLY, or File::RDWR.
+     * Other flags values have no effect on STREAMS devices.
+     *
+     * For a STREAMS device, the implementation of File::NONBLOCK is device-specific.
+     *
+     * ==== File::BINARY
+     *
+     * Flag File::BINARY specifies that the stream is to be accessed in binary mode;
+     * see {Data Mode}[rdoc-ref:File@Data+Mode].
+     *
+     * ==== File::NULL
+     *
+     * Flag File::NULL contains the string value of the null device:
+     *
+     * - On a Unix-like OS, <tt>'/dev/null'</tt>.
+     * - On Windows, <tt>'NUL'</tt>.
+     *
+     * ==== File::SHARE_DELETE
+     *
+     * Flag File::SHARE_DELETE enables other processes to open the stream
+     * with delete access.
+     *
+     * If the stream is opened for (local) delete access without File::SHARE_DELETE,
+     * and another process attempts to open it with delete access,
+     * the attempt fails and the stream is not opened for that process.
+     *
+     * == Filename Globbing \Constants (File::FNM_*)
+     *
+     * Filename-globbing constants may be used with optional argument +flags+
+     * in calls to the following methods:
+     *
+     * - Dir.glob.
+     * - File.fnmatch.
+     * - Pathname#fnmatch.
+     * - Pathname.glob.
+     * - Pathname#glob.
+     *
+     * The constants are:
+     *
+     * ==== File::FNM_CASEFOLD
+
+     * Flag File::FNM_CASEFOLD makes patterns case insensitive
+     * for File.fnmatch (but not Dir.glob).
+     *
+     * ==== File::FNM_DOTMATCH
+     *
+     * Flag File::FNM_DOTMATCH makes the <tt>‘*’</tt> pattern
+     * match a filename starting with <tt>'.'</tt>.
+     *
+     * ==== File::FNM_EXTGLOB
+     *
+     * Flag File::FNM_EXTGLOB enables pattern <tt>'{a,b}'</tt>.
+     *
+     * ==== File::FNM_NOESCAPE
+     *
+     * Flag File::FNM_NOESCAPE disables <tt>'\'</tt> escaping.
+     *
+     * ==== File::FNM_PATHNAME
+     *
+     * Flag File::FNM_PATHNAME specifies that patterns <tt>'*'</tt> and <tt>'?'</tt>
+     * do not match the directory separator
+     * (the value of constant File::SEPARATOR).
+     *
+     * ==== File::FNM_SHORTNAME
+     *
+     * Flag File::FNM_SHORTNAME Allows patterns to match short names if they exist;
+     * Valid only on Windows.
+     *
+     * ==== File::FNM_SYSCASE
+     *
+     * Flag File::FNM_SYSCASE specifies that case sensitivity
+     * is the same as in the underlying operating system;
+     * effective for File.fnmatch, but not Dir.glob.
+     *
      */
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
     rb_include_module(rb_cIO, rb_mFConst);
-
-    /* open for reading only */
     rb_define_const(rb_mFConst, "RDONLY", INT2FIX(O_RDONLY));
-    /* open for writing only */
     rb_define_const(rb_mFConst, "WRONLY", INT2FIX(O_WRONLY));
-    /* open for reading and writing */
     rb_define_const(rb_mFConst, "RDWR", INT2FIX(O_RDWR));
-    /* append on each write */
     rb_define_const(rb_mFConst, "APPEND", INT2FIX(O_APPEND));
-    /* create file if it does not exist */
-    rb_define_const(rb_mFConst, "CREAT", INT2FIX(O_CREAT));
-    /* error if CREAT and the file exists */
+    rb_define_const(rb_mFConst, "CREAT", INT2FIX(CREAT));
     rb_define_const(rb_mFConst, "EXCL", INT2FIX(O_EXCL));
 #if defined(O_NDELAY) || defined(O_NONBLOCK)
 # ifndef O_NONBLOCK
 #   define O_NONBLOCK O_NDELAY
 # endif
-    /* do not block on open or for data to become available */
     rb_define_const(rb_mFConst, "NONBLOCK", INT2FIX(O_NONBLOCK));
 #endif
-    /* truncate size to 0 */
     rb_define_const(rb_mFConst, "TRUNC", INT2FIX(O_TRUNC));
 #ifdef O_NOCTTY
-    /* not to make opened IO the controlling terminal device */
     rb_define_const(rb_mFConst, "NOCTTY", INT2FIX(O_NOCTTY));
 #endif
 #ifndef O_BINARY
 # define  O_BINARY 0
 #endif
-    /* disable line code conversion */
     rb_define_const(rb_mFConst, "BINARY", INT2FIX(O_BINARY));
 #ifndef O_SHARE_DELETE
 # define O_SHARE_DELETE 0
 #endif
-    /* can delete opened file */
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
-#ifdef O_SYNC
-    /* any write operation perform synchronously */
-    rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));
+#ifdef O_TRUNC
+    rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_TRUNC));
 #endif
 #ifdef O_DSYNC
-    /* any write operation perform synchronously except some meta data */
     rb_define_const(rb_mFConst, "DSYNC", INT2FIX(O_DSYNC));
 #endif
 #ifdef O_RSYNC
-    /* any read operation perform synchronously. used with SYNC or DSYNC. */
     rb_define_const(rb_mFConst, "RSYNC", INT2FIX(O_RSYNC));
 #endif
 #ifdef O_NOFOLLOW
-    /* do not follow symlinks */
     rb_define_const(rb_mFConst, "NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
 #endif
 #ifdef O_NOATIME
-    /* do not change atime */
     rb_define_const(rb_mFConst, "NOATIME", INT2FIX(O_NOATIME)); /* Linux */
 #endif
 #ifdef O_DIRECT
-    /*  Try to minimize cache effects of the I/O to and from this file. */
     rb_define_const(rb_mFConst, "DIRECT", INT2FIX(O_DIRECT));
 #endif
 #ifdef O_TMPFILE
-    /* Create an unnamed temporary file */
     rb_define_const(rb_mFConst, "TMPFILE", INT2FIX(O_TMPFILE));
 #endif
 
-    /* shared lock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_SH", INT2FIX(LOCK_SH));
-    /* exclusive lock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_EX", INT2FIX(LOCK_EX));
-    /* unlock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_UN", INT2FIX(LOCK_UN));
-    /* non-blocking lock. used with LOCK_SH or LOCK_EX. see File#flock  */
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
-    /* Name of the null device */
     rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(ruby_null_device));
 
     rb_define_global_function("test", rb_f_test, -1);
