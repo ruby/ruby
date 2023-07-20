@@ -162,7 +162,7 @@ module RubyVM::YJIT
 
     # Number of instructions that finish executing in YJIT.
     # See :count-placement: about the subtraction.
-    retired_in_yjit = stats[:exec_instruction] - side_exits
+    retired_in_yjit = stats[:yjit_insns_count] - side_exits
 
     # Average length of instruction sequences executed by YJIT
     avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0
@@ -317,7 +317,7 @@ module RubyVM::YJIT
       out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
       out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count])
       out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
-      out.puts "exec_instruction:      " + format_number(13, stats[:exec_instruction])
+      out.puts "yjit_insns_count:      " + format_number(13, stats[:yjit_insns_count])
       out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
       out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
