@@ -236,7 +236,7 @@ def in_makefile(target, source)
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["#{File.dirname(target)}/depend", target2, source2]
-  when UNSTABLE_FILES
+  when *UNSTABLE_FILES
     warn "warning: ignoring: #{target}"
   else
     raise "unexpected target: #{target}"
