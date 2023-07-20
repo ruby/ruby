@@ -1555,4 +1555,33 @@ end
     sys_exec "#{Gem.ruby} #{script}", :raise_on_error => false
     expect(out).to include("requiring foo used the monkeypatch")
   end
+
+  it "warn with bundled gems when it's loaded" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    ruby <<-R
+      require 'bundler/setup'
+      require 'csv'
+    R
+
+    expect(err).to include("csv is not part of the bundle")
+  end
+
+  it "don't warn with bundled gems when it's declared in Gemfile" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+      gem "csv"
+    G
+
+    ruby <<-R
+      require 'bundler/setup'
+      require 'csv'
+    R
+
+    expect(err).to be_empty
+  end
 end
