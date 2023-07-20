@@ -65,14 +65,14 @@ class CFP(gdb.Command):
         self.print_stack(cfp, -1, self.frame_types(cfp, -1))
         print()
 
-        stack_size = int((self.get_int(f'{cfp}->sp') - self.get_int(f'{cfp}->__bp__')) / 8)
+        stack_size = int((self.get_int(f'{cfp}->sp') - self.get_int(f'vm_base_ptr({cfp})')) / 8)
         print(f'Stack (size={stack_size}):')
         for i in range(0, stack_size):
             self.print_stack(cfp, i, self.rp(cfp, i))
         print(self.regs(cfp, stack_size))
 
     def print_stack(self, cfp, bp_index, content):
-        address = self.get_int(f'{cfp}->__bp__ + {bp_index}')
+        address = self.get_int(f'vm_base_ptr({cfp}) + {bp_index}')
         value = self.get_value(cfp, bp_index)
         regs = self.regs(cfp, bp_index)
         if content:
@@ -81,9 +81,9 @@ class CFP(gdb.Command):
         print('{:2} 0x{:x} [{}] {}(0x{:x})'.format(regs, address, bp_index, content, value))
 
     def regs(self, cfp, bp_index):
-        address = self.get_int(f'{cfp}->__bp__ + {bp_index}')
+        address = self.get_int(f'vm_base_ptr({cfp}) + {bp_index}')
         regs = []
-        for reg, field in { 'EP': 'ep', 'BP': '__bp__', 'SP': 'sp' }.items():
+        for reg, field in { 'EP': 'ep', 'SP': 'sp' }.items():
             if address == self.get_int(f'{cfp}->{field}'):
                 regs.append(reg)
         return ' '.join(regs)
@@ -119,7 +119,7 @@ class CFP(gdb.Command):
         return ' | '.join(types)
 
     def get_value(self, cfp, bp_index):
-        return self.get_int(f'{cfp}->__bp__[{bp_index}]')
+        return self.get_int(f'vm_base_ptr({cfp})[{bp_index}]')
 
     def get_int(self, expr):
         return int(self.get_string(f'printf "%ld", ({expr})'))

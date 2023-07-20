@@ -4841,7 +4841,6 @@ fn gen_push_frame(
     //    .self       = recv,
     //    .ep         = <sp - 1>,
     //    .block_code = 0,
-    //    .__bp__     = sp,
     // };
     asm.comment("push callee control frame");
 
