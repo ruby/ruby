@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require_relative "multifactor_auth_fetcher"
+require_relative "multifactor_auth_utilities"
 require "rubygems/commands/owner_command"
 
 class TestGemCommandsOwnerCommand < Gem::TestCase
@@ -358,8 +358,7 @@ EOF
 
   def test_with_webauthn_enabled_success
     response_success = "Owner added successfully."
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
 
     @stub_fetcher.respond_with_require_otp("#{Gem.host}/api/v1/gems/freewill/owners", response_success)
     @stub_fetcher.respond_with_webauthn_url
@@ -370,11 +369,11 @@ EOF
           @cmd.add_owners("freewill", ["user-new1@example.com"])
         end
       end
-    ensure
-      server.close
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(port)} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
+      "you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @stub_fetcher.last_request["OTP"]
     assert_match response_success, @stub_ui.output
@@ -382,8 +381,7 @@ EOF
 
   def test_with_webauthn_enabled_failure
     response_success = "Owner added successfully."
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")
 
     @stub_fetcher.respond_with_require_otp("#{Gem.host}/api/v1/gems/freewill/owners", response_success)
@@ -395,12 +393,12 @@ EOF
           @cmd.add_owners("freewill", ["user-new1@example.com"])
         end
       end
-    ensure
-      server.close
     end
 
     assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(port)} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
+      "you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @stub_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     refute_match response_success, @stub_ui.output
@@ -408,8 +406,7 @@ EOF
 
   def test_with_webauthn_enabled_success_with_polling
     response_success = "Owner added successfully."
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
 
     @stub_fetcher.respond_with_require_otp("#{Gem.host}/api/v1/gems/freewill/owners", response_success)
     @stub_fetcher.respond_with_webauthn_url
@@ -419,12 +416,10 @@ EOF
       use_ui @stub_ui do
         @cmd.add_owners("freewill", ["user-new1@example.com"])
       end
-    ensure
-      server.close
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(port)} to authenticate " \
-      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
       "command with the `--otp [your_code]` option.", @stub_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @stub_fetcher.last_request["OTP"]
@@ -433,8 +428,7 @@ EOF
 
   def test_with_webauthn_enabled_failure_with_polling
     response_success = "Owner added successfully."
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
 
     @stub_fetcher.respond_with_require_otp(
       "#{Gem.host}/api/v1/gems/freewill/owners",
@@ -447,13 +441,11 @@ EOF
       use_ui @stub_ui do
         @cmd.add_owners("freewill", ["user-new1@example.com"])
       end
-    ensure
-      server.close
     end
 
     assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(port)} to authenticate " \
-      "via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
+    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
       "command with the `--otp [your_code]` option.", @stub_ui.output
     assert_match "ERROR:  Security device verification failed: The token in the link you used has either expired " \
       "or been used already.", @stub_ui.error

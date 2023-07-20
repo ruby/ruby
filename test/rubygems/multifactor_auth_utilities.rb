@@ -74,3 +74,38 @@ class Gem::MultifactorAuthFetcher < Gem::FakeFetcher
     "#{@webauthn_url}?port=#{port}"
   end
 end
+
+##
+# The MockTCPServer for use in tests or to avoid real TCPServer instances to be created
+# when testing code related to the WebAuthn listener.
+#
+# Example:
+#
+#   server = Gem::MockTCPServer
+#   port = server.addr[1].to_s
+#
+#   # this mocks waiting for a request by calling sleep
+#   server.accept
+#
+#   # this mocks the server closing
+#   server.close
+
+class Gem::MockTCPServer
+  attr_reader :port
+
+  def initialize(port = 5678)
+    @port = port
+  end
+
+  def close
+    true
+  end
+
+  def addr
+    ["AF_INET6", @port, "::", "::"]
+  end
+
+  def accept
+    sleep
+  end
+end

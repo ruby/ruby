@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require_relative "multifactor_auth_fetcher"
+require_relative "multifactor_auth_utilities"
 require "rubygems"
 require "rubygems/command"
 require "rubygems/gemcutter_utilities"
@@ -223,8 +223,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_webauthn_enabled
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
 
     @fetcher.respond_with_require_otp
     @fetcher.respond_with_webauthn_url
@@ -232,11 +231,9 @@ class TestGemGemcutterUtilities < Gem::TestCase
       Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:otp] = "Uvh6T57tkWuUnWYo" }) do
         util_sign_in
       end
-    ensure
-      server.close
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
@@ -244,8 +241,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_webauthn_enabled_with_error
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")
 
     @fetcher.respond_with_require_otp
@@ -255,13 +251,11 @@ class TestGemGemcutterUtilities < Gem::TestCase
         Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
           util_sign_in
         end
-      ensure
-        server.close
       end
     end
     assert_equal 1, error.exit_code
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @sign_in_ui.error
@@ -270,19 +264,16 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_webauthn_enabled_with_polling
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
     @fetcher.respond_with_require_otp
     @fetcher.respond_with_webauthn_url
     @fetcher.respond_with_webauthn_polling("Uvh6T57tkWuUnWYo")
 
     TCPServer.stub(:new, server) do
       util_sign_in
-    ensure
-      server.close
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
@@ -290,8 +281,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_webauthn_enabled_with_polling_failure
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
     @fetcher.respond_with_require_otp
     @fetcher.respond_with_webauthn_url
     @fetcher.respond_with_webauthn_polling_failure
@@ -299,12 +289,10 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
         util_sign_in
-      ensure
-        server.close
       end
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
     assert_match "ERROR:  Security device verification failed: " \
