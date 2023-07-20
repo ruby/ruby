@@ -226,11 +226,9 @@ module Bundler
     end
 
     def replace_require(specs)
-      kernel = (class << ::Kernel; self; end)
+      return if [::Kernel.singleton_class, ::Kernel].any?{|klass| klass.respond_to?(:no_warning_require)}
 
-      return if [kernel, ::Kernel].any?{|klass| klass.respond_to?(:no_warning_require)}
-
-      [kernel, ::Kernel].each do |kernel_class|
+      [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
         kernel_class.send(:define_method, :require) do |file|
           name = file.tr("/", "-")
