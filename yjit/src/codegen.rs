@@ -847,14 +847,14 @@ pub fn gen_single_block(
             verify_ctx(&jit, &asm.ctx);
         }
 
+        // :count-placement:
+        // Count bytecode instructions that execute in generated code.
+        // Note that the increment happens even when the output takes side exit.
+        gen_counter_incr(&mut asm, Counter::exec_instruction);
+
         // Lookup the codegen function for this instruction
         let mut status = None;
         if let Some(gen_fn) = get_gen_fn(VALUE(opcode)) {
-            // :count-placement:
-            // Count bytecode instructions that execute in generated code.
-            // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr(&mut asm, Counter::exec_instruction);
-
             // Add a comment for the name of the YARV instruction
             asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
 

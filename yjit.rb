@@ -317,7 +317,7 @@ module RubyVM::YJIT
       out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
       out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count])
       out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
-      out.puts "yjit_insns_count:      " + format_number(13, stats[:exec_instruction])
+      out.puts "exec_instruction:      " + format_number(13, stats[:exec_instruction])
       out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
       out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
