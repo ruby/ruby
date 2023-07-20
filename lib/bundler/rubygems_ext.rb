@@ -30,10 +30,19 @@ end
 
 module Gem
 
-  BUNDLED_GEMS = %w[
-    abbrev observer getoptlong resolv-replace rinda
-    nkf syslog drb mutex_m csv base64
-  ]
+  BUNDLED_GEMS = {
+    "abbrev" => "3.4.0",
+    "observer" => "3.4.0",
+    "getoptlong" => "3.4.0",
+    "resolv-replace" => "3.4.0",
+    "rinda" => "3.4.0",
+    "nkf" => "3.4.0",
+    "syslog" => "3.4.0",
+    "drb" => "3.4.0",
+    "mutex_m" => "3.4.0",
+    "csv" => "3.4.0",
+    "base64" => "3.4.0"
+  }.freeze
 
   class Specification
     include ::Bundler::MatchMetadata

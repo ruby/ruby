@@ -233,13 +233,13 @@ module Bundler
       [kernel, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
         kernel_class.send(:define_method, :require) do |file|
-          if (::Gem::BUNDLED_GEMS - specs.to_a.map(&:name)).include?(file)
+          if (::Gem::BUNDLED_GEMS.keys - specs.to_a.map(&:name)).include?(file)
             target_file = begin
                             Bundler.default_gemfile.basename
                           rescue GemfileNotFound
                             "inline Gemfile"
                           end
-            warn "#{file} is not part of the bundle." \
+            warn "#{file} is not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS[file]}." \
             " Add it to your #{target_file}."
           end
           kernel_class.send(:no_warning_require, file)

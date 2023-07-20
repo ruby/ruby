@@ -1567,7 +1567,7 @@ end
       require 'csv'
     R
 
-    expect(err).to include("csv is not part of the bundle")
+    expect(err).to include("csv is not part of the default gems")
   end
 
   it "don't warn with bundled gems when it's declared in Gemfile" do
