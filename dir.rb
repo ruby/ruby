@@ -236,8 +236,6 @@ class Dir
   #
   # - <tt>'*'</tt> is the pattern that matches any entry name
   #   except those that begin with <tt>'.'</tt>.
-  # - If optional keyword argument +base+ is not given,
-  #   the base directory whose entries are to be matched is <tt>'.'</tt>.
   # - We use method Array#take to shorten returned arrays
   #   that otherwise would be very large.
   #
@@ -261,7 +259,8 @@ class Dir
   # the value modifies the matching; see below.
   #
   # If optional keyword argument +base+ is given,
-  # each pattern string specifies entries relative to the specified directory;
+  # its value specifies the base directory.
+  # Each pattern string specifies entries relative to the base directory;
   # the default is <tt>'.'</tt>.
   # The base directory is not prepended to the entry names in the result:
   #
