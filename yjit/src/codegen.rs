@@ -850,7 +850,7 @@ pub fn gen_single_block(
         // :count-placement:
         // Count bytecode instructions that execute in generated code.
         // Note that the increment happens even when the output takes side exit.
-        gen_counter_incr(&mut asm, Counter::exec_instruction);
+        gen_counter_incr(&mut asm, Counter::yjit_insns_count);
 
         // Lookup the codegen function for this instruction
         let mut status = None;

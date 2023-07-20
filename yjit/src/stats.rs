@@ -202,7 +202,7 @@ pub(crate) use ptr_to_counter;
 
 // Declare all the counters we track
 make_counters! {
-    exec_instruction,
+    yjit_insns_count,
 
     send_keywords,
     send_klass_megamorphic,
