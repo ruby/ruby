@@ -29,6 +29,12 @@ unless Gem.ruby_version.to_s == RUBY_VERSION || RUBY_PATCHLEVEL == -1
 end
 
 module Gem
+
+  BUNDLED_GEMS = %w[
+    abbrev observer getoptlong resolv-replace rinda
+    nkf syslog drb mutex_m csv base64
+  ]
+
   class Specification
     include ::Bundler::MatchMetadata
     include ::Bundler::MatchPlatform
