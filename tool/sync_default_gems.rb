@@ -416,6 +416,7 @@ module SyncDefaultGems
         mv "yarp/enc/#{f}", "yarp/enc/yp_#{f}"
       end
 
+      cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
 
