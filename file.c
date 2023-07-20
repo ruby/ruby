@@ -7738,7 +7738,7 @@ Init_File(void)
      *
      * ==== File::FNM_DOTMATCH
      *
-     * Flag File::FNM_DOTMATCH makes the <tt>‘*’</tt> pattern
+     * Flag File::FNM_DOTMATCH makes the <tt>'*'</tt> pattern
      * match a filename starting with <tt>'.'</tt>.
      *
      * ==== File::FNM_EXTGLOB
