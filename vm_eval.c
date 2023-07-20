@@ -1101,7 +1101,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
         return ret;
     }
     argv = ALLOCA_N(VALUE, argc);
-    MEMCPY(argv, RARRAY_CONST_PTR_TRANSIENT(args), VALUE, argc);
+    MEMCPY(argv, RARRAY_CONST_PTR(args), VALUE, argc);
 
     return rb_funcallv(recv, mid, argc, argv);
 }
@@ -1653,7 +1653,6 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
         if (!NIL_P(fname)) fname = rb_fstring(fname);
     }
     else {
-        fname = rb_fstring_lit("(eval)");
         if (!eval_default_path) {
             eval_default_path = rb_fstring_lit("(eval)");
             rb_gc_register_mark_object(eval_default_path);

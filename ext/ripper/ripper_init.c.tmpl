@@ -25,14 +25,14 @@ static void
 ripper_parser_mark2(void *ptr)
 {
     struct ripper *r = (struct ripper*)ptr;
-    ripper_parser_mark(r->p);
+    if (r->p) ripper_parser_mark(r->p);
 }
 
 static void
 ripper_parser_free2(void *ptr)
 {
     struct ripper *r = (struct ripper*)ptr;
-    ripper_parser_free(r->p);
+    if (r->p) ripper_parser_free(r->p);
     xfree(r);
 }
 
@@ -40,7 +40,7 @@ static size_t
 ripper_parser_memsize2(const void *ptr)
 {
     struct ripper *r = (struct ripper*)ptr;
-    return ripper_parser_memsize(r->p);
+    return (r->p) ? ripper_parser_memsize(r->p) : 0;
 }
 
 static const rb_data_type_t parser_data_type = {

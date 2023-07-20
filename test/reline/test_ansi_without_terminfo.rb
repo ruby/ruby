@@ -5,7 +5,7 @@ class Reline::ANSI::TestWithoutTerminfo < Reline::TestCase
   def setup
     Reline.send(:test_mode, ansi: true)
     @config = Reline::Config.new
-    Reline::IOGate.set_default_key_bindings(@config, allow_terminfo: false)
+    Reline.core.io_gate.set_default_key_bindings(@config, allow_terminfo: false)
   end
 
   def teardown
@@ -60,6 +60,8 @@ class Reline::ANSI::TestWithoutTerminfo < Reline::TestCase
     assert_key_binding("\e[1;5D", :ed_prev_word) # Ctrl+←
     assert_key_binding("\e[1;3C", :em_next_word) # Meta+→
     assert_key_binding("\e[1;3D", :ed_prev_word) # Meta+←
+    assert_key_binding("\e\e[C", :em_next_word) # Meta+→
+    assert_key_binding("\e\e[D", :ed_prev_word) # Meta+←
   end
 
   # Shift-Tab; always mapped regardless of terminfo enabled or not

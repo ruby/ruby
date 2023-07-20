@@ -116,6 +116,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "ruby/ractor.h"
 
 /* define system APIs */
@@ -4804,11 +4805,11 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  A filename can be specified as a hash value.
  *
- *    pid = spawn(command, :in=>"/dev/null") # read mode
- *    pid = spawn(command, :out=>"/dev/null") # write mode
+ *    pid = spawn(command, :in=>File::NULL) # read mode
+ *    pid = spawn(command, :out=>File::NULL) # write mode
  *    pid = spawn(command, :err=>"log") # write mode
- *    pid = spawn(command, [:out, :err]=>"/dev/null") # write mode
- *    pid = spawn(command, 3=>"/dev/null") # read mode
+ *    pid = spawn(command, [:out, :err]=>File::NULL) # write mode
+ *    pid = spawn(command, 3=>File::NULL) # read mode
  *
  *  For stdout and stderr (and combination of them),
  *  it is opened in write mode.
@@ -6834,7 +6835,7 @@ static int rb_daemon(int nochdir, int noclose);
  *  nochdir is true (i.e. non false), it changes the current
  *  working directory to the root ("/"). Unless the argument
  *  noclose is true, daemon() will redirect standard input,
- *  standard output and standard error to /dev/null.
+ *  standard output and standard error to null device.
  *  Return zero on success, or raise one of Errno::*.
  */
 
@@ -6853,6 +6854,8 @@ proc_daemon(int argc, VALUE *argv, VALUE _)
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 }
+
+extern const char ruby_null_device[];
 
 static int
 rb_daemon(int nochdir, int noclose)
@@ -6877,7 +6880,7 @@ rb_daemon(int nochdir, int noclose)
     if (!nochdir)
         err = chdir("/");
 
-    if (!noclose && (n = rb_cloexec_open("/dev/null", O_RDWR, 0)) != -1) {
+    if (!noclose && (n = rb_cloexec_open(ruby_null_device, O_RDWR, 0)) != -1) {
         rb_update_max_fd(n);
         (void)dup2(n, 0);
         (void)dup2(n, 1);
@@ -8532,6 +8535,37 @@ static VALUE rb_mProcUID;
 static VALUE rb_mProcGID;
 static VALUE rb_mProcID_Syscall;
 
+/*
+ *  call-seq:
+ *     Process.warmup    -> true
+ *
+ *  Notify the Ruby virtual machine that the boot sequence is finished,
+ *  and that now is a good time to optimize the application. This is useful
+ *  for long running applications.
+ *
+ *  This method is expected to be called at the end of the application boot.
+ *  If the application is deployed using a pre-forking model, +Process.warmup+
+ *  should be called in the original process before the first fork.
+ *
+ *  The actual optimizations performed are entirely implementation specific
+ *  and may change in the future without notice.
+ *
+ *  On CRuby, +Process.warmup+:
+ *
+ *  * Perform a major GC.
+ *  * Compacts the heap.
+ *  * Promotes all surviving objects to the old generation.
+ */
+
+static VALUE
+proc_warmup(VALUE _)
+{
+    RB_VM_LOCK_ENTER();
+    rb_gc_prepare_heap();
+    RB_VM_LOCK_LEAVE();
+    return Qtrue;
+}
+
 
 /*
  * Document-module: Process
@@ -8648,6 +8682,8 @@ InitVM_process(void)
 
     rb_define_module_function(rb_mProcess, "getpriority", proc_getpriority, 2);
     rb_define_module_function(rb_mProcess, "setpriority", proc_setpriority, 3);
+
+    rb_define_module_function(rb_mProcess, "warmup", proc_warmup, 0);
 
 #ifdef HAVE_GETPRIORITY
     /* see Process.setpriority */

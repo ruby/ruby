@@ -25,13 +25,15 @@ yp_newline_list_init(yp_newline_list_t *list, const char *start, size_t capacity
 bool
 yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
     if (list->size == list->capacity) {
-        list->capacity = list->capacity * 3 / 2;
+        list->capacity = (list->capacity * 3) / 2;
         list->offsets = (size_t *) realloc(list->offsets, list->capacity * sizeof(size_t));
         if (list->offsets == NULL) return false;
     }
 
     assert(cursor >= list->start);
-    list->offsets[list->size++] = (size_t) (cursor - list->start + 1);
+    size_t newline_offset = (size_t) (cursor - list->start + 1);
+    assert(list->size == 0 || newline_offset > list->offsets[list->size - 1]);
+    list->offsets[list->size++] = newline_offset;
 
     return true;
 }

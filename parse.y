@@ -201,6 +201,89 @@ new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0, int heredoc)
 }
 #endif /* !UNIVERSAL_PARSER */
 
+static inline int
+parse_isascii(int c)
+{
+    return '\0' <= c && c <= '\x7f';
+}
+
+#undef ISASCII
+#define ISASCII parse_isascii
+
+static inline int
+parse_isspace(int c)
+{
+    return c == ' ' || ('\t' <= c && c <= '\r');
+}
+
+#undef ISSPACE
+#define ISSPACE parse_isspace
+
+static inline int
+parse_iscntrl(int c)
+{
+    return ('\0' <= c && c < ' ') || c == '\x7f';
+}
+
+#undef ISCNTRL
+#define ISCNTRL(c) parse_iscntrl(c)
+
+static inline int
+parse_isupper(int c)
+{
+    return 'A' <= c && c <= 'Z';
+}
+
+static inline int
+parse_islower(int c)
+{
+    return 'a' <= c && c <= 'z';
+}
+
+static inline int
+parse_isalpha(int c)
+{
+    return parse_isupper(c) || parse_islower(c);
+}
+
+#undef ISALPHA
+#define ISALPHA(c) parse_isalpha(c)
+
+static inline int
+parse_isdigit(int c)
+{
+    return '0' <= c && c <= '9';
+}
+
+#undef ISDIGIT
+#define ISDIGIT(c) parse_isdigit(c)
+
+static inline int
+parse_isalnum(int c)
+{
+    return parse_isalpha(c) || parse_isdigit(c);
+}
+
+#undef ISALNUM
+#define ISALNUM(c) parse_isalnum(c)
+
+static inline int
+parse_isxdigit(int c)
+{
+    return parse_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
+}
+
+#undef ISXDIGIT
+#define ISXDIGIT(c) parse_isxdigit(c)
+
+#include "parser_st.h"
+
+#undef STRCASECMP
+#define STRCASECMP rb_parser_st_locale_insensitive_strcasecmp
+
+#undef STRNCASECMP
+#define STRNCASECMP rb_parser_st_locale_insensitive_strncasecmp
+
 #ifdef RIPPER
 #include "ripper_init.h"
 #endif
@@ -11252,7 +11335,7 @@ id_is_var(struct parser_params *p, ID id)
 static VALUE
 new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 {
-    VALUE src = 0, err;
+    VALUE src = 0, err = 0;
     int options = 0;
     if (ripper_is_node_yylval(p, re)) {
         src = RNODE(re)->nd_cval;

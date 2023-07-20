@@ -232,7 +232,6 @@ class_alloc(VALUE flags, VALUE klass)
     size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     flags &= T_MASK;
-    flags |= FL_PROMOTED1 /* start from age == 2 */;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 

@@ -165,7 +165,7 @@ args_copy(struct args_info *args)
 static inline const VALUE *
 args_rest_argv(struct args_info *args)
 {
-    return RARRAY_CONST_PTR_TRANSIENT(args->rest) + args->rest_index;
+    return RARRAY_CONST_PTR(args->rest) + args->rest_index;
 }
 
 static inline VALUE
@@ -230,7 +230,7 @@ args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
     long len;
     len = RARRAY_LEN(args->rest);
-    MEMCPY(locals, RARRAY_CONST_PTR_TRANSIENT(args->rest) + len - argc, VALUE, argc);
+    MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);
 }
 
@@ -251,7 +251,7 @@ args_setup_opt_parameters(struct args_info *args, int opt_max, VALUE *locals)
 
         if (args->rest) {
             int len = RARRAY_LENINT(args->rest);
-            const VALUE *argv = RARRAY_CONST_PTR_TRANSIENT(args->rest);
+            const VALUE *argv = RARRAY_CONST_PTR(args->rest);
 
             for (; i<opt_max && args->rest_index < len; i++, args->rest_index++) {
                 locals[i] = argv[args->rest_index];
@@ -640,8 +640,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
       case arg_setup_method:
         break; /* do nothing special */
       case arg_setup_block:
-        if (given_argc == (NIL_P(keyword_hash) ? 1 : 2) &&
+        if (given_argc == 1 &&
             allow_autosplat &&
+            !splat_flagged_keyword_hash &&
             (min_argc > 0 || ISEQ_BODY(iseq)->param.opt_num > 1) &&
             !ISEQ_BODY(iseq)->param.flags.ambiguous_param0 &&
             !((ISEQ_BODY(iseq)->param.flags.has_kw ||

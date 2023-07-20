@@ -13,9 +13,9 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.60.1"
+version = "0.62.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "062dddbc1ba4aca46de6338e2bf87771414c335f7b2f2036e8f3e9befebf88e6"
+checksum = "c6720a8b7b2d39dd533285ed438d458f65b31b5c257e6ac7bb3d7e82844dd722"
 dependencies = [
  "bitflags",
  "cexpr",
@@ -28,6 +28,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
+ "syn",
 ]
 
 [[package]]
@@ -151,22 +152,26 @@ dependencies = [
 
 [[package]]
 name = "rb-sys"
-version = "0.9.58"
+version = "0.9.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0158f5115e1ad04a2ee231f597e86306af96f36a8b93ac0c01f8852d0ba89278"
+checksum = "939fb78db3e4f26665c1d4c7b91ca66d3578335a19aba552d4a6445811d07072"
 dependencies = [
  "rb-sys-build",
 ]
 
 [[package]]
 name = "rb-sys-build"
-version = "0.9.58"
+version = "0.9.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c27b779db4a2863db74ddad0011f0d0c55c528e9601126d4613ad688063bc05"
+checksum = "335a95eb0420d52fa94ef12019df3c2c250c6b19cbb3c60bd05cb7e9c362072c"
 dependencies = [
  "bindgen",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
  "regex",
  "shell-words",
+ "syn",
 ]
 
 [[package]]
@@ -203,6 +208,17 @@ name = "shlex"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
+
+[[package]]
+name = "syn"
+version = "1.0.109"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
 
 [[package]]
 name = "unicode-ident"

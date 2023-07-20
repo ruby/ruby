@@ -93,10 +93,11 @@ jobs:
           - { name: clang-12,  env: { default_cc: clang-12 } }
           - { name: clang-11,  env: { default_cc: clang-11 } }
           - { name: clang-10,  env: { default_cc: clang-10 } }
-          - { name: clang-9,   env: { default_cc: clang-9 } }
-          - { name: clang-8,   env: { default_cc: clang-8 } }
-          - { name: clang-7,   env: { default_cc: clang-7 } }
-          - { name: clang-6.0, env: { default_cc: clang-6.0 } }
+          # llvm-objcopy<=9 doesn't have --wildcard. It compiles, but leaves Rust symbols in libyjit.o.
+          - { name: clang-9,   env: { default_cc: clang-9,   append_configure: '--disable-yjit' } }
+          - { name: clang-8,   env: { default_cc: clang-8,   append_configure: '--disable-yjit' } }
+          - { name: clang-7,   env: { default_cc: clang-7,   append_configure: '--disable-yjit' } }
+          - { name: clang-6.0, env: { default_cc: clang-6.0, append_configure: '--disable-yjit' } }
           - name: 'clang-16 LTO'
             container: clang-16
             env:
@@ -164,7 +165,6 @@ jobs:
 #         - { name: SYMBOL_DEBUG,                   env: { cppflags: '-DSYMBOL_DEBUG' } }
 
 #         - { name: RGENGC_CHECK_MODE,              env: { cppflags: '-DRGENGC_CHECK_MODE' } }
-#         - { name: TRANSIENT_HEAP_CHECK_MODE,      env: { cppflags: '-DTRANSIENT_HEAP_CHECK_MODE' } }
 #         - { name: VM_CHECK_MODE,                  env: { cppflags: '-DVM_CHECK_MODE' } }
 
 #         - { name: USE_EMBED_CI=0,                 env: { cppflags: '-DUSE_EMBED_CI=0' } }
@@ -177,7 +177,6 @@ jobs:
 #         - { name: USE_LAZY_LOAD,                  env: { cppflags: '-DUSE_LAZY_LOAD' } }
 #         - { name: USE_SYMBOL_GC=0,                env: { cppflags: '-DUSE_SYMBOL_GC=0' } }
 #         - { name: USE_THREAD_CACHE=0,             env: { cppflags: '-DUSE_THREAD_CACHE=0' } }
-#         - { name: USE_TRANSIENT_HEAP=0,           env: { cppflags: '-DUSE_TRANSIENT_HEAP=0' } }
           - { name: USE_RUBY_DEBUG_LOG=1,           env: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
 #         - { name: USE_DEBUG_COUNTER,              env: { cppflags: '-DUSE_DEBUG_COUNTER=1', RUBY_DEBUG_COUNTER_DISABLE: '1' } }
 
@@ -198,7 +197,6 @@ jobs:
 #         - { name: RGENGC_ESTIMATE_OLDMALLOC,      env: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
 #         - { name: RGENGC_FORCE_MAJOR_GC,          env: { cppflags: '-DRGENGC_FORCE_MAJOR_GC' } }
 #         - { name: RGENGC_OBJ_INFO,                env: { cppflags: '-DRGENGC_OBJ_INFO' } }
-#         - { name: RGENGC_OLD_NEWOBJ_CHECK,        env: { cppflags: '-DRGENGC_OLD_NEWOBJ_CHECK' } }
 #         - { name: RGENGC_PROFILE,                 env: { cppflags: '-DRGENGC_PROFILE' } }
 
 #         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
@@ -217,7 +215,12 @@ jobs:
       image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-16' }}
       options: --user root
 
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      )}}
 
     env: ${{ matrix.entry.env || matrix.env }}
 

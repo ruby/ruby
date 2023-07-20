@@ -217,6 +217,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
 #elif defined(YJIT_FORCE_ENABLE)
     opt->features.set |= FEATURE_BIT(yjit);
 #endif
+    opt->backtrace_length_limit = -1;
 
     return opt;
 }
@@ -811,10 +812,10 @@ toplevel_context(rb_binding_t *bind)
     return &bind->block;
 }
 
-static void
-process_sflag(int *sflag)
+static int
+process_sflag(int sflag)
 {
-    if (*sflag > 0) {
+    if (sflag > 0) {
         long n;
         const VALUE *args;
         VALUE argv = rb_argv;
@@ -871,8 +872,9 @@ process_sflag(int *sflag)
         while (n--) {
             rb_ary_shift(argv);
         }
-        *sflag = -1;
+        return -1;
     }
+    return sflag;
 }
 
 static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt);
@@ -885,6 +887,15 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     const char *ap = 0;
     VALUE argstr, argary;
     void *ptr;
+
+    VALUE src_enc_name = opt->src.enc.name;
+    VALUE ext_enc_name = opt->ext.enc.name;
+    VALUE int_enc_name = opt->intern.enc.name;
+    ruby_features_t feat = opt->features;
+    ruby_features_t warn = opt->warn;
+    int backtrace_length_limit = opt->backtrace_length_limit;
+
+    opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
@@ -919,6 +930,21 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
             ++argc;
             --argv;
         }
+    }
+
+    if (src_enc_name) {
+        opt->src.enc.name = src_enc_name;
+    }
+    if (ext_enc_name) {
+        opt->ext.enc.name = ext_enc_name;
+    }
+    if (int_enc_name) {
+        opt->intern.enc.name = int_enc_name;
+    }
+    FEATURE_SET_RESTORE(opt->features, feat);
+    FEATURE_SET_RESTORE(opt->warn, warn);
+    if (backtrace_length_limit >= 0) {
+        opt->backtrace_length_limit = backtrace_length_limit;
     }
 
     ruby_xfree(ptr);
@@ -1420,11 +1446,11 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         opt->dump |= DUMP_BIT(help);
         return 0;
     }
-    else if (is_option_with_arg("backtrace-limit", Qfalse, Qfalse)) {
+    else if (is_option_with_arg("backtrace-limit", Qfalse, Qtrue)) {
         char *e;
         long n = strtol(s, &e, 10);
-        if (errno == ERANGE || n < 0 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
-        rb_backtrace_length_limit = n;
+        if (errno == ERANGE || n < -1 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+        opt->backtrace_length_limit = (int)n;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -2002,22 +2028,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argv += i;
 
     if (FEATURE_SET_P(opt->features, rubyopt) && (s = getenv("RUBYOPT"))) {
-        VALUE src_enc_name = opt->src.enc.name;
-        VALUE ext_enc_name = opt->ext.enc.name;
-        VALUE int_enc_name = opt->intern.enc.name;
-        ruby_features_t feat = opt->features;
-        ruby_features_t warn = opt->warn;
-
-        opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
         moreswitches(s, opt, 1);
-        if (src_enc_name)
-            opt->src.enc.name = src_enc_name;
-        if (ext_enc_name)
-            opt->ext.enc.name = ext_enc_name;
-        if (int_enc_name)
-            opt->intern.enc.name = int_enc_name;
-        FEATURE_SET_RESTORE(opt->features, feat);
-        FEATURE_SET_RESTORE(opt->warn, warn);
     }
 
     if (opt->src.enc.name)
@@ -2203,7 +2214,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #undef SET_COMPILE_OPTION
     }
     ruby_set_argv(argc, argv);
-    process_sflag(&opt->sflag);
+    opt->sflag = process_sflag(opt->sflag);
 
     if (opt->e_script) {
         VALUE progname = rb_progname;
@@ -2233,7 +2244,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
     else {
         VALUE f;
-        f = open_load_file(script_name, &opt->xflag);
+        int xflag = opt->xflag;
+        f = open_load_file(script_name, &xflag);
+        opt->xflag = xflag != 0;
         rb_parser_set_context(parser, 0, f == rb_stdin);
         ast = load_file(parser, opt->script_name, f, 1, opt);
     }
@@ -2265,7 +2278,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         return Qfalse;
     }
 
-    process_sflag(&opt->sflag);
+    opt->sflag = process_sflag(opt->sflag);
     opt->xflag = 0;
 
     if (dump & DUMP_BIT(syntax)) {
@@ -2320,6 +2333,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (!dump) return Qtrue;
     }
     if (opt->dump & dump_exit_bits) return Qtrue;
+
+    if (opt->backtrace_length_limit >= 0) {
+        rb_backtrace_length_limit = opt->backtrace_length_limit;
+    }
 
     rb_define_readonly_boolean("$-p", opt->do_print);
     rb_define_readonly_boolean("$-l", opt->do_line);
@@ -2636,7 +2653,9 @@ void *
 rb_parser_load_file(VALUE parser, VALUE fname_v)
 {
     ruby_cmdline_options_t opt;
-    VALUE f = open_load_file(fname_v, &cmdline_options_init(&opt)->xflag);
+    int xflag = 0;
+    VALUE f = open_load_file(fname_v, &xflag);
+    cmdline_options_init(&opt)->xflag = xflag != 0;
     return load_file(parser, fname_v, f, 0, &opt);
 }
 

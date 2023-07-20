@@ -17,6 +17,15 @@ describe "String#tr_s" do
     "hello ^--^".tr_s("---", "_").should == "hello ^_^"
   end
 
+  ruby_bug "#19769", ""..."3.3" do
+    it "accepts c1-c1 notation to denote range of one character" do
+      "hello".tr_s('e-e', 'x').should == "hxllo"
+      "123456789".tr_s("2-23","xy").should == "1xy456789"
+      "hello ^-^".tr_s("e-", "a-a_").should == "hallo ^_^"
+      "hello ^-^".tr_s("---o", "_a").should == "hella ^_^"
+    end
+  end
+
   it "pads to_str with its last char if it is shorter than from_string" do
     "this".tr_s("this", "x").should == "x"
   end

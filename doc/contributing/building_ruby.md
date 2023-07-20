@@ -60,6 +60,7 @@
 
         ``` shell
         git clone https://github.com/ruby/ruby.git
+        cd ruby
         ```
 
         Generate the configure file:

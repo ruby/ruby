@@ -4850,7 +4850,6 @@ fn gen_push_frame(
     if let Some(pc) = frame.pc {
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), pc.into());
     };
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BP), sp);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), sp);
     let iseq: Opnd = if let Some(iseq) = frame.iseq {
         VALUE::from(iseq).into()
@@ -5228,7 +5227,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
     asm.csel_nz(emb_len_opnd, array_len_opnd)
 }
 
-// Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+// Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
 fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
     asm.comment("get array pointer for embedded or heap");
 
@@ -7649,6 +7648,7 @@ fn gen_getblockparamproxy(
     // When a block handler is present, it should always be a GC-guarded
     // pointer (VM_BH_ISEQ_BLOCK_P)
     if comptime_handler.as_u64() != 0 && comptime_handler.as_u64() & 0x3 != 0x1 {
+        incr_counter!(gbpp_not_gc_guarded);
         return None;
     }
 

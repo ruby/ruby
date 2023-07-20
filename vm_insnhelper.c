@@ -381,7 +381,6 @@ vm_push_frame(rb_execution_context_t *ec,
         .self       = self,
         .ep         = sp - 1,
         .block_code = NULL,
-        .__bp__     = sp, /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
 #if VM_DEBUG_BP_CHECK
         .bp_check   = sp,
 #endif
@@ -1874,7 +1873,7 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
         len = 1;
     }
     else {
-        ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        ptr = RARRAY_CONST_PTR(ary);
         len = (rb_num_t)RARRAY_LEN(ary);
     }
 
@@ -2455,15 +2454,15 @@ double_cmp_ge(double a, double b)
     return RBOOL(a >= b);
 }
 
+// Copied by vm_dump.c
 static inline VALUE *
 vm_base_ptr(const rb_control_frame_t *cfp)
 {
-#if 0 // we may optimize and use this once we confirm it does not spoil performance on JIT.
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
     if (cfp->iseq && VM_FRAME_RUBYFRAME_P(cfp)) {
         VALUE *bp = prev_cfp->sp + ISEQ_BODY(cfp->iseq)->local_table_size + VM_ENV_DATA_SIZE;
-        if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD) {
+        if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD || VM_FRAME_BMETHOD_P(cfp)) {
             /* adjust `self' */
             bp += 1;
         }
@@ -2480,9 +2479,6 @@ vm_base_ptr(const rb_control_frame_t *cfp)
     else {
         return NULL;
     }
-#else
-    return cfp->__bp__;
-#endif
 }
 
 /* method call processes with call_info */
@@ -2564,7 +2560,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
     bool ret = false;
 
     if (!NIL_P(ary)) {
-        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        const VALUE *ptr = RARRAY_CONST_PTR(ary);
         long len = RARRAY_LEN(ary);
         int argc = calling->argc;
 
@@ -3693,23 +3689,30 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
 
     const struct rb_captured_block *captured = &block->as.captured;
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
-    int i, opt_pc;
+    VALUE * const argv = cfp->sp - calling->argc;
+    const int arg_size = ISEQ_BODY(iseq)->param.size;
 
-    VALUE *sp = cfp->sp - calling->argc - 1;
-    for (i = 0; i < calling->argc; i++) {
-        sp[i] = sp[i+1];
-    }
-
+    int opt_pc;
     if (vm_ci_flag(calling->ci) & VM_CALL_ARGS_SIMPLE) {
-        opt_pc = vm_callee_setup_block_arg(ec, calling, calling->ci, iseq, sp, arg_setup_method);
+        opt_pc = vm_callee_setup_block_arg(ec, calling, calling->ci, iseq, argv, arg_setup_method);
     }
     else {
-        opt_pc = setup_parameters_complex(ec, iseq, calling, calling->ci, sp, arg_setup_method);
+        opt_pc = setup_parameters_complex(ec, iseq, calling, calling->ci, argv, arg_setup_method);
     }
 
-    cfp->sp = sp;
-    return invoke_bmethod(ec, iseq, calling->recv, captured, cme,
-                          VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_LAMBDA, opt_pc);
+    cfp->sp = argv - 1; // -1 for the receiver
+
+    vm_push_frame(ec, iseq,
+                  VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA,
+                  calling->recv,
+                  VM_GUARDED_PREV_EP(captured->ep),
+                  (VALUE)cme,
+                  ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
+                  argv + arg_size,
+                  ISEQ_BODY(iseq)->local_table_size - arg_size,
+                  ISEQ_BODY(iseq)->stack_max);
+
+    return Qundef;
 }
 
 static VALUE

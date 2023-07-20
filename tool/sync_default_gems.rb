@@ -443,6 +443,7 @@ module SyncDefaultGems
   def message_filter(repo, sha, input: ARGF)
     log = input.read
     log.delete!("\r")
+    log << "\n" if !log.end_with?("\n")
     repo_url = "https://github.com/#{repo}"
     subject, log = log.split(/\n(?:[ \t]*(?:\n|\z))/, 2)
     conv = proc do |s|

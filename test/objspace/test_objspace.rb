@@ -632,7 +632,13 @@ class TestObjSpace < Test::Unit::TestCase
       end
     end
 
-    entry_hash = JSON.parse(test_string_in_dump_all[1])
+    strs = test_string_in_dump_all.reject do |s|
+      s.include?("fstring")
+    end
+
+    assert_equal(1, strs.length)
+
+    entry_hash = JSON.parse(strs[0])
 
     assert_equal(5, entry_hash["bytesize"], "bytesize is wrong")
     assert_equal("TEST2", entry_hash["value"], "value is wrong")

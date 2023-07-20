@@ -18,7 +18,6 @@
 #include "internal/proc.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
-#include "transient_heap.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -798,39 +797,8 @@ rb_struct_initialize(VALUE self, VALUE values)
 static VALUE *
 struct_heap_alloc(VALUE st, size_t len)
 {
-    VALUE *ptr = rb_transient_heap_alloc((VALUE)st, sizeof(VALUE) * len);
-
-    if (ptr) {
-        RSTRUCT_TRANSIENT_SET(st);
-        return ptr;
-    }
-    else {
-        RSTRUCT_TRANSIENT_UNSET(st);
-        return ALLOC_N(VALUE, len);
-    }
+    return ALLOC_N(VALUE, len);
 }
-
-#if USE_TRANSIENT_HEAP
-void
-rb_struct_transient_heap_evacuate(VALUE obj, int promote)
-{
-    if (RSTRUCT_TRANSIENT_P(obj)) {
-        const VALUE *old_ptr = rb_struct_const_heap_ptr(obj);
-        VALUE *new_ptr;
-        long len = RSTRUCT_LEN(obj);
-
-        if (promote) {
-            new_ptr = ALLOC_N(VALUE, len);
-            FL_UNSET_RAW(obj, RSTRUCT_TRANSIENT_FLAG);
-        }
-        else {
-            new_ptr = struct_heap_alloc(obj, len);
-        }
-        MEMCPY(new_ptr, old_ptr, VALUE, len);
-        RSTRUCT(obj)->as.heap.ptr = new_ptr;
-    }
-}
-#endif
 
 static VALUE
 struct_alloc(VALUE klass)
@@ -1720,6 +1688,18 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     }
 
     return data_class;
+}
+
+VALUE
+rb_data_define(VALUE super, ...)
+{
+    va_list ar;
+    VALUE ary;
+    va_start(ar, super);
+    ary = struct_make_members_list(ar);
+    va_end(ar);
+    if (!super) super = rb_cData;
+    return setup_data(anonymous_struct(super), ary);
 }
 
 /*

@@ -89,7 +89,9 @@ module YARP
     end
 
     def ==(other)
-      other in Location[start_offset: ^(start_offset), end_offset: ^(end_offset)]
+      other.is_a?(Location) &&
+        other.start_offset == start_offset &&
+        other.end_offset == end_offset
     end
 
     def self.null
@@ -143,13 +145,14 @@ module YARP
   # the AST, any comments that were encounters, and any errors that were
   # encountered.
   class ParseResult
-    attr_reader :value, :comments, :errors, :warnings
+    attr_reader :value, :comments, :errors, :warnings, :source
 
-    def initialize(value, comments, errors, warnings)
+    def initialize(value, comments, errors, warnings, source)
       @value = value
       @comments = comments
       @errors = errors
       @warnings = warnings
+      @source = source
     end
 
     def deconstruct_keys(keys)
@@ -194,7 +197,9 @@ module YARP
     end
 
     def ==(other)
-      other in Token[type: ^(type), value: ^(value)]
+      other.is_a?(Token) &&
+        other.type == type &&
+        other.value == value
     end
   end
 
@@ -223,6 +228,10 @@ module YARP
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
+  end
+
+  def self.newlines(source)
+    YARP.parse(source).source.offsets
   end
 end
 

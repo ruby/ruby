@@ -1518,7 +1518,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
       stat = File.stat(f)
       unless stat.chardev?
-        # /dev/null may be accessed by other processes
+        # null device may be accessed by other processes
         assert_equal(stat.atime, File.atime(f), f)
         assert_equal(stat.ctime, File.ctime(f), f)
         assert_equal(stat.mtime, File.mtime(f), f)

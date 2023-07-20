@@ -20,30 +20,29 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 # define RJIT_STATS RUBY_DEBUG
 #endif
 
+#if USE_YJIT // We want vm_insns_count on any YJIT-enabled build
+// Increment vm_insns_count for --yjit-stats. We increment this even when
+// --yjit or --yjit-stats is not used because branching to skip it is slower.
+// We also don't use ATOMIC_INC for performance, allowing inaccuracy on Ractors.
+#define YJIT_COLLECT_USAGE_INSN(insn) rb_vm_insns_count++
+#else
+#define YJIT_COLLECT_USAGE_INSN(insn) // none
+#endif
+
+#if RJIT_STATS
+#define RJIT_COLLECT_USAGE_INSN(insn) rb_rjit_collect_vm_usage_insn(insn)
+#else
+#define RJIT_COLLECT_USAGE_INSN(insn) // none
+#endif
+
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
-
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
-#elif RJIT_STATS && YJIT_STATS
-// Both flags could be enabled at the same time. You need to call both in that case.
-#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
-#define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
-#define COLLECT_USAGE_REGISTER(reg, s)     /* none */
-#elif RJIT_STATS
-// for --rjit-stats
-#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn)
-#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
-#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
-#elif YJIT_STATS
-/* for --yjit-stats */
-#define COLLECT_USAGE_INSN(insn)           rb_yjit_collect_vm_usage_insn(insn)
-#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
-#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
 #else
-#define COLLECT_USAGE_INSN(insn)		/* none */
-#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
-#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
+#define COLLECT_USAGE_INSN(insn)           YJIT_COLLECT_USAGE_INSN(insn); RJIT_COLLECT_USAGE_INSN(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op) // none
+#define COLLECT_USAGE_REGISTER(reg, s)     // none
 #endif
 
 /**********************************************************/

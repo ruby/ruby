@@ -718,9 +718,8 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_SELF: i32 = 24;
     pub const RUBY_OFFSET_CFP_EP: i32 = 32;
     pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
-    pub const RUBY_OFFSET_CFP_BP: i32 = 48; // field __bp__
-    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 56;
-    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 64;
+    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
+    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
 
     // Constants from rb_execution_context_t vm_core.h
     pub const RUBY_OFFSET_EC_CFP: i32 = 16;

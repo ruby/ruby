@@ -27,6 +27,9 @@ typedef struct {
 // Calculates the memory footprint of a given node.
 YP_EXPORTED_FUNCTION void yp_node_memsize(yp_node_t *node, yp_memsize_t *memsize);
 
+// Returns a string representation of the given node type.
+YP_EXPORTED_FUNCTION const char * yp_node_type_to_str(yp_node_type_t node_type);
+
 #define YP_EMPTY_NODE_LIST ((yp_node_list_t) { .nodes = NULL, .size = 0, .capacity = 0 })
 #define YP_EMPTY_LOCATION_LIST ((yp_location_list_t) { .locations = NULL, .size = 0, .capacity = 0 })
 

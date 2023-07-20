@@ -16,7 +16,6 @@
 #include "internal/struct.h"
 #include "internal/thread.h"
 #include "variable.h"
-#include "transient_heap.h"
 #include "yjit.h"
 #include "rjit.h"
 
@@ -1833,7 +1832,6 @@ cancel_single_ractor_mode(void)
     VALUE was_disabled = rb_gc_enable();
 
     rb_gc_start();
-    rb_transient_heap_evacuate();
 
     if (was_disabled) {
         rb_gc_disable();
@@ -2925,10 +2923,7 @@ VALUE
 rb_ractor_make_shareable_copy(VALUE obj)
 {
     VALUE copy = ractor_copy(obj);
-    rb_obj_traverse(copy,
-                    make_shareable_check_shareable,
-                    null_leave, mark_shareable);
-    return copy;
+    return rb_ractor_make_shareable(copy);
 }
 
 VALUE
@@ -3206,10 +3201,6 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                         (st_data_t)&d);
             }
             else {
-#if USE_TRANSIENT_HEAP
-                if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
-#endif
-
                 uint32_t len = ROBJECT_IV_COUNT(obj);
                 VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -3225,9 +3216,6 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_ARRAY:
         {
             rb_ary_cancel_sharing(obj);
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
-#endif
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
                 VALUE e = rb_ary_entry(obj, i);
@@ -3268,9 +3256,6 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_STRUCT:
         {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_struct_transient_heap_evacuate(obj, TRUE);
-#endif
             long len = RSTRUCT_LEN(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 

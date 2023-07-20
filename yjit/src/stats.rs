@@ -354,6 +354,7 @@ make_counters! {
     expandarray_rhs_too_small,
 
     gbp_wb_required,
+    gbpp_not_gc_guarded,
     gbpp_block_param_modified,
     gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
@@ -368,7 +369,6 @@ make_counters! {
     binding_allocations,
     binding_set,
 
-    vm_insns_count,
     compiled_iseq_entry,
     compiled_iseq_count,
     compiled_blockid_count,
@@ -506,7 +506,6 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
 
     let hash = unsafe { rb_hash_new() };
 
-    // CodeBlock stats
     unsafe {
         // Get the inline and outlined code blocks
         let cb = CodegenGlobals::get_inline_cb();
@@ -546,6 +545,9 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             hash_aset_usize!(hash, "live_context_count", live_context_count);
             hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
         }
+
+        // VM instructions count
+        hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
     }
 
     // If we're not generating stats, the hash is done
@@ -564,13 +566,6 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             // Get the counter value
             let counter_ptr = get_counter_ptr(counter_name);
             let counter_val = *counter_ptr;
-
-            #[cfg(not(feature = "stats"))]
-            if counter_name == &"vm_insns_count" {
-                // If the stats feature is disabled, we don't have vm_insns_count
-                // so we are going to exclude the key
-                continue;
-            }
 
             // Put counter into hash
             let key = rust_str_to_sym(counter_name);
@@ -747,12 +742,6 @@ pub extern "C" fn rb_yjit_reset_stats_bang(_ec: EcPtr, _ruby_self: VALUE) -> VAL
     }
 
     return Qnil;
-}
-
-/// Increment the number of instructions executed by the interpreter
-#[no_mangle]
-pub extern "C" fn rb_yjit_collect_vm_usage_insn() {
-    incr_counter!(vm_insns_count);
 }
 
 #[no_mangle]

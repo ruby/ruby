@@ -3412,7 +3412,6 @@ yp_required_destructured_parameter_node_closing_set(yp_required_destructured_par
 // Allocate a new RequiredParameterNode node.
 static yp_required_parameter_node_t *
 yp_required_parameter_node_create(yp_parser_t *parser, const yp_token_t *token) {
-    assert(token->type == YP_TOKEN_MISSING || token->type == YP_TOKEN_IDENTIFIER);
     yp_required_parameter_node_t *node = YP_ALLOC_NODE(parser, yp_required_parameter_node_t);
 
     *node = (yp_required_parameter_node_t) {
@@ -6506,14 +6505,26 @@ parser_lex(yp_parser_t *parser) {
             }
         }
         case YP_LEX_LIST:
+            if (parser->next_start != NULL) {
+                parser->current.end = parser->next_start;
+                parser->next_start = NULL;
+            }
+
             // First we'll set the beginning of the token.
             parser->current.start = parser->current.end;
 
             // If there's any whitespace at the start of the list, then we're
             // going to trim it off the beginning and create a new token.
             size_t whitespace;
-            if ((whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list)) > 0) {
+
+            bool should_stop = parser->heredoc_end;
+
+            if ((whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list, should_stop)) > 0) {
                 parser->current.end += whitespace;
+                if (parser->current.end[-1] == '\n') {
+                    // mutates next_start
+                    parser_flush_heredoc_end(parser);
+                }
                 LEX(YP_TOKEN_WORDS_SEP);
             }
 
@@ -8244,8 +8255,27 @@ parse_parameters(
                 }
                 break;
             }
-            case YP_TOKEN_IDENTIFIER: {
+            case YP_TOKEN_CLASS_VARIABLE:
+            case YP_TOKEN_IDENTIFIER:
+            case YP_TOKEN_CONSTANT:
+            case YP_TOKEN_INSTANCE_VARIABLE:
+            case YP_TOKEN_GLOBAL_VARIABLE: {
                 parser_lex(parser);
+                switch (parser->previous.type) {
+                    case YP_TOKEN_CONSTANT:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a constant");
+                        break;
+                    case YP_TOKEN_INSTANCE_VARIABLE:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be an instance variable");
+                        break;
+                    case YP_TOKEN_GLOBAL_VARIABLE:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a global variable");
+                        break;
+                    case YP_TOKEN_CLASS_VARIABLE:
+                        yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a class variable");
+                        break;
+                    default: break;
+                }
 
                 if (parser->current.type == YP_TOKEN_EQUAL) {
                     update_parameter_state(parser, &parser->current, &order);
@@ -8387,22 +8417,6 @@ parse_parameters(
                 yp_parameters_node_keyword_rest_set(params, param);
                 break;
             }
-            case YP_TOKEN_CONSTANT:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a constant");
-                break;
-            case YP_TOKEN_INSTANCE_VARIABLE:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be an instance variable");
-                break;
-            case YP_TOKEN_GLOBAL_VARIABLE:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a global variable");
-                break;
-            case YP_TOKEN_CLASS_VARIABLE:
-                parser_lex(parser);
-                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Formal argument cannot be a class variable");
-                break;
             default:
                 if (parser->previous.type == YP_TOKEN_COMMA) {
                     if (allows_trailing_comma) {
@@ -8427,6 +8441,13 @@ parse_parameters(
     } while (looping && accept(parser, YP_TOKEN_COMMA));
 
     yp_do_loop_stack_pop(parser);
+
+    // If we don't have any parameters, return `NULL` instead of an empty `ParametersNode`.
+    if (params->base.location.start == params->base.location.end) {
+        yp_node_destroy(parser, (yp_node_t *) params);
+        return NULL;
+    }
+
     return params;
 }
 
@@ -10941,7 +10962,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 context_push(parser, YP_CONTEXT_DEF);
                 statements = (yp_node_t *) yp_statements_node_create(parser);
 
-                yp_node_t *statement = parse_expression(parser, YP_BINDING_POWER_ASSIGNMENT + 1, "Expected to be able to parse body of endless method definition.");
+                yp_node_t *statement = parse_expression(parser, YP_BINDING_POWER_DEFINED + 1, "Expected to be able to parse body of endless method definition.");
 
                 if (accept(parser, YP_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
                     yp_token_t rescue_keyword = parser->previous;
@@ -12382,7 +12403,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 YP_ATTRIBUTE_UNUSED bool captured_group_names =
                     yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures);
 
-                // We assert that the the regex was successfully parsed
+                // We assert that the regex was successfully parsed
                 assert(captured_group_names);
 
                 for (size_t index = 0; index < named_captures.length; index++) {
