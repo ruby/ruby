@@ -279,7 +279,6 @@ class Dir
   # Each pattern string is expanded
   # according to certain metacharacters;
   # examples below use the {Ruby file tree}[rdoc-ref:Dir@About+the+Examples]):
-  # {Ruby project file tree}[https://github.com/ruby/ruby]:
   #
   # - <tt>'*'</tt>: Matches any substring in an entry name,
   #   similar in meaning to regexp <tt>/.*/mx</tt>;
