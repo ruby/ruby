@@ -1022,6 +1022,11 @@ asan_unlock_freelist(struct heap_page *page)
 static int
 RVALUE_AGE_GET(VALUE obj)
 {
+#if RUBY_DEBUG && USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Attempted to get age bits while using MMTk.");
+    }
+#endif
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
     return (int)(age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] >> RVALUE_AGE_BITMAP_OFFSET(obj)) & RVALUE_AGE_BIT_MASK;
 }
@@ -1029,6 +1034,11 @@ RVALUE_AGE_GET(VALUE obj)
 static void
 RVALUE_AGE_SET(VALUE obj, int age)
 {
+#if RUBY_DEBUG && USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Attempted to set age bits while using MMTk.");
+    }
+#endif
     RUBY_ASSERT(age <= RVALUE_OLD_AGE);
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
     // clear the bits
@@ -2555,10 +2565,15 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     p->as.basic.flags = flags;
     *((VALUE *)&p->as.basic.klass) = klass;
 
+#if USE_MMTK
+    // MMTk uses its own way to distinguish young objects from old objects.
+    if (!rb_mmtk_enabled_p()) {
     int t = flags & RUBY_T_MASK;
     if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
         RVALUE_AGE_SET_CANDIDATE(objspace, obj);
     }
+    }
+#endif
 
     RUBY_DEBUG_LOG("newobj_init: %p, %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
 
