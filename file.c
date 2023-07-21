@@ -7054,10 +7054,10 @@ const char ruby_null_device[] =
  *  When mode is an integer it must be one or more of the following constants,
  *  which may be combined by the bitwise OR operator <tt>|</tt>:
  *
- *  - +File::RDONLY: Open for reading only.
- *  - +File::WRONLY: Open for writing only.
- *  - +File::RDWR: Open for reading and writing.
- *  - +File::APPEND: Open for appending only.
+ *  - +File::RDONLY+: Open for reading only.
+ *  - +File::WRONLY+: Open for writing only.
+ *  - +File::RDWR+: Open for reading and writing.
+ *  - +File::APPEND+: Open for appending only.
  *
  *  Examples:
  *
@@ -7070,8 +7070,8 @@ const char ruby_null_device[] =
  *
  *  These constants may also be ORed into the integer mode:
  *
- *  - +File::CREAT: Create file if it does not exist.
- *  - +File::EXCL: Raise an exception if +File::CREAT is given and the file exists.
+ *  - +File::CREAT+: Create file if it does not exist.
+ *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
  *
  *  === \Data Mode Specified as an \Integer
  *
@@ -7079,10 +7079,10 @@ const char ruby_null_device[] =
  *  When the stream access mode is given as an integer,
  *  the data mode is always text, never binary.
  *
- *  Note that although there is a constant +File::BINARY,
+ *  Note that although there is a constant +File::BINARY+,
  *  setting its value in an integer stream mode has no effect;
  *  this is because, as documented in File::Constants,
- *  the +File::BINARY value disables line code conversion,
+ *  the +File::BINARY+ value disables line code conversion,
  *  but does not change the external encoding.
  *
  *  === Encodings
