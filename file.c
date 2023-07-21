@@ -7773,7 +7773,7 @@ Init_File(void)
     rb_define_const(rb_mFConst, "WRONLY", INT2FIX(O_WRONLY));
     rb_define_const(rb_mFConst, "RDWR", INT2FIX(O_RDWR));
     rb_define_const(rb_mFConst, "APPEND", INT2FIX(O_APPEND));
-    rb_define_const(rb_mFConst, "CREAT", INT2FIX(CREAT));
+    rb_define_const(rb_mFConst, "CREAT", INT2FIX(O_CREAT));
     rb_define_const(rb_mFConst, "EXCL", INT2FIX(O_EXCL));
 #if defined(O_NDELAY) || defined(O_NONBLOCK)
 # ifndef O_NONBLOCK
@@ -7793,8 +7793,8 @@ Init_File(void)
 # define O_SHARE_DELETE 0
 #endif
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
-#ifdef O_TRUNC
-    rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_TRUNC));
+#ifdef O_SYNC
+    rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));
 #endif
 #ifdef O_DSYNC
     rb_define_const(rb_mFConst, "DSYNC", INT2FIX(O_DSYNC));
