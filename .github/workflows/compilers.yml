@@ -241,7 +241,11 @@ jobs:
 
       - name: Install Rust
         if: ${{ matrix.entry.rust }}
-        run: sudo apt-get update && sudo apt install -y rustc
+        run: |
+          command -v rustc ||
+          {
+            sudo apt-get update && sudo apt install -y rustc
+          }
 
       - name: Run configure
         run: >
