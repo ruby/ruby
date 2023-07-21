@@ -1566,7 +1566,6 @@ end
       gem "rack"
     G
 
-
     ruby <<-R
       module Gem
         remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
