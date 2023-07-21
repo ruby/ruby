@@ -1370,7 +1370,14 @@ rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), v
 
     rb_thread_t *th = NULL;
     ccan_list_for_each(&main_ractor->threads.set, th, lt_node) {
-        visit_mutator(th->mutator, data);
+        // Ruby caches native threads on some platforms,
+        // and the rb_thread_t structs can be reused while a thread is cached.
+        // Currently we destroy the mutator and the mutator_local structs when a thread exits.
+        if (th->mutator != NULL) {
+            visit_mutator(th->mutator, data);
+        } else {
+            RUBY_ASSERT(th->mutator_local == NULL);
+        }
     }
 }
 
