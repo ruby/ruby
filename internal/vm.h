@@ -76,6 +76,11 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      VALUE data2);
 void rb_check_stack_overflow(void);
 
+#if USE_YJIT
+/* vm_exec.c */
+extern uint64_t rb_vm_insns_count;
+#endif
+
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);

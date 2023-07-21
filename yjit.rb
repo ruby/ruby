@@ -162,19 +162,16 @@ module RubyVM::YJIT
 
     # Number of instructions that finish executing in YJIT.
     # See :count-placement: about the subtraction.
-    retired_in_yjit = stats[:exec_instruction] - side_exits
+    retired_in_yjit = stats[:yjit_insns_count] - side_exits
 
     # Average length of instruction sequences executed by YJIT
     avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0
 
-    # This only available on yjit stats builds
-    if stats.key?(:vm_insns_count)
-      # Proportion of instructions that retire in YJIT
-      total_insns_count = retired_in_yjit + stats[:vm_insns_count]
-      yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
-      stats[:total_insns_count] = total_insns_count
-      stats[:ratio_in_yjit] = yjit_ratio_pct
-    end
+    # Proportion of instructions that retire in YJIT
+    total_insns_count = retired_in_yjit + stats[:vm_insns_count]
+    yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
+    stats[:total_insns_count] = total_insns_count
+    stats[:ratio_in_yjit] = yjit_ratio_pct
 
     # Make those stats available in RubyVM::YJIT.runtime_stats as well
     stats[:side_exit_count]  = side_exits
@@ -318,14 +315,10 @@ module RubyVM::YJIT
       out.puts "object_shape_count:    " + format_number(13, stats[:object_shape_count])
       out.puts "side_exit_count:       " + format_number(13, stats[:side_exit_count])
       out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
-      out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count]) if stats.key?(:total_insns_count)
-      if stats.key?(:vm_insns_count)
-        out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
-      end
-      out.puts "yjit_insns_count:      " + format_number(13, stats[:exec_instruction])
-      if stats.key?(:ratio_in_yjit)
-        out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
-      end
+      out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count])
+      out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
+      out.puts "yjit_insns_count:      " + format_number(13, stats[:yjit_insns_count])
+      out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
       out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
       print_sorted_exit_counts(stats, out: out, prefix: "exit_")

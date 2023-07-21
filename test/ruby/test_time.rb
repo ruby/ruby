@@ -75,6 +75,7 @@ class TestTime < Test::Unit::TestCase
       Time.new("2020-12-25 00 +09:00")
     }
 
+    assert_equal(Time.new(2021), Time.new("2021"))
     assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
 
     assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
@@ -137,6 +138,18 @@ class TestTime < Test::Unit::TestCase
     }
     assert_raise_with_message(ArgumentError, /mon out of range/) {
       Time.new("2020-17-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12-02")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(" 2020-12-02 00:00:00")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new("2020-12-02 00:00:00 ")
     }
   end
 

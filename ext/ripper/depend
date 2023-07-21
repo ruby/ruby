@@ -12,7 +12,7 @@ ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
-	$(Q) $(BISON) -t -v -o$@ -h$*.h - parse.y < $<
+	$(Q) $(BISON) -t -v -o$@ -h$*.h - $< < $<
 
 all: check
 static: check
@@ -603,6 +603,7 @@ ripper.o: $(top_srcdir)/internal/warnings.h
 ripper.o: $(top_srcdir)/method.h
 ripper.o: $(top_srcdir)/node.h
 ripper.o: $(top_srcdir)/parser_node.h
+ripper.o: $(top_srcdir)/parser_st.h
 ripper.o: $(top_srcdir)/regenc.h
 ripper.o: $(top_srcdir)/ruby_assert.h
 ripper.o: $(top_srcdir)/ruby_atomic.h

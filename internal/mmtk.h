@@ -73,7 +73,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*update_global_weak_tables)(void);
     void *(*get_original_givtbl)(MMTk_ObjectReference object);
     void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
-    size_t (*vm_allocated_bytes)(void);
+    size_t (*vm_live_bytes)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {

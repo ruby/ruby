@@ -89,7 +89,9 @@ module YARP
     end
 
     def ==(other)
-      other in Location[start_offset: ^(start_offset), end_offset: ^(end_offset)]
+      other.is_a?(Location) &&
+        other.start_offset == start_offset &&
+        other.end_offset == end_offset
     end
 
     def self.null
@@ -195,7 +197,9 @@ module YARP
     end
 
     def ==(other)
-      other in Token[type: ^(type), value: ^(value)]
+      other.is_a?(Token) &&
+        other.type == type &&
+        other.value == value
     end
   end
 

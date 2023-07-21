@@ -169,7 +169,7 @@ module YARP
       USTAR: :on_op,
       USTAR_STAR: :on_op,
       WORDS_SEP: :on_words_sep,
-      __END__: :on___end__
+      "__END__": :on___end__
     }.freeze
 
     # When we produce tokens, we produce the same arrays that Ripper does.

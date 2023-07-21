@@ -847,14 +847,14 @@ pub fn gen_single_block(
             verify_ctx(&jit, &asm.ctx);
         }
 
+        // :count-placement:
+        // Count bytecode instructions that execute in generated code.
+        // Note that the increment happens even when the output takes side exit.
+        gen_counter_incr(&mut asm, Counter::yjit_insns_count);
+
         // Lookup the codegen function for this instruction
         let mut status = None;
         if let Some(gen_fn) = get_gen_fn(VALUE(opcode)) {
-            // :count-placement:
-            // Count bytecode instructions that execute in generated code.
-            // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr(&mut asm, Counter::exec_instruction);
-
             // Add a comment for the name of the YARV instruction
             asm.comment(&format!("Insn: {:04} {} (stack_size: {})", insn_idx, insn_name(opcode), asm.ctx.get_stack_size()));
 
@@ -4841,7 +4841,6 @@ fn gen_push_frame(
     //    .self       = recv,
     //    .ep         = <sp - 1>,
     //    .block_code = 0,
-    //    .__bp__     = sp,
     // };
     asm.comment("push callee control frame");
 
@@ -4850,7 +4849,6 @@ fn gen_push_frame(
     if let Some(pc) = frame.pc {
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), pc.into());
     };
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BP), sp);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), sp);
     let iseq: Opnd = if let Some(iseq) = frame.iseq {
         VALUE::from(iseq).into()
@@ -5228,7 +5226,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
     asm.csel_nz(emb_len_opnd, array_len_opnd)
 }
 
-// Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+// Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
 fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
     asm.comment("get array pointer for embedded or heap");
 

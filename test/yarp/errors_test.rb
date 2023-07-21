@@ -426,9 +426,14 @@ class ErrorsTest < Test::Unit::TestCase
     expected = DefNode(
       Location(),
       nil,
-      ParametersNode([], [], [], nil, [], nil, nil),
+      ParametersNode([
+        RequiredParameterNode(:A),
+        RequiredParameterNode(:@a),
+        RequiredParameterNode(:$A),
+        RequiredParameterNode(:@@a),
+      ], [], [], nil, [], nil, nil),
       nil,
-      [],
+      [:A, :@a, :$A, :@@a],
       Location(),
       nil,
       Location(),

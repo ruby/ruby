@@ -109,6 +109,19 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal pub_pem, priv.public_to_pem
     assert_equal pub_pem, pub.public_to_pem
 
+    begin
+      assert_equal "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+        priv.raw_private_key.unpack1("H*")
+      assert_equal OpenSSL::PKey.new_raw_private_key("ED25519", priv.raw_private_key).private_to_pem,
+        priv.private_to_pem
+      assert_equal "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
+        priv.raw_public_key.unpack1("H*")
+      assert_equal OpenSSL::PKey.new_raw_public_key("ED25519", priv.raw_public_key).public_to_pem,
+        pub.public_to_pem
+    rescue NoMethodError
+      pend "running OpenSSL version does not have raw public key support"
+    end
+
     sig = [<<~EOF.gsub(/[^0-9a-f]/, "")].pack("H*")
     92a009a9f0d4cab8720e820b5f642540
     a2b27b5416503f8fb3762223ebdb69da
@@ -155,6 +168,32 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal alice_pem, alice.private_to_pem
     assert_equal bob_pem, bob.public_to_pem
     assert_equal [shared_secret].pack("H*"), alice.derive(bob)
+    begin
+      alice_private = OpenSSL::PKey.new_raw_private_key("X25519", alice.raw_private_key)
+      bob_public = OpenSSL::PKey.new_raw_public_key("X25519", bob.raw_public_key)
+      alice_private_raw = alice.raw_private_key.unpack1("H*")
+      bob_public_raw = bob.raw_public_key.unpack1("H*")
+    rescue NoMethodError
+      # OpenSSL < 1.1.1
+      pend "running OpenSSL version does not have raw public key support"
+    end
+    assert_equal alice_private.private_to_pem,
+      alice.private_to_pem
+    assert_equal bob_public.public_to_pem,
+      bob.public_to_pem
+    assert_equal "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a",
+      alice_private_raw
+    assert_equal "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
+      bob_public_raw
+  end
+
+  def raw_initialize
+    pend "Ed25519 is not implemented" unless OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101000 && # >= v1.1.1
+
+    assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("foo123", "xxx") }
+    assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("ED25519", "xxx") }
+    assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_public_key("foo123", "xxx") }
+    assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_public_key("ED25519", "xxx") }
   end
 
   def test_compare?

@@ -8,7 +8,7 @@ rescue LoadError, NameError
   return
 end
 
-class IRB::TestRendering < Yamatanooroti::TestCase
+class IRB::RenderingTest < Yamatanooroti::TestCase
   def setup
     @pwd = Dir.pwd
     suffix = '%010d' % Random.rand(0..65535)
@@ -176,7 +176,7 @@ class IRB::TestRendering < Yamatanooroti::TestCase
   end
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
-    pend "Needs a dummy document to show doc"
+    omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1')
     write_irbrc <<~'LINES'
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
@@ -190,16 +190,28 @@ class IRB::TestRendering < Yamatanooroti::TestCase
     start_terminal(4, 19, %W{ruby -I/home/aycabta/ruby/reline/lib -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
     write("Str\C-i")
     close
-    assert_screen(<<~EOC)
-      001> String
-            StringPress A
-            StructString
-                  of byte
-    EOC
+
+    # This is because on macOS we display different shortcut for displaying the full doc
+    # 'O' is for 'Option' and 'A' is for 'Alt'
+    if RUBY_PLATFORM =~ /darwin/
+      assert_screen(<<~EOC)
+        start IRB
+        001> String
+             StringPress O
+             StructString
+      EOC
+    else
+      assert_screen(<<~EOC)
+        start IRB
+        001> String
+             StringPress A
+             StructString
+      EOC
+    end
   end
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_left
-    pend "Needs a dummy document to show doc"
+    omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1')
     write_irbrc <<~'LINES'
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
@@ -214,10 +226,10 @@ class IRB::TestRendering < Yamatanooroti::TestCase
     write("Str\C-i")
     close
     assert_screen(<<~EOC)
+      start IRB
       001> String
       PressString
       StrinStruct
-      of by
     EOC
   end
 

@@ -2545,13 +2545,18 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     size_t ndigits;
     size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
 
-    while ((ptr < end) && ISSPACE(*ptr)) ptr++;
+    if ((ptr < end) && (ISSPACE(*ptr) || ISSPACE(*(end-1)))) {
+        rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
+    }
     year = parse_int(ptr, end, &ptr, &ndigits, true);
     if (NIL_P(year)) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
     }
     else if (ndigits < 4) {
         rb_raise(rb_eArgError, "year must be 4 or more digits: %.*s", (int)ndigits, ptr - ndigits);
+    }
+    else if (ptr == end) {
+        goto only_year;
     }
     do {
 #define peekable_p(n) ((ptrdiff_t)(n) < (end - ptr))
@@ -2613,6 +2618,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     if (zend > zstr) {
         zone = rb_str_subseq(str, zstr - begin, zend - zstr);
     }
+    else if (hour == -1) {
+        rb_raise(rb_eArgError, "no time information");
+    }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
         static const size_t TIME_SCALE_NUMDIGITS =
@@ -2628,6 +2636,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
             subsec = rb_rational_new(subsec, num);
         }
     }
+
+only_year:
+    ;
 
     struct vtm vtm = {
         .wday = VTM_WDAY_INITVAL,

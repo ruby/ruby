@@ -3505,7 +3505,7 @@ rb_hash_keys(VALUE hash)
     if (size == 0) return keys;
 
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
-        RARRAY_PTR_USE_TRANSIENT(keys, ptr, {
+        RARRAY_PTR_USE(keys, ptr, {
             if (RHASH_AR_TABLE_P(hash)) {
                 size = ar_keys(hash, ptr, size);
             }
@@ -3552,14 +3552,14 @@ rb_hash_values(VALUE hash)
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
         if (RHASH_AR_TABLE_P(hash)) {
             rb_gc_writebarrier_remember(values);
-            RARRAY_PTR_USE_TRANSIENT(values, ptr, {
+            RARRAY_PTR_USE(values, ptr, {
                 size = ar_values(hash, ptr, size);
             });
         }
         else if (RHASH_ST_TABLE_P(hash)) {
             st_table *table = RHASH_ST_TABLE(hash);
             rb_gc_writebarrier_remember(values);
-            RARRAY_PTR_USE_TRANSIENT(values, ptr, {
+            RARRAY_PTR_USE(values, ptr, {
                 size = st_values(table, ptr, size);
             });
         }

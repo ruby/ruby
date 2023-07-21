@@ -2301,6 +2301,8 @@ CODE
     assert_not_predicate(str, :ascii_only?)
     assert_not_predicate(star, :ascii_only?)
     assert_not_predicate(result, :ascii_only?, bug13950)
+
+    assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
   end
 
   def test_tr!
@@ -2325,6 +2327,8 @@ CODE
     a = S("abc".force_encoding(Encoding::US_ASCII))
     assert_nil(a.tr!(S("z"), S("\u0101")), '[ruby-core:22326]')
     assert_equal(Encoding::US_ASCII, a.encoding, '[ruby-core:22326]')
+
+    assert_equal(S("XYC"), S("ABC").tr!("A-AB", "XY"))
   end
 
   def test_tr_s
@@ -2332,6 +2336,8 @@ CODE
     assert_equal(S("h*o"),  S("hello").tr_s(S("el"), S("*")))
     assert_equal("a".hash, S("\u0101\u0101").tr_s("\u0101", "a").hash)
     assert_equal(true, S("\u3041\u3041").tr("\u3041", "a").ascii_only?)
+
+    assert_equal(S("XYC"), S("ABC").tr_s("A-AB", "XY"))
   end
 
   def test_tr_s!
@@ -2344,6 +2350,8 @@ CODE
     a = S("hello")
     assert_equal(S("h*o"), a.tr_s!(S("el"), S("*")))
     assert_equal(S("h*o"), a)
+
+    assert_equal(S("XYC"), S("ABC").tr_s!("A-AB", "XY"))
   end
 
   def test_unpack

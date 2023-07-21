@@ -590,6 +590,12 @@ rb_get_def_bmethod_proc(rb_method_definition_t *def)
     return def->body.bmethod.proc;
 }
 
+unsigned long
+rb_get_iseq_body_total_calls(const rb_iseq_t *iseq)
+{
+    return iseq->body->total_calls;
+}
+
 const rb_iseq_t *
 rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {

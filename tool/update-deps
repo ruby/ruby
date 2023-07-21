@@ -167,6 +167,12 @@ FILES_SAME_NAME_TOP = %w[
   version.h
 ]
 
+# Files that may or may not exist on CI for some reason.
+# They are probably missing dependencies.
+UNSTABLE_FILES = %w[
+  win32/file.o
+]
+
 # Other source files exist in the source directory.
 
 def in_makefile(target, source)
@@ -230,6 +236,8 @@ def in_makefile(target, source)
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["#{File.dirname(target)}/depend", target2, source2]
+  when *UNSTABLE_FILES
+    warn "warning: ignoring: #{target}"
   else
     raise "unexpected target: #{target}"
   end

@@ -276,11 +276,13 @@ parse_isxdigit(int c)
 #undef ISXDIGIT
 #define ISXDIGIT(c) parse_isxdigit(c)
 
+#include "parser_st.h"
+
 #undef STRCASECMP
-#define STRCASECMP st_locale_insensitive_strcasecmp
+#define STRCASECMP rb_parser_st_locale_insensitive_strcasecmp
 
 #undef STRNCASECMP
-#define STRNCASECMP st_locale_insensitive_strncasecmp
+#define STRNCASECMP rb_parser_st_locale_insensitive_strncasecmp
 
 #ifdef RIPPER
 #include "ripper_init.h"
@@ -11333,7 +11335,7 @@ id_is_var(struct parser_params *p, ID id)
 static VALUE
 new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 {
-    VALUE src = 0, err;
+    VALUE src = 0, err = 0;
     int options = 0;
     if (ripper_is_node_yylval(p, re)) {
         src = RNODE(re)->nd_cval;

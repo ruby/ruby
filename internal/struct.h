@@ -15,7 +15,6 @@ enum {
     RSTRUCT_EMBED_LEN_MASK = RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 |
                                  RUBY_FL_USER3 | RUBY_FL_USER2 | RUBY_FL_USER1,
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
-    RSTRUCT_TRANSIENT_FLAG = RUBY_FL_USER8,
 };
 
 struct RStruct {
@@ -61,41 +60,12 @@ VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
 static inline const VALUE *rb_struct_const_heap_ptr(VALUE st);
-static inline bool RSTRUCT_TRANSIENT_P(VALUE st);
-static inline void RSTRUCT_TRANSIENT_SET(VALUE st);
-static inline void RSTRUCT_TRANSIENT_UNSET(VALUE st);
 static inline long RSTRUCT_EMBED_LEN(VALUE st);
 static inline long RSTRUCT_LEN(VALUE st);
 static inline int RSTRUCT_LENINT(VALUE st);
 static inline const VALUE *RSTRUCT_CONST_PTR(VALUE st);
 static inline void RSTRUCT_SET(VALUE st, long k, VALUE v);
 static inline VALUE RSTRUCT_GET(VALUE st, long k);
-
-static inline bool
-RSTRUCT_TRANSIENT_P(VALUE st)
-{
-#if USE_TRANSIENT_HEAP
-    return FL_TEST_RAW(st, RSTRUCT_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-static inline void
-RSTRUCT_TRANSIENT_SET(VALUE st)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RSTRUCT_TRANSIENT_UNSET(VALUE st)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
-#endif
-}
 
 static inline long
 RSTRUCT_EMBED_LEN(VALUE st)
