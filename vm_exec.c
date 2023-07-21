@@ -11,6 +11,11 @@
 
 #include <math.h>
 
+#if USE_YJIT
+// The number of instructions executed on vm_exec_core. --yjit-stats uses this.
+uint64_t rb_vm_insns_count = 0;
+#endif
+
 #if VM_COLLECT_USAGE_DETAILS
 static void vm_analysis_insn(int insn);
 #endif
@@ -39,18 +44,6 @@ static void vm_analysis_insn(int insn);
 static VALUE
 vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
-
-#if OPT_STACK_CACHING
-#if 0
-#elif __GNUC__ && __x86_64__
-    DECL_SC_REG(VALUE, a, "12");
-    DECL_SC_REG(VALUE, b, "13");
-#else
-    register VALUE reg_a;
-    register VALUE reg_b;
-#endif
-#endif
-
 #if defined(__GNUC__) && defined(__i386__)
     DECL_SC_REG(const VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");

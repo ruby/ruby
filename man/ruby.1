@@ -271,6 +271,11 @@ In auto-split mode, Ruby executes
 .Dl $F = $_.split
 at beginning of each loop.
 .Pp
+.It Fl -backtrace-limit Ns = Ns Ar num
+Limits the maximum length of backtraces to
+.Ar num
+lines (default -1, meaning no limit).
+.Pp
 .It Fl c
 Causes Ruby to check the syntax of the script and exit without
 executing. If there are no syntax errors, Ruby will print

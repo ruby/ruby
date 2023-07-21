@@ -1605,7 +1605,7 @@ class Reline::LineEditor
     else
       @just_cursor_moving = false
     end
-    if @is_multiline and @auto_indent_proc and not simplified_rendering?
+    if @is_multiline and @auto_indent_proc and not simplified_rendering? and @line
       process_auto_indent
     end
   end

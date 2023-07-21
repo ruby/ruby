@@ -3266,7 +3266,7 @@ dir_open_dir(int argc, VALUE *argv)
  *   #<Encoding:UTF-8>
  *   #<Encoding:US-ASCII>
  *
- * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
+ * See {String Encoding}[rdoc-ref:encodings.rdoc@String+Encoding].
  *
  * Returns an enumerator if no block is given.
  */
@@ -3302,7 +3302,7 @@ dir_collect(VALUE dir)
  *   Dir.entries('/example', encoding: 'US-ASCII').first.encoding
  *   # => #<Encoding:US-ASCII>
  *
- * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
+ * See {String Encoding}[rdoc-ref:encodings.rdoc@String+Encoding].
  *
  * Raises an exception if the directory does not exist.
  */
@@ -3399,7 +3399,7 @@ dir_collect_children(VALUE dir)
  *   Dir.children('/example', encoding: 'US-ASCII').first.encoding
  *   # => #<Encoding:US-ASCII>
  *
- * See {String Encoding}[https://docs.ruby-lang.org/en/master/encodings_rdoc.html#label-String+Encoding].
+ * See {String Encoding}[rdoc-ref:encodings.rdoc@String+Encoding].
  *
  * Raises an exception if the directory does not exist.
  */

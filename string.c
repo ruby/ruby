@@ -7744,8 +7744,10 @@ trnext(struct tr *t, rb_encoding *enc)
                         }
                         continue; /* not reached */
                     }
-                    t->gen = 1;
-                    t->max = c;
+                    else if (t->now < c) {
+                        t->gen = 1;
+                        t->max = c;
+                    }
                 }
             }
             return t->now;

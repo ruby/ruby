@@ -2,7 +2,6 @@
 require 'test/unit'
 require 'delegate'
 require 'timeout'
-require 'bigdecimal'
 require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
@@ -851,9 +850,6 @@ class TestRange < Test::Unit::TestCase
   def test_bsearch_for_other_numerics
     assert_raise(TypeError) {
       (Rational(-1,2)..Rational(9,4)).bsearch
-    }
-    assert_raise(TypeError) {
-      (BigDecimal('0.5')..BigDecimal('2.25')).bsearch
     }
   end
 

@@ -207,7 +207,6 @@ RB_DEBUG_COUNTER(gc_isptr_maybe)
  * * [attr]
  *   * _ptr: R?? is not embed.
  *   * _embed: R?? is embed.
- *   * _transient: R?? uses transient heap.
  * * type specific attr.
  *   * str_shared: str is shared.
  *   * str_nofree:        nofree
@@ -233,7 +232,6 @@ RB_DEBUG_COUNTER(obj_promote)
 RB_DEBUG_COUNTER(obj_wb_unprotect)
 
 RB_DEBUG_COUNTER(obj_obj_embed)
-RB_DEBUG_COUNTER(obj_obj_transient)
 RB_DEBUG_COUNTER(obj_obj_ptr)
 RB_DEBUG_COUNTER(obj_obj_too_complex)
 
@@ -244,7 +242,6 @@ RB_DEBUG_COUNTER(obj_str_nofree)
 RB_DEBUG_COUNTER(obj_str_fstr)
 
 RB_DEBUG_COUNTER(obj_ary_embed)
-RB_DEBUG_COUNTER(obj_ary_transient)
 RB_DEBUG_COUNTER(obj_ary_ptr)
 RB_DEBUG_COUNTER(obj_ary_extracapa)
 /*
@@ -268,11 +265,9 @@ RB_DEBUG_COUNTER(obj_hash_g8)
 RB_DEBUG_COUNTER(obj_hash_null)
 RB_DEBUG_COUNTER(obj_hash_ar)
 RB_DEBUG_COUNTER(obj_hash_st)
-RB_DEBUG_COUNTER(obj_hash_transient)
 RB_DEBUG_COUNTER(obj_hash_force_convert)
 
 RB_DEBUG_COUNTER(obj_struct_embed)
-RB_DEBUG_COUNTER(obj_struct_transient)
 RB_DEBUG_COUNTER(obj_struct_ptr)
 
 RB_DEBUG_COUNTER(obj_data_empty)
@@ -326,11 +321,6 @@ RB_DEBUG_COUNTER(artable_hint_notfound)
 RB_DEBUG_COUNTER(heap_xmalloc)
 RB_DEBUG_COUNTER(heap_xrealloc)
 RB_DEBUG_COUNTER(heap_xfree)
-
-/* transient_heap */
-RB_DEBUG_COUNTER(theap_alloc)
-RB_DEBUG_COUNTER(theap_alloc_fail)
-RB_DEBUG_COUNTER(theap_evacuate)
 
 // VM sync
 RB_DEBUG_COUNTER(vm_sync_lock)

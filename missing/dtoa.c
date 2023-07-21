@@ -183,7 +183,10 @@
 #undef Long
 #undef ULong
 
+#include <assert.h>
 #include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #if (INT_MAX >> 30) && !(INT_MAX >> 31)
 #define Long int
@@ -195,7 +198,7 @@
 #error No 32bit integer
 #endif
 
-#if HAVE_LONG_LONG
+#if defined(HAVE_LONG_LONG) && (HAVE_LONG_LONG)
 #define Llong LONG_LONG
 #else
 #define NO_LONG_LONG
@@ -221,12 +224,12 @@
 #ifdef MALLOC
 extern void *MALLOC(size_t);
 #else
-#define MALLOC xmalloc
+#define MALLOC malloc
 #endif
 #ifdef FREE
 extern void FREE(void*);
 #else
-#define FREE xfree
+#define FREE free
 #endif
 #ifndef NO_SANITIZE
 #define NO_SANITIZE(x, y) y
@@ -502,7 +505,7 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #endif
 
 #ifndef ATOMIC_PTR_CAS
-#define ATOMIC_PTR_CAS(var, old, new) ((var) = (new), (old))
+#define ATOMIC_PTR_CAS(var, old, new) ((var) = (new), (void *)(old))
 #endif
 #ifndef LIKELY
 #define LIKELY(x) (x)

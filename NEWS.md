@@ -49,6 +49,13 @@ Note: We're only listing outstanding class updates.
 
     * `Module#set_temporary_name` added for setting a temporary name for a module. [[Feature #19521]]
 
+* Process.warmup
+
+    * Notify the Ruby virtual machine that the boot sequence is finished,
+      and that now is a good time to optimize the application. This is useful
+      for long running applications. The actual optimizations performed are entirely
+      implementation specific and may change in the future without notice. [[Feature #18885]
+
 ## Stdlib updates
 
 The following default gems are updated.
@@ -59,7 +66,7 @@ The following default gems are updated.
 * csv 3.2.8
 * fiddle 1.1.2
 * fileutils 1.7.1
-* irb 1.7.2
+* irb 1.7.4
 * nkf 0.1.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
@@ -70,13 +77,14 @@ The following default gems are updated.
 * time 0.2.2
 * timeout 0.4.0
 * uri 0.12.2
+* yarp 0.4.0
 
 The following bundled gems are updated.
 
 * minitest 5.18.1
 * test-unit 3.6.1
 * net-imap 0.3.6
-* rbs 3.1.0
+* rbs 3.1.1
 * typeprof 0.21.7
 * debug 1.8.0
 
@@ -137,6 +145,6 @@ changelog for details of the default gems or bundled gems.
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
+[Feature #19521]: https://bugs.ruby-lang.org/issues/19521
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
-[Feature #19521]: https://bugs.ruby-lang.org/issues/19521

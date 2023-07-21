@@ -70,7 +70,7 @@ CLONESETUP(VALUE clone, VALUE obj)
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
 
-    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
+    const VALUE flags = RUBY_FL_PROMOTED | RUBY_FL_FINALIZE;
     rb_obj_setup(clone, rb_singleton_class_clone(obj),
                  RB_FL_TEST_RAW(obj, ~flags));
     rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
@@ -760,7 +760,7 @@ rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_a
 static const char proc_without_block[] = "tried to create Proc object without a block";
 
 static VALUE
-proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
+proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
     const rb_execution_context_t *ec = GET_EC();
@@ -825,7 +825,7 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 static VALUE
 rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE block = proc_new(klass, FALSE, FALSE);
+    VALUE block = proc_new(klass, FALSE);
 
     rb_obj_call_init_kw(block, argc, argv, RB_PASS_CALLED_KEYWORDS);
     return block;
@@ -834,7 +834,7 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_block_proc(void)
 {
-    return proc_new(rb_cProc, FALSE, FALSE);
+    return proc_new(rb_cProc, FALSE);
 }
 
 /*
@@ -847,13 +847,13 @@ rb_block_proc(void)
 static VALUE
 f_proc(VALUE _)
 {
-    return proc_new(rb_cProc, FALSE, TRUE);
+    return proc_new(rb_cProc, FALSE);
 }
 
 VALUE
 rb_block_lambda(void)
 {
-    return proc_new(rb_cProc, TRUE, FALSE);
+    return proc_new(rb_cProc, TRUE);
 }
 
 static void

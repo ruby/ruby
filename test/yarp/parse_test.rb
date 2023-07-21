@@ -28,7 +28,6 @@ class ParseTest < Test::Unit::TestCase
 
   known_failures = %w[
     seattlerb/heredoc_nested.txt
-    seattlerb/pct_w_heredoc_interp_nested.txt
   ]
 
   def find_source_file_node(node)

@@ -12,11 +12,9 @@
 #include <string.h>
 
 // YP_EXPORTED_FUNCTION
-#if defined(YP_STATIC)
-#   define YP_EXPORTED_FUNCTION
-#elif defined(_WIN32)
+#if defined(_WIN32)
 #   define YP_EXPORTED_FUNCTION __declspec(dllexport) extern
-#else
+#elif defined(YP_EXPORT_SYMBOLS)
 #   ifndef YP_EXPORTED_FUNCTION
 #       ifndef RUBY_FUNC_EXPORTED
 #           define YP_EXPORTED_FUNCTION __attribute__((__visibility__("default"))) extern
@@ -24,6 +22,8 @@
 #           define YP_EXPORTED_FUNCTION RUBY_FUNC_EXPORTED
 #       endif
 #   endif
+#else
+#   define YP_EXPORTED_FUNCTION
 #endif
 
 // YP_ATTRIBUTE_UNUSED
@@ -45,6 +45,12 @@ int yp_snprintf(char *dest, YP_ATTRIBUTE_UNUSED size_t size, const char *format,
 #if defined(HAVE_SNPRINTF)
     // We use snprintf if it's available
 #   define yp_snprintf snprintf
+
+#else
+    // In case snprintf isn't present on the system, we provide our own that simply
+    // forwards to the less-safe sprintf.
+#   define yp_snprintf(dest, size, ...) sprintf((dest), __VA_ARGS__)
+
 #endif
 
 #endif

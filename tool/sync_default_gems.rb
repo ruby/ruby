@@ -416,6 +416,7 @@ module SyncDefaultGems
         mv "yarp/enc/#{f}", "yarp/enc/yp_#{f}"
       end
 
+      cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
 
@@ -443,6 +444,7 @@ module SyncDefaultGems
   def message_filter(repo, sha, input: ARGF)
     log = input.read
     log.delete!("\r")
+    log << "\n" if !log.end_with?("\n")
     repo_url = "https://github.com/#{repo}"
     subject, log = log.split(/\n(?:[ \t]*(?:\n|\z))/, 2)
     conv = proc do |s|
