@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 require "rubygems" unless defined?(Gem)
+begin
+  require "bundled_gems" unless defined?(Gem::BUNDLED_GEMS)
+rescue LoadError
+end
 
 module Bundler
   class RubygemsIntegration
@@ -225,6 +229,20 @@ module Bundler
       end
     end
 
+    def reverse_rubygems_kernel_mixin
+      # Disable rubygems' gem activation system
+      if Gem.respond_to?(:discover_gems_on_require=)
+        Gem.discover_gems_on_require = false
+      else
+        kernel = (class << ::Kernel; self; end)
+        [kernel, ::Kernel].each do |k|
+          if k.private_method_defined?(:gem_original_require)
+            redefine_method(k, :require, k.instance_method(:gem_original_require))
+          end
+        end
+      end
+    end
+
     def replace_require(specs)
       return if [::Kernel.singleton_class, ::Kernel].any?{|klass| klass.respond_to?(:no_warning_require)}
 
@@ -370,7 +388,11 @@ module Bundler
     def replace_entrypoints(specs)
       specs_by_name = add_default_gems_to(specs)
 
-      replace_require(specs)
+      if defined?(::Gem::BUNDLED_GEMS)
+        replace_require(specs)
+      else
+        reverse_rubygems_kernel_mixin
+      end
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
       replace_bin_path(specs_by_name)

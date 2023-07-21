@@ -1556,7 +1556,12 @@ end
       gem "rack"
     G
 
+
     ruby <<-R
+      module Gem
+        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
+        BUNDLED_GEMS = { "csv" => "1.0.0" }
+      end
       require 'bundler/setup'
       require 'csv'
     R
@@ -1575,6 +1580,10 @@ end
     G
 
     ruby <<-R
+      module Gem
+        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
+        BUNDLED_GEMS = { "csv" => "1.0.0" }
+      end
       require 'csv'
       require 'bundler/setup'
       require 'csv'
@@ -1594,6 +1603,10 @@ end
     G
 
     ruby <<-R
+      module Gem
+        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
+        BUNDLED_GEMS = { "csv" => "1.0.0" }
+      end
       require 'bundler/setup'
       require 'csv'
     R
@@ -1615,6 +1628,10 @@ end
     G
 
     ruby <<-R
+      module Gem
+        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
+        BUNDLED_GEMS = { "csv" => "1.0.0", "net-imap" => "0.0.1" }
+      end
       require 'bundler/setup'
       begin
         require 'net/imap'
