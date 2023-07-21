@@ -810,6 +810,7 @@ module Bundler
       @specs_that_changed_sources = []
 
       specs.each do |s|
+        name = s.name
         dep = @dependencies.find {|d| s.satisfies?(d) }
         lockfile_source = s.source
 
@@ -848,11 +849,11 @@ module Bundler
           else
             # If the spec is no longer in the path source, unlock it. This
             # commonly happens if the version changed in the gemspec
-            @unlock[:gems] << s.name
+            @unlock[:gems] << name
           end
         end
 
-        if dep.nil? && requested_dependencies.find {|d| s.name == d.name }
+        if dep.nil? && requested_dependencies.find {|d| name == d.name }
           @unlock[:gems] << s.name
         else
           converged << s
