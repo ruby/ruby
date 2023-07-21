@@ -1031,6 +1031,48 @@ rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf)
     return strbuf->ary;
 }
 
+rb_mmtk_strbuf_t*
+rb_mmtk_chars_to_strbuf(char* chars)
+{
+    return (rb_mmtk_strbuf_t*)(chars - offsetof(rb_mmtk_strbuf_t, ary));
+}
+
+rb_mmtk_strbuf_t*
+rb_mmtk_strbuf_realloc(rb_mmtk_strbuf_t* old_strbuf, size_t new_capa)
+{
+    // Allocate a new strbuf.
+    rb_mmtk_strbuf_t *new_strbuf = rb_mmtk_new_strbuf(new_capa);
+
+    // Copy content if old_strbuf is not NULL.
+    if (old_strbuf != NULL) {
+        size_t old_capa = old_strbuf->capa;
+        size_t copy_size = old_capa > new_capa ? new_capa : old_capa;
+        memcpy(new_strbuf->ary, old_strbuf->ary, copy_size);
+    }
+
+    return new_strbuf;
+}
+
+void
+rb_mmtk_scan_offsetted_strbuf_field(char** field, bool update)
+{
+    // If the field contains NULL, return immediately.
+    char *old_field_value = *field;
+    if (old_field_value == NULL) {
+        return;
+    }
+
+    // Trace the actual object.
+    VALUE old_ref = (VALUE)rb_mmtk_chars_to_strbuf(old_field_value);
+    VALUE new_ref = rb_mmtk_maybe_forward(old_ref);
+
+    // Update the field if needed.
+    if (update && new_ref != old_ref) {
+        char *new_field_value = rb_mmtk_strbuf_to_chars((rb_mmtk_strbuf_t*)new_ref);
+        *field = new_field_value;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Object buffer implementation
 ////////////////////////////////////////////////////////////////////////////////

@@ -84,6 +84,9 @@ void rb_mmtk_update_global_weak_tables(void);
 // String buffer implementation
 rb_mmtk_strbuf_t *rb_mmtk_new_strbuf(size_t capa);
 char* rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf);
+rb_mmtk_strbuf_t* rb_mmtk_chars_to_strbuf(char* strbuf);
+rb_mmtk_strbuf_t* rb_mmtk_strbuf_realloc(rb_mmtk_strbuf_t* old_strbuf, size_t new_capa);
+void rb_mmtk_scan_offsetted_strbuf_field(char** field, bool update);
 
 // Object buffer implementation
 rb_mmtk_objbuf_t* rb_mmtk_new_objbuf(size_t capa);

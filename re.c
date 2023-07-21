@@ -999,6 +999,19 @@ pair_byte_cmp(const void *pair1, const void *pair2)
 #endif
 }
 
+#if USE_MMTK
+static void
+rb_mmtk_char_offset_realloc(struct rmatch_offset **field, size_t num_regs)
+{
+    struct rmatch_offset *old_field_value = *field;
+    rb_mmtk_strbuf_t *old_strbuf = old_field_value == NULL
+                                   ? NULL
+                                   : rb_mmtk_chars_to_strbuf((char*)old_field_value);
+    rb_mmtk_strbuf_t *new_strbuf = rb_mmtk_strbuf_realloc(old_strbuf, num_regs * sizeof(struct rmatch_offset));
+    *field = (struct rmatch_offset*)rb_mmtk_strbuf_to_chars(new_strbuf);
+}
+#endif
+
 static void
 update_char_offset(VALUE match)
 {
@@ -1017,7 +1030,15 @@ update_char_offset(VALUE match)
     num_regs = rm->regs.num_regs;
 
     if (rm->char_offset_num_allocated < num_regs) {
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         REALLOC_N(rm->char_offset, struct rmatch_offset, num_regs);
+#if USE_MMTK
+        } else {
+            rb_mmtk_char_offset_realloc(&rm->char_offset, num_regs);
+        }
+#endif
         rm->char_offset_num_allocated = num_regs;
     }
 
@@ -1093,7 +1114,15 @@ match_init_copy(VALUE obj, VALUE orig)
 
     if (RMATCH_EXT(orig)->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs);
+#if USE_MMTK
+            } else {
+                rb_mmtk_char_offset_realloc(&rm->char_offset, rm->regs.num_regs);
+            }
+#endif
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
         MEMCPY(rm->char_offset, RMATCH_EXT(orig)->char_offset,
