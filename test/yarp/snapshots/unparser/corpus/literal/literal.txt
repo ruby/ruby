@@ -296,22 +296,10 @@ ProgramNode(0...916)(
      XStringNode(435...439)((435...436), (436...438), (438...439), "`"),
      XStringNode(440...443)((440...441), (441...442), (442...443), "\""),
      SymbolNode(444...448)((444...445), (445...448), nil, "foo"),
-     InterpolatedSymbolNode(449...455)(
-       (449...451),
-       [StringNode(451...454)(nil, (451...454), nil, "A B")],
-       (454...455)
-     ),
+     SymbolNode(449...455)(nil, (451...454), nil, "A B"),
      SymbolNode(456...460)((456...457), (457...460), nil, "foo"),
-     InterpolatedSymbolNode(461...467)(
-       (461...463),
-       [StringNode(463...466)(nil, (463...466), nil, "A B")],
-       (466...467)
-     ),
-     InterpolatedSymbolNode(468...475)(
-       (468...470),
-       [StringNode(470...474)(nil, (470...474), nil, "A\"B")],
-       (474...475)
-     ),
+     SymbolNode(461...467)(nil, (463...466), nil, "A B"),
+     SymbolNode(468...475)(nil, (470...474), nil, "A\"B"),
      InterpolatedSymbolNode(476...479)((476...478), [], (478...479)),
      RegularExpressionNode(480...485)(
        (480...481),
@@ -662,11 +650,7 @@ ProgramNode(0...916)(
      HashNode(828...843)(
        (828...829),
        [AssocNode(830...841)(
-          InterpolatedSymbolNode(830...836)(
-            (830...832),
-            [StringNode(832...835)(nil, (832...835), nil, "a b")],
-            (835...836)
-          ),
+          SymbolNode(830...836)(nil, (832...835), nil, "a b"),
           IntegerNode(840...841)(),
           (837...839)
         )],
@@ -723,11 +707,7 @@ ProgramNode(0...916)(
        0,
        "foo"
      ),
-     InterpolatedSymbolNode(893...901)(
-       (893...895),
-       [StringNode(895...900)(nil, (895...900), nil, "a\\\n" + "b")],
-       (900...901)
-     ),
+     SymbolNode(893...901)(nil, (895...900), nil, "a\\\n" + "b"),
      InterpolatedXStringNode(902...916)(
        (902...903),
        [StringNode(903...907)(nil, (903...907), nil, "  x\n"),

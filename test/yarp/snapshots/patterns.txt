@@ -38,11 +38,7 @@ ProgramNode(0...3743)(
      ),
      MatchRequiredNode(78...91)(
        CallNode(78...81)(nil, nil, (78...81), nil, nil, nil, nil, 0, "foo"),
-       InterpolatedSymbolNode(85...91)(
-         (85...87),
-         [StringNode(87...90)(nil, (87...90), nil, "foo")],
-         (90...91)
-       ),
+       SymbolNode(85...91)(nil, (87...90), nil, "foo"),
        (82...84)
      ),
      MatchRequiredNode(92...104)(
@@ -465,16 +461,8 @@ ProgramNode(0...3743)(
          "foo"
        ),
        RangeNode(472...488)(
-         InterpolatedSymbolNode(472...478)(
-           (472...474),
-           [StringNode(474...477)(nil, (474...477), nil, "foo")],
-           (477...478)
-         ),
-         InterpolatedSymbolNode(482...488)(
-           (482...484),
-           [StringNode(484...487)(nil, (484...487), nil, "foo")],
-           (487...488)
-         ),
+         SymbolNode(472...478)(nil, (474...477), nil, "foo"),
+         SymbolNode(482...488)(nil, (484...487), nil, "foo"),
          (479...481),
          0
        ),
@@ -2207,11 +2195,7 @@ ProgramNode(0...3743)(
          0,
          "foo"
        ),
-       InterpolatedSymbolNode(1733...1739)(
-         (1733...1735),
-         [StringNode(1735...1738)(nil, (1735...1738), nil, "foo")],
-         (1738...1739)
-       ),
+       SymbolNode(1733...1739)(nil, (1735...1738), nil, "foo"),
        (1730...1732)
      ),
      MatchPredicateNode(1740...1752)(
@@ -2716,11 +2700,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        [InNode(2196...2210)(
-          InterpolatedSymbolNode(2199...2205)(
-            (2199...2201),
-            [StringNode(2201...2204)(nil, (2201...2204), nil, "foo")],
-            (2204...2205)
-          ),
+          SymbolNode(2199...2205)(nil, (2201...2204), nil, "foo"),
           nil,
           (2196...2198),
           (2206...2210)
@@ -3418,11 +3398,7 @@ ProgramNode(0...3743)(
             (3000...3002),
             LocalVariableReadNode(3003...3006)(:baz, 0),
             StatementsNode(2993...2999)(
-              [InterpolatedSymbolNode(2993...2999)(
-                 (2993...2995),
-                 [StringNode(2995...2998)(nil, (2995...2998), nil, "foo")],
-                 (2998...2999)
-               )]
+              [SymbolNode(2993...2999)(nil, (2995...2998), nil, "foo")]
             ),
             nil,
             nil
