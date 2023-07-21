@@ -819,6 +819,7 @@ module Bundler
 
           @specs_that_changed_sources << s if gemfile_source != lockfile_source
           deps << dep if !dep.source || lockfile_source.include?(dep.source)
+          @unlock[:gems] << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
 
           # Replace the locked dependency's source with the equivalent source from the Gemfile
           s.source = gemfile_source
