@@ -75,7 +75,7 @@ yp_strspn_whitespace(const char *string, ptrdiff_t length) {
 // whitespace while also tracking the location of each newline. Disallows
 // searching past the given maximum number of characters.
 size_t
-yp_strspn_whitespace_newlines(const char *string, long length, yp_newline_list_t *newline_list) {
+yp_strspn_whitespace_newlines(const char *string, long length, yp_newline_list_t *newline_list, bool stop_at_newline) {
     if (length <= 0) return 0;
 
     size_t size = 0;
@@ -83,7 +83,12 @@ yp_strspn_whitespace_newlines(const char *string, long length, yp_newline_list_t
 
     while (size < maximum && (yp_char_table[(unsigned char) string[size]] & YP_CHAR_BIT_WHITESPACE)) {
         if (string[size] == '\n') {
-            yp_newline_list_append(newline_list, string + size);
+            if (stop_at_newline) {
+                return size + 1;
+            }
+            else {
+                yp_newline_list_append(newline_list, string + size);
+            }
         }
 
         size++;

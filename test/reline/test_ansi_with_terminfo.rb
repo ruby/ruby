@@ -75,12 +75,28 @@ class Reline::ANSI::TestWithTerminfo < Reline::TestCase
     omit e.message
   end
 
+  # Home and End; always mapped regardless of terminfo enabled or not
+  def test_home_end
+    assert_key_binding("\e[H", :ed_move_to_beg)
+    assert_key_binding("\e[F", :ed_move_to_end)
+  end
+
+  # Arrow; always mapped regardless of terminfo enabled or not
+  def test_arrow
+    assert_key_binding("\e[A", :ed_prev_history)
+    assert_key_binding("\e[B", :ed_next_history)
+    assert_key_binding("\e[C", :ed_next_char)
+    assert_key_binding("\e[D", :ed_prev_char)
+  end
+
   # Ctrl+arrow and Meta+arrow; always mapped regardless of terminfo enabled or not
   def test_extended
     assert_key_binding("\e[1;5C", :em_next_word) # Ctrl+→
     assert_key_binding("\e[1;5D", :ed_prev_word) # Ctrl+←
     assert_key_binding("\e[1;3C", :em_next_word) # Meta+→
     assert_key_binding("\e[1;3D", :ed_prev_word) # Meta+←
+    assert_key_binding("\e\e[C", :em_next_word) # Meta+→
+    assert_key_binding("\e\e[D", :ed_prev_word) # Meta+←
   end
 
   # Shift-Tab; always mapped regardless of terminfo enabled or not

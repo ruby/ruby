@@ -40,8 +40,6 @@ VALUE rb_ary_diff(VALUE ary1, VALUE ary2);
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
-static inline void RARY_TRANSIENT_SET(VALUE ary);
-static inline void RARY_TRANSIENT_UNSET(VALUE ary);
 
 VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
@@ -56,7 +54,7 @@ static inline VALUE
 rb_ary_entry_internal(VALUE ary, long offset)
 {
     long len = RARRAY_LEN(ary);
-    const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
     if (len == 0) return Qnil;
     if (offset < 0) {
         offset += len;
@@ -118,22 +116,6 @@ ARY_SHARED_ROOT_REFCNT(VALUE ary)
     return RARRAY(ary)->as.heap.aux.capa;
 }
 
-static inline void
-RARY_TRANSIENT_SET(VALUE ary)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RARY_TRANSIENT_UNSET(VALUE ary)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#endif
-}
-
 #undef rb_ary_new_from_args
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
@@ -156,7 +138,7 @@ RARRAY_AREF(VALUE ary, long i)
 {
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
-    return RARRAY_CONST_PTR_TRANSIENT(ary)[i];
+    return RARRAY_CONST_PTR(ary)[i];
 }
 
 #endif /* INTERNAL_ARRAY_H */

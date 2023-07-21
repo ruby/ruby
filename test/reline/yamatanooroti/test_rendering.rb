@@ -245,6 +245,7 @@ begin
       sleep 1
       write("A")
       write("B\eAC") # ESC + A (M-A, specified ed_unassigned in Reline::KeyActor::Emacs)
+      close
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt> abcABCdef
@@ -690,6 +691,7 @@ begin
       EOC
       write("\C-p" * 4 + "\C-e" + "\C-p" * 4)
       write("2")
+      close
       assert_screen(<<~EOC)
         prompt> if 12
         prompt>   if 2
@@ -994,6 +996,7 @@ begin
       write("\n" * 10)
       write("if 1\n  sSt\nend")
       write("\C-p\C-h\C-e")
+      close
       assert_screen(<<~'EOC')
         prompt>
         prompt>
@@ -1583,6 +1586,20 @@ begin
       write("a\C-h" * 4000)
       close
       assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+      EOC
+    end
+
+    def test_exit_with_ctrl_d
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      begin
+        write("\C-d")
+        close
+      rescue EOFError
+        # EOFError is raised when process terminated.
+      end
+      assert_screen(<<~EOC)
         Multiline REPL.
         prompt>
       EOC

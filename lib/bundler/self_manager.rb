@@ -9,17 +9,23 @@ module Bundler
     def restart_with_locked_bundler_if_needed
       return unless needs_switching? && installed?
 
-      restart_with(lockfile_version)
+      restart_with(restart_version)
     end
 
     def install_locked_bundler_and_restart_with_it_if_needed
       return unless needs_switching?
 
-      Bundler.ui.info \
-        "Bundler #{current_version} is running, but your lockfile was generated with #{lockfile_version}. " \
-        "Installing Bundler #{lockfile_version} and restarting using that version."
+      if restart_version == lockfile_version
+        Bundler.ui.info \
+          "Bundler #{current_version} is running, but your lockfile was generated with #{lockfile_version}. " \
+          "Installing Bundler #{lockfile_version} and restarting using that version."
+      else
+        Bundler.ui.info \
+          "Bundler #{current_version} is running, but your configuration was #{restart_version}. " \
+          "Installing Bundler #{restart_version} and restarting using that version."
+      end
 
-      install_and_restart_with(lockfile_version)
+      install_and_restart_with(restart_version)
     end
 
     def update_bundler_and_restart_with_it_if_needed(target)
@@ -79,7 +85,8 @@ module Bundler
       autoswitching_applies? &&
         released?(lockfile_version) &&
         !running?(lockfile_version) &&
-        !updating?
+        !updating? &&
+        Bundler.settings[:version] != "global"
     end
 
     def autoswitching_applies?
@@ -151,7 +158,7 @@ module Bundler
     def installed?
       Bundler.configure
 
-      Bundler.rubygems.find_bundler(lockfile_version.to_s)
+      Bundler.rubygems.find_bundler(restart_version.to_s)
     end
 
     def current_version
@@ -163,6 +170,15 @@ module Bundler
 
       parsed_version = Bundler::LockfileParser.bundled_with
       @lockfile_version = parsed_version ? Gem::Version.new(parsed_version) : nil
+    end
+
+    def restart_version
+      return @restart_version if defined?(@restart_version)
+      # BUNDLE_VERSION=x.y.z
+      @restart_version = Gem::Version.new(Bundler.settings[:version])
+    rescue ArgumentError
+      # BUNDLE_VERSION=local
+      @restart_version = lockfile_version
     end
   end
 end

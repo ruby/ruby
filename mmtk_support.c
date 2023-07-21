@@ -148,6 +148,11 @@ static struct gc_timing {
     uint64_t last_vanilla_sweep;
 } g_vanilla_timing;
 
+// xmalloc accounting
+struct rb_mmtk_xmalloc_accounting {
+    size_t malloc_total;
+} g_xmalloc_accounting;
+
 struct RubyMMTKGlobal {
     pthread_mutex_t mutex;
     pthread_cond_t cond_world_stopped;
@@ -242,14 +247,6 @@ rb_mmtk_enabled_p(void)
 ////////////////////////////////////////////////////////////////////////////////
 // MMTk binding initialization
 ////////////////////////////////////////////////////////////////////////////////
-
-void
-rb_gc_init_collection(void)
-{
-    rb_thread_t *cur_thread = GET_THREAD();
-    mmtk_initialize_collection((void*)cur_thread);
-    rb_mmtk_bind_mutator(cur_thread);
-}
 
 void
 rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread)
@@ -1232,6 +1229,41 @@ rb_mmtk_gc_probe_slowpath(bool enter)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// xmalloc accounting
+////////////////////////////////////////////////////////////////////////////////
+
+// copied from gc.c
+static inline void
+atomic_sub_nounderflow(size_t *var, size_t sub)
+{
+    if (sub == 0) return;
+
+    while (1) {
+        size_t val = *var;
+        if (val < sub) sub = val;
+        if (ATOMIC_SIZE_CAS(*var, val, val-sub) == val) break;
+    }
+}
+
+// Record the increment of xmalloc-ed memory and potentially trigger a GC.
+void
+rb_mmtk_xmalloc_increase_body(size_t new_size, size_t old_size)
+{
+    if (new_size > old_size) {
+        ATOMIC_SIZE_ADD(g_xmalloc_accounting.malloc_total, new_size - old_size);
+    }
+    else {
+        atomic_sub_nounderflow(&g_xmalloc_accounting.malloc_total, old_size - new_size);
+    }
+}
+
+static size_t
+rb_mmtk_vm_live_bytes()
+{
+    return g_xmalloc_accounting.malloc_total;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // MMTk-Ruby Upcalls
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1366,7 +1398,14 @@ rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), v
 
     rb_thread_t *th = NULL;
     ccan_list_for_each(&main_ractor->threads.set, th, lt_node) {
-        visit_mutator(th->mutator, data);
+        // Ruby caches native threads on some platforms,
+        // and the rb_thread_t structs can be reused while a thread is cached.
+        // Currently we destroy the mutator and the mutator_local structs when a thread exits.
+        if (th->mutator != NULL) {
+            visit_mutator(th->mutator, data);
+        } else {
+            RUBY_ASSERT(th->mutator_local == NULL);
+        }
     }
 }
 
@@ -1441,6 +1480,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_global_weak_tables,
     rb_mmtk_get_original_givtbl,
     rb_mmtk_move_givtbl,
+    rb_mmtk_vm_live_bytes,
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -368,9 +368,9 @@ class RubyLex
           end
         end
       when :on_tstring_beg, :on_regexp_beg, :on_symbeg, :on_backtick
-        # can be indented if t.tok starts with `%`
-      when :on_words_beg, :on_qwords_beg, :on_symbols_beg, :on_qsymbols_beg, :on_embexpr_beg
-        # can be indented but not indented in current implementation
+        # No indent: "", //, :"", ``
+        # Indent: %(), %r(), %i(), %x()
+        indent_level += 1 if t.tok.start_with? '%'
       when :on_embdoc_beg
         indent_level = 0
       else

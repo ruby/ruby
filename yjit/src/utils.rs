@@ -5,7 +5,7 @@ use crate::cruby::*;
 use std::slice;
 
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
-/// Implementation conditional on the the cast preserving the numeric value on
+/// Implementation conditional on the cast preserving the numeric value on
 /// all inputs and being inexpensive.
 ///
 /// [usize] is only guaranteed to be more than 16-bit wide, so we can't use

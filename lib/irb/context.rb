@@ -154,8 +154,12 @@ module IRB
 
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
+
       if val
-        (IRB.conf[:MAIN_CONTEXT] || self).init_save_history
+        context = (IRB.conf[:MAIN_CONTEXT] || self)
+        if context.io.support_history_saving? && !context.io.singleton_class.include?(HistorySavingAbility)
+          context.io.extend(HistorySavingAbility)
+        end
       end
     end
 
@@ -575,12 +579,6 @@ module IRB
     def transform_args?(command)
       command = command_aliases.fetch(command.to_sym, command)
       ExtendCommandBundle.load_command(command)&.respond_to?(:transform_args)
-    end
-
-    def init_save_history# :nodoc:
-      unless (class<<@io;self;end).include?(HistorySavingAbility)
-        @io.extend(HistorySavingAbility)
-      end
     end
   end
 end

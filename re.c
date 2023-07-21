@@ -961,12 +961,13 @@ VALUE rb_cMatch;
 static VALUE
 match_alloc(VALUE klass)
 {
-    NEWOBJ_OF(match, struct RMatch, klass, T_MATCH | (RGENGC_WB_PROTECTED_MATCH ? FL_WB_PROTECTED : 0), sizeof(struct RMatch), 0);
+    size_t alloc_size = sizeof(struct RMatch) + sizeof(rb_matchext_t);
+    VALUE flags = T_MATCH | (RGENGC_WB_PROTECTED_MATCH ? FL_WB_PROTECTED : 0);
+    NEWOBJ_OF(match, struct RMatch, klass, flags, alloc_size, 0);
 
     match->str = Qfalse;
-    match->rmatch = 0;
     match->regexp = Qfalse;
-    match->rmatch = ZALLOC(struct rmatch);
+    memset(RMATCH_EXT(match), 0, sizeof(rb_matchext_t));
 
     return (VALUE)match;
 }
@@ -1001,7 +1002,7 @@ pair_byte_cmp(const void *pair1, const void *pair2)
 static void
 update_char_offset(VALUE match)
 {
-    struct rmatch *rm = RMATCH(match)->rmatch;
+    rb_matchext_t *rm = RMATCH_EXT(match);
     struct re_registers *regs;
     int i, num_regs, num_pos;
     long c;
@@ -1079,23 +1080,23 @@ match_check(VALUE match)
 static VALUE
 match_init_copy(VALUE obj, VALUE orig)
 {
-    struct rmatch *rm;
+    rb_matchext_t *rm;
 
     if (!OBJ_INIT_COPY(obj, orig)) return obj;
 
     RB_OBJ_WRITE(obj, &RMATCH(obj)->str, RMATCH(orig)->str);
     RB_OBJ_WRITE(obj, &RMATCH(obj)->regexp, RMATCH(orig)->regexp);
 
-    rm = RMATCH(obj)->rmatch;
+    rm = RMATCH_EXT(obj);
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
         rb_memerror();
 
-    if (RMATCH(orig)->rmatch->char_offset_num_allocated) {
+    if (RMATCH_EXT(orig)->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
             REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs);
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
-        MEMCPY(rm->char_offset, RMATCH(orig)->rmatch->char_offset,
+        MEMCPY(rm->char_offset, RMATCH_EXT(orig)->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
         RB_GC_GUARD(orig);
     }
@@ -1250,8 +1251,8 @@ match_offset(VALUE match, VALUE n)
         return rb_assoc_new(Qnil, Qnil);
 
     update_char_offset(match);
-    return rb_assoc_new(LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg),
-                        LONG2NUM(RMATCH(match)->rmatch->char_offset[i].end));
+    return rb_assoc_new(LONG2NUM(RMATCH_EXT(match)->char_offset[i].beg),
+                        LONG2NUM(RMATCH_EXT(match)->char_offset[i].end));
 }
 
 /*
@@ -1309,7 +1310,7 @@ match_begin(VALUE match, VALUE n)
         return Qnil;
 
     update_char_offset(match);
-    return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg);
+    return LONG2NUM(RMATCH_EXT(match)->char_offset[i].beg);
 }
 
 
@@ -1335,7 +1336,7 @@ match_end(VALUE match, VALUE n)
         return Qnil;
 
     update_char_offset(match);
-    return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].end);
+    return LONG2NUM(RMATCH_EXT(match)->char_offset[i].end);
 }
 
 /*
@@ -1422,7 +1423,7 @@ match_nth_length(VALUE match, VALUE n)
 
     update_char_offset(match);
     const struct rmatch_offset *const ofs =
-        &RMATCH(match)->rmatch->char_offset[i];
+        &RMATCH_EXT(match)->char_offset[i];
     return LONG2NUM(ofs->end - ofs->beg);
 }
 
@@ -1454,7 +1455,7 @@ static void
 match_set_string(VALUE m, VALUE string, long pos, long len)
 {
     struct RMatch *match = (struct RMatch *)m;
-    struct rmatch *rmatch = match->rmatch;
+    rb_matchext_t *rmatch = RMATCH_EXT(match);
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, string);
     RB_OBJ_WRITE(match, &RMATCH(match)->regexp, Qnil);

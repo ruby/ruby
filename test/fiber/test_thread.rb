@@ -39,7 +39,7 @@ class TestFiberThread < Test::Unit::TestCase
 
     assert_predicate sleeper, :alive?
   ensure
-    sleeper&.kill
+    sleeper&.kill&.join
   end
 
   def test_thread_join_implicit

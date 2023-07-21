@@ -5618,7 +5618,6 @@ module RubyVM::RJIT
       sp_reg = iseq ? SP : :rax
       asm.lea(sp_reg, [SP, C.VALUE.size * sp_offset])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:sp)], sp_reg)
-      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:__bp__)], sp_reg) # TODO: get rid of this!!
 
       # cfp->jit_return is used only for ISEQs
       if iseq
@@ -5810,7 +5809,7 @@ module RubyVM::RJIT
       asm.cmovz(len_reg, [array_reg, C.RArray.offsetof(:as, :heap, :len)])
     end
 
-    # Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+    # Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
     def jit_array_ptr(asm, array_reg, ary_opnd) # clobbers array_reg
       asm.comment('get array pointer for embedded or heap')
 

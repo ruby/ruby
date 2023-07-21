@@ -45,10 +45,14 @@ pub fn yjit_enabled_p() -> bool {
     YJIT_ENABLED.load(Ordering::Acquire)
 }
 
-/// After how many calls YJIT starts compiling a method
+/// Test whether we are ready to compile an ISEQ or not
 #[no_mangle]
-pub extern "C" fn rb_yjit_call_threshold() -> raw::c_uint {
-    get_option!(call_threshold) as raw::c_uint
+pub extern "C" fn rb_yjit_threshold_hit(iseq: IseqPtr) -> bool {
+
+    let call_threshold = get_option!(call_threshold) as u64;
+    let total_calls = unsafe { rb_get_iseq_body_total_calls(iseq) } as u64;
+
+    return total_calls == call_threshold;
 }
 
 /// This function is called from C code

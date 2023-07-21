@@ -1103,7 +1103,7 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
     incr_counter!(freed_iseq_count);
 }
 
-/// GC callback for marking GC objects in the the per-iseq payload.
+/// GC callback for marking GC objects in the per-iseq payload.
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
     let payload = if payload.is_null() {
@@ -1166,7 +1166,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
     }
 }
 
-/// GC callback for updating GC objects in the the per-iseq payload.
+/// GC callback for updating GC objects in the per-iseq payload.
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
@@ -2954,7 +2954,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     // Get a pointer to the generated code for this block
     let block_start = block.start_addr;
 
-    // Make the the start of the block do an exit. This handles OOM situations
+    // Make the start of the block do an exit. This handles OOM situations
     // and some cases where we can't efficiently patch incoming branches.
     // Do this first, since in case there is a fallthrough branch into this
     // block, the patching loop below can overwrite the start of the block.

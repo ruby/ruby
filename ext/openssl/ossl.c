@@ -827,45 +827,6 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   decrypted = cipher.update encrypted
  *   decrypted << cipher.final
  *
- * == PKCS #5 Password-based Encryption
- *
- * PKCS #5 is a password-based encryption standard documented at
- * RFC2898[http://www.ietf.org/rfc/rfc2898.txt].  It allows a short password or
- * passphrase to be used to create a secure encryption key. If possible, PBKDF2
- * as described above should be used if the circumstances allow it.
- *
- * PKCS #5 uses a Cipher, a pass phrase and a salt to generate an encryption
- * key.
- *
- *   pass_phrase = 'my secure pass phrase goes here'
- *   salt = '8 octets'
- *
- * === Encryption
- *
- * First set up the cipher for encryption
- *
- *   encryptor = OpenSSL::Cipher.new 'aes-256-cbc'
- *   encryptor.encrypt
- *   encryptor.pkcs5_keyivgen pass_phrase, salt
- *
- * Then pass the data you want to encrypt through
- *
- *   encrypted = encryptor.update 'top secret document'
- *   encrypted << encryptor.final
- *
- * === Decryption
- *
- * Use a new Cipher instance set up for decryption
- *
- *   decryptor = OpenSSL::Cipher.new 'aes-256-cbc'
- *   decryptor.decrypt
- *   decryptor.pkcs5_keyivgen pass_phrase, salt
- *
- * Then pass the data you want to decrypt through
- *
- *   plain = decryptor.update encrypted
- *   plain << decryptor.final
- *
  * == X509 Certificates
  *
  * === Creating a Certificate
