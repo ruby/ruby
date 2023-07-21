@@ -228,12 +228,21 @@ rb_ary_size_as_embedded(VALUE ary)
 
 
 #if USE_MMTK
-
 void
 rb_mmtk_ary_set_objbuf(VALUE ary, VALUE objbuf)
 {
     RUBY_ASSERT(rb_mmtk_enabled_p());
-    RB_OBJ_WRITE(ary, RARRAY_EXT(ary), objbuf);
+    RB_OBJ_WRITE(ary, &RARRAY_EXT(ary)->objbuf, objbuf);
+}
+
+void
+rb_mmtk_ary_copy_objbuf(VALUE dst_ary, VALUE src_ary)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+    RUBY_ASSERT(!ARY_EMBED_P(src_ary));
+    RUBY_ASSERT(!ARY_EMBED_P(dst_ary));
+    RUBY_ASSERT(!OBJ_FROZEN(dst_ary));
+    rb_mmtk_ary_set_objbuf(dst_ary, RARRAY_EXT(src_ary)->objbuf);
 }
 
 // Attach a heap array with a newly allocated imemo:mmtk_objbuf and copy over the contents
@@ -1119,7 +1128,7 @@ ary_make_shared(VALUE ary)
                 rb_mmtk_ary_new_objbuf_copy(shared, capa, RARRAY_CONST_PTR(ary), len);
                 FL_UNSET_EMBED(ary);
                 ARY_SET_PTR(ary, ARY_HEAP_PTR(shared));
-                rb_mmtk_ary_set_objbuf(ary, RARRAY_EXT(shared)->objbuf);
+                rb_mmtk_ary_copy_objbuf(ary, shared);
             }
 #endif
             ARY_SET_HEAP_LEN(ary, len);
@@ -1129,7 +1138,7 @@ ary_make_shared(VALUE ary)
 #if USE_MMTK
             if (rb_mmtk_enabled_p()) {
                 // `shared` will reference the same objbuf as `ary`, too.
-                rb_mmtk_ary_set_objbuf(shared, RARRAY_EXT(ary)->objbuf);
+                rb_mmtk_ary_copy_objbuf(shared, ary);
             }
 #endif
         }
@@ -1416,6 +1425,8 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     }
     else {
         VALUE shared = ary_make_shared(ary);
+        // MMTk note: If `ary` is frozen and embedded, it remains embedded after `ary_make_shared`,
+        // and the return value `shared` will be `ary` itself.
 
         VALUE result = ary_alloc_heap(klass);
         assert(!ARY_EMBED_P(result));
@@ -1423,7 +1434,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         ARY_SET_PTR(result, RARRAY_CONST_PTR(ary));
 #if USE_MMTK
         if (rb_mmtk_enabled_p()) {
-            rb_mmtk_ary_set_objbuf(result, RARRAY_EXT(ary)->objbuf);
+            // Note: `ary` may be embedded.  Only copy the objbuf reference if `ary` is not embedded.
+            if (!ARY_EMBED_P(ary)) {
+                rb_mmtk_ary_copy_objbuf(result, ary);
+            }
         }
 #endif
         ARY_SET_LEN(result, RARRAY_LEN(ary));
@@ -3639,7 +3653,7 @@ rb_ary_sort_bang(VALUE ary)
 #if USE_MMTK
                 if (rb_mmtk_enabled_p()) {
                     // Take over its objbuf, too.
-                    rb_mmtk_ary_set_objbuf(ary, RARRAY_EXT(tmp)->objbuf);
+                    rb_mmtk_ary_copy_objbuf(ary, tmp);
                 }
 #endif
                 ARY_SET_HEAP_LEN(ary, len);
@@ -4816,7 +4830,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
         ARY_SET_LEN(copy, ARY_HEAP_LEN(orig));
 #if USE_MMTK
         if (rb_mmtk_enabled_p()) {
-            rb_mmtk_ary_set_objbuf(copy, RARRAY_EXT(orig)->objbuf);
+            rb_mmtk_ary_copy_objbuf(copy, orig);
         }
 #endif
         rb_ary_set_shared(copy, shared_root);

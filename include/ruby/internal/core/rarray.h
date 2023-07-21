@@ -195,8 +195,6 @@ typedef struct rb_mmtk_arrayext_struct {
 } rb_mmtk_arrayext_t;
 
 #define RARRAY_EXT(s) ((rb_mmtk_arrayext_t *)((char *)(s) + sizeof(struct RArray)))
-
-void rb_mmtk_ary_set_objbuf(VALUE ary, VALUE objbuf);
 #endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
