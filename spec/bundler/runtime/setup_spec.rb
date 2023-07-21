@@ -1574,6 +1574,25 @@ end
     expect(err).to include("csv is not part of the default gems")
   end
 
+  it "don't warn with bundled gems when it's loaded twice" do
+    build_repo4 do
+      build_gem "rack"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+
+    ruby <<-R
+      require 'csv'
+      require 'bundler/setup'
+      require 'csv'
+    R
+
+    expect(err).to be_empty
+  end
+
   it "don't warn with bundled gems when it's declared in Gemfile" do
     build_repo4 do
       build_gem "csv"

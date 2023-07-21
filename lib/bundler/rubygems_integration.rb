@@ -233,13 +233,15 @@ module Bundler
         kernel_class.send(:define_method, :require) do |file|
           name = file.tr("/", "-")
           if (::Gem::BUNDLED_GEMS.keys - specs.to_a.map(&:name)).include?(name)
-            target_file = begin
-                            Bundler.default_gemfile.basename
-                          rescue GemfileNotFound
-                            "inline Gemfile"
-                          end
-            warn "#{name} is not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS[file]}." \
-            " Add it to your #{target_file}."
+            unless $LOADED_FEATURES.any?{|f| f.end_with?("#{name}.rb", "#{name}.#{RbConfig::CONFIG['DLEXT']}")}
+              target_file = begin
+                              Bundler.default_gemfile.basename
+                            rescue GemfileNotFound
+                              "inline Gemfile"
+                            end
+              warn "#{name} is not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS[file]}." \
+              " Add it to your #{target_file}."
+            end
           end
           kernel_class.send(:no_warning_require, file)
         end
