@@ -832,9 +832,9 @@ module Bundler
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
           new_specs = begin
             s.source.specs
-          rescue PathError, GitError
+          rescue PathError
             # if we won't need the source (according to the lockfile),
-            # don't error if the path/git source isn't available
+            # don't error if the path source isn't available
             next if specs.
                     for(requested_dependencies, false).
                     none? {|locked_spec| locked_spec.source == s.source }
