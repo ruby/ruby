@@ -480,7 +480,7 @@ def compare_deps(make_deps, cc_deps, out=$stdout)
     }
   }
 
-  makefiles.keys.sort.each {|makefile|
+  makefiles.keys.compact.sort.each {|makefile|
     cc_lines = cc_lines_hash[makefile] || Hash.new(false)
     make_lines = make_lines_hash[makefile] || Hash.new(false)
     content = begin
