@@ -1670,6 +1670,8 @@ eom
         assert_raise(NameError) {eval("_1")},
       ]
     }
+
+    assert_valid_syntax("p { [_1 **2] }")
   end
 
   def test_value_expr_in_condition
