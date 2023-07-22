@@ -3376,6 +3376,9 @@ CODE
     assert_equal(6, S("にんにちは").byteindex(S("に"), 6))
     assert_equal(6, S("にんにちは").byteindex(/に./, 6))
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 7) }
+
+    s = S("foobarbarbaz")
+    assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
   def test_byterindex
