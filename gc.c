@@ -12992,25 +12992,40 @@ wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 }
 
 static int
-wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+wmap_remove_inverse_ref(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    VALUE wmap, *ptr, size, i, j;
     if (!existing) return ST_STOP;
-    wmap = (VALUE)arg, ptr = (VALUE *)*value;
-    for (i = j = 1, size = ptr[0]; i <= size; ++i) {
-        if (ptr[i] != wmap) {
-            ptr[j++] = ptr[i];
-        }
-    }
-    if (j == 1) {
-        ruby_sized_xfree(ptr, i * sizeof(VALUE));
+
+    VALUE old_ref = (VALUE)arg;
+
+    VALUE *values = (VALUE *)*val;
+    VALUE size = values[0];
+
+    if (size == 1) {
+        // fast path, we only had one backref
+        RUBY_ASSERT(values[1] == old_ref);
+        ruby_sized_xfree(values, 2 * sizeof(VALUE));
         return ST_DELETE;
     }
-    if (j < i) {
-        SIZED_REALLOC_N(ptr, VALUE, j, i);
-        ptr[0] = j - 1;
-        *value = (st_data_t)ptr;
+
+    bool found = false;
+    VALUE index = 1;
+    for (; index <= size; index++) {
+        if (values[index] == old_ref) {
+            found = true;
+            break;
+        }
     }
+    if (!found) return ST_STOP;
+
+    if (size > index) {
+        MEMMOVE(&values[index], &values[index + 1], VALUE, size - index);
+    }
+
+    size -= 1;
+    values[0] = size;
+    SIZED_REALLOC_N(values, VALUE, size + 1, size + 2);
+    *val = (st_data_t)values;
     return ST_CONTINUE;
 }
 
@@ -13043,7 +13058,7 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
     wmap = (st_data_t)obj;
     if (st_delete(w->wmap2obj, &wmap, &orig)) {
         wmap = (st_data_t)obj;
-        st_update(w->obj2wmap, orig, wmap_final_func, wmap);
+        st_update(w->obj2wmap, orig, wmap_remove_inverse_ref, wmap);
     }
     return self;
 }
@@ -13259,6 +13274,14 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
     VALUE size, *ptr, *optr;
     if (existing) {
         size = (ptr = optr = (VALUE *)*val)[0];
+
+        for (VALUE index = 1; index <= size; index++) {
+            if (ptr[index] == (VALUE)arg) {
+                // The reference was already registered.
+                return ST_STOP;
+            }
+        }
+
         ++size;
         SIZED_REALLOC_N(ptr, VALUE, size + 1, size);
     }
@@ -13271,6 +13294,23 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
     ptr[size] = (VALUE)arg;
     if (ptr == optr) return ST_STOP;
     *val = (st_data_t)ptr;
+    return ST_CONTINUE;
+}
+
+struct wmap_aset_replace_args {
+    VALUE new_value;
+    VALUE old_value;
+};
+
+static int
+wmap_aset_replace_value(st_data_t *key, st_data_t *val, st_data_t _args, int existing)
+{
+    struct wmap_aset_replace_args *args = (struct wmap_aset_replace_args *)_args;
+
+    if (existing) {
+        args->old_value = *val;
+    }
+    *val = (st_data_t)args->new_value;
     return ST_CONTINUE;
 }
 
@@ -13288,8 +13328,25 @@ wmap_aset(VALUE self, VALUE key, VALUE value)
         define_final0(key, w->final);
     }
 
-    st_update(w->obj2wmap, (st_data_t)value, wmap_aset_update, key);
-    st_insert(w->wmap2obj, (st_data_t)key, (st_data_t)value);
+    struct wmap_aset_replace_args aset_args = {
+        .new_value = value,
+        .old_value = Qundef,
+    };
+    st_update(w->wmap2obj, (st_data_t)key, wmap_aset_replace_value, (st_data_t)&aset_args);
+
+    // If the value is unchanged, we have nothing to do.
+    if (value != aset_args.old_value) {
+        if (!UNDEF_P(aset_args.old_value) && FL_ABLE(aset_args.old_value)) {
+            // That key existed and had an inverse reference, we need to clear the outdated inverse reference.
+            st_update(w->obj2wmap, (st_data_t)aset_args.old_value, wmap_remove_inverse_ref, key);
+        }
+
+        if (FL_ABLE(value)) {
+            // If the value has no finalizer, we don't need to keep the inverse reference
+            st_update(w->obj2wmap, (st_data_t)value, wmap_aset_update, key);
+        }
+    }
+
     return nonspecial_obj_id(value);
 }
 
