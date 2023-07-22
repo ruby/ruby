@@ -7543,7 +7543,7 @@ Init_File(void)
      * The check for the existence and creation of the file is performed as an
      * atomic operation.
      *
-     * If both File::EXCL and File::CREAT are specified and path names a symbolic link,
+     * If both File::EXCL and File::CREAT are specified and the path names a symbolic link,
      * an exception is raised regardless of the contents of the symbolic link.
      *
      * If File::EXCL is specified and File::CREAT is not specified,
