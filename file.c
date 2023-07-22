@@ -7487,7 +7487,7 @@ Init_File(void)
      *
      * ==== File::RDWR
      *
-     * Flag File::RDWR specifies that the stream should be pened
+     * Flag File::RDWR specifies that the stream should be opened
      * for both reading and writing:
      *
      *   f = File.new(filepath, File::RDWR)
