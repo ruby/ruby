@@ -173,6 +173,7 @@ default:                        \
     rb_jit_func_t func; \
     if (val == Qundef && (func = jit_compile(ec))) { \
         val = func(ec, ec->cfp); \
+        RESTORE_REGS(); /* fix cfp for tailcall */ \
         if (ec->tag->state) THROW_EXCEPTION(val); \
     } \
 } while (0)
