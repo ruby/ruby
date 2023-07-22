@@ -455,7 +455,12 @@ exiting_split(VALUE errinfo, volatile int *exitcode, volatile int *sigstatus)
 
     if (NIL_P(errinfo)) return 0;
 
-    if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+    if (THROW_DATA_P(errinfo)) {
+        int throw_state = ((const struct vm_throw_data *)errinfo)->throw_state;
+        ex = throw_state & VM_THROW_STATE_MASK;
+        result |= EXITING_WITH_STATUS;
+    }
+    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
         ex = sysexit_status(errinfo);
         result |= EXITING_WITH_STATUS;
     }
