@@ -7549,105 +7549,85 @@ Init_File(void)
      * If File::EXCL is specified and File::CREAT is not specified,
      * the result is undefined.
      *
-     * === Locking
-     *
-     * Four file constants relate to stream locking;
-     * see File#flock:
-     *
-     * ==== File::LOCK_EX
-     *
-     * Flag File::LOCK_EX specifies an exclusive lock;
-     * only one process a a time may lock the stream.
-
-     * ==== File::LOCK_NB
-     *
-     * Flag File::LOCK_NB specifies non-blocking locking for the stream;
-     * may be combined with File::LOCK_EX or File::LOCK_SH.
-     *
-     * ==== File::LOCK_SH
-     *
-     * Flag File::LOCK_SH specifies that multiple processes may lock
-     * the stream at the same time.
-     *
-     * ==== File::LOCK_UN
-     *
-     * Flag File::LOCK_UN specifies that the stream is not to be locked.
-     *
      * === POSIX \File \Constants
      *
      * Some file-access constants are defined only on POSIX-compliant systems;
      * those are:
      *
-     * - File::DIRECT.
+     * - File::SYNC.
      * - File::DSYNC.
+     * - File::RSYNC.
+     * - File::DIRECT.
      * - File::NOATIME.
      * - File::NOCTTY.
      * - File::NOFOLLOW.
-     * - File::RSYNC.
-     * - File::SYNC.
      * - File::TMPFILE.
      *
-     * ==== File::RSYNC
+     * ==== File::SYNC, File::RSYNC, and File::DSYNC
      *
-     * Flag File::RSYNC specifies that read operations on the stream
-     * complete at the same level of integrity as specified by
-     * flags File::DSYNC and File::SYNC flags.
-     * If both File::DSYNC and File::RSYNC are specified,
-     * operations on the stream complete as defined
-     * by synchronized I/O data integrity completion.
-     * If both File::SYNC and File::RSYNC are specified,
-     * operations on the stream complete
-     * as defined by synchronized I/O file integrity completion.
+     * Flag File::SYNC, File::RSYNC, or File::DSYNC
+     * specifies synchronization of I/O operations with the underlying file system.
      *
-     * Defined only for POSIX-compliant systems.
+     * These flags are valid only for POSIX-compliant systems.
      *
-     * ==== File::SYNC
+     * - File::SYNC specifies that all write operations (both data and metadata)
+     *   are immediately to be flushed to the underlying storage device.
+     *   This means that the data is written to the storage device,
+     *   and the file's metadata (e.g., file size, timestamps, permissions)
+     *   are also synchronized.
+     *   This guarantees that data is safely stored on the storage medium
+     *   before returning control to the calling program.
+     *   This flag can have a significant impact on performance
+     *   since it requires synchronous writes, which can be slower
+     *   compared to asynchronous writes.
      *
-     * Flag File::SYNC specifies that write operations on the stream
-     * complete at the same level of integrity as specified
-     * by synchronized I/O file integrity completion.
+     * - File::RSYNC specifies that any read operations on the file will not return
+     *   until all outstanding write operations
+     *   (those that have been issued but not completed) are also synchronized.
+     *   This is useful when you want to read the most up-to-date data,
+     *   which may still be in the process of being written.
      *
-     * Defined only for POSIX-compliant systems.
+     * - File::DSYNC specifies that all _data_ write operations
+     *   are immediately to be flushed to the underlying storage device;
+     *   this differs from File::SYNC, which requires that _metadata_
+     *   also be synchronized.
      *
-     * ==== File::DSYNC
-     *
-     * Write operations for the stream complete as defined by synchronized I/O.
-     * Data integrity completion.
-     *
-     * If both the File::SYNC and File::DSYNC are specified,
-     * the effect is as if only the File::SYNC flag was specified.
-     *
-     * Defined only for POSIX-compliant systems.
+     * Note that the behavior of these flags may vary slightly
+     * depending on the operating system and filesystem being used.
+     * Additionally, using these flags can have an impact on performance
+     * due to the synchronous nature of the I/O operations,
+     * so they should be used judiciously,
+     * especially in performance-critical applications.
      *
      * ==== File::NOCTTY
      *
-     * Flag File::NOCTTY specifies that if the stram is a terminal device,
+     * Flag File::NOCTTY specifies that if the stream is a terminal device,
      * that device does not become the controlling terminal for the process.
      *
      * Defined only for POSIX-compliant systems.
      *
-     * ==== File::DIRECT.
+     * ==== File::DIRECT
      *
      * Flag File::DIRECT requests that cache effects of the I/O to and from the stream
      * be minimized.
      *
      * Defined only for POSIX-compliant systems.
      *
-     * ==== File::NOATIME.
+     * ==== File::NOATIME
      *
      * Flag File::NOATIME specifies that act of opening the stream
      * should not modify its access time (atime).
      *
      * Defined only for POSIX-compliant systems.
      *
-     * ==== File::NOFOLLOW.
+     * ==== File::NOFOLLOW
      *
      * Flag File::NOFOLLOW specifies that if path is a symbolic link,
      * it should not be followed.
      *
      * Defined only for POSIX-compliant systems.
      *
-     * ==== File::TMPFILE.
+     * ==== File::TMPFILE
      *
      * Flag File::TMPFILE specifies that the opened stream
      * should be a new temporary file.
@@ -7674,6 +7654,30 @@ Init_File(void)
      * If the stream is opened for (local) delete access without File::SHARE_DELETE,
      * and another process attempts to open it with delete access,
      * the attempt fails and the stream is not opened for that process.
+     *
+     * == Locking
+     *
+     * Four file constants relate to stream locking;
+     * see File#flock:
+     *
+     * ==== File::LOCK_EX
+     *
+     * Flag File::LOCK_EX specifies an exclusive lock;
+     * only one process a a time may lock the stream.
+
+     * ==== File::LOCK_NB
+     *
+     * Flag File::LOCK_NB specifies non-blocking locking for the stream;
+     * may be combined with File::LOCK_EX or File::LOCK_SH.
+     *
+     * ==== File::LOCK_SH
+     *
+     * Flag File::LOCK_SH specifies that multiple processes may lock
+     * the stream at the same time.
+     *
+     * ==== File::LOCK_UN
+     *
+     * Flag File::LOCK_UN specifies that the stream is not to be locked.
      *
      * == Filename Globbing \Constants (File::FNM_*)
      *
