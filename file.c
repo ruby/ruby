@@ -7640,7 +7640,7 @@ Init_File(void)
      *
      * When possible, the file is opened in nonblocking mode.
      * Neither the open operation nor any subsequent I/O operations on
-     * the returned file descriptor will cause the calling process to wait.
+     * the file will cause the calling process to wait.
      *
      * ==== File::BINARY
      *
