@@ -1048,6 +1048,10 @@ thread_join_sleep(VALUE arg)
 
         if (scheduler != Qnil) {
             rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
+            // Check if the target thread is finished after blocking:
+            if (thread_finished(target_th)) break;
+            // Otherwise, a timeout occurred:
+            else return Qfalse;
         }
         else if (!limit) {
             th->status = THREAD_STOPPED_FOREVER;
@@ -1069,6 +1073,7 @@ thread_join_sleep(VALUE arg)
 
         RUBY_DEBUG_LOG("interrupted target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
     }
+
     return Qtrue;
 }
 
