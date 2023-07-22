@@ -1176,9 +1176,9 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             shape_id = ROBJECT_SHAPE_ID(obj);
 #endif
             if (rb_shape_obj_too_complex(obj)) {
-                struct rb_id_table * iv_table = ROBJECT_IV_HASH(obj);
+                st_table * iv_table = ROBJECT_IV_HASH(obj);
                 VALUE val;
-                if (rb_id_table_lookup(iv_table, id, &val)) {
+                if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
                     return val;
                 }
                 else {
@@ -1435,7 +1435,7 @@ rb_grow_iv_list(VALUE obj)
 int
 rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg)
 {
-    rb_id_table_insert((struct rb_id_table *)arg, key, val);
+    st_insert((st_table *)arg, (st_data_t)key, (st_data_t)val);
     return ST_CONTINUE;
 }
 
@@ -1448,8 +1448,8 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
     uint32_t num_iv = shape->capacity;
 
     if (rb_shape_obj_too_complex(obj)) {
-        struct rb_id_table * table = ROBJECT_IV_HASH(obj);
-        rb_id_table_insert(table, id, val);
+        st_table * table = ROBJECT_IV_HASH(obj);
+        st_insert(table, (st_data_t)id, (st_data_t)val);
         RB_OBJ_WRITTEN(obj, Qundef, val);
         return 0;
     }
@@ -1472,13 +1472,13 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
         rb_shape_t *next_shape = rb_shape_get_next(shape, obj, id);
 
         if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            struct rb_id_table * table = rb_id_table_create(shape->next_iv_index);
+            st_table * table = st_init_numtable_with_size(shape->next_iv_index);
 
             // Evacuate all previous values from shape into id_table
             rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
 
             // Insert new value too
-            rb_id_table_insert(table, id, val);
+            st_insert(table, (st_data_t)id, (st_data_t)val);
             RB_OBJ_WRITTEN(obj, Qundef, val);
 
             rb_shape_set_too_complex(obj);
@@ -1627,7 +1627,7 @@ rb_ivar_defined(VALUE obj, ID id)
     if (SPECIAL_CONST_P(obj)) return Qfalse;
     if (rb_shape_obj_too_complex(obj)) {
         VALUE idx;
-        if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &idx)) {
+        if (!rb_st_lookup(ROBJECT_IV_HASH(obj), id, &idx)) {
             return Qfalse;
         }
 
@@ -1686,12 +1686,12 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
     }
 }
 
-static enum rb_id_table_iterator_result
-each_hash_iv(ID id, VALUE val, void *data)
+static int
+each_hash_iv(st_data_t id, st_data_t val, st_data_t data)
 {
     struct iv_itr_data * itr_data = (struct iv_itr_data *)data;
     rb_ivar_foreach_callback_func *callback = itr_data->func;
-    return callback(id, val, itr_data->arg);
+    return callback((ID)id, (VALUE)val, itr_data->arg);
 }
 
 static void
@@ -1703,7 +1703,7 @@ obj_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     itr_data.arg = arg;
     itr_data.func = func;
     if (rb_shape_obj_too_complex(obj)) {
-        rb_id_table_foreach(ROBJECT_IV_HASH(obj), each_hash_iv, &itr_data);
+        rb_st_foreach(ROBJECT_IV_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
         iterate_over_shapes_with_callback(shape, func, &itr_data);
@@ -1997,8 +1997,8 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
         break;
       case T_OBJECT: {
         if (rb_shape_obj_too_complex(obj)) {
-            if (rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
-                rb_id_table_delete(ROBJECT_IV_HASH(obj), id);
+            if (rb_st_lookup(ROBJECT_IV_HASH(obj), (st_data_t)id, (st_data_t *)&val)) {
+                rb_st_delete(ROBJECT_IV_HASH(obj), (st_data_t *)&id, 0);
             }
         }
         else {

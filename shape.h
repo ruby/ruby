@@ -162,12 +162,12 @@ ROBJECT_IV_CAPACITY(VALUE obj)
     return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->capacity;
 }
 
-static inline struct rb_id_table *
+static inline st_table *
 ROBJECT_IV_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
-    return (struct rb_id_table *)ROBJECT(obj)->as.heap.ivptr;
+    return (st_table *)ROBJECT(obj)->as.heap.ivptr;
 }
 
 static inline void
@@ -184,7 +184,7 @@ static inline uint32_t
 ROBJECT_IV_COUNT(VALUE obj)
 {
     if (ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID) {
-        return (uint32_t)rb_id_table_size(ROBJECT_IV_HASH(obj));
+        return (uint32_t)rb_st_table_size(ROBJECT_IV_HASH(obj));
     }
     else {
         RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);

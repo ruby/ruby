@@ -3462,7 +3462,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
             RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            rb_id_table_free(ROBJECT_IV_HASH(obj));
+            st_free_table(ROBJECT_IV_HASH(obj));
         }
         else if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
@@ -4889,7 +4889,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
-            size += rb_id_table_memsize(ROBJECT_IV_HASH(obj));
+            size += rb_st_memsize(ROBJECT_IV_HASH(obj));
         }
         else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
@@ -7333,7 +7333,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         {
             rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
             if (rb_shape_obj_too_complex(obj)) {
-                mark_m_tbl(objspace, ROBJECT_IV_HASH(obj));
+                mark_tbl_no_pin(objspace, ROBJECT_IV_HASH(obj));
             }
             else {
                 const VALUE * const ptr = ROBJECT_IVPTR(obj);
@@ -10121,15 +10121,13 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     }
 }
 
-static void update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl);
-
 static void
 gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
 
     if (rb_shape_obj_too_complex(v)) {
-        update_m_tbl(objspace, ROBJECT_IV_HASH(v));
+        rb_gc_update_tbl_refs(ROBJECT_IV_HASH(v));
         return;
     }
 

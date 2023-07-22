@@ -1256,7 +1256,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
         if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
-            if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+            if (!st_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
                 val = Qnil;
             }
         }
