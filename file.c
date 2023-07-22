@@ -7573,7 +7573,7 @@ Init_File(void)
      *
      * Flag File::LOCK_UN specifies that the stream is not to be locked.
      *
-     * === Posix \File \Constants
+     * === POSIX \File \Constants
      *
      * Some file-access constants are defined only on Posix-compliant systems;
      * those are:
