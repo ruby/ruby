@@ -7540,9 +7540,8 @@ Init_File(void)
      * If flags File::CREAT and File::EXCL are both specified
      * and the stream already exists, an exception is raised.
      *
-     * The checks for the existence of the file and for the creation of the file
-     * are atomic with respect to other threads executing accessing the same path
-     * in the same directory with File::EXCL and File::CREAT specified.
+     * The check for the existence and creation of the file is performed as an
+     * atomic operation.
      *
      * If both File::EXCL and File::CREAT are specified and path names a symbolic link,
      * an exception is raised regardless of the contents of the symbolic link.
