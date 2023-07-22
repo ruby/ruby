@@ -7530,7 +7530,6 @@ Init_File(void)
      *   - Raise an exception if File::EXCL is also specified.
      *   - Otherwise, do nothing.
      *
-     *
      * If the file does not exist, create it.
      * Upon successful completion, the atime, ctime, and mtime of the file are updated,
      * and the ctime and mtime of the parent directory are updated.
