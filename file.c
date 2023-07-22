@@ -7534,11 +7534,6 @@ Init_File(void)
      * Upon successful completion, the atime, ctime, and mtime of the file are updated,
      * and the ctime and mtime of the parent directory are updated.
      *
-     * May be used with optional argument +mode+ in calls to:
-     *
-     * - File.new.
-     * - File.open.
-     *
      * ==== File::EXCL
      *
      * Flag File::EXCL specifies that the stream should not already exist;
@@ -7664,51 +7659,15 @@ Init_File(void)
      *
      * ==== File::NONBLOCK
      *
-     * When opening a FIFO with flags File::RDONLY or File::WRONLY:
-     *
-     * - If File::NONBLOCK is specified,
-     *   a read-only opened stream returns without delay.
-     *   A write-only opened stream returns an error
-     *   if no process currently has the file open for reading.
-     *
-     * - If File::NONBLOCK is not specified,
-     *   read-only opened stream blocks the calling thread
-     *   until a thread opens the file for writing.
-     *   A write-only stream blocks the calling thread until a thread opens the file
-     *   for reading.
-     *
-     * When opening a block special or character special file
-     * that supports non-blocking opens:
-     *
-     * - If File::NONBLOCK is specified, the opened stream returns without blocking
-     *   for the device to be ready or available.
-     *   Subsequent behavior of the device is device-specific.
-     *
-     * - If File::NONBLOCK is not specified, opened stream blocks the calling thread
-     *   until the device is ready or available before returning.
-     *
-     * - Otherwise, the behavior of File::NONBLOCK is unspecified.
-     *
-     * If path refers to a {STREAMS device}[https://en.wikipedia.org/wiki/STREAMS],
-     * the flags may be constructed from File::NONBLOCK
-     * along with File::RDONLYj, File::WRONLY, or File::RDWR.
-     * Other flags values have no effect on STREAMS devices.
-     *
-     * For a STREAMS device, the implementation of File::NONBLOCK is device-specific.
+     * When possible, the file is opened in nonblocking mode.
+     * Neither the open operation nor any subsequent I/O operations on
+     * the returned file descriptor will cause the calling process to wait.
      *
      * ==== File::BINARY
      *
-     * Flag File::BINARY specifies that the stream is to be accessed in binary mode;
-     * see {Data Mode}[rdoc-ref:File@Data+Mode].
+     * Flag File::BINARY specifies that the stream is to be accessed in binary mode.
      *
-     * ==== File::NULL
-     *
-     * Flag File::NULL contains the string value of the null device:
-     *
-     * - On a Unix-like OS, <tt>'/dev/null'</tt>.
-     * - On Windows, <tt>'NUL'</tt>.
-     *
-     * ==== File::SHARE_DELETE
+     * ==== File::SHARE_DELETE (Windows Only)
      *
      * Flag File::SHARE_DELETE enables other processes to open the stream
      * with delete access.
@@ -7742,7 +7701,16 @@ Init_File(void)
      *
      * ==== File::FNM_EXTGLOB
      *
-     * Flag File::FNM_EXTGLOB enables pattern <tt>'{a,b}'</tt>.
+     * Flag File::FNM_EXTGLOB enables pattern <tt>'{_a_,_b_}'</tt>,
+     * which matches pattern '_a_' and pattern '_b_';
+     * behaves like
+     * a {regexp union}[https://docs.ruby-lang.org/en/master/Regexp.html#method-c-union]
+     * (e.g., <tt>'(?:_a_|_b_)'</tt>):
+     *
+     *   pattern = '{LEGAL,BSDL}'
+     *   Dir.glob(pattern)      # => ["LEGAL", "BSDL"]
+     *   Pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
+     *   pathname.glob(pattern) # => [#<Pathname:LEGAL>, #<Pathname:BSDL>]
      *
      * ==== File::FNM_NOESCAPE
      *
@@ -7754,16 +7722,24 @@ Init_File(void)
      * do not match the directory separator
      * (the value of constant File::SEPARATOR).
      *
-     * ==== File::FNM_SHORTNAME
+     * ==== File::FNM_SHORTNAME (Windows Only)
      *
-     * Flag File::FNM_SHORTNAME Allows patterns to match short names if they exist;
-     * Valid only on Windows.
+     * Flag File::FNM_SHORTNAME Allows patterns to match short names if they exist.
      *
      * ==== File::FNM_SYSCASE
      *
      * Flag File::FNM_SYSCASE specifies that case sensitivity
      * is the same as in the underlying operating system;
      * effective for File.fnmatch, but not Dir.glob.
+     *
+     * == Other \Constants
+     *
+     * ==== File::NULL
+     *
+     * Flag File::NULL contains the string value of the null device:
+     *
+     * - On a Unix-like OS, <tt>'/dev/null'</tt>.
+     * - On Windows, <tt>'NUL'</tt>.
      *
      */
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
