@@ -7575,7 +7575,7 @@ Init_File(void)
      *
      * === POSIX \File \Constants
      *
-     * Some file-access constants are defined only on Posix-compliant systems;
+     * Some file-access constants are defined only on POSIX-compliant systems;
      * those are:
      *
      * - File::DIRECT.
