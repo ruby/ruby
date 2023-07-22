@@ -170,6 +170,34 @@ class TestFiberIO < Test::Unit::TestCase
     assert_predicate(o, :closed?)
   end
 
+  def test_puts_empty
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+
+    i, o = UNIXSocket.pair
+    i.nonblock = false
+    o.nonblock = false
+
+    thread = Thread.new do
+      # This scheduler provides non-blocking `io_read`/`io_write`:
+      scheduler = IOBufferScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        # This was causing a segfault on older Ruby.
+        o.puts ""
+        o.puts nil
+        o.close
+      end
+    end
+
+    thread.join
+
+    message = i.read
+    i.close
+
+    assert_equal $/*2, message
+  end
+
   def test_io_select
     omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 

@@ -1320,14 +1320,15 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
 static ssize_t
 rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
 {
+    if (!iovcnt) return 0;
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        for (int i = 0; i < iovcnt; i += 1) {
-            VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[i].iov_base, iov[i].iov_len, 0);
+        // This path assumes at least one `iov`:
+        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len, 0);
 
-            if (!UNDEF_P(result)) {
-                return rb_fiber_scheduler_io_result_apply(result);
-            }
+        if (!UNDEF_P(result)) {
+            return rb_fiber_scheduler_io_result_apply(result);
         }
     }
 
@@ -2034,7 +2035,7 @@ io_binwritev_internal(VALUE arg)
     while (remaining) {
         long result = rb_writev_internal(fptr, iov, iovcnt);
 
-        if (result > 0) {
+        if (result >= 0) {
             offset += result;
             if (fptr->wbuf.ptr && fptr->wbuf.len) {
                 if (offset < (size_t)fptr->wbuf.len) {
@@ -8898,7 +8899,6 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 VALUE
 rb_io_puts(int argc, const VALUE *argv, VALUE out)
 {
-    int i, n;
     VALUE line, args[2];
 
     /* if no argument given, print newline. */
@@ -8906,22 +8906,30 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
         rb_io_write(out, rb_default_rs);
         return Qnil;
     }
-    for (i=0; i<argc; i++) {
+    for (int i = 0; i < argc; i++) {
+        // Convert the argument to a string:
         if (RB_TYPE_P(argv[i], T_STRING)) {
             line = argv[i];
-            goto string;
         }
-        if (rb_exec_recursive(io_puts_ary, argv[i], out)) {
+        else if (rb_exec_recursive(io_puts_ary, argv[i], out)) {
             continue;
         }
-        line = rb_obj_as_string(argv[i]);
-      string:
-        n = 0;
-        args[n++] = line;
-        if (RSTRING_LEN(line) == 0 ||
-            !rb_str_end_with_asciichar(line, '\n')) {
+        else {
+            line = rb_obj_as_string(argv[i]);
+        }
+
+        // Write the line:
+        int n = 0;
+        if (RSTRING_LEN(line) == 0) {
             args[n++] = rb_default_rs;
         }
+        else {
+            args[n++] = line;
+            if (!rb_str_end_with_asciichar(line, '\n')) {
+                args[n++] = rb_default_rs;
+            }
+        }
+
         rb_io_writev(out, n, args);
     }
 
