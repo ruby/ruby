@@ -1368,7 +1368,7 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
     for (i=0; i<len; i++) { \
         if (!rb_##name(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse; \
     } \
-    return Qtrue; 
+    return Qtrue;
 
 static VALUE
 recursive_equal(VALUE s, VALUE s2, int recur)

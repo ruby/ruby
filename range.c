@@ -142,7 +142,7 @@ range_exclude_end_p(VALUE range)
         return Qfalse; \
     if (!rb_##name(RANGE_END(range), RANGE_END(obj))) \
         return Qfalse; \
-    return RBOOL(EXCL(range) == EXCL(obj)); 
+    return RBOOL(EXCL(range) == EXCL(obj));
 
 static VALUE
 recursive_equal(VALUE range, VALUE obj, int recur)
