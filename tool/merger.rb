@@ -295,7 +295,8 @@ else
     tickets = ''
   end
 
-  revstr = ARGV[0].delete('^, :\-0-9a-fA-F')
+  revstr = ARGV[0].gsub(%r!https://github\.com/ruby/ruby/commit/|https://bugs\.ruby-lang\.org/projects/ruby-master/repository/git/revisions/!, '')
+  revstr = revstr.delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
   commit_message = ''
 
