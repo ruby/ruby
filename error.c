@@ -208,7 +208,6 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
  * etc.
  *
  * +:experimental+ :: experimental features
- * * Pattern matching
  */
 
 static VALUE
