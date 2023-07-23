@@ -136,15 +136,21 @@ range_exclude_end_p(VALUE range)
 }
 
 static VALUE
-recursive_equal(VALUE range, VALUE obj, int recur)
+recursive_eq(VALUE range, VALUE obj, int recur, VALUE (*func)(VALUE, VALUE))
 {
     if (recur) return Qtrue; /* Subtle! */
-    if (!rb_equal(RANGE_BEG(range), RANGE_BEG(obj)))
+    if (!func(RANGE_BEG(range), RANGE_BEG(obj)))
         return Qfalse;
-    if (!rb_equal(RANGE_END(range), RANGE_END(obj)))
+    if (!func(RANGE_END(range), RANGE_END(obj)))
         return Qfalse;
 
     return RBOOL(EXCL(range) == EXCL(obj));
+}
+
+static VALUE
+recursive_equal(VALUE range, VALUE obj, int recur)
+{
+    return recursive_eq(range, obj, recur, rb_equal);
 }
 
 
@@ -208,13 +214,7 @@ r_less(VALUE a, VALUE b)
 static VALUE
 recursive_eql(VALUE range, VALUE obj, int recur)
 {
-    if (recur) return Qtrue; /* Subtle! */
-    if (!rb_eql(RANGE_BEG(range), RANGE_BEG(obj)))
-        return Qfalse;
-    if (!rb_eql(RANGE_END(range), RANGE_END(obj)))
-        return Qfalse;
-
-    return RBOOL(EXCL(range) == EXCL(obj));
+    return recursive_eq(range, obj, recur, rb_eql);
 }
 
 /*

@@ -1357,16 +1357,22 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 }
 
 static VALUE
-recursive_equal(VALUE s, VALUE s2, int recur)
+recursive_eq(VALUE s, VALUE s2, int recur, VALUE (*func)(VALUE, VALUE))
 {
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-        if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
+        if (!func(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
+}
+
+static VALUE
+recursive_equal(VALUE s, VALUE s2, int recur)
+{
+    return recursive_eq(s, s2, recur, rb_equal);
 }
 
 
@@ -1442,14 +1448,7 @@ rb_struct_hash(VALUE s)
 static VALUE
 recursive_eql(VALUE s, VALUE s2, int recur)
 {
-    long i, len;
-
-    if (recur) return Qtrue; /* Subtle! */
-    len = RSTRUCT_LEN(s);
-    for (i=0; i<len; i++) {
-        if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
-    }
-    return Qtrue;
+    return recursive_eq(s, s2, recur, rb_eql);
 }
 
 /*
