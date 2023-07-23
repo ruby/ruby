@@ -7431,7 +7431,7 @@ Init_File(void)
     /*
      * Document-module: File::Constants
      *
-     * \Module \File::Constants defines file-related constants.
+     * \Module +File::Constants+ defines file-related constants.
      *
      * There are two families of constants here:
      *
