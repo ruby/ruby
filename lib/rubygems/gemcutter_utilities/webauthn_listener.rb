@@ -34,14 +34,14 @@ module Gem::GemcutterUtilities
 
     def self.listener_thread(host, server)
       thread = Thread.new do
+        Thread.abort_on_exception = true
+        Thread.report_on_exception = false
         Thread.current[:otp] = new(host).wait_for_otp_code(server)
       rescue Gem::WebauthnVerificationError => e
         Thread.current[:error] = e
       ensure
         server.close
       end
-      thread.abort_on_exception = true
-      thread.report_on_exception = false
 
       thread
     end
