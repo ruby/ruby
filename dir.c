@@ -3654,52 +3654,12 @@ Init_Dir(void)
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
-
-    /*  Document-const: File::Constants::FNM_NOESCAPE
-     *
-     *  Disables escapes in File.fnmatch and Dir.glob patterns
-     */
     rb_file_const("FNM_NOESCAPE", INT2FIX(FNM_NOESCAPE));
-
-    /*  Document-const: File::Constants::FNM_PATHNAME
-     *
-     *  Wildcards in File.fnmatch and Dir.glob patterns do not match directory
-     *  separators
-     */
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
-
-    /*  Document-const: File::Constants::FNM_DOTMATCH
-     *
-     *  The '*' wildcard matches filenames starting with "." in File.fnmatch
-     *  and Dir.glob patterns
-     */
     rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
-
-    /*  Document-const: File::Constants::FNM_CASEFOLD
-     *
-     *  Makes File.fnmatch patterns case insensitive (but not Dir.glob
-     *  patterns).
-     */
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
-
-    /*  Document-const: File::Constants::FNM_EXTGLOB
-     *
-     *  Allows file globbing through "{a,b}" in File.fnmatch patterns.
-     */
     rb_file_const("FNM_EXTGLOB", INT2FIX(FNM_EXTGLOB));
-
-    /*  Document-const: File::Constants::FNM_SYSCASE
-     *
-     *  System default case insensitiveness, equals to FNM_CASEFOLD or
-     *  0.
-     */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
-
-    /*  Document-const: File::Constants::FNM_SHORTNAME
-     *
-     *  Makes patterns to match short names if existing.  Valid only
-     *  on Microsoft Windows.
-     */
     rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
 
