@@ -1356,17 +1356,19 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
     return result;
 }
 
+#define recursive_eq(name) \
+    long i, len; \
+    if (recur) return Qtrue; /* Subtle! */ \
+    len = RSTRUCT_LEN(s); \
+    for (i=0; i<len; i++) { \
+        if (!rb_##name(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse; \
+    } \
+    return Qtrue; 
+
 static VALUE
 recursive_equal(VALUE s, VALUE s2, int recur)
 {
-    long i, len;
-
-    if (recur) return Qtrue; /* Subtle! */
-    len = RSTRUCT_LEN(s);
-    for (i=0; i<len; i++) {
-        if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
-    }
-    return Qtrue;
+    recursive_eq(equal);
 }
 
 
@@ -1442,14 +1444,7 @@ rb_struct_hash(VALUE s)
 static VALUE
 recursive_eql(VALUE s, VALUE s2, int recur)
 {
-    long i, len;
-
-    if (recur) return Qtrue; /* Subtle! */
-    len = RSTRUCT_LEN(s);
-    for (i=0; i<len; i++) {
-        if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
-    }
-    return Qtrue;
+    recursive_eq(eql);
 }
 
 /*
