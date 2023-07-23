@@ -81,7 +81,7 @@ module Gem::GemcutterUtilities
 
       def add_body
         return unless body
-        @http_response["content-type"] = "text/plain"
+        @http_response["content-type"] = "text/plain; charset=utf-8"
         @http_response["content-length"] = body.bytesize
         @http_response.instance_variable_set(:@body, body)
       end

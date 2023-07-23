@@ -18,7 +18,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
       access-control-allow-origin: rubygems.example\r
       access-control-allow-methods: POST\r
       access-control-allow-headers: Content-Type, Authorization, x-csrf-token\r
-      content-type: text/plain\r
+      content-type: text/plain; charset=utf-8\r
       content-length: 7\r
       \r
       success
@@ -82,7 +82,7 @@ class WebauthnListenerResponseTest < Gem::TestCase
       access-control-allow-origin: rubygems.example\r
       access-control-allow-methods: POST\r
       access-control-allow-headers: Content-Type, Authorization, x-csrf-token\r
-      content-type: text/plain\r
+      content-type: text/plain; charset=utf-8\r
       content-length: 22\r
       \r
       missing code parameter

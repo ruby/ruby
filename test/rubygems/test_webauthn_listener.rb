@@ -55,7 +55,7 @@ class WebauthnListenerTest < Gem::TestCase
     response = Gem::MockBrowser.get URI("http://localhost:#{@port}?code=xyz")
 
     assert response.is_a? Net::HTTPOK
-    assert_equal "text/plain", response["Content-Type"]
+    assert_equal "text/plain; charset=utf-8", response["Content-Type"]
     assert_equal "7", response["Content-Length"]
     assert_equal Gem.host, response["access-control-allow-origin"]
     assert_equal "POST", response["access-control-allow-methods"]
@@ -96,7 +96,7 @@ class WebauthnListenerTest < Gem::TestCase
     response = Gem::MockBrowser.get URI("http://localhost:#{@port}")
 
     assert response.is_a? Net::HTTPBadRequest
-    assert_equal "text/plain", response["Content-Type"]
+    assert_equal "text/plain; charset=utf-8", response["Content-Type"]
     assert_equal "22", response["Content-Length"]
     assert_equal "close", response["Connection"]
     assert_equal "missing code parameter", response.body
@@ -110,7 +110,7 @@ class WebauthnListenerTest < Gem::TestCase
     response = Gem::MockBrowser.get URI("http://localhost:#{@port}?param=xyz")
 
     assert response.is_a? Net::HTTPBadRequest
-    assert_equal "text/plain", response["Content-Type"]
+    assert_equal "text/plain; charset=utf-8", response["Content-Type"]
     assert_equal "22", response["Content-Length"]
     assert_equal "close", response["Connection"]
     assert_equal "missing code parameter", response.body
