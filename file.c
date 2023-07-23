@@ -7693,7 +7693,7 @@ Init_File(void)
      * The constants are:
      *
      * ==== File::FNM_CASEFOLD
-
+     *
      * Flag File::FNM_CASEFOLD makes patterns case insensitive
      * for File.fnmatch (but not Dir.glob).
      *
