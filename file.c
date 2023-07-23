@@ -7664,7 +7664,7 @@ Init_File(void)
      *
      * Flag File::LOCK_EX specifies an exclusive lock;
      * only one process a a time may lock the stream.
-
+     *
      * ==== File::LOCK_NB
      *
      * Flag File::LOCK_NB specifies non-blocking locking for the stream;
