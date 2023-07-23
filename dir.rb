@@ -390,7 +390,7 @@ class Dir
   #   enables the pattern extension
   #   <tt>'{_a_,_b_}'</tt>, which matches pattern _a_ and pattern _b_;
   #   behaves like a
-  #   {regexp union}[https://docs.ruby-lang.org/en/master/Regexp.html#method-c-union]
+  #   {regexp union}[rdoc-ref:Regexp.union]
   #   (e.g., <tt>'(?:_a_|_b_)'</tt>):
   #
   #     pattern = '{LEGAL,BSDL}'
