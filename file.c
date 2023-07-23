@@ -7442,7 +7442,7 @@ Init_File(void)
      * with method File::Constants.constants:
      *
      *   File::Constants.constants.take(5)
-    *    # => [:RDONLY, :WRONLY, :RDWR, :APPEND, :CREAT]
+     *   # => [:RDONLY, :WRONLY, :RDWR, :APPEND, :CREAT]
      *
      * == \File Access
      *
