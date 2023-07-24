@@ -1122,6 +1122,20 @@ rb_yjit_assert_holding_vm_lock(void)
     ASSERT_vm_locking();
 }
 
+// The number of stack slots that vm_sendish() pops for send and invokesuper.
+size_t
+rb_yjit_sendish_sp_pops(const struct rb_callinfo *ci)
+{
+    return 1 - sp_inc_of_sendish(ci); // + 1 to ignore return value push
+}
+
+// The number of stack slots that vm_sendish() pops for invokeblock.
+size_t
+rb_yjit_invokeblock_sp_pops(const struct rb_callinfo *ci)
+{
+    return 1 - sp_inc_of_invokeblock(ci); // + 1 to ignore return value push
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
