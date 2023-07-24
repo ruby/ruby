@@ -6947,7 +6947,7 @@ fn gen_opt_send_without_block(
         return Some(status);
     }
 
-    // Otherwise, fallback to dynamic dispatch
+    // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
@@ -6971,7 +6971,7 @@ fn gen_send(
         return Some(status);
     }
 
-    // Otherwise, fallback to dynamic dispatch
+    // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     let blockiseq = jit.get_arg(1).as_iseq();
     gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
@@ -6995,7 +6995,7 @@ fn gen_invokeblock(
         return Some(status);
     }
 
-    // Otherwise, fallback to dynamic dispatch
+    // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_invokeblock_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_invokeblock(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
@@ -7154,7 +7154,7 @@ fn gen_invokesuper(
         return Some(status);
     }
 
-    // Otherwise, fallback to dynamic dispatch
+    // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     let blockiseq = jit.get_arg(1).as_iseq();
     gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
