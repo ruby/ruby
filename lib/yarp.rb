@@ -297,12 +297,6 @@ module YARP
     end
   end
 
-  class BeginNode < Node
-    def set_newline_flag(newline_marked)
-      # Never marking BeginNode, mark the StatementsNode statements instead
-    end
-  end
-
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
