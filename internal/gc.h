@@ -235,6 +235,8 @@ VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
+void rb_gc_mark_weak(VALUE *ptr);
+
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
     rb_gc_mark_and_move(&_obj); \

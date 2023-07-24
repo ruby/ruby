@@ -6980,6 +6980,7 @@ gc.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 gc.$(OBJEXT): {$(VPATH)}builtin.h
 gc.$(OBJEXT): {$(VPATH)}config.h
 gc.$(OBJEXT): {$(VPATH)}constant.h
+gc.$(OBJEXT): {$(VPATH)}darray.h
 gc.$(OBJEXT): {$(VPATH)}debug.h
 gc.$(OBJEXT): {$(VPATH)}debug_counter.h
 gc.$(OBJEXT): {$(VPATH)}defines.h
@@ -8401,6 +8402,7 @@ load.$(OBJEXT): $(CCAN_DIR)/str/str.h
 load.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 load.$(OBJEXT): $(top_srcdir)/internal/array.h
 load.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+load.$(OBJEXT): $(top_srcdir)/internal/bits.h
 load.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 load.$(OBJEXT): $(top_srcdir)/internal/dir.h
 load.$(OBJEXT): $(top_srcdir)/internal/error.h
