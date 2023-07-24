@@ -95,6 +95,7 @@
 #undef LIST_HEAD /* ccan/list conflicts with BSD-origin sys/queue.h. */
 
 #include "constant.h"
+#include "darray.h"
 #include "debug_counter.h"
 #include "eval_intern.h"
 #include "id_table.h"
@@ -869,6 +870,8 @@ typedef struct rb_objspace {
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
 #endif
+
+    rb_darray(VALUE *) weak_references;
 } rb_objspace_t;
 
 
@@ -1831,6 +1834,8 @@ rb_objspace_alloc(void)
         ccan_list_head_init(&SIZE_POOL_TOMB_HEAP(size_pool)->pages);
     }
 
+    rb_darray_make_without_gc(&objspace->weak_references, 0);
+
     dont_gc_on();
 
     return objspace;
@@ -1878,6 +1883,8 @@ rb_objspace_free(rb_objspace_t *objspace)
 
     free_stack_chunks(&objspace->mark_stack);
     mark_stack_free_cache(&objspace->mark_stack);
+
+    rb_darray_free_without_gc(objspace->weak_references);
 
     free(objspace);
 }
@@ -6878,6 +6885,23 @@ rb_gc_mark_and_move(VALUE *ptr)
     }
 }
 
+void
+rb_gc_mark_weak(VALUE *ptr)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if (UNLIKELY(!during_gc)) return;
+
+    VALUE obj = *ptr;
+    if (RB_SPECIAL_CONST_P(obj)) return;
+
+    GC_ASSERT(objspace->rgengc.parent_object == 0 || FL_TEST(objspace->rgengc.parent_object, FL_WB_PROTECTED));
+
+    rgengc_check_relation(objspace, obj);
+
+    rb_darray_append_without_gc(&objspace->weak_references, ptr);
+}
+
 /* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
  * This function is only for GC_END_MARK timing.
  */
@@ -8100,6 +8124,28 @@ gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void
+gc_update_weak_references(rb_objspace_t *objspace)
+{
+    size_t retained_weak_references_count = 0;
+    VALUE **ptr_ptr;
+    rb_darray_foreach(objspace->weak_references, i, ptr_ptr) {
+        VALUE obj = **ptr_ptr;
+
+        if (RB_SPECIAL_CONST_P(obj)) continue;
+
+        if (!RVALUE_MARKED(obj)) {
+            **ptr_ptr = Qundef;
+        }
+        else {
+            retained_weak_references_count++;
+        }
+    }
+
+    rb_darray_clear(objspace->weak_references);
+    rb_darray_resize_capa_without_gc(&objspace->weak_references, retained_weak_references_count);
+}
+
+static void
 gc_marks_finish(rb_objspace_t *objspace)
 {
     /* finish incremental GC */
@@ -8124,6 +8170,8 @@ gc_marks_finish(rb_objspace_t *objspace)
             gc_marks_wb_unprotected_objects(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
         }
     }
+
+    gc_update_weak_references(objspace);
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);

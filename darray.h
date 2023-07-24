@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "internal/bits.h"
 #include "internal/gc.h"
 
 // Type for a dynamic array. Use to declare a dynamic array.
@@ -85,6 +86,15 @@
     rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
                         sizeof((*(ptr_to_ary))->data[0]), rb_darray_calloc_mul_add_without_gc)
 
+/* Resize the darray to a new capacity. The new capacity must be greater than
+ * or equal to the size of the darray.
+ *
+ * void rb_darray_resize_capa(rb_darray(T) *ptr_to_ary, size_t capa);
+ */
+#define rb_darray_resize_capa_without_gc(ptr_to_ary, capa) \
+    rb_darray_resize_capa_impl((ptr_to_ary), rb_darray_next_power_of_two(capa), sizeof(**(ptr_to_ary)), \
+                               sizeof((*(ptr_to_ary))->data[0]), rb_darray_realloc_mul_add_without_gc)
+
 #define rb_darray_data_ptr(ary) ((ary)->data)
 
 typedef struct rb_darray_meta {
@@ -92,9 +102,8 @@ typedef struct rb_darray_meta {
     size_t capa;
 } rb_darray_meta_t;
 
-// Set the size of the array to zero without freeing the backing memory.
-// Allows reusing the same array.
-//
+/* Set the size of the array to zero without freeing the backing memory.
+ * Allows reusing the same array. */
 static inline void
 rb_darray_clear(void *ary)
 {
@@ -162,6 +171,40 @@ rb_darray_realloc_mul_add_without_gc(const void *orig_ptr, size_t x, size_t y, s
     return ptr;
 }
 
+/* Internal function. Returns the next power of two that is greater than or
+ * equal to n. */
+static inline size_t
+rb_darray_next_power_of_two(size_t n)
+{
+    return (size_t)(1 << (64 - nlz_int64(n)));
+}
+
+/* Internal function. Resizes the capacity of a darray. The new capacity must
+ * be greater than or equal to the size of the darray. */
+static inline void
+rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size, size_t element_size,
+                           void *(*realloc_mul_add_impl)(const void *, size_t, size_t, size_t))
+{
+    rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
+    rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
+
+    rb_darray_meta_t *new_ary = realloc_mul_add_impl(meta, new_capa, element_size, header_size);
+
+    if (meta == NULL) {
+        /* First allocation. Initialize size. On subsequence allocations
+         * realloc takes care of carrying over the size. */
+        new_ary->size = 0;
+    }
+
+    assert(new_ary->size <= new_capa);
+
+    new_ary->capa = new_capa;
+
+    // We don't have access to the type of the dynamic array in function context.
+    // Write out result with memcpy to avoid strict aliasing issue.
+    memcpy(ptr_to_ary, &new_ary, sizeof(new_ary));
+}
+
 // Internal function
 // Ensure there is space for one more element.
 // Note: header_size can be bigger than sizeof(rb_darray_meta_t) when T is __int128_t, for example.
@@ -177,19 +220,7 @@ rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size
     // Double the capacity
     size_t new_capa = current_capa == 0 ? 1 : current_capa * 2;
 
-    rb_darray_meta_t *doubled_ary = realloc_mul_add_impl(meta, new_capa, element_size, header_size);
-
-    if (meta == NULL) {
-        // First allocation. Initialize size. On subsequence allocations
-        // realloc takes care of carrying over the size.
-        doubled_ary->size = 0;
-    }
-
-    doubled_ary->capa = new_capa;
-
-    // We don't have access to the type of the dynamic array in function context.
-    // Write out result with memcpy to avoid strict aliasing issue.
-    memcpy(ptr_to_ary, &doubled_ary, sizeof(doubled_ary));
+    rb_darray_resize_capa_impl(ptr_to_ary, new_capa, header_size, element_size, realloc_mul_add_impl);
 }
 
 static inline void
