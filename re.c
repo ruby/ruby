@@ -29,6 +29,10 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 
+#if USE_MMTK
+#include "internal/mmtk_support.h"
+#endif
+
 VALUE rb_eRegexpError, rb_eRegexpTimeoutError;
 
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
@@ -1008,6 +1012,7 @@ rb_mmtk_char_offset_realloc(struct rmatch_offset **field, size_t num_regs)
                                    ? NULL
                                    : rb_mmtk_chars_to_strbuf((char*)old_field_value);
     rb_mmtk_strbuf_t *new_strbuf = rb_mmtk_strbuf_realloc(old_strbuf, num_regs * sizeof(struct rmatch_offset));
+    // TODO: Use write barrier.
     *field = (struct rmatch_offset*)rb_mmtk_strbuf_to_chars(new_strbuf);
 }
 #endif
@@ -1732,8 +1737,16 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         }
     }
     if (result < 0) {
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         if (regs == &regi)
             onig_region_free(regs, 0);
+#if USE_MMTK
+        } else {
+            // No need to free `regs` because its buffers are allocated in the GC heap.
+        }
+#endif
         if (result == ONIG_MISMATCH) {
             rb_backref_set(Qnil);
             return result;
@@ -1746,6 +1759,8 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
 
     match = match_alloc(rb_cMatch);
     memcpy(RMATCH_REGS(match), regs, sizeof(struct re_registers));
+    // MMTk: TODO: Use write barrier to handle `RMATCH_EXT(match)->regs.beg` and `end` overwritten
+    // by memcpy.
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
@@ -1822,9 +1837,17 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         }
     }
     if (result < 0) {
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         if (regs == &regi)
             onig_region_free(regs, 0);
-        if (result == ONIG_MISMATCH) {
+ #if USE_MMTK
+        } else {
+            // No need to free `regs` because its buffers are allocated in the GC heap.
+        }
+#endif
+       if (result == ONIG_MISMATCH) {
             rb_backref_set(Qnil);
             return false;
         }
@@ -1838,7 +1861,15 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         int err;
         match = match_alloc(rb_cMatch);
         err = rb_reg_region_copy(RMATCH_REGS(match), regs);
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         onig_region_free(regs, 0);
+#if USE_MMTK
+        } else {
+            // No need to free `regs` because its buffers are allocated in the GC heap.
+        }
+#endif
         if (err) rb_memerror();
     }
 

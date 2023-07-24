@@ -3832,6 +3832,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         break;
       case T_MATCH:
         {
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                rb_bug("T_MATCH is not a candidate of obj_free when using MMTk.");
+            }
+#endif
+
             rb_matchext_t *rm = RMATCH_EXT(obj);
 #if USE_DEBUG_COUNTER
             if (rm->regs.num_regs >= 8) {
@@ -3845,14 +3851,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             }
 #endif
             onig_region_free(&rm->regs, 0);
-#if USE_MMTK
-            if (!rb_mmtk_enabled_p()) {
-#endif
             if (rm->char_offset)
                 xfree(rm->char_offset);
-#if USE_MMTK
-            }
-#endif
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
         }
@@ -7750,7 +7750,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         }
         #if USE_MMTK
         if (rb_mmtk_enabled_p()) {
+            // If GC is triggered when the mutator is resizing the following buffers, we retain
+            // them because their contents need to be copied to the new buffers after GC.
             rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->char_offset, false);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, false);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, false);
         }
         #endif
         break;
@@ -11201,7 +11205,11 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
         #if USE_MMTK
         if (rb_mmtk_enabled_p()) {
+            // If GC is triggered when the mutator is resizing the following buffers, we retain
+            // them because their contents need to be copied to the new buffers after GC.
             rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->char_offset, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, true);
         }
         #endif
 

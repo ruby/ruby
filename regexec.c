@@ -30,6 +30,11 @@
 
 #include "regint.h"
 
+#if USE_MMTK
+#include "internal/mmtk_support.h"
+#include "ruby/internal/core/rmatch.h" // For the offset of regs in RMatch
+#endif
+
 #ifdef RUBY
 # undef USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE
 #else
@@ -786,6 +791,27 @@ onig_region_clear(OnigRegion* region)
 #endif
 }
 
+#if USE_MMTK
+static OnigPosition*
+rb_mmtk_onig_position_array_alloc(size_t len)
+{
+  rb_mmtk_strbuf_t *strbuf = rb_mmtk_new_strbuf(len * sizeof(OnigPosition));
+  OnigPosition *result = (OnigPosition*)rb_mmtk_strbuf_to_chars(strbuf);
+  return result;
+}
+
+static OnigPosition*
+rb_mmtk_onig_position_array_realloc(OnigPosition* old, size_t new_len)
+{
+  RUBY_ASSERT(old != NULL);
+
+  rb_mmtk_strbuf_t *old_strbuf = rb_mmtk_chars_to_strbuf((char*)old);
+  rb_mmtk_strbuf_t *new_strbuf = rb_mmtk_strbuf_realloc(old_strbuf, new_len * sizeof(OnigPosition));
+  OnigPosition *result = (OnigPosition*)rb_mmtk_strbuf_to_chars(new_strbuf);
+  return result;
+}
+#endif
+
 extern int
 onig_region_resize(OnigRegion* region, int n)
 {
@@ -795,6 +821,9 @@ onig_region_resize(OnigRegion* region, int n)
     n = ONIG_NREGION;
 
   if (region->allocated == 0) {
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
     region->beg = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
     if (region->beg == 0)
       return ONIGERR_MEMORY;
@@ -804,6 +833,17 @@ onig_region_resize(OnigRegion* region, int n)
       xfree(region->beg);
       return ONIGERR_MEMORY;
     }
+#if USE_MMTK
+    } else {
+      OnigPosition *new_beg = rb_mmtk_onig_position_array_alloc(n);
+      OnigPosition *new_end = rb_mmtk_onig_position_array_alloc(n);
+      // TODO: Use write barrier when writing these fields.
+      region->beg = new_beg;
+      region->end = new_end;
+      // Currently MMTk panicks when out of memory.  We can customize the OOM handling in the
+      // `mmtk-ruby` binding so that it returns NULL instead.
+    }
+#endif
 
     region->allocated = n;
   }
@@ -811,6 +851,9 @@ onig_region_resize(OnigRegion* region, int n)
     OnigPosition *tmp;
 
     region->allocated = 0;
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
     tmp = (OnigPosition* )xrealloc(region->beg, n * sizeof(OnigPosition));
     if (tmp == 0) {
       xfree(region->beg);
@@ -825,6 +868,17 @@ onig_region_resize(OnigRegion* region, int n)
       return ONIGERR_MEMORY;
     }
     region->end = tmp;
+#if USE_MMTK
+    } else {
+      OnigPosition *new_beg = rb_mmtk_onig_position_array_realloc(region->beg, n);
+      OnigPosition *new_end = rb_mmtk_onig_position_array_realloc(region->end, n);
+      // TODO: Use write barrier when writing these fields.
+      region->beg = new_beg;
+      region->end = new_end;
+      // Currently MMTk panicks when out of memory.  We can customize the OOM handling in the
+      // `mmtk-ruby` binding so that it returns NULL instead.
+    }
+#endif
 
     region->allocated = n;
   }
@@ -873,6 +927,11 @@ onig_region_init(OnigRegion* region)
 extern OnigRegion*
 onig_region_new(void)
 {
+#if USE_MMTK
+  if (rb_mmtk_enabled_p()) {
+    rb_bug("onig_region_new should not be called when using MMTk.");
+  }
+#endif
   OnigRegion* r;
 
   r = (OnigRegion* )xmalloc(sizeof(OnigRegion));
@@ -884,6 +943,11 @@ onig_region_new(void)
 extern void
 onig_region_free(OnigRegion* r, int free_self)
 {
+#if USE_MMTK
+  if (rb_mmtk_enabled_p()) {
+    rb_bug("onig_region_free should not be called when using MMTk.");
+  }
+#endif
   if (r) {
     if (r->allocated > 0) {
       xfree(r->beg);

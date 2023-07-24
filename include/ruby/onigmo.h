@@ -716,6 +716,8 @@ typedef struct OnigCaptureTreeNodeStruct {
 struct re_registers {
   int  allocated;
   int  num_regs;
+  // MMTk note: When using MMTk, `beg` and `end` point to the `char[]` arrays of
+  // `imemo:mmtk_strbuf` instances allocated in the GC heap.
   OnigPosition* beg;
   OnigPosition* end;
 #ifdef USE_CAPTURE_HISTORY

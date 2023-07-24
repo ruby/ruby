@@ -682,7 +682,6 @@ rb_mmtk_is_obj_free_candidate(VALUE obj)
       case T_HASH:
       case T_REGEXP:
       case T_DATA:
-      case T_MATCH:
       case T_FILE:
       case T_ICLASS:
       case T_BIGNUM:
@@ -710,6 +709,9 @@ rb_mmtk_is_obj_free_candidate(VALUE obj)
         return false;
       case T_ARRAY:
         // We use imemo:mmtk_objbuf (rb_mmtk_objbuf_t) as the underlying buffer.
+        return false;
+      case T_MATCH:
+        // We use imemo:mmtk_strbuf (rb_mmtk_strbuf_t) for its several underlying buffers.
         return false;
       case T_RATIONAL:
       case T_COMPLEX:
