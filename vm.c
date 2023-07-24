@@ -1439,12 +1439,10 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
 
     stack_check(ec);
 
-#if VM_ARGC_STACK_MAX < 1
-    /* Skip ruby array for potential autosplat case */
-    if (UNLIKELY(argc > VM_ARGC_STACK_MAX && (argc != 1 || is_lambda))) {
-#else
-    if (UNLIKELY(argc > VM_ARGC_STACK_MAX)) {
-#endif
+    if (UNLIKELY(argc > VM_ARGC_STACK_MAX) &&
+        (VM_ARGC_STACK_MAX >= 1 ||
+         /* Skip ruby array for potential autosplat case */
+         (argc != 1 || is_lambda))) {
         use_argv = vm_argv_ruby_array(av, argv, &flags, &argc, kw_splat);
     }
 
