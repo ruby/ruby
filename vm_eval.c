@@ -1615,13 +1615,17 @@ rb_each(VALUE obj)
 
 static VALUE eval_default_path = Qfalse;
 
+#define EVAL_LOCATION_MARK "eval at "
+#define EVAL_LOCATION_MARK_LEN (int)rb_strlen_lit(EVAL_LOCATION_MARK)
+
 static VALUE
 get_eval_default_path(void)
 {
     int location_lineno;
     VALUE location_path = rb_source_location(&location_lineno);
     if (!NIL_P(location_path)) {
-        return rb_fstring(rb_sprintf("(eval at %"PRIsVALUE":%d)", location_path, location_lineno));
+        return rb_fstring(rb_sprintf("("EVAL_LOCATION_MARK"%"PRIsVALUE":%d)",
+                                     location_path, location_lineno));
     }
 
     if (!eval_default_path) {
@@ -2527,9 +2531,11 @@ rb_current_realfilepath(void)
         }
 
         // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
-        if (RSTRING_LEN(path) > 9) {
-            if (RSTRING_PTR(path)[RSTRING_LEN(path) - 1] == ')' &&
-                memcmp(RSTRING_PTR(path), "(eval at ", 9) == 0) {
+        const long len = RSTRING_LEN(path);
+        if (len > EVAL_LOCATION_MARK_LEN+1) {
+            const char *const ptr = RSTRING_PTR(path);
+            if (ptr[len - 1] == ')' &&
+                memcmp(ptr, "("EVAL_LOCATION_MARK, EVAL_LOCATION_MARK_LEN+1) == 0) {
                 return Qnil;
             }
         }
