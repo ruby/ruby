@@ -826,6 +826,10 @@ typedef struct rb_objspace {
         struct timespec marking_start_time;
         uint64_t sweeping_time_ns;
         struct timespec sweeping_start_time;
+
+        /* Weak references */
+        size_t weak_references_count;
+        size_t retained_weak_references_count;
     } profile;
     struct gc_list *global_list;
 
@@ -6900,6 +6904,8 @@ rb_gc_mark_weak(VALUE *ptr)
     rgengc_check_relation(objspace, obj);
 
     rb_darray_append_without_gc(&objspace->weak_references, ptr);
+
+    objspace->profile.weak_references_count++;
 }
 
 /* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
@@ -8141,6 +8147,8 @@ gc_update_weak_references(rb_objspace_t *objspace)
         }
     }
 
+    objspace->profile.retained_weak_references_count = retained_weak_references_count;
+
     rb_darray_clear(objspace->weak_references);
     rb_darray_resize_capa_without_gc(&objspace->weak_references, retained_weak_references_count);
 }
@@ -9299,6 +9307,8 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     objspace->profile.latest_gc_info = reason;
     objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
+    objspace->profile.weak_references_count = 0;
+    objspace->profile.retained_weak_references_count = 0;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, do_full_mark);
 
@@ -10861,6 +10871,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
 #endif
     static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
     static VALUE sym_none, sym_marking, sym_sweeping;
+    static VALUE sym_weak_references_count, sym_retained_weak_references_count;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by, need_major_by;
     unsigned int flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
@@ -10900,6 +10911,9 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
         S(none);
         S(marking);
         S(sweeping);
+
+        S(weak_references_count);
+        S(retained_weak_references_count);
 #undef S
     }
 
@@ -10950,6 +10964,9 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
         SET(state, gc_mode(objspace) == gc_mode_none ? sym_none :
                    gc_mode(objspace) == gc_mode_marking ? sym_marking : sym_sweeping);
     }
+
+    SET(weak_references_count, LONG2FIX(objspace->profile.weak_references_count));
+    SET(retained_weak_references_count, LONG2FIX(objspace->profile.retained_weak_references_count));
 #undef SET
 
     if (!NIL_P(key)) {/* matched key should return above */
@@ -11015,6 +11032,7 @@ enum gc_stat_sym {
     gc_stat_sym_oldmalloc_increase_bytes,
     gc_stat_sym_oldmalloc_increase_bytes_limit,
 #endif
+    gc_stat_sym_weak_references_count,
 #if RGENGC_PROFILE
     gc_stat_sym_total_generated_normal_object_count,
     gc_stat_sym_total_generated_shady_object_count,
@@ -11066,6 +11084,7 @@ setup_gc_stat_symbols(void)
         S(oldmalloc_increase_bytes);
         S(oldmalloc_increase_bytes_limit);
 #endif
+        S(weak_references_count);
 #if RGENGC_PROFILE
         S(total_generated_normal_object_count);
         S(total_generated_shady_object_count);
