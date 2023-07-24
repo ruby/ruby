@@ -108,6 +108,21 @@ class TestWeakKeyMap < Test::Unit::TestCase
     RUBY
   end
 
+  def test_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately(%w(-robjspace), <<-'end;')
+      wm = ObjectSpace::WeakKeyMap.new
+      key = Object.new
+      val = Object.new
+      wm[key] = val
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_equal(val, wm[key])
+    end;
+  end
+
   private
 
   def assert_weak_include(m, k, n = 100)
