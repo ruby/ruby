@@ -284,18 +284,20 @@ rb_io_buffer_type_allocate(VALUE self)
     return instance;
 }
 
-static VALUE
-io_buffer_for_make_instance(VALUE klass, VALUE string)
+static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    enum rb_io_buffer_flags flags = RB_IO_BUFFER_EXTERNAL;
+    flags |= RB_IO_BUFFER_EXTERNAL;
 
     if (RB_OBJ_FROZEN(string))
         flags |= RB_IO_BUFFER_READONLY;
+
+    if (!(flags & RB_IO_BUFFER_READONLY))
+        rb_str_modify(string);
 
     io_buffer_initialize(data, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
 
@@ -303,18 +305,19 @@ io_buffer_for_make_instance(VALUE klass, VALUE string)
 }
 
 struct io_buffer_for_yield_instance_arguments {
-  VALUE klass;
-  VALUE string;
-  VALUE instance;
+    VALUE klass;
+    VALUE string;
+    VALUE instance;
+    enum rb_io_buffer_flags flags;
 };
 
 static VALUE
 io_buffer_for_yield_instance(VALUE _arguments) {
     struct io_buffer_for_yield_instance_arguments *arguments = (struct io_buffer_for_yield_instance_arguments *)_arguments;
 
-    rb_str_locktmp(arguments->string);
+    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string, arguments->flags);
 
-    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string);
+    rb_str_locktmp(arguments->string);
 
     return rb_yield(arguments->instance);
 }
@@ -348,7 +351,8 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
  *  collector, the source string will be locked and cannot be modified.
  *
  *  If the string is frozen, it will create a read-only buffer which cannot be
- *  modified.
+ *  modified. If the string is shared, it may trigger a copy-on-write when
+ *  using the block form.
  *
  *    string = 'test'
  *    buffer = IO::Buffer.for(string)
@@ -376,17 +380,18 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
     // If the string is frozen, both code paths are okay.
     // If the string is not frozen, if a block is not given, it must be frozen.
     if (rb_block_given_p()) {
-      struct io_buffer_for_yield_instance_arguments arguments = {
-          .klass = klass,
-          .string = string,
-          .instance = Qnil,
-      };
+        struct io_buffer_for_yield_instance_arguments arguments = {
+            .klass = klass,
+            .string = string,
+            .instance = Qnil,
+            .flags = 0,
+        };
 
       return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
     } else {
-      // This internally returns the source string if it's already frozen.
-      string = rb_str_tmp_frozen_acquire(string);
-      return io_buffer_for_make_instance(klass, string);
+        // This internally returns the source string if it's already frozen.
+        string = rb_str_tmp_frozen_acquire(string);
+        return io_buffer_for_make_instance(klass, string, RB_IO_BUFFER_READONLY);
     }
 }
 
