@@ -6,7 +6,17 @@ class CommentsTest < Test::Unit::TestCase
   include ::YARP::DSL
 
   def test_comment_inline
-    assert_comment "# comment", :inline
+    assert_comment "# comment", :inline, 0..9
+  end
+
+  def test_comment_inline_def
+    source = <<~RUBY
+    def foo
+      # a comment
+    end
+    RUBY
+
+    assert_comment source, :inline, 10..22
   end
 
   def test_comment___END__
@@ -15,7 +25,7 @@ class CommentsTest < Test::Unit::TestCase
       comment
     RUBY
 
-    assert_comment source, :__END__
+    assert_comment source, :__END__, 0..16
   end
 
   def test_comment_embedded_document
@@ -25,7 +35,7 @@ class CommentsTest < Test::Unit::TestCase
       =end
     RUBY
 
-    assert_comment source, :embdoc
+    assert_comment source, :embdoc, 0..20
   end
 
   def test_comment_embedded_document_with_content_on_same_line
@@ -34,14 +44,16 @@ class CommentsTest < Test::Unit::TestCase
       =end
     RUBY
 
-    assert_comment source, :embdoc
+    assert_comment source, :embdoc, 0..24
   end
 
   private
 
-  def assert_comment(source, type)
+  def assert_comment(source, type, location)
     result = YARP.parse(source)
     assert result.errors.empty?, result.errors.map(&:message).join("\n")
     result => YARP::ParseResult[comments: [YARP::Comment[type: type]]]
+    assert_equal result.comments.first.location.start_offset, location.begin
+    assert_equal result.comments.first.location.end_offset, location.end
   end
 end
