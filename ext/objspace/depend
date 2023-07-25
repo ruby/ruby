@@ -163,6 +163,7 @@ object_tracing.o: objspace.h
 objspace.o: $(RUBY_EXTCONF_H)
 objspace.o: $(arch_hdrdir)/ruby/config.h
 objspace.o: $(hdrdir)/ruby/assert.h
+objspace.o: $(hdrdir)/ruby/atomic.h
 objspace.o: $(hdrdir)/ruby/backward.h
 objspace.o: $(hdrdir)/ruby/backward/2/assume.h
 objspace.o: $(hdrdir)/ruby/backward/2/attributes.h
@@ -334,6 +335,12 @@ objspace.o: $(hdrdir)/ruby/regex.h
 objspace.o: $(hdrdir)/ruby/ruby.h
 objspace.o: $(hdrdir)/ruby/st.h
 objspace.o: $(hdrdir)/ruby/subst.h
+objspace.o: $(hdrdir)/ruby/thread_native.h
+objspace.o: $(top_srcdir)/ccan/check_type/check_type.h
+objspace.o: $(top_srcdir)/ccan/container_of/container_of.h
+objspace.o: $(top_srcdir)/ccan/list/list.h
+objspace.o: $(top_srcdir)/ccan/str/str.h
+objspace.o: $(top_srcdir)/darray.h
 objspace.o: $(top_srcdir)/gc.h
 objspace.o: $(top_srcdir)/id_table.h
 objspace.o: $(top_srcdir)/internal.h
@@ -346,9 +353,16 @@ objspace.o: $(top_srcdir)/internal/imemo.h
 objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
+objspace.o: $(top_srcdir)/internal/vm.h
 objspace.o: $(top_srcdir)/internal/warnings.h
+objspace.o: $(top_srcdir)/method.h
 objspace.o: $(top_srcdir)/node.h
+objspace.o: $(top_srcdir)/ruby_assert.h
+objspace.o: $(top_srcdir)/ruby_atomic.h
 objspace.o: $(top_srcdir)/symbol.h
+objspace.o: $(top_srcdir)/thread_pthread.h
+objspace.o: $(top_srcdir)/vm_core.h
+objspace.o: $(top_srcdir)/vm_opts.h
 objspace.o: objspace.c
 objspace.o: {$(VPATH)}id.h
 objspace_dump.o: $(RUBY_EXTCONF_H)

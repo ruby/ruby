@@ -33,6 +33,12 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  Athena = Gods.clone
+
+  def test_cloned_classes_copy_cvar_cache
+    assert_equal "Cronus", Athena.new.ruler0
+  end
+
   def test_setting_class_variable_on_module_through_inheritance
     mod = Module.new
     mod.class_variable_set(:@@foo, 1)
@@ -41,6 +47,19 @@ class TestVariable < Test::Unit::TestCase
     assert_raise(FrozenError) { c.class_variable_set(:@@foo, 2) }
     assert_raise(FrozenError) { c.class_eval("@@foo = 2") }
     assert_equal(1, c.class_variable_get(:@@foo))
+  end
+
+  Zeus = Gods.clone
+
+  def test_cloned_allows_setting_cvar
+    Zeus.class_variable_set(:@@rule, "Athena")
+
+    god = Gods.new.ruler0
+    zeus = Zeus.new.ruler0
+
+    assert_equal "Cronus", god
+    assert_equal "Athena", zeus
+    assert_not_equal god.object_id, zeus.object_id
   end
 
   def test_singleton_class_included_class_variable
