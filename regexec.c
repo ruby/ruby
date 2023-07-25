@@ -943,15 +943,20 @@ onig_region_new(void)
 extern void
 onig_region_free(OnigRegion* r, int free_self)
 {
-#if USE_MMTK
-  if (rb_mmtk_enabled_p()) {
-    rb_bug("onig_region_free should not be called when using MMTk.");
-  }
-#endif
+  // MMTk note: This function is also called by the `strscan` module.
+  // It's better not to forbid this function from being called when using MMTk.
   if (r) {
     if (r->allocated > 0) {
+#if USE_MMTK
+      if (!rb_mmtk_enabled_p()) {
+#endif
       xfree(r->beg);
       xfree(r->end);
+#if USE_MMTK
+      } else {
+        // No need to free because they are imemo:mmtk_strbuf in the heap.
+      }
+#endif
       r->allocated = 0;
     }
 #ifdef USE_CAPTURE_HISTORY

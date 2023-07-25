@@ -1737,16 +1737,8 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         }
     }
     if (result < 0) {
-#if USE_MMTK
-        if (!rb_mmtk_enabled_p()) {
-#endif
         if (regs == &regi)
             onig_region_free(regs, 0);
-#if USE_MMTK
-        } else {
-            // No need to free `regs` because its buffers are allocated in the GC heap.
-        }
-#endif
         if (result == ONIG_MISMATCH) {
             rb_backref_set(Qnil);
             return result;
@@ -1837,17 +1829,9 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         }
     }
     if (result < 0) {
-#if USE_MMTK
-        if (!rb_mmtk_enabled_p()) {
-#endif
         if (regs == &regi)
             onig_region_free(regs, 0);
- #if USE_MMTK
-        } else {
-            // No need to free `regs` because its buffers are allocated in the GC heap.
-        }
-#endif
-       if (result == ONIG_MISMATCH) {
+        if (result == ONIG_MISMATCH) {
             rb_backref_set(Qnil);
             return false;
         }
@@ -1861,15 +1845,7 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         int err;
         match = match_alloc(rb_cMatch);
         err = rb_reg_region_copy(RMATCH_REGS(match), regs);
-#if USE_MMTK
-        if (!rb_mmtk_enabled_p()) {
-#endif
         onig_region_free(regs, 0);
-#if USE_MMTK
-        } else {
-            // No need to free `regs` because its buffers are allocated in the GC heap.
-        }
-#endif
         if (err) rb_memerror();
     }
 
