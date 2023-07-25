@@ -5435,6 +5435,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	    slen -= len;
 	    STR_SET_LEN(str, slen);
 	    TERM_FILL(&sptr[slen], TERM_LEN(str));
+	    ENC_CODERANGE_CLEAR(str);
 	}
     }
     return result;
