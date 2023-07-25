@@ -244,7 +244,7 @@ parser_comments(yp_parser_t *parser, VALUE source) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(comment->start - parser->start),
-            LONG2FIX(comment->end - parser->start)
+            LONG2FIX(comment->end - comment->start)
         };
 
         VALUE type;
