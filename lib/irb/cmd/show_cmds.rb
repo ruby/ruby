@@ -2,6 +2,7 @@
 
 require "stringio"
 require_relative "nop"
+require_relative "../pager"
 
 module IRB
   # :stopdoc:
@@ -28,9 +29,9 @@ module IRB
           output.puts
         end
 
-        puts output.string
-
-        nil
+        Pager.page do |io|
+          io.puts output.string
+        end
       end
     end
   end

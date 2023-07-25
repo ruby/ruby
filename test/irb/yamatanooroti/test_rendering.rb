@@ -252,6 +252,24 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
+  def test_show_cmds_with_pager_can_quit_with_ctrl_c
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+    LINES
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("show_cmds\n")
+    write("G") # move to the end of the screen
+    write("\C-c") # quit pager
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # IRB::Abort should be rescued
+    assert_not_match(/IRB::Abort/, screen)
+    # IRB should resume
+    assert_match(/foobar/, screen)
+  end
+
   private
 
   def write_irbrc(content)
