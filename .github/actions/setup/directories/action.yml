@@ -42,7 +42,6 @@ runs:
       run: |
         mkdir -p ${{ inputs.srcdir }}
         mkdir -p ${{ inputs.builddir }}
-        mkdir -p ${{ inputs.srcdir }}/.downloaded-cache
 
     # Did you know that actions/checkout works without git(1)?  We are
     # checking that here.
