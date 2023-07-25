@@ -9241,9 +9241,9 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
     ident = tokenize_ident(p, last_state);
     if (result == tCONSTANT && is_local_id(ident)) result = tIDENTIFIER;
     if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
-	(result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
-	lvar_defined(p, ident)) {
-	SET_LEX_STATE(EXPR_END|EXPR_LABEL);
+        (result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
+        (lvar_defined(p, ident) || NUMPARAM_ID_P(ident))) {
+        SET_LEX_STATE(EXPR_END|EXPR_LABEL);
     }
     return result;
 }
