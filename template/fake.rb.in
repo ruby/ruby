@@ -9,6 +9,7 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 if inc = arg['i']
   src = inc == '-' ? STDIN.read : File.read(inc)
+  src.gsub!(/^#.*\n/, '')
   def src.value(name)
     eval(self[/\bruby_#{name}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1].gsub(/#/, '\\#'))
   end
