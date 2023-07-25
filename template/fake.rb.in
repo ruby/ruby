@@ -9,6 +9,7 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 if inc = arg['i']
   src = inc == '-' ? STDIN.read : File.read(inc)
+  src.gsub!(/^#.*\n/, '')
 else
   src = ""
 end
