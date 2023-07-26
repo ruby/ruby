@@ -6259,6 +6259,12 @@ vm_opt_aref_with(VALUE recv, VALUE key)
     }
 }
 
+VALUE
+rb_vm_opt_aref_with(VALUE recv, VALUE key)
+{
+    return vm_opt_aref_with(recv, key);
+}
+
 static VALUE
 vm_opt_aset_with(VALUE recv, VALUE key, VALUE val)
 {

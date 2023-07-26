@@ -259,6 +259,7 @@ module RubyVM::YJIT
       print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       print_counters(stats, out: out, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
       print_counters(stats, out: out, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
+      print_counters(stats, out: out, prefix: 'opt_aref_with_', prompt: 'opt_aref_with exit reasons: ')
       print_counters(stats, out: out, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
       print_counters(stats, out: out, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')

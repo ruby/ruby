@@ -344,6 +344,8 @@ make_counters! {
     opt_aset_not_fixnum,
     opt_aset_not_hash,
 
+    opt_aref_with_qundef,
+
     opt_case_dispatch_megamorphic,
 
     opt_getinlinecache_miss,

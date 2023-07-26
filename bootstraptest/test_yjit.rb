@@ -1100,6 +1100,18 @@ assert_equal '[42, :default]', %q{
   ]
 }
 
+# Test default value block for Hash with opt_aref_with
+assert_equal "false", %q{
+  def index_with_string(h)
+    h["foo"]
+  end
+
+  h = Hash.new { |h, k| k.frozen? }
+
+  index_with_string(h)
+  index_with_string(h)
+}
+
 # A regression test for making sure cfp->sp is proper when
 # hitting stubs. See :stub-sp-flush:
 assert_equal 'ok', %q{
