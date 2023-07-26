@@ -226,6 +226,20 @@ describe "Kernel#eval" do
     -> { eval("return :eval") }.call.should == :eval
   end
 
+  it "returns from the method calling #eval when evaluating 'return'" do
+    def eval_return(n)
+      eval("return n*2")
+    end
+    -> { eval_return(3) }.call.should == 6
+  end
+
+  it "returns from the method calling #eval when evaluating 'return' in BEGIN" do
+    def eval_return(n)
+      eval("BEGIN {return n*3}")
+    end
+    -> { eval_return(4) }.call.should == 12
+  end
+
   it "unwinds through a Proc-style closure and returns from a lambda-style closure in the closure chain" do
     code = fixture __FILE__, "eval_return_with_lambda.rb"
     ruby_exe(code).chomp.should == "a,b,c,eval,f"
