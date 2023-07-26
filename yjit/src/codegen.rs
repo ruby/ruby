@@ -6488,6 +6488,7 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     // Fix the interpreter SP deviated by vm_sendish
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), SP);
 
+    gen_counter_incr(asm, Counter::num_send_dynamic);
     Some(KeepCompiling)
 }
 
