@@ -441,6 +441,7 @@ fn main() {
         .allowlist_function("rb_method_basic_definition_p")
         .allowlist_function("rb_yjit_array_len")
         .allowlist_function("rb_obj_class")
+        .allowlist_function("rb_obj_is_proc")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")
