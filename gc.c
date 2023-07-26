@@ -7015,11 +7015,22 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_callinfo:
         return;
       case imemo_callcache:
-        {
-            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-            // should not mark klass here
-            gc_mark(objspace, (VALUE)vm_cc_cme(cc));
-        }
+        /* cc is callcache.
+         *
+         * cc->klass (klass) should not be marked because if the klass is
+         * free'ed, the cc->klass will be cleared by `vm_cc_invalidate()`.
+         *
+         * cc->cme (cme) should not be marked because if cc is invalidated
+         * when cme is free'ed.
+         * - klass marks cme if klass uses cme.
+         * - caller classe's ccs->cme marks cc->cme.
+         * - if cc is invalidated (klass doesn't refer the cc),
+         *   cc is invalidated by `vm_cc_invalidate()` and cc->cme is
+         *   not be accessed.
+         * - On the multi-Ractors, cme will be collected with global GC
+         *   so that it is safe if GC is not interleaving while accessing
+         *   cc and cme.
+         */
         return;
       case imemo_constcache:
         {
@@ -10122,12 +10133,14 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
                 if (!is_live_object(objspace, cc->klass)) {
                     *((VALUE *)(&cc->klass)) = (VALUE)0;
                 }
-            }
 
-            if (cc->cme_) {
-                TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
-                if (!is_live_object(objspace, (VALUE)cc->cme_)) {
-                    *((struct rb_callable_method_entry_struct **)(&cc->cme_)) = (struct rb_callable_method_entry_struct *)0;
+                // cc->cme_ is available if cc->klass is given
+
+                if (cc->cme_) {
+                    TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+                    if (!is_live_object(objspace, (VALUE)cc->cme_)) {
+                        *((struct rb_callable_method_entry_struct **)(&cc->cme_)) = (struct rb_callable_method_entry_struct *)0;
+                    }
                 }
             }
         }
