@@ -5148,7 +5148,9 @@ rb_str_drop_bytes(VALUE str, long len)
     }
     STR_SET_LEN(str, nlen);
 
-    ptr[nlen] = 0;
+    if (!SHARABLE_MIDDLE_SUBSTRING) {
+        TERM_FILL(ptr + nlen, TERM_LEN(str));
+    }
     ENC_CODERANGE_CLEAR(str);
     return str;
 }
