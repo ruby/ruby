@@ -1289,6 +1289,14 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_aref_with
+    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar")
+      h = {"foo" => "bar"}
+
+      h["foo"]
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

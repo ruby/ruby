@@ -3064,6 +3064,37 @@ fn gen_opt_aset(
     }
 }
 
+fn gen_opt_aref_with(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus>{
+    jit_prepare_routine_call(jit, asm);
+
+    let key_opnd = Opnd::Value(jit.get_arg(0));
+    let recv_opnd = asm.stack_pop(1);
+
+    extern "C" {
+        fn rb_vm_opt_aref_with(recv: VALUE, key: VALUE) -> VALUE;
+    }
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_aref_with as *const u8,
+        vec![
+            recv_opnd,
+            key_opnd
+        ],
+    );
+
+    asm.cmp(val_opnd, Qundef.into());
+    asm.je(Target::side_exit(Counter::opt_aref_with_qundef));
+
+    let top = asm.stack_push(Type::Unknown);
+    asm.mov(top, val_opnd);
+
+    return Some(KeepCompiling);
+}
+
 fn gen_opt_and(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -8040,6 +8071,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_neq => Some(gen_opt_neq),
         YARVINSN_opt_aref => Some(gen_opt_aref),
         YARVINSN_opt_aset => Some(gen_opt_aset),
+        YARVINSN_opt_aref_with => Some(gen_opt_aref_with),
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),
