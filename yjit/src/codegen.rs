@@ -7901,7 +7901,7 @@ fn gen_getblockparam(
     asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    asm.jnz(Target::side_exit(Counter::gbpp_wb_required));
+    asm.jnz(Target::side_exit(Counter::gbp_wb_required));
 
     // Convert the block handler in to a proc
     // call rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
