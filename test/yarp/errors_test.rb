@@ -199,14 +199,12 @@ class ErrorsTest < Test::Unit::TestCase
   end
 
   def test_break_1_2_3
-    errors = [
+    assert_errors expression("break(1, 2, 3)"), "break(1, 2, 3)", [
       ["Expected to be able to parse an expression.", 7..7],
       ["Expected a closing parenthesis.", 7..7],
       ["Expected a newline or semicolon after statement.", 13..13],
       ["Expected to be able to parse an expression.", 13..13],
     ]
-
-    assert_errors expression("break(1, 2, 3)"), "break(1, 2, 3)", errors
   end
 
   def test_break_1
