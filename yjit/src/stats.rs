@@ -355,11 +355,15 @@ make_counters! {
     expandarray_not_array,
     expandarray_rhs_too_small,
 
+    // getblockparam
     gbp_wb_required,
-    gbpp_not_gc_guarded,
+
+    // getblockparamproxy
+    gbpp_unsupported_type,
     gbpp_block_param_modified,
     gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
+    gbpp_block_handler_not_proc,
 
     branchif_interrupted,
     branchunless_interrupted,

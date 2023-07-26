@@ -7784,19 +7784,19 @@ fn gen_getblockparamproxy(
         return Some(EndBlock);
     }
 
-    // A mirror of the interpreter code. Checking for the case
-    // where it's pushing rb_block_param_proxy.
-
     // EP level
     let level = jit.get_arg(1).as_u32();
 
     // Peek at the block handler so we can check whether it's nil
     let comptime_handler = jit.peek_at_block_handler(level);
 
-    // When a block handler is present, it should always be a GC-guarded
-    // pointer (VM_BH_ISEQ_BLOCK_P)
-    if comptime_handler.as_u64() != 0 && comptime_handler.as_u64() & 0x3 != 0x1 {
-        incr_counter!(gbpp_not_gc_guarded);
+    // Filter for the 3 cases we currently handle
+    if !(comptime_handler.as_u64() == 0 ||              // no block given
+            comptime_handler.as_u64() & 0x3 == 0x1 ||   // iseq block (no associated GC managed object)
+            unsafe { rb_obj_is_proc(comptime_handler) }.test() // block is a Proc
+        ) {
+        // Missing the symbol case, where we basically need to call Symbol#to_proc at runtime
+        gen_counter_incr(asm, Counter::gbpp_unsupported_type);
         return None;
     }
 
@@ -7818,7 +7818,12 @@ fn gen_getblockparamproxy(
         Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
     );
 
-    // Specialize compilation for the case where no block handler is present
+    // Use block handler sample to guide specialization...
+    // NOTE: we use jit_chain_guard() in this decision tree, and since
+    // there are only 3 cases, it should never reach the depth limit use
+    // the exit counter we pass to it.
+    //
+    // No block given
     if comptime_handler.as_u64() == 0 {
         // Bail if there is a block handler
         asm.cmp(block_handler, Opnd::UImm(0));
@@ -7833,7 +7838,7 @@ fn gen_getblockparamproxy(
         );
 
         jit_putobject(asm, Qnil);
-    } else {
+    } else if comptime_handler.as_u64() & 0x3 == 0x1 {
         // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
         let block_handler = asm.and(block_handler, 0x3.into());
 
@@ -7854,6 +7859,39 @@ fn gen_getblockparamproxy(
 
         let top = asm.stack_push(Type::BlockParamProxy);
         asm.mov(top, Opnd::const_ptr(unsafe { rb_block_param_proxy }.as_ptr()));
+    } else if unsafe { rb_obj_is_proc(comptime_handler) }.test() {
+        // The block parameter is a Proc
+        c_callable! {
+            // We can't hold values across C calls due to a backend limitation,
+            // so we'll use this thin wrapper around rb_obj_is_proc().
+            fn is_proc(object: VALUE) -> VALUE {
+                if unsafe { rb_obj_is_proc(object) }.test() {
+                    // VM_BH_TO_PROC() is the identify function.
+                    object
+                } else {
+                    Qfalse
+                }
+            }
+        }
+
+        // Simple predicate, no need to jit_prepare_routine_call()
+        let proc_or_false = asm.ccall(is_proc as _, vec![block_handler]);
+
+        // Guard for proc
+        asm.cmp(proc_or_false, Qfalse.into());
+        jit_chain_guard(
+            JCC_JE,
+            jit,
+            asm,
+            ocb,
+            SEND_MAX_DEPTH,
+            Counter::gbpp_block_handler_not_proc,
+        );
+
+        let top = asm.stack_push(Type::Unknown);
+        asm.mov(top, proc_or_false);
+    } else {
+        unreachable!("absurd given initial filtering");
     }
 
     jump_to_next_insn(jit, asm, ocb);
