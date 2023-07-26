@@ -7,6 +7,16 @@ module IRB
     PAGE_COMMANDS = [ENV['RI_PAGER'], ENV['PAGER'], 'less', 'more'].compact.uniq
 
     class << self
+      def page_content(content)
+        if content_exceeds_screen_height?(content)
+          page do |io|
+            io.puts content
+          end
+        else
+          $stdout.puts content
+        end
+      end
+
       def page
         if STDIN.tty? && pager = setup_pager
           begin
@@ -29,6 +39,21 @@ module IRB
       end
 
       private
+
+      def content_exceeds_screen_height?(content)
+        screen_height, screen_width = begin
+          Reline.get_screen_size
+        rescue Errno::EINVAL
+          [24, 80]
+        end
+
+        pageable_height = screen_height - 3 # leave some space for previous and the current prompt
+
+        # If the content has more lines than the pageable height
+        content.lines.count > pageable_height ||
+          # Or if the content is a few long lines
+          pageable_height * screen_width < Reline::Unicode.calculate_width(content, true)
+      end
 
       def setup_pager
         require 'shellwords'

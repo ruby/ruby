@@ -29,9 +29,7 @@ module IRB
           output.puts
         end
 
-        Pager.page do |io|
-          io.puts output.string
-        end
+        Pager.page_content(output.string)
       end
     end
   end
