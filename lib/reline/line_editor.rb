@@ -2696,6 +2696,7 @@ class Reline::LineEditor
       @cursor_max -= width
     end
   end
+  alias_method :kill_word, :em_delete_next_word
 
   private def ed_delete_prev_word(key)
     if @byte_pointer > 0
@@ -2707,6 +2708,7 @@ class Reline::LineEditor
       @cursor_max -= width
     end
   end
+  alias_method :backward_kill_word, :ed_delete_prev_word
 
   private def ed_transpose_chars(key)
     if @byte_pointer > 0
