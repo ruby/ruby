@@ -249,7 +249,7 @@ module Bundler
       [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         kernel_class.send(:alias_method, :no_warning_require, :require)
         kernel_class.send(:define_method, :require) do |file|
-          name = file.tr("/", "-")
+          name = file.to_s.tr("/", "-")
           if (::Gem::BUNDLED_GEMS.keys - specs.to_a.map(&:name)).include?(name)
             unless $LOADED_FEATURES.any? {|f| f.end_with?("#{name}.rb", "#{name}.#{RbConfig::CONFIG["DLEXT"]}") }
               target_file = begin
