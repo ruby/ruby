@@ -106,6 +106,27 @@ long rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int dir);
 VALUE rb_reg_quote(VALUE str);
 
 /**
+ * Exercises  various  checks  and  preprocesses  so  that  the  given  regular
+ * expression can be applied to the given string.  The preprocess here includes
+ * (but not limited to) for instance encoding conversion.
+ *
+ * @param[in]  re                  Target regular expression.
+ * @param[in]  str                 What `re` is about to run on.
+ * @exception  rb_eArgError        `re` does not fit for `str`.
+ * @exception  rb_eEncCompatError  `re` and `str` are incompatible.
+ * @exception  rb_eRegexpError     `re` is malformed.
+ * @return     A preprocessesed pattern buffer ready to be applied to `str`.
+ * @note       The return value is manages by our GC.  Don't free.
+ *
+ * @internal
+ *
+ * The  return  type,  `regex_t  *`, is  defined  in  `<ruby/onigmo.h>`,  _and_
+ * _conflicts_ with POSIX's  `<regex.h>`.  We can no longer  save the situation
+ * at this point.  Just don't mix the two.
+ */
+regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
+
+/**
  * Runs a regular expression match using function `match`. Performs preparation,
  * error handling, and memory cleanup.
  *

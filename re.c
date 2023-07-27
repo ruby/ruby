@@ -1575,7 +1575,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     return enc;
 }
 
-static regex_t *
+regex_t *
 rb_reg_prepare_re(VALUE re, VALUE str)
 {
     int r;
