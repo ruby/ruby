@@ -2276,6 +2276,17 @@ assert_equal '[1, 2, nil]', %q{
   expandarray_rhs_too_small
 }
 
+assert_equal '[nil, 2, nil]', %q{
+  def foo(arr)
+    a, b, c = arr
+  end
+
+  a, b, c1 = foo([0, 1])
+  a, b, c2 = foo([0, 1, 2])
+  a, b, c3 = foo([0, 1])
+  [c1, c2, c3]
+}
+
 assert_equal '[1, [2]]', %q{
   def expandarray_splat
     a, *b = [1, 2]

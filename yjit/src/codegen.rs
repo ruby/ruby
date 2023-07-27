@@ -1467,10 +1467,10 @@ fn guard_object_is_not_ruby2_keyword_hash(
 fn gen_expandarray(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     // Both arguments are rb_num_t which is unsigned
-    let num = jit.get_arg(0).as_usize();
+    let num = jit.get_arg(0).as_u32();
     let flag = jit.get_arg(1).as_usize();
 
     // If this instruction has the splat flag, then bail out.
@@ -1500,6 +1500,23 @@ fn gen_expandarray(
         return Some(KeepCompiling);
     }
 
+    // Defer compilation so we can specialize on a runtime `self`
+    if !jit.at_current_insn() {
+        defer_compilation(jit, asm, ocb);
+        return Some(EndBlock);
+    }
+
+    let comptime_recv = jit.peek_at_stack(&asm.ctx, 0);
+
+    // If the comptime receiver is not an array, bail
+    if comptime_recv.class_of() != unsafe { rb_cArray } {
+        return None;
+    }
+
+    // Get the compile-time array length
+    let comptime_len = unsafe { rb_yjit_array_len(comptime_recv) as u32 };
+    //println!("comptime_len={}", comptime_len);
+
     // Move the array from the stack and check that it's an array.
     guard_object_is_array(
         asm,
@@ -1507,42 +1524,92 @@ fn gen_expandarray(
         array_opnd.into(),
         Counter::expandarray_not_array,
     );
-    let array_opnd = asm.stack_pop(1); // pop after using the type info
 
     // If we don't actually want any values, then just return.
     if num == 0 {
+        asm.stack_pop(1); // pop the array
         return Some(KeepCompiling);
     }
 
+    let array_opnd = asm.stack_opnd(0);
     let array_reg = asm.load(array_opnd);
     let array_len_opnd = get_array_len(asm, array_reg);
 
-    // Only handle the case where the number of values in the array is greater
-    // than or equal to the number of values requested.
-    asm.cmp(array_len_opnd, num.into());
-    asm.jl(Target::side_exit(Counter::expandarray_rhs_too_small));
+    /*
+    // FIXME: JCC_JB not implemented
+    // Guard on the comptime/expected array length
+    if comptime_len >= num {
+        asm.comment(&format!("guard array length >= {}", num));
+        asm.cmp(array_len_opnd, num.into());
+        jit_chain_guard(
+            JCC_JB,
+            jit,
+            asm,
+            ocb,
+            OPT_AREF_MAX_CHAIN_DEPTH,
+            Counter::expandarray_chain_max_depth,
+        );
+    } else {
+        asm.comment(&format!("guard array length == {}", comptime_len));
+        asm.cmp(array_len_opnd, comptime_len.into());
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            asm,
+            ocb,
+            OPT_AREF_MAX_CHAIN_DEPTH,
+            Counter::expandarray_chain_max_depth,
+        );
+    }
+    */
 
-    // Load the address of the embedded array into REG1.
-    // (struct RArray *)(obj)->as.ary
-    let array_reg = asm.load(array_opnd);
-    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
-
-    // Conditionally load the address of the heap array into REG1.
-    // (struct RArray *)(obj)->as.heap.ptr
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-    asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
-    let heap_ptr_opnd = Opnd::mem(
-        usize::BITS as u8,
-        asm.load(array_opnd),
-        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+    asm.comment(&format!("guard array length == {}", comptime_len));
+    asm.cmp(array_len_opnd, comptime_len.into());
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        OPT_AREF_MAX_CHAIN_DEPTH,
+        Counter::expandarray_chain_max_depth,
     );
-    let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
-    // Loop backward through the array and push each element onto the stack.
-    for i in (0..num).rev() {
-        let top = asm.stack_push(Type::Unknown);
-        let offset = i32::try_from(i * SIZEOF_VALUE).unwrap();
-        asm.mov(top, Opnd::mem(64, ary_opnd, offset));
+    let array_opnd = asm.stack_pop(1); // pop after using the type info
+
+    //println!("generating loads");
+
+    // If the array has length 0, then we don't even need the array pointer
+    if comptime_len == 0 {
+        // Loop backward through the array and push Qnils onto the stack.
+        for _ in 0..num {
+            let top = asm.stack_push(Type::Nil);
+            asm.mov(top, Qnil.into());
+        }
+    } else {
+        let array_reg = asm.load(array_opnd);
+        let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+
+        // Conditionally load the address of the heap array
+        // (struct RArray *)(obj)->as.heap.ptr
+        let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+        asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
+        let heap_ptr_opnd = Opnd::mem(
+            usize::BITS as u8,
+            asm.load(array_opnd),
+            RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+        );
+        let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+
+        // Loop backward through the array and push each element onto the stack.
+        for i in (0..num).rev() {
+            let top = asm.stack_push(if i < comptime_len { Type::Unknown } else { Type::Nil });
+            let offset = i32::try_from(i * (SIZEOF_VALUE as u32)).unwrap();
+
+            // Missing elements are Qnil
+            asm.comment(&format!("load array[{}]", i));
+            let elem_opnd = if i < comptime_len { Opnd::mem(64, ary_opnd, offset) } else { Qnil.into() };
+            asm.mov(top, elem_opnd);
+        }
     }
 
     Some(KeepCompiling)
@@ -7394,7 +7461,7 @@ fn gen_leave(
     ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     // Only the return value should be on the stack
-    assert_eq!(1, asm.ctx.get_stack_size());
+    assert_eq!(1, asm.ctx.get_stack_size(), "leave instruction expects stack size 1, but was: {}", asm.ctx.get_stack_size());
 
     let ocb_asm = Assembler::new();
 
