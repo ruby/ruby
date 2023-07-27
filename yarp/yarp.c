@@ -12982,7 +12982,7 @@ yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const c
     yp_parser_init(&parser, source, size, NULL);
       if (eval) yp_populate_eval_scopes(&parser, parent_scopes);
 
-    yp_node_t *node = yp_parse(&parser, eval);  
+    yp_node_t *node = yp_parse(&parser, eval);
     yp_serialize(&parser, node, buffer);
 
     yp_node_destroy(&parser, node);
