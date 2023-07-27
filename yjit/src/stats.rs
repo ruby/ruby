@@ -396,9 +396,6 @@ make_counters! {
 
     constant_state_bumps,
 
-    // Not using "getivar_" to exclude this from exit reasons
-    get_ivar_max_depth,
-
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
@@ -407,10 +404,14 @@ make_counters! {
 
     num_send,
     num_send_known_class,
+    num_send_megamorphic,
     num_send_polymorphic,
     num_send_x86_rel32,
     num_send_x86_reg,
     num_send_dynamic,
+
+    num_getivar_megamorphic,
+    num_setivar_megamorphic,
 
     iseq_stack_too_large,
     iseq_too_long,

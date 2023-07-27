@@ -1971,9 +1971,9 @@ fn gen_get_ivar(
     // Check if the comptime receiver is a T_OBJECT
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
     // Use a general C call at the last chain to avoid exits on megamorphic shapes
-    let last_chain = asm.ctx.get_chain_depth() as i32 == max_chain_depth - 1;
-    if last_chain {
-        gen_counter_incr(asm, Counter::get_ivar_max_depth);
+    let megamorphic = asm.ctx.get_chain_depth() as i32 >= max_chain_depth;
+    if megamorphic {
+        gen_counter_incr(asm, Counter::num_getivar_megamorphic);
     }
 
     // If the class uses the default allocator, instances should all be T_OBJECT
@@ -1981,7 +1981,7 @@ fn gen_get_ivar(
     //       Eventually, we can encode whether an object is T_OBJECT or not
     //       inside object shapes.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || last_chain {
+    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || megamorphic {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm.comment("call rb_ivar_get()");
@@ -2182,11 +2182,16 @@ fn gen_setinstancevariable(
 
     // Check if the comptime receiver is a T_OBJECT
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
+    // Use a general C call at the last chain to avoid exits on megamorphic shapes
+    let megamorphic = asm.ctx.get_chain_depth() as i32 >= SET_IVAR_MAX_DEPTH;
+    if megamorphic {
+        gen_counter_incr(asm, Counter::num_setivar_megamorphic);
+    }
 
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || (asm.ctx.get_chain_depth() as i32) >= SET_IVAR_MAX_DEPTH {
+    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || megamorphic {
         asm.comment("call rb_vm_setinstancevariable()");
 
         let ic = jit.get_arg(1).as_u64(); // type IVC
@@ -6554,6 +6559,11 @@ fn gen_send_general(
     }
     if asm.ctx.get_chain_depth() > 1 {
         gen_counter_incr(asm, Counter::num_send_polymorphic);
+    }
+    // If megamorphic, let the caller fallback to dynamic dispatch
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
+        gen_counter_incr(asm, Counter::num_send_megamorphic);
+        return None;
     }
 
     jit_guard_known_klass(
