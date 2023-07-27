@@ -61,10 +61,6 @@
 #define OPT_SUPPORT_JOKE             0
 #endif
 
-#ifndef OPT_SUPPORT_CALL_C_FUNCTION
-#define OPT_SUPPORT_CALL_C_FUNCTION  0
-#endif
-
 #ifndef VM_COLLECT_USAGE_DETAILS
 #define VM_COLLECT_USAGE_DETAILS     0
 #endif
