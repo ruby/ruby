@@ -1567,9 +1567,9 @@ end
     G
 
     ruby <<-R
-      module Gem
-        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
-        BUNDLED_GEMS = { "csv" => "1.0.0" }
+      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
+      module Gem::BUNDLED_GEMS
+        SINCE = { "csv" => "1.0.0" }
       end
       require 'bundler/setup'
       require 'csv'
@@ -1589,9 +1589,9 @@ end
     G
 
     ruby <<-R
-      module Gem
-        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
-        BUNDLED_GEMS = { "csv" => "1.0.0" }
+      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
+      module Gem::BUNDLED_GEMS
+        SINCE = { "csv" => "1.0.0" }
       end
       require 'csv'
       require 'bundler/setup'
@@ -1612,9 +1612,9 @@ end
     G
 
     ruby <<-R
-      module Gem
-        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
-        BUNDLED_GEMS = { "csv" => "1.0.0" }
+      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
+      module Gem::BUNDLED_GEMS
+        SINCE = { "csv" => "1.0.0" }
       end
       require 'bundler/setup'
       require 'csv'
@@ -1637,9 +1637,9 @@ end
     G
 
     ruby <<-R
-      module Gem
-        remove_const :BUNDLED_GEMS if defined?(BUNDLED_GEMS)
-        BUNDLED_GEMS = { "csv" => "1.0.0", "net-imap" => "0.0.1" }
+      Gem.send(:remove_const, :BUNDLED_GEMS) if defined?(Gem::BUNDLED_GEMS)
+      module Gem::BUNDLED_GEMS
+        SINCE = { "csv" => "1.0.0", "net-imap" => "0.0.1" }
       end
       require 'bundler/setup'
       begin
