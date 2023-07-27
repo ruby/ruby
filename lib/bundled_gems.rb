@@ -44,14 +44,6 @@ module Gem::BUNDLED_GEMS
 
   WARNED = {}                   # unfrozen
 
-  def self.[](name)
-    SINCE[name]
-  end
-
-  def self.keys
-    SINCE.keys
-  end
-
   conf = ::RbConfig::CONFIG
   LIBDIR = (conf["rubylibdir"] + "/").freeze
   ARCHDIR = (conf["rubyarchdir"] + "/").freeze
