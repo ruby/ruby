@@ -1576,7 +1576,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 }
 
 static regex_t *
-rb_reg_prepare_re(VALUE re, VALUE str, onig_errmsg_buffer err)
+rb_reg_prepare_re(VALUE re, VALUE str)
 {
     regex_t *reg = RREGEXP_PTR(re);
     int r;
@@ -1592,6 +1592,7 @@ rb_reg_prepare_re(VALUE re, VALUE str, onig_errmsg_buffer err)
     reg = RREGEXP_PTR(re);
     pattern = RREGEXP_SRC_PTR(re);
 
+    onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
         pattern, pattern + RREGEXP_SRC_LEN(re), enc,
         &fixed_enc, err, 0);
@@ -1625,8 +1626,7 @@ rb_reg_onig_match(VALUE re, VALUE str,
                   OnigPosition (*match)(regex_t *reg, VALUE str, struct re_registers *regs, void *args),
                   void *args, struct re_registers *regs)
 {
-    onig_errmsg_buffer err = "";
-    regex_t *reg = rb_reg_prepare_re(re, str, err);
+    regex_t *reg = rb_reg_prepare_re(re, str);
 
     bool tmpreg = reg != RREGEXP_PTR(re);
     if (!tmpreg) RREGEXP(re)->usecnt++;
@@ -1648,6 +1648,7 @@ rb_reg_onig_match(VALUE re, VALUE str,
         onig_region_free(regs, 0);
 
         if (result != ONIG_MISMATCH) {
+            onig_errmsg_buffer err = "";
             onig_error_code_to_str((UChar*)err, (int)result);
             rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
         }
