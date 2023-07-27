@@ -1502,7 +1502,9 @@ strscan_named_captures(VALUE self)
     named_captures_data data;
     data.self = self;
     data.captures = rb_hash_new();
-    onig_foreach_name(RREGEXP_PTR(p->regex), named_captures_iter, &data);
+    if (!RB_NIL_P(p->regex)) {
+        onig_foreach_name(RREGEXP_PTR(p->regex), named_captures_iter, &data);
+    }
 
     return data.captures;
 }
