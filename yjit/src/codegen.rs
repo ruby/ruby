@@ -2287,6 +2287,7 @@ fn gen_setinstancevariable(
                 let new_shape_id = unsafe { rb_shape_id(dest_shape) };
 
                 if new_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
+                    gen_counter_incr(asm, Counter::setivar_too_complex);
                     return None;
                 }
 
