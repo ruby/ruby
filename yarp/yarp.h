@@ -51,7 +51,7 @@ YP_EXPORTED_FUNCTION void yp_parser_register_encoding_decode_callback(yp_parser_
 YP_EXPORTED_FUNCTION void yp_parser_free(yp_parser_t *parser);
 
 // Parse the Ruby source associated with the given parser and return the tree.
-YP_EXPORTED_FUNCTION yp_node_t * yp_parse(yp_parser_t *parser);
+YP_EXPORTED_FUNCTION yp_node_t * yp_parse(yp_parser_t *parser, bool eval);
 
 // Pretty-prints the AST represented by the given node to the given buffer.
 YP_EXPORTED_FUNCTION void yp_prettyprint(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer);
@@ -61,7 +61,7 @@ YP_EXPORTED_FUNCTION void yp_serialize(yp_parser_t *parser, yp_node_t *node, yp_
 
 // Parse and serialize the AST represented by the given source to the given
 // buffer.
-YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer);
+YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *parent_scopes);
 
 // Returns a string representation of the given token type.
 YP_EXPORTED_FUNCTION const char * yp_token_type_to_str(yp_token_type_t token_type);
