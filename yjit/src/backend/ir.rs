@@ -432,6 +432,9 @@ pub enum Insn {
     /// Jump if lower
     Jl(Target),
 
+    /// Jump if greater
+    Jg(Target),
+
     // Unconditional jump to a branch target
     Jmp(Target),
 
@@ -578,6 +581,7 @@ impl Insn {
             Insn::Jbe(_) => "Jbe",
             Insn::Je(_) => "Je",
             Insn::Jl(_) => "Jl",
+            Insn::Jg(_) => "Jg",
             Insn::Jmp(_) => "Jmp",
             Insn::JmpOpnd(_) => "JmpOpnd",
             Insn::Jne(_) => "Jne",
@@ -725,6 +729,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jbe(_) |
             Insn::Je(_) |
             Insn::Jl(_) |
+            Insn::Jg(_) |
             Insn::Jmp(_) |
             Insn::Jne(_) |
             Insn::Jnz(_) |
@@ -822,6 +827,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jbe(_) |
             Insn::Je(_) |
             Insn::Jl(_) |
+            Insn::Jg(_) |
             Insn::Jmp(_) |
             Insn::Jne(_) |
             Insn::Jnz(_) |

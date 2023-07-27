@@ -4325,6 +4325,45 @@ fn jit_rb_int_div(
     true
 }
 
+/*
+fn jit_rb_int_lshift(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if asm.ctx.two_fixnums_on_stack(jit) != Some(true) {
+        return false;
+    }
+    guard_two_fixnums(jit, asm, ocb);
+
+    let rhs = asm.stack_pop(1);
+    let lhs = asm.stack_pop(1);
+
+    // Ruby supports using a negative shift value
+    asm.comment("Guard shift negative");
+    let shift_val = asm.sub(rhs, 1.into());
+    asm.cmp(shift_val, 0.into());
+    asm.jl(Target::side_exit(Counter::lshift_range));
+
+    asm.cmp(shift_val, 63.into());
+    asm.jg(Target::side_exit(Counter::lshift_range));
+
+    // FIXME: we don't yet support shift with non-immediate values in the backend
+    // Do the shifting
+    let out_val = asm.lshift(lhs, shift_val);
+    asm.jo(Target::side_exit(Counter::lshift_overflow));
+
+    let ret_opnd = asm.stack_push(Type::Fixnum);
+    asm.mov(ret_opnd, out_val);
+    true
+}
+*/
+
 fn jit_rb_int_aref(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -8371,6 +8410,7 @@ impl CodegenGlobals {
 
             self.yjit_reg_method(rb_cInteger, "*", jit_rb_int_mul);
             self.yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
+            //self.yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
             self.yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
 
             // rb_str_to_s() methods in string.c

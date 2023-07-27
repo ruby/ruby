@@ -673,6 +673,14 @@ impl Assembler
                     }
                 },
 
+                Insn::Jg(target) => {
+                    match compile_side_exit(*target, self, ocb) {
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jg_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jg_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                    }
+                },
+
                 Insn::Jbe(target) => {
                     match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
