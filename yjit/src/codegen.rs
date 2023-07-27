@@ -1519,8 +1519,8 @@ fn gen_expandarray(
 
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
-    asm.cmp(array_len_opnd, num.into());
-    asm.jl(Target::side_exit(Counter::expandarray_rhs_too_small));
+    //asm.cmp(array_len_opnd, num.into());
+    //asm.jl(Target::side_exit(Counter::expandarray_rhs_too_small));
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
@@ -1542,7 +1542,13 @@ fn gen_expandarray(
     for i in (0..num).rev() {
         let top = asm.stack_push(Type::Unknown);
         let offset = i32::try_from(i * SIZEOF_VALUE).unwrap();
-        asm.mov(top, Opnd::mem(64, ary_opnd, offset));
+
+        //asm.mov(top, Opnd::mem(64, ary_opnd, offset));
+
+        // If the element index is less than the length of the array, load it
+        asm.cmp(array_len_opnd, i.into());
+        let elem_opnd = asm.csel_g(Opnd::mem(64, ary_opnd, offset), Qnil.into());
+        asm.mov(top, elem_opnd);
     }
 
     Some(KeepCompiling)
