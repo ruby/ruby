@@ -1578,7 +1578,6 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 static regex_t *
 rb_reg_prepare_re(VALUE re, VALUE str)
 {
-    regex_t *reg = RREGEXP_PTR(re);
     int r;
     OnigErrorInfo einfo;
     const char *pattern;
@@ -1586,10 +1585,10 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     rb_encoding *fixed_enc = 0;
     rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
 
+    regex_t *reg = RREGEXP_PTR(re);
     if (reg->enc == enc) return reg;
 
     rb_reg_check(re);
-    reg = RREGEXP_PTR(re);
     pattern = RREGEXP_SRC_PTR(re);
 
     onig_errmsg_buffer err = "";
