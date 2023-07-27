@@ -12735,8 +12735,8 @@ parse_expression(yp_parser_t *parser, yp_binding_power_t binding_power, const ch
 }
 
 static yp_node_t *
-parse_program(yp_parser_t *parser) {
-    yp_parser_scope_push(parser, true);
+parse_program(yp_parser_t *parser, bool eval) {
+    yp_parser_scope_push(parser, !eval);
     parser_lex(parser);
 
     yp_statements_node_t *statements = parse_statements(parser, YP_CONTEXT_MAIN);
@@ -12754,6 +12754,34 @@ parse_program(yp_parser_t *parser) {
     }
 
     return (yp_node_t *) yp_program_node_create(parser, &locals, statements);
+}
+
+// Assume always a valid string since it is from trusted source (Ruby impl internals).
+// Format: [num_scopes, (num_vars1, (var_char1*, 0)*)*]
+static void
+yp_populate_eval_scopes(yp_parser_t *parser, const char *data) {
+    const char *p = data;
+    size_t number_of_scopes = (size_t) *p;
+
+    p++;
+    for (size_t scope_index = 0; scope_index < number_of_scopes; scope_index++) {
+        size_t number_of_variables = (size_t) *p++;
+
+        yp_parser_scope_push(parser, scope_index == 0);
+
+        for (size_t variable_index = 0; variable_index < number_of_variables; variable_index++) {
+            char *eos = strchr(p, 0);
+
+            yp_token_t lvar = (yp_token_t) {
+                    .type = YP_TOKEN_IDENTIFIER,
+                    .start = p,
+                    .end = eos
+            };
+            yp_parser_local_add_token(parser, &lvar);
+
+            p = ++eos;
+        }
+    }
 }
 
 /******************************************************************************/
@@ -12892,8 +12920,8 @@ yp_parser_free(yp_parser_t *parser) {
 
 // Parse the Ruby source associated with the given parser and return the tree.
 YP_EXPORTED_FUNCTION yp_node_t *
-yp_parse(yp_parser_t *parser) {
-    return parse_program(parser);
+yp_parse(yp_parser_t *parser, bool eval) {
+  return parse_program(parser, eval);
 }
 
 YP_EXPORTED_FUNCTION void
@@ -12910,11 +12938,13 @@ yp_serialize(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
 // Parse and serialize the AST represented by the given source to the given
 // buffer.
 YP_EXPORTED_FUNCTION void
-yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer) {
+yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *parent_scopes) {
+    bool eval = parent_scopes != NULL;
     yp_parser_t parser;
     yp_parser_init(&parser, source, size, NULL);
+      if (eval) yp_populate_eval_scopes(&parser, parent_scopes);
 
-    yp_node_t *node = yp_parse(&parser);
+    yp_node_t *node = yp_parse(&parser, eval);  
     yp_serialize(&parser, node, buffer);
 
     yp_node_destroy(&parser, node);
