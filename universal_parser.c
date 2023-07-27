@@ -166,7 +166,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_intern2               p->config->intern2
 #define rb_intern3               p->config->intern3
 #define rb_intern_str            p->config->intern_str
-#define is_notop_id              p->config->is_notop_id
 #define rb_enc_symname_type      p->config->enc_symname_type
 #define rb_str_intern            p->config->str_intern
 #define rb_id2name               p->config->id2name

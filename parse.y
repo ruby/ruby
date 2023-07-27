@@ -284,6 +284,9 @@ parse_isxdigit(int c)
 #undef STRNCASECMP
 #define STRNCASECMP rb_parser_st_locale_insensitive_strncasecmp
 
+#undef is_notop_id
+#define is_notop_id(id) ((id)>tLAST_OP_ID)
+
 #ifdef RIPPER
 #include "ripper_init.h"
 #endif

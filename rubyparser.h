@@ -409,7 +409,6 @@ typedef struct rb_parser_config_struct {
     ID (*intern2)(const char *name, long len);
     ID (*intern3)(const char *name, long len, rb_encoding *enc);
     ID (*intern_str)(VALUE str);
-    int (*is_notop_id)(ID);
     int (*enc_symname_type)(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
     VALUE (*str_intern)(VALUE str);
     const char *(*id2name)(ID id);

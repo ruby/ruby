@@ -179,12 +179,6 @@ is_attrset_id2(ID id)
     return is_attrset_id(id);
 }
 
-static int
-is_notop_id2(ID id)
-{
-    return is_notop_id(id);
-}
-
 static VALUE
 enc_str_new(const char *ptr, long len, void *enc)
 {
@@ -636,7 +630,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->intern2               = rb_intern2;
     config->intern3               = intern3;
     config->intern_str            = rb_intern_str;
-    config->is_notop_id           = is_notop_id2;
     config->enc_symname_type      = enc_symname_type;
     config->str_intern            = rb_str_intern;
     config->id2name               = rb_id2name;
