@@ -546,7 +546,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler, ocb:
     // If we're compiling the first instruction in the block.
     if jit.insn_idx == jit.starting_insn_idx {
         // Generate the exit with the cache in Assembler.
-        let side_exit_context = SideExitContext { pc: jit.pc, ctx: block_starting_context.clone() };
+        let side_exit_context = SideExitContext::new(jit.pc, block_starting_context.clone());
         let entry_exit = asm.get_side_exit(&side_exit_context, None, ocb);
         jit.block_entry_exit = Some(entry_exit);
     } else {
@@ -800,7 +800,7 @@ pub fn gen_single_block(
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm.comment(&format!("Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth));
-        asm.comment(&format!("reg_temps: {:08b}", ctx.get_reg_temps().as_u8()));
+        asm.comment(&format!("reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8()));
     }
 
     // For each instruction to compile
@@ -8555,7 +8555,7 @@ mod tests {
     #[test]
     fn test_get_side_exit() {
         let (_jit, ctx, mut asm, _, mut ocb) = setup_codegen();
-        let side_exit_context = SideExitContext { pc: 0 as _, ctx };
+        let side_exit_context = SideExitContext::new(0 as _, ctx);
         asm.get_side_exit(&side_exit_context, None, &mut ocb);
         assert!(ocb.unwrap().get_write_pos() > 0);
     }

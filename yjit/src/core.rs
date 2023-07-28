@@ -417,7 +417,7 @@ impl RegTemps {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Clone, Copy, Default, Eq, Hash, PartialEq, Debug)]
+#[derive(Clone, Default, Eq, Hash, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u8,
@@ -1565,6 +1565,10 @@ impl Block {
 impl Context {
     pub fn get_stack_size(&self) -> u8 {
         self.stack_size
+    }
+
+    pub fn set_stack_size(&mut self, stack_size: u8) {
+        self.stack_size = stack_size;
     }
 
     /// Create a new Context that is compatible with self but doesn't have type information.

@@ -933,8 +933,36 @@ pub struct SideExitContext {
     /// PC of the instruction being compiled
     pub pc: *mut VALUE,
 
-    /// Context when it started to compile the instruction
-    pub ctx: Context,
+    /// Context fields used by get_generic_ctx()
+    pub stack_size: u8,
+    pub sp_offset: i8,
+    pub reg_temps: RegTemps,
+}
+
+impl SideExitContext {
+    /// Convert PC and Context into SideExitContext
+    pub fn new(pc: *mut VALUE, ctx: Context) -> Self {
+        let exit_ctx = SideExitContext {
+            pc,
+            stack_size: ctx.get_stack_size(),
+            sp_offset: ctx.get_sp_offset(),
+            reg_temps: ctx.get_reg_temps(),
+        };
+        if cfg!(debug_assertions) {
+            // Assert that we're not losing any mandatory metadata
+            assert_eq!(exit_ctx.get_ctx(), ctx.get_generic_ctx());
+        }
+        exit_ctx
+    }
+
+    /// Convert SideExitContext to Context
+    fn get_ctx(&self) -> Context {
+        let mut ctx = Context::default();
+        ctx.set_stack_size(self.stack_size);
+        ctx.set_sp_offset(self.sp_offset);
+        ctx.set_reg_temps(self.reg_temps);
+        ctx
+    }
 }
 
 /// Object into which we assemble instructions to be
@@ -1039,10 +1067,10 @@ impl Assembler
         if let Some(Target::SideExit { context, .. }) = insn.target_mut() {
             // We should skip this when this instruction is being copied from another Assembler.
             if context.is_none() {
-                *context = Some(SideExitContext {
-                    pc: self.side_exit_pc.unwrap(),
-                    ctx: self.ctx.with_stack_size(self.side_exit_stack_size.unwrap()),
-                });
+                *context = Some(SideExitContext::new(
+                    self.side_exit_pc.unwrap(),
+                    self.ctx.with_stack_size(self.side_exit_stack_size.unwrap()),
+                ));
             }
         }
 
@@ -1052,14 +1080,10 @@ impl Assembler
 
     /// Get a cached side exit, wrapping a counter if specified
     pub fn get_side_exit(&mut self, side_exit_context: &SideExitContext, counter: Option<Counter>, ocb: &mut OutlinedCb) -> CodePtr {
-        // Drop type information from a cache key
-        let mut side_exit_context = side_exit_context.clone();
-        side_exit_context.ctx = side_exit_context.ctx.get_generic_ctx();
-
         // Get a cached side exit
         let side_exit = match self.side_exits.get(&side_exit_context) {
             None => {
-                let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.ctx, ocb);
+                let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.get_ctx(), ocb);
                 self.side_exits.insert(side_exit_context.clone(), exit_code);
                 exit_code
             }
