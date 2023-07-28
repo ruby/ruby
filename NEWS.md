@@ -83,8 +83,9 @@ The following bundled gems are updated.
 
 * minitest 5.19.0
 * test-unit 3.6.1
+* rexml 3.2.6
 * net-imap 0.3.7
-* rbs 3.1.1
+* rbs 3.1.2
 * typeprof 0.21.7
 * debug 1.8.0
 
