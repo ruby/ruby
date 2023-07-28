@@ -2297,8 +2297,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
  */
 
 static inline VALUE
-vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
-                         VALUE errinfo, VALUE *initial);
+vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, VALUE errinfo);
 
 // for non-Emscripten Wasm build, use vm_exec with optimized setjmp for runtime performance
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
@@ -2306,7 +2305,6 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 struct rb_vm_exec_context {
     rb_execution_context_t *ec;
     struct rb_vm_tag *tag;
-    VALUE initial;
     VALUE result;
     enum ruby_tag_type state;
 };
@@ -2321,9 +2319,9 @@ vm_exec_enter_vm_loop(rb_execution_context_t *ec, struct rb_vm_exec_context *ctx
 
     ctx->result = ec->errinfo;
     rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
-    while (UNDEF_P(ctx->result = vm_exec_handle_exception(ec, ctx->state, ctx->result, &ctx->initial))) {
+    while (UNDEF_P(ctx->result = vm_exec_handle_exception(ec, ctx->state, ctx->result))) {
         /* caught a jump, exec the handler */
-        ctx->result = vm_exec_core(ec, ctx->initial);
+        ctx->result = vm_exec_core(ec);
     vm_loop_start:
         VM_ASSERT(ec->tag == _tag);
         /* when caught `throw`, `tag.state` is set. */
@@ -2339,7 +2337,7 @@ vm_exec_bottom_main(void *context)
 
     ctx->state = TAG_NONE;
     if (UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
-        ctx->result = vm_exec_core(ctx->ec, ctx->initial);
+        ctx->result = vm_exec_core(ctx->ec);
     }
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
 }
@@ -2383,23 +2381,22 @@ vm_exec(rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
-    VALUE initial = 0;
 
     EC_PUSH_TAG(ec);
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         if (UNDEF_P(result = jit_exec(ec))) {
-            result = vm_exec_core(ec, initial);
+            result = vm_exec_core(ec);
         }
         goto vm_loop_start; /* fallback to the VM */
     }
     else {
         result = ec->errinfo;
         rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
-        while (UNDEF_P(result = vm_exec_handle_exception(ec, state, result, &initial))) {
+        while (UNDEF_P(result = vm_exec_handle_exception(ec, state, result))) {
             /* caught a jump, exec the handler */
-            result = vm_exec_core(ec, initial);
+            result = vm_exec_core(ec);
           vm_loop_start:
             VM_ASSERT(ec->tag == &_tag);
             /* when caught `throw`, `tag.state` is set. */
@@ -2413,8 +2410,7 @@ vm_exec(rb_execution_context_t *ec)
 #endif
 
 static inline VALUE
-vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
-                         VALUE errinfo, VALUE *initial)
+vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, VALUE errinfo)
 {
     struct vm_throw_data *err = (struct vm_throw_data *)errinfo;
 
