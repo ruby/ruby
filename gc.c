@@ -14894,20 +14894,10 @@ rb_mmtk_update_global_weak_tables_early(void)
 {
 }
 
-// Defined in variable.c
-void rb_mmtk_cleanup_generic_iv_tbl();
-
-// This function is called after obj_free is called for dead objects during GC.
+/////////////// BEGIN: Global table updating ////////////////
 void
-rb_mmtk_update_global_weak_tables(void)
+rb_mmtk_update_frozen_strings_table(void)
 {
-    // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
-    rb_objspace_t *objspace = &rb_objspace;
-
-    // We have forwarded generic_iv_tbl entries for live objects in mmtk-ruby.
-    // We still need to remove entries for dead objects.
-    rb_mmtk_cleanup_generic_iv_tbl();
-
     // Update the fstring_table, and remove dead objects.
     rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
                               false,
@@ -14916,6 +14906,13 @@ rb_mmtk_update_global_weak_tables(void)
                               NULL);
 
     RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
+}
+
+void
+rb_mmtk_update_finalizer_table(void)
+{
+    // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
+    rb_objspace_t *objspace = &rb_objspace;
 
     // This table maps object addresses to its finalizer functions.
     // Not all keys point to live objects.
@@ -14927,7 +14924,11 @@ rb_mmtk_update_global_weak_tables(void)
                               false, // Currently values are pinned.
                               rb_mmtk_on_finalizer_table_delete,
                               NULL);
+}
 
+void
+rb_mmtk_update_obj_to_id_tbl(void)
+{
     // Update the obj_to_id_tbl first, and remove dead objects from both
     // obj_to_id_tbl and id_to_obj_tbl.
     rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
@@ -14935,18 +14936,34 @@ rb_mmtk_update_global_weak_tables(void)
                               false,
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
+}
+
+void
+rb_mmtk_update_id_to_obj_tbl(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
 
     // Now that dead objects are removed, we forward keys and values now.
     // This table hashes Fixnum and Bignum by value (object_id_hash_type),
     // so the hash will not change if the key is Bignum and it is moved.
     // We can update keys and values in place.
     gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
+}
+
+void
+rb_mmtk_update_global_symbols_table(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
 
     // This table hashes strings by value (rb_str_hash),
     // so the hash will not change if the key (String) is moved.
     // We can update keys and values in place.
     gc_update_table_refs(objspace, global_symbols.str_sym);
+}
 
+void
+rb_mmtk_update_overloaded_cme_table(void)
+{
     // The overloaded CME table.  It has both weak keys and weak values.
     rb_mmtk_update_weak_table(GET_VM()->overloaded_cme_table,
                               true,
@@ -14954,6 +14971,8 @@ rb_mmtk_update_global_weak_tables(void)
                               rb_mmtk_on_overloaded_cme_delete,
                               NULL);
 }
+
+/////////////// END: Global table updating ////////////////
 
 // Workaround private functions
 void

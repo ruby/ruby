@@ -1530,6 +1530,14 @@ rb_mmtk_move_givtbl(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_ob
     rb_mv_generic_ivar((VALUE)old_objref, (VALUE)new_objref);
 }
 
+void rb_mmtk_cleanup_generic_iv_tbl(void); // Defined in variable.c
+void rb_mmtk_update_frozen_strings_table(void);
+void rb_mmtk_update_finalizer_table(void);
+void rb_mmtk_update_obj_to_id_tbl(void);
+void rb_mmtk_update_id_to_obj_tbl(void);
+void rb_mmtk_update_global_symbols_table(void);
+void rb_mmtk_update_overloaded_cme_table(void);
+
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -1545,8 +1553,13 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_object_ruby_style,
     rb_mmtk_call_gc_mark_children,
     rb_mmtk_call_obj_free,
-    rb_mmtk_update_global_weak_tables_early,
-    rb_mmtk_update_global_weak_tables,
+    rb_mmtk_cleanup_generic_iv_tbl,
+    rb_mmtk_update_frozen_strings_table,
+    rb_mmtk_update_finalizer_table,
+    rb_mmtk_update_obj_to_id_tbl,
+    rb_mmtk_update_id_to_obj_tbl,
+    rb_mmtk_update_global_symbols_table,
+    rb_mmtk_update_overloaded_cme_table,
     rb_mmtk_get_original_givtbl,
     rb_mmtk_move_givtbl,
     rb_mmtk_vm_live_bytes,

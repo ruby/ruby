@@ -1190,7 +1190,7 @@ rb_mmtk_cleanup_generic_iv_tbl_check(st_data_t key, st_data_t value, st_data_t a
  * removed from generic_iv_tbl_ in obj_free when the object dies.
  */
 void
-rb_mmtk_cleanup_generic_iv_tbl()
+rb_mmtk_cleanup_generic_iv_tbl(void)
 {
     st_foreach_with_replace(generic_iv_tbl_,
                             rb_mmtk_cleanup_generic_iv_tbl_check,
