@@ -33,12 +33,12 @@ module Gem::GemcutterUtilities
 
     def self.poll_thread(options, host, webauthn_url, credentials)
       thread = Thread.new do
-        Thread.abort_on_exception = true
-        Thread.report_on_exception = false
         Thread.current[:otp] = new(options, host).poll_for_otp(webauthn_url, credentials)
       rescue Gem::WebauthnVerificationError, Timeout::Error => e
         Thread.current[:error] = e
       end
+      thread.abort_on_exception = true
+      thread.report_on_exception = false
 
       thread
     end
