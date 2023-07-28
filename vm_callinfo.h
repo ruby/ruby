@@ -439,8 +439,8 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
 
 /* callcache: mutate */
 
-#define VM_CALLCACH_IVAR IMEMO_FL_USER0
-#define VM_CALLCACH_BF IMEMO_FL_USER1
+#define VM_CALLCACHE_IVAR IMEMO_FL_USER0
+#define VM_CALLCACHE_BF IMEMO_FL_USER1
 
 static inline void
 vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
@@ -461,13 +461,13 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
     *attr_value = (attr_index_t)(index + 1) | ((uintptr_t)(dest_shape_id) << SHAPE_FLAG_SHIFT);
-    *(VALUE *)&cc->flags |= VM_CALLCACH_IVAR;
+    *(VALUE *)&cc->flags |= VM_CALLCACHE_IVAR;
 }
 
 static inline bool
 vm_cc_ivar_p(const struct rb_callcache *cc)
 {
-    return (cc->flags & VM_CALLCACH_IVAR) != 0;
+    return (cc->flags & VM_CALLCACHE_IVAR) != 0;
 }
 
 static inline void
@@ -496,13 +496,13 @@ vm_cc_bf_set(const struct rb_callcache *cc, const struct rb_builtin_function *bf
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
     *(const struct rb_builtin_function **)&cc->aux_.bf = bf;
-    *(VALUE *)&cc->flags |= VM_CALLCACH_BF;
+    *(VALUE *)&cc->flags |= VM_CALLCACHE_BF;
 }
 
 static inline bool
 vm_cc_bf_p(const struct rb_callcache *cc)
 {
-    return (cc->flags & VM_CALLCACH_BF) != 0;
+    return (cc->flags & VM_CALLCACHE_BF) != 0;
 }
 
 static inline void
