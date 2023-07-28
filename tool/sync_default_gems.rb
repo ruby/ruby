@@ -153,10 +153,9 @@ module SyncDefaultGems
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
       cp_r("#{upstream}/bundler/spec", "spec/bundler")
-      cp_r(Dir.glob("#{upstream}/tool/bundler/dev_gems*"), "tool/bundler")
-      cp_r(Dir.glob("#{upstream}/tool/bundler/test_gems*"), "tool/bundler")
-      cp_r(Dir.glob("#{upstream}/tool/bundler/rubocop_gems*"), "tool/bundler")
-      cp_r(Dir.glob("#{upstream}/tool/bundler/standard_gems*"), "tool/bundler")
+      %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
+        cp_r("#{upstream}/bundler/tool/bundler/#{gemfile}.rb", "tool/bundler")
+      end
       rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
     when "rdoc"
