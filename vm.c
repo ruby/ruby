@@ -2355,7 +2355,7 @@ vm_exec(rb_execution_context_t *ec)
 {
     struct rb_vm_exec_context ctx = {
         .ec = ec,
-        .initial = 0, .result = Qundef,
+        .result = Qundef,
     };
     struct rb_wasm_try_catch try_catch;
 
