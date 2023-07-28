@@ -1365,7 +1365,7 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
+INSNS	= optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
 !if [exit > insns_rules.mk]

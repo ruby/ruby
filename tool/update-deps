@@ -122,7 +122,6 @@ FILES_NEED_VPATH = %w[
   miniprelude.c
   newline.c
   node_name.inc
-  opt_sc.inc
   optinsn.inc
   optunifs.inc
   parse.c

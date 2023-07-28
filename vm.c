@@ -2483,11 +2483,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                 }
                 else {
                     /* TAG_BREAK */
-#if OPT_STACK_CACHING
-                    *initial = THROW_DATA_VAL(err);
-#else
                     *ec->cfp->sp++ = THROW_DATA_VAL(err);
-#endif
                     ec->errinfo = Qnil;
                     return Qundef;
                 }
@@ -2560,11 +2556,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                         cfp->sp = vm_base_ptr(cfp) + entry->sp;
 
                         if (state != TAG_REDO) {
-#if OPT_STACK_CACHING
-                            *initial = THROW_DATA_VAL(err);
-#else
                             *ec->cfp->sp++ = THROW_DATA_VAL(err);
-#endif
                         }
                         ec->errinfo = Qnil;
                         VM_ASSERT(ec->tag->state == TAG_NONE);
@@ -3890,9 +3882,6 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("call threaded code"));
 #endif
 
-#if OPT_STACK_CACHING
-    rb_ary_push(opts, rb_str_new2("stack caching"));
-#endif
 #if OPT_OPERANDS_UNIFICATION
     rb_ary_push(opts, rb_str_new2("operands unification"));
 #endif

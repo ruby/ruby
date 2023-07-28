@@ -486,7 +486,6 @@ static int iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl);
 static int iseq_set_exception_local_table(rb_iseq_t *iseq);
 static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, const NODE *const node);
 
-static int iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
@@ -1461,13 +1460,6 @@ iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     if (ISEQ_COMPILE_DATA(iseq)->option->instructions_unification) {
         debugs("[compile step 3.2 (iseq_insns_unification)]\n");
         iseq_insns_unification(iseq, anchor);
-        if (compile_debug > 5)
-            dump_disasm_list(FIRST_ELEMENT(anchor));
-    }
-
-    if (ISEQ_COMPILE_DATA(iseq)->option->stack_caching) {
-        debugs("[compile step 3.3 (iseq_set_sequence_stackcaching)]\n");
-        iseq_set_sequence_stackcaching(iseq, anchor);
         if (compile_debug > 5)
             dump_disasm_list(FIRST_ELEMENT(anchor));
     }
@@ -3945,167 +3937,6 @@ iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                   miss:;
                 }
             }
-        }
-        list = list->next;
-    }
-#endif
-    return COMPILE_OK;
-}
-
-#if OPT_STACK_CACHING
-
-#define SC_INSN(insn, stat) sc_insn_info[(insn)][(stat)]
-#define SC_NEXT(insn)       sc_insn_next[(insn)]
-
-#include "opt_sc.inc"
-
-static int
-insn_set_sc_state(rb_iseq_t *iseq, const LINK_ELEMENT *anchor, INSN *iobj, int state)
-{
-    int nstate;
-    int insn_id;
-
-    insn_id = iobj->insn_id;
-    iobj->insn_id = SC_INSN(insn_id, state);
-    nstate = SC_NEXT(iobj->insn_id);
-
-    if (insn_id == BIN(jump) ||
-        insn_id == BIN(branchif) || insn_id == BIN(branchunless)) {
-        LABEL *lobj = (LABEL *)OPERAND_AT(iobj, 0);
-
-        if (lobj->sc_state != 0) {
-            if (lobj->sc_state != nstate) {
-                BADINSN_DUMP(anchor, iobj, lobj);
-                COMPILE_ERROR(iseq, iobj->insn_info.line_no,
-                              "insn_set_sc_state error: %d at "LABEL_FORMAT
-                              ", %d expected\n",
-                              lobj->sc_state, lobj->label_no, nstate);
-                return COMPILE_NG;
-            }
-        }
-        else {
-            lobj->sc_state = nstate;
-        }
-        if (insn_id == BIN(jump)) {
-            nstate = SCS_XX;
-        }
-    }
-    else if (insn_id == BIN(leave)) {
-        nstate = SCS_XX;
-    }
-
-    return nstate;
-}
-
-static int
-label_set_sc_state(LABEL *lobj, int state)
-{
-    if (lobj->sc_state != 0) {
-        if (lobj->sc_state != state) {
-            state = lobj->sc_state;
-        }
-    }
-    else {
-        lobj->sc_state = state;
-    }
-
-    return state;
-}
-
-
-#endif
-
-static int
-iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
-{
-#if OPT_STACK_CACHING
-    LINK_ELEMENT *list;
-    int state, insn_id;
-
-    /* initialize */
-    state = SCS_XX;
-    list = FIRST_ELEMENT(anchor);
-    /* dump_disasm_list(list); */
-
-    /* for each list element */
-    while (list) {
-      redo_point:
-        switch (list->type) {
-          case ISEQ_ELEMENT_INSN:
-            {
-                INSN *iobj = (INSN *)list;
-                insn_id = iobj->insn_id;
-
-                /* dump_disasm_list(list); */
-
-                switch (insn_id) {
-                  case BIN(nop):
-                    {
-                        /* exception merge point */
-                        if (state != SCS_AX) {
-                            NODE dummy_line_node = generate_dummy_line_node(0, -1);
-                            INSN *rpobj =
-                                new_insn_body(iseq, &dummy_line_node, BIN(reput), 0);
-
-                            /* replace this insn */
-                            ELEM_REPLACE(list, (LINK_ELEMENT *)rpobj);
-                            list = (LINK_ELEMENT *)rpobj;
-                            goto redo_point;
-                        }
-                        break;
-                    }
-                  case BIN(swap):
-                    {
-                        if (state == SCS_AB || state == SCS_BA) {
-                            state = (state == SCS_AB ? SCS_BA : SCS_AB);
-
-                            ELEM_REMOVE(list);
-                            list = list->next;
-                            goto redo_point;
-                        }
-                        break;
-                    }
-                  case BIN(pop):
-                    {
-                        switch (state) {
-                          case SCS_AX:
-                          case SCS_BX:
-                            state = SCS_XX;
-                            break;
-                          case SCS_AB:
-                            state = SCS_AX;
-                            break;
-                          case SCS_BA:
-                            state = SCS_BX;
-                            break;
-                          case SCS_XX:
-                            goto normal_insn;
-                          default:
-                            COMPILE_ERROR(iseq, iobj->insn_info.line_no,
-                                          "unreachable");
-                            return COMPILE_NG;
-                        }
-                        /* remove useless pop */
-                        ELEM_REMOVE(list);
-                        list = list->next;
-                        goto redo_point;
-                    }
-                  default:;
-                    /* none */
-                }		/* end of switch */
-              normal_insn:
-                state = insn_set_sc_state(iseq, anchor, iobj, state);
-                break;
-            }
-          case ISEQ_ELEMENT_LABEL:
-            {
-                LABEL *lobj;
-                lobj = (LABEL *)list;
-
-                state = label_set_sc_state(lobj, state);
-            }
-          default:
-            break;
         }
         list = list->next;
     }

@@ -97,11 +97,6 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
     reg_cfp = ec->cfp;
     reg_pc = reg_cfp->pc;
 
-#if OPT_STACK_CACHING
-    reg_a = initial;
-    reg_b = 0;
-#endif
-
   first:
     INSN_DISPATCH();
 /*****************/

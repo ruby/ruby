@@ -21,11 +21,7 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_ENTER_INSN(insn) \
     rb_vmdebug_debug_print_pre(ec, GET_CFP(), GET_PC());
 
-#if OPT_STACK_CACHING
-#define SC_REGS() , reg_a, reg_b
-#else
 #define SC_REGS()
-#endif
 
 #define DEBUG_END_INSN() \
   rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());

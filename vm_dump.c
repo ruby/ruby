@@ -422,11 +422,7 @@ rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_fr
 }
 
 void
-rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp
-#if OPT_STACK_CACHING
-                 , VALUE reg_a, VALUE reg_b
-#endif
-    )
+rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
 #if VMDEBUG > 9
     SDR2(cfp);
@@ -442,15 +438,6 @@ rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_f
     /* stack_dump_thobj(ec); */
     vm_stack_dump_each(ec, ec->cfp);
 
-#if OPT_STACK_CACHING
-    {
-        VALUE rstr;
-        rstr = rb_inspect(reg_a);
-        fprintf(stderr, "  sc reg A: %s\n", StringValueCStr(rstr));
-        rstr = rb_inspect(reg_b);
-        fprintf(stderr, "  sc reg B: %s\n", StringValueCStr(rstr));
-    }
-#endif
     printf
         ("--------------------------------------------------------------\n");
 #endif
