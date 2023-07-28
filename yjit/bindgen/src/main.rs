@@ -326,6 +326,7 @@ fn main() {
         .allowlist_function("rb_yjit_assert_holding_vm_lock")
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
+        .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
@@ -443,6 +444,7 @@ fn main() {
         .allowlist_function("rb_yjit_array_len")
         .allowlist_function("rb_obj_class")
         .allowlist_function("rb_obj_is_proc")
+        .allowlist_function("rb_vm_base_ptr")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

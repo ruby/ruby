@@ -1253,7 +1253,6 @@ extern "C" {
     pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_get_def_iseq_ptr(def: *mut rb_method_definition_t) -> *const rb_iseq_t;
     pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
-    pub fn rb_get_iseq_body_total_calls(iseq: *const rb_iseq_t) -> ::std::os::raw::c_ulong;
     pub fn rb_get_iseq_body_local_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_parent_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
@@ -1297,6 +1296,7 @@ extern "C" {
     pub fn rb_get_cfp_self(cfp: *mut rb_control_frame_struct) -> VALUE;
     pub fn rb_get_cfp_ep(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;
+    pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
@@ -1340,4 +1340,5 @@ extern "C" {
     pub fn rb_yjit_assert_holding_vm_lock();
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
+    pub fn rb_yjit_set_exception_return(cfp: *mut rb_control_frame_t);
 }

@@ -18,7 +18,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem;
-use std::os::raw::{c_int};
+use std::os::raw::{c_int, c_void};
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -405,7 +405,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 // to the interpreter when it cannot service a stub by generating new code.
 // Before coming here, branch_stub_hit() takes care of fully reconstructing
 // interpreter state.
-fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
+fn gen_stub_exit(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
@@ -617,6 +617,38 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     return code_ptr;
 }
 
+// Increment SP and transfer the execution to the interpreter after jit_exec_exception().
+// On jit_exec_exception(), you need to return Qundef to keep executing caller non-FINISH
+// frames on the interpreter. You also need to increment SP to push the return value to
+// the caller's stack, which is different from gen_stub_exit().
+fn gen_leave_exception(ocb: &mut OutlinedCb) -> CodePtr {
+    let ocb = ocb.unwrap();
+    let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
+
+    // Every exit to the interpreter should be counted
+    gen_counter_incr(&mut asm, Counter::leave_interp_return);
+
+    asm.comment("increment SP of the caller");
+    let sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+    let new_sp = asm.add(sp, SIZEOF_VALUE.into());
+    asm.mov(sp, new_sp);
+
+    asm.comment("exit from exception");
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
+
+    asm.frame_teardown();
+
+    // Execute vm_exec_core
+    asm.cret(Qundef.into());
+
+    asm.compile(ocb, None);
+
+    return code_ptr;
+}
+
 // Generate a runtime guard that ensures the PC is at the expected
 // instruction index in the iseq, otherwise takes an entry stub
 // that generates another check and entry.
@@ -647,7 +679,15 @@ pub fn gen_entry_chain_guard(
 
 /// Compile an interpreter entry block to be inserted into an iseq
 /// Returns None if compilation fails.
-pub fn gen_entry_prologue(cb: &mut CodeBlock, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) -> Option<CodePtr> {
+/// If jit_exception is true, compile JIT code for handling exceptions.
+/// See [jit_compile_exception] for details.
+pub fn gen_entry_prologue(
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb,
+    iseq: IseqPtr,
+    insn_idx: u16,
+    jit_exception: bool,
+) -> Option<CodePtr> {
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new();
@@ -672,19 +712,28 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, ocb: &mut OutlinedCb, iseq: IseqPt
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
 
     // Setup cfp->jit_return
-    asm.mov(
-        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN),
-        Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
-    );
+    if jit_exception {
+        // On jit_exec_exception(), it's NOT safe to return a non-Qundef value
+        // from a non-FINISH frame. This function fixes that problem.
+        // See [jit_compile_exception] for details.
+        asm.ccall(rb_yjit_set_exception_return as *mut u8, vec![CFP]);
+    } else {
+        // On jit_exec() or JIT_EXEC(), it's safe to return a non-Qundef value
+        // on the entry frame. See [jit_compile] for details.
+        asm.mov(
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN),
+            Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
+        );
+    }
 
-    // We're compiling iseqs that we *expect* to start at `insn_idx`. But in
-    // the case of optional parameters, the interpreter can set the pc to a
-    // different location depending on the optional parameters.  If an iseq
-    // has optional parameters, we'll add a runtime check that the PC we've
+    // We're compiling iseqs that we *expect* to start at `insn_idx`.
+    // But in the case of optional parameters or when handling exceptions,
+    // the interpreter can set the pc to a different location. For
+    // such scenarios, we'll add a runtime check that the PC we've
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll jump to an entry stub and generate
     // another PC check and entry there.
-    let pending_entry = if unsafe { get_iseq_flags_has_opt(iseq) } {
+    let pending_entry = if unsafe { get_iseq_flags_has_opt(iseq) } || jit_exception {
         Some(gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?)
     } else {
         None
@@ -8283,8 +8332,11 @@ pub struct CodegenGlobals {
     /// Code for exiting back to the interpreter from the leave instruction
     leave_exit_code: CodePtr,
 
+    /// Code for exiting back to the interpreter after handling an exception
+    leave_exception_code: CodePtr,
+
     // For exiting from YJIT frame from branch_stub_hit().
-    // Filled by gen_code_for_exit_from_stub().
+    // Filled by gen_stub_exit().
     stub_exit_code: CodePtr,
 
     // For servicing branch stubs
@@ -8373,8 +8425,9 @@ impl CodegenGlobals {
 
         let ocb_start_addr = ocb.unwrap().get_write_ptr();
         let leave_exit_code = gen_leave_exit(&mut ocb);
+        let leave_exception_code = gen_leave_exception(&mut ocb);
 
-        let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
+        let stub_exit_code = gen_stub_exit(&mut ocb);
 
         let branch_stub_hit_trampoline = gen_branch_stub_hit_trampoline(&mut ocb);
         let entry_stub_hit_trampoline = gen_entry_stub_hit_trampoline(&mut ocb);
@@ -8393,7 +8446,8 @@ impl CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code,
-            stub_exit_code: stub_exit_code,
+            leave_exception_code,
+            stub_exit_code,
             outline_full_cfunc_return_pos: cfunc_exit_code,
             branch_stub_hit_trampoline,
             entry_stub_hit_trampoline,
@@ -8513,6 +8567,10 @@ impl CodegenGlobals {
         CodegenGlobals::get_instance().leave_exit_code
     }
 
+    pub fn get_leave_exception_code() -> CodePtr {
+        CodegenGlobals::get_instance().leave_exception_code
+    }
+
     pub fn get_stub_exit_code() -> CodePtr {
         CodegenGlobals::get_instance().stub_exit_code
     }
@@ -8566,6 +8624,18 @@ impl CodegenGlobals {
     pub fn get_code_gc_count() -> usize {
         CodegenGlobals::get_instance().code_gc_count
     }
+}
+
+/// Get code to exit to the interpreter with a return value
+#[no_mangle]
+pub extern "C" fn rb_yjit_leave_exit() -> *mut c_void {
+    CodegenGlobals::get_leave_exit_code().raw_ptr() as *mut c_void
+}
+
+/// Get code to exit to the interpreter with Qundef
+#[no_mangle]
+pub extern "C" fn rb_yjit_leave_exception() -> *mut c_void {
+    CodegenGlobals::get_leave_exception_code().raw_ptr() as *mut c_void
 }
 
 #[cfg(test)]

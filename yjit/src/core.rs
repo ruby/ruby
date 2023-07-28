@@ -2135,11 +2135,17 @@ fn gen_block_series_body(
 
 /// Generate a block version that is an entry point inserted into an iseq
 /// NOTE: this function assumes that the VM lock has been taken
-pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
+/// If jit_exception is true, compile JIT code for handling exceptions.
+/// See [jit_compile_exception] for details.
+pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<CodePtr> {
     // Compute the current instruction index based on the current PC
+    let cfp = unsafe { get_ec_cfp(ec) };
     let insn_idx: u16 = unsafe {
-        let ec_pc = get_cfp_pc(get_ec_cfp(ec));
+        let ec_pc = get_cfp_pc(cfp);
         iseq_pc_to_insn_idx(iseq, ec_pc)?
+    };
+    let stack_size: u8 = unsafe {
+        u8::try_from(get_cfp_sp(cfp).offset_from(get_cfp_bp(cfp))).ok()?
     };
 
     // The entry context makes no assumptions about types
@@ -2153,10 +2159,12 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
     let ocb = CodegenGlobals::get_outlined_cb();
 
     // Write the interpreter entry prologue. Might be NULL when out of memory.
-    let code_ptr = gen_entry_prologue(cb, ocb, iseq, insn_idx);
+    let code_ptr = gen_entry_prologue(cb, ocb, iseq, insn_idx, jit_exception);
 
     // Try to generate code for the entry block
-    let block = gen_block_series(blockid, &Context::default(), ec, cb, ocb);
+    let mut ctx = Context::default();
+    ctx.stack_size = stack_size;
+    let block = gen_block_series(blockid, &ctx, ec, cb, ocb);
 
     cb.mark_all_executable();
     ocb.unwrap().mark_all_executable();
@@ -2239,6 +2247,9 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     let cfp = unsafe { get_ec_cfp(ec) };
     let iseq = unsafe { get_cfp_iseq(cfp) };
     let insn_idx = iseq_pc_to_insn_idx(iseq, unsafe { get_cfp_pc(cfp) })?;
+    let stack_size: u8 = unsafe {
+        u8::try_from(get_cfp_sp(cfp).offset_from(get_cfp_bp(cfp))).ok()?
+    };
 
     let cb = CodegenGlobals::get_inline_cb();
     let ocb = CodegenGlobals::get_outlined_cb();
@@ -2251,7 +2262,8 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
 
     // Try to find an existing compiled version of this block
     let blockid = BlockId { iseq, idx: insn_idx };
-    let ctx = Context::default();
+    let mut ctx = Context::default();
+    ctx.stack_size = stack_size;
     let blockref = match find_block_version(blockid, &ctx) {
         // If an existing block is found, generate a jump to the block.
         Some(blockref) => {
