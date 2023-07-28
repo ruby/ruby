@@ -1606,9 +1606,30 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     const char *ptr;
     long len;
     RSTRING_GETMEM(unescaped, ptr, len);
-    r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
-                 reg->options, enc,
-                 OnigDefaultSyntax, &einfo);
+
+    /* If there are no other users of this regex, then we can directly overwrite it. */
+    if (RREGEXP(re)->usecnt == 0) {
+        regex_t tmp_reg;
+        r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
+                                   reg->options, enc,
+                                   OnigDefaultSyntax, &einfo);
+
+        if (r) {
+            /* There was an error so perform cleanups. */
+            onig_free_body(&tmp_reg);
+        }
+        else {
+            onig_free_body(reg);
+            /* There are no errors so set reg to tmp_reg. */
+            *reg = tmp_reg;
+        }
+    }
+    else {
+        r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
+                     reg->options, enc,
+                     OnigDefaultSyntax, &einfo);
+    }
+
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
         rb_reg_raise(pattern, RREGEXP_SRC_LEN(re), err, re);
@@ -1634,13 +1655,7 @@ rb_reg_onig_match(VALUE re, VALUE str,
 
     if (!tmpreg) RREGEXP(re)->usecnt--;
     if (tmpreg) {
-        if (RREGEXP(re)->usecnt) {
-            onig_free(reg);
-        }
-        else {
-            onig_free(RREGEXP_PTR(re));
-            RREGEXP_PTR(re) = reg;
-        }
+        onig_free(reg);
     }
 
     if (result < 0) {
