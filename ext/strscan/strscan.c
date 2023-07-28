@@ -580,11 +580,11 @@ strscan_match(regex_t *reg, VALUE str, struct re_registers *regs, void *args_ptr
     struct strscanner *p = (struct strscanner *)args_ptr;
 
     return onig_match(reg,
-               match_target(p),
-               (UChar* )(CURPTR(p) + S_RESTLEN(p)),
-               (UChar* )CURPTR(p),
-               regs,
-               ONIG_OPTION_NONE);
+                      match_target(p),
+                      (UChar* )(CURPTR(p) + S_RESTLEN(p)),
+                      (UChar* )CURPTR(p),
+                      regs,
+                      ONIG_OPTION_NONE);
 }
 
 static OnigPosition
