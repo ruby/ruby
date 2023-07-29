@@ -529,30 +529,16 @@ named_captures(VALUE self, VALUE source) {
 // version.
 static VALUE
 unescape(VALUE source, yp_unescape_type_t unescape_type) {
-    yp_string_t string;
-    VALUE result;
+    yp_string_t result;
 
-    yp_list_t error_list;
-    yp_list_init(&error_list);
-
-    const char *start = RSTRING_PTR(source);
-    size_t length = RSTRING_LEN(source);
-
-    yp_parser_t parser;
-    yp_parser_init(&parser, start, length, "");
-
-    yp_unescape_manipulate_string(&parser, start, length, &string, unescape_type, &error_list);
-    if (yp_list_empty_p(&error_list)) {
-        result = rb_str_new(yp_string_source(&string), yp_string_length(&string));
+    if (yp_unescape_string(RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
+        VALUE str = rb_str_new(yp_string_source(&result), yp_string_length(&result));
+        yp_string_free(&result);
+        return str;
     } else {
-        result = Qnil;
+        yp_string_free(&result);
+        return Qnil;
     }
-
-    yp_string_free(&string);
-    yp_list_free(&error_list);
-    yp_parser_free(&parser);
-
-    return result;
 }
 
 // Do not unescape anything in the given string. This is here to provide a
