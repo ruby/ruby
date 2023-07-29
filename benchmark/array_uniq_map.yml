@@ -1,0 +1,6 @@
+prelude: a = Array.new(100) { |i| i % 2 }
+benchmark:
+  a.map { ... }.uniq: a.map { |i| i * 2 }.uniq
+  a.uniq_map { ... }: a.uniq_map { |i| i * 2 }
+  a.map! { ... }.uniq!: a.map! { |i| i * 2 }.uniq!
+  a.uniq_map! { ... }: a.uniq_map! { |i| i * 2 }
