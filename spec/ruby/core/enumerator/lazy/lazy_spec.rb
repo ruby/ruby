@@ -20,6 +20,10 @@ describe "Enumerator::Lazy" do
       lazy_methods += [:compact]
     end
 
+    ruby_version_is '3.4' do
+      lazy_methods += [:uniq_map]
+    end
+
     Enumerator::Lazy.instance_methods(false).should include(*lazy_methods)
   end
 end

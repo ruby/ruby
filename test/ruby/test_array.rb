@@ -2276,6 +2276,74 @@ class TestArray < Test::Unit::TestCase
     assert_equal(orig, ary, "must not be modified once frozen")
   end
 
+  if RUBY_VERSION >= "3.4"
+    def test_uniq_map
+      a = []
+      b = a.uniq_map { |v| v * 2 }
+      assert_equal([], a)
+      assert_equal([], b)
+      assert_not_same(a, b)
+
+      a = [1]
+      b = a.uniq_map { |v| v * 2 }
+      assert_equal([1], a)
+      assert_equal([2], b)
+      assert_not_same(a, b)
+
+      a = [1, 1, 2]
+      b = a.uniq_map { |v| v * 2 }
+      assert_equal([1, 1, 2], a)
+      assert_equal([2, 4], b)
+      assert_not_same(a, b)
+
+      a = [{ a: 1 }, { a: 2 }, { a: 1 }]
+      b = a.uniq_map { |h| { b: h[:a] * 2 } }
+      assert_equal([{ a: 1 }, { a: 2 }, { a: 1 }], a)
+      assert_equal([{ b: 2 }, { b: 4 }], b)
+      assert_not_same(a, b)
+
+      a = %w(a a)
+      b = a.uniq_map { |v| v }
+      assert_equal(%w(a a), a)
+      assert(a.none?(&:frozen?))
+      assert_equal(%w(a), b)
+      assert(b.none?(&:frozen?))
+    end
+
+    def test_uniq_map_bang
+      a = []
+      b = a.uniq_map! { |v| v * 2 }
+      assert_equal([], a)
+      assert_equal([], b)
+      assert_same(a, b)
+
+      a = [1]
+      b = a.uniq_map! { |v| v * 2 }
+      assert_equal([2], a)
+      assert_equal([2], b)
+      assert_same(a, b)
+
+      a = [1, 1, 2]
+      b = a.uniq_map! { |v| v * 2 }
+      assert_equal([2, 4], a)
+      assert_equal([2, 4], b)
+      assert_same(a, b)
+
+      a = [ { a: 1 }, { a: 2 }, { a: 1 }]
+      b = a.uniq_map! { |h| { b: h[:a] * 2 } }
+      assert_equal([{ b: 2 }, { b: 4 }], a)
+      assert_equal([{ b: 2 }, { b: 4 }], b)
+      assert_same(a, b)
+
+      a = %w(a a)
+      b = a.uniq_map! { |v| v }
+      assert_equal(%w(a), a)
+      assert(a.none?(&:frozen?))
+      assert_equal(%w(a), b)
+      assert(b.none?(&:frozen?))
+    end
+  end
+
   def test_unshift
     a = @cls[]
     assert_equal(@cls['cat'], a.unshift('cat'))

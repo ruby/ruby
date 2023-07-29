@@ -1,0 +1,4 @@
+prelude: e = Array.new(100) { |i| i % 2 }.to_enum
+benchmark:
+  e.map { ... }.uniq: e.map { |i| i * 2 }.uniq
+  e.uniq_map { ... }: e.uniq_map { |i| i * 2 }

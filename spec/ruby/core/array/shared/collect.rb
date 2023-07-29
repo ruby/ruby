@@ -90,6 +90,10 @@ describe :array_collect_b, shared: true do
       -> { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(FrozenError)
     end
 
+    it "doesn't yield to the block on a frozen array" do
+      -> { ArraySpecs.frozen_array.send(@method) {raise RangeError, "shouldn't yield" } }.should raise_error(FrozenError)
+    end
+
     it "raises a FrozenError when empty" do
       -> { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(FrozenError)
     end
