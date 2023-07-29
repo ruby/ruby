@@ -25,7 +25,7 @@ class NewlineTest < Test::Unit::TestCase
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
       expected = rubyvm_lines(source)
 
-      result = YARP.parse(source, relative)
+      result = YARP.parse_file(filepath)
       assert_empty result.errors
 
       result.mark_newlines
