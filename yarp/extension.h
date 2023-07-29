@@ -5,16 +5,6 @@
 #include <ruby/encoding.h>
 #include "yarp.h"
 
-// The following headers are necessary to read files using demand paging.
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
-
 #define EXPECTED_YARP_VERSION "0.4.0"
 
 VALUE yp_source_new(yp_parser_t *parser);
