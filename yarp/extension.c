@@ -1,5 +1,8 @@
 #include "yarp/extension.h"
 
+// NOTE: this file should contain only bindings.
+// All non-trivial logic should be in librubyparser so it can be shared its the various callers.
+
 VALUE rb_cYARP;
 VALUE rb_cYARPSource;
 VALUE rb_cYARPToken;
