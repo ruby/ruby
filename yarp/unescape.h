@@ -33,6 +33,10 @@ typedef enum {
 // given unescape mode.
 YP_EXPORTED_FUNCTION void yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t length, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list);
 
+// Accepts a source string and a type of unescaping and returns the unescaped version.
+// The caller must yp_string_free(result); after calling this function.
+YP_EXPORTED_FUNCTION bool yp_unescape_string(const char *start, size_t length, yp_unescape_type_t unescape_type, yp_string_t *result);
+
 YP_EXPORTED_FUNCTION size_t yp_unescape_calculate_difference(const char *value, const char *end, yp_unescape_type_t unescape_type, bool expect_single_codepoint, yp_list_t *error_list);
 
 #endif
