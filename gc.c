@@ -10081,6 +10081,14 @@ gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
     }
 }
 
+static bool
+moved_or_living_object_strictly_p(rb_objspace_t *objspace, VALUE obj)
+{
+    return obj &&
+           is_pointer_to_heap(objspace, (void *)obj) &&
+           (is_live_object(objspace, obj) || BUILTIN_TYPE(obj) == T_MOVED);
+}
+
 static void
 gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 {
@@ -10133,10 +10141,8 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
                 // already invalidated
             }
             else {
-                if ( // cc->klass is living
-                     (BUILTIN_TYPE(cc->klass) == T_MOVED || is_live_object(objspace, cc->klass)) &&
-                     // cc->cme_ is living
-                     (cc->cme_ && ((BUILTIN_TYPE((VALUE)cc->cme_) == T_MOVED) || is_live_object(objspace, (VALUE)cc->cme_)))) {
+                if (moved_or_living_object_strictly_p(objspace, cc->klass) &&
+                    moved_or_living_object_strictly_p(objspace, (VALUE)cc->cme_)) {
                     UPDATE_IF_MOVED(objspace, cc->klass);
                     TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
                 }
