@@ -8571,7 +8571,7 @@ proc_warmup(VALUE _)
  * Document-module: Process
  *
  * \Module \Process represents a process in the underlying operating system.
- * Its methods support management of the current process and its subprocesses.
+ * Its methods support management of the current process and its child processes.
  *
  * == What's Here
  *
@@ -8584,7 +8584,7 @@ proc_warmup(VALUE _)
  * - ::getrlimit: Returns the resource limit.
  * - ::gid: Returns the (real) group ID.
  * - ::pid: Returns the process ID.
- * - ::ppid: Returns the process ID of the parent.
+ * - ::ppid: Returns the process ID of the parent process.
  * - ::uid: Returns the (real) user ID.
  *
  * === Current-Process Setters
@@ -8612,16 +8612,15 @@ proc_warmup(VALUE _)
  *   for the application is completed,
  *   and that the VM may begin optimizing the application.
  *
- * === Subprocesses
+ * === Child Processes
  *
- * - ::_fork: An internal method for forking; should not be called directly.
- * - ::detach: Guards against a subprocess becoming a zombie.
- * - ::fork: Creates a subprocess.
+ * - ::detach: Guards against a child process becoming a zombie.
+ * - ::fork: Creates a child process.
  * - ::kill: Sends a given signal to processes.
- * - ::spawn: Creates a subprocess.
- * - ::wait, ::waitpid: Waits for a subprocess to exit; returns its process ID.
- * - ::wait2, ::waitpid2: Waits for a subprocess to exit; returns its process ID and status.
- * - ::waitall: Waits for all subprocesses to exit;
+ * - ::spawn: Creates a chile process.
+ * - ::wait, ::waitpid: Waits for a child process to exit; returns its process ID.
+ * - ::wait2, ::waitpid2: Waits for a child process to exit; returns its process ID and status.
+ * - ::waitall: Waits for all child processes to exit;
  *   returns their process IDs and statuses.
  *
  * === \Process Groups
@@ -8650,7 +8649,7 @@ proc_warmup(VALUE _)
  * - ::clock_getres: Returns the resolution of a system clock.
  * - ::clock_gettime: Returns the time from a system clock.
  * - ::times: Returns a Process::Tms object containing times
- *   for the current process and its subprocesses.
+ *   for the current process and its child processes.
  *
  */
 
