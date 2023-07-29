@@ -10128,16 +10128,20 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_callcache:
         {
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-            if (cc->klass) {
-                UPDATE_IF_MOVED(objspace, cc->klass);
-                if (!is_live_object(objspace, cc->klass)) {
-                    vm_cc_invalidate(cc);
-                }
-                else if (cc->cme_) { // cc->cme_ is available if cc->klass is given
+
+            if (!cc->klass) {
+                // already invalidated
+            }
+            else {
+                if ( // cc->klass is living
+                     (BUILTIN_TYPE(cc->klass) == T_MOVED || is_live_object(objspace, cc->klass)) &&
+                     // cc->cme_ is living
+                     (cc->cme_ && ((BUILTIN_TYPE((VALUE)cc->cme_) == T_MOVED) || is_live_object(objspace, (VALUE)cc->cme_)))) {
+                    UPDATE_IF_MOVED(objspace, cc->klass);
                     TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
-                    if (!is_live_object(objspace, (VALUE)cc->cme_)) {
-                        vm_cc_invalidate(cc);
-                    }
+                }
+                else {
+                    vm_cc_invalidate(cc);
                 }
             }
         }
