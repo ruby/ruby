@@ -78,7 +78,15 @@ module Test_SyncDefaultGems
     def setup
       super
       @target = nil
-      pend "No git" unless system("git --version", out: IO::NULL)
+      begin
+        git_version = IO.popen(%W"git --version", &:read)
+      rescue Errno::ENOENT
+        pend "No git"
+      else
+        v = git_version.scan(/\d+/).map(&:to_i)
+        # GIT_CONFIG_GLOBAL is supported since 2.32.
+        pend "#{git_version} is too old" if (v <=> [2, 32]) < 0
+      end
       @testdir = Dir.mktmpdir("sync")
       @git_config = ENV["GIT_CONFIG_GLOBAL"]
       ENV["GIT_CONFIG_GLOBAL"] = @testdir + "/gitconfig"
