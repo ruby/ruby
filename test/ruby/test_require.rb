@@ -52,7 +52,8 @@ class TestRequire < Test::Unit::TestCase
   def test_require_nonascii
     bug3758 = '[ruby-core:31915]'
     ["\u{221e}", "\x82\xa0".force_encoding("cp932")].each do |path|
-      assert_raise_with_message(LoadError, /#{path}\z/, bug3758) {require path}
+      e = assert_raise(LoadError, bug3758) {require path}
+      assert_operator(e.message, :end_with?, path, bug3758)
     end
   end
 
