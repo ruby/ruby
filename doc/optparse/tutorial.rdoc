@@ -55,7 +55,7 @@ The class also has method #help, which displays automatically-generated help tex
 - {Argument Converters}[#label-Argument+Converters]
 - {Help}[#label-Help]
 - {Top List and Base List}[#label-Top+List+and+Base+List]
-- {Defining Options}[#label-Defining+Options]
+- {Methods for Defining Options}[#label-Methods+for+Defining+Options]
 - {Parsing}[#label-Parsing]
   - {Method parse!}[#label-Method+parse-21]
   - {Method parse}[#label-Method+parse]
@@ -614,49 +614,49 @@ Execution:
 
 === Top List and Base List
 
-An +OptionParser+ object maintains a stack of +OptionParser::List+ objects,
+An +OptionParser+ object maintains a stack of OptionParser::List objects,
 each of which has a collection of zero or more options.
 It is unlikely that you'll need to add or take away from that stack.
 
 The stack includes:
 
-- The <em>top list</em>, given by +OptionParser#top+.
-- The <em>base list</em>, given by +OptionParser#base+.
+- The <em>top list</em>, given by OptionParser#top.
+- The <em>base list</em>, given by OptionParser#base.
 
 When +OptionParser+ builds its help text, the options in the top list
 precede those in the base list.
 
-=== Defining Options
+=== Methods for Defining Options
 
 Option-defining methods allow you to create an option, and also append/prepend it
 to the top list or append it to the base list.
 
 Each of these next three methods accepts a sequence of parameter arguments and a block,
-creates an option object using method +Option#make_switch+ (see below),
+creates an option object using method OptionParser#make_switch (see below),
 and returns the created option:
 
-- \Method +OptionParser#define+ appends the created option to the top list.
+- \Method OptionParser#define appends the created option to the top list.
 
-- \Method +OptionParser#define_head+ prepends the created option to the top list.
+- \Method OptionParser#define_head prepends the created option to the top list.
 
-- \Method +OptionParser#define_tail+ appends the created option to the base list.
+- \Method OptionParser#define_tail appends the created option to the base list.
 
 These next three methods are identical to the three above,
 except for their return values:
 
-- \Method +OptionParser#on+ is identical to method +OptionParser#define+,
+- \Method OptionParser#on is identical to method OptionParser#define,
   except that it returns the parser object +self+.
 
-- \Method +OptionParser#on_head+ is identical to method +OptionParser#define_head+,
+- \Method OptionParser#on_head is identical to method OptionParser#define_head,
   except that it returns the parser object +self+.
 
-- \Method +OptionParser#on_tail+ is identical to method +OptionParser#define_tail+,
+- \Method OptionParser#on_tail is identical to method OptionParser#define_tail,
   except that it returns the parser object +self+.
 
 Though you may never need to call it directly,
 here's the core method for defining an option:
 
-- \Method +OptionParser#make_switch+ accepts an array of parameters and a block.
+- \Method OptionParser#make_switch accepts an array of parameters and a block.
   See {Parameters for New Options}[optparse/option_params.rdoc].
   This method is unlike others here in that it:
   - Accepts an <em>array of parameters</em>;
