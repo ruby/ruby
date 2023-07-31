@@ -110,7 +110,7 @@ yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity) {
 // if any potential calls to resize fail.
 yp_constant_id_t
 yp_constant_pool_insert(yp_constant_pool_t *pool, const char *start, size_t length) {
-    if (pool->size >= pool->capacity * 0.75) {
+    if (pool->size >= (pool->capacity / 4 * 3)) {
         if (!yp_constant_pool_resize(pool)) return 0;
     }
 
