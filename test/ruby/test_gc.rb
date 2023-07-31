@@ -438,6 +438,7 @@ class TestGc < Test::Unit::TestCase
       while GC.stat_heap(0, :heap_allocatable_pages) != 0
         ary << Object.new
       end
+      ary.clear
       ary = nil
 
       # Clear all the objects that were allocated.
