@@ -7798,7 +7798,7 @@ check_children_i(const VALUE child, void *ptr)
     if (check_rvalue_consistency_force(child, FALSE) != 0) {
         fprintf(stderr, "check_children_i: %s has error (referenced from %s)",
                 obj_info(child), obj_info(data->parent));
-        rb_print_backtrace(); /* C backtrace will help to debug */
+        rb_print_backtrace(stderr); /* C backtrace will help to debug */
 
         data->err_count++;
     }
@@ -9118,7 +9118,7 @@ rb_gc_register_address(VALUE *addr)
     if (0 && !SPECIAL_CONST_P(obj)) {
         rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
                 rb_obj_class(obj));
-        rb_print_backtrace();
+        rb_print_backtrace(stderr);
     }
 }
 
