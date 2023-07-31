@@ -3542,7 +3542,7 @@ extern size_t rb_gc_stack_maxsize;
 static VALUE
 sdr(VALUE self)
 {
-    rb_vm_bugreport(NULL);
+    rb_vm_bugreport(NULL, stderr);
     return Qnil;
 }
 

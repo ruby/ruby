@@ -757,7 +757,7 @@ bug_report_end(FILE *out)
     FILE *out = bug_report_file(file, line); \
     if (out) { \
         bug_report_begin(out, fmt); \
-        rb_vm_bugreport(ctx); \
+        rb_vm_bugreport(ctx, out); \
         bug_report_end(out); \
     } \
 } while (0) \
@@ -766,7 +766,7 @@ bug_report_end(FILE *out)
     FILE *out = bug_report_file(file, line); \
     if (out) { \
         bug_report_begin_valist(out, fmt, args); \
-        rb_vm_bugreport(ctx); \
+        rb_vm_bugreport(ctx, out); \
         bug_report_end(out); \
     } \
 } while (0) \
@@ -881,7 +881,7 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
     if (name) fprintf(out, "%s:", name);
     fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
     preface_dump(out);
-    rb_vm_bugreport(NULL);
+    rb_vm_bugreport(NULL, out);
     bug_report_end(out);
     die();
 }
@@ -3256,7 +3256,7 @@ rb_fatal(const char *fmt, ...)
         /* The thread has no GVL.  Object allocation impossible (cant run GC),
          * thus no message can be printed out. */
         fprintf(stderr, "[FATAL] rb_fatal() outside of GVL\n");
-        rb_print_backtrace();
+        rb_print_backtrace(stderr);
         die();
     }
 
