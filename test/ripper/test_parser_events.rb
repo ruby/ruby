@@ -499,6 +499,23 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[call(ref(self),&.,foo,[])]", tree
   end
 
+  def test_call_colon2
+    hook = Module.new do
+      def on_op(op)
+        super("(op: #{op.inspect})")
+      end
+      def on_call(recv, name, *args)
+        super(recv, "(method: #{name})", *args)
+      end
+      def on_ident(name)
+        super("(ident: #{name.inspect})")
+      end
+    end
+
+    parser = DummyParser.new("a::b").extend(hook)
+    assert_equal '[call(vcall((ident: "a")),(method: (op: "::")),(ident: "b"))]', parser.parse.to_s
+  end
+
   def test_excessed_comma
     thru_excessed_comma = false
     parse("proc{|x,|}", :on_excessed_comma) {thru_excessed_comma = true}
