@@ -85,7 +85,7 @@ The following bundled gems are updated.
 * test-unit 3.6.1
 * rexml 3.2.6
 * net-imap 0.3.7
-* rbs 3.1.2
+* rbs 3.1.3
 * typeprof 0.21.7
 * debug 1.8.0
 
