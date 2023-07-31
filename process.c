@@ -8570,7 +8570,7 @@ proc_warmup(VALUE _)
 /*
  * Document-module: Process
  *
- * \Module \Process represents a process in the underlying operating system.
+ * \Module +Process+ represents a process in the underlying operating system.
  * Its methods support management of the current process and its child processes.
  *
  * == What's Here
