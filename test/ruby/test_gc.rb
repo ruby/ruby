@@ -399,6 +399,60 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_gc_parameter_init_slots
+    assert_separately(["--disable-gems"], __FILE__, __LINE__, <<~RUBY)
+      # Constant from gc.c.
+      GC_HEAP_INIT_SLOTS = 10_000
+      GC.stat_heap.each do |_, s|
+        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
+        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+        # Give a 0.9x delta because integer division in minimum_pages_for_size_pool can sometimes cause number to be
+        # less than GC_HEAP_INIT_SLOTS.
+        assert_operator(total_slots, :>=, GC_HEAP_INIT_SLOTS * 0.9, s)
+      end
+    RUBY
+
+    env = {}
+    # Make the heap big enough to ensure the heap never needs to grow.
+    sizes = GC.stat_heap.keys.reverse.map { |i| (i + 1) * 100_000 }
+    GC.stat_heap.each do |i, s|
+      env["RUBY_GC_HEAP_INIT_SIZE_#{s[:slot_size]}_SLOTS"] = sizes[i].to_s
+    end
+    assert_separately([env, "-W0", "--disable-gems"], __FILE__, __LINE__, <<~RUBY)
+      SIZES = #{sizes}
+      GC.stat_heap.each do |i, s|
+        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
+        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+        assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
+      end
+    RUBY
+
+    # Check that the configured sizes are "remembered" across GC invocations.
+    assert_separately([env, "-W0", "--disable-gems"], __FILE__, __LINE__, <<~RUBY)
+      SIZES = #{sizes}
+
+      # Fill size pool 0 with transient objects.
+      ary = []
+      while GC.stat_heap(0, :heap_allocatable_pages) != 0
+        ary << Object.new
+      end
+      ary = nil
+
+      # Clear all the objects that were allocated.
+      GC.start
+
+      # Check that we still have the same number of slots as initially configured.
+      GC.stat_heap.each do |i, s|
+        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
+        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+        assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
+      end
+    RUBY
+  end
+
   def test_profiler_enabled
     GC::Profiler.enable
     assert_equal(true, GC::Profiler.enabled?)
