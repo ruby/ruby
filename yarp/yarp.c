@@ -6672,10 +6672,13 @@ parser_lex(yp_parser_t *parser) {
                 LEX(YP_TOKEN_EOF);
             }
 
+            // Get a reference to the current mode.
+            yp_lex_mode_t *mode = parser->lex_modes.current;
+
             // These are the places where we need to split up the content of the
             // regular expression. We'll use strpbrk to find the first of these
             // characters.
-            const char *breakpoints = parser->lex_modes.current->as.regexp.breakpoints;
+            const char *breakpoints = mode->as.regexp.breakpoints;
             const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
@@ -6700,14 +6703,15 @@ parser_lex(yp_parser_t *parser) {
                         break;
                     }
                     case '#': {
-                        yp_token_type_t type = lex_interpolation(parser, breakpoint);
-                        if (type != YP_TOKEN_NOT_PROVIDED) {
-                            LEX(type);
-                        }
+                        // If the terminator is #, then we need to fall into the
+                        // default case. Otherwise we'll attempt to lex
+                        // interpolation.
+                        if (mode->as.regexp.terminator != '#') {
+                            yp_token_type_t type = lex_interpolation(parser, breakpoint);
+                            if (type != YP_TOKEN_NOT_PROVIDED) {
+                                LEX(type);
+                            }
 
-                        // We need to check if the terminator was # before skipping over
-                        // to the next breakpoint
-                        if (parser->lex_modes.current->as.regexp.terminator != '#') {
                             // If we haven't returned at this point then we had something
                             // that looked like an interpolated class or instance variable
                             // like "#@" but wasn't actually. In this case we'll just skip
@@ -6718,11 +6722,11 @@ parser_lex(yp_parser_t *parser) {
                     }
                     /* fallthrough */
                     default: {
-                        if (*breakpoint == parser->lex_modes.current->as.regexp.incrementor) {
+                        if (*breakpoint == mode->as.regexp.incrementor) {
                             // If we've hit the incrementor, then we need to skip past it and
                             // find the next breakpoint.
                             breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                            parser->lex_modes.current->as.regexp.nesting++;
+                            mode->as.regexp.nesting++;
                             break;
                         }
 
@@ -6731,7 +6735,7 @@ parser_lex(yp_parser_t *parser) {
                             // that in the list of newlines.
                             yp_newline_list_append(&parser->newline_list, breakpoint);
 
-                            if (parser->lex_modes.current->as.regexp.terminator != '\n') {
+                            if (mode->as.regexp.terminator != '\n') {
                                 // If the terminator is not a newline, then we
                                 // can set the next breakpoint and continue.
                                 breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
@@ -6742,11 +6746,11 @@ parser_lex(yp_parser_t *parser) {
                             // terminator so we need to continue on.
                         }
 
-                        assert(*breakpoint == parser->lex_modes.current->as.regexp.terminator);
+                        assert(*breakpoint == mode->as.regexp.terminator);
 
-                        if (parser->lex_modes.current->as.regexp.nesting > 0) {
+                        if (mode->as.regexp.nesting > 0) {
                             breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                            parser->lex_modes.current->as.regexp.nesting--;
+                            mode->as.regexp.nesting--;
                             break;
                         }
 
