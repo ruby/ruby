@@ -345,6 +345,8 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [], "[ruby-core:39795]")
     assert_in_out_err([env, "-W1", "-e", "exit"], "", [], [], "[ruby-core:39795]")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_INIT_SLOTS=100000/, "[ruby-core:39795]")
+    # Value of GC_HEAP_INIT_SLOTS is 10000
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /\(default value: 10000\)/)
 
     env = {
       "RUBY_GC_HEAP_GROWTH_FACTOR" => "2.0",

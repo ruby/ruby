@@ -11665,7 +11665,7 @@ ruby_gc_set_params(void)
     }
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
-    size_t global_init_slots;
+    size_t global_init_slots = GC_HEAP_INIT_SLOTS;
     if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &global_init_slots, 0)) {
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
             gc_params.size_pool_init_slots[i] = global_init_slots;
