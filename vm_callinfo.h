@@ -296,13 +296,15 @@ struct rb_callcache {
 #define VM_CALLCACHE_UNMARKABLE FL_FREEZE
 #define VM_CALLCACHE_ON_STACK   FL_EXIVAR
 
-#define VM_CALLCACHE_IVAR  IMEMO_FL_USER0
-#define VM_CALLCACHE_BF    IMEMO_FL_USER1
-#define VM_CALLCACHE_SUPER IMEMO_FL_USER2
+#define VM_CALLCACHE_IVAR       IMEMO_FL_USER0
+#define VM_CALLCACHE_BF         IMEMO_FL_USER1
+#define VM_CALLCACHE_SUPER      IMEMO_FL_USER2
+#define VM_CALLCACHE_REFINEMENT IMEMO_FL_USER3
 
 enum vm_cc_type {
     cc_type_normal, // chained from ccs
     cc_type_super,
+    cc_type_refinement,
 };
 
 extern const struct rb_callcache *rb_vm_empty_cc(void);
@@ -332,6 +334,9 @@ vm_cc_new(VALUE klass,
       case cc_type_super:
         *(VALUE *)&cc->flags |= VM_CALLCACHE_SUPER;
         break;
+      case cc_type_refinement:
+        *(VALUE *)&cc->flags |= VM_CALLCACHE_REFINEMENT;
+        break;
     }
 
     vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
@@ -343,6 +348,12 @@ static inline bool
 vm_cc_super_p(const struct rb_callcache *cc)
 {
     return (cc->flags & VM_CALLCACHE_SUPER) != 0;
+}
+
+static inline bool
+vm_cc_refinement_p(const struct rb_callcache *cc)
+{
+    return (cc->flags & VM_CALLCACHE_REFINEMENT) != 0;
 }
 
 #define VM_CC_ON_STACK(clazz, call, aux, cme) \

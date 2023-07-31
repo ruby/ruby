@@ -2003,6 +2003,8 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
         VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
         VM_ASSERT(vm_cc_class_check(cc, klass));
         VM_ASSERT(vm_cc_check_cme(cc, ccs->cme));
+        VM_ASSERT(!vm_cc_super_p(cc));
+        VM_ASSERT(!vm_cc_refinement_p(cc));
     }
     return TRUE;
 }
@@ -4193,12 +4195,19 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
 static VALUE
 vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
-    struct rb_callcache *ref_cc =  &VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }},
-                                                   search_refined_method(ec, cfp, calling));
+    const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, cfp, calling);
 
-    if (vm_cc_cme(ref_cc)) {
-        calling->cc= ref_cc;
-        return vm_call_method(ec, cfp, calling);
+    if (ref_cme) {
+        if (calling->cd->cc) {
+            const struct rb_callcache *cc = calling->cc = vm_cc_new(vm_cc_cme(calling->cc)->defined_class, ref_cme, vm_call_general, cc_type_refinement);
+            RB_OBJ_WRITE(cfp->iseq, &calling->cd->cc, cc);
+            return vm_call_method(ec, cfp, calling);
+        }
+        else {
+            struct rb_callcache *ref_cc =  &VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, ref_cme);
+            calling->cc= ref_cc;
+            return vm_call_method(ec, cfp, calling);
+        }
     }
     else {
         return vm_call_method_nome(ec, cfp, calling);
