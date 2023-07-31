@@ -281,7 +281,9 @@ typedef enum {
 #define YP_REGEXP_OPTION_STATE_SLOTS (YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM + 1)
 
 // This is the set of options that are configurable on the regular expression.
-typedef struct { unsigned char values[YP_REGEXP_OPTION_STATE_SLOTS]; } yp_regexp_options_t;
+typedef struct {
+    unsigned char values[YP_REGEXP_OPTION_STATE_SLOTS];
+} yp_regexp_options_t;
 
 // Initialize a new set of options to their default values.
 static void
@@ -300,7 +302,7 @@ yp_regexp_options_init(yp_regexp_options_t *options) {
 static bool
 yp_regexp_options_add(yp_regexp_options_t *options, unsigned char key) {
     if (key >= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key -= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM;
+        key = (unsigned char) (key - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM);
 
         switch (options->values[key]) {
             case YP_REGEXP_OPTION_STATE_INVALID:
@@ -323,7 +325,7 @@ yp_regexp_options_add(yp_regexp_options_t *options, unsigned char key) {
 static bool
 yp_regexp_options_remove(yp_regexp_options_t *options, unsigned char key) {
     if (key >= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key -= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM;
+        key = (unsigned char) (key - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM);
 
         switch (options->values[key]) {
             case YP_REGEXP_OPTION_STATE_INVALID:
