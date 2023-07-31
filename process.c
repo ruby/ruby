@@ -8617,7 +8617,7 @@ proc_warmup(VALUE _)
  * - ::detach: Guards against a child process becoming a zombie.
  * - ::fork: Creates a child process.
  * - ::kill: Sends a given signal to processes.
- * - ::spawn: Creates a chile process.
+ * - ::spawn: Creates a child process.
  * - ::wait, ::waitpid: Waits for a child process to exit; returns its process ID.
  * - ::wait2, ::waitpid2: Waits for a child process to exit; returns its process ID and status.
  * - ::waitall: Waits for all child processes to exit;
