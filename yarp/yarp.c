@@ -5929,7 +5929,7 @@ parser_lex(yp_parser_t *parser) {
                                 }
 
                                 size_t ident_length = (size_t) (parser->current.end - ident_start);
-                                if (quote != YP_HEREDOC_QUOTE_NONE && !match(parser, quote)) {
+                                if (quote != YP_HEREDOC_QUOTE_NONE && !match(parser, (char) quote)) {
                                     // TODO: handle unterminated heredoc
                                 }
 

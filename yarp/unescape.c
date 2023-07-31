@@ -64,19 +64,19 @@ unescape_octal(const char *backslash, unsigned char *value) {
         return 2;
     }
 
-    *value = (*value << 3) | (backslash[2] - '0');
+    *value = (unsigned char) ((*value << 3) | (backslash[2] - '0'));
     if (!yp_char_is_octal_digit(backslash[3])) {
         return 3;
     }
 
-    *value = (*value << 3) | (backslash[3] - '0');
+    *value = (unsigned char) ((*value << 3) | (backslash[3] - '0'));
     return 4;
 }
 
 // Convert a hexadecimal digit into its equivalent value.
 static inline unsigned char
 unescape_hexadecimal_digit(const char value) {
-    return (value <= '9') ? (unsigned char) (value - '0') : (value & 0x7) + 9;
+    return (unsigned char) ((value <= '9') ? (value - '0') : (value & 0x7) + 9);
 }
 
 // Scan the 1-2 digits of hexadecimal into the value. Returns the number of
@@ -88,7 +88,7 @@ unescape_hexadecimal(const char *backslash, unsigned char *value) {
         return 3;
     }
 
-    *value = (*value << 4) | unescape_hexadecimal_digit(backslash[3]);
+    *value = (unsigned char) ((*value << 4) | unescape_hexadecimal_digit(backslash[3]));
     return 4;
 }
 
@@ -113,22 +113,22 @@ unescape_unicode_write(char *dest, uint32_t value, const char *start, const char
 
     if (value <= 0x7F) {
         // 0xxxxxxx
-        bytes[0] = value;
+        bytes[0] = (unsigned char) value;
         return 1;
     }
 
     if (value <= 0x7FF) {
         // 110xxxxx 10xxxxxx
-        bytes[0] = 0xC0 | (value >> 6);
-        bytes[1] = 0x80 | (value & 0x3F);
+        bytes[0] = (unsigned char) (0xC0 | (value >> 6));
+        bytes[1] = (unsigned char) (0x80 | (value & 0x3F));
         return 2;
     }
 
     if (value <= 0xFFFF) {
         // 1110xxxx 10xxxxxx 10xxxxxx
-        bytes[0] = 0xE0 | (value >> 12);
-        bytes[1] = 0x80 | ((value >> 6) & 0x3F);
-        bytes[2] = 0x80 | (value & 0x3F);
+        bytes[0] = (unsigned char) (0xE0 | (value >> 12));
+        bytes[1] = (unsigned char) (0x80 | ((value >> 6) & 0x3F));
+        bytes[2] = (unsigned char) (0x80 | (value & 0x3F));
         return 3;
     }
 
@@ -136,10 +136,10 @@ unescape_unicode_write(char *dest, uint32_t value, const char *start, const char
     // the input is invalid.
     if (value <= 0x10FFFF) {
         // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        bytes[0] = 0xF0 | (value >> 18);
-        bytes[1] = 0x80 | ((value >> 12) & 0x3F);
-        bytes[2] = 0x80 | ((value >> 6) & 0x3F);
-        bytes[3] = 0x80 | (value & 0x3F);
+        bytes[0] = (unsigned char) (0xF0 | (value >> 18));
+        bytes[1] = (unsigned char) (0x80 | ((value >> 12) & 0x3F));
+        bytes[2] = (unsigned char) (0x80 | ((value >> 6) & 0x3F));
+        bytes[3] = (unsigned char) (0x80 | (value & 0x3F));
         return 4;
     }
 
