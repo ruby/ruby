@@ -7030,7 +7030,15 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
          * - On the multi-Ractors, cme will be collected with global GC
          *   so that it is safe if GC is not interleaving while accessing
          *   cc and cme.
+         * - However, cc_type_super is not chained from cc so the cc->cme
+         *   should be marked.
          */
+        {
+            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+            if (vm_cc_super_p(cc)) {
+                gc_mark(objspace, (VALUE)cc->cme_);
+            }
+        }
         return;
       case imemo_constcache:
         {
