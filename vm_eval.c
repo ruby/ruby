@@ -96,7 +96,10 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
     }
 
     struct rb_calling_info calling = {
-        .ci = &VM_CI_ON_STACK(id, flags, argc, NULL),
+        .cd = &(struct rb_call_data) {
+            .ci = &VM_CI_ON_STACK(id, flags, argc, NULL),
+            .cc = NULL,
+        },
         .cc = cc,
         .block_handler = vm_passed_block_handler(ec),
         .recv = recv,
@@ -117,7 +120,7 @@ vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const 
 static VALUE
 vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, VALUE klass, enum method_missing_reason ex)
 {
-    ID mid = vm_ci_mid(calling->ci);
+    ID mid = vm_ci_mid(calling->cd->ci);
     klass = RCLASS_SUPER(klass);
 
     if (klass) {
@@ -136,7 +139,7 @@ vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, cons
 static VALUE
 vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, const VALUE *argv)
 {
-    const struct rb_callinfo *ci = calling->ci;
+    const struct rb_callinfo *ci = calling->cd->ci;
     VALUE val;
     const rb_callable_method_entry_t *me = vm_cc_cme(calling->cc);
     const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
@@ -201,7 +204,7 @@ vm_call_check_arity(struct rb_calling_info *calling, int argc, const VALUE *argv
 static VALUE
 vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
 {
-    const struct rb_callinfo *ci = calling->ci;
+    const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
     VALUE ret;
 

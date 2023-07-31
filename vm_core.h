@@ -278,7 +278,7 @@ union iseq_inline_storage_entry {
 };
 
 struct rb_calling_info {
-    const struct rb_callinfo *ci;
+    const struct rb_call_data *cd;
     const struct rb_callcache *cc;
     VALUE block_handler;
     VALUE recv;

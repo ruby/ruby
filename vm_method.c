@@ -322,6 +322,7 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
                 RCLASS_CC_TBL(v) = NULL;
             }
         }
+
         if (ptr) {
             asan_poison_object(v);
         }
