@@ -2626,6 +2626,24 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([], Refinement.used_modules)
   end
 
+  def test_inlinecache
+    assert_separately([], <<-"end;")
+      module R
+        refine String do
+          def to_s = :R
+        end
+      end
+
+      2.times{|i|
+        s = ''.to_s
+        assert_equal '', s if i == 0
+        assert_equal :R, s if i == 1
+        using R            if i == 0
+        assert_equal :R, ''.to_s
+      }
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
