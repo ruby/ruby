@@ -2202,7 +2202,7 @@ yp_if_node_create(yp_parser_t *parser,
 
     *node = (yp_if_node_t) {
         {
-            .type = YP_NODE_IF_NODE,
+            .type = YP_NODE_IF_NODE | YP_NODE_FLAG_NEWLINE,
             .location = {
                 .start = if_keyword->start,
                 .end = end
@@ -2228,7 +2228,7 @@ yp_if_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_t
 
     *node = (yp_if_node_t) {
         {
-            .type = YP_NODE_IF_NODE,
+            .type = YP_NODE_IF_NODE | YP_NODE_FLAG_NEWLINE,
             .location = {
                 .start = statement->location.start,
                 .end = predicate->location.end
@@ -2260,7 +2260,7 @@ yp_if_node_ternary_create(yp_parser_t *parser, yp_node_t *predicate, yp_node_t *
 
     *node = (yp_if_node_t) {
         {
-            .type = YP_NODE_IF_NODE,
+            .type = YP_NODE_IF_NODE | YP_NODE_FLAG_NEWLINE,
             .location = {
                 .start = predicate->location.start,
                 .end = false_expression->location.end,
@@ -3683,6 +3683,9 @@ yp_statements_node_body_append(yp_statements_node_t *node, yp_node_t *statement)
 
     yp_node_list_append(&node->body, statement);
     node->base.location.end = statement->location.end;
+
+    // Every statement gets marked as a place where a newline can occur.
+    statement->type |= YP_NODE_FLAG_NEWLINE;
 }
 
 // Allocate a new StringConcatNode node.
@@ -3940,7 +3943,7 @@ yp_unless_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t 
 
     *node = (yp_unless_node_t) {
         {
-            .type = YP_NODE_UNLESS_NODE,
+            .type = YP_NODE_UNLESS_NODE | YP_NODE_FLAG_NEWLINE,
             .location = {
                 .start = keyword->start,
                 .end = end
@@ -3966,7 +3969,7 @@ yp_unless_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const 
 
     *node = (yp_unless_node_t) {
         {
-            .type = YP_NODE_UNLESS_NODE,
+            .type = YP_NODE_UNLESS_NODE | YP_NODE_FLAG_NEWLINE,
             .location = {
                 .start = statement->location.start,
                 .end = predicate->location.end
