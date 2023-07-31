@@ -793,29 +793,32 @@ class TestRubyOptions < Test::Unit::TestCase
         )?
       )x,
     ]
+
+    KILL_SELF = "Process.kill :SEGV, $$"
   end
 
-  def assert_segv(args, message=nil)
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
+    env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if self.class.yjit_enabled?
-    args.unshift({'RUBY_ON_BUG' => nil})
+    env.update({'RUBY_ON_BUG' => nil})
+    args.unshift(env)
 
     test_stdin = ""
-    opt = SEGVTest::ExecOptions.dup
-    list = SEGVTest::ExpectedStderrList
 
-    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT", **opt)
+    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT",
+                      **SEGVTest::ExecOptions, **opt)
   end
 
   def test_segv_test
-    assert_segv(["--disable-gems", "-e", "Process.kill :SEGV, $$"])
+    assert_segv(["--disable-gems", "-e", SEGVTest::KILL_SELF])
   end
 
   def test_segv_loaded_features
     bug7402 = '[ruby-core:49573]'
 
-    status = assert_segv(['-e', 'END {Process.kill :SEGV, $$}',
+    status = assert_segv(['-e', "END {#{SEGVTest::KILL_SELF}}",
                           '-e', 'class Bogus; def to_str; exit true; end; end',
                           '-e', '$".clear',
                           '-e', '$".unshift Bogus.new',
@@ -829,8 +832,52 @@ class TestRubyOptions < Test::Unit::TestCase
     Tempfile.create(["test_ruby_test_bug7597", ".rb"]) {|t|
       t.write "f" * 100
       t.flush
-      assert_segv(["--disable-gems", "-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path], bug7597)
+      assert_segv(["--disable-gems", "-e", "$0=ARGV[0]; #{SEGVTest::KILL_SELF}", t.path], bug7597)
     }
+  end
+
+  def assert_bugreport_path(path, cmd = nil)
+    Dir.mktmpdir("ruby_bugreport") do |dir|
+      list = SEGVTest::ExpectedStderrList
+      if cmd
+        FileUtils.mkpath(File.join(dir, File.dirname(cmd)))
+        File.write(File.join(dir, cmd), SEGVTest::KILL_SELF+"\n")
+        c = Regexp.quote(cmd)
+        list = list.map {|re| Regexp.new(re.source.gsub(/-e/) {c}, re.options)}
+      else
+        cmd = ['-e', SEGVTest::KILL_SELF]
+      end
+      status = assert_segv([{"RUBY_BUGREPORT_PATH"=>path}, *cmd], list: [], chdir: dir)
+      reports = Dir.glob("*.log", File::FNM_DOTMATCH, base: dir)
+      assert_equal(1, reports.size)
+      assert_pattern_list(list, File.read(File.join(dir, reports.first)))
+      break status, reports.first
+    end
+  end
+
+  def test_bugreport_path
+    assert_bugreport_path("%e.%f.%p.log") do |status, report|
+      assert_equal("#{File.basename(EnvUtil.rubybin)}.-e.#{status.pid}.log", report)
+    end
+  end
+
+  def test_bugreport_path_script
+    assert_bugreport_path("%e.%f.%p.log", "bug.rb") do |status, report|
+      assert_equal("#{File.basename(EnvUtil.rubybin)}.bug.rb.#{status.pid}.log", report)
+    end
+  end
+
+  def test_bugreport_path_executable_path
+    omit if EnvUtil.rubybin.size > 245
+    assert_bugreport_path("%E.%p.log") do |status, report|
+      assert_equal("#{EnvUtil.rubybin.tr('/', '!')}.#{status.pid}.log", report)
+    end
+  end
+
+  def test_bugreport_path_script_path
+    assert_bugreport_path("%F.%p.log", "test/bug.rb") do |status, report|
+      assert_equal("test!bug.rb.#{status.pid}.log", report)
+    end
   end
 
   def test_DATA
