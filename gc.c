@@ -13441,7 +13441,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                     APPEND_F("%s", RSTRING_PTR(class_path));
                 }
                 else {
-                    APPEND_S("(annon)");
+                    APPEND_S("(anon)");
                 }
                 break;
             }
