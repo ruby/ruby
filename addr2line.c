@@ -144,7 +144,7 @@ void *alloca();
 #define DW_LNE_define_file              0x03
 #define DW_LNE_set_discriminator        0x04  /* DWARF4 */
 
-PRINTF_ARGS(static int kprintf(const char *fmt, ...), 1, 2);
+#define kprintf(...) fprintf(stderr, "" __VA_ARGS__)
 
 typedef struct line_info {
     const char *dirname;
@@ -1358,7 +1358,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
     return true;
 
   fail:
-    fprintf(stderr, "%d: unsupported form: %#"PRIx64"\n", __LINE__, form);
+    kprintf("%d: unsupported form: %#"PRIx64"\n", __LINE__, form);
     return false;
 }
 
@@ -1377,7 +1377,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
     di_skip_die_attributes(&p);
     for (uint64_t n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
         if (n == 0) {
-            fprintf(stderr,"%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
+            kprintf("%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
             return NULL;
         }
         uleb128(&p); /* tag */
@@ -1392,22 +1392,22 @@ static void
 hexdump0(const unsigned char *p, size_t n)
 {
     size_t i;
-    fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
+    kprintf("     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
     for (i=0; i < n; i++){
         switch (i & 15) {
           case 0:
-            fprintf(stderr, "%02" PRIdSIZE ": %02X ", i/16, p[i]);
+            kprintf("%02" PRIdSIZE ": %02X ", i/16, p[i]);
             break;
           case 15:
-            fprintf(stderr, "%02X\n", p[i]);
+            kprintf("%02X\n", p[i]);
             break;
           default:
-            fprintf(stderr, "%02X ", p[i]);
+            kprintf("%02X ", p[i]);
             break;
         }
     }
     if ((i & 15) != 15) {
-        fprintf(stderr, "\n");
+        kprintf("\n");
     }
 }
 #define hexdump(p,n) hexdump0((const unsigned char *)p, n)
@@ -1417,16 +1417,16 @@ div_inspect(DebugInfoValue *v)
 {
     switch (v->type) {
       case VAL_uint:
-        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:%"PRIx64"\n",__LINE__,v->type,v->size,v->as.uint64);
+        kprintf("%d: type:%d size:%" PRIxSIZE " v:%"PRIx64"\n",__LINE__,v->type,v->size,v->as.uint64);
         break;
       case VAL_int:
-        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:%"PRId64"\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
+        kprintf("%d: type:%d size:%" PRIxSIZE " v:%"PRId64"\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
         break;
       case VAL_cstr:
-        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:'%s'\n",__LINE__,v->type,v->size,v->as.ptr);
+        kprintf("%d: type:%d size:%" PRIxSIZE " v:'%s'\n",__LINE__,v->type,v->size,v->as.ptr);
         break;
       case VAL_data:
-        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:\n",__LINE__,v->type,v->size);
+        kprintf("%d: type:%d size:%" PRIxSIZE " v:\n",__LINE__,v->type,v->size);
         hexdump(v->as.ptr, 16);
         break;
     }
@@ -1506,7 +1506,7 @@ addr_header_init(obj_info_t *obj, addr_header_t *header) {
     p += 2; /* version */
     header->address_size = *p++;
     if (header->address_size != 4 && header->address_size != 8) {
-        fprintf(stderr,"unknown address_size:%d", header->address_size);
+        kprintf("unknown address_size:%d", header->address_size);
         return false;
     }
     p++; /* segment_selector_size */
@@ -1549,7 +1549,7 @@ rnglists_header_init(obj_info_t *obj, rnglists_header_t *header) {
     p += 2; /* version */
     header->address_size = *p++;
     if (header->address_size != 4 && header->address_size != 8) {
-        fprintf(stderr,"unknown address_size:%d", header->address_size);
+        kprintf("unknown address_size:%d", header->address_size);
         return false;
     }
     p++; /* segment_selector_size */
@@ -1709,27 +1709,27 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
 {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
-            fprintf(stderr,"low_pc_set:%d high_pc_set:%d ranges_set:%d\n",ptr->low_pc_set,ptr->high_pc_set,ptr->ranges_set);
+            kprintf("low_pc_set:%d high_pc_set:%d ranges_set:%d\n",ptr->low_pc_set,ptr->high_pc_set,ptr->ranges_set);
             return;
         }
-        fprintf(stderr,"low_pc:%"PRIx64" high_pc:%"PRIx64"\n",ptr->low_pc,ptr->high_pc);
+        kprintf("low_pc:%"PRIx64" high_pc:%"PRIx64"\n",ptr->low_pc,ptr->high_pc);
     }
     else if (ptr->ranges_set) {
         char *p = reader->obj->debug_ranges.ptr + ptr->ranges;
-        fprintf(stderr,"low_pc:%"PRIx64" ranges:%"PRIx64" %lx ",ptr->low_pc,ptr->ranges, p-reader->obj->mapped);
+        kprintf("low_pc:%"PRIx64" ranges:%"PRIx64" %lx ",ptr->low_pc,ptr->ranges, p-reader->obj->mapped);
         for (;;) {
             uintptr_t from = read_uintptr(&p);
             uintptr_t to = read_uintptr(&p);
             if (!from && !to) break;
-            fprintf(stderr,"%"PRIx64"-%"PRIx64" ",ptr->low_pc+from,ptr->low_pc+to);
+            kprintf("%"PRIx64"-%"PRIx64" ",ptr->low_pc+from,ptr->low_pc+to);
         }
-        fprintf(stderr,"\n");
+        kprintf("\n");
     }
     else if (ptr->low_pc_set) {
-        fprintf(stderr,"low_pc:%"PRIx64"\n",ptr->low_pc);
+        kprintf("low_pc:%"PRIx64"\n",ptr->low_pc);
     }
     else {
-        fprintf(stderr,"empty\n");
+        kprintf("empty\n");
     }
 }
 #endif
@@ -1763,7 +1763,7 @@ di_read_cu(DebugInfoReader *reader)
         reader->address_size = read_uint8(&reader->p);
     }
     if (reader->address_size != 4 && reader->address_size != 8) {
-        fprintf(stderr,"unknown address_size:%d", reader->address_size);
+        kprintf("unknown address_size:%d", reader->address_size);
         return -1;
     }
     reader->q0 = reader->obj->debug_abbrev.ptr + debug_abbrev_offset;
@@ -1887,7 +1887,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         line_info_t line = {};
 
         if (!di_read_die(reader, &die)) continue;
-        /* fprintf(stderr,"%d:%tx: <%d>\n",__LINE__,die.pos,reader->level,die.tag); */
+        /* kprintf("%d:%tx: <%d>\n",__LINE__,die.pos,reader->level,die.tag); */
 
         if (die.tag != DW_TAG_subprogram && die.tag != DW_TAG_inlined_subroutine) {
           skip_die:
@@ -1900,7 +1900,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             DebugInfoValue v = {{}};
             /* ptrdiff_t pos = reader->p - reader->p0; */
             if (!di_read_record(reader, &v)) break;
-            /* fprintf(stderr,"\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form); */
+            /* kprintf("\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form); */
             /* div_inspect(&v); */
             switch (v.at) {
               case DW_AT_name:
@@ -1928,7 +1928,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             }
         }
         /* ranges_inspect(reader, &ranges); */
-        /* fprintf(stderr,"%d:%tx: %x ",__LINE__,diepos,die.tag); */
+        /* kprintf("%d:%tx: %x ",__LINE__,diepos,die.tag); */
         for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
@@ -2196,7 +2196,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         debug_info_reader_init(&reader, obj);
         i = 0;
         while (reader.p < reader.pend) {
-            /* fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
+            /* kprintf("%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
             if (di_read_cu(&reader)) goto use_symtab;
             if (!debug_info_read(&reader, num_traces, traces, lines, offset))
                 goto use_symtab;
@@ -2345,13 +2345,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         struct fat_header *fat = (struct fat_header *)file;
         char *q = file + sizeof(*fat);
         uint32_t nfat_arch = __builtin_bswap32(fat->nfat_arch);
-        /* fprintf(stderr,"%d: fat:%s %d\n",__LINE__, binary_filename,nfat_arch); */
+        /* kprintf("%d: fat:%s %d\n",__LINE__, binary_filename,nfat_arch); */
         for (uint32_t i = 0; i < nfat_arch; i++) {
             struct fat_arch *arch = (struct fat_arch *)q;
             cpu_type_t cputype = __builtin_bswap32(arch->cputype);
             cpu_subtype_t cpusubtype = __builtin_bswap32(arch->cpusubtype);
             uint32_t offset = __builtin_bswap32(arch->offset);
-            /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
+            /* kprintf("%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
             if (mhp->cputype == cputype &&
                     (cpu_subtype_t)(mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
                 p = file + offset;
@@ -2686,435 +2686,8 @@ next_line:
     free(dladdr_fbases);
 }
 
-/* From FreeBSD's lib/libstand/printf.c */
-/*-
- * Copyright (c) 1986, 1988, 1991, 1993
- *	The Regents of the University of California.  All rights reserved.
- * (c) UNIX System Laboratories, Inc.
- * All or some portions of this file are derived from material licensed
- * to the University of California by American Telephone and Telegraph
- * Co. or Unix System Laboratories, Inc. and are reproduced herein with
- * the permission of UNIX System Laboratories, Inc.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- *	@(#)subr_prf.c	8.3 (Berkeley) 1/21/94
- */
+#undef kprintf
 
-#include <stdarg.h>
-#define MAXNBUF (sizeof(intmax_t) * CHAR_BIT + 1)
-static inline int toupper(int c) { return ('A' <= c && c <= 'Z') ? (c&0x5f) : c; }
-#define    hex2ascii(hex)  (hex2ascii_data[hex])
-static const char hex2ascii_data[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-static inline int imax(int a, int b) { return (a > b ? a : b); }
-static int kvprintf(char const *fmt, void (*func)(int), void *arg, int radix, va_list ap);
-
-static void putce(int c)
-{
-    char s[1];
-    ssize_t ret;
-
-    s[0] = (char)c;
-    ret = write(2, s, 1);
-    (void)ret;
-}
-
-static int
-kprintf(const char *fmt, ...)
-{
-	va_list ap;
-	int retval;
-
-	va_start(ap, fmt);
-	retval = kvprintf(fmt, putce, NULL, 10, ap);
-	va_end(ap);
-	return retval;
-}
-
-/*
- * Put a NUL-terminated ASCII number (base <= 36) in a buffer in reverse
- * order; return an optional length and a pointer to the last character
- * written in the buffer (i.e., the first character of the string).
- * The buffer pointed to by `nbuf' must have length >= MAXNBUF.
- */
-static char *
-ksprintn(char *nbuf, uintmax_t num, int base, int *lenp, int upper)
-{
-	char *p, c;
-
-	p = nbuf;
-	*p = '\0';
-	do {
-		c = hex2ascii(num % base);
-		*++p = upper ? toupper(c) : c;
-	} while (num /= base);
-	if (lenp)
-		*lenp = (int)(p - nbuf);
-	return (p);
-}
-
-/*
- * Scaled down version of printf(3).
- *
- * Two additional formats:
- *
- * The format %b is supported to decode error registers.
- * Its usage is:
- *
- *	printf("reg=%b\n", regval, "<base><arg>*");
- *
- * where <base> is the output base expressed as a control character, e.g.
- * \10 gives octal; \20 gives hex.  Each arg is a sequence of characters,
- * the first of which gives the bit number to be inspected (origin 1), and
- * the next characters (up to a control character, i.e. a character <= 32),
- * give the name of the register.  Thus:
- *
- *	kvprintf("reg=%b\n", 3, "\10\2BITTWO\1BITONE\n");
- *
- * would produce output:
- *
- *	reg=3<BITTWO,BITONE>
- *
- * XXX:  %D  -- Hexdump, takes pointer and separator string:
- *		("%6D", ptr, ":")   -> XX:XX:XX:XX:XX:XX
- *		("%*D", len, ptr, " " -> XX XX XX XX ...
- */
-static int
-kvprintf(char const *fmt, void (*func)(int), void *arg, int radix, va_list ap)
-{
-#define PCHAR(c) {int cc=(c); if (func) (*func)(cc); else *d++ = cc; retval++; }
-	char nbuf[MAXNBUF];
-	char *d;
-	const char *p, *percent, *q;
-	unsigned char *up;
-	int ch, n;
-	uintmax_t num;
-	int base, lflag, qflag, tmp, width, ladjust, sharpflag, neg, sign, dot;
-	int cflag, hflag, jflag, tflag, zflag;
-	int dwidth, upper;
-	char padc;
-	int stop = 0, retval = 0;
-
-	num = 0;
-	if (!func)
-		d = (char *) arg;
-	else
-		d = NULL;
-
-	if (fmt == NULL)
-		fmt = "(fmt null)\n";
-
-	if (radix < 2 || radix > 36)
-		radix = 10;
-
-	for (;;) {
-		padc = ' ';
-		width = 0;
-		while ((ch = (unsigned char)*fmt++) != '%' || stop) {
-			if (ch == '\0')
-				return (retval);
-			PCHAR(ch);
-		}
-		percent = fmt - 1;
-		qflag = 0; lflag = 0; ladjust = 0; sharpflag = 0; neg = 0;
-		sign = 0; dot = 0; dwidth = 0; upper = 0;
-		cflag = 0; hflag = 0; jflag = 0; tflag = 0; zflag = 0;
-reswitch:	switch (ch = (unsigned char)*fmt++) {
-		case '.':
-			dot = 1;
-			goto reswitch;
-		case '#':
-			sharpflag = 1;
-			goto reswitch;
-		case '+':
-			sign = 1;
-			goto reswitch;
-		case '-':
-			ladjust = 1;
-			goto reswitch;
-		case '%':
-			PCHAR(ch);
-			break;
-		case '*':
-			if (!dot) {
-				width = va_arg(ap, int);
-				if (width < 0) {
-					ladjust = !ladjust;
-					width = -width;
-				}
-			} else {
-				dwidth = va_arg(ap, int);
-			}
-			goto reswitch;
-		case '0':
-			if (!dot) {
-				padc = '0';
-				goto reswitch;
-			}
-		case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-				for (n = 0;; ++fmt) {
-					n = n * 10 + ch - '0';
-					ch = *fmt;
-					if (ch < '0' || ch > '9')
-						break;
-				}
-			if (dot)
-				dwidth = n;
-			else
-				width = n;
-			goto reswitch;
-		case 'b':
-			num = (unsigned int)va_arg(ap, int);
-			p = va_arg(ap, char *);
-			for (q = ksprintn(nbuf, num, *p++, NULL, 0); *q;)
-				PCHAR(*q--);
-
-			if (num == 0)
-				break;
-
-			for (tmp = 0; *p;) {
-				n = *p++;
-				if (num & (1 << (n - 1))) {
-					PCHAR(tmp ? ',' : '<');
-					for (; (n = *p) > ' '; ++p)
-						PCHAR(n);
-					tmp = 1;
-				} else
-					for (; *p > ' '; ++p)
-						continue;
-			}
-			if (tmp)
-				PCHAR('>');
-			break;
-		case 'c':
-			PCHAR(va_arg(ap, int));
-			break;
-		case 'D':
-			up = va_arg(ap, unsigned char *);
-			p = va_arg(ap, char *);
-			if (!width)
-				width = 16;
-			while(width--) {
-				PCHAR(hex2ascii(*up >> 4));
-				PCHAR(hex2ascii(*up & 0x0f));
-				up++;
-				if (width)
-					for (q=p;*q;q++)
-						PCHAR(*q);
-			}
-			break;
-		case 'd':
-		case 'i':
-			base = 10;
-			sign = 1;
-			goto handle_sign;
-		case 'h':
-			if (hflag) {
-				hflag = 0;
-				cflag = 1;
-			} else
-				hflag = 1;
-			goto reswitch;
-		case 'j':
-			jflag = 1;
-			goto reswitch;
-		case 'l':
-			if (lflag) {
-				lflag = 0;
-				qflag = 1;
-			} else
-				lflag = 1;
-			goto reswitch;
-		case 'n':
-			if (jflag)
-				*(va_arg(ap, intmax_t *)) = retval;
-			else if (qflag)
-				*(va_arg(ap, int64_t *)) = retval;
-			else if (lflag)
-				*(va_arg(ap, long *)) = retval;
-			else if (zflag)
-				*(va_arg(ap, size_t *)) = retval;
-			else if (hflag)
-				*(va_arg(ap, short *)) = retval;
-			else if (cflag)
-				*(va_arg(ap, char *)) = retval;
-			else
-				*(va_arg(ap, int *)) = retval;
-			break;
-		case 'o':
-			base = 8;
-			goto handle_nosign;
-		case 'p':
-			base = 16;
-			sharpflag = (width == 0);
-			sign = 0;
-			num = (uintptr_t)va_arg(ap, void *);
-			goto number;
-		case 'q':
-			qflag = 1;
-			goto reswitch;
-		case 'r':
-			base = radix;
-			if (sign)
-				goto handle_sign;
-			goto handle_nosign;
-		case 's':
-			p = va_arg(ap, char *);
-			if (p == NULL)
-				p = "(null)";
-			if (!dot)
-				n = (int)strlen (p);
-			else
-				for (n = 0; n < dwidth && p[n]; n++)
-					continue;
-
-			width -= n;
-
-			if (!ladjust && width > 0)
-				while (width--)
-					PCHAR(padc);
-			while (n--)
-				PCHAR(*p++);
-			if (ladjust && width > 0)
-				while (width--)
-					PCHAR(padc);
-			break;
-		case 't':
-			tflag = 1;
-			goto reswitch;
-		case 'u':
-			base = 10;
-			goto handle_nosign;
-		case 'X':
-			upper = 1;
-		case 'x':
-			base = 16;
-			goto handle_nosign;
-		case 'y':
-			base = 16;
-			sign = 1;
-			goto handle_sign;
-		case 'z':
-			zflag = 1;
-			goto reswitch;
-handle_nosign:
-			sign = 0;
-			if (jflag)
-				num = va_arg(ap, uintmax_t);
-			else if (qflag)
-				num = va_arg(ap, uint64_t);
-			else if (tflag)
-				num = va_arg(ap, ptrdiff_t);
-			else if (lflag)
-				num = va_arg(ap, unsigned long);
-			else if (zflag)
-				num = va_arg(ap, size_t);
-			else if (hflag)
-				num = (unsigned short)va_arg(ap, int);
-			else if (cflag)
-				num = (unsigned char)va_arg(ap, int);
-			else
-				num = va_arg(ap, unsigned int);
-			goto number;
-handle_sign:
-			if (jflag)
-				num = va_arg(ap, intmax_t);
-			else if (qflag)
-				num = va_arg(ap, int64_t);
-			else if (tflag)
-				num = va_arg(ap, ptrdiff_t);
-			else if (lflag)
-				num = va_arg(ap, long);
-			else if (zflag)
-				num = va_arg(ap, ssize_t);
-			else if (hflag)
-				num = (short)va_arg(ap, int);
-			else if (cflag)
-				num = (char)va_arg(ap, int);
-			else
-				num = va_arg(ap, int);
-number:
-			if (sign && (intmax_t)num < 0) {
-				neg = 1;
-				num = -(intmax_t)num;
-			}
-			p = ksprintn(nbuf, num, base, &n, upper);
-			tmp = 0;
-			if (sharpflag && num != 0) {
-				if (base == 8)
-					tmp++;
-				else if (base == 16)
-					tmp += 2;
-			}
-			if (neg)
-				tmp++;
-
-			if (!ladjust && padc == '0')
-				dwidth = width - tmp;
-			width -= tmp + imax(dwidth, n);
-			dwidth -= n;
-			if (!ladjust)
-				while (width-- > 0)
-					PCHAR(' ');
-			if (neg)
-				PCHAR('-');
-			if (sharpflag && num != 0) {
-				if (base == 8) {
-					PCHAR('0');
-				} else if (base == 16) {
-					PCHAR('0');
-					PCHAR('x');
-				}
-			}
-			while (dwidth-- > 0)
-				PCHAR('0');
-
-			while (*p)
-				PCHAR(*p--);
-
-			if (ladjust)
-				while (width-- > 0)
-					PCHAR(' ');
-
-			break;
-		default:
-			while (percent < fmt)
-				PCHAR(*percent++);
-			/*
-			 * Since we ignore an formatting argument it is no
-			 * longer safe to obey the remaining formatting
-			 * arguments as the arguments will no longer match
-			 * the format specs.
-			 */
-			stop = 1;
-			break;
-		}
-	}
-#undef PCHAR
-}
 #else /* defined(USE_ELF) */
 #error not supported
 #endif
