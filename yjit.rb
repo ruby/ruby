@@ -250,7 +250,8 @@ module RubyVM::YJIT
 
       out.puts("***YJIT: Printing YJIT statistics on exit***")
 
-      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
       print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons: ')
       print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
       print_counters(stats, out: out, prefix: 'leave_', prompt: 'leave exit reasons: ')
