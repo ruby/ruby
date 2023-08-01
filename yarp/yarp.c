@@ -12486,17 +12486,13 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
                 yp_location_t *content_loc = &((yp_regular_expression_node_t *) node)->content_loc;
 
-                YP_ATTRIBUTE_UNUSED bool captured_group_names =
-                    yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures);
+                if (yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures)) {
+                    for (size_t index = 0; index < named_captures.length; index++) {
+                        yp_string_t *name = &named_captures.strings[index];
+                        assert(name->type == YP_STRING_SHARED);
 
-                // We assert that the regex was successfully parsed
-                assert(captured_group_names);
-
-                for (size_t index = 0; index < named_captures.length; index++) {
-                    yp_string_t *name = &named_captures.strings[index];
-                    assert(name->type == YP_STRING_SHARED);
-
-                    yp_parser_local_add_location(parser, name->as.shared.start, name->as.shared.end);
+                        yp_parser_local_add_location(parser, name->as.shared.start, name->as.shared.end);
+                    }
                 }
 
                 yp_string_list_free(&named_captures);
