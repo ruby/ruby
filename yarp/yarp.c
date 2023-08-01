@@ -3023,7 +3023,7 @@ yp_nil_node_create(yp_parser_t *parser, const yp_token_t *token) {
 // Allocate and initialize a new NoKeywordsParameterNode node.
 static yp_no_keywords_parameter_node_t *
 yp_no_keywords_parameter_node_create(yp_parser_t *parser, const yp_token_t *operator, const yp_token_t *keyword) {
-    assert(operator->type == YP_TOKEN_USTAR_STAR);
+    assert(operator->type == YP_TOKEN_USTAR_STAR || operator->type == YP_TOKEN_STAR_STAR);
     assert(keyword->type == YP_TOKEN_KEYWORD_NIL);
     yp_no_keywords_parameter_node_t *node = YP_ALLOC_NODE(parser, yp_no_keywords_parameter_node_t);
 
