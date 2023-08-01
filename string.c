@@ -1276,18 +1276,19 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 }
 
 static VALUE
-str_replace_shared_without_enc(VALUE str2, VALUE str)
+str_replace_shared_suffix_without_enc(VALUE str2, VALUE str, size_t start)
 {
     const int termlen = TERM_LEN(str);
     char *ptr;
     long len;
 
     RSTRING_GETMEM(str, ptr, len);
-    if (str_embed_capa(str2) >= len + termlen) {
+    long suffix_len = len - (long)start;
+    if (str_embed_capa(str2) >= suffix_len + termlen) {
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
-        memcpy(ptr2, RSTRING_PTR(str), len);
-        TERM_FILL(ptr2+len, termlen);
+        memcpy(ptr2, RSTRING_PTR(str) + start, suffix_len);
+        TERM_FILL(ptr2+suffix_len, termlen);
     }
     else {
         VALUE root;
@@ -1310,27 +1311,45 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
             }
         }
         FL_SET(str2, STR_NOEMBED);
-        RSTRING(str2)->as.heap.ptr = ptr;
+        RSTRING(str2)->as.heap.ptr = ptr + start;
         STR_SET_SHARED(str2, root);
     }
 
-    STR_SET_LEN(str2, len);
+    STR_SET_LEN(str2, suffix_len);
 
+    return str2;
+}
+
+static VALUE
+str_replace_shared_without_enc(VALUE str2, VALUE str)
+{
+    return str_replace_shared_suffix_without_enc(str2, str, 0);
+}
+
+static VALUE
+str_replace_shared_suffix(VALUE str2, VALUE str, size_t start)
+{
+    str_replace_shared_suffix_without_enc(str2, str, start);
+    rb_enc_cr_str_exact_copy(str2, str);
     return str2;
 }
 
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
 {
-    str_replace_shared_without_enc(str2, str);
-    rb_enc_cr_str_exact_copy(str2, str);
-    return str2;
+    return str_replace_shared_suffix(str2, str, 0);
+}
+
+static VALUE
+str_new_shared_suffix(VALUE klass, VALUE str, size_t start)
+{
+    return str_replace_shared_suffix(str_alloc_heap(klass), str, start);
 }
 
 static VALUE
 str_new_shared(VALUE klass, VALUE str)
 {
-    return str_replace_shared(str_alloc_heap(klass), str);
+    return str_new_shared_suffix(klass, str, 0);
 }
 
 VALUE
@@ -2732,20 +2751,14 @@ str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    const long rstring_embed_capa_max = ((sizeof(struct RString) - offsetof(struct RString, as.embed.ary)) / sizeof(char)) - 1;
-
-    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str)) ||
-            len <= rstring_embed_capa_max) {
+    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
         str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
         RB_GC_GUARD(str);
     }
     else {
-        str2 = str_new_shared(rb_cString, str);
+        str2 = str_new_shared_suffix(rb_cString, str, beg);
+        RUBY_ASSERT(RSTRING_LEN(str2) == len);
         ENC_CODERANGE_CLEAR(str2);
-        RSTRING(str2)->as.heap.ptr += beg;
-        if (RSTRING_LEN(str2) > len) {
-            STR_SET_LEN(str2, len);
-        }
     }
 
     return str2;
