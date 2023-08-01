@@ -12463,6 +12463,10 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
             return (yp_node_t *) yp_call_node_binary_create(parser, node, &token, argument);
         }
+        case YP_TOKEN_USTAR:
+        case YP_TOKEN_USTAR_STAR:
+            // The only times this will occur are when we are in an error state,
+            // but we'll put them in here so that errors can propagate.
         case YP_TOKEN_BANG_EQUAL:
         case YP_TOKEN_BANG_TILDE:
         case YP_TOKEN_EQUAL_EQUAL:
