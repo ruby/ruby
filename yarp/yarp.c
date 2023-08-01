@@ -1014,7 +1014,7 @@ yp_block_parameters_node_closing_set(yp_block_parameters_node_t *node, const yp_
 // Append a new block-local variable to a BlockParametersNode node.
 static void
 yp_block_parameters_node_append_local(yp_block_parameters_node_t *node, const yp_token_t *local) {
-    assert(local->type == YP_TOKEN_IDENTIFIER);
+    assert(local->type == YP_TOKEN_IDENTIFIER || local->type == YP_TOKEN_MISSING);
 
     yp_location_list_append(&node->locals, local);
     if (node->base.location.start == NULL) node->base.location.start = local->start;
