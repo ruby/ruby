@@ -20,7 +20,6 @@ env:
   INIT_ENV:
 
 config_template: &CONFIG_TEMPLATE
-  auto_cancellation: $CIRRUS_BRANCH != 'master'
   only_if: changesInclude('.cirrus.yml', 'yjit.{c,h,rb}', 'yjit/**.{mk,rs,toml}')
   skip: >-
     $CIRRUS_CHANGE_MESSAGE =~ '.*\[DOC\].*' ||
