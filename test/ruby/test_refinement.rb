@@ -1807,9 +1807,13 @@ class TestRefinement < Test::Unit::TestCase
       end
     }.refinements
     assert_equal(Integer, refinements[0].target)
-    assert_equal(Integer, refinements[0].refined_class)
+    assert_warn(/Refinement#refined_class is deprecated and will be removed in Ruby 3.4; use Refinement#target instead/) do
+      assert_equal(Integer, refinements[0].refined_class)
+    end
     assert_equal(String, refinements[1].target)
-    assert_equal(String, refinements[1].refined_class)
+    assert_warn(/Refinement#refined_class is deprecated and will be removed in Ruby 3.4; use Refinement#target instead/) do
+      assert_equal(String, refinements[1].refined_class)
+    end
   end
 
   def test_warn_setconst_in_refinmenet
