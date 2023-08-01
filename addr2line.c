@@ -61,7 +61,20 @@ void *alloca();
 #   endif
 #  endif /* AIX */
 # endif	/* HAVE_ALLOCA_H */
+# ifndef UNREACHABLE
+#  define UNREACHABLE __builtin_unreachable()
+# endif
+# ifndef UNREACHABLE_RETURN
+#  define UNREACHABLE_RETURN(_) __builtin_unreachable()
+# endif
 #endif /* __GNUC__ */
+
+#ifndef UNREACHABLE
+# define UNREACHABLE abort()
+#endif
+#ifndef UNREACHABLE_RETURN
+# define UNREACHABLE_RETURN(_) return (abort(), (_))
+#endif
 
 #ifdef HAVE_DLADDR
 # include <dlfcn.h>
@@ -188,7 +201,7 @@ obj_dwarf_section_at(obj_info_t *obj, int n)
         &obj->debug_line_str
     };
     if (n < 0 || DWARF_SECTION_COUNT <= n) {
-        abort();
+        UNREACHABLE_RETURN(0);
     }
     return ary[n];
 }
@@ -1153,24 +1166,26 @@ resolve_strx(DebugInfoReader *reader, uint64_t idx)
 }
 
 static void
-debug_info_reader_read_addr_value(DebugInfoReader *reader, DebugInfoValue *v)
+debug_info_reader_read_addr_value_member(DebugInfoReader *reader, DebugInfoValue *v, int size, const char *mem)
 {
-    if (reader->address_size == 4) {
+    if (size == 4) {
         set_uint_value(v, read_uint32(&reader->p));
-    } else if (reader->address_size == 8) {
+    } else if (size == 8) {
         set_uint_value(v, read_uint64(&reader->p));
     } else {
-        fprintf(stderr,"unknown address_size:%d", reader->address_size);
-        abort();
+        UNREACHABLE; /* should have checked already */
     }
 }
 
-static void
+#define debug_info_reader_read_addr_value(reader, v, mem) \
+    debug_info_reader_read_addr_value_member((reader), (v), (reader)->mem, #mem)
+
+static bool
 debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
 {
     switch (form) {
       case DW_FORM_addr:
-        debug_info_reader_read_addr_value(reader, v);
+        debug_info_reader_read_addr_value(reader, v, address_size);
         break;
       case DW_FORM_block2:
         v->size = read_uint16(&reader->p);
@@ -1225,16 +1240,9 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         if (reader->current_version <= 2) {
             // DWARF Version 2 specifies that references have
             // the same size as an address on the target system
-            debug_info_reader_read_addr_value(reader, v);
+            debug_info_reader_read_addr_value(reader, v, address_size);
         } else {
-            if (reader->format == 4) {
-                set_uint_value(v, read_uint32(&reader->p));
-            } else if (reader->format == 8) {
-                set_uint_value(v, read_uint64(&reader->p));
-            } else {
-                fprintf(stderr,"unknown format:%d", reader->format);
-                abort();
-            }
+            debug_info_reader_read_addr_value(reader, v, format);
         }
         break;
       case DW_FORM_ref1:
@@ -1347,11 +1355,11 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         goto fail;
         break;
     }
-    return;
+    return true;
 
   fail:
     fprintf(stderr, "%d: unsupported form: %#"PRIx64"\n", __LINE__, form);
-    exit(1);
+    return false;
 }
 
 /* find abbrev in current compilation unit */
@@ -1370,7 +1378,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
     for (uint64_t n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
         if (n == 0) {
             fprintf(stderr,"%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
-            exit(1);
+            return NULL;
         }
         uleb128(&p); /* tag */
         p++; /* has_children */
@@ -1434,7 +1442,7 @@ di_read_die(DebugInfoReader *reader, DIE *die)
         return NULL;
     }
 
-    reader->q = di_find_abbrev(reader, abbrev_number);
+    if (!(reader->q = di_find_abbrev(reader, abbrev_number))) return NULL;
 
     die->pos = reader->p - reader->obj->debug_info.ptr - 1;
     die->tag = (int)uleb128(&reader->q); /* tag */
@@ -1453,19 +1461,19 @@ di_read_record(DebugInfoReader *reader, DebugInfoValue *vp)
     if (!at || !form) return NULL;
     vp->at = at;
     vp->form = form;
-    debug_info_reader_read_value(reader, form, vp);
+    if (!debug_info_reader_read_value(reader, form, vp)) return NULL;
     return vp;
 }
 
-static void
+static bool
 di_skip_records(DebugInfoReader *reader)
 {
     for (;;) {
         DebugInfoValue v = {{}};
         uint64_t at = uleb128(&reader->q);
         uint64_t form = uleb128(&reader->q);
-        if (!at || !form) return;
-        debug_info_reader_read_value(reader, form, &v);
+        if (!at || !form) return true;
+        if (!debug_info_reader_read_value(reader, form, &v)) return false;
     }
 }
 
@@ -1477,13 +1485,13 @@ typedef struct addr_header {
     /* uint8_t segment_selector_size; */
 } addr_header_t;
 
-static void
+static bool
 addr_header_init(obj_info_t *obj, addr_header_t *header) {
     const char *p = obj->debug_addr.ptr;
 
     header->ptr = p;
 
-    if (!p) return;
+    if (!p) return false;
 
     header->unit_length = *(uint32_t *)p;
     p += sizeof(uint32_t);
@@ -1497,7 +1505,12 @@ addr_header_init(obj_info_t *obj, addr_header_t *header) {
 
     p += 2; /* version */
     header->address_size = *p++;
+    if (header->address_size != 4 && header->address_size != 8) {
+        fprintf(stderr,"unknown address_size:%d", header->address_size);
+        return false;
+    }
     p++; /* segment_selector_size */
+    return true;
 }
 
 static uint64_t
@@ -1517,11 +1530,11 @@ typedef struct rnglists_header {
     uint32_t offset_entry_count;
 } rnglists_header_t;
 
-static void
+static bool
 rnglists_header_init(obj_info_t *obj, rnglists_header_t *header) {
     const char *p = obj->debug_rnglists.ptr;
 
-    if (!p) return;
+    if (!p) return false;
 
     header->unit_length = *(uint32_t *)p;
     p += sizeof(uint32_t);
@@ -1535,8 +1548,13 @@ rnglists_header_init(obj_info_t *obj, rnglists_header_t *header) {
 
     p += 2; /* version */
     header->address_size = *p++;
+    if (header->address_size != 4 && header->address_size != 8) {
+        fprintf(stderr,"unknown address_size:%d", header->address_size);
+        return false;
+    }
     p++; /* segment_selector_size */
     header->offset_entry_count = *(uint32_t *)p;
+    return true;
 }
 
 typedef struct {
@@ -1586,11 +1604,8 @@ read_dw_form_addr(DebugInfoReader *reader, const char **ptr)
     *ptr = p + reader->address_size;
     if (reader->address_size == 4) {
         return read_uint32(&p);
-    } else if (reader->address_size == 8) {
-        return read_uint64(&p);
     } else {
-        fprintf(stderr,"unknown address_size:%d", reader->address_size);
-        abort();
+        return read_uint64(&p);
     }
 }
 
@@ -1599,7 +1614,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_h
 {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
-            exit(1);
+            return UINTPTR_MAX;
         }
         if (ptr->low_pc <= addr && addr <= ptr->high_pc) {
             return (uintptr_t)ptr->low_pc;
@@ -1664,7 +1679,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_h
                     return from;
                 }
             }
-            return false;
+            return 0;
         }
         p = reader->obj->debug_ranges.ptr + ptr->ranges;
         for (;;) {
@@ -1685,7 +1700,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_h
             return (uintptr_t)ptr->low_pc;
         }
     }
-    return false;
+    return 0;
 }
 
 #if 0
@@ -1695,7 +1710,7 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
             fprintf(stderr,"low_pc_set:%d high_pc_set:%d ranges_set:%d\n",ptr->low_pc_set,ptr->high_pc_set,ptr->ranges_set);
-            exit(1);
+            return;
         }
         fprintf(stderr,"low_pc:%"PRIx64" high_pc:%"PRIx64"\n",ptr->low_pc,ptr->high_pc);
     }
@@ -1747,6 +1762,10 @@ di_read_cu(DebugInfoReader *reader)
         debug_abbrev_offset = read_uint(reader);
         reader->address_size = read_uint8(&reader->p);
     }
+    if (reader->address_size != 4 && reader->address_size != 8) {
+        fprintf(stderr,"unknown address_size:%d", reader->address_size);
+        return -1;
+    }
     reader->q0 = reader->obj->debug_abbrev.ptr + debug_abbrev_offset;
 
     reader->level = 0;
@@ -1759,7 +1778,7 @@ di_read_cu(DebugInfoReader *reader)
         if (!di_read_die(reader, &die)) continue;
 
         if (die.tag != DW_TAG_compile_unit) {
-            di_skip_records(reader);
+            if (!di_skip_records(reader)) return -1;
             break;
         }
 
@@ -1797,7 +1816,7 @@ di_read_cu(DebugInfoReader *reader)
             case VAL_addr:
                 {
                     addr_header_t header = {};
-                    addr_header_init(reader->obj, &header);
+                    if (!addr_header_init(reader->obj, &header)) return -1;
                     reader->current_low_pc = read_addr(&header, reader->current_addr_base, low_pc.as.addr_idx);
                 }
                 break;
@@ -1852,15 +1871,15 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
     reader->level = level;
 }
 
-static void
+static bool
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
          line_info_t *lines, int offset) {
 
     addr_header_t addr_header = {};
-    addr_header_init(reader->obj, &addr_header);
+    if (!addr_header_init(reader->obj, &addr_header)) return false;
 
     rnglists_header_t rnglists_header = {};
-    rnglists_header_init(reader->obj, &rnglists_header);
+    if (!rnglists_header_init(reader->obj, &rnglists_header)) return false;
 
     while (reader->p < reader->cu_end) {
         DIE die;
@@ -1872,7 +1891,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
 
         if (die.tag != DW_TAG_subprogram && die.tag != DW_TAG_inlined_subroutine) {
           skip_die:
-            di_skip_records(reader);
+            if (!di_skip_records(reader)) return false;
             continue;
         }
 
@@ -1914,6 +1933,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
             uintptr_t saddr = ranges_include(reader, &ranges, offset, &rnglists_header);
+            if (saddr == UINTPTR_MAX) return false;
             if (saddr) {
                 /* fprintf(stdout, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
                 if (lines[i].sname) {
@@ -1932,6 +1952,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             }
         }
     }
+    return true;
 }
 
 // This function parses the following attributes of Line Number Program Header in DWARF 5:
@@ -1970,7 +1991,7 @@ parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t 
             DebugInfoValue v = {{}};
             unsigned long dw_lnct = uleb128(&format);
             unsigned long dw_form = uleb128(&format);
-            debug_info_reader_read_value(&reader, dw_form, &v);
+            if (!debug_info_reader_read_value(&reader, dw_form, &v)) return 0;
             if (dw_lnct == 1 /* DW_LNCT_path */ && v.type == VAL_cstr && out_path)
                 *out_path = v.as.ptr + v.off;
             if (dw_lnct == 2 /* DW_LNCT_directory_index */ && v.type == VAL_uint && out_directory_index)
@@ -2177,7 +2198,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         while (reader.p < reader.pend) {
             /* fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
             if (di_read_cu(&reader)) goto use_symtab;
-            debug_info_read(&reader, num_traces, traces, lines, offset);
+            if (!debug_info_read(&reader, num_traces, traces, lines, offset))
+                goto use_symtab;
         }
     }
     else {
@@ -2446,7 +2468,8 @@ found_mach_header:
         debug_info_reader_init(&reader, obj);
         while (reader.p < reader.pend) {
             if (di_read_cu(&reader)) goto fail;
-            debug_info_read(&reader, num_traces, traces, lines, offset);
+            if (!debug_info_read(&reader, num_traces, traces, lines, offset))
+                goto fail;
         }
     }
 
