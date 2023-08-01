@@ -323,7 +323,6 @@ make_counters! {
     setivar_not_heap,
     setivar_frozen,
     setivar_megamorphic,
-    setivar_too_complex,
 
     definedivar_not_heap,
     definedivar_megamorphic,

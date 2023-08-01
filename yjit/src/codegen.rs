@@ -2188,10 +2188,66 @@ fn gen_setinstancevariable(
         gen_counter_incr(asm, Counter::num_setivar_megamorphic);
     }
 
+    // Get the iv index
+    let shape_too_complex = comptime_receiver.shape_too_complex();
+    let ivar_index = if !shape_too_complex {
+        let shape_id = comptime_receiver.shape_id_of();
+        let shape = unsafe { rb_shape_get_shape_by_id(shape_id) };
+        let mut ivar_index: u32 = 0;
+        if unsafe { rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) } {
+            Some(ivar_index as usize)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Get the next shape information if it needs transition
+    let new_shape = if !shape_too_complex && ivar_index.is_none() {
+        let shape = comptime_receiver.shape_of();
+
+        let current_capacity = unsafe { (*shape).capacity };
+        let new_capacity = current_capacity * 2;
+
+        // If the object doesn't have the capacity to store the IV,
+        // then we'll need to allocate it.
+        let needs_extension = unsafe { (*shape).next_iv_index >= current_capacity };
+
+        // We can write to the object, but we need to transition the shape
+        let ivar_index = unsafe { (*shape).next_iv_index } as usize;
+
+        let capa_shape = if needs_extension {
+            // We need to add an extended table to the object
+            // First, create an outgoing transition that increases the
+            // capacity
+            Some(unsafe { rb_shape_transition_shape_capa(shape, new_capacity) })
+        } else {
+            None
+        };
+
+        let dest_shape = if let Some(capa_shape) = capa_shape {
+            unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
+        } else {
+            unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
+        };
+
+        let new_shape_id = unsafe { rb_shape_id(dest_shape) };
+        let needs_extension = if needs_extension {
+            Some((current_capacity, new_capacity))
+        } else {
+            None
+        };
+        Some((new_shape_id, needs_extension, ivar_index))
+    } else {
+        None
+    };
+    let new_shape_too_complex = matches!(new_shape, Some((OBJ_TOO_COMPLEX_SHAPE_ID, _, _)));
+
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || megamorphic {
+    if !receiver_t_object || uses_custom_allocator || shape_too_complex || new_shape_too_complex || megamorphic {
         asm.comment("call rb_vm_setinstancevariable()");
 
         let ic = jit.get_arg(1).as_u64(); // type IVC
@@ -2215,18 +2271,6 @@ fn gen_setinstancevariable(
             ]
         );
     } else {
-        // Get the iv index
-        let ivar_index = unsafe {
-            let shape_id = comptime_receiver.shape_id_of();
-            let shape = rb_shape_get_shape_by_id(shape_id);
-            let mut ivar_index: u32 = 0;
-            if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
-                Some(ivar_index as usize)
-            } else {
-                None
-            }
-        };
-
         // Get the receiver
         let mut recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
 
@@ -2257,41 +2301,8 @@ fn gen_setinstancevariable(
             // If we don't have an instance variable index, then we need to
             // transition out of the current shape.
             None => {
-                let shape = comptime_receiver.shape_of();
-
-                let current_capacity = unsafe { (*shape).capacity };
-                let new_capacity = current_capacity * 2;
-
-                // If the object doesn't have the capacity to store the IV,
-                // then we'll need to allocate it.
-                let needs_extension = unsafe { (*shape).next_iv_index >= current_capacity };
-
-                // We can write to the object, but we need to transition the shape
-                let ivar_index = unsafe { (*shape).next_iv_index } as usize;
-
-                let capa_shape = if needs_extension {
-                    // We need to add an extended table to the object
-                    // First, create an outgoing transition that increases the
-                    // capacity
-                    Some(unsafe { rb_shape_transition_shape_capa(shape, new_capacity) })
-                } else {
-                    None
-                };
-
-                let dest_shape = if let Some(capa_shape) = capa_shape {
-                    unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
-                } else {
-                    unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
-                };
-
-                let new_shape_id = unsafe { rb_shape_id(dest_shape) };
-
-                if new_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
-                    gen_counter_incr(asm, Counter::setivar_too_complex);
-                    return None;
-                }
-
-                if needs_extension {
+                let (new_shape_id, needs_extension, ivar_index) = new_shape.unwrap();
+                if let Some((current_capacity, new_capacity)) = needs_extension {
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
                     asm.comment("call rb_ensure_iv_list_size");
@@ -2312,7 +2323,7 @@ fn gen_setinstancevariable(
                 }
 
                 write_val = asm.stack_pop(1);
-                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension.is_some());
 
                 asm.comment("write shape");
 
