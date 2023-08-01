@@ -7748,7 +7748,18 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         }
         ADD_INSNL(ret, line_node, jump, label_miss);
         ADD_LABEL(ret, label_hit);
-        CHECK(COMPILE(ret, "resbody body", resq->nd_body));
+        ADD_TRACE(ret, RUBY_EVENT_RESCUE);
+
+        if (nd_type(resq->nd_body) == NODE_BEGIN && resq->nd_body->nd_body == NULL) {
+            // empty body
+            int lineno = nd_line(resq->nd_body);
+            NODE dummy_line_node = generate_dummy_line_node(lineno, -1);
+            ADD_INSN(ret, &dummy_line_node, putnil);
+        }
+        else {
+            CHECK(COMPILE(ret, "resbody body", resq->nd_body));
+        }
+
         if (ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization) {
             ADD_INSN(ret, line_node, nop);
         }
@@ -10406,6 +10417,7 @@ event_name_to_flag(VALUE sym)
                 CHECK_EVENT(RUBY_EVENT_RETURN);
                 CHECK_EVENT(RUBY_EVENT_B_CALL);
                 CHECK_EVENT(RUBY_EVENT_B_RETURN);
+                CHECK_EVENT(RUBY_EVENT_RESCUE);
 #undef CHECK_EVENT
     return RUBY_EVENT_NONE;
 }

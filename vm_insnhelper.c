@@ -6483,6 +6483,14 @@ rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn)
     } \
 } while (0)
 
+static VALUE
+rescue_errinfo(rb_execution_context_t *ec, rb_control_frame_t *cfp)
+{
+    VM_ASSERT(VM_FRAME_RUBYFRAME_P(cfp));
+    VM_ASSERT(ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_RESCUE);
+    return cfp->ep[VM_ENV_INDEX_LAST_LVAR];
+}
+
 static void
 vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
@@ -6559,6 +6567,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
                 vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks_ptr, Qundef);
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
+            VM_TRACE_HOOK(RUBY_EVENT_RESCUE,                                        rescue_errinfo(ec, reg_cfp));
             VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_LINE,                                 Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_BRANCH,                               Qundef);
