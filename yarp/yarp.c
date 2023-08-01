@@ -445,7 +445,6 @@ not_provided(yp_parser_t *parser) {
     return (yp_token_t) { .type = YP_TOKEN_NOT_PROVIDED, .start = parser->start, .end = parser->start };
 }
 
-#define YP_EMPTY_STRING ((yp_string_t) { .type = YP_STRING_SHARED, .as.shared.start = NULL, .as.shared.end = NULL })
 #define YP_LOCATION_NULL_VALUE(parser) ((yp_location_t) { .start = parser->start, .end = parser->start })
 #define YP_LOCATION_TOKEN_VALUE(token) ((yp_location_t) { .start = (token)->start, .end = (token)->end })
 #define YP_LOCATION_NODE_VALUE(node) ((yp_location_t) { .start = (node)->location.start, .end = (node)->location.end })
@@ -9385,8 +9384,8 @@ parse_heredoc_dedent(yp_parser_t *parser, yp_node_t *node, yp_heredoc_quote_t qu
         // Now get the bounds of the existing string. We'll use this as a
         // destination to move bytes into. We'll also use it for bounds checking
         // since we don't require that these strings be null terminated.
-        size_t dest_length = string->as.owned.length;
-        char *source_start = string->as.owned.source;
+        size_t dest_length = yp_string_length(string);
+        char *source_start = string->source;
 
         const char *source_cursor = source_start;
         const char *source_end = source_cursor + dest_length;
@@ -9440,7 +9439,7 @@ parse_heredoc_dedent(yp_parser_t *parser, yp_node_t *node, yp_heredoc_quote_t qu
             dedent_next = true;
         }
 
-        string->as.owned.length = dest_length;
+        string->length = dest_length;
     }
 }
 
@@ -12491,7 +12490,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         yp_string_t *name = &named_captures.strings[index];
                         assert(name->type == YP_STRING_SHARED);
 
-                        yp_parser_local_add_location(parser, name->as.shared.start, name->as.shared.end);
+                        yp_parser_local_add_location(parser, name->source, name->source + name->length);
                     }
                 }
 

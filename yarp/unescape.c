@@ -461,10 +461,8 @@ yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t len
         return;
     }
 
-    yp_string_owned_init(string, allocated, length);
-
     // This is the memory address where we're putting the unescaped string.
-    char *dest = string->as.owned.source;
+    char *dest = allocated;
     size_t dest_length = 0;
 
     // This is the current position in the source string that we're looking at.
@@ -525,7 +523,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t len
     // We also need to update the length at the end. This is because every escape
     // reduces the length of the final string, and we don't want garbage at the
     // end.
-    string->as.owned.length = dest_length + ((size_t) (end - cursor));
+    yp_string_owned_init(string, allocated, dest_length + ((size_t) (end - cursor)));
 }
 
 YP_EXPORTED_FUNCTION bool
