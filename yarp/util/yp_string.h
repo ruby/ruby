@@ -3,6 +3,7 @@
 
 #include "yarp/defines.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -11,29 +12,11 @@
 // This struct represents a string value.
 typedef struct {
     enum { YP_STRING_SHARED, YP_STRING_OWNED, YP_STRING_CONSTANT, YP_STRING_MAPPED } type;
-
-    union {
-        struct {
-            const char *start;
-            const char *end;
-        } shared;
-
-        struct {
-            char *source;
-            size_t length;
-        } owned;
-
-        struct {
-            const char *source;
-            size_t length;
-        } constant;
-
-        struct {
-            char *source;
-            size_t length;
-        } mapped;
-    } as;
+    char *source;
+    size_t length;
 } yp_string_t;
+
+#define YP_EMPTY_STRING ((yp_string_t) { .type = YP_STRING_CONSTANT, .source = NULL, .length = 0 })
 
 // Initialize a shared string that is based on initial input.
 void yp_string_shared_init(yp_string_t *string, const char *start, const char *end);
