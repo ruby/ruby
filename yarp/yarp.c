@@ -6360,53 +6360,89 @@ parser_lex(yp_parser_t *parser) {
                         switch (*parser->current.end) {
                             case 'i': {
                                 parser->current.end++;
-                                lex_mode_push_list(parser, false, *parser->current.end++);
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_list(parser, false, *parser->current.end++);
+                                }
+
                                 LEX(YP_TOKEN_PERCENT_LOWER_I);
                             }
                             case 'I': {
                                 parser->current.end++;
-                                lex_mode_push_list(parser, true, *parser->current.end++);
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_list(parser, true, *parser->current.end++);
+                                }
+
                                 LEX(YP_TOKEN_PERCENT_UPPER_I);
                             }
                             case 'r': {
                                 parser->current.end++;
-                                lex_mode_push_regexp(parser, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                parser->current.end++;
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_regexp(parser, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    parser->current.end++;
+                                }
+
                                 LEX(YP_TOKEN_REGEXP_BEGIN);
                             }
                             case 'q': {
                                 parser->current.end++;
-                                lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                parser->current.end++;
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    parser->current.end++;
+                                }
+
                                 LEX(YP_TOKEN_STRING_BEGIN);
                             }
                             case 'Q': {
                                 parser->current.end++;
-                                lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                parser->current.end++;
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    parser->current.end++;
+                                }
+
                                 LEX(YP_TOKEN_STRING_BEGIN);
                             }
                             case 's': {
                                 parser->current.end++;
-                                lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                lex_state_set(parser, YP_LEX_STATE_FNAME | YP_LEX_STATE_FITEM);
-                                parser->current.end++;
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    lex_state_set(parser, YP_LEX_STATE_FNAME | YP_LEX_STATE_FITEM);
+                                    parser->current.end++;
+                                }
+
                                 LEX(YP_TOKEN_SYMBOL_BEGIN);
                             }
                             case 'w': {
                                 parser->current.end++;
-                                lex_mode_push_list(parser, false, *parser->current.end++);
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_list(parser, false, *parser->current.end++);
+                                }
+
                                 LEX(YP_TOKEN_PERCENT_LOWER_W);
                             }
                             case 'W': {
                                 parser->current.end++;
-                                lex_mode_push_list(parser, true, *parser->current.end++);
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_list(parser, true, *parser->current.end++);
+                                }
+
                                 LEX(YP_TOKEN_PERCENT_UPPER_W);
                             }
                             case 'x': {
                                 parser->current.end++;
-                                lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                parser->current.end++;
+
+                                if (parser->current.end < parser->end) {
+                                    lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    parser->current.end++;
+                                }
+
                                 LEX(YP_TOKEN_PERCENT_LOWER_X);
                             }
                             default:
