@@ -518,12 +518,13 @@ clear_pid_cache(void)
 
 /*
  *  call-seq:
- *     Process.pid   -> integer
+ *    Process.pid -> integer
  *
- *  Returns the process id of this process. Not available on all
- *  platforms.
+ *  Returns the process ID of the current process:
  *
- *     Process.pid   #=> 27415
+ *    Process.pid # => 15668
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -540,18 +541,15 @@ get_ppid(void)
 
 /*
  *  call-seq:
- *     Process.ppid   -> integer
+ *    Process.ppid -> integer
  *
- *  Returns the process id of the parent of this process. Returns
- *  untrustworthy value on Win32/64. Not available on all platforms.
+ *  Returns the process ID of the parent of the current process:
  *
- *     puts "I am #{Process.pid}"
- *     Process.fork { puts "Dad is #{Process.ppid}" }
+ *    Process.ppid # => 16112
  *
- *  <em>produces:</em>
+ *  Not available on all platforms.
  *
- *     I am 27417
- *     Dad is 27417
+ *  Returns an untrustworthy value on Windows.
  */
 
 static VALUE
@@ -624,18 +622,25 @@ rb_last_status_get(void)
 
 /*
  *  call-seq:
- *     Process.last_status   -> Process::Status or nil
+ *    Process.last_status -> Process::Status or nil
  *
- *  Returns the status of the last executed child process in the
- *  current thread.
+ *  Returns a Process::Status object representing the most recently exited
+ *  child process in the current thread, or +nil+ if none:
  *
- *     Process.wait Process.spawn("ruby", "-e", "exit 13")
- *     Process.last_status   #=> #<Process::Status: pid 4825 exit 13>
+ *    Process.spawn('ruby', '-e', 'exit 13')
+ *    Process.wait
+ *    Process.last_status # => #<Process::Status: pid 14396 exit 13>
  *
- *  If no child process has ever been executed in the current
- *  thread, this returns +nil+.
+ *    Process.spawn('ruby', '-e', 'exit 14')
+ *    Process.wait
+ *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
  *
- *     Process.last_status   #=> nil
+ *    Process.spawn('ruby', '-e', 'exit 15')
+ *    # 'exit 15' has not exited.
+ *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
+ *    Process.wait
+ *    Process.last_status # => #<Process::Status: pid 1380 exit 15>
+ *
  */
 static VALUE
 proc_s_last_status(VALUE mod)
@@ -1274,34 +1279,37 @@ proc_wait(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     Process.wait()                     -> integer
- *     Process.wait(pid=-1, flags=0)      -> integer
- *     Process.waitpid(pid=-1, flags=0)   -> integer
+ *    Process.wait(pid = -1, flags = 0) -> integer
  *
- *  Waits for a child process to exit, returns its process id, and
- *  sets <code>$?</code> to a Process::Status object
- *  containing information on that process. Which child it waits on
- *  depends on the value of _pid_:
+ *  Waits for a child process to exit, returns its process ID, and
+ *  sets <tt>$?</tt> to a Process::Status object
+ *  containing information on that process.
+ *  Which child it waits for depends on the value of the given +pid+:
  *
- *  > 0::   Waits for the child whose process ID equals _pid_.
+ *  - Positive integer: Waits for the child process whose process ID is +pid+:
  *
- *  0::     Waits for any child whose process group ID equals that of the
- *          calling process.
+ *      pid0 = Process.spawn('ruby', '-e', 'exit') # => 10204
+ *      pid1 = Process.spawn('ruby', '-e', 'exit') # => 21824
+ *      Process.wait(pid0)                         # => 10204
+ *      Process.wait(pid1)                         # => 21824
  *
- *  -1::    Waits for any child process (the default if no _pid_ is
- *          given).
+ *    Raises Errno::ECHILD if there is no such process.
  *
- *  < -1::  Waits for any child whose process group ID equals the absolute
- *          value of _pid_.
+ *  - <tt>0</tt>: Waits for any child process whose group ID
+ *    is the same as that of the current process:
  *
- *  The _flags_ argument may be a logical or of the flag values
- *  Process::WNOHANG (do not block if no child available)
- *  or Process::WUNTRACED (return stopped children that
- *  haven't been reported). Not all flags are available on all
- *  platforms, but a flag value of zero will work on all platforms.
  *
- *  Calling this method raises a SystemCallError if there are no child
- *  processes. Not available on all platforms.
+ *
+ *  - <tt>-1</tt> (default): Waits for any child process.
+ *  - Less than <tt>-1</tt>: Waits for any child whose process group ID is <tt>-pid</tt>.
+ *
+ *  Argument +flags+ should be given as one of the following constants,
+ *  or as the logical OR of both:
+ *
+ *  - Process::WNOHANG: Does not block if no child process is available.
+ *  - Process:WUNTRACED: May return a stopped child process, even if not yet reported.
+ *
+ *  Not all flags are available on all platforms.
  *
  *     include Process
  *     fork { exit 99 }                 #=> 27429
@@ -1309,11 +1317,17 @@ proc_wait(int argc, VALUE *argv)
  *     $?.exitstatus                    #=> 99
  *
  *     pid = fork { sleep 3 }           #=> 27440
- *     Time.now                         #=> 2008-03-08 19:56:16 +0900
+ *     Time.now                         #=> 2008-03-08 1    9:56:16 +0900
  *     waitpid(pid, Process::WNOHANG)   #=> nil
  *     Time.now                         #=> 2008-03-08 19:56:16 +0900
  *     waitpid(pid, 0)                  #=> 27440
  *     Time.now                         #=> 2008-03-08 19:56:19 +0900
+ *
+ *  Raises Errno::ECHILD if there are no child processes.
+ *
+ *  Not available on all platforms.
+ *
+ *  Process.waitpid is an alias for Process.wait.
  */
 
 static VALUE
@@ -1329,7 +1343,7 @@ proc_m_wait(int c, VALUE *v, VALUE _)
  *     Process.waitpid2(pid=-1, flags=0)   -> [pid, status]
  *
  *  Waits for a child process to exit (see Process::waitpid for exact
- *  semantics) and returns an array containing the process id and the
+ *  semantics) and returns an array containing the process ID and the
  *  exit status (a Process::Status object) of that
  *  child. Raises a SystemCallError if there are no child processes.
  *
@@ -6830,12 +6844,13 @@ static int rb_daemon(int nochdir, int noclose);
  *     Process.daemon()                        -> 0
  *     Process.daemon(nochdir=nil,noclose=nil) -> 0
  *
- *  Detach the process from controlling terminal and run in the
- *  background as system daemon.  Unless the argument _nochdir_ is
- *  +true+, it changes the current working directory to the root
- *  ("/"). Unless the argument _noclose_ is +true+, daemon() will
- *  redirect standard input, standard output and standard error to
- *  null device.  Return zero on success, or raise one of Errno::*.
+ *  Detach the process from controlling terminal and run in
+ *  the background as system daemon.  Unless the argument
+ *  nochdir is true (i.e. non false), it changes the current
+ *  working directory to the root ("/"). Unless the argument
+ *  noclose is true, daemon() will redirect standard input,
+ *  standard output and standard error to null device.
+ *  Return zero on success, or raise one of Errno::*.
  */
 
 static VALUE
@@ -8569,7 +8584,7 @@ proc_warmup(VALUE _)
 /*
  * Document-module: Process
  *
- * \Module +Process+ represents a process in the underlying operating system.
+ * \Module \Process represents a process in the underlying operating system.
  * Its methods support management of the current process and its child processes.
  *
  * == What's Here
@@ -8616,7 +8631,7 @@ proc_warmup(VALUE _)
  * - ::detach: Guards against a child process becoming a zombie.
  * - ::fork: Creates a child process.
  * - ::kill: Sends a given signal to processes.
- * - ::spawn: Creates a child process.
+ * - ::spawn: Creates a chile process.
  * - ::wait, ::waitpid: Waits for a child process to exit; returns its process ID.
  * - ::wait2, ::waitpid2: Waits for a child process to exit; returns its process ID and status.
  * - ::waitall: Waits for all child processes to exit;
