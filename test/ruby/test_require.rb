@@ -960,4 +960,19 @@ class TestRequire < Test::Unit::TestCase
       assert_nil($LOAD_PATH.resolve_feature_path("superkalifragilisticoespialidoso"))
     end
   end
+
+  def test_require_with_public_method_missing
+    # [Bug #19793]
+    assert_separately(["-W0", "--disable-gems", "-rtempfile"], __FILE__, __LINE__, <<~RUBY)
+      GC.stress = true
+
+      class Object
+        public :method_missing
+      end
+
+      Tempfile.create(["empty", ".rb"]) do |file|
+        require file.path
+      end
+    RUBY
+  end
 end
