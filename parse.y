@@ -12360,6 +12360,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
             if (!subnodes(nd_head, nd_resq)) goto end;
             break;
           case NODE_RESCUE:
+            newline = 0; // RESBODY should not be a NEWLINE
             if (node->nd_else) {
                 body = &node->nd_resq;
                 break;

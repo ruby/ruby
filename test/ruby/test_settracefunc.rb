@@ -2725,4 +2725,28 @@ CODE
       Foo.foo
     RUBY
   end
+
+  def helper_cant_rescue
+    begin
+      raise SyntaxError
+    rescue
+      cant_rescue
+    end
+  end
+
+  def test_tp_rescue
+    lines = []
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable{
+      begin
+        helper_cant_rescue
+      rescue SyntaxError
+      end
+    }
+    call_line = lines.shift
+    raise_line = lines.shift
+    assert_equal [], lines
+  end
 end
