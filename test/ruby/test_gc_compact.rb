@@ -352,6 +352,7 @@ class TestGCCompact < Test::Unit::TestCase
 
   def test_moving_objects_between_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit "Flaky on Solaris" if /solaris/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
