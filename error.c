@@ -201,14 +201,20 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
  * Returns the flag to show the warning messages for +category+.
  * Supported categories are:
  *
- * +:deprecated+ :: deprecation warnings
- * * assignment of non-nil value to <code>$,</code> and <code>$;</code>
- * * keyword arguments
- * * proc/lambda without block
- * etc.
+ * +:deprecated+ ::
+ *   deprecation warnings
+ *   * assignment of non-nil value to <code>$,</code> and <code>$;</code>
+ *   * keyword arguments
+ *   * proc/lambda without block
+ *   etc.
  *
- * +:experimental+ :: experimental features
- * * Pattern matching
+ * +:experimental+ ::
+ *   experimental features
+ *   * Pattern matching
+ *
+ * +:performance+ ::
+ *   performance hints
+ *   * Shape variation limit
  */
 
 static VALUE
