@@ -1701,18 +1701,18 @@ yp_constant_read_node_create(yp_parser_t *parser, const yp_token_t *name) {
 
 // Allocate a new ConstantWriteNode node.
 static yp_constant_write_node_t *
-yp_constant_write_node_create(yp_parser_t *parser, yp_constant_read_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+yp_constant_write_node_create(yp_parser_t *parser, yp_location_t *name_loc, const yp_token_t *operator, yp_node_t *value) {
     yp_constant_write_node_t *node = YP_ALLOC_NODE(parser, yp_constant_write_node_t);
 
     *node = (yp_constant_write_node_t) {
         {
             .type = YP_NODE_CONSTANT_WRITE_NODE,
             .location = {
-                .start = target->base.location.start,
-                .end = value != NULL ? value->location.end : target->base.location.end
+                .start = name_loc->start,
+                .end = value != NULL ? value->location.end : name_loc->end
             },
         },
-        .name_loc = YP_LOCATION_NODE_VALUE((yp_node_t *) target),
+        .name_loc = *name_loc,
         .operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
@@ -7558,8 +7558,12 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
         }
         case YP_NODE_CONSTANT_PATH_NODE:
             return (yp_node_t *) yp_constant_path_write_node_create(parser, target, operator, value);
-        case YP_NODE_CONSTANT_READ_NODE:
-            return (yp_node_t *) yp_constant_write_node_create(parser, (yp_constant_read_node_t *) target, operator, value);
+        case YP_NODE_CONSTANT_READ_NODE: {
+            yp_constant_write_node_t *node = yp_constant_write_node_create(parser, &target->location, operator, value);
+            yp_node_destroy(parser, target);
+
+            return (yp_node_t *) node;
+        }
         case YP_NODE_BACK_REFERENCE_READ_NODE:
         case YP_NODE_NUMBERED_REFERENCE_READ_NODE:
             yp_diagnostic_list_append(&parser->error_list, target->location.start, target->location.end, "Can't set variable");
