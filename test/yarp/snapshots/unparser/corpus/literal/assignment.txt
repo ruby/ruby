@@ -300,10 +300,10 @@ ProgramNode(0...719)(
        IntegerNode(315...316)(),
        (313...314)
      ),
-     ConstantPathWriteNode(317...326)(
-       ConstantReadNode(317...322)(),
-       (323...324),
-       IntegerNode(325...326)()
+     ConstantWriteNode(317...326)(
+       (317...322),
+       IntegerNode(325...326)(),
+       (323...324)
      ),
      ConstantPathWriteNode(327...350)(
        ConstantPathNode(327...346)(

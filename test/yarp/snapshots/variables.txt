@@ -180,14 +180,14 @@ ProgramNode(0...293)(
        (260...263),
        (264...265)
      ),
-     ConstantPathWriteNode(272...282)(
-       ConstantReadNode(272...275)(),
-       (276...277),
+     ConstantWriteNode(272...282)(
+       (272...275),
        ArrayNode(278...282)(
          [IntegerNode(278...279)(), IntegerNode(281...282)()],
          nil,
          nil
-       )
+       ),
+       (276...277)
      ),
      ParenthesesNode(284...293)(
        StatementsNode(285...292)(
