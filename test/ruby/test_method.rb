@@ -1458,7 +1458,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_zsuper_private_override_instance_method
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       # Bug #16942 [ruby-core:98691]
       module M
         def x
@@ -1479,7 +1479,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_override_optimized_method_on_class_using_prepend
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       # Bug #17725 [ruby-core:102884]
       $VERBOSE = nil
       String.prepend(Module.new)

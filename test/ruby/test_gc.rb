@@ -402,7 +402,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter_init_slots
-    assert_separately(["--disable-gems"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([], __FILE__, __LINE__, <<~RUBY)
       # Constant from gc.c.
       GC_HEAP_INIT_SLOTS = 10_000
       GC.stat_heap.each do |_, s|
@@ -421,7 +421,7 @@ class TestGc < Test::Unit::TestCase
     GC.stat_heap.each do |i, s|
       env["RUBY_GC_HEAP_INIT_SIZE_#{s[:slot_size]}_SLOTS"] = sizes[i].to_s
     end
-    assert_separately([env, "-W0", "--disable-gems"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
       SIZES = #{sizes}
       GC.stat_heap.each do |i, s|
         # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
@@ -432,7 +432,7 @@ class TestGc < Test::Unit::TestCase
     RUBY
 
     # Check that the configured sizes are "remembered" across GC invocations.
-    assert_separately([env, "-W0", "--disable-gems"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
       SIZES = #{sizes}
 
       # Fill size pool 0 with transient objects.

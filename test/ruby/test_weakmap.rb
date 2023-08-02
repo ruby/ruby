@@ -202,7 +202,7 @@ class TestWeakMap < Test::Unit::TestCase
       @wm[i] = obj
     end
 
-    assert_separately(%w(--disable-gems), <<-'end;')
+    assert_separately([], <<-'end;')
       wm = ObjectSpace::WeakMap.new
       obj = Object.new
       100.times do
