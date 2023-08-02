@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
     "config.h.in",
     "config.yml",
     "configure",
+    "docs/build_system.md",
     "docs/building.md",
     "docs/configuration.md",
     "docs/design.md",
