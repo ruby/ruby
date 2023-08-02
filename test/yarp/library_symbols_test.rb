@@ -13,7 +13,7 @@ if RUBY_PLATFORM =~ /linux/
 
       @librubyparser_a = File.expand_path(File.join(__dir__, "..", "build", "librubyparser.a"))
       @librubyparser_so = File.expand_path(File.join(__dir__, "..", "build", "librubyparser.so"))
-      @yarp_so = File.expand_path(File.join(__dir__, "..", "lib", "yarp.so"))
+      @yarp_so = File.expand_path(File.join(__dir__, "..", "lib", "yarp", "yarp.so"))
     end
 
     # objdump runner and helpers
