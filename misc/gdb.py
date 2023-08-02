@@ -2,12 +2,12 @@ import argparse
 import textwrap
 
 # usage: [-h] [-a | --all | --no-all] [-s STACK_SIZE] [uplevel]
-# 
+#
 # Dump a control frame
-# 
+#
 # positional arguments:
 #   uplevel               CFP offset from the stack top
-# 
+#
 # options:
 #   -h, --help            show this help message and exit
 #   -a, --all, --no-all   dump all frames
