@@ -1194,10 +1194,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
-    const size_t rarray_embed_capa_max = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
-
-    if ((size_t)len <= rarray_embed_capa_max && ary_embeddable_p(len)) {
-        VALUE result = ary_alloc_embed(klass, len);
+    VALUE result = ary_alloc_heap(klass);
+    size_t embed_capa = ary_embed_capa(result);
+    if ((size_t)len <= embed_capa) {
+        FL_SET_EMBED(result);
         ary_memcpy(result, 0, len, RARRAY_CONST_PTR(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
         return result;
@@ -1205,7 +1205,6 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     else {
         VALUE shared = ary_make_shared(ary);
 
-        VALUE result = ary_alloc_heap(klass);
         assert(!ARY_EMBED_P(result));
 
         ARY_SET_PTR(result, RARRAY_CONST_PTR(ary));
