@@ -35,7 +35,8 @@ class NewlineTest < Test::Unit::TestCase
 
       if relative == "lib/yarp/serialize.rb"
         # while (b = io.getbyte) >= 128 has 2 newline flags
-        expected.delete_at actual.index(62)
+        line_number = source.lines.index { |line| line.include?('while (b = io.getbyte) >= 128') } + 1
+        expected.delete_at(expected.index(line_number))
       elsif relative == "lib/yarp/lex_compat.rb"
         # extra flag for: dedent_next =\n  ((token.event: due to bytecode order
         actual.delete(520)
