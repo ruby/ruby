@@ -51,7 +51,6 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      PATCH: C:\msys64\usr\bin\patch.exe
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
       # FIXME: This is a workaround for the vcpkg's issue present as of openssl 3.1.1
       # where OpenSSL's default modules directory is incorrectly set to C:\vcpkg\packages\openssl_x64-windows\bin
@@ -62,18 +61,25 @@ jobs:
       - run: md build
         working-directory:
 
+      - name: find tools
+        id: find-tools
+        run: |
+          ::- find needed tools
+          set NEEDS=
+          for %%I in (patch.exe) do if "%%~$PATH:I" == "" (
+            echo NEEDS=%NEEDS% %%I
+          ) else (
+            echo %%I: %%~$PATH:I
+          )
+          echo needs=%NEEDS% >> %GITHUB_OUTPUT%
+
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
           update: true
           install: >-
-            patch
-        if: ${{ env.OS_VER != 'windows-2019' }}
-
-      - name: patch path
-        shell: msys2 {0}
-        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
-        if: ${{ steps.setup-msys2.outcome == 'success' }}
+            ${{ steps.find-patch.outputs.needs }}
+        if: ${{ steps.find-patch.outputs.needs != '' }}
 
       - uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
         with:
