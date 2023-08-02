@@ -1165,20 +1165,25 @@ resolve_strx(DebugInfoReader *reader, uint64_t idx)
     return reader->obj->debug_str.ptr + off;
 }
 
-static void
-debug_info_reader_read_addr_value_member(DebugInfoReader *reader, DebugInfoValue *v, int size, const char *mem)
+static bool
+debug_info_reader_read_addr_value_member(DebugInfoReader *reader, DebugInfoValue *v, int size)
 {
     if (size == 4) {
         set_uint_value(v, read_uint32(&reader->p));
     } else if (size == 8) {
         set_uint_value(v, read_uint64(&reader->p));
     } else {
-        UNREACHABLE; /* should have checked already */
+        return false;
     }
+    return true;
 }
 
 #define debug_info_reader_read_addr_value(reader, v, mem) \
-    debug_info_reader_read_addr_value_member((reader), (v), (reader)->mem, #mem)
+    if (!debug_info_reader_read_addr_value_member((reader), (v), (reader)->mem)) { \
+        kprintf("unknown " #mem ":%d", (reader)->mem); \
+        return false; \
+    }
+
 
 static bool
 debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
@@ -1935,7 +1940,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             uintptr_t saddr = ranges_include(reader, &ranges, offset, &rnglists_header);
             if (saddr == UINTPTR_MAX) return false;
             if (saddr) {
-                /* fprintf(stdout, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
+                /* kprintf("%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
                 if (lines[i].sname) {
                     line_info_t *lp = malloc(sizeof(line_info_t));
                     memcpy(lp, &lines[i], sizeof(line_info_t));
@@ -1981,7 +1986,7 @@ parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t 
 
     int entry_count = (int)uleb128(&p);
 
-    DebugInfoReader reader;
+    DebugInfoReader reader = {0};
     debug_info_reader_init(&reader, obj);
     reader.format = format;
     reader.p = p;
