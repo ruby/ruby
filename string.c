@@ -1276,19 +1276,28 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 }
 
 static VALUE
-str_replace_shared_suffix_without_enc(VALUE str2, VALUE str, size_t start)
+str_replace_shared_partial_without_enc(VALUE str2, VALUE str, long beg, long nominated_len)
 {
     const int termlen = TERM_LEN(str);
     char *ptr;
     long len;
 
     RSTRING_GETMEM(str, ptr, len);
-    long suffix_len = len - (long)start;
-    if (str_embed_capa(str2) >= suffix_len + termlen) {
+    long suffix_len = len - beg;
+
+#if SHARABLE_MIDDLE_SUBSTRING
+    RUBY_ASSERT(nominated_len == LONG_MAX || nominated_len <= suffix_len);
+#else
+    RUBY_ASSERT(nominated_len == LONG_MAX || nominated_len == suffix_len);
+#endif
+
+    long partial_len = nominated_len == LONG_MAX ? suffix_len : nominated_len;
+    RUBY_ASSERT(partial_len <= suffix_len);
+    if (str_embed_capa(str2) >= partial_len + termlen) {
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
-        memcpy(ptr2, RSTRING_PTR(str) + start, suffix_len);
-        TERM_FILL(ptr2+suffix_len, termlen);
+        memcpy(ptr2, RSTRING_PTR(str) + beg, partial_len);
+        TERM_FILL(ptr2+partial_len, termlen);
     }
     else {
         VALUE root;
@@ -1311,11 +1320,11 @@ str_replace_shared_suffix_without_enc(VALUE str2, VALUE str, size_t start)
             }
         }
         FL_SET(str2, STR_NOEMBED);
-        RSTRING(str2)->as.heap.ptr = ptr + start;
+        RSTRING(str2)->as.heap.ptr = ptr + beg;
         STR_SET_SHARED(str2, root);
     }
 
-    STR_SET_LEN(str2, suffix_len);
+    STR_SET_LEN(str2, partial_len);
 
     return str2;
 }
@@ -1323,13 +1332,13 @@ str_replace_shared_suffix_without_enc(VALUE str2, VALUE str, size_t start)
 static VALUE
 str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
-    return str_replace_shared_suffix_without_enc(str2, str, 0);
+    return str_replace_shared_partial_without_enc(str2, str, 0, LONG_MAX);
 }
 
 static VALUE
-str_replace_shared_suffix(VALUE str2, VALUE str, size_t start)
+str_replace_shared_partial(VALUE str2, VALUE str, long start, long end)
 {
-    str_replace_shared_suffix_without_enc(str2, str, start);
+    str_replace_shared_partial_without_enc(str2, str, start, end);
     rb_enc_cr_str_exact_copy(str2, str);
     return str2;
 }
@@ -1337,19 +1346,19 @@ str_replace_shared_suffix(VALUE str2, VALUE str, size_t start)
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
 {
-    return str_replace_shared_suffix(str2, str, 0);
+    return str_replace_shared_partial(str2, str, 0, LONG_MAX);
 }
 
 static VALUE
-str_new_shared_suffix(VALUE klass, VALUE str, size_t start)
+str_new_shared_partial(VALUE klass, VALUE str, long beg, long len)
 {
-    return str_replace_shared_suffix(str_alloc_heap(klass), str, start);
+    return str_replace_shared_partial(str_alloc_heap(klass), str, beg, len);
 }
 
 static VALUE
 str_new_shared(VALUE klass, VALUE str)
 {
-    return str_new_shared_suffix(klass, str, 0);
+    return str_new_shared_partial(klass, str, 0, LONG_MAX);
 }
 
 VALUE
@@ -2756,7 +2765,7 @@ str_subseq(VALUE str, long beg, long len)
         RB_GC_GUARD(str);
     }
     else {
-        str2 = str_new_shared_suffix(rb_cString, str, beg);
+        str2 = str_new_shared_partial(rb_cString, str, beg, len);
         RUBY_ASSERT(RSTRING_LEN(str2) == len);
         ENC_CODERANGE_CLEAR(str2);
     }
