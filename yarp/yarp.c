@@ -3221,6 +3221,7 @@ yp_parameters_node_posts_append(yp_parameters_node_t *params, yp_node_t *param) 
 // Set the rest parameter on a ParametersNode node.
 static void
 yp_parameters_node_rest_set(yp_parameters_node_t *params, yp_rest_parameter_node_t *param) {
+    assert(params->rest == NULL);
     yp_parameters_node_location_set(params, (yp_node_t *) param);
     params->rest = param;
 }
@@ -3235,6 +3236,7 @@ yp_parameters_node_keywords_append(yp_parameters_node_t *params, yp_node_t *para
 // Set the keyword rest parameter on a ParametersNode node.
 static void
 yp_parameters_node_keyword_rest_set(yp_parameters_node_t *params, yp_node_t *param) {
+    assert(params->keyword_rest == NULL);
     yp_parameters_node_location_set(params, param);
     params->keyword_rest = param;
 }
@@ -3242,6 +3244,7 @@ yp_parameters_node_keyword_rest_set(yp_parameters_node_t *params, yp_node_t *par
 // Set the block parameter on a ParametersNode node.
 static void
 yp_parameters_node_block_set(yp_parameters_node_t *params, yp_block_parameter_node_t *param) {
+    assert(params->block == NULL);
     yp_parameters_node_location_set(params, (yp_node_t *) param);
     params->block = param;
 }
@@ -8349,7 +8352,13 @@ parse_parameters(
                 }
 
                 yp_block_parameter_node_t *param = yp_block_parameter_node_create(parser, &name, &operator);
-                yp_parameters_node_block_set(params, param);
+                if (params->block == NULL) {
+                    yp_parameters_node_block_set(params, param);
+                } else {
+                    yp_diagnostic_list_append(&parser->error_list, param->base.location.start, param->base.location.end, "Unexpected multiple block parameter");
+                    yp_parameters_node_posts_append(params, (yp_node_t *) param);
+                }
+
                 break;
             }
             case YP_TOKEN_UDOT_DOT_DOT: {
@@ -8500,7 +8509,13 @@ parse_parameters(
                 }
 
                 yp_rest_parameter_node_t *param = yp_rest_parameter_node_create(parser, &operator, &name);
-                yp_parameters_node_rest_set(params, param);
+                if (params->rest == NULL) {
+                    yp_parameters_node_rest_set(params, param);
+                } else {
+                    yp_diagnostic_list_append(&parser->error_list, param->base.location.start, param->base.location.end, "Unexpected multiple splat parameters.");
+                    yp_parameters_node_posts_append(params, (yp_node_t *) param);
+                }
+
                 break;
             }
             case YP_TOKEN_STAR_STAR:
@@ -8528,7 +8543,13 @@ parse_parameters(
                     param = (yp_node_t *) yp_keyword_rest_parameter_node_create(parser, &operator, &name);
                 }
 
-                yp_parameters_node_keyword_rest_set(params, param);
+                if (params->keyword_rest == NULL) {
+                    yp_parameters_node_keyword_rest_set(params, param);
+                } else {
+                    yp_diagnostic_list_append(&parser->error_list, param->location.start, param->location.end, "Unexpected multiple double splat parameters.");
+                    yp_parameters_node_posts_append(params, param);
+                }
+
                 break;
             }
             default:
@@ -8539,7 +8560,13 @@ parse_parameters(
                         // represent it.
                         yp_token_t name = not_provided(parser);
                         yp_rest_parameter_node_t *param = yp_rest_parameter_node_create(parser, &parser->previous, &name);
-                        yp_parameters_node_rest_set(params, param);
+
+                        if (params->rest == NULL) {
+                            yp_parameters_node_rest_set(params, param);
+                        } else {
+                            yp_diagnostic_list_append(&parser->error_list, param->base.location.start, param->base.location.end, "Unexpected multiple splat parameters.");
+                            yp_parameters_node_posts_append(params, (yp_node_t *) param);
+                        }
                     } else {
                         yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, "Unexpected ','.");
                     }
