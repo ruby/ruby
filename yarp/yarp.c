@@ -111,7 +111,6 @@ debug_lex_mode(yp_parser_t *parser) {
             case YP_LEX_LIST: fprintf(stderr, "LIST (terminator=%c, interpolation=%d)", lex_mode->as.list.terminator, lex_mode->as.list.interpolation); break;
             case YP_LEX_REGEXP: fprintf(stderr, "REGEXP (terminator=%c)", lex_mode->as.regexp.terminator); break;
             case YP_LEX_STRING: fprintf(stderr, "STRING (terminator=%c, interpolation=%d)", lex_mode->as.string.terminator, lex_mode->as.string.interpolation); break;
-            case YP_LEX_NUMERIC: fprintf(stderr, "NUMERIC (token_type=%s)", yp_token_type_to_str(lex_mode->as.numeric.type)); break;
         }
 
         lex_mode = lex_mode->prev;
@@ -1916,6 +1915,69 @@ yp_float_node_create(yp_parser_t *parser, const yp_token_t *token) {
     return node;
 }
 
+// Allocate and initialize a new FloatNode node from a FLOAT_IMAGINARY token.
+static yp_imaginary_node_t *
+yp_float_node_imaginary_create(yp_parser_t *parser, const yp_token_t *token) {
+    assert(token->type == YP_TOKEN_FLOAT_IMAGINARY);
+
+    yp_imaginary_node_t *node = YP_ALLOC_NODE(parser, yp_imaginary_node_t);
+    *node = (yp_imaginary_node_t) {
+        {
+            .type = YP_NODE_IMAGINARY_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(token)
+        },
+        .numeric = (yp_node_t *) yp_float_node_create(parser, &((yp_token_t) {
+            .type = YP_TOKEN_FLOAT,
+            .start = token->start,
+            .end = token->end - 1
+        }))
+    };
+
+    return node;
+}
+
+// Allocate and initialize a new FloatNode node from a FLOAT_RATIONAL token.
+static yp_rational_node_t *
+yp_float_node_rational_create(yp_parser_t *parser, const yp_token_t *token) {
+    assert(token->type == YP_TOKEN_FLOAT_RATIONAL);
+
+    yp_rational_node_t *node = YP_ALLOC_NODE(parser, yp_rational_node_t);
+    *node = (yp_rational_node_t) {
+        {
+            .type = YP_NODE_RATIONAL_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(token)
+        },
+        .numeric = (yp_node_t *) yp_float_node_create(parser, &((yp_token_t) {
+            .type = YP_TOKEN_FLOAT,
+            .start = token->start,
+            .end = token->end - 1
+        }))
+    };
+
+    return node;
+}
+
+// Allocate and initialize a new FloatNode node from a FLOAT_RATIONAL_IMAGINARY token.
+static yp_imaginary_node_t *
+yp_float_node_rational_imaginary_create(yp_parser_t *parser, const yp_token_t *token) {
+    assert(token->type == YP_TOKEN_FLOAT_RATIONAL_IMAGINARY);
+
+    yp_imaginary_node_t *node = YP_ALLOC_NODE(parser, yp_imaginary_node_t);
+    *node = (yp_imaginary_node_t) {
+        {
+            .type = YP_NODE_IMAGINARY_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(token)
+        },
+        .numeric = (yp_node_t *) yp_float_node_rational_create(parser, &((yp_token_t) {
+            .type = YP_TOKEN_FLOAT_RATIONAL,
+            .start = token->start,
+            .end = token->end - 1
+        }))
+    };
+
+    return node;
+}
+
 // Allocate and initialize a new ForNode node.
 static yp_for_node_t *
 yp_for_node_create(
@@ -2297,90 +2359,66 @@ yp_integer_node_create(yp_parser_t *parser, const yp_token_t *token) {
     return node;
 }
 
-// Allocate and initialize a new RationalNode node.
-static yp_rational_node_t *
-yp_rational_node_create(yp_parser_t *parser, const yp_token_t *token) {
-    assert(token->type == YP_TOKEN_RATIONAL_NUMBER);
-    assert(parser->lex_modes.current->mode == YP_LEX_NUMERIC);
+// Allocate and initialize a new IntegerNode node from an INTEGER_IMAGINARY token.
+static yp_imaginary_node_t *
+yp_integer_node_imaginary_create(yp_parser_t *parser, const yp_token_t *token) {
+    assert(token->type == YP_TOKEN_INTEGER_IMAGINARY);
 
-    yp_node_t *numeric_node;
-    yp_token_t numeric_token = {
-        .type = parser->lex_modes.current->as.numeric.type,
-        .start = parser->lex_modes.current->as.numeric.start,
-        .end = parser->lex_modes.current->as.numeric.end
+    yp_imaginary_node_t *node = YP_ALLOC_NODE(parser, yp_imaginary_node_t);
+    *node = (yp_imaginary_node_t) {
+        {
+            .type = YP_NODE_IMAGINARY_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(token)
+        },
+        .numeric = (yp_node_t *) yp_integer_node_create(parser, &((yp_token_t) {
+            .type = YP_TOKEN_INTEGER,
+            .start = token->start,
+            .end = token->end - 1
+        }))
     };
-    switch (parser->lex_modes.current->as.numeric.type) {
-        case YP_TOKEN_INTEGER: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_integer_node_create(parser, &numeric_token);
-            break;
-        }
-        case YP_TOKEN_FLOAT: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_float_node_create(parser, &numeric_token);
-            break;
-        }
-        default: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_missing_node_create(parser, numeric_token.start, numeric_token.end);
-            (void)numeric_node; // Suppress clang-analyzer-deadcode.DeadStores warning
-            assert(false && "unreachable");
-        }
-    }
 
-    yp_rational_node_t *node = YP_ALLOC_NODE(parser, yp_rational_node_t);
-
-    *node = (yp_rational_node_t) {
-        { .type = YP_NODE_RATIONAL_NODE, .location = YP_LOCATION_TOKEN_VALUE(token) },
-        .numeric = numeric_node,
-    };
-    assert(parser->lex_modes.current->mode != YP_LEX_NUMERIC);
     return node;
 }
 
-// Allocate and initialize a new ImaginaryNode node.
-static yp_imaginary_node_t *
-yp_imaginary_node_create(yp_parser_t *parser, const yp_token_t *token) {
-    assert(token->type == YP_TOKEN_IMAGINARY_NUMBER);
-    assert(parser->lex_modes.current->mode == YP_LEX_NUMERIC);
+// Allocate and initialize a new IntegerNode node from an INTEGER_RATIONAL token.
+static yp_rational_node_t *
+yp_integer_node_rational_create(yp_parser_t *parser, const yp_token_t *token) {
+    assert(token->type == YP_TOKEN_INTEGER_RATIONAL);
 
-    yp_node_t *numeric_node;
-    yp_token_t numeric_token = {
-        .type = parser->lex_modes.current->as.numeric.type,
-        .start = parser->lex_modes.current->as.numeric.start,
-        .end = parser->lex_modes.current->as.numeric.end
+    yp_rational_node_t *node = YP_ALLOC_NODE(parser, yp_rational_node_t);
+    *node = (yp_rational_node_t) {
+        {
+            .type = YP_NODE_RATIONAL_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(token)
+        },
+        .numeric = (yp_node_t *) yp_integer_node_create(parser, &((yp_token_t) {
+            .type = YP_TOKEN_INTEGER,
+            .start = token->start,
+            .end = token->end - 1
+        }))
     };
-    switch (parser->lex_modes.current->as.numeric.type) {
-        case YP_TOKEN_INTEGER: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_integer_node_create(parser, &numeric_token);
-            break;
-        }
-        case YP_TOKEN_FLOAT: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_float_node_create(parser, &numeric_token);
-            break;
-        }
-        case YP_TOKEN_RATIONAL_NUMBER: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_rational_node_create(parser, &numeric_token);
-            break;
-        }
-        default: {
-            lex_mode_pop(parser);
-            numeric_node = (yp_node_t *)yp_missing_node_create(parser, numeric_token.start, numeric_token.end);
-            (void)numeric_node; // Suppress clang-analyzer-deadcode.DeadStores warning
-            assert(false && "unreachable");
-        }
-    }
+
+    return node;
+}
+
+// Allocate and initialize a new IntegerNode node from an INTEGER_RATIONAL_IMAGINARY token.
+static yp_imaginary_node_t *
+yp_integer_node_rational_imaginary_create(yp_parser_t *parser, const yp_token_t *token) {
+    assert(token->type == YP_TOKEN_INTEGER_RATIONAL_IMAGINARY);
 
     yp_imaginary_node_t *node = YP_ALLOC_NODE(parser, yp_imaginary_node_t);
-
     *node = (yp_imaginary_node_t) {
-        { .type = YP_NODE_IMAGINARY_NODE, .location = YP_LOCATION_TOKEN_VALUE(token) },
-        .numeric = numeric_node
+        {
+            .type = YP_NODE_IMAGINARY_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(token)
+        },
+        .numeric = (yp_node_t *) yp_integer_node_rational_create(parser, &((yp_token_t) {
+            .type = YP_TOKEN_INTEGER_RATIONAL,
+            .start = token->start,
+            .end = token->end - 1
+        }))
     };
-    assert(parser->lex_modes.current->mode != YP_LEX_NUMERIC);
+
     return node;
 }
 
@@ -4776,37 +4814,6 @@ lex_numeric_prefix(yp_parser_t *parser) {
 }
 
 static yp_token_type_t
-lex_finalize_numeric_type(yp_parser_t *parser, yp_token_type_t numeric_type, const char *numeric_end, const char *rational_end, const char *imaginary_end) {
-    if (rational_end || imaginary_end) {
-        lex_mode_push(parser, (yp_lex_mode_t) {
-                .mode = YP_LEX_NUMERIC,
-                .as.numeric.type = numeric_type,
-                .as.numeric.start = parser->current.start,
-                .as.numeric.end = numeric_end
-            });
-    }
-
-    if (rational_end && imaginary_end) {
-        lex_mode_push(parser, (yp_lex_mode_t) {
-                .mode = YP_LEX_NUMERIC,
-                .as.numeric.type = YP_TOKEN_RATIONAL_NUMBER,
-                .as.numeric.start = parser->current.start,
-                .as.numeric.end = rational_end
-            });
-    }
-
-    if (imaginary_end) {
-        return YP_TOKEN_IMAGINARY_NUMBER;
-    }
-
-    if (rational_end) {
-        return YP_TOKEN_RATIONAL_NUMBER;
-    }
-
-    return numeric_type;
-}
-
-static yp_token_type_t
 lex_numeric(yp_parser_t *parser) {
     yp_token_type_t type = YP_TOKEN_INTEGER;
 
@@ -4814,22 +4821,35 @@ lex_numeric(yp_parser_t *parser) {
         type = lex_numeric_prefix(parser);
 
         const char *end = parser->current.end;
-        const char *rational_end = NULL;
-        const char *imaginary_end = NULL;
+        yp_token_type_t suffix_type = type;
 
-        if (match(parser, 'r')) {
-            rational_end = parser->current.end;
-        }
+        if (type == YP_TOKEN_INTEGER) {
+            if (match(parser, 'r')) {
+                suffix_type = YP_TOKEN_INTEGER_RATIONAL;
 
-        if (match(parser, 'i')) {
-            imaginary_end = parser->current.end;
+                if (match(parser, 'i')) {
+                    suffix_type = YP_TOKEN_INTEGER_RATIONAL_IMAGINARY;
+                }
+            } else if (match(parser, 'i')) {
+                suffix_type = YP_TOKEN_INTEGER_IMAGINARY;
+            }
+        } else {
+            if (match(parser, 'r')) {
+                suffix_type = YP_TOKEN_FLOAT_RATIONAL;
+
+                if (match(parser, 'i')) {
+                    suffix_type = YP_TOKEN_FLOAT_RATIONAL_IMAGINARY;
+                }
+            } else if (match(parser, 'i')) {
+                suffix_type = YP_TOKEN_FLOAT_IMAGINARY;
+            }
         }
 
         const unsigned char uc = (const unsigned char) peek(parser);
         if (uc != '\0' && (uc >= 0x80 || ((uc >= 'a' && uc <= 'z') || (uc >= 'A' && uc <= 'Z')) || uc == '_')) {
             parser->current.end = end;
         } else {
-            type = lex_finalize_numeric_type(parser, type, end, rational_end, imaginary_end);
+            type = suffix_type;
         }
     }
 
@@ -5449,7 +5469,6 @@ parser_lex(yp_parser_t *parser) {
         case YP_LEX_DEFAULT:
         case YP_LEX_EMBEXPR:
         case YP_LEX_EMBVAR:
-        case YP_LEX_NUMERIC:
 
         // We have a specific named label here because we are going to jump back to
         // this location in the event that we have lexed a token that should not be
@@ -8936,13 +8955,15 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
 // This macro allows you to define a case statement for all of the token types
 // that represent the beginning of nodes that are "primitives" in a pattern
 // matching expression.
-#define YP_CASE_PRIMITIVE YP_TOKEN_INTEGER: case YP_TOKEN_FLOAT: case YP_TOKEN_RATIONAL_NUMBER: \
-    case YP_TOKEN_IMAGINARY_NUMBER: case YP_TOKEN_SYMBOL_BEGIN: case YP_TOKEN_REGEXP_BEGIN: case YP_TOKEN_BACKTICK: \
-    case YP_TOKEN_PERCENT_LOWER_X: case YP_TOKEN_PERCENT_LOWER_I: case YP_TOKEN_PERCENT_LOWER_W: \
-    case YP_TOKEN_PERCENT_UPPER_I: case YP_TOKEN_PERCENT_UPPER_W: case YP_TOKEN_STRING_BEGIN: case YP_TOKEN_KEYWORD_NIL: \
-    case YP_TOKEN_KEYWORD_SELF: case YP_TOKEN_KEYWORD_TRUE: case YP_TOKEN_KEYWORD_FALSE: case YP_TOKEN_KEYWORD___FILE__: \
-    case YP_TOKEN_KEYWORD___LINE__: case YP_TOKEN_KEYWORD___ENCODING__: case YP_TOKEN_MINUS_GREATER: \
-    case YP_TOKEN_HEREDOC_START: case YP_TOKEN_UMINUS_NUM: case YP_TOKEN_CHARACTER_LITERAL
+#define YP_CASE_PRIMITIVE YP_TOKEN_INTEGER: case YP_TOKEN_INTEGER_IMAGINARY: case YP_TOKEN_INTEGER_RATIONAL: \
+    case YP_TOKEN_INTEGER_RATIONAL_IMAGINARY: case YP_TOKEN_FLOAT: case YP_TOKEN_FLOAT_IMAGINARY: \
+    case YP_TOKEN_FLOAT_RATIONAL: case YP_TOKEN_FLOAT_RATIONAL_IMAGINARY: case YP_TOKEN_SYMBOL_BEGIN: \
+    case YP_TOKEN_REGEXP_BEGIN: case YP_TOKEN_BACKTICK: case YP_TOKEN_PERCENT_LOWER_X: case YP_TOKEN_PERCENT_LOWER_I: \
+    case YP_TOKEN_PERCENT_LOWER_W: case YP_TOKEN_PERCENT_UPPER_I: case YP_TOKEN_PERCENT_UPPER_W: \
+    case YP_TOKEN_STRING_BEGIN: case YP_TOKEN_KEYWORD_NIL: case YP_TOKEN_KEYWORD_SELF: case YP_TOKEN_KEYWORD_TRUE: \
+    case YP_TOKEN_KEYWORD_FALSE: case YP_TOKEN_KEYWORD___FILE__: case YP_TOKEN_KEYWORD___LINE__: \
+    case YP_TOKEN_KEYWORD___ENCODING__: case YP_TOKEN_MINUS_GREATER: case YP_TOKEN_HEREDOC_START: \
+    case YP_TOKEN_UMINUS_NUM: case YP_TOKEN_CHARACTER_LITERAL
 
 // This macro allows you to define a case statement for all of the token types
 // that could begin a parameter.
@@ -10305,7 +10326,16 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         }
         case YP_TOKEN_FLOAT:
             parser_lex(parser);
-            return (yp_node_t *)yp_float_node_create(parser, &parser->previous);
+            return (yp_node_t *) yp_float_node_create(parser, &parser->previous);
+        case YP_TOKEN_FLOAT_IMAGINARY:
+            parser_lex(parser);
+            return (yp_node_t *) yp_float_node_imaginary_create(parser, &parser->previous);
+        case YP_TOKEN_FLOAT_RATIONAL:
+            parser_lex(parser);
+            return (yp_node_t *) yp_float_node_rational_create(parser, &parser->previous);
+        case YP_TOKEN_FLOAT_RATIONAL_IMAGINARY:
+            parser_lex(parser);
+            return (yp_node_t *) yp_float_node_rational_imaginary_create(parser, &parser->previous);
         case YP_TOKEN_NUMBERED_REFERENCE: {
             parser_lex(parser);
             yp_node_t *node = (yp_node_t *) yp_numbered_reference_read_node_create(parser, &parser->previous);
@@ -10442,9 +10472,6 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 return node;
             }
         }
-        case YP_TOKEN_IMAGINARY_NUMBER:
-            parser_lex(parser);
-            return (yp_node_t *) yp_imaginary_node_create(parser, &parser->previous);
         case YP_TOKEN_INSTANCE_VARIABLE: {
             parser_lex(parser);
             yp_node_t *node = (yp_node_t *) yp_instance_variable_read_node_create(parser, &parser->previous);
@@ -10458,6 +10485,15 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         case YP_TOKEN_INTEGER:
             parser_lex(parser);
             return (yp_node_t *) yp_integer_node_create(parser, &parser->previous);
+        case YP_TOKEN_INTEGER_IMAGINARY:
+            parser_lex(parser);
+            return (yp_node_t *) yp_integer_node_imaginary_create(parser, &parser->previous);
+        case YP_TOKEN_INTEGER_RATIONAL:
+            parser_lex(parser);
+            return (yp_node_t *) yp_integer_node_rational_create(parser, &parser->previous);
+        case YP_TOKEN_INTEGER_RATIONAL_IMAGINARY:
+            parser_lex(parser);
+            return (yp_node_t *) yp_integer_node_rational_imaginary_create(parser, &parser->previous);
         case YP_TOKEN_KEYWORD___ENCODING__:
             parser_lex(parser);
             return (yp_node_t *) yp_source_encoding_node_create(parser, &parser->previous);
@@ -11617,9 +11653,6 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             return (yp_node_t *) array;
         }
-        case YP_TOKEN_RATIONAL_NUMBER:
-            parser_lex(parser);
-            return (yp_node_t *) yp_rational_node_create(parser, &parser->previous);
         case YP_TOKEN_REGEXP_BEGIN: {
             yp_token_t opening = parser->current;
             parser_lex(parser);
