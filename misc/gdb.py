@@ -75,9 +75,9 @@ class CFP(gdb.Command):
             print()
 
         print('Env:')
-        self.print_stack(cfp, -3, self.rp(cfp, -3))
-        self.print_stack(cfp, -2, self.specval(cfp, -2))
-        self.print_stack(cfp, -1, self.frame_types(cfp, -1))
+        self.print_env(cfp, -3, self.rp_env(cfp, -3))
+        self.print_env(cfp, -2, self.specval(cfp, -2))
+        self.print_env(cfp, -1, self.frame_types(cfp, -1))
         print()
 
         if args.stack_size is not None:
@@ -88,6 +88,16 @@ class CFP(gdb.Command):
         for i in range(0, stack_size):
             self.print_stack(cfp, i, self.rp(cfp, i))
         print(self.regs(cfp, stack_size))
+
+    def print_env(self, cfp, bp_index, content):
+        ep_index = bp_index + 1
+        address = self.get_int(f'((rb_control_frame_t *){cfp})->ep + {ep_index}')
+        value = self.get_env(cfp, bp_index)
+        regs = self.regs(cfp, bp_index)
+        if content:
+            content = textwrap.indent(content, ' ' * 3).lstrip() # Leave the regs column empty
+            content = f'{content} '
+        print('{:2} 0x{:x} [{}] {}(0x{:x})'.format(regs, address, bp_index, content, value))
 
     def print_stack(self, cfp, bp_index, content):
         address = self.get_int(f'vm_base_ptr({cfp}) + {bp_index}')
@@ -110,9 +120,13 @@ class CFP(gdb.Command):
         value = self.get_value(cfp, bp_index)
         return self.get_string(f'rp {value}').rstrip()
 
+    def rp_env(self, cfp, bp_index):
+        value = self.get_env(cfp, bp_index)
+        return self.get_string(f'rp {value}').rstrip()
+
     # specval: block_handler or previous EP
     def specval(self, cfp, bp_index):
-        value = self.get_value(cfp, bp_index)
+        value = self.get_env(cfp, bp_index)
         if value == 0:
             return 'VM_BLOCK_HANDLER_NONE'
         if value == self.get_int('rb_block_param_proxy'):
@@ -121,7 +135,7 @@ class CFP(gdb.Command):
 
     def frame_types(self, cfp, bp_index):
         types = []
-        value = self.get_value(cfp, bp_index)
+        value = self.get_env(cfp, bp_index)
 
         magic_mask = self.get_int('VM_FRAME_MAGIC_MASK')
         for magic in self.FRAME_MAGICS:
@@ -135,6 +149,10 @@ class CFP(gdb.Command):
                 types.append(flag)
 
         return ' | '.join(types)
+
+    def get_env(self, cfp, bp_index):
+        ep_index = bp_index + 1
+        return self.get_int(f'((rb_control_frame_t *){cfp})->ep[{ep_index}]')
 
     def get_value(self, cfp, bp_index):
         return self.get_int(f'vm_base_ptr({cfp})[{bp_index}]')
