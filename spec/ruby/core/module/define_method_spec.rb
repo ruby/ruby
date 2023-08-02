@@ -133,6 +133,17 @@ describe "Module#define_method when name is not a special private name" do
         klass.should have_public_instance_method(:baz)
       end
     end
+
+    it "sets the method owner for a dynamically added method with a different original owner" do
+      mixin_module = Module.new do
+        def bar; end
+      end
+
+      foo = Object.new
+      foo.singleton_class.define_method(:bar, mixin_module.instance_method(:bar))
+
+      foo.method(:bar).owner.should == foo.singleton_class
+    end
   end
 
   describe "passed a block" do

@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require 'date'
 
-ruby_version_is "3.2" do
+version_is Date::VERSION, "3.3" do #ruby_version_is "3.2" do
   describe "DateTime#deconstruct_keys" do
     it "returns whole hash for nil as an argument" do
       d = DateTime.new(2022, 10, 5, 13, 30)
