@@ -1,15 +1,16 @@
 import argparse
 import textwrap
 
-# usage: [-h] [-s STACK_SIZE] [uplevel]
-#
+# usage: [-h] [-a | --all | --no-all] [-s STACK_SIZE] [uplevel]
+# 
 # Dump a control frame
-#
+# 
 # positional arguments:
 #   uplevel               CFP offset from the stack top
-#
+# 
 # options:
 #   -h, --help            show this help message and exit
+#   -a, --all, --no-all   dump all frames
 #   -s STACK_SIZE, --stack-size STACK_SIZE
 #                         override stack_size (useful for JIT frames)
 class CFP(gdb.Command):
@@ -46,6 +47,7 @@ class CFP(gdb.Command):
 
         self.parser = argparse.ArgumentParser(description='Dump a control frame')
         self.parser.add_argument('uplevel', type=int, nargs='?', default=0, help='CFP offset from the stack top')
+        self.parser.add_argument('-a', '--all', action=argparse.BooleanOptionalAction, help='dump all frames')
         self.parser.add_argument('-s', '--stack-size', type=int, help='override stack_size (useful for JIT frames)')
 
     def invoke(self, args, from_tty):
@@ -55,24 +57,33 @@ class CFP(gdb.Command):
             return
         cfp = f'(ruby_current_ec->cfp + ({args.uplevel}))'
 
-        end_cfp = self.get_int('ruby_current_ec->vm_stack + ruby_current_ec->vm_stack_size')
-        cfp_count = int((end_cfp - self.get_int('ruby_current_ec->cfp')) / self.get_int('sizeof(rb_control_frame_t)'))
-        print('CFP (count={}, addr=0x{:x}):'.format(cfp_count, self.get_int(cfp)))
+        if args.all:
+            end_cfp = self.get_int('ruby_current_ec->vm_stack + ruby_current_ec->vm_stack_size')
+            cfp_count = int((end_cfp - self.get_int('ruby_current_ec->cfp')) / self.get_int('sizeof(rb_control_frame_t)')) - 1 # exclude dummy CFP
+            for i in range(cfp_count):
+                print('-' * 80)
+                self.invoke(str(cfp_count - i - 1), from_tty)
+            return
+
+        print('CFP (addr=0x{:x}, uplevel={}):'.format(self.get_int(cfp), args.uplevel))
         gdb.execute(f'p *({cfp})')
         print()
 
         if self.get_int(f'{cfp}->iseq'):
             local_size = self.get_int(f'{cfp}->iseq->body->local_table_size - {cfp}->iseq->body->param.size')
             param_size = self.get_int(f'{cfp}->iseq->body->param.size')
-            print(f'Params (size={param_size}):')
-            for i in range(-3 - local_size - param_size, -3 - local_size):
-                self.print_stack(cfp, i, self.rp(cfp, i))
-            print()
 
-            print(f'Locals (size={local_size}):')
-            for i in range(-3 - local_size, -3):
-                self.print_stack(cfp, i, self.rp(cfp, i))
-            print()
+            if local_size:
+                print(f'Params (size={param_size}):')
+                for i in range(-3 - local_size - param_size, -3 - local_size):
+                    self.print_stack(cfp, i, self.rp(cfp, i))
+                print()
+
+            if param_size:
+                print(f'Locals (size={local_size}):')
+                for i in range(-3 - local_size, -3):
+                    self.print_stack(cfp, i, self.rp(cfp, i))
+                print()
 
         print('Env:')
         self.print_env(cfp, -3, self.rp_env(cfp, -3))
