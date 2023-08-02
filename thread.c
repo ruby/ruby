@@ -5321,6 +5321,55 @@ Init_Thread_Mutex(void)
     rb_native_mutex_initialize(&th->interrupt_lock);
 }
 
+#if THREAD_TRACE_MEMORY_ALLOCATIONS
+rb_thread_t *
+ruby_threadptr_for_trace_memory_allocations(void)
+{
+    // The order of this checks is important due
+    // to how Ruby VM is initialized
+    if (GET_VM()->thread_trace_memory_allocations && GET_EC() != NULL) {
+        return GET_THREAD();
+    }
+
+    return NULL;
+}
+
+static VALUE
+rb_thread_s_trace_memory_allocations(VALUE _)
+{
+    return GET_THREAD()->vm->thread_trace_memory_allocations ? Qtrue : Qfalse;
+}
+
+static VALUE
+rb_thread_s_trace_memory_allocations_set(VALUE self, VALUE val)
+{
+    GET_THREAD()->vm->thread_trace_memory_allocations = RTEST(val);
+    return val;
+}
+
+static VALUE
+rb_thread_memory_allocations(VALUE self)
+{
+    rb_thread_t *th = rb_thread_ptr(self);
+
+    if (!th->vm->thread_trace_memory_allocations) {
+        return Qnil;
+    }
+
+    VALUE ret = rb_hash_new();
+
+	VALUE total_allocated_objects = ID2SYM(rb_intern_const("total_allocated_objects"));
+	VALUE total_malloc_bytes = ID2SYM(rb_intern_const("total_malloc_bytes"));
+	VALUE total_mallocs = ID2SYM(rb_intern_const("total_mallocs"));
+
+	rb_hash_aset(ret, total_allocated_objects, SIZET2NUM(th->memory_allocations.total_allocated_objects));
+	rb_hash_aset(ret, total_malloc_bytes, SIZET2NUM(th->memory_allocations.total_malloc_bytes));
+	rb_hash_aset(ret, total_mallocs, SIZET2NUM(th->memory_allocations.total_mallocs));
+
+    return ret;
+}
+#endif
+
 /*
  *  Document-class: ThreadError
  *
@@ -5402,6 +5451,12 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "native_thread_id", rb_thread_native_thread_id, 0);
     rb_define_method(rb_cThread, "to_s", rb_thread_to_s, 0);
     rb_define_alias(rb_cThread, "inspect", "to_s");
+
+#if THREAD_TRACE_MEMORY_ALLOCATIONS
+    rb_define_singleton_method(rb_cThread, "trace_memory_allocations", rb_thread_s_trace_memory_allocations, 0);
+    rb_define_singleton_method(rb_cThread, "trace_memory_allocations=", rb_thread_s_trace_memory_allocations_set, 1);
+    rb_define_method(rb_cThread, "memory_allocations", rb_thread_memory_allocations, 0);
+#endif
 
     rb_vm_register_special_exception(ruby_error_stream_closed, rb_eIOError,
                                      "stream closed in another thread");

@@ -115,6 +115,13 @@ extern int ruby_assert_critical_section_entered;
 # define VM_INSN_INFO_TABLE_IMPL 2
 #endif
 
+/*
+ * track a per thread memory allocations
+ */
+#ifndef THREAD_TRACE_MEMORY_ALLOCATIONS
+# define THREAD_TRACE_MEMORY_ALLOCATIONS 1
+#endif
+
 #if defined(NSIG_MAX)           /* POSIX issue 8 */
 # undef NSIG
 # define NSIG NSIG_MAX
@@ -652,6 +659,7 @@ typedef struct rb_vm_struct {
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
     unsigned int thread_ignore_deadlock: 1;
+    unsigned int thread_trace_memory_allocations: 1;
 
     /* object management */
     VALUE mark_object_ary;
@@ -1023,6 +1031,14 @@ typedef struct rb_thread_struct {
     struct rb_mutex_struct *keeping_mutexes;
 
     struct rb_waiting_list *join_list;
+
+#if THREAD_TRACE_MEMORY_ALLOCATIONS
+    struct {
+        size_t total_allocated_objects;
+        size_t total_malloc_bytes;
+        size_t total_mallocs;
+    } memory_allocations;
+#endif
 
     union {
         struct {
@@ -1949,6 +1965,7 @@ void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
+rb_thread_t *ruby_threadptr_for_trace_memory_allocations(void);
 VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
 void rb_execution_context_update(rb_execution_context_t *ec);
