@@ -7503,6 +7503,7 @@ token_begins_expression_p(yp_token_type_t type) {
         case YP_TOKEN_KEYWORD_END:
         case YP_TOKEN_KEYWORD_ELSE:
         case YP_TOKEN_KEYWORD_ELSIF:
+        case YP_TOKEN_KEYWORD_ENSURE:
         case YP_TOKEN_KEYWORD_THEN:
         case YP_TOKEN_KEYWORD_RESCUE:
         case YP_TOKEN_KEYWORD_WHEN:
