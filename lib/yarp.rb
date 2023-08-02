@@ -302,9 +302,18 @@ module YARP
     Serialize.load(source, serialized)
   end
 
-  def self.newlines(source)
-    YARP.parse(source).source.offsets
+  # This module is used for testing and debugging and is not meant to be used by
+  # consumers of this library.
+  module Debug
+    def self.newlines(source)
+      YARP.parse(source).source.offsets
+    end
   end
+
+  # Marking this as private so that consumers don't see it. It makes it a little
+  # annoying for testing since you have to const_get it to access the methods,
+  # but at least this way it's clear it's not meant for consumers.
+  private_constant :Debug
 end
 
 require_relative "yarp/lex_compat"

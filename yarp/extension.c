@@ -512,12 +512,13 @@ Init_yarp(void) {
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
-    rb_define_singleton_method(rb_cYARP, "named_captures", named_captures, 1);
-    rb_define_singleton_method(rb_cYARP, "unescape_none", unescape_none, 1);
-    rb_define_singleton_method(rb_cYARP, "unescape_minimal", unescape_minimal, 1);
-    rb_define_singleton_method(rb_cYARP, "unescape_all", unescape_all, 1);
-    rb_define_singleton_method(rb_cYARP, "memsize", memsize, 1);
-    rb_define_singleton_method(rb_cYARP, "profile_file", profile_file, 1);
+    VALUE rb_cYARPDebug = rb_define_module_under(rb_cYARP, "Debug");
+    rb_define_singleton_method(rb_cYARPDebug, "named_captures", named_captures, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_none", unescape_none, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_minimal", unescape_minimal, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_all", unescape_all, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "memsize", memsize, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "profile_file", profile_file, 1);
 
     // Next, initialize the pack API.
     Init_yarp_pack();

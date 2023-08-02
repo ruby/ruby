@@ -111,7 +111,7 @@ class ParseTest < Test::Unit::TestCase
       # Next, assert that the newlines are in the expected places.
       expected_newlines = [0]
       source.b.scan("\n") { expected_newlines << $~.offset(0)[0] + 1 }
-      assert_equal expected_newlines, YARP.newlines(source)
+      assert_equal expected_newlines, YARP.const_get(:Debug).newlines(source)
 
       # Finally, assert that we can lex the source and get the same tokens as
       # Ripper.
