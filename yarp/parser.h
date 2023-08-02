@@ -96,10 +96,7 @@ typedef struct yp_lex_mode {
 
         // This state is used when we are lexing a string or a string-like
         // token, as in string content with either quote or an xstring.
-        YP_LEX_STRING,
-
-        // you lexed a number with extra information attached
-        YP_LEX_NUMERIC,
+        YP_LEX_STRING
     } mode;
 
     union {
@@ -162,12 +159,6 @@ typedef struct yp_lex_mode {
             // tokens within the string.
             char breakpoints[6];
         } string;
-
-        struct {
-            yp_token_type_t type;
-            const char *start;
-            const char *end;
-        } numeric;
 
         struct {
             // These pointers point to the beginning and end of the heredoc
