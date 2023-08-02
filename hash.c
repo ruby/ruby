@@ -461,13 +461,19 @@ ar_set_entry(VALUE hash, unsigned int index, st_data_t key, st_data_t val, st_ha
   ((unsigned int)((RBASIC(h)->flags >> RHASH_AR_TABLE_BOUND_SHIFT) & \
                   (RHASH_AR_TABLE_BOUND_MASK >> RHASH_AR_TABLE_BOUND_SHIFT)))
 
-#define RHASH_AR_TABLE_BOUND(h) (HASH_ASSERT(RHASH_AR_TABLE_P(h)), \
-                                 RHASH_AR_TABLE_BOUND_RAW(h))
-
 #define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
 #define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
 
 #define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(HASH_DEBUG, expr, #expr)
+
+static inline unsigned int
+RHASH_AR_TABLE_BOUND(VALUE h)
+{
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+    const unsigned int bound = RHASH_AR_TABLE_BOUND_RAW(h);
+    HASH_ASSERT(bound <= RHASH_AR_TABLE_MAX_SIZE);
+    return bound;
+}
 
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
@@ -481,7 +487,7 @@ rb_hash_dump(VALUE hash)
         unsigned i, n = 0, bound = RHASH_AR_TABLE_BOUND(hash);
 
         fprintf(stderr, "  size:%u bound:%u\n",
-                RHASH_AR_TABLE_SIZE(hash), RHASH_AR_TABLE_BOUND(hash));
+                RHASH_AR_TABLE_SIZE(hash), bound);
 
         for (i=0; i<bound; i++) {
             st_data_t k, v;
