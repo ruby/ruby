@@ -967,10 +967,10 @@ ProgramNode(0...1194)(
        nil,
        (872...875)
      ),
-     ConstantPathWriteNode(877...886)(
-       ConstantReadNode(877...882)(),
-       (883...884),
-       IntegerNode(885...886)()
+     ConstantWriteNode(877...886)(
+       (877...882),
+       IntegerNode(885...886)(),
+       (883...884)
      ),
      DefNode(888...903)(
        (898...899),

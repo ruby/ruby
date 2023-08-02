@@ -29,11 +29,7 @@ ProgramNode(0...709)(
        (26...27),
        IntegerNode(28...29)()
      ),
-     ConstantPathWriteNode(31...36)(
-       ConstantReadNode(31...32)(),
-       (33...34),
-       IntegerNode(35...36)()
-     ),
+     ConstantWriteNode(31...36)((31...32), IntegerNode(35...36)(), (33...34)),
      ConstantReadNode(38...41)(),
      CallNode(43...48)(
        nil,
