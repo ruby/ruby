@@ -1238,6 +1238,29 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_setivar_on_class
+    # Bug in https://github.com/ruby/ruby/pull/8152
+    assert_compiles(<<~RUBY, result: :ok)
+      class Base
+        def self.or_equal
+          @or_equal ||= Object.new
+        end
+      end
+
+      Base.or_equal # ensure compiled
+
+      class Child < Base
+      end
+
+      200.times do |iv| # Need to be more than MAX_IVAR
+        Child.instance_variable_set("@_iv_\#{iv}", Object.new)
+      end
+
+      Child.or_equal
+      :ok
+    RUBY
+  end
+
   def test_nested_send
     #[Bug #19464]
     assert_compiles(<<~RUBY, result: [:ok, :ok])

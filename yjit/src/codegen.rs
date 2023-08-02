@@ -2204,7 +2204,7 @@ fn gen_setinstancevariable(
     };
 
     // Get the next shape information if it needs transition
-    let new_shape = if !shape_too_complex && ivar_index.is_none() {
+    let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let shape = comptime_receiver.shape_of();
 
         let current_capacity = unsafe { (*shape).capacity };
