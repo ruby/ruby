@@ -379,7 +379,7 @@ named_captures(VALUE self, VALUE source) {
     yp_string_list_t string_list;
     yp_string_list_init(&string_list);
 
-    if (!yp_regexp_named_capture_group_names(RSTRING_PTR(source), RSTRING_LEN(source), &string_list)) {
+    if (!yp_regexp_named_capture_group_names(RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
         yp_string_list_free(&string_list);
         return Qnil;
     }
