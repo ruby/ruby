@@ -6623,99 +6623,88 @@ parser_lex(yp_parser_t *parser) {
 
             // Here we'll get a list of the places where strpbrk should break,
             // and then find the first one.
-            const char *breakpoints = parser->lex_modes.current->as.list.breakpoints;
+            yp_lex_mode_t *lex_mode = parser->lex_modes.current;
+            const char *breakpoints = lex_mode->as.list.breakpoints;
             const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
-                switch (*breakpoint) {
-                    case '\0':
-                        // If we hit a null byte, skip directly past it.
+                // If we hit a null byte, skip directly past it.
+                if (*breakpoint == '\0') {
+                    breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    continue;
+                }
+
+                // If we hit whitespace, then we must have received content by
+                // now, so we can return an element of the list.
+                if (yp_char_is_whitespace(*breakpoint)) {
+                    parser->current.end = breakpoint;
+                    LEX(YP_TOKEN_STRING_CONTENT);
+                }
+
+                //If we hit the terminator, we need to check which token to
+                // return.
+                if (*breakpoint == lex_mode->as.list.terminator) {
+                    // If this terminator doesn't actually close the list, then
+                    // we need to continue on past it.
+                    if (lex_mode->as.list.nesting > 0) {
                         breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                        break;
-                    case '\\': {
-                        // If we hit escapes, then we need to treat the next token
-                        // literally. In this case we'll skip past the next character and
-                        // find the next breakpoint.
-
-                        yp_unescape_type_t unescape_type;
-                        if (parser->lex_modes.current->as.list.interpolation) {
-                            unescape_type = YP_UNESCAPE_ALL;
-                        } else {
-                            unescape_type = YP_UNESCAPE_MINIMAL;
-                        }
-                        size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, unescape_type, false, &parser->error_list);
-
-                        // If the result is an escaped newline, then we need to
-                        // track that newline.
-                        if (breakpoint[difference - 1] == '\n') {
-                            yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                        }
-
-                        breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
-                        break;
+                        lex_mode->as.list.nesting--;
+                        continue;
                     }
-                    case ' ':
-                    case '\t':
-                    case '\f':
-                    case '\r':
-                    case '\v':
-                    case '\n':
-                        // If we've hit whitespace, then we must have received content by
-                        // now, so we can return an element of the list.
+
+                    // If we've hit the terminator and we've already skipped
+                    // past content, then we can return a list node.
+                    if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
                         LEX(YP_TOKEN_STRING_CONTENT);
-                    case '#': {
-                        // if # is the terminator, we need to fall into the default case
-                        if (parser->lex_modes.current->as.list.terminator != '#') {
-                            yp_token_type_t type = lex_interpolation(parser, breakpoint);
-                            if (type != YP_TOKEN_NOT_PROVIDED) {
-                                LEX(type);
-                            }
-
-                            // If we haven't returned at this point then we had something
-                            // that looked like an interpolated class or instance variable
-                            // like "#@" but wasn't actually. In this case we'll just skip
-                            // to the next breakpoint.
-                            breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
-                            break;
-                        }
                     }
-                    /* fallthrough */
-                    default:
-                        if (*breakpoint == parser->lex_modes.current->as.list.incrementor) {
-                            // If we've hit the incrementor, then we need to skip past it and
-                            // find the next breakpoint.
-                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                            parser->lex_modes.current->as.list.nesting++;
-                            break;
-                        }
 
-                        // In this case we've hit the terminator.
-                        assert(*breakpoint == parser->lex_modes.current->as.list.terminator);
-
-                        // If this terminator doesn't actually close the list, then we need
-                        // to continue on past it.
-                        if (parser->lex_modes.current->as.list.nesting > 0) {
-                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                            parser->lex_modes.current->as.list.nesting--;
-                            break;
-                        }
-
-                        // If we've hit the terminator and we've already skipped past
-                        // content, then we can return a list node.
-                        if (breakpoint > parser->current.start) {
-                            parser->current.end = breakpoint;
-                            LEX(YP_TOKEN_STRING_CONTENT);
-                        }
-
-                        // Otherwise, switch back to the default state and return the end of
-                        // the list.
-                        parser->current.end = breakpoint + 1;
-                        lex_mode_pop(parser);
-
-                        lex_state_set(parser, YP_LEX_STATE_END);
-                        LEX(YP_TOKEN_STRING_END);
+                    // Otherwise, switch back to the default state and return
+                    // the end of the list.
+                    parser->current.end = breakpoint + 1;
+                    lex_mode_pop(parser);
+                    lex_state_set(parser, YP_LEX_STATE_END);
+                    LEX(YP_TOKEN_STRING_END);
                 }
+
+                // If we hit escapes, then we need to treat the next token
+                // literally. In this case we'll skip past the next character
+                // and find the next breakpoint.
+                if (*breakpoint == '\\') {
+                    yp_unescape_type_t unescape_type = lex_mode->as.list.interpolation ? YP_UNESCAPE_ALL : YP_UNESCAPE_MINIMAL;
+                    size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, unescape_type, false, &parser->error_list);
+
+                    // If the result is an escaped newline, then we need to
+                    // track that newline.
+                    if (breakpoint[difference - 1] == '\n') {
+                        yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
+                    }
+
+                    breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                    continue;
+                }
+
+                // If we hit a #, then we will attempt to lex interpolation.
+                if (*breakpoint == '#') {
+                    yp_token_type_t type = lex_interpolation(parser, breakpoint);
+                    if (type != YP_TOKEN_NOT_PROVIDED) {
+                        LEX(type);
+                    }
+
+                    // If we haven't returned at this point then we had something
+                    // that looked like an interpolated class or instance variable
+                    // like "#@" but wasn't actually. In this case we'll just skip
+                    // to the next breakpoint.
+                    breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                    continue;
+                }
+
+                // If we've hit the incrementor, then we need to skip past it
+                // and find the next breakpoint.
+                assert(*breakpoint == lex_mode->as.list.incrementor);
+                breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                lex_mode->as.list.nesting++;
+                continue;
             }
 
             // If we were unable to find a breakpoint, then this token hits the end of
