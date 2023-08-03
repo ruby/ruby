@@ -5412,8 +5412,6 @@ check_stack_for_moved(rb_objspace_t *objspace)
     each_machine_stack_value(ec, revert_machine_stack_references);
 }
 
-static void gc_mode_transition(rb_objspace_t *objspace, enum gc_mode mode);
-
 static void
 gc_compact_finish(rb_objspace_t *objspace)
 {
