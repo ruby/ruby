@@ -4574,7 +4574,7 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
  */
 
 static VALUE
-rb_ary_transpose(VALUE ary)
+rb_ary_transpose(int argc, VALUE *argv, VALUE ary)
 {
     long elen = -1, alen, i, j;
     VALUE tmp, result = 0;
@@ -8803,7 +8803,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
     rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
-    rb_define_method(rb_cArray, "transpose", rb_ary_transpose, 0);
+    rb_define_method(rb_cArray, "transpose", rb_ary_transpose, -1);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
