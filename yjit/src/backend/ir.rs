@@ -538,6 +538,7 @@ impl Insn {
     pub(super) fn target_mut(&mut self) -> Option<&mut Target> {
         match self {
             Insn::Jbe(target) |
+            Insn::Jb(target) |
             Insn::Je(target) |
             Insn::Jl(target) |
             Insn::Jmp(target) |
@@ -682,6 +683,7 @@ impl Insn {
     pub fn target(&self) -> Option<&Target> {
         match self {
             Insn::Jbe(target) |
+            Insn::Jb(target) |
             Insn::Je(target) |
             Insn::Jl(target) |
             Insn::Jmp(target) |
@@ -1819,6 +1821,10 @@ impl Assembler {
 
     pub fn jbe(&mut self, target: Target) {
         self.push_insn(Insn::Jbe(target));
+    }
+
+    pub fn jb(&mut self, target: Target) {
+        self.push_insn(Insn::Jb(target));
     }
 
     pub fn je(&mut self, target: Target) {

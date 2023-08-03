@@ -241,8 +241,10 @@ pub enum JCCKinds {
     JCC_JNZ,
     JCC_JZ,
     JCC_JE,
+    JCC_JB,
     JCC_JBE,
     JCC_JNA,
+    JCC_JNAE,
 }
 
 #[inline(always)]
@@ -1535,8 +1537,6 @@ fn gen_expandarray(
     let array_reg = asm.load(array_opnd);
     let array_len_opnd = get_array_len(asm, array_reg);
 
-    /*
-    // FIXME: JCC_JB not implemented
     // Guard on the comptime/expected array length
     if comptime_len >= num {
         asm.comment(&format!("guard array length >= {}", num));
@@ -1549,6 +1549,7 @@ fn gen_expandarray(
             OPT_AREF_MAX_CHAIN_DEPTH,
             Counter::expandarray_chain_max_depth,
         );
+
     } else {
         asm.comment(&format!("guard array length == {}", comptime_len));
         asm.cmp(array_len_opnd, comptime_len.into());
@@ -1561,18 +1562,6 @@ fn gen_expandarray(
             Counter::expandarray_chain_max_depth,
         );
     }
-    */
-
-    asm.comment(&format!("guard array length == {}", comptime_len));
-    asm.cmp(array_len_opnd, comptime_len.into());
-    jit_chain_guard(
-        JCC_JNE,
-        jit,
-        asm,
-        ocb,
-        OPT_AREF_MAX_CHAIN_DEPTH,
-        Counter::expandarray_chain_max_depth,
-    );
 
     let array_opnd = asm.stack_pop(1); // pop after using the type info
 
@@ -1908,6 +1897,7 @@ fn jit_chain_guard(
         JCC_JNE | JCC_JNZ => BranchGenFn::JNZToTarget0,
         JCC_JZ | JCC_JE => BranchGenFn::JZToTarget0,
         JCC_JBE | JCC_JNA => BranchGenFn::JBEToTarget0,
+        JCC_JB | JCC_JNAE => BranchGenFn::JBToTarget0,
     };
 
     if (asm.ctx.get_chain_depth() as i32) < depth_limit {
