@@ -62,7 +62,7 @@ dump_input(yp_string_t *input, const char *filepath) {
     yp_parser_t parser;
     yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
 
-    yp_node_t *node = yp_parse(&parser, false);
+    yp_node_t *node = yp_parse(&parser);
     yp_serialize(&parser, node, &buffer);
 
     VALUE result = rb_str_new(buffer.value, buffer.length);
@@ -246,7 +246,7 @@ lex_input(yp_string_t *input, const char *filepath) {
     };
 
     parser.lex_callback = &lex_callback;
-    yp_node_t *node = yp_parse(&parser, false);
+    yp_node_t *node = yp_parse(&parser);
 
     // Here we need to update the source range to have the correct newline
     // offsets. We do it here because we've already created the object and given
@@ -307,7 +307,7 @@ parse_input(yp_string_t *input, const char *filepath) {
     yp_parser_t parser;
     yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
 
-    yp_node_t *node = yp_parse(&parser, false);
+    yp_node_t *node = yp_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
 
     VALUE source = yp_source_new(&parser);
@@ -437,7 +437,7 @@ memsize(VALUE self, VALUE string) {
     size_t length = RSTRING_LEN(string);
     yp_parser_init(&parser, RSTRING_PTR(string), length, NULL);
 
-    yp_node_t *node = yp_parse(&parser, false);
+    yp_node_t *node = yp_parse(&parser);
     yp_memsize_t memsize;
     yp_node_memsize(node, &memsize);
 
@@ -463,7 +463,7 @@ profile_file(VALUE self, VALUE filepath) {
     yp_parser_t parser;
     yp_parser_init(&parser, yp_string_source(&input), yp_string_length(&input), checked);
 
-    yp_node_t *node = yp_parse(&parser, false);
+    yp_node_t *node = yp_parse(&parser);
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
 
