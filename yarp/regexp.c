@@ -380,11 +380,13 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
         switch (*parser->cursor) {
             case '#': { // inline comments
                 if (parser->encoding_changed && parser->encoding->multibyte) {
+                    bool escaped = false;
+
                     // Here we're going to take a slow path and iterate through
                     // each multibyte character to find the close paren. We do
                     // this because \ can be a trailing byte in some encodings.
                     while (parser->cursor < parser->end) {
-                        if (*parser->cursor == ')') {
+                        if (!escaped && *parser->cursor == ')') {
                             parser->cursor++;
                             return true;
                         }
@@ -392,6 +394,7 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
                         size_t width = parser->encoding->char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
                         if (width == 0) return false;
 
+                        escaped = (width == 1) && (*parser->cursor == '\\');
                         parser->cursor += width;
                     }
 
