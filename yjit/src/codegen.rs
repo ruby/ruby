@@ -1576,30 +1576,23 @@ fn gen_expandarray(
 
     let array_opnd = asm.stack_pop(1); // pop after using the type info
 
-    //println!("generating loads");
-
-    // If the array has length 0, then we don't even need the array pointer
-    if comptime_len == 0 {
-        // Loop backward through the array and push Qnils onto the stack.
-        for _ in 0..num {
-            let top = asm.stack_push(Type::Nil);
-            asm.mov(top, Qnil.into());
-        }
-    } else {
-        // Load the pointer to the embedded or heap array
+    // Load the pointer to the embedded or heap array
+    let ary_opnd = if comptime_len > 0 {
         let array_reg = asm.load(array_opnd);
-        let ary_opnd = get_array_ptr(asm, array_reg);
+        Some(get_array_ptr(asm, array_reg))
+    } else {
+        None
+    };
 
-        // Loop backward through the array and push each element onto the stack.
-        for i in (0..num).rev() {
-            let top = asm.stack_push(if i < comptime_len { Type::Unknown } else { Type::Nil });
-            let offset = i32::try_from(i * (SIZEOF_VALUE as u32)).unwrap();
+    // Loop backward through the array and push each element onto the stack.
+    for i in (0..num).rev() {
+        let top = asm.stack_push(if i < comptime_len { Type::Unknown } else { Type::Nil });
+        let offset = i32::try_from(i * (SIZEOF_VALUE as u32)).unwrap();
 
-            // Missing elements are Qnil
-            asm.comment(&format!("load array[{}]", i));
-            let elem_opnd = if i < comptime_len { Opnd::mem(64, ary_opnd, offset) } else { Qnil.into() };
-            asm.mov(top, elem_opnd);
-        }
+        // Missing elements are Qnil
+        asm.comment(&format!("load array[{}]", i));
+        let elem_opnd = if i < comptime_len { Opnd::mem(64, ary_opnd.unwrap(), offset) } else { Qnil.into() };
+        asm.mov(top, elem_opnd);
     }
 
     Some(KeepCompiling)
