@@ -12870,8 +12870,8 @@ parse_expression(yp_parser_t *parser, yp_binding_power_t binding_power, const ch
 }
 
 static yp_node_t *
-parse_program(yp_parser_t *parser, bool eval) {
-    yp_parser_scope_push(parser, !eval);
+parse_program(yp_parser_t *parser) {
+    yp_parser_scope_push(parser, !parser->current_scope);
     parser_lex(parser);
 
     yp_statements_node_t *statements = parse_statements(parser, YP_CONTEXT_MAIN);
@@ -12891,30 +12891,45 @@ parse_program(yp_parser_t *parser, bool eval) {
     return (yp_node_t *) yp_program_node_create(parser, &locals, statements);
 }
 
-// Assume always a valid string since it is from trusted source (Ruby impl internals).
-// Format: [num_scopes, (num_vars1, (var_char1*, 0)*)*]
+// Process any additional metadata being passed into a parse.  Since the source
+// of these calls will be from Ruby implementation internals we assume it is from
+// a trusted source.
+//
+// Currently, this is only passing in variable scoping surrounding an eval, but
+// eventually it will be extended to hold any additional metadata.  This data
+// is serialized to reduce the calling complexity for a foreign function call
+// vs a foreign runtime making a bindable in-memory version of a C structure.
+//
+// *Format*
+//
+// No metadata should just be NULL.  For variable scopes it should be:
+//
+// ```text
+// [number_of_variable_scopes: uint32_t,
+//   [number_of_variables: uint32_t,
+//      [data_length: uint32_t, data: char*]*
+//   ]*
+// ]
+// ```
 static void
-yp_populate_eval_scopes(yp_parser_t *parser, const char *data) {
-    const char *p = data;
-    size_t number_of_scopes = (size_t) *p;
+yp_process_metadata(yp_parser_t *parser, const char *metadata) {
+    const char *p = metadata;
+    uint32_t number_of_scopes = (uint32_t) *p;
+    p += 4;
 
-    p++;
     for (size_t scope_index = 0; scope_index < number_of_scopes; scope_index++) {
-        size_t number_of_variables = (size_t) *p++;
+        uint32_t number_of_variables = (uint32_t) *p;
+        p += 4;
 
         yp_parser_scope_push(parser, scope_index == 0);
 
         for (size_t variable_index = 0; variable_index < number_of_variables; variable_index++) {
-            char *eos = strchr(p, 0);
+            int32_t length = (uint32_t) *p;
+            p += 4;
 
-            yp_token_t lvar = (yp_token_t) {
-                    .type = YP_TOKEN_IDENTIFIER,
-                    .start = p,
-                    .end = eos
-            };
-            yp_parser_local_add_token(parser, &lvar);
+            yp_parser_local_add_location(parser, p, p + length);
 
-            p = ++eos;
+            p += length;
         }
     }
 }
@@ -13055,8 +13070,8 @@ yp_parser_free(yp_parser_t *parser) {
 
 // Parse the Ruby source associated with the given parser and return the tree.
 YP_EXPORTED_FUNCTION yp_node_t *
-yp_parse(yp_parser_t *parser, bool eval) {
-  return parse_program(parser, eval);
+yp_parse(yp_parser_t *parser) {
+  return parse_program(parser);
 }
 
 YP_EXPORTED_FUNCTION void
@@ -13073,13 +13088,12 @@ yp_serialize(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
 // Parse and serialize the AST represented by the given source to the given
 // buffer.
 YP_EXPORTED_FUNCTION void
-yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *parent_scopes) {
-    bool eval = parent_scopes != NULL;
+yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *metadata) {
     yp_parser_t parser;
     yp_parser_init(&parser, source, size, NULL);
-      if (eval) yp_populate_eval_scopes(&parser, parent_scopes);
+    if (metadata) yp_process_metadata(&parser, metadata);
 
-    yp_node_t *node = yp_parse(&parser, eval);
+    yp_node_t *node = yp_parse(&parser);
     yp_serialize(&parser, node, buffer);
 
     yp_node_destroy(&parser, node);

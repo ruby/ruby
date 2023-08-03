@@ -51,7 +51,7 @@ YP_EXPORTED_FUNCTION void yp_parser_register_encoding_decode_callback(yp_parser_
 YP_EXPORTED_FUNCTION void yp_parser_free(yp_parser_t *parser);
 
 // Parse the Ruby source associated with the given parser and return the tree.
-YP_EXPORTED_FUNCTION yp_node_t * yp_parse(yp_parser_t *parser, bool eval);
+YP_EXPORTED_FUNCTION yp_node_t * yp_parse(yp_parser_t *parser);
 
 // Pretty-prints the AST represented by the given node to the given buffer.
 YP_EXPORTED_FUNCTION void yp_prettyprint(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer);
