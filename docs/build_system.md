@@ -32,7 +32,7 @@ When installing the gem, `extconf.rb` is used and that:
 * compiles the C extension with mkmf
 
 When installing the gem on JRuby and TruffleRuby, no C extension is built, so instead of the last step,
-there is Ruby code using Fiddle which uses `librubyparser.so/dylib/dll`
+there is Ruby code using Fiddle which uses `librubyparser.{so,dylib,dll}`
 to implement the same methods as the C extension, but using serialization instead of many native calls/accesses
 (JRuby does not support C extensions, serialization is faster on TruffleRuby than the C extension).
 
