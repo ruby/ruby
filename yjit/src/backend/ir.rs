@@ -423,8 +423,11 @@ pub enum Insn {
     // Produces no output
     IncrCounter { mem: Opnd, value: Opnd },
 
-    /// Jump if below or equal
+    /// Jump if below or equal (unsigned)
     Jbe(Target),
+
+    /// Jump if below (unsigned)
+    Jb(Target),
 
     /// Jump if equal
     Je(Target),
@@ -579,6 +582,7 @@ impl Insn {
             Insn::FrameTeardown => "FrameTeardown",
             Insn::IncrCounter { .. } => "IncrCounter",
             Insn::Jbe(_) => "Jbe",
+            Insn::Jb(_) => "Jb",
             Insn::Je(_) => "Je",
             Insn::Jl(_) => "Jl",
             Insn::Jg(_) => "Jg",
@@ -727,6 +731,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::FrameSetup |
             Insn::FrameTeardown |
             Insn::Jbe(_) |
+            Insn::Jb(_) |
             Insn::Je(_) |
             Insn::Jl(_) |
             Insn::Jg(_) |
@@ -825,6 +830,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::FrameSetup |
             Insn::FrameTeardown |
             Insn::Jbe(_) |
+            Insn::Jb(_) |
             Insn::Je(_) |
             Insn::Jl(_) |
             Insn::Jg(_) |
