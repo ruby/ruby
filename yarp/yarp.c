@@ -12576,7 +12576,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
                 yp_location_t *content_loc = &((yp_regular_expression_node_t *) node)->content_loc;
 
-                if (yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures)) {
+                if (yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures, parser->encoding_changed, &parser->encoding)) {
                     for (size_t index = 0; index < named_captures.length; index++) {
                         yp_string_t *name = &named_captures.strings[index];
                         assert(name->type == YP_STRING_SHARED);
