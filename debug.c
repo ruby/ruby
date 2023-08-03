@@ -27,6 +27,7 @@
 #include "vm_callinfo.h"
 #include "ruby/thread_native.h"
 #include "ractor_core.h"
+#include "hrtime.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {
@@ -291,7 +292,9 @@ static struct {
     struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
     unsigned int filters_num;
     bool show_pid;
+    bool show_time;
     rb_nativethread_lock_t lock;
+    rb_hrtime_t prev_time;
     FILE *output;
 } debug_log;
 
@@ -411,6 +414,10 @@ setup_debug_log(void)
         if (getenv("RUBY_DEBUG_LOG_PID")) {
             debug_log.show_pid = true;
         }
+        if (getenv("RUBY_DEBUG_LOG_TIME")) {
+            debug_log.show_time = true;
+            debug_log.prev_time = rb_hrtime_now();
+        }
     }
 }
 
@@ -509,6 +516,16 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
     if (debug_log.show_pid) {
         r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "pid:%d\t", getpid());
         if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+        len += r;
+    }
+
+    if (debug_log.show_time) {
+        rb_hrtime_t now = rb_hrtime_now();
+        rb_hrtime_t diff = now > debug_log.prev_time ? now - debug_log.prev_time : 0;
+        debug_log.prev_time = now;
+
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%lu\t", (unsigned long)(diff / 1000L));
+        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
         len += r;
     }
 
