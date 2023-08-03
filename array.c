@@ -4581,16 +4581,16 @@ rb_ary_transpose(VALUE ary)
 
     alen = RARRAY_LEN(ary);
     if (alen == 0) return rb_ary_dup(ary);
+    tmp = to_ary(rb_ary_elt(ary, 0));
+    elen = RARRAY_LEN(tmp);
+    result = rb_ary_new2(elen);
+    for (i=0; i<elen; i++) {
+        rb_ary_store(result, i, rb_ary_new2(alen));
+    }
+
     for (i=0; i<alen; i++) {
-        tmp = to_ary(rb_ary_elt(ary, i));
-        if (elen < 0) {		/* first element */
-            elen = RARRAY_LEN(tmp);
-            result = rb_ary_new2(elen);
-            for (j=0; j<elen; j++) {
-                rb_ary_store(result, j, rb_ary_new2(alen));
-            }
-        }
-        else if (elen != RARRAY_LEN(tmp)) {
+        if (i > 0) tmp = to_ary(rb_ary_elt(ary, i));
+        if (elen != RARRAY_LEN(tmp)) {
             rb_raise(rb_eIndexError, "element size differs (%ld should be %ld)",
                      RARRAY_LEN(tmp), elen);
         }
