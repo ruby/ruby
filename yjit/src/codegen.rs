@@ -1510,12 +1510,12 @@ fn gen_expandarray(
 
     // If the comptime receiver is not an array, bail
     if comptime_recv.class_of() != unsafe { rb_cArray } {
+        gen_counter_incr(asm, Counter::expandarray_comptime_not_array);
         return None;
     }
 
     // Get the compile-time array length
     let comptime_len = unsafe { rb_yjit_array_len(comptime_recv) as u32 };
-    //println!("comptime_len={}", comptime_len);
 
     // Move the array from the stack and check that it's an array.
     guard_object_is_array(
@@ -1586,19 +1586,9 @@ fn gen_expandarray(
             asm.mov(top, Qnil.into());
         }
     } else {
+        // Load the pointer to the embedded or heap array
         let array_reg = asm.load(array_opnd);
-        let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
-
-        // Conditionally load the address of the heap array
-        // (struct RArray *)(obj)->as.heap.ptr
-        let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-        asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
-        let heap_ptr_opnd = Opnd::mem(
-            usize::BITS as u8,
-            asm.load(array_opnd),
-            RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
-        );
-        let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+        let ary_opnd = get_array_ptr(asm, array_reg);
 
         // Loop backward through the array and push each element onto the stack.
         for i in (0..num).rev() {
@@ -5391,6 +5381,7 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
     );
+
     // Load the address of the embedded array
     // (struct RArray *)(obj)->as.ary
     let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
