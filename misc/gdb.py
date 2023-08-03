@@ -56,16 +56,17 @@ class CFP(gdb.Command):
         except SystemExit:
             return
         cfp = f'(ruby_current_ec->cfp + ({args.uplevel}))'
+        end_cfp = self.get_int('ruby_current_ec->vm_stack + ruby_current_ec->vm_stack_size')
+        cfp_index = int((end_cfp - self.get_int(cfp) - 1) / self.get_int('sizeof(rb_control_frame_t)'))
 
         if args.all:
-            end_cfp = self.get_int('ruby_current_ec->vm_stack + ruby_current_ec->vm_stack_size')
             cfp_count = int((end_cfp - self.get_int('ruby_current_ec->cfp')) / self.get_int('sizeof(rb_control_frame_t)')) - 1 # exclude dummy CFP
             for i in range(cfp_count):
                 print('-' * 80)
                 self.invoke(str(cfp_count - i - 1), from_tty)
             return
 
-        print('CFP (addr=0x{:x}, uplevel={}):'.format(self.get_int(cfp), args.uplevel))
+        print('CFP (addr=0x{:x}, index={}):'.format(self.get_int(cfp), cfp_index))
         gdb.execute(f'p *({cfp})')
         print()
 
@@ -91,14 +92,16 @@ class CFP(gdb.Command):
         self.print_env(cfp, -1, self.frame_types(cfp, -1))
         print()
 
-        if args.stack_size is not None:
-            stack_size = args.stack_size
-        else:
-            stack_size = int((self.get_int(f'{cfp}->sp') - self.get_int(f'vm_base_ptr({cfp})')) / 8)
-        print(f'Stack (size={stack_size}):')
-        for i in range(0, stack_size):
-            self.print_stack(cfp, i, self.rp(cfp, i))
-        print(self.regs(cfp, stack_size))
+        # We can't calculate BP for the first frame
+        if cfp_index > 0:
+            if args.stack_size is not None:
+                stack_size = args.stack_size
+            else:
+                stack_size = int((self.get_int(f'{cfp}->sp') - self.get_int(f'vm_base_ptr({cfp})')) / 8)
+            print(f'Stack (size={stack_size}):')
+            for i in range(0, stack_size):
+                self.print_stack(cfp, i, self.rp(cfp, i))
+            print(self.regs(cfp, stack_size))
 
     def print_env(self, cfp, bp_index, content):
         ep_index = bp_index + 1
