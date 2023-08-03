@@ -12965,7 +12965,7 @@ yp_process_metadata(yp_parser_t *parser, const char *metadata) {
         yp_parser_scope_push(parser, scope_index == 0);
 
         for (size_t variable_index = 0; variable_index < number_of_variables; variable_index++) {
-            int32_t length = (uint32_t) *p;
+            uint32_t length = (uint32_t) *p;
             p += 4;
 
             yp_parser_local_add_location(parser, p, p + length);
