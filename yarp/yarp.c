@@ -6749,105 +6749,98 @@ parser_lex(yp_parser_t *parser) {
             }
 
             // Get a reference to the current mode.
-            yp_lex_mode_t *mode = parser->lex_modes.current;
+            yp_lex_mode_t *lex_mode = parser->lex_modes.current;
 
             // These are the places where we need to split up the content of the
             // regular expression. We'll use strpbrk to find the first of these
             // characters.
-            const char *breakpoints = mode->as.regexp.breakpoints;
+            const char *breakpoints = lex_mode->as.regexp.breakpoints;
             const char *breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
 
             while (breakpoint != NULL) {
-                switch (*breakpoint) {
-                    case '\0':
-                        // If we hit a null byte, skip directly past it.
+                // If we hit a null byte, skip directly past it.
+                if (*breakpoint == '\0') {
+                    breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    continue;
+                }
+
+                // If we've hit a newline, then we need to track that in the
+                // list of newlines.
+                if (*breakpoint == '\n') {
+                    yp_newline_list_append(&parser->newline_list, breakpoint);
+
+                    if (lex_mode->as.regexp.terminator != '\n') {
+                        // If the terminator is not a newline, then we can set
+                        // the next breakpoint and continue.
                         breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                        break;
-                    case '\\': {
-                        // If we hit escapes, then we need to treat the next token
-                        // literally. In this case we'll skip past the next character and
-                        // find the next breakpoint.
-                        size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, YP_UNESCAPE_ALL, false, &parser->error_list);
-
-                        // If the result is an escaped newline, then we need to
-                        // track that newline.
-                        if (breakpoint[difference - 1] == '\n') {
-                            yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                        }
-
-                        breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
-                        break;
-                    }
-                    case '#': {
-                        // If the terminator is #, then we need to fall into the
-                        // default case. Otherwise we'll attempt to lex
-                        // interpolation.
-                        if (mode->as.regexp.terminator != '#') {
-                            yp_token_type_t type = lex_interpolation(parser, breakpoint);
-                            if (type != YP_TOKEN_NOT_PROVIDED) {
-                                LEX(type);
-                            }
-
-                            // If we haven't returned at this point then we had something
-                            // that looked like an interpolated class or instance variable
-                            // like "#@" but wasn't actually. In this case we'll just skip
-                            // to the next breakpoint.
-                            breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
-                            break;
-                        }
-                    }
-                    /* fallthrough */
-                    default: {
-                        if (*breakpoint == mode->as.regexp.incrementor) {
-                            // If we've hit the incrementor, then we need to skip past it and
-                            // find the next breakpoint.
-                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                            mode->as.regexp.nesting++;
-                            break;
-                        }
-
-                        if (*breakpoint == '\n') {
-                            // If we've hit a newline, then we need to track
-                            // that in the list of newlines.
-                            yp_newline_list_append(&parser->newline_list, breakpoint);
-
-                            if (mode->as.regexp.terminator != '\n') {
-                                // If the terminator is not a newline, then we
-                                // can set the next breakpoint and continue.
-                                breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                                break;
-                            }
-
-                            // Otherwise, the newline character is the
-                            // terminator so we need to continue on.
-                        }
-
-                        assert(*breakpoint == mode->as.regexp.terminator);
-
-                        if (mode->as.regexp.nesting > 0) {
-                            breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
-                            mode->as.regexp.nesting--;
-                            break;
-                        }
-
-                        // Here we've hit the terminator. If we have already consumed
-                        // content then we need to return that content as string content
-                        // first.
-                        if (breakpoint > parser->current.start) {
-                            parser->current.end = breakpoint;
-                            LEX(YP_TOKEN_STRING_CONTENT);
-                        }
-
-                        // Since we've hit the terminator of the regular expression, we now
-                        // need to parse the options.
-                        parser->current.end = breakpoint + 1;
-                        parser->current.end += yp_strspn_regexp_option(parser->current.end, parser->end - parser->current.end);
-
-                        lex_mode_pop(parser);
-                        lex_state_set(parser, YP_LEX_STATE_END);
-                        LEX(YP_TOKEN_REGEXP_END);
+                        continue;
                     }
                 }
+
+                // If we hit the terminator, we need to determine what kind of
+                // token to return.
+                if (*breakpoint == lex_mode->as.regexp.terminator) {
+                    if (lex_mode->as.regexp.nesting > 0) {
+                        breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                        lex_mode->as.regexp.nesting--;
+                        continue;
+                    }
+
+                    // Here we've hit the terminator. If we have already consumed
+                    // content then we need to return that content as string content
+                    // first.
+                    if (breakpoint > parser->current.start) {
+                        parser->current.end = breakpoint;
+                        LEX(YP_TOKEN_STRING_CONTENT);
+                    }
+
+                    // Since we've hit the terminator of the regular expression, we now
+                    // need to parse the options.
+                    parser->current.end = breakpoint + 1;
+                    parser->current.end += yp_strspn_regexp_option(parser->current.end, parser->end - parser->current.end);
+
+                    lex_mode_pop(parser);
+                    lex_state_set(parser, YP_LEX_STATE_END);
+                    LEX(YP_TOKEN_REGEXP_END);
+                }
+
+                // If we hit escapes, then we need to treat the next token
+                // literally. In this case we'll skip past the next character
+                // and find the next breakpoint.
+                if (*breakpoint == '\\') {
+                    size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, YP_UNESCAPE_ALL, false, &parser->error_list);
+
+                    // If the result is an escaped newline, then we need to
+                    // track that newline.
+                    if (breakpoint[difference - 1] == '\n') {
+                        yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
+                    }
+
+                    breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
+                    continue;
+                }
+
+                // If we hit a #, then we will attempt to lex interpolation.
+                if (*breakpoint == '#') {
+                    yp_token_type_t type = lex_interpolation(parser, breakpoint);
+                    if (type != YP_TOKEN_NOT_PROVIDED) {
+                        LEX(type);
+                    }
+
+                    // If we haven't returned at this point then we had
+                    // something that looked like an interpolated class or
+                    // instance variable like "#@" but wasn't actually. In this
+                    // case we'll just skip to the next breakpoint.
+                    breakpoint = yp_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                    continue;
+                }
+
+                // If we've hit the incrementor, then we need to skip past it
+                // and find the next breakpoint.
+                assert(*breakpoint == lex_mode->as.regexp.incrementor);
+                breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                lex_mode->as.regexp.nesting++;
+                continue;
             }
 
             // At this point, the breakpoint is NULL which means we were unable to
