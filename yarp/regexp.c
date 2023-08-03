@@ -379,12 +379,35 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
 
         switch (*parser->cursor) {
             case '#': { // inline comments
-                bool found = yp_regexp_char_find(parser, ')');
-                // the close paren we found is escaped, we need to find another
-                while (found && (parser->start <= parser->cursor - 2) && (*(parser->cursor - 2) == '\\')) {
-                    found = yp_regexp_char_find(parser, ')');
+                if (parser->encoding_changed && parser->encoding->multibyte) {
+                    // Here we're going to take a slow path and iterate through
+                    // each multibyte character to find the close paren. We do
+                    // this because \ can be a trailing byte in some encodings.
+                    while (parser->cursor < parser->end) {
+                        if (*parser->cursor == ')') {
+                            parser->cursor++;
+                            return true;
+                        }
+
+                        size_t width = parser->encoding->char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
+                        if (width == 0) return false;
+
+                        parser->cursor += width;
+                    }
+
+                    return false;
+                } else {
+                    // Here we can take the fast path and use memchr to find the
+                    // next ) because we are safe checking backward for \ since
+                    // it cannot be a trailing character.
+                    bool found = yp_regexp_char_find(parser, ')');
+
+                    while (found && (parser->start <= parser->cursor - 2) && (*(parser->cursor - 2) == '\\')) {
+                        found = yp_regexp_char_find(parser, ')');
+                    }
+
+                    return found;
                 }
-                return found;
             }
             case ':': // non-capturing group
             case '=': // positive lookahead
