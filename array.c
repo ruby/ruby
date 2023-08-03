@@ -4564,12 +4564,25 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 /*
  *  call-seq:
  *    array.transpose -> new_array
+ *    array.transpose(size) -> new_array
  *
  *  Transposes the rows and columns in an +Array+ of Arrays;
  *  the nested Arrays must all be the same size:
  *
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
  *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
+ *
+ *  With non-negative \Integer argument +size+, ensures the
+ *  resulting Array has that size:
+ *
+ *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
+ *    a.transpose(2) # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
+ *    a.transpose(3)
+ *    # IndexError (element size differs (2 should be 3))
+ *
+ *    a = []
+ *    a.transpose(2) # => [[], []]
+ *    a.transpose(3) # => [[], [], []]
  *
  */
 
@@ -4580,9 +4593,14 @@ rb_ary_transpose(int argc, VALUE *argv, VALUE ary)
     VALUE tmp, result = 0;
 
     alen = RARRAY_LEN(ary);
-    if (alen == 0) return rb_ary_dup(ary);
-    tmp = to_ary(rb_ary_elt(ary, 0));
-    elen = RARRAY_LEN(tmp);
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
+        elen = NUM2INT(argv[0]);
+        if (alen > 0) tmp = to_ary(rb_ary_elt(ary, 0));
+    } else {
+        if (alen == 0) return rb_ary_dup(ary);
+        tmp = to_ary(rb_ary_elt(ary, 0));
+        elen = RARRAY_LEN(tmp);
+    }
     result = rb_ary_new2(elen);
     for (i=0; i<elen; i++) {
         rb_ary_store(result, i, rb_ary_new2(alen));
