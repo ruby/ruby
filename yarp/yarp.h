@@ -61,7 +61,7 @@ YP_EXPORTED_FUNCTION void yp_serialize(yp_parser_t *parser, yp_node_t *node, yp_
 
 // Parse and serialize the AST represented by the given source to the given
 // buffer.
-YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *parent_scopes);
+YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *metadata);
 
 // Returns a string representation of the given token type.
 YP_EXPORTED_FUNCTION const char * yp_token_type_to_str(yp_token_type_t token_type);
