@@ -1,283 +1,15 @@
-require "forwardable"
+require "lrama/grammar/code"
+require "lrama/grammar/error_token"
+require "lrama/grammar/precedence"
+require "lrama/grammar/printer"
+require "lrama/grammar/reference"
+require "lrama/grammar/rule"
+require "lrama/grammar/symbol"
+require "lrama/grammar/union"
 require "lrama/lexer"
 
 module Lrama
-  Rule = Struct.new(:id, :lhs, :rhs, :code, :nullable, :precedence_sym, :lineno, keyword_init: true) do
-    # TODO: Change this to display_name
-    def to_s
-      l = lhs.id.s_value
-      r = rhs.empty? ? "ε" : rhs.map {|r| r.id.s_value }.join(", ")
-
-      "#{l} -> #{r}"
-    end
-
-    # Used by #user_actions
-    def as_comment
-      l = lhs.id.s_value
-      r = rhs.empty? ? "%empty" : rhs.map {|r| r.display_name }.join(" ")
-
-      "#{l}: #{r}"
-    end
-
-    def precedence
-      precedence_sym && precedence_sym.precedence
-    end
-
-    def initial_rule?
-      id == 0
-    end
-
-    def translated_code
-      if code
-        code.translated_code
-      else
-        nil
-      end
-    end
-  end
-
-  # Symbol is both of nterm and term
-  # `number` is both for nterm and term
-  # `token_id` is tokentype for term, internal sequence number for nterm
-  #
-  # TODO: Add validation for ASCII code range for Token::Char
-  Symbol = Struct.new(:id, :alias_name, :number, :tag, :term, :token_id, :nullable, :precedence, :printer, keyword_init: true) do
-    attr_writer :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol
-
-    def term?
-      term
-    end
-
-    def nterm?
-      !term
-    end
-
-    def eof_symbol?
-      !!@eof_symbol
-    end
-
-    def error_symbol?
-      !!@error_symbol
-    end
-
-    def undef_symbol?
-      !!@undef_symbol
-    end
-
-    def accept_symbol?
-      !!@accept_symbol
-    end
-
-    def display_name
-      if alias_name
-        alias_name
-      else
-        id.s_value
-      end
-    end
-
-    # name for yysymbol_kind_t
-    #
-    # See: b4_symbol_kind_base
-    def enum_name
-      case
-      when accept_symbol?
-        name = "YYACCEPT"
-      when eof_symbol?
-        name = "YYEOF"
-      when term? && id.type == Token::Char
-        if alias_name
-          name = number.to_s + alias_name
-        else
-          name = number.to_s + id.s_value
-        end
-      when term? && id.type == Token::Ident
-        name = id.s_value
-      when nterm? && (id.s_value.include?("$") || id.s_value.include?("@"))
-        name = number.to_s + id.s_value
-      when nterm?
-        name = id.s_value
-      else
-        raise "Unexpected #{self}"
-      end
-
-      "YYSYMBOL_" + name.gsub(/[^a-zA-Z_0-9]+/, "_")
-    end
-
-    # comment for yysymbol_kind_t
-    def comment
-      case
-      when accept_symbol?
-        # YYSYMBOL_YYACCEPT
-        id.s_value
-      when eof_symbol?
-        # YYEOF
-        alias_name
-      when (term? && 0 < token_id && token_id < 128)
-        # YYSYMBOL_3_backslash_, YYSYMBOL_14_
-        alias_name || id.s_value
-      when id.s_value.include?("$") || id.s_value.include?("@")
-        # YYSYMBOL_21_1
-        id.s_value
-      else
-        # YYSYMBOL_keyword_class, YYSYMBOL_strings_1
-        alias_name || id.s_value
-      end
-    end
-  end
-
   Type = Struct.new(:id, :tag, keyword_init: true)
-
-  Code = Struct.new(:type, :token_code, keyword_init: true) do
-    extend Forwardable
-
-    def_delegators "token_code", :s_value, :line, :column, :references
-
-    # $$, $n, @$, @n is translated to C code
-    def translated_code
-      case type
-      when :user_code
-        translated_user_code
-      when :initial_action
-        translated_initial_action_code
-      end
-    end
-
-    # * ($1) error
-    # * ($$) *yyvaluep
-    # * (@1) error
-    # * (@$) *yylocationp
-    def translated_printer_code(tag)
-      t_code = s_value.dup
-
-      references.reverse.each do |ref|
-        first_column = ref.first_column
-        last_column = ref.last_column
-
-        case
-        when ref.value == "$" && ref.type == :dollar # $$
-          # Omit "<>"
-          member = tag.s_value[1..-2]
-          str = "((*yyvaluep).#{member})"
-        when ref.value == "$" && ref.type == :at # @$
-          str = "(*yylocationp)"
-        when ref.type == :dollar # $n
-          raise "$#{ref.value} can not be used in %printer."
-        when ref.type == :at # @n
-          raise "@#{ref.value} can not be used in %printer."
-        else
-          raise "Unexpected. #{self}, #{ref}"
-        end
-
-        t_code[first_column..last_column] = str
-      end
-
-      return t_code
-    end
-
-
-    private
-
-    # * ($1) yyvsp[i]
-    # * ($$) yyval
-    # * (@1) yylsp[i]
-    # * (@$) yyloc
-    def translated_user_code
-      t_code = s_value.dup
-
-      references.reverse.each do |ref|
-        first_column = ref.first_column
-        last_column = ref.last_column
-
-        case
-        when ref.value == "$" && ref.type == :dollar # $$
-          # Omit "<>"
-          member = ref.tag.s_value[1..-2]
-          str = "(yyval.#{member})"
-        when ref.value == "$" && ref.type == :at # @$
-          str = "(yyloc)"
-        when ref.type == :dollar # $n
-          i = -ref.position_in_rhs + ref.value
-          # Omit "<>"
-          member = ref.tag.s_value[1..-2]
-          str = "(yyvsp[#{i}].#{member})"
-        when ref.type == :at # @n
-          i = -ref.position_in_rhs + ref.value
-          str = "(yylsp[#{i}])"
-        else
-          raise "Unexpected. #{self}, #{ref}"
-        end
-
-        t_code[first_column..last_column] = str
-      end
-
-      return t_code
-    end
-
-    # * ($1) error
-    # * ($$) yylval
-    # * (@1) error
-    # * (@$) yylloc
-    def translated_initial_action_code
-      t_code = s_value.dup
-
-      references.reverse.each do |ref|
-        first_column = ref.first_column
-        last_column = ref.last_column
-
-        case
-        when ref.value == "$" && ref.type == :dollar # $$
-          str = "yylval"
-        when ref.value == "$" && ref.type == :at # @$
-          str = "yylloc"
-        when ref.type == :dollar # $n
-          raise "$#{ref.value} can not be used in initial_action."
-        when ref.type == :at # @n
-          raise "@#{ref.value} can not be used in initial_action."
-        else
-          raise "Unexpected. #{self}, #{ref}"
-        end
-
-        t_code[first_column..last_column] = str
-      end
-
-      return t_code
-    end
-  end
-
-  # type: :dollar or :at
-  # ex_tag: "$<tag>1" (Optional)
-  Reference = Struct.new(:type, :value, :ex_tag, :first_column, :last_column, :referring_symbol, :position_in_rhs, keyword_init: true) do
-    def tag
-      if ex_tag
-        ex_tag
-      else
-        referring_symbol.tag
-      end
-    end
-  end
-
-  Precedence = Struct.new(:type, :precedence, keyword_init: true) do
-    include Comparable
-
-    def <=>(other)
-      self.precedence <=> other.precedence
-    end
-  end
-
-  Printer = Struct.new(:ident_or_tags, :code, :lineno, keyword_init: true) do
-    def translated_code(member)
-      code.translated_printer_code(member)
-    end
-  end
-
-  Union = Struct.new(:code, :lineno, keyword_init: true) do
-    def braces_less_code
-      # Remove braces
-      code.s_value[1..-2]
-    end
-  end
-
   Token = Lrama::Lexer::Token
 
   # Grammar is the result of parsing an input grammar file
@@ -287,7 +19,7 @@ module Lrama
 
     attr_reader :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol, :aux
     attr_accessor :union, :expect,
-                  :printers,
+                  :printers, :error_tokens,
                   :lex_param, :parse_param, :initial_action,
                   :symbols, :types,
                   :rules, :_rules,
@@ -295,6 +27,7 @@ module Lrama
 
     def initialize
       @printers = []
+      @error_tokens = []
       @symbols = []
       @types = []
       @_rules = []
@@ -312,6 +45,10 @@ module Lrama
 
     def add_printer(ident_or_tags:, code:, lineno:)
       @printers << Printer.new(ident_or_tags: ident_or_tags, code: code, lineno: lineno)
+    end
+
+    def add_error_token(ident_or_tags:, code:, lineno:)
+      @error_tokens << ErrorToken.new(ident_or_tags, code, lineno)
     end
 
     def add_term(id:, alias_name: nil, tag: nil, token_id: nil, replace: false)
@@ -419,12 +156,14 @@ module Lrama
       fill_sym_to_rules
       fill_nterm_type
       fill_symbol_printer
+      fill_symbol_error_token
       @symbols.sort_by!(&:number)
     end
 
     # TODO: More validation methods
     def validate!
       validate_symbol_number_uniqueness!
+      validate_no_declared_type_reference!
     end
 
     def compute_nullable
@@ -845,6 +584,23 @@ module Lrama
       end
     end
 
+    def fill_symbol_error_token
+      @symbols.each do |sym|
+        @error_tokens.each do |error_token|
+          error_token.ident_or_tags.each do |ident_or_tag|
+            case ident_or_tag.type
+            when Token::Ident
+              sym.error_token = error_token if sym.id == ident_or_tag
+            when Token::Tag
+              sym.error_token = error_token if sym.tag == ident_or_tag
+            else
+              raise "Unknown token type. #{error_token}"
+            end
+          end
+        end
+      end
+    end
+
     def validate_symbol_number_uniqueness!
       invalid = @symbols.group_by(&:number).select do |number, syms|
         syms.count > 1
@@ -853,6 +609,24 @@ module Lrama
       return if invalid.empty?
 
       raise "Symbol number is duplicated. #{invalid}"
+    end
+
+    def validate_no_declared_type_reference!
+      errors = []
+
+      rules.each do |rule|
+        next unless rule.code
+
+        rule.code.references.select do |ref|
+          ref.type == :dollar && !ref.tag
+        end.each do |ref|
+          errors << "$#{ref.value} of '#{rule.lhs.id.s_value}' has no declared type"
+        end
+      end
+
+      return if errors.empty?
+
+      raise errors.join("\n")
     end
   end
 end

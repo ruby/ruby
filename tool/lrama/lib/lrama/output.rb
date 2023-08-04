@@ -1,20 +1,24 @@
 require "erb"
 require "forwardable"
-require "lrama/report"
+require "lrama/report/duration"
 
 module Lrama
   class Output
     extend Forwardable
     include Report::Duration
 
-    attr_reader :grammar_file_path, :context, :grammar
+    attr_reader :grammar_file_path, :context, :grammar, :error_recovery
 
     def_delegators "@context", :yyfinal, :yylast, :yyntokens, :yynnts, :yynrules, :yynstates,
                                :yymaxutok, :yypact_ninf, :yytable_ninf
 
     def_delegators "@grammar", :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol
 
-    def initialize(out:, output_file_path:, template_name:, grammar_file_path:, header_out: nil, header_file_path: nil, context:, grammar:)
+    def initialize(
+      out:, output_file_path:, template_name:, grammar_file_path:,
+      header_out: nil, header_file_path: nil,
+      context:, grammar:, error_recovery: false
+    )
       @out = out
       @output_file_path = output_file_path
       @template_name = template_name
@@ -23,6 +27,7 @@ module Lrama
       @header_file_path = header_file_path
       @context = context
       @grammar = grammar
+      @error_recovery = error_recovery
     end
 
     if ERB.instance_method(:initialize).parameters.last.first == :key
@@ -98,6 +103,10 @@ module Lrama
       int_array_to_string(@context.yytranslate)
     end
 
+    def yytranslate_inverted
+      int_array_to_string(@context.yytranslate_inverted)
+    end
+
     def yyrline
       int_array_to_string(@context.yyrline)
     end
@@ -153,6 +162,25 @@ module Lrama
 #line #{@grammar.initial_action.line} "#{@grammar_file_path}"
         #{@grammar.initial_action.translated_code}
       STR
+    end
+
+    def symbol_actions_for_error_token
+      str = ""
+
+      @grammar.symbols.each do |sym|
+        next unless sym.error_token
+
+        str << <<-STR
+    case #{sym.enum_name}: /* #{sym.comment}  */
+#line #{sym.error_token.lineno} "#{@grammar_file_path}"
+         #{sym.error_token.translated_code(sym.tag)}
+#line [@oline@] [@ofile@]
+        break;
+
+        STR
+      end
+
+      str
     end
 
     # b4_user_actions
