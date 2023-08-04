@@ -841,8 +841,10 @@ static int parser_yyerror0(struct parser_params*, const char*);
 #define yyerror(yylloc, p, msg) parser_yyerror(p, yylloc, msg)
 #define token_flush(ptr) ((ptr)->lex.ptok = (ptr)->lex.pcur)
 #define lex_goto_eol(p) ((p)->lex.pcur = (p)->lex.pend)
-#define lex_eol_p(p) ((p)->lex.pcur >= (p)->lex.pend)
-#define lex_eol_n_p(p,n) ((p)->lex.pcur+(n) >= (p)->lex.pend)
+#define lex_eol_p(p) lex_eol_n_p(p, 0)
+#define lex_eol_n_p(p,n) lex_eol_ptr_n_p(p, (p)->lex.pcur, n)
+#define lex_eol_ptr_p(p,ptr) lex_eol_ptr_n_p(p,ptr,0)
+#define lex_eol_ptr_n_p(p,ptr,n) ((ptr)+(n) >= (p)->lex.pend)
 
 static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
@@ -2043,7 +2045,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     /*%%%*/
                         $$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
                     /*% %*/
-                    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
+                    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
                     }
                 | defn_head f_opt_paren_args '=' endless_command
                     {
@@ -2314,14 +2316,14 @@ command		: fcall command_args       %prec tLOWEST
                     /*%%%*/
                         $$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, Qnull, &@3, &@$);
                     /*% %*/
-                    /*% ripper: command_call!($1, ID2VAL(idCOLON2), $3, $4) %*/
+                    /*% ripper: command_call!($1, $2, $3, $4) %*/
                     }
                 | primary_value tCOLON2 operation2 command_args cmd_brace_block
                     {
                     /*%%%*/
                         $$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
                     /*% %*/
-                    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idCOLON2), $3, $4), $5) %*/
+                    /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
                    }
                 | keyword_super command_args
                     {
@@ -2597,7 +2599,7 @@ lhs		: user_variable
                     /*%%%*/
                         $$ = attrset(p, $1, idCOLON2, $3, &@$);
                     /*% %*/
-                    /*% ripper: field!($1, ID2VAL(idCOLON2), $3) %*/
+                    /*% ripper: field!($1, $2, $3) %*/
                     }
                 | primary_value call_op tCONSTANT
                     {
@@ -2788,7 +2790,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     /*%%%*/
                         $$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
                     /*% %*/
-                    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
+                    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
                     }
                 | primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
                     {
@@ -4349,14 +4351,14 @@ method_call	: fcall paren_args
                         $$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% %*/
-                    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), $3), $4) %*/
+                    /*% ripper: method_add_arg!(call!($1, $2, $3), $4) %*/
                     }
                 | primary_value tCOLON2 operation3
                     {
                     /*%%%*/
                         $$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, Qnull, &@3, &@$);
                     /*% %*/
-                    /*% ripper: call!($1, ID2VAL(idCOLON2), $3) %*/
+                    /*% ripper: call!($1, $2, $3) %*/
                     }
                 | primary_value call_op paren_args
                     {
@@ -4372,7 +4374,7 @@ method_call	: fcall paren_args
                         $$ = new_qcall(p, ID2VAL(idCOLON2), $1, ID2VAL(idCall), $3, &@2, &@$);
                         nd_set_line($$, @2.end_pos.lineno);
                     /*% %*/
-                    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), ID2VAL(idCall)), $3) %*/
+                    /*% ripper: method_add_arg!(call!($1, $2, ID2VAL(idCall)), $3) %*/
                     }
                 | keyword_super paren_args
                     {
@@ -7142,7 +7144,7 @@ nextline(struct parser_params *p, int set_encoding)
         if (p->eofp)
             return -1;
 
-        if (p->lex.pend > p->lex.pbeg && *(p->lex.pend-1) != '\n') {
+        if (!lex_eol_ptr_p(p, p->lex.pbeg) && *(p->lex.pend-1) != '\n') {
             goto end_of_input;
         }
 
@@ -7190,7 +7192,7 @@ nextc0(struct parser_params *p, int set_encoding)
 {
     int c;
 
-    if (UNLIKELY((p->lex.pcur == p->lex.pend) || p->eofp || RTEST(p->lex.nextline))) {
+    if (UNLIKELY(lex_eol_p(p) || p->eofp || RTEST(p->lex.nextline))) {
         if (nextline(p, set_encoding)) return -1;
     }
     c = (unsigned char)*p->lex.pcur++;
@@ -7223,7 +7225,7 @@ static int
 looking_at_eol_p(struct parser_params *p)
 {
     const char *ptr = p->lex.pcur;
-    while (ptr < p->lex.pend) {
+    while (!lex_eol_ptr_p(p, ptr)) {
         int c = (unsigned char)*ptr++;
         int eol = (c == '\n' || c == '#');
         if (eol || !ISSPACE(c)) {
@@ -7411,8 +7413,8 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
         else {
             const char *second = NULL;
             int c, last = nextc(p);
-            if (p->lex.pcur >= p->lex.pend) goto unterminated;
-            while (ISSPACE(c = *p->lex.pcur) && ++p->lex.pcur < p->lex.pend);
+            if (lex_eol_p(p)) goto unterminated;
+            while (ISSPACE(c = peekc(p)) && !lex_eol_ptr_p(p, ++p->lex.pcur));
             while (c != close_brace) {
                 if (c == term) goto unterminated;
                 if (second == multiple_codepoints)
@@ -7421,8 +7423,8 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                 if (!tokadd_codepoint(p, encp, regexp_literal, TRUE)) {
                     break;
                 }
-                while (ISSPACE(c = *p->lex.pcur)) {
-                    if (++p->lex.pcur >= p->lex.pend) goto unterminated;
+                while (ISSPACE(c = peekc(p))) {
+                    if (lex_eol_ptr_p(p, ++p->lex.pcur)) goto unterminated;
                     last = c;
                 }
                 if (term == -1 && !second)
@@ -7781,7 +7783,7 @@ tokadd_string(struct parser_params *p,
             }
             --*nest;
         }
-        else if ((func & STR_FUNC_EXPAND) && c == '#' && p->lex.pcur < p->lex.pend) {
+        else if ((func & STR_FUNC_EXPAND) && c == '#' && !lex_eol_p(p)) {
             int c2 = *p->lex.pcur;
             if (c2 == '$' || c2 == '@' || c2 == '{') {
                 pushback(p, c);
@@ -7974,12 +7976,12 @@ parser_peek_variable_name(struct parser_params *p)
     int c;
     const char *ptr = p->lex.pcur;
 
-    if (ptr + 1 >= p->lex.pend) return 0;
+    if (lex_eol_ptr_n_p(p, ptr, 1)) return 0;
     c = *ptr++;
     switch (c) {
       case '$':
         if ((c = *ptr) == '-') {
-            if (++ptr >= p->lex.pend) return 0;
+            if (lex_eol_ptr_p(p, ++ptr)) return 0;
             c = *ptr;
         }
         else if (is_global_name_punct(c) || ISDIGIT(c)) {
@@ -7988,7 +7990,7 @@ parser_peek_variable_name(struct parser_params *p)
         break;
       case '@':
         if ((c = *ptr) == '@') {
-            if (++ptr >= p->lex.pend) return 0;
+            if (lex_eol_ptr_p(p, ++ptr)) return 0;
             c = *ptr;
         }
         break;
@@ -8333,7 +8335,7 @@ static int
 word_match_p(struct parser_params *p, const char *word, long len)
 {
     if (strncmp(p->lex.pcur, word, len)) return 0;
-    if (p->lex.pcur + len == p->lex.pend) return 1;
+    if (lex_eol_n_p(p, len)) return 1;
     int c = (unsigned char)p->lex.pcur[len];
     if (ISSPACE(c)) return 1;
     switch (c) {
@@ -8528,7 +8530,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
                 rb_str_cat(str, ptr, ptr_end - ptr);
             else
                 str = STR_NEW(ptr, ptr_end - ptr);
-            if (ptr_end < p->lex.pend) rb_str_cat(str, "\n", 1);
+            if (!lex_eol_ptr_p(p, ptr_end)) rb_str_cat(str, "\n", 1);
             lex_goto_eol(p);
             if (p->heredoc_indent > 0) {
                 goto flush_str;
@@ -9043,7 +9045,7 @@ parser_prepare(struct parser_params *p)
         if (peek(p, '!')) p->has_shebang = 1;
         break;
       case 0xef:		/* UTF-8 BOM marker */
-        if (p->lex.pend - p->lex.pcur >= 2 &&
+        if (!lex_eol_n_p(p, 2) &&
             (unsigned char)p->lex.pcur[0] == 0xbb &&
             (unsigned char)p->lex.pcur[1] == 0xbf) {
             p->enc = rb_utf8_encoding();
@@ -9368,14 +9370,14 @@ parse_qmark(struct parser_params *p, int space_seen)
         if (tokadd_mbchar(p, c) == -1) return 0;
     }
     else if ((rb_enc_isalnum(c, p->enc) || c == '_') &&
-             p->lex.pcur < p->lex.pend && is_identchar(p, p->lex.pcur, p->lex.pend, p->enc)) {
+             !lex_eol_p(p) && is_identchar(p, p->lex.pcur, p->lex.pend, p->enc)) {
         if (space_seen) {
             const char *start = p->lex.pcur - 1, *ptr = start;
             do {
                 int n = parser_precise_mbclen(p, ptr);
                 if (n < 0) return -1;
                 ptr += n;
-            } while (ptr < p->lex.pend && is_identchar(p, ptr, p->lex.pend, p->enc));
+            } while (!lex_eol_ptr_p(p, ptr) && is_identchar(p, ptr, p->lex.pend, p->enc));
             rb_warn2("`?' just followed by `%.*s' is interpreted as" \
                      " a conditional operator, put a space after `?'",
                      WARN_I((int)(ptr - start)), WARN_S_L(start, (ptr - start)));
@@ -12358,6 +12360,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
             if (!subnodes(nd_head, nd_resq)) goto end;
             break;
           case NODE_RESCUE:
+            newline = 0; // RESBODY should not be a NEWLINE
             if (node->nd_else) {
                 body = &node->nd_resq;
                 break;

@@ -251,9 +251,6 @@ pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 32768;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
 pub type ruby_robject_flags = u32;
-pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: i32 = 16;
-pub const ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL: i32 = 24;
-pub const ROBJECT_OFFSET_AS_ARY: i32 = 16;
 pub type rb_block_call_func = ::std::option::Option<
     unsafe extern "C" fn(
         yielded_arg: VALUE,
@@ -1060,6 +1057,10 @@ pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
+pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: robject_offsets = 16;
+pub const ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL: robject_offsets = 24;
+pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
+pub type robject_offsets = u32;
 pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;
 pub type rstring_offsets = u32;
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
@@ -1099,6 +1100,7 @@ extern "C" {
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
+    pub fn rb_obj_is_proc(recv: VALUE) -> VALUE;
     pub fn rb_sym2id(obj: VALUE) -> ID;
     pub fn rb_id2sym(id: ID) -> VALUE;
     pub fn rb_intern(name: *const ::std::os::raw::c_char) -> ID;
@@ -1336,4 +1338,6 @@ extern "C" {
         line: ::std::os::raw::c_int,
     );
     pub fn rb_yjit_assert_holding_vm_lock();
+    pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
+    pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
 }

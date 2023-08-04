@@ -2762,15 +2762,30 @@ str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    const long rstring_embed_capa_max = ((sizeof(struct RString) - offsetof(struct RString, as.embed.ary)) / sizeof(char)) - 1;
+    assert(beg >= 0);
+    assert(len >= 0);
+    assert(beg+len <= RSTRING_LEN(str));
 
-    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str)) ||
-            len <= rstring_embed_capa_max) {
+    const int termlen = TERM_LEN(str);
+    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
         str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        RB_GC_GUARD(str);
+        return str2;
+    }
+
+    str2 = str_alloc_heap(rb_cString);
+    if (str_embed_capa(str2) >= len + termlen) {
+        char *ptr2 = RSTRING(str2)->as.embed.ary;
+        STR_SET_EMBED(str2);
+        memcpy(ptr2, RSTRING_PTR(str) + beg, len);
+        TERM_FILL(ptr2+len, termlen);
+
+        STR_SET_LEN(str2, len);
         RB_GC_GUARD(str);
     }
     else {
-        str2 = str_new_shared(rb_cString, str);
+        str_replace_shared(str2, str);
+        assert(!STR_EMBED_P(str2));
         ENC_CODERANGE_CLEAR(str2);
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING_LEN(str2) > len) {
@@ -5178,7 +5193,9 @@ rb_str_drop_bytes(VALUE str, long len)
     }
     STR_SET_LEN(str, nlen);
 
-    ptr[nlen] = 0;
+    if (!SHARABLE_MIDDLE_SUBSTRING) {
+        TERM_FILL(ptr + nlen, TERM_LEN(str));
+    }
     ENC_CODERANGE_CLEAR(str);
     return str;
 }

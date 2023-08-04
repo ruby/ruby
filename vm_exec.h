@@ -21,11 +21,7 @@ typedef rb_iseq_t *ISEQ;
 #define DEBUG_ENTER_INSN(insn) \
     rb_vmdebug_debug_print_pre(ec, GET_CFP(), GET_PC());
 
-#if OPT_STACK_CACHING
-#define SC_REGS() , reg_a, reg_b
-#else
 #define SC_REGS()
-#endif
 
 #define DEBUG_END_INSN() \
   rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
@@ -169,10 +165,20 @@ default:                        \
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
 
+// Run the interpreter from the JIT
+#define VM_EXEC(ec, val) do { \
+    if (val == Qundef) { \
+        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
+        val = vm_exec(ec); \
+    } \
+} while (0)
+
+// Run the JIT from the interpreter
 #define JIT_EXEC(ec, val) do { \
     rb_jit_func_t func; \
     if (val == Qundef && (func = jit_compile(ec))) { \
         val = func(ec, ec->cfp); \
+        RESTORE_REGS(); /* fix cfp for tailcall */ \
         if (ec->tag->state) THROW_EXCEPTION(val); \
     } \
 } while (0)

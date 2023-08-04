@@ -335,9 +335,12 @@ class Reline::ANSI
     @@output.write "\e[K"
   end
 
+  # This only works when the cursor is at the bottom of the scroll range
+  # For more details, see https://github.com/ruby/reline/pull/577#issuecomment-1646679623
   def self.scroll_down(x)
     return if x.zero?
-    @@output.write "\e[#{x}S"
+    # We use `\n` instead of CSI + S because CSI + S would cause https://github.com/ruby/reline/issues/576
+    @@output.write "\n" * x
   end
 
   def self.clear_screen

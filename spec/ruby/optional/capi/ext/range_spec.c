@@ -7,7 +7,7 @@ extern "C" {
 
 VALUE range_spec_rb_range_new(int argc, VALUE* argv, VALUE self) {
   int exclude_end = 0;
-  if(argc == 3) {
+  if (argc == 3) {
     exclude_end = RTEST(argv[2]);
   }
   return rb_range_new(argv[0], argv[1], exclude_end);

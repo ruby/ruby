@@ -2096,10 +2096,9 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     VALUE klass = rb_singleton_class_get(obj);
     ID id = rb_check_id(&vid);
 
-    if (NIL_P(klass)) {
-        /* goto undef; */
-    }
-    else if (NIL_P(klass = RCLASS_ORIGIN(klass))) {
+    if (NIL_P(klass) ||
+        NIL_P(klass = RCLASS_ORIGIN(klass)) ||
+        !NIL_P(rb_special_singleton_class(obj))) {
         /* goto undef; */
     }
     else if (! id) {

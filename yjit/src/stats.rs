@@ -204,8 +204,8 @@ pub(crate) use ptr_to_counter;
 make_counters! {
     yjit_insns_count,
 
+    // Method calls that fallback to dynamic dispatch
     send_keywords,
-    send_klass_megamorphic,
     send_kw_splat,
     send_args_splat_super,
     send_iseq_zsuper,
@@ -245,11 +245,6 @@ make_counters! {
     send_iseq_too_many_kwargs,
     send_not_implemented_method,
     send_getter_arity,
-    send_se_cf_overflow,
-    send_se_protected_check_failed,
-    send_splatarray_length_not_equal,
-    send_splatarray_last_ruby_2_keywords,
-    send_splat_not_array,
     send_args_splat_non_iseq,
     send_args_splat_ivar,
     send_args_splat_attrset,
@@ -268,10 +263,7 @@ make_counters! {
     send_send_null_mid,
     send_send_null_cme,
     send_send_nested,
-    send_send_chain,
     send_send_chain_string,
-    send_send_chain_not_string,
-    send_send_chain_not_sym,
     send_send_chain_not_string_or_sym,
     send_send_getter,
     send_send_builtin,
@@ -279,16 +271,26 @@ make_counters! {
     send_iseq_has_rest_and_send,
     send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_rest_opt_and_block,
-    send_iseq_has_rest_and_splat_not_equal,
-    send_is_a_class_mismatch,
-    send_instance_of_class_mismatch,
-    send_interrupted,
-    send_not_fixnums,
-    send_not_string,
-    send_mid_mismatch,
-
     send_bmethod_ractor,
     send_bmethod_block_arg,
+
+    // Method calls that exit to the interpreter
+    guard_send_klass_megamorphic,
+    guard_send_se_cf_overflow,
+    guard_send_se_protected_check_failed,
+    guard_send_splatarray_length_not_equal,
+    guard_send_splatarray_last_ruby_2_keywords,
+    guard_send_splat_not_array,
+    guard_send_send_chain,
+    guard_send_send_chain_not_string,
+    guard_send_send_chain_not_sym,
+    guard_send_iseq_has_rest_and_splat_not_equal,
+    guard_send_is_a_class_mismatch,
+    guard_send_instance_of_class_mismatch,
+    guard_send_interrupted,
+    guard_send_not_fixnums,
+    guard_send_not_string,
+    guard_send_mid_mismatch,
 
     traced_cfunc_return,
 
@@ -335,6 +337,9 @@ make_counters! {
     opt_mod_zero,
     opt_div_zero,
 
+    lshift_range,
+    lshift_overflow,
+
     opt_aref_argc_not_one,
     opt_aref_arg_not_fixnum,
     opt_aref_not_array,
@@ -344,6 +349,8 @@ make_counters! {
     opt_aset_not_fixnum,
     opt_aset_not_hash,
 
+    opt_aref_with_qundef,
+
     opt_case_dispatch_megamorphic,
 
     opt_getinlinecache_miss,
@@ -351,13 +358,18 @@ make_counters! {
     expandarray_splat,
     expandarray_postarg,
     expandarray_not_array,
-    expandarray_rhs_too_small,
+    expandarray_comptime_not_array,
+    expandarray_chain_max_depth,
 
+    // getblockparam
     gbp_wb_required,
-    gbpp_not_gc_guarded,
+
+    // getblockparamproxy
+    gbpp_unsupported_type,
     gbpp_block_param_modified,
     gbpp_block_handler_not_none,
     gbpp_block_handler_not_iseq,
+    gbpp_block_handler_not_proc,
 
     branchif_interrupted,
     branchunless_interrupted,
@@ -394,9 +406,6 @@ make_counters! {
 
     constant_state_bumps,
 
-    // Not using "getivar_" to exclude this from exit reasons
-    get_ivar_max_depth,
-
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
@@ -405,9 +414,14 @@ make_counters! {
 
     num_send,
     num_send_known_class,
+    num_send_megamorphic,
     num_send_polymorphic,
     num_send_x86_rel32,
     num_send_x86_reg,
+    num_send_dynamic,
+
+    num_getivar_megamorphic,
+    num_setivar_megamorphic,
 
     iseq_stack_too_large,
     iseq_too_long,

@@ -203,6 +203,25 @@ describe "The super keyword" do
     -> { klass.new.a(:a_called) }.should raise_error(RuntimeError)
   end
 
+  it "is able to navigate to super, when a method is defined dynamically on the singleton class" do
+    foo_class = Class.new do
+      def bar
+        "bar"
+      end
+    end
+
+    mixin_module = Module.new do
+      def bar
+        "super_" + super
+      end
+    end
+
+    foo = foo_class.new
+    foo.singleton_class.define_method(:bar, mixin_module.instance_method(:bar))
+
+    foo.bar.should == "super_bar"
+  end
+
   # Rubinius ticket github#157
   it "calls method_missing when a superclass method is not found" do
     SuperSpecs::MM_B.new.is_a?(Hash).should == false

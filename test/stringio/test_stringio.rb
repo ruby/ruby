@@ -729,6 +729,25 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal Encoding::ASCII_8BIT, f.sysread(3).encoding
   end
 
+  def test_pread
+    f = StringIO.new("pread")
+    f.read
+
+    assert_equal "pre".b, f.pread(3, 0)
+    assert_equal "read".b, f.pread(4, 1)
+    assert_equal Encoding::ASCII_8BIT, f.pread(4, 1).encoding
+
+    buf = "".b
+    f.pread(3, 0, buf)
+    assert_equal "pre".b, buf
+    f.pread(4, 1, buf)
+    assert_equal "read".b, buf
+
+    assert_raise(EOFError) { f.pread(1, 5) }
+    assert_raise(ArgumentError) { f.pread(-1, 0) }
+    assert_raise(Errno::EINVAL) { f.pread(3, -1) }
+  end
+
   def test_size
     f = StringIO.new("1234")
     assert_equal(4, f.size)

@@ -289,7 +289,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     system_gems %w[rack-1.0.0 thin-1.0 net_a-1.0], :gem_repo => gem_repo2
     bundle "config set --local path.system true"
-    ENV["BUNDLER_SPEC_ALL_REQUESTS"] = strip_whitespace(<<-EOS).strip
+    ENV["BUNDLER_SPEC_ALL_REQUESTS"] = <<~EOS.strip
       #{source_uri}/versions
       #{source_uri}/info/rack
     EOS

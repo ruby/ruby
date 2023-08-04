@@ -202,14 +202,20 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
  * Returns the flag to show the warning messages for +category+.
  * Supported categories are:
  *
- * +:deprecated+ :: deprecation warnings
- * * assignment of non-nil value to <code>$,</code> and <code>$;</code>
- * * keyword arguments
- * * proc/lambda without block
- * etc.
+ * +:deprecated+ ::
+ *   deprecation warnings
+ *   * assignment of non-nil value to <code>$,</code> and <code>$;</code>
+ *   * keyword arguments
+ *   * proc/lambda without block
+ *   etc.
  *
- * +:experimental+ :: experimental features
- * * Pattern matching
+ * +:experimental+ ::
+ *   experimental features
+ *   * Pattern matching
+ *
+ * +:performance+ ::
+ *   performance hints
+ *   * Shape variation limit
  */
 
 static VALUE
@@ -1826,7 +1832,9 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
-    if (cfp) rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+    if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+    }
     return exc;
 }
 

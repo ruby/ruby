@@ -24,7 +24,7 @@ class TestStringMemory < Test::Unit::TestCase
   end
 
   def test_byteslice_prefix
-    string = "a" * 100_000
+    string = ("a" * 100_000).freeze
 
     allocations = capture_allocations(String) do
       string.byteslice(0, 50_000)

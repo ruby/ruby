@@ -438,7 +438,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone_gc
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       ENV["TZ"] = "JST-9"
       s = Marshal.dump(Time.now)
       t = Marshal.load(s)

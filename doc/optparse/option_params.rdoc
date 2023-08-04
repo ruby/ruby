@@ -1,6 +1,6 @@
 == Parameters for New Options
 
-Option-creating methods in \OptionParser
+Option-creating methods in +OptionParser+
 accept arguments that determine the behavior of a new option:
 
 - OptionParser#on
@@ -405,7 +405,7 @@ Executions:
 === Argument Converters
 
 An option can specify that its argument is to be converted
-from the default \String to an instance of another class.
+from the default +String+ to an instance of another class.
 
 There are a number of built-in converters.
 You can also define custom converters.

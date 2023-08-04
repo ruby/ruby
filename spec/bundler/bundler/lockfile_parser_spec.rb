@@ -3,7 +3,7 @@
 require "bundler/lockfile_parser"
 
 RSpec.describe Bundler::LockfileParser do
-  let(:lockfile_contents) { strip_whitespace(<<-L) }
+  let(:lockfile_contents) { <<~L }
     GIT
       remote: https://github.com/alloy/peiji-san.git
       revision: eca485d8dc95f12aaec1a434b49d295c7e91844b
@@ -39,7 +39,7 @@ RSpec.describe Bundler::LockfileParser do
   end
 
   describe ".unknown_sections_in_lockfile" do
-    let(:lockfile_contents) { strip_whitespace(<<-L) }
+    let(:lockfile_contents) { <<~L }
       UNKNOWN ATTR
 
       UNKNOWN ATTR 2

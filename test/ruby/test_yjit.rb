@@ -548,7 +548,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_getblockparamproxy
     # Currently two side exits as OPTIMIZED_METHOD_TYPE_CALL is unimplemented
-    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: { opt_send_without_block: 2 })
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy])
       def foo &blk
         p blk.call
         p blk.call
@@ -607,7 +607,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_send_kwargs
     # For now, this side-exits when calls include keyword args
-    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/A", exits: {opt_send_without_block: 1})
+    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/A")
       def internal_method(**kw)
         "#{kw.size}##{kw.keys.map { |k| "#{k}:#{kw[k]}" }.join(",")}"
       end
@@ -647,7 +647,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_send_kwargs_splat
     # For now, this side-exits when calling with a splat
-    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/B", exits: {opt_send_without_block: 1})
+    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/B")
       def internal_method(**kw)
         "#{kw.size}##{kw.keys.map { |k| "#{k}:#{kw[k]}" }.join(",")}"
       end
@@ -1238,6 +1238,29 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_setivar_on_class
+    # Bug in https://github.com/ruby/ruby/pull/8152
+    assert_compiles(<<~RUBY, result: :ok)
+      class Base
+        def self.or_equal
+          @or_equal ||= Object.new
+        end
+      end
+
+      Base.or_equal # ensure compiled
+
+      class Child < Base
+      end
+
+      200.times do |iv| # Need to be more than MAX_IVAR
+        Child.instance_variable_set("@_iv_\#{iv}", Object.new)
+      end
+
+      Child.or_equal
+      :ok
+    RUBY
+  end
+
   def test_nested_send
     #[Bug #19464]
     assert_compiles(<<~RUBY, result: [:ok, :ok])
@@ -1286,6 +1309,14 @@ class TestYJIT < Test::Unit::TestCase
       [test, test]
       $stderr.reopen($stderr.dup)
       [test, test].map { :ok unless _1 == :i }
+    RUBY
+  end
+
+  def test_opt_aref_with
+    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar")
+      h = {"foo" => "bar"}
+
+      h["foo"]
     RUBY
   end
 

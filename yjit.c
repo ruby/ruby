@@ -38,6 +38,13 @@
 
 #include <errno.h>
 
+// Field offsets for the RObject struct
+enum robject_offsets {
+    ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr),
+    ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL = offsetof(struct RObject, as.heap.iv_index_tbl),
+    ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
+};
+
 // Field offsets for the RString struct
 enum rstring_offsets {
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
@@ -1120,6 +1127,20 @@ void
 rb_yjit_assert_holding_vm_lock(void)
 {
     ASSERT_vm_locking();
+}
+
+// The number of stack slots that vm_sendish() pops for send and invokesuper.
+size_t
+rb_yjit_sendish_sp_pops(const struct rb_callinfo *ci)
+{
+    return 1 - sp_inc_of_sendish(ci); // + 1 to ignore return value push
+}
+
+// The number of stack slots that vm_sendish() pops for invokeblock.
+size_t
+rb_yjit_invokeblock_sp_pops(const struct rb_callinfo *ci)
+{
+    return 1 - sp_inc_of_invokeblock(ci); // + 1 to ignore return value push
 }
 
 // Primitives used by yjit.rb

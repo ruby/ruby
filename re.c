@@ -1576,9 +1576,8 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 }
 
 regex_t *
-rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
+rb_reg_prepare_re(VALUE re, VALUE str)
 {
-    regex_t *reg = RREGEXP_PTR(re);
     int r;
     OnigErrorInfo einfo;
     const char *pattern;
@@ -1586,12 +1585,13 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
     rb_encoding *fixed_enc = 0;
     rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
 
+    regex_t *reg = RREGEXP_PTR(re);
     if (reg->enc == enc) return reg;
 
     rb_reg_check(re);
-    reg = RREGEXP_PTR(re);
     pattern = RREGEXP_SRC_PTR(re);
 
+    onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
         pattern, pattern + RREGEXP_SRC_LEN(re), enc,
         &fixed_enc, err, 0);
@@ -1606,9 +1606,30 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
     const char *ptr;
     long len;
     RSTRING_GETMEM(unescaped, ptr, len);
-    r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
-                 reg->options, enc,
-                 OnigDefaultSyntax, &einfo);
+
+    /* If there are no other users of this regex, then we can directly overwrite it. */
+    if (RREGEXP(re)->usecnt == 0) {
+        regex_t tmp_reg;
+        r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
+                                   reg->options, enc,
+                                   OnigDefaultSyntax, &einfo);
+
+        if (r) {
+            /* There was an error so perform cleanups. */
+            onig_free_body(&tmp_reg);
+        }
+        else {
+            onig_free_body(reg);
+            /* There are no errors so set reg to tmp_reg. */
+            *reg = tmp_reg;
+        }
+    }
+    else {
+        r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
+                     reg->options, enc,
+                     OnigDefaultSyntax, &einfo);
+    }
+
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
         rb_reg_raise(pattern, RREGEXP_SRC_LEN(re), err, re);
@@ -1620,11 +1641,34 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
     return reg;
 }
 
-regex_t *
-rb_reg_prepare_re(VALUE re, VALUE str)
+OnigPosition
+rb_reg_onig_match(VALUE re, VALUE str,
+                  OnigPosition (*match)(regex_t *reg, VALUE str, struct re_registers *regs, void *args),
+                  void *args, struct re_registers *regs)
 {
-    onig_errmsg_buffer err = "";
-    return rb_reg_prepare_re0(re, str, err);
+    regex_t *reg = rb_reg_prepare_re(re, str);
+
+    bool tmpreg = reg != RREGEXP_PTR(re);
+    if (!tmpreg) RREGEXP(re)->usecnt++;
+
+    OnigPosition result = match(reg, str, regs, args);
+
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+        onig_free(reg);
+    }
+
+    if (result < 0) {
+        onig_region_free(regs, 0);
+
+        if (result != ONIG_MISMATCH) {
+            onig_errmsg_buffer err = "";
+            onig_error_code_to_str((UChar*)err, (int)result);
+            rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
+        }
+    }
+
+    return result;
 }
 
 long
@@ -1658,65 +1702,52 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
     return pos;
 }
 
+struct reg_onig_search_args {
+    long pos;
+    long range;
+};
+
+static OnigPosition
+reg_onig_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_ptr)
+{
+    struct reg_onig_search_args *args = (struct reg_onig_search_args *)args_ptr;
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(str, ptr, len);
+
+    return onig_search(
+        reg,
+        (UChar *)ptr,
+        (UChar *)(ptr + len),
+        (UChar *)(ptr + args->pos),
+        (UChar *)(ptr + args->range),
+        regs,
+        ONIG_OPTION_NONE);
+}
+
 /* returns byte offset */
 static long
 rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *set_match)
 {
-    long result;
-    VALUE match;
-    struct re_registers regi, *regs = &regi;
-    char *start, *range;
-    long len;
-    regex_t *reg;
-    int tmpreg;
-    onig_errmsg_buffer err = "";
-
-    RSTRING_GETMEM(str, start, len);
-    range = start;
+    long len = RSTRING_LEN(str);
     if (pos > len || pos < 0) {
         rb_backref_set(Qnil);
         return -1;
     }
 
-    reg = rb_reg_prepare_re0(re, str, err);
-    tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
+    struct reg_onig_search_args args = {
+        .pos = pos,
+        .range = reverse ? 0 : len,
+    };
 
-    MEMZERO(regs, struct re_registers, 1);
-    if (!reverse) {
-        range += len;
-    }
-    result = onig_search(reg,
-                         (UChar*)start,
-                         ((UChar*)(start + len)),
-                         ((UChar*)(start + pos)),
-                         ((UChar*)range),
-                         regs, ONIG_OPTION_NONE);
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-        if (RREGEXP(re)->usecnt) {
-            onig_free(reg);
-        }
-        else {
-            onig_free(RREGEXP_PTR(re));
-            RREGEXP_PTR(re) = reg;
-        }
-    }
-    if (result < 0) {
-        if (regs == &regi)
-            onig_region_free(regs, 0);
-        if (result == ONIG_MISMATCH) {
-            rb_backref_set(Qnil);
-            return result;
-        }
-        else {
-            onig_error_code_to_str((UChar*)err, (int)result);
-            rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
-        }
-    }
+    VALUE match = match_alloc(rb_cMatch);
+    struct re_registers *regs = RMATCH_REGS(match);
 
-    match = match_alloc(rb_cMatch);
-    memcpy(RMATCH_REGS(match), regs, sizeof(struct re_registers));
+    OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, regs);
+    if (result == ONIG_MISMATCH) {
+        rb_backref_set(Qnil);
+        return ONIG_MISMATCH;
+    }
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
@@ -1748,69 +1779,35 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
     return rb_reg_search0(re, str, pos, reverse, 1);
 }
 
-bool
-rb_reg_start_with_p(VALUE re, VALUE str)
+static OnigPosition
+reg_onig_match(regex_t *reg, VALUE str, struct re_registers *regs, void *_)
 {
-    long result;
-    VALUE match;
-    struct re_registers regi, *regs = &regi;
-    regex_t *reg;
-    int tmpreg;
-    onig_errmsg_buffer err = "";
-
-    reg = rb_reg_prepare_re0(re, str, err);
-    tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
-
-    match = rb_backref_get();
-    if (!NIL_P(match)) {
-        if (FL_TEST(match, MATCH_BUSY)) {
-            match = Qnil;
-        }
-        else {
-            regs = RMATCH_REGS(match);
-        }
-    }
-    if (NIL_P(match)) {
-        MEMZERO(regs, struct re_registers, 1);
-    }
     const char *ptr;
     long len;
     RSTRING_GETMEM(str, ptr, len);
-    result = onig_match(reg,
-            (UChar*)(ptr),
-            ((UChar*)(ptr + len)),
-            (UChar*)(ptr),
-            regs, ONIG_OPTION_NONE);
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-        if (RREGEXP(re)->usecnt) {
-            onig_free(reg);
-        }
-        else {
-            onig_free(RREGEXP_PTR(re));
-            RREGEXP_PTR(re) = reg;
-        }
-    }
-    if (result < 0) {
-        if (regs == &regi)
-            onig_region_free(regs, 0);
-        if (result == ONIG_MISMATCH) {
-            rb_backref_set(Qnil);
-            return false;
-        }
-        else {
-            onig_error_code_to_str((UChar*)err, (int)result);
-            rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
-        }
+
+    return onig_match(
+        reg,
+        (UChar *)ptr,
+        (UChar *)(ptr + len),
+        (UChar *)ptr,
+        regs,
+        ONIG_OPTION_NONE);
+}
+
+bool
+rb_reg_start_with_p(VALUE re, VALUE str)
+{
+    VALUE match = rb_backref_get();
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+        match = match_alloc(rb_cMatch);
     }
 
-    if (NIL_P(match)) {
-        int err;
-        match = match_alloc(rb_cMatch);
-        err = rb_reg_region_copy(RMATCH_REGS(match), regs);
-        onig_region_free(regs, 0);
-        if (err) rb_memerror();
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    if (rb_reg_onig_match(re, str, reg_onig_match, NULL, regs) == ONIG_MISMATCH) {
+        rb_backref_set(Qnil);
+        return false;
     }
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
@@ -3784,12 +3781,6 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 VALUE
 rb_reg_match_p(VALUE re, VALUE str, long pos)
 {
-    regex_t *reg;
-    onig_errmsg_buffer err = "";
-    OnigPosition result;
-    const UChar *start, *end;
-    int tmpreg;
-
     if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
     if (pos) {
@@ -3804,33 +3795,13 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
             pos = beg - RSTRING_PTR(str);
         }
     }
-    reg = rb_reg_prepare_re0(re, str, err);
-    tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
-    start = ((UChar*)RSTRING_PTR(str));
-    end = start + RSTRING_LEN(str);
-    result = onig_search(reg, start, end, start + pos, end,
-                         NULL, ONIG_OPTION_NONE);
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-        if (RREGEXP(re)->usecnt) {
-            onig_free(reg);
-        }
-        else {
-            onig_free(RREGEXP_PTR(re));
-            RREGEXP_PTR(re) = reg;
-        }
-    }
-    if (result < 0) {
-        if (result == ONIG_MISMATCH) {
-            return Qfalse;
-        }
-        else {
-            onig_error_code_to_str((UChar*)err, (int)result);
-            rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
-        }
-    }
-    return Qtrue;
+
+    struct reg_onig_search_args args = {
+        .pos = pos,
+        .range = RSTRING_LEN(str),
+    };
+
+    return rb_reg_onig_match(re, str, reg_onig_search, &args, NULL) == ONIG_MISMATCH ? Qfalse : Qtrue;
 }
 
 /*

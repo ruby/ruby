@@ -290,6 +290,48 @@ rb_iseq_mark_and_move_each_value(const rb_iseq_t *iseq, VALUE *original_iseq)
     }
 }
 
+static bool
+cc_is_active(const struct rb_callcache *cc, bool reference_updating)
+{
+    if (cc) {
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // vm_empty_cc is an off-heap object, but has the layout of a heap object.
+            // In vanilla Ruby, rb_gc_location looks at the header to see if it is T_MOVED.
+            // Since vm_empty_cc is not T_MOVED, it treats it like an un-moved object.
+            // But MMTk will think it is not a heap object and will crash.
+            // We simply skip it if cc is vm_empty_cc.
+            if (cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
+                // Both vm_empty_cc and vm_empty_cc_for_super are UNMARKABLE.
+                // We return false as they would when running vanilla Ruby.
+                return false;
+            }
+
+            // For evacuating collectors, we always have to trace the objects
+            // before looking at their fields.
+            reference_updating = true;
+        }
+#endif
+
+        if (reference_updating) {
+            cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
+        }
+
+        if (vm_cc_markable(cc)) {
+            if (cc->klass) { // cc is not invalidated
+                const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+                if (reference_updating) {
+                    cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
+                }
+                if (!METHOD_ENTRY_INVALIDATED(cme)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 void
 rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 {
@@ -318,48 +360,11 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
                 if (cds[i].ci) rb_gc_mark_and_move_ptr(&cds[i].ci);
 
-                const struct rb_callcache *cc = cds[i].cc;
-                if (cc) {
-#if USE_MMTK
-                    // vm_empty_cc is an off-heap object, but has the layout of a heap object.
-                    // In vanilla Ruby, rb_gc_location looks at the header to see if it is T_MOVED.
-                    // Since vm_empty_cc is not T_MOVED, it treats it like an un-moved object.
-                    // But MMTk will think it is not a heap object and will crash.
-                    // We simply skip it if cc is vm_empty_cc.
-                    if (!rb_mmtk_enabled_p() ||
-                        (cc != rb_vm_empty_cc() && cc != rb_vm_empty_cc_for_super())) {
-#endif
-#if USE_MMTK
-                    if (rb_mmtk_enabled_p() || reference_updating) {
-                        // Note: With an evacuating collector (such as Immix),
-                        // the object (for example, the `cc` below) is moved whenever we trace it,
-                        // and there is not any distinct "mark phase" where objects do not move.
-                        // So because we look at the contents of `cc` below,
-                        // we must always prepare for the possibility that `cc` may be moved.
-#else
-                    if (reference_updating) {
-#endif
-                        cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
-                    }
-
-                    if (vm_cc_markable(cc)) {
-                        VM_ASSERT((cc->flags & VM_CALLCACHE_ON_STACK) == 0);
-
-                        const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
-                        if (reference_updating) {
-                            cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
-                        }
-
-                        if (cc->klass && !METHOD_ENTRY_INVALIDATED(cme)) {
-                            rb_gc_mark_and_move_ptr(&cds[i].cc);
-                        }
-                        else {
-                            cds[i].cc = rb_vm_empty_cc();
-                        }
-                    }
-#if USE_MMTK
-                    }
-#endif
+                if (cc_is_active(cds[i].cc, reference_updating)) {
+                    rb_gc_mark_and_move_ptr(&cds[i].cc);
+                }
+                else {
+                    cds[i].cc = rb_vm_empty_cc();
                 }
             }
         }
@@ -735,7 +740,6 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_SPECIALISED_INSTRUCTION, /* int specialized_instruction; */
     OPT_OPERANDS_UNIFICATION, /* int operands_unification; */
     OPT_INSTRUCTIONS_UNIFICATION, /* int instructions_unification; */
-    OPT_STACK_CACHING, /* int stack_caching; */
     OPT_FROZEN_STRING_LITERAL,
     OPT_DEBUG_FROZEN_STRING_LITERAL,
     TRUE,			/* coverage_enabled */
@@ -761,7 +765,6 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
     SET_COMPILE_OPTION(option, opt, specialized_instruction);
     SET_COMPILE_OPTION(option, opt, operands_unification);
     SET_COMPILE_OPTION(option, opt, instructions_unification);
-    SET_COMPILE_OPTION(option, opt, stack_caching);
     SET_COMPILE_OPTION(option, opt, frozen_string_literal);
     SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
     SET_COMPILE_OPTION(option, opt, coverage_enabled);
@@ -824,7 +827,6 @@ make_compile_option_value(rb_compile_option_t *option)
         SET_COMPILE_OPTION(option, opt, specialized_instruction);
         SET_COMPILE_OPTION(option, opt, operands_unification);
         SET_COMPILE_OPTION(option, opt, instructions_unification);
-        SET_COMPILE_OPTION(option, opt, stack_caching);
         SET_COMPILE_OPTION(option, opt, frozen_string_literal);
         SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
         SET_COMPILE_OPTION(option, opt, coverage_enabled);
@@ -1460,7 +1462,6 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
  *  * +:operands_unification+
  *  * +:peephole_optimization+
  *  * +:specialized_instruction+
- *  * +:stack_caching+
  *  * +:tailcall_optimization+
  *
  *  Additionally, +:debug_level+ can be set to an integer.
@@ -2245,7 +2246,7 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
     {
         rb_event_flag_t events = rb_iseq_event_flags(iseq, pos);
         if (events) {
-            str = rb_str_catf(str, "[%s%s%s%s%s%s%s%s%s%s%s]",
+            str = rb_str_catf(str, "[%s%s%s%s%s%s%s%s%s%s%s%s]",
                               events & RUBY_EVENT_LINE     ? "Li" : "",
                               events & RUBY_EVENT_CLASS    ? "Cl" : "",
                               events & RUBY_EVENT_END      ? "En" : "",
@@ -2255,6 +2256,7 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
                               events & RUBY_EVENT_C_RETURN ? "Cr" : "",
                               events & RUBY_EVENT_B_CALL   ? "Bc" : "",
                               events & RUBY_EVENT_B_RETURN ? "Br" : "",
+                              events & RUBY_EVENT_RESCUE   ? "Rs" : "",
                               events & RUBY_EVENT_COVERAGE_LINE   ? "Cli" : "",
                               events & RUBY_EVENT_COVERAGE_BRANCH ? "Cbr" : "");
         }
@@ -2599,6 +2601,7 @@ push_event_info(const rb_iseq_t *iseq, rb_event_flag_t events, int line, VALUE a
     C(RUBY_EVENT_END,      "end",      INT2FIX(line));
     C(RUBY_EVENT_RETURN,   "return",   INT2FIX(line));
     C(RUBY_EVENT_B_RETURN, "b_return", INT2FIX(line));
+    C(RUBY_EVENT_RESCUE,    "rescue",  INT2FIX(line));
 #undef C
 }
 
@@ -3116,6 +3119,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
             CHECK_EVENT(RUBY_EVENT_RETURN);
             CHECK_EVENT(RUBY_EVENT_B_CALL);
             CHECK_EVENT(RUBY_EVENT_B_RETURN);
+            CHECK_EVENT(RUBY_EVENT_RESCUE);
 #undef CHECK_EVENT
             prev_insn_info = info;
         }

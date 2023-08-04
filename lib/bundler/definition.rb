@@ -700,7 +700,7 @@ module Bundler
       return if @dependency_changes
 
       current_dependencies.find do |d|
-        @locked_specs[d.name].empty?
+        @locked_specs[d.name].empty? && d.name != "bundler"
       end&.name
     end
 

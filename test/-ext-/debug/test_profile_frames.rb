@@ -14,6 +14,8 @@ class SampleClassForTestProfileFrames
   end
 
   class Sample2
+    EVAL_LINE = __LINE__ + 3
+
     def baz(block)
       instance_eval "def zab(block) block.call end"
       [self, zab(block)]
@@ -112,7 +114,7 @@ class TestProfileFrames < Test::Unit::TestCase
       "SampleClassForTestProfileFrames#foo",
       "TestProfileFrames#test_profile_frames",
     ]
-    paths = [ nil, file=__FILE__, "(eval)", file, file, file, file, file, file, nil ]
+    paths = [ nil, file=__FILE__, "(eval at #{__FILE__}:#{SampleClassForTestProfileFrames::Sample2::EVAL_LINE})", file, file, file, file, file, file, nil ]
     absolute_paths = [ "<cfunc>", file, nil, file, file, file, file, file, file, nil ]
 
     assert_equal(labels.size, frames.size)

@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include <fiddle.h>
 
 VALUE mFiddle;
@@ -357,6 +359,12 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddleTypes, "UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
 
+    /* Document-const: Fiddle::Types::BOOL
+     *
+     * C type - bool
+     */
+    rb_define_const(mFiddleTypes, "BOOL" ,      rb_fiddle_type_bool());
+
     /* Document-const: ALIGN_VOIDP
      *
      * The alignment size of a void*
@@ -634,6 +642,12 @@ Init_fiddle(void)
      * size of a const char*
      */
     rb_define_const(mFiddle, "SIZEOF_CONST_STRING", INT2NUM(sizeof(const char*)));
+
+    /* Document-const: SIZEOF_BOOL
+     *
+     * size of a bool
+     */
+    rb_define_const(mFiddle, "SIZEOF_BOOL", INT2NUM(sizeof(bool)));
 
     /* Document-const: RUBY_FREE
      *

@@ -230,8 +230,9 @@ lcov*.info
 # /misc/
 /misc/**/__pycache__
 
-# /spec/bundler
+# for `make test-bundler`
 /.rspec_status
+/tool/bundler/*.lock
 
 # /tool/
 /tool/config.guess

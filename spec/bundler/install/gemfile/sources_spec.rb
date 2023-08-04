@@ -1374,7 +1374,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           gem "thin"
         end
       G
-      expect(err).to eq strip_whitespace(<<-EOS).strip
+      expect(err).to eq <<~EOS.strip
         Warning: The gem 'rack' was found in multiple relevant sources.
           * rubygems repository https://gem.repo1/
           * rubygems repository https://gem.repo4/
@@ -1404,7 +1404,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
       G
       expect(last_command).to be_failure
-      expect(err).to eq strip_whitespace(<<-EOS).strip
+      expect(err).to eq <<~EOS.strip
         The gem 'rack' was found in multiple relevant sources.
           * rubygems repository https://gem.repo1/
           * rubygems repository https://gem.repo4/

@@ -12,7 +12,7 @@ class TestRequireLib < Test::Unit::TestCase
     # skip many files that almost use no threads
     next if TEST_RATIO < rand(0.0..1.0)
     define_method "test_thread_size:#{lib}" do
-      assert_separately(['--disable-gems', '-W0'], "#{<<~"begin;"}\n#{<<~"end;"}")
+      assert_separately(['-W0'], "#{<<~"begin;"}\n#{<<~"end;"}")
       begin;
         n = Thread.list.size
         begin

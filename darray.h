@@ -50,30 +50,10 @@
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
-
-// Last element of the array
-//
-#define rb_darray_back(ary) ((ary)->data[(ary)->meta.size - 1])
-
-// Remove the last element of the array.
-//
-#define rb_darray_pop_back(ary) ((ary)->meta.size--)
-
-// Remove element at idx and replace it by the last element
-#define rb_darray_remove_unordered(ary, idx) do {   \
-    rb_darray_set(ary, idx, rb_darray_back(ary));   \
-    rb_darray_pop_back(ary);                        \
-} while (0);
-
 // Iterate over items of the array in a for loop
 //
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
     for (size_t idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
-
-// Iterate over valid indices in the array in a for loop
-//
-#define rb_darray_for(ary, idx_name) \
-    for (size_t idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)
 
 // Make a dynamic array of a certain size. All bytes backing the elements are set to zero.
 //

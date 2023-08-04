@@ -76,7 +76,7 @@ RSpec.describe Bundler do
     context "with incorrect YAML file" do
       before do
         File.open(app_gemspec_path, "wb") do |f|
-          f.write strip_whitespace(<<-GEMSPEC)
+          f.write <<~GEMSPEC
             ---
               {:!00 ao=gu\g1= 7~f
           GEMSPEC
@@ -147,7 +147,7 @@ RSpec.describe Bundler do
     context "with gemspec containing local variables" do
       before do
         File.open(app_gemspec_path, "wb") do |f|
-          f.write strip_whitespace(<<-GEMSPEC)
+          f.write <<~GEMSPEC
             must_not_leak = true
             Gem::Specification.new do |gem|
               gem.name = "leak check"

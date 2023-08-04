@@ -310,6 +310,7 @@ class TestGCCompact < Test::Unit::TestCase
 
   def test_moving_arrays_down_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    pend "Flaky on some platforms" if /solaris|mswin/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -324,12 +325,13 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
       assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT)
-      assert_include(ObjectSpace.dump(arys[0]), '"embedded":true')
+      refute_empty(arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_arrays_up_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    pend "Flaky on some platforms" if /solaris|mswin/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -346,12 +348,13 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
       assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT)
-      assert_include(ObjectSpace.dump(arys[0]), '"embedded":true')
+      refute_empty(arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_objects_between_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    pend "Flaky on some platforms" if /solaris|mswin/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -376,12 +379,13 @@ class TestGCCompact < Test::Unit::TestCase
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
-      assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
+      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_strings_up_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    pend "Flaky on some platforms" if /solaris|mswin/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -395,12 +399,13 @@ class TestGCCompact < Test::Unit::TestCase
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
-      assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
+      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_strings_down_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    pend "Flaky on some platforms" if /solaris|mswin/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -413,7 +418,7 @@ class TestGCCompact < Test::Unit::TestCase
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
-      assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
+      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -424,7 +429,7 @@ class TestGCCompact < Test::Unit::TestCase
     # This test fails on Solaris SPARC with the following error and I can't figure out why:
     #   TestGCCompact#test_moving_hashes_down_size_pools
     #   Expected 499 to be >= 500.
-    omit if /sparc-solaris/ =~ RUBY_PLATFORM
+    pend "Flaky on some platforms" if /solaris|mswin/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;

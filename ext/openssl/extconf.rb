@@ -13,7 +13,14 @@
 
 require "mkmf"
 
-dir_config_given = dir_config("openssl").any?
+if defined?(::TruffleRuby)
+  # Always respect the openssl prefix chosen by truffle/openssl-prefix
+  require 'truffle/openssl-prefix'
+  dir_config_given = dir_config("openssl", ENV["OPENSSL_PREFIX"]).any?
+else
+  dir_config_given = dir_config("openssl").any?
+end
+
 dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"

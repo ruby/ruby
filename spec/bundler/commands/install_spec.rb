@@ -514,8 +514,6 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   describe "Ruby version in Gemfile.lock" do
-    include Bundler::GemHelpers
-
     context "and using an unsupported Ruby version" do
       it "prints an error" do
         install_gemfile <<-G, :raise_on_error => false

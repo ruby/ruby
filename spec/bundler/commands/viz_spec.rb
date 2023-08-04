@@ -16,7 +16,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
     expect(out).to include("gem_graph.png")
 
     bundle "viz", :format => "debug"
-    expect(out).to eq(strip_whitespace(<<-DOT).strip)
+    expect(out).to eq(<<~DOT.strip)
       digraph Gemfile {
       concentrate = "true";
       normalize = "true";
@@ -50,7 +50,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
     expect(out).to include("gem_graph.png")
 
     bundle "viz", :format => :debug, :version => true
-    expect(out).to eq(strip_whitespace(<<-EOS).strip)
+    expect(out).to eq(<<~EOS.strip)
       digraph Gemfile {
       concentrate = "true";
       normalize = "true";
@@ -88,7 +88,7 @@ RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot"), :re
       G
 
       bundle "viz", :format => "debug"
-      expect(out).to eq(strip_whitespace(<<-DOT).strip)
+      expect(out).to eq(<<~DOT.strip)
         digraph Gemfile {
         concentrate = "true";
         normalize = "true";

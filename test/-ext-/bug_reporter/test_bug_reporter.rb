@@ -9,8 +9,6 @@ class TestBugReporter < Test::Unit::TestCase
   end
 
   def test_bug_reporter_add
-    omit if ENV['RUBY_ON_BUG']
-
     description = RUBY_DESCRIPTION
     description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
@@ -27,6 +25,7 @@ class TestBugReporter < Test::Unit::TestCase
     args = ["--disable-gems", "-r-test-/bug_reporter",
             "-C", tmpdir]
     args.push("--yjit") if yjit_enabled? # We want the printed description to match this process's RUBY_DESCRIPTION
+    args.unshift({"RUBY_ON_BUG" => nil})
     stdin = "#{no_core}register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
     assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")
   ensure

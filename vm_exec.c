@@ -42,7 +42,7 @@ static void vm_analysis_insn(int insn);
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
-vm_exec_core(rb_execution_context_t *ec, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec)
 {
 #if defined(__GNUC__) && defined(__i386__)
     DECL_SC_REG(const VALUE *, pc, "di");
@@ -97,11 +97,6 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
     reg_cfp = ec->cfp;
     reg_pc = reg_cfp->pc;
 
-#if OPT_STACK_CACHING
-    reg_a = initial;
-    reg_b = 0;
-#endif
-
   first:
     INSN_DISPATCH();
 /*****************/
@@ -117,7 +112,7 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 const void **
 rb_vm_get_insns_address_table(void)
 {
-    return (const void **)vm_exec_core(0, 0);
+    return (const void **)vm_exec_core(0);
 }
 
 #else /* OPT_CALL_THREADED_CODE */
@@ -132,7 +127,7 @@ rb_vm_get_insns_address_table(void)
 }
 
 static VALUE
-vm_exec_core(rb_execution_context_t *ec, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec)
 {
     register rb_control_frame_t *reg_cfp = ec->cfp;
     rb_thread_t *th;

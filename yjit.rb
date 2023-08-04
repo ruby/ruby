@@ -250,7 +250,8 @@ module RubyVM::YJIT
 
       out.puts("***YJIT: Printing YJIT statistics on exit***")
 
-      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
       print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons: ')
       print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
       print_counters(stats, out: out, prefix: 'leave_', prompt: 'leave exit reasons: ')
@@ -259,6 +260,7 @@ module RubyVM::YJIT
       print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       print_counters(stats, out: out, prefix: 'definedivar_', prompt: 'definedivar exit reasons:')
       print_counters(stats, out: out, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
+      print_counters(stats, out: out, prefix: 'opt_aref_with_', prompt: 'opt_aref_with exit reasons: ')
       print_counters(stats, out: out, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
       print_counters(stats, out: out, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
@@ -269,10 +271,14 @@ module RubyVM::YJIT
       out.puts "num_send:              " + format_number(13, stats[:num_send])
       out.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
       out.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
+      out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:num_send_megamorphic], stats[:num_send])
+      out.puts "num_send_dynamic:      " + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
         out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
         out.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
       end
+      out.puts "num_getivar_megamorphic: " + format_number(13, stats[:num_getivar_megamorphic])
+      out.puts "num_setivar_megamorphic: " + format_number(13, stats[:num_setivar_megamorphic])
 
       out.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
       out.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
@@ -300,7 +306,6 @@ module RubyVM::YJIT
       out.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
       out.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
       out.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
-      out.puts "get_ivar_max_depth:    " + format_number(13, stats[:get_ivar_max_depth])
       out.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
       out.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
       out.puts "code_region_size:      " + format_number(13, stats[:code_region_size])

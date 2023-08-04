@@ -122,7 +122,6 @@ FILES_NEED_VPATH = %w[
   miniprelude.c
   newline.c
   node_name.inc
-  opt_sc.inc
   optinsn.inc
   optunifs.inc
   parse.c
@@ -168,10 +167,8 @@ FILES_SAME_NAME_TOP = %w[
 ]
 
 # Files that may or may not exist on CI for some reason.
-# They are probably missing dependencies.
-UNSTABLE_FILES = %w[
-  win32/file.o
-]
+# Windows build generally seems to have missing dependencies.
+UNSTABLE_FILES = %r{\Awin32/[^/]+\.o\z}
 
 # Other source files exist in the source directory.
 
@@ -236,7 +233,9 @@ def in_makefile(target, source)
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["#{File.dirname(target)}/depend", target2, source2]
-  when *UNSTABLE_FILES
+  # Files that may or may not exist on CI for some reason.
+  # Windows build generally seems to have missing dependencies.
+  when UNSTABLE_FILES
     warn "warning: ignoring: #{target}"
   else
     raise "unexpected target: #{target}"
@@ -480,7 +479,7 @@ def compare_deps(make_deps, cc_deps, out=$stdout)
     }
   }
 
-  makefiles.keys.sort.each {|makefile|
+  makefiles.keys.compact.sort.each {|makefile|
     cc_lines = cc_lines_hash[makefile] || Hash.new(false)
     make_lines = make_lines_hash[makefile] || Hash.new(false)
     content = begin

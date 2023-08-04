@@ -2355,7 +2355,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(--disable=gems - #{RUBY}), <<-INPUT, timeout: 100)
+    assert_separately(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2707,6 +2707,18 @@ EOS
       Process.warmup
       assert_equal major_gc_count + 1, GC.stat(:major_gc_count)
       assert_equal compact_count + 1, GC.stat(:compact_count)
+    end;
+  end
+
+  def test_warmup_precompute_string_coderange
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
+    begin;
+      obj = "a" * 12
+      obj.force_encoding(Encoding::BINARY)
+      assert_include(ObjectSpace.dump(obj), '"coderange":"unknown"')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"coderange":"7bit"')
     end;
   end
 end

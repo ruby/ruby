@@ -52,7 +52,8 @@ class TestRequire < Test::Unit::TestCase
   def test_require_nonascii
     bug3758 = '[ruby-core:31915]'
     ["\u{221e}", "\x82\xa0".force_encoding("cp932")].each do |path|
-      assert_raise_with_message(LoadError, /#{path}\z/, bug3758) {require path}
+      e = assert_raise(LoadError, bug3758) {require path}
+      assert_operator(e.message, :end_with?, path, bug3758)
     end
   end
 
@@ -958,5 +959,20 @@ class TestRequire < Test::Unit::TestCase
     def test_resolve_feature_path_with_missing_feature
       assert_nil($LOAD_PATH.resolve_feature_path("superkalifragilisticoespialidoso"))
     end
+  end
+
+  def test_require_with_public_method_missing
+    # [Bug #19793]
+    assert_separately(["-W0", "--disable-gems", "-rtempfile"], __FILE__, __LINE__, <<~RUBY)
+      GC.stress = true
+
+      class Object
+        public :method_missing
+      end
+
+      Tempfile.create(["empty", ".rb"]) do |file|
+        require file.path
+      end
+    RUBY
   end
 end

@@ -1024,7 +1024,7 @@ __FILE__: #{path.to_s.inspect}
       end
 
       context "signals being trapped by bundler" do
-        let(:executable) { strip_whitespace <<-RUBY }
+        let(:executable) { <<~RUBY }
           #{shebang}
           begin
             Thread.new do
@@ -1051,7 +1051,7 @@ __FILE__: #{path.to_s.inspect}
       end
 
       context "signals not being trapped by bunder" do
-        let(:executable) { strip_whitespace <<-RUBY }
+        let(:executable) { <<~RUBY }
           #{shebang}
 
           signals = #{test_signals.inspect}

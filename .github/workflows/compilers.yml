@@ -179,6 +179,7 @@ jobs:
 #         - { name: USE_THREAD_CACHE=0,             env: { cppflags: '-DUSE_THREAD_CACHE=0' } }
           - { name: USE_RUBY_DEBUG_LOG=1,           env: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
 #         - { name: USE_DEBUG_COUNTER,              env: { cppflags: '-DUSE_DEBUG_COUNTER=1', RUBY_DEBUG_COUNTER_DISABLE: '1' } }
+          - { name: SHARABLE_MIDDLE_SUBSTRING,      env: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' } }
 
 #         - { name: DEBUG_FIND_TIME_NUMGUESS,       env: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
 #         - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
@@ -202,9 +203,9 @@ jobs:
 #         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
 #         - { name: VM_DEBUG_VERIFY_METHOD_CACHE,   env: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
 
-          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' }, rust: true }
+          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' } }
           - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
-          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' }, rust: true }
+          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
 #         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
 
     name: ${{ matrix.entry.name }}
@@ -238,10 +239,6 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
-
-      - name: Install Rust
-        if: ${{ matrix.entry.rust }}
-        run: sudo apt-get update && sudo apt install -y rustc
 
       - name: Run configure
         run: >

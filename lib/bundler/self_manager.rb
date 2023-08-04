@@ -86,7 +86,7 @@ module Bundler
         released?(lockfile_version) &&
         !running?(lockfile_version) &&
         !updating? &&
-        Bundler.settings[:version] != "global"
+        Bundler.settings[:version] != "system"
     end
 
     def autoswitching_applies?
@@ -177,7 +177,7 @@ module Bundler
       # BUNDLE_VERSION=x.y.z
       @restart_version = Gem::Version.new(Bundler.settings[:version])
     rescue ArgumentError
-      # BUNDLE_VERSION=local
+      # BUNDLE_VERSION=lockfile
       @restart_version = lockfile_version
     end
   end

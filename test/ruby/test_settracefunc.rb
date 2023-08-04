@@ -2725,4 +2725,75 @@ CODE
       Foo.foo
     RUBY
   end
+
+  def helper_cant_rescue
+    begin
+      raise SyntaxError
+    rescue
+      cant_rescue
+    end
+  end
+
+  def test_tp_rescue
+    lines = []
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable{
+      begin
+        helper_cant_rescue
+      rescue SyntaxError
+      end
+    }
+    call_line = lines.shift
+    raise_line = lines.shift
+    assert_equal [], lines
+  end
+
+  def helper_can_rescue
+    begin
+      raise __LINE__.to_s
+    rescue SyntaxError
+      :ng
+    rescue
+      :ok
+    end
+  end
+
+  def helper_can_rescue_empty_body
+    begin
+      raise __LINE__.to_s
+    rescue SyntaxError
+      :ng
+    rescue
+    end
+  end
+
+  def test_tp_rescue_event
+    lines = []
+    TracePoint.new(:rescue){|tp|
+      next unless target_thread?
+      lines << [tp.lineno, tp.raised_exception]
+    }.enable{
+      helper_can_rescue
+    }
+
+    line, err, = lines.pop
+    assert_equal [], lines
+    assert err.kind_of?(RuntimeError)
+    assert_equal err.message.to_i + 4, line
+
+    lines = []
+    TracePoint.new(:rescue){|tp|
+      next unless target_thread?
+      lines << [tp.lineno, tp.raised_exception]
+    }.enable{
+      helper_can_rescue_empty_body
+    }
+
+    line, err, = lines.pop
+    assert_equal [], lines
+    assert err.kind_of?(RuntimeError)
+    assert_equal err.message.to_i + 3, line
+  end
 end

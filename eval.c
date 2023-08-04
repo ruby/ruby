@@ -1341,14 +1341,14 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
     using_module_recursive(cref, module);
-    rb_clear_method_cache_all();
+    rb_clear_all_refinement_method_cache();
 }
 
 /*
  *  call-seq:
- *     refined_class    -> class
+ *     target    -> class
  *
- *  Return the class refined by the receiver.
+ *  Return the class or module refined by the receiver.
  */
 VALUE
 rb_refinement_module_get_refined_class(VALUE module)
@@ -1357,6 +1357,19 @@ rb_refinement_module_get_refined_class(VALUE module)
 
     CONST_ID(id_refined_class, "__refined_class__");
     return rb_attr_get(module, id_refined_class);
+}
+
+/*
+ *  call-seq:
+ *     refined_class    -> class
+ *
+ *  Return the class refined by the receiver.
+ */
+static VALUE
+rb_refinement_refined_class(VALUE module)
+{
+    rb_warn_deprecated_to_remove("3.4", "Refinement#refined_class", "Refinement#target");
+    return rb_refinement_module_get_refined_class(module);
 }
 
 static void
@@ -2067,7 +2080,8 @@ Init_eval(void)
                                rb_mod_s_used_refinements, 0);
     rb_undef_method(rb_cClass, "refine");
     rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
-    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_module_get_refined_class, 0);
+    rb_define_method(rb_cRefinement, "target", rb_refinement_module_get_refined_class, 0);
+    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_refined_class, 0);
     rb_undef_method(rb_cRefinement, "append_features");
     rb_undef_method(rb_cRefinement, "prepend_features");
     rb_undef_method(rb_cRefinement, "extend_object");

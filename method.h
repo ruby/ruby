@@ -249,6 +249,6 @@ void rb_scope_visibility_set(rb_method_visibility_t);
 VALUE rb_unnamed_parameters(int arity);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
-void rb_clear_method_cache_all(void);
+void rb_clear_all_refinement_method_cache(void);
 
 #endif /* RUBY_METHOD_H */

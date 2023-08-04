@@ -1,14 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle lock" do
-  def strip_lockfile(lockfile)
-    strip_whitespace(lockfile).sub(/\n\Z/, "")
-  end
-
-  def read_lockfile(file = "Gemfile.lock")
-    strip_lockfile bundled_app(file).read
-  end
-
   let(:repo) { gem_repo1 }
 
   before :each do
@@ -19,7 +11,7 @@ RSpec.describe "bundle lock" do
       gem "foo"
     G
 
-    @lockfile = strip_lockfile(<<-L)
+    @lockfile = <<~L
       GEM
         remote: #{file_uri_for(repo)}/
         specs:
@@ -58,7 +50,7 @@ RSpec.describe "bundle lock" do
   it "prints a lockfile when there is no existing lockfile with --print" do
     bundle "lock --print"
 
-    expect(out).to eq(@lockfile)
+    expect(out).to eq(@lockfile.strip)
   end
 
   it "prints a lockfile when there is an existing lockfile with --print" do
@@ -66,7 +58,7 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --print"
 
-    expect(out).to eq(@lockfile)
+    expect(out).to eq(@lockfile.strip)
   end
 
   it "writes a lockfile when there is no existing lockfile" do
@@ -94,7 +86,7 @@ RSpec.describe "bundle lock" do
       source "#{file_uri_for(repo)}"
       gem "foo"
     G
-    lockfile = strip_lockfile(<<-L)
+    lockfile = <<~L
       GEM
         remote: #{file_uri_for(repo)}/
         specs:

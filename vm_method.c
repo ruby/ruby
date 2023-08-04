@@ -307,21 +307,22 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
 void rb_cc_table_free(VALUE klass);
 
 static int
-invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
+invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data)
 {
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
+
         if (RBASIC(v)->flags) { // liveness check
-            if (RB_TYPE_P(v, T_CLASS) ||
-                RB_TYPE_P(v, T_ICLASS)) {
-                if (RCLASS_CC_TBL(v)) {
-                    rb_cc_table_free(v);
+            if (imemo_type_p(v, imemo_callcache)) {
+                const struct rb_callcache *cc = (const struct rb_callcache *)v;
+                if (vm_cc_refinement_p(cc) && cc->klass) {
+                    vm_cc_invalidate(cc);
                 }
-                RCLASS_CC_TBL(v) = NULL;
             }
         }
+
         if (ptr) {
             asan_poison_object(v);
         }
@@ -330,10 +331,9 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
 }
 
 void
-rb_clear_method_cache_all(void)
+rb_clear_all_refinement_method_cache(void)
 {
-    rb_objspace_each_objects(invalidate_all_cc, NULL);
-
+    rb_objspace_each_objects(invalidate_all_refinement_cc, NULL);
     rb_yjit_invalidate_all_method_lookup_assumptions();
 }
 

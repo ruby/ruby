@@ -155,15 +155,62 @@ describe "Module#module_function with specific method names" do
 
     m.foo.should == ["m", "super_m"]
   end
+
+  context "methods created with define_method" do
+    context "passed a block" do
+      it "creates duplicates of the given instance methods" do
+        m = Module.new do
+          define_method :test1 do; end
+          module_function :test1
+        end
+
+        m.respond_to?(:test1).should == true
+      end
+    end
+
+    context "passed a method" do
+      it "creates duplicates of the given instance methods" do
+        module_with_method = Module.new do
+          def test1; end
+        end
+
+        c = Class.new do
+          extend module_with_method
+        end
+
+        m = Module.new do
+          define_method :test2, c.method(:test1)
+          module_function :test2
+        end
+
+        m.respond_to?(:test2).should == true
+      end
+    end
+
+    context "passed an unbound method" do
+      it "creates duplicates of the given instance methods" do
+        module_with_method = Module.new do
+          def test1; end
+        end
+
+        m = Module.new do
+          define_method :test2, module_with_method.instance_method(:test1)
+          module_function :test2
+        end
+
+        m.respond_to?(:test2).should == true
+      end
+    end
+  end
 end
 
 describe "Module#module_function as a toggle (no arguments) in a Module body" do
   it "makes any subsequently defined methods module functions with the normal semantics" do
-    m = Module.new {
+    m = Module.new do
       module_function
       def test1() end
       def test2() end
-    }
+    end
 
     m.respond_to?(:test1).should == true
     m.respond_to?(:test2).should == true
@@ -187,13 +234,13 @@ describe "Module#module_function as a toggle (no arguments) in a Module body" do
 
   it "stops creating module functions if the body encounters another toggle " \
      "like public/protected/private without arguments" do
-    m = Module.new {
+    m = Module.new do
       module_function
       def test1() end
       def test2() end
       public
       def test3() end
-    }
+    end
 
     m.respond_to?(:test1).should == true
     m.respond_to?(:test2).should == true
@@ -202,14 +249,14 @@ describe "Module#module_function as a toggle (no arguments) in a Module body" do
 
   it "does not stop creating module functions if the body encounters " \
      "public/protected/private WITH arguments" do
-    m = Module.new {
+    m = Module.new do
       def foo() end
       module_function
       def test1() end
       def test2() end
       public :foo
       def test3() end
-    }
+    end
 
     m.respond_to?(:test1).should == true
     m.respond_to?(:test2).should == true
@@ -217,69 +264,116 @@ describe "Module#module_function as a toggle (no arguments) in a Module body" do
   end
 
   it "does not affect module_evaled method definitions also if outside the eval itself" do
-    m = Module.new {
+    m = Module.new do
       module_function
       module_eval { def test1() end }
       module_eval " def test2() end "
-    }
+    end
 
     m.respond_to?(:test1).should == false
     m.respond_to?(:test2).should == false
   end
 
   it "has no effect if inside a module_eval if the definitions are outside of it" do
-    m = Module.new {
+    m = Module.new do
       module_eval { module_function }
       def test1() end
       def test2() end
-    }
+    end
 
     m.respond_to?(:test1).should == false
     m.respond_to?(:test2).should == false
   end
 
   it "functions normally if both toggle and definitions inside a module_eval" do
-    m = Module.new {
-      module_eval {
+    m = Module.new do
+      module_eval do
         module_function
         def test1() end
         def test2() end
-      }
-    }
+      end
+    end
 
     m.respond_to?(:test1).should == true
     m.respond_to?(:test2).should == true
   end
 
-  it "affects evaled method definitions also even when outside the eval itself" do
-    m = Module.new {
+  it "affects eval'ed method definitions also even when outside the eval itself" do
+    m = Module.new do
       module_function
       eval "def test1() end"
-    }
+    end
 
     m.respond_to?(:test1).should == true
   end
 
   it "doesn't affect definitions when inside an eval even if the definitions are outside of it" do
-    m = Module.new {
+    m = Module.new do
       eval "module_function"
       def test1() end
-    }
+    end
 
     m.respond_to?(:test1).should == false
   end
 
   it "functions normally if both toggle and definitions inside a eval" do
-    m = Module.new {
+    m = Module.new do
       eval <<-CODE
         module_function
 
         def test1() end
         def test2() end
       CODE
-    }
+    end
 
     m.respond_to?(:test1).should == true
     m.respond_to?(:test2).should == true
+  end
+
+  context "methods are defined with define_method" do
+    context "passed a block" do
+      it "makes any subsequently defined methods module functions with the normal semantics" do
+        m = Module.new do
+          module_function
+          define_method :test1 do; end
+        end
+
+        m.respond_to?(:test1).should == true
+      end
+    end
+
+    context "passed a method" do
+      it "makes any subsequently defined methods module functions with the normal semantics" do
+        module_with_method = Module.new do
+          def test1; end
+        end
+
+        c = Class.new do
+          extend module_with_method
+        end
+
+        m = Module.new do
+          module_function
+          define_method :test2, c.method(:test1)
+        end
+
+        m.respond_to?(:test2).should == true
+      end
+    end
+
+    context "passed an unbound method" do
+      it "makes any subsequently defined methods module functions with the normal semantics" do
+        module_with_method = Module.new do
+          def test1; end
+        end
+
+        m = Module.new do
+          module_function
+          define_method :test2, module_with_method.instance_method(:test1)
+        end
+
+        m.respond_to?(:test2).should == true
+      end
+    end
   end
 end

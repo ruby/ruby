@@ -228,13 +228,13 @@ describe "BigDecimal#round" do
     -> { BigDecimal('-Infinity').round(2) }.should_not raise_error(FloatDomainError)
   end
 
-  ruby_version_is ''...'3.2' do
+  version_is BigDecimal::VERSION, ''...'3.1.3' do #ruby_version_is ''...'3.2' do
     it 'raise for a non-existent round mode' do
       -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode")
     end
   end
 
-  ruby_version_is '3.2' do
+  version_is BigDecimal::VERSION, '3.1.3' do #ruby_version_is '3.2' do
     it 'raise for a non-existent round mode' do
       -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode (nonsense)")
     end

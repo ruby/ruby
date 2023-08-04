@@ -244,7 +244,7 @@ parser_comments(yp_parser_t *parser, VALUE source) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(comment->start - parser->start),
-            LONG2FIX(comment->end - parser->start)
+            LONG2FIX(comment->end - comment->start)
         };
 
         VALUE type;
@@ -280,7 +280,7 @@ parser_errors(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(error->start - parser->start),
-            LONG2FIX(error->end - parser->start)
+            LONG2FIX(error->end - error->start)
         };
 
         VALUE error_argv[] = {
@@ -304,7 +304,7 @@ parser_warnings(yp_parser_t *parser, rb_encoding *encoding, VALUE source) {
         VALUE location_argv[] = {
             source,
             LONG2FIX(warning->start - parser->start),
-            LONG2FIX(warning->end - parser->start)
+            LONG2FIX(warning->end - warning->start)
         };
 
         VALUE warning_argv[] = {

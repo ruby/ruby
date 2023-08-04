@@ -79,6 +79,10 @@ describe "String#encode" do
       encoded.encode("UTF-8").should == "ちfoofoo"
     end
 
+    it "replace multiple invalid bytes at the end with a single replacement character" do
+      "\xE3\x81\x93\xE3\x81".encode("UTF-8", invalid: :replace).should == "\u3053\ufffd"
+    end
+
     it "replaces invalid encoding in source using a specified replacement even when a fallback is given" do
       encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace, replace: "foo", fallback: -> c { "bar" })
       encoded.should == "\u3061foofoo".encode("UTF-16LE")

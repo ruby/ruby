@@ -218,126 +218,126 @@ static VALUE so_check_type(VALUE self, VALUE obj, VALUE other) {
 }
 
 static VALUE so_is_type_nil(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_NIL) {
+  if (TYPE(obj) == T_NIL) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_object(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_OBJECT) {
+  if (TYPE(obj) == T_OBJECT) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_array(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_ARRAY) {
+  if (TYPE(obj) == T_ARRAY) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_module(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_MODULE) {
+  if (TYPE(obj) == T_MODULE) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_class(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_CLASS) {
+  if (TYPE(obj) == T_CLASS) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_data(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_DATA) {
+  if (TYPE(obj) == T_DATA) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_nil(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_NIL)) {
+  if (rb_type_p(obj, T_NIL)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_object(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_OBJECT)) {
+  if (rb_type_p(obj, T_OBJECT)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_array(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_ARRAY)) {
+  if (rb_type_p(obj, T_ARRAY)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_module(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_MODULE)) {
+  if (rb_type_p(obj, T_MODULE)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_class(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_CLASS)) {
+  if (rb_type_p(obj, T_CLASS)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_data(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_DATA)) {
+  if (rb_type_p(obj, T_DATA)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_file(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_FILE)) {
+  if (rb_type_p(obj, T_FILE)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_object(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_OBJECT) {
+  if (BUILTIN_TYPE(obj) == T_OBJECT) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_array(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_ARRAY) {
+  if (BUILTIN_TYPE(obj) == T_ARRAY) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_module(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_MODULE) {
+  if (BUILTIN_TYPE(obj) == T_MODULE) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_class(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_CLASS) {
+  if (BUILTIN_TYPE(obj) == T_CLASS) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_data(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_DATA) {
+  if (BUILTIN_TYPE(obj) == T_DATA) {
     return Qtrue;
   }
   return Qfalse;

@@ -434,6 +434,15 @@ describe "The 'case'-construct with no target expression" do
     end.should == :called
   end
 
+  it "only matches last value in complex expressions within ()" do
+    case 'a'
+    when ('a'; 'b')
+      :wrong_called
+    when ('b'; 'a')
+      :called
+    end.should == :called
+  end
+
   # Homogeneous cases are often optimized to avoid === using a jump table, and should be tested separately.
   # See https://github.com/jruby/jruby/issues/6440
   it "handles homogeneous cases" do

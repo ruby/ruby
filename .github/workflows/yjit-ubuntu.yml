@@ -164,6 +164,7 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
+          YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
         continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
 
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison

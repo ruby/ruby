@@ -688,6 +688,16 @@ module TestIRB
 
 
   class ShowCmdsTest < CommandTestCase
+    def setup
+      STDIN.singleton_class.define_method :tty? do
+        false
+      end
+    end
+
+    def teardown
+      STDIN.singleton_class.remove_method :tty?
+    end
+
     def test_show_cmds
       out, err = execute_lines(
         "show_cmds\n"
@@ -700,6 +710,16 @@ module TestIRB
   end
 
   class LsTest < CommandTestCase
+    def setup
+      STDIN.singleton_class.define_method :tty? do
+        false
+      end
+    end
+
+    def teardown
+      STDIN.singleton_class.remove_method :tty?
+    end
+
     def test_ls
       out, err = execute_lines(
         "class P\n",

@@ -80,7 +80,8 @@ module Test_SyncDefaultGems
       @target = nil
       pend "No git" unless system("git --version", out: IO::NULL)
       @testdir = Dir.mktmpdir("sync")
-      @git_config = ENV["GIT_CONFIG_GLOBAL"]
+      @git_config = %W"HOME GIT_CONFIG_GLOBAL".each_with_object({}) {|k, c| c[k] = ENV[k]}
+      ENV["HOME"] = @testdir
       ENV["GIT_CONFIG_GLOBAL"] = @testdir + "/gitconfig"
       system(*%W"git config --global user.email test@ruby-lang.org")
       system(*%W"git config --global user.name", "Ruby")
@@ -105,7 +106,7 @@ module Test_SyncDefaultGems
       if @target
         Dir.chdir(@origdir)
         SyncDefaultGems::REPOSITORIES.delete(@target.to_sym)
-        ENV["GIT_CONFIG_GLOBAL"] = @git_config
+        ENV.update(@git_config)
         FileUtils.rm_rf(@testdir)
       end
       super

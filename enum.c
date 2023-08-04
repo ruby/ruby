@@ -4824,13 +4824,13 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *    %w[a b c c b a a b c].uniq       # => ["a", "b", "c"]
  *    [0, 1, 2, 2, 1, 0, 0, 1, 2].uniq # => [0, 1, 2]
  *
- *  With a block, returns a new array containing only for which the block
+ *  With a block, returns a new array containing elements only for which the block
  *  returns a unique value:
  *
  *    a = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1]
  *    a.uniq {|i| i.even? ? i : 0 } # => [0, 2, 4]
  *    a = %w[a b c d e e d c b a a b c d e]
-      a.uniq {|c| c < 'c' }         # => ["a", "c"]
+ *    a.uniq {|c| c < 'c' }         # => ["a", "c"]
  *
  */
 

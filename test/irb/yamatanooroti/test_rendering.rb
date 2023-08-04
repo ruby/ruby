@@ -252,6 +252,72 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
+  def test_show_cmds_with_pager_can_quit_with_ctrl_c
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+    LINES
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("show_cmds\n")
+    write("G") # move to the end of the screen
+    write("\C-c") # quit pager
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # IRB::Abort should be rescued
+    assert_not_match(/IRB::Abort/, screen)
+    # IRB should resume
+    assert_match(/foobar/, screen)
+  end
+
+  def test_pager_page_content_pages_output_when_it_does_not_fit_in_the_screen_because_of_total_length
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("IRB::Pager.page_content('a' * (80 * 8))\n")
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_match(/a{80}/, screen)
+    # because pager is invoked, foobar will not be evaluated
+    assert_not_match(/foobar/, screen)
+  end
+
+  def test_pager_page_content_pages_output_when_it_does_not_fit_in_the_screen_because_of_screen_height
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("IRB::Pager.page_content('a\n' * 8)\n")
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_match(/(a\n){8}/, screen)
+    # because pager is invoked, foobar will not be evaluated
+    assert_not_match(/foobar/, screen)
+  end
+
+  def test_pager_page_content_doesnt_page_output_when_it_fits_in_the_screen
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("IRB::Pager.page_content('a' * (80 * 7))\n")
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_match(/a{80}/, screen)
+    # because pager is not invoked, foobar will be evaluated
+    assert_match(/foobar/, screen)
+  end
+
   private
 
   def write_irbrc(content)

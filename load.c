@@ -1184,8 +1184,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile const struct {
         VALUE wrapper, self, errinfo;
+        rb_execution_context_t *ec;
     } saved = {
         th->top_wrapper, th->top_self, ec->errinfo,
+        ec,
     };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
@@ -1248,6 +1250,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     }
     EC_POP_TAG();
 
+    ec = saved.ec;
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
     th2->top_self = saved.self;
     th2->top_wrapper = saved.wrapper;

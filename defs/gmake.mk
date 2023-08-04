@@ -304,6 +304,7 @@ foreach-bundled-gems-rev-0 = \
 bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
 bundled-gem-gemspec = $(srcdir)/gems/src/$(1)/$(1).gemspec
 bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
+bundled-gem-revision = $(srcdir)/.bundle/.timestamp/$(1).revision
 
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
 update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
@@ -343,7 +344,7 @@ $(srcdir)/gems/src/$(1)/.git: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
 	$(Q) $(GIT) clone $(4) $$(@D)
 
-$(srcdir)/.bundle/.timestamp/$(1).revision: \
+$(bundled-gem-revision): \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
 	| $(srcdir)/.bundle/.timestamp $(srcdir)/gems/src/$(1)/.git
 	$(ECHO) Update $(1) to $(3)
@@ -355,12 +356,11 @@ $(srcdir)/.bundle/.timestamp/$(1).revision: \
 
 # The repository of minitest does not include minitest.gemspec because it uses hoe.
 # This creates a dummy gemspec.
-$(srcdir)/gems/src/$(1)/$(1).gemspec: $(srcdir)/.bundle/.timestamp/$(1).revision \
+$(bundled-gem-gemspec): $(bundled-gem-revision) \
 	| $(srcdir)/gems/src/$(1)/.git
 	$(Q) $(BASERUBY) -I$(tooldir)/lib -rbundled_gem -e 'BundledGem.dummy_gemspec(*ARGV)' $$(@)
 
-$(srcdir)/gems/$(1)-$(2).gem: $(srcdir)/gems/src/$(1)/$(1).gemspec \
-		$(srcdir)/.bundle/.timestamp/$(1).revision
+$(bundled-gem-gemfile): $(bundled-gem-gemspec) $(bundled-gem-revision)
 	$(ECHO) Building $(1)@$(3) to $$(@)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \

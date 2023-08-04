@@ -347,7 +347,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #define TICK_TYPE 1
 
 typedef struct {
-    size_t heap_init_slots;
+    size_t size_pool_init_slots[SIZE_POOL_COUNT];
     size_t heap_free_slots;
     double growth_factor;
     size_t growth_max_slots;
@@ -370,7 +370,7 @@ typedef struct {
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
-    GC_HEAP_INIT_SLOTS,
+    { 0 },
     GC_HEAP_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_SLOTS,
@@ -2339,6 +2339,14 @@ heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 }
 
 static size_t
+minimum_pages_for_size_pool(rb_objspace_t *objspace, int size_pool_idx)
+{
+    rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
+    int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+    return gc_params.size_pool_init_slots[size_pool_idx] * multiple / HEAP_PAGE_OBJ_LIMIT;
+}
+
+static size_t
 heap_extend_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, size_t free_slots, size_t total_slots, size_t used)
 {
     double goal_ratio = gc_params.heap_free_slots_goal_ratio;
@@ -2348,8 +2356,7 @@ heap_extend_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, size_t fre
         next_used = (size_t)(used * gc_params.growth_factor);
     }
     else if (total_slots == 0) {
-        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
-        next_used = (gc_params.heap_init_slots * multiple) / HEAP_PAGE_OBJ_LIMIT;
+        next_used = minimum_pages_for_size_pool(objspace, (int)(size_pool - size_pools));
     }
     else {
         /* Find `f' where free_slots = f * total_slots * goal_ratio
@@ -3373,6 +3380,8 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, rb_objspace_t *objspace,
                     asan_poison_object((VALUE)cc);
                 }
             }
+
+            VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
             vm_cc_invalidate(cc);
         }
         ruby_xfree(ccs->entries);
@@ -4032,9 +4041,10 @@ Init_heap(void)
 
     /* Set size pools allocatable pages. */
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_size_pool_t *size_pool = &size_pools[i];
-        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
-        size_pool->allocatable_pages = gc_params.heap_init_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
+        /* Set the default value of size_pool_init_slots. */
+        gc_params.size_pool_init_slots[i] = GC_HEAP_INIT_SLOTS;
+
+        size_pools[i].allocatable_pages = minimum_pages_for_size_pool(objspace, i);
     }
     heap_pages_expand_sorted(objspace);
 
@@ -5814,8 +5824,6 @@ check_stack_for_moved(rb_objspace_t *objspace)
     each_machine_stack_value(ec, revert_machine_stack_references);
 }
 
-static void gc_mode_transition(rb_objspace_t *objspace, enum gc_mode mode);
-
 static void
 gc_compact_finish(rb_objspace_t *objspace)
 {
@@ -6119,30 +6127,20 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     size_t total_pages = heap->total_pages + SIZE_POOL_TOMB_HEAP(size_pool)->total_pages;
     size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots;
 
-    size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
+    size_t init_slots = gc_params.size_pool_init_slots[size_pool - size_pools];
+    size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
 
     /* If we don't have enough slots and we have pages on the tomb heap, move
      * pages from the tomb heap to the eden heap. This may prevent page
      * creation thrashing (frequently allocating and deallocting pages) and
      * GC thrashing (running GC more frequently than required). */
     struct heap_page *resurrected_page;
-    while ((swept_slots < min_free_slots || swept_slots < gc_params.heap_init_slots) &&
+    while (swept_slots < min_free_slots &&
             (resurrected_page = heap_page_resurrect(objspace, size_pool))) {
         swept_slots += resurrected_page->free_slots;
 
         heap_add_page(objspace, size_pool, heap, resurrected_page);
         heap_add_freepage(heap, resurrected_page);
-    }
-
-    /* Some size pools may have very few pages (or even no pages). These size pools
-     * should still have allocatable pages. */
-    if (min_free_slots < gc_params.heap_init_slots && swept_slots < gc_params.heap_init_slots) {
-        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
-        size_t extra_slots = gc_params.heap_init_slots - swept_slots;
-        size_t extend_page_count = CEILDIV(extra_slots * multiple, HEAP_PAGE_OBJ_LIMIT);
-        if (extend_page_count > size_pool->allocatable_pages) {
-            size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
-        }
     }
 
     if (swept_slots < min_free_slots) {
@@ -6155,7 +6153,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
                                        size_pool->freed_slots > size_pool->empty_slots) &&
                                    size_pool->allocatable_pages == 0;
 
-            if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
+            /* Grow this heap if we haven't run at least RVALUE_OLD_AGE minor
+             * GC since the last major GC or if this heap is smaller than the
+             * the configured initial size. */
+            if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE ||
+                    total_slots < init_slots) {
                 grow_heap = TRUE;
             }
             else if (is_growth_heap) { /* Only growth heaps are allowed to start a major GC. */
@@ -7461,10 +7463,29 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_callinfo:
         return;
       case imemo_callcache:
+        /* cc is callcache.
+         *
+         * cc->klass (klass) should not be marked because if the klass is
+         * free'ed, the cc->klass will be cleared by `vm_cc_invalidate()`.
+         *
+         * cc->cme (cme) should not be marked because if cc is invalidated
+         * when cme is free'ed.
+         * - klass marks cme if klass uses cme.
+         * - caller classe's ccs->cme marks cc->cme.
+         * - if cc is invalidated (klass doesn't refer the cc),
+         *   cc is invalidated by `vm_cc_invalidate()` and cc->cme is
+         *   not be accessed.
+         * - On the multi-Ractors, cme will be collected with global GC
+         *   so that it is safe if GC is not interleaving while accessing
+         *   cc and cme.
+         * - However, cc_type_super is not chained from cc so the cc->cme
+         *   should be marked.
+         */
         {
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-            // should not mark klass here
-            gc_mark(objspace, (VALUE)vm_cc_cme(cc));
+            if (vm_cc_super_p(cc)) {
+                gc_mark(objspace, (VALUE)cc->cme_);
+            }
         }
         return;
       case imemo_constcache:
@@ -8675,9 +8696,14 @@ gc_marks_finish(rb_objspace_t *objspace)
 
         GC_ASSERT(heap_eden_total_slots(objspace) >= objspace->marked_slots);
 
-        /* setup free-able page counts */
-        if (max_free_slots < gc_params.heap_init_slots * r_mul) {
-            max_free_slots = gc_params.heap_init_slots * r_mul;
+        /* Setup freeable slots. */
+        size_t total_init_slots = 0;
+        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+            total_init_slots += gc_params.size_pool_init_slots[i] * r_mul;
+        }
+
+        if (max_free_slots < total_init_slots) {
+            max_free_slots = total_init_slots;
         }
 
         if (sweep_slots > max_free_slots) {
@@ -10114,6 +10140,11 @@ gc_set_candidate_object_i(void *vstart, void *vend, size_t stride, void *data)
           case T_NONE:
           case T_ZOMBIE:
             break;
+          case T_STRING:
+            // precompute the string coderange. This both save time for when it will be
+            // eventually needed, and avoid mutating heap pages after a potential fork.
+            rb_enc_str_coderange(v);
+            // fall through
           default:
             if (!RVALUE_OLD_P(v) && !RVALUE_WB_UNPROTECTED(v)) {
                 RVALUE_AGE_SET_CANDIDATE(objspace, v);
@@ -10599,6 +10630,14 @@ gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
     }
 }
 
+static bool
+moved_or_living_object_strictly_p(rb_objspace_t *objspace, VALUE obj)
+{
+    return obj &&
+           is_pointer_to_heap(objspace, (void *)obj) &&
+           (is_live_object(objspace, obj) || BUILTIN_TYPE(obj) == T_MOVED);
+}
+
 static void
 gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 {
@@ -10646,17 +10685,18 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_callcache:
         {
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-            if (cc->klass) {
-                UPDATE_IF_MOVED(objspace, cc->klass);
-                if (!is_live_object(objspace, cc->klass)) {
-                    *((VALUE *)(&cc->klass)) = (VALUE)0;
-                }
-            }
 
-            if (cc->cme_) {
-                TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
-                if (!is_live_object(objspace, (VALUE)cc->cme_)) {
-                    *((struct rb_callable_method_entry_struct **)(&cc->cme_)) = (struct rb_callable_method_entry_struct *)0;
+            if (!cc->klass) {
+                // already invalidated
+            }
+            else {
+                if (moved_or_living_object_strictly_p(objspace, cc->klass) &&
+                    moved_or_living_object_strictly_p(objspace, (VALUE)cc->cme_)) {
+                    UPDATE_IF_MOVED(objspace, cc->klass);
+                    TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+                }
+                else {
+                    vm_cc_invalidate(cc);
                 }
             }
         }
@@ -11294,7 +11334,6 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
     /* Clear the heap. */
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qfalse);
-    size_t growth_slots = gc_params.heap_init_slots;
 
     if (RTEST(double_heap)) {
         rb_warn("double_heap is deprecated, please use expand_heap instead");
@@ -11312,8 +11351,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
                 size_t minimum_pages = 0;
                 if (RTEST(expand_heap)) {
-                    int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
-                    minimum_pages = growth_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
+                    minimum_pages = minimum_pages_for_size_pool(objspace, i);
                 }
 
                 heap_add_pages(objspace, size_pool, heap, MAX(minimum_pages, heap->total_pages));
@@ -12129,7 +12167,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
 }
 
 static void
-gc_set_initial_pages(rb_objspace_t *objspace, int global_heap_init_slots)
+gc_set_initial_pages(rb_objspace_t *objspace)
 {
     gc_rest(objspace);
 
@@ -12138,24 +12176,18 @@ gc_set_initial_pages(rb_objspace_t *objspace, int global_heap_init_slots)
         char env_key[sizeof("RUBY_GC_HEAP_INIT_SIZE_" "_SLOTS") + DECIMAL_SIZE_OF_BITS(sizeof(size_pool->slot_size) * CHAR_BIT)];
         snprintf(env_key, sizeof(env_key), "RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS", size_pool->slot_size);
 
-        size_t pool_init_slots = 0;
-        if (!get_envparam_size(env_key, &pool_init_slots, 0)) {
-            if (global_heap_init_slots) {
-                // If we use the global init slot we ponderate it by slot size
-                pool_init_slots = gc_params.heap_init_slots / (size_pool->slot_size / BASE_SLOT_SIZE);
-            }
-            else {
-                continue;
-            }
+        size_t size_pool_init_slots = gc_params.size_pool_init_slots[i];
+        if (get_envparam_size(env_key, &size_pool_init_slots, 0)) {
+            gc_params.size_pool_init_slots[i] = size_pool_init_slots;
         }
 
-        if (pool_init_slots > size_pool->eden_heap.total_slots) {
-            size_t slots = pool_init_slots - size_pool->eden_heap.total_slots;
+        if (size_pool_init_slots > size_pool->eden_heap.total_slots) {
+            size_t slots = size_pool_init_slots - size_pool->eden_heap.total_slots;
             int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
             size_pool->allocatable_pages = slots * multiple / HEAP_PAGE_OBJ_LIMIT;
         }
         else {
-            /* We already have more slots than heap_init_slots allows, so
+            /* We already have more slots than size_pool_init_slots allows, so
              * prevent creating more pages. */
             size_pool->allocatable_pages = 0;
         }
@@ -12215,12 +12247,13 @@ ruby_gc_set_params(void)
     }
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
-    if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
-        gc_set_initial_pages(objspace, TRUE);
+    size_t global_init_slots = GC_HEAP_INIT_SLOTS;
+    if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &global_init_slots, 0)) {
+        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+            gc_params.size_pool_init_slots[i] = global_init_slots;
+        }
     }
-    else {
-        gc_set_initial_pages(objspace, FALSE);
-    }
+    gc_set_initial_pages(objspace);
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);
     get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);

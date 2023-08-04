@@ -97,13 +97,15 @@ endif
 	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1' BTESTS=-j
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_yjit.rb'
 
+YJIT_BINDGEN_DIFF_OPTS =
+
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
 .PHONY: yjit-bindgen yjit-bindgen-show-unused
 yjit-bindgen: yjit.$(OBJEXT)
 	YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
-	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff --exit-code yjit/src/cruby_bindings.inc.rs; fi
+	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(YJIT_BINDGEN_DIFF_OPTS) yjit/src/cruby_bindings.inc.rs; fi
 
 check-yjit-bindgen-unused: yjit.$(OBJEXT)
 	RUST_LOG=warn YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) 2>&1 | (! grep "unused option: --allow")

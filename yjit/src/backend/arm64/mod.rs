@@ -1079,8 +1079,14 @@ impl Assembler
                 Insn::Jl(target) => {
                     emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(*target, self, ocb));
                 },
+                Insn::Jg(target) => {
+                    emit_conditional_jump::<{Condition::GT}>(cb, compile_side_exit(*target, self, ocb));
+                },
                 Insn::Jbe(target) => {
                     emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(*target, self, ocb));
+                },
+                Insn::Jb(target) => {
+                    emit_conditional_jump::<{Condition::CC}>(cb, compile_side_exit(*target, self, ocb));
                 },
                 Insn::Jo(target) => {
                     emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb));

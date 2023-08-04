@@ -1102,6 +1102,18 @@ assert_equal '[42, :default]', %q{
   ]
 }
 
+# Test default value block for Hash with opt_aref_with
+assert_equal "false", %q{
+  def index_with_string(h)
+    h["foo"]
+  end
+
+  h = Hash.new { |h, k| k.frozen? }
+
+  index_with_string(h)
+  index_with_string(h)
+}
+
 # A regression test for making sure cfp->sp is proper when
 # hitting stubs. See :stub-sp-flush:
 assert_equal 'ok', %q{
@@ -2264,6 +2276,17 @@ assert_equal '[1, 2, nil]', %q{
 
   expandarray_rhs_too_small
   expandarray_rhs_too_small
+}
+
+assert_equal '[nil, 2, nil]', %q{
+  def foo(arr)
+    a, b, c = arr
+  end
+
+  a, b, c1 = foo([0, 1])
+  a, b, c2 = foo([0, 1, 2])
+  a, b, c3 = foo([0, 1])
+  [c1, c2, c3]
 }
 
 assert_equal '[1, [2]]', %q{

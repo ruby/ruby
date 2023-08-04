@@ -12,18 +12,16 @@
 #include <string.h>
 
 // YP_EXPORTED_FUNCTION
-#if defined(_WIN32)
-#   define YP_EXPORTED_FUNCTION __declspec(dllexport) extern
-#elif defined(YP_EXPORT_SYMBOLS)
-#   ifndef YP_EXPORTED_FUNCTION
-#       ifndef RUBY_FUNC_EXPORTED
-#           define YP_EXPORTED_FUNCTION __attribute__((__visibility__("default"))) extern
+#ifndef YP_EXPORTED_FUNCTION
+#   ifdef YP_EXPORT_SYMBOLS
+#       ifdef _WIN32
+#          define YP_EXPORTED_FUNCTION __declspec(dllexport) extern
 #       else
-#           define YP_EXPORTED_FUNCTION RUBY_FUNC_EXPORTED
+#          define YP_EXPORTED_FUNCTION __attribute__((__visibility__("default"))) extern
 #       endif
+#   else
+#       define YP_EXPORTED_FUNCTION
 #   endif
-#else
-#   define YP_EXPORTED_FUNCTION
 #endif
 
 // YP_ATTRIBUTE_UNUSED

@@ -428,11 +428,31 @@ impl Assembler
             }
         }
 
-        fn emit_csel(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd)) {
-            if out != truthy {
-                mov(cb, out.into(), truthy.into());
+        fn emit_csel(
+            cb: &mut CodeBlock,
+            truthy: Opnd,
+            falsy: Opnd,
+            out: Opnd,
+            cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd),
+            cmov_neg: fn(&mut CodeBlock, X86Opnd, X86Opnd)){
+
+            // Assert that output is a register
+            out.unwrap_reg();
+
+            // If the truthy value is a memory operand
+            if let Opnd::Mem(_) = truthy {
+                if out != falsy {
+                    mov(cb, out.into(), falsy.into());
+                }
+
+                cmov_fn(cb, out.into(), truthy.into());
+            } else {
+                if out != truthy {
+                    mov(cb, out.into(), truthy.into());
+                }
+
+                cmov_neg(cb, out.into(), falsy.into());
             }
-            cmov_fn(cb, out.into(), falsy.into());
         }
 
         //dbg!(&self.insns);
@@ -673,10 +693,26 @@ impl Assembler
                     }
                 },
 
+                Insn::Jg(target) => {
+                    match compile_side_exit(*target, self, ocb) {
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jg_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jg_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                    }
+                },
+
                 Insn::Jbe(target) => {
                     match compile_side_exit(*target, self, ocb) {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                    }
+                },
+
+                Insn::Jb(target) => {
+                    match compile_side_exit(*target, self, ocb) {
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jb_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jb_label(cb, label_idx),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
@@ -716,28 +752,28 @@ impl Assembler
                 Insn::Breakpoint => int3(cb),
 
                 Insn::CSelZ { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovnz);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovz, cmovnz);
                 },
                 Insn::CSelNZ { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovz);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovnz, cmovz);
                 },
                 Insn::CSelE { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovne);
+                    emit_csel(cb, *truthy, *falsy, *out, cmove, cmovne);
                 },
                 Insn::CSelNE { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmove);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovne, cmove);
                 },
                 Insn::CSelL { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovge);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovl, cmovge);
                 },
                 Insn::CSelLE { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovg);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovle, cmovg);
                 },
                 Insn::CSelG { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovle);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovg, cmovle);
                 },
                 Insn::CSelGE { truthy, falsy, out } => {
-                    emit_csel(cb, *truthy, *falsy, *out, cmovl);
+                    emit_csel(cb, *truthy, *falsy, *out, cmovge, cmovl);
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
@@ -1167,6 +1203,28 @@ mod tests {
             0x1b: mov rdx, r11
             0x1e: mov eax, 0
             0x23: call rax
+        "});
+    }
+
+    #[test]
+    fn test_cmov_mem() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let top = Opnd::mem(64, SP, 0);
+        let ary_opnd = SP;
+        let array_len_opnd = Opnd::mem(64, SP, 16);
+
+        asm.cmp(array_len_opnd, 1.into());
+        let elem_opnd = asm.csel_g(Opnd::mem(64, ary_opnd, 0), Qnil.into());
+        asm.mov(top, elem_opnd);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "48837b1001b804000000480f4f03488903", {"
+            0x0: cmp qword ptr [rbx + 0x10], 1
+            0x5: mov eax, 4
+            0xa: cmovg rax, qword ptr [rbx]
+            0xe: mov qword ptr [rbx], rax
         "});
     }
 }
