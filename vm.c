@@ -2336,9 +2336,7 @@ vm_exec_bottom_main(void *context)
     struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
 
     ctx->state = TAG_NONE;
-    if (UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
-        ctx->result = vm_exec_core(ctx->ec);
-    }
+    ctx->result = vm_exec_core(ctx->ec);
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
 }
 
