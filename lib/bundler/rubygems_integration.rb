@@ -254,7 +254,7 @@ module Bundler
                               "inline Gemfile"
                             end
               be = RUBY_VERSION < ::Gem::BUNDLED_GEMS::SINCE[name] ? "will be" : "is"
-              warn "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[file]}." \
+              warn "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[name]}." \
               " Add it to your #{target_file}."
             end
           end
