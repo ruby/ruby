@@ -10686,6 +10686,9 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         {
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
 
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             if (!cc->klass) {
                 // already invalidated
             }
@@ -10699,6 +10702,15 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
                     vm_cc_invalidate(cc);
                 }
             }
+#if USE_MMTK
+            } else {
+                // When using MMTk, we must trace both the class and the cme_ field because
+                // we are still in the middle of tracing at this time,
+                // therefore reachability is not yet established.
+                UPDATE_IF_MOVED(objspace, cc->klass);
+                TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+            }
+#endif
         }
         break;
       case imemo_constcache:
