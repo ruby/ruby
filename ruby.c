@@ -1352,6 +1352,8 @@ proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt
     UNREACHABLE;
 }
 
+static const char *test_bug_report_template;
+
 static long
 proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **argv, int envopt)
 {
@@ -1461,6 +1463,9 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         else {
             opt->backtrace_length_limit = n;
         }
+    }
+    else if (is_option_with_arg("test-bugreport", true, false)) {
+        test_bug_report_template = s;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -2911,6 +2916,10 @@ ruby_process_options(int argc, char **argv)
 
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
+    if (test_bug_report_template) {
+        void ruby_test_bug_report(const char *template);
+        ruby_test_bug_report(test_bug_report_template);
+    }
     return (void*)(struct RData*)iseq;
 }
 

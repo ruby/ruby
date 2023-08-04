@@ -958,6 +958,18 @@ bug_report_end(FILE *out)
     } \
 } while (0) \
 
+void
+ruby_test_bug_report(const char *template)
+{
+    char buf[REPORT_BUG_BUFSIZ];
+    FILE *out = open_report_path(template, buf, sizeof(buf));
+    if (out) {
+        time_t t = time(NULL);
+        fprintf(out, "ruby_test_bug_report: %s", ctime(&t));
+        finish_report(out);
+    }
+}
+
 NORETURN(static void die(void));
 static void
 die(void)
