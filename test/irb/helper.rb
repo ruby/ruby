@@ -79,7 +79,7 @@ module TestIRB
     end
   end
 
-  class IntegrationTestCase
+  class IntegrationTestCase < TestCase
     LIB = File.expand_path("../../lib", __dir__)
     TIMEOUT_SEC = 3
 
