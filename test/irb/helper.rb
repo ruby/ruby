@@ -87,6 +87,8 @@ module TestIRB
       unless defined?(PTY)
         omit "Integration tests require PTY."
       end
+
+      @envs = {}
     end
 
     def run_ruby_file(&block)
@@ -98,7 +100,7 @@ module TestIRB
 
       yield
 
-      PTY.spawn(integration_envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
+      PTY.spawn(@envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
         Timeout.timeout(TIMEOUT_SEC) do
           while line = safe_gets(read)
             lines << line
@@ -177,10 +179,6 @@ module TestIRB
       @ruby_file = Tempfile.create(%w{irb- .rb})
       @ruby_file.write(program)
       @ruby_file.close
-    end
-
-    def integration_envs
-      {}
     end
   end
 end

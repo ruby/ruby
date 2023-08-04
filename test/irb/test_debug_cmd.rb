@@ -8,6 +8,8 @@ require_relative "helper"
 module TestIRB
   class DebugCommandTest < IntegrationTestCase
     def setup
+      super
+
       if ruby_core?
         omit "This test works only under ruby/irb"
       end
@@ -15,6 +17,8 @@ module TestIRB
       if RUBY_ENGINE == 'truffleruby'
         omit "This test runs with ruby/debug, which doesn't work with truffleruby"
       end
+
+      @envs.merge!("NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => '')
     end
 
     def test_backtrace
@@ -188,12 +192,6 @@ module TestIRB
 
       assert_match(/\(rdbg:irb\) catch/, output)
       assert_match(/Stop by #0  BP - Catch  "ZeroDivisionError"/, output)
-    end
-
-    private
-
-    def integration_envs
-      { "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => '' }
     end
   end
 end
