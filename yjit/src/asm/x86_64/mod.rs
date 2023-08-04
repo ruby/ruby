@@ -1223,8 +1223,8 @@ pub fn ret(cb: &mut CodeBlock) {
     cb.write_byte(0xC3);
 }
 
-// Encode a single-operand shift instruction
-fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, _op_mem_cl_pref: u8, op_mem_imm_pref: u8, op_ext: Option<u8>, opnd0: X86Opnd, opnd1: X86Opnd) {
+// Encode a bitwise shift instruction
+fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, op_mem_cl_pref: u8, op_mem_imm_pref: u8, op_ext: u8, opnd0: X86Opnd, opnd1: X86Opnd) {
     assert!(matches!(opnd0, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
 
     // Check the size of opnd0
@@ -1234,16 +1234,26 @@ fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, _op_mem_cl_pref: u8, op_
     let sz_pref = opnd_size == 16;
     let rex_w = opnd_size == 64;
 
-    if let X86Opnd::UImm(imm) = opnd1 {
-        if imm.value == 1 {
-            write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, op_ext, &[op_mem_one_pref]);
-        } else {
-            assert!(imm.num_bits <= 8);
-            write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, op_ext, &[op_mem_imm_pref]);
-            cb.write_byte(imm.value as u8);
+    match opnd1 {
+        X86Opnd::UImm(imm) => {
+            if imm.value == 1 {
+                write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, Some(op_ext), &[op_mem_one_pref]);
+            } else {
+                assert!(imm.num_bits <= 8);
+                write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, Some(op_ext), &[op_mem_imm_pref]);
+                cb.write_byte(imm.value as u8);
+            }
         }
-    } else {
-        unreachable!();
+
+        X86Opnd::Reg(reg) => {
+            // We can only use CL/RCX as the shift amount
+            assert!(reg.reg_no == RCX_REG.reg_no);
+            write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, Some(op_ext), &[op_mem_cl_pref]);
+        }
+
+        _ => {
+            unreachable!();
+        }
     }
 }
 
@@ -1254,7 +1264,7 @@ pub fn sal(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x04),
+        0x04,
         opnd0,
         opnd1
     );
@@ -1267,7 +1277,7 @@ pub fn sar(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x07),
+        0x07,
         opnd0,
         opnd1
     );
@@ -1280,7 +1290,7 @@ pub fn shl(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x04),
+        0x04,
         opnd0,
         opnd1
     );
@@ -1293,7 +1303,7 @@ pub fn shr(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x05),
+        0x05,
         opnd0,
         opnd1
     );
