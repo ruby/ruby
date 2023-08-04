@@ -779,6 +779,16 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
     return Qfalse;
 }
 
+#if USE_MMTK
+// How large is the array allocated with ary_alloc_heap
+static inline size_t
+rb_mmtk_ary_heap_size(void)
+{
+    // The main RArray plus the arrayext.
+    return sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
+}
+#endif
+
 static VALUE
 ary_alloc_embed(VALUE klass, long capa)
 {
@@ -786,9 +796,13 @@ ary_alloc_embed(VALUE klass, long capa)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        if (size < sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t)) {
-            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_arrayext_t.
-            size = sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
+        if (size < rb_mmtk_ary_heap_size()) {
+            // When using MMTk, we always allocate enough space to hold a heap array.
+            // The lowest size class for vanilla Ruby gc is 40 bytes,
+            // which is enough to hold a whole `struct RArray` for heap arrays.
+            // But we have one extra field in the trailing rb_mmtk_arrayext_t.
+            // So we manually ensure the allocated memory region is large enough.
+            size = rb_mmtk_ary_heap_size();
         }
     }
 #endif
@@ -803,23 +817,6 @@ ary_alloc_embed(VALUE klass, long capa)
      */
     return (VALUE)ary;
 }
-
-#if USE_MMTK
-// How large is the array allocated with ary_alloc_heap
-static inline size_t
-rb_mmtk_ary_heap_size(void)
-{
-    // The main RArray plus the arrayext.
-    size_t size = sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
-
-    // Align up to the next size class.
-    if (size < 80) {
-        size = 80;
-    }
-
-    return size;
-}
-#endif
 
 static VALUE
 ary_alloc_heap(VALUE klass)
@@ -937,17 +934,13 @@ rb_ary_new_from_values(long n, const VALUE *elts)
 static VALUE
 ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
-    size_t size = ary_embed_size(capa);
-
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        if (size < sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t)) {
-            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_arrayext_t.
-            size = sizeof(struct RArray) + sizeof(rb_mmtk_arrayext_t);
-        }
+        // The optimization about ec is unnecessary for MMTk.  We avoid code duplication.
+        return ary_alloc_embed(klass, capa);
     }
 #endif
-
+    size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
@@ -962,18 +955,15 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    size_t size = sizeof(struct RString);
-
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        // When using MMTk, we include a trailing rb_mmtk_arrayext_t.
-        size = rb_mmtk_ary_heap_size();
+        // The optimization about ec is unnecessary for MMTk.  We avoid code duplication.
+        return ary_alloc_heap(klass);
     }
 #endif
-
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-            size, ec);
+            sizeof(struct RArray), ec);
     return (VALUE)ary;
 }
 

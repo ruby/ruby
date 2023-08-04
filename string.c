@@ -972,6 +972,16 @@ must_not_null(const char *ptr)
     }
 }
 
+#if USE_MMTK
+// How large is the string allocated with str_alloc_heap
+static inline size_t
+rb_mmtk_str_heap_size(void)
+{
+    // The main RString plus the stringext.
+    return sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+}
+#endif
+
 static inline VALUE
 str_alloc_embed(VALUE klass, size_t capa)
 {
@@ -980,9 +990,13 @@ str_alloc_embed(VALUE klass, size_t capa)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        if (size < sizeof(struct RString) + sizeof(rb_mmtk_stringext_t)) {
-            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_stringext_t.
-            size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+        if (size < rb_mmtk_str_heap_size()) {
+            // When using MMTk, we always allocate enough space to hold a heap string.
+            // The lowest size class for vanilla Ruby gc is 40 bytes,
+            // which is enough to hold a whole `struct RString` for heap strings.
+            // But we have one extra field in the trailing rb_mmtk_stringext_t.
+            // So we manually ensure the allocated memory region is large enough.
+            size = rb_mmtk_str_heap_size();
         }
     }
 #endif
@@ -994,23 +1008,6 @@ str_alloc_embed(VALUE klass, size_t capa)
     return (VALUE)str;
 
 }
-
-#if USE_MMTK
-// How large is the string allocated with str_alloc_heap
-static inline size_t
-rb_mmtk_str_heap_size(void)
-{
-    // The main RString plus the stringext.
-    size_t size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
-
-    // Align up to the next size class.
-    if (size < 80) {
-        size = 80;
-    }
-
-    return size;
-}
-#endif
 
 static inline VALUE
 str_alloc_heap(VALUE klass)
@@ -1946,18 +1943,14 @@ str_replace(VALUE str, VALUE str2)
 static inline VALUE
 ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t capa)
 {
-    size_t size = rb_str_embed_size(capa);
-    assert(size > 0);
-
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        if (size < sizeof(struct RString) + sizeof(rb_mmtk_stringext_t)) {
-            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_stringext_t.
-            size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
-        }
+        // The optimization about ec is unnecessary for MMTk.  We avoid code duplication.
+        return str_alloc_embed(klass, capa);
     }
 #endif
-
+    size_t size = rb_str_embed_size(capa);
+    assert(size > 0);
     assert(rb_gc_size_allocatable_p(size));
 
     NEWOBJ_OF(str, struct RString, klass,
@@ -1969,17 +1962,14 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 static inline VALUE
 ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
-    size_t size = sizeof(struct RString);
-
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        // When using MMTk, we include a trailing rb_mmtk_stringext_t.
-        size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+        // The optimization about ec is unnecessary for MMTk.  We avoid code duplication.
+        return str_alloc_heap(klass);
     }
 #endif
-
     NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
+            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), ec);
 
     return (VALUE)str;
 }
