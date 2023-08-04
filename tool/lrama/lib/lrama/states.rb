@@ -1,5 +1,6 @@
 require "forwardable"
-require "lrama/report"
+require "lrama/report/duration"
+require "lrama/states/item"
 
 module Lrama
   # States is passed to a template file
@@ -11,46 +12,7 @@ module Lrama
     include Lrama::Report::Duration
 
     def_delegators "@grammar", :symbols, :terms, :nterms, :rules,
-      :accept_symbol, :eof_symbol, :find_symbol_by_s_value!
-
-    # TODO: Validate position is not over rule rhs
-    Item = Struct.new(:rule, :position, keyword_init: true) do
-      # Optimization for States#setup_state
-      def hash
-        [rule.id, position].hash
-      end
-
-      def rule_id
-        rule.id
-      end
-
-      def next_sym
-        rule.rhs[position]
-      end
-
-      def end_of_rule?
-        rule.rhs.count == position
-      end
-
-      def new_by_next_position
-        Item.new(rule: rule, position: position + 1)
-      end
-
-      def previous_sym
-        rule.rhs[position - 1]
-      end
-
-      def display_name
-        r = rule.rhs.map(&:display_name).insert(position, "•").join(" ")
-        "#{r}  (rule #{rule.id})"
-      end
-
-      # Right after position
-      def display_rest
-        r = rule.rhs[position..-1].map(&:display_name).join(" ")
-        ". #{r}  (rule #{rule.id})"
-      end
-    end
+      :accept_symbol, :eof_symbol, :undef_symbol, :find_symbol_by_s_value!
 
     attr_reader :states, :reads_relation, :includes_relation, :lookback_relation
 

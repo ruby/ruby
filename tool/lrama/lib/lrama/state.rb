@@ -1,34 +1,9 @@
 require "lrama/state/reduce"
 require "lrama/state/shift"
+require "lrama/state/resolved_conflict"
 
 module Lrama
   class State
-    # * symbol: A symbol under discussion
-    # * reduce: A reduce under discussion
-    # * which: For which a conflict is resolved. :shift, :reduce or :error (for nonassociative)
-    ResolvedConflict = Struct.new(:symbol, :reduce, :which, :same_prec, keyword_init: true) do
-      def report_message
-        s = symbol.display_name
-        r = reduce.rule.precedence_sym.display_name
-        case
-        when which == :shift && same_prec
-          msg = "resolved as #{which} (%right #{s})"
-        when which == :shift
-          msg = "resolved as #{which} (#{r} < #{s})"
-        when which == :reduce && same_prec
-          msg = "resolved as #{which} (%left #{s})"
-        when which == :reduce
-          msg = "resolved as #{which} (#{s} < #{r})"
-        when which == :error
-          msg = "resolved as an #{which} (%nonassoc #{s})"
-        else
-          raise "Unknown direction. #{self}"
-        end
-
-        "Conflict between rule #{reduce.rule.id} and token #{s} #{msg}."
-      end
-    end
-
     Conflict = Struct.new(:symbols, :reduce, :type, keyword_init: true)
 
     attr_reader :id, :accessing_symbol, :kernels, :conflicts, :resolved_conflicts,
@@ -96,7 +71,7 @@ module Lrama
       reduce.look_ahead = look_ahead
     end
 
-    # Returns array of [nterm, next_state]
+    # Returns array of [Shift, next_state]
     def nterm_transitions
       return @nterm_transitions if @nterm_transitions
 
@@ -111,7 +86,7 @@ module Lrama
       @nterm_transitions
     end
 
-    # Returns array of [term, next_state]
+    # Returns array of [Shift, next_state]
     def term_transitions
       return @term_transitions if @term_transitions
 
