@@ -253,6 +253,16 @@ struct RString {
     } as;
 };
 
+#if USE_MMTK
+typedef struct rb_mmtk_stringext_struct {
+    VALUE strbuf; // points to rb_mmtk_strbuf_t in the GC'ed heap
+} rb_mmtk_stringext_t;
+
+#define RSTRING_EXT(s) ((rb_mmtk_stringext_t *)((char *)(s) + sizeof(struct RString)))
+
+void rb_mmtk_str_set_strbuf(VALUE str, VALUE strbuf);
+#endif
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 /**
  * Identical to rb_check_string_type(), except it  raises exceptions in case of

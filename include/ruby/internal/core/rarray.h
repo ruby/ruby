@@ -189,6 +189,14 @@ struct RArray {
     } as;
 };
 
+#if USE_MMTK
+typedef struct rb_mmtk_arrayext_struct {
+    VALUE objbuf; // points to rb_mmtk_objbuf_t in the GC'ed heap
+} rb_mmtk_arrayext_t;
+
+#define RARRAY_EXT(s) ((rb_mmtk_arrayext_t *)((char *)(s) + sizeof(struct RArray)))
+#endif
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 /**
  * @private

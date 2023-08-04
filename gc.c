@@ -2912,6 +2912,27 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
     return newobj_slowpath(klass, flags, objspace, cr, FALSE, size_pool_idx);
 }
 
+#if USE_MMTK
+// Allocate an object, bypassing size pool check.
+static inline VALUE
+rb_mmtk_newobj_of0_inner(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    size_t prefix_size = rb_mmtk_prefix_size();
+    size_t suffix_size = rb_mmtk_suffix_size();
+
+    // We prepend a size field before the object.
+    size_t mmtk_alloc_size = payload_size + prefix_size + suffix_size;
+
+    // Allocate the object.
+    VALUE obj = rb_mmtk_alloc_obj(mmtk_alloc_size, payload_size, prefix_size);
+
+    // Finally, do the rest of Ruby-level initialization.
+    return newobj_init(klass, flags, wb_protected, objspace, obj);
+}
+#endif
+
 static inline VALUE
 newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t alloc_size)
 {
@@ -2955,17 +2976,7 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
         size_t size_pool_size = size_pool_slot_size(size_pool_idx);
         RUBY_ASSERT(size_pool_size % MMTK_MIN_OBJ_ALIGN == 0);
 
-        size_t prefix_size = rb_mmtk_prefix_size();
-        size_t suffix_size = rb_mmtk_suffix_size();
-
-        // We prepend a size field before the object.
-        size_t mmtk_alloc_size = size_pool_size + prefix_size + suffix_size;
-
-        // Allocate the object.
-        obj = rb_mmtk_alloc_obj(mmtk_alloc_size, size_pool_size, prefix_size);
-
-        // Finally, do the rest of Ruby-level initialization.
-        return newobj_init(klass, flags, wb_protected, objspace, obj);
+        return rb_mmtk_newobj_of0_inner(klass, flags, wb_protected, size_pool_size);
     }
 #endif
 
@@ -3090,6 +3101,8 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(callinfo);
         IMEMO_NAME(callcache);
         IMEMO_NAME(constcache);
+        IMEMO_NAME(mmtk_strbuf);
+        IMEMO_NAME(mmtk_objbuf);
 #undef IMEMO_NAME
     }
     return "unknown";
@@ -3828,6 +3841,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         break;
       case T_MATCH:
         {
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                rb_bug("T_MATCH is not a candidate of obj_free when using MMTk.");
+            }
+#endif
+
             rb_matchext_t *rm = RMATCH_EXT(obj);
 #if USE_DEBUG_COUNTER
             if (rm->regs.num_regs >= 8) {
@@ -3965,6 +3984,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_constcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
             break;
+#if USE_MMTK
+          case imemo_mmtk_strbuf:
+            rb_bug("imemo_mmtk_strbuf is not a candidate of obj_free");
+            break;
+          case imemo_mmtk_objbuf:
+            rb_bug("imemo_mmtk_objbuf is not a candidate of obj_free");
+            break;
+#endif
         }
         return TRUE;
 
@@ -7494,6 +7521,28 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, ice->value);
         }
         return;
+#if USE_MMTK
+      case imemo_mmtk_strbuf:
+        {
+            // imemo_mmtk_strbuf is only used by mmtk.
+            RUBY_ASSERT(rb_mmtk_enabled_p());
+
+            // imemo_mmtk_strbuf does not nave any children.
+        }
+        return;
+      case imemo_mmtk_objbuf:
+        {
+            // imemo_mmtk_objbuf is only used by mmtk.
+            RUBY_ASSERT(rb_mmtk_enabled_p());
+
+            rb_mmtk_objbuf_t *objbuf = (rb_mmtk_objbuf_t*)obj;
+            size_t capa = objbuf->capa;
+            for (size_t i = 0; i < capa; i++) {
+                gc_mark(objspace, objbuf->ary[i]);
+            }
+        }
+        return;
+#endif
 #if VM_CHECK_MODE > 0
       default:
         VM_UNREACHABLE(gc_mark_imemo);
@@ -7618,6 +7667,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_ARRAY:
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // MMTk guarantees to call both `gc_mark_children` and `gc_update_object_references`
+            // when visiting an object.  We do everything in `gc_update_object_references`.
+            break;
+        }
+#endif
         if (ARY_SHARED_P(obj)) {
             VALUE root = ARY_SHARED_ROOT(obj);
             gc_mark(objspace, root);
@@ -7636,6 +7692,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_STRING:
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // MMTk guarantees to call both `gc_mark_children` and `gc_update_object_references`
+            // when visiting an object.  We do everything in `gc_update_object_references`.
+            break;
+        }
+#endif
         if (STR_SHARED_P(obj)) {
             gc_mark(objspace, any->as.string.as.heap.aux.shared);
         }
@@ -7706,6 +7769,15 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         if (any->as.match.str) {
             gc_mark(objspace, any->as.match.str);
         }
+        #if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // If GC is triggered when the mutator is resizing the following buffers, we retain
+            // them because their contents need to be copied to the new buffers after GC.
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->char_offset, false);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, false);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, false);
+        }
+        #endif
         break;
 
       case T_RATIONAL:
@@ -10428,6 +10500,53 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 }
 #endif
 
+#if USE_MMTK
+static void
+gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
+{
+     if (STR_EMBED_P(str)) {
+        // Embedded strings don't point into any buffer.
+        return;
+    }
+
+    if (rb_mmtk_str_no_free(str)) {
+        // It is a "heap" string, but `as.heap.ptr` points to static C string.
+        // Skip it.
+        return;
+    }
+
+    if (STR_SHARED_P(str)) {
+        VALUE old_root = RSTRING(str)->as.heap.aux.shared;
+        UPDATE_IF_MOVED(objspace, RSTRING(str)->as.heap.aux.shared);
+        VALUE new_root = RSTRING(str)->as.heap.aux.shared;
+
+        // Note: For evacuating collectors such as Immix, `new_root` points into the to-space,
+        // and the object is guaranteed to be readable.  But `old_root` may point to the from-space
+        // which is no longer readable now.
+        if (STR_EMBED_P(new_root)) {
+            // If the shared root is embedded, `RSTRING(str)->as.heap.ptr` points into the embedded
+            // `ary` of the root.  Adjust the pointer, preserving the offset.
+            size_t offset = (size_t)RSTRING(str)->as.heap.ptr - (size_t)old_root;
+            RSTRING(str)->as.heap.ptr = (char*)(new_root + offset);
+            return;
+        }
+
+        // If the shared root is not embedded, then `RSTRING(str)->as.heap.ptr` points into the
+        // imemo:mmtk_strbuf which `RSTRING_EXT(new_root)->strbuf` points to.
+        // Just fall through and adjust `ptr` according to `RSTRING_EXT(str)->strbuf`.
+    }
+
+    // Otherwise the RSTRING_EXT(obj)->strbuf field always points to the underlying imemo:mmtk_strbuf.
+    VALUE old_strbuf = RSTRING_EXT(str)->strbuf;
+    UPDATE_IF_MOVED(objspace, RSTRING_EXT(str)->strbuf);
+    VALUE new_strbuf = RSTRING_EXT(str)->strbuf;
+    size_t offset = (size_t)RSTRING(str)->as.heap.ptr - (size_t)old_strbuf;
+    RSTRING(str)->as.heap.ptr = (char*)(new_strbuf + offset);
+
+    // Currently the size of the string cannot change during GC.
+}
+#endif
+
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 {
@@ -10448,10 +10567,19 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
         long len = RARRAY_LEN(v);
 
         if (len > 0) {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p() || ARY_EMBED_P(v)) {
+            // When using MMTk, we only scan embedded arrays here.
+            // If not embedded, we scan the `RARRAY_EXT(v)` field, and the GC will transitively
+            // scan objects reached from there.
+#endif
             VALUE *ptr = (VALUE *)RARRAY_CONST_PTR(v);
             for (long i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
             }
+#if USE_MMTK
+            }
+#endif
         }
 
         if (rb_gc_obj_slot_size(v) >= rb_ary_size_as_embedded(v)) {
@@ -10460,6 +10588,20 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
             }
         }
     }
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (!ARY_EMBED_P(v)) {
+            // If the array is not embedded, it has a hidde `objbuf` field that needs to be traced.
+            // We also update the `ptr` to point to the new location.
+            VALUE old_objbuf = RARRAY_EXT(v)->objbuf;
+            UPDATE_IF_MOVED(objspace, RARRAY_EXT(v)->objbuf);
+            VALUE new_objbuf = RARRAY_EXT(v)->objbuf;
+            size_t offset = RARRAY(v)->as.heap.ptr - rb_mmtk_objbuf_to_elems((rb_mmtk_objbuf_t*)old_objbuf);
+            RARRAY(v)->as.heap.ptr = rb_mmtk_objbuf_to_elems((rb_mmtk_objbuf_t*)new_objbuf) + offset;
+        }
+    }
+#endif
 }
 
 static void
@@ -10723,6 +10865,28 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_tmpbuf:
       case imemo_callinfo:
         break;
+#if USE_MMTK
+      case imemo_mmtk_strbuf:
+        {
+            // imemo_mmtk_strbuf is only used by mmtk.
+            RUBY_ASSERT(rb_mmtk_enabled_p());
+
+            // imemo_mmtk_strbuf does not nave any children.
+        }
+        break;
+      case imemo_mmtk_objbuf:
+        {
+            // imemo_mmtk_objbuf is only used by mmtk.
+            RUBY_ASSERT(rb_mmtk_enabled_p());
+
+            rb_mmtk_objbuf_t *objbuf = (rb_mmtk_objbuf_t*)obj;
+            size_t capa = objbuf->capa;
+            for (size_t i = 0; i < capa; i++) {
+                UPDATE_IF_MOVED(objspace, objbuf->ary[i]);
+            }
+        }
+        break;
+#endif
       default:
         rb_bug("not reachable %d", imemo_type(obj));
         break;
@@ -11015,6 +11179,13 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_STRING:
         {
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                gc_ref_update_string(objspace, obj);
+                break;
+            }
+#endif
+
             if (STR_SHARED_P(obj)) {
                 VALUE old_root = any->as.string.as.heap.aux.shared;
                 UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
@@ -11083,6 +11254,17 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         if (any->as.match.str) {
             UPDATE_IF_MOVED(objspace, any->as.match.str);
         }
+
+        #if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // If GC is triggered when the mutator is resizing the following buffers, we retain
+            // them because their contents need to be copied to the new buffers after GC.
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->char_offset, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, true);
+        }
+        #endif
+
         break;
 
       case T_RATIONAL:
@@ -14822,5 +15004,11 @@ rb_mmtk_get_vanilla_times(uint64_t *mark, uint64_t *sweep)
 {
     *mark = rb_objspace.profile.marking_time_ns;
     *sweep = rb_objspace.profile.sweeping_time_ns;
+}
+
+VALUE
+rb_mmtk_newobj_raw(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
+{
+    return rb_mmtk_newobj_of0_inner(klass, flags, wb_protected, payload_size);
 }
 #endif

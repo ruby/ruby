@@ -6,6 +6,7 @@
 #include "internal.h"
 #include "internal/cmdlineopt.h"
 #include "internal/gc.h"
+#include "internal/imemo.h"
 #include "internal/mmtk.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
@@ -413,6 +414,10 @@ rb_mmtk_immix_alloc_fast(size_t size)
 static void*
 rb_mmtk_alloc(size_t size)
 {
+    if (size > MMTK_MAX_IMMIX_OBJECT_SIZE) {
+        return mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_LOS);
+    }
+
     struct rb_mmtk_mutator_local *local = &rb_mmtk_mutator_local;
 
     PREFETCH((void*)local->last_new_cursor, 1);
@@ -423,7 +428,7 @@ rb_mmtk_alloc(size_t size)
         return fast_result;
     }
 
-    void *result = mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, 0);
+    void *result = mmtk_alloc(GET_THREAD()->mutator, size, MMTK_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
     return result;
 }
@@ -674,12 +679,9 @@ rb_mmtk_is_obj_free_candidate(VALUE obj)
         return false;
       case T_MODULE:
       case T_CLASS:
-      case T_STRING:
-      case T_ARRAY:
       case T_HASH:
       case T_REGEXP:
       case T_DATA:
-      case T_MATCH:
       case T_FILE:
       case T_ICLASS:
       case T_BIGNUM:
@@ -701,6 +703,15 @@ rb_mmtk_is_obj_free_candidate(VALUE obj)
         }
       case T_SYMBOL:
         // Will be unregistered from global symbol table during weak reference processing phase.
+        return false;
+      case T_STRING:
+        // We use imemo:mmtk_strbuf (rb_mmtk_strbuf_t) as the underlying buffer.
+        return false;
+      case T_ARRAY:
+        // We use imemo:mmtk_objbuf (rb_mmtk_objbuf_t) as the underlying buffer.
+        return false;
+      case T_MATCH:
+        // We use imemo:mmtk_strbuf (rb_mmtk_strbuf_t) for its several underlying buffers.
         return false;
       case T_RATIONAL:
       case T_COMPLEX:
@@ -998,6 +1009,92 @@ rb_mmtk_update_weak_table(st_table *table,
             abort();
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// String buffer implementation
+////////////////////////////////////////////////////////////////////////////////
+
+rb_mmtk_strbuf_t*
+rb_mmtk_new_strbuf(size_t capa)
+{
+    VALUE flags = T_IMEMO | (imemo_mmtk_strbuf << FL_USHIFT);
+    size_t payload_size = offsetof(rb_mmtk_strbuf_t, ary) + capa;
+    if (payload_size % MMTK_MIN_OBJ_ALIGN != 0) {
+        payload_size = (payload_size + MMTK_MIN_OBJ_ALIGN - 1) & ~(MMTK_MIN_OBJ_ALIGN - 1);
+    }
+    VALUE obj = rb_mmtk_newobj_raw(capa, flags, true, payload_size);
+    return (rb_mmtk_strbuf_t*)obj;
+}
+
+char*
+rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf)
+{
+    return strbuf->ary;
+}
+
+rb_mmtk_strbuf_t*
+rb_mmtk_chars_to_strbuf(char* chars)
+{
+    return (rb_mmtk_strbuf_t*)(chars - offsetof(rb_mmtk_strbuf_t, ary));
+}
+
+rb_mmtk_strbuf_t*
+rb_mmtk_strbuf_realloc(rb_mmtk_strbuf_t* old_strbuf, size_t new_capa)
+{
+    // Allocate a new strbuf.
+    rb_mmtk_strbuf_t *new_strbuf = rb_mmtk_new_strbuf(new_capa);
+
+    // Copy content if old_strbuf is not NULL.
+    if (old_strbuf != NULL) {
+        size_t old_capa = old_strbuf->capa;
+        size_t copy_size = old_capa > new_capa ? new_capa : old_capa;
+        memcpy(new_strbuf->ary, old_strbuf->ary, copy_size);
+    }
+
+    return new_strbuf;
+}
+
+void
+rb_mmtk_scan_offsetted_strbuf_field(char** field, bool update)
+{
+    // If the field contains NULL, return immediately.
+    char *old_field_value = *field;
+    if (old_field_value == NULL) {
+        return;
+    }
+
+    // Trace the actual object.
+    VALUE old_ref = (VALUE)rb_mmtk_chars_to_strbuf(old_field_value);
+    VALUE new_ref = rb_mmtk_maybe_forward(old_ref);
+
+    // Update the field if needed.
+    if (update && new_ref != old_ref) {
+        char *new_field_value = rb_mmtk_strbuf_to_chars((rb_mmtk_strbuf_t*)new_ref);
+        *field = new_field_value;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Object buffer implementation
+////////////////////////////////////////////////////////////////////////////////
+
+rb_mmtk_objbuf_t*
+rb_mmtk_new_objbuf(size_t capa)
+{
+    VALUE flags = T_IMEMO | (imemo_mmtk_objbuf << FL_USHIFT);
+    size_t payload_size = offsetof(rb_mmtk_objbuf_t, ary) + capa * sizeof(VALUE);
+    if (payload_size % MMTK_MIN_OBJ_ALIGN != 0) {
+        payload_size = (payload_size + MMTK_MIN_OBJ_ALIGN - 1) & ~(MMTK_MIN_OBJ_ALIGN - 1);
+    }
+    VALUE obj = rb_mmtk_newobj_raw(capa, flags, true, payload_size);
+    return (rb_mmtk_objbuf_t*)obj;
+}
+
+VALUE*
+rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf)
+{
+    return objbuf->ary;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

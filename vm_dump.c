@@ -1226,14 +1226,16 @@ rb_vm_bugreport(const void *ctx)
     }
 
 #if USE_MMTK
-    fprintf(stderr, "* MMTk:\n\n");
-    fprintf(stderr, "                mmtk_plan_name: %s\n", mmtk_plan_name());
-    fprintf(stderr, "               mmtk_free_bytes: %zu\n", mmtk_free_bytes());
-    fprintf(stderr, "              mmtk_total_bytes: %zu\n", mmtk_total_bytes());
-    fprintf(stderr, "               mmtk_used_bytes: %zu\n", mmtk_used_bytes());
-    fprintf(stderr, "    mmtk_starting_heap_address: 0x%zx\n", (size_t) mmtk_starting_heap_address());
-    fprintf(stderr, "        mmtk_last_heap_address: 0x%zx\n", (size_t) mmtk_last_heap_address());
-    fprintf(stderr, "\n");
+    if (rb_mmtk_enabled_p()) {
+        fprintf(stderr, "* MMTk:\n\n");
+        fprintf(stderr, "                mmtk_plan_name: %s\n", mmtk_plan_name());
+        fprintf(stderr, "               mmtk_free_bytes: %zu\n", mmtk_free_bytes());
+        fprintf(stderr, "              mmtk_total_bytes: %zu\n", mmtk_total_bytes());
+        fprintf(stderr, "               mmtk_used_bytes: %zu\n", mmtk_used_bytes());
+        fprintf(stderr, "    mmtk_starting_heap_address: 0x%zx\n", (size_t) mmtk_starting_heap_address());
+        fprintf(stderr, "        mmtk_last_heap_address: 0x%zx\n", (size_t) mmtk_last_heap_address());
+        fprintf(stderr, "\n");
+    }
 #endif
 }
 

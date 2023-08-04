@@ -12,6 +12,26 @@
 
 #define MMTK_DEFAULT_PLAN "MarkSweep"
 
+#define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
+#define MMTK_ALLOCATION_SEMANTICS_LOS 1
+#define MMTK_MAX_IMMIX_OBJECT_SIZE 16384
+
+// Special imemo data structures.
+
+// String's underlying buffer.
+typedef struct {
+    VALUE flags; /* imemo header */
+    size_t capa;
+    char ary[]; // The actual content.
+} rb_mmtk_strbuf_t;
+
+// Object, Arrry and Struct's underlying buffer.
+typedef struct {
+    VALUE flags; /* imemo header */
+    size_t capa;
+    VALUE ary[]; // The actual content.
+} rb_mmtk_objbuf_t;
+
 // Enabled?
 bool rb_mmtk_enabled_p(void);
 
@@ -60,6 +80,17 @@ rb_mmtk_update_weak_table(st_table *table,
 
 void rb_mmtk_update_global_weak_tables_early(void);
 void rb_mmtk_update_global_weak_tables(void);
+
+// String buffer implementation
+rb_mmtk_strbuf_t *rb_mmtk_new_strbuf(size_t capa);
+char* rb_mmtk_strbuf_to_chars(rb_mmtk_strbuf_t* strbuf);
+rb_mmtk_strbuf_t* rb_mmtk_chars_to_strbuf(char* strbuf);
+rb_mmtk_strbuf_t* rb_mmtk_strbuf_realloc(rb_mmtk_strbuf_t* old_strbuf, size_t new_capa);
+void rb_mmtk_scan_offsetted_strbuf_field(char** field, bool update);
+
+// Object buffer implementation
+rb_mmtk_objbuf_t* rb_mmtk_new_objbuf(size_t capa);
+VALUE* rb_mmtk_objbuf_to_elems(rb_mmtk_objbuf_t* objbuf);
 
 // MMTk-specific Ruby module (GC::MMTk)
 void rb_mmtk_define_gc_mmtk_module(void);

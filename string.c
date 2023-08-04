@@ -146,7 +146,7 @@ str_enc_fastpath(VALUE str)
     const int termlen = TERM_LEN(str);\
     RESIZE_CAPA_TERM(str,capacity,termlen);\
 } while (0)
-#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
+#define RESIZE_CAPA_TERM0(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
         if (str_embed_capa(str) < capacity + termlen) {\
             char *const tmp = ALLOC_N(char, (size_t)(capacity) + (termlen));\
@@ -165,6 +165,18 @@ str_enc_fastpath(VALUE str)
         RSTRING(str)->as.heap.aux.capa = (capacity);\
     }\
 } while (0)
+
+#if USE_MMTK
+#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
+    if (!rb_mmtk_enabled_p()) {\
+        RESIZE_CAPA_TERM0(str,capacity,termlen);\
+    } else {\
+        rb_mmtk_resize_capa_term(str,(size_t)(capacity),(size_t)(termlen));\
+    }\
+} while (0)
+#else
+#define RESIZE_CAPA_TERM RESIZE_CAPA_TERM0
+#endif
 
 #define STR_SET_SHARED(str, shared_str) do { \
     if (!FL_TEST(str, STR_FAKESTR)) { \
@@ -193,6 +205,98 @@ str_enc_fastpath(VALUE str)
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
 #endif
 
+#if USE_MMTK
+static inline long str_embed_capa(VALUE str);
+static inline int str_dependent_p(VALUE str);
+
+void
+rb_mmtk_str_set_strbuf(VALUE str, VALUE strbuf)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+    RB_OBJ_WRITE(str, RSTRING_EXT(str), strbuf);
+}
+
+// Attach a heap string with a newly allocated imemo:mmtk_strbuf and memcpy the given content.
+// Note that `str` may be an existing string and `src` may point into `str` or its existing
+// buffer.  Do not modify `str` until the new strbuf is fully written.
+static inline void
+rb_mmtk_str_new_strbuf_copy(VALUE str, size_t capa, const char *src, size_t copy_size)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+
+    // When using MMTk, as.heap.ptr points to the ary field of a rb_mmtk_strbuf_t
+    // which is allocated in the heap as an imemo:mmtk_strbuf.
+    rb_mmtk_strbuf_t *strbuf = rb_mmtk_new_strbuf(capa);
+    char *chars = rb_mmtk_strbuf_to_chars(strbuf);
+
+    if (src != NULL) {
+        RUBY_ASSERT(capa >= copy_size);
+        memcpy(chars, src, copy_size);
+    }
+
+    RSTRING(str)->as.heap.ptr = chars;
+    rb_mmtk_str_set_strbuf(str, (VALUE)strbuf);
+}
+
+// Attach a heap string with a newly allocated empty imemo:mmtk_strbuf.
+static inline void
+rb_mmtk_str_new_strbuf(VALUE str, size_t capa)
+{
+    rb_mmtk_str_new_strbuf_copy(str, capa, NULL, 0);
+}
+
+static inline void
+rb_mmtk_resize_capa_term(VALUE str, size_t capacity, size_t termlen)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+
+    if (STR_EMBED_P(str)) {
+        if ((size_t)str_embed_capa(str) < capacity + termlen) {
+            const long tlen = RSTRING_LEN(str);
+            rb_mmtk_str_new_strbuf_copy(str, (size_t)(capacity) + (termlen), RSTRING_PTR(str), tlen);
+            RSTRING(str)->len = tlen;
+            STR_SET_NOEMBED(str);
+            RSTRING(str)->as.heap.aux.capa = (capacity);
+        }
+    }
+    else {
+        assert(!FL_TEST((str), STR_SHARED));
+        rb_mmtk_str_new_strbuf_copy(
+            str,
+            (size_t)(capacity) + (termlen),
+            RSTRING(str)->as.heap.ptr,
+            STR_HEAP_SIZE(str));
+        RSTRING(str)->as.heap.aux.capa = (capacity);
+    }
+}
+
+// Handle what the ubiquitous SIZED_REALLOC does to `as.heap.ptr`.
+static inline void
+rb_mmtk_str_sized_realloc_n(VALUE str, size_t new_size)
+{
+    RUBY_ASSERT(rb_mmtk_enabled_p());
+
+    RUBY_ASSERT(!STR_EMBED_P(str));
+    RUBY_ASSERT(!str_dependent_p(str));
+
+    size_t old_size = STR_HEAP_SIZE(str);
+    size_t copy_size = old_size < new_size ? old_size : new_size;
+
+    rb_mmtk_str_new_strbuf_copy(
+        str,
+        new_size,
+        RSTRING(str)->as.heap.ptr,
+        copy_size);
+    RSTRING(str)->as.heap.aux.capa = new_size;
+}
+
+bool rb_mmtk_str_no_free(VALUE str)
+{
+    // With MMTk, GC needs to know this in order to check if `RSTRING(str)->as.heap.ptr` points to
+    // a heap object or an unmanaged C string literal.
+    return FL_TEST(str, STR_NOFREE);
+}
+#endif
 
 static inline long
 str_embed_capa(VALUE str)
@@ -286,6 +390,13 @@ rb_str_make_embedded(VALUE str)
 void
 rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, we adjust the ptr field using the RSTRING_STR(str)->strbuf field.
+        rb_bug("This should not be reachable");
+    }
+#endif
+
     // if the root location hasn't changed, we don't need to update
     if (new_root == old_root) {
         return;
@@ -493,6 +604,8 @@ setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 
     RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
     fake_str->len = len;
+    // MMTk: "fake strings" are allocated on the stack, and the ptr points directly to the content.
+    // The RString struct on the stack is not allocated with `rb_mmtk_stringext_t`, so no `strbuf`.
     fake_str->as.heap.ptr = (char *)name;
     fake_str->as.heap.aux.capa = len;
     return (VALUE)fake_str;
@@ -864,19 +977,55 @@ str_alloc_embed(VALUE klass, size_t capa)
 {
     size_t size = rb_str_embed_size(capa);
     assert(size > 0);
-    assert(rb_gc_size_allocatable_p(size));
 
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (size < sizeof(struct RString) + sizeof(rb_mmtk_stringext_t)) {
+            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_stringext_t.
+            size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+        }
+    }
+#endif
+
+    assert(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
 
     return (VALUE)str;
+
 }
+
+#if USE_MMTK
+// How large is the string allocated with str_alloc_heap
+static inline size_t
+rb_mmtk_str_heap_size(void)
+{
+    // The main RString plus the stringext.
+    size_t size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+
+    // Align up to the next size class.
+    if (size < 80) {
+        size = 80;
+    }
+
+    return size;
+}
+#endif
 
 static inline VALUE
 str_alloc_heap(VALUE klass)
 {
+    size_t size = sizeof(struct RString);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, we include a trailing rb_mmtk_stringext_t.
+        size = rb_mmtk_str_heap_size();
+    }
+#endif
+
     NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), 0);
+            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
 
     return (VALUE)str;
 }
@@ -913,8 +1062,16 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
         /* :FIXME: @shyouhei guesses `len + termlen` is guaranteed to never
          * integer overflow.  If we can STATIC_ASSERT that, the following
          * mul_add_mul can be reverted to a simple ALLOC_N. */
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         RSTRING(str)->as.heap.ptr =
             rb_xmalloc_mul_add_mul(sizeof(char), len, sizeof(char), termlen);
+#if USE_MMTK
+        } else {
+            rb_mmtk_str_new_strbuf(str, sizeof(char) * len + sizeof(char) * termlen);
+        }
+#endif
     }
     if (ptr) {
         memcpy(RSTRING_PTR(str), ptr, len);
@@ -1019,6 +1176,8 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
         RUBY_DTRACE_CREATE_HOOK(STRING, len);
         str = str_alloc_heap(klass);
         RSTRING(str)->len = len;
+        // MMTk: This is a "static string".  `ptr` points to off-heap memory.
+        // If `STR_NOFREE` is set, the GC will not consider the `RSTRING_EXT(str)->strbuf` field.
         RSTRING(str)->as.heap.ptr = (char *)ptr;
         RSTRING(str)->as.heap.aux.capa = len;
         RBASIC(str)->flags |= STR_NOFREE;
@@ -1321,11 +1480,27 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
             }
             char *ptr2 = STR_HEAP_PTR(str2);
             if (ptr2 != ptr) {
+#if USE_MMTK
+                if (!rb_mmtk_enabled_p()) {
+#endif
                 ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
+#if USE_MMTK
+                }
+#endif
             }
         }
         FL_SET(str2, STR_NOEMBED);
         RSTRING(str2)->as.heap.ptr = ptr;
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            if (!STR_EMBED_P(root)) {
+                // Also set the strbuf to the root's strbuf.
+                rb_mmtk_str_set_strbuf(str2, RSTRING_EXT(root)->strbuf);
+            } else {
+                rb_mmtk_str_set_strbuf(str2, 0);
+            }
+        }
+#endif
         STR_SET_SHARED(str2, root);
     }
 
@@ -1417,10 +1592,45 @@ heap_str_make_shared(VALUE klass, VALUE orig)
     assert(!STR_EMBED_P(orig));
     assert(!STR_SHARED_P(orig));
 
+    // MMTk: From the assertions above, we know that the input `orig` string is a "heap" string
+    // but is not shared.
+    // The current function is called in two places.
+    // In `rb_str_drop_bytes`, the caller has a "heap" but not shared string, and it wants to make
+    // a shared string to take over its buffer so that it can gracefully delete characters from the
+    // beginning.
+    // In `str_new_frozen_buffer`, the caller has an "orig" string that is not embedded but not
+    // shared either, and the string content is too long to be embedded.  The caller wants a frozen
+    // version of the "orig" string.
+
+    // It looks like this function does the following things:
+    // 1.  Allocate a "heap" string `str` which will be returned.
+    // 2.  `str` will point to the same buffer as the original.
+    // 3.  `str` will have the `.aux.capa` field (instead of the `.aux.shared` field).
+    // 4.  If `orig` has the `STR_NOFREE` flag, it will be transferred to `str`.
+    // 5.  Let `orig` have the `STR_SHARED` flag, and make `str` a `STR_SHARED_ROOT`.
+    //
+    // By doing 2-5, `str` will take ownership of the underlying buffer, and become the shared
+    // root.  `orig`, on the other hand, will become a `STR_SHARED` that uses the underlying
+    // buffer of `str` which was transferred from `orig`.
+
     VALUE str = str_alloc_heap(klass);
     STR_SET_LEN(str, RSTRING_LEN(orig));
     RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
     RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (!FL_TEST_RAW(orig, STR_NOFREE)) {
+            // Since this function transfers the ownership of the underlying buffer to `str`,
+            // the `strbuf` field should also be transferred.  Since `strbuf` is a heap reference,
+            // we just copy it.
+           rb_mmtk_str_set_strbuf(str, RSTRING_EXT(orig)->strbuf);
+        } else {
+            // Otherwise, `orig` has `STR_NOFREE`, and the underlying buffer is not in the heap.
+            // We don't copy the `strbuf` because it should be NULL.
+            RUBY_ASSERT(RSTRING_EXT(orig)->strbuf == 0);
+        }
+    }
+#endif
     RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
     RBASIC(orig)->flags &= ~STR_NOFREE;
     STR_SET_SHARED(orig, str);
@@ -1456,6 +1666,9 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
                 ENCODING_GET(shared) != ENCODING_GET(orig)) {
                 str = str_new_shared(klass, shared);
                 assert(!STR_EMBED_P(str));
+                // MMTk: `str_new_shared` above copies the string, so RSTRING_EXT(str)->strbuf is
+                // already set.  Here we add an offset `ofs` to `as.heap.ptr` so that it points to
+                // the middle of the string.
                 RSTRING(str)->as.heap.ptr += ofs;
                 STR_SET_LEN(str, RSTRING_LEN(str) - (ofs + rest));
             }
@@ -1473,6 +1686,12 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
         }
         else {
+            // MMTk: In this branch `orig` is neither embedded nor shared.  `heap_str_make_shared`
+            // will create a new string `str` to take over the underlying buffer of `orig` and
+            // become `STR_SHARED_ROOT`, while `orig` will become a `STR_SHARED` that points to
+            // the buffer of `str`.  Since `str` becomes the new shared root, it is safe to freeze
+            // it.  `heap_str_make_shared` already takes care of the `strbuf` field.  Nothing
+            // special needs to be done here when running MMTk.
             str = heap_str_make_shared(klass, orig);
         }
     }
@@ -1508,7 +1727,15 @@ rb_str_buf_new(long capa)
     VALUE str = str_alloc_heap(rb_cString);
 
     RSTRING(str)->as.heap.aux.capa = capa;
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
     RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + 1);
+#if USE_MMTK
+    } else {
+        rb_mmtk_str_new_strbuf(str, sizeof(char) * ((size_t)capa + 1));
+    }
+#endif
     RSTRING(str)->as.heap.ptr[0] = '\0';
 
     return str;
@@ -1536,17 +1763,12 @@ void
 rb_str_free(VALUE str)
 {
 #if USE_MMTK
-    if (!rb_mmtk_enabled_p()) {
-    // Vanilla Ruby deletes string from fstring_table when it is found dead.
-    // This behaves like weak table.
-    // However, with MMTk, rb_str_free is called during weak reference processing,
-    // at which time live objects have been forwarded
-    // but entries of fstring_table are not forwarded, yet.
-    // (Note: fstring_table entries are not marked in rb_vm_mark().)
-    // If we attempt to access fstring_table now,
-    // it may see pointers to from-space objects, and crash.
-    // We instead handle fstring_table in rb_mmtk_update_global_weak_tables.
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, strings are fully managed by GC.
+        rb_bug("Should not be called when using MMTk.");
+    }
 #endif
+
     if (FL_TEST(str, RSTRING_FSTR)) {
         st_data_t fstr = (st_data_t)str;
 
@@ -1557,9 +1779,6 @@ rb_str_free(VALUE str)
         }
         RB_VM_LOCK_LEAVE();
     }
-#if USE_MMTK
-    }
-#endif
 
     if (STR_EMBED_P(str)) {
         RB_DEBUG_COUNTER_INC(obj_str_embed);
@@ -1627,9 +1846,21 @@ str_shared_replace(VALUE str, VALUE str2)
             long len = RSTRING_LEN(str2);
             assert(len + termlen <= str_embed_capa(str2));
 
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             char *new_ptr = ALLOC_N(char, len + termlen);
             memcpy(new_ptr, RSTRING(str2)->as.embed.ary, len + termlen);
             RSTRING(str2)->as.heap.ptr = new_ptr;
+#if USE_MMTK
+            } else {
+                rb_mmtk_str_new_strbuf_copy(
+                    str2,
+                    len + termlen,
+                    RSTRING(str2)->as.embed.ary,
+                    len + termlen);
+            }
+#endif
             STR_SET_LEN(str2, len);
             RSTRING(str2)->as.heap.aux.capa = len;
             STR_SET_NOEMBED(str2);
@@ -1646,6 +1877,14 @@ str_shared_replace(VALUE str, VALUE str2)
         else {
             RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
         }
+
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // No matter whether str2 has `STR_SHARED` or not, its `strbuf` field always points
+            // to the right strbuf.  We copy it over.
+            rb_mmtk_str_set_strbuf(str, RSTRING_EXT(str2)->strbuf);
+        }
+#endif
 
         /* abandon str2 */
         STR_SET_EMBED(str2);
@@ -1688,6 +1927,12 @@ str_replace(VALUE str, VALUE str2)
         STR_SET_NOEMBED(str);
         STR_SET_LEN(str, len);
         RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // Since str2 is already shared, we copy the strbuf field over.
+            rb_mmtk_str_set_strbuf(str, RSTRING_EXT(str2)->strbuf);
+        }
+#endif
         STR_SET_SHARED(str, shared);
         rb_enc_cr_str_exact_copy(str, str2);
     }
@@ -1703,6 +1948,16 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 {
     size_t size = rb_str_embed_size(capa);
     assert(size > 0);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (size < sizeof(struct RString) + sizeof(rb_mmtk_stringext_t)) {
+            // When using MMTk, we allocate at least 48 bytes, including a trailing rb_mmtk_stringext_t.
+            size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+        }
+    }
+#endif
+
     assert(rb_gc_size_allocatable_p(size));
 
     NEWOBJ_OF(str, struct RString, klass,
@@ -1714,8 +1969,17 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 static inline VALUE
 ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
+    size_t size = sizeof(struct RString);
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // When using MMTk, we include a trailing rb_mmtk_stringext_t.
+        size = sizeof(struct RString) + sizeof(rb_mmtk_stringext_t);
+    }
+#endif
+
     NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), ec);
+            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
 
     return (VALUE)str;
 }
@@ -1751,6 +2015,12 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
         FL_SET(root, STR_SHARED_ROOT);
         RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // We copy the strbuf from the shared root.
+            rb_mmtk_str_set_strbuf(dup, RSTRING_EXT(root)->strbuf);
+        }
+#endif
         flags |= RSTRING_NOEMBED | STR_SHARED;
     }
 
@@ -1862,23 +2132,56 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             }
             str_modifiable(str);
             if (STR_EMBED_P(str)) { /* make noembed always */
+#if USE_MMTK
+                if (!rb_mmtk_enabled_p()) {
+#endif
                 char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
                 assert(RSTRING_LEN(str) + 1 <= str_embed_capa(str));
                 memcpy(new_ptr, RSTRING(str)->as.embed.ary, RSTRING_LEN(str) + 1);
                 RSTRING(str)->as.heap.ptr = new_ptr;
+#if USE_MMTK
+                } else {
+                    assert((size_t)RSTRING_LEN(str) + 1 <= (size_t)capa + termlen);
+                    rb_mmtk_str_new_strbuf_copy(
+                        str,
+                        (size_t)capa + termlen,
+                        RSTRING(str)->as.embed.ary,
+                        RSTRING_LEN(str) + 1);
+                }
+#endif
             }
             else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
+#if USE_MMTK
+                if (!rb_mmtk_enabled_p()) {
+#endif
                 char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
-                FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
+#if USE_MMTK
+                } else {
+                    rb_mmtk_str_new_strbuf_copy(
+                        str,
+                        (size_t)capa + termlen,
+                        old_ptr,
+                        osize < size ? osize : size);
+                }
+#endif
+                FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
             }
             else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
+#if USE_MMTK
+                if (!rb_mmtk_enabled_p()) {
+#endif
                 SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
                         (size_t)capa + termlen, STR_HEAP_SIZE(str));
+#if USE_MMTK
+                } else {
+                    rb_mmtk_str_sized_realloc_n(str, (size_t)capa + termlen);
+                }
+#endif
             }
             STR_SET_LEN(str, len);
             TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
@@ -2266,7 +2569,15 @@ rb_str_times(VALUE str, VALUE times)
         else {
             str2 = str_alloc_heap(rb_cString);
             RSTRING(str2)->as.heap.aux.capa = len;
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             RSTRING(str2)->as.heap.ptr = ZALLOC_N(char, (size_t)len + 1);
+#if USE_MMTK
+            } else {
+                rb_mmtk_str_new_strbuf(str2, (size_t)len + 1);
+            }
+#endif
         }
         STR_SET_LEN(str2, len);
         rb_enc_copy(str2, str);
@@ -2376,18 +2687,32 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
         return;
     }
 
-    ptr = ALLOC_N(char, (size_t)capa + termlen);
     oldptr = RSTRING_PTR(str);
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
+    ptr = ALLOC_N(char, (size_t)capa + termlen);
     if (oldptr) {
         memcpy(ptr, oldptr, len);
     }
     if (FL_TEST_RAW(str, STR_NOEMBED|STR_NOFREE|STR_SHARED) == STR_NOEMBED) {
         xfree(oldptr);
     }
+    RSTRING(str)->as.heap.ptr = ptr;
+#if USE_MMTK
+    } else {
+        rb_mmtk_str_new_strbuf_copy(
+            str,
+            (size_t)capa + termlen,
+            oldptr,
+            len);
+        ptr = RSTRING(str)->as.heap.ptr;
+        // No need to free oldptr because oldptr points to a imemo:mmtk_strbur in the heap
+    }
+#endif
     STR_SET_NOEMBED(str);
     FL_UNSET(str, STR_SHARED|STR_NOFREE);
     TERM_FILL(ptr + len, termlen);
-    RSTRING(str)->as.heap.ptr = ptr;
     STR_SET_LEN(str, len);
     RSTRING(str)->as.heap.aux.capa = capa;
 }
@@ -2438,7 +2763,17 @@ str_discard(VALUE str)
 {
     str_modifiable(str);
     if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+#if USE_MMTK
+        } else {
+            // Note: Is this necessary? If strbuf points to the heap,
+            // GC can collect unused objects.  We should not need to explicitly clear it.
+            rb_mmtk_str_set_strbuf(str, 0);
+        }
+#endif
         RSTRING(str)->as.heap.ptr = 0;
         STR_SET_LEN(str, 0);
     }
@@ -3051,7 +3386,13 @@ rb_str_resize(VALUE str, long len)
             if (slen > 0) MEMCPY(RSTRING(str)->as.embed.ary, ptr, char, slen);
             TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
             STR_SET_LEN(str, len);
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             if (independent) ruby_xfree(ptr);
+#if USE_MMTK
+            }
+#endif
             return str;
         }
         else if (!independent) {
@@ -3060,8 +3401,16 @@ rb_str_resize(VALUE str, long len)
         }
         else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
                  (capa - len) > (len < 1024 ? len : 1024)) {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+#endif
             SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
                             (size_t)len + termlen, STR_HEAP_SIZE(str));
+#if USE_MMTK
+            } else {
+                rb_mmtk_str_sized_realloc_n(str, (size_t)len + termlen);
+            }
+#endif
             RSTRING(str)->as.heap.aux.capa = len;
         }
         else if (len == slen) return str;
@@ -5181,14 +5530,22 @@ rb_str_drop_bytes(VALUE str, long len)
         STR_SET_EMBED(str);
         ptr = RSTRING(str)->as.embed.ary;
         memmove(ptr, oldptr + len, nlen);
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         if (fl == STR_NOEMBED) xfree(oldptr);
+#if USE_MMTK
+        }
+#endif
     }
     else {
         if (!STR_SHARED_P(str)) {
-            VALUE shared = heap_str_make_shared(rb_obj_class(str), str);
+           VALUE shared = heap_str_make_shared(rb_obj_class(str), str);
             rb_enc_cr_str_exact_copy(shared, str);
             OBJ_FREEZE(shared);
         }
+        // MMTk: `heap_str_make_shared` already takes care of the `RSTRING_EXT(str)->strbuf` field.
+        // Here we only move the `as.heap.ptr` pointer forward.
         ptr = RSTRING(str)->as.heap.ptr += len;
     }
     STR_SET_LEN(str, nlen);
@@ -7944,7 +8301,22 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
             ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         }
         TERM_FILL((char *)t, termlen);
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         RSTRING(str)->as.heap.ptr = (char *)buf;
+#if USE_MMTK
+        } else {
+            // Do we need to copy?
+            // It should be possible to let the code above to use heap objects from the start,
+            // but it's a bit too complicated to make the change.
+            rb_mmtk_str_new_strbuf_copy(
+                str,
+                max + termlen,
+                (char *)buf,
+                max + termlen);
+        }
+#endif
         STR_SET_LEN(str, t - buf);
         STR_SET_NOEMBED(str);
         RSTRING(str)->as.heap.aux.capa = max;
@@ -8020,7 +8392,22 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
             ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         }
         TERM_FILL((char *)t, termlen);
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+#endif
         RSTRING(str)->as.heap.ptr = (char *)buf;
+#if USE_MMTK
+        } else {
+            // Do we need to copy?
+            // It should be possible to let the code above to use heap objects from the start,
+            // but it's a bit too complicated to make the change.
+            rb_mmtk_str_new_strbuf_copy(
+                str,
+                max + termlen,
+                (char *)buf,
+                max + termlen);
+        }
+#endif
         STR_SET_LEN(str, t - buf);
         STR_SET_NOEMBED(str);
         RSTRING(str)->as.heap.aux.capa = max;

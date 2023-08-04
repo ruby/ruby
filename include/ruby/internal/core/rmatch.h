@@ -75,6 +75,8 @@ struct rb_matchext_struct {
      */
     struct re_registers regs;
 
+    // MMTk note: When using MMTk, `char_offset` points to the `char[]` array of a
+    // `imemo:mmtk_strbuf` allocated in the GC heap.
     /** Capture group offsets, in C array. */
     struct rmatch_offset *char_offset;
 
