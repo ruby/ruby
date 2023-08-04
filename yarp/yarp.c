@@ -3522,7 +3522,7 @@ yp_rescue_node_create(yp_parser_t *parser, const yp_token_t *keyword) {
         },
         .keyword_loc = YP_LOCATION_TOKEN_VALUE(keyword),
         .operator_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .exception = NULL,
+        .reference = NULL,
         .statements = NULL,
         .consequent = NULL,
         .exceptions = YP_EMPTY_NODE_LIST
@@ -3536,11 +3536,11 @@ yp_rescue_node_operator_set(yp_rescue_node_t *node, const yp_token_t *operator) 
     node->operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
 }
 
-// Set the exception of a rescue node, and update the location of the node.
+// Set the reference of a rescue node, and update the location of the node.
 static void
-yp_rescue_node_exception_set(yp_rescue_node_t *node, yp_node_t *exception) {
-    node->exception = exception;
-    node->base.location.end = exception->location.end;
+yp_rescue_node_reference_set(yp_rescue_node_t *node, yp_node_t *reference) {
+    node->reference = reference;
+    node->base.location.end = reference->location.end;
 }
 
 // Set the statements of a rescue node, and update the location of the node.
@@ -8571,11 +8571,11 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
                 parser_lex(parser);
                 yp_rescue_node_operator_set(rescue, &parser->previous);
 
-                yp_node_t *node = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected an exception variable after `=>` in rescue statement.");
+                yp_node_t *reference = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected an exception variable after `=>` in rescue statement.");
                 yp_token_t operator = not_provided(parser);
-                node = parse_target(parser, node, &operator, NULL);
+                reference = parse_target(parser, reference, &operator, NULL);
 
-                rescue->exception = node;
+                yp_rescue_node_reference_set(rescue, reference);
                 break;
             }
             case YP_TOKEN_NEWLINE:
@@ -8602,11 +8602,11 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
                         if (accept(parser, YP_TOKEN_EQUAL_GREATER)) {
                             yp_rescue_node_operator_set(rescue, &parser->previous);
 
-                            yp_node_t *node = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected an exception variable after `=>` in rescue statement.");
+                            yp_node_t *reference = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected an exception variable after `=>` in rescue statement.");
                             yp_token_t operator = not_provided(parser);
-                            node = parse_target(parser, node, &operator, NULL);
+                            reference = parse_target(parser, reference, &operator, NULL);
 
-                            yp_rescue_node_exception_set(rescue, node);
+                            yp_rescue_node_reference_set(rescue, reference);
                             break;
                         }
                     } while (accept(parser, YP_TOKEN_COMMA));
