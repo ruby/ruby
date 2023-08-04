@@ -681,7 +681,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->bignum_negate = bignum_negate;
     config->big_norm      = rb_big_norm;
-    config->int2big       = rb_int2big;
     config->cstr_to_inum  = rb_cstr_to_inum;
 
     config->float_new   = rb_float_new;
