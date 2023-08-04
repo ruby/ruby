@@ -253,7 +253,8 @@ module Bundler
                             rescue GemfileNotFound
                               "inline Gemfile"
                             end
-              warn "#{name} is not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[file]}." \
+              be = RUBY_VERSION < ::Gem::BUNDLED_GEMS::SINCE[name] ? "will be" : "is"
+              warn "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[file]}." \
               " Add it to your #{target_file}."
             end
           end
