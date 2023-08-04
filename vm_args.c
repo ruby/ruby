@@ -560,11 +560,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         args->rest = locals[--args->argc];
         int len = RARRAY_LENINT(args->rest);
         given_argc += len - 1;
-        rest_last = RARRAY_AREF(args->rest, len - 1);
 
         if (!kw_flag && len > 0) {
-            if (RB_TYPE_P(rest_last, T_HASH) &&
-                (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+            rest_last = RARRAY_AREF(args->rest, len - 1);
+            if (RB_TYPE_P(rest_last, T_HASH) && FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS)) {
                 // def f(**kw); a = [..., kw]; g(*a)
                 splat_flagged_keyword_hash = rest_last;
                 rest_last = rb_hash_dup(rest_last);
@@ -594,9 +593,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                     }
                 }
             }
-        }
-        else {
-            rest_last = 0;
         }
     }
     else {
@@ -628,8 +624,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
     }
 
-    if (flag_keyword_hash && RB_TYPE_P(flag_keyword_hash, T_HASH)) {
-        ((struct RHash *)flag_keyword_hash)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
+    if (flag_keyword_hash) {
+        FL_SET_RAW(flag_keyword_hash, RHASH_PASS_AS_KEYWORDS);
     }
 
     if (kw_flag && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
