@@ -12914,6 +12914,17 @@ parse_program(yp_parser_t *parser) {
     return (yp_node_t *) yp_program_node_create(parser, &locals, statements);
 }
 
+static uint32_t
+yp_read_u32(const char *ptr) {
+    if (((uintptr_t) ptr) % sizeof(uint32_t) == 0) {
+        return *((uint32_t *) ptr);
+    } else {
+        uint32_t value;
+        memcpy(&value, ptr, sizeof(uint32_t));
+        return value;
+    }
+}
+
 // Process any additional metadata being passed into a parse.  Since the source
 // of these calls will be from Ruby implementation internals we assume it is from
 // a trusted source.
@@ -12935,19 +12946,19 @@ parse_program(yp_parser_t *parser) {
 // ]
 // ```
 static void
-yp_process_metadata(yp_parser_t *parser, const char *metadata) {
+yp_parser_metadata(yp_parser_t *parser, const char *metadata) {
     const char *p = metadata;
-    uint32_t number_of_scopes = (uint32_t) *p;
+    uint32_t number_of_scopes = yp_read_u32(p);
     p += 4;
 
     for (size_t scope_index = 0; scope_index < number_of_scopes; scope_index++) {
-        uint32_t number_of_variables = (uint32_t) *p;
+        uint32_t number_of_variables = yp_read_u32(p);
         p += 4;
 
         yp_parser_scope_push(parser, scope_index == 0);
 
         for (size_t variable_index = 0; variable_index < number_of_variables; variable_index++) {
-            uint32_t length = (uint32_t) *p;
+            uint32_t length = yp_read_u32(p);
             p += 4;
 
             yp_parser_local_add_location(parser, p, p + length);
@@ -13094,7 +13105,7 @@ yp_parser_free(yp_parser_t *parser) {
 // Parse the Ruby source associated with the given parser and return the tree.
 YP_EXPORTED_FUNCTION yp_node_t *
 yp_parse(yp_parser_t *parser) {
-  return parse_program(parser);
+    return parse_program(parser);
 }
 
 YP_EXPORTED_FUNCTION void
@@ -13114,7 +13125,7 @@ YP_EXPORTED_FUNCTION void
 yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *metadata) {
     yp_parser_t parser;
     yp_parser_init(&parser, source, size, NULL);
-    if (metadata) yp_process_metadata(&parser, metadata);
+    if (metadata) yp_parser_metadata(&parser, metadata);
 
     yp_node_t *node = yp_parse(&parser);
     yp_serialize(&parser, node, buffer);
