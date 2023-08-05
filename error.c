@@ -1000,12 +1000,13 @@ bug_report_end(FILE *out, rb_pid_t pid)
 void
 ruby_test_bug_report(const char *template)
 {
+    rb_pid_t pid = -1;
     char buf[REPORT_BUG_BUFSIZ];
-    FILE *out = open_report_path(template, buf, sizeof(buf));
+    FILE *out = open_report_path(template, buf, sizeof(buf), &pid);
     if (out) {
         time_t t = time(NULL);
         fprintf(out, "ruby_test_bug_report: %s", ctime(&t));
-        finish_report(out);
+        finish_report(out, pid);
     }
 }
 
