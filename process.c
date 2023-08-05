@@ -545,7 +545,13 @@ get_ppid(void)
  *
  *  Returns the process ID of the parent of the current process:
  *
- *    Process.ppid # => 16112
+ *    puts "Pid is #{Process.pid}."
+ *    fork { puts "Parent pid is #{Process.ppid}." }
+ *
+ *  Output:
+ *
+ *    Pid is 271290.
+ *    Parent pid is 271290.
  *
  *  Not available on all platforms.
  *
