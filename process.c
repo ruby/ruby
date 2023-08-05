@@ -1302,8 +1302,8 @@ proc_wait(int argc, VALUE *argv)
  *      parent_pgpid = Process.getpgid(Process.pid)
  *      puts "Parent process group ID is #{parent_pgpid}."
  *      child0_pid = fork do
- *      puts "Child 0 pid is #{Process.pid}"
- *      child0_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 0 pid is #{Process.pid}"
+ *        child0_pgid = Process.getpgid(Process.pid)
  *        puts "Child 0 process group ID is #{child0_pgid} (same as parent's)."
  *      end
  *      child1_pid = fork do
@@ -1344,6 +1344,7 @@ proc_wait(int argc, VALUE *argv)
  *        Process.setpgid(0, Process.pid)
  *        child1_pgid = Process.getpgid(Process.pid)
  *        puts "Child 1 process group ID is #{child1_pgid} (different from parent's)."
+ *        sleep 3 # To force child 1 to exit later than child 0 exit.
  *      end
  *      retrieved_pid = Process.wait(-1)
  *      puts "Process.wait(-1) returned pid #{retrieved_pid}, which is child 0 pid."
