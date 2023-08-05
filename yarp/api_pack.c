@@ -188,7 +188,7 @@ pack_parse(VALUE self, VALUE version_symbol, VALUE variant_symbol, VALUE format_
         const char *directive_start = format;
 
         yp_pack_result parse_result = yp_pack_parse(variant, &format, format_end, &type, &signed_type, &endian,
-                                                                                                &size, &length_type, &length, &encoding);
+                                                    &size, &length_type, &length, &encoding);
 
         const char *directive_end = format;
 
@@ -214,14 +214,14 @@ pack_parse(VALUE self, VALUE version_symbol, VALUE variant_symbol, VALUE format_
         }
 
         VALUE directive_args[9] = { version_symbol,
-                                                                variant_symbol,
-                                                                rb_usascii_str_new(directive_start, directive_end - directive_start),
-                                                                pack_type_to_symbol(type),
-                                                                pack_signed_to_symbol(signed_type),
-                                                                pack_endian_to_symbol(endian),
-                                                                pack_size_to_symbol(size),
-                                                                pack_length_type_to_symbol(length_type),
-                                                                (long) LONG2NUM(length) };
+                                    variant_symbol,
+                                    rb_usascii_str_new(directive_start, directive_end - directive_start),
+                                    pack_type_to_symbol(type),
+                                    pack_signed_to_symbol(signed_type),
+                                    pack_endian_to_symbol(endian),
+                                    pack_size_to_symbol(size),
+                                    pack_length_type_to_symbol(length_type),
+                                    (long) LONG2NUM(length) };
 
         rb_ary_push(directives_array, rb_class_new_instance(9, directive_args, rb_cYARPPackDirective));
     }
