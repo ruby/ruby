@@ -880,6 +880,21 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_bugreport_path_pipe
+    if File.executable?(echo = "/bin/echo")
+    elsif /mswin|ming/ =~ RUBY_PLATFORM
+      echo = "echo"
+    else
+      omit "/bin/echo not found"
+    end
+    assert_in_out_err([{"RUBY_BUGREPORT_PATH"=>"| #{echo} %e:%f:%p"}], SEGVTest::KILL_SELF,
+                      encoding: "ASCII-8BIT",
+                      **SEGVTest::ExecOptions) do |stdout, stderr, status|
+      assert_empty(stderr)
+      assert_equal(["#{File.basename(EnvUtil.rubybin)}:-:#{status.pid}"], stdout)
+    end
+  end
+
   def test_DATA
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
       t.puts "puts DATA.read.inspect"

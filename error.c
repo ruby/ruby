@@ -23,6 +23,10 @@
 # include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+# include <sys/wait.h>
+#endif
+
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
@@ -34,12 +38,14 @@
 #include "internal/io.h"
 #include "internal/load.h"
 #include "internal/object.h"
+#include "internal/process.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
+#include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
 
@@ -716,9 +722,12 @@ append_basename(char *p, const char *pe, struct path_string *path, VALUE str)
 }
 
 static void
-finish_report(FILE *out)
+finish_report(FILE *out, rb_pid_t pid)
 {
     if (out != stdout && out != stderr) fclose(out);
+#ifdef HAVE_WORKING_FORK
+    if (pid > 0) waitpid(pid, NULL, 0);
+#endif
 }
 
 struct report_expansion {
@@ -743,19 +752,24 @@ struct report_expansion {
  *   %p    PID of dumped process in decimal.
  *   %t    Time of dump, expressed as seconds since the Epoch,
  *         1970-01-01 00:00:00 +0000 (UTC).
+ *   %NNN  Octal char code, upto 3 digits.
  */
 static char *
 expand_report_argument(const char **input_template, struct report_expansion *values,
-                       char *buf, size_t size)
+                       char *buf, size_t size, bool word)
 {
     char *p = buf;
     char *end = buf + size;
     const char *template = *input_template;
+    bool store = true;
 
     if (p >= end-1 || !*template) return NULL;
     do {
         char c = *template++;
+        if (word && ISSPACE(c)) break;
+        if (!store) continue;
         if (c == '%') {
+            size_t n;
             switch (c = *template++) {
               case 'e':
                 p = append_basename(p, end, &values->exe, rb_argv0);
@@ -779,6 +793,13 @@ expand_report_argument(const char **input_template, struct report_expansion *val
                 snprintf(p, end-p, "%" PRI_TIMET_PREFIX "d", values->time);
                 p += strlen(p);
                 continue;
+              default:
+                if (c >= '0' && c <= '7') {
+                    c = (unsigned char)ruby_scan_oct(template-1, 3, &n);
+                    template += n - 1;
+                    if (!c) store = false;
+                }
+                break;
             }
         }
         if (p < end-1) *p++ = c;
@@ -788,15 +809,31 @@ expand_report_argument(const char **input_template, struct report_expansion *val
     return ++p;
 }
 
+FILE *ruby_popen_writer(char *const *argv, rb_pid_t *pid);
+
 static FILE *
-open_report_path(const char *template, char *buf, size_t size)
+open_report_path(const char *template, char *buf, size_t size, rb_pid_t *pid)
 {
     struct report_expansion values = {{0}};
 
     if (!template) return NULL;
     if (0) fprintf(stderr, "RUBY_BUGREPORT_PATH=%s\n", buf);
-    if (*template) {
-        expand_report_argument(&template, &values, buf, size);
+    if (*template == '|') {
+        char *argv[16], *bufend = buf + size, *p;
+        int argc;
+        template++;
+        for (argc = 0; argc < numberof(argv) - 1; ++argc) {
+            while (*template && ISSPACE(*template)) template++;
+            p = expand_report_argument(&template, &values, buf, bufend-buf, true);
+            if (!p) break;
+            argv[argc] = buf;
+            buf = p;
+        }
+        argv[argc] = NULL;
+        if (!p) return ruby_popen_writer(argv, pid);
+    }
+    else if (*template) {
+        expand_report_argument(&template, &values, buf, size, false);
         return fopen(buf, "w");
     }
     return NULL;
@@ -805,10 +842,10 @@ open_report_path(const char *template, char *buf, size_t size)
 /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
 #define REPORT_BUG_BUFSIZ 256
 static FILE *
-bug_report_file(const char *file, int line)
+bug_report_file(const char *file, int line, rb_pid_t *pid)
 {
     char buf[REPORT_BUG_BUFSIZ];
-    FILE *out = open_report_path(getenv("RUBY_BUGREPORT_PATH"), buf, sizeof(buf));
+    FILE *out = open_report_path(getenv("RUBY_BUGREPORT_PATH"), buf, sizeof(buf), pid);
     int len = err_position_0(buf, sizeof(buf), file, line);
 
     if (out) {
@@ -926,7 +963,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 } while (0)
 
 static void
-bug_report_end(FILE *out)
+bug_report_end(FILE *out, rb_pid_t pid)
 {
     /* call additional bug reporters */
     {
@@ -937,24 +974,26 @@ bug_report_end(FILE *out)
         }
     }
     postscript_dump(out);
-    finish_report(out);
+    finish_report(out, pid);
 }
 
 #define report_bug(file, line, fmt, ctx) do { \
-    FILE *out = bug_report_file(file, line); \
+    rb_pid_t pid = -1; \
+    FILE *out = bug_report_file(file, line, &pid); \
     if (out) { \
         bug_report_begin(out, fmt); \
         rb_vm_bugreport(ctx, out); \
-        bug_report_end(out); \
+        bug_report_end(out, pid); \
     } \
 } while (0) \
 
 #define report_bug_valist(file, line, fmt, ctx, args) do { \
-    FILE *out = bug_report_file(file, line);  \
+    rb_pid_t pid = -1; \
+    FILE *out = bug_report_file(file, line, &pid); \
     if (out) { \
         bug_report_begin_valist(out, fmt, args); \
         rb_vm_bugreport(ctx, out); \
-        bug_report_end(out); \
+        bug_report_end(out, pid); \
     } \
 } while (0) \
 
@@ -1081,7 +1120,7 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
     fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
     preface_dump(out);
     rb_vm_bugreport(NULL, out);
-    bug_report_end(out);
+    bug_report_end(out, -1);
     die();
 }
 
