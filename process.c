@@ -1346,10 +1346,11 @@ proc_wait(int argc, VALUE *argv)
  *        puts "Child 1 process group ID is #{child1_pgid} (different from parent's)."
  *        sleep 3 # To force child 1 to exit later than child 0 exit.
  *      end
+ *      child_pids = [child0_pid, child1_pid]
  *      retrieved_pid = Process.wait(-1)
- *      puts "Process.wait(-1) returned pid #{retrieved_pid}, which is child 0 pid."
+ *      puts child_pids.include?(retrieved_pid)
  *      retrieved_pid = Process.wait(-1)
- *      puts "Process.wait(-1) returned pid #{retrieved_pid}, which is child 1 pid."
+ *      puts child_pids.include?(retrieved_pid)
  *
  *    Output:
  *
@@ -1358,8 +1359,8 @@ proc_wait(int argc, VALUE *argv)
  *      Child 0 process group ID is 228736 (same as parent's).
  *      Child 1 pid is 228759
  *      Child 1 process group ID is 228759 (different from parent's).
- *      Process.wait(-1) returned pid 228758, which is child 0 pid.
- *      Process.wait(-1) returned pid 228759, which is child 1 pid.
+ *      true
+ *      true
  *
  *  - Less than <tt>-1</tt>: Waits for any child whose process group ID is <tt>-pid</tt>:
  *
