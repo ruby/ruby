@@ -67,6 +67,7 @@ module Gem::BUNDLED_GEMS
     return unless gem = find_gem(path)
     caller, = caller_locations(3, 1)
     return if find_gem(caller&.absolute_path)
+    name = name[%r[\A[^/]+]]
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
