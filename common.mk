@@ -6324,6 +6324,7 @@ error.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 error.$(OBJEXT): $(top_srcdir)/internal/io.h
 error.$(OBJEXT): $(top_srcdir)/internal/load.h
 error.$(OBJEXT): $(top_srcdir)/internal/object.h
+error.$(OBJEXT): $(top_srcdir)/internal/process.h
 error.$(OBJEXT): $(top_srcdir)/internal/serial.h
 error.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 error.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -6516,6 +6517,7 @@ error.$(OBJEXT): {$(VPATH)}st.h
 error.$(OBJEXT): {$(VPATH)}subst.h
 error.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 error.$(OBJEXT): {$(VPATH)}thread_native.h
+error.$(OBJEXT): {$(VPATH)}util.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
 error.$(OBJEXT): {$(VPATH)}vm_opts.h
 error.$(OBJEXT): {$(VPATH)}warning.rbinc

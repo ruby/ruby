@@ -170,6 +170,7 @@ off_t __syscall(quad_t number, ...);
 #define open	rb_w32_uopen
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
+#include "win32/file.h"
 #endif
 
 VALUE rb_cIO;
@@ -7953,6 +7954,60 @@ popen_finish(VALUE port, VALUE klass)
         return rb_ensure(rb_yield, port, pipe_close, port);
     }
     return port;
+}
+
+#if defined(HAVE_WORKING_FORK) && !defined(__EMSCRIPTEN__)
+struct popen_writer_arg {
+    char *const *argv;
+    struct popen_arg popen;
+};
+
+static int
+exec_popen_writer(void *arg, char *errmsg, size_t buflen)
+{
+    struct popen_writer_arg *pw = arg;
+    pw->popen.modef = FMODE_WRITABLE;
+    popen_redirect(&pw->popen);
+    execv(pw->argv[0], pw->argv);
+    strlcpy(errmsg, strerror(errno), buflen);
+    return -1;
+}
+#endif
+
+FILE *
+ruby_popen_writer(char *const *argv, rb_pid_t *pid)
+{
+#if (defined(HAVE_WORKING_FORK) && !defined(__EMSCRIPTEN__)) || defined(_WIN32)
+# ifdef HAVE_WORKING_FORK
+    struct popen_writer_arg pw;
+    int *const write_pair = pw.popen.pair;
+# else
+    int write_pair[2];
+# endif
+
+    int result = rb_cloexec_pipe(write_pair);
+    *pid = -1;
+    if (result == 0) {
+# ifdef HAVE_WORKING_FORK
+        pw.argv = argv;
+        int status;
+        char errmsg[80] = {'\0'};
+        *pid = rb_fork_async_signal_safe(&status, exec_popen_writer, &pw, Qnil, errmsg, sizeof(errmsg));
+# else
+        *pid = rb_w32_uspawn_process(P_NOWAIT, argv[0], argv, write_pair[0], -1, -1, 0);
+        const char *errmsg = (*pid < 0) ? strerror(errno) : NULL;
+# endif
+        close(write_pair[0]);
+        if (*pid < 0) {
+            close(write_pair[1]);
+            fprintf(stderr, "ruby_popen_writer(%s): %s\n", argv[0], errmsg);
+        }
+        else {
+            return fdopen(write_pair[1], "w");
+        }
+    }
+#endif
+    return NULL;
 }
 
 static void
