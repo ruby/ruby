@@ -6922,12 +6922,12 @@ static int rb_daemon(int nochdir, int noclose);
  *     Process.daemon()                        -> 0
  *     Process.daemon(nochdir=nil,noclose=nil) -> 0
  *
- * Detach the process from controlling terminal and run in the
- * background as system daemon. Unless the argument _nochdir_ is
- * +true+, it changes the current working directory to the root
- * ("/"). Unless the argument _noclose_ is +true+, daemon() will
- * redirect standard input, standard output and standard error to
- * null device. Return zero on success, or raise one of Errno::*.
+ *  Detach the process from controlling terminal and run in the
+ *  background as system daemon.  Unless the argument _nochdir_ is
+ *  +true+, it changes the current working directory to the root
+ *  ("/"). Unless the argument _noclose_ is +true+, daemon() will
+ *  redirect standard input, standard output and standard error to
+ *  null device.  Return zero on success, or raise one of Errno::*.
  */
 
 static VALUE
