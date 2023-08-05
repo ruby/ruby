@@ -721,6 +721,12 @@ finish_report(FILE *out)
     if (out != stdout && out != stderr) fclose(out);
 }
 
+struct report_expansion {
+    struct path_string exe, script;
+    rb_pid_t pid;
+    time_t time;
+};
+
 /*
  * Open a bug report file to write.  The `RUBY_BUGREPORT_PATH`
  * environment variable can be set to define a template that is used
@@ -738,48 +744,59 @@ finish_report(FILE *out)
  *   %t    Time of dump, expressed as seconds since the Epoch,
  *         1970-01-01 00:00:00 +0000 (UTC).
  */
+static char *
+expand_report_argument(const char **input_template, struct report_expansion *values,
+                       char *buf, size_t size)
+{
+    char *p = buf;
+    char *end = buf + size;
+    const char *template = *input_template;
+
+    if (p >= end-1 || !*template) return NULL;
+    do {
+        char c = *template++;
+        if (c == '%') {
+            switch (c = *template++) {
+              case 'e':
+                p = append_basename(p, end, &values->exe, rb_argv0);
+                continue;
+              case 'E':
+                p = append_pathname(p, end, rb_argv0);
+                continue;
+              case 'f':
+                p = append_basename(p, end, &values->script, GET_VM()->orig_progname);
+                continue;
+              case 'F':
+                p = append_pathname(p, end, GET_VM()->orig_progname);
+                continue;
+              case 'p':
+                if (!values->pid) values->pid = getpid();
+                snprintf(p, end-p, "%" PRI_PIDT_PREFIX "d", values->pid);
+                p += strlen(p);
+                continue;
+              case 't':
+                if (!values->time) values->time = time(NULL);
+                snprintf(p, end-p, "%" PRI_TIMET_PREFIX "d", values->time);
+                p += strlen(p);
+                continue;
+            }
+        }
+        if (p < end-1) *p++ = c;
+    } while (*template);
+    *input_template = template;
+    *p = '\0';
+    return ++p;
+}
+
 static FILE *
 open_report_path(const char *template, char *buf, size_t size)
 {
-    if (template && *template) {
-        char *p = buf;
-        char *end = buf + size;
-        rb_pid_t pid = 0;
-        struct path_string exe = {0};
-        struct path_string script = {0};
-        time_t t = 0;
-        while (p < end-1 && *template) {
-            char c = *template++;
-            if (c == '%') {
-                switch (c = *template++) {
-                  case 'e':
-                    p = append_basename(p, end, &exe, rb_argv0);
-                    continue;
-                  case 'E':
-                    p = append_pathname(p, end, rb_argv0);
-                    continue;
-                  case 'f':
-                    p = append_basename(p, end, &script, GET_VM()->orig_progname);
-                    continue;
-                  case 'F':
-                    p = append_pathname(p, end, GET_VM()->orig_progname);
-                    continue;
-                  case 'p':
-                    if (!pid) pid = getpid();
-                    snprintf(p, end-p, "%" PRI_PIDT_PREFIX "d", pid);
-                    p += strlen(p);
-                    continue;
-                  case 't':
-                    if (!t) t = time(NULL);
-                    snprintf(p, end-p, "%" PRI_TIMET_PREFIX "d", t);
-                    p += strlen(p);
-                    continue;
-                }
-            }
-            *p++ = c;
-        }
-        *p = '\0';
-        if (0) fprintf(stderr, "RUBY_BUGREPORT_PATH=%s\n", buf);
+    struct report_expansion values = {{0}};
+
+    if (!template) return NULL;
+    if (0) fprintf(stderr, "RUBY_BUGREPORT_PATH=%s\n", buf);
+    if (*template) {
+        expand_report_argument(&template, &values, buf, size);
         return fopen(buf, "w");
     }
     return NULL;
