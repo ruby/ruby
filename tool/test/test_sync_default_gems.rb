@@ -93,6 +93,12 @@ module Test_SyncDefaultGems
       Dir.chdir(@testdir)
       ["src", @target].each do |dir|
         system(*%W"git init -q #{dir}", exception: true)
+        if dir == "src"
+          Dir.mkdir("#{dir}/lib")
+          File.write("#{dir}/lib/fine.rb", "return\n")
+          system(*%W"git add lib/fine.rb", exception: true, chdir: dir)
+          system(*%W"git commit -q -m", "Looks fine", exception: true, chdir: dir)
+        end
         Dir.mkdir("#{dir}/tool")
         File.write("#{dir}/tool/ok", "#!/bin/sh\n""echo ok\n")
         system(*%W"git add tool/ok", exception: true, chdir: dir)
@@ -146,6 +152,37 @@ module Test_SyncDefaultGems
         end
       end
       assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+    end
+
+    def test_skip_toplevel
+      Dir.mkdir("#@target/docs")
+      File.write("#@target/docs/NEWS.md", "= NEWS!!!\n")
+      system(*%W"git add --", "docs/NEWS.md", exception: true, chdir: @target)
+      system(*%W"git commit -q -m", "It's a news", exception: true, chdir: @target)
+      out = capture_process_output_to([STDOUT, STDERR]) do
+        Dir.chdir("src") do
+          SyncDefaultGems.sync_default_gems_with_commits(@target, true)
+        end
+      end
+      assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+    end
+
+    def test_adding_toplevel
+      Dir.mkdir("#@target/docs")
+      File.write("#@target/docs/NEWS.md", "= New library\n")
+      Dir.mkdir("#@target/lib")
+      File.write("#@target/lib/news.rb", "return\n")
+      system(*%W"git add --", "docs/NEWS.md", "lib/news.rb", exception: true, chdir: @target)
+      system(*%W"git commit -q -m", "New lib", exception: true, chdir: @target)
+      out = capture_process_output_to([STDOUT, STDERR]) do
+        Dir.chdir("src") do
+          SyncDefaultGems.sync_default_gems_with_commits(@target, true)
+        end
+      end
+      assert_not_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+      assert_equal "return\n", File.read("src/lib/news.rb")
+      assert_include IO.popen(%W[git log -1 --oneline], chdir: "src", &:read), "[ruby/#{@target}] New lib"
+      assert_not_operator File, :exist?, "src/docs"
     end
   end
 end
