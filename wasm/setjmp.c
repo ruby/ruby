@@ -153,18 +153,16 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
     target->state = JMP_BUF_STATE_CAPTURED;
 
     switch ((enum try_catch_phase)try_catch->state) {
-    case TRY_CATCH_PHASE_MAIN: {
+    case TRY_CATCH_PHASE_MAIN:
         // may unwind
         try_catch->try_f(try_catch->context);
         break;
-    }
-    case TRY_CATCH_PHASE_RESCUE: {
+    case TRY_CATCH_PHASE_RESCUE:
         if (try_catch->catch_f) {
             // may unwind
             try_catch->catch_f(try_catch->context);
         }
         break;
-    }
     }
 
     while (1) {
@@ -203,18 +201,16 @@ rb_wasm_handle_jmp_unwind(void)
     }
 
     switch (_rb_wasm_active_jmpbuf->state) {
-    case JMP_BUF_STATE_CAPTURING: {
+    case JMP_BUF_STATE_CAPTURING:
         RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_CAPTURING");
         // save the captured Asyncify stack top
         _rb_wasm_active_jmpbuf->dst_buf_top = _rb_wasm_active_jmpbuf->setjmp_buf.top;
         break;
-    }
-    case JMP_BUF_STATE_RETURNING: {
+    case JMP_BUF_STATE_RETURNING:
         RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_RETURNING");
         // restore the saved Asyncify stack top
         _rb_wasm_active_jmpbuf->setjmp_buf.top = _rb_wasm_active_jmpbuf->dst_buf_top;
         break;
-    }
     default:
         assert(0 && "unexpected state");
     }
