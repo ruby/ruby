@@ -421,8 +421,8 @@ jit_exec(rb_execution_context_t *ec)
     }
 }
 #else
-static inline rb_jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
-RBIMPL_ATTR_MAYBE_UNUSED() static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; }
+# define jit_compile(ec) ((rb_jit_func_t)0)
+# define jit_exec(ec) Qundef
 #endif
 
 #include "vm_insnhelper.c"
