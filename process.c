@@ -524,7 +524,6 @@ clear_pid_cache(void)
  *
  *    Process.pid # => 15668
  *
- *  Not available on all platforms.
  */
 
 static VALUE
@@ -553,9 +552,7 @@ get_ppid(void)
  *    Pid is 271290.
  *    Parent pid is 271290.
  *
- *  Not available on all platforms.
- *
- *  Returns an untrustworthy value on Windows.
+ *  May not return a trustworthy value on certain platforms.
  */
 
 static VALUE
@@ -638,11 +635,12 @@ rb_last_status_get(void)
  *    Process.last_status # => #<Process::Status: pid 14396 exit 13>
  *
  *    Process.spawn('ruby', '-e', 'exit 14')
+
  *    Process.wait
  *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
  *
  *    Process.spawn('ruby', '-e', 'exit 15')
- *    # 'exit 15' has not exited.
+ *    # 'exit 15' has not been reaped by #wait.
  *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
  *    Process.wait
  *    Process.last_status # => #<Process::Status: pid 1380 exit 15>
