@@ -165,9 +165,9 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
         break;
     }
 
-    while (1) {
+    {
         // catch longjmp with target jmp_buf
-        if (rb_asyncify_unwind_buf && _rb_wasm_active_jmpbuf == target) {
+        while (rb_asyncify_unwind_buf && _rb_wasm_active_jmpbuf == target) {
             // do similar steps setjmp does when JMP_BUF_STATE_RETURNING
 
             // stop unwinding
@@ -182,14 +182,9 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
             if (try_catch->catch_f) {
                 try_catch->catch_f(try_catch->context);
             }
-            continue;
-        } else if (rb_asyncify_unwind_buf /* unrelated unwind */) {
-            return;
         }
-        // no unwind, then exit
-        break;
+        // no unwind or unrelated unwind, then exit
     }
-    return;
 }
 
 void *
