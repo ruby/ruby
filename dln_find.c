@@ -11,11 +11,9 @@
 
 #ifdef RUBY_EXPORT
 #include "ruby/ruby.h"
-#define dln_warning rb_warning
-#define dln_warning_arg
+#define dln_warning(...) rb_warning(__VA_ARGS__)
 #else
-#define dln_warning fprintf
-#define dln_warning_arg stderr,
+#define dln_warning(...) fprintf(stderr, __VA_ARGS__)
 #endif
 #include "dln.h"
 
@@ -109,7 +107,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 
     static const char pathname_too_long[] = "openpath: pathname too long (ignored)\n\
 \tDirectory \"%.*s\"%s\n\tFile \"%.*s\"%s\n";
-#define PATHNAME_TOO_LONG() dln_warning(dln_warning_arg pathname_too_long, \
+#define PATHNAME_TOO_LONG() dln_warning(pathname_too_long, \
                                         ((bp - fbuf) > 100 ? 100 : (int)(bp - fbuf)), fbuf, \
                                         ((bp - fbuf) > 100 ? "..." : ""), \
                                         (fnlen > 100 ? 100 : (int)fnlen), fname, \
@@ -120,8 +118,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
     RETURN_IF(!fname);
     fnlen = strlen(fname);
     if (fnlen >= size) {
-        dln_warning(dln_warning_arg
-                    "openpath: pathname too long (ignored)\n\tFile \"%.*s\"%s\n",
+        dln_warning("openpath: pathname too long (ignored)\n\tFile \"%.*s\"%s\n",
                     (fnlen > 100 ? 100 : (int)fnlen), fname,
                     (fnlen > 100 ? "..." : ""));
         return NULL;
