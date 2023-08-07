@@ -11643,7 +11643,12 @@ static void
 reachable_objects_from_callback(VALUE obj)
 {
     rb_ractor_t *cr = GET_RACTOR();
-    cr->mfd.mark_func(obj, cr->mfd.data);
+    if (LIKELY(!cr->mfd.mark_func)) {
+        gc_mark_ptr(obj, (void *)&rb_objspace);
+    }
+    else {
+        cr->mfd.mark_func(obj, cr->mfd.data);
+    }
 }
 
 void
@@ -13745,8 +13750,8 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 void
 rb_ractor_init_mfd(rb_ractor_t *r)
 {
-    r->mfd.mark_func = gc_mark_ptr;
-    r->mfd.data = (void *)&rb_objspace;
+    r->mfd.mark_func = NULL;
+    r->mfd.data = NULL;
 }
 
 /*
