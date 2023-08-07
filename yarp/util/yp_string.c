@@ -125,7 +125,8 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        yp_string_mapped_init_internal(string, "", 0);
+        char empty_string[] = "";
+        yp_string_mapped_init_internal(string, empty_string, 0);
         return true;
     }
 
@@ -171,7 +172,8 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        yp_string_mapped_init_internal(string, "", 0);
+        char empty_string[] = "";
+        yp_string_mapped_init_internal(string, empty_string, 0);
         return true;
     }
 
