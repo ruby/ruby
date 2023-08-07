@@ -635,7 +635,6 @@ rb_last_status_get(void)
  *    Process.last_status # => #<Process::Status: pid 14396 exit 13>
  *
  *    Process.spawn('ruby', '-e', 'exit 14')
-
  *    Process.wait
  *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
  *
