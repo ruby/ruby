@@ -444,34 +444,25 @@ push_include(const char *path, VALUE (*filter)(VALUE))
     const char sep = PATH_SEP_CHAR;
     const char *p, *s;
     VALUE load_path = GET_VM()->load_path;
-
-    p = path;
-    while (*p) {
-        while (*p == sep)
-            p++;
-        if (!*p) break;
-        for (s = p; *s && *s != sep; s = CharNext(s));
-        rb_ary_push(load_path, (*filter)(rubylib_path_new(p, s - p)));
-        p = s;
-    }
-}
-
 #ifdef __CYGWIN__
-static void
-push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
-{
-    const char *p, *s;
     char rubylib[FILENAME_MAX];
     VALUE buf = 0;
+# define is_path_sep(c) ((c) == sep || (c) == ';')
+#else
+# define is_path_sep(c) ((c) == sep)
+#endif
 
     p = path;
     while (*p) {
-        unsigned int len;
-        while (*p == ';')
+        long len;
+        while (is_path_sep(*p))
             p++;
         if (!*p) break;
-        for (s = p; *s && *s != ';'; s = CharNext(s));
+        for (s = p; *s && !is_path_sep(*s); s = CharNext(s));
         len = s - p;
+#undef is_path_sep
+
+#ifdef __CYGWIN__
         if (*s) {
             if (!buf) {
                 buf = rb_str_new(p, len);
@@ -488,18 +479,17 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 #else
 # error no cygwin_conv_path
 #endif
-        if (CONV_TO_POSIX_PATH(p, rubylib) == 0)
+        if (CONV_TO_POSIX_PATH(p, rubylib) == 0) {
             p = rubylib;
-        push_include(p, filter);
-        if (!*s) break;
-        p = s + 1;
+            len = strlen(p);
+        }
+#endif
+        rb_ary_push(load_path, (*filter)(rubylib_path_new(p, len)));
+        p = s;
     }
 }
 
-#define push_include push_include_cygwin
-#endif
-
-void
+static void
 ruby_push_include(const char *path, VALUE (*filter)(VALUE))
 {
     if (path == 0)
@@ -512,6 +502,7 @@ identical_path(VALUE path)
 {
     return path;
 }
+
 static VALUE
 locale_path(VALUE path)
 {
