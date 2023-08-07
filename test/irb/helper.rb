@@ -22,7 +22,6 @@ module TestIRB
       attr_reader :list, :line_no
 
       def initialize(list = [])
-        super("test")
         @line_no = 0
         @list = list
       end

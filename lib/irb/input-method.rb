@@ -9,16 +9,7 @@ require 'io/console'
 require 'reline'
 
 module IRB
-  STDIN_FILE_NAME = "(line)" # :nodoc:
   class InputMethod
-
-    # Creates a new input method object
-    def initialize(file = STDIN_FILE_NAME)
-      @file_name = file
-    end
-    # The file name of this input method, usually given during initialization.
-    attr_reader :file_name
-
     # The irb prompt associated with this input method
     attr_accessor :prompt
 
@@ -59,7 +50,6 @@ module IRB
   class StdioInputMethod < InputMethod
     # Creates a new input method object
     def initialize
-      super
       @line_no = 0
       @line = []
       @stdin = IO.open(STDIN.to_i, :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
@@ -133,12 +123,9 @@ module IRB
 
     # Creates a new input method object
     def initialize(file)
-      super
       @io = file.is_a?(IO) ? file : File.open(file)
       @external_encoding = @io.external_encoding
     end
-    # The file name of this input method, usually given during initialization.
-    attr_reader :file_name
 
     # Whether the end of this input method has been reached, returns +true+ if
     # there is no more data to read.
@@ -186,7 +173,6 @@ module IRB
         if Readline.respond_to?(:encoding_system_needs)
           IRB.__send__(:set_encoding, Readline.encoding_system_needs.name, override: false)
         end
-        super
 
         @line_no = 0
         @line = []
@@ -267,7 +253,6 @@ module IRB
     # Creates a new input method object using Reline
     def initialize
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
-      super
 
       @line_no = 0
       @line = []
