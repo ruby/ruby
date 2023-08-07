@@ -69,7 +69,10 @@ yp_string_ensure_owned(yp_string_t *string) {
     size_t length = yp_string_length(string);
     const char *source = yp_string_source(string);
 
-    yp_string_owned_init(string, malloc(length), length);
+    char *memory = malloc(length);
+    if (!memory) return;
+
+    yp_string_owned_init(string, memory, length);
     memcpy(string->source, source, length);
 }
 
