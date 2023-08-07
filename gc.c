@@ -14899,6 +14899,7 @@ void
 rb_mmtk_update_frozen_strings_table(void)
 {
     // Update the fstring_table, and remove dead objects.
+    // Values are the same as keys.
     rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
                               false,
                               true,
@@ -14927,8 +14928,10 @@ rb_mmtk_update_finalizer_table(void)
 }
 
 void
-rb_mmtk_update_obj_to_id_tbl(void)
+rb_mmtk_update_obj_id_tables(void)
 {
+    rb_objspace_t *objspace = &rb_objspace;
+
     // Update the obj_to_id_tbl first, and remove dead objects from both
     // obj_to_id_tbl and id_to_obj_tbl.
     rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
@@ -14936,12 +14939,6 @@ rb_mmtk_update_obj_to_id_tbl(void)
                               false,
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
-}
-
-void
-rb_mmtk_update_id_to_obj_tbl(void)
-{
-    rb_objspace_t *objspace = &rb_objspace;
 
     // Now that dead objects are removed, we forward keys and values now.
     // This table hashes Fixnum and Bignum by value (object_id_hash_type),
@@ -14953,12 +14950,16 @@ rb_mmtk_update_id_to_obj_tbl(void)
 void
 rb_mmtk_update_global_symbols_table(void)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-
-    // This table hashes strings by value (rb_str_hash),
-    // so the hash will not change if the key (String) is moved.
-    // We can update keys and values in place.
-    gc_update_table_refs(objspace, global_symbols.str_sym);
+    // String-to-symbol table.
+    // Keys are the strings, hasshed by content (rb_str_hash).
+    // Values are symbol objects.  A symbol holds a reference to its
+    // corresponding string, so if the value is live, the key must be live.
+    // We need to remove entries for dead symbols.
+    rb_mmtk_update_weak_table(global_symbols.str_sym,
+                              false,
+                              true,
+                              NULL,
+                              NULL);
 }
 
 void

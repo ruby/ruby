@@ -858,7 +858,30 @@ rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t
     struct rb_mmtk_weak_table_rebuilding_context *ctx =
         (struct rb_mmtk_weak_table_rebuilding_context*)arg;
 
-    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+    // Preconditions:
+    // The key must be an object reference,
+    RUBY_ASSERT(!SPECIAL_CONST_P((VALUE)key));
+    // and the key must point to a valid object (may be dead, but must be allocated).
+    RUBY_ASSERT(mmtk_is_mmtk_object((MMTk_ObjectReference)key));
+
+    bool key_live = mmtk_is_reachable((MMTk_ObjectReference)key);
+    bool keep = key_live;
+    bool value_live = true;
+
+    if (ctx->update_values) {
+        RUBY_ASSERT(
+            // The value is either a primitive value (e.g. Fixnum that represents an ID)
+            SPECIAL_CONST_P((VALUE)value) ||
+            // or a valid object reference (e.g. to a Bignum that represents an ID).
+            // It may be dead, but must be allocated.
+            mmtk_is_mmtk_object((MMTk_ObjectReference)value));
+        if (!SPECIAL_CONST_P((VALUE)value)) {
+            value_live = mmtk_is_reachable((MMTk_ObjectReference)value);
+            keep = keep && value_live;
+        }
+    }
+
+    if (keep) {
         st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key, false);
         st_data_t new_value = ctx->update_values ?
             (st_data_t)rb_mmtk_maybe_forward((VALUE)value) : // Note that value may be primitive value or objref.
@@ -867,9 +890,9 @@ rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t
         RUBY_DEBUG_LOG("Forwarding key-value pair: (%p, %p) -> (%p, %p)",
             (void*)key, (void*)value, (void*)new_key, (void*)new_value);
     } else {
-        // The key is dead. Discard the entry.
-        RUBY_DEBUG_LOG("Discarding key-value pair: (%p, %p)",
-            (void*)key, (void*)value);
+        // The key or the value is dead. Discard the entry.
+        RUBY_DEBUG_LOG("Discarding key-value pair: (%p, %p). Key is %s, value is %s",
+            (void*)key, (void*)value, key_live ? "live" : "dead", value_live ? "live" : "dead");
         if (ctx->on_delete != NULL) {
             ctx->on_delete(key, value, ctx->on_delete_arg);
         }
@@ -939,6 +962,7 @@ rb_mmtk_update_weak_table_replace(st_data_t *key, st_data_t *value, st_data_t ar
  * If a key points to a live object, keep the key-value pair,
  * and update the key (and optionally the value) to point to their new addresses.
  * If a key points to a dead object, discard the key-value pair.
+ * If update_values is true, also discard the key-value pair if the value is dead.
  */
 void
 rb_mmtk_update_weak_table(st_table *table,
@@ -1531,12 +1555,11 @@ rb_mmtk_move_givtbl(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_ob
 }
 
 void rb_mmtk_cleanup_generic_iv_tbl(void); // Defined in variable.c
-void rb_mmtk_update_frozen_strings_table(void);
-void rb_mmtk_update_finalizer_table(void);
-void rb_mmtk_update_obj_to_id_tbl(void);
-void rb_mmtk_update_id_to_obj_tbl(void);
-void rb_mmtk_update_global_symbols_table(void);
-void rb_mmtk_update_overloaded_cme_table(void);
+void rb_mmtk_update_frozen_strings_table(void); // Defined in gc.c
+void rb_mmtk_update_finalizer_table(void); // Defined in gc.c
+void rb_mmtk_update_obj_id_tables(void); // Defined in gc.c
+void rb_mmtk_update_global_symbols_table(void); // Defined in gc.c
+void rb_mmtk_update_overloaded_cme_table(void); // Defined in gc.c
 
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -1556,8 +1579,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_cleanup_generic_iv_tbl,
     rb_mmtk_update_frozen_strings_table,
     rb_mmtk_update_finalizer_table,
-    rb_mmtk_update_obj_to_id_tbl,
-    rb_mmtk_update_id_to_obj_tbl,
+    rb_mmtk_update_obj_id_tables,
     rb_mmtk_update_global_symbols_table,
     rb_mmtk_update_overloaded_cme_table,
     rb_mmtk_get_original_givtbl,

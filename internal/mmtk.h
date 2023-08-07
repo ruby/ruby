@@ -72,8 +72,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*cleanup_generic_iv_tbl)(void);
     void (*update_frozen_strings_table)(void);
     void (*update_finalizer_table)(void);
-    void (*update_obj_to_id_tbl)(void);
-    void (*update_id_to_obj_tbl)(void);
+    void (*update_obj_id_tables)(void);
     void (*update_global_symbols_table)(void);
     void (*update_overloaded_cme_table)(void);
     void *(*get_original_givtbl)(MMTk_ObjectReference object);
