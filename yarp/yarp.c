@@ -505,10 +505,15 @@ yp_statements_node_body_append(yp_statements_node_t *node, yp_node_t *statement)
 // implement our own arena allocation.
 static inline void *
 yp_alloc_node(YP_ATTRIBUTE_UNUSED yp_parser_t *parser, size_t size) {
-    return malloc(size);
+    void *memory = malloc(size);
+    if (memory == NULL) {
+        fprintf(stderr, "Failed to allocate %zu bytes\n", size);
+        abort();
+    }
+    return memory;
 }
 
-#define YP_ALLOC_NODE(parser, type) (type *) yp_alloc_node(parser, sizeof(type)); if (node == NULL) return NULL
+#define YP_ALLOC_NODE(parser, type) (type *) yp_alloc_node(parser, sizeof(type))
 
 // Allocate a new MissingNode node.
 static yp_missing_node_t *
@@ -12206,7 +12211,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     node = parse_target(parser, node, &operator, NULL);
 
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
-                    return (yp_node_t *) yp_call_operator_and_write_node_create(parser, call_node, &token, value);
+                    return (yp_node_t *) yp_call_operator_and_write_node_create(parser, (yp_call_node_t *) node, &token, value);
                 }
                 case YP_NODE_CLASS_VARIABLE_READ_NODE: {
                     parser_lex(parser);
@@ -12311,7 +12316,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     node = parse_target(parser, node, &operator, NULL);
 
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after ||=");
-                    return (yp_node_t *) yp_call_operator_or_write_node_create(parser, call_node, &token, value);
+                    return (yp_node_t *) yp_call_operator_or_write_node_create(parser, (yp_call_node_t *) node, &token, value);
                 }
                 case YP_NODE_CLASS_VARIABLE_READ_NODE: {
                     parser_lex(parser);
@@ -12425,7 +12430,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
                     parser_lex(parser);
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after the operator.");
-                    return (yp_node_t *) yp_call_operator_write_node_create(parser, call_node, &token, value);
+                    return (yp_node_t *) yp_call_operator_write_node_create(parser, (yp_call_node_t *) node, &token, value);
                 }
                 case YP_NODE_CLASS_VARIABLE_READ_NODE: {
                     parser_lex(parser);
