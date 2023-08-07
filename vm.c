@@ -1981,7 +1981,7 @@ rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 }
 
 VALUE
-rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
+rb_vm_make_jump_tag_but_local_jump(enum ruby_tag_type state, VALUE val)
 {
     const char *mesg;
 
@@ -2013,7 +2013,7 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
 }
 
 void
-rb_vm_jump_tag_but_local_jump(int state)
+rb_vm_jump_tag_but_local_jump(enum ruby_tag_type state)
 {
     VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
     if (!NIL_P(exc)) rb_exc_raise(exc);

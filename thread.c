@@ -4364,7 +4364,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
-    int state;
+    enum ruby_tag_type state;
     volatile int lerrno;
 
     rb_execution_context_t *ec = GET_EC();
