@@ -145,7 +145,8 @@ rb_ec_tag_state(const rb_execution_context_t *ec)
     enum ruby_tag_type state = tag->state;
     tag->state = TAG_NONE;
     rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
-    RBIMPL_ASSUME(state != TAG_NONE);
+    RBIMPL_ASSUME(state > TAG_NONE);
+    RBIMPL_ASSUME(state <= TAG_FATAL);
     return state;
 }
 
@@ -153,7 +154,7 @@ NORETURN(static inline void rb_ec_tag_jump(const rb_execution_context_t *ec, enu
 static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
-    RUBY_ASSERT(st != TAG_NONE);
+    RUBY_ASSERT(st > TAG_NONE && st <= TAG_FATAL, ": Invalid tag jump: %d", (int)st);
     ec->tag->state = st;
     ruby_longjmp(RB_VM_TAG_JMPBUF_GET(ec->tag->buf), 1);
 }
