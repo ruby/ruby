@@ -4,6 +4,7 @@
 // All non-trivial logic should be in librubyparser so it can be shared its the various callers.
 
 VALUE rb_cYARP;
+VALUE rb_cYARPNode;
 VALUE rb_cYARPSource;
 VALUE rb_cYARPToken;
 VALUE rb_cYARPLocation;
@@ -490,6 +491,7 @@ Init_yarp(void) {
     // Grab up references to all of the constants that we're going to need to
     // reference throughout this extension.
     rb_cYARP = rb_define_module("YARP");
+    rb_cYARPNode = rb_define_class_under(rb_cYARP, "Node", rb_cObject);
     rb_cYARPSource = rb_define_class_under(rb_cYARP, "Source", rb_cObject);
     rb_cYARPToken = rb_define_class_under(rb_cYARP, "Token", rb_cObject);
     rb_cYARPLocation = rb_define_class_under(rb_cYARP, "Location", rb_cObject);
@@ -520,6 +522,7 @@ Init_yarp(void) {
     rb_define_singleton_method(rb_cYARPDebug, "memsize", memsize, 1);
     rb_define_singleton_method(rb_cYARPDebug, "profile_file", profile_file, 1);
 
-    // Next, initialize the pack API.
+    // Next, initialize the other APIs.
+    Init_yarp_api_node();
     Init_yarp_pack();
 }
