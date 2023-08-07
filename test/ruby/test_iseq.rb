@@ -497,7 +497,8 @@ class TestISeq < Test::Unit::TestCase
                                   [7, :line],
                                   [9, :return]]],
                        [["ensure in foo@2", [[7, :line]]]],
-                       [["rescue in foo@4", [[5, :line]]]]]],
+                       [["rescue in foo@4", [[5, :line],
+                                             [5, :rescue]]]]]],
                    [["<class:D>@17", [[17, :class],
                                       [18, :end]]]]], collect_iseq.call(sample_iseq)
   end

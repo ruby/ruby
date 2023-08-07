@@ -327,6 +327,14 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #define GC_OLDMALLOC_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
 #endif
 
+#ifndef GC_CAN_COMPILE_COMPACTION
+#if defined(__wasi__) /* WebAssembly doesn't support signals */
+# define GC_CAN_COMPILE_COMPACTION 0
+#else
+# define GC_CAN_COMPILE_COMPACTION 1
+#endif
+#endif
+
 #ifndef PRINT_MEASURE_LINE
 #define PRINT_MEASURE_LINE 0
 #endif
@@ -2249,6 +2257,7 @@ heap_assign_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
     heap_add_freepage(heap, page);
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 static void
 heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, size_t add)
 {
@@ -2262,6 +2271,7 @@ heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 
     GC_ASSERT(size_pool->allocatable_pages == 0);
 }
+#endif
 
 static size_t
 minimum_pages_for_size_pool(rb_objspace_t *objspace, int size_pool_idx)
@@ -5183,14 +5193,8 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void gc_update_references(rb_objspace_t * objspace);
+#if GC_CAN_COMPILE_COMPACTION
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
-
-#ifndef GC_CAN_COMPILE_COMPACTION
-#if defined(__wasi__) /* WebAssembly doesn't support signals */
-# define GC_CAN_COMPILE_COMPACTION 0
-#else
-# define GC_CAN_COMPILE_COMPACTION 1
-#endif
 #endif
 
 #if defined(__MINGW32__) || defined(_WIN32)
@@ -5376,45 +5380,6 @@ install_handlers(void)
 #endif
 
 static void
-revert_stack_objects(VALUE stack_obj, void *ctx)
-{
-    rb_objspace_t * objspace = (rb_objspace_t*)ctx;
-
-    if (BUILTIN_TYPE(stack_obj) == T_MOVED) {
-        /* For now we'll revert the whole page if the object made it to the
-         * stack.  I think we can change this to move just the one object
-         * back though */
-        invalidate_moved_page(objspace, GET_HEAP_PAGE(stack_obj));
-    }
-}
-
-static void
-revert_machine_stack_references(rb_objspace_t *objspace, VALUE v)
-{
-    if (is_pointer_to_heap(objspace, (void *)v)) {
-        if (BUILTIN_TYPE(v) == T_MOVED) {
-            /* For now we'll revert the whole page if the object made it to the
-             * stack.  I think we can change this to move just the one object
-             * back though */
-            invalidate_moved_page(objspace, GET_HEAP_PAGE(v));
-        }
-    }
-}
-
-static void each_machine_stack_value(const rb_execution_context_t *ec, void (*cb)(rb_objspace_t *, VALUE));
-
-static void
-check_stack_for_moved(rb_objspace_t *objspace)
-{
-    rb_execution_context_t *ec = GET_EC();
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
-    rb_vm_each_stack_value(vm, revert_stack_objects, (void*)objspace);
-    each_machine_stack_value(ec, revert_machine_stack_references);
-}
-
-static void gc_mode_transition(rb_objspace_t *objspace, enum gc_mode mode);
-
-static void
 gc_compact_finish(rb_objspace_t *objspace)
 {
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
@@ -5424,13 +5389,6 @@ gc_compact_finish(rb_objspace_t *objspace)
     }
 
     uninstall_handlers();
-
-    /* The mutator is allowed to run during incremental sweeping. T_MOVED
-     * objects can get pushed on the stack and when the compaction process
-     * finishes up, it may remove the read barrier before anything has a
-     * chance to read from the T_MOVED address. To fix this, we scan the stack
-     * then revert any moved objects that made it to the stack. */
-    check_stack_for_moved(objspace);
 
     gc_update_references(objspace);
     objspace->profile.compact_count++;
@@ -5925,6 +5883,7 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
     gc_sweeping_exit(objspace);
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 static void
 invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_t p, bits_t bitset)
 {
@@ -5997,6 +5956,7 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
         p += BITS_BITLENGTH * BASE_SLOT_SIZE;
     }
 }
+#endif
 
 static void
 gc_compact_start(rb_objspace_t *objspace)

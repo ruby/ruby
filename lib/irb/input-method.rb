@@ -4,7 +4,6 @@
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
-require_relative 'src_encoding'
 require_relative 'completion'
 require 'io/console'
 require 'reline'

@@ -276,7 +276,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The custom user agent fragment Bundler includes in API requests.
 * `version` (`BUNDLE_VERSION`):
    The version of Bundler to use when running under Bundler environment.
-   Defaults to `local`. You can also specify `system` or `x.y.z`.
+   Defaults to `lockfile`. You can also specify `system` or `x.y.z`.
    `lockfile` will use the Bundler version specified in the `Gemfile.lock`,
    `system` will use the system version of Bundler, and `x.y.z` will use
    the specified version of Bundler.

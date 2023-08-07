@@ -681,6 +681,7 @@ get_event_id(rb_event_flag_t event)
         C(thread_end, THREAD_END);
         C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
+        C(rescue, RESCUE);
 #undef C
       default:
         return 0;
@@ -697,8 +698,8 @@ get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *
         *pathp = rb_iseq_path(iseq);
 
         if (event & (RUBY_EVENT_CLASS |
-                                RUBY_EVENT_CALL  |
-                                RUBY_EVENT_B_CALL)) {
+                     RUBY_EVENT_CALL  |
+                     RUBY_EVENT_B_CALL)) {
             *linep = FIX2INT(rb_iseq_first_lineno(iseq));
         }
         else {
@@ -823,6 +824,7 @@ symbol2event_flag(VALUE v)
     C(thread_end, THREAD_END);
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
+    C(rescue, RESCUE);
 
     /* joke */
     C(a_call, A_CALL);
@@ -943,6 +945,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
       case RUBY_EVENT_CLASS:
       case RUBY_EVENT_END:
       case RUBY_EVENT_SCRIPT_COMPILED:
+      case RUBY_EVENT_RESCUE:
         rb_raise(rb_eRuntimeError, "not supported by this event");
         break;
     }
@@ -1013,7 +1016,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RAISE)) {
+    if (trace_arg->event & (RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE)) {
         /* ok */
     }
     else {

@@ -458,7 +458,6 @@ typedef struct rb_parser_config_struct {
     /* Bignum */
     void (*bignum_negate)(VALUE b);
     VALUE (*big_norm)(VALUE x);
-    VALUE (*int2big)(intptr_t n);
     VALUE (*cstr_to_inum)(const char *str, int base, int badcheck);
 
     /* Float */

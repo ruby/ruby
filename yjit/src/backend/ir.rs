@@ -423,8 +423,11 @@ pub enum Insn {
     // Produces no output
     IncrCounter { mem: Opnd, value: Opnd },
 
-    /// Jump if below or equal
+    /// Jump if below or equal (unsigned)
     Jbe(Target),
+
+    /// Jump if below (unsigned)
+    Jb(Target),
 
     /// Jump if equal
     Je(Target),
@@ -535,6 +538,7 @@ impl Insn {
     pub(super) fn target_mut(&mut self) -> Option<&mut Target> {
         match self {
             Insn::Jbe(target) |
+            Insn::Jb(target) |
             Insn::Je(target) |
             Insn::Jl(target) |
             Insn::Jmp(target) |
@@ -579,6 +583,7 @@ impl Insn {
             Insn::FrameTeardown => "FrameTeardown",
             Insn::IncrCounter { .. } => "IncrCounter",
             Insn::Jbe(_) => "Jbe",
+            Insn::Jb(_) => "Jb",
             Insn::Je(_) => "Je",
             Insn::Jl(_) => "Jl",
             Insn::Jg(_) => "Jg",
@@ -678,6 +683,7 @@ impl Insn {
     pub fn target(&self) -> Option<&Target> {
         match self {
             Insn::Jbe(target) |
+            Insn::Jb(target) |
             Insn::Je(target) |
             Insn::Jl(target) |
             Insn::Jmp(target) |
@@ -727,6 +733,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::FrameSetup |
             Insn::FrameTeardown |
             Insn::Jbe(_) |
+            Insn::Jb(_) |
             Insn::Je(_) |
             Insn::Jl(_) |
             Insn::Jg(_) |
@@ -825,6 +832,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::FrameSetup |
             Insn::FrameTeardown |
             Insn::Jbe(_) |
+            Insn::Jb(_) |
             Insn::Je(_) |
             Insn::Jl(_) |
             Insn::Jg(_) |
@@ -1813,6 +1821,10 @@ impl Assembler {
 
     pub fn jbe(&mut self, target: Target) {
         self.push_insn(Insn::Jbe(target));
+    }
+
+    pub fn jb(&mut self, target: Target) {
+        self.push_insn(Insn::Jb(target));
     }
 
     pub fn je(&mut self, target: Target) {

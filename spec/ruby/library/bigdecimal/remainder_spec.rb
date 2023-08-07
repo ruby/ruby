@@ -54,7 +54,7 @@ describe "BigDecimal#remainder" do
     @nan.remainder(@infinity).should.nan?
   end
 
-  version_is BigDecimal::VERSION, ""..."3.1.4" do
+  version_is BigDecimal::VERSION, ""..."3.1.4" do #ruby_version_is ""..."3.3" do
     it "returns NaN if Infinity is involved" do
       @infinity.remainder(@infinity).should.nan?
       @infinity.remainder(@one).should.nan?

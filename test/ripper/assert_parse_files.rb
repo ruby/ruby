@@ -7,7 +7,7 @@ class TestRipper::Generic < Test::Unit::TestCase
 
   def assert_parse_files(dir, pattern = "**/*.rb", exclude: nil, gc_stress: GC.stress, test_ratio: nil)
     test_ratio ||= ENV["TEST_RIPPER_RATIO"]&.tap {|s|break s.to_f} || 0.05 # testing all files needs too long time...
-    assert_separately(%W[--disable-gem -rripper - #{SRCDIR}/#{dir} #{pattern}],
+    assert_separately(%W[-rripper - #{SRCDIR}/#{dir} #{pattern}],
                       __FILE__, __LINE__, "#{<<-"begin;"}\n#{<<-'end;'}", timeout: Float::INFINITY)
     GC.stress = false
     pattern = "#{pattern}"

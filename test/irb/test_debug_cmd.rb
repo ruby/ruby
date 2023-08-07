@@ -1,25 +1,15 @@
 # frozen_string_literal: true
 
-begin
-  require "pty"
-rescue LoadError
-  return
-end
-
 require "tempfile"
 require "tmpdir"
 
 require_relative "helper"
 
 module TestIRB
-  LIB = File.expand_path("../../lib", __dir__)
-
-  class DebugCommandTestCase < TestCase
-    IRB_AND_DEBUGGER_OPTIONS = {
-      "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
-    }
-
+  class DebugCommandTest < IntegrationTestCase
     def setup
+      super
+
       if ruby_core?
         omit "This test works only under ruby/irb"
       end
@@ -27,6 +17,8 @@ module TestIRB
       if RUBY_ENGINE == 'truffleruby'
         omit "This test runs with ruby/debug, which doesn't work with truffleruby"
       end
+
+      @envs.merge!("NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => '')
     end
 
     def test_backtrace
@@ -200,100 +192,6 @@ module TestIRB
 
       assert_match(/\(rdbg:irb\) catch/, output)
       assert_match(/Stop by #0  BP - Catch  "ZeroDivisionError"/, output)
-    end
-
-    private
-
-    TIMEOUT_SEC = 3
-
-    def run_ruby_file(&block)
-      cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
-      tmp_dir = Dir.mktmpdir
-
-      @commands = []
-      lines = []
-
-      yield
-
-      PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
-        Timeout.timeout(TIMEOUT_SEC) do
-          while line = safe_gets(read)
-            lines << line
-
-            # means the breakpoint is triggered
-            if line.match?(/binding\.irb/)
-              while command = @commands.shift
-                write.puts(command)
-              end
-            end
-          end
-        end
-      ensure
-        read.close
-        write.close
-        kill_safely(pid)
-      end
-
-      lines.join
-    rescue Timeout::Error
-      message = <<~MSG
-      Test timedout.
-
-      #{'=' * 30} OUTPUT #{'=' * 30}
-        #{lines.map { |l| "  #{l}" }.join}
-      #{'=' * 27} END OF OUTPUT #{'=' * 27}
-      MSG
-      assert_block(message) { false }
-    ensure
-      File.unlink(@ruby_file) if @ruby_file
-      FileUtils.remove_entry tmp_dir
-    end
-
-    # read.gets could raise exceptions on some platforms
-    # https://github.com/ruby/ruby/blob/master/ext/pty/pty.c#L729-L736
-    def safe_gets(read)
-      read.gets
-    rescue Errno::EIO
-      nil
-    end
-
-    def kill_safely pid
-      return if wait_pid pid, TIMEOUT_SEC
-
-      Process.kill :TERM, pid
-      return if wait_pid pid, 0.2
-
-      Process.kill :KILL, pid
-      Process.waitpid(pid)
-    rescue Errno::EPERM, Errno::ESRCH
-    end
-
-    def wait_pid pid, sec
-      total_sec = 0.0
-      wait_sec = 0.001 # 1ms
-
-      while total_sec < sec
-        if Process.waitpid(pid, Process::WNOHANG) == pid
-          return true
-        end
-        sleep wait_sec
-        total_sec += wait_sec
-        wait_sec *= 2
-      end
-
-      false
-    rescue Errno::ECHILD
-      true
-    end
-
-    def type(command)
-      @commands << command
-    end
-
-    def write_ruby(program)
-      @ruby_file = Tempfile.create(%w{irb- .rb})
-      @ruby_file.write(program)
-      @ruby_file.close
     end
   end
 end

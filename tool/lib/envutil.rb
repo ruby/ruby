@@ -155,7 +155,7 @@ module EnvUtil
 
     # remain env
     %w(ASAN_OPTIONS RUBY_ON_BUG).each{|name|
-      child_env[name] = ENV[name] if ENV[name]
+      child_env[name] = ENV[name] if !child_env.key?(name) and ENV.key?(name)
     }
 
     args = [args] if args.kind_of?(String)

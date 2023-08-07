@@ -4,7 +4,7 @@ require "-test-/string"
 
 class Test_TooManyDummyEncodings < Test::Unit::TestCase
   def test_exceed_encoding_table_size
-    assert_separately(%w[--disable=gems], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "-test-/string"
       assert_raise_with_message(EncodingError, /too many encoding/) do

@@ -340,6 +340,7 @@ fn test_sal() {
     check_bytes("d1e1", |cb| sal(cb, ECX, uimm_opnd(1)));
     check_bytes("c1e505", |cb| sal(cb, EBP, uimm_opnd(5)));
     check_bytes("d1642444", |cb| sal(cb, mem_opnd(32, RSP, 68), uimm_opnd(1)));
+    check_bytes("48d3e1", |cb| sal(cb, RCX, CL));
 }
 
 #[test]

@@ -436,8 +436,8 @@ module SyncDefaultGems
     |\.git.*
     |[A-Z]\w+file
     |COPYING
-    |\Arakelib\/.*
-    |\Atest\/lib\/.*
+    |rakelib\/.*
+    |test\/lib\/.*
     )\z/mx
 
   def message_filter(repo, sha, input: ARGF)
@@ -586,16 +586,32 @@ module SyncDefaultGems
         next
       end
 
-      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/ rakelib/")
+      changed = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD --")
+      toplevels = changed.map {|f| f[%r[\A(?!tool/)[^/]+/?]]}.compact
+      toplevels.delete_if do |top|
+        if system(*%w"git checkout -f HEAD~ --", top, err: File::NULL)
+          # previously existent path
+          system(*%w"git checkout -f HEAD --", top, out: File::NULL)
+          true
+        end
+      end
+      unless toplevels.empty?
+        puts "Remove files added to toplevel: #{toplevels.join(', ')}"
+        system(*%w"git rm -r --", *toplevels)
+      end
+      tools = changed.select {|f|f.start_with?("test/lib/", "tool/")}
       unless tools.empty?
-        system(*%W"git rm --", *tools)
+        system(*%W"git rm -r --", *tools)
         system(*%W"git checkout HEAD~ --", *tools)
+      end
+      unless toplevels.empty? and tools.empty?
+        clean = toplevels + tools
         if system(*%W"git diff --quiet HEAD~")
           `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
-          puts "Skip commit #{sha} only for tools"
+          puts "Skip commit #{sha} only for tools or toplevel"
           next
         end
-        unless system(*%W"git commit --amend --no-edit --", *tools)
+        unless system(*%W"git commit --amend --no-edit --", *clean)
           failed_commits << sha
           `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
           puts "Failed to pick #{sha}"

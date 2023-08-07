@@ -45,7 +45,7 @@ static VALUE rb_debug_inspector_frame_iseq_get_callback(const rb_debug_inspector
   return rb_debug_inspector_frame_iseq_get(dc, NUM2LONG((VALUE) ptr));
 }
 
-static VALUE debug_spec_callback_data(VALUE self){
+static VALUE debug_spec_callback_data(VALUE self) {
   return callback_data;
 }
 

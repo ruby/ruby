@@ -119,13 +119,6 @@ struct RObject {
     } as;
 };
 
-/* Offsets for YJIT */
-#ifndef __cplusplus
-static const int32_t ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr);
-static const int32_t ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL = offsetof(struct RObject, as.heap.iv_index_tbl);
-static const int32_t ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary);
-#endif
-
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**

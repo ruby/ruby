@@ -13,7 +13,7 @@ module IRB
   module ExtendCommand
 
     class CurrentWorkingWorkspace < Nop
-      category "IRB"
+      category "Workspace"
       description "Show the current workspace."
 
       def execute(*obj)
@@ -22,7 +22,7 @@ module IRB
     end
 
     class ChangeWorkspace < Nop
-      category "IRB"
+      category "Workspace"
       description "Change the current workspace to an object."
 
       def execute(*obj)

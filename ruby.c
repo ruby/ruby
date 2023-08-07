@@ -895,10 +895,11 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     ruby_features_t warn = opt->warn;
     int backtrace_length_limit = opt->backtrace_length_limit;
 
-    opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
-
     while (ISSPACE(*s)) s++;
     if (!*s) return;
+
+    opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
+
     argstr = rb_str_tmp_new((len = strlen(s)) + (envopt!=0));
     argary = rb_str_tmp_new(0);
 

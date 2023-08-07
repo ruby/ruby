@@ -121,6 +121,10 @@ module Fiddle
       assert_equal(TYPE_UINTPTR_T, parse_ctype("const uintptr_t"))
     end
 
+    def test_bool_ctype
+      assert_equal(TYPE_BOOL, parse_ctype('bool'))
+    end
+
     def test_undefined_ctype
       assert_raise(DLError) { parse_ctype('DWORD') }
     end
