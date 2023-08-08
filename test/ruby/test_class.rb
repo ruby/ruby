@@ -96,6 +96,13 @@ class TestClass < Test::Unit::TestCase
 
   def test_superclass_of_basicobject
     assert_equal(nil, BasicObject.superclass)
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      module Mod end
+      BasicObject.include(Mod)
+      assert_equal(nil, BasicObject.superclass)
+    end;
   end
 
   def test_module_function
