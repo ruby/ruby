@@ -3818,6 +3818,15 @@ fn gen_throw(
     let throwobj = asm.stack_pop(1);
     let throwobj = asm.load(throwobj);
 
+    // Gather some statistics about throw
+    gen_counter_incr(asm, Counter::num_throw);
+    match (throw_state & VM_THROW_STATE_MASK as u64) as u32 {
+        RUBY_TAG_BREAK => gen_counter_incr(asm, Counter::num_throw_break),
+        RUBY_TAG_RETRY => gen_counter_incr(asm, Counter::num_throw_retry),
+        RUBY_TAG_RETURN => gen_counter_incr(asm, Counter::num_throw_return),
+        _ => {},
+    }
+
     // THROW_DATA_NEW allocates. Save SP for GC and PC for allocation tracing as
     // well as handling the catch table. However, not using jit_prepare_routine_call
     // since we don't need a patch point for this implementation.

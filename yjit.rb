@@ -279,6 +279,10 @@ module RubyVM::YJIT
       end
       out.puts "num_getivar_megamorphic: " + format_number(13, stats[:num_getivar_megamorphic])
       out.puts "num_setivar_megamorphic: " + format_number(13, stats[:num_setivar_megamorphic])
+      out.puts "num_throw:             " + format_number(13, stats[:num_throw])
+      out.puts "num_throw_break:       " + format_number(13, stats[:num_throw_break])
+      out.puts "num_throw_retry:       " + format_number(13, stats[:num_throw_retry])
+      out.puts "num_throw_return:      " + format_number(13, stats[:num_throw_return])
 
       out.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
       out.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])

@@ -423,6 +423,11 @@ make_counters! {
     num_getivar_megamorphic,
     num_setivar_megamorphic,
 
+    num_throw,
+    num_throw_break,
+    num_throw_retry,
+    num_throw_return,
+
     iseq_stack_too_large,
     iseq_too_long,
 
