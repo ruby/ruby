@@ -1016,6 +1016,62 @@ yp_block_argument_node_create(yp_parser_t *parser, const yp_token_t *operator, y
     return node;
 }
 
+static void
+YP_ATTRIBUTE_UNUSED yp_scope_node_create(yp_parameters_node_t *parameters, yp_statements_node_t *statements, yp_constant_id_list_t locals, const char *start, const char *end, yp_scope_node_t *dest)
+{
+    *dest = (yp_scope_node_t) {
+         {
+             .type = YP_NODE_SCOPE_NODE,
+             .location = { .start = start, .end = end },
+         },
+        .parameters = parameters,
+        .statements = statements,
+        .locals = locals,
+    };
+    return;
+}
+
+// TODO: Implement this for all other nodes which can have a scope
+void
+yp_get_scope_node(yp_node_t *node, yp_scope_node_t *dest) {
+    yp_parameters_node_t *parameters = NULL;
+    yp_statements_node_t *statements;
+    yp_constant_id_list_t locals;
+    const char *start = node->location.start;
+    const char *end = node->location.end;
+
+    switch (node->type) {
+      case YP_NODE_DEF_NODE: {
+          yp_def_node_t *def_node = (yp_def_node_t *) node;
+          parameters = def_node->parameters;
+          statements = (yp_statements_node_t *)def_node->body;
+          locals = def_node->locals;
+          break;
+      }
+
+      case YP_NODE_CLASS_NODE: {
+          yp_class_node_t *class_node = (yp_class_node_t *) node;
+          statements = (yp_statements_node_t *)class_node->body;
+          locals = class_node->locals;
+          break;
+      }
+
+      case YP_NODE_SINGLETON_CLASS_NODE: {
+          yp_singleton_class_node_t *singleton_class_node = (yp_singleton_class_node_t *) node;
+          statements = (yp_statements_node_t *)singleton_class_node->body;
+          locals = singleton_class_node->locals;
+          break;
+      }
+
+      default:
+        assert(false && "unreachable");
+        return;
+    }
+
+    yp_scope_node_create(parameters, statements, locals, start, end, dest);
+    return;
+}
+
 // Allocate and initialize a new BlockNode node.
 static yp_block_node_t *
 yp_block_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *opening, yp_block_parameters_node_t *parameters, yp_node_t *body, const yp_token_t *closing) {

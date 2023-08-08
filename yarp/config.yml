@@ -1686,6 +1686,20 @@ nodes:
 
           return 1
           ^^^^^^^^
+  - name: ScopeNode
+    child_nodes:
+      - name: parameters
+        type: node?
+        kind: ParametersNode
+      - name: statements
+        type: node?
+        kind: StatementsNode
+      - name: locals
+        type: constant[]
+    comment: |
+      Used only to retrieve the scope, not an
+      actual semantically meaningful node
+
   - name: SelfNode
     comment: |
       Represents the `self` keyword.
