@@ -439,7 +439,7 @@ usage(const char *name, int help, int highlight, int columns)
 #define rubylib_path_new rb_str_new
 
 static void
-push_include(const char *path, VALUE (*filter)(VALUE))
+ruby_push_include(const char *path, VALUE (*filter)(VALUE))
 {
     const char sep = PATH_SEP_CHAR;
     const char *p, *s;
@@ -452,6 +452,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 # define is_path_sep(c) ((c) == sep)
 #endif
 
+    if (path == 0) return;
     p = path;
     while (*p) {
         long len;
@@ -487,14 +488,6 @@ push_include(const char *path, VALUE (*filter)(VALUE))
         rb_ary_push(load_path, (*filter)(rubylib_path_new(p, len)));
         p = s;
     }
-}
-
-static void
-ruby_push_include(const char *path, VALUE (*filter)(VALUE))
-{
-    if (path == 0)
-        return;
-    push_include(path, filter);
 }
 
 static VALUE
