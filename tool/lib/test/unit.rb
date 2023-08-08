@@ -346,7 +346,8 @@ module Test
           options[:retry] = false
         end
 
-        opts.on '--ruby VAL', "Path to ruby which is used at -j option" do |a|
+        opts.on '--ruby VAL', "Path to ruby which is used at -j option",
+                "Also used as EnvUtil.rubybin by some assertion methods" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
 
