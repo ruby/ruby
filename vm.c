@@ -2427,7 +2427,8 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
 
     rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
     while (UNDEF_P(result = vm_exec_handle_exception(ec, state, result))) {
-        /* caught a jump, exec the handler */
+        // caught a jump, exec the handler. JIT code in jit_exec_exception()
+        // may return Qundef to run remaining frames with vm_exec_core().
         if (UNDEF_P(result = jit_exec_exception(ec))) {
             result = vm_exec_core(ec);
         }
