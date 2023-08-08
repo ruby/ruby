@@ -1607,15 +1607,15 @@ yp_constant_path_node_create(yp_parser_t *parser, yp_node_t *parent, const yp_to
 
 // Allocate a new ConstantPathWriteNode node.
 static yp_constant_path_write_node_t *
-yp_constant_path_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+yp_constant_path_write_node_create(yp_parser_t *parser, yp_constant_path_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     yp_constant_path_write_node_t *node = YP_ALLOC_NODE(parser, yp_constant_path_write_node_t);
 
     *node = (yp_constant_path_write_node_t) {
         {
             .type = YP_NODE_CONSTANT_PATH_WRITE_NODE,
             .location = {
-                .start = target->location.start,
-                .end = (value == NULL ? target->location.end : value->location.end)
+                .start = target->base.location.start,
+                .end = (value == NULL ? target->base.location.end : value->location.end)
             },
         },
         .target = target,
@@ -7575,7 +7575,7 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
             return (yp_node_t *) write_node;
         }
         case YP_NODE_CONSTANT_PATH_NODE:
-            return (yp_node_t *) yp_constant_path_write_node_create(parser, target, operator, value);
+            return (yp_node_t *) yp_constant_path_write_node_create(parser, (yp_constant_path_node_t *) target, operator, value);
         case YP_NODE_CONSTANT_READ_NODE: {
             yp_constant_write_node_t *node = yp_constant_write_node_create(parser, &target->location, operator, value);
             yp_node_destroy(parser, target);
