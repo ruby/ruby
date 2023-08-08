@@ -1177,8 +1177,8 @@ module RubyVM::RJIT # :nodoc: all
       ), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mark_bits)")],
       outer_variables: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), outer_variables)")],
       mandatory_only_iseq: [CType::Pointer.new { self.rb_iseq_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mandatory_only_iseq)")],
-      jit_func: [self.rb_jit_func_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)")],
-      total_calls: [CType::Immediate.parse("unsigned long"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), total_calls)")],
+      jit_entry: [self.rb_jit_func_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_entry)")],
+      jit_entry_calls: [CType::Immediate.parse("unsigned long"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_entry_calls)")],
       rjit_blocks: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), rjit_blocks)"), true],
     )
   end

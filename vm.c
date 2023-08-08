@@ -370,7 +370,14 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
 #if USE_RJIT || USE_YJIT
-// Try to compile the current ISeq in ec. Return 0 if not compiled.
+// Generate JIT code that supports the following kinds of ISEQ entries:
+//   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
+//     called by a C method). The current frame has VM_FRAME_FLAG_FINISH.
+//     The current vm_exec stops if JIT code returns a non-Qundef value.
+//   * ISEQs called by the interpreter on vm_sendish (e.g. Ruby methods or
+//     blocks called by a Ruby frame that isn't compiled or side-exited).
+//     The current frame doesn't have VM_FRAME_FLAG_FINISH. The current
+//     vm_exec does NOT stop whether JIT code returns Qundef or not.
 static inline rb_jit_func_t
 jit_compile(rb_execution_context_t *ec)
 {
@@ -379,35 +386,29 @@ jit_compile(rb_execution_context_t *ec)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     bool yjit_enabled = rb_yjit_compile_new_iseqs();
     if (yjit_enabled || rb_rjit_call_p) {
-        body->total_calls++;
+        body->jit_entry_calls++;
     }
     else {
-        return 0;
+        return NULL;
     }
 
-    // Don't try to compile the function if it's already compiled
-    if (body->jit_func) {
-        return body->jit_func;
-    }
-
-    // Trigger JIT compilation as needed
-    if (yjit_enabled) {
-        if (rb_yjit_threshold_hit(iseq)) {
-            rb_yjit_compile_iseq(iseq, ec);
+    // Trigger JIT compilation if not compiled
+    if (body->jit_entry == NULL) {
+        if (yjit_enabled) {
+            if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
+                rb_yjit_compile_iseq(iseq, ec, false);
+            }
+        }
+        else { // rb_rjit_call_p
+            if (body->jit_entry_calls == rb_rjit_call_threshold()) {
+                rb_rjit_compile(iseq);
+            }
         }
     }
-    else { // rb_rjit_call_p
-        if (body->total_calls == rb_rjit_call_threshold()) {
-            rb_rjit_compile(iseq);
-        }
-    }
-
-    return body->jit_func;
+    return body->jit_entry;
 }
 
-// Try to execute the current iseq in ec.  Use JIT code if it is ready.
-// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
-// YJIT compiles on the thread running the iseq.
+// Execute JIT code compiled by jit_compile()
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
 {
@@ -423,6 +424,51 @@ jit_exec(rb_execution_context_t *ec)
 #else
 # define jit_compile(ec) ((rb_jit_func_t)0)
 # define jit_exec(ec) Qundef
+#endif
+
+#if USE_YJIT
+// Generate JIT code that supports the following kind of ISEQ entry:
+//   * The first ISEQ pushed by vm_exec_handle_exception. The frame would
+//     point to a location specified by a catch table, and it doesn't have
+//     VM_FRAME_FLAG_FINISH. The current vm_exec stops if JIT code returns
+//     a non-Qundef value. So you should not return a non-Qundef value
+//     until ec->cfp is changed to a frame with VM_FRAME_FLAG_FINISH.
+static inline rb_jit_func_t
+jit_compile_exception(rb_execution_context_t *ec)
+{
+    // Increment the ISEQ's call counter
+    const rb_iseq_t *iseq = ec->cfp->iseq;
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (rb_yjit_compile_new_iseqs()) {
+        body->jit_exception_calls++;
+    }
+    else {
+        return NULL;
+    }
+
+    // Trigger JIT compilation if not compiled
+    if (body->jit_exception == NULL && rb_yjit_threshold_hit(iseq, body->jit_exception_calls)) {
+        rb_yjit_compile_iseq(iseq, ec, true);
+    }
+    return body->jit_exception;
+}
+
+// Execute JIT code compiled by jit_compile_exception()
+static inline VALUE
+jit_exec_exception(rb_execution_context_t *ec)
+{
+    rb_jit_func_t func = jit_compile_exception(ec);
+    if (func) {
+        // Call the JIT code
+        return func(ec, ec->cfp);
+    }
+    else {
+        return Qundef;
+    }
+}
+#else
+# define jit_compile_exception(ec) ((rb_jit_func_t)0)
+# define jit_exec_exception(ec) Qundef
 #endif
 
 #include "vm_insnhelper.c"
@@ -2381,8 +2427,11 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
 
     rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
     while (UNDEF_P(result = vm_exec_handle_exception(ec, state, result))) {
-        /* caught a jump, exec the handler */
-        result = vm_exec_core(ec);
+        // caught a jump, exec the handler. JIT code in jit_exec_exception()
+        // may return Qundef to run remaining frames with vm_exec_core().
+        if (UNDEF_P(result = jit_exec_exception(ec))) {
+            result = vm_exec_core(ec);
+        }
       vm_loop_start:
         VM_ASSERT(ec->tag == tag);
         /* when caught `throw`, `tag.state` is set. */

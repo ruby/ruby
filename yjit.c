@@ -422,10 +422,12 @@ void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    iseq->body->jit_func = NULL;
+    iseq->body->jit_entry = NULL;
+    iseq->body->jit_exception = NULL;
     // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
     // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    iseq->body->total_calls = 0;
+    iseq->body->jit_entry_calls = 0;
+    iseq->body->jit_exception_calls = 0;
 }
 
 // Get the PC for a given index in an iseq
@@ -595,12 +597,6 @@ rb_get_def_bmethod_proc(rb_method_definition_t *def)
 {
     RUBY_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD);
     return def->body.bmethod.proc;
-}
-
-unsigned long
-rb_get_iseq_body_total_calls(const rb_iseq_t *iseq)
-{
-    return iseq->body->total_calls;
 }
 
 const rb_iseq_t *
@@ -832,6 +828,8 @@ rb_get_cfp_ep_level(struct rb_control_frame_struct *cfp, uint32_t lv)
     return ep;
 }
 
+extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
+
 VALUE
 rb_yarv_class_of(VALUE obj)
 {
@@ -1047,27 +1045,24 @@ rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
-bool
-rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec)
+void
+rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    bool success = true;
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
-    // Compile a block version starting at the first instruction
-    uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec); // defined in Rust
-    uint8_t *code_ptr = rb_yjit_iseq_gen_entry_point(iseq, ec);
+    // Compile a block version starting at the current instruction
+    uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
+    uint8_t *code_ptr = rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
-    if (code_ptr) {
-        iseq->body->jit_func = (rb_jit_func_t)code_ptr;
+    if (jit_exception) {
+        iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
     }
     else {
-        iseq->body->jit_func = 0;
-        success = false;
+        iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
     }
 
     RB_VM_LOCK_LEAVE();
-    return success;
 }
 
 // GC root for interacting with the GC
@@ -1141,6 +1136,35 @@ size_t
 rb_yjit_invokeblock_sp_pops(const struct rb_callinfo *ci)
 {
     return 1 - sp_inc_of_invokeblock(ci); // + 1 to ignore return value push
+}
+
+// Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.
+// See [jit_compile_exception] for details.
+void
+rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *leave_exception)
+{
+    if (VM_FRAME_FINISHED_P(cfp)) {
+        // If it's a FINISH frame, just normally exit with a non-Qundef value.
+        cfp->jit_return = leave_exit;
+    }
+    else if (cfp->jit_return) {
+        while (!VM_FRAME_FINISHED_P(cfp)) {
+            if (cfp->jit_return == leave_exit) {
+                // Unlike jit_exec(), leave_exit is not safe on a non-FINISH frame on
+                // jit_exec_exception(). See [jit_exec] and [jit_exec_exception] for
+                // details. Exit to the interpreter with Qundef to let it keep executing
+                // other Ruby frames.
+                cfp->jit_return = leave_exception;
+                return;
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        }
+    }
+    else {
+        // If the caller was not JIT code, exit to the interpreter with Qundef
+        // to keep executing Ruby frames with the interpreter.
+        cfp->jit_return = leave_exception;
+    }
 }
 
 // Primitives used by yjit.rb
