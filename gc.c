@@ -1492,9 +1492,6 @@ asan_poison_object_restore(VALUE obj, void *ptr)
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
 
-
-static int rgengc_remembered(rb_objspace_t *objspace, VALUE obj);
-static int rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj);
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
@@ -2507,7 +2504,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         GC_ASSERT(RVALUE_OLD_P(obj) == FALSE);
         GC_ASSERT(RVALUE_WB_UNPROTECTED(obj) == FALSE);
 
-        if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
+        if (RVALUE_REMEMBERED((VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
     }
     RB_VM_LOCK_LEAVE_NO_BARRIER();
 #endif
@@ -5435,7 +5432,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #if RGENGC_CHECK_MODE
                     if (!is_full_marking(objspace)) {
                         if (RVALUE_OLD_P(vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                        if (rgengc_remembered_sweep(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                        if (RVALUE_REMEMBERED(vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
                     }
 #endif
                     if (obj_free(objspace, vp)) {
@@ -8579,12 +8576,6 @@ gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
 /* bit operations */
 
 static int
-rgengc_remembersetbits_get(rb_objspace_t *objspace, VALUE obj)
-{
-    return RVALUE_REMEMBERED(obj);
-}
-
-static int
 rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 {
     struct heap_page *page = GET_HEAP_PAGE(obj);
@@ -8607,7 +8598,7 @@ static int
 rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 {
     gc_report(6, objspace, "rgengc_remember: %s %s\n", obj_info(obj),
-              rgengc_remembersetbits_get(objspace, obj) ? "was already remembered" : "is remembered now");
+              RVALUE_REMEMBERED(obj) ? "was already remembered" : "is remembered now");
 
     check_rvalue_consistency(obj);
 
@@ -8616,7 +8607,7 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
     }
 
 #if RGENGC_PROFILE > 0
-    if (!rgengc_remembered(objspace, obj)) {
+    if (!RVALUE_REMEMBERED(obj)) {
         if (RVALUE_WB_UNPROTECTED(obj) == 0) {
             objspace->profile.total_remembered_normal_object_count++;
 #if RGENGC_PROFILE >= 2
@@ -8627,21 +8618,6 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 #endif /* RGENGC_PROFILE > 0 */
 
     return rgengc_remembersetbits_set(objspace, obj);
-}
-
-static int
-rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj)
-{
-    int result = rgengc_remembersetbits_get(objspace, obj);
-    check_rvalue_consistency(obj);
-    return result;
-}
-
-static int
-rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
-{
-    gc_report(6, objspace, "rgengc_remembered: %s\n", obj_info(obj));
-    return rgengc_remembered_sweep(objspace, obj);
 }
 
 #ifndef PROFILE_REMEMBERSET_MARK
@@ -8749,7 +8725,7 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
     }
 
     /* mark `a' and remember (default behavior) */
-    if (!rgengc_remembered(objspace, a)) {
+    if (!RVALUE_REMEMBERED(a)) {
         RB_VM_LOCK_ENTER_NO_BARRIER();
         {
             rgengc_remember(objspace, a);
@@ -8844,7 +8820,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
         rb_objspace_t *objspace = &rb_objspace;
 
         gc_report(2, objspace, "rb_gc_writebarrier_unprotect: %s %s\n", obj_info(obj),
-                  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
+                  RVALUE_REMEMBERED(obj) ? " (already remembered)" : "");
 
         RB_VM_LOCK_ENTER_NO_BARRIER();
         {
