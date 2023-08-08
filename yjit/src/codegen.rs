@@ -712,6 +712,7 @@ pub fn gen_entry_prologue(
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
 
     // Setup cfp->jit_return
+    // If this is an exception handler entry point
     if jit_exception {
         // On jit_exec_exception(), it's NOT safe to return a non-Qundef value
         // from a non-FINISH frame. This function fixes that problem.
