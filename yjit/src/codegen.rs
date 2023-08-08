@@ -5603,7 +5603,7 @@ fn gen_send_iseq(
     exit_if_has_kwrest(asm, iseq)?;
     exit_if_splat_and_ruby2_keywords(asm, jit, flags)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
-    exit_if_has_rest_and_send(asm, iseq_has_rest, flags)?;
+    exit_if_has_rest_and_splat(asm, iseq_has_rest, flags)?;
     exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
     exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
@@ -6347,8 +6347,8 @@ fn exit_if_has_rest_and_captured(asm: &mut Assembler, iseq_has_rest: bool, captu
 }
 
 #[must_use]
-fn exit_if_has_rest_and_send( asm: &mut Assembler, iseq_has_rest: bool, flags: u32) -> Option<()> {
-    exit_if(asm, iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0, Counter::send_iseq_has_rest_and_send)
+fn exit_if_has_rest_and_splat( asm: &mut Assembler, iseq_has_rest: bool, flags: u32) -> Option<()> {
+    exit_if(asm, iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0, Counter::send_iseq_has_rest_and_splat)
 }
 
 #[must_use]
