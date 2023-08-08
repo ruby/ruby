@@ -1141,24 +1141,20 @@ rb_yjit_invokeblock_sp_pops(const struct rb_callinfo *ci)
 // Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.
 // See [jit_compile_exception] for details.
 void
-rb_yjit_set_exception_return(rb_control_frame_t *cfp)
+rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *leave_exception)
 {
-    extern void *rb_yjit_leave_exit();
-    extern void *rb_yjit_leave_exception();
-
     if (VM_FRAME_FINISHED_P(cfp)) {
         // If it's a FINISH frame, just normally exit with a non-Qundef value.
-        cfp->jit_return = rb_yjit_leave_exit();
+        cfp->jit_return = leave_exit;
     }
     else if (cfp->jit_return) {
-        void *leave_exit = rb_yjit_leave_exit();
         while (!VM_FRAME_FINISHED_P(cfp)) {
             if (cfp->jit_return == leave_exit) {
                 // Unlike jit_exec(), leave_exit is not safe on a non-FINISH frame on
                 // jit_exec_exception(). See [jit_exec] and [jit_exec_exception] for
                 // details. Exit to the interpreter with Qundef to let it keep executing
                 // other Ruby frames.
-                cfp->jit_return = rb_yjit_leave_exception();
+                cfp->jit_return = leave_exception;
                 return;
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1167,7 +1163,7 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp)
     else {
         // If the caller was not JIT code, exit to the interpreter with Qundef
         // to keep executing Ruby frames with the interpreter.
-        cfp->jit_return = rb_yjit_leave_exception();
+        cfp->jit_return = leave_exception;
     }
 }
 

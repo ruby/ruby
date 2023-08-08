@@ -18,7 +18,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem;
-use std::os::raw::{c_int, c_void};
+use std::os::raw::c_int;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -716,7 +716,14 @@ pub fn gen_entry_prologue(
         // On jit_exec_exception(), it's NOT safe to return a non-Qundef value
         // from a non-FINISH frame. This function fixes that problem.
         // See [jit_compile_exception] for details.
-        asm.ccall(rb_yjit_set_exception_return as *mut u8, vec![CFP]);
+        asm.ccall(
+            rb_yjit_set_exception_return as *mut u8,
+            vec![
+                CFP,
+                Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
+                Opnd::const_ptr(CodegenGlobals::get_leave_exception_code().raw_ptr()),
+            ],
+        );
     } else {
         // On jit_exec() or JIT_EXEC(), it's safe to return a non-Qundef value
         // on the entry frame. See [jit_compile] for details.
@@ -8624,18 +8631,6 @@ impl CodegenGlobals {
     pub fn get_code_gc_count() -> usize {
         CodegenGlobals::get_instance().code_gc_count
     }
-}
-
-/// Get code to exit to the interpreter with a return value
-#[no_mangle]
-pub extern "C" fn rb_yjit_leave_exit() -> *mut c_void {
-    CodegenGlobals::get_leave_exit_code().raw_ptr() as *mut c_void
-}
-
-/// Get code to exit to the interpreter with Qundef
-#[no_mangle]
-pub extern "C" fn rb_yjit_leave_exception() -> *mut c_void {
-    CodegenGlobals::get_leave_exception_code().raw_ptr() as *mut c_void
 }
 
 #[cfg(test)]
