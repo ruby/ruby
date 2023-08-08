@@ -7807,6 +7807,7 @@ fn gen_opt_getconstant_path(
     if ice.is_null() {
         // In this case, leave a block that unconditionally side exits
         // for the interpreter to invalidate.
+        gen_counter_incr(asm, Counter::opt_getconstant_path_no_ic_entry);
         return None;
     }
 
@@ -7827,7 +7828,7 @@ fn gen_opt_getconstant_path(
         // Check the result. SysV only specifies one byte for _Bool return values,
         // so it's important we only check one bit to ignore the higher bits in the register.
         asm.test(ret_val, 1.into());
-        asm.jz(Target::side_exit(Counter::opt_getinlinecache_miss));
+        asm.jz(Target::side_exit(Counter::opt_getconstant_path_ic_miss));
 
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
@@ -7849,6 +7850,7 @@ fn gen_opt_getconstant_path(
     } else {
         // Optimize for single ractor mode.
         if !assume_single_ractor_mode(jit, asm, ocb) {
+            gen_counter_incr(asm, Counter::opt_getconstant_path_multi_ractor);
             return None;
         }
 
