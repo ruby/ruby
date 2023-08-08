@@ -697,6 +697,8 @@ typedef struct mark_stack {
 #define SIZE_POOL_EDEN_HEAP(size_pool) (&(size_pool)->eden_heap)
 #define SIZE_POOL_TOMB_HEAP(size_pool) (&(size_pool)->tomb_heap)
 
+typedef int (*gc_compact_compare_func)(const void *l, const void *r, void *d);
+
 typedef struct rb_heap_struct {
     struct heap_page *free_pages;
     struct ccan_list_head pages;
@@ -9933,7 +9935,7 @@ compare_free_slots(const void *left, const void *right, void *dummy)
 }
 
 static void
-gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
+gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func)
 {
     for (int j = 0; j < SIZE_POOL_COUNT; j++) {
         rb_size_pool_t *size_pool = &size_pools[j];
@@ -9953,7 +9955,7 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 
         /* Sort the heap so "filled pages" are first. `heap_add_page` adds to the
          * head of the list, so empty pages will end up at the start of the heap */
-        ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_free_slots, NULL);
+        ruby_qsort(page_list, total_pages, sizeof(struct heap_page *), compare_func, NULL);
 
         /* Reset the eden heap */
         ccan_list_head_init(&SIZE_POOL_EDEN_HEAP(size_pool)->pages);
@@ -10893,7 +10895,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
         }
 
         if (RTEST(toward_empty)) {
-            gc_sort_heap_by_empty_slots(objspace);
+            gc_sort_heap_by_compare_func(objspace, compare_free_slots);
         }
     }
     RB_VM_LOCK_LEAVE();
