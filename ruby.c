@@ -337,6 +337,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
         M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
         M("--version",                              "", "print the version number, then exit"),
+        M("--bugreport-path=TEMPLATE",              "", "template of bug report files"),
         M("-y",                          ", --yydebug", "print log of parser. Backward compatibility is not guaranteed"),
         M("--help",			            "", "show this message, -h for short message"),
     };
@@ -1352,8 +1353,6 @@ proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt
     UNREACHABLE;
 }
 
-static const char *test_bug_report_template;
-
 static long
 proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **argv, int envopt)
 {
@@ -1464,8 +1463,10 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
             opt->backtrace_length_limit = n;
         }
     }
-    else if (is_option_with_arg("test-bugreport", true, false)) {
-        test_bug_report_template = s;
+    else if (is_option_with_arg("bugreport-path", true, true)) {
+        if (!opt->bugreport_path) {
+            opt->bugreport_path = s;
+        }
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -2916,9 +2917,9 @@ ruby_process_options(int argc, char **argv)
 
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
-    if (test_bug_report_template) {
-        void ruby_test_bug_report(const char *template);
-        ruby_test_bug_report(test_bug_report_template);
+    if (opt.bugreport_path && *opt.bugreport_path) {
+        void ruby_set_bug_report(const char *template);
+        ruby_set_bug_report(opt.bugreport_path);
     }
     return (void*)(struct RData*)iseq;
 }

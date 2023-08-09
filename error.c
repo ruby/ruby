@@ -839,13 +839,17 @@ open_report_path(const char *template, char *buf, size_t size, rb_pid_t *pid)
     return NULL;
 }
 
+static const char *bugreport_path;
+
 /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
 #define REPORT_BUG_BUFSIZ 256
 static FILE *
 bug_report_file(const char *file, int line, rb_pid_t *pid)
 {
     char buf[REPORT_BUG_BUFSIZ];
-    FILE *out = open_report_path(getenv("RUBY_BUGREPORT_PATH"), buf, sizeof(buf), pid);
+    const char *report = bugreport_path;
+    if (!report) report = getenv("RUBY_BUGREPORT_PATH");
+    FILE *out = open_report_path(report, buf, sizeof(buf), pid);
     int len = err_position_0(buf, sizeof(buf), file, line);
 
     if (out) {
@@ -998,8 +1002,10 @@ bug_report_end(FILE *out, rb_pid_t pid)
 } while (0) \
 
 void
-ruby_test_bug_report(const char *template)
+ruby_set_bug_report(const char *template)
 {
+    bugreport_path = template;
+#if RUBY_DEBUG
     rb_pid_t pid = -1;
     char buf[REPORT_BUG_BUFSIZ];
     FILE *out = open_report_path(template, buf, sizeof(buf), &pid);
@@ -1008,6 +1014,7 @@ ruby_test_bug_report(const char *template)
         fprintf(out, "ruby_test_bug_report: %s", ctime(&t));
         finish_report(out, pid);
     }
+#endif
 }
 
 NORETURN(static void die(void));
