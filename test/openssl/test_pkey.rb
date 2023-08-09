@@ -82,8 +82,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_ed25519
-    # https://github.com/openssl/openssl/issues/20758
-    pend('Not supported on FIPS mode enabled') if OpenSSL.fips_mode
+    pend_on_openssl_issue_21493
 
     # Test vector from RFC 8032 Section 7.1 TEST 2
     priv_pem = <<~EOF
@@ -101,7 +100,13 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       pub = OpenSSL::PKey.read(pub_pem)
     rescue OpenSSL::PKey::PKeyError
       # OpenSSL < 1.1.1
-      pend "Ed25519 is not implemented"
+      if !openssl?(1, 1, 1)
+        pend "Ed25519 is not implemented"
+      elsif OpenSSL.fips_mode && openssl?(3, 1, 0, 0)
+        # See OpenSSL providers/fips/fipsprov.c PROV_NAMES_ED25519 entries
+        # with FIPS_UNAPPROVED_PROPERTIES in OpenSSL 3.1+.
+        pend "Ed25519 is not approved in OpenSSL 3.1+ FIPS code"
+      end
     end
     assert_instance_of OpenSSL::PKey::PKey, priv
     assert_instance_of OpenSSL::PKey::PKey, pub
@@ -143,7 +148,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_x25519
-    pend('Not supported on FIPS mode enabled') if OpenSSL.fips_mode
+    pend_on_openssl_issue_21493
 
     # Test vector from RFC 7748 Section 6.1
     alice_pem = <<~EOF
@@ -197,7 +202,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_compare?
-    pend('Not supported on FIPS mode enabled') if OpenSSL.fips_mode
+    pend_on_openssl_issue_21493
 
     key1 = Fixtures.pkey("rsa1024")
     key2 = Fixtures.pkey("rsa1024")
