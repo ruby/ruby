@@ -353,7 +353,9 @@ make_counters! {
 
     opt_case_dispatch_megamorphic,
 
-    opt_getinlinecache_miss,
+    opt_getconstant_path_ic_miss,
+    opt_getconstant_path_no_ic_entry,
+    opt_getconstant_path_multi_ractor,
 
     expandarray_splat,
     expandarray_postarg,
