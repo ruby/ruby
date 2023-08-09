@@ -8,7 +8,6 @@ require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"
 require_relative "output-method"
-require_relative "history"
 
 module IRB
   # A class that wraps the current state of the irb session, including the
@@ -130,8 +129,6 @@ module IRB
       else
         @io = input_method
       end
-      self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
-
       @extra_doc_dirs = IRB.conf[:EXTRA_DOC_DIRS]
 
       @echo = IRB.conf[:ECHO]
@@ -154,13 +151,6 @@ module IRB
 
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
-
-      if val
-        context = (IRB.conf[:MAIN_CONTEXT] || self)
-        if context.io.support_history_saving? && !context.io.singleton_class.include?(HistorySavingAbility)
-          context.io.extend(HistorySavingAbility)
-        end
-      end
     end
 
     def save_history

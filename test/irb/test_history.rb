@@ -1,8 +1,11 @@
 # frozen_string_literal: false
 require 'irb'
 require 'readline'
+require "tempfile"
 
 require_relative "helper"
+
+return if RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
 
 module TestIRB
   class HistoryTest < TestCase
@@ -205,4 +208,87 @@ module TestIRB
       end
     end
   end
-end if not RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
+
+  class NestedIRBHistoryTest < IntegrationTestCase
+    def test_history_saving_with_nested_sessions
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit
+      HISTORY
+    end
+
+    def test_history_saving_with_nested_sessions_and_prior_history
+      write_history <<~HISTORY
+        old_history_1
+        old_history_2
+        old_history_3
+      HISTORY
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        old_history_1
+        old_history_2
+        old_history_3
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit
+      HISTORY
+    end
+
+    private
+
+    def write_history(history)
+      @history_file = Tempfile.new('irb_history')
+      @history_file.write(history)
+      @history_file.close
+      @irbrc = Tempfile.new('irbrc')
+      @irbrc.write <<~RUBY
+        IRB.conf[:HISTORY_FILE] = "#{@history_file.path}"
+      RUBY
+      @irbrc.close
+      @envs['IRBRC'] = @irbrc.path
+    end
+  end
+end

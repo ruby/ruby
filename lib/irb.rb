@@ -482,8 +482,15 @@ module IRB
     end
 
     def run(conf = IRB.conf)
+      in_nested_session = !!conf[:MAIN_CONTEXT]
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
+
+      save_history = !in_nested_session && conf[:SAVE_HISTORY] && context.io.support_history_saving?
+
+      if save_history
+        context.io.load_history
+      end
 
       prev_trap = trap("SIGINT") do
         signal_handle
@@ -496,6 +503,7 @@ module IRB
       ensure
         trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
+        context.io.save_history if save_history
       end
     end
 
