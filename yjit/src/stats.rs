@@ -310,7 +310,7 @@ make_counters! {
     guard_send_interrupted,
     guard_send_not_fixnums,
     guard_send_not_string,
-    guard_send_mid_mismatch,
+    guard_send_respond_to_mid_mismatch,
 
     guard_invokesuper_me_changed,
     guard_invokesuper_block_given,

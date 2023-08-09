@@ -1958,7 +1958,8 @@ fn jit_chain_guard(
     };
 
     if (asm.ctx.get_chain_depth() as i32) < depth_limit {
-        let mut deeper = asm.ctx.clone();
+        // Rewind Context to use the stack_size at the beginning of this instruction.
+        let mut deeper = asm.ctx.with_stack_size(jit.stack_size_for_pc);
         deeper.increment_chain_depth();
         let bid = BlockId {
             iseq: jit.iseq,
@@ -4833,7 +4834,14 @@ fn jit_obj_respond_to(
     // This is necessary because we have no guarantee that sym_opnd is a constant
     asm.comment("guard known mid");
     asm.cmp(sym_opnd, mid_sym.into());
-    asm.jne(Target::side_exit(Counter::guard_send_mid_mismatch));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        SEND_MAX_CHAIN_DEPTH,
+        Counter::guard_send_respond_to_mid_mismatch,
+    );
 
     jit_putobject(asm, result);
 
