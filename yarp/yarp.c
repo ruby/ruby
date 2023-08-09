@@ -1424,7 +1424,7 @@ yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
 static yp_class_variable_operator_and_write_node_t *
 yp_class_variable_operator_and_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_CLASS_VARIABLE_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL));
+    assert(operator->type == YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
     yp_class_variable_operator_and_write_node_t *node = YP_ALLOC_NODE(parser, yp_class_variable_operator_and_write_node_t);
 
     *node = (yp_class_variable_operator_and_write_node_t) {
@@ -1469,7 +1469,7 @@ yp_class_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *tar
 static yp_class_variable_operator_or_write_node_t *
 yp_class_variable_operator_or_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_CLASS_VARIABLE_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_PIPE_PIPE_EQUAL));
+    assert(operator->type == YP_TOKEN_PIPE_PIPE_EQUAL);
     yp_class_variable_operator_or_write_node_t *node = YP_ALLOC_NODE(parser, yp_class_variable_operator_or_write_node_t);
 
     *node = (yp_class_variable_operator_or_write_node_t) {
@@ -1630,7 +1630,7 @@ yp_constant_path_write_node_create(yp_parser_t *parser, yp_constant_path_node_t 
 static yp_constant_operator_and_write_node_t *
 yp_constant_operator_and_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_CONSTANT_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL));
+    assert(operator->type == YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
     yp_constant_operator_and_write_node_t *node = YP_ALLOC_NODE(parser, yp_constant_operator_and_write_node_t);
 
     *node = (yp_constant_operator_and_write_node_t) {
@@ -1675,7 +1675,7 @@ yp_constant_operator_write_node_create(yp_parser_t *parser, yp_node_t *target, c
 static yp_constant_operator_or_write_node_t *
 yp_constant_operator_or_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_CONSTANT_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_PIPE_PIPE_EQUAL));
+    assert(operator->type == YP_TOKEN_PIPE_PIPE_EQUAL);
     yp_constant_operator_or_write_node_t *node = YP_ALLOC_NODE(parser, yp_constant_operator_or_write_node_t);
 
     *node = (yp_constant_operator_or_write_node_t) {
@@ -2132,7 +2132,7 @@ yp_hash_pattern_node_node_list_create(yp_parser_t *parser, yp_node_list_t *assoc
 static yp_global_variable_operator_and_write_node_t *
 yp_global_variable_operator_and_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_GLOBAL_VARIABLE_READ_NODE) || YP_NODE_TYPE_P(target, YP_NODE_BACK_REFERENCE_READ_NODE) || YP_NODE_TYPE_P(target, YP_NODE_NUMBERED_REFERENCE_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL));
+    assert(operator->type == YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
     yp_global_variable_operator_and_write_node_t *node = YP_ALLOC_NODE(parser, yp_global_variable_operator_and_write_node_t);
 
     *node = (yp_global_variable_operator_and_write_node_t) {
@@ -2177,7 +2177,7 @@ yp_global_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *ta
 static yp_global_variable_operator_or_write_node_t *
 yp_global_variable_operator_or_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_GLOBAL_VARIABLE_READ_NODE) || YP_NODE_TYPE_P(target, YP_NODE_BACK_REFERENCE_READ_NODE) || YP_NODE_TYPE_P(target, YP_NODE_NUMBERED_REFERENCE_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_PIPE_PIPE_EQUAL));
+    assert(operator->type == YP_TOKEN_PIPE_PIPE_EQUAL);
     yp_global_variable_operator_or_write_node_t *node = YP_ALLOC_NODE(parser, yp_global_variable_operator_or_write_node_t);
 
     *node = (yp_global_variable_operator_or_write_node_t) {
@@ -2483,7 +2483,7 @@ yp_in_node_create(yp_parser_t *parser, yp_node_t *pattern, yp_statements_node_t 
 static yp_instance_variable_operator_and_write_node_t *
 yp_instance_variable_operator_and_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_INSTANCE_VARIABLE_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL));
+    assert(operator->type == YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
     yp_instance_variable_operator_and_write_node_t *node = YP_ALLOC_NODE(parser, yp_instance_variable_operator_and_write_node_t);
 
     *node = (yp_instance_variable_operator_and_write_node_t) {
@@ -2528,7 +2528,7 @@ yp_instance_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *
 static yp_instance_variable_operator_or_write_node_t *
 yp_instance_variable_operator_or_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_INSTANCE_VARIABLE_READ_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_PIPE_PIPE_EQUAL));
+    assert(operator->type == YP_TOKEN_PIPE_PIPE_EQUAL);
     yp_instance_variable_operator_or_write_node_t *node = YP_ALLOC_NODE(parser, yp_instance_variable_operator_or_write_node_t);
 
     *node = (yp_instance_variable_operator_or_write_node_t) {
@@ -2821,7 +2821,7 @@ yp_lambda_node_create(
 static yp_local_variable_operator_and_write_node_t *
 yp_local_variable_operator_and_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value, yp_constant_id_t constant_id) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_LOCAL_VARIABLE_READ_NODE) || YP_NODE_TYPE_P(target, YP_NODE_CALL_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL));
+    assert(operator->type == YP_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
     yp_local_variable_operator_and_write_node_t *node = YP_ALLOC_NODE(parser, yp_local_variable_operator_and_write_node_t);
 
     *node = (yp_local_variable_operator_and_write_node_t) {
@@ -2868,7 +2868,7 @@ yp_local_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *tar
 static yp_local_variable_operator_or_write_node_t *
 yp_local_variable_operator_or_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value, yp_constant_id_t constant_id) {
     assert(YP_NODE_TYPE_P(target, YP_NODE_LOCAL_VARIABLE_READ_NODE) || YP_NODE_TYPE_P(target, YP_NODE_CALL_NODE));
-    assert(YP_NODE_TYPE_P(operator, YP_TOKEN_PIPE_PIPE_EQUAL));
+    assert(operator->type == YP_TOKEN_PIPE_PIPE_EQUAL);
     yp_local_variable_operator_or_write_node_t *node = YP_ALLOC_NODE(parser, yp_local_variable_operator_or_write_node_t);
 
     *node = (yp_local_variable_operator_or_write_node_t) {
