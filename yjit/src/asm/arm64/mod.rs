@@ -699,6 +699,20 @@ pub fn msr(cb: &mut CodeBlock, systemregister: SystemRegister, rt: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// MUL - multiply two registers, put the result in a third register
+pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
+
+            MAdd::mul(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to mul instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// MVN - move a value in a register to another register, negating it
 pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rm) {
@@ -1411,6 +1425,11 @@ mod tests {
     #[test]
     fn test_msr() {
         check_bytes("0a421bd5", |cb| msr(cb, SystemRegister::NZCV, X10));
+    }
+
+    #[test]
+    fn test_mul() {
+        check_bytes("6a7d0c9b", |cb| mul(cb, X10, X11, X12));
     }
 
     #[test]
