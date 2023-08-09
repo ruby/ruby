@@ -642,6 +642,11 @@ impl Assembler
                     let opnd1 = split_shifted_immediate(asm, *right);
                     asm.sub(opnd0, opnd1);
                 },
+                Insn::Mul { left, right, .. } => {
+                    let opnd0 = split_load_operand(asm, *left);
+                    let opnd1 = split_shifted_immediate(asm, *right);
+                    asm.mul(opnd0, opnd1);
+                },
                 Insn::Test { left, right } => {
                     // The value being tested must be in a register, so if it's
                     // not already one we'll load it first.
@@ -839,9 +844,6 @@ impl Assembler
                         cb.write_byte(0);
                     }
                 },
-                Insn::Add { left, right, out } => {
-                    adds(cb, out.into(), left.into(), right.into());
-                },
                 Insn::FrameSetup => {
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
 
@@ -854,8 +856,14 @@ impl Assembler
 
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
                 },
+                Insn::Add { left, right, out } => {
+                    adds(cb, out.into(), left.into(), right.into());
+                },
                 Insn::Sub { left, right, out } => {
                     subs(cb, out.into(), left.into(), right.into());
+                },
+                Insn::Mul { left, right, out } => {
+                    mul(cb, out.into(), left.into(), right.into());
                 },
                 Insn::And { left, right, out } => {
                     and(cb, out.into(), left.into(), right.into());
