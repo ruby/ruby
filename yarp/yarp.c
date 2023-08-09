@@ -12926,12 +12926,13 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 case YP_CASE_KEYWORD:
                 case YP_TOKEN_IDENTIFIER: {
                     parser_lex(parser);
+                    yp_token_t message = parser->previous;
 
                     // If we have an identifier following a '::' operator, then it is for
                     // sure a method call.
                     yp_arguments_t arguments = YP_EMPTY_ARGUMENTS;
                     parse_arguments_list(parser, &arguments, true);
-                    yp_call_node_t *call = yp_call_node_call_create(parser, node, &delimiter, &parser->previous, &arguments);
+                    yp_call_node_t *call = yp_call_node_call_create(parser, node, &delimiter, &message, &arguments);
 
                     // If this is followed by a comma then it is a multiple assignment.
                     if (previous_binding_power == YP_BINDING_POWER_STATEMENT && match_type_p(parser, YP_TOKEN_COMMA)) {

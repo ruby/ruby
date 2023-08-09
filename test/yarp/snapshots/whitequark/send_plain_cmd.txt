@@ -30,7 +30,7 @@ ProgramNode(0...39)(
      CallNode(27...39)(
        CallNode(27...30)(nil, nil, (27...30), nil, nil, nil, nil, 2, "foo"),
        (30...32),
-       (36...39),
+       (32...35),
        nil,
        ArgumentsNode(36...39)(
          [CallNode(36...39)(nil, nil, (36...39), nil, nil, nil, nil, 2, "bar")]
@@ -38,7 +38,7 @@ ProgramNode(0...39)(
        nil,
        nil,
        0,
-       "bar"
+       "fun"
      )]
   )
 )
