@@ -621,6 +621,20 @@ pub struct rb_id_table {
     _unused: [u8; 0],
 }
 pub type rb_num_t = ::std::os::raw::c_ulong;
+pub const RUBY_TAG_NONE: ruby_tag_type = 0;
+pub const RUBY_TAG_RETURN: ruby_tag_type = 1;
+pub const RUBY_TAG_BREAK: ruby_tag_type = 2;
+pub const RUBY_TAG_NEXT: ruby_tag_type = 3;
+pub const RUBY_TAG_RETRY: ruby_tag_type = 4;
+pub const RUBY_TAG_REDO: ruby_tag_type = 5;
+pub const RUBY_TAG_RAISE: ruby_tag_type = 6;
+pub const RUBY_TAG_THROW: ruby_tag_type = 7;
+pub const RUBY_TAG_FATAL: ruby_tag_type = 8;
+pub const RUBY_TAG_MASK: ruby_tag_type = 15;
+pub type ruby_tag_type = u32;
+pub const VM_THROW_NO_ESCAPE_FLAG: ruby_vm_throw_flags = 32768;
+pub const VM_THROW_STATE_MASK: ruby_vm_throw_flags = 255;
+pub type ruby_vm_throw_flags = u32;
 #[repr(C)]
 pub struct iseq_inline_constant_cache_entry {
     pub flags: VALUE,

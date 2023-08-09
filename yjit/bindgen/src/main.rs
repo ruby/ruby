@@ -290,6 +290,8 @@ fn main() {
         .allowlist_var("VM_ENV_DATA_SIZE")
         .allowlist_function("rb_iseq_path")
         .allowlist_type("rb_builtin_attr")
+        .allowlist_type("ruby_tag_type")
+        .allowlist_type("ruby_vm_throw_flags")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
