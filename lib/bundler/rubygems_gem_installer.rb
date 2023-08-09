@@ -61,7 +61,7 @@ module Bundler
     end
 
     def pre_install_checks
-      super && validate_bundler_checksum(options[:bundler_expected_checksum])
+      super && validate_bundler_checksum(options[:bundler_checksum_store])
     end
 
     def build_extensions
@@ -115,55 +115,56 @@ module Bundler
       raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
     end
 
-    def validate_bundler_checksum(checksum)
+    def validate_bundler_checksum(checksum_store)
       return true if Bundler.settings[:disable_checksum_validation]
-      return true unless checksum
+
       return true unless source = @package.instance_variable_get(:@gem)
       return true unless source.respond_to?(:with_read_io)
-      digest = Bundler::Checksum.digest_from_file_source(source)
-      calculated_checksum = send(checksum_type(checksum), digest)
+      digests = Bundler::Checksum.digests_from_file_source(source).transform_values(&:hexdigest!)
 
-      unless calculated_checksum == checksum
-        raise SecurityError, <<-MESSAGE
+      checksum = checksum_store[spec]
+      unless checksum.match_digests?(digests)
+        expected = checksum_store.send(:store)[spec.full_name]
+
+        raise SecurityError, <<~MESSAGE
           Bundler cannot continue installing #{spec.name} (#{spec.version}).
           The checksum for the downloaded `#{spec.full_name}.gem` does not match \
-          the checksum given by the server. This means the contents of the downloaded \
-          gem is different from what was uploaded to the server, and could be a potential security issue.
+          the known checksum for the gem.
+          This means the contents of the downloaded \
+          gem is different from what was uploaded to the server \
+          or first used by your teammates, and could be a potential security issue.
 
           To resolve this issue:
-          1. delete the downloaded gem located at: `#{spec.gem_dir}/#{spec.full_name}.gem`
+          1. delete the downloaded gem located at: `#{source.path}`
           2. run `bundle install`
+
+          If you are sure that the new checksum is correct, you can \
+          remove the `#{GemHelpers.lock_name spec.name, spec.version, spec.platform}` entry under the lockfile `CHECKSUMS` \
+          section and rerun `bundle install`.
 
           If you wish to continue installing the downloaded gem, and are certain it does not pose a \
           security issue despite the mismatching checksum, do the following:
           1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
           2. run `bundle install`
 
-          (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \
-          checksum for the downloaded gem was #{calculated_checksum.inspect}.)
+          #{expected.map do |algo, multi|
+            next unless actual = digests[algo]
+            next if actual == multi
+
+            "(More info: The expected #{algo.upcase} checksum was #{multi.digest.inspect}, but the " \
+            "checksum for the downloaded gem was #{actual.inspect}. The expected checksum came from: #{multi.sources.join(", ")})"
+          end.compact.join("\n")}
           MESSAGE
       end
+      register_digests(digests, checksum_store, source)
       true
     end
 
-    def checksum_type(checksum)
-      case checksum.length
-      when 64 then :hexdigest!
-      when 44 then :base64digest!
-      else raise InstallError, "The given checksum for #{spec.full_name} (#{checksum.inspect}) is not a valid SHA256 hexdigest nor base64digest"
-      end
-    end
-
-    def hexdigest!(digest)
-      digest.hexdigest!
-    end
-
-    def base64digest!(digest)
-      if digest.respond_to?(:base64digest!)
-        digest.base64digest!
-      else
-        [digest.digest!].pack("m0")
-      end
+    def register_digests(digests, checksum_store, source)
+      checksum_store.register(
+        spec,
+        digests.map {|algo, digest| Checksum::Single.new(algo, digest, "downloaded gem @ `#{source.path}`") }
+      )
     end
   end
 end

@@ -849,6 +849,10 @@ RSpec.describe "bundle install with explicit source paths" do
         DEPENDENCIES
           foo!
 
+        CHECKSUMS
+          foo (1.0)
+          rack (0.9.1)
+
         BUNDLED WITH
            #{Bundler::VERSION}
       G

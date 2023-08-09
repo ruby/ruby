@@ -15,7 +15,6 @@ module Bundler
       :dependencies,
       :locked_deps,
       :locked_gems,
-      :locked_checksums,
       :platforms,
       :ruby_version,
       :lockfile,
@@ -93,7 +92,6 @@ module Bundler
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
-        @locked_checksums = @locked_gems.checksums
 
         if unlock != true
           @locked_deps    = @locked_gems.dependencies
@@ -114,7 +112,6 @@ module Bundler
         @originally_locked_specs = @locked_specs
         @locked_sources = []
         @locked_platforms = []
-        @locked_checksums = {}
       end
 
       locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
@@ -753,6 +750,11 @@ module Bundler
       changes = sources.replace_sources!(@locked_sources)
 
       sources.all_sources.each do |source|
+        # has to be done separately, because we want to keep the locked checksum
+        # store for a source, even when doing a full update
+        if @locked_gems && locked_source = @locked_gems.sources.find {|s| s == source }
+          source.checksum_store&.use(locked_source.checksum_store)
+        end
         # If the source is unlockable and the current command allows an unlock of
         # the source (for example, you are doing a `bundle update <foo>` of a git-pinned
         # gem), unlock it. For git sources, this means to unlock the revision, which

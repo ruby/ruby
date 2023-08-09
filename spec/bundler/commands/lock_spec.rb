@@ -65,7 +65,9 @@ RSpec.describe "bundle lock" do
   it "prints a lockfile when there is no existing lockfile with --print" do
     bundle "lock --print"
 
-    expect(out).to eq(@lockfile.strip)
+    # No checksums because no way to get them from a file uri source
+    # + no existing lockfile that has them
+    expect(out).to eq(@lockfile.strip.gsub(/ sha256-[a-f0-9]+$/, ""))
   end
 
   it "prints a lockfile when there is an existing lockfile with --print" do
@@ -79,7 +81,9 @@ RSpec.describe "bundle lock" do
   it "writes a lockfile when there is no existing lockfile" do
     bundle "lock"
 
-    expect(read_lockfile).to eq(@lockfile)
+    # No checksums because no way to get them from a file uri source
+    # + no existing lockfile that has them
+    expect(read_lockfile).to eq(@lockfile.gsub(/ sha256-[a-f0-9]+$/, ""))
   end
 
   it "writes a lockfile when there is an outdated lockfile using --update" do
@@ -93,7 +97,8 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --update", :env => { "BUNDLE_FROZEN" => "true" }
 
-    expect(read_lockfile).to eq(@lockfile)
+    # No checksums for the updated gems
+    expect(read_lockfile).to eq(@lockfile.gsub(/( \(2\.3\.2\)) sha256-[a-f0-9]+$/, "\\1"))
   end
 
   it "does not fetch remote specs when using the --local option" do
@@ -120,7 +125,7 @@ RSpec.describe "bundle lock" do
         foo
 
       CHECKSUMS
-        #{checksum_for_repo_gem repo, "foo", "1.0"}
+        #{checksum_for_repo_gem repo, "foo", "1.0", :empty => true}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -136,7 +141,7 @@ RSpec.describe "bundle lock" do
     bundle "lock --lockfile=lock"
 
     expect(out).to match(/Writing lockfile to.+lock/)
-    expect(read_lockfile("lock")).to eq(@lockfile)
+    expect(read_lockfile("lock")).to eq(@lockfile.gsub(/ sha256-[a-f0-9]+$/, ""))
     expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
@@ -156,7 +161,7 @@ RSpec.describe "bundle lock" do
       c.repo_gem repo, "weakling", "0.0.3"
     end
 
-    lockfile = strip_lockfile(<<-L)
+    lockfile = <<~L
       GEM
         remote: #{file_uri_for(repo)}/
         specs:
@@ -203,7 +208,17 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --update rails rake"
 
-    expect(read_lockfile).to eq(@lockfile)
+    expect(read_lockfile).to eq(@lockfile.gsub(/( \((?:2\.3\.2|13\.0\.1)\)) sha256-[a-f0-9]+$/, "\\1"))
+  end
+
+  it "preserves unknown checksum algorithms" do
+    lockfile @lockfile.gsub(/(sha256-[a-f0-9]+)$/, "constant-true,\\1,xyz-123")
+
+    previous_lockfile = read_lockfile
+
+    bundle "lock"
+
+    expect(read_lockfile).to eq(previous_lockfile)
   end
 
   it "does not unlock git sources when only uri shape changes" do
@@ -280,7 +295,7 @@ RSpec.describe "bundle lock" do
     G
     bundle "config set without test"
     bundle "config set path vendor/bundle"
-    bundle "lock"
+    bundle "lock", :verbose => true
     expect(bundled_app("vendor/bundle")).not_to exist
   end
 
@@ -611,10 +626,10 @@ RSpec.describe "bundle lock" do
         mixlib-shellout
 
       CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.14", "x86-mingw32"}
-        #{checksum_for_repo_gem gem_repo4, "gssapi", "1.2.0"}
-        #{checksum_for_repo_gem gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32"}
-        #{checksum_for_repo_gem gem_repo4, "win32-process", "0.8.3"}
+        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.14", "x86-mingw32", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "gssapi", "1.2.0", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "win32-process", "0.8.3", :empty => true}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -646,12 +661,12 @@ RSpec.describe "bundle lock" do
         mixlib-shellout
 
       CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.14"}
-        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.14", "x86-mingw32"}
-        #{checksum_for_repo_gem gem_repo4, "gssapi", "1.2.0"}
-        #{checksum_for_repo_gem gem_repo4, "mixlib-shellout", "2.2.6"}
-        #{checksum_for_repo_gem gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32"}
-        #{checksum_for_repo_gem gem_repo4, "win32-process", "0.8.3"}
+        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.14", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.14", "x86-mingw32", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "gssapi", "1.2.0", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "mixlib-shellout", "2.2.6", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "win32-process", "0.8.3", :empty => true}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -732,8 +747,8 @@ RSpec.describe "bundle lock" do
         libv8
 
       CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-19"}
-        #{checksum_for_repo_gem gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-20"}
+        #{checksum_for_repo_gem gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-19", :empty => true}
+        #{checksum_for_repo_gem gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-20", :empty => true}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -928,13 +943,15 @@ RSpec.describe "bundle lock" do
   end
 
   context "when an update is available" do
-    let(:repo) { gem_repo2 }
-
-    before do
-      lockfile(@lockfile)
+    let(:repo) do
       build_repo2 do
         build_gem "foo", "2.0"
       end
+      gem_repo2
+    end
+
+    before do
+      lockfile(@lockfile)
     end
 
     it "does not implicitly update" do
@@ -952,7 +969,7 @@ RSpec.describe "bundle lock" do
         c.repo_gem repo, "weakling", "0.0.3"
       end
 
-      expected_lockfile = strip_lockfile(<<-L)
+      expected_lockfile = <<~L
         GEM
           remote: #{file_uri_for(repo)}/
           specs:
@@ -1003,13 +1020,15 @@ RSpec.describe "bundle lock" do
         c.repo_gem repo, "activerecord", "2.3.2"
         c.repo_gem repo, "activeresource", "2.3.2"
         c.repo_gem repo, "activesupport", "2.3.2"
-        c.repo_gem repo, "foo", "2.0"
+        # We don't have a checksum for foo 2,
+        # since it is not downloaded by bundle lock, therefore we don't include it
+        # c.repo_gem repo, "foo", "2.0"
         c.repo_gem repo, "rails", "2.3.2"
         c.repo_gem repo, "rake", "13.0.1"
         c.repo_gem repo, "weakling", "0.0.3"
       end
 
-      expected_lockfile = strip_lockfile(<<-L)
+      expected_lockfile = <<~L
         GEM
           remote: #{file_uri_for(repo)}/
           specs:
@@ -1041,7 +1060,7 @@ RSpec.describe "bundle lock" do
           weakling
 
         CHECKSUMS
-          #{expected_checksums}
+        #{expected_checksums.prepend("  ").lines(:chomp => true).append("  foo (2.0)").sort.join("\n")}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -1118,8 +1137,8 @@ RSpec.describe "bundle lock" do
           debug
 
         CHECKSUMS
-          #{checksum_for_repo_gem gem_repo4, "debug", "1.6.3"}
-          #{checksum_for_repo_gem gem_repo4, "irb", "1.5.0"}
+          #{checksum_for_repo_gem gem_repo4, "debug", "1.6.3", :empty => true}
+          #{checksum_for_repo_gem gem_repo4, "irb", "1.5.0", :empty => true}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -1424,6 +1443,10 @@ RSpec.describe "bundle lock" do
         DEPENDENCIES
           foo!
 
+        CHECKSUMS
+          #{checksum_for_repo_gem(gem_repo4, "foo", "1.0", :empty => true)}
+          #{checksum_for_repo_gem(gem_repo4, "nokogiri", "1.14.2", :empty => true)}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -1506,6 +1529,12 @@ RSpec.describe "bundle lock" do
         DEPENDENCIES
           activesupport (= 7.0.4.3)
           govuk_app_config
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo4, "actionpack", "7.0.4.3", :empty => true}
+          #{checksum_for_repo_gem gem_repo4, "activesupport", "7.0.4.3", :empty => true}
+          #{checksum_for_repo_gem gem_repo4, "govuk_app_config", "4.13.0", :empty => true}
+          #{checksum_for_repo_gem gem_repo4, "railties", "7.0.4.3", :empty => true}
 
         BUNDLED WITH
            #{Bundler::VERSION}

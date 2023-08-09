@@ -426,8 +426,8 @@ RSpec.describe "bundle check" do
           depends_on_rack!
 
         CHECKSUMS
-          #{checksum_for_repo_gem gem_repo4, "depends_on_rack", "1.0"}
-          #{checksum_for_repo_gem gem_repo4, "rack", "1.0"}
+          depends_on_rack (1.0)
+          rack (1.0)
 
         BUNDLED WITH
            #{Bundler::VERSION}

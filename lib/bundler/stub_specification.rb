@@ -93,16 +93,6 @@ module Bundler
       stub.raw_require_paths
     end
 
-    def add_checksum(checksum)
-      @checksum ||= checksum
-    end
-
-    def to_checksum
-      return Bundler::Checksum.new(name, version, platform, ["sha256-#{checksum}"]) if checksum
-
-      _remote_specification&.to_checksum
-    end
-
     private
 
     def _remote_specification

@@ -168,7 +168,7 @@ RSpec.describe Bundler::Definition do
           only_java
 
         CHECKSUMS
-          #{checksum_for_repo_gem gem_repo1, "only_java", "1.1", "java"}
+          only_java (1.1-java)
 
         BUNDLED WITH
            #{Bundler::VERSION}

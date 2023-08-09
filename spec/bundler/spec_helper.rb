@@ -48,6 +48,9 @@ RSpec.configure do |config|
 
   config.silence_filter_announcements = !ENV["TEST_ENV_NUMBER"].nil?
 
+  config.backtrace_exclusion_patterns <<
+    %r{./spec/(spec_helper\.rb|support/.+)}
+
   config.disable_monkey_patching!
 
   # Since failures cause us to keep a bunch of long strings in memory, stop

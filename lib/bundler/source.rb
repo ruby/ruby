@@ -11,6 +11,8 @@ module Bundler
 
     attr_accessor :dependency_names
 
+    attr_reader :checksum_store
+
     def unmet_deps
       specs.unmet_dependency_names
     end

@@ -19,6 +19,7 @@ module Bundler
         @allow_remote = false
         @allow_cached = false
         @allow_local = options["allow_local"] || false
+        @checksum_store = Checksum::Store.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
@@ -177,7 +178,7 @@ module Bundler
           :wrappers => true,
           :env_shebang => true,
           :build_args => options[:build_args],
-          :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
+          :bundler_checksum_store => spec.source.checksum_store,
           :bundler_extension_cache_path => extension_cache_path(spec)
         )
 

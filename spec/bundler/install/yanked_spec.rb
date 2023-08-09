@@ -161,7 +161,8 @@ RSpec.context "when resolving a bundle that includes yanked gems, but unlocking 
         foo
 
       CHECKSUMS
-        #{checksum_for_repo_gem(gem_repo4, "bar", "2.0.0")}
+        #{checksum_for_repo_gem(gem_repo4, "bar", "2.0.0", :empty => true)}
+        #{checksum_for_repo_gem(gem_repo4, "foo", "9.0.0", :empty => true)}
 
       BUNDLED WITH
          #{Bundler::VERSION}

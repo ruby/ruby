@@ -146,6 +146,9 @@ RSpec.describe "the lockfile format" do
       DEPENDENCIES
         rack
 
+      CHECKSUMS
+        #{checksum_for_repo_gem(gem_repo2, "rack", "1.0.0")}
+
       BUNDLED WITH
          #{version}
     L
@@ -170,6 +173,9 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         rack
+
+      CHECKSUMS
+        #{checksum_for_repo_gem(gem_repo2, "rack", "1.0.0")}
 
       BUNDLED WITH
          #{version}
@@ -676,6 +682,10 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         ckeditor!
+
+      CHECKSUMS
+        #{checksum_for_repo_gem(gem_repo4, "ckeditor", "4.0.8", :empty => true)}
+        #{checksum_for_repo_gem(gem_repo4, "orm_adapter", "0.4.1", :empty => true)}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -1516,6 +1526,10 @@ RSpec.describe "the lockfile format" do
       DEPENDENCIES
         direct_dependency
 
+      CHECKSUMS
+        #{checksum_for_repo_gem(gem_repo4, "direct_dependency", "4.5.6")}
+        #{checksum_for_repo_gem(gem_repo4, "indirect_dependency", "1.2.3")}
+
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -1569,6 +1583,10 @@ RSpec.describe "the lockfile format" do
 
         DEPENDENCIES
           minitest-bisect
+
+        CHECKSUMS
+          #{checksum_for_repo_gem(gem_repo4, "minitest-bisect", "1.6.0")}
+          #{checksum_for_repo_gem(gem_repo4, "path_expander", "1.1.1")}
 
         BUNDLED WITH
            #{Bundler::VERSION}

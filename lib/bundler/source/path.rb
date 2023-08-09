@@ -14,6 +14,7 @@ module Bundler
       DEFAULT_GLOB = "{,*,*/*}.gemspec"
 
       def initialize(options)
+        @checksum_store = Checksum::Store.new
         @options = options.dup
         @glob = options["glob"] || DEFAULT_GLOB
 

@@ -67,19 +67,6 @@ module Bundler
       out
     end
 
-    def materialize_for_checksum(&blk)
-      #
-      # See comment about #ruby_platform_materializes_to_ruby_platform?
-      # If the old lockfile format is present where there is no specific
-      # platform, then we should skip locking checksums as it is not
-      # deterministic which platform variant is locked.
-      #
-      return unless ruby_platform_materializes_to_ruby_platform?
-
-      s = materialize_for_installation
-      yield s if block_given?
-    end
-
     def materialize_for_installation
       source.local!
 
@@ -126,7 +113,7 @@ module Bundler
     end
 
     def to_s
-      @__to_s ||= GemHelpers.lock_name(name, version, platform)
+      @to_s ||= GemHelpers.lock_name(name, version, platform)
     end
 
     def git_version

@@ -721,7 +721,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         CHECKSUMS
           activeadmin (2.9.0)
-          #{checksum_for_repo_gem gem_repo4, "jruby-openssl", "0.10.7", "java"}
+          jruby-openssl (0.10.7-java)
           #{checksum_for_repo_gem gem_repo4, "railties", "6.1.4"}
 
         BUNDLED WITH

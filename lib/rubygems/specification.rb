@@ -761,8 +761,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   attr_accessor :specification_version
 
-  attr_reader :checksum
-
   def self._all # :nodoc:
     @@all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
   end
@@ -2739,23 +2737,5 @@ class Gem::Specification < Gem::BasicSpecification
 
   def raw_require_paths # :nodoc:
     @require_paths
-  end
-
-  def add_checksum(checksum)
-    @checksum ||= checksum
-  end
-
-  # if we don't get the checksum from the server
-  # calculating the checksum from the file on disk still provides some measure of security
-  # if it changes from install to install, that is cause for concern
-  def to_checksum
-    return Bundler::Checksum.new(name, version, platform, ["sha256-#{checksum}"]) if checksum
-    return Bundler::Checksum.new(name, version, platform) unless File.exist?(cache_file)
-
-    require "rubygems/package"
-    package = Gem::Package.new(cache_file)
-    digest = Bundler::Checksum.digest_from_file_source(package.gem)
-    calculated_checksum = digest.hexdigest!
-    Bundler::Checksum.new(name, version, platform, ["sha256-#{calculated_checksum}"]) if calculated_checksum
   end
 end

@@ -7,19 +7,19 @@ module Spec
         @checksums = []
       end
 
-      def repo_gem(gem_repo, gem_name, gem_version, platform = nil)
+      def repo_gem(gem_repo, gem_name, gem_version, platform = nil, empty: false)
         gem_file = if platform
           "#{gem_repo}/gems/#{gem_name}-#{gem_version}-#{platform}.gem"
         else
           "#{gem_repo}/gems/#{gem_name}-#{gem_version}.gem"
         end
 
-        checksum = sha256_checksum(gem_file)
-        @checksums << Bundler::Checksum.new(gem_name, gem_version, platform, [checksum])
+        checksum = { "sha256" => sha256_checksum(gem_file) } unless empty
+        @checksums << Bundler::Checksum.new(gem_name, gem_version, platform, checksum)
       end
 
       def to_lock
-        @checksums.map(&:to_lock).join.strip
+        @checksums.map(&:to_lock).sort.join.strip
       end
 
       private
@@ -29,7 +29,7 @@ module Spec
           digest = Bundler::SharedHelpers.digest(:SHA256).new
           digest << f.read(16_384) until f.eof?
 
-          "sha256-#{digest.hexdigest!}"
+          digest.hexdigest!
         end
       end
     end
@@ -42,9 +42,9 @@ module Spec
       checksums.to_lock
     end
 
-    def checksum_for_repo_gem(gem_repo, gem_name, gem_version, platform = nil)
+    def checksum_for_repo_gem(*args, **kwargs)
       construct_checksum_section do |c|
-        c.repo_gem(gem_repo, gem_name, gem_version, platform)
+        c.repo_gem(*args, **kwargs)
       end
     end
   end

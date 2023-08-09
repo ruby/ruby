@@ -68,16 +68,11 @@ module Bundler
 
     def add_checksums
       out << "\nCHECKSUMS\n"
-      definition.resolve.sort_by(&:full_name).each do |spec|
-        checksum = spec.to_checksum if spec.respond_to?(:to_checksum)
-        if spec.is_a?(LazySpecification)
-          spec.materialize_for_checksum do |materialized_spec|
-            checksum ||= materialized_spec.to_checksum if materialized_spec&.respond_to?(:to_checksum)
-          end
-        end
-        checksum ||= definition.locked_checksums[spec.full_name]
 
-        out << checksum.to_lock if checksum
+      empty_store = Checksum::Store.new
+
+      definition.resolve.sort_by(&:full_name).each do |spec|
+        out << (spec.source.checksum_store || empty_store)[spec].to_lock
       end
     end
 

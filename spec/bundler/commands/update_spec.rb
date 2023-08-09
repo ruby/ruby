@@ -300,7 +300,7 @@ RSpec.describe "bundle update" do
 
       previous_lockfile = lockfile
 
-      bundle "lock --update"
+      bundle "lock --update", :env => { "DEBUG" => "1" }, :verbose => true
 
       expect(lockfile).to eq(previous_lockfile)
     end
@@ -539,6 +539,10 @@ RSpec.describe "bundle update" do
       expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
       expect(lockfile).to eq(expected_lockfile)
 
+      # needed because regressing to versions already present on the system
+      # won't add a checksum
+      expected_lockfile = expected_lockfile.gsub(/ sha256-[a-f0-9]+$/, "")
+
       lockfile original_lockfile
       bundle "update"
       expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
@@ -547,26 +551,7 @@ RSpec.describe "bundle update" do
       lockfile original_lockfile
       bundle "lock --update"
       expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
-      expect(lockfile).to eq <<~L
-        GEM
-          remote: #{file_uri_for(gem_repo4)}/
-          specs:
-            activesupport (6.0.4.1)
-              tzinfo (~> 1.1)
-            tzinfo (1.2.9)
-
-        PLATFORMS
-          #{lockfile_platforms}
-
-        DEPENDENCIES
-          activesupport (~> 6.0.0)
-
-        CHECKSUMS
-          #{expected_checksums}
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
+      expect(lockfile).to eq expected_lockfile
     end
   end
 
@@ -1283,11 +1268,26 @@ RSpec.describe "bundle update --bundler" do
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
-    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
-
     expected_checksum = checksum_for_repo_gem(gem_repo4, "rack", "1.0")
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          rack (1.0)
 
-    FileUtils.rm_r gem_repo4
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      CHECKSUMS
+        #{expected_checksum}
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
     bundle :update, :bundler => true, :artifice => "compact_index", :verbose => true
     expect(out).to include("Using bundler #{Bundler::VERSION}")
@@ -1717,14 +1717,6 @@ RSpec.describe "bundle update conservative" do
     it "should only change direct dependencies when updating the lockfile with --conservative" do
       bundle "lock --update --conservative"
 
-      expected_checksums = construct_checksum_section do |c|
-        c.repo_gem gem_repo4, "isolated_dep", "2.0.1"
-        c.repo_gem gem_repo4, "isolated_owner", "1.0.2"
-        c.repo_gem gem_repo4, "shared_dep", "5.0.1"
-        c.repo_gem gem_repo4, "shared_owner_a", "3.0.2"
-        c.repo_gem gem_repo4, "shared_owner_b", "4.0.2"
-      end
-
       expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo4)}/
@@ -1747,7 +1739,11 @@ RSpec.describe "bundle update conservative" do
           shared_owner_b
 
         CHECKSUMS
-          #{expected_checksums}
+          isolated_dep (2.0.1)
+          isolated_owner (1.0.2)
+          shared_dep (5.0.1)
+          shared_owner_a (3.0.2)
+          shared_owner_b (4.0.2)
 
         BUNDLED WITH
            #{Bundler::VERSION}
