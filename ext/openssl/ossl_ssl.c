@@ -885,9 +885,9 @@ ossl_sslctx_setup(VALUE self)
     if (ca_path && !SSL_CTX_load_verify_dir(ctx, ca_path))
         ossl_raise(eSSLError, "SSL_CTX_load_verify_dir");
 #else
-    if(ca_file || ca_path){
-	if (!SSL_CTX_load_verify_locations(ctx, ca_file, ca_path))
-	    rb_warning("can't set verify locations");
+    if (ca_file || ca_path) {
+        if (!SSL_CTX_load_verify_locations(ctx, ca_file, ca_path))
+            ossl_raise(eSSLError, "SSL_CTX_load_verify_locations");
     }
 #endif
 
