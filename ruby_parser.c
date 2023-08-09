@@ -686,14 +686,12 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->float_new   = rb_float_new;
     config->float_value = rb_float_value;
 
-    config->fix2int          = rb_fix2int;
     config->num2int          = rb_num2int_inline;
     config->int_positive_pow = rb_int_positive_pow;
     config->int2num          = rb_int2num_inline;
     config->fix2long         = rb_fix2long;
 
     config->rational_new     = rb_rational_new;
-    config->rational_raw     = rb_rational_raw;
     config->rational_raw1    = rational_raw1;
     config->rational_set_num = rational_set_num;
     config->rational_get_num = rational_get_num;
