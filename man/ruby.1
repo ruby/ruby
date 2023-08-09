@@ -669,6 +669,8 @@ PID of dumped process.
 .It %t
 Time of dump, expressed as seconds since the
 Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+.It %NNN
+A character code in octal.
 .El
 .Pp
 A single % at the end of the template is dropped from the
@@ -678,6 +680,13 @@ All other characters in the template become a literal
 part of the core filename.
 The template may include \(aq/\(aq characters, which are interpreted
 as delimiters for directory names.
+.Ss Piping bug reports to a program
+If the first character of this file is a pipe symbol (\fB|\fP),
+then the remainder of the line is interpreted as the command-line for
+a program (or script) that is to be executed.
+.Pp
+The pipe template is split on spaces into an argument list before the
+template parameters are expanded.
 .Sh SEE ALSO
 .Bl -hang -compact -width "https://www.ruby-toolbox.com/"
 .It Lk https://www.ruby-lang.org/
