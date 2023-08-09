@@ -13229,22 +13229,26 @@ local_push(struct parser_params *p, int toplevel_scope)
 }
 
 static void
+vtable_chain_free(struct parser_params *p, struct vtable *table)
+{
+    while (!DVARS_TERMINAL_P(table)) {
+        struct vtable *cur_table = table;
+        table = cur_table->prev;
+        vtable_free(cur_table);
+    }
+}
+
+static void
 local_free(struct parser_params *p, struct local_vars *local)
 {
-    if (local->used) {
-        vtable_free(local->used);
-    }
+    vtable_chain_free(p, local->used);
 
 # if WARN_PAST_SCOPE
-    while (local->past) {
-        struct vtable *past = local->past;
-        local->past = past->prev;
-        vtable_free(past);
-    }
+    vtable_chain_free(p, local->past);
 # endif
 
-    vtable_free(local->args);
-    vtable_free(local->vars);
+    vtable_chain_free(p, local->args);
+    vtable_chain_free(p, local->vars);
 
     ruby_sized_xfree(local, sizeof(struct local_vars));
 }
