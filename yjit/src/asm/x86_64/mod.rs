@@ -805,6 +805,31 @@ pub fn cqo(cb: &mut CodeBlock) {
     cb.write_bytes(&[0x48, 0x99]);
 }
 
+/// imul - signed integer multiply
+pub fn imul(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
+    assert!(opnd0.num_bits() == 64);
+    assert!(opnd1.num_bits() == 64);
+    assert!(matches!(opnd0, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
+    assert!(matches!(opnd1, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
+
+    match (opnd0, opnd1) {
+        (X86Opnd::Reg(_), X86Opnd::Reg(_) | X86Opnd::Mem(_)) => {
+            //REX.W + 0F AF /rIMUL r64, r/m64
+            // Quadword register := Quadword register * r/m64.
+            write_rm(cb, false, true, opnd0, opnd1, None, &[0x0F, 0xAF]);
+        }
+
+        // Flip the operands to handle this case. This instruction has weird encoding restrictions.
+        (X86Opnd::Mem(_), X86Opnd::Reg(_)) => {
+            //REX.W + 0F AF /rIMUL r64, r/m64
+            // Quadword register := Quadword register * r/m64.
+            write_rm(cb, false, true, opnd1, opnd0, None, &[0x0F, 0xAF]);
+        }
+
+        _ => unreachable!()
+    }
+}
+
 /// Interrupt 3 - trap to debugger
 pub fn int3(cb: &mut CodeBlock) {
     cb.write_byte(0xcc);

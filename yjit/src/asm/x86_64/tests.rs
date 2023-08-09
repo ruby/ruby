@@ -106,6 +106,15 @@ fn test_cqo() {
 }
 
 #[test]
+fn test_imul() {
+    check_bytes("480fafc3", |cb| imul(cb, RAX, RBX));
+    check_bytes("480faf10", |cb| imul(cb, RDX, mem_opnd(64, RAX, 0)));
+
+    // Operands flipped for encoding since multiplication is commutative
+    check_bytes("480faf10", |cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
+}
+
+#[test]
 fn test_jge_label() {
     check_bytes("0f8dfaffffff", |cb| {
         let label_idx = cb.new_label("loop".to_owned());
