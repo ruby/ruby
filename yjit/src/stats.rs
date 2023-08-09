@@ -268,7 +268,7 @@ make_counters! {
     send_send_getter,
     send_send_builtin,
     send_iseq_has_rest_and_captured,
-    send_iseq_has_rest_and_send,
+    send_iseq_has_rest_and_splat,
     send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_rest_opt_and_block,
     send_bmethod_ractor,
