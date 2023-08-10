@@ -447,6 +447,16 @@ yp_flip_flop(yp_node_t *node) {
             yp_flip_flop(cast->right);
             break;
         }
+        case YP_NODE_PARENTHESES_NODE: {
+            yp_parentheses_node_t *cast = (yp_parentheses_node_t *) node;
+
+            if ((cast->statements != NULL) && YP_NODE_TYPE_P(cast->statements, YP_NODE_STATEMENTS_NODE)) {
+                yp_statements_node_t *statements = (yp_statements_node_t *) cast->statements;
+                if (statements->body.size == 1) yp_flip_flop(statements->body.nodes[0]);
+            }
+
+            break;
+        }
         case YP_NODE_RANGE_NODE: {
             yp_range_node_t *cast = (yp_range_node_t *) node;
             cast->flags |= YP_RANGE_NODE_FLAGS_FLIP_FLOP;
@@ -11424,6 +11434,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     arguments.closing_loc = ((yp_location_t) { .start = parser->previous.start, .end = parser->previous.end });
                 } else {
                     receiver = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, "Expected expression after `not`.");
+                    yp_flip_flop(receiver);
 
                     if (!parser->recovering) {
                         accept(parser, YP_TOKEN_NEWLINE);
@@ -11433,6 +11444,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 }
             } else {
                 receiver = parse_expression(parser, YP_BINDING_POWER_DEFINED, "Expected expression after `not`.");
+                yp_flip_flop(receiver);
             }
 
             return (yp_node_t *) yp_call_node_not_create(parser, receiver, &message, &arguments);
@@ -12010,6 +12022,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *receiver = parse_expression(parser, yp_binding_powers[parser->previous.type].right, "Expected a receiver after unary !.");
             yp_call_node_t *node = yp_call_node_unary_create(parser, &operator, receiver, "!");
 
+            yp_flip_flop(receiver);
             return (yp_node_t *) node;
         }
         case YP_TOKEN_TILDE: {

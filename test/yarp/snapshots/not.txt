@@ -1,6 +1,6 @@
-ProgramNode(0...156)(
+ProgramNode(0...190)(
   [],
-  StatementsNode(0...156)(
+  StatementsNode(0...190)(
     [AndNode(0...19)(
        CallNode(0...7)(
          CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 2, "foo"),
@@ -185,6 +185,84 @@ ProgramNode(0...156)(
        (143...144),
        nil,
        (155...156),
+       nil,
+       0,
+       "!"
+     ),
+     CallNode(158...172)(
+       RangeNode(162...172)(
+         CallNode(162...165)(
+           nil,
+           nil,
+           (162...165),
+           nil,
+           nil,
+           nil,
+           nil,
+           2,
+           "foo"
+         ),
+         CallNode(169...172)(
+           nil,
+           nil,
+           (169...172),
+           nil,
+           nil,
+           nil,
+           nil,
+           2,
+           "bar"
+         ),
+         (166...168),
+         2
+       ),
+       nil,
+       (158...161),
+       nil,
+       nil,
+       nil,
+       nil,
+       0,
+       "!"
+     ),
+     CallNode(174...190)(
+       ParenthesesNode(178...190)(
+         StatementsNode(179...189)(
+           [RangeNode(179...189)(
+              CallNode(179...182)(
+                nil,
+                nil,
+                (179...182),
+                nil,
+                nil,
+                nil,
+                nil,
+                2,
+                "foo"
+              ),
+              CallNode(186...189)(
+                nil,
+                nil,
+                (186...189),
+                nil,
+                nil,
+                nil,
+                nil,
+                2,
+                "bar"
+              ),
+              (183...185),
+              2
+            )]
+         ),
+         (178...179),
+         (189...190)
+       ),
+       nil,
+       (174...177),
+       nil,
+       nil,
+       nil,
        nil,
        0,
        "!"
