@@ -1059,6 +1059,22 @@ class ErrorsTest < Test::Unit::TestCase
     assert_errors expected, "def foo(a,b,&a);end", [
       ["Duplicated parameter name.", 13..14]
     ]
+
+    expected = DefNode(
+      Location(),
+      nil,
+      ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode())], [RequiredParameterNode(:b)], RestParameterNode(Location(), Location()), [], nil, nil),
+      nil,
+      [:a, :b, :c],
+      Location(),
+      nil,
+      Location(),
+      Location(),
+      nil,
+      Location()
+    )
+
+    assert_errors expected, "def foo(a = 1,b,*c);end", [["Unexpected parameter *", 16..17]]
   end
 
   private
