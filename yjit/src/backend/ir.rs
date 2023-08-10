@@ -507,8 +507,11 @@ pub enum Insn {
     // Low-level instruction to store a value to memory.
     Store { dest: Opnd, src: Opnd },
 
-    // This is the same as the OP_ADD instruction, except for subtraction.
+    // This is the same as the add instruction, except for subtraction.
     Sub { left: Opnd, right: Opnd, out: Opnd },
+
+    // Integer multiplication
+    Mul { left: Opnd, right: Opnd, out: Opnd },
 
     // Bitwise AND test instruction
     Test { left: Opnd, right: Opnd },
@@ -609,6 +612,7 @@ impl Insn {
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
+            Insn::Mul { .. } => "Mul",
             Insn::Test { .. } => "Test",
             Insn::URShift { .. } => "URShift",
             Insn::Xor { .. } => "Xor"
@@ -641,6 +645,7 @@ impl Insn {
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
+            Insn::Mul { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             _ => None
@@ -673,6 +678,7 @@ impl Insn {
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
+            Insn::Mul { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             _ => None
@@ -782,6 +788,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Store { dest: opnd0, src: opnd1 } |
             Insn::Sub { left: opnd0, right: opnd1, .. } |
+            Insn::Mul { left: opnd0, right: opnd1, .. } |
             Insn::Test { left: opnd0, right: opnd1 } |
             Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Xor { left: opnd0, right: opnd1, .. } => {
@@ -881,6 +888,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Store { dest: opnd0, src: opnd1 } |
             Insn::Sub { left: opnd0, right: opnd1, .. } |
+            Insn::Mul { left: opnd0, right: opnd1, .. } |
             Insn::Test { left: opnd0, right: opnd1 } |
             Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Xor { left: opnd0, right: opnd1, .. } => {
@@ -1950,6 +1958,13 @@ impl Assembler {
     pub fn sub(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Sub { left, right, out });
+        out
+    }
+
+    #[must_use]
+    pub fn mul(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::Mul { left, right, out });
         out
     }
 
