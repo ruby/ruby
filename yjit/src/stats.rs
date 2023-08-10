@@ -277,11 +277,13 @@ make_counters! {
     invokesuper_defined_class_mismatch,
     invokesuper_kw_splat,
     invokesuper_kwarg,
+    invokesuper_megamorphic,
     invokesuper_no_cme,
     invokesuper_no_me,
     invokesuper_not_iseq_or_cfunc,
     invokesuper_refinement,
 
+    invokeblock_megamorphic,
     invokeblock_none,
     invokeblock_iseq_arg0_optional,
     invokeblock_iseq_arg0_has_kw,

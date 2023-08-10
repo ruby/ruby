@@ -7226,6 +7226,12 @@ fn gen_invokeblock_specialized(
         return Some(EndBlock);
     }
 
+    // Fallback to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
+        gen_counter_incr(asm, Counter::invokeblock_megamorphic);
+        return None;
+    }
+
     // Get call info
     let ci = unsafe { get_call_data_ci(cd) };
     let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
@@ -7389,6 +7395,12 @@ fn gen_invokesuper_specialized(
         return Some(EndBlock);
     }
 
+    // Fallback to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
+        gen_counter_incr(asm, Counter::invokesuper_megamorphic);
+        return None;
+    }
+
     let me = unsafe { rb_vm_frame_method_entry(jit.get_cfp()) };
     if me.is_null() {
         gen_counter_incr(asm, Counter::invokesuper_no_me);
@@ -7463,7 +7475,14 @@ fn gen_invokesuper_specialized(
 
     let me_as_value = VALUE(me as usize);
     asm.cmp(ep_me_opnd, me_as_value.into());
-    asm.jne(Target::side_exit(Counter::guard_invokesuper_me_changed));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        SEND_MAX_CHAIN_DEPTH,
+        Counter::guard_invokesuper_me_changed,
+    );
 
     // gen_send_* currently support the first two branches in vm_caller_setup_arg_block:
     //   * VM_CALL_ARGS_BLOCKARG
