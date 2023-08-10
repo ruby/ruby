@@ -1532,6 +1532,7 @@ PREPARE_SYNTAX_SUGGEST = $(TEST_RUNNABLE)-test-syntax-suggest-prepare
 test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
 yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
 	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest:spec/lib .bundle/bin/rspec \
+		--require rspec/expectations \
 		--require spec_helper --require formatter_overrides --require spec_coverage \
 		$(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
 no-test-syntax-suggest:
