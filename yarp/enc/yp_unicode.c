@@ -3,7 +3,7 @@
 
 #include "yarp/enc/yp_encoding.h"
 
-typedef uint32_t unicode_codepoint_t;
+typedef uint32_t yp_unicode_codepoint_t;
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding unicode codepoint. Note that
@@ -31,7 +31,7 @@ unsigned char yp_encoding_unicode_table[256] = {
 };
 
 #define UNICODE_ALPHA_CODEPOINTS_LENGTH 1450
-static unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
+static yp_unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
     0x2E0, 0x2E4,
@@ -760,7 +760,7 @@ static unicode_codepoint_t unicode_alpha_codepoints[UNICODE_ALPHA_CODEPOINTS_LEN
 };
 
 #define UNICODE_ALNUM_CODEPOINTS_LENGTH 1528
-static unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
+static yp_unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LENGTH] = {
     0x100, 0x2C1,
     0x2C6, 0x2D1,
     0x2E0, 0x2E4,
@@ -1528,7 +1528,7 @@ static unicode_codepoint_t unicode_alnum_codepoints[UNICODE_ALNUM_CODEPOINTS_LEN
 };
 
 #define UNICODE_ISUPPER_CODEPOINTS_LENGTH 1296
-static unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
+static yp_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS_LENGTH] = {
     0x100, 0x100,
     0x102, 0x102,
     0x104, 0x104,
@@ -2180,7 +2180,7 @@ static unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_CODEPOINTS
 };
 
 static bool
-unicode_codepoint_match(unicode_codepoint_t codepoint, unicode_codepoint_t *codepoints, size_t size) {
+yp_unicode_codepoint_match(yp_unicode_codepoint_t codepoint, yp_unicode_codepoint_t *codepoints, size_t size) {
     size_t start = 0;
     size_t end = size;
 
@@ -2202,7 +2202,7 @@ unicode_codepoint_match(unicode_codepoint_t codepoint, unicode_codepoint_t *code
     return false;
 }
 
-static const uint8_t utf_8_dfa[] = {
+static const uint8_t yp_utf_8_dfa[] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 40..5f
@@ -2219,23 +2219,26 @@ static const uint8_t utf_8_dfa[] = {
     1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
 
-static unicode_codepoint_t
-utf_8_codepoint(const unsigned char *c, size_t *width) {
+static yp_unicode_codepoint_t
+yp_utf_8_codepoint(const unsigned char *c, ptrdiff_t n, size_t *width) {
+    assert(n >= 1);
+    size_t maximum = (size_t) n;
+
     uint32_t codepoint;
     uint32_t state = 0;
 
-    for (size_t index = 0; index < 4; index++) {
+    for (size_t index = 0; index < 4 && index < maximum; index++) {
         uint32_t byte = c[index];
-        uint32_t type = utf_8_dfa[byte];
+        uint32_t type = yp_utf_8_dfa[byte];
 
         codepoint = (state != 0) ?
             (byte & 0x3fu) | (codepoint << 6) :
             (0xffu >> type) & (byte);
 
-        state = utf_8_dfa[256 + (state * 16) + type];
+        state = yp_utf_8_dfa[256 + (state * 16) + type];
         if (!state) {
             *width = index + 1;
-            return (unicode_codepoint_t) codepoint;
+            return (yp_unicode_codepoint_t) codepoint;
         }
     }
 
@@ -2244,62 +2247,62 @@ utf_8_codepoint(const unsigned char *c, size_t *width) {
 }
 
 static size_t
-yp_encoding_utf_8_char_width(const char *c) {
+yp_encoding_utf_8_char_width(const char *c, ptrdiff_t n) {
     size_t width;
     const unsigned char *v = (const unsigned char *) c;
 
-    utf_8_codepoint(v, &width);
+    yp_utf_8_codepoint(v, n, &width);
     return width;
 }
 
 size_t
-yp_encoding_utf_8_alpha_char(const char *c) {
+yp_encoding_utf_8_alpha_char(const char *c, ptrdiff_t n) {
     const unsigned char *v = (const unsigned char *) c;
     if (*v < 0x80) {
         return (yp_encoding_unicode_table[*v] & YP_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
 
     size_t width;
-    unicode_codepoint_t codepoint = utf_8_codepoint(v, &width);
+    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(v, n, &width);
 
     if (codepoint <= 0xFF) {
         return (yp_encoding_unicode_table[(unsigned char) codepoint] & YP_ENCODING_ALPHABETIC_BIT) ? width : 0;
     } else {
-        return unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
+        return yp_unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
 size_t
-yp_encoding_utf_8_alnum_char(const char *c) {
+yp_encoding_utf_8_alnum_char(const char *c, ptrdiff_t n) {
     const unsigned char *v = (const unsigned char *) c;
     if (*v < 0x80) {
         return (yp_encoding_unicode_table[*v] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
 
     size_t width;
-    unicode_codepoint_t codepoint = utf_8_codepoint(v, &width);
+    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(v, n, &width);
 
     if (codepoint <= 0xFF) {
         return (yp_encoding_unicode_table[(unsigned char) codepoint] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
     } else {
-        return unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
+        return yp_unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
 static bool
-yp_encoding_utf_8_isupper_char(const char *c) {
+yp_encoding_utf_8_isupper_char(const char *c, ptrdiff_t n) {
     const unsigned char *v = (const unsigned char *) c;
     if (*v < 0x80) {
         return (yp_encoding_unicode_table[*v] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
     }
 
     size_t width;
-    unicode_codepoint_t codepoint = utf_8_codepoint(v, &width);
+    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(v, n, &width);
 
     if (codepoint <= 0xFF) {
         return (yp_encoding_unicode_table[(unsigned char) codepoint] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
     } else {
-        return unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
+        return yp_unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
     }
 }
 

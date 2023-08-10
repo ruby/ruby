@@ -294,28 +294,10 @@ class ErrorsTest < Test::Unit::TestCase
       nil,
       Location(),
       Location(),
-      ArgumentsNode(
-        [KeywordHashNode(
-           [AssocSplatNode(
-              CallNode(
-                nil,
-                nil,
-                Location(),
-                nil,
-                nil,
-                nil,
-                nil,
-                0,
-                "kwargs"
-              ),
-              Location()
-            )]
-         ),
-         SplatNode(
-           Location(),
-           CallNode(nil, nil, Location(), nil, nil, nil, nil, 0, "args")
-         )]
-      ),
+      ArgumentsNode([
+        KeywordHashNode([AssocSplatNode(expression("kwargs"), Location())]),
+        SplatNode(Location(), expression("args"))
+      ]),
       Location(),
       nil,
       0,
@@ -362,19 +344,16 @@ class ErrorsTest < Test::Unit::TestCase
       nil,
       Location(),
       Location(),
-      ArgumentsNode(
-        [KeywordHashNode(
-           [AssocNode(
-              SymbolNode(nil, Location(), Location(), "foo"),
-              CallNode(nil, nil, Location(), nil, nil, nil, nil, 0, "bar"),
-              nil
-            )]
-         ),
-         SplatNode(
-           Location(),
-           CallNode(nil, nil, Location(), nil, nil, nil, nil, 0, "args")
-         )]
-      ),
+      ArgumentsNode([
+        KeywordHashNode(
+          [AssocNode(
+            SymbolNode(nil, Location(), Location(), "foo"),
+            expression("bar"),
+            nil
+          )]
+        ),
+        SplatNode(Location(), expression("args"))
+      ]),
       Location(),
       nil,
       0,
@@ -1005,23 +984,27 @@ class ErrorsTest < Test::Unit::TestCase
   end
 
   def test_duplicated_parameter_names
-    expected = DefNode(
-      Location(),
-      nil,
-      ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:a)], [], [], nil, [], nil, nil),
-      nil,
-      [:a, :b],
-      Location(),
-      nil,
-      Location(),
-      Location(),
-      nil,
-      Location()
-    )
+    # For some reason, Ripper reports no error for Ruby 3.0 when you have
+    # duplicated parameter names for positional parameters.
+    unless RUBY_VERSION < "3.1.0"
+      expected = DefNode(
+        Location(),
+        nil,
+        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:a)], [], [], nil, [], nil, nil),
+        nil,
+        [:a, :b],
+        Location(),
+        nil,
+        Location(),
+        Location(),
+        nil,
+        Location()
+      )
 
-    assert_errors expected, "def foo(a,b,a);end", [
-      ["Duplicated parameter name.", 12..13]
-    ]
+      assert_errors expected, "def foo(a,b,a);end", [
+        ["Duplicated parameter name.", 12..13]
+      ]
+    end
 
     expected = DefNode(
       Location(),

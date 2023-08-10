@@ -188,6 +188,7 @@ module YARP
       !success?
     end
 
+    # Keep in sync with Java MarkNewlinesVisitor
     class MarkNewlinesVisitor < YARP::Visitor
       def initialize(newline_marked)
         @newline_marked = newline_marked
@@ -308,6 +309,10 @@ module YARP
     def self.newlines(source)
       YARP.parse(source).source.offsets
     end
+
+    def self.parse_serialize_file(filepath)
+      parse_serialize_file_metadata(filepath, [filepath.bytesize, filepath.b, 0].pack("LA*L"))
+    end
   end
 
   # Marking this as private so that consumers don't see it. It makes it a little
@@ -321,4 +326,5 @@ require_relative "yarp/node"
 require_relative "yarp/ripper_compat"
 require_relative "yarp/serialize"
 require_relative "yarp/pack"
-require "yarp.so"
+
+require "yarp/yarp"

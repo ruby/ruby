@@ -28,7 +28,7 @@ ProgramNode(0...30)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "d"
                )]
             ),
@@ -47,7 +47,7 @@ ProgramNode(0...30)(
        "a"
      ),
      CallNode(20...30)(
-       CallNode(20...21)(nil, nil, (20...21), nil, nil, nil, nil, 0, "e"),
+       CallNode(20...21)(nil, nil, (20...21), nil, nil, nil, nil, 2, "e"),
        (21...22),
        (22...23),
        nil,

@@ -12,7 +12,7 @@ ProgramNode(0...13)(
        nil,
        ParenthesesNode(4...9)(
          StatementsNode(5...8)(
-           [CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 0, "foo")]
+           [CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "foo")]
          ),
          (4...5),
          (8...9)

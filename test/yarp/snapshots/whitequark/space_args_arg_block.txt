@@ -2,7 +2,7 @@ ProgramNode(0...43)(
   [],
   StatementsNode(0...43)(
     [CallNode(0...14)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        (3...4),
        (4...7),
        nil,
@@ -19,7 +19,7 @@ ProgramNode(0...43)(
        "fun"
      ),
      CallNode(16...31)(
-       CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 0, "foo"),
+       CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 2, "foo"),
        (19...21),
        (30...31),
        nil,

@@ -55,6 +55,9 @@ YP_EXPORTED_FUNCTION void yp_list_init(yp_list_t *list);
 // Returns true if the given list is empty.
 YP_EXPORTED_FUNCTION bool yp_list_empty_p(yp_list_t *list);
 
+// Returns the size of the list in O(n) time.
+YP_EXPORTED_FUNCTION uint32_t yp_list_size(yp_list_t *list);
+
 // Append a node to the given list.
 void yp_list_append(yp_list_t *list, yp_list_node_t *node);
 

@@ -20,6 +20,6 @@ ProgramNode(0...19)(
        ),
        nil
      ),
-     CallNode(14...19)(nil, nil, (14...19), nil, nil, nil, nil, 0, "scope")]
+     CallNode(14...19)(nil, nil, (14...19), nil, nil, nil, nil, 2, "scope")]
   )
 )

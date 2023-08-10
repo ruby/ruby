@@ -7,7 +7,7 @@ ProgramNode(0...65)(
        nil,
        StatementsNode(6...13)(
          [CallNode(6...13)(
-            CallNode(6...8)(nil, nil, (6...8), nil, nil, nil, nil, 0, "_1"),
+            CallNode(6...8)(nil, nil, (6...8), nil, nil, nil, nil, 2, "_1"),
             nil,
             (9...10),
             nil,
@@ -20,7 +20,7 @@ ProgramNode(0...65)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "_9"
                )]
             ),
@@ -45,7 +45,7 @@ ProgramNode(0...65)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "_1"
             ),
             nil,
@@ -60,7 +60,7 @@ ProgramNode(0...65)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "_9"
                )]
             ),
@@ -91,7 +91,7 @@ ProgramNode(0...65)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "_1"
               ),
               nil,
@@ -106,7 +106,7 @@ ProgramNode(0...65)(
                    nil,
                    nil,
                    nil,
-                   0,
+                   2,
                    "_9"
                  )]
               ),
@@ -142,7 +142,7 @@ ProgramNode(0...65)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "_1"
               ),
               nil,
@@ -157,7 +157,7 @@ ProgramNode(0...65)(
                    nil,
                    nil,
                    nil,
-                   0,
+                   2,
                    "_9"
                  )]
               ),

@@ -33,6 +33,7 @@ module YARP
       visitor.visit_alias_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [new_name, old_name]
@@ -78,6 +79,7 @@ module YARP
     def accept(visitor)
       visitor.visit_alternation_pattern_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -125,6 +127,7 @@ module YARP
       visitor.visit_and_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [left, right]
@@ -162,6 +165,7 @@ module YARP
     def accept(visitor)
       visitor.visit_arguments_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -204,6 +208,7 @@ module YARP
     def accept(visitor)
       visitor.visit_array_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -280,6 +285,7 @@ module YARP
       visitor.visit_array_pattern_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [constant, *requireds, rest, *posts]
@@ -331,6 +337,7 @@ module YARP
       visitor.visit_assoc_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [key, value]
@@ -373,6 +380,7 @@ module YARP
       visitor.visit_assoc_splat_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -406,6 +414,7 @@ module YARP
     def accept(visitor)
       visitor.visit_back_reference_read_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -462,6 +471,10 @@ module YARP
       visitor.visit_begin_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      # Never mark BeginNode with a newline flag, mark children instead
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements, rescue_clause, else_clause, ensure_clause]
@@ -508,6 +521,7 @@ module YARP
     def accept(visitor)
       visitor.visit_block_argument_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -563,6 +577,7 @@ module YARP
       visitor.visit_block_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [parameters, statements]
@@ -610,6 +625,7 @@ module YARP
     def accept(visitor)
       visitor.visit_block_parameter_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -670,6 +686,7 @@ module YARP
       visitor.visit_block_parameters_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [parameters]
@@ -716,6 +733,7 @@ module YARP
     def accept(visitor)
       visitor.visit_break_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -802,6 +820,7 @@ module YARP
       visitor.visit_call_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [receiver, arguments, block]
@@ -863,6 +882,7 @@ module YARP
       visitor.visit_call_operator_and_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [target, value]
@@ -908,6 +928,7 @@ module YARP
     def accept(visitor)
       visitor.visit_call_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -959,6 +980,7 @@ module YARP
       visitor.visit_call_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [target, value]
@@ -1004,6 +1026,7 @@ module YARP
     def accept(visitor)
       visitor.visit_capture_pattern_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1060,6 +1083,7 @@ module YARP
     def accept(visitor)
       visitor.visit_case_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1128,6 +1152,7 @@ module YARP
       visitor.visit_class_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [constant_path, superclass, statements]
@@ -1184,6 +1209,7 @@ module YARP
       visitor.visit_class_variable_operator_and_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -1234,6 +1260,7 @@ module YARP
     def accept(visitor)
       visitor.visit_class_variable_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1290,6 +1317,7 @@ module YARP
       visitor.visit_class_variable_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -1323,6 +1351,7 @@ module YARP
     def accept(visitor)
       visitor.visit_class_variable_read_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1364,6 +1393,7 @@ module YARP
     def accept(visitor)
       visitor.visit_class_variable_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1416,6 +1446,7 @@ module YARP
       visitor.visit_constant_operator_and_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -1466,6 +1497,7 @@ module YARP
     def accept(visitor)
       visitor.visit_constant_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1522,6 +1554,7 @@ module YARP
       visitor.visit_constant_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -1567,6 +1600,7 @@ module YARP
     def accept(visitor)
       visitor.visit_constant_path_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1614,6 +1648,7 @@ module YARP
       visitor.visit_constant_path_operator_and_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [target, value]
@@ -1659,6 +1694,7 @@ module YARP
     def accept(visitor)
       visitor.visit_constant_path_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1710,6 +1746,7 @@ module YARP
       visitor.visit_constant_path_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [target, value]
@@ -1724,13 +1761,16 @@ module YARP
     end
   end
 
-  # Represents writing to a constant.
+  # Represents writing to a constant path.
   #
-  #     Foo = 1
-  #     ^^^^^^^
+  #     ::Foo = 1
+  #     ^^^^^^^^^
   #
   #     Foo::Bar = 1
   #     ^^^^^^^^^^^^
+  #
+  #     ::Foo::Bar = 1
+  #     ^^^^^^^^^^^^^^
   class ConstantPathWriteNode < Node
     # attr_reader target: Node
     attr_reader :target
@@ -1753,6 +1793,7 @@ module YARP
     def accept(visitor)
       visitor.visit_constant_path_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1788,6 +1829,7 @@ module YARP
       visitor.visit_constant_read_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -1799,6 +1841,58 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { location: location }
+    end
+  end
+
+  # Represents writing to a constant.
+  #
+  #     Foo = 1
+  #     ^^^^^^^
+  class ConstantWriteNode < Node
+    # attr_reader name_loc: Location
+    attr_reader :name_loc
+
+    # attr_reader value: Node?
+    attr_reader :value
+
+    # attr_reader operator_loc: Location?
+    attr_reader :operator_loc
+
+    # def initialize: (name_loc: Location, value: Node?, operator_loc: Location?, location: Location) -> void
+    def initialize(name_loc, value, operator_loc, location)
+      @name_loc = name_loc
+      @value = value
+      @operator_loc = operator_loc
+      @location = location
+    end
+
+    # def accept: (visitor: Visitor) -> void
+    def accept(visitor)
+      visitor.visit_constant_write_node(self)
+    end
+
+
+    # def child_nodes: () -> Array[nil | Node]
+    def child_nodes
+      [value]
+    end
+
+    # def deconstruct: () -> Array[nil | Node]
+    alias deconstruct child_nodes
+
+    # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
+    def deconstruct_keys(keys)
+      { name_loc: name_loc, value: value, operator_loc: operator_loc, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
     end
   end
 
@@ -1861,6 +1955,7 @@ module YARP
     def accept(visitor)
       visitor.visit_def_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -1942,6 +2037,7 @@ module YARP
       visitor.visit_defined_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -1998,6 +2094,7 @@ module YARP
       visitor.visit_else_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements]
@@ -2049,6 +2146,7 @@ module YARP
       visitor.visit_embedded_statements_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements]
@@ -2095,6 +2193,7 @@ module YARP
     def accept(visitor)
       visitor.visit_embedded_variable_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2146,6 +2245,7 @@ module YARP
       visitor.visit_ensure_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements]
@@ -2184,6 +2284,7 @@ module YARP
     def accept(visitor)
       visitor.visit_false_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2244,6 +2345,7 @@ module YARP
       visitor.visit_find_pattern_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [constant, left, *requireds, right]
@@ -2282,6 +2384,7 @@ module YARP
     def accept(visitor)
       visitor.visit_float_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2340,6 +2443,7 @@ module YARP
       visitor.visit_for_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [index, collection, statements]
@@ -2391,6 +2495,7 @@ module YARP
       visitor.visit_forwarding_arguments_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -2420,6 +2525,7 @@ module YARP
     def accept(visitor)
       visitor.visit_forwarding_parameter_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2453,6 +2559,7 @@ module YARP
     def accept(visitor)
       visitor.visit_forwarding_super_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2494,6 +2601,7 @@ module YARP
     def accept(visitor)
       visitor.visit_global_variable_operator_and_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2545,6 +2653,7 @@ module YARP
     def accept(visitor)
       visitor.visit_global_variable_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2601,6 +2710,7 @@ module YARP
       visitor.visit_global_variable_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -2634,6 +2744,7 @@ module YARP
     def accept(visitor)
       visitor.visit_global_variable_read_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2675,6 +2786,7 @@ module YARP
     def accept(visitor)
       visitor.visit_global_variable_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2726,6 +2838,7 @@ module YARP
     def accept(visitor)
       visitor.visit_hash_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2789,6 +2902,7 @@ module YARP
       visitor.visit_hash_pattern_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [constant, *assocs, kwrest]
@@ -2851,6 +2965,10 @@ module YARP
       visitor.visit_if_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [predicate, statements, consequent]
@@ -2893,6 +3011,7 @@ module YARP
     def accept(visitor)
       visitor.visit_imaginary_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2938,6 +3057,7 @@ module YARP
     def accept(visitor)
       visitor.visit_in_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -2990,6 +3110,7 @@ module YARP
       visitor.visit_instance_variable_operator_and_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -3040,6 +3161,7 @@ module YARP
     def accept(visitor)
       visitor.visit_instance_variable_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3096,6 +3218,7 @@ module YARP
       visitor.visit_instance_variable_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -3129,6 +3252,7 @@ module YARP
     def accept(visitor)
       visitor.visit_instance_variable_read_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3171,6 +3295,7 @@ module YARP
       visitor.visit_instance_variable_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -3209,6 +3334,7 @@ module YARP
     def accept(visitor)
       visitor.visit_integer_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3253,6 +3379,11 @@ module YARP
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_interpolated_regular_expression_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -3306,6 +3437,11 @@ module YARP
       visitor.visit_interpolated_string_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*parts]
@@ -3355,6 +3491,11 @@ module YARP
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_interpolated_symbol_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -3408,6 +3549,11 @@ module YARP
       visitor.visit_interpolated_x_string_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*parts]
@@ -3451,6 +3597,7 @@ module YARP
       visitor.visit_keyword_hash_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*elements]
@@ -3492,6 +3639,7 @@ module YARP
     def accept(visitor)
       visitor.visit_keyword_parameter_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3535,6 +3683,7 @@ module YARP
     def accept(visitor)
       visitor.visit_keyword_rest_parameter_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3591,6 +3740,7 @@ module YARP
       visitor.visit_lambda_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [parameters, statements]
@@ -3640,6 +3790,7 @@ module YARP
     def accept(visitor)
       visitor.visit_local_variable_operator_and_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3695,6 +3846,7 @@ module YARP
     def accept(visitor)
       visitor.visit_local_variable_operator_or_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3755,6 +3907,7 @@ module YARP
       visitor.visit_local_variable_operator_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value]
@@ -3804,6 +3957,7 @@ module YARP
       visitor.visit_local_variable_read_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -3852,6 +4006,7 @@ module YARP
     def accept(visitor)
       visitor.visit_local_variable_write_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -3904,6 +4059,7 @@ module YARP
       visitor.visit_match_predicate_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value, pattern]
@@ -3950,6 +4106,7 @@ module YARP
       visitor.visit_match_required_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [value, pattern]
@@ -3981,6 +4138,7 @@ module YARP
     def accept(visitor)
       visitor.visit_missing_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4030,6 +4188,7 @@ module YARP
     def accept(visitor)
       visitor.visit_module_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4090,6 +4249,7 @@ module YARP
       visitor.visit_multi_write_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*targets, value]
@@ -4142,6 +4302,7 @@ module YARP
       visitor.visit_next_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [arguments]
@@ -4175,6 +4336,7 @@ module YARP
     def accept(visitor)
       visitor.visit_nil_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4214,6 +4376,7 @@ module YARP
       visitor.visit_no_keywords_parameter_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -4252,6 +4415,7 @@ module YARP
     def accept(visitor)
       visitor.visit_numbered_reference_read_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4298,6 +4462,7 @@ module YARP
     def accept(visitor)
       visitor.visit_optional_parameter_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4349,6 +4514,7 @@ module YARP
     def accept(visitor)
       visitor.visit_or_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4413,6 +4579,7 @@ module YARP
       visitor.visit_parameters_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*requireds, *optionals, *posts, rest, *keywords, keyword_rest, block]
@@ -4452,6 +4619,10 @@ module YARP
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_parentheses_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      # Never mark ParenthesesNode with a newline flag, mark children instead
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -4510,6 +4681,7 @@ module YARP
       visitor.visit_pinned_expression_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [expression]
@@ -4563,6 +4735,7 @@ module YARP
       visitor.visit_pinned_variable_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [variable]
@@ -4612,6 +4785,7 @@ module YARP
     def accept(visitor)
       visitor.visit_post_execution_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4673,6 +4847,7 @@ module YARP
       visitor.visit_pre_execution_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements]
@@ -4722,6 +4897,7 @@ module YARP
       visitor.visit_program_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements]
@@ -4770,6 +4946,7 @@ module YARP
       visitor.visit_range_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [left, right]
@@ -4808,6 +4985,7 @@ module YARP
       visitor.visit_rational_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [numeric]
@@ -4836,6 +5014,7 @@ module YARP
     def accept(visitor)
       visitor.visit_redo_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4885,6 +5064,7 @@ module YARP
     def accept(visitor)
       visitor.visit_regular_expression_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -4943,6 +5123,7 @@ module YARP
       visitor.visit_required_destructured_parameter_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*parameters]
@@ -4987,6 +5168,7 @@ module YARP
       visitor.visit_required_parameter_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -5028,6 +5210,10 @@ module YARP
       visitor.visit_rescue_modifier_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      expression.set_newline_flag(newline_marked)
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [expression, rescue_expression]
@@ -5067,8 +5253,8 @@ module YARP
     # attr_reader operator_loc: Location?
     attr_reader :operator_loc
 
-    # attr_reader exception: Node?
-    attr_reader :exception
+    # attr_reader reference: Node?
+    attr_reader :reference
 
     # attr_reader statements: Node?
     attr_reader :statements
@@ -5076,12 +5262,12 @@ module YARP
     # attr_reader consequent: Node?
     attr_reader :consequent
 
-    # def initialize: (keyword_loc: Location, exceptions: Array[Node], operator_loc: Location?, exception: Node?, statements: Node?, consequent: Node?, location: Location) -> void
-    def initialize(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location)
+    # def initialize: (keyword_loc: Location, exceptions: Array[Node], operator_loc: Location?, reference: Node?, statements: Node?, consequent: Node?, location: Location) -> void
+    def initialize(keyword_loc, exceptions, operator_loc, reference, statements, consequent, location)
       @keyword_loc = keyword_loc
       @exceptions = exceptions
       @operator_loc = operator_loc
-      @exception = exception
+      @reference = reference
       @statements = statements
       @consequent = consequent
       @location = location
@@ -5092,9 +5278,10 @@ module YARP
       visitor.visit_rescue_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
-      [*exceptions, exception, statements, consequent]
+      [*exceptions, reference, statements, consequent]
     end
 
     # def deconstruct: () -> Array[nil | Node]
@@ -5102,7 +5289,7 @@ module YARP
 
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
-      { keyword_loc: keyword_loc, exceptions: exceptions, operator_loc: operator_loc, exception: exception, statements: statements, consequent: consequent, location: location }
+      { keyword_loc: keyword_loc, exceptions: exceptions, operator_loc: operator_loc, reference: reference, statements: statements, consequent: consequent, location: location }
     end
 
     # def keyword: () -> String
@@ -5139,6 +5326,7 @@ module YARP
     def accept(visitor)
       visitor.visit_rest_parameter_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5179,6 +5367,7 @@ module YARP
       visitor.visit_retry_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -5216,6 +5405,7 @@ module YARP
       visitor.visit_return_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [arguments]
@@ -5249,6 +5439,7 @@ module YARP
     def accept(visitor)
       visitor.visit_self_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5303,6 +5494,7 @@ module YARP
       visitor.visit_singleton_class_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [expression, statements]
@@ -5347,6 +5539,7 @@ module YARP
       visitor.visit_source_encoding_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -5380,6 +5573,7 @@ module YARP
       visitor.visit_source_file_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -5408,6 +5602,7 @@ module YARP
     def accept(visitor)
       visitor.visit_source_line_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5445,6 +5640,7 @@ module YARP
     def accept(visitor)
       visitor.visit_splat_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5484,6 +5680,7 @@ module YARP
       visitor.visit_statements_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*body]
@@ -5520,6 +5717,7 @@ module YARP
     def accept(visitor)
       visitor.visit_string_concat_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5572,6 +5770,7 @@ module YARP
     def accept(visitor)
       visitor.visit_string_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5640,6 +5839,7 @@ module YARP
       visitor.visit_super_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [arguments, block]
@@ -5703,6 +5903,7 @@ module YARP
       visitor.visit_symbol_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -5747,6 +5948,7 @@ module YARP
       visitor.visit_true_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       []
@@ -5783,6 +5985,7 @@ module YARP
     def accept(visitor)
       visitor.visit_undef_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5841,6 +6044,10 @@ module YARP
       visitor.visit_unless_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [predicate, statements, consequent]
@@ -5882,17 +6089,25 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, location: Location) -> void
-    def initialize(keyword_loc, predicate, statements, location)
+    # attr_reader flags: Integer
+    attr_reader :flags
+
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, flags: Integer, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, flags, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
+      @flags = flags
       @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_until_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -5905,7 +6120,7 @@ module YARP
 
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
-      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, location: location }
+      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, flags: flags, location: location }
     end
 
     # def keyword: () -> String
@@ -5940,6 +6155,7 @@ module YARP
     def accept(visitor)
       visitor.visit_when_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -5977,17 +6193,25 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, location: Location) -> void
-    def initialize(keyword_loc, predicate, statements, location)
+    # attr_reader flags: Integer
+    attr_reader :flags
+
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, flags: Integer, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, flags, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
+      @flags = flags
       @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_while_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -6000,7 +6224,7 @@ module YARP
 
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
-      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, location: location }
+      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, flags: flags, location: location }
     end
 
     # def keyword: () -> String
@@ -6039,6 +6263,7 @@ module YARP
     def accept(visitor)
       visitor.visit_x_string_node(self)
     end
+
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
@@ -6100,6 +6325,7 @@ module YARP
       visitor.visit_yield_node(self)
     end
 
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [arguments]
@@ -6132,11 +6358,22 @@ module YARP
   module CallNodeFlags
     # &. operator
     SAFE_NAVIGATION = 1 << 0
+
+    # a call that could have been a local variable
+    VARIABLE_CALL = 1 << 1
+  end
+
+  module LoopFlags
+    # a loop after a begin statement, so the body is executed first before the condition
+    BEGIN_MODIFIER = 1 << 0
   end
 
   module RangeNodeFlags
     # ... operator
     EXCLUDE_END = 1 << 0
+
+    # a range used as a flip flop
+    FLIP_FLOP = 1 << 1
   end
 
   module RegularExpressionFlags
@@ -6163,24 +6400,6 @@ module YARP
 
     # o - only interpolates values into the regular expression once
     ONCE = 1 << 7
-  end
-
-  # A class that knows how to walk down the tree. None of the individual visit
-  # methods are implemented on this visitor, so it forces the consumer to
-  # implement each one that they need. For a default implementation that
-  # continues walking the tree, see the Visitor class.
-  class BasicVisitor
-    def visit(node)
-      node&.accept(self)
-    end
-
-    def visit_all(nodes)
-      nodes.map { |node| visit(node) }
-    end
-
-    def visit_child_nodes(node)
-      visit_all(node.child_nodes)
-    end
   end
 
   class Visitor < BasicVisitor
@@ -6291,6 +6510,9 @@ module YARP
 
     # Visit a ConstantReadNode node
     alias visit_constant_read_node visit_child_nodes
+
+    # Visit a ConstantWriteNode node
+    alias visit_constant_write_node visit_child_nodes
 
     # Visit a DefNode node
     alias visit_def_node visit_child_nodes
@@ -6751,6 +6973,11 @@ module YARP
       ConstantReadNode.new(location)
     end
 
+    # Create a new ConstantWriteNode node
+    def ConstantWriteNode(name_loc, value, operator_loc, location = Location())
+      ConstantWriteNode.new(name_loc, value, operator_loc, location)
+    end
+
     # Create a new DefNode node
     def DefNode(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location = Location())
       DefNode.new(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location)
@@ -7087,8 +7314,8 @@ module YARP
     end
 
     # Create a new RescueNode node
-    def RescueNode(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location = Location())
-      RescueNode.new(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location)
+    def RescueNode(keyword_loc, exceptions, operator_loc, reference, statements, consequent, location = Location())
+      RescueNode.new(keyword_loc, exceptions, operator_loc, reference, statements, consequent, location)
     end
 
     # Create a new RestParameterNode node
@@ -7177,8 +7404,8 @@ module YARP
     end
 
     # Create a new UntilNode node
-    def UntilNode(keyword_loc, predicate, statements, location = Location())
-      UntilNode.new(keyword_loc, predicate, statements, location)
+    def UntilNode(keyword_loc, predicate, statements, flags, location = Location())
+      UntilNode.new(keyword_loc, predicate, statements, flags, location)
     end
 
     # Create a new WhenNode node
@@ -7187,8 +7414,8 @@ module YARP
     end
 
     # Create a new WhileNode node
-    def WhileNode(keyword_loc, predicate, statements, location = Location())
-      WhileNode.new(keyword_loc, predicate, statements, location)
+    def WhileNode(keyword_loc, predicate, statements, flags, location = Location())
+      WhileNode.new(keyword_loc, predicate, statements, flags, location)
     end
 
     # Create a new XStringNode node

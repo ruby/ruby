@@ -19,7 +19,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (17...23),
@@ -52,7 +52,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),
@@ -85,7 +85,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (75...81),
@@ -118,7 +118,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),
@@ -161,7 +161,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (135...141),
@@ -203,7 +203,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),
@@ -245,7 +245,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (198...204),
@@ -287,7 +287,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),
@@ -323,7 +323,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (263...269),
@@ -358,7 +358,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),
@@ -399,7 +399,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (329...335),
@@ -441,7 +441,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),
@@ -483,7 +483,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (394...400),
@@ -525,7 +525,7 @@ ProgramNode(0...437)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               )]
            ),

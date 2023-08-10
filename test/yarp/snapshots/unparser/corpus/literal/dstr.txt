@@ -26,7 +26,7 @@ ProgramNode(0...299)(
              StringNode(47...51)(nil, (47...51), nil, "a\n" + "b\n")],
             (51...61)
           ),
-          CallNode(63...64)(nil, nil, (63...64), nil, nil, nil, nil, 0, "x")]
+          CallNode(63...64)(nil, nil, (63...64), nil, nil, nil, nil, 2, "x")]
        ),
        nil,
        (65...68)
@@ -132,7 +132,7 @@ ProgramNode(0...299)(
                     nil,
                     nil,
                     nil,
-                    0,
+                    2,
                     "bar"
                   )]
                ),
@@ -167,7 +167,7 @@ ProgramNode(0...299)(
                     nil,
                     nil,
                     nil,
-                    0,
+                    2,
                     "bar"
                   )]
                ),

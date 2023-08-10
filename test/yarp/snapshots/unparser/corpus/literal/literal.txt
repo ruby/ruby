@@ -119,7 +119,7 @@ ProgramNode(0...916)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "baz"
           ),
           (160...162)
@@ -142,7 +142,7 @@ ProgramNode(0...916)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "baz"
           ),
           (198...200)
@@ -230,7 +230,7 @@ ProgramNode(0...916)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "baz"
              )]
           ),
@@ -396,7 +396,7 @@ ProgramNode(0...916)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "bar"
              )]
           ),
@@ -515,7 +515,7 @@ ProgramNode(0...916)(
           nil,
           nil,
           nil,
-          0,
+          2,
           "n2"
         )],
        (673...674),
@@ -607,7 +607,7 @@ ProgramNode(0...916)(
                    nil,
                    nil,
                    nil,
-                   0,
+                   2,
                    "foo"
                  )
                )]
@@ -722,7 +722,7 @@ ProgramNode(0...916)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "foo"
              )]
           ),

@@ -166,6 +166,7 @@ module YARP
       STRING_END: :on_tstring_end,
       SYMBOL_BEGIN: :on_symbeg,
       TILDE: :on_op,
+      UAMPERSAND: :on_op,
       UCOLON_COLON: :on_op,
       UDOT_DOT: :on_op,
       UDOT_DOT_DOT: :on_op,

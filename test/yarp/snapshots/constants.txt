@@ -16,7 +16,7 @@ ProgramNode(0...715)(
        (10...12)
      ),
      ConstantPathNode(15...19)(
-       CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 0, "a"),
+       CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 2, "a"),
        ConstantReadNode(18...19)(),
        (16...18)
      ),
@@ -726,7 +726,7 @@ ProgramNode(0...715)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "i"
           )]
        ),
@@ -749,7 +749,7 @@ ProgramNode(0...715)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "w"
           )]
        ),
@@ -772,7 +772,7 @@ ProgramNode(0...715)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "x"
           )]
        ),

@@ -2,6 +2,10 @@
 
 require "yarp_test_helper"
 
+# To accurately compare against the snapshots, we need to make sure that we're
+# running on Ruby 3.2+.
+return if RUBY_VERSION < "3.2.0"
+
 # It is useful to have a diff even if the strings to compare are big
 # However, ruby/ruby does not have a version of Test::Unit with access to
 # max_diff_target_string_size
@@ -25,38 +29,18 @@ class ParseTest < Test::Unit::TestCase
     ignore_warnings { Encoding.default_external = @previous_default_external }
   end
 
-  def test_Ruby_3_2_plus
-    assert_operator RUBY_VERSION, :>=, "3.2.0", "ParseTest requires Ruby 3.2+"
-  end
-
   def test_empty_string
     YARP.parse("") => YARP::ParseResult[value: YARP::ProgramNode[statements: YARP::StatementsNode[body: []]]]
   end
 
-  known_failures = %w[
-    seattlerb/heredoc_nested.txt
-  ]
-
-  if RUBY_VERSION < "3.3.0"
-    known_failures << "seattlerb/pct_w_heredoc_interp_nested.txt"
-  end
-
-  def find_source_file_node(node)
-    if node.is_a?(YARP::SourceFileNode)
-      node
-    else
-      node && node.child_nodes.each do |child_node|
-        source_file_node = find_source_file_node(child_node)
-        return source_file_node if source_file_node
-      end
-    end
-  end
+  known_failures = %w[seattlerb/heredoc_nested.txt]
+  known_failures << "seattlerb/pct_w_heredoc_interp_nested.txt" if RUBY_VERSION < "3.3.0"
 
   def test_parse_takes_file_path
     filepath = "filepath.rb"
-    parsed_result = YARP.parse("def foo; __FILE__; end", filepath)
+    result = YARP.parse("def foo; __FILE__; end", filepath)
 
-    assert_equal filepath, find_source_file_node(parsed_result.value).filepath
+    assert_equal filepath, find_source_file_node(result.value).filepath
   end
 
   base = File.join(__dir__, "fixtures")
@@ -105,7 +89,7 @@ class ParseTest < Test::Unit::TestCase
 
       # Next, assert that the value can be serialized and deserialized without
       # changing the shape of the tree.
-      assert_equal_nodes(result.value, YARP.load(source, YARP.dump(source, relative)))
+      assert_equal_nodes(result.value, YARP.load(source, YARP.dump(source, relative)).value)
 
       # Next, assert that the newlines are in the expected places.
       expected_newlines = [0]
@@ -141,12 +125,20 @@ class ParseTest < Test::Unit::TestCase
         result = YARP.parse(snippet, relative)
         assert_empty result.errors
 
-        assert_equal_nodes(result.value, YARP.load(snippet, YARP.dump(snippet, relative)))
+        assert_equal_nodes(result.value, YARP.load(snippet, YARP.dump(snippet, relative)).value)
       end
     end
   end
 
   private
+
+  def find_source_file_node(program)
+    queue = [program]
+    while (node = queue.shift)
+      return node if node.is_a?(YARP::SourceFileNode)
+      queue.concat(node.child_nodes.compact)
+    end
+  end
 
   def ignore_warnings
     previous_verbosity = $VERBOSE

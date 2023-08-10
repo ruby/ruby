@@ -21,8 +21,8 @@ ProgramNode(0...78)(
      DefinedNode(45...66)(
        (53...54),
        AndNode(54...65)(
-         CallNode(54...57)(nil, nil, (54...57), nil, nil, nil, nil, 0, "foo"),
-         CallNode(62...65)(nil, nil, (62...65), nil, nil, nil, nil, 0, "bar"),
+         CallNode(54...57)(nil, nil, (54...57), nil, nil, nil, nil, 2, "foo"),
+         CallNode(62...65)(nil, nil, (62...65), nil, nil, nil, nil, 2, "bar"),
          (58...61)
        ),
        (65...66),

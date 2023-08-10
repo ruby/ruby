@@ -2,7 +2,7 @@ ProgramNode(0...44)(
   [],
   StatementsNode(0...44)(
     [CallNode(0...9)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        (3...4),
        (4...5),
        nil,
@@ -13,7 +13,7 @@ ProgramNode(0...44)(
        "A="
      ),
      CallNode(11...20)(
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 0, "foo"),
+       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "foo"),
        (14...15),
        (15...16),
        nil,
@@ -25,7 +25,7 @@ ProgramNode(0...44)(
      ),
      ConstantPathWriteNode(22...32)(
        ConstantPathNode(22...28)(
-         CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 0, "foo"),
+         CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 2, "foo"),
          ConstantReadNode(27...28)(),
          (25...27)
        ),
@@ -33,7 +33,7 @@ ProgramNode(0...44)(
        IntegerNode(31...32)()
      ),
      CallNode(34...44)(
-       CallNode(34...37)(nil, nil, (34...37), nil, nil, nil, nil, 0, "foo"),
+       CallNode(34...37)(nil, nil, (34...37), nil, nil, nil, nil, 2, "foo"),
        (37...39),
        (39...40),
        nil,

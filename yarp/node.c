@@ -82,7 +82,7 @@ yp_node_list_free(yp_parser_t *parser, yp_node_list_t *list) {
 // of pre-allocating larger memory pools.
 YP_EXPORTED_FUNCTION void
 yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
-    switch (node->type) {
+    switch (YP_NODE_TYPE(node)) {
 #line 81 "node.c.erb"
         case YP_NODE_ALIAS_NODE:
             yp_node_destroy(parser, (yp_node_t *)((yp_alias_node_t *)node)->new_name);
@@ -298,6 +298,12 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
             break;
 #line 81 "node.c.erb"
         case YP_NODE_CONSTANT_READ_NODE:
+            break;
+#line 81 "node.c.erb"
+        case YP_NODE_CONSTANT_WRITE_NODE:
+            if (((yp_constant_write_node_t *)node)->value != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)((yp_constant_write_node_t *)node)->value);
+            }
             break;
 #line 81 "node.c.erb"
         case YP_NODE_DEF_NODE:
@@ -647,8 +653,8 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
 #line 81 "node.c.erb"
         case YP_NODE_RESCUE_NODE:
             yp_node_list_free(parser, &((yp_rescue_node_t *)node)->exceptions);
-            if (((yp_rescue_node_t *)node)->exception != NULL) {
-                yp_node_destroy(parser, (yp_node_t *)((yp_rescue_node_t *)node)->exception);
+            if (((yp_rescue_node_t *)node)->reference != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)((yp_rescue_node_t *)node)->reference);
             }
             if (((yp_rescue_node_t *)node)->statements != NULL) {
                 yp_node_destroy(parser, (yp_node_t *)((yp_rescue_node_t *)node)->statements);
@@ -782,7 +788,7 @@ static void
 yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
     memsize->node_count++;
 
-    switch (node->type) {
+    switch (YP_NODE_TYPE(node)) {
 #line 120 "node.c.erb"
         case YP_NODE_ALIAS_NODE: {
             memsize->memsize += sizeof(yp_alias_node_t);
@@ -1069,6 +1075,14 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
 #line 120 "node.c.erb"
         case YP_NODE_CONSTANT_READ_NODE: {
             memsize->memsize += sizeof(yp_constant_read_node_t);
+            break;
+        }
+#line 120 "node.c.erb"
+        case YP_NODE_CONSTANT_WRITE_NODE: {
+            memsize->memsize += sizeof(yp_constant_write_node_t);
+            if (((yp_constant_write_node_t *)node)->value != NULL) {
+                yp_node_memsize_node((yp_node_t *)((yp_constant_write_node_t *)node)->value, memsize);
+            }
             break;
         }
 #line 120 "node.c.erb"
@@ -1554,8 +1568,8 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
         case YP_NODE_RESCUE_NODE: {
             memsize->memsize += sizeof(yp_rescue_node_t);
             yp_node_list_memsize(&((yp_rescue_node_t *)node)->exceptions, memsize);
-            if (((yp_rescue_node_t *)node)->exception != NULL) {
-                yp_node_memsize_node((yp_node_t *)((yp_rescue_node_t *)node)->exception, memsize);
+            if (((yp_rescue_node_t *)node)->reference != NULL) {
+                yp_node_memsize_node((yp_node_t *)((yp_rescue_node_t *)node)->reference, memsize);
             }
             if (((yp_rescue_node_t *)node)->statements != NULL) {
                 yp_node_memsize_node((yp_node_t *)((yp_rescue_node_t *)node)->statements, memsize);
@@ -1810,6 +1824,8 @@ yp_node_type_to_str(yp_node_type_t node_type)
             return "YP_NODE_CONSTANT_PATH_WRITE_NODE";
         case YP_NODE_CONSTANT_READ_NODE:
             return "YP_NODE_CONSTANT_READ_NODE";
+        case YP_NODE_CONSTANT_WRITE_NODE:
+            return "YP_NODE_CONSTANT_WRITE_NODE";
         case YP_NODE_DEF_NODE:
             return "YP_NODE_DEF_NODE";
         case YP_NODE_DEFINED_NODE:

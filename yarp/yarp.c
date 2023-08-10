@@ -973,7 +973,7 @@ yp_block_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
 // Allocate and initialize a new BlockParameterNode node.
 static yp_block_parameter_node_t *
 yp_block_parameter_node_create(yp_parser_t *parser, const yp_token_t *name, const yp_token_t *operator) {
-    assert(operator->type == YP_TOKEN_NOT_PROVIDED || operator->type == YP_TOKEN_AMPERSAND);
+    assert(operator->type == YP_TOKEN_NOT_PROVIDED || operator->type == YP_TOKEN_UAMPERSAND || operator->type == YP_TOKEN_AMPERSAND);
     yp_block_parameter_node_t *node = YP_ALLOC_NODE(parser, yp_block_parameter_node_t);
 
     *node = (yp_block_parameter_node_t) {
@@ -1267,7 +1267,7 @@ yp_call_node_unary_create(yp_parser_t *parser, yp_token_t *operator, yp_node_t *
 // Allocate and initialize a new CallNode node from a call to a method name
 // without a receiver that could also have been a local variable read.
 static yp_call_node_t *
-yp_call_node_vcall_create(yp_parser_t *parser, yp_token_t *message) {
+yp_call_node_variable_call_create(yp_parser_t *parser, yp_token_t *message) {
     yp_call_node_t *node = yp_call_node_create(parser);
 
     node->base.location.start = message->start;
@@ -1282,13 +1282,8 @@ yp_call_node_vcall_create(yp_parser_t *parser, yp_token_t *message) {
 // Returns whether or not this call node is a "vcall" (a call to a method name
 // without a receiver that could also have been a local variable read).
 static inline bool
-yp_call_node_vcall_p(yp_call_node_t *node) {
-    return (
-        (node->opening_loc.start == NULL) &&
-        (node->arguments == NULL) &&
-        (node->block == NULL) &&
-        (node->receiver == NULL)
-    );
+yp_call_node_variable_call_p(yp_call_node_t *node) {
+    return node->flags & YP_CALL_NODE_FLAGS_VARIABLE_CALL;
 }
 
 // Allocate and initialize a new CallOperatorAndWriteNode node.
@@ -4096,7 +4091,7 @@ yp_unless_node_end_keyword_loc_set(yp_unless_node_t *node, const yp_token_t *end
 
 // Allocate a new UntilNode node.
 static yp_until_node_t *
-yp_until_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements) {
+yp_until_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements, uint32_t flags) {
     yp_until_node_t *node = YP_ALLOC_NODE(parser, yp_until_node_t);
     bool has_statements = (statements != NULL) && (statements->body.size != 0);
 
@@ -4124,7 +4119,8 @@ yp_until_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *
         },
         .keyword_loc = YP_LOCATION_TOKEN_VALUE(keyword),
         .predicate = predicate,
-        .statements = statements
+        .statements = statements,
+        .flags = flags
     };
 
     return node;
@@ -4170,7 +4166,7 @@ yp_when_node_statements_set(yp_when_node_t *node, yp_statements_node_t *statemen
 
 // Allocate a new WhileNode node.
 static yp_while_node_t *
-yp_while_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements) {
+yp_while_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements, uint32_t flags) {
     yp_while_node_t *node = YP_ALLOC_NODE(parser, yp_while_node_t);
 
     const char *start = NULL;
@@ -4198,7 +4194,8 @@ yp_while_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *
         },
         .keyword_loc = YP_LOCATION_TOKEN_VALUE(keyword),
         .predicate = predicate,
-        .statements = statements
+        .statements = statements,
+        .flags = flags
     };
 
     return node;
@@ -4355,12 +4352,13 @@ static inline size_t
 char_is_identifier_start(yp_parser_t *parser, const char *c) {
     const unsigned char uc = (unsigned char) *c;
 
-    return (
-        (parser->encoding_changed
-            ? parser->encoding.alpha_char(c)
-            : (uc < 0x80 ? (yp_encoding_unicode_table[uc] & YP_ENCODING_ALPHABETIC_BIT ? 1 : 0) : yp_encoding_utf_8_alpha_char(c))
-        ) || (uc == '_') || (uc >= 0x80)
-    );
+    if (parser->encoding_changed) {
+        return parser->encoding.alpha_char(c, parser->end - c) || (uc == '_') || (uc >= 0x80);
+    } else if (uc < 0x80) {
+        return (yp_encoding_unicode_table[uc] & YP_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (uc == '_');
+    } else {
+        return (size_t) (yp_encoding_utf_8_alpha_char(c, parser->end - c) || 1u);
+    }
 }
 
 // Like the above, this function is also used extremely frequently to lex all of
@@ -4370,12 +4368,13 @@ static inline size_t
 char_is_identifier(yp_parser_t *parser, const char *c) {
     const unsigned char uc = (unsigned char) *c;
 
-    return (
-        (parser->encoding_changed
-            ? parser->encoding.alnum_char(c)
-            : (uc < 0x80 ? (yp_encoding_unicode_table[uc] & YP_ENCODING_ALPHANUMERIC_BIT ? 1 : 0) : yp_encoding_utf_8_alnum_char(c))
-        ) || (uc == '_') || (uc >= 0x80)
-    );
+    if (parser->encoding_changed) {
+        return parser->encoding.alnum_char(c, parser->end - c) || (uc == '_') || (uc >= 0x80);
+    } else if (uc < 0x80) {
+        return (yp_encoding_unicode_table[uc] & YP_ENCODING_ALPHANUMERIC_BIT ? 1 : 0) || (uc == '_');
+    } else {
+        return (size_t) (yp_encoding_utf_8_alnum_char(c, parser->end - c) || 1u);
+    }
 }
 
 // Here we're defining a perfect hash for the characters that are allowed in
@@ -4523,7 +4522,7 @@ parser_lex_encoding_comment_start(yp_parser_t *parser, const char *cursor, ptrdi
     if (key_length > length) return NULL;
 
     const char *cursor_limit = cursor + length - key_length + 1;
-    while ((cursor = yp_memchr(parser, cursor, 'c', (size_t) (cursor_limit - cursor))) != NULL) {
+    while ((cursor = yp_memchr(cursor, 'c', (size_t) (cursor_limit - cursor), parser->encoding_changed, &parser->encoding)) != NULL) {
         if (
             (strncmp(cursor, "coding", key_length - 1) == 0) &&
             (cursor[key_length - 1] == ':' || cursor[key_length - 1] == '=')
@@ -5181,7 +5180,7 @@ lex_identifier(yp_parser_t *parser, bool previous_command_start) {
         }
     }
 
-    return parser->encoding.isupper_char(parser->current.start) ? YP_TOKEN_CONSTANT : YP_TOKEN_IDENTIFIER;
+    return parser->encoding.isupper_char(parser->current.start, parser->end - parser->current.start) ? YP_TOKEN_CONSTANT : YP_TOKEN_IDENTIFIER;
 }
 
 // Returns true if the current token that the parser is considering is at the
@@ -5375,15 +5374,15 @@ lex_question_mark(yp_parser_t *parser) {
         parser->current.end += yp_unescape_calculate_difference(parser->current.start + 1, parser->end, YP_UNESCAPE_ALL, true, &parser->error_list);
         return YP_TOKEN_CHARACTER_LITERAL;
     } else {
-        size_t encoding_width = parser->encoding.char_width(parser->current.end);
+        size_t encoding_width = parser->encoding.char_width(parser->current.end, parser->end - parser->current.end);
 
         // We only want to return a character literal if there's exactly one
         // alphanumeric character right after the `?`
         if (
-            !parser->encoding.alnum_char(parser->current.end) ||
+            !parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end) ||
             (
                 (parser->current.end + encoding_width >= parser->end) ||
-                !parser->encoding.alnum_char(parser->current.end + encoding_width)
+                !parser->encoding.alnum_char(parser->current.end + encoding_width, parser->end - (parser->current.end + encoding_width))
             )
         ) {
             lex_state_set(parser, YP_LEX_STATE_END);
@@ -6176,7 +6175,7 @@ parser_lex(yp_parser_t *parser) {
                     LEX(lex_question_mark(parser));
 
                 // & && &&= &=
-                case '&':
+                case '&': {
                     if (match(parser, '&')) {
                         lex_state_set(parser, YP_LEX_STATE_BEG);
 
@@ -6197,13 +6196,19 @@ parser_lex(yp_parser_t *parser) {
                         LEX(YP_TOKEN_AMPERSAND_DOT);
                     }
 
+                    yp_token_type_t type = YP_TOKEN_AMPERSAND;
+                    if (lex_state_spcarg_p(parser, space_seen) || lex_state_beg_p(parser)) {
+                        type = YP_TOKEN_UAMPERSAND;
+                    }
+
                     if (lex_state_operator_p(parser)) {
                         lex_state_set(parser, YP_LEX_STATE_ARG);
                     } else {
                         lex_state_set(parser, YP_LEX_STATE_BEG);
                     }
 
-                    LEX(YP_TOKEN_AMPERSAND);
+                    LEX(type);
+                }
 
                 // | || ||= |=
                 case '|':
@@ -6459,7 +6464,7 @@ parser_lex(yp_parser_t *parser) {
                         (lex_state_p(parser, YP_LEX_STATE_FITEM) && (*parser->current.end == 's')) ||
                         lex_state_spcarg_p(parser, space_seen)
                     ) {
-                        if (!parser->encoding.alnum_char(parser->current.end)) {
+                        if (!parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end)) {
                             lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
 
                             if (*parser->current.end == '\r') {
@@ -7569,6 +7574,10 @@ token_begins_expression_p(yp_token_type_t type) {
             // and let it be handled by the default case below.
             assert(yp_binding_powers[type].left == YP_BINDING_POWER_UNSET);
             return false;
+        case YP_TOKEN_UAMPERSAND:
+            // This is a special case because this unary operator cannot appear
+            // as a general operator, it only appears in certain circumstances.
+            return false;
         case YP_TOKEN_UCOLON_COLON:
         case YP_TOKEN_UMINUS:
         case YP_TOKEN_UMINUS_NUM:
@@ -8095,7 +8104,7 @@ parse_arguments(yp_parser_t *parser, yp_arguments_node_t *arguments, bool accept
                 parsed_bare_hash = true;
                 break;
             }
-            case YP_TOKEN_AMPERSAND: {
+            case YP_TOKEN_UAMPERSAND: {
                 parser_lex(parser);
                 yp_token_t operator = parser->previous;
                 yp_node_t *expression = NULL;
@@ -8301,6 +8310,7 @@ typedef enum {
 // This matches parameters tokens with parameters state.
 static yp_parameters_order_t parameters_ordering[YP_TOKEN_MAXIMUM] = {
     [0] = YP_PARAMETERS_NO_CHANGE,
+    [YP_TOKEN_UAMPERSAND] = YP_PARAMETERS_ORDER_NOTHING_AFTER,
     [YP_TOKEN_AMPERSAND] = YP_PARAMETERS_ORDER_NOTHING_AFTER,
     [YP_TOKEN_UDOT_DOT_DOT] = YP_PARAMETERS_ORDER_NOTHING_AFTER,
     [YP_TOKEN_IDENTIFIER] = YP_PARAMETERS_ORDER_NAMED,
@@ -8367,6 +8377,7 @@ parse_parameters(
                 }
                 break;
             }
+            case YP_TOKEN_UAMPERSAND:
             case YP_TOKEN_AMPERSAND: {
                 update_parameter_state(parser, &parser->current, &order);
                 parser_lex(parser);
@@ -8868,10 +8879,14 @@ parse_block(yp_parser_t *parser) {
 }
 
 // Parse a list of arguments and their surrounding parentheses if they are
-// present.
-static void
+// present. It returns true if it found any pieces of arguments (parentheses,
+// arguments, or blocks).
+static bool
 parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accepts_block) {
+    bool found = false;
+
     if (accept(parser, YP_TOKEN_PARENTHESIS_LEFT)) {
+        found |= true;
         arguments->opening_loc = ((yp_location_t) { .start = parser->previous.start, .end = parser->previous.end });
 
         if (accept(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
@@ -8886,7 +8901,8 @@ parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accept
 
             arguments->closing_loc = ((yp_location_t) { .start = parser->previous.start, .end = parser->previous.end });
         }
-    } else if ((token_begins_expression_p(parser->current.type) || match_any_type_p(parser, 2, YP_TOKEN_USTAR, YP_TOKEN_USTAR_STAR)) && !match_type_p(parser, YP_TOKEN_BRACE_LEFT)) {
+    } else if ((token_begins_expression_p(parser->current.type) || match_any_type_p(parser, 3, YP_TOKEN_USTAR, YP_TOKEN_USTAR_STAR, YP_TOKEN_UAMPERSAND)) && !match_type_p(parser, YP_TOKEN_BRACE_LEFT)) {
+        found |= true;
         yp_accepts_block_stack_push(parser, false);
 
         // If we get here, then the subsequent token cannot be used as an infix
@@ -8903,11 +8919,15 @@ parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accept
     // the arguments.
     if (accepts_block) {
         if (accept(parser, YP_TOKEN_BRACE_LEFT)) {
+            found |= true;
             arguments->block = parse_block(parser);
         } else if (yp_accepts_block_stack_p(parser) && accept(parser, YP_TOKEN_KEYWORD_DO)) {
+            found |= true;
             arguments->block = parse_block(parser);
         }
     }
+
+    return found;
 }
 
 static inline yp_node_t *
@@ -9060,8 +9080,8 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
     case YP_TOKEN_EQUAL_TILDE: case YP_TOKEN_GREATER_EQUAL: case YP_TOKEN_GREATER_GREATER: case YP_TOKEN_GREATER: \
     case YP_TOKEN_LESS_EQUAL_GREATER: case YP_TOKEN_LESS_EQUAL: case YP_TOKEN_LESS_LESS: case YP_TOKEN_LESS: \
     case YP_TOKEN_MINUS: case YP_TOKEN_PERCENT: case YP_TOKEN_PIPE: case YP_TOKEN_PLUS: case YP_TOKEN_SLASH: \
-    case YP_TOKEN_STAR_STAR: case YP_TOKEN_STAR: case YP_TOKEN_TILDE: case YP_TOKEN_UMINUS: case YP_TOKEN_UMINUS_NUM: \
-    case YP_TOKEN_UPLUS: case YP_TOKEN_USTAR: case YP_TOKEN_USTAR_STAR
+    case YP_TOKEN_STAR_STAR: case YP_TOKEN_STAR: case YP_TOKEN_TILDE: case YP_TOKEN_UAMPERSAND: case YP_TOKEN_UMINUS: \
+    case YP_TOKEN_UMINUS_NUM: case YP_TOKEN_UPLUS: case YP_TOKEN_USTAR: case YP_TOKEN_USTAR_STAR
 
 // This macro allows you to define a case statement for all of the token types
 // that represent the beginning of nodes that are "primitives" in a pattern
@@ -9078,9 +9098,10 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
 
 // This macro allows you to define a case statement for all of the token types
 // that could begin a parameter.
-#define YP_CASE_PARAMETER YP_TOKEN_AMPERSAND: case YP_TOKEN_UDOT_DOT_DOT: case YP_TOKEN_IDENTIFIER: \
-    case YP_TOKEN_LABEL: case YP_TOKEN_USTAR: case YP_TOKEN_STAR: case YP_TOKEN_STAR_STAR: case YP_TOKEN_USTAR_STAR: case YP_TOKEN_CONSTANT: \
-    case YP_TOKEN_INSTANCE_VARIABLE: case YP_TOKEN_GLOBAL_VARIABLE: case YP_TOKEN_CLASS_VARIABLE
+#define YP_CASE_PARAMETER YP_TOKEN_UAMPERSAND: case YP_TOKEN_AMPERSAND: case YP_TOKEN_UDOT_DOT_DOT: \
+    case YP_TOKEN_IDENTIFIER: case YP_TOKEN_LABEL: case YP_TOKEN_USTAR: case YP_TOKEN_STAR: case YP_TOKEN_STAR_STAR: \
+    case YP_TOKEN_USTAR_STAR: case YP_TOKEN_CONSTANT: case YP_TOKEN_INSTANCE_VARIABLE: case YP_TOKEN_GLOBAL_VARIABLE: \
+    case YP_TOKEN_CLASS_VARIABLE
 
 // This macro allows you to define a case statement for all of the nodes that
 // can be transformed into write targets.
@@ -9369,19 +9390,22 @@ parse_alias_argument(yp_parser_t *parser, bool first) {
 
 // Parse an identifier into either a local variable read or a call.
 static yp_node_t *
-parse_vcall(yp_parser_t *parser) {
-    int depth;
+parse_variable_call(yp_parser_t *parser) {
+    uint32_t flags = 0;
 
-    if (
-        (parser->current.type != YP_TOKEN_PARENTHESIS_LEFT) &&
-        (parser->previous.end[-1] != '!') &&
-        (parser->previous.end[-1] != '?') &&
-        (depth = yp_parser_local_depth(parser, &parser->previous)) != -1
-    ) {
-        return (yp_node_t *) yp_local_variable_read_node_create(parser, &parser->previous, (uint32_t) depth);
+    if (!match_type_p(parser, YP_TOKEN_PARENTHESIS_LEFT) && (parser->previous.end[-1] != '!') && (parser->previous.end[-1] != '?')) {
+        int depth;
+        if ((depth = yp_parser_local_depth(parser, &parser->previous)) != -1) {
+            return (yp_node_t *) yp_local_variable_read_node_create(parser, &parser->previous, (uint32_t) depth);
+        }
+
+        flags |= YP_CALL_NODE_FLAGS_VARIABLE_CALL;
     }
 
-    return (yp_node_t *) yp_call_node_vcall_create(parser, &parser->previous);
+    yp_call_node_t *node = yp_call_node_variable_call_create(parser, &parser->previous);
+    node->flags = flags;
+
+    return (yp_node_t *) node;
 }
 
 static inline yp_token_t
@@ -10491,36 +10515,42 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         case YP_TOKEN_IDENTIFIER: {
             parser_lex(parser);
             yp_token_t identifier = parser->previous;
-            yp_node_t *node = parse_vcall(parser);
+            yp_node_t *node = parse_variable_call(parser);
 
             if (YP_NODE_TYPE_P(node, YP_NODE_CALL_NODE)) {
-                // If parse_vcall returned with a call node, then we know the identifier
-                // is not in the local table. In that case we need to check if there are
-                // arguments following the identifier.
+                // If parse_variable_call returned with a call node, then we
+                // know the identifier is not in the local table. In that case
+                // we need to check if there are arguments following the
+                // identifier.
                 yp_call_node_t *call = (yp_call_node_t *) node;
                 yp_arguments_t arguments = YP_EMPTY_ARGUMENTS;
-                parse_arguments_list(parser, &arguments, true);
 
-                call->opening_loc = arguments.opening_loc;
-                call->arguments = arguments.arguments;
-                call->closing_loc = arguments.closing_loc;
-                call->block = arguments.block;
+                if (parse_arguments_list(parser, &arguments, true)) {
+                    // Since we found arguments, we need to turn off the
+                    // variable call bit in the flags.
+                    call->flags &= (uint32_t) ~YP_CALL_NODE_FLAGS_VARIABLE_CALL;
 
-                if (arguments.block != NULL) {
-                    call->base.location.end = arguments.block->base.location.end;
-                } else if (arguments.closing_loc.start == NULL) {
-                    if (arguments.arguments != NULL) {
-                        call->base.location.end = arguments.arguments->base.location.end;
+                    call->opening_loc = arguments.opening_loc;
+                    call->arguments = arguments.arguments;
+                    call->closing_loc = arguments.closing_loc;
+                    call->block = arguments.block;
+
+                    if (arguments.block != NULL) {
+                        call->base.location.end = arguments.block->base.location.end;
+                    } else if (arguments.closing_loc.start == NULL) {
+                        if (arguments.arguments != NULL) {
+                            call->base.location.end = arguments.arguments->base.location.end;
+                        } else {
+                            call->base.location.end = call->message_loc.end;
+                        }
                     } else {
-                        call->base.location.end = call->message_loc.end;
+                        call->base.location.end = arguments.closing_loc.end;
                     }
-                } else {
-                    call->base.location.end = arguments.closing_loc.end;
                 }
             } else {
-                // Otherwise, we know the identifier is in the local table. This can
-                // still be a method call if it is followed by arguments or a block, so
-                // we need to check for that here.
+                // Otherwise, we know the identifier is in the local table. This
+                // can still be a method call if it is followed by arguments or
+                // a block, so we need to check for that here.
                 if (
                     (binding_power <= YP_BINDING_POWER_ASSIGNMENT && (token_begins_expression_p(parser->current.type) || match_any_type_p(parser, 2, YP_TOKEN_USTAR, YP_TOKEN_USTAR_STAR))) ||
                     (yp_accepts_block_stack_p(parser) && match_any_type_p(parser, 2, YP_TOKEN_KEYWORD_DO, YP_TOKEN_BRACE_LEFT))
@@ -11002,7 +11032,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     parser_lex(parser);
 
                     if (match_any_type_p(parser, 2, YP_TOKEN_DOT, YP_TOKEN_COLON_COLON)) {
-                        receiver = parse_vcall(parser);
+                        receiver = parse_variable_call(parser);
 
                         lex_state_set(parser, YP_LEX_STATE_FNAME);
                         parser_lex(parser);
@@ -11442,7 +11472,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 expect(parser, YP_TOKEN_KEYWORD_END, "Expected `end` to close `until` statement.");
             }
 
-            yp_until_node_t *until_node = yp_until_node_create(parser, &keyword, predicate, statements);
+            yp_until_node_t *until_node = yp_until_node_create(parser, &keyword, predicate, statements, 0);
             if (parser->previous.type == YP_TOKEN_KEYWORD_END) {
                 until_node->base.location.end = parser->previous.end;
             }
@@ -11468,7 +11498,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 expect(parser, YP_TOKEN_KEYWORD_END, "Expected `end` to close `while` statement.");
             }
 
-            yp_while_node_t *while_node = yp_while_node_create(parser, &keyword, predicate, statements);
+            yp_while_node_t *while_node = yp_while_node_create(parser, &keyword, predicate, statements, 0);
             if (parser->previous.type == YP_TOKEN_KEYWORD_END) {
                 while_node->base.location.end = parser->previous.end;
             }
@@ -12197,18 +12227,18 @@ static inline yp_node_t *
 parse_assignment_value(yp_parser_t *parser, yp_binding_power_t previous_binding_power, yp_binding_power_t binding_power, const char *message) {
     yp_node_t *value = parse_starred_expression(parser, binding_power, message);
 
-    if (previous_binding_power == YP_BINDING_POWER_STATEMENT && accept(parser, YP_TOKEN_COMMA)) {
+    if (previous_binding_power == YP_BINDING_POWER_STATEMENT && (YP_NODE_TYPE_P(value, YP_NODE_SPLAT_NODE) || match_type_p(parser, YP_TOKEN_COMMA))) {
         yp_token_t opening = not_provided(parser);
         yp_array_node_t *array = yp_array_node_create(parser, &opening);
 
         yp_array_node_elements_append(array, value);
         value = (yp_node_t *) array;
 
-        do {
+        while (accept(parser, YP_TOKEN_COMMA)) {
             yp_node_t *element = parse_starred_expression(parser, binding_power, "Expected an element for the array.");
             yp_array_node_elements_append(array, element);
             if (YP_NODE_TYPE_P(element, YP_NODE_MISSING_NODE)) break;
-        } while (accept(parser, YP_TOKEN_COMMA));
+        }
     }
 
     return value;
@@ -12222,12 +12252,12 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
         case YP_TOKEN_EQUAL: {
             switch (YP_NODE_TYPE(node)) {
                 case YP_NODE_CALL_NODE: {
-                    // If we have no arguments to the call node and we need this to be a
-                    // target then this is either a method call or a local variable write.
-                    // This _must_ happen before the value is parsed because it could be
-                    // referenced in the value.
+                    // If we have no arguments to the call node and we need this
+                    // to be a target then this is either a method call or a
+                    // local variable write. This _must_ happen before the value
+                    // is parsed because it could be referenced in the value.
                     yp_call_node_t *call_node = (yp_call_node_t *) node;
-                    if (yp_call_node_vcall_p(call_node)) {
+                    if (yp_call_node_variable_call_p(call_node)) {
                         yp_parser_local_add_location(parser, call_node->message_loc.start, call_node->message_loc.end);
                     }
                 }
@@ -12281,7 +12311,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (yp_call_node_vcall_p(call_node)) {
+                    if (yp_call_node_variable_call_p(call_node)) {
                         yp_location_t message_loc = call_node->message_loc;
                         yp_parser_local_add_location(parser, message_loc.start, message_loc.end);
 
@@ -12386,7 +12416,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (yp_call_node_vcall_p(call_node)) {
+                    if (yp_call_node_variable_call_p(call_node)) {
                         yp_location_t message_loc = call_node->message_loc;
                         yp_parser_local_add_location(parser, message_loc.start, message_loc.end);
 
@@ -12501,7 +12531,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     // If we have a vcall (a method with no arguments and no
                     // receiver that could have been a local variable) then we
                     // will transform it into a local variable write.
-                    if (yp_call_node_vcall_p(call_node)) {
+                    if (yp_call_node_variable_call_p(call_node)) {
                         yp_location_t message_loc = call_node->message_loc;
                         yp_parser_local_add_location(parser, message_loc.start, message_loc.end);
 
@@ -12630,6 +12660,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
 
             return (yp_node_t *) yp_call_node_binary_create(parser, node, &token, argument);
         }
+        case YP_TOKEN_UAMPERSAND:
         case YP_TOKEN_USTAR:
         case YP_TOKEN_USTAR_STAR:
             // The only times this will occur are when we are in an error state,
@@ -12733,7 +12764,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
             yp_statements_node_body_append(statements, node);
 
             yp_node_t *predicate = parse_expression(parser, binding_power, "Expected a predicate after 'until'");
-            return (yp_node_t *) yp_until_node_create(parser, &token, predicate, statements);
+            return (yp_node_t *) yp_until_node_create(parser, &token, predicate, statements, YP_NODE_TYPE_P(node, YP_NODE_BEGIN_NODE) ? YP_LOOP_FLAGS_BEGIN_MODIFIER : 0);
         }
         case YP_TOKEN_KEYWORD_WHILE_MODIFIER: {
             parser_lex(parser);
@@ -12741,7 +12772,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
             yp_statements_node_body_append(statements, node);
 
             yp_node_t *predicate = parse_expression(parser, binding_power, "Expected a predicate after 'while'");
-            return (yp_node_t *) yp_while_node_create(parser, &token, predicate, statements);
+            return (yp_node_t *) yp_while_node_create(parser, &token, predicate, statements, YP_NODE_TYPE_P(node, YP_NODE_BEGIN_NODE) ? YP_LOOP_FLAGS_BEGIN_MODIFIER : 0);
         }
         case YP_TOKEN_QUESTION_MARK: {
             parser_lex(parser);
@@ -12972,8 +13003,11 @@ parse_program(yp_parser_t *parser) {
     return (yp_node_t *) yp_program_node_create(parser, &locals, statements);
 }
 
+// Read a 32-bit unsigned integer from a pointer. This function is used to read
+// the metadata that is passed into the parser from the Ruby implementation. It
+// handles aligned and unaligned reads.
 static uint32_t
-yp_read_u32(const char *ptr) {
+yp_metadata_read_u32(const char *ptr) {
     if (((uintptr_t) ptr) % sizeof(uint32_t) == 0) {
         return *((uint32_t *) ptr);
     } else {
@@ -12983,45 +13017,57 @@ yp_read_u32(const char *ptr) {
     }
 }
 
-// Process any additional metadata being passed into a parse.  Since the source
-// of these calls will be from Ruby implementation internals we assume it is from
-// a trusted source.
+// Process any additional metadata being passed into a call to the parser via
+// the yp_parse_serialize function. Since the source of these calls will be from
+// Ruby implementation internals we assume it is from a trusted source.
 //
 // Currently, this is only passing in variable scoping surrounding an eval, but
 // eventually it will be extended to hold any additional metadata.  This data
 // is serialized to reduce the calling complexity for a foreign function call
 // vs a foreign runtime making a bindable in-memory version of a C structure.
 //
-// *Format*
-//
-// No metadata should just be NULL.  For variable scopes it should be:
+// metadata is assumed to be a valid pointer pointing to well-formed data. The
+// format is described below:
 //
 // ```text
-// [number_of_variable_scopes: uint32_t,
-//   [number_of_variables: uint32_t,
-//      [data_length: uint32_t, data: char*]*
+// [
+//   filepath_size: uint32_t,
+//   filepath: char*,
+//   scopes_count: uint32_t,
+//   [
+//     locals_count: uint32_t,
+//     [local_size: uint32_t, local: char*]*
 //   ]*
 // ]
 // ```
 static void
 yp_parser_metadata(yp_parser_t *parser, const char *metadata) {
-    const char *p = metadata;
-    uint32_t number_of_scopes = yp_read_u32(p);
-    p += 4;
+    uint32_t filepath_size = yp_metadata_read_u32(metadata);
+    metadata += 4;
 
-    for (size_t scope_index = 0; scope_index < number_of_scopes; scope_index++) {
-        uint32_t number_of_variables = yp_read_u32(p);
-        p += 4;
+    if (filepath_size) {
+        yp_string_t filepath_string;
+        yp_string_constant_init(&filepath_string, metadata, filepath_size);
+
+        parser->filepath_string = filepath_string;
+        metadata += filepath_size;
+    }
+
+    uint32_t scopes_count = yp_metadata_read_u32(metadata);
+    metadata += 4;
+
+    for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
+        uint32_t locals_count = yp_metadata_read_u32(metadata);
+        metadata += 4;
 
         yp_parser_scope_push(parser, scope_index == 0);
 
-        for (size_t variable_index = 0; variable_index < number_of_variables; variable_index++) {
-            uint32_t length = yp_read_u32(p);
-            p += 4;
+        for (size_t local_index = 0; local_index < locals_count; local_index++) {
+            uint32_t local_size = yp_metadata_read_u32(metadata);
+            metadata += 4;
 
-            yp_parser_local_add_location(parser, p, p + length);
-
-            p += length;
+            yp_parser_local_add_location(parser, metadata, metadata + local_size);
+            metadata += local_size;
         }
     }
 }

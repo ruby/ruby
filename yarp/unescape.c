@@ -445,7 +445,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t len
         return;
     }
 
-    const char *backslash = yp_memchr(parser, value, '\\', length);
+    const char *backslash = yp_memchr(value, '\\', length, parser->encoding_changed, &parser->encoding);
 
     if (backslash == NULL) {
         // Here there are no escapes, so we can reference the source directly.
@@ -507,7 +507,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t len
         }
 
         if (end > cursor) {
-            backslash = yp_memchr(parser, cursor, '\\', (size_t) (end - cursor));
+            backslash = yp_memchr(cursor, '\\', (size_t) (end - cursor), parser->encoding_changed, &parser->encoding);
         } else {
             backslash = NULL;
         }

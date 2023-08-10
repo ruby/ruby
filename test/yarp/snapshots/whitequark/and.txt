@@ -2,13 +2,13 @@ ProgramNode(0...23)(
   [],
   StatementsNode(0...23)(
     [AndNode(0...10)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
-       CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 0, "bar"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
+       CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 2, "bar"),
        (4...6)
      ),
      AndNode(12...23)(
-       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "foo"),
-       CallNode(20...23)(nil, nil, (20...23), nil, nil, nil, nil, 0, "bar"),
+       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "foo"),
+       CallNode(20...23)(nil, nil, (20...23), nil, nil, nil, nil, 2, "bar"),
        (16...19)
      )]
   )
