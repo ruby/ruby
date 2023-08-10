@@ -8312,6 +8312,10 @@ update_parameter_state(yp_parser_t *parser, yp_token_t *token, yp_parameters_ord
         return;
     }
 
+    if (token->type == YP_TOKEN_USTAR && *current == YP_PARAMETERS_ORDER_AFTER_OPTIONAL) {
+        yp_diagnostic_list_append(&parser->error_list, token->start, token->end, "Unexpected parameter *");
+    }
+
     if (*current == YP_PARAMETERS_ORDER_NOTHING_AFTER || state > *current) {
         // We know what transition we failed on, so we can provide a better error here.
         yp_diagnostic_list_append(&parser->error_list, token->start, token->end, "Unexpected parameter order");
