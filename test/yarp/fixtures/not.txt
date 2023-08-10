@@ -31,3 +31,7 @@ foo
 
 
   )
+
+not foo .. bar
+
+not (foo .. bar)
