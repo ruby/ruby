@@ -7426,10 +7426,6 @@ fn gen_invokesuper_specialized(
         gen_counter_incr(asm, Counter::invokesuper_kw_splat);
         return None;
     }
-    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
-        gen_counter_incr(asm, Counter::invokesuper_blockarg);
-        return None;
-    }
 
     // Ensure we haven't rebound this method onto an incompatible class.
     // In the interpreter we try to avoid making this check by performing some
@@ -7469,13 +7465,15 @@ fn gen_invokesuper_specialized(
     asm.cmp(ep_me_opnd, me_as_value.into());
     asm.jne(Target::side_exit(Counter::guard_invokesuper_me_changed));
 
-    if block.is_none() {
-        // Guard no block passed
+    // gen_send_* currently support the first two branches in vm_caller_setup_arg_block:
+    //   * VM_CALL_ARGS_BLOCKARG
+    //   * blockiseq
+    if ci_flags & VM_CALL_ARGS_BLOCKARG == 0 && block.is_none() {
+        // TODO: gen_send_* does not support the last branch, GET_BLOCK_HANDLER().
+        // For now, we guard no block passed.
+        //
         // rb_vm_frame_block_handler(GET_EC()->cfp) == VM_BLOCK_HANDLER_NONE
         // note, we assume VM_ASSERT(VM_ENV_LOCAL_P(ep))
-        //
-        // TODO: this could properly forward the current block handler, but
-        // would require changes to gen_send_*
         asm.comment("guard no block given");
         let ep_specval_opnd = Opnd::mem(
             64,
@@ -7483,7 +7481,7 @@ fn gen_invokesuper_specialized(
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
-        asm.jne(Target::side_exit(Counter::guard_invokesuper_block_given));
+        asm.jne(Target::side_exit(Counter::guard_invokesuper_block_handler));
     }
 
     // We need to assume that both our current method entry and the super
