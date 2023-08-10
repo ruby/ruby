@@ -185,29 +185,9 @@ ProgramNode(0...916)(
      RationalNode(234...238)(FloatNode(234...237)()),
      RationalNode(239...243)(FloatNode(239...242)()),
      ImaginaryNode(244...246)(IntegerNode(244...245)()),
-     CallNode(247...250)(
-       ImaginaryNode(248...250)(IntegerNode(248...249)()),
-       nil,
-       (247...248),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "-@"
-     ),
+     ImaginaryNode(247...250)(IntegerNode(247...249)()),
      ImaginaryNode(251...255)(FloatNode(251...254)()),
-     CallNode(256...261)(
-       ImaginaryNode(257...261)(FloatNode(257...260)()),
-       nil,
-       (256...257),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "-@"
-     ),
+     ImaginaryNode(256...261)(FloatNode(256...260)()),
      ImaginaryNode(262...294)(IntegerNode(262...293)()),
      ImaginaryNode(295...298)(
        RationalNode(295...297)(IntegerNode(295...296)())
@@ -487,17 +467,7 @@ ProgramNode(0...916)(
        (651...653),
        0
      ),
-     CallNode(657...661)(
-       FloatNode(658...661)(),
-       nil,
-       (657...658),
-       nil,
-       nil,
-       nil,
-       nil,
-       0,
-       "-@"
-     ),
+     FloatNode(657...661)(),
      FloatNode(662...665)(),
      ArrayNode(666...672)(
        [IntegerNode(667...668)(), IntegerNode(670...671)()],

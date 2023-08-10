@@ -997,17 +997,7 @@ ProgramNode(0...1200)(
                  (791...793),
                  "a"
                ),
-               CallNode(794...796)(
-                 IntegerNode(795...796)(),
-                 nil,
-                 (794...795),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 0,
-                 "-@"
-               ),
+               IntegerNode(794...796)(),
                nil
              )]
           )]

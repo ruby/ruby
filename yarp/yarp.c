@@ -10204,6 +10204,30 @@ parse_pattern(yp_parser_t *parser, bool top_pattern, const char *message) {
     return node;
 }
 
+// Incorporate a negative sign into a numeric node by subtracting 1 character
+// from its start bounds. If it's a compound node, then we will recursively
+// apply this function to its value.
+static inline void
+parse_negative_numeric(yp_node_t *node) {
+    switch (YP_NODE_TYPE(node)) {
+        case YP_NODE_INTEGER_NODE:
+        case YP_NODE_FLOAT_NODE:
+            node->location.start--;
+            break;
+        case YP_NODE_RATIONAL_NODE:
+            node->location.start--;
+            parse_negative_numeric(((yp_rational_node_t *) node)->numeric);
+            break;
+        case YP_NODE_IMAGINARY_NODE:
+            node->location.start--;
+            parse_negative_numeric(((yp_imaginary_node_t *) node)->numeric);
+            break;
+        default:
+            assert(false && "unreachable");
+            break;
+    }
+}
+
 // Parse an expression that begins with the previous node that we just lexed.
 static inline yp_node_t *
 parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
@@ -11971,8 +11995,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             return (yp_node_t *) node;
         }
-        case YP_TOKEN_UMINUS:
-        case YP_TOKEN_UMINUS_NUM: {
+        case YP_TOKEN_UMINUS: {
             parser_lex(parser);
 
             yp_token_t operator = parser->previous;
@@ -11980,6 +12003,26 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_call_node_t *node = yp_call_node_unary_create(parser, &operator, receiver, "-@");
 
             return (yp_node_t *) node;
+        }
+        case YP_TOKEN_UMINUS_NUM: {
+            parser_lex(parser);
+
+            yp_token_t operator = parser->previous;
+            yp_node_t *node = parse_expression(parser, yp_binding_powers[parser->previous.type].right, "Expected a receiver after unary -.");
+
+            switch (YP_NODE_TYPE(node)) {
+                case YP_NODE_INTEGER_NODE:
+                case YP_NODE_FLOAT_NODE:
+                case YP_NODE_RATIONAL_NODE:
+                case YP_NODE_IMAGINARY_NODE:
+                    parse_negative_numeric(node);
+                    break;
+                default:
+                    node = (yp_node_t *) yp_call_node_unary_create(parser, &operator, node, "-@");
+                    break;
+            }
+
+            return node;
         }
         case YP_TOKEN_MINUS_GREATER: {
             int previous_lambda_enclosure_nesting = parser->lambda_enclosure_nesting;

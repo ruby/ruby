@@ -644,17 +644,7 @@ ProgramNode(0...690)(
          nil,
          [KeywordParameterNode(583...590)(
             (583...587),
-            CallNode(588...590)(
-              IntegerNode(589...590)(),
-              nil,
-              (588...589),
-              nil,
-              nil,
-              nil,
-              nil,
-              0,
-              "-@"
-            )
+            IntegerNode(588...590)()
           )],
          nil,
          nil
