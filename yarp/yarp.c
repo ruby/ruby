@@ -487,9 +487,33 @@ typedef struct {
     yp_arguments_node_t *arguments;
     yp_location_t closing_loc;
     yp_block_node_t *block;
+
+    // This boolean is used to tell if there is an implicit block (i.e., an
+    // argument passed with an & operator).
+    bool implicit_block;
 } yp_arguments_t;
 
-#define YP_EMPTY_ARGUMENTS ((yp_arguments_t) { .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE, .arguments = NULL, .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE, .block = NULL })
+#define YP_EMPTY_ARGUMENTS ((yp_arguments_t) {              \
+    .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE, \
+    .arguments = NULL,                                      \
+    .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE, \
+    .block = NULL,                                          \
+    .implicit_block = false                                 \
+})
+
+// Check that the set of arguments parsed for a given node is valid. This means
+// checking that we don't have both an implicit and explicit block.
+static void
+yp_arguments_validate(yp_parser_t *parser, yp_arguments_t *arguments) {
+    if (arguments->block != NULL && arguments->implicit_block) {
+        yp_diagnostic_list_append(
+            &parser->error_list,
+            arguments->block->base.location.start,
+            arguments->block->base.location.end,
+            "both block arg and actual block given"
+        );
+    }
+}
 
 /******************************************************************************/
 /* Node creation functions                                                    */
@@ -8064,7 +8088,7 @@ parse_assocs(yp_parser_t *parser, yp_node_t *node) {
 
 // Parse a list of arguments.
 static void
-parse_arguments(yp_parser_t *parser, yp_arguments_node_t *arguments, bool accepts_forwarding, yp_token_type_t terminator) {
+parse_arguments(yp_parser_t *parser, yp_arguments_t *arguments, bool accepts_forwarding, yp_token_type_t terminator) {
     yp_binding_power_t binding_power = yp_binding_powers[parser->current.type].left;
 
     // First we need to check if the next token is one that could be the start of
@@ -8117,6 +8141,7 @@ parse_arguments(yp_parser_t *parser, yp_arguments_node_t *arguments, bool accept
 
                 argument = (yp_node_t *)yp_block_argument_node_create(parser, &operator, expression);
                 parsed_block_argument = true;
+                arguments->implicit_block = true;
                 break;
             }
             case YP_TOKEN_USTAR: {
@@ -8203,7 +8228,7 @@ parse_arguments(yp_parser_t *parser, yp_arguments_node_t *arguments, bool accept
             }
         }
 
-        yp_arguments_node_arguments_append(arguments, argument);
+        yp_arguments_node_arguments_append(arguments->arguments, argument);
 
         // If parsing the argument failed, we need to stop parsing arguments.
         if (YP_NODE_TYPE_P(argument, YP_NODE_MISSING_NODE) || parser->recovering) break;
@@ -8895,7 +8920,7 @@ parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accept
             arguments->arguments = yp_arguments_node_create(parser);
 
             yp_accepts_block_stack_push(parser, true);
-            parse_arguments(parser, arguments->arguments, true, YP_TOKEN_PARENTHESIS_RIGHT);
+            parse_arguments(parser, arguments, true, YP_TOKEN_PARENTHESIS_RIGHT);
             expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected a ')' to close the argument list.");
             yp_accepts_block_stack_pop(parser);
 
@@ -8909,7 +8934,7 @@ parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accept
         // operator. In this case we assume the subsequent token is part of an
         // argument to this method call.
         arguments->arguments = yp_arguments_node_create(parser);
-        parse_arguments(parser, arguments->arguments, true, YP_TOKEN_EOF);
+        parse_arguments(parser, arguments, true, YP_TOKEN_EOF);
 
         yp_accepts_block_stack_pop(parser);
     }
@@ -8927,6 +8952,7 @@ parse_arguments_list(yp_parser_t *parser, yp_arguments_t *arguments, bool accept
         }
     }
 
+    yp_arguments_validate(parser, arguments);
     return found;
 }
 
@@ -10906,7 +10932,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             parser_lex(parser);
 
             yp_token_t keyword = parser->previous;
-            yp_arguments_node_t *arguments = NULL;
+            yp_arguments_t arguments = YP_EMPTY_ARGUMENTS;
 
             if (
                 token_begins_expression_p(parser->current.type) ||
@@ -10915,16 +10941,16 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 yp_binding_power_t binding_power = yp_binding_powers[parser->current.type].left;
 
                 if (binding_power == YP_BINDING_POWER_UNSET || binding_power >= YP_BINDING_POWER_RANGE) {
-                    arguments = yp_arguments_node_create(parser);
-                    parse_arguments(parser, arguments, false, YP_TOKEN_EOF);
+                    arguments.arguments = yp_arguments_node_create(parser);
+                    parse_arguments(parser, &arguments, false, YP_TOKEN_EOF);
                 }
             }
 
             switch (keyword.type) {
                 case YP_TOKEN_KEYWORD_BREAK:
-                    return (yp_node_t *) yp_break_node_create(parser, &keyword, arguments);
+                    return (yp_node_t *) yp_break_node_create(parser, &keyword, arguments.arguments);
                 case YP_TOKEN_KEYWORD_NEXT:
-                    return (yp_node_t *) yp_next_node_create(parser, &keyword, arguments);
+                    return (yp_node_t *) yp_next_node_create(parser, &keyword, arguments.arguments);
                 case YP_TOKEN_KEYWORD_RETURN: {
                     if (
                         (parser->current_context->context == YP_CONTEXT_CLASS) ||
@@ -10932,7 +10958,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     ) {
                         yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid return in class/module body");
                     }
-                    return (yp_node_t *) yp_return_node_create(parser, &keyword, arguments);
+                    return (yp_node_t *) yp_return_node_create(parser, &keyword, arguments.arguments);
                 }
                 default:
                     assert(false && "unreachable");
@@ -12929,7 +12955,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 yp_accepts_block_stack_push(parser, true);
                 arguments.arguments = yp_arguments_node_create(parser);
 
-                parse_arguments(parser, arguments.arguments, false, YP_TOKEN_BRACKET_RIGHT);
+                parse_arguments(parser, &arguments, false, YP_TOKEN_BRACKET_RIGHT);
                 yp_accepts_block_stack_pop(parser);
 
                 expect(parser, YP_TOKEN_BRACKET_RIGHT, "Expected ']' to close the bracket expression.");
@@ -12953,6 +12979,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 arguments.block = parse_block(parser);
             }
 
+            yp_arguments_validate(parser, &arguments);
             return (yp_node_t *) yp_call_node_aref_create(parser, node, &arguments);
         }
         case YP_TOKEN_KEYWORD_IN: {
