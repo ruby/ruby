@@ -1457,6 +1457,13 @@ if defined? Zlib
       assert_raise(Zlib::GzipFile::Error){ Zlib.gunzip(src) }
     end
 
+    # Zlib.gunzip input is always considered a binary string, regardless of its String#encoding.
+    def test_gunzip_encoding
+      #                vvvvvvvv = mtime, but valid UTF-8 string of U+0080
+      src = %w[1f8b0800c28000000003cb48cdc9c9070086a6103605000000].pack("H*").force_encoding('UTF-8')
+      assert_equal 'hello', Zlib.gunzip(src.freeze)
+    end
+
     def test_gunzip_no_memory_leak
       assert_no_memory_leak(%[-rzlib], "#{<<~"{#"}", "#{<<~'};'}")
       d = Zlib.gzip("data")
