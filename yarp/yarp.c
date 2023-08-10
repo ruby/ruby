@@ -431,6 +431,32 @@ yp_parser_constant_id_token(yp_parser_t *parser, const yp_token_t *token) {
     return yp_parser_constant_id_location(parser, token->start, token->end);
 }
 
+// Mark any range nodes in this subtree as flipflops.
+static void
+yp_flip_flop(yp_node_t *node) {
+    switch (YP_NODE_TYPE(node)) {
+        case YP_NODE_AND_NODE: {
+            yp_and_node_t *cast = (yp_and_node_t *) node;
+            yp_flip_flop(cast->left);
+            yp_flip_flop(cast->right);
+            break;
+        }
+        case YP_NODE_OR_NODE: {
+            yp_or_node_t *cast = (yp_or_node_t *) node;
+            yp_flip_flop(cast->left);
+            yp_flip_flop(cast->right);
+            break;
+        }
+        case YP_NODE_RANGE_NODE: {
+            yp_range_node_t *cast = (yp_range_node_t *) node;
+            cast->flags |= YP_RANGE_NODE_FLAGS_FLIP_FLOP;
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 // In a lot of places in the tree you can have tokens that are not provided but
 // that do not cause an error. For example, in a method call without
 // parentheses. In these cases we set the token to the "not provided" type. For
@@ -2274,6 +2300,7 @@ yp_if_node_create(yp_parser_t *parser,
     yp_node_t *consequent,
     const yp_token_t *end_keyword
 ) {
+    yp_flip_flop(predicate);
     yp_if_node_t *node = YP_ALLOC_NODE(parser, yp_if_node_t);
 
     const char *end;
@@ -2309,6 +2336,7 @@ yp_if_node_create(yp_parser_t *parser,
 // Allocate and initialize new IfNode node in the modifier form.
 static yp_if_node_t *
 yp_if_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_token_t *if_keyword, yp_node_t *predicate) {
+    yp_flip_flop(predicate);
     yp_if_node_t *node = YP_ALLOC_NODE(parser, yp_if_node_t);
 
     yp_statements_node_t *statements = yp_statements_node_create(parser);
@@ -2336,6 +2364,8 @@ yp_if_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_t
 // Allocate and initialize an if node from a ternary expression.
 static yp_if_node_t *
 yp_if_node_ternary_create(yp_parser_t *parser, yp_node_t *predicate, yp_node_t *true_expression, const yp_token_t *colon, yp_node_t *false_expression) {
+    yp_flip_flop(predicate);
+
     yp_statements_node_t *if_statements = yp_statements_node_create(parser);
     yp_statements_node_body_append(if_statements, true_expression);
 
@@ -3974,6 +4004,7 @@ yp_undef_node_append(yp_undef_node_t *node, yp_node_t *name) {
 // Allocate a new UnlessNode node.
 static yp_unless_node_t *
 yp_unless_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements) {
+    yp_flip_flop(predicate);
     yp_unless_node_t *node = YP_ALLOC_NODE(parser, yp_unless_node_t);
 
     const char *end;
@@ -4005,6 +4036,7 @@ yp_unless_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t 
 // Allocate and initialize new UnlessNode node in the modifier form.
 static yp_unless_node_t *
 yp_unless_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_token_t *unless_keyword, yp_node_t *predicate) {
+    yp_flip_flop(predicate);
     yp_unless_node_t *node = YP_ALLOC_NODE(parser, yp_unless_node_t);
 
     yp_statements_node_t *statements = yp_statements_node_create(parser);
