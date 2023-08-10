@@ -14,6 +14,10 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_version
+    assert_kind_of(String, StringIO::VERSION)
+  end
+
   def test_initialize
     assert_kind_of StringIO, StringIO.new
     assert_kind_of StringIO, StringIO.new('str')
