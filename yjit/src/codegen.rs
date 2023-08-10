@@ -4444,7 +4444,6 @@ fn jit_rb_int_div(
     true
 }
 
-/*
 fn jit_rb_int_lshift(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -4460,28 +4459,42 @@ fn jit_rb_int_lshift(
     }
     guard_two_fixnums(jit, asm, ocb);
 
+    let comptime_shift = jit.peek_at_stack(&asm.ctx, 0);
+
+    if !comptime_shift.fixnum_p() {
+        return false;
+    }
+
+    // Untag the fixnum shift amount
+    let shift_amt = comptime_shift.as_isize() >> 1;
+
+    if shift_amt > 63 || shift_amt < 0 {
+        return false;
+    }
+
     let rhs = asm.stack_pop(1);
     let lhs = asm.stack_pop(1);
 
-    // Ruby supports using a negative shift value
-    asm.comment("Guard shift negative");
-    let shift_val = asm.sub(rhs, 1.into());
-    asm.cmp(shift_val, 0.into());
-    asm.jl(Target::side_exit(Counter::lshift_range));
+    // Guard on the shift value we speculated on
+    asm.cmp(rhs, comptime_shift.into());
+    asm.jne(Target::side_exit(Counter::lshift_amt_changed));
 
-    asm.cmp(shift_val, 63.into());
-    asm.jg(Target::side_exit(Counter::lshift_range));
+    let in_val = asm.sub(lhs, 1.into());
+    let shift_opnd = Opnd::UImm(shift_amt as u64);
+    let out_val = asm.lshift(in_val, shift_opnd);
+    let unshifted = asm.rshift(out_val, shift_opnd);
 
-    // FIXME: we don't yet support shift with non-immediate values in the backend
-    // Do the shifting
-    let out_val = asm.lshift(lhs, shift_val);
-    asm.jo(Target::side_exit(Counter::lshift_overflow));
+    // Guard that we did not overflow
+    asm.cmp(unshifted, in_val);
+    asm.jne(Target::side_exit(Counter::lshift_overflow));
+
+    // Re-tag the output value
+    let out_val = asm.add(out_val, 1.into());
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
     asm.mov(ret_opnd, out_val);
     true
 }
-*/
 
 fn jit_rb_int_aref(
     jit: &mut JITState,
@@ -8548,7 +8561,7 @@ impl CodegenGlobals {
 
             self.yjit_reg_method(rb_cInteger, "*", jit_rb_int_mul);
             self.yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
-            //self.yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
+            self.yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
             self.yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
 
             // rb_str_to_s() methods in string.c
