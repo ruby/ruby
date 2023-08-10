@@ -279,6 +279,11 @@ module YARP
       end
     end
 
+    # Slice the location of the node from the source.
+    def slice
+      location.slice
+    end
+
     def pretty_print(q)
       q.group do
         q.text(self.class.name.split("::").last)
