@@ -1958,7 +1958,8 @@ fn jit_chain_guard(
     };
 
     if (asm.ctx.get_chain_depth() as i32) < depth_limit {
-        let mut deeper = asm.ctx.clone();
+        // Rewind Context to use the stack_size at the beginning of this instruction.
+        let mut deeper = asm.ctx.with_stack_size(jit.stack_size_for_pc);
         deeper.increment_chain_depth();
         let bid = BlockId {
             iseq: jit.iseq,
@@ -4833,7 +4834,14 @@ fn jit_obj_respond_to(
     // This is necessary because we have no guarantee that sym_opnd is a constant
     asm.comment("guard known mid");
     asm.cmp(sym_opnd, mid_sym.into());
-    asm.jne(Target::side_exit(Counter::guard_send_mid_mismatch));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        SEND_MAX_CHAIN_DEPTH,
+        Counter::guard_send_respond_to_mid_mismatch,
+    );
 
     jit_putobject(asm, result);
 
@@ -7218,6 +7226,12 @@ fn gen_invokeblock_specialized(
         return Some(EndBlock);
     }
 
+    // Fallback to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
+        gen_counter_incr(asm, Counter::invokeblock_megamorphic);
+        return None;
+    }
+
     // Get call info
     let ci = unsafe { get_call_data_ci(cd) };
     let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
@@ -7381,6 +7395,12 @@ fn gen_invokesuper_specialized(
         return Some(EndBlock);
     }
 
+    // Fallback to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
+        gen_counter_incr(asm, Counter::invokesuper_megamorphic);
+        return None;
+    }
+
     let me = unsafe { rb_vm_frame_method_entry(jit.get_cfp()) };
     if me.is_null() {
         gen_counter_incr(asm, Counter::invokesuper_no_me);
@@ -7416,10 +7436,6 @@ fn gen_invokesuper_specialized(
     }
     if ci_flags & VM_CALL_KW_SPLAT != 0 {
         gen_counter_incr(asm, Counter::invokesuper_kw_splat);
-        return None;
-    }
-    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
-        gen_counter_incr(asm, Counter::invokesuper_blockarg);
         return None;
     }
 
@@ -7459,15 +7475,24 @@ fn gen_invokesuper_specialized(
 
     let me_as_value = VALUE(me as usize);
     asm.cmp(ep_me_opnd, me_as_value.into());
-    asm.jne(Target::side_exit(Counter::guard_invokesuper_me_changed));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        SEND_MAX_CHAIN_DEPTH,
+        Counter::guard_invokesuper_me_changed,
+    );
 
-    if block.is_none() {
-        // Guard no block passed
+    // gen_send_* currently support the first two branches in vm_caller_setup_arg_block:
+    //   * VM_CALL_ARGS_BLOCKARG
+    //   * blockiseq
+    if ci_flags & VM_CALL_ARGS_BLOCKARG == 0 && block.is_none() {
+        // TODO: gen_send_* does not support the last branch, GET_BLOCK_HANDLER().
+        // For now, we guard no block passed.
+        //
         // rb_vm_frame_block_handler(GET_EC()->cfp) == VM_BLOCK_HANDLER_NONE
         // note, we assume VM_ASSERT(VM_ENV_LOCAL_P(ep))
-        //
-        // TODO: this could properly forward the current block handler, but
-        // would require changes to gen_send_*
         asm.comment("guard no block given");
         let ep_specval_opnd = Opnd::mem(
             64,
@@ -7475,7 +7500,7 @@ fn gen_invokesuper_specialized(
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
-        asm.jne(Target::side_exit(Counter::guard_invokesuper_block_given));
+        asm.jne(Target::side_exit(Counter::guard_invokesuper_block_handler));
     }
 
     // We need to assume that both our current method entry and the super

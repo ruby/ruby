@@ -274,15 +274,16 @@ make_counters! {
     send_bmethod_ractor,
     send_bmethod_block_arg,
 
-    invokesuper_blockarg,
     invokesuper_defined_class_mismatch,
     invokesuper_kw_splat,
     invokesuper_kwarg,
+    invokesuper_megamorphic,
     invokesuper_no_cme,
     invokesuper_no_me,
     invokesuper_not_iseq_or_cfunc,
     invokesuper_refinement,
 
+    invokeblock_megamorphic,
     invokeblock_none,
     invokeblock_iseq_arg0_optional,
     invokeblock_iseq_arg0_has_kw,
@@ -310,10 +311,10 @@ make_counters! {
     guard_send_interrupted,
     guard_send_not_fixnums,
     guard_send_not_string,
-    guard_send_mid_mismatch,
+    guard_send_respond_to_mid_mismatch,
 
     guard_invokesuper_me_changed,
-    guard_invokesuper_block_given,
+    guard_invokesuper_block_handler,
 
     guard_invokeblock_tag_changed,
     guard_invokeblock_iseq_block_changed,

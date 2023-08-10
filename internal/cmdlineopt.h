@@ -23,7 +23,7 @@ typedef struct ruby_cmdline_options {
     ruby_features_t features;
     ruby_features_t warn;
     unsigned int dump;
-    int backtrace_length_limit;
+    long backtrace_length_limit;
 #if USE_RJIT
     struct rb_rjit_options rjit;
 #endif
