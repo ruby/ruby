@@ -80,7 +80,7 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
-        timeout-minutes: 40
+        timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
