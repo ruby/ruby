@@ -143,7 +143,6 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       irb(main):016:0>
       irb(main):017:0>
       irb(main):018:0> class A def b; self; end; def c; true; end; end;
-      => :c
       irb(main):019:0> a = A.new
       => #<A>
       irb(main):020:0> a

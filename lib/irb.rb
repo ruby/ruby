@@ -570,7 +570,8 @@ module IRB
             is_assignment = assignment_expression?(line)
             evaluate_line(line, line_no)
 
-            if @context.echo?
+            # Don't echo if the line ends with a semicolon
+            if @context.echo? && !line.match?(/;\s*\z/)
               if is_assignment
                 if @context.echo_on_assignment?
                   output_value(@context.echo_on_assignment? == :truncate)
