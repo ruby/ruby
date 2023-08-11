@@ -11236,17 +11236,17 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- * Symbol objects represent named identifiers inside the Ruby interpreter.
+ * \Symbol objects represent named identifiers inside the Ruby interpreter.
  *
- * You can create a Symbol object explicitly with:
+ * You can create a \Symbol object explicitly with:
  *
  * - A {symbol literal}[rdoc-ref:syntax/literals.rdoc@Symbol+Literals].
  *
- * The same Symbol object will be
+ * The same \Symbol object will be
  * created for a given name or string for the duration of a program's
  * execution, regardless of the context or meaning of that name. Thus
  * if <code>Fred</code> is a constant in one context, a method in
- * another, and a class in a third, the Symbol <code>:Fred</code>
+ * another, and a class in a third, the \Symbol <code>:Fred</code>
  * will be the same object in all three contexts.
  *
  *     module One
@@ -11289,18 +11289,18 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *     local_variables
  *     # => [:seven]
  *
- * Symbol objects are different from String objects in that
- * Symbol objects represent identifiers, while String objects
+ * \Symbol objects are different from String objects in that
+ * \Symbol objects represent identifiers, while String objects
  * represent text or data.
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class Symbol:
+ * First, what's elsewhere. \Class \Symbol:
  *
  * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
- * Here, class Symbol provides methods that are useful for:
+ * Here, class \Symbol provides methods that are useful for:
  *
  * - {Querying}[rdoc-ref:Symbol@Methods+for+Querying]
  * - {Comparing}[rdoc-ref:Symbol@Methods+for+Comparing]
