@@ -1277,7 +1277,7 @@ fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, op_mem_cl_pref: u8, op_m
         }
 
         _ => {
-            unreachable!("{:?} {:?}", opnd0, opnd1);
+            unreachable!("unsupported operands: {:?}, {:?}", opnd0, opnd1);
         }
     }
 }
