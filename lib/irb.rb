@@ -429,30 +429,6 @@ module IRB
   end
 
   class Irb
-    ASSIGNMENT_NODE_TYPES = [
-      # Local, instance, global, class, constant, instance, and index assignment:
-      #   "foo = bar",
-      #   "@foo = bar",
-      #   "$foo = bar",
-      #   "@@foo = bar",
-      #   "::Foo = bar",
-      #   "a::Foo = bar",
-      #   "Foo = bar"
-      #   "foo.bar = 1"
-      #   "foo[1] = bar"
-      :assign,
-
-      # Operation assignment:
-      #   "foo += bar"
-      #   "foo -= bar"
-      #   "foo ||= bar"
-      #   "foo &&= bar"
-      :opassign,
-
-      # Multiple assignment:
-      #   "foo, bar = 1, 2
-      :massign,
-    ]
     # Note: instance and index assignment expressions could also be written like:
     # "foo.bar=(1)" and "foo.[]=(1, bar)", when expressed that way, the former
     # be parsed as :assign and echo will be suppressed, but the latter is
@@ -563,11 +539,9 @@ module IRB
 
       @scanner.configure_io(@context.io)
 
-      @scanner.each_top_level_statement do |line, line_no|
+      @scanner.each_top_level_statement do |line, line_no, is_assignment|
         signal_status(:IN_EVAL) do
           begin
-            # Assignment expression check should be done before evaluate_line to handle code like `a /2#/ if false; a = 1`
-            is_assignment = assignment_expression?(line)
             evaluate_line(line, line_no)
 
             # Don't echo if the line ends with a semicolon
@@ -875,24 +849,6 @@ module IRB
         end
       end
       format("#<%s: %s>", self.class, ary.join(", "))
-    end
-
-    def assignment_expression?(line)
-      # Try to parse the line and check if the last of possibly multiple
-      # expressions is an assignment type.
-
-      # If the expression is invalid, Ripper.sexp should return nil which will
-      # result in false being returned. Any valid expression should return an
-      # s-expression where the second element of the top level array is an
-      # array of parsed expressions. The first element of each expression is the
-      # expression's type.
-      verbose, $VERBOSE = $VERBOSE, nil
-      code = "#{RubyLex.generate_local_variables_assign_code(@context.local_variables) || 'nil;'}\n#{line}"
-      # Get the last node_type of the line. drop(1) is to ignore the local_variables_assign_code part.
-      node_type = Ripper.sexp(code)&.dig(1)&.drop(1)&.dig(-1, 0)
-      ASSIGNMENT_NODE_TYPES.include?(node_type)
-    ensure
-      $VERBOSE = verbose
     end
   end
 

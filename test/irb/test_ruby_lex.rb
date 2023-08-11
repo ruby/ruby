@@ -813,6 +813,60 @@ module TestIRB
       assert_indent_level(code_with_embdoc.lines, expected)
     end
 
+    def test_assignment_expression
+      context = build_context
+      ruby_lex = RubyLex.new(context)
+
+      [
+        "foo = bar",
+        "@foo = bar",
+        "$foo = bar",
+        "@@foo = bar",
+        "::Foo = bar",
+        "a::Foo = bar",
+        "Foo = bar",
+        "foo.bar = 1",
+        "foo[1] = bar",
+        "foo += bar",
+        "foo -= bar",
+        "foo ||= bar",
+        "foo &&= bar",
+        "foo, bar = 1, 2",
+        "foo.bar=(1)",
+        "foo; foo = bar",
+        "foo; foo = bar; ;\n ;",
+        "foo\nfoo = bar",
+      ].each do |exp|
+        assert(
+          ruby_lex.assignment_expression?(exp),
+          "#{exp.inspect}: should be an assignment expression"
+        )
+      end
+
+      [
+        "foo",
+        "foo.bar",
+        "foo[0]",
+        "foo = bar; foo",
+        "foo = bar\nfoo",
+      ].each do |exp|
+        refute(
+          ruby_lex.assignment_expression?(exp),
+          "#{exp.inspect}: should not be an assignment expression"
+        )
+      end
+    end
+
+    def test_assignment_expression_with_local_variable
+      context = build_context
+      ruby_lex = RubyLex.new(context)
+      code = "a /1;x=1#/"
+      refute(ruby_lex.assignment_expression?(code), "#{code}: should not be an assignment expression")
+      context.workspace.binding.eval('a = 1')
+      assert(ruby_lex.assignment_expression?(code), "#{code}: should be an assignment expression")
+      refute(ruby_lex.assignment_expression?(""), "empty code should not be an assignment expression")
+    end
+
     private
 
     def build_context(local_variables = nil)

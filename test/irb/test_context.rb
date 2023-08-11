@@ -202,59 +202,6 @@ module TestIRB
       assert_equal(true, @context.use_autocomplete?)
     end
 
-    def test_assignment_expression
-      input = TestInputMethod.new
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      [
-        "foo = bar",
-        "@foo = bar",
-        "$foo = bar",
-        "@@foo = bar",
-        "::Foo = bar",
-        "a::Foo = bar",
-        "Foo = bar",
-        "foo.bar = 1",
-        "foo[1] = bar",
-        "foo += bar",
-        "foo -= bar",
-        "foo ||= bar",
-        "foo &&= bar",
-        "foo, bar = 1, 2",
-        "foo.bar=(1)",
-        "foo; foo = bar",
-        "foo; foo = bar; ;\n ;",
-        "foo\nfoo = bar",
-      ].each do |exp|
-        assert(
-          irb.assignment_expression?(exp),
-          "#{exp.inspect}: should be an assignment expression"
-        )
-      end
-
-      [
-        "foo",
-        "foo.bar",
-        "foo[0]",
-        "foo = bar; foo",
-        "foo = bar\nfoo",
-      ].each do |exp|
-        refute(
-          irb.assignment_expression?(exp),
-          "#{exp.inspect}: should not be an assignment expression"
-        )
-      end
-    end
-
-    def test_assignment_expression_with_local_variable
-      input = TestInputMethod.new
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      code = "a /1;x=1#/"
-      refute(irb.assignment_expression?(code), "#{code}: should not be an assignment expression")
-      irb.context.workspace.binding.eval('a = 1')
-      assert(irb.assignment_expression?(code), "#{code}: should be an assignment expression")
-      refute(irb.assignment_expression?(""), "empty code should not be an assignment expression")
-    end
-
     def test_echo_on_assignment
       input = TestInputMethod.new([
         "a = 1\n",
