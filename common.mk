@@ -85,32 +85,14 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 YARP_FILES = yarp/api_node.$(OBJEXT) \
 		yarp/api_pack.$(OBJEXT) \
 		yarp/diagnostic.$(OBJEXT) \
-		yarp/enc/yp_ascii.$(OBJEXT) \
 		yarp/enc/yp_big5.$(OBJEXT) \
 		yarp/enc/yp_euc_jp.$(OBJEXT) \
 		yarp/enc/yp_gbk.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_1.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_10.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_11.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_13.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_14.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_15.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_16.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_2.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_3.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_4.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_5.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_6.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_7.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_8.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_9.$(OBJEXT) \
-		yarp/enc/yp_koi8_r.$(OBJEXT) \
-		yarp/enc/yp_shared.$(OBJEXT) \
 		yarp/enc/yp_shift_jis.$(OBJEXT) \
+		yarp/enc/yp_tables.$(OBJEXT) \
 		yarp/enc/yp_unicode.$(OBJEXT) \
-		yarp/enc/yp_windows_1251.$(OBJEXT) \
-		yarp/enc/yp_windows_1252.$(OBJEXT) \
 		yarp/enc/yp_windows_31j.$(OBJEXT) \
+		yarp/extension.$(OBJEXT) \
 		yarp/node.$(OBJEXT) \
 		yarp/pack.$(OBJEXT) \
 		yarp/prettyprint.$(OBJEXT) \
@@ -131,7 +113,6 @@ YARP_FILES = yarp/api_node.$(OBJEXT) \
 		yarp/util/yp_strpbrk.$(OBJEXT) \
 		yarp/yarp.$(OBJEXT) \
 		yarp/yarp_init.$(OBJEXT) \
-		yarp/extension.$(OBJEXT)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
@@ -19214,171 +19195,6 @@ yarp/diagnostic.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.c
 yarp/diagnostic.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
 yarp/diagnostic.$(OBJEXT): $(top_srcdir)/yarp/util/yp_list.h
 yarp/diagnostic.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_ascii.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_ascii.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_ascii.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_ascii.c
-yarp/enc/yp_ascii.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_ascii.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_big5.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_big5.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_big5.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_big5.c
-yarp/enc/yp_big5.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_big5.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_euc_jp.c
-yarp/enc/yp_euc_jp.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_gbk.c
-yarp/enc/yp_gbk.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_1.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_1.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_1.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_1.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_1.c
-yarp/enc/yp_iso_8859_1.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_10.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_10.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_10.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_10.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_10.c
-yarp/enc/yp_iso_8859_10.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_11.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_11.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_11.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_11.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_11.c
-yarp/enc/yp_iso_8859_11.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_13.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_13.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_13.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_13.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_13.c
-yarp/enc/yp_iso_8859_13.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_14.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_14.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_14.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_14.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_14.c
-yarp/enc/yp_iso_8859_14.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_15.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_15.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_15.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_15.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_15.c
-yarp/enc/yp_iso_8859_15.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_16.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_16.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_16.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_16.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_16.c
-yarp/enc/yp_iso_8859_16.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_2.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_2.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_2.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_2.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_2.c
-yarp/enc/yp_iso_8859_2.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_3.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_3.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_3.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_3.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_3.c
-yarp/enc/yp_iso_8859_3.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_4.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_4.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_4.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_4.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_4.c
-yarp/enc/yp_iso_8859_4.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_5.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_5.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_5.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_5.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_5.c
-yarp/enc/yp_iso_8859_5.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_6.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_6.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_6.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_6.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_6.c
-yarp/enc/yp_iso_8859_6.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_7.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_7.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_7.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_7.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_7.c
-yarp/enc/yp_iso_8859_7.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_8.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_8.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_8.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_8.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_8.c
-yarp/enc/yp_iso_8859_8.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_iso_8859_9.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_iso_8859_9.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_iso_8859_9.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_iso_8859_9.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_iso_8859_9.c
-yarp/enc/yp_iso_8859_9.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_koi8_r.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_koi8_r.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_koi8_r.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_koi8_r.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_koi8_r.c
-yarp/enc/yp_koi8_r.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_shared.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_shared.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_shared.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_shared.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_shared.c
-yarp/enc/yp_shared.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_shift_jis.c
-yarp/enc/yp_shift_jis.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_unicode.c
-yarp/enc/yp_unicode.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_windows_1251.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_windows_1251.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_windows_1251.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_windows_1251.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_windows_1251.c
-yarp/enc/yp_windows_1251.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_windows_1252.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_windows_1252.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_windows_1252.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_windows_1252.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_windows_1252.c
-yarp/enc/yp_windows_1252.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_windows_31j.c
-yarp/enc/yp_windows_31j.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_big5.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_big5.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_big5.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_big5.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_big5.c
-yarp/enc/yp_yp_big5.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_euc_jp.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_euc_jp.c
-yarp/enc/yp_yp_euc_jp.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_gbk.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_gbk.c
-yarp/enc/yp_yp_gbk.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_shift_jis.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_shift_jis.c
-yarp/enc/yp_yp_shift_jis.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_tables.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_tables.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_tables.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_tables.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_tables.c
-yarp/enc/yp_yp_tables.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_unicode.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_unicode.c
-yarp/enc/yp_yp_unicode.$(OBJEXT): {$(VPATH)}config.h
-yarp/enc/yp_yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/config.h
-yarp/enc/yp_yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/enc/yp_yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/enc/yp_yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_yp_windows_31j.c
-yarp/enc/yp_yp_windows_31j.$(OBJEXT): {$(VPATH)}config.h
 yarp/extension.$(OBJEXT): $(hdrdir)/ruby.h
 yarp/extension.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 yarp/extension.$(OBJEXT): $(top_srcdir)/yarp/ast.h
