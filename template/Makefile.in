@@ -637,8 +637,11 @@ un-runnable:
 	$(Q) exit 1
 
 LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=)
-yes-test-basic: $(DOT_WAIT) leaked-globals
-leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals
+yes-test-basic: $(DOT_WAIT) test-leaked-globals
+leaked-globals: test-leaked-globals
+yes-test-leaked-globals-precheck: $(COMMONOBJS) prog $(tooldir)/leaked-globals
+test-leaked-globals: yes-test-leaked-globals
+yes-test-leaked-globals: yes-test-leaked-globals-precheck
 	$(ACTIONS_GROUP)
 	$(Q) $(XRUBY) $(tooldir)/leaked-globals \
 	  SOEXT=$(SOEXT) NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) \

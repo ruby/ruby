@@ -883,10 +883,12 @@ test-sample: test-basic # backward compatibility for mswin-build
 test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
+yes-test-all-precheck: programs encs exts PHONY $(DOT_WAIT)
+
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: programs PHONY
+yes-test-all: yes-test-all-precheck
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 	$(ACTIONS_ENDGROUP)
@@ -928,10 +930,10 @@ $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(srcdir)/
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-test-spec-precheck: programs yes-fake
+yes-test-spec-precheck: yes-test-all-precheck yes-fake
 
 test-spec: $(TEST_RUNNABLE)-test-spec
-yes-test-spec: test-spec-precheck
+yes-test-spec: yes-test-spec-precheck
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
 	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/rubyspec_temp \
@@ -1544,6 +1546,7 @@ check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
 yes-test-bundler-precheck: main $(arch)-fake.rb
+yes-test-bundler-parallel-precheck: yes-test-bundler-precheck
 
 test-bundler-prepare: $(TEST_RUNNABLE)-test-bundler-prepare
 no-test-bundler-prepare: no-test-bundler-precheck

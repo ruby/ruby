@@ -38,6 +38,7 @@ TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-basic,test-basic test-leaked-globals,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
@@ -92,16 +93,31 @@ $(addprefix yes-,$(TEST_TARGETS)): $(TEST_DEPENDS)
 endif
 
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
-	btest-ruby test-knownbug test-basic \
+	btest-ruby test-knownbug test-leaked-globals test-basic \
 	test-testframework test-tool test-ruby test-all \
 	test-spec test-syntax-suggest-prepare test-syntax-suggest \
 	test-bundler-prepare test-bundler test-bundler-parallel \
 	test-bundled-gems-precheck test-bundled-gems-fetch \
 	test-bundled-gems-prepare test-bundled-gems-run \
 	)
-prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
+
+# grep ^yes-test-.*-precheck: template/Makefile.in defs/gmake.mk common.mk
+test_prechecks := $(filter $(ORDERED_TEST_TARGETS),\
+	test-leaked-globals \
+	test-all \
+	test-spec \
+	test-syntax-suggest \
+	test-bundler \
+	test-bundler-parallel \
+	test-bundled-gems\
+	)
+prev_test := $(subst test-bundler-parallel,test-bundler,$(test_prechecks))
+prev_test := $(addsuffix -precheck,$(prev_test))
+first_test_prechecks := $(prev_test)
+
 $(foreach test,$(ORDERED_TEST_TARGETS), \
-	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
+	$(eval yes-$(value test): $(addprefix yes-,$(value prev_test))); \
+	$(eval no-$(value test): $(addprefix no-,$(value prev_test))); \
 	$(eval prev_test := $(value test)))
 endif
 
