@@ -530,9 +530,9 @@ yp_arguments_validate(yp_parser_t *parser, yp_arguments_t *arguments) {
 /******************************************************************************/
 
 // Parse out the options for a regular expression.
-static inline uint16_t
+static inline yp_node_flags_t
 yp_regular_expression_flags_create(const yp_token_t *closing) {
-    uint16_t flags = 0;
+    yp_node_flags_t flags = 0;
 
     if (closing->type == YP_TOKEN_REGEXP_END) {
         for (const char *flag = closing->start + 1; flag < closing->end; flag++) {
@@ -4123,7 +4123,7 @@ yp_unless_node_end_keyword_loc_set(yp_unless_node_t *node, const yp_token_t *end
 
 // Allocate a new UntilNode node.
 static yp_until_node_t *
-yp_until_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements, uint16_t flags) {
+yp_until_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements, yp_node_flags_t flags) {
     yp_until_node_t *node = YP_ALLOC_NODE(parser, yp_until_node_t);
     bool has_statements = (statements != NULL) && (statements->body.size != 0);
 
@@ -4198,7 +4198,7 @@ yp_when_node_statements_set(yp_when_node_t *node, yp_statements_node_t *statemen
 
 // Allocate a new WhileNode node.
 static yp_while_node_t *
-yp_while_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements, uint16_t flags) {
+yp_while_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements, yp_node_flags_t flags) {
     yp_while_node_t *node = YP_ALLOC_NODE(parser, yp_while_node_t);
 
     const char *start = NULL;
@@ -9430,7 +9430,7 @@ parse_alias_argument(yp_parser_t *parser, bool first) {
 // Parse an identifier into either a local variable read or a call.
 static yp_node_t *
 parse_variable_call(yp_parser_t *parser) {
-    uint16_t flags = 0;
+    yp_node_flags_t flags = 0;
 
     if (!match_type_p(parser, YP_TOKEN_PARENTHESIS_LEFT) && (parser->previous.end[-1] != '!') && (parser->previous.end[-1] != '?')) {
         int depth;
@@ -10596,7 +10596,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 if (parse_arguments_list(parser, &arguments, true)) {
                     // Since we found arguments, we need to turn off the
                     // variable call bit in the flags.
-                    call->base.flags &= (uint16_t) ~YP_CALL_NODE_FLAGS_VARIABLE_CALL;
+                    call->base.flags &= (yp_node_flags_t) ~YP_CALL_NODE_FLAGS_VARIABLE_CALL;
 
                     call->opening_loc = arguments.opening_loc;
                     call->arguments = arguments.arguments;
