@@ -544,6 +544,7 @@ impl Insn {
             Insn::Jb(target) |
             Insn::Je(target) |
             Insn::Jl(target) |
+            Insn::Jg(target) |
             Insn::Jmp(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
@@ -692,6 +693,7 @@ impl Insn {
             Insn::Jb(target) |
             Insn::Je(target) |
             Insn::Jl(target) |
+            Insn::Jg(target) |
             Insn::Jmp(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
@@ -1841,6 +1843,10 @@ impl Assembler {
 
     pub fn jl(&mut self, target: Target) {
         self.push_insn(Insn::Jl(target));
+    }
+
+    pub fn jg(&mut self, target: Target) {
+        self.push_insn(Insn::Jg(target));
     }
 
     pub fn jmp(&mut self, target: Target) {

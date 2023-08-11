@@ -348,7 +348,7 @@ make_counters! {
     opt_mod_zero,
     opt_div_zero,
 
-    lshift_range,
+    lshift_amt_changed,
     lshift_overflow,
 
     opt_aref_argc_not_one,
