@@ -10356,6 +10356,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         }
         case YP_TOKEN_PARENTHESIS_LEFT:
         case YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
+            yp_token_type_t current_token_type = parser->current.type;
             parser_lex(parser);
 
             yp_token_t opening = parser->previous;
@@ -10376,7 +10377,11 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             // If we hit a right parenthesis, then we're done parsing the parentheses
             // node, and we can check which kind of node we should return.
-            if (accept(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
+            if (match_type_p(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
+                if (current_token_type == YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES) {
+                    lex_state_set(parser, YP_LEX_STATE_ENDARG);
+                }
+                parser_lex(parser);
                 yp_accepts_block_stack_pop(parser);
 
                 // If we have a single statement and are ending on a right parenthesis,

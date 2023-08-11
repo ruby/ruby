@@ -1,6 +1,6 @@
-ProgramNode(0...1208)(
+ProgramNode(0...1237)(
   [],
-  StatementsNode(0...1208)(
+  StatementsNode(0...1237)(
     [CallNode(0...14)(
        CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        (3...4),
@@ -1586,6 +1586,67 @@ ProgramNode(0...1208)(
        nil,
        0,
        "<<"
+     ),
+     InterpolatedStringNode(1210...1227)(
+       (1210...1211),
+       [EmbeddedStatementsNode(1211...1226)(
+          (1211...1213),
+          StatementsNode(1214...1224)(
+            [CallNode(1214...1224)(
+               nil,
+               nil,
+               (1214...1218),
+               nil,
+               ArgumentsNode(1219...1224)(
+                 [ParenthesesNode(1219...1224)(
+                    StatementsNode(1220...1223)(
+                      [StringNode(1220...1223)(
+                         (1220...1221),
+                         (1221...1222),
+                         (1222...1223),
+                         " "
+                       )]
+                    ),
+                    (1219...1220),
+                    (1223...1224)
+                  )]
+               ),
+               nil,
+               nil,
+               0,
+               "join"
+             )]
+          ),
+          (1225...1226)
+        )],
+       (1226...1227)
+     ),
+     InterpolatedStringNode(1229...1237)(
+       (1229...1230),
+       [EmbeddedStatementsNode(1230...1236)(
+          (1230...1232),
+          StatementsNode(1232...1235)(
+            [ParenthesesNode(1232...1235)(
+               StatementsNode(1233...1234)(
+                 [CallNode(1233...1234)(
+                    nil,
+                    nil,
+                    (1233...1234),
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    2,
+                    "v"
+                  )]
+               ),
+               (1232...1233),
+               (1234...1235)
+             )]
+          ),
+          (1235...1236)
+        )],
+       (1236...1237)
      )]
   )
 )
