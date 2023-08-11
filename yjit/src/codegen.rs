@@ -4143,7 +4143,7 @@ fn jit_rb_obj_not(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4178,7 +4178,7 @@ fn jit_rb_true(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4196,7 +4196,7 @@ fn jit_rb_false(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4214,7 +4214,7 @@ fn jit_rb_kernel_is_a(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     argc: i32,
     known_recv_class: *const VALUE,
 ) -> bool {
@@ -4267,7 +4267,7 @@ fn jit_rb_kernel_instance_of(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     argc: i32,
     known_recv_class: *const VALUE,
 ) -> bool {
@@ -4325,7 +4325,7 @@ fn jit_rb_mod_eqq(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4359,7 +4359,7 @@ fn jit_rb_obj_equal(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4383,7 +4383,7 @@ fn jit_rb_obj_not_equal(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4397,7 +4397,7 @@ fn jit_rb_int_equal(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4422,7 +4422,7 @@ fn jit_rb_int_mul(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4450,7 +4450,7 @@ fn jit_rb_int_div(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4480,7 +4480,7 @@ fn jit_rb_int_lshift(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4532,7 +4532,7 @@ fn jit_rb_int_aref(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4562,7 +4562,7 @@ fn jit_rb_str_uplus(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool
@@ -4605,7 +4605,7 @@ fn jit_rb_str_bytesize(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4630,7 +4630,7 @@ fn jit_rb_str_to_s(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     known_recv_class: *const VALUE,
 ) -> bool {
@@ -4650,7 +4650,7 @@ fn jit_rb_str_empty_p(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4680,7 +4680,7 @@ fn jit_rb_str_concat(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4751,7 +4751,7 @@ fn jit_rb_ary_empty_p(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4774,7 +4774,7 @@ fn jit_rb_ary_push(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4798,7 +4798,7 @@ fn jit_obj_respond_to(
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     argc: i32,
     known_recv_class: *const VALUE,
 ) -> bool {
@@ -4897,7 +4897,7 @@ fn jit_rb_f_block_given_p(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4926,7 +4926,7 @@ fn jit_thread_s_current(
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
-    _block: Option<IseqPtr>,
+    _block: Option<BlockHandler>,
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
@@ -4981,10 +4981,19 @@ unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> V
 // which are covered here by enum variants.
 enum SpecVal {
     None,
-    BlockISeq(IseqPtr),
+    BlockHandler(BlockHandler),
     BlockParamProxy,
     PrevEP(*const VALUE),
     PrevEPOpnd(Opnd),
+}
+
+// Each variant represents a branch in vm_caller_setup_arg_block.
+#[derive(Clone, Copy)]
+pub enum BlockHandler {
+    // send, invokesuper: blockiseq operand
+    BlockISeq(IseqPtr),
+    // invokesuper: GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
+    LEPSpecVal,
 }
 
 struct ControlFrame {
@@ -5039,14 +5048,22 @@ fn gen_push_frame(
         SpecVal::None => {
             VM_BLOCK_HANDLER_NONE.into()
         }
-        SpecVal::BlockISeq(block_iseq) => {
-            // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
-            // VM_CFP_TO_CAPTURED_BLOCK does &cfp->self, rb_captured_block->code.iseq aliases
-            // with cfp->block_code.
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
+        SpecVal::BlockHandler(block_handler) => {
+            match block_handler {
+                BlockHandler::BlockISeq(block_iseq) => {
+                    // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
+                    // VM_CFP_TO_CAPTURED_BLOCK does &cfp->self, rb_captured_block->code.iseq aliases
+                    // with cfp->block_code.
+                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
 
-            let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
-            asm.or(cfp_self, Opnd::Imm(1))
+                    let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
+                    asm.or(cfp_self, Opnd::Imm(1))
+                }
+                BlockHandler::LEPSpecVal => {
+                    let lep_opnd = gen_get_lep(jit, asm);
+                    asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                }
+            }
         }
         SpecVal::BlockParamProxy => {
             let ep_opnd = gen_get_lep(jit, asm);
@@ -5151,7 +5168,7 @@ fn gen_send_cfunc(
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
-    block: Option<IseqPtr>,
+    block: Option<BlockHandler>,
     recv_known_klass: *const VALUE,
     flags: u32,
     argc: i32,
@@ -5332,8 +5349,8 @@ fn gen_send_cfunc(
 
     let specval = if block_arg_type == Some(Type::BlockParamProxy) {
         SpecVal::BlockParamProxy
-    } else if let Some(block_iseq) = block {
-        SpecVal::BlockISeq(block_iseq)
+    } else if let Some(block_handler) = block {
+        SpecVal::BlockHandler(block_handler)
     } else {
         SpecVal::None
     };
@@ -5621,7 +5638,7 @@ fn gen_send_bmethod(
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
-    block: Option<IseqPtr>,
+    block: Option<BlockHandler>,
     flags: u32,
     argc: i32,
 ) -> Option<CodegenStatus> {
@@ -5664,7 +5681,7 @@ fn gen_send_iseq(
     frame_type: u32,
     prev_ep: Option<*const VALUE>,
     cme: *const rb_callable_method_entry_t,
-    block: Option<IseqPtr>,
+    block: Option<BlockHandler>,
     flags: u32,
     argc: i32,
     captured_opnd: Option<Opnd>,
@@ -6328,8 +6345,8 @@ fn gen_send_iseq(
         SpecVal::PrevEPOpnd(ep_opnd)
     } else if block_arg_type == Some(Type::BlockParamProxy) {
         SpecVal::BlockParamProxy
-    } else if let Some(block_val) = block {
-        SpecVal::BlockISeq(block_val)
+    } else if let Some(block_handler) = block {
+        SpecVal::BlockHandler(block_handler)
     } else {
         SpecVal::None
     };
@@ -6711,7 +6728,7 @@ fn gen_send_general(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cd: *const rb_call_data,
-    block: Option<IseqPtr>,
+    block: Option<BlockHandler>,
 ) -> Option<CodegenStatus> {
     // Relevant definitions:
     // rb_execution_context_t       : vm_core.h
@@ -7217,7 +7234,7 @@ fn gen_send(
 ) -> Option<CodegenStatus> {
     // Generate specialized code if possible
     let cd = jit.get_arg(0).as_ptr();
-    let block = jit.get_arg(1).as_optional_ptr();
+    let block = jit.get_arg(1).as_optional_ptr().map(|iseq| BlockHandler::BlockISeq(iseq));
     if let Some(status) = gen_send_general(jit, asm, ocb, cd, block) {
         return Some(status);
     }
@@ -7430,13 +7447,18 @@ fn gen_invokesuper_specialized(
     ocb: &mut OutlinedCb,
     cd: *const rb_call_data,
 ) -> Option<CodegenStatus> {
-    let block: Option<IseqPtr> = jit.get_arg(1).as_optional_ptr();
-
     // Defer compilation so we can specialize on class of receiver
     if !jit.at_current_insn() {
         defer_compilation(jit, asm, ocb);
         return Some(EndBlock);
     }
+
+    // Handle the last two branches of vm_caller_setup_arg_block
+    let block = if let Some(iseq) = jit.get_arg(1).as_optional_ptr() {
+        BlockHandler::BlockISeq(iseq)
+    } else {
+        BlockHandler::LEPSpecVal
+    };
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
     if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
@@ -7527,25 +7549,6 @@ fn gen_invokesuper_specialized(
         Counter::guard_invokesuper_me_changed,
     );
 
-    // gen_send_* currently support the first two branches in vm_caller_setup_arg_block:
-    //   * VM_CALL_ARGS_BLOCKARG
-    //   * blockiseq
-    if ci_flags & VM_CALL_ARGS_BLOCKARG == 0 && block.is_none() {
-        // TODO: gen_send_* does not support the last branch, GET_BLOCK_HANDLER().
-        // For now, we guard no block passed.
-        //
-        // rb_vm_frame_block_handler(GET_EC()->cfp) == VM_BLOCK_HANDLER_NONE
-        // note, we assume VM_ASSERT(VM_ENV_LOCAL_P(ep))
-        asm.comment("guard no block given");
-        let ep_specval_opnd = Opnd::mem(
-            64,
-            lep_opnd,
-            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
-        );
-        asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
-        asm.jne(Target::side_exit(Counter::guard_invokesuper_block_handler));
-    }
-
     // We need to assume that both our current method entry and the super
     // method entry we invoke remain stable
     jit.assume_method_lookup_stable(asm, ocb, me);
@@ -7558,10 +7561,10 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, ci_flags, argc, None)
+            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
         }
         VM_METHOD_TYPE_CFUNC => {
-            gen_send_cfunc(jit, asm, ocb, ci, cme, block, ptr::null(), ci_flags, argc)
+            gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), ptr::null(), ci_flags, argc)
         }
         _ => unreachable!(),
     }
@@ -8408,7 +8411,7 @@ type MethodGenFn = fn(
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
-    block: Option<IseqPtr>,
+    block: Option<BlockHandler>,
     argc: i32,
     known_recv_class: *const VALUE,
 ) -> bool;
