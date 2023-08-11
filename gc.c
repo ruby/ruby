@@ -872,6 +872,9 @@ typedef struct rb_objspace {
         size_t moved_up_count_table[T_MASK];
         size_t moved_down_count_table[T_MASK];
         size_t total_moved;
+
+        /* This function will be used, if set, to sort the heap prior to compaction */
+        gc_compact_compare_func compare_func;
     } rcompactor;
 
     struct {
@@ -5667,6 +5670,8 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
 __attribute__((noinline))
 #endif
+
+static void gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func);
 static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
@@ -9371,6 +9376,11 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
     GC_ASSERT(during_gc);
 
+    if (objspace->flags.during_compacting &&
+        objspace->rcompactor.compare_func) {
+        gc_sort_heap_by_compare_func(objspace, objspace->rcompactor.compare_func);
+    }
+
     gc_prof_timer_start(objspace);
     {
         if (gc_marks(objspace, do_full_mark)) {
@@ -10895,7 +10905,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
         }
 
         if (RTEST(toward_empty)) {
-            gc_sort_heap_by_compare_func(objspace, compare_free_slots);
+            objspace->rcompactor.compare_func = compare_free_slots;
         }
     }
     RB_VM_LOCK_LEAVE();
@@ -10905,6 +10915,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL, TRUE);
 
+    objspace->rcompactor.compare_func = NULL;
     return gc_compact_stats(self);
 }
 #else
