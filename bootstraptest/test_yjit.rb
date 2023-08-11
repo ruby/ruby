@@ -4026,3 +4026,15 @@ assert_equal '1', %q{
 
   entry
 }
+
+assert_equal '6', %q{
+  class Base
+    def number = 1 + yield
+  end
+
+  class Sub < Base
+    def number = super + 2
+  end
+
+  Sub.new.number { 3 }
+}

@@ -314,7 +314,6 @@ make_counters! {
     guard_send_respond_to_mid_mismatch,
 
     guard_invokesuper_me_changed,
-    guard_invokesuper_block_handler,
 
     guard_invokeblock_tag_changed,
     guard_invokeblock_iseq_block_changed,
