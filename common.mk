@@ -1543,6 +1543,7 @@ test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
 yes-test-bundler-precheck: main $(arch)-fake.rb
 
+test-bundler-prepare: $(TEST_RUNNABLE)-test-bundler-prepare
 no-test-bundler-prepare: no-test-bundler-precheck
 yes-test-bundler-prepare: yes-test-bundler-precheck
 	$(ACTIONS_GROUP)
@@ -1556,7 +1557,7 @@ yes-test-bundler-prepare: yes-test-bundler-precheck
 
 RSPECOPTS =
 BUNDLER_SPECS =
-PREPARE_BUNDLER = yes-test-bundler-prepare
+PREPARE_BUNDLER = $(TEST_RUNNABLE)-test-bundler-prepare
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
