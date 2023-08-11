@@ -1354,5 +1354,9 @@ extern "C" {
     pub fn rb_yjit_assert_holding_vm_lock();
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
-    pub fn rb_yjit_set_exception_return(cfp: *mut rb_control_frame_t);
+    pub fn rb_yjit_set_exception_return(
+        cfp: *mut rb_control_frame_t,
+        leave_exit: *mut ::std::os::raw::c_void,
+        leave_exception: *mut ::std::os::raw::c_void,
+    );
 }
