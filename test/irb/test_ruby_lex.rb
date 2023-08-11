@@ -115,12 +115,10 @@ module TestIRB
     def check_state(lines, local_variables: [])
       context = build_context(local_variables)
       code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
-      tokens = RubyLex.ripper_lex_without_warning(code, context: context)
-      opens = IRB::NestingParser.open_tokens(tokens)
       ruby_lex = RubyLex.new(context)
+      tokens, opens, terminated = ruby_lex.check_code_state(code)
       indent_level = ruby_lex.calc_indent_level(opens)
       continue = ruby_lex.should_continue?(tokens)
-      terminated = ruby_lex.code_terminated?(code, tokens, opens)
       [indent_level, continue, !terminated]
     end
 
@@ -715,6 +713,16 @@ module TestIRB
       ]
 
       assert_dynamic_prompt(input_with_prompt)
+    end
+
+    def test_literal_ends_with_space
+      assert_code_block_open(['% a'], true)
+      assert_code_block_open(['% a '], false)
+    end
+
+    def test_literal_ends_with_newline
+      assert_code_block_open(['%'], true)
+      assert_code_block_open(['%', ''], false)
     end
 
     def test_should_continue

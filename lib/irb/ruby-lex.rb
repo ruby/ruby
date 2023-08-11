@@ -213,8 +213,7 @@ class RubyLex
   end
 
   def check_code_state(code)
-    check_target_code = code.gsub(/\s*\z/, '').concat("\n")
-    tokens = self.class.ripper_lex_without_warning(check_target_code, context: @context)
+    tokens = self.class.ripper_lex_without_warning(code, context: @context)
     opens = IRB::NestingParser.open_tokens(tokens)
     [tokens, opens, code_terminated?(code, tokens, opens)]
   end
