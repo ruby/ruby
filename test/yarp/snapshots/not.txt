@@ -190,7 +190,7 @@ ProgramNode(0...190)(
        "!"
      ),
      CallNode(158...172)(
-       RangeNode(162...172)(
+       FlipFlopNode(162...172)(
          CallNode(162...165)(
            nil,
            nil,
@@ -214,7 +214,7 @@ ProgramNode(0...190)(
            "bar"
          ),
          (166...168),
-         2
+         0
        ),
        nil,
        (158...161),
@@ -228,7 +228,7 @@ ProgramNode(0...190)(
      CallNode(174...190)(
        ParenthesesNode(178...190)(
          StatementsNode(179...189)(
-           [RangeNode(179...189)(
+           [FlipFlopNode(179...189)(
               CallNode(179...182)(
                 nil,
                 nil,
@@ -252,7 +252,7 @@ ProgramNode(0...190)(
                 "bar"
               ),
               (183...185),
-              2
+              0
             )]
          ),
          (178...179),

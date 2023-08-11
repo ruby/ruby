@@ -34,17 +34,17 @@ ProgramNode(0...77)(
      IfNode(32...53)(
        (32...34),
        OrNode(35...49)(
-         RangeNode(35...40)(
+         FlipFlopNode(35...40)(
            CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 2, "a"),
            CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 2, "b"),
            (36...39),
-           3
+           1
          ),
-         RangeNode(44...49)(
+         FlipFlopNode(44...49)(
            CallNode(44...45)(nil, nil, (44...45), nil, nil, nil, nil, 2, "c"),
            CallNode(48...49)(nil, nil, (48...49), nil, nil, nil, nil, 2, "d"),
            (45...48),
-           3
+           1
          ),
          (41...43)
        ),
@@ -55,17 +55,17 @@ ProgramNode(0...77)(
      IfNode(55...77)(
        (55...57),
        AndNode(58...73)(
-         RangeNode(58...63)(
+         FlipFlopNode(58...63)(
            CallNode(58...59)(nil, nil, (58...59), nil, nil, nil, nil, 2, "a"),
            CallNode(62...63)(nil, nil, (62...63), nil, nil, nil, nil, 2, "b"),
            (59...62),
-           3
+           1
          ),
-         RangeNode(68...73)(
+         FlipFlopNode(68...73)(
            CallNode(68...69)(nil, nil, (68...69), nil, nil, nil, nil, 2, "c"),
            CallNode(72...73)(nil, nil, (72...73), nil, nil, nil, nil, 2, "d"),
            (69...72),
-           3
+           1
          ),
          (64...67)
        ),

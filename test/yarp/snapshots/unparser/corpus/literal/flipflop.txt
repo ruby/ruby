@@ -5,7 +5,7 @@ ProgramNode(0...68)(
        (0...2),
        ParenthesesNode(3...23)(
          StatementsNode(4...22)(
-           [RangeNode(4...22)(
+           [FlipFlopNode(4...22)(
               ParenthesesNode(4...12)(
                 StatementsNode(5...11)(
                   [CallNode(5...11)(
@@ -61,7 +61,7 @@ ProgramNode(0...68)(
                 (21...22)
               ),
               (12...14),
-              2
+              0
             )]
          ),
          (3...4),
@@ -77,7 +77,7 @@ ProgramNode(0...68)(
        (34...36),
        ParenthesesNode(37...58)(
          StatementsNode(38...57)(
-           [RangeNode(38...57)(
+           [FlipFlopNode(38...57)(
               ParenthesesNode(38...46)(
                 StatementsNode(39...45)(
                   [CallNode(39...45)(
@@ -133,7 +133,7 @@ ProgramNode(0...68)(
                 (56...57)
               ),
               (46...49),
-              3
+              1
             )]
          ),
          (37...38),

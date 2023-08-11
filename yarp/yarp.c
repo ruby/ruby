@@ -459,7 +459,14 @@ yp_flip_flop(yp_node_t *node) {
         }
         case YP_NODE_RANGE_NODE: {
             yp_range_node_t *cast = (yp_range_node_t *) node;
-            cast->base.flags |= YP_RANGE_NODE_FLAGS_FLIP_FLOP;
+            yp_flip_flop(cast->left);
+            yp_flip_flop(cast->right);
+
+            // Here we change the range node into a flip flop node. We can do
+            // this since the nodes are exactly the same except for the type.
+            assert(sizeof(yp_range_node_t) == sizeof(yp_flip_flop_node_t));
+            node->type = YP_NODE_FLIP_FLOP_NODE;
+
             break;
         }
         default:
@@ -3462,7 +3469,7 @@ yp_range_node_create(yp_parser_t *parser, yp_node_t *left, const yp_token_t *ope
     switch (operator->type) {
         case YP_TOKEN_DOT_DOT_DOT:
         case YP_TOKEN_UDOT_DOT_DOT:
-            node->base.flags |= YP_RANGE_NODE_FLAGS_EXCLUDE_END;
+            node->base.flags |= YP_RANGE_FLAGS_EXCLUDE_END;
             break;
         default:
             break;
