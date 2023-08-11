@@ -210,14 +210,6 @@ module TestIRB
   end
 
   class NestedIRBHistoryTest < IntegrationTestCase
-    def setup
-      super
-
-      if ruby_core?
-        omit "This test works only under ruby/irb"
-      end
-    end
-
     def test_history_saving_with_nested_sessions
       write_history ""
 

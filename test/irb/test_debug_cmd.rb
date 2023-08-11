@@ -10,10 +10,6 @@ module TestIRB
     def setup
       super
 
-      if ruby_core?
-        omit "This test works only under ruby/irb"
-      end
-
       if RUBY_ENGINE == 'truffleruby'
         omit "This test runs with ruby/debug, which doesn't work with truffleruby"
       end

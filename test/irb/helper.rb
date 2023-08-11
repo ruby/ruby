@@ -87,6 +87,10 @@ module TestIRB
         omit "Integration tests require PTY."
       end
 
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+
       @envs = {}
     end
 
