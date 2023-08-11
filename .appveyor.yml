@@ -103,7 +103,7 @@ for:
     # separately execute tests without -j which may crash worker with -j.
     - >-
       nmake -l
-      "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor"
+      "TESTOPTS=--timeout-scale=3.0 --excludes=../test/excludes/_appveyor"
       TESTS="
       ../test/win32ole
       ../test/ruby/test_bignum.rb
@@ -111,7 +111,7 @@ for:
       ../test/open-uri/test_open-uri.rb
       ../test/rubygems/test_bundled_ca.rb
       " test-all
-    - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+    - nmake -l test-spec # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
   - provider: Webhook
     method: POST

@@ -129,8 +129,10 @@ jobs:
           :vcset
           set | C:\msys64\usr\bin\sort > old.env
           call %VCVARS%
+          nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
@@ -162,7 +164,7 @@ jobs:
       - run: nmake test
         timeout-minutes: 5
 
-      - run: nmake test-spec MSPECOPT="-V -fspec"
+      - run: nmake test-spec
         timeout-minutes: 10
 
       - run: nmake test-all
