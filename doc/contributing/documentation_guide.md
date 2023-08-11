@@ -167,7 +167,9 @@ We might consider whether to suppress when:
 - The reference is to a class or module that users
   usually don't deal with, including these:
 
+  - \Class.
   - \Method.
+  - \Module.
 
 ### HTML Tags
 
