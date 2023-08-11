@@ -45,6 +45,7 @@ TEST_TARGETS := $(patsubst test-bundler-parallel,test-bundler-parallel $(PREPARE
 TEST_TARGETS := $(patsubst test-syntax-suggest,test-syntax-suggest $(PREPARE_SYNTAX_SUGGEST),$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+TEST_TARGETS := $(patsubst yes-%,%,$(filter-out no-%,$(TEST_TARGETS)))
 endif
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
