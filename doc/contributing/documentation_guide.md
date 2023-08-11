@@ -164,6 +164,12 @@ We might consider whether to suppress when:
   (e.g., _Array_ in the documentation for class `Array`).
 - The same reference is repeated many times
   (e.g., _RDoc_ on this page).
+- The reference is to a class or module that users
+  usually don't deal with, including these:
+
+  - \Class.
+  - \Method.
+  - \Module.
 
 ### HTML Tags
 
