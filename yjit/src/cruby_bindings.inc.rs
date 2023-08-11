@@ -768,6 +768,10 @@ impl rb_proc_t {
         __bindgen_bitfield_unit
     }
 }
+pub const VM_CHECKMATCH_TYPE_WHEN: vm_check_match_type = 1;
+pub const VM_CHECKMATCH_TYPE_CASE: vm_check_match_type = 2;
+pub const VM_CHECKMATCH_TYPE_RESCUE: vm_check_match_type = 3;
+pub type vm_check_match_type = u32;
 pub const VM_SPECIAL_OBJECT_VMCORE: vm_special_object_type = 1;
 pub const VM_SPECIAL_OBJECT_CBASE: vm_special_object_type = 2;
 pub const VM_SPECIAL_OBJECT_CONST_BASE: vm_special_object_type = 3;
