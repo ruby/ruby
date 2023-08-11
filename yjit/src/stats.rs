@@ -343,6 +343,7 @@ make_counters! {
 
     opt_plus_overflow,
     opt_minus_overflow,
+    opt_mult_overflow,
 
     opt_mod_zero,
     opt_div_zero,

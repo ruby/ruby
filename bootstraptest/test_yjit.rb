@@ -4091,4 +4091,18 @@ assert_equal '6', %q{
   end
 
   Sub.new.number { 3 }
+
+# Integer multiplication and overflow
+assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]', %q{
+  def foo(a, b)
+    a * b
+  end
+
+  r1 = foo(2, 3)
+  r2 = foo(2, -3)
+  r3 = foo(2 << 40, 2 << 41)
+  r4 = foo(2 << 40, -2 << 41)
+  r5 = foo(1 << 62, 1 << 62)
+
+  [r1, r2, r3, r4, r5]
 }
