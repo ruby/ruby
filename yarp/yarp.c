@@ -5410,13 +5410,14 @@ lex_question_mark(yp_parser_t *parser) {
     } else {
         size_t encoding_width = parser->encoding.char_width(parser->current.end, parser->end - parser->current.end);
 
-        // We only want to return a character literal if there's exactly one
-        // alphanumeric character right after the `?`
+        // Ternary operators can have a ? immediately followed by an identifier which starts with
+        // an underscore. We check for this case
         if (
-            !parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end) ||
+            !(parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end) ||
+                *parser->current.end == '_') ||
             (
                 (parser->current.end + encoding_width >= parser->end) ||
-                !parser->encoding.alnum_char(parser->current.end + encoding_width, parser->end - (parser->current.end + encoding_width))
+                !char_is_identifier(parser, parser->current.end + encoding_width)
             )
         ) {
             lex_state_set(parser, YP_LEX_STATE_END);

@@ -1,6 +1,6 @@
-ProgramNode(0...117)(
-  [],
-  StatementsNode(0...117)(
+ProgramNode(0...131)(
+  [:_a],
+  StatementsNode(0...131)(
     [IfNode(0...9)(
        nil,
        CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
@@ -126,6 +126,35 @@ ProgramNode(0...117)(
               "var2"
             )]
          ),
+         nil
+       ),
+       nil
+     ),
+     IfNode(119...131)(
+       nil,
+       CallNode(119...123)(
+         nil,
+         nil,
+         (119...123),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "nil?"
+       ),
+       StatementsNode(124...129)(
+         [LocalVariableWriteNode(124...129)(
+            :_a,
+            0,
+            IntegerNode(128...129)(),
+            (124...126),
+            (127...128)
+          )]
+       ),
+       ElseNode(129...131)(
+         (129...130),
+         StatementsNode(130...131)([IntegerNode(130...131)()]),
          nil
        ),
        nil
