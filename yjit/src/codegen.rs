@@ -1603,7 +1603,7 @@ fn gen_expandarray(
             jit,
             asm,
             ocb,
-            OPT_AREF_MAX_CHAIN_DEPTH,
+            EXPANDARRAY_MAX_CHAIN_DEPTH,
             Counter::expandarray_chain_max_depth,
         );
 
@@ -1615,7 +1615,7 @@ fn gen_expandarray(
             jit,
             asm,
             ocb,
-            OPT_AREF_MAX_CHAIN_DEPTH,
+            EXPANDARRAY_MAX_CHAIN_DEPTH,
             Counter::expandarray_chain_max_depth,
         );
     }
@@ -2007,6 +2007,9 @@ pub const SET_IVAR_MAX_DEPTH: i32 = 10;
 
 // hashes and arrays
 pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
+
+// expandarray
+pub const EXPANDARRAY_MAX_CHAIN_DEPTH: i32 = 4;
 
 // up to 10 different classes
 pub const SEND_MAX_DEPTH: i32 = 20;
