@@ -966,6 +966,7 @@ struct heap_page {
     short total_slots;
     short free_slots;
     short final_slots;
+    short pinned_slots;
     struct {
         unsigned int before_sweep : 1;
         unsigned int has_remembered_objects : 1;
@@ -5672,11 +5673,20 @@ __attribute__((noinline))
 #endif
 
 static void gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func);
+static int compare_pinned_slots(const void *left, const void *right, void *d);
+
 static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
     objspace->rincgc.pooled_slots = 0;
+
+    if (objspace->flags.during_compacting) {
+        gc_sort_heap_by_compare_func(
+            objspace,
+            objspace->rcompactor.compare_func ? objspace->rcompactor.compare_func : compare_pinned_slots
+        );
+    }
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -6863,7 +6873,10 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
     GC_ASSERT(is_markable_object(obj));
     if (UNLIKELY(objspace->flags.during_compacting)) {
         if (LIKELY(during_gc)) {
-            MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+            if (!MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj)) {
+                GET_HEAP_PAGE(obj)->pinned_slots++;
+                MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+            }
         }
     }
 }
@@ -9376,11 +9389,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
     GC_ASSERT(during_gc);
 
-    if (objspace->flags.during_compacting &&
-        objspace->rcompactor.compare_func) {
-        gc_sort_heap_by_compare_func(objspace, objspace->rcompactor.compare_func);
-    }
-
     gc_prof_timer_start(objspace);
     {
         if (gc_marks(objspace, do_full_mark)) {
@@ -9932,6 +9940,18 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
 }
 
 #if GC_CAN_COMPILE_COMPACTION
+static int
+compare_pinned_slots(const void *left, const void *right, void *dummy)
+{
+    struct heap_page *left_page;
+    struct heap_page *right_page;
+
+    left_page = *(struct heap_page * const *)left;
+    right_page = *(struct heap_page * const *)right;
+
+    return left_page->pinned_slots - right_page->pinned_slots;
+}
+
 static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
