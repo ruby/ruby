@@ -3376,7 +3376,7 @@ fn gen_opt_mult(
     };
 
     if two_fixnums {
-        if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS) {
+        if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_MULT) {
             return None;
         }
 
