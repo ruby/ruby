@@ -813,18 +813,16 @@ struct rb_block {
 };
 
 typedef struct rb_control_frame_struct {
-    const VALUE *pc;		/* cfp[0] */
-    VALUE *sp;			/* cfp[1] */
-    const rb_iseq_t *iseq;	/* cfp[2] */
-    VALUE self;			/* cfp[3] / block[0] */
-    const VALUE *ep;		/* cfp[4] / block[1] */
-    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc or forwarded block handler */
-
+    const VALUE *pc;        // cfp[0]
+    VALUE *sp;              // cfp[1]
+    const rb_iseq_t *iseq;  // cfp[2]
+    VALUE self;             // cfp[3] / block[0]
+    const VALUE *ep;        // cfp[4] / block[1]
+    const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
+    void *jit_return;       // cfp[6] -- return address for JIT code
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[6] */
+    VALUE *bp_check;        // cfp[7]
 #endif
-    // Return address for YJIT code
-    void *jit_return;
 } rb_control_frame_t;
 
 extern const rb_data_type_t ruby_threadptr_data_type;
