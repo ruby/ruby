@@ -6539,11 +6539,11 @@ const char ruby_null_device[] =
  *
  *  == Access Modes
  *
- *  \Methods File.new and File.open each create a \File object for a given file path.
+ *  Methods File.new and File.open each create a \File object for a given file path.
  *
  *  === \String Access Modes
  *
- *  \Methods File.new and File.open each may take string argument +mode+, which:
+ *  Methods File.new and File.open each may take string argument +mode+, which:
  *
  *  - Begins with a 1- or 2-character
  *    {read/write mode}[rdoc-ref:File@Read-2FWrite+Mode].
@@ -7179,7 +7179,7 @@ const char ruby_null_device[] =
  *
  *  == \File \Constants
  *
- *  Various constants for use in \File and \IO methods
+ *  Various constants for use in \File and IO methods
  *  may be found in module File::Constants;
  *  an array of their names is returned by <tt>File::Constants.constants</tt>.
  *
@@ -7234,15 +7234,15 @@ const char ruby_null_device[] =
  *
  *  _Times_
  *
- *  - ::atime: Returns a \Time for the most recent access to the given file.
- *  - ::birthtime: Returns a \Time  for the creation of the given file.
- *  - ::ctime: Returns a \Time  for the metadata change of the given file.
- *  - ::mtime: Returns a \Time for the most recent data modification to
+ *  - ::atime: Returns a Time for the most recent access to the given file.
+ *  - ::birthtime: Returns a Time  for the creation of the given file.
+ *  - ::ctime: Returns a Time  for the metadata change of the given file.
+ *  - ::mtime: Returns a Time for the most recent data modification to
  *    the content of the given file.
- *  - #atime: Returns a \Time for the most recent access to +self+.
- *  - #birthtime: Returns a \Time  the creation for +self+.
- *  - #ctime: Returns a \Time for the metadata change of +self+.
- *  - #mtime: Returns a \Time for the most recent data modification
+ *  - #atime: Returns a Time for the most recent access to +self+.
+ *  - #birthtime: Returns a Time  the creation for +self+.
+ *  - #ctime: Returns a Time for the metadata change of +self+.
+ *  - #mtime: Returns a Time for the most recent data modification
  *    to the content of +self+.
  *
  *  _Types_
