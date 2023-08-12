@@ -23,7 +23,8 @@ class ParseTest < Test::Unit::TestCase
   end
 
   def test_empty_string
-    YARP.parse("") => YARP::ParseResult[value: YARP::ProgramNode[statements: YARP::StatementsNode[body: []]]]
+    result = YARP.parse("")
+    assert_equal [], result.value.statements.body
   end
 
   known_failures = %w[
@@ -107,7 +108,9 @@ class ParseTest < Test::Unit::TestCase
 
       # Finally, assert that we can lex the source and get the same tokens as
       # Ripper.
-      YARP.lex_compat(source) => { errors: [], value: tokens }
+      lex_result = YARP.lex_compat(source)
+      assert_equal [], lex_result.errors
+      tokens = lex_result.value
 
       begin
         YARP.lex_ripper(source).zip(tokens).each do |(ripper, yarp)|
