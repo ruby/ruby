@@ -1145,18 +1145,24 @@ resolve_strx(DebugInfoReader *reader, uint64_t idx)
 }
 
 static void
+debug_info_reader_read_addr_value(DebugInfoReader *reader, DebugInfoValue *v)
+{
+    if (reader->address_size == 4) {
+        set_uint_value(v, read_uint32(&reader->p));
+    } else if (reader->address_size == 8) {
+        set_uint_value(v, read_uint64(&reader->p));
+    } else {
+        fprintf(stderr,"unknown address_size:%d", reader->address_size);
+        abort();
+    }
+}
+
+static void
 debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
 {
     switch (form) {
       case DW_FORM_addr:
-        if (reader->address_size == 4) {
-            set_uint_value(v, read_uint32(&reader->p));
-        } else if (reader->address_size == 8) {
-            set_uint_value(v, read_uint64(&reader->p));
-        } else {
-            fprintf(stderr,"unknown address_size:%d", reader->address_size);
-            abort();
-        }
+        debug_info_reader_read_addr_value(reader, v);
         break;
       case DW_FORM_block2:
         v->size = read_uint16(&reader->p);
@@ -1208,13 +1214,19 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uleb128(reader));
         break;
       case DW_FORM_ref_addr:
-        if (reader->format == 4) {
-            set_uint_value(v, read_uint32(&reader->p));
-        } else if (reader->format == 8) {
-            set_uint_value(v, read_uint64(&reader->p));
+        if (reader->current_version <= 2) {
+            // DWARF Version 2 specifies that references have
+            // the same size as an address on the target system
+            debug_info_reader_read_addr_value(reader, v);
         } else {
-            fprintf(stderr,"unknown format:%d", reader->format);
-            abort();
+            if (reader->format == 4) {
+                set_uint_value(v, read_uint32(&reader->p));
+            } else if (reader->format == 8) {
+                set_uint_value(v, read_uint64(&reader->p));
+            } else {
+                fprintf(stderr,"unknown format:%d", reader->format);
+                abort();
+            }
         }
         break;
       case DW_FORM_ref1:
