@@ -64,10 +64,10 @@ module IRB # :nodoc:
         :RETURN => "%s\n"
       },
       :DEFAULT => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
-        :PROMPT_S => "%N(%m):%03n:%i%l ",
-        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :PROMPT_I => "%N(%m):%03n> ",
+        :PROMPT_N => "%N(%m):%03n> ",
+        :PROMPT_S => "%N(%m):%03n%l ",
+        :PROMPT_C => "%N(%m):%03n* ",
         :RETURN => "=> %s\n"
       },
       :CLASSIC => {
@@ -85,7 +85,7 @@ module IRB # :nodoc:
         :RETURN => "=> %s\n"
       },
       :INF_RUBY => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
+        :PROMPT_I => "%N(%m):%03n> ",
         :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,

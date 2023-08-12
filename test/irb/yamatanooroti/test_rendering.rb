@@ -41,9 +41,9 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     close
     assert_screen(<<~EOC)
       start IRB
-      irb(main):001:0> 'Hello, World!'
+      irb(main):001> 'Hello, World!'
       => "Hello, World!"
-      irb(main):002:0>
+      irb(main):002>
     EOC
   end
 
@@ -68,21 +68,21 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     close
     assert_screen(<<~EOC)
       start IRB
-      irb(main):001:1* class A
-      irb(main):002:1*   def inspect; '#<A>'; end
-      irb(main):003:1*   def a; self; end
-      irb(main):004:1*   def b; true; end
-      irb(main):005:0> end
+      irb(main):001* class A
+      irb(main):002*   def inspect; '#<A>'; end
+      irb(main):003*   def a; self; end
+      irb(main):004*   def b; true; end
+      irb(main):005> end
       => :b
-      irb(main):006:0>
-      irb(main):007:0> a = A.new
+      irb(main):006>
+      irb(main):007> a = A.new
       => #<A>
-      irb(main):008:0>
-      irb(main):009:0> a
-      irb(main):010:0>  .a
-      irb(main):011:0> .b
+      irb(main):008>
+      irb(main):009> a
+      irb(main):010>  .a
+      irb(main):011> .b
       => true
-      irb(main):012:0>
+      irb(main):012>
     EOC
   end
 
@@ -121,39 +121,39 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     close
     assert_screen(<<~EOC)
       start IRB
-      irb(main):001:1* class A
-      irb(main):002:1*   def inspect; '#<A>'; end
-      irb(main):003:1*   def b; self; end
-      irb(main):004:1*   def c; true; end
-      irb(main):005:0> end
+      irb(main):001* class A
+      irb(main):002*   def inspect; '#<A>'; end
+      irb(main):003*   def b; self; end
+      irb(main):004*   def c; true; end
+      irb(main):005> end
       => :c
-      irb(main):006:0>
-      irb(main):007:0> a = A.new
+      irb(main):006>
+      irb(main):007> a = A.new
       => #<A>
-      irb(main):008:0>
-      irb(main):009:0> a
-      irb(main):010:0>   .b
-      irb(main):011:0>   # aaa
-      irb(main):012:0>   .c
+      irb(main):008>
+      irb(main):009> a
+      irb(main):010>   .b
+      irb(main):011>   # aaa
+      irb(main):012>   .c
       => true
-      irb(main):013:0>
-      irb(main):014:0> (a)
-      irb(main):015:0>   &.b()
+      irb(main):013>
+      irb(main):014> (a)
+      irb(main):015>   &.b()
       => #<A>
-      irb(main):016:0>
-      irb(main):017:0>
-      irb(main):018:0> class A def b; self; end; def c; true; end; end;
-      irb(main):019:0> a = A.new
+      irb(main):016>
+      irb(main):017>
+      irb(main):018> class A def b; self; end; def c; true; end; end;
+      irb(main):019> a = A.new
       => #<A>
-      irb(main):020:0> a
-      irb(main):021:0>   .b
-      irb(main):022:0>   # aaa
-      irb(main):023:0>   .c
+      irb(main):020> a
+      irb(main):021>   .b
+      irb(main):022>   # aaa
+      irb(main):023>   .c
       => true
-      irb(main):024:0> (a)
-      irb(main):025:0> &.b()
+      irb(main):024> (a)
+      irb(main):025> &.b()
       => #<A>
-      irb(main):026:0>
+      irb(main):026>
     EOC
   end
 
@@ -168,9 +168,9 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     close
     assert_screen(<<~EOC)
       start IRB
-      irb(main):001:0> :`
+      irb(main):001> :`
       => :`
-      irb(main):002:0>
+      irb(main):002>
     EOC
   end
 
@@ -243,11 +243,11 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     close
     assert_screen(<<~EOC)
       start IRB
-      irb(main):001:0> #{code}
+      irb(main):001> #{code}
       =>
       [0,
       ...
-      irb(main):002:0>
+      irb(main):002>
     EOC
   end
 
