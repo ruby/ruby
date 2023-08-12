@@ -1818,7 +1818,9 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
-    if (cfp) rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+    if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+    }
     return exc;
 }
 
