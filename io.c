@@ -846,7 +846,7 @@ rb_io_timeout(VALUE self)
  *    timeout = duration -> duration
  *    timeout = nil -> nil
  *
- *  \Set the internal timeout to the specified duration or nil. The timeout
+ *  Sets the internal timeout to the specified duration or nil. The timeout
  *  applies to all blocking operations where possible.
  *
  *  When the operation performs longer than the timeout set, IO::TimeoutError
@@ -8007,11 +8007,11 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
  *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
  *
- *  Creates a new \File object, via File.new with the given arguments.
+ *  Creates a new File object, via File.new with the given arguments.
  *
- *  With no block given, returns the \File object.
+ *  With no block given, returns the File object.
  *
- *  With a block given, calls the block with the \File object
+ *  With a block given, calls the block with the File object
  *  and returns the block's value.
  *
  */
@@ -8799,9 +8799,9 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *
  *  Treatment for each object:
  *
- *  - \String: writes the string.
+ *  - String: writes the string.
  *  - Neither string nor array: writes <tt>object.to_s</tt>.
- *  - \Array: writes each element of the array; arrays may be nested.
+ *  - Array: writes each element of the array; arrays may be nested.
  *
  *  To keep these examples brief, we define this helper method:
  *
@@ -9460,9 +9460,9 @@ rb_io_set_encoding_by_bom(VALUE io)
  *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
  *
  *  Opens the file at the given +path+ according to the given +mode+;
- *  creates and returns a new \File object for that file.
+ *  creates and returns a new File object for that file.
  *
- *  The new \File object is buffered mode (or non-sync mode), unless
+ *  The new File object is buffered mode (or non-sync mode), unless
  *  +filename+ is a tty.
  *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync=.
  *
@@ -14656,7 +14656,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  ARGF is not itself a subclass of \IO.
  *
  *  \Class StringIO provides an IO-like stream that handles a String.
- *  \StringIO is not itself a subclass of \IO.
+ *  StringIO is not itself a subclass of \IO.
  *
  *  Important objects based on \IO include:
  *
@@ -14674,7 +14674,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - Kernel#open: Returns a new \IO object connected to a given source:
  *    stream, file, or subprocess.
  *
- *  Like a \File stream, an \IO stream has:
+ *  Like a File stream, an \IO stream has:
  *
  *  - A read/write mode, which may be read-only, write-only, or read/write;
  *    see {Read/Write Mode}[rdoc-ref:File@Read-2FWrite+Mode].
@@ -14710,7 +14710,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  that determine how a new stream is to be opened:
  *
  *  - +:mode+: Stream mode.
- *  - +:flags+: \Integer file open flags;
+ *  - +:flags+: Integer file open flags;
  *    If +mode+ is also given, the two are bitwise-ORed.
  *  - +:external_encoding+: External encoding for the stream.
  *  - +:internal_encoding+: Internal encoding for the stream.
