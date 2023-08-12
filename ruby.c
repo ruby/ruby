@@ -897,6 +897,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     VALUE int_enc_name = opt->intern.enc.name;
     ruby_features_t feat = opt->features;
     ruby_features_t warn = opt->warn;
+    long backtrace_length_limit = opt->backtrace_length_limit;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
@@ -947,6 +948,9 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     }
     FEATURE_SET_RESTORE(opt->features, feat);
     FEATURE_SET_RESTORE(opt->warn, warn);
+    if (BACKTRACE_LENGTH_LIMIT_VALID_P(backtrace_length_limit)) {
+        opt->backtrace_length_limit = backtrace_length_limit;
+    }
 
     ruby_xfree(ptr);
     /* get rid of GC */
@@ -1453,7 +1457,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         if (errno == ERANGE || !BACKTRACE_LENGTH_LIMIT_VALID_P(n) || *e) {
             rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
         }
-        else if (!OPT_BACKTRACE_LENGTH_LIMIT_VALID_P(opt)) {
+        else {
             opt->backtrace_length_limit = n;
         }
     }
