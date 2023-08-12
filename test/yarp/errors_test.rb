@@ -1097,10 +1097,11 @@ class ErrorsTest < Test::Unit::TestCase
   private
 
   def assert_errors(expected, source, errors)
-    assert_nil Ripper.sexp_raw(source)
+    # Ripper behaves differently on JRuby/TruffleRuby, so only check this on CRuby
+    assert_nil Ripper.sexp_raw(source) if RUBY_ENGINE == "ruby"
 
     result = YARP.parse(source)
-    result => YARP::ParseResult[value: YARP::ProgramNode[statements: YARP::StatementsNode[body: [*, node]]]]
+    node = result.value.statements.body.last
 
     assert_equal_nodes(expected, node, compare_location: false)
     assert_equal(errors, result.errors.map { |e| [e.message, e.location.start_offset..e.location.end_offset] })
@@ -1113,7 +1114,6 @@ class ErrorsTest < Test::Unit::TestCase
   end
 
   def expression(source)
-    YARP.parse(source) => YARP::ParseResult[value: YARP::ProgramNode[statements: YARP::StatementsNode[body: [*, node]]]]
-    node
+    YARP.parse(source).value.statements.body.last
   end
 end
