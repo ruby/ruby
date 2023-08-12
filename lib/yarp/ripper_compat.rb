@@ -47,9 +47,9 @@ module YARP
       Ripper::PARSER_EVENT_TABLE.each do |event, arity|
         case event
         when /_new\z/
-          alias :"on_#{event}" :_dispatch_event_new if arity == 0
+          alias_method :"on_#{event}", :_dispatch_event_new if arity == 0
         when /_add\z/
-          alias :"on_#{event}" :_dispatch_event_push
+          alias_method :"on_#{event}", :_dispatch_event_push
         end
       end
     end
@@ -168,7 +168,7 @@ module YARP
     def _dispatch7(_, _, _, _, _, _, _); end
 
     (Ripper::SCANNER_EVENT_TABLE.merge(Ripper::PARSER_EVENT_TABLE)).each do |event, arity|
-      alias :"on_#{event}" :"_dispatch#{arity}"
+      alias_method :"on_#{event}", :"_dispatch#{arity}"
     end
   end
 end
