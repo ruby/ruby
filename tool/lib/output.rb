@@ -14,7 +14,7 @@ class Output
     opt.on('-o', '--output=PATH') {|v| @path = v}
     opt.on('-t', '--timestamp[=PATH]') {|v| @timestamp = v || true}
     opt.on('-c', '--[no-]if-change') {|v| @ifchange = v}
-    opt.on('--color') {@color = true}
+    opt.on('--[no-]color') {|v| @color = v}
     @vpath.def_options(opt)
   end
 
