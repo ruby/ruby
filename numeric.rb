@@ -340,7 +340,7 @@ class Float
   #  call-seq:
   #    negative? -> true or false
   #
-  #
+  #  Returns +true+ if +self+ is less than 0, +false+ otherwise.
   def negative?
     Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
