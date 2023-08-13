@@ -13176,26 +13176,39 @@ local_push(struct parser_params *p, int toplevel_scope)
 }
 
 static void
+local_free(struct parser_params *p, struct local_vars *local)
+{
+    if (local->used) {
+        vtable_free(local->used);
+    }
+
+# if WARN_PAST_SCOPE
+    while (local->past) {
+        struct vtable *past = local->past;
+        local->past = past->prev;
+        vtable_free(past);
+    }
+# endif
+
+    vtable_free(local->args);
+    vtable_free(local->vars);
+
+    ruby_sized_xfree(local, sizeof(struct local_vars));
+}
+
+static void
 local_pop(struct parser_params *p)
 {
     struct local_vars *local = p->lvtbl->prev;
     if (p->lvtbl->used) {
-	warn_unused_var(p, p->lvtbl);
-	vtable_free(p->lvtbl->used);
+        warn_unused_var(p, p->lvtbl);
     }
-# if WARN_PAST_SCOPE
-    while (p->lvtbl->past) {
-	struct vtable *past = p->lvtbl->past;
-	p->lvtbl->past = past->prev;
-	vtable_free(past);
-    }
-# endif
-    vtable_free(p->lvtbl->args);
-    vtable_free(p->lvtbl->vars);
+
+    local_free(p, p->lvtbl);
+    p->lvtbl = local;
+
     CMDARG_POP();
     COND_POP();
-    ruby_sized_xfree(p->lvtbl, sizeof(*p->lvtbl));
-    p->lvtbl = local;
 }
 
 #ifndef RIPPER
@@ -13776,16 +13789,17 @@ parser_free(void *ptr)
     if (p->tokenbuf) {
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
     }
+
     for (local = p->lvtbl; local; local = prev) {
-	if (local->vars) xfree(local->vars);
-	prev = local->prev;
-	xfree(local);
+        prev = local->prev;
+        local_free(p, local);
     }
+
     {
-	token_info *ptinfo;
-	while ((ptinfo = p->token_info) != 0) {
-	    p->token_info = ptinfo->next;
-	    xfree(ptinfo);
+        token_info *ptinfo;
+        while ((ptinfo = p->token_info) != 0) {
+            p->token_info = ptinfo->next;
+            xfree(ptinfo);
 	}
     }
     xfree(ptr);

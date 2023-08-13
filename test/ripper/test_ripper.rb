@@ -120,6 +120,13 @@ class TestRipper::Ripper < Test::Unit::TestCase
       END
       assert_nil(Ripper.sexp(src), bug12651)
     end;
+
+    # [Bug #19835]
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.parse("class Foo")
+      end
+    end;
   end
 
   # https://bugs.jruby.org/4176
