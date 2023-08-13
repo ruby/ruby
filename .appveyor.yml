@@ -93,7 +93,7 @@ for:
     - nmake -l "TESTOPTS=-v -q" test-basic
     - >-
       nmake -l "TESTOPTS=-v --timeout-scale=3.0
-      --excludes=../test/excludes/_appveyor -j%JOBS%
+      --excludes=../test/.excludes/_appveyor -j%JOBS%
       --exclude win32ole
       --exclude test_bignum
       --exclude test_syntax
@@ -103,7 +103,7 @@ for:
     # separately execute tests without -j which may crash worker with -j.
     - >-
       nmake -l
-      "TESTOPTS=--timeout-scale=3.0 --excludes=../test/excludes/_appveyor"
+      "TESTOPTS=--timeout-scale=3.0 --excludes=../test/.excludes/_appveyor"
       TESTS="
       ../test/win32ole
       ../test/ruby/test_bignum.rb
