@@ -1643,6 +1643,7 @@ rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
     return rb_nogvl(func, data1, ubf, data2, 0);
 }
 
+static void
 rb_thread_io_wake_pending_closer(struct waiting_fd *wfd)
 {
     bool has_waiter = wfd->busy && RB_TEST(wfd->busy->wakeup_mutex);
@@ -1661,6 +1662,12 @@ rb_thread_io_wake_pending_closer(struct waiting_fd *wfd)
         rb_thread_wakeup(wfd->busy->closing_thread);
         rb_mutex_unlock(wfd->busy->wakeup_mutex);
     }
+}
+
+static int
+waitfd_to_waiting_flag(int wfd_event)
+{
+    return wfd_event << 1;
 }
 
 VALUE
@@ -2559,6 +2566,9 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
        of this function. */
     RB_GC_GUARD(wakeup_mutex);
     return has_any;
+#else
+    return 0;
+#endif
 }
 
 void
@@ -5409,7 +5419,7 @@ Init_Thread(void)
     Init_thread_sync();
 
     // TODO: Suppress unused function warning for now
-    if (0) rb_thread_sched_destroy(NULL);
+    // if (0) rb_thread_sched_destroy(NULL);
 }
 
 int

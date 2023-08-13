@@ -1094,16 +1094,17 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
         vm->ractor.sched.grq_cnt++;
         RUBY_DEBUG_LOG("r:%u th:%u grq_cnt:%u", rb_ractor_id(r), rb_th_serial(sched->running), vm->ractor.sched.grq_cnt);
 
+#if 0
         if (vm->ractor.sched.grq_cnt > 1) {
-            rb_native_cond_signal(&vm->ractor.sched.cond);
-        }
-        else if (th_has_dedicated_nt(GET_THREAD())) {
             rb_native_cond_signal(&vm->ractor.sched.cond);
         }
         else {
             // lazy deq
             timer_thread_wakeup_locked(vm);
         }
+#else
+        rb_native_cond_signal(&vm->ractor.sched.cond);
+#endif
     }
     rb_native_mutex_unlock(&vm->ractor.sched.lock);
 }
@@ -1193,6 +1194,7 @@ rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fu
             }
             else {
                 // sleep
+                RB_VM_SAVE_MACHINE_CONTEXT(th);
                 th->status = THREAD_STOPPED_FOREVER;
                 thread_sched_wakeup_next_thread(sched, th);
                 thread_sched_wait_running_turn(sched, th);
@@ -1308,7 +1310,6 @@ ractor_sched_barrier_join_wait_locked(rb_vm_t *vm, rb_thread_t *th)
 
     while (vm->ractor.sched.barrier_serial == barrier_serial) {
         RUBY_DEBUG_LOG("sleep serial:%u", barrier_serial);
-
         RB_VM_SAVE_MACHINE_CONTEXT(th);
         rb_native_cond_wait(&vm->ractor.sched.barrier_release_cond, &vm->ractor.sched.lock);
 
@@ -1369,6 +1370,7 @@ rb_thread_sched_destroy(struct rb_thread_sched *sched)
     }
     clear_thread_cache_altstack();
 }
+#endif
 
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
 static int
