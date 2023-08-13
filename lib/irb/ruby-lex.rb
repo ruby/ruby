@@ -74,59 +74,6 @@ class RubyLex
     @input = block
   end
 
-  def configure_io(io)
-    @io = io
-    if @io.respond_to?(:check_termination)
-      @io.check_termination do |code|
-        if Reline::IOGate.in_pasting?
-          rest = check_termination_in_prev_line(code)
-          if rest
-            Reline.delete_text
-            rest.bytes.reverse_each do |c|
-              Reline.ungetc(c)
-            end
-            true
-          else
-            false
-          end
-        else
-          # Accept any single-line input for symbol aliases or commands that transform args
-          next true if single_line_command?(code)
-
-          _tokens, _opens, terminated = check_code_state(code)
-          terminated
-        end
-      end
-    end
-    if @io.respond_to?(:dynamic_prompt)
-      @io.dynamic_prompt do |lines|
-        lines << '' if lines.empty?
-        tokens = self.class.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, context: @context)
-        line_results = IRB::NestingParser.parse_by_line(tokens)
-        tokens_until_line = []
-        line_results.map.with_index do |(line_tokens, _prev_opens, next_opens, _min_depth), line_num_offset|
-          line_tokens.each do |token, _s|
-            # Avoid appending duplicated token. Tokens that include "\n" like multiline tstring_content can exist in multiple lines.
-            tokens_until_line << token if token != tokens_until_line.last
-          end
-          continue = should_continue?(tokens_until_line)
-          prompt(next_opens, continue, line_num_offset)
-        end
-      end
-    end
-
-    if @io.respond_to?(:auto_indent) and @context.auto_indent_mode
-      @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
-        next nil if lines == [nil] # Workaround for exit IRB with CTRL+d
-        next nil if !is_newline && lines[line_index]&.byteslice(0, byte_pointer)&.match?(/\A\s*\z/)
-
-        code = lines[0..line_index].map { |l| "#{l}\n" }.join
-        tokens = self.class.ripper_lex_without_warning(code, context: @context)
-        process_indent_level(tokens, lines, line_index, is_newline)
-      end
-    end
-  end
-
   def set_prompt(&block)
     @prompt = block
   end
@@ -240,7 +187,7 @@ class RubyLex
     save_prompt_to_context_io([], false, 0)
 
     # multiline
-    return @input.call if @io.respond_to?(:check_termination)
+    return @input.call if @context.io.respond_to?(:check_termination)
 
     # nomultiline
     code = ''
@@ -270,7 +217,7 @@ class RubyLex
       break unless code
 
       if code != "\n"
-        code.force_encoding(@io.encoding)
+        code.force_encoding(@context.io.encoding)
         yield code, @line_no, assignment_expression?(code)
       end
       @line_no += code.count("\n")

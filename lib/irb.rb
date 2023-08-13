@@ -537,7 +537,7 @@ module IRB
         end
       end
 
-      @scanner.configure_io(@context.io)
+      configure_io
 
       @scanner.each_top_level_statement do |line, line_no, is_assignment|
         signal_status(:IN_EVAL) do
@@ -560,6 +560,58 @@ module IRB
             handle_exception(exc)
             @context.workspace.local_variable_set(:_, exc)
           end
+        end
+      end
+    end
+
+    def configure_io
+      if @context.io.respond_to?(:check_termination)
+        @context.io.check_termination do |code|
+          if Reline::IOGate.in_pasting?
+            rest = @scanner.check_termination_in_prev_line(code)
+            if rest
+              Reline.delete_text
+              rest.bytes.reverse_each do |c|
+                Reline.ungetc(c)
+              end
+              true
+            else
+              false
+            end
+          else
+            # Accept any single-line input for symbol aliases or commands that transform args
+            next true if @scanner.single_line_command?(code)
+
+            _tokens, _opens, terminated = @scanner.check_code_state(code)
+            terminated
+          end
+        end
+      end
+      if @context.io.respond_to?(:dynamic_prompt)
+        @context.io.dynamic_prompt do |lines|
+          lines << '' if lines.empty?
+          tokens = RubyLex.ripper_lex_without_warning(lines.map{ |l| l + "\n" }.join, context: @context)
+          line_results = IRB::NestingParser.parse_by_line(tokens)
+          tokens_until_line = []
+          line_results.map.with_index do |(line_tokens, _prev_opens, next_opens, _min_depth), line_num_offset|
+            line_tokens.each do |token, _s|
+              # Avoid appending duplicated token. Tokens that include "\n" like multiline tstring_content can exist in multiple lines.
+              tokens_until_line << token if token != tokens_until_line.last
+            end
+            continue = @scanner.should_continue?(tokens_until_line)
+            @scanner.prompt(next_opens, continue, line_num_offset)
+          end
+        end
+      end
+
+      if @context.io.respond_to?(:auto_indent) and @context.auto_indent_mode
+        @context.io.auto_indent do |lines, line_index, byte_pointer, is_newline|
+          next nil if lines == [nil] # Workaround for exit IRB with CTRL+d
+          next nil if !is_newline && lines[line_index]&.byteslice(0, byte_pointer)&.match?(/\A\s*\z/)
+
+          code = lines[0..line_index].map { |l| "#{l}\n" }.join
+          tokens = RubyLex.ripper_lex_without_warning(code, context: @context)
+          @scanner.process_indent_level(tokens, lines, line_index, is_newline)
         end
       end
     end
