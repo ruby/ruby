@@ -96,7 +96,9 @@ module Test_SyncDefaultGems
         if dir == "src"
           Dir.mkdir("#{dir}/lib")
           File.write("#{dir}/lib/fine.rb", "return\n")
-          system(*%W"git add lib/fine.rb", exception: true, chdir: dir)
+          Dir.mkdir("#{dir}/test")
+          File.write("#{dir}/test/test_fine.rb", "return\n")
+          system(*%W"git add lib/fine.rb test/test_fine.rb", exception: true, chdir: dir)
           system(*%W"git commit -q -m", "Looks fine", exception: true, chdir: dir)
         end
         Dir.mkdir("#{dir}/tool")
@@ -149,6 +151,20 @@ module Test_SyncDefaultGems
       out = capture_process_output_to([STDOUT, STDERR]) do
         Dir.chdir("src") do
           SyncDefaultGems.sync_default_gems_with_commits(@target, true)
+        end
+      end
+      assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+    end
+
+    def test_skip_test_fixtures
+      Dir.mkdir("#@target/test")
+      Dir.mkdir("#@target/test/fixtures")
+      File.write("#@target/test/fixtures/fixme.rb", "")
+      system(*%W"git add test/fixtures/fixme.rb", exception: true, chdir: @target)
+      system(*%W"git commit -q -m", "Add fitures", exception: true, chdir: @target)
+      out = capture_process_output_to([STDOUT, STDERR]) do
+        Dir.chdir("src") do
+          SyncDefaultGems.sync_default_gems_with_commits(@target, ["#{@sha[@target]}..#{@target}/default"])
         end
       end
       assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
