@@ -209,7 +209,50 @@ module TestIRB
     end
   end
 
-  class NestedIRBHistoryTest < IntegrationTestCase
+  class IRBHistoryIntegrationTest < IntegrationTestCase
+    def test_history_saving_with_debug
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+        end
+
+        binding.irb
+
+        foo
+      RUBY
+
+      output = run_ruby_file do
+        type "'irb session'"
+        type "next"
+        type "'irb:debug session'"
+        type "step"
+        type "irb_info"
+        type "puts Reline::HISTORY.to_a.to_s"
+        type "q!"
+      end
+
+      assert_include(output, "InputMethod: RelineInputMethod")
+      # check that in-memory history is preserved across sessions
+      assert_include output, %q(
+        ["'irb session'", "next", "'irb:debug session'", "step", "irb_info", "puts Reline::HISTORY.to_a.to_s"]
+      ).strip
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'irb session'
+        next
+        'irb:debug session'
+        step
+        irb_info
+        puts Reline::HISTORY.to_a.to_s
+        q!
+      HISTORY
+    end
+
     def test_history_saving_with_nested_sessions
       write_history ""
 

@@ -183,6 +183,10 @@ class RubyLex
     prompt(opens, continue, line_num_offset)
   end
 
+  def increase_line_no(addition)
+    @line_no += addition
+  end
+
   def readmultiline
     save_prompt_to_context_io([], false, 0)
 
@@ -220,7 +224,7 @@ class RubyLex
         code.force_encoding(@context.io.encoding)
         yield code, @line_no, assignment_expression?(code)
       end
-      @line_no += code.count("\n")
+      increase_line_no(code.count("\n"))
     rescue TerminateLineInput
     end
   end

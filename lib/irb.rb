@@ -18,6 +18,7 @@ require_relative "irb/color"
 
 require_relative "irb/version"
 require_relative "irb/easter-egg"
+require_relative "irb/debug"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
@@ -373,8 +374,6 @@ module IRB
   class Abort < Exception;end
 
   @CONF = {}
-
-
   # Displays current configuration.
   #
   # Modifying the configuration is achieved by sending a message to IRB.conf.
@@ -441,7 +440,7 @@ module IRB
     # Creates a new irb session
     def initialize(workspace = nil, input_method = nil)
       @context = Context.new(self, workspace, input_method)
-      @context.main.extend ExtendCommandBundle
+      @context.workspace.load_commands_to_main
       @signal_status = :IN_IRB
       @scanner = RubyLex.new(@context)
     end
@@ -455,6 +454,38 @@ module IRB
         # and remove the redundant method
         DEBUGGER__.singleton_class.send(:undef_method, :capture_frames_without_irb)
       end
+    end
+
+    def debug_readline(binding)
+      workspace = IRB::WorkSpace.new(binding)
+      context.workspace = workspace
+      context.workspace.load_commands_to_main
+      scanner.increase_line_no(1)
+
+      # When users run:
+      # 1. Debugging commands, like `step 2`
+      # 2. Any input that's not irb-command, like `foo = 123`
+      #
+      # Irb#eval_input will simply return the input, and we need to pass it to the debugger.
+      input = if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
+        # Previous IRB session's history has been saved when `Irb#run` is exited
+        # We need to make sure the saved history is not saved again by reseting the counter
+        context.io.reset_history_counter
+
+        begin
+          eval_input
+        ensure
+          context.io.save_history
+        end
+      else
+        eval_input
+      end
+
+      if input&.include?("\n")
+        scanner.increase_line_no(input.count("\n") - 1)
+      end
+
+      input
     end
 
     def run(conf = IRB.conf)
@@ -542,6 +573,18 @@ module IRB
       @scanner.each_top_level_statement do |line, line_no, is_assignment|
         signal_status(:IN_EVAL) do
           begin
+            # If the integration with debugger is activated, we need to handle certain input differently
+            if @context.with_debugger
+              command_class = load_command_class(line)
+              # First, let's pass debugging command's input to debugger
+              # Secondly, we need to let debugger evaluate non-command input
+              # Otherwise, the expression will be evaluated in the debugger's main session thread
+              # This is the only way to run the user's program in the expected thread
+              if !command_class || ExtendCommand::DebugCommand > command_class
+                return line
+              end
+            end
+
             evaluate_line(line, line_no)
 
             # Don't echo if the line ends with a semicolon
@@ -631,6 +674,12 @@ module IRB
       end
 
       @context.evaluate(line, line_no)
+    end
+
+    def load_command_class(line)
+      command, _ = line.split(/\s/, 2)
+      command_name = @context.command_aliases[command.to_sym]
+      ExtendCommandBundle.load_command(command_name || command)
     end
 
     def convert_invalid_byte_sequence(str, enc)
@@ -986,12 +1035,32 @@ class Binding
   #
   # See IRB@Usage for more information.
   def irb(show_code: true)
+    # Setup IRB with the current file's path and no command line arguments
     IRB.setup(source_location[0], argv: [])
+    # Create a new workspace using the current binding
     workspace = IRB::WorkSpace.new(self)
+    # Print the code around the binding if show_code is true
     STDOUT.print(workspace.code_around_binding) if show_code
-    binding_irb = IRB::Irb.new(workspace)
-    binding_irb.context.irb_path = File.expand_path(source_location[0])
-    binding_irb.run(IRB.conf)
-    binding_irb.debug_break
+    # Get the original IRB instance
+    debugger_irb = IRB.instance_variable_get(:@debugger_irb)
+
+    irb_path = File.expand_path(source_location[0])
+
+    if debugger_irb
+      # If we're already in a debugger session, set the workspace and irb_path for the original IRB instance
+      debugger_irb.context.workspace = workspace
+      debugger_irb.context.irb_path = irb_path
+      # If we've started a debugger session and hit another binding.irb, we don't want to start an IRB session
+      # instead, we want to resume the irb:rdbg session.
+      IRB::Debug.setup(debugger_irb)
+      IRB::Debug.insert_debug_break
+      debugger_irb.debug_break
+    else
+      # If we're not in a debugger session, create a new IRB instance with the current workspace
+      binding_irb = IRB::Irb.new(workspace)
+      binding_irb.context.irb_path = irb_path
+      binding_irb.run(IRB.conf)
+      binding_irb.debug_break
+    end
   end
 end

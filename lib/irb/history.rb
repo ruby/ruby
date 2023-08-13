@@ -4,6 +4,10 @@ module IRB
       true
     end
 
+    def reset_history_counter
+      @loaded_history_lines = self.class::HISTORY.size if defined? @loaded_history_lines
+    end
+
     def load_history
       history = self.class::HISTORY
       if history_file = IRB.conf[:HISTORY_FILE]

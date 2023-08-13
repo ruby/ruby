@@ -108,6 +108,10 @@ EOF
     # <code>IRB.conf[:__MAIN__]</code>
     attr_reader :main
 
+    def load_commands_to_main
+      main.extend ExtendCommandBundle
+    end
+
     # Evaluate the given +statements+ within the  context of this workspace.
     def evaluate(statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)

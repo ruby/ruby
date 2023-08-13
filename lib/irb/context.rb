@@ -345,6 +345,8 @@ module IRB
     # User-defined IRB command aliases
     attr_accessor :command_aliases
 
+    attr_accessor :with_debugger
+
     # Alias for #use_multiline
     alias use_multiline? use_multiline
     # Alias for #use_singleline
