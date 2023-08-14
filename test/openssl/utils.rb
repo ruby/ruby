@@ -131,11 +131,12 @@ module OpenSSL::TestUtils
     end
   end
 
-  def openssl?(major = nil, minor = nil, fix = nil, patch = 0)
+  def openssl?(major = nil, minor = nil, fix = nil, patch = 0, status = 0)
     return false if OpenSSL::OPENSSL_VERSION.include?("LibreSSL")
     return true unless major
     OpenSSL::OPENSSL_VERSION_NUMBER >=
-      major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10
+      major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10 +
+      status * 0x1
   end
 
   def libressl?(major = nil, minor = nil, fix = nil)

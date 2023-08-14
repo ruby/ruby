@@ -188,7 +188,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def raw_initialize
-    pend "Ed25519 is not implemented" unless OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10101000 && # >= v1.1.1
+    pend "Ed25519 is not implemented" unless openssl?(1, 1, 1) # >= v1.1.1
 
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("foo123", "xxx") }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("ED25519", "xxx") }
