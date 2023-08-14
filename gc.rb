@@ -1,6 +1,6 @@
 # for gc.c
 
-#  The GC module provides an interface to Ruby's mark and
+#  The \GC module provides an interface to Ruby's mark and
 #  sweep garbage collection mechanism.
 #
 #  Some of the underlying methods are also available via the ObjectSpace
