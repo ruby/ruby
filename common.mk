@@ -201,6 +201,40 @@ $(YARP_FILES): $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_
 $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
+	$(MV) $(tooldir)/lib/yarp/node.rb $(top_srcdir)/lib/yarp/node.rb
+	$(MV) $(tooldir)/lib/yarp/serialize.rb $(top_srcdir)/lib/yarp/serialize.rb
+
+$(top_srcdir)/yarp/api_node.c: $(tooldir)/templates/template.rb $(tooldir)/templates/ext/yarp/api_node.c.erb
+	$(Q) YARP_JAVA_SKIP=1 $(BASERUBY) $(tooldir)/templates/template.rb
+	$(MV) $(tooldir)/ext/yarp/api_node.c $(top_srcdir)/yarp/api_node.c
+
+$(top_srcdir)/yarp/ast.h: $(tooldir)/templates/template.rb $(tooldir)/templates/include/yarp/ast.h.erb
+	$(Q) YARP_JAVA_SKIP=1 $(BASERUBY) $(tooldir)/templates/template.rb
+	$(MV) $(tooldir)/include/yarp/ast.h $(top_srcdir)/yarp/ast.h
+
+$(top_srcdir)/yarp/node.c: $(tooldir)/templates/template.rb $(tooldir)/templates/src/node.c.erb
+	$(Q) YARP_JAVA_SKIP=1 $(BASERUBY) $(tooldir)/templates/template.rb
+	$(MV) $(tooldir)/src/node.c $(top_srcdir)/yarp/node.c
+
+$(top_srcdir)/yarp/prettyprint.c: $(tooldir)/templates/template.rb $(tooldir)/templates/src/prettyprint.c.erb
+	$(Q) YARP_JAVA_SKIP=1 $(BASERUBY) $(tooldir)/templates/template.rb
+	$(MV) $(tooldir)/src/prettyprint.c $(top_srcdir)/yarp/prettyprint.c
+
+$(top_srcdir)/yarp/serialize.c: $(tooldir)/templates/template.rb $(tooldir)/templates/src/serialize.c.erb
+	$(Q) YARP_JAVA_SKIP=1 $(BASERUBY) $(tooldir)/templates/template.rb
+	$(MV) $(tooldir)/src/serialize.c $(top_srcdir)/src/serialize.c
+
+$(top_srcdir)/yarp/token_type.c: $(tooldir)/templates/template.rb $(tooldir)/templates/src/token_type.c.erb
+	$(Q) YARP_JAVA_SKIP=1 $(BASERUBY) $(tooldir)/templates/template.rb
+	$(MV) $(tooldir)/src/token_type.c $(top_srcdir)/src/token_type.c
+
+#  "include/yarp/ast.h",
+#  "lib/yarp/node.rb",
+#  "lib/yarp/serialize.rb",
+#  "src/node.c",
+#  "src/prettyprint.c",
+#  "src/serialize.c",
+#  "src/token_type.c"
 
 EXPORTOBJS    = $(DLNOBJ) \
 		localeinit.$(OBJEXT) \
