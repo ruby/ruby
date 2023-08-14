@@ -673,10 +673,7 @@ static VALUE convert_encoding(VALUE source)
   }
 
  if (encindex == binary_encindex) {
-    if (OBJ_FROZEN(source)) {
-      source = rb_str_dup(source);
-    }
-    return rb_enc_associate_index(source, utf8_encindex);
+    return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
   }
 
   return rb_str_conv_enc(source, rb_enc_from_index(encindex), rb_utf8_encoding());
