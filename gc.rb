@@ -10,26 +10,31 @@
 #  GC::Profiler.
 module GC
 
-  #  call-seq:
-  #     GC.start                     -> nil
-  #     ObjectSpace.garbage_collect  -> nil
-  #     include GC; garbage_collect  -> nil
-  #     GC.start(full_mark: true, immediate_sweep: true)           -> nil
-  #     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
-  #     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+  # Initiates garbage collection, even if manually disabled.
   #
-  #  Initiates garbage collection, even if manually disabled.
+  # The +full_mark+ keyword argument determines whether or not to perform a
+  # major garbage collection cycle. When set to +true+, a major garbage
+  # collection cycle is ran, meaning all objects are marked. When set to
+  # +false+, a minor garbage collection cycle is ran, meaning only young
+  # objects are marked.
   #
-  #  This method is defined with keyword arguments that default to true:
+  # The +immediate_mark+ keyword argument determines whether or not to perform
+  # incremental marking. When set to +true+, marking is completed during the
+  # call to this method. When set to +false+, marking is performed in steps
+  # that is interleaved with future Ruby code execution, so marking might not
+  # be completed during this method call. Note that if +full_mark+ is +false+
+  # then marking will always be immediate, regardless of the value of
+  # +immediate_mark+.
   #
-  #     def GC.start(full_mark: true, immediate_sweep: true); end
+  # The +immedate_sweep+ keyword argument determines whether or not to defer
+  # sweeping (using lazy sweep). When set to +true+, sweeping is performed in
+  # steps that is interleaved with future Ruby code execution, so sweeping might
+  # not be completed during this method call. When set to +false+, sweeping is
+  # completed during the call to this method.
   #
-  #  Use full_mark: false to perform a minor \GC.
-  #  Use immediate_sweep: false to defer sweeping (use lazy sweep).
-  #
-  #  Note: These keyword arguments are implementation and version dependent. They
-  #  are not guaranteed to be future-compatible, and may be ignored if the
-  #  underlying implementation does not support them.
+  # Note: These keyword arguments are implementation and version dependent. They
+  # are not guaranteed to be future-compatible, and may be ignored if the
+  # underlying implementation does not support them.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
     Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
