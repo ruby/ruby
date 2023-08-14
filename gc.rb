@@ -244,6 +244,9 @@ module GC
   # [force_major_gc_count]
   #   The number of times major garbage collection cycles this heap has forced
   #   to start due to running out of free slots.
+  # [force_incremental_marking_finish_count]
+  #   The number of times this heap has forced incremental marking to complete
+  #   due to running out of pooled slots.
   #
   def self.stat_heap heap_name = nil, hash_or_key = nil
     Primitive.gc_stat_heap heap_name, hash_or_key
