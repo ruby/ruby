@@ -219,6 +219,33 @@ module GC
   # If the optional argument, hash, is given, it is overwritten and returned.
   #
   # This method is only expected to work on CRuby.
+  #
+  # The hash includes the following keys about the internal information in
+  # the \GC:
+  #
+  # [slot_size]
+  #   The slot size of the heap in bytes.
+  # [heap_allocatable_pages]
+  #   The number of pages that can be allocated without triggering a new
+  #   garbage collection cycle.
+  # [heap_eden_pages]
+  #   The number of pages in the eden heap.
+  # [heap_eden_slots]
+  #   The total number of slots in all of the pages in the eden heap.
+  # [heap_tomb_pages]
+  #   The number of pages in the tomb heap. The tomb heap only contains pages
+  #   that do not have any live objects.
+  # [heap_tomb_slots]
+  #   The total number of slots in all of the pages in the tomb heap.
+  # [total_allocated_pages]
+  #   The total number of pages that have been allocated in the heap.
+  # [total_freed_pages]
+  #   The total number of pages that have been freed and released back to the
+  #   system in the heap.
+  # [force_major_gc_count]
+  #   The number of times major garbage collection cycles this size pool has
+  #   forced to start due to running out of free slots.
+  #
   def self.stat_heap heap_name = nil, hash_or_key = nil
     Primitive.gc_stat_heap heap_name, hash_or_key
   end
