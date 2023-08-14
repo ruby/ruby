@@ -1,3 +1,12 @@
+# test filled optionals with unspecified keyword param
+assert_equal 'ok', %q{
+  def opt_rest_opt_kw(_=1, *, k: :ok) = k
+
+  def call = opt_rest_opt_kw(0)
+
+  call
+}
+
 # test splat empty array with rest param
 assert_equal '[0, 1, 2, []]', %q{
   public def foo(a=1, b=2, *rest)
