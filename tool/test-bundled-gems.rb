@@ -23,7 +23,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
   next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
-  puts "#{github_actions ? "##[group]" : "\n"}Testing the #{gem} gem"
+  # 93(bright yellow) is copied from .github/workflows/mingw.yml
+  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
   first_timeout = 600 # 10min
@@ -88,7 +89,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     break
   end
 
-  print "##[endgroup]\n" if github_actions
+  print "::endgroup::\n" if github_actions
   unless $?.success?
 
     mesg = "Tests failed " +

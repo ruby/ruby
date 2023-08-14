@@ -8,8 +8,9 @@ MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
 ifeq ($(GITHUB_ACTIONS),true)
-override ACTIONS_GROUP = @echo "\#\#[group]$(patsubst yes-%,%,$@)"
-override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
+# 93(bright yellow) is copied from .github/workflows/mingw.yml
+override ACTIONS_GROUP = @echo "::group::[93m$(@:yes-%=%)[m"
+override ACTIONS_ENDGROUP = @echo "::endgroup::"
 endif
 
 ifneq ($(filter darwin%,$(target_os)),)
