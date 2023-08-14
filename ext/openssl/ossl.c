@@ -1152,9 +1152,26 @@ Init_openssl(void)
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with
-     * (base 16)
+     * (base 16). The formats are below.
+     *
+     * [OpenSSL 3] <tt>0xMNN00PP0 (major minor 00 patch 0)</tt>
+     * [OpenSSL before 3] <tt>0xMNNFFPPS (major minor fix patch status)</tt>
+     * [LibreSSL] <tt>0x20000000 (fixed value)</tt>
+     *
+     * See also the man page OPENSSL_VERSION_NUMBER(3).
      */
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
+
+#if defined(LIBRESSL_VERSION_NUMBER)
+    /*
+     * Version number of LibreSSL the ruby OpenSSL extension was built with
+     * (base 16). The format is <tt>0xMNNFFPPS (major minor fix patch
+     * status)</tt>. This constant is only defined in LibreSSL cases.
+     *
+     * See also the man page OPENSSL_VERSION_NUMBER(3).
+     */
+    rb_define_const(mOSSL, "LIBRESSL_VERSION_NUMBER", INT2NUM(LIBRESSL_VERSION_NUMBER));
+#endif
 
     /*
      * Boolean indicating whether OpenSSL is FIPS-capable or not
