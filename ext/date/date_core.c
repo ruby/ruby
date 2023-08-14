@@ -6332,11 +6332,9 @@ minus_dd(VALUE self, VALUE other)
  * call-seq:
  *    d - other  ->  date or rational
  *
- * If the other is a date object, returns a Rational
- * whose value is the difference between the two dates in days.
- * If the other is a numeric value, returns a date object
- * pointing +other+ days before self.
- * If the other is a fractional number,
+ * Returns the difference between the two dates if the other is a date
+ * object.  If the other is a numeric value, returns a date object
+ * pointing +other+ days before self.  If the other is a fractional number,
  * assumes its precision is at most nanosecond.
  *
  *     Date.new(2001,2,3) - 1	#=> #<Date: 2001-02-02 ...>
