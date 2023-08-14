@@ -1,3 +1,14 @@
+# test splat empty array with rest param
+assert_equal '[0, 1, 2, []]', %q{
+  public def foo(a=1, b=2, *rest)
+    [self, a, b, rest]
+  end
+
+  def call(args) = 0.foo(*args)
+
+  call([])
+}
+
 # Regression test for yielding with autosplat to block with
 # optional parameters. https://github.com/Shopify/yjit/issues/313
 assert_equal '[:a, :b, :a, :b]', %q{

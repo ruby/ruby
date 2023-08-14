@@ -5523,6 +5523,11 @@ fn move_rest_args_to_stack(array: Opnd, num_args: u32, asm: &mut Assembler) {
     asm.cmp(array_len_opnd, num_args.into());
     asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_not_equal));
 
+    // Unused operands cause the backend to panic
+    if num_args == 0 {
+        return;
+    }
+
     asm.comment("Push arguments from array");
 
     // Load the address of the embedded array
