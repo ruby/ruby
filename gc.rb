@@ -196,19 +196,18 @@ module GC
   #    GC.stat_heap(heap_name, hash) -> Hash
   #    GC.stat_heap(heap_name, :key) -> Numeric
   #
-  # Returns information for memory pools in the \GC.
+  # Returns information for heaps in the \GC.
   #
   # If the first optional argument, +heap_name+, is passed in and not +nil+, it
-  # returns a +Hash+ containing information about the particular memory pool.
-  # Otherwise, it will return a +Hash+ with memory pool names as keys and
-  # a +Hash+ containing information about the memory pool as values.
+  # returns a +Hash+ containing information about the particular heap.
+  # Otherwise, it will return a +Hash+ with heap names as keys and
+  # a +Hash+ containing information about the heap as values.
   #
   # If the second optional argument, +hash_or_key+, is given as +Hash+, it will
   # be overwritten and returned. This is intended to avoid the probe effect.
   #
   # If both optional arguments are passed in and the second optional argument is
-  # a symbol, it will return a +Numeric+ of the value for the particular memory
-  # pool.
+  # a symbol, it will return a +Numeric+ of the value for the particular heap.
   #
   # On CRuby, +heap_name+ is of the type +Integer+ but may be of type +String+
   # on other implementations.
@@ -243,8 +242,8 @@ module GC
   #   The total number of pages that have been freed and released back to the
   #   system in the heap.
   # [force_major_gc_count]
-  #   The number of times major garbage collection cycles this size pool has
-  #   forced to start due to running out of free slots.
+  #   The number of times major garbage collection cycles this heap has forced
+  #   to start due to running out of free slots.
   #
   def self.stat_heap heap_name = nil, hash_or_key = nil
     Primitive.gc_stat_heap heap_name, hash_or_key
