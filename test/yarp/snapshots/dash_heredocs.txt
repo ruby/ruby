@@ -1,6 +1,6 @@
-ProgramNode(0...223)(
+ProgramNode(0...231)(
   [],
-  StatementsNode(0...223)(
+  StatementsNode(0...231)(
     [InterpolatedStringNode(0...15)(
        (0...6),
        [StringNode(7...11)(nil, (7...11), nil, "  a\n")],
@@ -112,10 +112,11 @@ ProgramNode(0...223)(
        [StringNode(188...196)(nil, (188...196), nil, "  a\n" + "  b\n")],
        (196...200)
      ),
-     InterpolatedStringNode(201...223)(
-       (201...209),
-       [StringNode(210...219)(nil, (210...219), nil, "  a \#{1}\n")],
-       (219...223)
+     InterpolatedStringNode(201...208)((201...206), [], (207...208)),
+     InterpolatedStringNode(209...231)(
+       (209...217),
+       [StringNode(218...227)(nil, (218...227), nil, "  a \#{1}\n")],
+       (227...231)
      )]
   )
 )

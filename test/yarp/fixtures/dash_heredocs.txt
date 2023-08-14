@@ -39,6 +39,9 @@ EOF
   b
 EOF
 
+<<-''
+
+
 <<-'EOF'
   a #{1}
 EOF
