@@ -9,6 +9,10 @@
 # to test on the most recent versions.
 return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.2"
 
+# Omit tests if running on a 32-bit machine because there is a bug with how
+# Ruby is handling large ISeqs on 32-bit machines
+return if RUBY_PLATFORM =~ /i686/
+
 require "yarp_test_helper"
 
 class LocalsTest < Test::Unit::TestCase
