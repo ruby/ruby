@@ -14,9 +14,6 @@ override ACTIONS_ENDGROUP = @echo "::endgroup::"
 endif
 
 ifneq ($(filter darwin%,$(target_os)),)
-# Remove debug option not to generate thousands of .dSYM
-RJIT_DEBUGFLAGS := $(filter-out -g%,$(RJIT_DEBUGFLAGS))
-
 INSTRUBY_ENV += SDKROOT=
 endif
 INSTRUBY_ARGS += --gnumake
