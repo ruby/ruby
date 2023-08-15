@@ -4143,7 +4143,7 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  === What's Here
  *
- *  These are the methods defined for BasicObject:
+ *  These are the methods defined for \BasicObject:
  *
  *  - ::new: Returns a new \BasicObject instance.
  *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
