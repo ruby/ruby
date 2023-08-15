@@ -62,6 +62,9 @@ typedef enum yp_token_type {
     YP_TOKEN_EQUAL_GREATER, // =>
     YP_TOKEN_EQUAL_TILDE, // =~
     YP_TOKEN_FLOAT, // a floating point number
+    YP_TOKEN_FLOAT_IMAGINARY, // a floating pointer number with an imaginary suffix
+    YP_TOKEN_FLOAT_RATIONAL, // a floating pointer number with a rational suffix
+    YP_TOKEN_FLOAT_RATIONAL_IMAGINARY, // a floating pointer number with a rational and imaginary suffix
     YP_TOKEN_GLOBAL_VARIABLE, // a global variable
     YP_TOKEN_GREATER, // >
     YP_TOKEN_GREATER_EQUAL, // >=
@@ -71,9 +74,11 @@ typedef enum yp_token_type {
     YP_TOKEN_HEREDOC_START, // the start of a heredoc
     YP_TOKEN_IDENTIFIER, // an identifier
     YP_TOKEN_IGNORED_NEWLINE, // an ignored newline
-    YP_TOKEN_IMAGINARY_NUMBER, // an imaginary number literal
     YP_TOKEN_INSTANCE_VARIABLE, // an instance variable
     YP_TOKEN_INTEGER, // an integer (any base)
+    YP_TOKEN_INTEGER_IMAGINARY, // an integer with an imaginary suffix
+    YP_TOKEN_INTEGER_RATIONAL, // an integer with a rational suffix
+    YP_TOKEN_INTEGER_RATIONAL_IMAGINARY, // an integer with a rational and imaginary suffix
     YP_TOKEN_KEYWORD_ALIAS, // alias
     YP_TOKEN_KEYWORD_AND, // and
     YP_TOKEN_KEYWORD_BEGIN, // begin
@@ -151,7 +156,6 @@ typedef enum yp_token_type {
     YP_TOKEN_PLUS, // +
     YP_TOKEN_PLUS_EQUAL, // +=
     YP_TOKEN_QUESTION_MARK, // ?
-    YP_TOKEN_RATIONAL_NUMBER, // a rational number literal
     YP_TOKEN_REGEXP_BEGIN, // the beginning of a regular expression
     YP_TOKEN_REGEXP_END, // the end of a regular expression
     YP_TOKEN_SEMICOLON, // ;
@@ -166,6 +170,7 @@ typedef enum yp_token_type {
     YP_TOKEN_STRING_END, // the end of a string
     YP_TOKEN_SYMBOL_BEGIN, // the beginning of a symbol
     YP_TOKEN_TILDE, // ~ or ~@
+    YP_TOKEN_UAMPERSAND, // unary &
     YP_TOKEN_UCOLON_COLON, // unary ::
     YP_TOKEN_UDOT_DOT, // unary ..
     YP_TOKEN_UDOT_DOT_DOT, // unary ...
@@ -208,7 +213,7 @@ typedef struct yp_node_list {
     size_t capacity;
 } yp_node_list_t;
 
-typedef enum {
+enum yp_node_type {
     YP_NODE_ALIAS_NODE = 1,
     YP_NODE_ALTERNATION_PATTERN_NODE = 2,
     YP_NODE_AND_NODE = 3,
@@ -245,103 +250,120 @@ typedef enum {
     YP_NODE_CONSTANT_PATH_OPERATOR_WRITE_NODE = 34,
     YP_NODE_CONSTANT_PATH_WRITE_NODE = 35,
     YP_NODE_CONSTANT_READ_NODE = 36,
-    YP_NODE_DEF_NODE = 37,
-    YP_NODE_DEFINED_NODE = 38,
-    YP_NODE_ELSE_NODE = 39,
-    YP_NODE_EMBEDDED_STATEMENTS_NODE = 40,
-    YP_NODE_EMBEDDED_VARIABLE_NODE = 41,
-    YP_NODE_ENSURE_NODE = 42,
-    YP_NODE_FALSE_NODE = 43,
-    YP_NODE_FIND_PATTERN_NODE = 44,
-    YP_NODE_FLOAT_NODE = 45,
-    YP_NODE_FOR_NODE = 46,
-    YP_NODE_FORWARDING_ARGUMENTS_NODE = 47,
-    YP_NODE_FORWARDING_PARAMETER_NODE = 48,
-    YP_NODE_FORWARDING_SUPER_NODE = 49,
-    YP_NODE_GLOBAL_VARIABLE_OPERATOR_AND_WRITE_NODE = 50,
-    YP_NODE_GLOBAL_VARIABLE_OPERATOR_OR_WRITE_NODE = 51,
-    YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE = 52,
-    YP_NODE_GLOBAL_VARIABLE_READ_NODE = 53,
-    YP_NODE_GLOBAL_VARIABLE_WRITE_NODE = 54,
-    YP_NODE_HASH_NODE = 55,
-    YP_NODE_HASH_PATTERN_NODE = 56,
-    YP_NODE_IF_NODE = 57,
-    YP_NODE_IMAGINARY_NODE = 58,
-    YP_NODE_IN_NODE = 59,
-    YP_NODE_INSTANCE_VARIABLE_OPERATOR_AND_WRITE_NODE = 60,
-    YP_NODE_INSTANCE_VARIABLE_OPERATOR_OR_WRITE_NODE = 61,
-    YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE = 62,
-    YP_NODE_INSTANCE_VARIABLE_READ_NODE = 63,
-    YP_NODE_INSTANCE_VARIABLE_WRITE_NODE = 64,
-    YP_NODE_INTEGER_NODE = 65,
-    YP_NODE_INTERPOLATED_REGULAR_EXPRESSION_NODE = 66,
-    YP_NODE_INTERPOLATED_STRING_NODE = 67,
-    YP_NODE_INTERPOLATED_SYMBOL_NODE = 68,
-    YP_NODE_INTERPOLATED_X_STRING_NODE = 69,
-    YP_NODE_KEYWORD_HASH_NODE = 70,
-    YP_NODE_KEYWORD_PARAMETER_NODE = 71,
-    YP_NODE_KEYWORD_REST_PARAMETER_NODE = 72,
-    YP_NODE_LAMBDA_NODE = 73,
-    YP_NODE_LOCAL_VARIABLE_OPERATOR_AND_WRITE_NODE = 74,
-    YP_NODE_LOCAL_VARIABLE_OPERATOR_OR_WRITE_NODE = 75,
-    YP_NODE_LOCAL_VARIABLE_OPERATOR_WRITE_NODE = 76,
-    YP_NODE_LOCAL_VARIABLE_READ_NODE = 77,
-    YP_NODE_LOCAL_VARIABLE_WRITE_NODE = 78,
-    YP_NODE_MATCH_PREDICATE_NODE = 79,
-    YP_NODE_MATCH_REQUIRED_NODE = 80,
-    YP_NODE_MISSING_NODE = 81,
-    YP_NODE_MODULE_NODE = 82,
-    YP_NODE_MULTI_WRITE_NODE = 83,
-    YP_NODE_NEXT_NODE = 84,
-    YP_NODE_NIL_NODE = 85,
-    YP_NODE_NO_KEYWORDS_PARAMETER_NODE = 86,
-    YP_NODE_NUMBERED_REFERENCE_READ_NODE = 87,
-    YP_NODE_OPTIONAL_PARAMETER_NODE = 88,
-    YP_NODE_OR_NODE = 89,
-    YP_NODE_PARAMETERS_NODE = 90,
-    YP_NODE_PARENTHESES_NODE = 91,
-    YP_NODE_PINNED_EXPRESSION_NODE = 92,
-    YP_NODE_PINNED_VARIABLE_NODE = 93,
-    YP_NODE_POST_EXECUTION_NODE = 94,
-    YP_NODE_PRE_EXECUTION_NODE = 95,
-    YP_NODE_PROGRAM_NODE = 96,
-    YP_NODE_RANGE_NODE = 97,
-    YP_NODE_RATIONAL_NODE = 98,
-    YP_NODE_REDO_NODE = 99,
-    YP_NODE_REGULAR_EXPRESSION_NODE = 100,
-    YP_NODE_REQUIRED_DESTRUCTURED_PARAMETER_NODE = 101,
-    YP_NODE_REQUIRED_PARAMETER_NODE = 102,
-    YP_NODE_RESCUE_MODIFIER_NODE = 103,
-    YP_NODE_RESCUE_NODE = 104,
-    YP_NODE_REST_PARAMETER_NODE = 105,
-    YP_NODE_RETRY_NODE = 106,
-    YP_NODE_RETURN_NODE = 107,
-    YP_NODE_SELF_NODE = 108,
-    YP_NODE_SINGLETON_CLASS_NODE = 109,
-    YP_NODE_SOURCE_ENCODING_NODE = 110,
-    YP_NODE_SOURCE_FILE_NODE = 111,
-    YP_NODE_SOURCE_LINE_NODE = 112,
-    YP_NODE_SPLAT_NODE = 113,
-    YP_NODE_STATEMENTS_NODE = 114,
-    YP_NODE_STRING_CONCAT_NODE = 115,
-    YP_NODE_STRING_NODE = 116,
-    YP_NODE_SUPER_NODE = 117,
-    YP_NODE_SYMBOL_NODE = 118,
-    YP_NODE_TRUE_NODE = 119,
-    YP_NODE_UNDEF_NODE = 120,
-    YP_NODE_UNLESS_NODE = 121,
-    YP_NODE_UNTIL_NODE = 122,
-    YP_NODE_WHEN_NODE = 123,
-    YP_NODE_WHILE_NODE = 124,
-    YP_NODE_X_STRING_NODE = 125,
-    YP_NODE_YIELD_NODE = 126,
-} yp_node_type_t;
+    YP_NODE_CONSTANT_WRITE_NODE = 37,
+    YP_NODE_DEF_NODE = 38,
+    YP_NODE_DEFINED_NODE = 39,
+    YP_NODE_ELSE_NODE = 40,
+    YP_NODE_EMBEDDED_STATEMENTS_NODE = 41,
+    YP_NODE_EMBEDDED_VARIABLE_NODE = 42,
+    YP_NODE_ENSURE_NODE = 43,
+    YP_NODE_FALSE_NODE = 44,
+    YP_NODE_FIND_PATTERN_NODE = 45,
+    YP_NODE_FLIP_FLOP_NODE = 46,
+    YP_NODE_FLOAT_NODE = 47,
+    YP_NODE_FOR_NODE = 48,
+    YP_NODE_FORWARDING_ARGUMENTS_NODE = 49,
+    YP_NODE_FORWARDING_PARAMETER_NODE = 50,
+    YP_NODE_FORWARDING_SUPER_NODE = 51,
+    YP_NODE_GLOBAL_VARIABLE_OPERATOR_AND_WRITE_NODE = 52,
+    YP_NODE_GLOBAL_VARIABLE_OPERATOR_OR_WRITE_NODE = 53,
+    YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE = 54,
+    YP_NODE_GLOBAL_VARIABLE_READ_NODE = 55,
+    YP_NODE_GLOBAL_VARIABLE_WRITE_NODE = 56,
+    YP_NODE_HASH_NODE = 57,
+    YP_NODE_HASH_PATTERN_NODE = 58,
+    YP_NODE_IF_NODE = 59,
+    YP_NODE_IMAGINARY_NODE = 60,
+    YP_NODE_IN_NODE = 61,
+    YP_NODE_INSTANCE_VARIABLE_OPERATOR_AND_WRITE_NODE = 62,
+    YP_NODE_INSTANCE_VARIABLE_OPERATOR_OR_WRITE_NODE = 63,
+    YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE = 64,
+    YP_NODE_INSTANCE_VARIABLE_READ_NODE = 65,
+    YP_NODE_INSTANCE_VARIABLE_WRITE_NODE = 66,
+    YP_NODE_INTEGER_NODE = 67,
+    YP_NODE_INTERPOLATED_REGULAR_EXPRESSION_NODE = 68,
+    YP_NODE_INTERPOLATED_STRING_NODE = 69,
+    YP_NODE_INTERPOLATED_SYMBOL_NODE = 70,
+    YP_NODE_INTERPOLATED_X_STRING_NODE = 71,
+    YP_NODE_KEYWORD_HASH_NODE = 72,
+    YP_NODE_KEYWORD_PARAMETER_NODE = 73,
+    YP_NODE_KEYWORD_REST_PARAMETER_NODE = 74,
+    YP_NODE_LAMBDA_NODE = 75,
+    YP_NODE_LOCAL_VARIABLE_OPERATOR_AND_WRITE_NODE = 76,
+    YP_NODE_LOCAL_VARIABLE_OPERATOR_OR_WRITE_NODE = 77,
+    YP_NODE_LOCAL_VARIABLE_OPERATOR_WRITE_NODE = 78,
+    YP_NODE_LOCAL_VARIABLE_READ_NODE = 79,
+    YP_NODE_LOCAL_VARIABLE_WRITE_NODE = 80,
+    YP_NODE_MATCH_PREDICATE_NODE = 81,
+    YP_NODE_MATCH_REQUIRED_NODE = 82,
+    YP_NODE_MISSING_NODE = 83,
+    YP_NODE_MODULE_NODE = 84,
+    YP_NODE_MULTI_WRITE_NODE = 85,
+    YP_NODE_NEXT_NODE = 86,
+    YP_NODE_NIL_NODE = 87,
+    YP_NODE_NO_KEYWORDS_PARAMETER_NODE = 88,
+    YP_NODE_NUMBERED_REFERENCE_READ_NODE = 89,
+    YP_NODE_OPTIONAL_PARAMETER_NODE = 90,
+    YP_NODE_OR_NODE = 91,
+    YP_NODE_PARAMETERS_NODE = 92,
+    YP_NODE_PARENTHESES_NODE = 93,
+    YP_NODE_PINNED_EXPRESSION_NODE = 94,
+    YP_NODE_PINNED_VARIABLE_NODE = 95,
+    YP_NODE_POST_EXECUTION_NODE = 96,
+    YP_NODE_PRE_EXECUTION_NODE = 97,
+    YP_NODE_PROGRAM_NODE = 98,
+    YP_NODE_RANGE_NODE = 99,
+    YP_NODE_RATIONAL_NODE = 100,
+    YP_NODE_REDO_NODE = 101,
+    YP_NODE_REGULAR_EXPRESSION_NODE = 102,
+    YP_NODE_REQUIRED_DESTRUCTURED_PARAMETER_NODE = 103,
+    YP_NODE_REQUIRED_PARAMETER_NODE = 104,
+    YP_NODE_RESCUE_MODIFIER_NODE = 105,
+    YP_NODE_RESCUE_NODE = 106,
+    YP_NODE_REST_PARAMETER_NODE = 107,
+    YP_NODE_RETRY_NODE = 108,
+    YP_NODE_RETURN_NODE = 109,
+    YP_NODE_SELF_NODE = 110,
+    YP_NODE_SINGLETON_CLASS_NODE = 111,
+    YP_NODE_SOURCE_ENCODING_NODE = 112,
+    YP_NODE_SOURCE_FILE_NODE = 113,
+    YP_NODE_SOURCE_LINE_NODE = 114,
+    YP_NODE_SPLAT_NODE = 115,
+    YP_NODE_STATEMENTS_NODE = 116,
+    YP_NODE_STRING_CONCAT_NODE = 117,
+    YP_NODE_STRING_NODE = 118,
+    YP_NODE_SUPER_NODE = 119,
+    YP_NODE_SYMBOL_NODE = 120,
+    YP_NODE_TRUE_NODE = 121,
+    YP_NODE_UNDEF_NODE = 122,
+    YP_NODE_UNLESS_NODE = 123,
+    YP_NODE_UNTIL_NODE = 124,
+    YP_NODE_WHEN_NODE = 125,
+    YP_NODE_WHILE_NODE = 126,
+    YP_NODE_X_STRING_NODE = 127,
+    YP_NODE_YIELD_NODE = 128,
+};
+
+typedef uint16_t yp_node_type_t;
+typedef uint16_t yp_node_flags_t;
+
+// We store the flags enum in every node in the tree. Some flags are common to
+// all nodes (the ones listed below). Others are specific to certain node types.
+static const yp_node_flags_t YP_NODE_FLAG_NEWLINE = 0x1;
+
+// For easy access, we define some macros to check node type
+#define YP_NODE_TYPE(node) ((enum yp_node_type)node->type)
+#define YP_NODE_TYPE_P(node, type) (YP_NODE_TYPE(node) == (type))
 
 // This is the overall tagged union representing a node in the syntax tree.
 typedef struct yp_node {
     // This represents the type of the node. It somewhat maps to the nodes that
     // existed in the original grammar and ripper, but it's not a 1:1 mapping.
     yp_node_type_t type;
+
+    // This represents any flags on the node. Currently, this is only a newline
+    // flag
+    yp_node_flags_t flags;
 
     // This is the location of the node in the source. It's a range of bytes
     // containing a start and an end.
@@ -478,7 +500,6 @@ typedef struct yp_call_node {
     struct yp_arguments_node *arguments;
     yp_location_t closing_loc;
     struct yp_block_node *block;
-    uint32_t flags;
     yp_string_t name;
 } yp_call_node_t;
 
@@ -636,7 +657,7 @@ typedef struct yp_constant_path_operator_write_node {
 // ConstantPathWriteNode
 typedef struct yp_constant_path_write_node {
     yp_node_t base;
-    struct yp_node *target;
+    struct yp_constant_path_node *target;
     yp_location_t operator_loc;
     struct yp_node *value;
 } yp_constant_path_write_node_t;
@@ -645,6 +666,14 @@ typedef struct yp_constant_path_write_node {
 typedef struct yp_constant_read_node {
     yp_node_t base;
 } yp_constant_read_node_t;
+
+// ConstantWriteNode
+typedef struct yp_constant_write_node {
+    yp_node_t base;
+    yp_location_t name_loc;
+    struct yp_node *value;
+    yp_location_t operator_loc;
+} yp_constant_write_node_t;
 
 // DefNode
 typedef struct yp_def_node {
@@ -717,6 +746,14 @@ typedef struct yp_find_pattern_node {
     yp_location_t opening_loc;
     yp_location_t closing_loc;
 } yp_find_pattern_node_t;
+
+// FlipFlopNode
+typedef struct yp_flip_flop_node {
+    yp_node_t base;
+    struct yp_node *left;
+    struct yp_node *right;
+    yp_location_t operator_loc;
+} yp_flip_flop_node_t;
 
 // FloatNode
 typedef struct yp_float_node {
@@ -881,7 +918,6 @@ typedef struct yp_interpolated_regular_expression_node {
     yp_location_t opening_loc;
     struct yp_node_list parts;
     yp_location_t closing_loc;
-    uint32_t flags;
 } yp_interpolated_regular_expression_node_t;
 
 // InterpolatedStringNode
@@ -1131,7 +1167,6 @@ typedef struct yp_range_node {
     struct yp_node *left;
     struct yp_node *right;
     yp_location_t operator_loc;
-    uint32_t flags;
 } yp_range_node_t;
 
 // RationalNode
@@ -1152,7 +1187,6 @@ typedef struct yp_regular_expression_node {
     yp_location_t content_loc;
     yp_location_t closing_loc;
     yp_string_t unescaped;
-    uint32_t flags;
 } yp_regular_expression_node_t;
 
 // RequiredDestructuredParameterNode
@@ -1183,7 +1217,7 @@ typedef struct yp_rescue_node {
     yp_location_t keyword_loc;
     struct yp_node_list exceptions;
     yp_location_t operator_loc;
-    struct yp_node *exception;
+    struct yp_node *reference;
     struct yp_statements_node *statements;
     struct yp_rescue_node *consequent;
 } yp_rescue_node_t;
@@ -1353,24 +1387,30 @@ typedef struct yp_yield_node {
 
 // CallNodeFlags
 typedef enum {
-    YP_CALL_NODE_FLAGS_SAFE_NAVIGATION = 1 << 0,
+    YP_CALL_NODE_FLAGS_SAFE_NAVIGATION = 1 << 1,
+    YP_CALL_NODE_FLAGS_VARIABLE_CALL = 1 << 2,
 } yp_call_node_flags_t;
 
-// RangeNodeFlags
+// LoopFlags
 typedef enum {
-    YP_RANGE_NODE_FLAGS_EXCLUDE_END = 1 << 0,
-} yp_range_node_flags_t;
+    YP_LOOP_FLAGS_BEGIN_MODIFIER = 1 << 1,
+} yp_loop_flags_t;
+
+// RangeFlags
+typedef enum {
+    YP_RANGE_FLAGS_EXCLUDE_END = 1 << 1,
+} yp_range_flags_t;
 
 // RegularExpressionFlags
 typedef enum {
-    YP_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE = 1 << 0,
-    YP_REGULAR_EXPRESSION_FLAGS_MULTI_LINE = 1 << 1,
-    YP_REGULAR_EXPRESSION_FLAGS_EXTENDED = 1 << 2,
-    YP_REGULAR_EXPRESSION_FLAGS_EUC_JP = 1 << 3,
-    YP_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT = 1 << 4,
-    YP_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J = 1 << 5,
-    YP_REGULAR_EXPRESSION_FLAGS_UTF_8 = 1 << 6,
-    YP_REGULAR_EXPRESSION_FLAGS_ONCE = 1 << 7,
+    YP_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE = 1 << 1,
+    YP_REGULAR_EXPRESSION_FLAGS_MULTI_LINE = 1 << 2,
+    YP_REGULAR_EXPRESSION_FLAGS_EXTENDED = 1 << 3,
+    YP_REGULAR_EXPRESSION_FLAGS_EUC_JP = 1 << 4,
+    YP_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT = 1 << 5,
+    YP_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J = 1 << 6,
+    YP_REGULAR_EXPRESSION_FLAGS_UTF_8 = 1 << 7,
+    YP_REGULAR_EXPRESSION_FLAGS_ONCE = 1 << 8,
 } yp_regular_expression_flags_t;
 
 #endif // YARP_AST_H

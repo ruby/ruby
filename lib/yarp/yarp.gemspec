@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "yarp"
-  spec.version = "0.4.0"
+  spec.version = "0.7.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -10,27 +10,27 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/ruby/yarp"
   spec.license = "MIT"
 
+  spec.required_ruby_version = ">= 3.0.0"
+
   spec.require_paths = ["lib"]
   spec.files = [
     "CHANGELOG.md",
     "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
     "LICENSE.md",
-    "Makefile.in",
+    "Makefile",
     "README.md",
-    "config.h.in",
     "config.yml",
-    "configure",
     "docs/build_system.md",
     "docs/building.md",
     "docs/configuration.md",
     "docs/design.md",
     "docs/encoding.md",
-    "docs/extension.md",
     "docs/fuzzing.md",
     "docs/heredocs.md",
     "docs/mapping.md",
     "docs/ripper.md",
+    "docs/ruby_api.md",
     "docs/serialization.md",
     "docs/testing.md",
     "ext/yarp/api_node.c",
@@ -59,38 +59,20 @@ Gem::Specification.new do |spec|
     "include/yarp/util/yp_strpbrk.h",
     "include/yarp/version.h",
     "lib/yarp.rb",
+    "lib/yarp/ffi.rb",
     "lib/yarp/lex_compat.rb",
     "lib/yarp/node.rb",
     "lib/yarp/pack.rb",
     "lib/yarp/ripper_compat.rb",
     "lib/yarp/serialize.rb",
     "src/diagnostic.c",
-    "src/enc/ascii.c",
-    "src/enc/big5.c",
-    "src/enc/euc_jp.c",
-    "src/enc/gbk.c",
-    "src/enc/iso_8859_1.c",
-    "src/enc/iso_8859_10.c",
-    "src/enc/iso_8859_11.c",
-    "src/enc/iso_8859_13.c",
-    "src/enc/iso_8859_14.c",
-    "src/enc/iso_8859_15.c",
-    "src/enc/iso_8859_16.c",
-    "src/enc/iso_8859_2.c",
-    "src/enc/iso_8859_3.c",
-    "src/enc/iso_8859_4.c",
-    "src/enc/iso_8859_5.c",
-    "src/enc/iso_8859_6.c",
-    "src/enc/iso_8859_7.c",
-    "src/enc/iso_8859_8.c",
-    "src/enc/iso_8859_9.c",
-    "src/enc/koi8_r.c",
-    "src/enc/shared.c",
-    "src/enc/shift_jis.c",
-    "src/enc/unicode.c",
-    "src/enc/windows_1251.c",
-    "src/enc/windows_1252.c",
-    "src/enc/windows_31j.c",
+    "src/enc/yp_big5.c",
+    "src/enc/yp_euc_jp.c",
+    "src/enc/yp_gbk.c",
+    "src/enc/yp_shift_jis.c",
+    "src/enc/yp_tables.c",
+    "src/enc/yp_unicode.c",
+    "src/enc/yp_windows_31j.c",
     "src/node.c",
     "src/pack.c",
     "src/prettyprint.c",

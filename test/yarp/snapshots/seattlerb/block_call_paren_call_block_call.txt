@@ -9,7 +9,7 @@ ProgramNode(0...16)(
        ArgumentsNode(2...5)(
          [ParenthesesNode(2...5)(
             StatementsNode(3...4)(
-              [CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 0, "b")]
+              [CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 2, "b")]
             ),
             (2...3),
             (4...5)
@@ -21,7 +21,7 @@ ProgramNode(0...16)(
        "a"
      ),
      CallNode(6...16)(
-       CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 0, "c"),
+       CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 2, "c"),
        (7...8),
        (8...9),
        nil,

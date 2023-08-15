@@ -4,7 +4,7 @@ ProgramNode(0...100)(
     [DefNode(0...18)(
        (10...13),
        ParenthesesNode(4...9)(
-         CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 0, "foo"),
+         CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "foo"),
          (4...5),
          (8...9)
        ),

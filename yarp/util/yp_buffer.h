@@ -12,6 +12,7 @@
 // A yp_buffer_t is a simple memory buffer that stores data in a contiguous
 // block of memory. It is used to store the serialized representation of a
 // YARP tree.
+// NOTE: keep in sync with YARP::LibRubyParser::Buffer in lib/yarp.rb
 typedef struct {
     char *value;
     size_t length;

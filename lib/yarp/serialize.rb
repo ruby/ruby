@@ -7,45 +7,85 @@ if you are looking to modify the template
 
 require "stringio"
 
+# Polyfill for String#unpack1 with the offset parameter.
+if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset }
+  String.prepend(
+    Module.new {
+      def unpack1(format, offset: 0)
+        offset == 0 ? super(format) : self[offset..].unpack1(format)
+      end
+    }
+  )
+end
+
 module YARP
   module Serialize
-    def self.load(input, serialized)
-      io = StringIO.new(serialized)
-      io.set_encoding(Encoding::BINARY)
+    MAJOR_VERSION = 0
+    MINOR_VERSION = 7
+    PATCH_VERSION = 0
 
-      Loader.new(input, serialized, io).load
+    def self.load(input, serialized)
+      Loader.new(Source.new(input), serialized).load
+    end
+
+    def self.load_tokens(source, serialized)
+      Loader.new(source, serialized).load_tokens
     end
 
     class Loader
       attr_reader :encoding, :input, :serialized, :io
       attr_reader :constant_pool_offset, :constant_pool, :source
 
-      def initialize(input, serialized, io)
+      def initialize(source, serialized)
         @encoding = Encoding::UTF_8
 
-        @input = input.dup
+        @input = source.source.dup
         @serialized = serialized
-        @io = io
+        @io = StringIO.new(serialized)
+        @io.set_encoding(Encoding::BINARY)
 
         @constant_pool_offset = nil
         @constant_pool = nil
 
-        offsets = [0]
-        input.b.scan("\n") { offsets << $~.end(0) }
-        @source = Source.new(input, offsets)
+        @source = source
+      end
+
+      def load_tokens
+        tokens = []
+        while type = TOKEN_TYPES.fetch(load_varint)
+          start = load_varint
+          length = load_varint
+          lex_state = load_varint
+          location = Location.new(@source, start, length)
+          tokens << [YARP::Token.new(type, location.slice, location), lex_state]
+        end
+
+        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        errors = load_varint.times.map { ParseError.new(load_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_string, load_location) }
+
+        raise "Expected to consume all bytes while deserializing" unless @io.eof?
+
+        YARP::ParseResult.new(tokens, comments, errors, warnings, @source)
       end
 
       def load
-        io.read(4) => "YARP"
-        io.read(3).unpack("C3") => [0, 4, 0]
+        raise "Invalid serialization" if io.read(4) != "YARP"
+        raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
 
         @encoding = Encoding.find(io.read(load_varint))
         @input = input.force_encoding(@encoding).freeze
 
+        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(io.getbyte), load_location) }
+        errors = load_varint.times.map { ParseError.new(load_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_string, load_location) }
+
         @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
 
-        load_node
+        ast = load_node
+
+        YARP::ParseResult.new(ast, comments, errors, warnings, @source)
       end
 
       private
@@ -184,188 +224,359 @@ module YARP
         when 36 then
           ConstantReadNode.new(location)
         when 37 then
+          ConstantWriteNode.new(load_location, load_optional_node, load_optional_location, location)
+        when 38 then
           load_serialized_length
           DefNode.new(load_location, load_optional_node, load_optional_node, load_optional_node, Array.new(load_varint) { load_constant }, load_location, load_optional_location, load_optional_location, load_optional_location, load_optional_location, load_optional_location, location)
-        when 38 then
-          DefinedNode.new(load_optional_location, load_node, load_optional_location, load_location, location)
         when 39 then
-          ElseNode.new(load_location, load_optional_node, load_optional_location, location)
+          DefinedNode.new(load_optional_location, load_node, load_optional_location, load_location, location)
         when 40 then
-          EmbeddedStatementsNode.new(load_location, load_optional_node, load_location, location)
+          ElseNode.new(load_location, load_optional_node, load_optional_location, location)
         when 41 then
-          EmbeddedVariableNode.new(load_location, load_node, location)
+          EmbeddedStatementsNode.new(load_location, load_optional_node, load_location, location)
         when 42 then
-          EnsureNode.new(load_location, load_optional_node, load_location, location)
+          EmbeddedVariableNode.new(load_location, load_node, location)
         when 43 then
-          FalseNode.new(location)
+          EnsureNode.new(load_location, load_optional_node, load_location, location)
         when 44 then
-          FindPatternNode.new(load_optional_node, load_node, Array.new(load_varint) { load_node }, load_node, load_optional_location, load_optional_location, location)
+          FalseNode.new(location)
         when 45 then
-          FloatNode.new(location)
+          FindPatternNode.new(load_optional_node, load_node, Array.new(load_varint) { load_node }, load_node, load_optional_location, load_optional_location, location)
         when 46 then
-          ForNode.new(load_node, load_node, load_optional_node, load_location, load_location, load_optional_location, load_location, location)
+          FlipFlopNode.new(load_optional_node, load_optional_node, load_location, load_varint, location)
         when 47 then
-          ForwardingArgumentsNode.new(location)
+          FloatNode.new(location)
         when 48 then
-          ForwardingParameterNode.new(location)
+          ForNode.new(load_node, load_node, load_optional_node, load_location, load_location, load_optional_location, load_location, location)
         when 49 then
-          ForwardingSuperNode.new(load_optional_node, location)
+          ForwardingArgumentsNode.new(location)
         when 50 then
-          GlobalVariableOperatorAndWriteNode.new(load_location, load_location, load_node, location)
+          ForwardingParameterNode.new(location)
         when 51 then
-          GlobalVariableOperatorOrWriteNode.new(load_location, load_location, load_node, location)
+          ForwardingSuperNode.new(load_optional_node, location)
         when 52 then
-          GlobalVariableOperatorWriteNode.new(load_location, load_location, load_node, load_constant, location)
+          GlobalVariableOperatorAndWriteNode.new(load_location, load_location, load_node, location)
         when 53 then
-          GlobalVariableReadNode.new(location)
+          GlobalVariableOperatorOrWriteNode.new(load_location, load_location, load_node, location)
         when 54 then
-          GlobalVariableWriteNode.new(load_location, load_optional_location, load_optional_node, location)
+          GlobalVariableOperatorWriteNode.new(load_location, load_location, load_node, load_constant, location)
         when 55 then
-          HashNode.new(load_location, Array.new(load_varint) { load_node }, load_location, location)
+          GlobalVariableReadNode.new(location)
         when 56 then
-          HashPatternNode.new(load_optional_node, Array.new(load_varint) { load_node }, load_optional_node, load_optional_location, load_optional_location, location)
+          GlobalVariableWriteNode.new(load_location, load_optional_location, load_optional_node, location)
         when 57 then
-          IfNode.new(load_optional_location, load_node, load_optional_node, load_optional_node, load_optional_location, location)
+          HashNode.new(load_location, Array.new(load_varint) { load_node }, load_location, location)
         when 58 then
-          ImaginaryNode.new(load_node, location)
+          HashPatternNode.new(load_optional_node, Array.new(load_varint) { load_node }, load_optional_node, load_optional_location, load_optional_location, location)
         when 59 then
-          InNode.new(load_node, load_optional_node, load_location, load_optional_location, location)
+          IfNode.new(load_optional_location, load_node, load_optional_node, load_optional_node, load_optional_location, location)
         when 60 then
-          InstanceVariableOperatorAndWriteNode.new(load_location, load_location, load_node, location)
+          ImaginaryNode.new(load_node, location)
         when 61 then
-          InstanceVariableOperatorOrWriteNode.new(load_location, load_location, load_node, location)
+          InNode.new(load_node, load_optional_node, load_location, load_optional_location, location)
         when 62 then
-          InstanceVariableOperatorWriteNode.new(load_location, load_location, load_node, load_constant, location)
+          InstanceVariableOperatorAndWriteNode.new(load_location, load_location, load_node, location)
         when 63 then
-          InstanceVariableReadNode.new(location)
+          InstanceVariableOperatorOrWriteNode.new(load_location, load_location, load_node, location)
         when 64 then
-          InstanceVariableWriteNode.new(load_location, load_optional_node, load_optional_location, location)
+          InstanceVariableOperatorWriteNode.new(load_location, load_location, load_node, load_constant, location)
         when 65 then
-          IntegerNode.new(location)
+          InstanceVariableReadNode.new(location)
         when 66 then
-          InterpolatedRegularExpressionNode.new(load_location, Array.new(load_varint) { load_node }, load_location, load_varint, location)
+          InstanceVariableWriteNode.new(load_location, load_optional_node, load_optional_location, location)
         when 67 then
-          InterpolatedStringNode.new(load_optional_location, Array.new(load_varint) { load_node }, load_optional_location, location)
+          IntegerNode.new(location)
         when 68 then
-          InterpolatedSymbolNode.new(load_optional_location, Array.new(load_varint) { load_node }, load_optional_location, location)
+          InterpolatedRegularExpressionNode.new(load_location, Array.new(load_varint) { load_node }, load_location, load_varint, location)
         when 69 then
-          InterpolatedXStringNode.new(load_location, Array.new(load_varint) { load_node }, load_location, location)
+          InterpolatedStringNode.new(load_optional_location, Array.new(load_varint) { load_node }, load_optional_location, location)
         when 70 then
-          KeywordHashNode.new(Array.new(load_varint) { load_node }, location)
+          InterpolatedSymbolNode.new(load_optional_location, Array.new(load_varint) { load_node }, load_optional_location, location)
         when 71 then
-          KeywordParameterNode.new(load_location, load_optional_node, location)
+          InterpolatedXStringNode.new(load_location, Array.new(load_varint) { load_node }, load_location, location)
         when 72 then
-          KeywordRestParameterNode.new(load_location, load_optional_location, location)
+          KeywordHashNode.new(Array.new(load_varint) { load_node }, location)
         when 73 then
-          LambdaNode.new(Array.new(load_varint) { load_constant }, load_location, load_optional_node, load_optional_node, location)
+          KeywordParameterNode.new(load_location, load_optional_node, location)
         when 74 then
-          LocalVariableOperatorAndWriteNode.new(load_location, load_location, load_node, load_constant, location)
+          KeywordRestParameterNode.new(load_location, load_optional_location, location)
         when 75 then
-          LocalVariableOperatorOrWriteNode.new(load_location, load_location, load_node, load_constant, location)
+          LambdaNode.new(Array.new(load_varint) { load_constant }, load_location, load_optional_node, load_optional_node, location)
         when 76 then
-          LocalVariableOperatorWriteNode.new(load_location, load_location, load_node, load_constant, load_constant, location)
+          LocalVariableOperatorAndWriteNode.new(load_location, load_location, load_node, load_constant, location)
         when 77 then
-          LocalVariableReadNode.new(load_constant, load_varint, location)
+          LocalVariableOperatorOrWriteNode.new(load_location, load_location, load_node, load_constant, location)
         when 78 then
-          LocalVariableWriteNode.new(load_constant, load_varint, load_optional_node, load_location, load_optional_location, location)
+          LocalVariableOperatorWriteNode.new(load_location, load_location, load_node, load_constant, load_constant, location)
         when 79 then
-          MatchPredicateNode.new(load_node, load_node, load_location, location)
+          LocalVariableReadNode.new(load_constant, load_varint, location)
         when 80 then
-          MatchRequiredNode.new(load_node, load_node, load_location, location)
+          LocalVariableWriteNode.new(load_constant, load_varint, load_optional_node, load_location, load_optional_location, location)
         when 81 then
-          MissingNode.new(location)
+          MatchPredicateNode.new(load_node, load_node, load_location, location)
         when 82 then
-          ModuleNode.new(Array.new(load_varint) { load_constant }, load_location, load_node, load_optional_node, load_location, location)
+          MatchRequiredNode.new(load_node, load_node, load_location, location)
         when 83 then
-          MultiWriteNode.new(Array.new(load_varint) { load_node }, load_optional_location, load_optional_node, load_optional_location, load_optional_location, location)
+          MissingNode.new(location)
         when 84 then
-          NextNode.new(load_optional_node, load_location, location)
+          ModuleNode.new(Array.new(load_varint) { load_constant }, load_location, load_node, load_optional_node, load_location, location)
         when 85 then
-          NilNode.new(location)
+          MultiWriteNode.new(Array.new(load_varint) { load_node }, load_optional_location, load_optional_node, load_optional_location, load_optional_location, location)
         when 86 then
-          NoKeywordsParameterNode.new(load_location, load_location, location)
+          NextNode.new(load_optional_node, load_location, location)
         when 87 then
-          NumberedReferenceReadNode.new(location)
+          NilNode.new(location)
         when 88 then
-          OptionalParameterNode.new(load_constant, load_location, load_location, load_node, location)
+          NoKeywordsParameterNode.new(load_location, load_location, location)
         when 89 then
-          OrNode.new(load_node, load_node, load_location, location)
+          NumberedReferenceReadNode.new(location)
         when 90 then
-          ParametersNode.new(Array.new(load_varint) { load_node }, Array.new(load_varint) { load_node }, Array.new(load_varint) { load_node }, load_optional_node, Array.new(load_varint) { load_node }, load_optional_node, load_optional_node, location)
+          OptionalParameterNode.new(load_constant, load_location, load_location, load_node, location)
         when 91 then
-          ParenthesesNode.new(load_optional_node, load_location, load_location, location)
+          OrNode.new(load_node, load_node, load_location, location)
         when 92 then
-          PinnedExpressionNode.new(load_node, load_location, load_location, load_location, location)
+          ParametersNode.new(Array.new(load_varint) { load_node }, Array.new(load_varint) { load_node }, Array.new(load_varint) { load_node }, load_optional_node, Array.new(load_varint) { load_node }, load_optional_node, load_optional_node, location)
         when 93 then
-          PinnedVariableNode.new(load_node, load_location, location)
+          ParenthesesNode.new(load_optional_node, load_location, load_location, location)
         when 94 then
-          PostExecutionNode.new(load_optional_node, load_location, load_location, load_location, location)
+          PinnedExpressionNode.new(load_node, load_location, load_location, load_location, location)
         when 95 then
-          PreExecutionNode.new(load_optional_node, load_location, load_location, load_location, location)
+          PinnedVariableNode.new(load_node, load_location, location)
         when 96 then
-          ProgramNode.new(Array.new(load_varint) { load_constant }, load_node, location)
+          PostExecutionNode.new(load_optional_node, load_location, load_location, load_location, location)
         when 97 then
-          RangeNode.new(load_optional_node, load_optional_node, load_location, load_varint, location)
+          PreExecutionNode.new(load_optional_node, load_location, load_location, load_location, location)
         when 98 then
-          RationalNode.new(load_node, location)
+          ProgramNode.new(Array.new(load_varint) { load_constant }, load_node, location)
         when 99 then
-          RedoNode.new(location)
+          RangeNode.new(load_optional_node, load_optional_node, load_location, load_varint, location)
         when 100 then
-          RegularExpressionNode.new(load_location, load_location, load_location, load_string, load_varint, location)
+          RationalNode.new(load_node, location)
         when 101 then
-          RequiredDestructuredParameterNode.new(Array.new(load_varint) { load_node }, load_location, load_location, location)
+          RedoNode.new(location)
         when 102 then
-          RequiredParameterNode.new(load_constant, location)
+          RegularExpressionNode.new(load_location, load_location, load_location, load_string, load_varint, location)
         when 103 then
-          RescueModifierNode.new(load_node, load_location, load_node, location)
+          RequiredDestructuredParameterNode.new(Array.new(load_varint) { load_node }, load_location, load_location, location)
         when 104 then
-          RescueNode.new(load_location, Array.new(load_varint) { load_node }, load_optional_location, load_optional_node, load_optional_node, load_optional_node, location)
+          RequiredParameterNode.new(load_constant, location)
         when 105 then
-          RestParameterNode.new(load_location, load_optional_location, location)
+          RescueModifierNode.new(load_node, load_location, load_node, location)
         when 106 then
-          RetryNode.new(location)
+          RescueNode.new(load_location, Array.new(load_varint) { load_node }, load_optional_location, load_optional_node, load_optional_node, load_optional_node, location)
         when 107 then
-          ReturnNode.new(load_location, load_optional_node, location)
+          RestParameterNode.new(load_location, load_optional_location, location)
         when 108 then
-          SelfNode.new(location)
+          RetryNode.new(location)
         when 109 then
-          SingletonClassNode.new(Array.new(load_varint) { load_constant }, load_location, load_location, load_node, load_optional_node, load_location, location)
+          ReturnNode.new(load_location, load_optional_node, location)
         when 110 then
-          SourceEncodingNode.new(location)
+          SelfNode.new(location)
         when 111 then
-          SourceFileNode.new(load_string, location)
+          SingletonClassNode.new(Array.new(load_varint) { load_constant }, load_location, load_location, load_node, load_optional_node, load_location, location)
         when 112 then
-          SourceLineNode.new(location)
+          SourceEncodingNode.new(location)
         when 113 then
-          SplatNode.new(load_location, load_optional_node, location)
+          SourceFileNode.new(load_string, location)
         when 114 then
-          StatementsNode.new(Array.new(load_varint) { load_node }, location)
+          SourceLineNode.new(location)
         when 115 then
-          StringConcatNode.new(load_node, load_node, location)
+          SplatNode.new(load_location, load_optional_node, location)
         when 116 then
-          StringNode.new(load_optional_location, load_location, load_optional_location, load_string, location)
+          StatementsNode.new(Array.new(load_varint) { load_node }, location)
         when 117 then
-          SuperNode.new(load_location, load_optional_location, load_optional_node, load_optional_location, load_optional_node, location)
+          StringConcatNode.new(load_node, load_node, location)
         when 118 then
-          SymbolNode.new(load_optional_location, load_location, load_optional_location, load_string, location)
+          StringNode.new(load_optional_location, load_location, load_optional_location, load_string, location)
         when 119 then
-          TrueNode.new(location)
+          SuperNode.new(load_location, load_optional_location, load_optional_node, load_optional_location, load_optional_node, location)
         when 120 then
-          UndefNode.new(Array.new(load_varint) { load_node }, load_location, location)
+          SymbolNode.new(load_optional_location, load_location, load_optional_location, load_string, location)
         when 121 then
-          UnlessNode.new(load_location, load_node, load_optional_node, load_optional_node, load_optional_location, location)
+          TrueNode.new(location)
         when 122 then
-          UntilNode.new(load_location, load_node, load_optional_node, location)
+          UndefNode.new(Array.new(load_varint) { load_node }, load_location, location)
         when 123 then
-          WhenNode.new(load_location, Array.new(load_varint) { load_node }, load_optional_node, location)
+          UnlessNode.new(load_location, load_node, load_optional_node, load_optional_node, load_optional_location, location)
         when 124 then
-          WhileNode.new(load_location, load_node, load_optional_node, location)
+          UntilNode.new(load_location, load_node, load_optional_node, load_varint, location)
         when 125 then
-          XStringNode.new(load_location, load_location, load_location, load_string, location)
+          WhenNode.new(load_location, Array.new(load_varint) { load_node }, load_optional_node, location)
         when 126 then
+          WhileNode.new(load_location, load_node, load_optional_node, load_varint, location)
+        when 127 then
+          XStringNode.new(load_location, load_location, load_location, load_string, location)
+        when 128 then
           YieldNode.new(load_location, load_optional_location, load_optional_node, load_optional_location, location)
         end
       end
     end
+
+    TOKEN_TYPES = [
+      nil,
+      :EOF,
+      :MISSING,
+      :NOT_PROVIDED,
+      :AMPERSAND,
+      :AMPERSAND_AMPERSAND,
+      :AMPERSAND_AMPERSAND_EQUAL,
+      :AMPERSAND_DOT,
+      :AMPERSAND_EQUAL,
+      :BACKTICK,
+      :BACK_REFERENCE,
+      :BANG,
+      :BANG_EQUAL,
+      :BANG_TILDE,
+      :BRACE_LEFT,
+      :BRACE_RIGHT,
+      :BRACKET_LEFT,
+      :BRACKET_LEFT_ARRAY,
+      :BRACKET_LEFT_RIGHT,
+      :BRACKET_LEFT_RIGHT_EQUAL,
+      :BRACKET_RIGHT,
+      :CARET,
+      :CARET_EQUAL,
+      :CHARACTER_LITERAL,
+      :CLASS_VARIABLE,
+      :COLON,
+      :COLON_COLON,
+      :COMMA,
+      :COMMENT,
+      :CONSTANT,
+      :DOT,
+      :DOT_DOT,
+      :DOT_DOT_DOT,
+      :EMBDOC_BEGIN,
+      :EMBDOC_END,
+      :EMBDOC_LINE,
+      :EMBEXPR_BEGIN,
+      :EMBEXPR_END,
+      :EMBVAR,
+      :EQUAL,
+      :EQUAL_EQUAL,
+      :EQUAL_EQUAL_EQUAL,
+      :EQUAL_GREATER,
+      :EQUAL_TILDE,
+      :FLOAT,
+      :FLOAT_IMAGINARY,
+      :FLOAT_RATIONAL,
+      :FLOAT_RATIONAL_IMAGINARY,
+      :GLOBAL_VARIABLE,
+      :GREATER,
+      :GREATER_EQUAL,
+      :GREATER_GREATER,
+      :GREATER_GREATER_EQUAL,
+      :HEREDOC_END,
+      :HEREDOC_START,
+      :IDENTIFIER,
+      :IGNORED_NEWLINE,
+      :INSTANCE_VARIABLE,
+      :INTEGER,
+      :INTEGER_IMAGINARY,
+      :INTEGER_RATIONAL,
+      :INTEGER_RATIONAL_IMAGINARY,
+      :KEYWORD_ALIAS,
+      :KEYWORD_AND,
+      :KEYWORD_BEGIN,
+      :KEYWORD_BEGIN_UPCASE,
+      :KEYWORD_BREAK,
+      :KEYWORD_CASE,
+      :KEYWORD_CLASS,
+      :KEYWORD_DEF,
+      :KEYWORD_DEFINED,
+      :KEYWORD_DO,
+      :KEYWORD_DO_LOOP,
+      :KEYWORD_ELSE,
+      :KEYWORD_ELSIF,
+      :KEYWORD_END,
+      :KEYWORD_END_UPCASE,
+      :KEYWORD_ENSURE,
+      :KEYWORD_FALSE,
+      :KEYWORD_FOR,
+      :KEYWORD_IF,
+      :KEYWORD_IF_MODIFIER,
+      :KEYWORD_IN,
+      :KEYWORD_MODULE,
+      :KEYWORD_NEXT,
+      :KEYWORD_NIL,
+      :KEYWORD_NOT,
+      :KEYWORD_OR,
+      :KEYWORD_REDO,
+      :KEYWORD_RESCUE,
+      :KEYWORD_RESCUE_MODIFIER,
+      :KEYWORD_RETRY,
+      :KEYWORD_RETURN,
+      :KEYWORD_SELF,
+      :KEYWORD_SUPER,
+      :KEYWORD_THEN,
+      :KEYWORD_TRUE,
+      :KEYWORD_UNDEF,
+      :KEYWORD_UNLESS,
+      :KEYWORD_UNLESS_MODIFIER,
+      :KEYWORD_UNTIL,
+      :KEYWORD_UNTIL_MODIFIER,
+      :KEYWORD_WHEN,
+      :KEYWORD_WHILE,
+      :KEYWORD_WHILE_MODIFIER,
+      :KEYWORD_YIELD,
+      :KEYWORD___ENCODING__,
+      :KEYWORD___FILE__,
+      :KEYWORD___LINE__,
+      :LABEL,
+      :LABEL_END,
+      :LAMBDA_BEGIN,
+      :LESS,
+      :LESS_EQUAL,
+      :LESS_EQUAL_GREATER,
+      :LESS_LESS,
+      :LESS_LESS_EQUAL,
+      :MINUS,
+      :MINUS_EQUAL,
+      :MINUS_GREATER,
+      :NEWLINE,
+      :NUMBERED_REFERENCE,
+      :PARENTHESIS_LEFT,
+      :PARENTHESIS_LEFT_PARENTHESES,
+      :PARENTHESIS_RIGHT,
+      :PERCENT,
+      :PERCENT_EQUAL,
+      :PERCENT_LOWER_I,
+      :PERCENT_LOWER_W,
+      :PERCENT_LOWER_X,
+      :PERCENT_UPPER_I,
+      :PERCENT_UPPER_W,
+      :PIPE,
+      :PIPE_EQUAL,
+      :PIPE_PIPE,
+      :PIPE_PIPE_EQUAL,
+      :PLUS,
+      :PLUS_EQUAL,
+      :QUESTION_MARK,
+      :REGEXP_BEGIN,
+      :REGEXP_END,
+      :SEMICOLON,
+      :SLASH,
+      :SLASH_EQUAL,
+      :STAR,
+      :STAR_EQUAL,
+      :STAR_STAR,
+      :STAR_STAR_EQUAL,
+      :STRING_BEGIN,
+      :STRING_CONTENT,
+      :STRING_END,
+      :SYMBOL_BEGIN,
+      :TILDE,
+      :UAMPERSAND,
+      :UCOLON_COLON,
+      :UDOT_DOT,
+      :UDOT_DOT_DOT,
+      :UMINUS,
+      :UMINUS_NUM,
+      :UPLUS,
+      :USTAR,
+      :USTAR_STAR,
+      :WORDS_SEP,
+      :__END__,
+    ]
   end
 end

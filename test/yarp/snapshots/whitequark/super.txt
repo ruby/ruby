@@ -5,7 +5,7 @@ ProgramNode(0...30)(
        (0...5),
        nil,
        ArgumentsNode(6...9)(
-         [CallNode(6...9)(nil, nil, (6...9), nil, nil, nil, nil, 0, "foo")]
+         [CallNode(6...9)(nil, nil, (6...9), nil, nil, nil, nil, 2, "foo")]
        ),
        nil,
        nil
@@ -15,7 +15,7 @@ ProgramNode(0...30)(
        (20...25),
        (25...26),
        ArgumentsNode(26...29)(
-         [CallNode(26...29)(nil, nil, (26...29), nil, nil, nil, nil, 0, "foo")]
+         [CallNode(26...29)(nil, nil, (26...29), nil, nil, nil, nil, 2, "foo")]
        ),
        (29...30),
        nil

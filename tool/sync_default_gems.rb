@@ -627,7 +627,7 @@ module SyncDefaultGems
         puts "Remove files added to toplevel: #{toplevels.join(', ')}"
         system(*%w"git rm -r --", *toplevels)
       end
-      tools = changed.select {|f|f.start_with?("test/lib/", "tool/")}
+      tools = changed.select {|f|f.start_with?("test/fixtures/", "test/lib/", "tool/")}
       unless tools.empty?
         system(*%W"git rm -r --", *tools)
         system(*%W"git checkout HEAD~ --", *tools)

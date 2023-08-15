@@ -3,10 +3,10 @@ ProgramNode(0...15)(
   StatementsNode(0...15)(
     [IfNode(0...15)(
        nil,
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a"),
+       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
        StatementsNode(4...10)(
          [CallNode(4...10)(
-            CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 0, "b"),
+            CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "b"),
             nil,
             (6...7),
             nil,

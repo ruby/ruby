@@ -39,7 +39,7 @@ ProgramNode(0...233)(
      LocalVariableOperatorAndWriteNode(36...43)(
        (36...37),
        (38...41),
-       CallNode(42...43)(nil, nil, (42...43), nil, nil, nil, nil, 0, "b"),
+       CallNode(42...43)(nil, nil, (42...43), nil, nil, nil, nil, 2, "b"),
        :a
      ),
      LocalVariableOperatorOrWriteNode(44...51)(
@@ -87,8 +87,8 @@ ProgramNode(0...233)(
        (76...79),
        (76...77),
        ArgumentsNode(77...83)(
-         [CallNode(77...78)(nil, nil, (77...78), nil, nil, nil, nil, 0, "k"),
-          CallNode(82...83)(nil, nil, (82...83), nil, nil, nil, nil, 0, "v")]
+         [CallNode(77...78)(nil, nil, (77...78), nil, nil, nil, nil, 2, "k"),
+          CallNode(82...83)(nil, nil, (82...83), nil, nil, nil, nil, 2, "v")]
        ),
        (78...79),
        nil,
@@ -188,7 +188,7 @@ ProgramNode(0...233)(
          "b="
        ),
        (134...137),
-       CallNode(138...139)(nil, nil, (138...139), nil, nil, nil, nil, 0, "b")
+       CallNode(138...139)(nil, nil, (138...139), nil, nil, nil, nil, 2, "b")
      ),
      CallOperatorOrWriteNode(140...149)(
        CallNode(140...143)(
@@ -220,7 +220,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -248,7 +248,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -276,7 +276,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -304,7 +304,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -332,7 +332,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -360,7 +360,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -370,7 +370,7 @@ ProgramNode(0...233)(
          "[]="
        ),
        (206...209),
-       CallNode(210...211)(nil, nil, (210...211), nil, nil, nil, nil, 0, "b")
+       CallNode(210...211)(nil, nil, (210...211), nil, nil, nil, nil, 2, "b")
      ),
      CallOperatorOrWriteNode(212...222)(
        CallNode(212...216)(
@@ -387,7 +387,7 @@ ProgramNode(0...233)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -409,7 +409,7 @@ ProgramNode(0...233)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "foo"
          ),
          (226...227),

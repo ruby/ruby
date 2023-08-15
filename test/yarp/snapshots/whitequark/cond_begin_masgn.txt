@@ -5,7 +5,7 @@ ProgramNode(0...25)(
        (0...2),
        ParenthesesNode(3...20)(
          StatementsNode(4...19)(
-           [CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 0, "bar"),
+           [CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 2, "bar"),
             MultiWriteNode(9...19)(
               [LocalVariableWriteNode(9...10)(:a, 0, nil, (9...10), nil),
                LocalVariableWriteNode(12...13)(:b, 0, nil, (12...13), nil)],
@@ -18,7 +18,7 @@ ProgramNode(0...25)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "foo"
               ),
               nil,

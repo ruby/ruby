@@ -7,7 +7,7 @@ ProgramNode(0...8)(
         EmbeddedStatementsNode(3...7)(
           (3...5),
           StatementsNode(5...6)(
-            [CallNode(5...6)(nil, nil, (5...6), nil, nil, nil, nil, 0, "b")]
+            [CallNode(5...6)(nil, nil, (5...6), nil, nil, nil, nil, 2, "b")]
           ),
           (6...7)
         )],

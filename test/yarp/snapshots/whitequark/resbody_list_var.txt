@@ -4,7 +4,7 @@ ProgramNode(0...39)(
     [BeginNode(0...39)(
        (0...5),
        StatementsNode(7...11)(
-         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 0, "meth")]
+         [CallNode(7...11)(nil, nil, (7...11), nil, nil, nil, nil, 2, "meth")]
        ),
        RescueNode(13...34)(
          (13...19),
@@ -16,7 +16,7 @@ ProgramNode(0...39)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "foo"
           )],
          (24...26),
@@ -30,7 +30,7 @@ ProgramNode(0...39)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "bar"
             )]
          ),

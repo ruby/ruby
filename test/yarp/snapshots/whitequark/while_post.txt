@@ -3,7 +3,7 @@ ProgramNode(0...24)(
   StatementsNode(0...24)(
     [WhileNode(0...24)(
        (15...20),
-       CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 0, "foo"),
+       CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 2, "foo"),
        StatementsNode(0...14)(
          [BeginNode(0...14)(
             (0...5),
@@ -16,7 +16,7 @@ ProgramNode(0...24)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "meth"
                )]
             ),
@@ -25,7 +25,8 @@ ProgramNode(0...24)(
             nil,
             (11...14)
           )]
-       )
+       ),
+       1
      )]
   )
 )

@@ -2,12 +2,12 @@ ProgramNode(0...402)(
   [:fork],
   StatementsNode(0...402)(
     [CallNode(0...16)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        nil,
        (3...8),
        (3...4),
        ArgumentsNode(4...7)(
-         [CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 2, "bar")]
        ),
        (7...8),
        BlockNode(9...16)(
@@ -22,7 +22,7 @@ ProgramNode(0...402)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             )]
          ),
@@ -33,12 +33,12 @@ ProgramNode(0...402)(
        "[]"
      ),
      CallNode(18...37)(
-       CallNode(18...21)(nil, nil, (18...21), nil, nil, nil, nil, 0, "foo"),
+       CallNode(18...21)(nil, nil, (18...21), nil, nil, nil, nil, 2, "foo"),
        nil,
        (21...26),
        (21...22),
        ArgumentsNode(22...25)(
-         [CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 2, "bar")]
        ),
        (25...26),
        BlockNode(27...37)(
@@ -53,7 +53,7 @@ ProgramNode(0...402)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             )]
          ),
@@ -64,7 +64,7 @@ ProgramNode(0...402)(
        "[]"
      ),
      CallNode(39...74)(
-       CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 0, "x"),
+       CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 2, "x"),
        (40...41),
        (41...47),
        (47...48),
@@ -119,7 +119,7 @@ ProgramNode(0...402)(
        (88...91),
        nil,
        ArgumentsNode(92...109)(
-         [CallNode(92...95)(nil, nil, (92...95), nil, nil, nil, nil, 0, "bar"),
+         [CallNode(92...95)(nil, nil, (92...95), nil, nil, nil, nil, 2, "bar"),
           ParenthesesNode(97...109)(
             StatementsNode(98...108)(
               [CallNode(98...108)(
@@ -157,7 +157,7 @@ ProgramNode(0...402)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),
@@ -186,7 +186,7 @@ ProgramNode(0...402)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "baz"
                )]
             ),
@@ -226,7 +226,7 @@ ProgramNode(0...402)(
                     nil,
                     nil,
                     nil,
-                    0,
+                    2,
                     "b"
                   ),
                   nil,
@@ -342,7 +342,7 @@ ProgramNode(0...402)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        nil,
@@ -357,7 +357,7 @@ ProgramNode(0...402)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),
@@ -374,7 +374,7 @@ ProgramNode(0...402)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             )]
          ),

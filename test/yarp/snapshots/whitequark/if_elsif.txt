@@ -3,13 +3,13 @@ ProgramNode(0...38)(
   StatementsNode(0...38)(
     [IfNode(0...38)(
        (0...2),
-       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 0, "foo"),
+       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 2, "foo"),
        StatementsNode(8...11)(
-         [CallNode(8...11)(nil, nil, (8...11), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(8...11)(nil, nil, (8...11), nil, nil, nil, nil, 2, "bar")]
        ),
        IfNode(13...38)(
          (13...18),
-         CallNode(19...22)(nil, nil, (19...22), nil, nil, nil, nil, 0, "baz"),
+         CallNode(19...22)(nil, nil, (19...22), nil, nil, nil, nil, 2, "baz"),
          StatementsNode(24...25)([IntegerNode(24...25)()]),
          ElseNode(27...38)(
            (27...31),

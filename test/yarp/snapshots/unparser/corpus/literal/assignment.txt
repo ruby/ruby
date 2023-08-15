@@ -419,7 +419,7 @@ ProgramNode(0...719)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "index"
             )
           ),
@@ -431,7 +431,7 @@ ProgramNode(0...719)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "value"
           )]
        ),
@@ -460,7 +460,7 @@ ProgramNode(0...719)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "value"
           )]
        ),
@@ -496,7 +496,7 @@ ProgramNode(0...719)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "value"
           )]
        ),
@@ -519,7 +519,7 @@ ProgramNode(0...719)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "index"
           ),
           CallNode(501...506)(
@@ -530,7 +530,7 @@ ProgramNode(0...719)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "value"
           )]
        ),
@@ -574,7 +574,7 @@ ProgramNode(0...719)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),
@@ -605,7 +605,7 @@ ProgramNode(0...719)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "bar"
        ),
        (543...546)
@@ -698,7 +698,7 @@ ProgramNode(0...719)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "bar"
        ),
        (665...668)

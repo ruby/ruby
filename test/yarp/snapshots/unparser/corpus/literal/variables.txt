@@ -1,7 +1,7 @@
 ProgramNode(0...66)(
   [],
   StatementsNode(0...66)(
-    [CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a"),
+    [CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
      InstanceVariableReadNode(2...4)(),
      ClassVariableReadNode(5...8)(),
      GlobalVariableReadNode(9...11)(),

@@ -42,7 +42,7 @@ ProgramNode(0...114)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             ),
             (31...32)
@@ -59,7 +59,7 @@ ProgramNode(0...114)(
        (43...46),
        nil,
        ArgumentsNode(47...59)(
-         [CallNode(47...50)(nil, nil, (47...50), nil, nil, nil, nil, 0, "foo"),
+         [CallNode(47...50)(nil, nil, (47...50), nil, nil, nil, nil, 2, "foo"),
           KeywordHashNode(52...59)(
             [AssocNode(52...59)(
                SymbolNode(52...54)((52...53), (53...54), nil, "a"),

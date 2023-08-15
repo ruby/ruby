@@ -7,7 +7,7 @@ ProgramNode(0...9)(
        (0...1),
        (1...2),
        ArgumentsNode(2...8)(
-         [CallNode(2...3)(nil, nil, (2...3), nil, nil, nil, nil, 0, "b"),
+         [CallNode(2...3)(nil, nil, (2...3), nil, nil, nil, nil, 2, "b"),
           KeywordHashNode(5...8)(
             [AssocSplatNode(5...8)(IntegerNode(7...8)(), (5...7))]
           )]

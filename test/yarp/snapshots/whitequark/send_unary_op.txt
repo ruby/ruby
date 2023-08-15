@@ -2,7 +2,7 @@ ProgramNode(0...16)(
   [],
   StatementsNode(0...16)(
     [CallNode(0...4)(
-       CallNode(1...4)(nil, nil, (1...4), nil, nil, nil, nil, 0, "foo"),
+       CallNode(1...4)(nil, nil, (1...4), nil, nil, nil, nil, 2, "foo"),
        nil,
        (0...1),
        nil,
@@ -13,7 +13,7 @@ ProgramNode(0...16)(
        "+@"
      ),
      CallNode(6...10)(
-       CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 0, "foo"),
+       CallNode(7...10)(nil, nil, (7...10), nil, nil, nil, nil, 2, "foo"),
        nil,
        (6...7),
        nil,
@@ -24,7 +24,7 @@ ProgramNode(0...16)(
        "-@"
      ),
      CallNode(12...16)(
-       CallNode(13...16)(nil, nil, (13...16), nil, nil, nil, nil, 0, "foo"),
+       CallNode(13...16)(nil, nil, (13...16), nil, nil, nil, nil, 2, "foo"),
        nil,
        (12...13),
        nil,

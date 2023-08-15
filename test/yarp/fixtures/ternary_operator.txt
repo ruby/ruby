@@ -11,3 +11,5 @@ empty??nil:nil
 a??nil:nil
 
 a ?var1 : var2
+
+nil??_a =2:1

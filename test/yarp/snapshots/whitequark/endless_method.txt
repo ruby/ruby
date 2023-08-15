@@ -49,7 +49,7 @@ ProgramNode(0...78)(
      ),
      DefNode(36...54)(
        (44...47),
-       CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 0, "obj"),
+       CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 2, "obj"),
        nil,
        StatementsNode(52...54)([IntegerNode(52...54)()]),
        [],
@@ -62,7 +62,7 @@ ProgramNode(0...78)(
      ),
      DefNode(56...78)(
        (64...67),
-       CallNode(60...63)(nil, nil, (60...63), nil, nil, nil, nil, 0, "obj"),
+       CallNode(60...63)(nil, nil, (60...63), nil, nil, nil, nil, 2, "obj"),
        ParametersNode(68...69)(
          [RequiredParameterNode(68...69)(:x)],
          [],
