@@ -273,7 +273,7 @@ class Net::HTTPResponse
 
   def error!   #:nodoc:
     message = @code
-    message += " #{@message.dump}" if @message
+    message = "#{message} #{@message.dump}" if @message
     raise error_type().new(message, self)
   end
 
