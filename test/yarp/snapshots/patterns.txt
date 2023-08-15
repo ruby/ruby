@@ -2,51 +2,47 @@ ProgramNode(0...3743)(
   [:bar, :baz, :qux, :b, :a],
   StatementsNode(0...3743)(
     [MatchRequiredNode(0...10)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        LocalVariableWriteNode(7...10)(:bar, 0, nil, (7...10), nil),
        (4...6)
      ),
      MatchRequiredNode(11...19)(
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 0, "foo"),
+       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "foo"),
        IntegerNode(18...19)(),
        (15...17)
      ),
      MatchRequiredNode(20...30)(
-       CallNode(20...23)(nil, nil, (20...23), nil, nil, nil, nil, 0, "foo"),
+       CallNode(20...23)(nil, nil, (20...23), nil, nil, nil, nil, 2, "foo"),
        FloatNode(27...30)(),
        (24...26)
      ),
      MatchRequiredNode(31...40)(
-       CallNode(31...34)(nil, nil, (31...34), nil, nil, nil, nil, 0, "foo"),
+       CallNode(31...34)(nil, nil, (31...34), nil, nil, nil, nil, 2, "foo"),
        ImaginaryNode(38...40)(IntegerNode(38...39)()),
        (35...37)
      ),
      MatchRequiredNode(41...50)(
-       CallNode(41...44)(nil, nil, (41...44), nil, nil, nil, nil, 0, "foo"),
+       CallNode(41...44)(nil, nil, (41...44), nil, nil, nil, nil, 2, "foo"),
        RationalNode(48...50)(IntegerNode(48...49)()),
        (45...47)
      ),
      MatchRequiredNode(51...62)(
-       CallNode(51...54)(nil, nil, (51...54), nil, nil, nil, nil, 0, "foo"),
+       CallNode(51...54)(nil, nil, (51...54), nil, nil, nil, nil, 2, "foo"),
        SymbolNode(58...62)((58...59), (59...62), nil, "foo"),
        (55...57)
      ),
      MatchRequiredNode(63...77)(
-       CallNode(63...66)(nil, nil, (63...66), nil, nil, nil, nil, 0, "foo"),
+       CallNode(63...66)(nil, nil, (63...66), nil, nil, nil, nil, 2, "foo"),
        SymbolNode(70...77)((70...73), (73...76), (76...77), "foo"),
        (67...69)
      ),
      MatchRequiredNode(78...91)(
-       CallNode(78...81)(nil, nil, (78...81), nil, nil, nil, nil, 0, "foo"),
-       InterpolatedSymbolNode(85...91)(
-         (85...87),
-         [StringNode(87...90)(nil, (87...90), nil, "foo")],
-         (90...91)
-       ),
+       CallNode(78...81)(nil, nil, (78...81), nil, nil, nil, nil, 2, "foo"),
+       SymbolNode(85...91)(nil, (87...90), nil, "foo"),
        (82...84)
      ),
      MatchRequiredNode(92...104)(
-       CallNode(92...95)(nil, nil, (92...95), nil, nil, nil, nil, 0, "foo"),
+       CallNode(92...95)(nil, nil, (92...95), nil, nil, nil, nil, 2, "foo"),
        RegularExpressionNode(99...104)(
          (99...100),
          (100...103),
@@ -65,7 +61,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        XStringNode(112...117)((112...113), (113...116), (116...117), "foo"),
@@ -80,7 +76,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        XStringNode(125...132)((125...128), (128...131), (131...132), "foo"),
@@ -95,7 +91,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(140...147)(
@@ -114,7 +110,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(155...162)(
@@ -133,7 +129,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(170...177)(
@@ -152,7 +148,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(185...192)(
@@ -171,7 +167,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        StringNode(200...207)((200...203), (203...206), (206...207), "foo"),
@@ -186,7 +182,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        StringNode(215...222)((215...218), (218...221), (221...222), "foo"),
@@ -201,7 +197,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        StringNode(230...235)((230...231), (231...234), (234...235), "foo"),
@@ -216,7 +212,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        NilNode(243...246)(),
@@ -231,7 +227,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SelfNode(254...258)(),
@@ -246,7 +242,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        TrueNode(266...270)(),
@@ -261,7 +257,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FalseNode(278...283)(),
@@ -276,7 +272,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SourceFileNode(291...299)("patterns.txt"),
@@ -291,7 +287,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SourceLineNode(307...315)(),
@@ -306,7 +302,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SourceEncodingNode(323...335)(),
@@ -321,7 +317,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        LambdaNode(343...353)(
@@ -341,7 +337,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(362...368)(
@@ -361,7 +357,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(376...386)(
@@ -381,7 +377,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(394...402)(
@@ -401,7 +397,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(410...418)(
@@ -421,7 +417,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(426...438)(
@@ -441,7 +437,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(446...464)(
@@ -461,20 +457,12 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(472...488)(
-         InterpolatedSymbolNode(472...478)(
-           (472...474),
-           [StringNode(474...477)(nil, (474...477), nil, "foo")],
-           (477...478)
-         ),
-         InterpolatedSymbolNode(482...488)(
-           (482...484),
-           [StringNode(484...487)(nil, (484...487), nil, "foo")],
-           (487...488)
-         ),
+         SymbolNode(472...478)(nil, (474...477), nil, "foo"),
+         SymbolNode(482...488)(nil, (484...487), nil, "foo"),
          (479...481),
          0
        ),
@@ -489,7 +477,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(496...510)(
@@ -521,7 +509,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(518...532)(
@@ -541,7 +529,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(540...558)(
@@ -561,7 +549,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(566...584)(
@@ -589,7 +577,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(592...610)(
@@ -617,7 +605,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(618...636)(
@@ -645,7 +633,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(644...662)(
@@ -673,7 +661,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(670...688)(
@@ -693,7 +681,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(696...714)(
@@ -713,7 +701,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(722...736)(
@@ -733,7 +721,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(744...754)(
@@ -753,7 +741,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(762...774)(
@@ -773,7 +761,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(782...794)(
@@ -793,7 +781,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(802...816)(
@@ -813,7 +801,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(824...844)(
@@ -833,7 +821,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(852...872)(
@@ -853,7 +841,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(880...908)(
@@ -873,7 +861,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RangeNode(916...940)(
@@ -907,7 +895,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedVariableNode(949...953)(
@@ -925,7 +913,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedVariableNode(961...966)(
@@ -943,7 +931,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedVariableNode(974...980)(
@@ -961,7 +949,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedVariableNode(988...993)(
@@ -979,7 +967,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedExpressionNode(1002...1006)(
@@ -999,7 +987,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedExpressionNode(1014...1020)(
@@ -1019,7 +1007,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        PinnedExpressionNode(1028...1044)(
@@ -1061,7 +1049,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ConstantReadNode(1053...1056)(),
@@ -1076,7 +1064,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ConstantPathNode(1064...1077)(
@@ -1099,7 +1087,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ConstantPathNode(1085...1090)(
@@ -1118,7 +1106,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ConstantPathNode(1098...1113)(
@@ -1145,7 +1133,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1122...1127)(
@@ -1167,7 +1155,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1135...1141)(
@@ -1189,7 +1177,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1149...1161)(
@@ -1213,7 +1201,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1169...1177)(
@@ -1241,7 +1229,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1185...1199)(
@@ -1278,7 +1266,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1207...1221)(
@@ -1315,7 +1303,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FindPatternNode(1229...1249)(
@@ -1361,7 +1349,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1258...1263)(
@@ -1383,7 +1371,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1271...1277)(
@@ -1405,7 +1393,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1285...1297)(
@@ -1429,7 +1417,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1305...1315)(
@@ -1458,7 +1446,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1323...1331)(
@@ -1486,7 +1474,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1339...1353)(
@@ -1523,7 +1511,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1361...1375)(
@@ -1560,7 +1548,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FindPatternNode(1383...1403)(
@@ -1606,7 +1594,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1412...1416)(
@@ -1637,7 +1625,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1424...1438)(
@@ -1681,7 +1669,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1446...1460)(
@@ -1724,7 +1712,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1468...1482)(
@@ -1768,7 +1756,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FindPatternNode(1490...1505)(
@@ -1814,7 +1802,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1514...1516)(
@@ -1836,7 +1824,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1524...1534)(
@@ -1886,7 +1874,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1543...1549)(
@@ -1917,7 +1905,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1557...1573)(
@@ -1961,7 +1949,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1581...1597)(
@@ -2004,7 +1992,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayPatternNode(1605...1621)(
@@ -2048,7 +2036,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FindPatternNode(1629...1646)(
@@ -2094,7 +2082,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        LocalVariableWriteNode(1655...1658)(:bar, 0, nil, (1655...1658), nil),
@@ -2109,7 +2097,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        IntegerNode(1666...1667)(),
@@ -2124,7 +2112,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FloatNode(1675...1678)(),
@@ -2139,7 +2127,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ImaginaryNode(1686...1688)(IntegerNode(1686...1687)()),
@@ -2154,7 +2142,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RationalNode(1696...1698)(IntegerNode(1696...1697)()),
@@ -2169,7 +2157,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SymbolNode(1706...1710)((1706...1707), (1707...1710), nil, "foo"),
@@ -2184,7 +2172,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SymbolNode(1718...1725)(
@@ -2204,14 +2192,10 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
-       InterpolatedSymbolNode(1733...1739)(
-         (1733...1735),
-         [StringNode(1735...1738)(nil, (1735...1738), nil, "foo")],
-         (1738...1739)
-       ),
+       SymbolNode(1733...1739)(nil, (1735...1738), nil, "foo"),
        (1730...1732)
      ),
      MatchPredicateNode(1740...1752)(
@@ -2223,7 +2207,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        RegularExpressionNode(1747...1752)(
@@ -2244,7 +2228,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        XStringNode(1760...1765)(
@@ -2264,7 +2248,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        XStringNode(1773...1780)(
@@ -2284,7 +2268,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(1788...1795)(
@@ -2303,7 +2287,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(1803...1810)(
@@ -2322,7 +2306,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(1818...1825)(
@@ -2341,7 +2325,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        ArrayNode(1833...1840)(
@@ -2360,7 +2344,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        StringNode(1848...1855)(
@@ -2380,7 +2364,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        StringNode(1863...1870)(
@@ -2400,7 +2384,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        StringNode(1878...1883)(
@@ -2420,7 +2404,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        NilNode(1891...1894)(),
@@ -2435,7 +2419,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SelfNode(1902...1906)(),
@@ -2450,7 +2434,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        TrueNode(1914...1918)(),
@@ -2465,7 +2449,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        FalseNode(1926...1931)(),
@@ -2480,7 +2464,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SourceFileNode(1939...1947)("patterns.txt"),
@@ -2495,7 +2479,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SourceLineNode(1955...1963)(),
@@ -2510,7 +2494,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        SourceEncodingNode(1971...1983)(),
@@ -2525,7 +2509,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        LambdaNode(1991...2001)(
@@ -2547,7 +2531,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2013...2024)(
@@ -2575,7 +2559,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2039...2048)(
@@ -2597,7 +2581,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2063...2074)(
@@ -2619,7 +2603,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2089...2099)(
@@ -2641,7 +2625,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2114...2124)(
@@ -2663,7 +2647,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2139...2151)(
@@ -2685,7 +2669,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2166...2181)(
@@ -2712,15 +2696,11 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2196...2210)(
-          InterpolatedSymbolNode(2199...2205)(
-            (2199...2201),
-            [StringNode(2201...2204)(nil, (2201...2204), nil, "foo")],
-            (2204...2205)
-          ),
+          SymbolNode(2199...2205)(nil, (2201...2204), nil, "foo"),
           nil,
           (2196...2198),
           (2206...2210)
@@ -2738,7 +2718,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2225...2238)(
@@ -2766,7 +2746,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2253...2266)(
@@ -2793,7 +2773,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2281...2296)(
@@ -2820,7 +2800,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2311...2326)(
@@ -2846,7 +2826,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2341...2356)(
@@ -2872,7 +2852,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2371...2386)(
@@ -2898,7 +2878,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2401...2416)(
@@ -2924,7 +2904,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2431...2446)(
@@ -2951,7 +2931,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2461...2476)(
@@ -2978,7 +2958,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2491...2504)(
@@ -3005,7 +2985,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2519...2530)(
@@ -3027,7 +3007,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2545...2557)(
@@ -3049,7 +3029,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2572...2584)(
@@ -3071,7 +3051,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2599...2612)(
@@ -3093,7 +3073,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2627...2643)(
@@ -3115,7 +3095,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2658...2674)(
@@ -3137,7 +3117,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2689...2709)(
@@ -3159,7 +3139,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2724...2742)(
@@ -3188,7 +3168,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2758...2776)(
@@ -3224,7 +3204,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2791...2807)(
@@ -3252,7 +3232,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2822...2840)(
@@ -3280,7 +3260,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2855...2872)(
@@ -3310,7 +3290,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2887...2904)(
@@ -3340,7 +3320,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2919...2938)(
@@ -3375,7 +3355,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2953...2975)(
@@ -3410,7 +3390,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(2990...3011)(
@@ -3418,11 +3398,7 @@ ProgramNode(0...3743)(
             (3000...3002),
             LocalVariableReadNode(3003...3006)(:baz, 0),
             StatementsNode(2993...2999)(
-              [InterpolatedSymbolNode(2993...2999)(
-                 (2993...2995),
-                 [StringNode(2995...2998)(nil, (2995...2998), nil, "foo")],
-                 (2998...2999)
-               )]
+              [SymbolNode(2993...2999)(nil, (2995...2998), nil, "foo")]
             ),
             nil,
             nil
@@ -3444,7 +3420,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3026...3046)(
@@ -3480,7 +3456,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3061...3081)(
@@ -3515,7 +3491,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3096...3118)(
@@ -3550,7 +3526,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3133...3155)(
@@ -3584,7 +3560,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3170...3192)(
@@ -3618,7 +3594,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3207...3229)(
@@ -3652,7 +3628,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3244...3266)(
@@ -3686,7 +3662,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3281...3303)(
@@ -3721,7 +3697,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3318...3340)(
@@ -3756,7 +3732,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3355...3375)(
@@ -3791,7 +3767,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3390...3408)(
@@ -3819,7 +3795,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3423...3442)(
@@ -3847,7 +3823,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3457...3476)(
@@ -3875,7 +3851,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3491...3511)(
@@ -3903,7 +3879,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3526...3549)(
@@ -3933,7 +3909,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3564...3587)(
@@ -3961,7 +3937,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3602...3629)(
@@ -3989,7 +3965,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        [InNode(3644...3669)(
@@ -4028,7 +4004,7 @@ ProgramNode(0...3743)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "a"
          ),
          ArrayPatternNode(3683...3685)(
@@ -4054,7 +4030,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "a"
        ),
        ArrayPatternNode(3696...3703)(
@@ -4076,7 +4052,7 @@ ProgramNode(0...3743)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        HashPatternNode(3712...3743)(

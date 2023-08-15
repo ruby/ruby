@@ -2,7 +2,7 @@ ProgramNode(0...12)(
   [],
   StatementsNode(0...12)(
     [CallNode(0...12)(
-       CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 0, "_buf"),
+       CallNode(0...4)(nil, nil, (0...4), nil, nil, nil, nil, 2, "_buf"),
        nil,
        (5...7),
        nil,

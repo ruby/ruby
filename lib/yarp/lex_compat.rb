@@ -166,6 +166,7 @@ module YARP
       STRING_END: :on_tstring_end,
       SYMBOL_BEGIN: :on_symbeg,
       TILDE: :on_op,
+      UAMPERSAND: :on_op,
       UCOLON_COLON: :on_op,
       UDOT_DOT: :on_op,
       UDOT_DOT_DOT: :on_op,
@@ -646,19 +647,34 @@ module YARP
         # can shuffle around the token to match Ripper's output.
         case state
         when :default
+          # The default state is when there are no heredocs at all. In this
+          # state we can append the token to the list of tokens and move on.
           tokens << token
 
+          # If we get the declaration of a heredoc, then we open a new heredoc
+          # and move into the heredoc_opened state.
           if event == :on_heredoc_beg
             state = :heredoc_opened
             heredoc_stack.last << Heredoc.build(token)
           end
         when :heredoc_opened
+          # The heredoc_opened state is when we've seen the declaration of a
+          # heredoc and are now lexing the body of the heredoc. In this state we
+          # push tokens onto the most recently created heredoc.
           heredoc_stack.last.last << token
 
           case event
           when :on_heredoc_beg
+            # If we receive a heredoc declaration while lexing the body of a
+            # heredoc, this means we have nested heredocs. In this case we'll
+            # push a new heredoc onto the stack and stay in the heredoc_opened
+            # state since we're now lexing the body of the new heredoc.
             heredoc_stack << [Heredoc.build(token)]
           when :on_heredoc_end
+            # If we receive the end of a heredoc, then we're done lexing the
+            # body of the heredoc. In this case we now have a completed heredoc
+            # but need to wait for the next newline to push it into the token
+            # stream.
             state = :heredoc_closed
           end
         when :heredoc_closed
@@ -733,8 +749,7 @@ module YARP
       when :on_sp
         # skip
       when :on_tstring_content
-        if previous[1] == :on_tstring_content &&
-            (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
+        if previous[1] == :on_tstring_content && (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
           previous[2] << token[2]
         else
           results << token

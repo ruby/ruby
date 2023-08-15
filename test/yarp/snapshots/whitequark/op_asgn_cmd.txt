@@ -3,7 +3,7 @@ ProgramNode(0...64)(
   StatementsNode(0...64)(
     [CallOperatorWriteNode(0...14)(
        CallNode(0...5)(
-         CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+         CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
          (3...4),
          (4...5),
          nil,
@@ -28,7 +28,7 @@ ProgramNode(0...64)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "foo"
             )]
          ),
@@ -41,7 +41,7 @@ ProgramNode(0...64)(
      ),
      CallOperatorWriteNode(16...30)(
        CallNode(16...21)(
-         CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 0, "foo"),
+         CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 2, "foo"),
          (19...20),
          (20...21),
          nil,
@@ -66,7 +66,7 @@ ProgramNode(0...64)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "foo"
             )]
          ),
@@ -79,7 +79,7 @@ ProgramNode(0...64)(
      ),
      ConstantPathOperatorWriteNode(32...47)(
        ConstantPathNode(32...38)(
-         CallNode(32...35)(nil, nil, (32...35), nil, nil, nil, nil, 0, "foo"),
+         CallNode(32...35)(nil, nil, (32...35), nil, nil, nil, nil, 2, "foo"),
          ConstantReadNode(37...38)(),
          (35...37)
        ),
@@ -98,7 +98,7 @@ ProgramNode(0...64)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "foo"
             )]
          ),
@@ -111,7 +111,7 @@ ProgramNode(0...64)(
      ),
      CallOperatorWriteNode(49...64)(
        CallNode(49...55)(
-         CallNode(49...52)(nil, nil, (49...52), nil, nil, nil, nil, 0, "foo"),
+         CallNode(49...52)(nil, nil, (49...52), nil, nil, nil, nil, 2, "foo"),
          (52...54),
          (54...55),
          nil,
@@ -136,7 +136,7 @@ ProgramNode(0...64)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "foo"
             )]
          ),

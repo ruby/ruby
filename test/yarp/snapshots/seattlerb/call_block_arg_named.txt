@@ -8,7 +8,7 @@ ProgramNode(0...7)(
        (1...2),
        ArgumentsNode(2...6)(
          [BlockArgumentNode(2...6)(
-            CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 0, "blk"),
+            CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 2, "blk"),
             (2...3)
           )]
        ),

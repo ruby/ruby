@@ -102,6 +102,12 @@ yp_token_type_to_str(yp_token_type_t token_type)
             return "EQUAL_TILDE";
         case YP_TOKEN_FLOAT:
             return "FLOAT";
+        case YP_TOKEN_FLOAT_IMAGINARY:
+            return "FLOAT_IMAGINARY";
+        case YP_TOKEN_FLOAT_RATIONAL:
+            return "FLOAT_RATIONAL";
+        case YP_TOKEN_FLOAT_RATIONAL_IMAGINARY:
+            return "FLOAT_RATIONAL_IMAGINARY";
         case YP_TOKEN_GLOBAL_VARIABLE:
             return "GLOBAL_VARIABLE";
         case YP_TOKEN_GREATER:
@@ -120,12 +126,16 @@ yp_token_type_to_str(yp_token_type_t token_type)
             return "IDENTIFIER";
         case YP_TOKEN_IGNORED_NEWLINE:
             return "IGNORED_NEWLINE";
-        case YP_TOKEN_IMAGINARY_NUMBER:
-            return "IMAGINARY_NUMBER";
         case YP_TOKEN_INSTANCE_VARIABLE:
             return "INSTANCE_VARIABLE";
         case YP_TOKEN_INTEGER:
             return "INTEGER";
+        case YP_TOKEN_INTEGER_IMAGINARY:
+            return "INTEGER_IMAGINARY";
+        case YP_TOKEN_INTEGER_RATIONAL:
+            return "INTEGER_RATIONAL";
+        case YP_TOKEN_INTEGER_RATIONAL_IMAGINARY:
+            return "INTEGER_RATIONAL_IMAGINARY";
         case YP_TOKEN_KEYWORD_ALIAS:
             return "KEYWORD_ALIAS";
         case YP_TOKEN_KEYWORD_AND:
@@ -280,8 +290,6 @@ yp_token_type_to_str(yp_token_type_t token_type)
             return "PLUS_EQUAL";
         case YP_TOKEN_QUESTION_MARK:
             return "QUESTION_MARK";
-        case YP_TOKEN_RATIONAL_NUMBER:
-            return "RATIONAL_NUMBER";
         case YP_TOKEN_REGEXP_BEGIN:
             return "REGEXP_BEGIN";
         case YP_TOKEN_REGEXP_END:
@@ -310,6 +318,8 @@ yp_token_type_to_str(yp_token_type_t token_type)
             return "SYMBOL_BEGIN";
         case YP_TOKEN_TILDE:
             return "TILDE";
+        case YP_TOKEN_UAMPERSAND:
+            return "UAMPERSAND";
         case YP_TOKEN_UCOLON_COLON:
             return "UCOLON_COLON";
         case YP_TOKEN_UDOT_DOT:

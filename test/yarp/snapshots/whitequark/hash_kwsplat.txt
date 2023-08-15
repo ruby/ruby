@@ -9,7 +9,7 @@ ProgramNode(0...17)(
           nil
         ),
         AssocSplatNode(10...15)(
-          CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "bar"),
+          CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "bar"),
           (10...12)
         )],
        (16...17)

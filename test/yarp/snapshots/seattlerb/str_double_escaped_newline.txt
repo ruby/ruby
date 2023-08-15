@@ -14,6 +14,6 @@ ProgramNode(0...8)(
        0,
        "a"
      ),
-     CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 0, "b")]
+     CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 2, "b")]
   )
 )

@@ -6,8 +6,8 @@
 // we need to search for a character in a buffer that could be the trailing byte
 // of a multibyte character.
 void *
-yp_memchr(yp_parser_t *parser, const void *memory, int character, size_t number) {
-    if (parser->encoding_changed && parser->encoding.multibyte && character >= YP_MEMCHR_TRAILING_BYTE_MINIMUM) {
+yp_memchr(const void *memory, int character, size_t number, bool encoding_changed, yp_encoding_t *encoding) {
+    if (encoding_changed && encoding->multibyte && character >= YP_MEMCHR_TRAILING_BYTE_MINIMUM) {
         const char *source = (const char *) memory;
         size_t index = 0;
 
@@ -16,7 +16,7 @@ yp_memchr(yp_parser_t *parser, const void *memory, int character, size_t number)
                 return (void *) (source + index);
             }
 
-            size_t width = parser->encoding.char_width(source + index);
+            size_t width = encoding->char_width(source + index, (ptrdiff_t) (number - index));
             if (width == 0) {
                 return NULL;
             }

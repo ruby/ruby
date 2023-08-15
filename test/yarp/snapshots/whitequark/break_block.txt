@@ -17,7 +17,7 @@ ProgramNode(0...20)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "foo"
                )]
             ),

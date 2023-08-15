@@ -6,13 +6,13 @@ ProgramNode(0...120)(
      HashNode(9...27)(
        (9...10),
        [AssocNode(11...17)(
-          CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 0, "a"),
-          CallNode(16...17)(nil, nil, (16...17), nil, nil, nil, nil, 0, "b"),
+          CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "a"),
+          CallNode(16...17)(nil, nil, (16...17), nil, nil, nil, nil, 2, "b"),
           (13...15)
         ),
         AssocNode(19...25)(
-          CallNode(19...20)(nil, nil, (19...20), nil, nil, nil, nil, 0, "c"),
-          CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 0, "d"),
+          CallNode(19...20)(nil, nil, (19...20), nil, nil, nil, nil, 2, "c"),
+          CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 2, "d"),
           (21...23)
         )],
        (26...27)
@@ -20,12 +20,12 @@ ProgramNode(0...120)(
      HashNode(29...44)(
        (29...30),
        [AssocNode(31...37)(
-          CallNode(31...32)(nil, nil, (31...32), nil, nil, nil, nil, 0, "a"),
-          CallNode(36...37)(nil, nil, (36...37), nil, nil, nil, nil, 0, "b"),
+          CallNode(31...32)(nil, nil, (31...32), nil, nil, nil, nil, 2, "a"),
+          CallNode(36...37)(nil, nil, (36...37), nil, nil, nil, nil, 2, "b"),
           (33...35)
         ),
         AssocSplatNode(39...42)(
-          CallNode(41...42)(nil, nil, (41...42), nil, nil, nil, nil, 0, "c"),
+          CallNode(41...42)(nil, nil, (41...42), nil, nil, nil, nil, 2, "c"),
           (39...41)
         )],
        (43...44)
@@ -34,12 +34,12 @@ ProgramNode(0...120)(
        (46...47),
        [AssocNode(54...58)(
           SymbolNode(54...56)(nil, (54...55), (55...56), "a"),
-          CallNode(57...58)(nil, nil, (57...58), nil, nil, nil, nil, 0, "b"),
+          CallNode(57...58)(nil, nil, (57...58), nil, nil, nil, nil, 2, "b"),
           nil
         ),
         AssocNode(66...70)(
           SymbolNode(66...68)(nil, (66...67), (67...68), "c"),
-          CallNode(69...70)(nil, nil, (69...70), nil, nil, nil, nil, 0, "d"),
+          CallNode(69...70)(nil, nil, (69...70), nil, nil, nil, nil, 2, "d"),
           nil
         )],
        (78...79)
@@ -48,16 +48,16 @@ ProgramNode(0...120)(
        (81...82),
        [AssocNode(83...87)(
           SymbolNode(83...85)(nil, (83...84), (84...85), "a"),
-          CallNode(86...87)(nil, nil, (86...87), nil, nil, nil, nil, 0, "b"),
+          CallNode(86...87)(nil, nil, (86...87), nil, nil, nil, nil, 2, "b"),
           nil
         ),
         AssocNode(89...93)(
           SymbolNode(89...91)(nil, (89...90), (90...91), "c"),
-          CallNode(92...93)(nil, nil, (92...93), nil, nil, nil, nil, 0, "d"),
+          CallNode(92...93)(nil, nil, (92...93), nil, nil, nil, nil, 2, "d"),
           nil
         ),
         AssocSplatNode(95...98)(
-          CallNode(97...98)(nil, nil, (97...98), nil, nil, nil, nil, 0, "e"),
+          CallNode(97...98)(nil, nil, (97...98), nil, nil, nil, nil, 2, "e"),
           (95...97)
         ),
         AssocNode(100...104)(
@@ -70,7 +70,7 @@ ProgramNode(0...120)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "g"
           ),
           nil

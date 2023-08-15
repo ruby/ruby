@@ -3,9 +3,9 @@ ProgramNode(0...58)(
   StatementsNode(0...58)(
     [IfNode(0...30)(
        (0...2),
-       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 0, "foo"),
+       CallNode(3...6)(nil, nil, (3...6), nil, nil, nil, nil, 2, "foo"),
        StatementsNode(12...15)(
-         [CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "bar")]
        ),
        ElseNode(17...30)(
          (17...21),
@@ -18,7 +18,7 @@ ProgramNode(0...58)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             )]
          ),
@@ -28,9 +28,9 @@ ProgramNode(0...58)(
      ),
      IfNode(32...58)(
        (32...34),
-       CallNode(35...38)(nil, nil, (35...38), nil, nil, nil, nil, 0, "foo"),
+       CallNode(35...38)(nil, nil, (35...38), nil, nil, nil, nil, 2, "foo"),
        StatementsNode(40...43)(
-         [CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 2, "bar")]
        ),
        ElseNode(45...58)(
          (45...49),
@@ -43,7 +43,7 @@ ProgramNode(0...58)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             )]
          ),

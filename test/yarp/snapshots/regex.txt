@@ -40,7 +40,7 @@ ProgramNode(0...278)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "bbb"
              )]
           ),
@@ -71,7 +71,7 @@ ProgramNode(0...278)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "baz"
              )]
           ),

@@ -17,7 +17,7 @@ ProgramNode(0...104)(
             "p"
           ),
           CallNode(16...21)(
-            CallNode(16...17)(nil, nil, (16...17), nil, nil, nil, nil, 0, "a"),
+            CallNode(16...17)(nil, nil, (16...17), nil, nil, nil, nil, 2, "a"),
             (17...18),
             (18...19),
             nil,
@@ -28,7 +28,7 @@ ProgramNode(0...104)(
             "b"
           ),
           CallNode(24...32)(
-            CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 0, "c"),
+            CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 2, "c"),
             (25...26),
             (26...27),
             nil,
@@ -41,7 +41,7 @@ ProgramNode(0...104)(
             "d"
           ),
           CallNode(35...40)(
-            CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 0, "e"),
+            CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 2, "e"),
             (36...37),
             (37...38),
             nil,
@@ -52,7 +52,7 @@ ProgramNode(0...104)(
             "f"
           ),
           CallNode(43...51)(
-            CallNode(43...44)(nil, nil, (43...44), nil, nil, nil, nil, 0, "g"),
+            CallNode(43...44)(nil, nil, (43...44), nil, nil, nil, nil, 2, "g"),
             (44...45),
             (45...46),
             nil,
@@ -76,7 +76,7 @@ ProgramNode(0...104)(
             "p"
           ),
           CallNode(61...67)(
-            CallNode(61...62)(nil, nil, (61...62), nil, nil, nil, nil, 0, "a"),
+            CallNode(61...62)(nil, nil, (61...62), nil, nil, nil, nil, 2, "a"),
             (62...63),
             (63...64),
             (64...65),
@@ -87,7 +87,7 @@ ProgramNode(0...104)(
             "b"
           ),
           CallNode(70...79)(
-            CallNode(70...71)(nil, nil, (70...71), nil, nil, nil, nil, 0, "c"),
+            CallNode(70...71)(nil, nil, (70...71), nil, nil, nil, nil, 2, "c"),
             (71...72),
             (72...73),
             (73...74),
@@ -100,7 +100,7 @@ ProgramNode(0...104)(
             "d"
           ),
           CallNode(82...88)(
-            CallNode(82...83)(nil, nil, (82...83), nil, nil, nil, nil, 0, "e"),
+            CallNode(82...83)(nil, nil, (82...83), nil, nil, nil, nil, 2, "e"),
             (83...84),
             (84...85),
             (85...86),
@@ -111,7 +111,7 @@ ProgramNode(0...104)(
             "f"
           ),
           CallNode(91...100)(
-            CallNode(91...92)(nil, nil, (91...92), nil, nil, nil, nil, 0, "g"),
+            CallNode(91...92)(nil, nil, (91...92), nil, nil, nil, nil, 2, "g"),
             (92...93),
             (93...94),
             (94...95),

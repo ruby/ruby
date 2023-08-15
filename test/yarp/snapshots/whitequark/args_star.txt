@@ -9,7 +9,7 @@ ProgramNode(0...26)(
        ArgumentsNode(4...8)(
          [SplatNode(4...8)(
             (4...5),
-            CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 0, "bar")
+            CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "bar")
           )]
        ),
        (8...9),
@@ -33,7 +33,7 @@ ProgramNode(0...26)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "bar"
             )
           ),
@@ -46,7 +46,7 @@ ProgramNode(0...26)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             ),
             (21...22)

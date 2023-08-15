@@ -1,9 +1,9 @@
 #include "yarp/enc/yp_encoding.h"
 
-typedef uint16_t shift_jis_codepoint_t;
+typedef uint16_t yp_shift_jis_codepoint_t;
 
-static shift_jis_codepoint_t
-shift_jis_codepoint(const char *c, size_t *width) {
+static yp_shift_jis_codepoint_t
+yp_shift_jis_codepoint(const char *c, ptrdiff_t n, size_t *width) {
     const unsigned char *uc = (const unsigned char *) c;
 
     // These are the single byte characters.
@@ -14,11 +14,12 @@ shift_jis_codepoint(const char *c, size_t *width) {
 
     // These are the double byte characters.
     if (
+        (n > 1) &&
         ((uc[0] >= 0x81 && uc[0] <= 0x9F) || (uc[0] >= 0xE0 && uc[0] <= 0xFC)) &&
         (uc[1] >= 0x40 && uc[1] <= 0xFC)
     ) {
         *width = 2;
-        return (shift_jis_codepoint_t) (uc[0] << 8 | uc[1]);
+        return (yp_shift_jis_codepoint_t) (uc[0] << 8 | uc[1]);
     }
 
     *width = 0;
@@ -26,47 +27,47 @@ shift_jis_codepoint(const char *c, size_t *width) {
 }
 
 static size_t
-yp_encoding_shift_jis_char_width(const char *c) {
+yp_encoding_shift_jis_char_width(const char *c, ptrdiff_t n) {
     size_t width;
-    shift_jis_codepoint(c, &width);
+    yp_shift_jis_codepoint(c, n, &width);
 
     return width;
 }
 
 static size_t
-yp_encoding_shift_jis_alpha_char(const char *c) {
+yp_encoding_shift_jis_alpha_char(const char *c, ptrdiff_t n) {
     size_t width;
-    shift_jis_codepoint_t codepoint = shift_jis_codepoint(c, &width);
+    yp_shift_jis_codepoint_t codepoint = yp_shift_jis_codepoint(c, n, &width);
 
     if (width == 1) {
         const char value = (const char) codepoint;
-        return yp_encoding_ascii_alpha_char(&value);
+        return yp_encoding_ascii_alpha_char(&value, n);
     } else {
         return 0;
     }
 }
 
 static size_t
-yp_encoding_shift_jis_alnum_char(const char *c) {
+yp_encoding_shift_jis_alnum_char(const char *c, ptrdiff_t n) {
     size_t width;
-    shift_jis_codepoint_t codepoint = shift_jis_codepoint(c, &width);
+    yp_shift_jis_codepoint_t codepoint = yp_shift_jis_codepoint(c, n, &width);
 
     if (width == 1) {
         const char value = (const char) codepoint;
-        return yp_encoding_ascii_alnum_char(&value);
+        return yp_encoding_ascii_alnum_char(&value, n);
     } else {
         return 0;
     }
 }
 
 static bool
-yp_encoding_shift_jis_isupper_char(const char *c) {
+yp_encoding_shift_jis_isupper_char(const char *c, ptrdiff_t n) {
     size_t width;
-    shift_jis_codepoint_t codepoint = shift_jis_codepoint(c, &width);
+    yp_shift_jis_codepoint_t codepoint = yp_shift_jis_codepoint(c, n, &width);
 
     if (width == 1) {
         const char value = (const char) codepoint;
-        return yp_encoding_ascii_isupper_char(&value);
+        return yp_encoding_ascii_isupper_char(&value, n);
     } else {
         return 0;
     }

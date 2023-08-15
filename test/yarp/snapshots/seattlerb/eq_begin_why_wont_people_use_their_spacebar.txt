@@ -2,12 +2,12 @@ ProgramNode(0...29)(
   [],
   StatementsNode(0...29)(
     [CallNode(0...29)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "h"),
+       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "h"),
        nil,
        (1...4),
        (1...2),
        ArgumentsNode(2...29)(
-         [CallNode(2...3)(nil, nil, (2...3), nil, nil, nil, nil, 0, "k"),
+         [CallNode(2...3)(nil, nil, (2...3), nil, nil, nil, nil, 2, "k"),
           BeginNode(5...29)(
             (5...10),
             StatementsNode(18...20)([IntegerNode(18...20)()]),

@@ -3,7 +3,7 @@ ProgramNode(0...31)(
   StatementsNode(0...31)(
     [CallNode(0...31)(
        CallNode(0...16)(
-         CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a"),
+         CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
          (1...2),
          (2...3),
          nil,
@@ -33,7 +33,7 @@ ProgramNode(0...31)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "d"
               )]
            ),
@@ -65,7 +65,7 @@ ProgramNode(0...31)(
            (24...25)
          ),
          StatementsNode(26...27)(
-           [CallNode(26...27)(nil, nil, (26...27), nil, nil, nil, nil, 0, "g")]
+           [CallNode(26...27)(nil, nil, (26...27), nil, nil, nil, nil, 2, "g")]
          ),
          (19...21),
          (28...31)

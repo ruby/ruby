@@ -29,7 +29,8 @@ ProgramNode(0...197)(
          ),
          (37...40)
        ),
-       StatementsNode(42...47)([BreakNode(42...47)(nil, (42...47))])
+       StatementsNode(42...47)([BreakNode(42...47)(nil, (42...47))]),
+       0
      ),
      WhileNode(54...102)(
        (54...59),
@@ -53,7 +54,8 @@ ProgramNode(0...197)(
          ),
          (87...90)
        ),
-       StatementsNode(92...97)([BreakNode(92...97)(nil, (92...97))])
+       StatementsNode(92...97)([BreakNode(92...97)(nil, (92...97))]),
+       0
      ),
      WhileNode(104...151)(
        (104...109),
@@ -84,7 +86,8 @@ ProgramNode(0...197)(
          ),
          (136...139)
        ),
-       StatementsNode(141...146)([BreakNode(141...146)(nil, (141...146))])
+       StatementsNode(141...146)([BreakNode(141...146)(nil, (141...146))]),
+       0
      ),
      WhileNode(153...197)(
        (153...158),
@@ -109,7 +112,8 @@ ProgramNode(0...197)(
          ),
          (182...185)
        ),
-       StatementsNode(187...192)([BreakNode(187...192)(nil, (187...192))])
+       StatementsNode(187...192)([BreakNode(187...192)(nil, (187...192))]),
+       0
      )]
   )
 )

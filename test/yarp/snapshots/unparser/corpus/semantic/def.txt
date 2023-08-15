@@ -17,7 +17,7 @@ ProgramNode(0...55)(
                    nil,
                    nil,
                    nil,
-                   0,
+                   2,
                    "a"
                  ),
                  nil,
@@ -32,7 +32,7 @@ ProgramNode(0...55)(
                       nil,
                       nil,
                       nil,
-                      0,
+                      2,
                       "b"
                     )]
                  ),
@@ -60,7 +60,7 @@ ProgramNode(0...55)(
        nil,
        StatementsNode(33...51)(
          [RescueModifierNode(33...51)(
-            CallNode(33...34)(nil, nil, (33...34), nil, nil, nil, nil, 0, "a"),
+            CallNode(33...34)(nil, nil, (33...34), nil, nil, nil, nil, 2, "a"),
             (35...41),
             ConstantReadNode(42...51)()
           )]

@@ -134,7 +134,7 @@ ProgramNode(0...100)(
                       nil,
                       nil,
                       nil,
-                      0,
+                      2,
                       "z"
                     ),
                     IntegerNode(98...99)(),

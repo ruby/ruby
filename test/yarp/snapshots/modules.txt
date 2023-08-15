@@ -30,7 +30,7 @@ ProgramNode(0...140)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "bbb"
              )]
           ),
@@ -43,7 +43,7 @@ ProgramNode(0...140)(
        [],
        (40...46),
        ConstantPathNode(47...51)(
-         CallNode(47...48)(nil, nil, (47...48), nil, nil, nil, nil, 0, "m"),
+         CallNode(47...48)(nil, nil, (47...48), nil, nil, nil, nil, 2, "m"),
          ConstantReadNode(50...51)(),
          (48...50)
        ),

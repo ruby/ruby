@@ -10,7 +10,7 @@ yp_strpbrk_multi_byte(yp_parser_t *parser, const char *source, const char *chars
             return source + index;
         }
 
-        size_t width = parser->encoding.char_width(source + index);
+        size_t width = parser->encoding.char_width(source + index, (ptrdiff_t) (maximum - index));
         if (width == 0) {
             return NULL;
         }

@@ -13,7 +13,7 @@ ProgramNode(0...30)(
              nil,
              nil,
              nil,
-             0,
+             2,
              "var"
            ),
            (13...14),
@@ -36,7 +36,8 @@ ProgramNode(0...30)(
        ),
        StatementsNode(21...26)(
          [StringNode(21...26)((21...22), (22...25), (25...26), "foo")]
-       )
+       ),
+       0
      )]
   )
 )

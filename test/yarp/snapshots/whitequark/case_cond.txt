@@ -13,7 +13,7 @@ ProgramNode(0...26)(
              nil,
              nil,
              nil,
-             0,
+             2,
              "foo"
            )],
           StatementsNode(16...21)(
