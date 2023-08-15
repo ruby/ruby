@@ -371,7 +371,7 @@ module SyncDefaultGems
       `git checkout ext/digest/depend ext/digest/*/depend`
     when "set"
       sync_lib gem, upstream
-      cp_r(Dir.glob("#{upstream}/test/*"), "test/set")
+      cp_r("#{upstream}/test", ".")
     when "optparse"
       sync_lib gem, upstream
       rm_rf(%w[doc/optparse])
@@ -420,7 +420,7 @@ module SyncDefaultGems
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
 
-      rm("yarp/config.h")
+      rm_f("yarp/config.h")
       File.write("yarp/config.h", "#include \"ruby/config.h\"\n")
       rm("yarp/extconf.rb")
 
@@ -439,6 +439,27 @@ module SyncDefaultGems
     |COPYING
     |rakelib\/.*
     |test\/lib\/.*
+    )\z/mx
+
+  YARP_IGNORE_FILE_PATTERN =
+    /\A(?:[A-Z]\w*\.(?:md|txt)
+    |[^\/]+\.yml
+    |\.gitignore
+    |\.git.*
+    |[A-Z]\w+file
+    |COPYING
+    |CONTRIBUTING\.md
+    |Gemfile
+    |Gemfile\.lock
+    |Makefile\.in
+    |README\.md
+    |bin\/.*
+    |configure\.ac
+    |rakelib\/.*
+    |templates\/.*
+    |test\/lib\/.*
+    |tasks\/.*
+    |ext\/yarp\/extconf\.rb
     )\z/mx
 
   def message_filter(repo, sha, input: ARGF)
@@ -508,9 +529,15 @@ module SyncDefaultGems
     end
 
     # Ignore Merge commit and insufficiency commit for ruby core repository.
+    case gem
+    when "yarp"
+      ignore_file_pattern = YARP_IGNORE_FILE_PATTERN
+    else
+      ignore_file_pattern = IGNORE_FILE_PATTERN
+    end
     commits.delete_if do |sha, subject|
       files = pipe_readlines(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}")
-      subject.start_with?("Merge", "Auto Merge") or files.all?(IGNORE_FILE_PATTERN)
+      subject.start_with?("Merge", "Auto Merge") or files.all?(ignore_file_pattern)
     end
 
     if commits.empty?
@@ -559,7 +586,7 @@ module SyncDefaultGems
         result = pipe_readlines(%W"git status --porcelain -z")
         result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
         result.compact!
-        ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
+        ignore, conflict = result.partition {|name| ignore_file_pattern =~ name}
         unless ignore.empty?
           system(*%W"git reset HEAD --", *ignore)
           File.unlink(*ignore)
@@ -600,7 +627,7 @@ module SyncDefaultGems
         puts "Remove files added to toplevel: #{toplevels.join(', ')}"
         system(*%w"git rm -r --", *toplevels)
       end
-      tools = changed.select {|f|f.start_with?("test/fixtures/", "test/lib/", "tool/")}
+      tools = changed.select {|f|f.start_with?("test/lib/", "tool/")}
       unless tools.empty?
         system(*%W"git rm -r --", *tools)
         system(*%W"git checkout HEAD~ --", *tools)
