@@ -1547,7 +1547,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-class: Data
  *
- *  \Class Data provides a convenient way to define simple classes
+ *  \Class \Data provides a convenient way to define simple classes
  *  for value-alike objects.
  *
  *  The simplest example of usage:
@@ -1619,7 +1619,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   define(*symbols) -> class
  *
- *  Defines a new Data class.
+ *  Defines a new \Data class.
  *
  *     measure = Data.define(:amount, :unit)
  *     #=> #<Class:0x00007f70c6868498>
@@ -1634,7 +1634,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *     #=> #<data Measure amount=1, unit="km">
  *
  *
- *  Note that member-less Data is acceptable and might be a useful technique
+ *  Note that member-less \Data is acceptable and might be a useful technique
  *  for defining several homogenous data classes, like
  *
  *     class HTTPFetcher

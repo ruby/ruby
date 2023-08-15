@@ -3498,7 +3498,7 @@ match_hash(VALUE match)
  *  call-seq:
  *    matchdata == object -> true or false
  *
- *  Returns +true+ if +object+ is another MatchData object
+ *  Returns +true+ if +object+ is another \MatchData object
  *  whose target string, regexp, match, and captures
  *  are the same as +self+, +false+ otherwise.
  */

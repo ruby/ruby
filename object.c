@@ -4298,7 +4298,7 @@ InitVM_Object(void)
      *
      * == What's Here
      *
-     * \Module Kernel provides methods that are useful for:
+     * \Module \Kernel provides methods that are useful for:
      *
      * - {Converting}[rdoc-ref:Kernel@Converting]
      * - {Querying}[rdoc-ref:Kernel@Querying]
