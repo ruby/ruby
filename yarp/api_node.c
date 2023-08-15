@@ -59,6 +59,7 @@ static VALUE rb_cYARPEmbeddedVariableNode;
 static VALUE rb_cYARPEnsureNode;
 static VALUE rb_cYARPFalseNode;
 static VALUE rb_cYARPFindPatternNode;
+static VALUE rb_cYARPFlipFlopNode;
 static VALUE rb_cYARPFloatNode;
 static VALUE rb_cYARPForNode;
 static VALUE rb_cYARPForwardingArgumentsNode;
@@ -516,6 +517,13 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     for (size_t index = 0; index < cast->requireds.size; index++) {
                         yp_node_stack_push(&node_stack, (yp_node_t *) cast->requireds.nodes[index]);
                     }
+                    yp_node_stack_push(&node_stack, (yp_node_t *) cast->right);
+                    break;
+                }
+#line 111 "api_node.c.erb"
+                case YP_NODE_FLIP_FLOP_NODE: {
+                    yp_flip_flop_node_t *cast = (yp_flip_flop_node_t *) node;
+                    yp_node_stack_push(&node_stack, (yp_node_t *) cast->left);
                     yp_node_stack_push(&node_stack, (yp_node_t *) cast->right);
                     break;
                 }
@@ -1280,7 +1288,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[6] = rb_ary_pop(value_stack);
 
                     // flags
-                    argv[7] = ULONG2NUM(cast->flags);
+                    argv[7] = ULONG2NUM(node->flags >> 1);
 
                     // name
                     argv[8] = yp_string_new(&cast->name, encoding);
@@ -1917,6 +1925,29 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     break;
                 }
 #line 137 "api_node.c.erb"
+                case YP_NODE_FLIP_FLOP_NODE: {
+                    yp_flip_flop_node_t *cast = (yp_flip_flop_node_t *) node;
+                    VALUE argv[5];
+
+                    // left
+                    argv[0] = rb_ary_pop(value_stack);
+
+                    // right
+                    argv[1] = rb_ary_pop(value_stack);
+
+                    // operator_loc
+                    argv[2] = yp_location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
+
+                    // flags
+                    argv[3] = ULONG2NUM(node->flags >> 1);
+
+                    // location
+                    argv[4] = yp_location_new(parser, node->location.start, node->location.end, source);
+
+                    rb_ary_push(value_stack, rb_class_new_instance(5, argv, rb_cYARPFlipFlopNode));
+                    break;
+                }
+#line 137 "api_node.c.erb"
                 case YP_NODE_FLOAT_NODE: {
                     VALUE argv[1];
 
@@ -2319,7 +2350,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[2] = yp_location_new(parser, cast->closing_loc.start, cast->closing_loc.end, source);
 
                     // flags
-                    argv[3] = ULONG2NUM(cast->flags);
+                    argv[3] = ULONG2NUM(node->flags >> 1);
 
                     // location
                     argv[4] = yp_location_new(parser, node->location.start, node->location.end, source);
@@ -2978,7 +3009,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[2] = yp_location_new(parser, cast->operator_loc.start, cast->operator_loc.end, source);
 
                     // flags
-                    argv[3] = ULONG2NUM(cast->flags);
+                    argv[3] = ULONG2NUM(node->flags >> 1);
 
                     // location
                     argv[4] = yp_location_new(parser, node->location.start, node->location.end, source);
@@ -3027,7 +3058,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[3] = yp_string_new(&cast->unescaped, encoding);
 
                     // flags
-                    argv[4] = ULONG2NUM(cast->flags);
+                    argv[4] = ULONG2NUM(node->flags >> 1);
 
                     // location
                     argv[5] = yp_location_new(parser, node->location.start, node->location.end, source);
@@ -3437,7 +3468,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[2] = rb_ary_pop(value_stack);
 
                     // flags
-                    argv[3] = ULONG2NUM(cast->flags);
+                    argv[3] = ULONG2NUM(node->flags >> 1);
 
                     // location
                     argv[4] = yp_location_new(parser, node->location.start, node->location.end, source);
@@ -3483,7 +3514,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[2] = rb_ary_pop(value_stack);
 
                     // flags
-                    argv[3] = ULONG2NUM(cast->flags);
+                    argv[3] = ULONG2NUM(node->flags >> 1);
 
                     // location
                     argv[4] = yp_location_new(parser, node->location.start, node->location.end, source);
@@ -3595,6 +3626,7 @@ Init_yarp_api_node(void) {
     rb_cYARPEnsureNode = rb_define_class_under(rb_cYARP, "EnsureNode", rb_cYARPNode);
     rb_cYARPFalseNode = rb_define_class_under(rb_cYARP, "FalseNode", rb_cYARPNode);
     rb_cYARPFindPatternNode = rb_define_class_under(rb_cYARP, "FindPatternNode", rb_cYARPNode);
+    rb_cYARPFlipFlopNode = rb_define_class_under(rb_cYARP, "FlipFlopNode", rb_cYARPNode);
     rb_cYARPFloatNode = rb_define_class_under(rb_cYARP, "FloatNode", rb_cYARPNode);
     rb_cYARPForNode = rb_define_class_under(rb_cYARP, "ForNode", rb_cYARPNode);
     rb_cYARPForwardingArgumentsNode = rb_define_class_under(rb_cYARP, "ForwardingArgumentsNode", rb_cYARPNode);

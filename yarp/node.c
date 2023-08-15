@@ -357,6 +357,15 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
             yp_node_destroy(parser, (yp_node_t *)((yp_find_pattern_node_t *)node)->right);
             break;
 #line 81 "node.c.erb"
+        case YP_NODE_FLIP_FLOP_NODE:
+            if (((yp_flip_flop_node_t *)node)->left != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)((yp_flip_flop_node_t *)node)->left);
+            }
+            if (((yp_flip_flop_node_t *)node)->right != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)((yp_flip_flop_node_t *)node)->right);
+            }
+            break;
+#line 81 "node.c.erb"
         case YP_NODE_FLOAT_NODE:
             break;
 #line 81 "node.c.erb"
@@ -1153,6 +1162,17 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
             break;
         }
 #line 120 "node.c.erb"
+        case YP_NODE_FLIP_FLOP_NODE: {
+            memsize->memsize += sizeof(yp_flip_flop_node_t);
+            if (((yp_flip_flop_node_t *)node)->left != NULL) {
+                yp_node_memsize_node((yp_node_t *)((yp_flip_flop_node_t *)node)->left, memsize);
+            }
+            if (((yp_flip_flop_node_t *)node)->right != NULL) {
+                yp_node_memsize_node((yp_node_t *)((yp_flip_flop_node_t *)node)->right, memsize);
+            }
+            break;
+        }
+#line 120 "node.c.erb"
         case YP_NODE_FLOAT_NODE: {
             memsize->memsize += sizeof(yp_float_node_t);
             break;
@@ -1842,6 +1862,8 @@ yp_node_type_to_str(yp_node_type_t node_type)
             return "YP_NODE_FALSE_NODE";
         case YP_NODE_FIND_PATTERN_NODE:
             return "YP_NODE_FIND_PATTERN_NODE";
+        case YP_NODE_FLIP_FLOP_NODE:
+            return "YP_NODE_FLIP_FLOP_NODE";
         case YP_NODE_FLOAT_NODE:
             return "YP_NODE_FLOAT_NODE";
         case YP_NODE_FOR_NODE:

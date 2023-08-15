@@ -1,0 +1,168 @@
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+#include "yarp/node.h"
+
+// Clear the node but preserves the location.
+void yp_node_clear(yp_node_t *node) {
+    yp_location_t location = node->location;
+    memset(node, 0, sizeof(yp_node_t));
+    node->location = location;
+}
+
+// Calculate the size of the token list in bytes.
+static size_t
+yp_location_list_memsize(yp_location_list_t *list) {
+    return sizeof(yp_location_list_t) + (list->capacity * sizeof(yp_location_t));
+}
+
+// Append a token to the given list.
+void
+yp_location_list_append(yp_location_list_t *list, const yp_token_t *token) {
+    if (list->size == list->capacity) {
+        list->capacity = list->capacity == 0 ? 2 : list->capacity * 2;
+        list->locations = (yp_location_t *) realloc(list->locations, sizeof(yp_location_t) * list->capacity);
+    }
+    list->locations[list->size++] = (yp_location_t) { .start = token->start, .end = token->end };
+}
+
+// Free the memory associated with the token list.
+static void
+yp_location_list_free(yp_location_list_t *list) {
+    if (list->locations != NULL) {
+        free(list->locations);
+    }
+}
+
+static void
+yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize);
+
+// Calculate the size of the node list in bytes.
+static size_t
+yp_node_list_memsize(yp_node_list_t *node_list, yp_memsize_t *memsize) {
+    size_t size = sizeof(yp_node_list_t) + (node_list->capacity * sizeof(yp_node_t *));
+    for (size_t index = 0; index < node_list->size; index++) {
+        yp_node_memsize_node(node_list->nodes[index], memsize);
+    }
+    return size;
+}
+
+// Append a new node onto the end of the node list.
+void
+yp_node_list_append(yp_node_list_t *list, yp_node_t *node) {
+    if (list->size == list->capacity) {
+        list->capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+        list->nodes = (yp_node_t **) realloc(list->nodes, sizeof(yp_node_t *) * list->capacity);
+    }
+    list->nodes[list->size++] = node;
+}
+
+YP_EXPORTED_FUNCTION void
+yp_node_destroy(yp_parser_t *parser, yp_node_t *node);
+
+// Deallocate the inner memory of a list of nodes. The parser argument is not
+// used, but is here for the future possibility of pre-allocating memory pools.
+static void
+yp_node_list_free(yp_parser_t *parser, yp_node_list_t *list) {
+    if (list->capacity > 0) {
+        for (size_t index = 0; index < list->size; index++) {
+            yp_node_destroy(parser, list->nodes[index]);
+        }
+        free(list->nodes);
+    }
+}
+
+// Deallocate the space for a yp_node_t. Similarly to yp_node_alloc, we're not
+// using the parser argument, but it's there to allow for the future possibility
+// of pre-allocating larger memory pools.
+YP_EXPORTED_FUNCTION void
+yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
+    switch (YP_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+        case <%= node.type %>:
+            <%- node.params.each do |param| -%>
+            <%- case param -%>
+            <%- when LocationParam, OptionalLocationParam, UInt32Param, FlagsParam, ConstantParam -%>
+            <%- when NodeParam -%>
+            yp_node_destroy(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when OptionalNodeParam -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            }
+            <%- when StringParam -%>
+            yp_string_free(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when NodeListParam -%>
+            yp_node_list_free(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when LocationListParam -%>
+            yp_location_list_free(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when ConstantListParam -%>
+            yp_constant_id_list_free(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- else -%>
+            <%- raise -%>
+            <%- end -%>
+            <%- end -%>
+            break;
+        <%- end -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+        default:
+            assert(false && "unreachable");
+            break;
+    }
+    free(node);
+}
+
+static void
+yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
+    memsize->node_count++;
+
+    switch (YP_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+        case <%= node.type %>: {
+            memsize->memsize += sizeof(yp_<%= node.human %>_t);
+            <%- node.params.each do |param| -%>
+            <%- case param -%>
+            <%- when ConstantParam, UInt32Param, FlagsParam, LocationParam, OptionalLocationParam -%>
+            <%- when NodeParam -%>
+            yp_node_memsize_node((yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, memsize);
+            <%- when OptionalNodeParam -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> != NULL) {
+                yp_node_memsize_node((yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, memsize);
+            }
+            <%- when StringParam -%>
+            memsize->memsize += yp_string_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when NodeListParam -%>
+            yp_node_list_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>, memsize);
+            <%- when LocationListParam -%>
+            memsize->memsize += yp_location_list_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when ConstantListParam -%>
+            memsize->memsize += yp_constant_id_list_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- else -%>
+            <%- raise -%>
+            <%- end -%>
+            <%- end -%>
+            break;
+        }
+        <%- end -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+    }
+}
+
+// Calculates the memory footprint of a given node.
+YP_EXPORTED_FUNCTION void
+yp_node_memsize(yp_node_t *node, yp_memsize_t *memsize) {
+    *memsize = (yp_memsize_t) { .memsize = 0, .node_count = 0 };
+    yp_node_memsize_node(node, memsize);
+}
+
+// Returns a string representation of the given node type.
+YP_EXPORTED_FUNCTION const char *
+yp_node_type_to_str(yp_node_type_t node_type)
+{
+    switch (node_type) {
+<%- nodes.each do |node| -%>
+        case <%= node.type %>:
+            return "<%= node.type %>";
+<%- end -%>
+    }
+    return "\0";
+}
