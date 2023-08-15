@@ -4145,7 +4145,7 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  These are the methods defined for BasicObject:
  *
- *  - ::new: Returns a new BasicObject instance.
+ *  - ::new: Returns a new \BasicObject instance.
  *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
  *  - #!=: Returns whether +self+ and the given object are _not_ equal.
  *  - #==: Returns whether +self+ and the given object are equivalent.
