@@ -3713,7 +3713,7 @@ AS_IF([test x"$gcov" = xyes], [
 RUBY_SETJMP_TYPE
 }
 
-[begin]_group "build section" && {
+[begin]_group "installation section" && {
 dnl build rdoc index if requested
 RDOCTARGET=""
 CAPITARGET=""
@@ -3761,6 +3761,19 @@ AC_SUBST(CAPITARGET)
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
 
+AC_ARG_ENABLE(install-static-library,
+	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
+	[INSTALL_STATIC_LIBRARY=$enableval
+         AS_IF([test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno],
+                 [AC_MSG_ERROR([must install either static or shared library])],
+                 [])],
+	AS_IF([test x"$enable_shared" = xyes],
+	    [INSTALL_STATIC_LIBRARY=no],
+	    [INSTALL_STATIC_LIBRARY=yes]))
+AC_SUBST(INSTALL_STATIC_LIBRARY)
+}
+
+[begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
@@ -3922,18 +3935,9 @@ AS_CASE(["$RJIT_SUPPORT"],
 ])
 
 AC_SUBST(RJIT_SUPPORT)
+}
 
-AC_ARG_ENABLE(install-static-library,
-	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
-	[INSTALL_STATIC_LIBRARY=$enableval
-         AS_IF([test x"$enable_shared" = xno -a x"$INSTALL_STATIC_LIBRARY" = xno],
-                 [AC_MSG_ERROR([must install either static or shared library])],
-                 [])],
-	AS_IF([test x"$enable_shared" = xyes],
-	    [INSTALL_STATIC_LIBRARY=no],
-	    [INSTALL_STATIC_LIBRARY=yes]))
-AC_SUBST(INSTALL_STATIC_LIBRARY)
-
+[begin]_group "build section" && {
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
 	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
