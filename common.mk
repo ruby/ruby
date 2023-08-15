@@ -85,32 +85,14 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 YARP_FILES = yarp/api_node.$(OBJEXT) \
 		yarp/api_pack.$(OBJEXT) \
 		yarp/diagnostic.$(OBJEXT) \
-		yarp/enc/yp_ascii.$(OBJEXT) \
 		yarp/enc/yp_big5.$(OBJEXT) \
 		yarp/enc/yp_euc_jp.$(OBJEXT) \
 		yarp/enc/yp_gbk.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_1.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_10.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_11.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_13.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_14.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_15.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_16.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_2.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_3.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_4.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_5.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_6.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_7.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_8.$(OBJEXT) \
-		yarp/enc/yp_iso_8859_9.$(OBJEXT) \
-		yarp/enc/yp_koi8_r.$(OBJEXT) \
-		yarp/enc/yp_shared.$(OBJEXT) \
 		yarp/enc/yp_shift_jis.$(OBJEXT) \
+		yarp/enc/yp_tables.$(OBJEXT) \
 		yarp/enc/yp_unicode.$(OBJEXT) \
-		yarp/enc/yp_windows_1251.$(OBJEXT) \
-		yarp/enc/yp_windows_1252.$(OBJEXT) \
 		yarp/enc/yp_windows_31j.$(OBJEXT) \
+		yarp/extension.$(OBJEXT) \
 		yarp/node.$(OBJEXT) \
 		yarp/pack.$(OBJEXT) \
 		yarp/prettyprint.$(OBJEXT) \
@@ -130,8 +112,7 @@ YARP_FILES = yarp/api_node.$(OBJEXT) \
 		yarp/util/yp_strncasecmp.$(OBJEXT) \
 		yarp/util/yp_strpbrk.$(OBJEXT) \
 		yarp/yarp.$(OBJEXT) \
-		yarp/yarp_init.$(OBJEXT) \
-		yarp/extension.$(OBJEXT)
+		yarp/yarp_init.$(OBJEXT)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
