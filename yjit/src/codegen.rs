@@ -1773,9 +1773,8 @@ fn gen_setlocal_generic(
     // Fallback because of write barrier
     if asm.ctx.get_chain_depth() > 0
     {
-        // Max says: I don't think that this is needed here?
-        // Save the PC and SP because we are allocating
-        //jit_prepare_routine_call(jit, asm);
+        // Save the PC and SP because it runs GC
+        jit_prepare_routine_call(jit, asm);
 
         // Pop the value to write from the stack
         let value_opnd = asm.stack_pop(1);
