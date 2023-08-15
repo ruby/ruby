@@ -371,7 +371,7 @@ module SyncDefaultGems
       `git checkout ext/digest/depend ext/digest/*/depend`
     when "set"
       sync_lib gem, upstream
-      cp_r("#{upstream}/test", ".")
+      cp_r(Dir.glob("#{upstream}/test/*"), "test/set")
     when "optparse"
       sync_lib gem, upstream
       rm_rf(%w[doc/optparse])
