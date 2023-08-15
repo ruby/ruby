@@ -2,12 +2,12 @@ ProgramNode(0...64)(
   [:x],
   StatementsNode(0...64)(
     [RescueModifierNode(0...14)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        (4...10),
-       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 0, "bar")
+       CallNode(11...14)(nil, nil, (11...14), nil, nil, nil, nil, 2, "bar")
      ),
      RescueModifierNode(15...36)(
-       CallNode(15...18)(nil, nil, (15...18), nil, nil, nil, nil, 0, "foo"),
+       CallNode(15...18)(nil, nil, (15...18), nil, nil, nil, nil, 2, "foo"),
        (19...25),
        ReturnNode(26...36)(
          (26...32),
@@ -20,7 +20,7 @@ ProgramNode(0...64)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "bar"
             )]
          )
@@ -40,7 +40,7 @@ ProgramNode(0...64)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "foo"
               ),
               (46...52),
@@ -55,7 +55,7 @@ ProgramNode(0...64)(
                      nil,
                      nil,
                      nil,
-                     0,
+                     2,
                      "bar"
                    )]
                 )

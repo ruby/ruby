@@ -12,6 +12,19 @@ yp_list_empty_p(yp_list_t *list) {
     return list->head == NULL;
 }
 
+YP_EXPORTED_FUNCTION uint32_t
+yp_list_size(yp_list_t *list) {
+    yp_list_node_t *node = list->head;
+    uint32_t length = 0;
+
+    while (node != NULL) {
+        length++;
+        node = node->next;
+    }
+
+    return length;
+}
+
 // Append a node to the given list.
 void
 yp_list_append(yp_list_t *list, yp_list_node_t *node) {

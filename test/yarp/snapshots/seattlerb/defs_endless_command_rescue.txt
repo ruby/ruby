@@ -3,7 +3,7 @@ ProgramNode(0...45)(
   StatementsNode(0...45)(
     [DefNode(0...45)(
        (6...17),
-       CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 0, "x"),
+       CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "x"),
        nil,
        StatementsNode(20...45)(
          [CallNode(20...45)(

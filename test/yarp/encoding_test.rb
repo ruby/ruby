@@ -30,6 +30,7 @@ class EncodingTest < Test::Unit::TestCase
     sjis
     us-ascii
     utf-8
+    utf8-mac
     windows-31j
     windows-1251
     windows-1252

@@ -80,7 +80,7 @@ ProgramNode(0...370)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "foo"
          ),
          nil,
@@ -158,7 +158,7 @@ ProgramNode(0...370)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "foo"
          ),
          (232...233),
@@ -186,7 +186,7 @@ ProgramNode(0...370)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "foo"
          ),
          (254...255),

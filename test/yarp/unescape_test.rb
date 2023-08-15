@@ -2,6 +2,8 @@
 
 require "yarp_test_helper"
 
+return if YARP::BACKEND == :FFI
+
 module UnescapeTest
   class UnescapeNoneTest < Test::Unit::TestCase
     def test_backslash

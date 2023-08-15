@@ -4,6 +4,6 @@ ProgramNode(0...38)(
     [SourceEncodingNode(0...12)(),
      SourceFileNode(13...21)("unparser/corpus/literal/pragma.txt"),
      SourceLineNode(22...30)(),
-     CallNode(31...38)(nil, nil, (31...38), nil, nil, nil, nil, 0, "__dir__")]
+     CallNode(31...38)(nil, nil, (31...38), nil, nil, nil, nil, 2, "__dir__")]
   )
 )

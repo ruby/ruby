@@ -5,7 +5,7 @@ ProgramNode(0...9)(
        :a,
        0,
        CallNode(4...9)(
-         CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 0, "b"),
+         CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "b"),
          (5...6),
          (6...7),
          nil,

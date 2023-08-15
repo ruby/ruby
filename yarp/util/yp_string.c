@@ -97,10 +97,8 @@ yp_string_free(yp_string_t *string) {
         void *memory = (void *) string->source;
         #if defined(_WIN32)
         UnmapViewOfFile(memory);
-        #elif defined(HAVE_MMAP)
-        munmap(memory, string->length);
         #else
-        free(memory);
+        munmap(memory, string->length);
         #endif
     }
 }
@@ -128,7 +126,8 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        yp_string_mapped_init_internal(string, "", 0);
+        char empty_string[] = "";
+        yp_string_mapped_init_internal(string, empty_string, 0);
         return true;
     }
 
@@ -174,32 +173,26 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        yp_string_mapped_init_internal(string, "", 0);
+        char empty_string[] = "";
+        yp_string_mapped_init_internal(string, empty_string, 0);
         return true;
     }
 
-#ifdef HAVE_MMAP
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
         perror("Map failed");
         return false;
     }
-#else
-    source = malloc(size);
-    if (source == NULL) {
-        return false;
-    }
-
-    ssize_t read_size = read(fd, (void *) source, size);
-    if (read_size < 0 || (size_t)read_size != size) {
-        perror("Read size is incorrect");
-        free((void *) source);
-        return false;
-    }
-#endif
 
     close(fd);
     yp_string_mapped_init_internal(string, source, size);
     return true;
 #endif
+}
+
+// Returns the size of the yp_string_t struct. This is necessary to allocate the
+// correct amount of memory in the FFI backend.
+YP_EXPORTED_FUNCTION size_t
+yp_string_sizeof(void) {
+    return sizeof(yp_string_t);
 }

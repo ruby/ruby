@@ -2,12 +2,12 @@ ProgramNode(0...316)(
   [:a],
   StatementsNode(0...316)(
     [RescueModifierNode(0...14)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        (4...10),
        NilNode(11...14)()
      ),
      RescueModifierNode(16...30)(
-       CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 0, "foo"),
+       CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 2, "foo"),
        (20...26),
        NilNode(27...30)()
      ),
@@ -27,7 +27,7 @@ ProgramNode(0...316)(
        NilNode(81...84)()
      ),
      RescueModifierNode(86...105)(
-       CallNode(86...89)(nil, nil, (86...89), nil, nil, nil, nil, 0, "foo"),
+       CallNode(86...89)(nil, nil, (86...89), nil, nil, nil, nil, 2, "foo"),
        (90...96),
        OrNode(97...105)(
          NilNode(97...100)(),
@@ -44,7 +44,7 @@ ProgramNode(0...316)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        (111...117),
@@ -71,7 +71,7 @@ ProgramNode(0...316)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "a"
           )]
        ),
@@ -87,7 +87,7 @@ ProgramNode(0...316)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )
           )],
@@ -139,7 +139,7 @@ ProgramNode(0...316)(
                      nil,
                      nil,
                      nil,
-                     0,
+                     2,
                      "y"
                    )]
                 ),
@@ -201,7 +201,7 @@ ProgramNode(0...316)(
              nil,
              nil,
              nil,
-             0,
+             2,
              "foo"
            ),
            (225...231),
@@ -219,7 +219,7 @@ ProgramNode(0...316)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),

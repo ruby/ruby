@@ -7,7 +7,7 @@ ProgramNode(0...14)(
         LocalVariableWriteNode(6...7)(:c, 0, nil, (6...7), nil),
         SplatNode(9...10)((9...10), nil)],
        (11...12),
-       CallNode(13...14)(nil, nil, (13...14), nil, nil, nil, nil, 0, "f"),
+       CallNode(13...14)(nil, nil, (13...14), nil, nil, nil, nil, 2, "f"),
        nil,
        nil
      )]

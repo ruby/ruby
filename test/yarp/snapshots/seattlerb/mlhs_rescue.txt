@@ -6,7 +6,7 @@ ProgramNode(0...18)(
         LocalVariableWriteNode(3...4)(:b, 0, nil, (3...4), nil)],
        (5...6),
        RescueModifierNode(7...18)(
-         CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 0, "f"),
+         CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 2, "f"),
          (9...15),
          IntegerNode(16...18)()
        ),

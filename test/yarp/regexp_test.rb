@@ -2,6 +2,8 @@
 
 require "yarp_test_helper"
 
+return if YARP::BACKEND == :FFI
+
 class RegexpTest < Test::Unit::TestCase
   ##############################################################################
   # These tests test the actual use case of extracting named capture groups

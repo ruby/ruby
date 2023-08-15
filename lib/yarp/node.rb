@@ -462,6 +462,10 @@ module YARP
       visitor.visit_begin_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      # Never mark BeginNode with a newline flag, mark children instead
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements, rescue_clause, else_clause, ensure_clause]
@@ -833,6 +837,16 @@ module YARP
     # def closing: () -> String?
     def closing
       closing_loc&.slice
+    end
+
+    # def safe_navigation?: () -> bool
+    def safe_navigation?
+      flags.anybits?(CallNodeFlags::SAFE_NAVIGATION)
+    end
+
+    # def variable_call?: () -> bool
+    def variable_call?
+      flags.anybits?(CallNodeFlags::VARIABLE_CALL)
     end
   end
 
@@ -1724,13 +1738,16 @@ module YARP
     end
   end
 
-  # Represents writing to a constant.
+  # Represents writing to a constant path.
   #
-  #     Foo = 1
-  #     ^^^^^^^
+  #     ::Foo = 1
+  #     ^^^^^^^^^
   #
   #     Foo::Bar = 1
   #     ^^^^^^^^^^^^
+  #
+  #     ::Foo::Bar = 1
+  #     ^^^^^^^^^^^^^^
   class ConstantPathWriteNode < Node
     # attr_reader target: Node
     attr_reader :target
@@ -1799,6 +1816,57 @@ module YARP
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
       { location: location }
+    end
+  end
+
+  # Represents writing to a constant.
+  #
+  #     Foo = 1
+  #     ^^^^^^^
+  class ConstantWriteNode < Node
+    # attr_reader name_loc: Location
+    attr_reader :name_loc
+
+    # attr_reader value: Node?
+    attr_reader :value
+
+    # attr_reader operator_loc: Location?
+    attr_reader :operator_loc
+
+    # def initialize: (name_loc: Location, value: Node?, operator_loc: Location?, location: Location) -> void
+    def initialize(name_loc, value, operator_loc, location)
+      @name_loc = name_loc
+      @value = value
+      @operator_loc = operator_loc
+      @location = location
+    end
+
+    # def accept: (visitor: Visitor) -> void
+    def accept(visitor)
+      visitor.visit_constant_write_node(self)
+    end
+
+    # def child_nodes: () -> Array[nil | Node]
+    def child_nodes
+      [value]
+    end
+
+    # def deconstruct: () -> Array[nil | Node]
+    alias deconstruct child_nodes
+
+    # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
+    def deconstruct_keys(keys)
+      { name_loc: name_loc, value: value, operator_loc: operator_loc, location: location }
+    end
+
+    # def name: () -> String
+    def name
+      name_loc.slice
+    end
+
+    # def operator: () -> String?
+    def operator
+      operator_loc&.slice
     end
   end
 
@@ -2265,6 +2333,61 @@ module YARP
     # def closing: () -> String?
     def closing
       closing_loc&.slice
+    end
+  end
+
+  # Represents the use of the `..` or `...` operators to create flip flops.
+  #
+  #     baz if foo .. bar
+  #            ^^^^^^^^^^
+  class FlipFlopNode < Node
+    # attr_reader left: Node?
+    attr_reader :left
+
+    # attr_reader right: Node?
+    attr_reader :right
+
+    # attr_reader operator_loc: Location
+    attr_reader :operator_loc
+
+    # attr_reader flags: Integer
+    attr_reader :flags
+
+    # def initialize: (left: Node?, right: Node?, operator_loc: Location, flags: Integer, location: Location) -> void
+    def initialize(left, right, operator_loc, flags, location)
+      @left = left
+      @right = right
+      @operator_loc = operator_loc
+      @flags = flags
+      @location = location
+    end
+
+    # def accept: (visitor: Visitor) -> void
+    def accept(visitor)
+      visitor.visit_flip_flop_node(self)
+    end
+
+    # def child_nodes: () -> Array[nil | Node]
+    def child_nodes
+      [left, right]
+    end
+
+    # def deconstruct: () -> Array[nil | Node]
+    alias deconstruct child_nodes
+
+    # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
+    def deconstruct_keys(keys)
+      { left: left, right: right, operator_loc: operator_loc, flags: flags, location: location }
+    end
+
+    # def operator: () -> String
+    def operator
+      operator_loc.slice
+    end
+
+    # def exclude_end?: () -> bool
+    def exclude_end?
+      flags.anybits?(RangeFlags::EXCLUDE_END)
     end
   end
 
@@ -2851,6 +2974,10 @@ module YARP
       visitor.visit_if_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [predicate, statements, consequent]
@@ -3255,6 +3382,11 @@ module YARP
       visitor.visit_interpolated_regular_expression_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*parts]
@@ -3276,6 +3408,46 @@ module YARP
     # def closing: () -> String
     def closing
       closing_loc.slice
+    end
+
+    # def ignore_case?: () -> bool
+    def ignore_case?
+      flags.anybits?(RegularExpressionFlags::IGNORE_CASE)
+    end
+
+    # def multi_line?: () -> bool
+    def multi_line?
+      flags.anybits?(RegularExpressionFlags::MULTI_LINE)
+    end
+
+    # def extended?: () -> bool
+    def extended?
+      flags.anybits?(RegularExpressionFlags::EXTENDED)
+    end
+
+    # def euc_jp?: () -> bool
+    def euc_jp?
+      flags.anybits?(RegularExpressionFlags::EUC_JP)
+    end
+
+    # def ascii_8bit?: () -> bool
+    def ascii_8bit?
+      flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
+    end
+
+    # def windows_31j?: () -> bool
+    def windows_31j?
+      flags.anybits?(RegularExpressionFlags::WINDOWS_31J)
+    end
+
+    # def utf_8?: () -> bool
+    def utf_8?
+      flags.anybits?(RegularExpressionFlags::UTF_8)
+    end
+
+    # def once?: () -> bool
+    def once?
+      flags.anybits?(RegularExpressionFlags::ONCE)
     end
   end
 
@@ -3304,6 +3476,11 @@ module YARP
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_interpolated_string_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -3357,6 +3534,11 @@ module YARP
       visitor.visit_interpolated_symbol_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [*parts]
@@ -3406,6 +3588,11 @@ module YARP
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_interpolated_x_string_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      first = parts.first
+      first.set_newline_flag(newline_marked) if first
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -4454,6 +4641,10 @@ module YARP
       visitor.visit_parentheses_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      # Never mark ParenthesesNode with a newline flag, mark children instead
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [statements]
@@ -4787,6 +4978,11 @@ module YARP
     def operator
       operator_loc.slice
     end
+
+    # def exclude_end?: () -> bool
+    def exclude_end?
+      flags.anybits?(RangeFlags::EXCLUDE_END)
+    end
   end
 
   # Represents a rational number literal.
@@ -4913,6 +5109,46 @@ module YARP
     def closing
       closing_loc.slice
     end
+
+    # def ignore_case?: () -> bool
+    def ignore_case?
+      flags.anybits?(RegularExpressionFlags::IGNORE_CASE)
+    end
+
+    # def multi_line?: () -> bool
+    def multi_line?
+      flags.anybits?(RegularExpressionFlags::MULTI_LINE)
+    end
+
+    # def extended?: () -> bool
+    def extended?
+      flags.anybits?(RegularExpressionFlags::EXTENDED)
+    end
+
+    # def euc_jp?: () -> bool
+    def euc_jp?
+      flags.anybits?(RegularExpressionFlags::EUC_JP)
+    end
+
+    # def ascii_8bit?: () -> bool
+    def ascii_8bit?
+      flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
+    end
+
+    # def windows_31j?: () -> bool
+    def windows_31j?
+      flags.anybits?(RegularExpressionFlags::WINDOWS_31J)
+    end
+
+    # def utf_8?: () -> bool
+    def utf_8?
+      flags.anybits?(RegularExpressionFlags::UTF_8)
+    end
+
+    # def once?: () -> bool
+    def once?
+      flags.anybits?(RegularExpressionFlags::ONCE)
+    end
   end
 
   # Represents a destructured required parameter node.
@@ -5028,6 +5264,10 @@ module YARP
       visitor.visit_rescue_modifier_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      expression.set_newline_flag(newline_marked)
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [expression, rescue_expression]
@@ -5067,8 +5307,8 @@ module YARP
     # attr_reader operator_loc: Location?
     attr_reader :operator_loc
 
-    # attr_reader exception: Node?
-    attr_reader :exception
+    # attr_reader reference: Node?
+    attr_reader :reference
 
     # attr_reader statements: Node?
     attr_reader :statements
@@ -5076,12 +5316,12 @@ module YARP
     # attr_reader consequent: Node?
     attr_reader :consequent
 
-    # def initialize: (keyword_loc: Location, exceptions: Array[Node], operator_loc: Location?, exception: Node?, statements: Node?, consequent: Node?, location: Location) -> void
-    def initialize(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location)
+    # def initialize: (keyword_loc: Location, exceptions: Array[Node], operator_loc: Location?, reference: Node?, statements: Node?, consequent: Node?, location: Location) -> void
+    def initialize(keyword_loc, exceptions, operator_loc, reference, statements, consequent, location)
       @keyword_loc = keyword_loc
       @exceptions = exceptions
       @operator_loc = operator_loc
-      @exception = exception
+      @reference = reference
       @statements = statements
       @consequent = consequent
       @location = location
@@ -5094,7 +5334,7 @@ module YARP
 
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
-      [*exceptions, exception, statements, consequent]
+      [*exceptions, reference, statements, consequent]
     end
 
     # def deconstruct: () -> Array[nil | Node]
@@ -5102,7 +5342,7 @@ module YARP
 
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
-      { keyword_loc: keyword_loc, exceptions: exceptions, operator_loc: operator_loc, exception: exception, statements: statements, consequent: consequent, location: location }
+      { keyword_loc: keyword_loc, exceptions: exceptions, operator_loc: operator_loc, reference: reference, statements: statements, consequent: consequent, location: location }
     end
 
     # def keyword: () -> String
@@ -5841,6 +6081,10 @@ module YARP
       visitor.visit_unless_node(self)
     end
 
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
+    end
+
     # def child_nodes: () -> Array[nil | Node]
     def child_nodes
       [predicate, statements, consequent]
@@ -5882,17 +6126,25 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, location: Location) -> void
-    def initialize(keyword_loc, predicate, statements, location)
+    # attr_reader flags: Integer
+    attr_reader :flags
+
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, flags: Integer, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, flags, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
+      @flags = flags
       @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_until_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -5905,12 +6157,17 @@ module YARP
 
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
-      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, location: location }
+      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, flags: flags, location: location }
     end
 
     # def keyword: () -> String
     def keyword
       keyword_loc.slice
+    end
+
+    # def begin_modifier?: () -> bool
+    def begin_modifier?
+      flags.anybits?(LoopFlags::BEGIN_MODIFIER)
     end
   end
 
@@ -5977,17 +6234,25 @@ module YARP
     # attr_reader statements: Node?
     attr_reader :statements
 
-    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, location: Location) -> void
-    def initialize(keyword_loc, predicate, statements, location)
+    # attr_reader flags: Integer
+    attr_reader :flags
+
+    # def initialize: (keyword_loc: Location, predicate: Node, statements: Node?, flags: Integer, location: Location) -> void
+    def initialize(keyword_loc, predicate, statements, flags, location)
       @keyword_loc = keyword_loc
       @predicate = predicate
       @statements = statements
+      @flags = flags
       @location = location
     end
 
     # def accept: (visitor: Visitor) -> void
     def accept(visitor)
       visitor.visit_while_node(self)
+    end
+
+    def set_newline_flag(newline_marked)
+      predicate.set_newline_flag(newline_marked)
     end
 
     # def child_nodes: () -> Array[nil | Node]
@@ -6000,12 +6265,17 @@ module YARP
 
     # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
     def deconstruct_keys(keys)
-      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, location: location }
+      { keyword_loc: keyword_loc, predicate: predicate, statements: statements, flags: flags, location: location }
     end
 
     # def keyword: () -> String
     def keyword
       keyword_loc.slice
+    end
+
+    # def begin_modifier?: () -> bool
+    def begin_modifier?
+      flags.anybits?(LoopFlags::BEGIN_MODIFIER)
     end
   end
 
@@ -6132,9 +6402,17 @@ module YARP
   module CallNodeFlags
     # &. operator
     SAFE_NAVIGATION = 1 << 0
+
+    # a call that could have been a local variable
+    VARIABLE_CALL = 1 << 1
   end
 
-  module RangeNodeFlags
+  module LoopFlags
+    # a loop after a begin statement, so the body is executed first before the condition
+    BEGIN_MODIFIER = 1 << 0
+  end
+
+  module RangeFlags
     # ... operator
     EXCLUDE_END = 1 << 0
   end
@@ -6163,24 +6441,6 @@ module YARP
 
     # o - only interpolates values into the regular expression once
     ONCE = 1 << 7
-  end
-
-  # A class that knows how to walk down the tree. None of the individual visit
-  # methods are implemented on this visitor, so it forces the consumer to
-  # implement each one that they need. For a default implementation that
-  # continues walking the tree, see the Visitor class.
-  class BasicVisitor
-    def visit(node)
-      node&.accept(self)
-    end
-
-    def visit_all(nodes)
-      nodes.map { |node| visit(node) }
-    end
-
-    def visit_child_nodes(node)
-      visit_all(node.child_nodes)
-    end
   end
 
   class Visitor < BasicVisitor
@@ -6292,6 +6552,9 @@ module YARP
     # Visit a ConstantReadNode node
     alias visit_constant_read_node visit_child_nodes
 
+    # Visit a ConstantWriteNode node
+    alias visit_constant_write_node visit_child_nodes
+
     # Visit a DefNode node
     alias visit_def_node visit_child_nodes
 
@@ -6315,6 +6578,9 @@ module YARP
 
     # Visit a FindPatternNode node
     alias visit_find_pattern_node visit_child_nodes
+
+    # Visit a FlipFlopNode node
+    alias visit_flip_flop_node visit_child_nodes
 
     # Visit a FloatNode node
     alias visit_float_node visit_child_nodes
@@ -6751,6 +7017,11 @@ module YARP
       ConstantReadNode.new(location)
     end
 
+    # Create a new ConstantWriteNode node
+    def ConstantWriteNode(name_loc, value, operator_loc, location = Location())
+      ConstantWriteNode.new(name_loc, value, operator_loc, location)
+    end
+
     # Create a new DefNode node
     def DefNode(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location = Location())
       DefNode.new(name_loc, receiver, parameters, statements, locals, def_keyword_loc, operator_loc, lparen_loc, rparen_loc, equal_loc, end_keyword_loc, location)
@@ -6789,6 +7060,11 @@ module YARP
     # Create a new FindPatternNode node
     def FindPatternNode(constant, left, requireds, right, opening_loc, closing_loc, location = Location())
       FindPatternNode.new(constant, left, requireds, right, opening_loc, closing_loc, location)
+    end
+
+    # Create a new FlipFlopNode node
+    def FlipFlopNode(left, right, operator_loc, flags, location = Location())
+      FlipFlopNode.new(left, right, operator_loc, flags, location)
     end
 
     # Create a new FloatNode node
@@ -7087,8 +7363,8 @@ module YARP
     end
 
     # Create a new RescueNode node
-    def RescueNode(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location = Location())
-      RescueNode.new(keyword_loc, exceptions, operator_loc, exception, statements, consequent, location)
+    def RescueNode(keyword_loc, exceptions, operator_loc, reference, statements, consequent, location = Location())
+      RescueNode.new(keyword_loc, exceptions, operator_loc, reference, statements, consequent, location)
     end
 
     # Create a new RestParameterNode node
@@ -7177,8 +7453,8 @@ module YARP
     end
 
     # Create a new UntilNode node
-    def UntilNode(keyword_loc, predicate, statements, location = Location())
-      UntilNode.new(keyword_loc, predicate, statements, location)
+    def UntilNode(keyword_loc, predicate, statements, flags, location = Location())
+      UntilNode.new(keyword_loc, predicate, statements, flags, location)
     end
 
     # Create a new WhenNode node
@@ -7187,8 +7463,8 @@ module YARP
     end
 
     # Create a new WhileNode node
-    def WhileNode(keyword_loc, predicate, statements, location = Location())
-      WhileNode.new(keyword_loc, predicate, statements, location)
+    def WhileNode(keyword_loc, predicate, statements, flags, location = Location())
+      WhileNode.new(keyword_loc, predicate, statements, flags, location)
     end
 
     # Create a new XStringNode node

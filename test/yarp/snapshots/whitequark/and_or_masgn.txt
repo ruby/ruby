@@ -2,7 +2,7 @@ ProgramNode(0...40)(
   [:a, :b],
   StatementsNode(0...40)(
     [AndNode(0...19)(
-       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 0, "foo"),
+       CallNode(0...3)(nil, nil, (0...3), nil, nil, nil, nil, 2, "foo"),
        ParenthesesNode(7...19)(
          StatementsNode(8...18)(
            [MultiWriteNode(8...18)(
@@ -17,7 +17,7 @@ ProgramNode(0...40)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               nil,
@@ -30,7 +30,7 @@ ProgramNode(0...40)(
        (4...6)
      ),
      OrNode(21...40)(
-       CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 0, "foo"),
+       CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 2, "foo"),
        ParenthesesNode(28...40)(
          StatementsNode(29...39)(
            [MultiWriteNode(29...39)(
@@ -45,7 +45,7 @@ ProgramNode(0...40)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               nil,

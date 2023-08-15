@@ -1,16 +1,16 @@
-ProgramNode(0...117)(
-  [],
-  StatementsNode(0...117)(
+ProgramNode(0...131)(
+  [:_a],
+  StatementsNode(0...131)(
     [IfNode(0...9)(
        nil,
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 0, "a"),
+       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
        StatementsNode(4...5)(
-         [CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 0, "b")]
+         [CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "b")]
        ),
        ElseNode(6...9)(
          (6...7),
          StatementsNode(8...9)(
-           [CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 0, "c")]
+           [CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "c")]
          ),
          nil
        ),
@@ -18,11 +18,11 @@ ProgramNode(0...117)(
      ),
      IfNode(11...38)(
        nil,
-       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 0, "a"),
+       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "a"),
        StatementsNode(15...25)(
          [DefinedNode(15...25)(
             nil,
-            CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 0, "b"),
+            CallNode(24...25)(nil, nil, (24...25), nil, nil, nil, nil, 2, "b"),
             nil,
             (15...23)
           )]
@@ -40,7 +40,7 @@ ProgramNode(0...117)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "c"
               ),
               nil,
@@ -97,7 +97,7 @@ ProgramNode(0...117)(
      ),
      IfNode(103...117)(
        nil,
-       CallNode(103...104)(nil, nil, (103...104), nil, nil, nil, nil, 0, "a"),
+       CallNode(103...104)(nil, nil, (103...104), nil, nil, nil, nil, 2, "a"),
        StatementsNode(106...110)(
          [CallNode(106...110)(
             nil,
@@ -107,7 +107,7 @@ ProgramNode(0...117)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "var1"
           )]
        ),
@@ -122,10 +122,39 @@ ProgramNode(0...117)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "var2"
             )]
          ),
+         nil
+       ),
+       nil
+     ),
+     IfNode(119...131)(
+       nil,
+       CallNode(119...123)(
+         nil,
+         nil,
+         (119...123),
+         nil,
+         nil,
+         nil,
+         nil,
+         0,
+         "nil?"
+       ),
+       StatementsNode(124...129)(
+         [LocalVariableWriteNode(124...129)(
+            :_a,
+            0,
+            IntegerNode(128...129)(),
+            (124...126),
+            (127...128)
+          )]
+       ),
+       ElseNode(129...131)(
+         (129...130),
+         StatementsNode(130...131)([IntegerNode(130...131)()]),
          nil
        ),
        nil

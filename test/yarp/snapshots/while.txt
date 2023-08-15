@@ -4,27 +4,32 @@ ProgramNode(0...314)(
     [WhileNode(0...18)(
        (0...5),
        TrueNode(6...10)(),
-       StatementsNode(12...13)([IntegerNode(12...13)()])
+       StatementsNode(12...13)([IntegerNode(12...13)()]),
+       0
      ),
      WhileNode(20...32)(
        (22...27),
        TrueNode(28...32)(),
-       StatementsNode(20...21)([IntegerNode(20...21)()])
+       StatementsNode(20...21)([IntegerNode(20...21)()]),
+       0
      ),
      WhileNode(34...50)(
        (40...45),
        TrueNode(46...50)(),
-       StatementsNode(34...39)([BreakNode(34...39)(nil, (34...39))])
+       StatementsNode(34...39)([BreakNode(34...39)(nil, (34...39))]),
+       0
      ),
      WhileNode(52...67)(
        (57...62),
        TrueNode(63...67)(),
-       StatementsNode(52...56)([NextNode(52...56)(nil, (52...56))])
+       StatementsNode(52...56)([NextNode(52...56)(nil, (52...56))]),
+       0
      ),
      WhileNode(69...86)(
        (76...81),
        TrueNode(82...86)(),
-       StatementsNode(69...75)([ReturnNode(69...75)((69...75), nil)])
+       StatementsNode(69...75)([ReturnNode(69...75)((69...75), nil)]),
+       0
      ),
      WhileNode(88...109)(
        (99...104),
@@ -54,7 +59,8 @@ ProgramNode(0...314)(
             0,
             "foo"
           )]
-       )
+       ),
+       0
      ),
      WhileNode(111...161)(
        (111...116),
@@ -94,7 +100,8 @@ ProgramNode(0...314)(
          nil,
          (146...149)
        ),
-       StatementsNode(151...156)([BreakNode(151...156)(nil, (151...156))])
+       StatementsNode(151...156)([BreakNode(151...156)(nil, (151...156))]),
+       0
      ),
      WhileNode(163...210)(
        (163...168),
@@ -125,7 +132,8 @@ ProgramNode(0...314)(
          ),
          (195...198)
        ),
-       StatementsNode(200...205)([BreakNode(200...205)(nil, (200...205))])
+       StatementsNode(200...205)([BreakNode(200...205)(nil, (200...205))]),
+       0
      ),
      WhileNode(212...260)(
        (212...217),
@@ -149,7 +157,8 @@ ProgramNode(0...314)(
          ),
          (245...248)
        ),
-       StatementsNode(250...255)([BreakNode(250...255)(nil, (250...255))])
+       StatementsNode(250...255)([BreakNode(250...255)(nil, (250...255))]),
+       0
      ),
      WhileNode(262...314)(
        (262...267),
@@ -179,7 +188,8 @@ ProgramNode(0...314)(
          ),
          (299...302)
        ),
-       StatementsNode(304...309)([BreakNode(304...309)(nil, (304...309))])
+       StatementsNode(304...309)([BreakNode(304...309)(nil, (304...309))]),
+       0
      )]
   )
 )

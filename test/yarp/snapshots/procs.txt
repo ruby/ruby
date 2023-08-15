@@ -51,7 +51,7 @@ ProgramNode(0...266)(
        (71...73),
        nil,
        StatementsNode(76...79)(
-         [CallNode(76...79)(nil, nil, (76...79), nil, nil, nil, nil, 0, "foo")]
+         [CallNode(76...79)(nil, nil, (76...79), nil, nil, nil, nil, 2, "foo")]
        )
      ),
      LambdaNode(83...98)(
@@ -59,7 +59,7 @@ ProgramNode(0...266)(
        (83...85),
        nil,
        StatementsNode(90...93)(
-         [CallNode(90...93)(nil, nil, (90...93), nil, nil, nil, nil, 0, "foo")]
+         [CallNode(90...93)(nil, nil, (90...93), nil, nil, nil, nil, 2, "foo")]
        )
      ),
      LambdaNode(100...129)(

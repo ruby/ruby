@@ -22,7 +22,7 @@ ProgramNode(0...65)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "raise"
               )]
            ),

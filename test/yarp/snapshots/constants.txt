@@ -16,7 +16,7 @@ ProgramNode(0...715)(
        (10...12)
      ),
      ConstantPathNode(15...19)(
-       CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 0, "a"),
+       CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 2, "a"),
        ConstantReadNode(18...19)(),
        (16...18)
      ),
@@ -715,7 +715,7 @@ ProgramNode(0...715)(
      CallNode(615...620)(
        ConstantReadNode(615...616)(),
        (616...618),
-       (619...620),
+       (618...619),
        nil,
        ArgumentsNode(619...620)(
          [CallNode(619...620)(
@@ -726,19 +726,19 @@ ProgramNode(0...715)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "i"
           )]
        ),
        nil,
        nil,
        0,
-       "i"
+       "%"
      ),
      CallNode(622...627)(
        ConstantReadNode(622...623)(),
        (623...625),
-       (626...627),
+       (625...626),
        nil,
        ArgumentsNode(626...627)(
          [CallNode(626...627)(
@@ -749,19 +749,19 @@ ProgramNode(0...715)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "w"
           )]
        ),
        nil,
        nil,
        0,
-       "w"
+       "%"
      ),
      CallNode(629...634)(
        ConstantReadNode(629...630)(),
        (630...632),
-       (633...634),
+       (632...633),
        nil,
        ArgumentsNode(633...634)(
          [CallNode(633...634)(
@@ -772,36 +772,36 @@ ProgramNode(0...715)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "x"
           )]
        ),
        nil,
        nil,
        0,
-       "x"
+       "%"
      ),
      CallNode(636...641)(
        ConstantReadNode(636...637)(),
        (637...639),
-       (640...641),
+       (639...640),
        nil,
        ArgumentsNode(640...641)([ConstantReadNode(640...641)()]),
        nil,
        nil,
        0,
-       "I"
+       "%"
      ),
      CallNode(643...648)(
        ConstantReadNode(643...644)(),
        (644...646),
-       (647...648),
+       (646...647),
        nil,
        ArgumentsNode(647...648)([ConstantReadNode(647...648)()]),
        nil,
        nil,
        0,
-       "W"
+       "%"
      ),
      CallNode(650...654)(
        ConstantReadNode(650...651)(),

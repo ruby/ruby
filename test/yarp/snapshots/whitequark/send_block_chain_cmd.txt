@@ -17,7 +17,7 @@ ProgramNode(0...173)(
        (14...17),
        nil,
        ArgumentsNode(18...21)(
-         [CallNode(18...21)(nil, nil, (18...21), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(18...21)(nil, nil, (18...21), nil, nil, nil, nil, 2, "bar")]
        ),
        nil,
        nil,
@@ -40,7 +40,7 @@ ProgramNode(0...173)(
        (37...40),
        nil,
        ArgumentsNode(41...44)(
-         [CallNode(41...44)(nil, nil, (41...44), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(41...44)(nil, nil, (41...44), nil, nil, nil, nil, 2, "bar")]
        ),
        nil,
        BlockNode(45...51)([], nil, nil, (45...47), (48...51)),
@@ -84,7 +84,7 @@ ProgramNode(0...173)(
        (89...92),
        (92...93),
        ArgumentsNode(93...96)(
-         [CallNode(93...96)(nil, nil, (93...96), nil, nil, nil, nil, 0, "bar")]
+         [CallNode(93...96)(nil, nil, (93...96), nil, nil, nil, nil, 2, "bar")]
        ),
        (96...97),
        nil,
@@ -115,7 +115,7 @@ ProgramNode(0...173)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),
@@ -137,7 +137,7 @@ ProgramNode(0...173)(
          "meth"
        ),
        (139...141),
-       (145...148),
+       (141...144),
        nil,
        ArgumentsNode(145...148)(
          [CallNode(145...148)(
@@ -148,14 +148,14 @@ ProgramNode(0...173)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),
        nil,
        nil,
        0,
-       "bar"
+       "fun"
      ),
      CallNode(150...173)(
        CallNode(150...163)(
@@ -170,7 +170,7 @@ ProgramNode(0...173)(
          "meth"
        ),
        (163...165),
-       (172...173),
+       (165...168),
        (168...169),
        ArgumentsNode(169...172)(
          [CallNode(169...172)(
@@ -181,14 +181,14 @@ ProgramNode(0...173)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "bar"
           )]
        ),
        (172...173),
        nil,
        0,
-       ")"
+       "fun"
      )]
   )
 )

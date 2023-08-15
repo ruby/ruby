@@ -2,6 +2,8 @@
 
 require "yarp_test_helper"
 
+return if YARP::BACKEND == :FFI
+
 class MemsizeTest < Test::Unit::TestCase
   def test_memsize
     result = YARP.const_get(:Debug).memsize("2 + 3")
