@@ -1,0 +1,18 @@
+#include <string.h>
+
+#include "yarp/ast.h"
+
+// Returns a string representation of the given token type.
+YP_EXPORTED_FUNCTION const char *
+yp_token_type_to_str(yp_token_type_t token_type)
+{
+    switch (token_type) {
+<%- tokens.each do |token| -%>
+        case YP_TOKEN_<%= token.name %>:
+            return "<%= token.name %>";
+<%- end -%>
+        case YP_TOKEN_MAXIMUM:
+            return "MAXIMUM";
+    }
+    return "\0";
+}

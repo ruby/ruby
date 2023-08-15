@@ -1,0 +1,111 @@
+#ifndef YARP_AST_H
+#define YARP_AST_H
+
+#include "yarp/defines.h"
+#include "yarp/util/yp_constant_pool.h"
+#include "yarp/util/yp_string.h"
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+// This enum represents every type of token in the Ruby source.
+typedef enum yp_token_type {
+<%- tokens.each do |token| -%>
+    <%= token.declaration %>
+<%- end -%>
+    YP_TOKEN_MAXIMUM, // the maximum token value
+} yp_token_type_t;
+
+// This struct represents a token in the Ruby source. We use it to track both
+// type and location information.
+typedef struct {
+    yp_token_type_t type;
+    const char *start;
+    const char *end;
+} yp_token_t;
+
+// This represents a range of bytes in the source string to which a node or
+// token corresponds.
+typedef struct {
+    const char *start;
+    const char *end;
+} yp_location_t;
+
+typedef struct {
+    yp_location_t *locations;
+    size_t size;
+    size_t capacity;
+} yp_location_list_t;
+
+struct yp_node;
+
+typedef struct yp_node_list {
+    struct yp_node **nodes;
+    size_t size;
+    size_t capacity;
+} yp_node_list_t;
+
+enum yp_node_type {
+<%- nodes.each_with_index do |node, index| -%>
+    <%= node.type %> = <%= index + 1 %>,
+<%- end -%>
+};
+
+typedef uint16_t yp_node_type_t;
+typedef uint16_t yp_node_flags_t;
+
+// We store the flags enum in every node in the tree. Some flags are common to
+// all nodes (the ones listed below). Others are specific to certain node types.
+static const yp_node_flags_t YP_NODE_FLAG_NEWLINE = 0x1;
+
+// For easy access, we define some macros to check node type
+#define YP_NODE_TYPE(node) ((enum yp_node_type)node->type)
+#define YP_NODE_TYPE_P(node, type) (YP_NODE_TYPE(node) == (type))
+
+// This is the overall tagged union representing a node in the syntax tree.
+typedef struct yp_node {
+    // This represents the type of the node. It somewhat maps to the nodes that
+    // existed in the original grammar and ripper, but it's not a 1:1 mapping.
+    yp_node_type_t type;
+
+    // This represents any flags on the node. Currently, this is only a newline
+    // flag
+    yp_node_flags_t flags;
+
+    // This is the location of the node in the source. It's a range of bytes
+    // containing a start and an end.
+    yp_location_t location;
+} yp_node_t;
+<%- nodes.each do |node| -%>
+
+// <%= node.name %>
+typedef struct yp_<%= node.human %> {
+    yp_node_t base;
+<%- node.params.grep_v(FlagsParam).each do |param| -%>
+    <%= case param
+    when NodeParam, OptionalNodeParam then "struct #{param.c_type} *#{param.name}"
+    when NodeListParam then "struct yp_node_list #{param.name}"
+    when LocationListParam then "yp_location_list_t #{param.name}"
+    when ConstantParam then "yp_constant_id_t #{param.name}"
+    when ConstantListParam then "yp_constant_id_list_t #{param.name}"
+    when StringParam then "yp_string_t #{param.name}"
+    when LocationParam, OptionalLocationParam then "yp_location_t #{param.name}"
+    when UInt32Param then "uint32_t #{param.name}"
+    else raise param.class.name
+    end
+    %>;
+<%- end -%>
+} yp_<%= node.human %>_t;
+<%- end -%>
+<%- flags.each do |flag| -%>
+
+// <%= flag.name %>
+typedef enum {
+    <%- flag.values.each.with_index(COMMON_FLAGS) do |value, index| -%>
+    YP_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,
+    <%- end -%>
+} yp_<%= flag.human %>_t;
+<%- end -%>
+
+#endif // YARP_AST_H
