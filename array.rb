@@ -81,7 +81,7 @@ class Array
   #
   # If +self+ is empty, returns +nil+.
   #
-  # When non-negative \Integer argument +n+ is given,
+  # When non-negative Integer argument +n+ is given,
   # returns the first +n+ elements in a new \Array:
   #
   #   a = [:foo, 'bar', 2]
@@ -125,7 +125,7 @@ class Array
   #
   # If +self+ is empty, returns +nil+.
   #
-  # When non-negative \Integer argument +n+ is given,
+  # When non-negative Integer argument +n+ is given,
   # returns the last +n+ elements in a new \Array:
   #
   #   a = [:foo, 'bar', 2]
