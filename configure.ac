@@ -420,21 +420,6 @@ AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
-: ${RJIT_CC=$CC}
-AS_IF([test "x$cross_compiling" = xno], [
-    AC_PATH_PROG([RJIT_CC], ${RJIT_CC})
-
-    # if $CC is in /usr/lib/ccache/$CC, search original $CC (disable ccache)
-    AS_IF([echo $RUBY_DEBUG | grep ci > /dev/null &&
-           echo $RJIT_CC | grep ^/usr/lib/ccache > /dev/null], [
-           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` RJIT_CC=`which $CC`])
-
-    AS_CASE([$target_os],
-	[*mingw*], [command -v cygpath > /dev/null && RJIT_CC=`cygpath -ma $RJIT_CC`])
-    shift 2
-    RJIT_CC="$RJIT_CC${1+ }$*"
-])
-
 AS_CASE(["$build_os"],
   [darwin1*.*], [
     # Xcode linker warns for deprecated architecture and wrongly
@@ -2960,14 +2945,6 @@ LIBEXT=a
 
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
-AC_SUBST(RJIT_CC)dnl
-AS_CASE(["$GCC:$target_os"],
-    [yes:aix*], [rjit_std_cflag="-std=gnu99"],
-    [rjit_std_cflag=])
-AC_SUBST(RJIT_CFLAGS, [${RJIT_CFLAGS-"-w ${rjit_std_cflag} ${orig_cflags}"}])dnl
-AC_SUBST(RJIT_OPTFLAGS, [${RJIT_OPTFLAGS-'$(optflags)'}])dnl
-AC_SUBST(RJIT_DEBUGFLAGS, [${RJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
-AC_SUBST(RJIT_LDSHARED)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -4127,7 +4104,6 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 ])
 }
 
-: ${RJIT_LDSHARED=`echo "$LDSHARED" | sed ['s|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(RJIT_CC)|g']`}
 [end]_group
 
 MAINLIBS="$LIBS"
