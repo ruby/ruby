@@ -47,11 +47,22 @@ m4_include([tool/m4/ruby_universal_arch.m4])dnl
 m4_include([tool/m4/ruby_wasm_tools.m4])dnl
 m4_include([tool/m4/ruby_werror_flag.m4])dnl
 
+AS_IF([test "x${GITHUB_ACTIONS}" = xtrue],
+[AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
+dnl 93(bright yellow) is copied from .github/workflows/mingw.yml
+    begin_group() { AS_ECHO(["::group::@<:@93m$[]1@<:@m"]);}
+    end_group() { AS_ECHO(["::endgroup::"]);}
+],
+[dnl
+    begin_group() { :;}
+    end_group() { :;}
+])
+
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])dnl
 
-: "environment section" && {
+[begin]_group "environment section" && {
 HAVE_BASERUBY=yes
 BASERUBY_VERSION=
 AC_ARG_WITH(baseruby,
@@ -591,7 +602,7 @@ AC_MSG_RESULT([$CHDIR])
 AC_SUBST(CHDIR)
 }
 
-: "compiler section" && {
+[begin]_group "compiler section" && {
 RUBY_WERROR_FLAG([
     AC_MSG_CHECKING([whether CFLAGS is valid])
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
@@ -985,7 +996,7 @@ AS_IF([test "$rb_cv_have_stmt_and_decl_in_expr" = yes], [
   AC_DEFINE(HAVE_STMT_AND_DECL_IN_EXPR)
 ])
 
-: "header and library section" && {
+[begin]_group "header and library section" && {
 AC_ARG_WITH(winnt-ver,
   AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0600)]),
   [with_winnt_ver="$withval"], [with_winnt_ver="0x0600"])
@@ -2913,7 +2924,7 @@ AS_IF([test "x$ac_cv_func_ioctl" = xyes], [
 
 }
 
-: "runtime section" && {
+[begin]_group "runtime section" && {
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out,
 	AS_HELP_STRING([--with-dln-a-out], [dln_a_out is deprecated]),
@@ -3702,7 +3713,7 @@ AS_IF([test x"$gcov" = xyes], [
 RUBY_SETJMP_TYPE
 }
 
-: "build section" && {
+[begin]_group "build section" && {
 dnl build rdoc index if requested
 RDOCTARGET=""
 CAPITARGET=""
@@ -4110,8 +4121,10 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 		const char arch[[]] = __ARCHITECTURE__;]], [[puts(arch);]])],
 		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 ])
+}
 
 : ${RJIT_LDSHARED=`echo "$LDSHARED" | sed ['s|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(RJIT_CC)|g']`}
+[end]_group
 
 MAINLIBS="$LIBS"
 LIBS=$ORIG_LIBS
@@ -4549,7 +4562,6 @@ AC_ARG_WITH(destdir,
 AC_SUBST(DESTDIR)
 
 AC_OUTPUT
-}
 }
 
 AS_IF([test "$silent" = yes], [], [
