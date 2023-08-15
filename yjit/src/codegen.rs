@@ -1546,8 +1546,7 @@ fn gen_expandarray(
 
     let array_opnd = asm.stack_opnd(0);
 
-    // num is the number of requested values. If there aren't enough in the
-    // array then we're going to push on nils.
+    // If the array operand is nil, just push on nils
     if asm.ctx.get_opnd_type(array_opnd.into()) == Type::Nil {
         asm.stack_pop(1); // pop after using the type info
         // special case for a, b = nil pattern
@@ -1762,6 +1761,7 @@ fn gen_getlocal_wc1(
 fn gen_setlocal_generic(
     jit: &mut JITState,
     asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
@@ -1769,6 +1769,30 @@ fn gen_setlocal_generic(
 
     // Load environment pointer EP at level
     let ep_opnd = gen_get_ep(asm, level);
+
+    // Fallback because of write barrier
+    if asm.ctx.get_chain_depth() > 0
+    {
+        // Max says: I don't think that this is needed here?
+        // Save the PC and SP because we are allocating
+        //jit_prepare_routine_call(jit, asm);
+
+        // Pop the value to write from the stack
+        let value_opnd = asm.stack_pop(1);
+
+        // void rb_vm_env_write(const VALUE *ep, int index, VALUE v)
+        let index = -(ep_offset as i64);
+        asm.ccall(
+            rb_vm_env_write as *const u8,
+            vec![
+                ep_opnd,
+                index.into(),
+                value_opnd,
+            ]
+        );
+
+        return Some(KeepCompiling);
+    }
 
     // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
     // only affect heap objects being written. If we know an immediate value is being written we
@@ -1783,7 +1807,15 @@ fn gen_setlocal_generic(
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
         // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-        asm.jnz(Target::side_exit(Counter::setlocal_wb_required));
+        assert!(asm.ctx.get_chain_depth() == 0);
+        jit_chain_guard(
+            JCC_JNZ,
+            jit,
+            asm,
+            ocb,
+            1,
+            Counter::setlocal_wb_required,
+        );
     }
 
     if level == 0 {
@@ -1804,29 +1836,29 @@ fn gen_setlocal_generic(
 fn gen_setlocal(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let idx = jit.get_arg(0).as_u32();
     let level = jit.get_arg(1).as_u32();
-    gen_setlocal_generic(jit, asm, idx, level)
+    gen_setlocal_generic(jit, asm, ocb, idx, level)
 }
 
 fn gen_setlocal_wc0(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let idx = jit.get_arg(0).as_u32();
-    gen_setlocal_generic(jit, asm, idx, 0)
+    gen_setlocal_generic(jit, asm, ocb, idx, 0)
 }
 
 fn gen_setlocal_wc1(
     jit: &mut JITState,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let idx = jit.get_arg(0).as_u32();
-    gen_setlocal_generic(jit, asm, idx, 1)
+    gen_setlocal_generic(jit, asm, ocb, idx, 1)
 }
 
 // new hash initialized from top N values
