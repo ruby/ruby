@@ -1,3 +1,57 @@
+# test splat filling required and feeding rest
+assert_equal '[0, 1, 2, [3, 4]]', %q{
+  public def lead_rest(a, b, *rest)
+    [self, a, b, rest]
+  end
+
+  def call(args) = 0.lead_rest(*args)
+
+  call([1, 2, 3, 4])
+}
+
+# test missing opts are nil initialized
+assert_equal '[[0, 1, nil, 3], [0, 1, nil, 3], [0, 1, nil, 3, []], [0, 1, nil, 3, []]]', %q{
+  public def lead_opts(a, b=binding.local_variable_get(:c), c=3)
+    [self, a, b, c]
+  end
+
+  public def opts_rest(a=raise, b=binding.local_variable_get(:c), c=3, *rest)
+    [self, a, b, c, rest]
+  end
+
+  def call(args)
+    [
+      0.lead_opts(1),
+      0.lead_opts(*args),
+
+      0.opts_rest(1),
+      0.opts_rest(*args),
+    ]
+  end
+
+  call([1])
+}
+
+# test filled optionals with unspecified keyword param
+assert_equal 'ok', %q{
+  def opt_rest_opt_kw(_=1, *, k: :ok) = k
+
+  def call = opt_rest_opt_kw(0)
+
+  call
+}
+
+# test splat empty array with rest param
+assert_equal '[0, 1, 2, []]', %q{
+  public def foo(a=1, b=2, *rest)
+    [self, a, b, rest]
+  end
+
+  def call(args) = 0.foo(*args)
+
+  call([])
+}
+
 # Regression test for yielding with autosplat to block with
 # optional parameters. https://github.com/Shopify/yjit/issues/313
 assert_equal '[:a, :b, :a, :b]', %q{
