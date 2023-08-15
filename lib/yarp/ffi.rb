@@ -75,7 +75,10 @@ module YARP
 
     load_exported_functions_from(
       "yarp/util/yp_buffer.h",
+      "yp_buffer_sizeof",
       "yp_buffer_init",
+      "yp_buffer_value",
+      "yp_buffer_length",
       "yp_buffer_free"
     )
 
@@ -88,34 +91,49 @@ module YARP
       "yp_string_sizeof"
     )
 
-    # This object represents a yp_buffer_t. Its structure must be kept in sync
-    # with the C version.
-    class YPBuffer < FFI::Struct
-      layout value: :pointer, length: :size_t, capacity: :size_t
+    # This object represents a yp_buffer_t. We only use it as an opaque pointer,
+    # so it doesn't need to know the fields of yp_buffer_t.
+    class YPBuffer
+      SIZEOF = LibRubyParser.yp_buffer_sizeof
 
-      # Read the contents of the buffer into a String object and return it.
-      def to_ruby_string
-        self[:value].read_string(self[:length])
+      attr_reader :pointer
+
+      def initialize(pointer)
+        @pointer = pointer
       end
-    end
 
-    # Initialize a new buffer and yield it to the block. The buffer will be
-    # automatically freed when the block returns.
-    def self.with_buffer(&block)
-      buffer = YPBuffer.new
+      def value
+        LibRubyParser.yp_buffer_value(pointer)
+      end
 
-      begin
-        raise unless yp_buffer_init(buffer)
-        yield buffer
-      ensure
-        yp_buffer_free(buffer)
-        buffer.pointer.free
+      def length
+        LibRubyParser.yp_buffer_length(pointer)
+      end
+
+      def read
+        value.read_string(length)
+      end
+
+      # Initialize a new buffer and yield it to the block. The buffer will be
+      # automatically freed when the block returns.
+      def self.with(&block)
+        pointer = FFI::MemoryPointer.new(SIZEOF)
+
+        begin
+          raise unless LibRubyParser.yp_buffer_init(pointer)
+          yield new(pointer)
+        ensure
+          LibRubyParser.yp_buffer_free(pointer)
+          pointer.free
+        end
       end
     end
 
     # This object represents a yp_string_t. We only use it as an opaque pointer,
     # so it doesn't have to be an FFI::Struct.
     class YPString
+      SIZEOF = LibRubyParser.yp_string_sizeof
+
       attr_reader :pointer
 
       def initialize(pointer)
@@ -133,23 +151,18 @@ module YARP
       def read
         source.read_string(length)
       end
-    end
 
-    # This is the size of a yp_string_t. It is returned by the yp_string_sizeof
-    # function which we call once to ensure we have sufficient space for the
-    # yp_string_t FFI pointer.
-    SIZEOF_YP_STRING = yp_string_sizeof
+      # Yields a yp_string_t pointer to the given block.
+      def self.with(filepath, &block)
+        pointer = FFI::MemoryPointer.new(SIZEOF)
 
-    # Yields a yp_string_t pointer to the given block.
-    def self.with_string(filepath, &block)
-      string = FFI::MemoryPointer.new(SIZEOF_YP_STRING)
-
-      begin
-        raise unless yp_string_mapped_init(string, filepath)
-        yield YPString.new(string)
-      ensure
-        yp_string_free(string)
-        string.free
+        begin
+          raise unless LibRubyParser.yp_string_mapped_init(pointer, filepath)
+          yield new(pointer)
+        ensure
+          LibRubyParser.yp_string_free(pointer)
+          pointer.free
+        end
       end
     end
   end
@@ -162,10 +175,10 @@ module YARP
   VERSION = LibRubyParser.yp_version.read_string
 
   def self.dump_internal(source, source_size, filepath)
-    LibRubyParser.with_buffer do |buffer|
+    LibRubyParser::YPBuffer.with do |buffer|
       metadata = [filepath.bytesize, filepath.b, 0].pack("LA*L") if filepath
-      LibRubyParser.yp_parse_serialize(source, source_size, buffer, metadata)
-      buffer.to_ruby_string
+      LibRubyParser.yp_parse_serialize(source, source_size, buffer.pointer, metadata)
+      buffer.read
     end
   end
   private_class_method :dump_internal
@@ -177,24 +190,24 @@ module YARP
 
   # Mirror the YARP.dump_file API by using the serialization API.
   def self.dump_file(filepath)
-    LibRubyParser.with_string(filepath) do |string|
+    LibRubyParser::YPString.with(filepath) do |string|
       dump_internal(string.source, string.length, filepath)
     end
   end
 
   # Mirror the YARP.lex API by using the serialization API.
   def self.lex(code, filepath = nil)
-    LibRubyParser.with_buffer do |buffer|
-      LibRubyParser.yp_lex_serialize(code, code.bytesize, filepath, buffer)
-
-      source = Source.new(code)
-      Serialize.load_tokens(source, buffer.to_ruby_string)
+    LibRubyParser::YPBuffer.with do |buffer|
+      LibRubyParser.yp_lex_serialize(code, code.bytesize, filepath, buffer.pointer)
+      Serialize.load_tokens(Source.new(code), buffer.read)
     end
   end
 
   # Mirror the YARP.lex_file API by using the serialization API.
   def self.lex_file(filepath)
-    LibRubyParser.with_string(filepath) { |string| lex(string.read, filepath) }
+    LibRubyParser::YPString.with(filepath) do |string|
+      lex(string.read, filepath)
+    end
   end
 
   # Mirror the YARP.parse API by using the serialization API.
@@ -206,6 +219,8 @@ module YARP
   # native strings instead of Ruby strings because it allows us to use mmap when
   # it is available.
   def self.parse_file(filepath)
-    LibRubyParser.with_string(filepath) { |string| parse(string.read, filepath) }
+    LibRubyParser::YPString.with(filepath) do |string|
+      parse(string.read, filepath)
+    end
   end
 end
