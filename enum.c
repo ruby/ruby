@@ -354,7 +354,7 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
  *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -424,7 +424,7 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *   ['a', 'b', 'c', 'b'].find_index {|element| element.start_with?('b') } # => 1
  *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 }         # => 2
  *
- * With no argument and no block given, returns an \Enumerator.
+ * With no argument and no block given, returns an Enumerator.
  *
  */
 
@@ -501,7 +501,7 @@ enum_size_over_p(VALUE obj, long n)
  *   a = {foo: 0, bar: 1, baz: 2}.select {|key, value| key.start_with?('b') }
  *   a # => {:bar=>1, :baz=>2}
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  * Related: #reject.
  */
@@ -543,7 +543,7 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   (0..9).filter_map {|i| i * 2 if i.even? }                              # => [0, 4, 8, 12, 16]
  *   {foo: 0, bar: 1, baz: 2}.filter_map {|key, value| key if value.even? } # => [:foo, :baz]
  *
- * When no block given, returns an \Enumerator.
+ * When no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -584,7 +584,7 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   (0..9).reject {|i| i * 2 if i.even? }                             # => [1, 3, 5, 7, 9]
  *   {foo: 0, bar: 1, baz: 2}.reject {|key, value| key if value.odd? } # => {:foo=>0, :baz=>2}
  *
- * When no block given, returns an \Enumerator.
+ * When no block given, returns an Enumerator.
  *
  * Related: #select.
  */
@@ -631,7 +631,7 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   (0..4).map {|i| i*i }                               # => [0, 1, 4, 9, 16]
  *   {foo: 0, bar: 1, baz: 2}.map {|key, value| value*2} # => [0, 2, 4]
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -681,7 +681,7 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   [[0, 1], [2, 3]].flat_map {|e| e + [100] }                     # => [0, 1, 100, 2, 3, 100]
  *   {foo: 0, bar: 1, baz: 2}.flat_map {|key, value| [key, value] } # => [:foo, 0, :bar, 1, :baz, 2]
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  * Alias: #collect_concat.
  */
@@ -4905,7 +4905,7 @@ enum_compact(VALUE obj)
  * - #one?: Returns +true+ if exactly one element meets a specified criterion; +false+ otherwise.
  * - #count: Returns the count of elements,
  *   based on an argument or block criterion, if given.
- * - #tally: Returns a new \Hash containing the counts of occurrences of each element.
+ * - #tally: Returns a new Hash containing the counts of occurrences of each element.
  *
  * === Methods for Fetching
  *
@@ -4926,20 +4926,20 @@ enum_compact(VALUE obj)
  *   as determined by <tt><=></tt> or a given block.
  * - #max: Returns the elements whose values are largest among the elements,
  *   as determined by <tt><=></tt> or a given block.
- * - #minmax: Returns a 2-element \Array containing the smallest and largest elements.
+ * - #minmax: Returns a 2-element Array containing the smallest and largest elements.
  * - #min_by: Returns the smallest element, as determined by the given block.
  * - #max_by: Returns the largest element, as determined by the given block.
  * - #minmax_by: Returns the smallest and largest elements, as determined by the given block.
  *
  * <i>Groups, slices, and partitions</i>:
  *
- * - #group_by: Returns a \Hash that partitions the elements into groups.
+ * - #group_by: Returns a Hash that partitions the elements into groups.
  * - #partition: Returns elements partitioned into two new Arrays, as determined by the given block.
- * - #slice_after: Returns a new \Enumerator whose entries are a partition of +self+,
+ * - #slice_after: Returns a new Enumerator whose entries are a partition of +self+,
      based either on a given +object+ or a given block.
- * - #slice_before: Returns a new \Enumerator whose entries are a partition of +self+,
+ * - #slice_before: Returns a new Enumerator whose entries are a partition of +self+,
      based either on a given +object+ or a given block.
- * - #slice_when: Returns a new \Enumerator whose entries are a partition of +self+
+ * - #slice_when: Returns a new Enumerator whose entries are a partition of +self+
      based on the given block.
  * - #chunk: Returns elements organized into chunks as specified by the given block.
  * - #chunk_while: Returns elements organized into chunks as specified by the given block.
@@ -5040,18 +5040,18 @@ enum_compact(VALUE obj)
  *
  * Virtually all methods in \Enumerable call method +#each+ in the including class:
  *
- * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element \Array.
- * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element \Array.
+ * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element Array.
+ * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element Array.
  * - For the other classes above, +#each+ yields the next object from the collection.
  *
  * == About the Examples
  *
  * The example code snippets for the \Enumerable methods:
  *
- * - Always show the use of one or more \Array-like classes (often \Array itself).
- * - Sometimes show the use of a \Hash-like class.
+ * - Always show the use of one or more Array-like classes (often Array itself).
+ * - Sometimes show the use of a Hash-like class.
  *   For some methods, though, the usage would not make sense,
- *   and so it is not shown.  Example: #tally would find exactly one of each \Hash entry.
+ *   and so it is not shown.  Example: #tally would find exactly one of each Hash entry.
  *
  */
 

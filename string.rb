@@ -265,7 +265,7 @@
 #
 #  <b><tt>string[regexp, capture = 0]</tt></b>
 #
-#  When the \Regexp argument +regexp+ is given,
+#  When the Regexp argument +regexp+ is given,
 #  and the +capture+ argument is <tt>0</tt>,
 #  the slice is the first matching substring found in +self+:
 #

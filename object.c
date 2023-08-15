@@ -4143,9 +4143,9 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  *  === What's Here
  *
- *  These are the methods defined for \BasicObject:
+ *  These are the methods defined for BasicObject:
  *
- *  - ::new: Returns a new \BasicObject instance.
+ *  - ::new: Returns a new BasicObject instance.
  *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
  *  - #!=: Returns whether +self+ and the given object are _not_ equal.
  *  - #==: Returns whether +self+ and the given object are equivalent.
@@ -4244,7 +4244,7 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *    and frozen state.
  *  - #define_singleton_method: Defines a singleton method in +self+
  *    for the given symbol method-name and block or proc.
- *  - #display: Prints +self+ to the given \IO stream or <tt>$stdout</tt>.
+ *  - #display: Prints +self+ to the given IO stream or <tt>$stdout</tt>.
  *  - #dup: Returns a shallow unfrozen copy of +self+.
  *  - #enum_for (aliased as #to_enum): Returns an Enumerator for +self+
  *    using the using the given method, arguments, and block.
@@ -4298,7 +4298,7 @@ InitVM_Object(void)
      *
      * == What's Here
      *
-     * \Module \Kernel provides methods that are useful for:
+     * \Module Kernel provides methods that are useful for:
      *
      * - {Converting}[rdoc-ref:Kernel@Converting]
      * - {Querying}[rdoc-ref:Kernel@Querying]

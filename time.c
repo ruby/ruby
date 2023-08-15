@@ -3637,7 +3637,7 @@ tmcmp(struct tm *a, struct tm *b)
  *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
  *     # => 0000-01-01 00:00:00 UTC
  *
- * - \String integers:
+ * - String integers:
  *
  *     a = %w[0 1 1 0 0 0 0 0]
  *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
