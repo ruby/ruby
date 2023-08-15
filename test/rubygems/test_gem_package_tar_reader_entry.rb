@@ -181,8 +181,13 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal @contents[100..-1], @entry.read
   end
 
-  def test_read_partial
+  def test_readpartial
     assert_equal @contents[0...100], @entry.readpartial(100)
+  end
+
+  def test_readpartial_to_eof
+    assert_equal @contents, @entry.readpartial(4096)
+    assert @entry.eof?
   end
 
   def test_read_partial_buffer
@@ -193,8 +198,35 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
   def test_readpartial_past_eof
     @entry.readpartial(@contents.size)
+    assert @entry.eof?
     assert_raise(EOFError) do
       @entry.readpartial(1)
+    end
+  end
+
+  def test_read_corrupted_tar
+    corrupt_tar = String.new
+    corrupt_tar << tar_file_header("lib/foo", "", 0, 100, Time.now)
+    corrupt_tar << tar_file_contents("")
+    corrupt_entry = util_entry corrupt_tar
+
+    assert_equal "", corrupt_entry.read(0)
+    assert_equal "", corrupt_entry.read, "IO.read without len should return empty string (even though it's at an unpexpected EOF)"
+
+    corrupt_entry.rewind
+
+    assert_nil corrupt_entry.read(100), "IO.read with len should return nil as per IO.read docs"
+  end
+
+  def test_readpartial_corrupted_tar
+    corrupt_tar = String.new
+    corrupt_tar << tar_file_header("lib/foo", "", 0, 100, Time.now)
+    corrupt_tar << tar_file_contents("")
+
+    corrupt_entry = util_entry corrupt_tar
+
+    assert_raise EOFError do
+      corrupt_entry.readpartial(100)
     end
   end
 
@@ -301,6 +333,22 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
       assert_equal contents2.size - 10, entry.pos
       assert_equal contents2[-10..-1], entry.read, "read from end"
       assert_equal contents2.size, entry.pos
+    end
+  end
+
+  def test_seek_in_gzip_io_corrupted
+    @tar << tar_file_header("lib/bar", "", 0, 100, Time.now)
+    @tar << tar_file_contents("")
+
+    tgz = util_gzip(@tar)
+
+    Zlib::GzipReader.wrap StringIO.new(tgz) do |gzio|
+      util_entry(gzio).close # skip the first entry so io.pos is not 0
+      entry = util_entry(gzio)
+
+      assert_raise EOFError do
+        entry.seek(50)
+      end
     end
   end
 end

@@ -946,6 +946,87 @@ class TestGemPackage < Gem::Package::TarTestCase
     tf.close!
   end
 
+  def test_verify_corrupt_tar_metadata_entry
+    gem = tar_file_header("metadata.gz", "", 0, 999, Time.now)
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = assert_raise Gem::Package::FormatError do
+      package.verify
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+  end
+
+  def test_verify_corrupt_tar_checksums_entry
+    gem = tar_file_header("checksums.yaml.gz", "", 0, 100, Time.now)
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = assert_raise Gem::Package::FormatError do
+      package.verify
+    end
+
+    assert_equal "not in gzip format in corrupt.gem", e.message
+  end
+
+  def test_verify_corrupt_tar_data_entry
+    gem = tar_file_header("data.tar.gz", "", 0, 100, Time.now)
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = assert_raise Gem::Package::FormatError do
+      package.verify
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+  end
+
+  def test_corrupt_data_tar_gz
+    data_tgz = util_gzip tar_file_header("lib/code.rb", "", 0, 100, Time.now)
+    metadata_gz = util_gzip @spec.to_yaml
+
+    gem = util_tar do |tar|
+      tar.add_file "data.tar.gz", 0o444 do |io|
+        io.write data_tgz
+      end
+
+      tar.add_file "metadata.gz", 0o644 do |io|
+        io.write metadata_gz
+      end
+    end
+
+    File.open "corrupt.gem", "wb" do |io|
+      io.write gem.string
+    end
+
+    package = Gem::Package.new "corrupt.gem"
+
+    e = assert_raise Gem::Package::FormatError do
+      package.contents
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+
+    e = assert_raise Gem::Package::FormatError do
+      package.extract_files @destination
+    end
+
+    assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+  end
+
   def test_verify_empty
     FileUtils.touch "empty.gem"
 

@@ -347,6 +347,8 @@ EOM
         return @contents
       end
     end
+  rescue Zlib::GzipFile::Error, EOFError, Gem::Package::TarInvalidError => e
+    raise Gem::Package::FormatError.new e.message, @gem
   end
 
   ##
@@ -363,7 +365,7 @@ EOM
     algorithms.each do |algorithm|
       digester = Gem::Security.create_digest(algorithm)
 
-      digester << entry.read(16_384) until entry.eof?
+      digester << entry.readpartial(16_384) until entry.eof?
 
       entry.rewind
 
@@ -395,6 +397,8 @@ EOM
         break # ignore further entries
       end
     end
+  rescue Zlib::GzipFile::Error, EOFError, Gem::Package::TarInvalidError => e
+    raise Gem::Package::FormatError.new e.message, @gem
   end
 
   ##
@@ -626,7 +630,7 @@ EOM
     raise
   rescue Errno::ENOENT => e
     raise Gem::Package::FormatError.new e.message
-  rescue Gem::Package::TarInvalidError => e
+  rescue Zlib::GzipFile::Error, EOFError, Gem::Package::TarInvalidError => e
     raise Gem::Package::FormatError.new e.message, @gem
   end
 
