@@ -4091,6 +4091,7 @@ assert_equal '6', %q{
   end
 
   Sub.new.number { 3 }
+}
 
 # Integer multiplication and overflow
 assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]', %q{
