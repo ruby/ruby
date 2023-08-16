@@ -148,9 +148,14 @@ module Bundler
     def all
       keys = @temporary.keys.union(@global_config.keys, @local_config.keys, @env_config.keys)
 
-      keys.map do |key|
-        key.sub(/^BUNDLE_/, "").gsub(/___/, "-").gsub(/__/, ".").downcase
-      end.sort
+      keys.map! do |key|
+        key = key.delete_prefix("BUNDLE_")
+        key.gsub!("___", "-")
+        key.gsub!("__", ".")
+        key.downcase!
+        key
+      end.sort!
+      keys
     end
 
     def local_overrides
