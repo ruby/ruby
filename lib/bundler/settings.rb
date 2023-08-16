@@ -340,7 +340,8 @@ module Bundler
     end
 
     def is_bool(name)
-      BOOL_KEYS.include?(name.to_s) || BOOL_KEYS.include?(parent_setting_for(name.to_s))
+      name = name.to_s
+      BOOL_KEYS.include?(name) || BOOL_KEYS.include?(parent_setting_for(name))
     end
 
     def is_string(name)
