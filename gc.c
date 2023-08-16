@@ -709,6 +709,7 @@ typedef struct rb_size_pool_struct {
     size_t force_major_gc_count;
     size_t force_incremental_marking_finish_count;
     size_t total_allocated_objects;
+    size_t total_freed_objects;
 
     /* Sweeping statistics */
     size_t freed_slots;
@@ -820,7 +821,6 @@ typedef struct rb_objspace {
 
         /* basic statistics */
         size_t count;
-        size_t total_freed_objects;
         uint64_t marking_time_ns;
         struct timespec marking_start_time;
         uint64_t sweeping_time_ns;
@@ -1202,6 +1202,17 @@ total_allocated_objects(rb_objspace_t *objspace)
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         count += size_pool->total_allocated_objects;
+    }
+    return count;
+}
+
+static inline size_t
+total_freed_objects(rb_objspace_t *objspace)
+{
+    size_t count = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        count += size_pool->total_freed_objects;
     }
     return count;
 }
@@ -4305,7 +4316,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             page->final_slots--;
             page->free_slots++;
             heap_page_add_freeobj(objspace, page, zombie);
-            objspace->profile.total_freed_objects++;
+            page->size_pool->total_freed_objects++;
         }
         RB_VM_LOCK_LEAVE();
 
@@ -5055,7 +5066,7 @@ objspace_available_slots(rb_objspace_t *objspace)
 static size_t
 objspace_live_slots(rb_objspace_t *objspace)
 {
-    return (total_allocated_objects(objspace) - objspace->profile.total_freed_objects) - heap_pages_final_slots;
+    return total_allocated_objects(objspace) - total_freed_objects(objspace) - heap_pages_final_slots;
 }
 
 static size_t
@@ -5518,7 +5529,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
                    ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
 
     sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
-    objspace->profile.total_freed_objects += ctx->freed_slots;
+    sweep_page->size_pool->total_freed_objects += ctx->freed_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
@@ -7906,9 +7917,8 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
         !finalizing &&
         ruby_single_main_ractor != NULL) {
         if (objspace_live_slots(objspace) != data.live_object_count) {
-            fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", "
-                    "objspace->profile.total_freed_objects: %"PRIdSIZE"\n",
-                    heap_pages_final_slots, objspace->profile.total_freed_objects);
+            fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", total_freed_objects: %"PRIdSIZE"\n",
+                    heap_pages_final_slots, total_freed_objects(objspace));
             rb_bug("inconsistent live slot number: expect %"PRIuSIZE", but %"PRIuSIZE".",
                    objspace_live_slots(objspace), data.live_object_count);
         }
@@ -11069,7 +11079,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(total_allocated_pages, total_allocated_pages(objspace));
     SET(total_freed_pages, total_freed_pages(objspace));
     SET(total_allocated_objects, total_allocated_objects(objspace));
-    SET(total_freed_objects, objspace->profile.total_freed_objects);
+    SET(total_freed_objects, total_freed_objects(objspace));
     SET(malloc_increase_bytes, malloc_increase);
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
@@ -11161,6 +11171,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_force_major_gc_count,
     gc_stat_heap_sym_force_incremental_marking_finish_count,
     gc_stat_heap_sym_total_allocated_objects,
+    gc_stat_heap_sym_total_freed_objects,
     gc_stat_heap_sym_last
 };
 
@@ -11182,6 +11193,7 @@ setup_gc_stat_heap_symbols(void)
         S(force_major_gc_count);
         S(force_incremental_marking_finish_count);
         S(total_allocated_objects);
+        S(total_freed_objects);
 #undef S
     }
 }
@@ -11227,6 +11239,7 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(force_major_gc_count, size_pool->force_major_gc_count);
     SET(force_incremental_marking_finish_count, size_pool->force_incremental_marking_finish_count);
     SET(total_allocated_objects, size_pool->total_allocated_objects);
+    SET(total_freed_objects, size_pool->total_freed_objects);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
@@ -12819,7 +12832,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
-        size_t live = objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
+        size_t live = objspace->profile.total_allocated_objects_at_gc_start - total_freed_objects(objspace);
         size_t total = objspace->profile.heap_used_at_gc_start * HEAP_PAGE_OBJ_LIMIT;
 
 #if GC_PROFILE_MORE_DETAIL
