@@ -93,7 +93,7 @@ for:
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
     - >-
-      nmake -l "TESTOPTS=-v --timeout-scale=3.0
+      nmake -l "TESTOPTS=--timeout-scale=3.0
       --excludes=../test/.excludes/_appveyor -j%JOBS%
       --exclude win32ole
       --exclude test_bignum
