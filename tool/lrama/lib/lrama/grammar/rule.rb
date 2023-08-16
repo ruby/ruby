@@ -17,6 +17,12 @@ module Lrama
         "#{l}: #{r}"
       end
 
+      # opt_nl: ε     <-- empty_rule
+      #       | '\n'  <-- not empty_rule
+      def empty_rule?
+        rhs.empty?
+      end
+
       def precedence
         precedence_sym&.precedence
       end

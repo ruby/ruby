@@ -7,6 +7,7 @@
 module Lrama
   class Grammar
     class Symbol < Struct.new(:id, :alias_name, :number, :tag, :term, :token_id, :nullable, :precedence, :printer, :error_token, keyword_init: true)
+      attr_accessor :first_set, :first_set_bitmap
       attr_writer :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol
 
       def term?
@@ -34,11 +35,7 @@ module Lrama
       end
 
       def display_name
-        if alias_name
-          alias_name
-        else
-          id.s_value
-        end
+        alias_name || id.s_value
       end
 
       # name for yysymbol_kind_t
@@ -51,11 +48,7 @@ module Lrama
         when eof_symbol?
           name = "YYEOF"
         when term? && id.type == Token::Char
-          if alias_name
-            name = number.to_s + alias_name
-          else
-            name = number.to_s + id.s_value
-          end
+          name = number.to_s + display_name
         when term? && id.type == Token::Ident
           name = id.s_value
         when nterm? && (id.s_value.include?("$") || id.s_value.include?("@"))
@@ -66,7 +59,7 @@ module Lrama
           raise "Unexpected #{self}"
         end
 
-        "YYSYMBOL_" + name.gsub(/[^a-zA-Z_0-9]+/, "_")
+        "YYSYMBOL_" + name.gsub(/\W+/, "_")
       end
 
       # comment for yysymbol_kind_t
