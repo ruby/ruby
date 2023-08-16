@@ -278,7 +278,7 @@ int rb_errno(void);
 void rb_errno_set(int);
 int *rb_errno_ptr(void);
 
-inline int *
+static inline int *
 rb_orig_errno_ptr(void)
 {
     return &errno;
