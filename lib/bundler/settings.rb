@@ -99,7 +99,11 @@ module Bundler
 
     def [](name)
       key = key_for(name)
-      value = configs.values.map {|config| config[key] }.compact.first
+
+      values = configs.values
+      values.map! {|config| config[key] }
+      values.compact!
+      value = values.first
 
       converted_value(value, name)
     end
