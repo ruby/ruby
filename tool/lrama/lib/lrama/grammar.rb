@@ -1,3 +1,4 @@
+require "lrama/grammar/auxiliary"
 require "lrama/grammar/code"
 require "lrama/grammar/error_token"
 require "lrama/grammar/precedence"
@@ -7,16 +8,13 @@ require "lrama/grammar/rule"
 require "lrama/grammar/symbol"
 require "lrama/grammar/union"
 require "lrama/lexer"
+require "lrama/type"
 
 module Lrama
-  Type = Struct.new(:id, :tag, keyword_init: true)
   Token = Lrama::Lexer::Token
 
   # Grammar is the result of parsing an input grammar file
   class Grammar
-    # Grammar file information not used by States but by Output
-    Aux = Struct.new(:prologue_first_lineno, :prologue, :epilogue_first_lineno, :epilogue, keyword_init: true)
-
     attr_reader :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol, :aux
     attr_accessor :union, :expect,
                   :printers, :error_tokens,
@@ -38,7 +36,7 @@ module Lrama
       @error_symbol = nil
       @undef_symbol = nil
       @accept_symbol = nil
-      @aux = Aux.new
+      @aux = Auxiliary.new
 
       append_special_symbols
     end
@@ -48,7 +46,7 @@ module Lrama
     end
 
     def add_error_token(ident_or_tags:, code:, lineno:)
-      @error_tokens << ErrorToken.new(ident_or_tags, code, lineno)
+      @error_tokens << ErrorToken.new(ident_or_tags: ident_or_tags, code: code, lineno: lineno)
     end
 
     def add_term(id:, alias_name: nil, tag: nil, token_id: nil, replace: false)
@@ -212,6 +210,41 @@ module Lrama
 
       nterms.select {|r| r.nullable.nil? }.each do |nterm|
         nterm.nullable = false
+      end
+    end
+
+    def compute_first_set
+      terms.each do |term|
+        term.first_set = Set.new([term]).freeze
+        term.first_set_bitmap = Lrama::Bitmap.from_array([term.number])
+      end
+
+      nterms.each do |nterm|
+        nterm.first_set = Set.new([]).freeze
+        nterm.first_set_bitmap = Lrama::Bitmap.from_array([])
+      end
+
+      while true do
+        changed = false
+
+        @rules.each do |rule|
+          rule.rhs.each do |r|
+            if rule.lhs.first_set_bitmap | r.first_set_bitmap != rule.lhs.first_set_bitmap
+              changed = true
+              rule.lhs.first_set_bitmap = rule.lhs.first_set_bitmap | r.first_set_bitmap
+            end
+
+            break unless r.nullable
+          end
+        end
+
+        break unless changed
+      end
+
+      nterms.each do |nterm|
+        nterm.first_set = Lrama::Bitmap.to_array(nterm.first_set_bitmap).map do |number|
+          find_symbol_by_number!(number)
+        end.to_set
       end
     end
 

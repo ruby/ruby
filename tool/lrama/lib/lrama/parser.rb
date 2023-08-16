@@ -22,6 +22,7 @@ module Lrama
         process_epilogue(grammar, lexer)
         grammar.prepare
         grammar.compute_nullable
+        grammar.compute_first_set
         grammar.validate!
 
         grammar
