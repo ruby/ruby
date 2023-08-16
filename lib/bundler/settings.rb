@@ -512,8 +512,11 @@ module Bundler
 
     def self.key_for(key)
       key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")
-      key = key.to_s.gsub(".", "__").gsub("-", "___").upcase
-      "BUNDLE_#{key}"
+      key = key.to_s.gsub(".", "__")
+      key.gsub!("-", "___")
+      key.upcase!
+
+      key.prepend("BUNDLE_")
     end
 
     # TODO: duplicates Rubygems#normalize_uri
