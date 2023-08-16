@@ -1466,7 +1466,10 @@ static int looking_at_eol_p(struct parser_params *p);
 %define parse.error verbose
 %printer {
 #ifndef RIPPER
-    if ($$) {
+    if ($$ == (NODE *)-1) {
+        rb_parser_printf(p, "NODE_SPECIAL");
+    }
+    else if ($$) {
         rb_parser_printf(p, "%s", ruby_node_name(nd_type($$)));
     }
 #else
