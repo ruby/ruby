@@ -34,6 +34,11 @@
 #   define inline __inline
 #endif
 
+// Windows versions before 2015 use _snprintf
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#   define snprintf _snprintf
+#endif
+
 int yp_strncasecmp(const char *string1, const char *string2, size_t length);
 
 #endif
