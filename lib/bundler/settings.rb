@@ -412,6 +412,8 @@ module Bundler
     end
 
     def converted_value(value, key)
+      key = key.to_s
+
       if is_array(key)
         to_array(value)
       elsif value.nil?
