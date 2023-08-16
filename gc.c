@@ -708,6 +708,7 @@ typedef struct rb_size_pool_struct {
     size_t total_freed_pages;
     size_t force_major_gc_count;
     size_t force_incremental_marking_finish_count;
+    size_t total_allocated_objects;
 
     /* Sweeping statistics */
     size_t freed_slots;
@@ -751,7 +752,6 @@ typedef struct rb_objspace {
     } flags;
 
     rb_event_flag_t hook_events;
-    size_t total_allocated_objects;
     VALUE next_object_id;
 
     rb_size_pool_t size_pools[SIZE_POOL_COUNT];
@@ -1191,6 +1191,17 @@ total_freed_pages(rb_objspace_t *objspace)
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         count += size_pool->total_freed_pages;
+    }
+    return count;
+}
+
+static inline size_t
+total_allocated_objects(rb_objspace_t *objspace)
+{
+    size_t count = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        count += size_pool->total_allocated_objects;
     }
     return count;
 }
@@ -2480,9 +2491,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
 
-    // TODO: make it atomic, or ractor local
-    objspace->total_allocated_objects++;
-
 #if RGENGC_PROFILE
     if (wb_protected) {
         objspace->profile.total_generated_normal_object_count++;
@@ -2702,6 +2710,8 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
             RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
         }
     }
+
+    size_pool->total_allocated_objects++;
 
     return obj;
 }
@@ -5045,7 +5055,7 @@ objspace_available_slots(rb_objspace_t *objspace)
 static size_t
 objspace_live_slots(rb_objspace_t *objspace)
 {
-    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
+    return (total_allocated_objects(objspace) - objspace->profile.total_freed_objects) - heap_pages_final_slots;
 }
 
 static size_t
@@ -9229,7 +9239,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
-    objspace->profile.total_allocated_objects_at_gc_start = objspace->total_allocated_objects;
+    objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, do_full_mark);
@@ -11058,7 +11068,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
     SET(total_allocated_pages, total_allocated_pages(objspace));
     SET(total_freed_pages, total_freed_pages(objspace));
-    SET(total_allocated_objects, objspace->total_allocated_objects);
+    SET(total_allocated_objects, total_allocated_objects(objspace));
     SET(total_freed_objects, objspace->profile.total_freed_objects);
     SET(malloc_increase_bytes, malloc_increase);
     SET(malloc_increase_bytes_limit, malloc_limit);
@@ -11150,6 +11160,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_total_freed_pages,
     gc_stat_heap_sym_force_major_gc_count,
     gc_stat_heap_sym_force_incremental_marking_finish_count,
+    gc_stat_heap_sym_total_allocated_objects,
     gc_stat_heap_sym_last
 };
 
@@ -11170,6 +11181,7 @@ setup_gc_stat_heap_symbols(void)
         S(total_freed_pages);
         S(force_major_gc_count);
         S(force_incremental_marking_finish_count);
+        S(total_allocated_objects);
 #undef S
     }
 }
@@ -11214,6 +11226,7 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(total_freed_pages, size_pool->total_freed_pages);
     SET(force_major_gc_count, size_pool->force_major_gc_count);
     SET(force_incremental_marking_finish_count, size_pool->force_incremental_marking_finish_count);
+    SET(total_allocated_objects, size_pool->total_allocated_objects);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
