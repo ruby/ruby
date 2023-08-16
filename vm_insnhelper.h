@@ -181,10 +181,8 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /**********************************************************/
 
 #define CALL_SIMPLE_METHOD() do { \
-    rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
-    rb_snum_t y = attr_width_opt_send_without_block(0); \
-    rb_snum_t z = x - y; \
-    ADD_PC(z); \
+    rb_snum_t insn_width = attr_width_opt_send_without_block(0); \
+    ADD_PC(-insn_width); \
     DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
 } while (0)
 
