@@ -6966,8 +6966,8 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
     return fd;
 }
 
-FILE *
-rb_fdopen(int fd, const char *modestr)
+static inline FILE *
+fdopen_internal(int fd, const char *modestr)
 {
     FILE *file;
 
@@ -6976,24 +6976,25 @@ rb_fdopen(int fd, const char *modestr)
 #endif
     file = fdopen(fd, modestr);
     if (!file) {
-        int e = errno;
-#if defined(__sun)
-        if (e == 0) {
-            rb_gc();
-            errno = 0;
-            file = fdopen(fd, modestr);
-        }
-        else
+#ifdef _WIN32
+        if (errno == 0) errno = EINVAL;
+#elif defined(__sun)
+        if (errno == 0) errno = EMFILE;
 #endif
+    }
+    return file;
+}
+
+FILE *
+rb_fdopen(int fd, const char *modestr)
+{
+    FILE *file = fdopen_internal(fd, modestr);
+    if (!file) {
+        int e = errno;
         if (rb_gc_for_fd(e)) {
-            file = fdopen(fd, modestr);
+            file = fdopen_internal(fd, modestr);
         }
         if (!file) {
-#ifdef _WIN32
-            if (e == 0) e = EINVAL;
-#elif defined(__sun)
-            if (e == 0) e = EMFILE;
-#endif
             rb_syserr_fail(e, 0);
         }
     }
