@@ -351,7 +351,13 @@ module Bundler
 
     def to_bool(value)
       case value
-      when nil, /\A(false|f|no|n|0|)\z/i, false
+      when String
+        if value.match?(/\A(false|f|no|n|0|)\z/i)
+          false
+        else
+          true
+        end
+      when nil, false
         false
       else
         true
