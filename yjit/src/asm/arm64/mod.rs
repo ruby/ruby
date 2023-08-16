@@ -713,6 +713,21 @@ pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// SMULH - multiply two 64-bit registers to produce a 128-bit result, put the high 64-bits of the result into rd
+pub fn smulh(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
+            assert!(rd.num_bits == 64, "smulh only applicable to 64-bit registers");
+
+            SMulH::smulh(rd.reg_no, rn.reg_no, rm.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to mul instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// MVN - move a value in a register to another register, negating it
 pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rm) {

@@ -811,6 +811,7 @@ impl Assembler
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
+            let mut next_insn_idx = insn_idx + 1;
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -863,7 +864,32 @@ impl Assembler
                     subs(cb, out.into(), left.into(), right.into());
                 },
                 Insn::Mul { left, right, out } => {
-                    mul(cb, out.into(), left.into(), right.into());
+                    // If the next instruction is jo (jump on overflow)
+                    match self.insns.get(insn_idx + 1) {
+                        Some(Insn::Jo(target)) => {
+                            // Compute the high 64 bits
+                            smulh(cb, Self::SCRATCH0, left.into(), right.into());
+
+                            // Compute the low 64 bits
+                            // This may clobber one of the input registers,
+                            // so we do it after smulh
+                            mul(cb, out.into(), left.into(), right.into());
+
+                            // Produce a register that is all zeros or all ones
+                            // Based on the sign bit of the 64-bit mul result
+                            asr(cb, Self::SCRATCH1, out.into(), A64Opnd::UImm(63));
+
+                            // If the high 64-bits are not all zeros or all ones,
+                            // matching the sign bit, then we have an overflow
+                            cmp(cb, Self::SCRATCH0, Self::SCRATCH1);
+                            emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb));
+
+                            next_insn_idx += 1;
+                        }
+                        _ => {
+                            mul(cb, out.into(), left.into(), right.into());
+                        }
+                    }
                 },
                 Insn::And { left, right, out } => {
                     and(cb, out.into(), left.into(), right.into());
@@ -1158,7 +1184,7 @@ impl Assembler
                     return Err(());
                 }
             } else {
-                insn_idx += 1;
+                insn_idx = next_insn_idx;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
