@@ -1063,20 +1063,24 @@ rb_gc_for_fd(int err)
     return 0;
 }
 
+/* try `expr` upto twice while it returns false and `errno`
+ * is to GC.  Each `errno`s are available as `first_errno` and
+ * `retried_errno` respectively */
+#define TRY_WITH_GC(expr) \
+    for (int first_errno, retried_errno = 0, retried = 0; \
+         (!retried && \
+          !(expr) && \
+          (!rb_gc_for_fd(first_errno = errno) || !(expr)) &&   \
+          (retried_errno = errno, 1)); \
+         (void)retried_errno, retried = 1)
+
 static int
 ruby_dup(int orig)
 {
-    int fd;
+    int fd = -1;
 
-    fd = rb_cloexec_dup(orig);
-    if (fd < 0) {
-        int e = errno;
-        if (rb_gc_for_fd(e)) {
-            fd = rb_cloexec_dup(orig);
-        }
-        if (fd < 0) {
-            rb_syserr_fail(e, 0);
-        }
+    TRY_WITH_GC((fd = rb_cloexec_dup(orig)) >= 0) {
+        rb_syserr_fail(first_errno, 0);
     }
     rb_update_max_fd(fd);
     return fd;
@@ -6945,7 +6949,7 @@ rb_sysopen_internal(struct sysopen_struct *data)
 static int
 rb_sysopen(VALUE fname, int oflags, mode_t perm)
 {
-    int fd;
+    int fd = -1;
     struct sysopen_struct data;
 
     data.fname = rb_str_encode_ospath(fname);
@@ -6953,15 +6957,8 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
     data.oflags = oflags;
     data.perm = perm;
 
-    fd = rb_sysopen_internal(&data);
-    if (fd < 0) {
-        int e = errno;
-        if (rb_gc_for_fd(e)) {
-            fd = rb_sysopen_internal(&data);
-        }
-        if (fd < 0) {
-            rb_syserr_fail_path(e, fname);
-        }
+    TRY_WITH_GC((fd = rb_sysopen_internal(&data)) >= 0) {
+        rb_syserr_fail_path(first_errno, fname);
     }
     return fd;
 }
@@ -6988,15 +6985,10 @@ fdopen_internal(int fd, const char *modestr)
 FILE *
 rb_fdopen(int fd, const char *modestr)
 {
-    FILE *file = fdopen_internal(fd, modestr);
-    if (!file) {
-        int e = errno;
-        if (rb_gc_for_fd(e)) {
-            file = fdopen_internal(fd, modestr);
-        }
-        if (!file) {
-            rb_syserr_fail(e, 0);
-        }
+    FILE *file = 0;
+
+    TRY_WITH_GC((file = fdopen_internal(fd, modestr)) != 0) {
+        rb_syserr_fail(first_errno, 0);
     }
 
     /* xxx: should be _IONBF?  A buffer in FILE may have trouble. */
@@ -7287,12 +7279,7 @@ int
 rb_pipe(int *pipes)
 {
     int ret;
-    ret = rb_cloexec_pipe(pipes);
-    if (ret < 0) {
-        if (rb_gc_for_fd(errno)) {
-            ret = rb_cloexec_pipe(pipes);
-        }
-    }
+    TRY_WITH_GC((ret = rb_cloexec_pipe(pipes)) >= 0);
     if (ret == 0) {
         rb_update_max_fd(pipes[0]);
         rb_update_max_fd(pipes[1]);
