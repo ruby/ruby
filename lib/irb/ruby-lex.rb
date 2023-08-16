@@ -7,6 +7,7 @@
 require "ripper"
 require "jruby" if RUBY_ENGINE == "jruby"
 require_relative "nesting_parser"
+require_relative "statement"
 
 # :stopdoc:
 class RubyLex
@@ -221,16 +222,30 @@ class RubyLex
       break unless code
 
       if code != "\n"
-        code.force_encoding(@context.io.encoding)
-        yield code, @line_no, assignment_expression?(code)
+        yield build_statement(code), @line_no
       end
       increase_line_no(code.count("\n"))
     rescue TerminateLineInput
     end
   end
 
-  def assignment_expression?(line)
-    # Try to parse the line and check if the last of possibly multiple
+  def build_statement(code)
+    code.force_encoding(@context.io.encoding)
+    command_or_alias, arg = code.split(/\s/, 2)
+    # Transform a non-identifier alias (@, $) or keywords (next, break)
+    command_name = @context.command_aliases[command_or_alias.to_sym]
+    command = command_name || command_or_alias
+    command_class = IRB::ExtendCommandBundle.load_command(command)
+
+    if command_class
+      IRB::Statement::Command.new(code, command, arg, command_class)
+    else
+      IRB::Statement::Expression.new(code, assignment_expression?(code))
+    end
+  end
+
+  def assignment_expression?(code)
+    # Try to parse the code and check if the last of possibly multiple
     # expressions is an assignment type.
 
     # If the expression is invalid, Ripper.sexp should return nil which will
@@ -239,7 +254,7 @@ class RubyLex
     # array of parsed expressions. The first element of each expression is the
     # expression's type.
     verbose, $VERBOSE = $VERBOSE, nil
-    code = "#{RubyLex.generate_local_variables_assign_code(@context.local_variables) || 'nil;'}\n#{line}"
+    code = "#{RubyLex.generate_local_variables_assign_code(@context.local_variables) || 'nil;'}\n#{code}"
     # Get the last node_type of the line. drop(1) is to ignore the local_variables_assign_code part.
     node_type = Ripper.sexp(code)&.dig(1)&.drop(1)&.dig(-1, 0)
     ASSIGNMENT_NODE_TYPES.include?(node_type)

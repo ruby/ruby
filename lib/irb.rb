@@ -570,26 +570,19 @@ module IRB
 
       configure_io
 
-      @scanner.each_top_level_statement do |line, line_no, is_assignment|
+      @scanner.each_top_level_statement do |statement, line_no|
         signal_status(:IN_EVAL) do
           begin
             # If the integration with debugger is activated, we need to handle certain input differently
-            if @context.with_debugger
-              command_class = load_command_class(line)
-              # First, let's pass debugging command's input to debugger
-              # Secondly, we need to let debugger evaluate non-command input
-              # Otherwise, the expression will be evaluated in the debugger's main session thread
-              # This is the only way to run the user's program in the expected thread
-              if !command_class || ExtendCommand::DebugCommand > command_class
-                return line
-              end
+            if @context.with_debugger && statement.should_be_handled_by_debugger?
+              return statement.code
             end
 
-            evaluate_line(line, line_no)
+            @context.evaluate(statement.evaluable_code, line_no)
 
             # Don't echo if the line ends with a semicolon
-            if @context.echo? && !line.match?(/;\s*\z/)
-              if is_assignment
+            if @context.echo? && !statement.suppresses_echo?
+              if statement.is_assignment?
                 if @context.echo_on_assignment?
                   output_value(@context.echo_on_assignment? == :truncate)
                 end
@@ -657,29 +650,6 @@ module IRB
           @scanner.process_indent_level(tokens, lines, line_index, is_newline)
         end
       end
-    end
-
-    def evaluate_line(line, line_no)
-      # Transform a non-identifier alias (@, $) or keywords (next, break)
-      command, args = line.split(/\s/, 2)
-      if original = @context.command_aliases[command.to_sym]
-        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
-        command = original
-      end
-
-      # Hook command-specific transformation
-      command_class = ExtendCommandBundle.load_command(command)
-      if command_class&.respond_to?(:transform_args)
-        line = "#{command} #{command_class.transform_args(args)}"
-      end
-
-      @context.evaluate(line, line_no)
-    end
-
-    def load_command_class(line)
-      command, _ = line.split(/\s/, 2)
-      command_name = @context.command_aliases[command.to_sym]
-      ExtendCommandBundle.load_command(command_name || command)
     end
 
     def convert_invalid_byte_sequence(str, enc)
