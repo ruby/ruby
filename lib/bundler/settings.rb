@@ -345,7 +345,8 @@ module Bundler
     end
 
     def is_string(name)
-      STRING_KEYS.include?(name.to_s) || name.to_s.start_with?("local.") || name.to_s.start_with?("mirror.") || name.to_s.start_with?("build.")
+      name = name.to_s
+      STRING_KEYS.include?(name) || name.start_with?("local.") || name.start_with?("mirror.") || name.start_with?("build.")
     end
 
     def to_bool(value)
