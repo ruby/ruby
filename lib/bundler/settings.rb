@@ -90,7 +90,9 @@ module Bundler
     def initialize(root = nil)
       @root            = root
       @local_config    = load_config(local_config_file)
-      @env_config      = ENV.to_h.select {|key, _value| key =~ /\ABUNDLE_.+/ }
+      @env_config      = ENV.to_h
+      @env_config.select! {|key, _value| key.start_with?("BUNDLE_") }
+
       @global_config   = load_config(global_config_file)
       @temporary       = {}
     end
