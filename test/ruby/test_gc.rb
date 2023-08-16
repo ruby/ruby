@@ -165,6 +165,8 @@ class TestGc < Test::Unit::TestCase
       assert_operator stat_heap[:force_major_gc_count], :>=, 0
       assert_operator stat_heap[:force_incremental_marking_finish_count], :>=, 0
       assert_operator stat_heap[:total_allocated_objects], :>=, 0
+      assert_operator stat_heap[:total_freed_objects], :>=, 0
+      assert_operator stat_heap[:total_freed_objects], :<=, stat_heap[:total_allocated_objects]
     end
 
     GC.stat_heap(0, stat_heap)
@@ -220,6 +222,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_allocated_pages], stat_heap_sum[:total_allocated_pages]
     assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
+    assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
   end
 
   def test_latest_gc_info
