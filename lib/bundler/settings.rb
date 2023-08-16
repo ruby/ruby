@@ -146,7 +146,7 @@ module Bundler
     end
 
     def all
-      keys = @temporary.keys | @global_config.keys | @local_config.keys | @env_config.keys
+      keys = @temporary.keys.union(@global_config.keys, @local_config.keys, @env_config.keys)
 
       keys.map do |key|
         key.sub(/^BUNDLE_/, "").gsub(/___/, "-").gsub(/__/, ".").downcase
