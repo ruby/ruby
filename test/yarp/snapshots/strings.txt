@@ -120,7 +120,7 @@ ProgramNode(0...498)(
      ),
      ArrayNode(325...339)(
        [StringNode(328...329)(nil, (328...329), nil, "a"),
-        InterpolatedStringNode(0...336)(
+        InterpolatedStringNode(330...336)(
           nil,
           [StringNode(330...331)(nil, (330...331), nil, "b"),
            EmbeddedStatementsNode(331...335)(

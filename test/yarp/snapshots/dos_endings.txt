@@ -18,17 +18,17 @@ ProgramNode(0...108)(
        "puts"
      ),
      ArrayNode(28...37)(
-       [SymbolNode(31...36)(nil, (31...36), nil, "a\u0000\u0000b")],
+       [SymbolNode(31...36)(nil, (31...36), nil, "ab")],
        (28...31),
        (36...37)
      ),
-     InterpolatedStringNode(41...73)(
+     InterpolatedStringNode(41...45)(
        (41...45),
        [StringNode(47...70)(
           nil,
           (47...70),
           nil,
-          "    1 \u0000\u0000    2\r\n" + "    3\r\n"
+          "    1     2\r\n" + "    3\r\n"
         )],
        (70...73)
      ),
@@ -49,7 +49,7 @@ ProgramNode(0...108)(
          (95...96),
          ArgumentsNode(96...107)(
            [CallNode(96...107)(
-              InterpolatedStringNode(96...128)(
+              InterpolatedStringNode(96...102)(
                 (96...102),
                 [StringNode(110...121)(
                    nil,

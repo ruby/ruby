@@ -11,7 +11,7 @@ ProgramNode(0...16)(
        (5...6)
      ),
      ArrayNode(8...16)(
-       [InterpolatedStringNode(0...15)(
+       [InterpolatedStringNode(11...15)(
           nil,
           [EmbeddedStatementsNode(11...15)(
              (11...13),

@@ -84,6 +84,10 @@ class ParseTest < Test::Unit::TestCase
       # changing the shape of the tree.
       assert_equal_nodes(result.value, YARP.load(source, YARP.dump(source, relative)).value)
 
+      # Next, check that the location ranges of each node in the tree are a
+      # superset of their respective child nodes.
+      assert_non_overlapping_locations(result.value)
+
       # Next, assert that the newlines are in the expected places.
       expected_newlines = [0]
       source.b.scan("\n") { expected_newlines << $~.offset(0)[0] + 1 }
@@ -136,6 +140,32 @@ class ParseTest < Test::Unit::TestCase
   end
 
   private
+
+  # Check that the location ranges of each node in the tree are a superset of
+  # their respective child nodes.
+  def assert_non_overlapping_locations(node)
+    queue = [node]
+
+    while (current = queue.shift)
+      # We only want to compare parent/child location overlap in the case that
+      # we are not looking at a heredoc. That's because heredoc locations are
+      # special in that they only use the declaration of the heredoc.
+      compare = !(current.is_a?(YARP::InterpolatedStringNode) || current.is_a?(YARP::InterpolatedXStringNode)) || !current.opening&.start_with?("<<")
+
+      current.child_nodes.each do |child|
+        # child_nodes can return nil values, so we need to skip those.
+        next unless child
+
+        # Now that we know we have a child node, add that to the queue.
+        queue << child
+
+        if compare
+          assert_operator current.location.start_offset, :<=, child.location.start_offset
+          assert_operator current.location.end_offset, :>=, child.location.end_offset
+        end
+      end
+    end
+  end
 
   def find_source_file_node(program)
     queue = [program]

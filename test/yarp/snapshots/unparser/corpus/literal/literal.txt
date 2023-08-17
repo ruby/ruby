@@ -3,9 +3,9 @@ ProgramNode(0...916)(
   StatementsNode(0...916)(
     [HashNode(0...38)(
        (0...1),
-       [AssocNode(2...53)(
+       [AssocNode(2...21)(
           StringNode(2...7)((2...3), (3...6), (6...7), "foo"),
-          InterpolatedStringNode(11...53)(
+          InterpolatedStringNode(11...21)(
             (11...21),
             [StringNode(39...41)(nil, (39...41), nil, "  "),
              EmbeddedStatementsNode(41...44)((41...43), nil, (43...44)),
@@ -47,8 +47,8 @@ ProgramNode(0...916)(
          nil,
          (98...99),
          (99...100),
-         ArgumentsNode(100...128)(
-           [InterpolatedStringNode(100...128)(
+         ArgumentsNode(100...110)(
+           [InterpolatedStringNode(100...110)(
               (100...110),
               [StringNode(114...116)(nil, (114...116), nil, "  "),
                EmbeddedStatementsNode(116...119)(
@@ -99,9 +99,9 @@ ProgramNode(0...916)(
      ),
      HashNode(137...167)(
        (137...138),
-       [AssocNode(139...182)(
+       [AssocNode(139...158)(
           StringNode(139...144)((139...140), (140...143), (143...144), "foo"),
-          InterpolatedStringNode(148...182)(
+          InterpolatedStringNode(148...158)(
             (148...158),
             [StringNode(168...170)(nil, (168...170), nil, "  "),
              EmbeddedStatementsNode(170...173)((170...172), nil, (172...173)),

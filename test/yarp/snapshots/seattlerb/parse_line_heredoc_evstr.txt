@@ -1,7 +1,7 @@
-ProgramNode(0...14)(
+ProgramNode(0...4)(
   [],
-  StatementsNode(0...14)(
-    [InterpolatedStringNode(0...14)(
+  StatementsNode(0...4)(
+    [InterpolatedStringNode(0...4)(
        (0...4),
        [StringNode(5...7)(nil, (5...7), nil, "a\n"),
         EmbeddedStatementsNode(7...11)(

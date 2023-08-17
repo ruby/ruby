@@ -2,7 +2,7 @@ ProgramNode(0...9)(
   [],
   StatementsNode(0...9)(
     [ArrayNode(0...9)(
-       [InterpolatedStringNode(0...8)(
+       [InterpolatedStringNode(3...8)(
           nil,
           [EmbeddedStatementsNode(3...7)(
              (3...5),

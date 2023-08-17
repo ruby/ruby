@@ -9,7 +9,7 @@ ProgramNode(0...30)(
        ArgumentsNode(2...30)(
          [CallNode(2...30)(
             CallNode(2...26)(
-              InterpolatedStringNode(2...22)(
+              InterpolatedStringNode(2...8)(
                 (2...8),
                 [StringNode(12...16)(nil, (12...16), nil, "  a\n")],
                 (16...22)

@@ -1,10 +1,10 @@
-ProgramNode(0...27)(
+ProgramNode(0...10)(
   [:s],
-  StatementsNode(0...27)(
-    [LocalVariableWriteNode(0...27)(
+  StatementsNode(0...10)(
+    [LocalVariableWriteNode(0...10)(
        :s,
        0,
-       InterpolatedStringNode(4...27)(
+       InterpolatedStringNode(4...10)(
          (4...10),
          [StringNode(11...23)(nil, (11...23), nil, "a\xA7b\n" + "cöd\n")],
          (23...27)

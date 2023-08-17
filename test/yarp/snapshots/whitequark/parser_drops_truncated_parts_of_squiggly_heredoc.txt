@@ -1,10 +1,9 @@
-ProgramNode(0...19)(
+ProgramNode(0...7)(
   [],
-  StatementsNode(0...19)(
-    [InterpolatedStringNode(0...19)(
+  StatementsNode(0...7)(
+    [InterpolatedStringNode(0...7)(
        (0...7),
-       [StringNode(8...10)(nil, (8...10), nil, ""),
-        EmbeddedStatementsNode(10...13)((10...12), nil, (12...13)),
+       [EmbeddedStatementsNode(10...13)((10...12), nil, (12...13)),
         StringNode(13...14)(nil, (13...14), nil, "\n")],
        (14...19)
      )]

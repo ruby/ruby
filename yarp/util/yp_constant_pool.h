@@ -51,6 +51,9 @@ typedef struct {
     size_t capacity;
 } yp_constant_pool_t;
 
+// Define an empty constant pool.
+#define YP_CONSTANT_POOL_EMPTY ((yp_constant_pool_t) { .constants = NULL, .size = 0, .capacity = 0 })
+
 // Initialize a new constant pool with a given capacity.
 bool yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity);
 

@@ -411,7 +411,8 @@ module YARP
     end
 
     def test_InterpolatedStringNode
-      assert_location(InterpolatedStringNode, "<<~A\nhello world\nA")
+      assert_location(InterpolatedStringNode, "\"foo \#@bar baz\"")
+      assert_location(InterpolatedStringNode, "<<~A\nhello world\nA", 0...4)
     end
 
     def test_InterpolatedSymbolNode

@@ -31,7 +31,7 @@ typedef enum {
 
 // Unescape the contents of the given token into the given string using the
 // given unescape mode.
-YP_EXPORTED_FUNCTION void yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t length, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list);
+YP_EXPORTED_FUNCTION void yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list);
 
 // Accepts a source string and a type of unescaping and returns the unescaped version.
 // The caller must yp_string_free(result); after calling this function.

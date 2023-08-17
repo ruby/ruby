@@ -1,11 +1,5 @@
 #include "yarp/util/yp_state_stack.h"
 
-// Initializes the state stack to an empty stack.
-void
-yp_state_stack_init(yp_state_stack_t *stack) {
-    *stack = 0;
-}
-
 // Pushes a value onto the stack.
 void
 yp_state_stack_push(yp_state_stack_t *stack, bool value) {

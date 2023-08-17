@@ -983,8 +983,8 @@ ProgramNode(0...913)(
        (860...861),
        nil,
        nil,
-       StatementsNode(864...893)(
-         [InterpolatedStringNode(864...893)(
+       StatementsNode(864...874)(
+         [InterpolatedStringNode(864...874)(
             (864...874),
             [StringNode(875...879)(nil, (875...879), nil, "    "),
              EmbeddedStatementsNode(879...882)((879...881), nil, (881...882)),
