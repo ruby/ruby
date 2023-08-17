@@ -203,28 +203,36 @@ $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time
 	@$(NULLCMD) > $@
 
 main: $(top_srcdir)/lib/yarp/node.rb
+srcs: $(top_srcdir)/lib/yarp/node.rb
 $(top_srcdir)/lib/yarp/node.rb: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/lib/yarp/node.rb.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb lib/yarp/node.rb $(top_srcdir)/lib/yarp/node.rb
 
 main: $(top_srcdir)/lib/yarp/serialize.rb
+srcs: $(top_srcdir)/lib/yarp/serialize.rb
 $(top_srcdir)/lib/yarp/serialize.rb: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/lib/yarp/serialize.rb.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb lib/yarp/serialize.rb $(top_srcdir)/lib/yarp/serialize.rb
 
+srcs: $(top_srcdir)/yarp/api_node.c
 $(top_srcdir)/yarp/api_node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/ext/yarp/api_node.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb ext/yarp/api_node.c $(top_srcdir)/yarp/api_node.c
 
+srcs: $(top_srcdir)/yarp/ast.h
 $(top_srcdir)/yarp/ast.h: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/include/yarp/ast.h.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb include/yarp/ast.h $(top_srcdir)/yarp/ast.h
 
+srcs: $(top_srcdir)/yarp/node.c
 $(top_srcdir)/yarp/node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/node.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/node.c $(top_srcdir)/yarp/node.c
 
+srcs: $(top_srcdir)/yarp/prettyprint.c
 $(top_srcdir)/yarp/prettyprint.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/prettyprint.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/prettyprint.c $(top_srcdir)/yarp/prettyprint.c
 
+srcs: $(top_srcdir)/yarp/serialize.c
 $(top_srcdir)/yarp/serialize.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/serialize.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/serialize.c $(top_srcdir)/yarp/serialize.c
 
+srcs: $(top_srcdir)/yarp/token_type.c
 $(top_srcdir)/yarp/token_type.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/token_type.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/token_type.c $(top_srcdir)/yarp/token_type.c
 
