@@ -5653,13 +5653,23 @@ parser_lex(yp_parser_t *parser) {
                         break;
                     case '\\':
                         if (peek_at(parser, 1) == '\n') {
-                            yp_newline_list_append(&parser->newline_list, parser->current.end + 1);
-                            parser->current.end += 2;
-                            space_seen = true;
-                        } else if (parser->current.end + 2 < parser->end && peek_at(parser, 1) == '\r' && peek_at(parser, 2) == '\n') {
-                            yp_newline_list_append(&parser->newline_list, parser->current.end + 2);
-                            parser->current.end += 3;
-                            space_seen = true;
+                            if (parser->heredoc_end) {
+                                parser->current.end = parser->heredoc_end;
+                                parser->heredoc_end = NULL;
+                            } else {
+                                yp_newline_list_append(&parser->newline_list, parser->current.end + 1);
+                                parser->current.end += 2;
+                                space_seen = true;
+                            }
+                        } else if (peek_at(parser, 1) == '\r' && peek_at(parser, 2) == '\n') {
+                            if (parser->heredoc_end) {
+                                parser->current.end = parser->heredoc_end;
+                                parser->heredoc_end = NULL;
+                            } else {
+                                yp_newline_list_append(&parser->newline_list, parser->current.end + 2);
+                                parser->current.end += 3;
+                                space_seen = true;
+                            }
                         } else if (yp_char_is_inline_whitespace(*parser->current.end)) {
                             parser->current.end += 2;
                         } else {
