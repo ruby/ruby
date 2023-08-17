@@ -1094,6 +1094,25 @@ dependencies: []
     assert_equal(yaml_defined, Object.const_defined?("YAML"))
   end
 
+  def test_handles_dependencies_with_other_syck_requirements_argument_error
+    yaml_defined = Object.const_defined?("YAML")
+
+    data = Marshal.dump(Gem::Specification.new do |s|
+      v = Gem::Version.allocate
+      v.instance_variable_set :@version, "YAML::Syck::DefaultKey"
+      s.instance_variable_set :@version, v
+    end)
+
+    assert_raises(ArgumentError) { Marshal.load(data) }
+    out, err = capture_output do
+      assert_raises(ArgumentError) { Marshal.load(data) }
+    end
+    assert_empty out
+    assert_empty err
+
+    assert_equal(yaml_defined, Object.const_defined?("YAML"))
+  end
+
   def test_initialize
     spec = Gem::Specification.new do |s|
       s.name = "blah"
