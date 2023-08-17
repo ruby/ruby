@@ -455,6 +455,7 @@ module SyncDefaultGems
     |bin\/.*
     |configure\.ac
     |rakelib\/.*
+    |rust\/.*
     |templates\/.*
     |test\/lib\/.*
     |tasks\/.*
