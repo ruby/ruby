@@ -444,9 +444,7 @@ module SyncDefaultGems
   YARP_IGNORE_FILE_PATTERN =
     /\A(?:[A-Z]\w*\.(?:md|txt)
     |[^\/]+\.yml
-    |\.gitignore
     |\.git.*
-    |\.github\/.*
     |[A-Z]\w+file
     |COPYING
     |CONTRIBUTING\.md
