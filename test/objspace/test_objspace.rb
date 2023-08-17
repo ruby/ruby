@@ -225,6 +225,13 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o4))
       assert_equal(line4, ObjectSpace.allocation_sourceline(o4))
 
+      # The line number should be based on newarray instead of getinstancevariable.
+      line5 = __LINE__; o5 = [ # newarray (leaf)
+        @ivar, # getinstancevariable (not leaf)
+      ]
+      assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o5))
+      assert_equal(line5, ObjectSpace.allocation_sourceline(o5))
+
       # [Bug #19482]
       EnvUtil.under_gc_stress do
         100.times do

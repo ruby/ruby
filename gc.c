@@ -2423,42 +2423,7 @@ static void
 gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
     if (UNLIKELY(!ec->cfp)) return;
-    const VALUE *pc = ec->cfp->pc;
-    if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
-        int prev_opcode = rb_vm_insn_addr2opcode((void *)*ec->cfp->iseq->body->iseq_encoded);
-        for (const VALUE *insn = ec->cfp->iseq->body->iseq_encoded; insn < pc; insn += rb_insn_len(prev_opcode)) {
-            prev_opcode = rb_vm_insn_addr2opcode((void *)*insn);
-        }
-
-        /* If the previous instruction is a leaf instruction, then the PC is
-         * the currently executing instruction. We should increment the PC
-         * because the source line is calculated with PC-1 in calc_pos.
-         *
-         * If the previous instruction is not a leaf instruction and the
-         * current instruction is not a leaf instruction, then the PC was
-         * incremented before the instruction was ran (meaning the currently
-         * executing instruction is actually the previous instruction), so we
-         * should not increment the PC otherwise we will calculate the source
-         * line for the next instruction.
-         *
-         * However, this implementation still has a bug. Consider the
-         * following situation:
-         *
-         *   non-leaf
-         *   leaf <-
-         *
-         * Where the PC currently points to a leaf instruction. We don't know
-         * which instruction we really are at since we could be at the non-leaf
-         * instruction (since it incremented the PC before executing the
-         * instruction). We could also be at the leaf instruction since the PC
-         * doesn't get incremented until the instruction finishes.
-         */
-        if (rb_insns_leaf_p(prev_opcode)) {
-            ec->cfp->pc++;
-        }
-    }
     EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, data);
-    ec->cfp->pc = pc;
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
