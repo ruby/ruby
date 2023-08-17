@@ -7098,6 +7098,7 @@ parser_lex(yp_parser_t *parser) {
             } else {
                 parser->current.start = parser->next_start;
                 parser->current.end = parser->next_start;
+                parser->heredoc_end = NULL;
                 parser->next_start = NULL;
             }
 
