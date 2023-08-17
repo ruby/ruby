@@ -3,12 +3,12 @@ ProgramNode(0...30)(
   StatementsNode(0...30)(
     [ArrayNode(0...30)(
        [StringNode(4...5)(nil, (4...5), nil, "1"),
-        InterpolatedStringNode(0...12)(
+        InterpolatedStringNode(6...12)(
           nil,
           [EmbeddedStatementsNode(6...12)(
              (6...8),
-             StatementsNode(8...19)(
-               [InterpolatedStringNode(8...19)(
+             StatementsNode(8...11)(
+               [InterpolatedStringNode(8...11)(
                   (8...11),
                   [StringNode(15...17)(nil, (15...17), nil, "2\n")],
                   (17...19)

@@ -6,8 +6,8 @@ ProgramNode(0...23)(
        nil,
        (0...1),
        nil,
-       ArgumentsNode(2...20)(
-         [InterpolatedStringNode(2...20)((2...10), [], (14...20))]
+       ArgumentsNode(2...10)(
+         [InterpolatedStringNode(2...10)((2...10), [], (14...20))]
        ),
        nil,
        BlockNode(11...23)([], nil, nil, (11...13), (20...23)),

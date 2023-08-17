@@ -1,4 +1,4 @@
-ProgramNode(0...7)(
+ProgramNode(0...4)(
   [],
-  StatementsNode(0...7)([InterpolatedStringNode(0...7)((0...4), [], (5...7))])
+  StatementsNode(0...4)([InterpolatedStringNode(0...4)((0...4), [], (5...7))])
 )

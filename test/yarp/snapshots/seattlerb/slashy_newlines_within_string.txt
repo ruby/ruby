@@ -11,7 +11,7 @@ ProgramNode(0...40)(
             (5...6),
             (6...32),
             (32...33),
-            "hello\n" + " my\n" + " dear\n" + " friend"
+            "hello my dear friend"
           )]
        ),
        nil,

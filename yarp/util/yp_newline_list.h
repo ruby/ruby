@@ -35,6 +35,10 @@ typedef struct {
     size_t column;
 } yp_line_column_t;
 
+#define YP_NEWLINE_LIST_EMPTY ((yp_newline_list_t) { \
+    .start = NULL, .offsets = NULL, .size = 0, .capacity = 0, .last_offset = 0, .last_index = 0 \
+})
+
 // Initialize a new newline list with the given capacity. Returns true if the
 // allocation of the offsets succeeds, otherwise returns false.
 bool yp_newline_list_init(yp_newline_list_t *list, const char *start, size_t capacity);

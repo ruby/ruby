@@ -1,10 +1,10 @@
 ProgramNode(6...74)(
   [:string],
   StatementsNode(6...74)(
-    [LocalVariableWriteNode(6...57)(
+    [LocalVariableWriteNode(6...22)(
        :string,
        0,
-       InterpolatedStringNode(15...57)(
+       InterpolatedStringNode(15...22)(
          (15...22),
          [StringNode(23...48)(
             nil,

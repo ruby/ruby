@@ -102,8 +102,8 @@ ProgramNode(0...188)(
          nil,
          (106...107),
          (107...108),
-         ArgumentsNode(108...123)(
-           [InterpolatedStringNode(108...123)((108...114), [], (119...123))]
+         ArgumentsNode(108...114)(
+           [InterpolatedStringNode(108...114)((108...114), [], (119...123))]
          ),
          (114...115),
          BlockNode(116...130)(

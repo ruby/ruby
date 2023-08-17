@@ -1526,7 +1526,7 @@ void yp_serialize_comment(yp_parser_t *parser, yp_comment_t *comment, yp_buffer_
 }
 
 void yp_serialize_comment_list(yp_parser_t *parser, yp_list_t list, yp_buffer_t *buffer) {
-    yp_buffer_append_u32(buffer, yp_list_size(&list));
+    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(&list)));
 
     yp_comment_t *comment;
     for (comment = (yp_comment_t *) list.head; comment != NULL; comment = (yp_comment_t *) comment->node.next) {
@@ -1546,7 +1546,7 @@ void yp_serialize_diagnostic(yp_parser_t *parser, yp_diagnostic_t *diagnostic, y
 }
 
 void yp_serialize_diagnostic_list(yp_parser_t *parser, yp_list_t list, yp_buffer_t *buffer) {
-    yp_buffer_append_u32(buffer, yp_list_size(&list));
+    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(&list)));
 
     yp_diagnostic_t *diagnostic;
     for (diagnostic = (yp_diagnostic_t *) list.head; diagnostic != NULL; diagnostic = (yp_diagnostic_t *) diagnostic->node.next) {

@@ -1,15 +1,15 @@
-ProgramNode(0...21)(
+ProgramNode(0...8)(
   [],
-  StatementsNode(0...21)(
-    [CallNode(0...21)(
+  StatementsNode(0...8)(
+    [CallNode(0...8)(
        nil,
        nil,
        (0...1),
        nil,
-       ArgumentsNode(2...21)(
-         [InterpolatedStringNode(2...21)(
+       ArgumentsNode(2...8)(
+         [InterpolatedStringNode(2...8)(
             (2...8),
-            [StringNode(9...19)(nil, (9...19), nil, "x\n" + " y\n")],
+            [StringNode(9...19)(nil, (9...19), nil, "x\n" + "   y\n")],
             (19...21)
           )]
        ),

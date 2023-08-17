@@ -7,7 +7,7 @@ ProgramNode(0...47)(
        (16...17)
      ),
      ArrayNode(19...47)(
-       [InterpolatedStringNode(20...46)(
+       [InterpolatedStringNode(20...27)(
           (20...27),
           [StringNode(29...41)(nil, (29...41), nil, "  some text\n")],
           (41...46)
