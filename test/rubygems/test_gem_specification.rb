@@ -1103,9 +1103,9 @@ dependencies: []
       s.instance_variable_set :@version, v
     end)
 
-    assert_raises(ArgumentError) { Marshal.load(data) }
+    assert_raise(ArgumentError) { Marshal.load(data) }
     out, err = capture_output do
-      assert_raises(ArgumentError) { Marshal.load(data) }
+      assert_raise(ArgumentError) { Marshal.load(data) }
     end
     assert_empty out
     assert_empty err
