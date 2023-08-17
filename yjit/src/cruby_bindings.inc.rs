@@ -1166,6 +1166,7 @@ extern "C" {
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;
     pub fn rb_iseq_path(iseq: *const rb_iseq_t) -> VALUE;
+    pub fn rb_vm_env_write(ep: *const VALUE, index: ::std::os::raw::c_int, v: VALUE);
     pub fn rb_vm_bh_to_procval(ec: *const rb_execution_context_t, block_handler: VALUE) -> VALUE;
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,

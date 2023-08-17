@@ -283,6 +283,7 @@ fn main() {
         .blocklist_type("rb_control_frame_struct")
         .opaque_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
+        .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")
         .allowlist_type("vm_special_object_type")
         .allowlist_var("VM_ENV_DATA_INDEX_SPECVAL")

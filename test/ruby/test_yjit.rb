@@ -661,7 +661,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_send_block
     # Setlocal_wc_0 sometimes side-exits on write barrier
-    assert_compiles(<<~'RUBY', result: "b:n/b:y/b:y/b:n", exits: { :setlocal_WC_0 => 0..1 })
+    assert_compiles(<<~'RUBY', result: "b:n/b:y/b:y/b:n")
       def internal_method(&b)
         "b:#{block_given? ? "y" : "n"}"
       end

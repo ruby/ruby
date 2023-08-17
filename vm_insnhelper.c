@@ -505,6 +505,12 @@ vm_env_write(const VALUE *ep, int index, VALUE v)
     }
 }
 
+void
+rb_vm_env_write(const VALUE *ep, int index, VALUE v)
+{
+    vm_env_write(ep, index, v);
+}
+
 VALUE
 rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 {
