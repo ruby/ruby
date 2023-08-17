@@ -4885,19 +4885,27 @@ fn jit_obj_respond_to(
     };
 
     let result = match (visibility, allow_priv) {
-        (METHOD_VISI_UNDEF, _) => Qfalse, // No method => false
-        (METHOD_VISI_PUBLIC, _) => Qtrue, // Public method => true regardless of include_all
-        (_, Some(true)) => Qtrue, // include_all => always true
+        (METHOD_VISI_UNDEF, _) => {
+            // No method, we can return false given respond_to_missing? hasn't been overridden.
+            // In the future, we might want to jit the call to respond_to_missing?
+            if !assume_method_basic_definition(jit, asm, ocb, recv_class, idRespond_to_missing.into()) {
+                return false;
+            }
+            Qfalse
+        }
+        (METHOD_VISI_PUBLIC, _) | // Public method => fine regardless of include_all
+        (_, Some(true)) => { // include_all => all visibility are acceptable
+            // Method exists and has acceptable visibility
+            if cme_def_type == VM_METHOD_TYPE_NOTIMPLEMENTED {
+                // C method with rb_f_notimplement(). `respond_to?` returns false
+                // without consulting `respond_to_missing?`.
+                Qfalse
+            } else {
+                Qtrue
+            }
+        }
         (_, _) => return false // not public and include_all not known, can't compile
     };
-
-    if result != Qtrue {
-        // Only if respond_to_missing? hasn't been overridden
-        // In the future, we might want to jit the call to respond_to_missing?
-        if !assume_method_basic_definition(jit, asm, ocb, recv_class, idRespond_to_missing.into()) {
-            return false;
-        }
-    }
 
     // Invalidate this block if method lookup changes for the method being queried. This works
     // both for the case where a method does or does not exist, as for the latter we asked for a
