@@ -1009,7 +1009,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[2];
 
                     // arguments
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->arguments.size);
                     for (size_t index = 0; index < cast->arguments.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -1026,7 +1026,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[4];
 
                     // elements
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->elements.size);
                     for (size_t index = 0; index < cast->elements.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -1052,7 +1052,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = rb_ary_pop(value_stack);
 
                     // requireds
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->requireds.size);
                     for (size_t index = 0; index < cast->requireds.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -1061,7 +1061,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[2] = rb_ary_pop(value_stack);
 
                     // posts
-                    argv[3] = rb_ary_new();
+                    argv[3] = rb_ary_new_capa(cast->posts.size);
                     for (size_t index = 0; index < cast->posts.size; index++) {
                         rb_ary_push(argv[3], rb_ary_pop(value_stack));
                     }
@@ -1177,7 +1177,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[6];
 
                     // locals
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[0], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -1226,7 +1226,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = rb_ary_pop(value_stack);
 
                     // locals
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         yp_location_t location = cast->locals.locations[index];
                         rb_ary_push(argv[1], yp_location_new(parser, location.start, location.end, source));
@@ -1391,7 +1391,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = rb_ary_pop(value_stack);
 
                     // conditions
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->conditions.size);
                     for (size_t index = 0; index < cast->conditions.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -1417,7 +1417,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[8];
 
                     // locals
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[0], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -1753,7 +1753,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[3] = rb_ary_pop(value_stack);
 
                     // locals
-                    argv[4] = rb_ary_new();
+                    argv[4] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[4], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -1904,7 +1904,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[1] = rb_ary_pop(value_stack);
 
                     // requireds
-                    argv[2] = rb_ary_new();
+                    argv[2] = rb_ary_new_capa(cast->requireds.size);
                     for (size_t index = 0; index < cast->requireds.size; index++) {
                         rb_ary_push(argv[2], rb_ary_pop(value_stack));
                     }
@@ -2124,7 +2124,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = yp_location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
                     // elements
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->elements.size);
                     for (size_t index = 0; index < cast->elements.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -2147,7 +2147,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = rb_ary_pop(value_stack);
 
                     // assocs
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->assocs.size);
                     for (size_t index = 0; index < cast->assocs.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -2341,7 +2341,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = yp_location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
                     // parts
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->parts.size);
                     for (size_t index = 0; index < cast->parts.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -2367,7 +2367,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = cast->opening_loc.start == NULL ? Qnil : yp_location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
                     // parts
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->parts.size);
                     for (size_t index = 0; index < cast->parts.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -2390,7 +2390,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = cast->opening_loc.start == NULL ? Qnil : yp_location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
                     // parts
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->parts.size);
                     for (size_t index = 0; index < cast->parts.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -2413,7 +2413,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = yp_location_new(parser, cast->opening_loc.start, cast->opening_loc.end, source);
 
                     // parts
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->parts.size);
                     for (size_t index = 0; index < cast->parts.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -2433,7 +2433,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[2];
 
                     // elements
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->elements.size);
                     for (size_t index = 0; index < cast->elements.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -2484,7 +2484,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[5];
 
                     // locals
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[0], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -2675,7 +2675,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[6];
 
                     // locals
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[0], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -2704,7 +2704,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[6];
 
                     // targets
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->targets.size);
                     for (size_t index = 0; index < cast->targets.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -2830,19 +2830,19 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[8];
 
                     // requireds
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->requireds.size);
                     for (size_t index = 0; index < cast->requireds.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
 
                     // optionals
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->optionals.size);
                     for (size_t index = 0; index < cast->optionals.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
 
                     // posts
-                    argv[2] = rb_ary_new();
+                    argv[2] = rb_ary_new_capa(cast->posts.size);
                     for (size_t index = 0; index < cast->posts.size; index++) {
                         rb_ary_push(argv[2], rb_ary_pop(value_stack));
                     }
@@ -2851,7 +2851,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[3] = rb_ary_pop(value_stack);
 
                     // keywords
-                    argv[4] = rb_ary_new();
+                    argv[4] = rb_ary_new_capa(cast->keywords.size);
                     for (size_t index = 0; index < cast->keywords.size; index++) {
                         rb_ary_push(argv[4], rb_ary_pop(value_stack));
                     }
@@ -2980,7 +2980,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[3];
 
                     // locals
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[0], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -3072,7 +3072,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[4];
 
                     // parameters
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->parameters.size);
                     for (size_t index = 0; index < cast->parameters.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -3132,7 +3132,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = yp_location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
                     // exceptions
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->exceptions.size);
                     for (size_t index = 0; index < cast->exceptions.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }
@@ -3215,7 +3215,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[7];
 
                     // locals
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->locals.size);
                     for (size_t index = 0; index < cast->locals.size; index++) {
                         rb_ary_push(argv[0], rb_id2sym(constants[cast->locals.ids[index] - 1]));
                     }
@@ -3298,7 +3298,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[2];
 
                     // body
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->body.size);
                     for (size_t index = 0; index < cast->body.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -3413,7 +3413,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     VALUE argv[3];
 
                     // names
-                    argv[0] = rb_ary_new();
+                    argv[0] = rb_ary_new_capa(cast->names.size);
                     for (size_t index = 0; index < cast->names.size; index++) {
                         rb_ary_push(argv[0], rb_ary_pop(value_stack));
                     }
@@ -3485,7 +3485,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[0] = yp_location_new(parser, cast->keyword_loc.start, cast->keyword_loc.end, source);
 
                     // conditions
-                    argv[1] = rb_ary_new();
+                    argv[1] = rb_ary_new_capa(cast->conditions.size);
                     for (size_t index = 0; index < cast->conditions.size; index++) {
                         rb_ary_push(argv[1], rb_ary_pop(value_stack));
                     }

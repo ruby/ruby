@@ -1,0 +1,31 @@
+ProgramNode(0...39)(
+  [],
+  StatementsNode(0...39)(
+    [IfNode(0...13)(
+       (0...2),
+       FlipFlopNode(3...7)(
+         IntegerNode(3...4)(),
+         IntegerNode(6...7)(),
+         (4...6),
+         0
+       ),
+       nil,
+       nil,
+       (10...13)
+     ),
+     IfNode(14...26)(
+       (14...16),
+       FlipFlopNode(17...20)(nil, IntegerNode(19...20)(), (17...19), 0),
+       nil,
+       nil,
+       (23...26)
+     ),
+     IfNode(27...39)(
+       (27...29),
+       FlipFlopNode(30...33)(IntegerNode(30...31)(), nil, (31...33), 0),
+       nil,
+       nil,
+       (36...39)
+     )]
+  )
+)

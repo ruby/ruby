@@ -459,8 +459,12 @@ yp_flip_flop(yp_node_t *node) {
         }
         case YP_NODE_RANGE_NODE: {
             yp_range_node_t *cast = (yp_range_node_t *) node;
-            yp_flip_flop(cast->left);
-            yp_flip_flop(cast->right);
+            if (cast->left) {
+                yp_flip_flop(cast->left);
+            }
+            if (cast->right) {
+                yp_flip_flop(cast->right);
+            }
 
             // Here we change the range node into a flip flop node. We can do
             // this since the nodes are exactly the same except for the type.
