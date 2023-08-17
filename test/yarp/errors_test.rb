@@ -155,6 +155,13 @@ class ErrorsTest < Test::Unit::TestCase
     ]
   end
 
+  def test_unterminated_argument_expression
+    assert_errors expression('a %'), 'a %', [
+      ["Unexpected end of input", 2..3],
+      ["Expected a value after the operator.", 3..3],
+    ]
+  end
+
   def test_1_2_3
     assert_errors expression("(1, 2, 3)"), "(1, 2, 3)", [
       ["Expected to be able to parse an expression.", 2..2],

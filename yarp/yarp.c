@@ -6494,13 +6494,11 @@ parser_lex(yp_parser_t *parser) {
 
                 // % %= %i %I %q %Q %w %W
                 case '%': {
-                    // In a BEG state, if you encounter a % then you must be
-                    // starting something. In this case if there is no
-                    // subsequent character then we have an invalid token. We're
-                    // going to say it's the percent operator because we don't
-                    // want to move into the string lex mode unnecessarily.
-                    if (lex_state_beg_p(parser) && (parser->current.end >= parser->end)) {
-                        yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "unexpected end of input");
+                    // If there is no subsequent character then we have an invalid token. We're
+                    // going to say it's the percent operator because we don't want to move into the
+                    // string lex mode unnecessarily.
+                    if ((lex_state_beg_p(parser) || lex_state_arg_p(parser)) && (parser->current.end >= parser->end)) {
+                        yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Unexpected end of input");
                         LEX(YP_TOKEN_PERCENT);
                     }
 
