@@ -446,6 +446,7 @@ module SyncDefaultGems
     |[^\/]+\.yml
     |\.gitignore
     |\.git.*
+    |\.github/.*
     |[A-Z]\w+file
     |COPYING
     |CONTRIBUTING\.md
