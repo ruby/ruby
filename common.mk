@@ -198,21 +198,23 @@ COMMONOBJS    = array.$(OBJEXT) \
 
 $(YARP_FILES): $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time
 
-$(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time: $(top_srcdir)/lib/yarp/node.rb $(top_srcdir)/lib/yarp/serialize.rb
+$(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
+
+main: $(top_srcdir)/lib/yarp/node.rb
+$(top_srcdir)/lib/yarp/node.rb: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/lib/yarp/node.rb.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb lib/yarp/node.rb $(top_srcdir)/lib/yarp/node.rb
+
+main: $(top_srcdir)/lib/yarp/serialize.rb
+$(top_srcdir)/lib/yarp/serialize.rb: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/lib/yarp/serialize.rb.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb lib/yarp/serialize.rb $(top_srcdir)/lib/yarp/serialize.rb
 
 $(top_srcdir)/yarp/api_node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/ext/yarp/api_node.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb ext/yarp/api_node.c $(top_srcdir)/yarp/api_node.c
 
 $(top_srcdir)/yarp/ast.h: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/include/yarp/ast.h.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb include/yarp/ast.h $(top_srcdir)/yarp/ast.h
-
-$(top_srcdir)/lib/yarp/node.rb: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/lib/yarp/node.rb.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb lib/yarp/node.rb $(top_srcdir)/lib/yarp/node.rb
-
-$(top_srcdir)/lib/yarp/serialize.rb: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/lib/yarp/serialize.rb.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb lib/yarp/serialize.rb $(top_srcdir)/lib/yarp/serialize.rb
 
 $(top_srcdir)/yarp/node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/node.c.erb
 	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/node.c $(top_srcdir)/yarp/node.c
