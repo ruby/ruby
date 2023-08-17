@@ -77,6 +77,15 @@ class LocalsTest < Test::Unit::TestCase
     define_method("test_#{relative}") { assert_locals(filepath) }
   end
 
+  def setup
+    @previous_default_external = Encoding.default_external
+    ignore_warnings { Encoding.default_external = Encoding::UTF_8 }
+  end
+
+  def teardown
+    ignore_warnings { Encoding.default_external = @previous_default_external }
+  end
+
   private
 
   def assert_locals(filepath)
@@ -86,5 +95,13 @@ class LocalsTest < Test::Unit::TestCase
     actual = YARP.const_get(:Debug).yarp_locals(source)
 
     assert_equal(expected, actual)
+  end
+
+  def ignore_warnings
+    previous_verbosity = $VERBOSE
+    $VERBOSE = nil
+    yield
+  ensure
+    $VERBOSE = previous_verbosity
   end
 end
