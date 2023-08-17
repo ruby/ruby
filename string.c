@@ -421,7 +421,8 @@ rb_fstring(VALUE str)
             OBJ_FREEZE_RAW(str);
             return str;
         }
-        if (FL_TEST_RAW(str, STR_NOEMBED|STR_SHARED_ROOT|STR_SHARED) == (STR_NOEMBED|STR_SHARED_ROOT)) {
+
+        if (FL_TEST_RAW(str, STR_SHARED_ROOT | STR_SHARED) == STR_SHARED_ROOT) {
             assert(OBJ_FROZEN(str));
             return str;
         }
