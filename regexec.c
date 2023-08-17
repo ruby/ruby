@@ -368,7 +368,10 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
       case OP_MEMORY_END:
       case OP_MEMORY_END_REC:
 	p += SIZE_MEMNUM;
-	if (lookaround_nesting > 0) goto impossible;
+	// A memory (capture) in look-around is found.
+	if (lookaround_nesting != 0) {
+	  goto impossible;
+        }
 	break;
 
       case OP_KEEP:
@@ -431,13 +434,25 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	break;
 
       case OP_PUSH_POS:
+	if (lookaround_nesting < 0) {
+	  // A look-around nested in a atomic grouping is found.
+	  goto impossible;
+	}
 	lookaround_nesting++;
 	break;
       case OP_PUSH_POS_NOT:
+	if (lookaround_nesting < 0) {
+	  // A look-around nested in a atomic grouping is found.
+	  goto impossible;
+	}
 	p += SIZE_RELADDR;
 	lookaround_nesting++;
 	break;
       case OP_PUSH_LOOK_BEHIND_NOT:
+	if (lookaround_nesting < 0) {
+	  // A look-around nested in a atomic grouping is found.
+	  goto impossible;
+	}
 	p += SIZE_RELADDR;
 	p += SIZE_LENGTH;
 	lookaround_nesting++;
@@ -448,7 +463,16 @@ count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
 	lookaround_nesting--;
 	break;
       case OP_PUSH_STOP_BT:
+	if (lookaround_nesting != 0) {
+	  // A nested atomic grouping is found.
+	  goto impossible;
+	}
+	lookaround_nesting++;
+	lookaround_nesting *= -1;
+	break;
       case OP_POP_STOP_BT:
+	lookaround_nesting *= -1;
+	lookaround_nesting--;
 	break;
       case OP_LOOK_BEHIND:
 	p += SIZE_LENGTH;
@@ -637,7 +661,9 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
       case OP_MEMORY_END:
       case OP_MEMORY_END_REC:
 	p += SIZE_MEMNUM;
-	if (lookaround_nesting > 0) goto unexpected_bytecode_error;
+	if (lookaround_nesting != 0) {
+	  goto unexpected_bytecode_error;
+	}
 	break;
 
       case OP_KEEP:
@@ -725,7 +751,12 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
 	DEC_LOOKAROUND_NESTING;
 	break;
       case OP_PUSH_STOP_BT:
+	INC_LOOKAROUND_NESTING;
+	lookaround_nesting *= -1;
+	break;
       case OP_POP_STOP_BT:
+	lookaround_nesting *= -1;
+	DEC_LOOKAROUND_NESTING;
 	break;
       case OP_LOOK_BEHIND:
 	p += SIZE_LENGTH;
@@ -945,32 +976,33 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 
 /* stack type */
 /* used by normal-POP */
-#define STK_ALT                    0x0001
-#define STK_LOOK_BEHIND_NOT        0x0002
-#define STK_POS_NOT                0x0003
+#define STK_ALT                      0x0001
+#define STK_LOOK_BEHIND_NOT          0x0002
+#define STK_POS_NOT                  0x0003
 /* handled by normal-POP */
-#define STK_MEM_START              0x0100
-#define STK_MEM_END                0x8200
-#define STK_REPEAT_INC             0x0300
-#define STK_STATE_CHECK_MARK       0x1000
+#define STK_MEM_START                0x0100
+#define STK_MEM_END                  0x8200
+#define STK_REPEAT_INC               0x0300
+#define STK_STATE_CHECK_MARK         0x1000
 /* avoided by normal-POP */
-#define STK_NULL_CHECK_START       0x3000
-#define STK_NULL_CHECK_END         0x5000  /* for recursive call */
-#define STK_MEM_END_MARK           0x8400
-#define STK_POS                    0x0500  /* used when POP-POS */
-#define STK_STOP_BT                0x0600  /* mark for "(?>...)" */
-#define STK_REPEAT                 0x0700
-#define STK_CALL_FRAME             0x0800
-#define STK_RETURN                 0x0900
-#define STK_VOID                   0x0a00  /* for fill a blank */
-#define STK_ABSENT_POS             0x0b00  /* for absent */
-#define STK_ABSENT                 0x0c00  /* absent inner loop marker */
-#define STK_MATCH_CACHE_POINT      0x0d00  /* for the match cache optimization */
+#define STK_NULL_CHECK_START         0x3000
+#define STK_NULL_CHECK_END           0x5000  /* for recursive call */
+#define STK_MEM_END_MARK             0x8400
+#define STK_POS                      0x0500  /* used when POP-POS */
+#define STK_STOP_BT                  0x0600  /* mark for "(?>...)" */
+#define STK_REPEAT                   0x0700
+#define STK_CALL_FRAME               0x0800
+#define STK_RETURN                   0x0900
+#define STK_VOID                     0x0a00  /* for fill a blank */
+#define STK_ABSENT_POS               0x0b00  /* for absent */
+#define STK_ABSENT                   0x0c00  /* absent inner loop marker */
+#define STK_MATCH_CACHE_POINT        0x0d00  /* for the match cache optimization */
+#define STK_ATOMIC_MATCH_CACHE_POINT 0x0e00
 
 /* stack type check mask */
-#define STK_MASK_POP_USED          0x00ff
-#define STK_MASK_TO_VOID_TARGET    0x10ff
-#define STK_MASK_MEM_END_OR_MARK   0x8000  /* MEM_END or MEM_END_MARK */
+#define STK_MASK_POP_USED            0x00ff
+#define STK_MASK_TO_VOID_TARGET      0x10ff
+#define STK_MASK_MEM_END_OR_MARK     0x8000  /* MEM_END or MEM_END_MARK */
 
 #ifdef USE_MATCH_CACHE
 #define MATCH_ARG_INIT_MATCH_CACHE(msa) do {\
@@ -1432,19 +1464,28 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     if (stk->type == STK_MATCH_CACHE_POINT) {\
       msa->match_cache_buf[stk->u.match_cache_point.index] |= stk->u.match_cache_point.mask;\
       MATCH_CACHE_DEBUG_MEMOIZE(stk);\
+    } else if (stk->type == STK_ATOMIC_MATCH_CACHE_POINT) {\
+      memoize_extended_match_cache_point(msa->match_cache_buf, stk->u.match_cache_point.index, stk->u.match_cache_point.mask);\
+      MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
   } while(0)
-# define MEMOIZE_ATOMIC_MATCH_CACHE_POINT(stkp) do {\
+# define MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT(stkp) do {\
     if (stkp->type == STK_MATCH_CACHE_POINT) {\
       stkp->type = STK_VOID;\
-      atomic_match_cache_point_matched(msa->match_cache_buf, stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);\
+      memoize_extended_match_cache_point(msa->match_cache_buf, stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);\
+      MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
+    }\
+  } while(0)
+# define MEMOIZE_ATOMIC_MATCH_CACHE_POINT do {\
+    if (stk->type == STK_MATCH_CACHE_POINT) {\
+      memoize_extended_match_cache_point(msa->match_cache_buf, stk->u.match_cache_point.index, stk->u.match_cache_point.mask);\
       MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
   } while(0)
 #else
 # define INC_NUM_FAILS ((void) 0)
 # define MEMOIZE_MATCH_CACHE_POINT ((void) 0)
-# define MEMOIZE_ATOMIC_MATCH_CACHE_POINT ((void) 0)
+# define MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT ((void) 0)
 #endif
 
 #define STACK_POP_ONE do {\
@@ -1519,7 +1560,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       INC_NUM_FAILS;\
     }\
     ELSE_IF_STATE_CHECK_MARK(stk);\
-    MEMOIZE_ATOMIC_MATCH_CACHE_POINT(stk);\
+    MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT(stk);\
   }\
 } while(0)
 
@@ -1583,7 +1624,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       k->type = STK_VOID;\
       break;\
     }\
-    MEMOIZE_ATOMIC_MATCH_CACHE_POINT(k);\
+    MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT(k);\
   }\
 } while(0)
 
@@ -1600,6 +1641,21 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       k->type = STK_VOID;\
       break;\
     }\
+    else if (k->type == STK_MATCH_CACHE_POINT) {\
+      k->type = STK_ATOMIC_MATCH_CACHE_POINT;\
+    }\
+  }\
+} while(0)
+
+#define STACK_STOP_BT_FAIL do {\
+  while (1) {\
+    stk--;\
+    STACK_BASE_CHECK(stk, "STACK_STOP_BT_END"); \
+    if (stk->type == STK_STOP_BT) {\
+      stk->type = STK_VOID;\
+      break;\
+    }\
+    MEMOIZE_ATOMIC_MATCH_CACHE_POINT;\
   }\
 } while(0)
 
@@ -2140,7 +2196,7 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
     cache_point;
 }
 
-static int atomic_match_cache_point_is_matched(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
+static int check_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
   if (match_cache_point_mask & 0x80) {
     return (match_cache_buf[match_cache_point_index + 1] & 0x01) > 0;
   } else {
@@ -2148,7 +2204,7 @@ static int atomic_match_cache_point_is_matched(uint8_t *match_cache_buf, long ma
   }
 }
 
-static void atomic_match_cache_point_matched(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
+static void memoize_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
   match_cache_buf[match_cache_point_index] |= match_cache_point_mask;
   if (match_cache_point_mask & 0x80) {
     match_cache_buf[match_cache_point_index + 1] |= 0x01;
@@ -2487,8 +2543,13 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       if (msa->match_cache_buf[match_cache_point_index] & match_cache_point_mask) {\
 	MATCH_CACHE_DEBUG_HIT;\
 	if (cache_opcode->lookaround_nesting == 0) goto fail;\
-	else {\
-	  if (atomic_match_cache_point_is_matched(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
+	else if (cache_opcode->lookaround_nesting < 0) {\
+	  if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
+            STACK_STOP_BT_FAIL;\
+            goto fail;\
+          } else goto fail;\
+        } else {\
+	  if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
 	    p = cache_opcode->match_addr;\
             MOP_OUT;\
             JUMP;\
