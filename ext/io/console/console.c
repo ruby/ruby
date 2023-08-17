@@ -1578,6 +1578,12 @@ str_chomp(VALUE str)
  * see String#chomp!.
  *
  * You must require 'io/console' to use this method.
+ * 
+ *    require 'io/console'
+ *    IO::console.getpass("Enter password: ")
+ *    Enter password: 
+ *    # => "mypassword"
+ * 
  */
 static VALUE
 console_getpass(int argc, VALUE *argv, VALUE io)
