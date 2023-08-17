@@ -4764,7 +4764,7 @@ fn jit_rb_str_concat(
     asm.spill_temps(); // for ccall
     let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, vec![recv, concat_arg]);
     let ret_label = asm.new_label("func_return");
-    let stack_ret = asm.stack_push(Type::CString);
+    let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);
     asm.stack_pop(1); // forget stack_ret to re-push after ccall
     asm.jmp(ret_label);
@@ -4773,7 +4773,7 @@ fn jit_rb_str_concat(
     asm.write_label(enc_mismatch);
     asm.spill_temps(); // for ccall
     let ret_opnd = asm.ccall(rb_str_buf_append as *const u8, vec![recv, concat_arg]);
-    let stack_ret = asm.stack_push(Type::CString);
+    let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);
     // Drop through to return
 
