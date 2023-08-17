@@ -4898,7 +4898,7 @@ fn jit_obj_respond_to(
             // Method exists and has acceptable visibility
             if cme_def_type == VM_METHOD_TYPE_NOTIMPLEMENTED {
                 // C method with rb_f_notimplement(). `respond_to?` returns false
-                // without consulting `respond_to_missing?`.
+                // without consulting `respond_to_missing?`. See also: rb_add_method_cfunc()
                 Qfalse
             } else {
                 Qtrue
