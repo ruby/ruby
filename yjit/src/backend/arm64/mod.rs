@@ -612,6 +612,19 @@ impl Assembler
 
                     asm.not(opnd0);
                 },
+                Insn::LShift { opnd, shift, .. } |
+                Insn::RShift { opnd, shift, .. } |
+                Insn::URShift { opnd, shift, .. } => {
+                    // The operand must be in a register, so
+                    // if we get anything else we need to load it first.
+                    let opnd0 = match opnd {
+                        Opnd::Mem(_) => split_load_operand(asm, *opnd),
+                        _ => *opnd
+                    };
+
+                    *opnd = opnd0;
+                    asm.push_insn(insn);
+                },
                 Insn::Store { dest, src } => {
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.
