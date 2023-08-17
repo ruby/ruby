@@ -408,13 +408,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test", "test/yarp")
       cp_r("#{upstream}/src/.", "yarp")
 
-      # Move all files in enc to be prefixed with yp_ in order
-      # to deconflict them from non-yarp enc files
-      (Dir.entries("yarp/enc/") - ["..", "."]).each do |f|
-        next if f.start_with?("yp_")
-        mv "yarp/enc/#{f}", "yarp/enc/yp_#{f}"
-      end
-
       cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
