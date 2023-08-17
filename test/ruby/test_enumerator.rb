@@ -969,7 +969,7 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal [1, 1, 2, 2, 3, 3], heads
 
     # Reject keyword arguments
-    assert_raise(ArgumentError) {
+    assert_raise(ArgumentError, "no keywords accepted") {
       Enumerator::Product.new(1..3, foo: 1, bar: 2)
     }
 
@@ -1004,7 +1004,7 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"]], e.take(4)
 
     # Reject keyword arguments
-    assert_raise(ArgumentError) {
+    assert_raise(ArgumentError, "no keywords accepted") {
       Enumerator.product(1..3, foo: 1, bar: 2)
     }
   end

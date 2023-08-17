@@ -47,7 +47,7 @@ ruby_version_is "3.2" do
     it "reject keyword arguments" do
       -> {
         Enumerator.product(1..3, foo: 1, bar: 2)
-      }.should raise_error(ArgumentError, "unknown keywords: :foo, :bar")
+      }.should raise_error(ArgumentError)
     end
 
     it "calls only #each_entry method on arguments" do

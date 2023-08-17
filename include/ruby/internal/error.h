@@ -326,6 +326,16 @@ RBIMPL_ATTR_NORETURN()
  */
 void rb_notimplement(void);
 
+RBIMPL_ATTR_NORETURN()
+/**
+ * Raises an ArgumentError stating no keywords accepted. Should be used for
+ * C functions that want to implement the equivalent of **nil syntax.
+ *
+ * @exception  rb_eArgError
+ * @note       It never returns.
+ */
+void rb_no_keywords_accepted(void);
+
 /**
  * Creates an exception object that represents the given C errno.
  *

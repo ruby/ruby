@@ -3240,6 +3240,12 @@ rb_loaderror_with_path(VALUE path, const char *fmt, ...)
 }
 
 void
+rb_no_keywords_accepted(void)
+{
+    rb_raise(rb_eArgError, "no keywords accepted");
+}
+
+void
 rb_notimplement(void)
 {
     rb_raise(rb_eNotImpError,

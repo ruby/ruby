@@ -629,7 +629,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     }
 
     if (kw_flag && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
-        rb_raise(rb_eArgError, "no keywords accepted");
+        rb_no_keywords_accepted();
     }
 
     switch (arg_setup_type) {
