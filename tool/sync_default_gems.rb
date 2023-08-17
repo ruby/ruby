@@ -403,7 +403,6 @@ module SyncDefaultGems
       rm_rf(%w[test/yarp yarp])
 
       # Run the YARP templating scripts
-      system("ruby #{upstream}/templates/template.rb")
       cp_r("#{upstream}/ext/yarp", "yarp")
       cp_r("#{upstream}/lib/.", "lib")
       cp_r("#{upstream}/test", "test/yarp")
@@ -419,6 +418,9 @@ module SyncDefaultGems
       cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
+
+      cp_r("#{upstream}/config.yml", "yarp/")
+      cp_r("#{upstream}/templates", "yarp/")
 
       rm_f("yarp/config.h")
       File.write("yarp/config.h", "#include \"ruby/config.h\"\n")
@@ -456,7 +458,6 @@ module SyncDefaultGems
     |configure\.ac
     |rakelib\/.*
     |rust\/.*
-    |templates\/.*
     |test\/lib\/.*
     |tasks\/.*
     |ext\/yarp\/extconf\.rb
