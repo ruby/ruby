@@ -2298,11 +2298,11 @@ nt_therad_stack_size(void)
 }
 
 static struct nt_stack_chunk_header *
-nt_alloc_thread_stack_chunk(struct nt_stack_chunk_header *prev_ch)
+nt_alloc_thread_stack_chunk(void)
 {
     const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK, -1, 0);
     if (m == MAP_FAILED) {
-        rb_bug("mmap failed errno:%d", errno); // TODO: raise
+        return NULL;
     }
 
     size_t msz = nt_therad_stack_size();
@@ -2320,8 +2320,8 @@ nt_alloc_thread_stack_chunk(struct nt_stack_chunk_header *prev_ch)
     struct nt_stack_chunk_header *ch = (struct nt_stack_chunk_header *)m;
 
     ch->start_page = header_page_cnt;
-    ch->prev_chunk = prev_ch;
-    ch->prev_free_chunk = NULL;
+    ch->prev_chunk = nt_stack_chunks;
+    ch->prev_free_chunk = nt_free_stack_chunks;
     ch->uninitialized_stack_count = ch->stack_count = (uint16_t)stack_count;
     ch->free_stack_pos = 0;
 
@@ -2374,19 +2374,42 @@ nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, si
     return (void *)guard_page;
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
-nt_guard_page(const char *p, size_t len)
+nt_stack_chunk_dump(void)
 {
-    int r = mprotect((void *)p, len, PROT_NONE);
+    struct nt_stack_chunk_header *ch;
+    int i;
 
-    if (r != 0) {
-        rb_bug("mprotect errno:%d", errno); // TODO: raise
+    fprintf(stderr, "** nt_stack_chunks\n");
+    ch = nt_stack_chunks;
+    for (i=0; ch; i++, ch = ch->prev_chunk) {
+        fprintf(stderr, "%d %p free_pos:%d\n", i, ch, (int)ch->free_stack_pos);
+    }
+
+    fprintf(stderr, "** nt_free_stack_chunks\n");
+    ch = nt_free_stack_chunks;
+    for (i=0; ch; i++, ch = ch->prev_free_chunk) {
+        fprintf(stderr, "%d %p free_pos:%d\n", i, ch, (int)ch->free_stack_pos);
     }
 }
 
-static void
+static int
+nt_guard_page(const char *p, size_t len)
+{
+    if (mprotect((void *)p, len, PROT_NONE) != -1) {
+        return 0;
+    }
+    else {
+        return errno;
+    }
+}
+
+static int
 nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
 {
+    int err = 0;
+
     rb_native_mutex_lock(&nt_machine_stack_lock);
     {
       retry:
@@ -2401,7 +2424,7 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
 
                 size_t idx = ch->stack_count - ch->uninitialized_stack_count--;
                 void *guard_page = nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
-                nt_guard_page(guard_page, MSTACK_PAGE_SIZE);
+                err = nt_guard_page(guard_page, MSTACK_PAGE_SIZE);
             }
             else {
                 nt_free_stack_chunks = ch->prev_free_chunk;
@@ -2410,11 +2433,19 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
             }
         }
         else {
-            nt_free_stack_chunks = nt_stack_chunks = nt_alloc_thread_stack_chunk(nt_stack_chunks);
-            goto retry;
+            struct nt_stack_chunk_header *p = nt_alloc_thread_stack_chunk();
+            if (p == NULL) {
+                err = errno;
+            }
+            else {
+                nt_free_stack_chunks = nt_stack_chunks = p;
+                goto retry;
+            }
         }
     }
     rb_native_mutex_unlock(&nt_machine_stack_lock);
+
+    return err;
 }
 
 static void
@@ -2431,8 +2462,7 @@ nt_free_stack(void *mstack)
 
         RUBY_DEBUG_LOG("stack:%p mstack:%p ch:%p index:%d", stack, mstack, ch, idx);
 
-        if (ch->uninitialized_stack_count == 0 &&
-            ch->free_stack_pos == 0) {
+        if (ch->prev_free_chunk == NULL) {
             ch->prev_free_chunk = nt_free_stack_chunks;
             nt_free_stack_chunks = ch;
         }
@@ -2469,8 +2499,10 @@ native_thread_create_shared(rb_thread_t *th)
 {
     // setup coroutine
     rb_vm_t *vm = th->vm;
-    void *vm_stack, *machine_stack;
-    nt_alloc_stack(vm, &vm_stack, &machine_stack);
+    void *vm_stack = NULL, *machine_stack = NULL;
+    int err = nt_alloc_stack(vm, &vm_stack, &machine_stack);
+    if (err) return err;
+
     VM_ASSERT(vm_stack < machine_stack);
 
     // setup vm stack
