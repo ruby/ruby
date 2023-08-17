@@ -1,3 +1,12 @@
+# regression test for return type of String#<<
+assert_equal 'Sub', %q{
+  def call(sub) = (sub << sub).itself
+
+  class Sub < String; end
+
+  call(Sub.new('o')).class
+}
+
 # test splat filling required and feeding rest
 assert_equal '[0, 1, 2, [3, 4]]', %q{
   public def lead_rest(a, b, *rest)
