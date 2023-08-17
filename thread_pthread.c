@@ -1560,13 +1560,23 @@ Init_native_thread(rb_thread_t *main_th)
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
 
+    const char *mn_threads_cstr = getenv("RUBY_MN_THREADS");
+    bool enable_mn_threads;
+    if (mn_threads_cstr && (enable_mn_threads = atoi(mn_threads_cstr) > 0)) {
+        // TODO: fprintf(stderr, "MN threads is enabled.\n");
+    }
+    else {
+        enable_mn_threads = false; // default: off on main Ractor
+    }
+    main_th->ractor->threads.sched.enable_mn_threads = enable_mn_threads;
+
     const char *max_proc_cstr = getenv("RUBY_MAX_PROC");
     int max_proc;
     if (max_proc_cstr && (max_proc = atoi(max_proc_cstr)) > 0) {
-        fprintf(stderr, "max_proc = %d\n", max_proc);
+        // TODO: fprintf(stderr, "max_proc = %d\n", max_proc);
     }
     else {
-        max_proc = 8;
+        max_proc = 8; // TODO: CPU num?
     }
 
     vm->ractor.sched.max_proc = max_proc;
@@ -1958,16 +1968,16 @@ native_thread_init_stack(rb_thread_t *th)
     }
     else {
 #ifdef STACKADDR_AVAILABLE
-#if 0 // TODO
-        void *start;
-        size_t size;
+        if (th_has_dedicated_nt(th)) {
+            void *start;
+            size_t size;
 
-        if (get_stack(&start, &size) == 0) {
-            uintptr_t diff = (uintptr_t)start - (uintptr_t)&curr;
-            th->ec->machine.stack_start = (VALUE *)&curr;
-            th->ec->machine.stack_maxsize = size - diff;
+            if (get_stack(&start, &size) == 0) {
+                uintptr_t diff = (uintptr_t)start - (uintptr_t)&curr;
+                th->ec->machine.stack_start = (VALUE *)&curr;
+                th->ec->machine.stack_maxsize = size - diff;
+            }
         }
-#endif
 #else
         rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
 #endif
@@ -1985,7 +1995,8 @@ struct nt_param {
     struct rb_native_thread *nt;
 };
 
-static void *nt_start(void *ptr);
+static void *
+nt_start(void *ptr);
 
 static int
 native_thread_create0(struct rb_native_thread *nt)
@@ -2046,27 +2057,6 @@ native_thread_cleanup(struct rb_native_thread *nt)
     RB_ALTSTACK_FREE(nt->altstack);
 }
 
-static void
-call_thread_start_func_2(rb_thread_t *th)
-{
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED);
-
-    struct rb_thread_sched *sched = TH_SCHED(th);
-    thread_sched_lock(sched, th);
-    {
-        thread_sched_add_running_thread(TH_SCHED(th), th);
-    }
-    thread_sched_unlock(sched, th);
-
-#if defined USE_NATIVE_THREAD_INIT
-    native_thread_init_stack(th);
-    thread_start_func_2(th, th->ec->machine.stack_start);
-#else
-    VALUE stack_start;
-    thread_start_func_2(th, &stack_start);
-#endif
-}
-
 static struct rb_native_thread *
 native_thread_alloc(void)
 {
@@ -2085,7 +2075,27 @@ native_thread_create_dedicated(rb_thread_t *th)
     th->nt->vm = th->vm;
     th->nt->running_thread = th;
     th->nt->dedicated = 1;
+
+    // vm stack
+    size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+    void *vm_stack = ruby_xmalloc(vm_stack_word_size * sizeof(VALUE));
+    rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
+    th->sched.context_stack = vm_stack;
     return native_thread_create0(th->nt);
+}
+
+static void
+call_thread_start_func_2(rb_thread_t *th)
+{
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED);
+
+#if defined USE_NATIVE_THREAD_INIT
+    native_thread_init_stack(th);
+    thread_start_func_2(th, th->ec->machine.stack_start);
+#else
+    VALUE stack_start;
+    thread_start_func_2(th, &stack_start);
+#endif
 }
 
 static COROUTINE
@@ -2096,7 +2106,9 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
     VM_ASSERT(th->nt != NULL);
     VM_ASSERT(th == sched->running);
 
-    // RUBY_DEBUG_LOG("th:%d", (int)th->serial);
+    // RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+
+    thread_sched_add_running_thread(TH_SCHED(th), th);
 
     thread_sched_unlock(sched, NULL);
     {
@@ -2118,9 +2130,11 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
         thread_sched_switch(th, next_th);
     }
     else {
+        struct rb_native_thread *nt = th->nt;
         // switch to the next Ractor
         rb_ractor_set_current_ec(th->ractor, NULL);
-        coroutine_transfer(self, &th->nt->nt_context);
+        native_thread_assign(NULL, th);
+        coroutine_transfer(self, &nt->nt_context);
     }
     rb_bug("unreachable");
 }
@@ -2138,9 +2152,29 @@ nt_start(void *ptr)
     native_thread_setup(nt);
     coroutine_initialize_main(&nt->nt_context);
 
+    RUBY_DEBUG_LOG("nt:%u", nt->serial);
+
     while (1) {
         if (nt->dedicated) {
-            call_thread_start_func_2(nt->running_thread);
+            // wait running turn
+            rb_thread_t *th = nt->running_thread;
+            struct rb_thread_sched *sched = TH_SCHED(th);
+
+            RUBY_DEBUG_LOG("on dedicated th:%u", rb_th_serial(th));
+
+            thread_sched_lock(sched, th);
+            {
+                ruby_thread_set_native(th);
+                thread_sched_to_ready_common(sched, th, true, false);
+                if (sched->running == th) {
+                    thread_sched_add_running_thread(sched, th);
+                }
+                thread_sched_wait_running_turn(sched, th, false);
+            }
+            thread_sched_unlock(sched, th);
+
+            // start threads
+            call_thread_start_func_2(th);
             break; // TODO: allow to change to the SNT
         }
         else {
@@ -2421,7 +2455,13 @@ nt_free_stack(void *mstack)
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
-    nt_free_stack(th->sched.context_stack);
+    if (th->nt && th->ec && th_has_dedicated_nt(th)) {
+        VM_ASSERT(th_has_dedicated_nt(th));
+        ruby_xfree(th->sched.context_stack);
+    }
+    else {
+        nt_free_stack(th->sched.context_stack);
+    }
 }
 
 static int
@@ -2458,6 +2498,10 @@ native_thread_create(rb_thread_t *th)
 {
     VM_ASSERT(th->nt == 0);
     RUBY_DEBUG_LOG("th:%d has_dnt:%d", th->serial, th->has_dedicated_nt);
+
+    if (!th->ractor->threads.sched.enable_mn_threads) {
+        th->has_dedicated_nt = 1;
+    }
 
     if (th->has_dedicated_nt) {
         return native_thread_create_dedicated(th);

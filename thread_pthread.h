@@ -118,6 +118,7 @@ struct rb_thread_sched {
     struct rb_thread_struct *running; // running thread or NULL
     bool is_running;
     bool is_running_timeslice;
+    bool enable_mn_threads;
 
     struct ccan_list_head readyq;
     int readyq_cnt;
