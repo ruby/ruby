@@ -6337,7 +6337,7 @@ parser_lex(yp_parser_t *parser) {
                         ((parser->current.end - parser->current.start) == 7) &&
                         current_token_starts_line(parser) &&
                         (strncmp(parser->current.start, "__END__", 7) == 0) &&
-                        (*parser->current.end == '\n' || (*parser->current.end == '\r' && parser->current.end[1] == '\n'))
+                        (parser->current.end == parser->end || *parser->current.end == '\n' || (*parser->current.end == '\r' && parser->current.end[1] == '\n'))
                     ) {
                         parser->current.end = parser->end;
                         parser->current.type = YP_TOKEN___END__;
@@ -8674,7 +8674,7 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
     }
 
     yp_token_t end_keyword = not_provided(parser);
-    yp_node_t *parent;
+    yp_node_t *parent = NULL;
 
     switch (context) {
         case YP_CONTEXT_IF:
@@ -8684,7 +8684,6 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
             parent = (yp_node_t *) yp_unless_node_create(parser, &keyword, predicate, statements);
             break;
         default:
-            parent = NULL;
             assert(false && "unreachable");
             break;
     }
@@ -8730,50 +8729,49 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
         switch (context) {
             case YP_CONTEXT_IF:
                 ((yp_if_node_t *) current)->consequent = (yp_node_t *) else_node;
-                // Recurse down if nodes setting the appropriate end location in
-                // all cases.
-                yp_node_t *recursing_node = parent;
-                bool recursing = true;
-
-                while (recursing) {
-                    switch (YP_NODE_TYPE(recursing_node)) {
-                        case YP_NODE_IF_NODE:
-                            yp_if_node_end_keyword_loc_set((yp_if_node_t *) recursing_node, &parser->previous);
-                            recursing_node = ((yp_if_node_t *) recursing_node)->consequent;
-                            break;
-                        case YP_NODE_ELSE_NODE:
-                            yp_else_node_end_keyword_loc_set((yp_else_node_t *) recursing_node, &parser->previous);
-                            recursing = false;
-                            break;
-                        default: {
-                            recursing = false;
-                            break;
-                        }
-                    }
-                }
                 break;
             case YP_CONTEXT_UNLESS:
                 ((yp_unless_node_t *) parent)->consequent = else_node;
-                yp_unless_node_end_keyword_loc_set((yp_unless_node_t *) parent, &parser->previous);
                 break;
             default:
                 assert(false && "unreachable");
                 break;
         }
     } else {
-        expect(parser, YP_TOKEN_KEYWORD_END, "Expected `end` to close `if` statement.");
+        expect(parser, YP_TOKEN_KEYWORD_END, "Expected `end` to close conditional statement.");
+    }
 
-        switch (context) {
-            case YP_CONTEXT_IF:
-                yp_if_node_end_keyword_loc_set((yp_if_node_t *) parent, &parser->previous);
-                break;
-            case YP_CONTEXT_UNLESS:
-                yp_unless_node_end_keyword_loc_set((yp_unless_node_t *) parent, &parser->previous);
-                break;
-            default:
-                assert(false && "unreachable");
-                break;
+    // Set the appropriate end location for all of the nodes in the subtree.
+    switch (context) {
+        case YP_CONTEXT_IF: {
+            yp_node_t *current = parent;
+            bool recursing = true;
+
+            while (recursing) {
+                switch (YP_NODE_TYPE(current)) {
+                    case YP_NODE_IF_NODE:
+                        yp_if_node_end_keyword_loc_set((yp_if_node_t *) current, &parser->previous);
+                        current = ((yp_if_node_t *) current)->consequent;
+                        recursing = current != NULL;
+                        break;
+                    case YP_NODE_ELSE_NODE:
+                        yp_else_node_end_keyword_loc_set((yp_else_node_t *) current, &parser->previous);
+                        recursing = false;
+                        break;
+                    default: {
+                        recursing = false;
+                        break;
+                    }
+                }
+            }
+            break;
         }
+        case YP_CONTEXT_UNLESS:
+            yp_unless_node_end_keyword_loc_set((yp_unless_node_t *) parent, &parser->previous);
+            break;
+        default:
+            assert(false && "unreachable");
+            break;
     }
 
     return parent;

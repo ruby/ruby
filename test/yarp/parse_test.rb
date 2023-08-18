@@ -34,8 +34,12 @@ class ParseTest < Test::Unit::TestCase
   # running on Ruby 3.2+.
   check_ripper = RUBY_VERSION >= "3.2.0"
 
+  # The FOCUS environment variable allows you to specify one particular fixture
+  # to test, instead of all of them.
   base = File.join(__dir__, "fixtures")
-  Dir["**/*.txt", base: base].each do |relative|
+  relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
+
+  relatives.each do |relative|
     # These fail on TruffleRuby due to a difference in Symbol#inspect: :测试 vs :"测试"
     next if RUBY_ENGINE == "truffleruby" and %w[seattlerb/bug202.txt seattlerb/magic_encoding_comment.txt].include?(relative)
 
@@ -91,6 +95,13 @@ class ParseTest < Test::Unit::TestCase
       # Next, assert that the newlines are in the expected places.
       expected_newlines = [0]
       source.b.scan("\n") { expected_newlines << $~.offset(0)[0] + 1 }
+
+      # If there's a __END__, then we should trip out those newlines because we
+      # don't actually scan them during parsing (because we don't need to).
+      if found = result.comments.find { |comment| comment.type == :__END__ }
+        expected_newlines = expected_newlines[...found.location.start_line]
+      end
+
       assert_equal expected_newlines, YARP.const_get(:Debug).newlines(source)
 
       # This file has changed behavior in Ripper in Ruby 3.3, so we skip it if

@@ -203,7 +203,7 @@ ProgramNode(0...382)(
          (269...271)
        ),
        nil,
-       IfNode(274...289)(
+       IfNode(274...293)(
          (274...279),
          MatchPredicateNode(280...289)(
            CallNode(280...284)(
@@ -222,7 +222,7 @@ ProgramNode(0...382)(
          ),
          nil,
          nil,
-         nil
+         (290...293)
        ),
        (290...293)
      ),
