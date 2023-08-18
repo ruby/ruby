@@ -104,7 +104,12 @@ RSpec.describe Bundler::RubyDsl do
       let(:engine_version) { version }
       let(:patchlevel) { nil }
       let(:engine) { "ruby" }
-      before { allow(Bundler).to receive(:read_file).with("foo").and_return("#{version}\n") }
+      let(:project_root) { Pathname.new("/path/to/project") }
+
+      before do
+        allow(Bundler).to receive(:read_file).with(project_root.join("foo")).and_return("#{version}\n")
+        allow(Bundler).to receive(:root).and_return(Pathname.new("/path/to/project"))
+      end
 
       it_behaves_like "it stores the ruby version"
 
