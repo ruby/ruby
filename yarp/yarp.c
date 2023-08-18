@@ -1506,6 +1506,31 @@ yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
     return node;
 }
 
+<<<<<<< HEAD:yarp/yarp.c
+=======
+// Allocate and initialize a new ClassVariableOperatorWriteNode node.
+static yp_class_variable_operator_write_node_t *
+yp_class_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+    yp_class_variable_operator_write_node_t *node = YP_ALLOC_NODE(parser, yp_class_variable_operator_write_node_t);
+
+    *node = (yp_class_variable_operator_write_node_t) {
+        {
+            .type = YP_NODE_CLASS_VARIABLE_OPERATOR_WRITE_NODE,
+            .location = {
+                .start = target->location.start,
+                .end = value->location.end
+            }
+        },
+        .name_loc = target->location,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value,
+        .operator = yp_parser_constant_id_location(parser, operator->start, operator->end - 1)
+    };
+
+    return node;
+}
+
+>>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):src/yarp.c
 // Allocate and initialize a new ClassVariableReadNode node.
 static yp_class_variable_read_node_t *
 yp_class_variable_read_node_create(yp_parser_t *parser, const yp_token_t *token) {
@@ -1536,6 +1561,31 @@ yp_class_variable_read_node_to_class_variable_write_node(yp_parser_t *parser, yp
     return node;
 }
 
+<<<<<<< HEAD:yarp/yarp.c
+=======
+// Allocate and initialize a new ConstantPathOperatorWriteNode node.
+static yp_constant_path_operator_write_node_t *
+yp_constant_path_operator_write_node_create(yp_parser_t *parser, yp_constant_path_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+    yp_constant_path_operator_write_node_t *node = YP_ALLOC_NODE(parser, yp_constant_path_operator_write_node_t);
+
+    *node = (yp_constant_path_operator_write_node_t) {
+        {
+            .type = YP_NODE_CONSTANT_PATH_OPERATOR_WRITE_NODE,
+            .location = {
+                .start = target->base.location.start,
+                .end = value->location.end
+            }
+        },
+        .target = target,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value,
+        .operator = yp_parser_constant_id_location(parser, operator->start, operator->end - 1)
+    };
+
+    return node;
+}
+
+>>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):src/yarp.c
 // Allocate and initialize a new ConstantPathNode node.
 static yp_constant_path_node_t *
 yp_constant_path_node_create(yp_parser_t *parser, yp_node_t *parent, const yp_token_t *delimiter, yp_node_t *child) {
@@ -1578,6 +1628,31 @@ yp_constant_path_write_node_create(yp_parser_t *parser, yp_constant_path_node_t 
     return node;
 }
 
+<<<<<<< HEAD:yarp/yarp.c
+=======
+// Allocate and initialize a new ConstantOperatorWriteNode node.
+static yp_constant_operator_write_node_t *
+yp_constant_operator_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+    yp_constant_operator_write_node_t *node = YP_ALLOC_NODE(parser, yp_constant_operator_write_node_t);
+
+    *node = (yp_constant_operator_write_node_t) {
+        {
+            .type = YP_NODE_CONSTANT_OPERATOR_WRITE_NODE,
+            .location = {
+                .start = target->location.start,
+                .end = value->location.end
+            }
+        },
+        .name_loc = target->location,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value,
+        .operator = yp_parser_constant_id_location(parser, operator->start, operator->end - 1)
+    };
+
+    return node;
+}
+
+>>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):src/yarp.c
 // Allocate and initialize a new ConstantReadNode node.
 static yp_constant_read_node_t *
 yp_constant_read_node_create(yp_parser_t *parser, const yp_token_t *name) {
@@ -2012,6 +2087,31 @@ yp_hash_pattern_node_node_list_create(yp_parser_t *parser, yp_node_list_t *assoc
     return node;
 }
 
+<<<<<<< HEAD:yarp/yarp.c
+=======
+// Allocate and initialize a new GlobalVariableOperatorWriteNode node.
+static yp_global_variable_operator_write_node_t *
+yp_global_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+    yp_global_variable_operator_write_node_t *node = YP_ALLOC_NODE(parser, yp_global_variable_operator_write_node_t);
+
+    *node = (yp_global_variable_operator_write_node_t) {
+        {
+            .type = YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE,
+            .location = {
+                .start = target->location.start,
+                .end = value->location.end
+            }
+        },
+        .name_loc = target->location,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value,
+        .operator = yp_parser_constant_id_location(parser, operator->start, operator->end - 1)
+    };
+
+    return node;
+}
+
+>>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):src/yarp.c
 // Allocate a new GlobalVariableReadNode node.
 static yp_global_variable_read_node_t *
 yp_global_variable_read_node_create(yp_parser_t *parser, const yp_token_t *name) {
@@ -2302,6 +2402,31 @@ yp_in_node_create(yp_parser_t *parser, yp_node_t *pattern, yp_statements_node_t 
     return node;
 }
 
+<<<<<<< HEAD:yarp/yarp.c
+=======
+// Allocate and initialize a new InstanceVariableOperatorWriteNode node.
+static yp_instance_variable_operator_write_node_t *
+yp_instance_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+    yp_instance_variable_operator_write_node_t *node = YP_ALLOC_NODE(parser, yp_instance_variable_operator_write_node_t);
+
+    *node = (yp_instance_variable_operator_write_node_t) {
+        {
+            .type = YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE,
+            .location = {
+                .start = target->location.start,
+                .end = value->location.end
+            }
+        },
+        .name_loc = target->location,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value,
+        .operator = yp_parser_constant_id_location(parser, operator->start, operator->end - 1)
+    };
+
+    return node;
+}
+
+>>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):src/yarp.c
 // Allocate and initialize a new InstanceVariableReadNode node.
 static yp_instance_variable_read_node_t *
 yp_instance_variable_read_node_create(yp_parser_t *parser, const yp_token_t *token) {
@@ -2569,7 +2694,34 @@ yp_lambda_node_create(
         .locals = *locals,
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
         .parameters = parameters,
+<<<<<<< HEAD:yarp/yarp.c
         .body = body
+=======
+        .statements = statements
+    };
+
+    return node;
+}
+
+// Allocate and initialize a new LocalVariableOperatorWriteNode node.
+static yp_local_variable_operator_write_node_t *
+yp_local_variable_operator_write_node_create(yp_parser_t *parser, yp_node_t *target, const yp_token_t *operator, yp_node_t *value, yp_constant_id_t constant_id) {
+    yp_local_variable_operator_write_node_t *node = YP_ALLOC_NODE(parser, yp_local_variable_operator_write_node_t);
+
+    *node = (yp_local_variable_operator_write_node_t) {
+        {
+            .type = YP_NODE_LOCAL_VARIABLE_OPERATOR_WRITE_NODE,
+            .location = {
+                .start = target->location.start,
+                .end = value->location.end
+            }
+        },
+        .name_loc = target->location,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value,
+        .constant_id = constant_id,
+        .operator_id = yp_parser_constant_id_location(parser, operator->start, operator->end - 1)
+>>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):src/yarp.c
     };
 
     return node;
