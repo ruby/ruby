@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GEMFILE" "5" "July 2023" "" ""
+.TH "GEMFILE" "5" "August 2023" "" ""
 .
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
@@ -80,6 +80,19 @@ The version of Ruby that your application requires\. If your application require
 .nf
 
 ruby "3\.1\.2"
+.
+.fi
+.
+.IP "" 0
+.
+.P
+If you wish to derive your Ruby version from a version file (ie \.ruby\-version), you can use the \fBfile\fR option instead\.
+.
+.IP "" 4
+.
+.nf
+
+ruby file: "\.ruby\-version"
 .
 .fi
 .

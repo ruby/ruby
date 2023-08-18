@@ -47,7 +47,7 @@ class BundlerVCRHTTP < Net::HTTP
           response.uri = request.uri
 
           response.reading_body(response_io, request.response_body_permitted?) do
-            response_block.call(response) if response_block
+            response_block&.call(response)
           end
         end
       end

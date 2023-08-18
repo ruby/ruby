@@ -5,8 +5,14 @@ module Bundler
     def ruby(*ruby_version)
       options = ruby_version.last.is_a?(Hash) ? ruby_version.pop : {}
       ruby_version.flatten!
+
       raise GemfileError, "Please define :engine_version" if options[:engine] && options[:engine_version].nil?
       raise GemfileError, "Please define :engine" if options[:engine_version] && options[:engine].nil?
+
+      if options[:file]
+        raise GemfileError, "Cannot specify version when using the file option" if ruby_version.any?
+        ruby_version << Bundler.read_file(options[:file]).strip
+      end
 
       if options[:engine] == "ruby" && options[:engine_version] &&
          ruby_version != Array(options[:engine_version])

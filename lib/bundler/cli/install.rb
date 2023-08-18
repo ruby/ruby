@@ -154,7 +154,7 @@ module Bundler
       end
 
       bin_option = options["binstubs"]
-      bin_option = nil if bin_option && bin_option.empty?
+      bin_option = nil if bin_option&.empty?
       Bundler.settings.set_command_option :bin, bin_option if options["binstubs"]
 
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]

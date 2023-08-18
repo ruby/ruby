@@ -67,6 +67,13 @@ module Bundler
 
       alias_method :==, :eql?
 
+      def include?(other)
+        other.is_a?(Git) && uri == other.uri &&
+          name == other.name &&
+          glob == other.glob &&
+          submodules == other.submodules
+      end
+
       def to_s
         begin
           at = humanized_ref || current_branch

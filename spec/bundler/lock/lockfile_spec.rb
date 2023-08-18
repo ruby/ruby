@@ -540,6 +540,92 @@ RSpec.describe "the lockfile format" do
     G
   end
 
+  it "is conservative with dependencies of git gems" do
+    build_repo4 do
+      build_gem "orm_adapter", "0.4.1"
+      build_gem "orm_adapter", "0.5.0"
+    end
+
+    FileUtils.mkdir_p lib_path("ckeditor/lib")
+
+    @remote = build_git("ckeditor_remote", :bare => true)
+
+    build_git "ckeditor", :path => lib_path("ckeditor") do |s|
+      s.write "lib/ckeditor.rb", "CKEDITOR = '4.0.7'"
+      s.version = "4.0.7"
+      s.add_dependency "orm_adapter"
+    end
+
+    update_git "ckeditor", :path => lib_path("ckeditor"), :remote => file_uri_for(@remote.path)
+    update_git "ckeditor", :path => lib_path("ckeditor"), :tag => "v4.0.7"
+    old_git = update_git "ckeditor", :path => lib_path("ckeditor"), :push => "v4.0.7"
+
+    update_git "ckeditor", :path => lib_path("ckeditor"), :gemspec => true do |s|
+      s.write "lib/ckeditor.rb", "CKEDITOR = '4.0.8'"
+      s.version = "4.0.8"
+      s.add_dependency "orm_adapter"
+    end
+    update_git "ckeditor", :path => lib_path("ckeditor"), :tag => "v4.0.8"
+
+    new_git = update_git "ckeditor", :path => lib_path("ckeditor"), :push => "v4.0.8"
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "ckeditor", :git => "#{@remote.path}", :tag => "v4.0.8"
+    G
+
+    lockfile <<~L
+      GIT
+        remote: #{@remote.path}
+        revision: #{old_git.ref_for("v4.0.7")}
+        tag: v4.0.7
+        specs:
+          ckeditor (4.0.7)
+            orm_adapter
+
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          orm_adapter (0.4.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ckeditor!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock"
+
+    # Bumps the git gem, but keeps its dependency locked
+    expect(lockfile).to eq <<~L
+      GIT
+        remote: #{@remote.path}
+        revision: #{new_git.ref_for("v4.0.8")}
+        tag: v4.0.8
+        specs:
+          ckeditor (4.0.8)
+            orm_adapter
+
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          orm_adapter (0.4.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ckeditor!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "serializes pinned path sources to the lockfile" do
     build_lib "foo"
 

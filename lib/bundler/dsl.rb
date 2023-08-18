@@ -41,7 +41,7 @@ module Bundler
     end
 
     def eval_gemfile(gemfile, contents = nil)
-      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile && @gemfile.parent)
+      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
       original_gemfile = @gemfile
       @gemfile = expanded_gemfile_path
       @gemfiles << expanded_gemfile_path

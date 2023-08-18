@@ -683,6 +683,15 @@ The checksum of /versions does not match the checksum provided by the server! So
         bundle :install, :artifice => "compact_index_strict_basic_authentication", :raise_on_error => false
         expect(err).to include("Bad username or password")
       end
+
+      it "does not fallback to old dependency API if bad authentication is provided" do
+        bundle "config set #{source_hostname} #{user}:wrong"
+
+        bundle :install, :artifice => "compact_index_strict_basic_authentication", :raise_on_error => false, :verbose => true
+        expect(err).to include("Bad username or password")
+        expect(out).to include("HTTP 401 Unauthorized http://user@localgemserver.test/versions")
+        expect(out).not_to include("HTTP 401 Unauthorized http://user@localgemserver.test/api/v1/dependencies")
+      end
     end
 
     describe "with no password" do

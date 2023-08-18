@@ -11,6 +11,7 @@ RSpec.describe Bundler::RubyDsl do
 
   let(:dsl) { MockDSL.new }
   let(:ruby_version) { "2.0.0" }
+  let(:ruby_version_arg) { ruby_version }
   let(:version) { "2.0.0" }
   let(:engine) { "jruby" }
   let(:engine_version) { "9000" }
@@ -23,7 +24,10 @@ RSpec.describe Bundler::RubyDsl do
 
   let(:invoke) do
     proc do
-      args = Array(ruby_version) + [options]
+      args = []
+      args << Array(ruby_version_arg) if ruby_version_arg
+      args << options
+
       dsl.ruby(*args)
     end
   end
@@ -89,6 +93,27 @@ RSpec.describe Bundler::RubyDsl do
         let(:ruby_version) { ["~> 2.0.0", "> 2.0.1"] }
         let(:engine_version) { ruby_version }
         it_behaves_like "it stores the ruby version"
+      end
+    end
+
+    context "with a file option" do
+      let(:options) { { :file => "foo" } }
+      let(:version) { "3.2.2" }
+      let(:ruby_version) { "3.2.2" }
+      let(:ruby_version_arg) { nil }
+      let(:engine_version) { version }
+      let(:patchlevel) { nil }
+      let(:engine) { "ruby" }
+      before { allow(Bundler).to receive(:read_file).with("foo").and_return("#{version}\n") }
+
+      it_behaves_like "it stores the ruby version"
+
+      context "and a version" do
+        let(:ruby_version_arg) { "2.0.0" }
+
+        it "raises an error" do
+          expect { subject }.to raise_error(Bundler::GemfileError, "Cannot specify version when using the file option")
+        end
       end
     end
   end
