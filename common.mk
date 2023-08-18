@@ -18849,8 +18849,6 @@ weakmap.$(OBJEXT): {$(VPATH)}vm_opts.h
 weakmap.$(OBJEXT): {$(VPATH)}weakmap.c
 yarp/api_node.$(OBJEXT): $(hdrdir)/ruby.h
 yarp/api_node.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/api_node.c
-yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
@@ -19043,7 +19041,6 @@ yarp/api_node.$(OBJEXT): {$(VPATH)}yarp/ast.h
 yarp/api_pack.$(OBJEXT): $(hdrdir)/ruby.h
 yarp/api_pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 yarp/api_pack.$(OBJEXT): $(top_srcdir)/yarp/api_pack.c
-yarp/api_pack.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/api_pack.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/api_pack.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/api_pack.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
@@ -19375,7 +19372,6 @@ yarp/enc/yp_windows_31j.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_windows_31j.c
 yarp/enc/yp_windows_31j.$(OBJEXT): {$(VPATH)}config.h
 yarp/extension.$(OBJEXT): $(hdrdir)/ruby.h
 yarp/extension.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-yarp/extension.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/extension.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/extension.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/extension.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
@@ -19565,12 +19561,10 @@ yarp/extension.$(OBJEXT): {$(VPATH)}oniguruma.h
 yarp/extension.$(OBJEXT): {$(VPATH)}st.h
 yarp/extension.$(OBJEXT): {$(VPATH)}subst.h
 yarp/extension.$(OBJEXT): {$(VPATH)}yarp/ast.h
-yarp/node.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
-yarp/node.$(OBJEXT): $(top_srcdir)/yarp/node.c
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/node.h
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/pack.h
 yarp/node.$(OBJEXT): $(top_srcdir)/yarp/parser.h
@@ -19594,12 +19588,10 @@ yarp/pack.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/pack.$(OBJEXT): $(top_srcdir)/yarp/pack.c
 yarp/pack.$(OBJEXT): $(top_srcdir)/yarp/pack.h
 yarp/pack.$(OBJEXT): {$(VPATH)}config.h
-yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/parser.h
-yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/prettyprint.c
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/util/yp_buffer.h
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/util/yp_constant_pool.h
 yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/util/yp_list.h
@@ -19625,7 +19617,6 @@ yarp/regexp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_string.h
 yarp/regexp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_string_list.h
 yarp/regexp.$(OBJEXT): {$(VPATH)}config.h
 yarp/regexp.$(OBJEXT): {$(VPATH)}yarp/ast.h
-yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
@@ -19634,7 +19625,6 @@ yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/node.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/pack.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/parser.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/regexp.h
-yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/serialize.c
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/unescape.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/util/yp_buffer.h
 yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/util/yp_char.h
@@ -19650,16 +19640,13 @@ yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/yarp.h
 yarp/serialize.$(OBJEXT): {$(VPATH)}config.h
 yarp/serialize.$(OBJEXT): {$(VPATH)}yarp/ast.h
 yarp/serialize.$(OBJEXT): {$(VPATH)}yarp/serialize.c
-yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/defines.h
-yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/token_type.c
 yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/util/yp_constant_pool.h
 yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/util/yp_string.h
 yarp/token_type.$(OBJEXT): {$(VPATH)}config.h
 yarp/token_type.$(OBJEXT): {$(VPATH)}yarp/ast.h
 yarp/token_type.$(OBJEXT): {$(VPATH)}yarp/token_type.c
-yarp/unescape.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/unescape.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/unescape.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/unescape.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
@@ -19741,7 +19728,6 @@ yarp/util/yp_string_list.$(OBJEXT): {$(VPATH)}config.h
 yarp/util/yp_strncasecmp.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/util/yp_strncasecmp.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/util/yp_strncasecmp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_strncasecmp.c
-yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/enc/yp_encoding.h
@@ -19755,7 +19741,6 @@ yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/util/yp_strpbrk.c
 yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/util/yp_strpbrk.h
 yarp/util/yp_strpbrk.$(OBJEXT): {$(VPATH)}config.h
 yarp/util/yp_strpbrk.$(OBJEXT): {$(VPATH)}yarp/ast.h
-yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
@@ -19782,7 +19767,6 @@ yarp/yarp.$(OBJEXT): {$(VPATH)}config.h
 yarp/yarp.$(OBJEXT): {$(VPATH)}yarp/ast.h
 yarp/yarp_init.$(OBJEXT): $(hdrdir)/ruby.h
 yarp/yarp_init.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-yarp/yarp_init.$(OBJEXT): $(top_srcdir)/yarp/ast.h
 yarp/yarp_init.$(OBJEXT): $(top_srcdir)/yarp/config.h
 yarp/yarp_init.$(OBJEXT): $(top_srcdir)/yarp/defines.h
 yarp/yarp_init.$(OBJEXT): $(top_srcdir)/yarp/diagnostic.h
