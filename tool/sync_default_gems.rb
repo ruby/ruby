@@ -571,19 +571,30 @@ module SyncDefaultGems
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
-        # Automatically fix some parts of conflicts
+        # Forcibly remove any files that we don't want to copy to this repository.
+        # We also ignore them as new `toplevels` even when they don't conflict.
         case gem
         when "rubygems"
-          # git doesn't auto-rename new files under the vcr_cassettes to spec/bundler.
-          # We delete them as `toplevels` if they don't conflict.
+          # We don't copy any vcr_cassettes to this repository. Because the directory does not
+          # exist, rename detection doesn't work. So it starts with the original path `bundler/`.
           %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
             if File.exist?(rem)
               system("git", "reset", rem)
               rm_rf(rem)
             end
           end
-          # New files renamed to spec/bundler are safe to commit.
+        end
+
+        # git has inexact rename detection, so they follow directory renames even for new files.
+        # However, new files are considered a `CONFLICT (file location)`, so you need to git-add them here.
+        # We hope that they are not other kinds of conflicts, assuming we don't modify them in this repository.
+        case gem
+        when "rubygems"
           system(*%w[git add spec/bundler])
+        when "yarp"
+          system(*%w[git add lib/yarp])
+          system(*%w[git add test/yarp])
+          system(*%w[git add yarp])
         end
 
         # Discover unmerged files
