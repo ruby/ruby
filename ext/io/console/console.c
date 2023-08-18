@@ -76,9 +76,7 @@ getattr(int fd, conmode *t)
 #endif
 
 static ID id_getc, id_console, id_close;
-#if ENABLE_IO_GETPASS
 static ID id_gets, id_chomp_bang;
-#endif
 
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
 # include "ruby/fiber/scheduler.h"
@@ -1534,7 +1532,6 @@ io_getch(int argc, VALUE *argv, VALUE io)
     return rb_funcallv(io, id_getc, argc, argv);
 }
 
-#if ENABLE_IO_GETPASS
 static VALUE
 puts_call(VALUE io)
 {
@@ -1615,7 +1612,6 @@ io_getpass(int argc, VALUE *argv, VALUE io)
     puts_call(io);
     return str;
 }
-#endif
 
 /*
  * IO console methods
@@ -1625,10 +1621,8 @@ Init_console(void)
 {
 #undef rb_intern
     id_getc = rb_intern("getc");
-#if ENABLE_IO_GETPASS
     id_gets = rb_intern("gets");
     id_chomp_bang = rb_intern("chomp!");
-#endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
 #define init_rawmode_opt_id(name) \
@@ -1676,16 +1670,12 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
-#if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
-#endif
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
-#if ENABLE_IO_GETPASS
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
-#endif
     }
     {
 	/* :stopdoc: */

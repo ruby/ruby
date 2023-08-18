@@ -241,7 +241,6 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_getpass
-    omit unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
