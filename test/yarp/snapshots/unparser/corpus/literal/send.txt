@@ -1,6 +1,6 @@
-ProgramNode(0...991)(
+ProgramNode(0...999)(
   [],
-  StatementsNode(0...991)(
+  StatementsNode(0...999)(
     [ModuleNode(0...35)(
        [:foo, :a, :_],
        (0...6),
@@ -2025,6 +2025,29 @@ ProgramNode(0...991)(
        nil,
        0,
        "~"
+     ),
+     CallNode(992...999)(
+       CallNode(992...993)(nil, nil, (992...993), nil, nil, nil, nil, 2, "a"),
+       (993...995),
+       (995...996),
+       (996...997),
+       ArgumentsNode(997...998)(
+         [CallNode(997...998)(
+            nil,
+            nil,
+            (997...998),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
+       ),
+       (998...999),
+       nil,
+       1,
+       "+"
      )]
   )
 )
