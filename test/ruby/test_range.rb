@@ -1051,4 +1051,32 @@ class TestRange < Test::Unit::TestCase
   def test_count
     assert_equal(Float::INFINITY, (1..).count)
   end
+
+  def test_overlap?
+    assert_not_operator(0..2, :overlap?, -2..-1)
+    assert_not_operator(0..2, :overlap?, -2...0)
+    assert_operator(0..2, :overlap?, -1..0)
+    assert_operator(0..2, :overlap?, 1..2)
+    assert_operator(0..2, :overlap?, 2..3)
+    assert_not_operator(0..2, :overlap?, 3..4)
+    assert_not_operator(0...2, :overlap?, 2..3)
+
+    assert_operator(..0, :overlap?, -1..0)
+    assert_operator(...0, :overlap?, -1..0)
+    assert_operator(..0, :overlap?, 0..1)
+    assert_operator(..0, :overlap?, ..1)
+    assert_not_operator(..0, :overlap?, 1..2)
+    assert_not_operator(...0, :overlap?, 0..1)
+
+    assert_not_operator(0.., :overlap?, -2..-1)
+    assert_not_operator(0.., :overlap?, ...0)
+    assert_operator(0.., :overlap?, -1..0)
+    assert_operator(0.., :overlap?, ..0)
+    assert_operator(0.., :overlap?, 0..1)
+    assert_operator(0.., :overlap?, 1..2)
+    assert_operator(0.., :overlap?, 1..)
+
+    assert_raise(TypeError) { (0..).overlap?(1) }
+    assert_raise(TypeError) { (0..).overlap?(nil) }
+  end
 end
