@@ -1120,7 +1120,7 @@ rb_sigwait_fd_migrate(rb_vm_t *vm)
 extern volatile unsigned int ruby_nocldwait; /* signal.c */
 /* called by timer thread or thread which acquired sigwait_fd */
 static void
-waitpid_each(struct list_head *head)
+waitpid_each(rb_vm_t *vm, struct list_head *head)
 {
     struct waitpid_state *w = 0, *next;
 
@@ -1129,6 +1129,18 @@ waitpid_each(struct list_head *head)
 
         if (!ret) continue;
         if (ret == -1) w->errnum = errno;
+
+        if (w->pid <= 0) {
+            /* when waiting for a group of processes, make sure a waiter for a
+             * specific pid is given that event in preference */
+            struct waitpid_state *w_inner = 0, *next_inner;
+            list_for_each_safe(&vm->waiting_pids, w_inner, next_inner, wnode) {
+                if (w_inner->pid == ret) {
+                    /* signal this one instead */
+                    w = w_inner;
+                }
+            }
+        }
 
         w->ret = ret;
         list_del_init(&w->wnode);
@@ -1144,10 +1156,8 @@ ruby_waitpid_all(rb_vm_t *vm)
 {
 #if RUBY_SIGCHLD
     rb_native_mutex_lock(&vm->waitpid_lock);
-    waitpid_each(&vm->waiting_pids);
-    if (list_empty(&vm->waiting_pids)) {
-        waitpid_each(&vm->waiting_grps);
-    }
+    waitpid_each(vm, &vm->waiting_pids);
+    waitpid_each(vm, &vm->waiting_grps);
     /* emulate SA_NOCLDWAIT */
     if (list_empty(&vm->waiting_pids) && list_empty(&vm->waiting_grps)) {
         while (ruby_nocldwait && do_waitpid(-1, 0, WNOHANG) > 0)
