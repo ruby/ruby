@@ -226,7 +226,9 @@ module RubyVM::YJIT
   # Avoid calling a method here to not interfere with compilation tests
   if Primitive.rb_yjit_stats_enabled_p
     at_exit do
-      _print_stats
+      if Primitive.rb_yjit_print_stats_p
+        _print_stats
+      end
       _dump_locations
     end
   end
