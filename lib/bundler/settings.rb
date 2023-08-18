@@ -161,7 +161,7 @@ module Bundler
     def local_overrides
       repos = {}
       all.each do |k|
-        repos[$'] = self[k] if k.start_with?("local.")
+        repos[k.delete_prefix("local.")] = self[k] if k.start_with?("local.")
       end
       repos
     end
