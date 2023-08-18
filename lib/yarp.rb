@@ -381,6 +381,10 @@ module YARP
             # of those here.
             names = names.grep_v(/^_\d$/)
 
+            # For some reason, CRuby occasionally pushes this special local
+            # variable when there are splat arguments. We get rid of that here.
+            names = names.grep_v(:"#arg_rest")
+
             # Now push them onto the list of locals.
             locals << names
           end
