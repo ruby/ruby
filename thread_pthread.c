@@ -2097,6 +2097,10 @@ nt_start(void *ptr)
 
 static int native_thread_create_shared(rb_thread_t *th);
 
+#if USE_MN_THREADS
+static void nt_free_stack(void *mstack);
+#endif
+
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
