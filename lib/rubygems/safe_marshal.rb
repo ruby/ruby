@@ -38,6 +38,7 @@ module Gem
 
       @_zone
       @cpu
+      @debug_created_info
       @force_ruby_platform
       @marshal_with_utc_coercion
       @name

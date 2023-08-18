@@ -39,19 +39,20 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_string_with_ivar
-    assert_safe_load_as String.new("abc").tap { _1.instance_variable_set :@type, "type" }
+    assert_safe_load_as String.new("abc").tap {|s| s.instance_variable_set :@type, "type" }
   end
 
   def test_time_with_ivar
-    assert_safe_load_as Time.new.tap { _1.instance_variable_set :@type, "type" }
+    assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, "type" }
   end
 
   secs = Time.new(2000, 12, 31, 23, 59, 59).to_i
   [
-    Time.new,
-    Time.now(in: "+04:00"),
-    Time.now(in: "-11:52"),
-    Time.at(secs, in: "UTC"),
+    Time.at(secs),
+    Time.at(secs, in: "+04:00"),
+    Time.at(secs, in: "-11:52"),
+    Time.at(secs, in: "+00:00"),
+    Time.at(secs, in: "-00:00"),
     Time.at(secs, 1, :millisecond),
     Time.at(secs, 1.1, :millisecond),
     Time.at(secs, 1.01, :millisecond),
@@ -78,7 +79,7 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_hash_with_ivar
-    assert_safe_load_as({ runtime: :development }.tap { _1.instance_variable_set :@type, "null" })
+    assert_safe_load_as({ runtime: :development }.tap {|h| h.instance_variable_set :@type, "null" })
   end
 
   def test_hash_with_default_value
@@ -115,7 +116,7 @@ class TestGemSafeMarshal < Gem::TestCase
         s.name = "hi"
         s.version = "1.2.3"
 
-        s.dependencies << Gem::Dependency.new("rspec", Gem::Requirement.new([">= 1.2.3"]), :runtime).tap { _1.instance_variable_set(:@name, :rspec) }
+        s.dependencies << Gem::Dependency.new("rspec", Gem::Requirement.new([">= 1.2.3"]), :runtime).tap {|d| d.instance_variable_set(:@name, :rspec) }
       end
       Gem::SafeMarshal.safe_load(Marshal.dump(spec))
     end
