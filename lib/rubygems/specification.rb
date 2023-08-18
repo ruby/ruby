@@ -1312,7 +1312,7 @@ class Gem::Specification < Gem::BasicSpecification
       # 1 retry each allowed in case all 3 of
       # - YAML
       # - YAML::Syck::DefaultKey
-      # - YAML::Private type
+      # - YAML::PrivateType
       # need to be defined
       raise if retry_count >= 3
 
