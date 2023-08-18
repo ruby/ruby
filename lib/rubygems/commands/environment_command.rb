@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 class Gem::Commands::EnvironmentCommand < Gem::Command

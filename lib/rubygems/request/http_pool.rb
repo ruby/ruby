@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A connection "pool" that only manages one connection for now.  Provides
 # thread safe `checkout` and `checkin` methods.  The pool consists of one

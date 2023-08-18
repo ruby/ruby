@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
@@ -1299,6 +1300,8 @@ class Gem::Specification < Gem::BasicSpecification
   def self._load(str)
     Gem.load_yaml
 
+    yaml_set = false
+
     array = begin
       Marshal.load str
     rescue ArgumentError => e
@@ -1311,7 +1314,10 @@ class Gem::Specification < Gem::BasicSpecification
       message = e.message
       raise unless message.include?("YAML::")
 
-      Object.const_set "YAML", Psych unless Object.const_defined?(:YAML)
+      unless Object.const_defined?(:YAML)
+        Object.const_set "YAML", Psych
+        yaml_set = true
+      end
 
       if message.include?("YAML::Syck::")
         YAML.const_set "Syck", YAML unless YAML.const_defined?(:Syck)
@@ -1322,6 +1328,8 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       retry
+    ensure
+      Object.__send__(:remove_const, "YAML") if yaml_set
     end
 
     spec = Gem::Specification.new

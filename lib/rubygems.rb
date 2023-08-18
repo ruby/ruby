@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -8,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.4.17"
+  VERSION = "3.4.18"
 end
 
 # Must be first since it unloads the prelude from 1.9.2

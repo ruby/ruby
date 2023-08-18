@@ -291,15 +291,15 @@ module Spec
     end
 
     def rubocop_gemfile_basename
-      source_root.join("tool/bundler/rubocop_gems.rb")
+      tool_dir.join("rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      source_root.join("tool/bundler/standard_gems.rb")
+      tool_dir.join("standard_gems.rb")
     end
 
     def tool_dir
-      source_root.join("tool/bundler")
+      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
     end
 
     def templates_dir

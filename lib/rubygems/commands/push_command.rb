@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../local_remote_options"
 require_relative "../gemcutter_utilities"
