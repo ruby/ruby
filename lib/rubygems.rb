@@ -604,6 +604,16 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     @yaml_loaded = true
   end
 
+  @safe_marshal_loaded = false
+
+  def self.load_safe_marshal
+    return if @safe_marshal_loaded
+
+    require_relative "rubygems/safe_marshal"
+
+    @safe_marshal_loaded = true
+  end
+
   ##
   # The file name and line number of the caller of the caller of this method.
   #

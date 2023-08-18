@@ -1300,12 +1300,13 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self._load(str)
     Gem.load_yaml
+    Gem.load_safe_marshal
 
     yaml_set = false
     retry_count = 0
 
     array = begin
-      Marshal.load str
+      Gem::SafeMarshal.safe_load str
     rescue ArgumentError => e
       # Avoid an infinite retry loop when the argument error has nothing to do
       # with the classes not being defined.
