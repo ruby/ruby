@@ -399,6 +399,19 @@ nodes:
 
           left and right
           ^^^^^^^^^^^^^^
+  - name: AndWriteNode
+    child_nodes:
+      - name: target
+        type: node
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the `&&=` operator.
+
+          target &&= value
+          ^^^^^^^^^^^^^^^^
   - name: ArgumentsNode
     child_nodes:
       - name: arguments
@@ -723,32 +736,6 @@ nodes:
 
           class Foo end
           ^^^^^^^^^^^^^
-  - name: ClassVariableOperatorAndWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator for assignment to a class variable.
-
-          @@target &&= value
-          ^^^^^^^^^^^^^^^^
-  - name: ClassVariableOperatorOrWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `||=` operator for assignment to a class variable.
-
-          @@target ||= value
-          ^^^^^^^^^^^^^^^^^^
   - name: ClassVariableOperatorWriteNode
     child_nodes:
       - name: name_loc
@@ -783,32 +770,6 @@ nodes:
 
           @@foo = 1
           ^^^^^^^^^
-  - name: ConstantOperatorAndWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator for assignment to a constant.
-
-          Target &&= value
-          ^^^^^^^^^^^^^^^^
-  - name: ConstantOperatorOrWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `||=` operator for assignment to a constant.
-
-          Target ||= value
-          ^^^^^^^^^^^^^^^^
   - name: ConstantOperatorWriteNode
     child_nodes:
       - name: name_loc
@@ -837,34 +798,6 @@ nodes:
 
           Foo::Bar
           ^^^^^^^^
-  - name: ConstantPathOperatorAndWriteNode
-    child_nodes:
-      - name: target
-        type: node
-        kind: ConstantPathNode
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator for assignment to a constant path.
-
-          Parent::Child &&= value
-          ^^^^^^^^^^^^^^^^^^^^^^^
-  - name: ConstantPathOperatorOrWriteNode
-    child_nodes:
-      - name: target
-        type: node
-        kind: ConstantPathNode
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `||=` operator for assignment to a constant path.
-
-          Parent::Child ||= value
-          ^^^^^^^^^^^^^^^^^^^^^^^
   - name: ConstantPathOperatorWriteNode
     child_nodes:
       - name: target
@@ -1123,32 +1056,6 @@ nodes:
 
           super
           ^^^^^
-  - name: GlobalVariableOperatorAndWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator for assignment to a global variable.
-
-          $target &&= value
-          ^^^^^^^^^^^^^^^^^
-  - name: GlobalVariableOperatorOrWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `||=` operator for assignment to a global variable.
-
-          $target ||= value
-          ^^^^^^^^^^^^^^^^^
   - name: GlobalVariableOperatorWriteNode
     child_nodes:
       - name: name_loc
@@ -1263,32 +1170,6 @@ nodes:
 
           case a; in b then c end
                   ^^^^^^^^^^^
-  - name: InstanceVariableOperatorAndWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator for assignment to an instance variable.
-
-          @target &&= value
-          ^^^^^^^^^^^^^^^^^
-  - name: InstanceVariableOperatorOrWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `||=` operator for assignment to an instance variable.
-
-          @target ||= value
-          ^^^^^^^^^^^^^^^^^
   - name: InstanceVariableOperatorWriteNode
     child_nodes:
       - name: name_loc
@@ -1441,36 +1322,6 @@ nodes:
 
           ->(value) { value * 2 }
           ^^^^^^^^^^^^^^^^^^^^^^^
-  - name: LocalVariableOperatorAndWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: constant_id
-        type: constant
-    comment: |
-      Represents the use of the `&&=` operator for assignment to a local variable.
-
-          target &&= value
-          ^^^^^^^^^^^^^^^^
-  - name: LocalVariableOperatorOrWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: constant_id
-        type: constant
-    comment: |
-      Represents the use of the `||=` operator for assignment to a local variable.
-
-          target ||= value
-          ^^^^^^^^^^^^^^^^
   - name: LocalVariableOperatorWriteNode
     child_nodes:
       - name: name_loc
@@ -1647,6 +1498,19 @@ nodes:
 
           left or right
           ^^^^^^^^^^^^^
+  - name: OrWriteNode
+    child_nodes:
+      - name: target
+        type: node
+      - name: value
+        type: node
+      - name: operator_loc
+        type: location
+    comment: |
+      Represents the use of the `||=` operator.
+
+          target ||= value
+          ^^^^^^^^^^^^^^^^
   - name: ParametersNode
     child_nodes:
       - name: requireds

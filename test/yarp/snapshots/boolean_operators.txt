@@ -1,11 +1,10 @@
 ProgramNode(0...24)(
   [:a],
   StatementsNode(0...24)(
-    [LocalVariableOperatorAndWriteNode(0...7)(
-       (0...1),
-       (2...5),
+    [AndWriteNode(0...7)(
+       LocalVariableReadNode(0...1)(:a, 0),
        CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 2, "b"),
-       :a
+       (2...5)
      ),
      LocalVariableOperatorWriteNode(9...15)(
        (9...10),
@@ -14,11 +13,10 @@ ProgramNode(0...24)(
        :a,
        :+
      ),
-     LocalVariableOperatorOrWriteNode(17...24)(
-       (17...18),
-       (19...22),
+     OrWriteNode(17...24)(
+       LocalVariableReadNode(17...18)(:a, 0),
        CallNode(23...24)(nil, nil, (23...24), nil, nil, nil, nil, 2, "b"),
-       :a
+       (19...22)
      )]
   )
 )

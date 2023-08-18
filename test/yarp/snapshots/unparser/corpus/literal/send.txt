@@ -6,9 +6,8 @@ ProgramNode(0...991)(
        (0...6),
        ConstantReadNode(7...8)(),
        StatementsNode(11...31)(
-         [LocalVariableOperatorOrWriteNode(11...31)(
-            (11...14),
-            (15...18),
+         [OrWriteNode(11...31)(
+            LocalVariableReadNode(11...14)(:foo, 0),
             ParenthesesNode(19...31)(
               StatementsNode(21...30)(
                 [MultiWriteNode(21...30)(
@@ -45,7 +44,7 @@ ProgramNode(0...991)(
               (19...20),
               (30...31)
             ),
-            :foo
+            (15...18)
           )]
        ),
        (32...35)

@@ -17,6 +17,16 @@ module YARP
       assert_location(AndNode, "foo && bar")
     end
 
+    def test_AndWriteNode
+      assert_location(AndWriteNode, "foo &&= bar")
+      assert_location(AndWriteNode, "foo = 1; foo &&= bar", 9...20)
+      assert_location(AndWriteNode, "@@foo &&= bar")
+      assert_location(AndWriteNode, "Parent::Child &&= bar")
+      assert_location(AndWriteNode, "Foo &&= bar")
+      assert_location(AndWriteNode, "$foo &&= bar")
+      assert_location(AndWriteNode, "@foo &&= bar")
+    end
+
     def test_ArgumentsNode
       assert_location(ArgumentsNode, "foo(bar, baz, qux)", 4...17, &:arguments)
     end
@@ -199,16 +209,8 @@ module YARP
       assert_location(ClassNode, "class Foo < Bar end")
     end
 
-    def test_ClassVariableOperatorAndWriteNode
-      assert_location(ClassVariableOperatorAndWriteNode, "@@foo &&= bar")
-    end
-
     def test_ClassVariableOperatorWriteNode
       assert_location(ClassVariableOperatorWriteNode, "@@foo += bar")
-    end
-
-    def test_ClassVariableOperatorOrWriteNode
-      assert_location(ClassVariableOperatorOrWriteNode, "@@foo ||= bar")
     end
 
     def test_ClassVariableReadNode
@@ -231,28 +233,12 @@ module YARP
       assert_location(ConstantPathWriteNode, "::Foo::Bar = baz")
     end
 
-    def test_ConstantPathOperatorAndWriteNode
-      assert_location(ConstantPathOperatorAndWriteNode, "Parent::Child &&= bar")
-    end
-
     def test_ConstantPathOperatorWriteNode
       assert_location(ConstantPathOperatorWriteNode, "Parent::Child += bar")
     end
 
-    def test_ConstantPathOperatorOrWriteNode
-      assert_location(ConstantPathOperatorOrWriteNode, "Parent::Child ||= bar")
-    end
-
-    def test_ConstantOperatorAndWriteNode
-      assert_location(ConstantOperatorAndWriteNode, "Foo &&= bar")
-    end
-
     def test_ConstantOperatorWriteNode
       assert_location(ConstantOperatorWriteNode, "Foo += bar")
-    end
-
-    def test_ConstantOperatorOrWriteNode
-      assert_location(ConstantOperatorOrWriteNode, "Foo ||= bar")
     end
 
     def test_ConstantReadNode
@@ -328,16 +314,8 @@ module YARP
       assert_location(ForwardingSuperNode, "super {}")
     end
 
-    def test_GlobalVariableOperatorAndWriteNode
-      assert_location(GlobalVariableOperatorAndWriteNode, "$foo &&= bar")
-    end
-
     def test_GlobalVariableOperatorWriteNode
       assert_location(GlobalVariableOperatorWriteNode, "$foo += bar")
-    end
-
-    def test_GlobalVariableOperatorOrWriteNode
-      assert_location(GlobalVariableOperatorOrWriteNode, "$foo ||= bar")
     end
 
     def test_GlobalVariableReadNode
@@ -374,16 +352,8 @@ module YARP
       end
     end
 
-    def test_InstanceVariableOperatorAndWriteNode
-      assert_location(InstanceVariableOperatorAndWriteNode, "@foo &&= bar")
-    end
-
     def test_InstanceVariableOperatorWriteNode
       assert_location(InstanceVariableOperatorWriteNode, "@foo += bar")
-    end
-
-    def test_InstanceVariableOperatorOrWriteNode
-      assert_location(InstanceVariableOperatorOrWriteNode, "@foo ||= bar")
     end
 
     def test_InstanceVariableReadNode
@@ -452,20 +422,11 @@ module YARP
       assert_location(LambdaNode, "-> do foo end")
     end
 
-    def test_LocalVariableOperatorAndWriteNode
-      assert_location(LocalVariableOperatorAndWriteNode, "foo &&= bar")
-      assert_location(LocalVariableOperatorAndWriteNode, "foo = 1; foo &&= bar", 9...20)
-    end
-
     def test_LocalVariableOperatorWriteNode
       assert_location(LocalVariableOperatorWriteNode, "foo += bar")
       assert_location(LocalVariableOperatorWriteNode, "foo = 1; foo += bar", 9...19)
     end
 
-    def test_LocalVariableOperatorOrWriteNode
-      assert_location(LocalVariableOperatorOrWriteNode, "foo ||= bar")
-      assert_location(LocalVariableOperatorOrWriteNode, "foo = 1; foo ||= bar", 9...20)
-    end
 
     def test_LocalVariableReadNode
       assert_location(LocalVariableReadNode, "foo = 1; foo", 9...12)
@@ -519,6 +480,16 @@ module YARP
     def test_OrNode
       assert_location(OrNode, "foo || bar")
       assert_location(OrNode, "foo or bar")
+    end
+
+    def test_OrWriteNode
+      assert_location(OrWriteNode, "@@foo ||= bar")
+      assert_location(OrWriteNode, "Parent::Child ||= bar")
+      assert_location(OrWriteNode, "Foo ||= bar")
+      assert_location(OrWriteNode, "$foo ||= bar")
+      assert_location(OrWriteNode, "@foo ||= bar")
+      assert_location(OrWriteNode, "foo ||= bar")
+      assert_location(OrWriteNode, "foo = 1; foo ||= bar", 9...20)
     end
 
     def test_ParametersNode

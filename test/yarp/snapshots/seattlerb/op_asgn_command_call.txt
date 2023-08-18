@@ -1,9 +1,8 @@
 ProgramNode(0...11)(
   [:a],
   StatementsNode(0...11)(
-    [LocalVariableOperatorOrWriteNode(0...11)(
-       (0...1),
-       (2...5),
+    [OrWriteNode(0...11)(
+       LocalVariableReadNode(0...1)(:a, 0),
        CallNode(6...11)(
          CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 2, "b"),
          (7...8),
@@ -15,7 +14,7 @@ ProgramNode(0...11)(
          0,
          "c"
        ),
-       :a
+       (2...5)
      )]
   )
 )

@@ -36,26 +36,23 @@ ProgramNode(0...233)(
        :a,
        :/
      ),
-     LocalVariableOperatorAndWriteNode(36...43)(
-       (36...37),
-       (38...41),
+     AndWriteNode(36...43)(
+       LocalVariableReadNode(36...37)(:a, 0),
        CallNode(42...43)(nil, nil, (42...43), nil, nil, nil, nil, 2, "b"),
-       :a
+       (38...41)
      ),
-     LocalVariableOperatorOrWriteNode(44...51)(
-       (44...45),
-       (46...49),
+     OrWriteNode(44...51)(
+       LocalVariableReadNode(44...45)(:a, 0),
        IntegerNode(50...51)(),
-       :a
+       (46...49)
      ),
      CallNode(52...65)(
        ParenthesesNode(52...61)(
          StatementsNode(53...60)(
-           [LocalVariableOperatorOrWriteNode(53...60)(
-              (53...54),
-              (55...58),
+           [OrWriteNode(53...60)(
+              LocalVariableReadNode(53...54)(:a, 0),
               IntegerNode(59...60)(),
-              :a
+              (55...58)
             )]
          ),
          (52...53),
@@ -73,11 +70,10 @@ ProgramNode(0...233)(
      CallNode(66...83)(
        ParenthesesNode(66...76)(
          StatementsNode(67...75)(
-           [LocalVariableOperatorOrWriteNode(67...75)(
-              (67...68),
-              (69...72),
+           [OrWriteNode(67...75)(
+              LocalVariableReadNode(67...68)(:h, 0),
               HashNode(73...75)((73...74), [], (74...75)),
-              :h
+              (69...72)
             )]
          ),
          (66...67),
