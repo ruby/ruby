@@ -1385,24 +1385,6 @@ INSNS	= optinsn.inc optunifs.inc insns.inc insns_info.inc \
 ! endif
 !endif
 
-$(top_srcdir)/yarp/api_node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/ext/yarp/api_node.c.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb ext/yarp/api_node.c $(top_srcdir)/yarp/api_node.c
-
-$(top_srcdir)/yarp/ast.h: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/include/yarp/ast.h.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb include/yarp/ast.h $(top_srcdir)/yarp/ast.h
-
-$(top_srcdir)/yarp/node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/node.c.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/node.c $(top_srcdir)/yarp/node.c
-
-$(top_srcdir)/yarp/prettyprint.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/prettyprint.c.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/prettyprint.c $(top_srcdir)/yarp/prettyprint.c
-
-$(top_srcdir)/yarp/serialize.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/serialize.c.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/serialize.c $(top_srcdir)/yarp/serialize.c
-
-$(top_srcdir)/yarp/token_type.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/token_type.c.erb
-	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/token_type.c $(top_srcdir)/yarp/token_type.c
-
 verconf.h: verconf.mk
 
 loadpath: verconf.h
