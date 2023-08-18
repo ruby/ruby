@@ -6,8 +6,8 @@ ProgramNode(0...10)(
        0,
        InterpolatedStringNode(4...10)(
          (4...10),
-         [StringNode(11...20)(nil, (11...20), nil, "x\n" + "\n" + "z\n")],
-         (20...24)
+         [StringNode(11...21)(nil, (11...21), nil, "x\n" + "\n" + "z\n")],
+         (21...25)
        ),
        (0...1),
        (2...3)
