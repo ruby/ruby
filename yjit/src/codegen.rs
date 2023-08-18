@@ -4531,6 +4531,9 @@ fn jit_rb_int_div(
     }
     guard_two_fixnums(jit, asm, ocb);
 
+    // rb_fix_div_fix may GC-allocate for Bignum
+    jit_prepare_routine_call(jit, asm);
+
     asm.comment("Integer#/");
     let obj = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
@@ -4541,7 +4544,7 @@ fn jit_rb_int_div(
 
     let ret = asm.ccall(rb_fix_div_fix as *const u8, vec![recv, obj]);
 
-    let ret_opnd = asm.stack_push(Type::Fixnum);
+    let ret_opnd = asm.stack_push(Type::Unknown);
     asm.mov(ret_opnd, ret);
     true
 }

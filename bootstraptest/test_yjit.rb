@@ -1,3 +1,13 @@
+# regression test for return type of Integer#/
+# It can return a T_BIGNUM when inputs are T_FIXNUM.
+assert_equal 0x3fffffffffffffff.to_s, %q{
+  def call(fixnum_min)
+    (fixnum_min / -1) - 1
+  end
+
+  call(-(2**62))
+}
+
 # regression test for return type of String#<<
 assert_equal 'Sub', %q{
   def call(sub) = (sub << sub).itself
