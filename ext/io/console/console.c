@@ -1564,7 +1564,8 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	rb_funcallv(str, id_chomp_bang, 1, &rb_default_rs);
+	const VALUE rs = rb_default_rs; /* rvalue in TruffleRuby */
+	rb_funcallv(str, id_chomp_bang, 1, &rs);
     }
     return str;
 }
