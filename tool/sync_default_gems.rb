@@ -563,20 +563,24 @@ module SyncDefaultGems
       end
       next if skipped
 
-      case gem
-      when "rubygems"
-        %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
-          if File.exist?(rem)
-            system("git", "reset", rem)
-            rm_rf(rem)
-          end
-        end
-        system(*%w[git add spec/bundler])
-      end
-
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
+        # Automatically fix some parts of conflicts
+        case gem
+        when "rubygems"
+          # git doesn't auto-rename new files under the vcr_cassettes to spec/bundler.
+          # We delete them as `toplevels` if they don't conflict.
+          %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
+            if File.exist?(rem)
+              system("git", "reset", rem)
+              rm_rf(rem)
+            end
+          end
+          # New files renamed to spec/bundler are safe to commit.
+          system(*%w[git add spec/bundler])
+        end
+
         result = pipe_readlines(%W"git status --porcelain -z")
         result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
         result.compact!
