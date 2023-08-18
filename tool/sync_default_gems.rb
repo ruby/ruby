@@ -499,6 +499,7 @@ module SyncDefaultGems
     repo, default_branch = REPOSITORIES[gem.to_sym]
     puts "Sync #{repo} with commit history."
 
+    # Fetch the repository to be synchronized
     IO.popen(%W"git remote") do |f|
       unless f.read.split.include?(gem)
         `git remote add #{gem} git@github.com:#{repo}.git`
@@ -506,12 +507,14 @@ module SyncDefaultGems
     end
     system(*%W"git fetch --no-tags #{gem}")
 
+    # If -a is given, discover all commits since the last picked commit
     if ranges == true
       pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
       log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
+    # Parse a given range with git log
     commits = ranges.flat_map do |range|
       unless range.include?("..")
         range = "#{range}~1..#{range}"
@@ -522,7 +525,7 @@ module SyncDefaultGems
       end
     end
 
-    # Ignore Merge commit and insufficiency commit for ruby core repository.
+    # Ignore Merge commits and already-merged commits.
     case gem
     when "yarp"
       ignore_file_pattern = YARP_IGNORE_FILE_PATTERN
@@ -554,6 +557,7 @@ module SyncDefaultGems
     commits.each do |sha, subject|
       puts "Pick #{sha} from #{repo}."
 
+      # Attempt to cherry-pick a commit
       skipped = false
       result = IO.popen(%W"git cherry-pick #{sha}", &:read)
       if result =~ /nothing\ to\ commit/
@@ -563,6 +567,7 @@ module SyncDefaultGems
       end
       next if skipped
 
+      # Skip empty commits or deal with conflicts
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
@@ -581,16 +586,24 @@ module SyncDefaultGems
           system(*%w[git add spec/bundler])
         end
 
-        result = pipe_readlines(%W"git status --porcelain -z")
-        result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
-        result.compact!
-        ignore, conflict = result.partition {|name| ignore_file_pattern =~ name}
+        # Discover unmerged files
+        # AU: unmerged, added by us
+        # DU: unmerged, deleted by us
+        # UU: unmerged, both modified
+        # UA: unmerged, added by them
+        # AA: unmerged, both added
+        unmerged = pipe_readlines(%W"git status --porcelain -z")
+        unmerged.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
+        unmerged.compact!
+        ignore, conflict = unmerged.partition {|name| ignore_file_pattern =~ name}
+        # Reset ignored files if they conflict
         unless ignore.empty?
           system(*%W"git reset HEAD --", *ignore)
           File.unlink(*ignore)
           ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/\A.. (.*)/, 1]}
           system(*%W"git checkout HEAD --", *ignore) unless ignore.empty?
         end
+        # If -e option is given, open each conflicted file with an editor
         unless conflict.empty?
           if edit
             case
@@ -602,9 +615,11 @@ module SyncDefaultGems
             end
           end
         end
+        # Attempt to commit the cherry-pick
         skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
       end
 
+      # Skip the commit if it's empty or the cherry-pick attempt failed
       if skipped
         failed_commits << sha
         `git reset` && `git checkout .` && `git clean -fd`
@@ -612,6 +627,8 @@ module SyncDefaultGems
         next
       end
 
+      # Forcibly remove any new top-level entries, and any changes under
+      # /test/fixtures, /test/lib, or /tool.
       changed = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD --")
       toplevels = changed.map {|f| f[%r[\A(?!tool/)[^/]+/?]]}.compact
       toplevels.delete_if do |top|
@@ -645,6 +662,7 @@ module SyncDefaultGems
         end
       end
 
+      # Amend the commit if RDoc references need to be replaced
       head = `git log --format=%H -1 HEAD`.chomp
       system(*%w"git reset --quiet HEAD~ --")
       amend = replace_rdoc_ref_all
@@ -655,6 +673,7 @@ module SyncDefaultGems
 
       puts "Update commit message: #{sha}"
 
+      # Run this script itself (tool/sync_default_gems.rb --message-filter) as a message filter
       IO.popen({"FILTER_BRANCH_SQUELCH_WARNING" => "1"},
                %W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD],
                &:read)
