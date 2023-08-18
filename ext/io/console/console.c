@@ -1580,7 +1580,7 @@ str_chomp(VALUE str)
  * You must require 'io/console' to use this method.
  *
  *    require 'io/console'
- *    IO::console.getpass("Enter password: ")
+ *    IO::console.getpass("Enter password:")
  *    Enter password:
  *    # => "mypassword"
  *
