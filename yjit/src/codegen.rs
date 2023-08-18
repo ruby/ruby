@@ -3398,8 +3398,42 @@ fn gen_opt_mult(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
-    // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, asm, ocb)
+    let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            defer_compilation(jit, asm, ocb);
+            return Some(EndBlock);
+        }
+    };
+
+    if two_fixnums {
+        if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_MULT) {
+            return None;
+        }
+
+        // Check that both operands are fixnums
+        guard_two_fixnums(jit, asm, ocb);
+
+        // Get the operands from the stack
+        let arg1 = asm.stack_pop(1);
+        let arg0 = asm.stack_pop(1);
+
+        // Do some bitwise gymnastics to handle tag bits
+        // x * y is translated to (x >> 1) * (y - 1) + 1
+        let arg0_untag = asm.rshift(arg0, Opnd::UImm(1));
+        let arg1_untag = asm.sub(arg1, Opnd::UImm(1));
+        let out_val = asm.mul(arg0_untag, arg1_untag);
+        asm.jo(Target::side_exit(Counter::opt_mult_overflow));
+        let out_val = asm.add(out_val, Opnd::UImm(1));
+
+        // Push the output on the stack
+        let dst = asm.stack_push(Type::Fixnum);
+        asm.mov(dst, out_val);
+
+        Some(KeepCompiling)
+    } else {
+        gen_opt_send_without_block(jit, asm, ocb)
+    }
 }
 
 fn gen_opt_div(
