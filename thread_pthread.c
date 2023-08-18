@@ -60,11 +60,15 @@ static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 static const void *const condattr_monotonic = NULL;
 #endif
 
-#ifndef HAVE_EPOLL
-#define HAVE_EPOLL 0
+#ifndef HAVE_SYS_EPOLL_H
+#define HAVE_SYS_EPOLL_H 0
+#else
+// force setting for debug
+// #undef HAVE_SYS_EPOLL_H
+// #define HAVE_SYS_EPOLL_H 0
 #endif
 
-#if HAVE_EPOLL
+#if HAVE_SYS_EPOLL_H
   #include <sys/epoll.h>
   #define USE_MN_THREADS 1
 #else
@@ -2548,7 +2552,7 @@ static struct {
 
     int comm_fds[2]; // r, w
 
-#if HAVE_EPOLL
+#if HAVE_SYS_EPOLL_H
 #define EPOLL_EVENTS_MAX 0x10
     int epoll_fd;
     struct epoll_event finished_events[EPOLL_EVENTS_MAX];
@@ -2835,7 +2839,7 @@ rb_thread_create_timer_thread(void)
             RUBY_DEBUG_LOG("forked child process");
 
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
-#if HAVE_EPOLL
+#if HAVE_SYS_EPOLL_H
             close_invalidate(&timer_th.epoll_fd, "close epoll_fd");
 #endif
             rb_native_mutex_destroy(&timer_th.waiting_lock);
@@ -2927,7 +2931,7 @@ rb_reserved_fd_p(int fd)
 
     if (fd == timer_th.comm_fds[0] ||
         fd == timer_th.comm_fds[1]
-#if HAVE_EPOLL
+#if HAVE_SYS_EPOLL_H
         || fd == timer_th.epoll_fd
 #endif
         ) {
