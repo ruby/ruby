@@ -3249,9 +3249,9 @@ timer_thread_func(void *ptr)
                                    (events & EPOLLIN)    ? "in/" : "",
                                    (events & EPOLLOUT)   ? "out/" : "",
                                    (events & EPOLLRDHUP) ? "RDHUP/" : "",
-                                   (events & EPOLLPRI) ? "pri/" : "",
-                                   (events & EPOLLERR) ? "err/" : "",
-                                   (events & EPOLLHUP) ? "hup/" : "");
+                                   (events & EPOLLPRI)   ? "pri/" : "",
+                                   (events & EPOLLERR)   ? "err/" : "",
+                                   (events & EPOLLHUP)   ? "hup/" : "");
 
                     rb_native_mutex_lock(&timer_th.waiting_lock);
                     {
