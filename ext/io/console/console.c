@@ -1539,6 +1539,12 @@ puts_call(VALUE io)
 }
 
 static VALUE
+gets_call(VALUE io)
+{
+    return rb_funcallv(io, id_gets, 0, 0);
+}
+
+static VALUE
 getpass_call(VALUE io)
 {
     return ttymode(io, rb_io_gets, io, set_noecho, NULL);
@@ -1610,9 +1616,8 @@ io_getpass(int argc, VALUE *argv, VALUE io)
     rb_check_arity(argc, 0, 1);
     prompt(argc, argv, io);
     rb_check_funcall(io, id_flush, 0, 0);
-    str = str_chomp(rb_funcallv(io, id_gets, 0, 0));
-    puts_call(io);
-    return str;
+    str = rb_ensure(gets_call, io, puts_call, io);
+    return str_chomp(str);
 }
 
 /*
