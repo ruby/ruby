@@ -76,7 +76,7 @@ module Gem::SafeMarshal
               end
               true
             end
-            object = object.localtime offset if offset
+
             if (nano_den || nano_num) && !(nano_den && nano_num)
               raise FormatError, "Must have all of nano_den, nano_num for Time #{e.pretty_inspect}"
             elsif nano_den && nano_num
@@ -86,10 +86,15 @@ module Gem::SafeMarshal
 
               object = Time.at(object.to_r, nano, :nanosecond)
             end
+
             if zone
               require "time"
+              zone = "+0000" if zone == "UTC" && offset == 0
               Time.send(:force_zone!, object, zone, offset)
+            elsif offset
+              object = object.localtime offset
             end
+
             @objects[object_offset] = object
           end
         when Elements::String

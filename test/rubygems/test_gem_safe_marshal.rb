@@ -33,10 +33,6 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_safe_load_as Time.new
   end
 
-  def test_time_with_zone_loads
-    assert_safe_load_as Time.now(in: "+04:00")
-  end
-
   def test_string_with_encoding
     assert_safe_load_as String.new("abc", encoding: "US-ASCII")
     assert_safe_load_as String.new("abc", encoding: "UTF-8")
@@ -52,6 +48,10 @@ class TestGemSafeMarshal < Gem::TestCase
 
   secs = Time.new(2000, 12, 31, 23, 59, 59).to_i
   [
+    Time.new,
+    Time.now(in: "+04:00"),
+    Time.now(in: "-11:52"),
+    Time.at(secs, in: "UTC"),
     Time.at(secs, 1, :millisecond),
     Time.at(secs, 1.1, :millisecond),
     Time.at(secs, 1.01, :millisecond),
@@ -66,7 +66,7 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.00001, :nanosecond).tap {|t| t.instance_variable_set :@type, "type" },
   ].each_with_index do |t, i|
     define_method("test_time_#{i} #{t.inspect}") do
-      assert_safe_load_as t, additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :to_a]
+      assert_safe_load_as t, additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a]
     end
   end
 
@@ -130,7 +130,7 @@ class TestGemSafeMarshal < Gem::TestCase
 
     # NaN != NaN, for example
     if x == x # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-      # assert_equal x, safe_loaded, "should load #{dumped.inspect}"
+      assert_equal x, safe_loaded, "should load #{dumped.inspect}"
       assert_equal loaded, safe_loaded, "should equal what Marshal.load returns"
     end
 
