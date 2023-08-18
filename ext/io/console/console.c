@@ -1564,7 +1564,7 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	rb_funcallv(str, id_chomp_bang, 0, 0);
+	rb_funcallv(str, id_chomp_bang, 1, &rb_default_rs);
     }
     return str;
 }

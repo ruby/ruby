@@ -258,6 +258,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
     end
+
+    run_pty("$VERBOSE, $/ = nil, '.'; p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      sleep 0.1
+      w.print "asdf\n"
+      sleep 0.1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
   end
 
   def test_iflush
