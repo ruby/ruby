@@ -2149,6 +2149,34 @@ range_count(int argc, VALUE *argv, VALUE range)
     }
 }
 
+/*
+ *  call-seq:
+ *    overlap?(range) -> true or false
+ *
+ *  Returns +true+ if +range+ overlaps with +self+, +false+ otherwise:
+ *
+ *    (0..2).overlap?(1..3) #=> true
+ *    (0..2).overlap?(3..4) #=> false
+ *    (0..).overlap?(..0)   #=> true
+ *
+ *  Related: Range#cover?.
+ */
+
+static VALUE
+range_overlap(VALUE range, VALUE other)
+{
+    if (!rb_obj_is_kind_of(other, rb_cRange)) {
+        rb_raise(rb_eTypeError, "argument must be Range");
+    }
+
+    VALUE beg_self, beg_other;
+
+    beg_self = RANGE_BEG(range);
+    beg_other = RANGE_BEG(other);
+
+    return RBOOL(rb_equal(beg_self, beg_other) || range_cover(range, beg_other) || range_cover(other, beg_self));
+}
+
 /* A \Range object represents a collection of values
  * that are between given begin and end values.
  *
@@ -2415,4 +2443,5 @@ Init_Range(void)
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
     rb_define_method(rb_cRange, "count", range_count, -1);
+    rb_define_method(rb_cRange, "overlap?", range_overlap, 1);
 }
