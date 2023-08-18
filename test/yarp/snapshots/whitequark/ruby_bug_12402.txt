@@ -1,9 +1,10 @@
 ProgramNode(0...437)(
   [:foo],
   StatementsNode(0...437)(
-    [LocalVariableOperatorWriteNode(0...27)(
-       (0...3),
+    [OperatorWriteNode(0...27)(
+       LocalVariableReadNode(0...3)(:foo, 0),
        (4...6),
+       :+,
        CallNode(7...27)(
          nil,
          nil,
@@ -30,13 +31,12 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       ),
-       :foo,
-       :+
+       )
      ),
-     LocalVariableOperatorWriteNode(29...57)(
-       (29...32),
+     OperatorWriteNode(29...57)(
+       LocalVariableReadNode(29...32)(:foo, 0),
        (33...35),
+       :+,
        RescueModifierNode(36...57)(
          CallNode(36...46)(
            nil,
@@ -63,9 +63,7 @@ ProgramNode(0...437)(
          ),
          (47...53),
          NilNode(54...57)()
-       ),
-       :foo,
-       :+
+       )
      ),
      LocalVariableWriteNode(59...85)(
        :foo,

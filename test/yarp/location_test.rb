@@ -209,10 +209,6 @@ module YARP
       assert_location(ClassNode, "class Foo < Bar end")
     end
 
-    def test_ClassVariableOperatorWriteNode
-      assert_location(ClassVariableOperatorWriteNode, "@@foo += bar")
-    end
-
     def test_ClassVariableReadNode
       assert_location(ClassVariableReadNode, "@@foo")
     end
@@ -231,14 +227,6 @@ module YARP
       assert_location(ConstantPathWriteNode, "Foo::Bar = baz")
       assert_location(ConstantPathWriteNode, "::Foo = bar")
       assert_location(ConstantPathWriteNode, "::Foo::Bar = baz")
-    end
-
-    def test_ConstantPathOperatorWriteNode
-      assert_location(ConstantPathOperatorWriteNode, "Parent::Child += bar")
-    end
-
-    def test_ConstantOperatorWriteNode
-      assert_location(ConstantOperatorWriteNode, "Foo += bar")
     end
 
     def test_ConstantReadNode
@@ -314,10 +302,6 @@ module YARP
       assert_location(ForwardingSuperNode, "super {}")
     end
 
-    def test_GlobalVariableOperatorWriteNode
-      assert_location(GlobalVariableOperatorWriteNode, "$foo += bar")
-    end
-
     def test_GlobalVariableReadNode
       assert_location(GlobalVariableReadNode, "$foo")
     end
@@ -350,10 +334,6 @@ module YARP
       assert_location(InNode, "case foo; in bar; end", 10...16) do |node|
         node.conditions.first
       end
-    end
-
-    def test_InstanceVariableOperatorWriteNode
-      assert_location(InstanceVariableOperatorWriteNode, "@foo += bar")
     end
 
     def test_InstanceVariableReadNode
@@ -422,12 +402,6 @@ module YARP
       assert_location(LambdaNode, "-> do foo end")
     end
 
-    def test_LocalVariableOperatorWriteNode
-      assert_location(LocalVariableOperatorWriteNode, "foo += bar")
-      assert_location(LocalVariableOperatorWriteNode, "foo = 1; foo += bar", 9...19)
-    end
-
-
     def test_LocalVariableReadNode
       assert_location(LocalVariableReadNode, "foo = 1; foo", 9...12)
     end
@@ -469,6 +443,16 @@ module YARP
 
     def test_NumberedReferenceReadNode
       assert_location(NumberedReferenceReadNode, "$1")
+    end
+
+    def test_OperatorWriteNode
+      assert_location(OperatorWriteNode, "@@foo += bar")
+      assert_location(OperatorWriteNode, "Parent::Child += bar")
+      assert_location(OperatorWriteNode, "Foo += bar")
+      assert_location(OperatorWriteNode, "$foo += bar")
+      assert_location(OperatorWriteNode, "@foo += bar")
+      assert_location(OperatorWriteNode, "foo += bar")
+      assert_location(OperatorWriteNode, "foo = 1; foo += bar", 9...19)
     end
 
     def test_OptionalParameterNode

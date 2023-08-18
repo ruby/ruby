@@ -1,40 +1,35 @@
 ProgramNode(0...233)(
   [:a, :h],
   StatementsNode(0...233)(
-    [LocalVariableOperatorWriteNode(0...6)(
-       (0...1),
+    [OperatorWriteNode(0...6)(
+       LocalVariableReadNode(0...1)(:a, 0),
        (2...4),
-       IntegerNode(5...6)(),
-       :a,
-       :+
+       :+,
+       IntegerNode(5...6)()
      ),
-     LocalVariableOperatorWriteNode(7...13)(
-       (7...8),
+     OperatorWriteNode(7...13)(
+       LocalVariableReadNode(7...8)(:a, 0),
        (9...11),
-       IntegerNode(12...13)(),
-       :a,
-       :-
+       :-,
+       IntegerNode(12...13)()
      ),
-     LocalVariableOperatorWriteNode(14...21)(
-       (14...15),
+     OperatorWriteNode(14...21)(
+       LocalVariableReadNode(14...15)(:a, 0),
        (16...19),
-       IntegerNode(20...21)(),
-       :a,
-       :**
+       :**,
+       IntegerNode(20...21)()
      ),
-     LocalVariableOperatorWriteNode(22...28)(
-       (22...23),
+     OperatorWriteNode(22...28)(
+       LocalVariableReadNode(22...23)(:a, 0),
        (24...26),
-       IntegerNode(27...28)(),
-       :a,
-       :*
+       :*,
+       IntegerNode(27...28)()
      ),
-     LocalVariableOperatorWriteNode(29...35)(
-       (29...30),
+     OperatorWriteNode(29...35)(
+       LocalVariableReadNode(29...30)(:a, 0),
        (31...33),
-       IntegerNode(34...35)(),
-       :a,
-       :/
+       :/,
+       IntegerNode(34...35)()
      ),
      AndWriteNode(36...43)(
        LocalVariableReadNode(36...37)(:a, 0),
