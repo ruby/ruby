@@ -3,7 +3,7 @@
 begin
   require 'rbconfig'
 rescue LoadError
-  # for make mjit-headers
+  # for make rjit-headers
 end
 
 # Namespace for file utility methods for copying, moving, removing, etc.

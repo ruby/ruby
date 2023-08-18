@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A Lock source wraps an installed gem's source and sorts before other sources
 # during dependency resolution.  This allows RubyGems to prefer gems from

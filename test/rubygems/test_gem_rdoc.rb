@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rubygems"
 require_relative "helper"
 require "rubygems/rdoc"

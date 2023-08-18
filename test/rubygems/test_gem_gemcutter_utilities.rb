@@ -1,5 +1,7 @@
 # frozen_string_literal: true
+
 require_relative "helper"
+require_relative "multifactor_auth_utilities"
 require "rubygems"
 require "rubygems/command"
 require "rubygems/gemcutter_utilities"
@@ -9,6 +11,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     super
 
     credential_setup
+    @fetcher = SignInFetcher.new
 
     # below needed for random testing, class property
     Gem.configuration.disable_default_gem_server = nil
@@ -92,21 +95,19 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    util_sign_in
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert @fetcher.last_request["authorization"]
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = load_yaml_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials[:rubygems_api_key]
+    assert_equal @fetcher.api_key, credentials[:rubygems_api_key]
   end
 
   def test_sign_in_with_host
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), "http://example.com", ["http://example.com"]
+    @fetcher = SignInFetcher.new(host: "http://example.com")
+    util_sign_in
 
     assert_match "Enter your http://example.com credentials.",
                  @sign_in_ui.output
@@ -114,13 +115,12 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = load_yaml_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials["http://example.com"]
+    assert_equal @fetcher.api_key, credentials["http://example.com"]
   end
 
   def test_sign_in_with_host_nil
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), nil, [nil]
+    @fetcher = SignInFetcher.new(host: nil)
+    util_sign_in(args: [nil])
 
     assert_match "Enter your RubyGems.org credentials.",
                  @sign_in_ui.output
@@ -128,12 +128,12 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = load_yaml_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials[:rubygems_api_key]
+    assert_equal @fetcher.api_key, credentials[:rubygems_api_key]
   end
 
   def test_sign_in_with_host_ENV
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), "http://example.com"
+    @fetcher = SignInFetcher.new(host: "http://example.com")
+    util_sign_in
 
     assert_match "Enter your http://example.com credentials.",
                  @sign_in_ui.output
@@ -141,47 +141,45 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = load_yaml_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials["http://example.com"]
+    assert_equal @fetcher.api_key, credentials["http://example.com"]
   end
 
   def test_sign_in_skips_with_existing_credentials
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    Gem.configuration.rubygems_api_key = api_key
+    Gem.configuration.rubygems_api_key = @fetcher.api_key
 
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    util_sign_in
 
     assert_equal "", @sign_in_ui.output
   end
 
   def test_sign_in_skips_with_key_override
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     Gem.configuration.api_keys[:KEY] = "other"
     @cmd.options[:key] = :KEY
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    util_sign_in
 
     assert_equal "", @sign_in_ui.output
   end
 
   def test_sign_in_with_other_credentials_doesnt_overwrite_other_keys
-    api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     other_api_key = "f46dbb18bb6a9c97cdc61b5b85c186a17403cdcbf"
 
     File.open Gem.configuration.credentials_path, "w" do |f|
       f.write Hash[:other_api_key, other_api_key].to_yaml
     end
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    util_sign_in
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = load_yaml_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials[:rubygems_api_key]
+    assert_equal @fetcher.api_key, credentials[:rubygems_api_key]
     assert_equal other_api_key, credentials[:other_api_key]
   end
 
   def test_sign_in_with_bad_credentials
+    @fetcher.respond_with_forbidden_api_key_response
     assert_raise Gem::MockGemUi::TermError do
-      util_sign_in HTTPResponseFactory.create(body: "Access Denied.", code: 403, msg: "Forbidden")
+      util_sign_in
     end
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
@@ -190,26 +188,16 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_signin_with_env_otp_code
     ENV["GEM_HOST_OTP_CODE"] = "111111"
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
-    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    util_sign_in
 
     assert_match "Signed in with API key:", @sign_in_ui.output
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
   def test_sign_in_with_correct_otp_code
-    api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
-
-    util_sign_in(proc do
-      @call_count ||= 0
-      if (@call_count += 1).odd?
-        HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
-      else
-        HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
-      end
-    end, nil, [], "111111\n")
+    @fetcher.respond_with_require_otp
+    util_sign_in(extra_input: "111111\n")
 
     assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @sign_in_ui.output
     assert_match "Code: ", @sign_in_ui.output
@@ -220,8 +208,9 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_incorrect_otp_code
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
 
+    @fetcher.respond_with_unauthorized_api_key_response
     assert_raise Gem::MockGemUi::TermError do
-      util_sign_in HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized"), nil, [], "111111\n"
+      util_sign_in(extra_input: "111111\n")
     end
 
     assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @sign_in_ui.output
@@ -231,87 +220,87 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_webauthn_enabled
-    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
-    response_fail = "You have enabled multifactor authentication"
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    port = 5678
-    server = TCPServer.new(port)
+    server = Gem::MockTCPServer.new
 
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url
     TCPServer.stub(:new, server) do
-      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
-        util_sign_in(proc do
-          @call_count ||= 0
-          if (@call_count += 1).odd?
-            HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
-          else
-            HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
-          end
-        end, nil, [], "", webauthn_verification_url)
+      Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:otp] = "Uvh6T57tkWuUnWYo" }) do
+        util_sign_in
       end
-    ensure
-      server.close
     end
 
-    url_with_port = "#{webauthn_verification_url}?port=#{port}"
-    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
+      "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
   end
 
   def test_sign_in_with_webauthn_enabled_with_error
-    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
-    response_fail = "You have enabled multifactor authentication"
-    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    port = 5678
-    server = TCPServer.new(port)
-    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+    server = Gem::MockTCPServer.new
+    error = Gem::WebauthnVerificationError.new("Something went wrong")
 
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url
     error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
-        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
-          util_sign_in(proc do
-            @call_count ||= 0
-            if (@call_count += 1).odd?
-              HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
-            else
-              HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
-            end
-          end, nil, [], "", webauthn_verification_url)
+        Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
+          util_sign_in
         end
-      ensure
-        server.close
       end
     end
     assert_equal 1, error.exit_code
 
-    url_with_port = "#{webauthn_verification_url}?port=#{port}"
-    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
+      "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @sign_in_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
     refute_match "Signed in with API key:", @sign_in_ui.output
   end
 
-  def util_sign_in(response, host = nil, args = [], extra_input = "", webauthn_url = nil)
-    email             = "you@example.com"
-    password          = "secret"
-    profile_response  = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
-    webauthn_response =
-      if webauthn_url
-        HTTPResponseFactory.create(body: webauthn_url, code: 200, msg: "OK")
-      else
-        HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
-      end
+  def test_sign_in_with_webauthn_enabled_with_polling
+    server = Gem::MockTCPServer.new
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url
+    @fetcher.respond_with_webauthn_polling("Uvh6T57tkWuUnWYo")
 
-    if host
-      ENV["RUBYGEMS_HOST"] = host
-    else
-      host = Gem.host
+    TCPServer.stub(:new, server) do
+      util_sign_in
     end
 
-    @fetcher = Gem::FakeFetcher.new
-    @fetcher.data["#{host}/api/v1/api_key"] = response
-    @fetcher.data["#{host}/api/v1/profile/me.yaml"] = profile_response
-    @fetcher.data["#{host}/api/v1/webauthn_verification"] = webauthn_response
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
+      "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
+  end
+
+  def test_sign_in_with_webauthn_enabled_with_polling_failure
+    server = Gem::MockTCPServer.new
+    @fetcher.respond_with_require_otp
+    @fetcher.respond_with_webauthn_url
+    @fetcher.respond_with_webauthn_polling_failure
+
+    assert_raise Gem::MockGemUi::TermError do
+      TCPServer.stub(:new, server) do
+        util_sign_in
+      end
+    end
+
+    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+      "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
+      "you can re-run the gem signin command with the `--otp [your_code]` option.", @sign_in_ui.output
+    assert_match "ERROR:  Security device verification failed: " \
+      "The token in the link you used has either expired or been used already.", @sign_in_ui.error
+  end
+
+  def util_sign_in(args: [], extra_input: "")
+    email             = "you@example.com"
+    password          = "secret"
+
+    ENV["RUBYGEMS_HOST"] = @fetcher.host
     Gem::RemoteFetcher.fetcher = @fetcher
 
     @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)
@@ -339,6 +328,31 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_verify_missing_api_key
     assert_raise Gem::MockGemUi::TermError do
       @cmd.verify_api_key :missing
+    end
+  end
+
+  class SignInFetcher < Gem::MultifactorAuthFetcher
+    attr_reader :api_key
+
+    def initialize(host: nil)
+      super(host: host)
+      @api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+      @data["#{@host}/api/v1/api_key"] = Gem::HTTPResponseFactory.create(body: @api_key, code: 200, msg: "OK")
+      @data["#{@host}/api/v1/profile/me.yaml"] = Gem::HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+    end
+
+    def respond_with_require_otp
+      super("#{host}/api/v1/api_key", @api_key)
+    end
+
+    def respond_with_forbidden_api_key_response
+      @data["#{host}/api/v1/api_key"] = Gem::HTTPResponseFactory.create(body: "Access Denied.", code: 403, msg: "Forbidden")
+    end
+
+    def respond_with_unauthorized_api_key_response
+      response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+
+      @data["#{host}/api/v1/api_key"] = Gem::HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
     end
   end
 end

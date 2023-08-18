@@ -18,7 +18,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:document] = []
 
     filelist = %w[
-      bin/gem
+      exe/gem
       lib/rubygems.rb
       lib/rubygems/requirement.rb
       lib/rubygems/ssl_certs/rubygems.org/foo.pem

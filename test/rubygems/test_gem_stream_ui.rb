@@ -1,12 +1,13 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/user_interaction"
 require "timeout"
 
 class TestGemStreamUI < Gem::TestCase
-  # increase timeout with MJIT for --jit-wait testing
-  mjit_enabled = defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
-  SHORT_TIMEOUT = (RUBY_ENGINE == "ruby" && !mjit_enabled) ? 0.1 : 1.0
+  # increase timeout with RJIT for --jit-wait testing
+  rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+  SHORT_TIMEOUT = (RUBY_ENGINE == "ruby" && !rjit_enabled) ? 0.1 : 1.0
 
   module IsTty
     attr_accessor :tty
@@ -107,6 +108,36 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_choose_from_list_EOF
+    result = @sui.choose_from_list "which one?", %w[foo bar]
+
+    assert_equal [nil, nil], result
+    assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
+  end
+
+  def test_choose_from_list_0
+    @in.puts "0"
+    @in.rewind
+
+    result = @sui.choose_from_list "which one?", %w[foo bar]
+
+    assert_equal [nil, nil], result
+    assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
+  end
+
+  def test_choose_from_list_over
+    @in.puts "3"
+    @in.rewind
+
+    result = @sui.choose_from_list "which one?", %w[foo bar]
+
+    assert_equal [nil, nil], result
+    assert_equal "which one?\n 1. foo\n 2. bar\n> ", @out.string
+  end
+
+  def test_choose_from_list_negative
+    @in.puts "-1"
+    @in.rewind
+
     result = @sui.choose_from_list "which one?", %w[foo bar]
 
     assert_equal [nil, nil], result

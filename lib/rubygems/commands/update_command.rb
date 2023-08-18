@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../command_manager"
 require_relative "../dependency_installer"

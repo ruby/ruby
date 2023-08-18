@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Specifies a Specification object that should be activated.  Also contains a
 # dependency that was used to introduce this activation.

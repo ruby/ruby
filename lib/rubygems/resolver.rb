@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "dependency"
 require_relative "exceptions"
 require_relative "util/list"

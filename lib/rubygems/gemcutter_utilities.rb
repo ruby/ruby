@@ -1,7 +1,9 @@
 # frozen_string_literal: true
+
 require_relative "remote_fetcher"
 require_relative "text"
-require_relative "webauthn_listener"
+require_relative "gemcutter_utilities/webauthn_listener"
+require_relative "gemcutter_utilities/webauthn_poller"
 
 ##
 # Utility methods for using the RubyGems API.
@@ -254,36 +256,39 @@ module Gem::GemcutterUtilities
 
   def fetch_otp(credentials)
     options[:otp] = if webauthn_url = webauthn_verification_url(credentials)
-      wait_for_otp(webauthn_url)
+      server = TCPServer.new 0
+      port = server.addr[1].to_s
+
+      url_with_port = "#{webauthn_url}?port=#{port}"
+      say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
+
+      threads = [WebauthnListener.listener_thread(host, server), WebauthnPoller.poll_thread(options, host, webauthn_url, credentials)]
+      otp_thread = wait_for_otp_thread(*threads)
+
+      threads.each(&:join)
+
+      if error = otp_thread[:error]
+        alert_error error.message
+        terminate_interaction(1)
+      end
+
+      say "You are verified with a security device. You may close the browser window."
+      otp_thread[:otp]
     else
       say "You have enabled multi-factor authentication. Please enter OTP code."
       ask "Code: "
     end
   end
 
-  def wait_for_otp(webauthn_url)
-    server = TCPServer.new 0
-    port = server.addr[1].to_s
-
-    thread = Thread.new do
-      Thread.current[:otp] = Gem::WebauthnListener.wait_for_otp_code(host, server)
-    rescue Gem::WebauthnVerificationError => e
-      Thread.current[:error] = e
+  def wait_for_otp_thread(*threads)
+    loop do
+      threads.each do |otp_thread|
+        return otp_thread unless otp_thread.alive?
+      end
+      sleep 0.1
     end
-    thread.abort_on_exception = true
-    thread.report_on_exception = false
-
-    url_with_port = "#{webauthn_url}?port=#{port}"
-    say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
-
-    thread.join
-    if error = thread[:error]
-      alert_error error.message
-      terminate_interaction(1)
-    end
-
-    say "You are verified with a security device. You may close the browser window."
-    thread[:otp]
+  ensure
+    threads.each(&:exit)
   end
 
   def webauthn_verification_url(credentials)

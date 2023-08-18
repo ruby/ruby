@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 SIMPLE_GEM = <<-GEMDATA
         MD5SUM = "989bf34a1cbecd52e0ea66b662b3a405"
         if $0 == __FILE__

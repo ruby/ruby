@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #++
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
