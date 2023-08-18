@@ -347,7 +347,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 // similar code with `sleep_forever`, but
                 // sleep_forever(SLEEP_DEADLOCKABLE) raises an exception.
                 // Ensure clause is needed like but `rb_ensure` a bit slow.
-                // 
+                //
                 //   begin
                 //     sleep_forever(th, SLEEP_DEADLOCKABLE);
                 //   ensure
