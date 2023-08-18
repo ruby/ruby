@@ -1,6 +1,6 @@
-ProgramNode(0...309)(
+ProgramNode(0...313)(
   [],
-  StatementsNode(0...309)(
+  StatementsNode(0...313)(
     [CallNode(0...8)(
        nil,
        nil,
@@ -206,13 +206,13 @@ ProgramNode(0...309)(
        ArgumentsNode(225...229)(
          [InterpolatedStringNode(225...229)(
             (225...229),
-            [StringNode(230...239)(
+            [StringNode(230...243)(
                nil,
-               (230...239),
+               (230...243),
                nil,
-               "x\n" + "\n" + "y\n"
+               "x\n" + "  \n" + "y\n"
              )],
-            (239...241)
+            (243...245)
           )]
        ),
        nil,
@@ -220,16 +220,16 @@ ProgramNode(0...309)(
        0,
        "p"
      ),
-     CallNode(242...248)(
+     CallNode(246...252)(
        nil,
        nil,
-       (242...243),
+       (246...247),
        nil,
-       ArgumentsNode(244...248)(
-         [InterpolatedStringNode(244...248)(
-            (244...248),
-            [StringNode(249...259)(nil, (249...259), nil, "x\n" + "  y\n")],
-            (259...261)
+       ArgumentsNode(248...252)(
+         [InterpolatedStringNode(248...252)(
+            (248...252),
+            [StringNode(253...263)(nil, (253...263), nil, "x\n" + "  y\n")],
+            (263...265)
           )]
        ),
        nil,
@@ -237,16 +237,16 @@ ProgramNode(0...309)(
        0,
        "p"
      ),
-     CallNode(262...268)(
+     CallNode(266...272)(
        nil,
        nil,
-       (262...263),
+       (266...267),
        nil,
-       ArgumentsNode(264...268)(
-         [InterpolatedStringNode(264...268)(
-            (264...268),
-            [StringNode(269...273)(nil, (269...273), nil, "x\n")],
-            (273...275)
+       ArgumentsNode(268...272)(
+         [InterpolatedStringNode(268...272)(
+            (268...272),
+            [StringNode(273...277)(nil, (273...277), nil, "x\n")],
+            (277...279)
           )]
        ),
        nil,
@@ -254,16 +254,16 @@ ProgramNode(0...309)(
        0,
        "p"
      ),
-     CallNode(276...282)(
+     CallNode(280...286)(
        nil,
        nil,
-       (276...277),
+       (280...281),
        nil,
-       ArgumentsNode(278...282)(
-         [InterpolatedStringNode(278...282)(
-            (278...282),
-            [StringNode(283...288)(nil, (283...288), nil, "ð\n")],
-            (288...290)
+       ArgumentsNode(282...286)(
+         [InterpolatedStringNode(282...286)(
+            (282...286),
+            [StringNode(287...292)(nil, (287...292), nil, "ð\n")],
+            (292...294)
           )]
        ),
        nil,
@@ -271,35 +271,35 @@ ProgramNode(0...309)(
        0,
        "p"
      ),
-     CallNode(291...297)(
+     CallNode(295...301)(
        nil,
        nil,
-       (291...292),
+       (295...296),
        nil,
-       ArgumentsNode(293...297)(
-         [InterpolatedStringNode(293...297)((293...297), [], (298...300))]
+       ArgumentsNode(297...301)(
+         [InterpolatedStringNode(297...301)((297...301), [], (302...304))]
        ),
        nil,
        nil,
        0,
        "p"
      ),
-     CallNode(301...309)(
+     CallNode(305...313)(
        nil,
        nil,
-       (301...302),
+       (305...306),
        nil,
-       ArgumentsNode(303...309)(
-         [InterpolatedXStringNode(303...309)(
-            (303...309),
-            [StringNode(310...318)(nil, (310...318), nil, "  x\n"),
-             EmbeddedStatementsNode(318...324)(
-               (318...320),
-               StatementsNode(320...323)(
-                 [CallNode(320...323)(
+       ArgumentsNode(307...313)(
+         [InterpolatedXStringNode(307...313)(
+            (307...313),
+            [StringNode(314...322)(nil, (314...322), nil, "  x\n"),
+             EmbeddedStatementsNode(322...328)(
+               (322...324),
+               StatementsNode(324...327)(
+                 [CallNode(324...327)(
                     nil,
                     nil,
-                    (320...323),
+                    (324...327),
                     nil,
                     nil,
                     nil,
@@ -308,10 +308,10 @@ ProgramNode(0...309)(
                     "foo"
                   )]
                ),
-               (323...324)
+               (327...328)
              ),
-             StringNode(324...325)(nil, (324...325), nil, "\n")],
-            (325...327)
+             StringNode(328...329)(nil, (328...329), nil, "\n")],
+            (329...331)
           )]
        ),
        nil,
