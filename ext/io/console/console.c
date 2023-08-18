@@ -76,7 +76,7 @@ getattr(int fd, conmode *t)
 #endif
 
 static ID id_getc, id_console, id_close;
-static ID id_gets, id_chomp_bang;
+static ID id_gets, id_flush, id_chomp_bang;
 
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
 # include "ruby/fiber/scheduler.h"
@@ -1591,6 +1591,7 @@ console_getpass(int argc, VALUE *argv, VALUE io)
     wio = rb_io_get_write_io(io);
     if (wio == io && io == rb_stdin) wio = rb_stderr;
     prompt(argc, argv, wio);
+    rb_io_flush(wio);
     str = rb_ensure(getpass_call, io, puts_call, wio);
     return str_chomp(str);
 }
@@ -1608,6 +1609,7 @@ io_getpass(int argc, VALUE *argv, VALUE io)
 
     rb_check_arity(argc, 0, 1);
     prompt(argc, argv, io);
+    rb_check_funcall(io, id_flush, 0, 0);
     str = str_chomp(rb_funcallv(io, id_gets, 0, 0));
     puts_call(io);
     return str;
@@ -1622,6 +1624,7 @@ Init_console(void)
 #undef rb_intern
     id_getc = rb_intern("getc");
     id_gets = rb_intern("gets");
+    id_flush = rb_intern("flush");
     id_chomp_bang = rb_intern("chomp!");
     id_console = rb_intern("console");
     id_close = rb_intern("close");
