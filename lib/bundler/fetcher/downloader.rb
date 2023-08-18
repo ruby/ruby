@@ -41,6 +41,8 @@ module Bundler
         when Net::HTTPUnauthorized
           raise BadAuthenticationError, uri.host if uri.userinfo
           raise AuthenticationRequiredError, uri.host
+        when Net::HTTPForbidden
+          raise AuthenticationForbiddenError, uri.host
         when Net::HTTPNotFound
           raise FallbackError, "Net::HTTPNotFound: #{filtered_uri}"
         else

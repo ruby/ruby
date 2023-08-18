@@ -47,7 +47,7 @@ module Gem::BundlerVersionFinder
 
   def self.lockfile_contents
     gemfile = ENV["BUNDLE_GEMFILE"]
-    gemfile = nil if gemfile && gemfile.empty?
+    gemfile = nil if gemfile&.empty?
 
     unless gemfile
       begin

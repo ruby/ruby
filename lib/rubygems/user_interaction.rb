@@ -292,7 +292,7 @@ class Gem::StreamUI
     @outs.flush
 
     result = @ins.gets
-    result.chomp! if result
+    result&.chomp!
     result
   end
 
@@ -307,7 +307,7 @@ class Gem::StreamUI
 
     password = _gets_noecho
     @outs.puts
-    password.chomp! if password
+    password&.chomp!
     password
   end
 

@@ -61,6 +61,16 @@ module Bundler
       end
     end
 
+    # This error is raised if HTTP authentication is correct, but lacks
+    # necessary permissions.
+    class AuthenticationForbiddenError < HTTPError
+      def initialize(remote_uri)
+        remote_uri = filter_uri(remote_uri)
+        super "Access token could not be authenticated for #{remote_uri}.\n" \
+          "Make sure it's valid and has the necessary scopes configured."
+      end
+    end
+
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.
     NET_ERRORS = [:HTTPBadGateway, :HTTPBadRequest, :HTTPFailedDependency,
@@ -70,7 +80,7 @@ module Bundler
                   :HTTPRequestURITooLong, :HTTPUnauthorized, :HTTPUnprocessableEntity,
                   :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
     FAIL_ERRORS = begin
-      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, FallbackError]
+      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError]
       fail_errors << Gem::Requirement::BadRequirementError
       fail_errors.concat(NET_ERRORS.map {|e| Net.const_get(e) })
     end.freeze
