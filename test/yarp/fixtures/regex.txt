@@ -26,3 +26,5 @@ foo /bar/
 /(?#\))/ =~ "hi"
 
 %r#pound#
+
+/aaa #{bbb}/o

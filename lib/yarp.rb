@@ -481,6 +481,8 @@ module YARP
           locals << []
         when PostExecutionNode
           locals.push([], [])
+        when InterpolatedRegularExpressionNode
+          locals << [] if node.once?
         end
 
         stack.concat(node.child_nodes.compact)
