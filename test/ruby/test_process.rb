@@ -2529,4 +2529,61 @@ EOS
     end
     assert_empty(Process.waitall)
   end
+
+  def test_concurrent_group_and_pid_wait
+    # Use a pair of pipes that will make long_pid exit when this test exits, to avoid
+    # leaking temp processes.
+    long_rpipe, long_wpipe = IO.pipe
+    short_rpipe, short_wpipe = IO.pipe
+    # This process should run forever
+    long_pid = fork do
+      [short_rpipe, short_wpipe, long_wpipe].each(&:close)
+      long_rpipe.read
+    end
+    # This process will exit
+    short_pid = fork do
+      [long_rpipe, long_wpipe, short_wpipe].each(&:close)
+      short_rpipe.read
+    end
+    t1, t2, t3 = nil
+    EnvUtil.timeout(5) do
+      t1 = Thread.new do
+        Process.waitpid long_pid
+      end
+      # Wait for us to be blocking in a call to waitpid2
+      Thread.pass until t1.stop?
+      short_wpipe.close # Make short_pid exit
+
+      # The short pid has exited, so -1 should pick that up.
+      assert_equal short_pid, Process.waitpid(-1)
+
+      t1.kill
+      t2 = Thread.new do
+        Process.waitpid -1
+      rescue Errno::ECHILD
+        nil
+      end
+      Thread.pass until t2.stop?
+      t3 = Thread.new do
+        Process.waitpid long_pid
+      rescue Errno::ECHILD
+        nil
+      end
+      Thread.pass until t3.stop?
+
+      # it's actually nondeterministic which of t2 or t3 will receive the wait (this
+      # nondeterminism comes from the behaviour of the underlying system calls)
+      long_wpipe.close
+      assert_equal [long_pid], [t2, t3].map(&:value).compact
+
+
+      # Now we should see that waitpid(long_pid) takes priority over waitpid(-1)
+      assert t2.alive?
+      assert_equal long_pid, t3.value
+      assert_raise(Errno::ECHILD) { t2.value }
+    end
+  ensure
+    [t1, t2, t3].each { _1&.kill rescue nil }
+    [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
+  end if defined?(fork)
 end
