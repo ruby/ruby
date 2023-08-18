@@ -1200,7 +1200,6 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         FL_SET_EMBED(result);
         ary_memcpy(result, 0, len, RARRAY_CONST_PTR(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
-        return result;
     }
     else {
         VALUE shared = ary_make_shared(ary);
@@ -1215,9 +1214,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         ARY_SET_LEN(result, len);
 
         ary_verify(shared);
-        ary_verify(result);
-        return result;
     }
+
+    ary_verify(result);
+    return result;
 }
 
 static VALUE
