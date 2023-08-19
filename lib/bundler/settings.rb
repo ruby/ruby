@@ -92,7 +92,7 @@ module Bundler
       @local_config    = load_config(local_config_file)
 
       @env_config      = ENV.to_h
-      @env_config.select! {|key, _value| key.start_with?("BUNDLE_")}
+      @env_config.select! {|key, _value| key.start_with?("BUNDLE_") }
       @env_config.delete("BUNDLE_")
 
       @global_config   = load_config(global_config_file)
