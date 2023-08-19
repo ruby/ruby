@@ -23,6 +23,10 @@ module KindTypes
     end
   end
 
+  def ruby_type
+    options[:kind] || "Node"
+  end
+
   def java_type
     options[:kind] || "Node"
   end
@@ -42,7 +46,7 @@ class NodeParam < Param
   include KindTypes
 
   def rbs_class
-    "Node"
+    ruby_type
   end
 end
 
@@ -52,7 +56,7 @@ class OptionalNodeParam < Param
   include KindTypes
 
   def rbs_class
-    "Node?"
+    "#{ruby_type}?"
   end
 end
 
