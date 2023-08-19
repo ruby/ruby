@@ -121,7 +121,7 @@ Init_version(void)
     /*
      * The version of the engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE_VERSION", (1 ? version : MKSTR(version)));
+    rb_define_global_const("RUBY_ENGINE_VERSION", version);
 
     rb_provide("ruby2_keywords.rb");
 }
