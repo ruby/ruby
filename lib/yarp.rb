@@ -313,6 +313,30 @@ module YARP
     end
   end
 
+  class FloatNode < Node
+    def value
+      Float(slice)
+    end
+  end
+
+  class ImaginaryNode < Node
+    def value
+      Complex(0, numeric.value)
+    end
+  end
+
+  class IntegerNode < Node
+    def value
+      Integer(slice)
+    end
+  end
+
+  class RationalNode < Node
+    def value
+      Rational(numeric.value)
+    end
+  end
+
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
