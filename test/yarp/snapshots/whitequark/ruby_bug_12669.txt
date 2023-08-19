@@ -2,11 +2,11 @@ ProgramNode(0...74)(
   [:a, :b],
   StatementsNode(0...74)(
     [OperatorWriteNode(0...18)(
-       LocalVariableReadNode(0...1)(:a, 0),
+       LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
        (2...4),
        :+,
        OperatorWriteNode(5...18)(
-         LocalVariableReadNode(5...6)(:b, 0),
+         LocalVariableWriteNode(5...6)(:b, 0, nil, (5...6), nil),
          (7...9),
          :+,
          CallNode(10...18)(
@@ -25,7 +25,7 @@ ProgramNode(0...74)(
        )
      ),
      OperatorWriteNode(20...37)(
-       LocalVariableReadNode(20...21)(:a, 0),
+       LocalVariableWriteNode(20...21)(:a, 0, nil, (20...21), nil),
        (22...24),
        :+,
        LocalVariableWriteNode(25...37)(
@@ -52,7 +52,7 @@ ProgramNode(0...74)(
        :a,
        0,
        OperatorWriteNode(43...56)(
-         LocalVariableReadNode(43...44)(:b, 0),
+         LocalVariableWriteNode(43...44)(:b, 0, nil, (43...44), nil),
          (45...47),
          :+,
          CallNode(48...56)(

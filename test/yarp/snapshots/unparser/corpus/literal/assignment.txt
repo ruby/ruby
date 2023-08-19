@@ -611,7 +611,7 @@ ProgramNode(0...704)(
        (543...546)
      ),
      OrWriteNode(551...561)(
-       InstanceVariableReadNode(551...553)(),
+       InstanceVariableWriteNode(551...553)((551...553), nil, nil),
        StringNode(558...561)((558...560), (560...560), (560...561), ""),
        (554...557)
      ),
@@ -704,7 +704,7 @@ ProgramNode(0...704)(
        (665...668)
      ),
      OrWriteNode(687...704)(
-       InstanceVariableReadNode(687...689)(),
+       InstanceVariableWriteNode(687...689)((687...689), nil, nil),
        InterpolatedStringNode(694...704)(
          (694...704),
          [StringNode(705...707)(nil, (705...707), nil, "  "),

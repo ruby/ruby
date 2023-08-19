@@ -2,7 +2,7 @@ ProgramNode(0...18)(
   [:a],
   StatementsNode(0...18)(
     [OrWriteNode(0...18)(
-       LocalVariableReadNode(0...1)(:a, 0),
+       LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
        RescueModifierNode(6...18)(
          CallNode(6...7)(nil, nil, (6...7), nil, nil, nil, nil, 2, "b"),
          (8...14),

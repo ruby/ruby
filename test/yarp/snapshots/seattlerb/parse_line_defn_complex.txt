@@ -26,7 +26,7 @@ ProgramNode(0...40)(
             "p"
           ),
           OperatorWriteNode(18...24)(
-            LocalVariableReadNode(18...19)(:y, 0),
+            LocalVariableWriteNode(18...19)(:y, 0, nil, (18...19), nil),
             (20...22),
             :*,
             IntegerNode(23...24)()

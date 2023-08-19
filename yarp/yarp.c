@@ -12261,6 +12261,10 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 case YP_NODE_INSTANCE_VARIABLE_READ_NODE:
                 case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
+
+                    yp_token_t operator = not_provided(parser);
+                    node = parse_target(parser, node, &operator, NULL);
+
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
                     return (yp_node_t *) yp_and_write_node_create(parser, node, &token, value);
                 }
@@ -12279,11 +12283,12 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         }
 
                         parser_lex(parser);
-                        yp_node_t *target = (yp_node_t *) yp_local_variable_read_node_create(parser, &(yp_token_t) { .type = YP_TOKEN_IDENTIFIER, .start = message_loc.start, .end = message_loc.end }, 0);
-                        yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
 
-                        yp_node_destroy(parser, node);
-                        return (yp_node_t *) yp_and_write_node_create(parser, target, &token, value);
+                        yp_token_t operator = not_provided(parser);
+                        node = parse_target(parser, node, &operator, NULL);
+
+                        yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
+                        return (yp_node_t *) yp_and_write_node_create(parser, node, &token, value);
                     }
 
                     parser_lex(parser);
@@ -12323,6 +12328,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
+                    yp_token_t operator = not_provided(parser);
+                    node = parse_target(parser, node, &operator, NULL);
+
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after ||=");
                     return (yp_node_t *) yp_or_write_node_create(parser, node, &token, value);
                 }
@@ -12341,11 +12349,12 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         }
 
                         parser_lex(parser);
-                        yp_node_t *target = (yp_node_t *) yp_local_variable_read_node_create(parser, &(yp_token_t) { .type = YP_TOKEN_IDENTIFIER, .start = message_loc.start, .end = message_loc.end }, 0);
-                        yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after ||=");
 
-                        yp_node_destroy(parser, node);
-                        return (yp_node_t *) yp_or_write_node_create(parser, target, &token, value);
+                        yp_token_t operator = not_provided(parser);
+                        node = parse_target(parser, node, &operator, NULL);
+
+                        yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after ||=");
+                        return (yp_node_t *) yp_or_write_node_create(parser, node, &token, value);
                     }
 
                     parser_lex(parser);
@@ -12395,6 +12404,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
+                    yp_token_t operator = not_provided(parser);
+                    node = parse_target(parser, node, &operator, NULL);
+
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after the operator");
                     return (yp_node_t *) yp_operator_write_node_create(parser, node, &token, value);
                 }
@@ -12413,11 +12425,12 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         }
 
                         parser_lex(parser);
-                        yp_node_t *target = (yp_node_t *) yp_local_variable_read_node_create(parser, &(yp_token_t) { .type = YP_TOKEN_IDENTIFIER, .start = message_loc.start, .end = message_loc.end }, 0);
-                        yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
 
-                        yp_node_destroy(parser, node);
-                        return (yp_node_t *) yp_operator_write_node_create(parser, target, &token, value);
+                        yp_token_t operator = not_provided(parser);
+                        node = parse_target(parser, node, &operator, NULL);
+
+                        yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
+                        return (yp_node_t *) yp_operator_write_node_create(parser, node, &token, value);
                     }
 
                     yp_token_t operator = not_provided(parser);

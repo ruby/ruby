@@ -10,10 +10,14 @@ ProgramNode(0...15)(
          [ParenthesesNode(2...15)(
             StatementsNode(3...14)(
               [OperatorWriteNode(3...14)(
-                 ConstantPathNode(3...7)(
-                   ConstantReadNode(3...4)(),
-                   ConstantReadNode(6...7)(),
-                   (4...6)
+                 ConstantPathWriteNode(3...7)(
+                   ConstantPathNode(3...7)(
+                     ConstantReadNode(3...4)(),
+                     ConstantReadNode(6...7)(),
+                     (4...6)
+                   ),
+                   nil,
+                   nil
                  ),
                  (8...10),
                  :*,

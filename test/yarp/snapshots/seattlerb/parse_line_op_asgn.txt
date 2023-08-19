@@ -2,7 +2,7 @@ ProgramNode(6...34)(
   [:foo],
   StatementsNode(6...34)(
     [OperatorWriteNode(6...24)(
-       LocalVariableReadNode(6...9)(:foo, 0),
+       LocalVariableWriteNode(6...9)(:foo, 0, nil, (6...9), nil),
        (10...12),
        :+,
        CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 2, "bar")

@@ -89,7 +89,7 @@ ProgramNode(0...402)(
          ),
          StatementsNode(63...72)(
            [OperatorWriteNode(63...72)(
-              LocalVariableReadNode(63...67)(:memo, 0),
+              LocalVariableWriteNode(63...67)(:memo, 0, nil, (63...67), nil),
               (68...70),
               :+,
               LocalVariableReadNode(71...72)(:x, 0)

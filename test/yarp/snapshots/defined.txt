@@ -9,7 +9,7 @@ ProgramNode(0...78)(
      DefinedNode(27...43)(
        (35...36),
        OperatorWriteNode(36...42)(
-         LocalVariableReadNode(36...37)(:x, 0),
+         LocalVariableWriteNode(36...37)(:x, 0, nil, (36...37), nil),
          (38...40),
          :%,
          IntegerNode(41...42)()
