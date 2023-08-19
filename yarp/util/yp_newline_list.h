@@ -47,6 +47,9 @@ bool yp_newline_list_init(yp_newline_list_t *list, const char *start, size_t cap
 // the offsets succeeds (if one was necessary), otherwise returns false.
 bool yp_newline_list_append(yp_newline_list_t *list, const char *cursor);
 
+// Conditionally append a new offset to the newline list, if the value passed in is a newline.
+bool yp_newline_list_check_append(yp_newline_list_t *list, const char *cursor);
+
 // Returns the line and column of the given offset. If the offset is not in the
 // list, the line and column of the closest offset less than the given offset
 // are returned.

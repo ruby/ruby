@@ -6183,9 +6183,7 @@ parser_lex(yp_parser_t *parser) {
                                 parser->current.end++;
                             }
 
-                            if (*parser->current.end == '\n') {
-                                yp_newline_list_append(&parser->newline_list, parser->current.end);
-                            }
+                            yp_newline_list_check_append(&parser->newline_list, parser->current.end);
 
                             parser->current.end++;
                             LEX(YP_TOKEN_STRING_BEGIN);
@@ -6215,9 +6213,7 @@ parser_lex(yp_parser_t *parser) {
 
                                 if (parser->current.end < parser->end) {
                                     lex_mode_push_regexp(parser, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                    if (parser->current.end == '\n') {
-                                        yp_newline_list_append(&parser->newline_list, parser->current.end);
-                                    }
+                                    yp_newline_list_check_append(&parser->newline_list, parser->current.end);
                                     parser->current.end++;
                                 }
 
@@ -6465,9 +6461,7 @@ parser_lex(yp_parser_t *parser) {
 
                     // If the result is an escaped newline, then we need to
                     // track that newline.
-                    if (breakpoint[difference - 1] == '\n') {
-                        yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                    }
+                    yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
 
                     breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                     continue;
@@ -6580,9 +6574,7 @@ parser_lex(yp_parser_t *parser) {
 
                     // If the result is an escaped newline, then we need to
                     // track that newline.
-                    if (breakpoint[difference - 1] == '\n') {
-                        yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                    }
+                    yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
 
                     breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                     continue;
@@ -6673,9 +6665,7 @@ parser_lex(yp_parser_t *parser) {
                         parser->current.end = breakpoint + 2;
                         yp_newline_list_append(&parser->newline_list, breakpoint + 1);
                     } else {
-                        if (*parser->current.end == '\n') {
-                            yp_newline_list_append(&parser->newline_list, parser->current.end);
-                        }
+                        yp_newline_list_check_append(&parser->newline_list, parser->current.end);
 
                         parser->current.end = breakpoint + 1;
                     }
@@ -6725,9 +6715,7 @@ parser_lex(yp_parser_t *parser) {
 
                         // If the result is an escaped newline, then we need to
                         // track that newline.
-                        if (breakpoint[difference - 1] == '\n') {
-                            yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                        }
+                        yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
 
                         breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         break;
@@ -6898,9 +6886,7 @@ parser_lex(yp_parser_t *parser) {
                             yp_unescape_type_t unescape_type = (quote == YP_HEREDOC_QUOTE_SINGLE) ? YP_UNESCAPE_MINIMAL : YP_UNESCAPE_ALL;
                             size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, unescape_type, false, &parser->error_list);
 
-                            if (breakpoint[difference - 1] == '\n') {
-                                yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
-                            }
+                            yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
 
                             breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         }
