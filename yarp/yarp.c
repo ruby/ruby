@@ -6215,6 +6215,9 @@ parser_lex(yp_parser_t *parser) {
 
                                 if (parser->current.end < parser->end) {
                                     lex_mode_push_regexp(parser, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    if (parser->current.end == '\n') {
+                                        yp_newline_list_append(&parser->newline_list, parser->current.end);
+                                    }
                                     parser->current.end++;
                                 }
 
@@ -6526,7 +6529,13 @@ parser_lex(yp_parser_t *parser) {
                 // If we've hit a newline, then we need to track that in the
                 // list of newlines.
                 if (*breakpoint == '\n') {
-                    yp_newline_list_append(&parser->newline_list, breakpoint);
+                    // For the special case of a newline-terminated regular expression, we will pass
+                    // through this branch twice -- once with YP_TOKEN_REGEXP_BEGIN and then again
+                    // with YP_TOKEN_STRING_CONTENT. Let's avoid tracking the newline twice, by
+                    // tracking it only in the REGEXP_BEGIN case.
+                    if (!(lex_mode->as.regexp.terminator == '\n' && parser->current.type != YP_TOKEN_REGEXP_BEGIN)) {
+                        yp_newline_list_append(&parser->newline_list, breakpoint);
+                    }
 
                     if (lex_mode->as.regexp.terminator != '\n') {
                         // If the terminator is not a newline, then we can set

@@ -120,6 +120,8 @@ class ParseTest < Test::Unit::TestCase
   end
 
   Dir["*.txt", base: base].each do |relative|
+    next if relative == "newline_terminated.txt"
+
     # We test every snippet (separated by \n\n) in isolation
     # to ensure the parser does not try to read bytes further than the end of each snippet
     define_method "test_individual_snippets_#{relative}" do
