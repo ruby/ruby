@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'tempfile'
 require_relative 'marshaltestlib'
 
 class TestMarshal < Test::Unit::TestCase
@@ -314,11 +313,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(c, Marshal.load(Marshal.dump(c)), bug2109)
 
     assert_nothing_raised(ArgumentError, '[ruby-dev:40386]') do
-      re = Tempfile.create("marshal_regexp") do |f|
-        f.binmode.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
-        f.rewind
-        re2 = Marshal.load(f)
-        re2
+      re = IO.pipe do |r, w|
+        w.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
+        # Marshal.load would not overread and block
+        Marshal.load(r)
       end
       assert_equal(//, re)
     end
