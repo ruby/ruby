@@ -6369,7 +6369,13 @@ parser_lex(yp_parser_t *parser) {
 
                                 if (parser->current.end < parser->end) {
                                     lex_mode_push_regexp(parser, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+<<<<<<< HEAD:yarp/yarp.c
                                     yp_newline_list_check_append(&parser->newline_list, parser->current.end);
+=======
+                                    if (parser->current.end == '\n') {
+                                        yp_newline_list_append(&parser->newline_list, parser->current.end);
+                                    }
+>>>>>>> 0d5d759091 (fix: support newline-terminated regular expressions):src/yarp.c
                                     parser->current.end++;
                                 }
 

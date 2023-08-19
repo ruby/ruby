@@ -1,3 +1,4 @@
+<<<<<<< HEAD:test/yarp/snapshots/newline-terminated-things.txt
 ProgramNode(76...106)(
   [],
   StatementsNode(76...106)(
@@ -11,5 +12,11 @@ ProgramNode(76...106)(
        "foo",
        0
      )]
+=======
+ProgramNode(0...7)(
+  [],
+  StatementsNode(0...7)(
+    [RegularExpressionNode(0...7)((0...3), (3...6), (6...7), "foo", 0)]
+>>>>>>> 0d5d759091 (fix: support newline-terminated regular expressions):test/snapshots/newline-terminated-things.txt
   )
 )
