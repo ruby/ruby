@@ -216,6 +216,8 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     corrupt_entry.rewind
 
     assert_nil corrupt_entry.read(100), "IO.read with len should return nil as per IO.read docs"
+  ensure
+    close_util_entry(corrupt_entry) if corrupt_entry
   end
 
   def test_readpartial_corrupted_tar
@@ -228,6 +230,8 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_raise EOFError do
       corrupt_entry.readpartial(100)
     end
+  ensure
+    close_util_entry(corrupt_entry) if corrupt_entry
   end
 
   def test_rewind
