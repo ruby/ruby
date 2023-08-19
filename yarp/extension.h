@@ -5,7 +5,7 @@
 #include <ruby/encoding.h>
 #include "yarp.h"
 
-#define EXPECTED_YARP_VERSION "0.7.0"
+#define EXPECTED_YARP_VERSION "0.8.0"
 
 VALUE yp_source_new(yp_parser_t *parser);
 VALUE yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding, VALUE source);
