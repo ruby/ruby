@@ -2695,9 +2695,13 @@ yp_lambda_node_create(
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
         .parameters = parameters,
 <<<<<<< HEAD:yarp/yarp.c
+<<<<<<< HEAD:yarp/yarp.c
         .body = body
 =======
         .statements = statements
+=======
+        .body = body
+>>>>>>> 0aa7d9d10c (Rename statements to body where appropriate):src/yarp.c
     };
 
     return node;
