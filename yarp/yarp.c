@@ -450,8 +450,8 @@ yp_flip_flop(yp_node_t *node) {
         case YP_NODE_PARENTHESES_NODE: {
             yp_parentheses_node_t *cast = (yp_parentheses_node_t *) node;
 
-            if ((cast->statements != NULL) && YP_NODE_TYPE_P(cast->statements, YP_NODE_STATEMENTS_NODE)) {
-                yp_statements_node_t *statements = (yp_statements_node_t *) cast->statements;
+            if ((cast->body != NULL) && YP_NODE_TYPE_P(cast->body, YP_NODE_STATEMENTS_NODE)) {
+                yp_statements_node_t *statements = (yp_statements_node_t *) cast->body;
                 if (statements->body.size == 1) yp_flip_flop(statements->body.nodes[0]);
             }
 
@@ -1018,7 +1018,7 @@ yp_block_argument_node_create(yp_parser_t *parser, const yp_token_t *operator, y
 
 // Allocate and initialize a new BlockNode node.
 static yp_block_node_t *
-yp_block_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *opening, yp_block_parameters_node_t *parameters, yp_node_t *statements, const yp_token_t *closing) {
+yp_block_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *opening, yp_block_parameters_node_t *parameters, yp_node_t *body, const yp_token_t *closing) {
     yp_block_node_t *node = YP_ALLOC_NODE(parser, yp_block_node_t);
 
     *node = (yp_block_node_t) {
@@ -1028,7 +1028,7 @@ yp_block_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
         },
         .locals = *locals,
         .parameters = parameters,
-        .statements = statements,
+        .body = body,
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = YP_LOCATION_TOKEN_VALUE(closing)
     };
@@ -1486,7 +1486,7 @@ yp_case_node_end_keyword_loc_set(yp_case_node_t *node, const yp_token_t *end_key
 
 // Allocate a new ClassNode node.
 static yp_class_node_t *
-yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *class_keyword, yp_node_t *constant_path, const yp_token_t *inheritance_operator, yp_node_t *superclass, yp_node_t *statements, const yp_token_t *end_keyword) {
+yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *class_keyword, yp_node_t *constant_path, const yp_token_t *inheritance_operator, yp_node_t *superclass, yp_node_t *body, const yp_token_t *end_keyword) {
     yp_class_node_t *node = YP_ALLOC_NODE(parser, yp_class_node_t);
 
     *node = (yp_class_node_t) {
@@ -1499,7 +1499,7 @@ yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
         .constant_path = constant_path,
         .inheritance_operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(inheritance_operator),
         .superclass = superclass,
-        .statements = statements,
+        .body = body,
         .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword)
     };
 
@@ -1616,7 +1616,7 @@ yp_def_node_create(
     const yp_token_t *name,
     yp_node_t *receiver,
     yp_parameters_node_t *parameters,
-    yp_node_t *statements,
+    yp_node_t *body,
     yp_constant_id_list_t *locals,
     const yp_token_t *def_keyword,
     const yp_token_t *operator,
@@ -1629,7 +1629,7 @@ yp_def_node_create(
     const char *end;
 
     if (end_keyword->type == YP_TOKEN_NOT_PROVIDED) {
-        end = statements->location.end;
+        end = body->location.end;
     } else {
         end = end_keyword->end;
     }
@@ -1642,7 +1642,7 @@ yp_def_node_create(
         .name_loc = YP_LOCATION_TOKEN_VALUE(name),
         .receiver = receiver,
         .parameters = parameters,
-        .statements = statements,
+        .body = body,
         .locals = *locals,
         .def_keyword_loc = YP_LOCATION_TOKEN_VALUE(def_keyword),
         .operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
@@ -2553,7 +2553,7 @@ yp_lambda_node_create(
     yp_constant_id_list_t *locals,
     const yp_token_t *opening,
     yp_block_parameters_node_t *parameters,
-    yp_node_t *statements,
+    yp_node_t *body,
     const yp_token_t *closing
 ) {
     yp_lambda_node_t *node = YP_ALLOC_NODE(parser, yp_lambda_node_t);
@@ -2569,7 +2569,7 @@ yp_lambda_node_create(
         .locals = *locals,
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
         .parameters = parameters,
-        .statements = statements
+        .body = body
     };
 
     return node;
@@ -2679,7 +2679,7 @@ yp_match_required_node_create(yp_parser_t *parser, yp_node_t *value, yp_node_t *
 
 // Allocate a new ModuleNode node.
 static yp_module_node_t *
-yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *module_keyword, yp_node_t *constant_path, yp_node_t *statements, const yp_token_t *end_keyword) {
+yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *module_keyword, yp_node_t *constant_path, yp_node_t *body, const yp_token_t *end_keyword) {
     yp_module_node_t *node = YP_ALLOC_NODE(parser, yp_module_node_t);
 
     *node = (yp_module_node_t) {
@@ -2693,7 +2693,7 @@ yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const 
         .locals = (locals == NULL ? ((yp_constant_id_list_t) { .ids = NULL, .size = 0, .capacity = 0 }) : *locals),
         .module_keyword_loc = YP_LOCATION_TOKEN_VALUE(module_keyword),
         .constant_path = constant_path,
-        .statements = statements,
+        .body = body,
         .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword)
     };
 
@@ -3006,7 +3006,7 @@ yp_program_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, yp_st
 
 // Allocate and initialize new ParenthesesNode node.
 static yp_parentheses_node_t *
-yp_parentheses_node_create(yp_parser_t *parser, const yp_token_t *opening, yp_node_t *statements, const yp_token_t *closing) {
+yp_parentheses_node_create(yp_parser_t *parser, const yp_token_t *opening, yp_node_t *body, const yp_token_t *closing) {
     yp_parentheses_node_t *node = YP_ALLOC_NODE(parser, yp_parentheses_node_t);
 
     *node = (yp_parentheses_node_t) {
@@ -3017,7 +3017,7 @@ yp_parentheses_node_create(yp_parser_t *parser, const yp_token_t *opening, yp_no
                 .end = closing->end
             }
         },
-        .statements = statements,
+        .body = body,
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = YP_LOCATION_TOKEN_VALUE(closing)
     };
@@ -3363,7 +3363,7 @@ yp_self_node_create(yp_parser_t *parser, const yp_token_t *token) {
 
 // Allocate a new SingletonClassNode node.
 static yp_singleton_class_node_t *
-yp_singleton_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *class_keyword, const yp_token_t *operator, yp_node_t *expression, yp_node_t *statements, const yp_token_t *end_keyword) {
+yp_singleton_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *class_keyword, const yp_token_t *operator, yp_node_t *expression, yp_node_t *body, const yp_token_t *end_keyword) {
     yp_singleton_class_node_t *node = YP_ALLOC_NODE(parser, yp_singleton_class_node_t);
 
     *node = (yp_singleton_class_node_t) {
@@ -3378,7 +3378,7 @@ yp_singleton_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *local
         .class_keyword_loc = YP_LOCATION_TOKEN_VALUE(class_keyword),
         .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
         .expression = expression,
-        .statements = statements,
+        .body = body,
         .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword)
     };
 

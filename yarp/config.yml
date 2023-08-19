@@ -540,7 +540,7 @@ nodes:
       - name: parameters
         type: node?
         kind: BlockParametersNode
-      - name: statements
+      - name: body
         type: node?
       - name: opening_loc
         type: location
@@ -727,7 +727,7 @@ nodes:
         type: location?
       - name: superclass
         type: node?
-      - name: statements
+      - name: body
         type: node?
       - name: end_keyword_loc
         type: location
@@ -816,7 +816,7 @@ nodes:
       - name: parameters
         type: node?
         kind: ParametersNode
-      - name: statements
+      - name: body
         type: node?
       - name: locals
         type: constant[]
@@ -1239,7 +1239,7 @@ nodes:
       - name: parameters
         type: node?
         kind: BlockParametersNode
-      - name: statements
+      - name: body
         type: node?
     comment: |
       Represents using a lambda literal (not the lambda method call).
@@ -1314,7 +1314,7 @@ nodes:
         type: location
       - name: constant_path
         type: node
-      - name: statements
+      - name: body
         type: node?
       - name: end_keyword_loc
         type: location
@@ -1459,7 +1459,7 @@ nodes:
           end
   - name: ParenthesesNode
     child_nodes:
-      - name: statements
+      - name: body
         type: node?
       - name: opening_loc
         type: location
@@ -1702,7 +1702,7 @@ nodes:
         type: location
       - name: expression
         type: node
-      - name: statements
+      - name: body
         type: node?
       - name: end_keyword_loc
         type: location

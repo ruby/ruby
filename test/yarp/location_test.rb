@@ -69,8 +69,8 @@ module YARP
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz end")
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz\nensure qux end")
 
-      assert_location(BeginNode, "class Foo\nrescue then end", 10..25, &:statements)
-      assert_location(BeginNode, "module Foo\nrescue then end", 11..26, &:statements)
+      assert_location(BeginNode, "class Foo\nrescue then end", 10..25, &:body)
+      assert_location(BeginNode, "module Foo\nrescue then end", 11..26, &:body)
     end
 
     def test_BlockArgumentNode
@@ -287,7 +287,7 @@ module YARP
 
     def test_ForwardingArgumentsNode
       assert_location(ForwardingArgumentsNode, "def foo(...); bar(...); end", 18...21) do |node|
-        node.statements.body.first.arguments.arguments.first
+        node.body.body.first.arguments.arguments.first
       end
     end
 
@@ -599,13 +599,13 @@ module YARP
     end
 
     def test_StatementsNode
-      assert_location(StatementsNode, "foo { 1 }", 6...7) { |node| node.block.statements }
+      assert_location(StatementsNode, "foo { 1 }", 6...7) { |node| node.block.body }
 
-      assert_location(StatementsNode, "(1)", 1...2, &:statements)
+      assert_location(StatementsNode, "(1)", 1...2, &:body)
 
-      assert_location(StatementsNode, "def foo; 1; end", 9...10, &:statements)
-      assert_location(StatementsNode, "def foo = 1", 10...11, &:statements)
-      assert_location(StatementsNode, "def foo; 1\n2; end", 9...12, &:statements)
+      assert_location(StatementsNode, "def foo; 1; end", 9...10, &:body)
+      assert_location(StatementsNode, "def foo = 1", 10...11, &:body)
+      assert_location(StatementsNode, "def foo; 1\n2; end", 9...12, &:body)
 
       assert_location(StatementsNode, "if foo; bar; end", 8...11, &:statements)
       assert_location(StatementsNode, "foo if bar", 0...3, &:statements)
@@ -631,11 +631,11 @@ module YARP
       assert_location(StatementsNode, "begin; ensure; foo; end", 15...18) { |node| node.ensure_clause.statements }
       assert_location(StatementsNode, "begin; rescue; else; foo; end", 21...24) { |node| node.else_clause.statements }
 
-      assert_location(StatementsNode, "class Foo; foo; end", 11...14, &:statements)
-      assert_location(StatementsNode, "module Foo; foo; end", 12...15, &:statements)
-      assert_location(StatementsNode, "class << self; foo; end", 15...18, &:statements)
+      assert_location(StatementsNode, "class Foo; foo; end", 11...14, &:body)
+      assert_location(StatementsNode, "module Foo; foo; end", 12...15, &:body)
+      assert_location(StatementsNode, "class << self; foo; end", 15...18, &:body)
 
-      assert_location(StatementsNode, "-> { foo }", 5...8, &:statements)
+      assert_location(StatementsNode, "-> { foo }", 5...8, &:body)
       assert_location(StatementsNode, "BEGIN { foo }", 8...11, &:statements)
       assert_location(StatementsNode, "END { foo }", 6...9, &:statements)
 
