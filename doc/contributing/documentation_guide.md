@@ -171,6 +171,61 @@ We might consider whether to suppress when:
   - \Method.
   - \Module.
 
+### Fonts
+
+Most of the text in the documentation should use the default font
+(which may vary depending on the output format).
+
+#### Monofont Text
+
+Most often, the name of a class, module, constant, or method
+will be autolinked:
+
+- Array.
+- Enumerable.
+- File::RDONLY.
+- File.new
+- File#read.
+
+If not, or if you suppress autolinking, consider forcing monofont.
+
+- +File::RDONLY+.
+- \+Array+.
+
+Monofont text may be forced for a single word with enclosing plus-signs,
+or for any text with enclosing markup tags:
+
+    +:my_word+
+    <tt>Foo Bar</tt>
+
+#### Italic Text
+
+The name of a variable (as specified in its call-seq)
+should be italicized in the method's discussion.
+
+Also, use italic text for the name of a transient variable
+(i.e., one defined and used only in the discussion, such as _n_).
+
+Italic text may also be used for emphasis.
+
+Italic text may be forced for a single word with enclosing underscores,
+or for any text with enclosing markup tags:
+
+    _Italic_
+    <i>Italic words</i>
+
+#### Bold Text
+
+In the rare case where heading-like structures are needed
+within the documentation for a method or constant,
+use bold text as pseudo-headings.
+
+Bold text may be forced for any text with enclosing markup tags:
+
+    <b>Bold words</b>
+
+Do not use formal headings the documentation for a method or constant.
+
 ### HTML Tags
 
 In general, avoid using HTML tags (even in formats where it's allowed)
