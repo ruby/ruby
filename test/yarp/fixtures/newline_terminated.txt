@@ -1,2 +1,13 @@
+# note that %i, %I, %w, and %W do not support newline termination in CRuby
+
+%
+foo
+
+%q
+foo
+
+%Q
+foo
+
 %r
 foo
