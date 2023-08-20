@@ -162,6 +162,12 @@ class ErrorsTest < Test::Unit::TestCase
     ]
   end
 
+  def test_cr_without_lf_in_percent_expression
+    assert_errors expression("%\r"), "%\r", [
+      ["Invalid %% token", 0..3],
+    ]
+  end
+
   def test_1_2_3
     assert_errors expression("(1, 2, 3)"), "(1, 2, 3)", [
       ["Expected to be able to parse an expression.", 2..2],

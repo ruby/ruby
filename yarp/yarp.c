@@ -6186,7 +6186,9 @@ parser_lex(yp_parser_t *parser) {
                             yp_newline_list_check_append(&parser->newline_list, parser->current.end);
 
                             parser->current.end++;
-                            LEX(YP_TOKEN_STRING_BEGIN);
+                            if (parser->current.end < parser->end) {
+                                LEX(YP_TOKEN_STRING_BEGIN);
+                            }
                         }
 
                         switch (*parser->current.end) {
@@ -6285,7 +6287,7 @@ parser_lex(yp_parser_t *parser) {
                                 // unparseable. In this case we'll just drop it from the parser
                                 // and skip past it and hope that the next token is something
                                 // that we can parse.
-                                yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "invalid %% token");
+                                yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid %% token");
                                 goto lex_next_token;
                         }
                     }
