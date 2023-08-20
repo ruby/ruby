@@ -955,11 +955,15 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new "corrupt.gem"
 
-    e = assert_raise Gem::Package::FormatError do
-      package.verify
+    e = nil
+    out_err = capture_output do
+      e = assert_raise Gem::Package::FormatError do
+        package.verify
+      end
     end
 
     assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+    assert_equal(["", "Exception while verifying corrupt.gem\n"], out_err)
   end
 
   def test_verify_corrupt_tar_checksums_entry
@@ -987,11 +991,15 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new "corrupt.gem"
 
-    e = assert_raise Gem::Package::FormatError do
-      package.verify
+    e = nil
+    out_err = capture_output do
+      e = assert_raise Gem::Package::FormatError do
+        package.verify
+      end
     end
 
     assert_match(/(EOFError|end of file reached) in corrupt.gem/i, e.message)
+    assert_equal(["", "Exception while verifying corrupt.gem\n"], out_err)
   end
 
   def test_corrupt_data_tar_gz
