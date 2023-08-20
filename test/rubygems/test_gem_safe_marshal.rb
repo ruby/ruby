@@ -20,7 +20,9 @@ class TestGemSafeMarshal < Gem::TestCase
   def test_recursive_string
     s = String.new("hello")
     s.instance_variable_set(:@type, s)
-    assert_safe_load_as s, additional_methods: [:instance_variables]
+    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "String" => %w[@type E] }) do
+      assert_safe_load_as s, additional_methods: [:instance_variables]
+    end
   end
 
   def test_recursive_array
@@ -39,11 +41,17 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_string_with_ivar
-    assert_safe_load_as String.new("abc").tap {|s| s.instance_variable_set :@type, "type" }
+    str = String.new("abc")
+    str.instance_variable_set :@type, "type"
+    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "String" => %w[@type E] }) do
+      assert_safe_load_as str
+    end
   end
 
   def test_time_with_ivar
-    assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, "type" }
+    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "Time" => %w[@type offset zone nano_num nano_den submicro], "String" => "E" }) do
+      assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, :runtime }
+    end
   end
 
   secs = Time.new(2000, 12, 31, 23, 59, 59).to_i
@@ -64,7 +72,7 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.01, :nanosecond),
     Time.at(secs, 1.001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
-    Time.at(secs, 1.00001, :nanosecond).tap {|t| t.instance_variable_set :@type, "type" },
+    Time.at(secs, 1.00001, :nanosecond),
   ].each_with_index do |t, i|
     define_method("test_time_#{i} #{t.inspect}") do
       assert_safe_load_as t, additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a]
@@ -79,11 +87,21 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_hash_with_ivar
-    assert_safe_load_as({ runtime: :development }.tap {|h| h.instance_variable_set :@type, "null" })
+    h = { runtime: :development }
+    h.instance_variable_set :@type, []
+    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "Hash" => %w[@type] }) do
+      assert_safe_load_as(h)
+    end
   end
 
   def test_hash_with_default_value
     assert_safe_load_as Hash.new([])
+  end
+
+  def test_hash_with_compare_by_identity
+    pend "`read_user_class` not yet implemented"
+
+    assert_safe_load_as Hash.new.compare_by_identity
   end
 
   def test_frozen_object
@@ -91,7 +109,11 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_date
-    assert_safe_load_as Date.new
+    assert_safe_load_as Date.new(1994, 12, 9)
+  end
+
+  def test_rational
+    assert_safe_load_as Rational(1, 3)
   end
 
   [
@@ -141,5 +163,19 @@ class TestGemSafeMarshal < Gem::TestCase
       assert_equal loaded.send(m), safe_loaded.send(m), "should have equal #{m}"
     end
     assert_equal Marshal.dump(loaded), Marshal.dump(safe_loaded), "should Marshal.dump the same"
+  end
+
+  def with_const(mod, name, new_value, &block)
+    orig = mod.const_get(name)
+    mod.send :remove_const, name
+    mod.const_set name, new_value
+
+    begin
+      yield
+    ensure
+      mod.send :remove_const, name
+      mod.const_set name, orig
+      mod.send :private_constant, name
+    end
   end
 end

@@ -5,9 +5,10 @@ require_relative "visitor"
 module Gem::SafeMarshal
   module Visitors
     class ToRuby < Visitor
-      def initialize(permitted_classes:, permitted_symbols:)
+      def initialize(permitted_classes:, permitted_symbols:, permitted_ivars:)
         @permitted_classes = permitted_classes
         @permitted_symbols = permitted_symbols | permitted_classes | ["E"]
+        @permitted_ivars = permitted_ivars
 
         @objects = []
         @symbols = []
@@ -17,7 +18,8 @@ module Gem::SafeMarshal
       end
 
       def inspect # :nodoc:
-        format("#<%s permitted_classes: %p permitted_symbols: %p>", self.class, @permitted_classes, @permitted_symbols)
+        format("#<%s permitted_classes: %p permitted_symbols: %p permitted_ivars: %p>",
+          self.class, @permitted_classes, @permitted_symbols, @permitted_ivars)
       end
 
       def visit(target)
@@ -37,14 +39,16 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_Symbol(s)
-        resolve_symbol(s.name)
+        name = s.name
+        raise UnpermittedSymbolError.new(symbol: name, stack: @stack.dup) unless @permitted_symbols.include?(name)
+        visit_symbol_type(s)
       end
 
-      def map_ivars(ivars)
+      def map_ivars(klass, ivars)
         ivars.map.with_index do |(k, v), i|
-          @stack << "ivar #{i}"
-          k = visit(k)
-          @stack << k
+          @stack << "ivar_#{i}"
+          k = resolve_ivar(klass, k)
+          @stack[-1] = k
           next k, visit(v)
         end
       end
@@ -54,12 +58,12 @@ module Gem::SafeMarshal
         object_offset = @objects.size
         @stack << "object"
         object = visit(e.object)
-        ivars = map_ivars(e.ivars)
+        ivars = map_ivars(object.class, e.ivars)
 
         case e.object
         when Elements::UserDefined
           if object.class == ::Time
-            offset = zone = nano_num = nano_den = nil
+            offset = zone = nano_num = nano_den = submicro = nil
             ivars.reject! do |k, v|
               case k
               when :offset
@@ -71,6 +75,7 @@ module Gem::SafeMarshal
               when :nano_den
                 nano_den = v
               when :submicro
+                submicro = v
               else
                 next false
               end
@@ -80,17 +85,23 @@ module Gem::SafeMarshal
             if (nano_den || nano_num) && !(nano_den && nano_num)
               raise FormatError, "Must have all of nano_den, nano_num for Time #{e.pretty_inspect}"
             elsif nano_den && nano_num
-              nano = Rational(nano_num, nano_den)
-              nsec, subnano = nano.divmod(1)
-              nano  = nsec + subnano
-
-              object = Time.at(object.to_r, nano, :nanosecond)
+              if RUBY_ENGINE == "jruby"
+                nano = Rational(nano_num, nano_den * 1_000_000_000)
+                object = Time.at(object.to_i + nano + object.subsec)
+              elsif RUBY_ENGINE == "truffleruby"
+                object = Time.at(object.to_i, Rational(nano_num, nano_den).to_i, :nanosecond)
+              else # assume "ruby"
+                nano = Rational(nano_num, nano_den)
+                nsec, subnano = nano.divmod(1)
+                nano = nsec + subnano
+                object = Time.at(object.to_r, nano, :nanosecond)
+              end
             end
 
             if zone
               require "time"
               zone = "+0000" if zone == "UTC" && offset == 0
-              Time.send(:force_zone!, object, zone, offset)
+              call_method(Time, :force_zone!, object, zone, offset)
             elsif offset
               object = object.localtime offset
             end
@@ -157,14 +168,23 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_UserDefined(o)
-        register_object(resolve_class(o.name).send(:_load, o.binary_string))
+        register_object(call_method(resolve_class(o.name), :_load, o.binary_string))
       end
 
       def visit_Gem_SafeMarshal_Elements_UserMarshal(o)
-        register_object(resolve_class(o.name).allocate).tap do |object|
-          @stack << :data
-          object.marshal_load visit(o.data)
+        klass = resolve_class(o.name)
+        compat = COMPAT_CLASSES.fetch(klass, nil)
+        idx = @objects.size
+        object = register_object(call_method(compat || klass, :allocate))
+
+        @stack << :data
+        ret = call_method(object, :marshal_load, visit(o.data))
+
+        if compat
+          object = @objects[idx] = ret
         end
+
+        object
       end
 
       def visit_Gem_SafeMarshal_Elements_Integer(i)
@@ -218,16 +238,9 @@ module Gem::SafeMarshal
 
       def resolve_class(n)
         @class_cache[n] ||= begin
-          name = nil
-          case n
-          when Elements::Symbol, Elements::SymbolLink
-            @stack << "class name"
-            name = visit(n)
-          else
-            raise FormatError, "Class names must be Symbol or SymbolLink"
-          end
-          to_s = name.to_s
-          raise UnpermittedClassError.new(name: name, stack: @stack.dup) unless @permitted_classes.include?(to_s)
+          to_s = resolve_symbol_name(n)
+          raise UnpermittedClassError.new(name: to_s, stack: @stack.dup) unless @permitted_classes.include?(to_s)
+          visit_symbol_type(n)
           begin
             ::Object.const_get(to_s)
           rescue NameError
@@ -236,11 +249,47 @@ module Gem::SafeMarshal
         end
       end
 
-      def resolve_symbol(name)
-        raise UnpermittedSymbolError.new(symbol: name, stack: @stack.dup) unless @permitted_symbols.include?(name)
-        sym = name.to_sym
-        @symbols << sym
-        sym
+      class RationalCompat
+        def marshal_load(s)
+          num, den = s
+          raise ArgumentError, "Expected 2 ints" unless s.size == 2 && num.is_a?(Integer) && den.is_a?(Integer)
+          Rational(num, den)
+        end
+      end
+
+      COMPAT_CLASSES = {}.tap do |h|
+        h[Rational] = RationalCompat if RUBY_VERSION >= "3"
+      end.freeze
+      private_constant :COMPAT_CLASSES
+
+      def resolve_ivar(klass, name)
+        to_s = resolve_symbol_name(name)
+
+        raise UnpermittedIvarError.new(symbol: to_s, klass: klass, stack: @stack.dup) unless @permitted_ivars.fetch(klass.name, [].freeze).include?(to_s)
+
+        visit_symbol_type(name)
+      end
+
+      def visit_symbol_type(element)
+        case element
+        when Elements::Symbol
+          sym = element.name.to_sym
+          @symbols << sym
+          sym
+        when Elements::SymbolLink
+          visit_Gem_SafeMarshal_Elements_SymbolLink(element)
+        end
+      end
+
+      def resolve_symbol_name(element)
+        case element
+        when Elements::Symbol
+          element.name
+        when Elements::SymbolLink
+          visit_Gem_SafeMarshal_Elements_SymbolLink(element).to_s
+        else
+          raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{@stack.join(".")}"
+        end
       end
 
       def register_object(o)
@@ -248,11 +297,28 @@ module Gem::SafeMarshal
         o
       end
 
+      def call_method(receiver, method, *args)
+        receiver.__send__(method, *args)
+      rescue NoMethodError => e
+        raise unless e.receiver == receiver
+
+        raise MethodCallError, "Unable to call #{method.inspect} on #{receiver.inspect}, perhaps it is a class using marshal compat, which is not visible in ruby? #{e}"
+      end
+
       class UnpermittedSymbolError < StandardError
         def initialize(symbol:, stack:)
           @symbol = symbol
           @stack = stack
           super "Attempting to load unpermitted symbol #{symbol.inspect} @ #{stack.join "."}"
+        end
+      end
+
+      class UnpermittedIvarError < StandardError
+        def initialize(symbol:, klass:, stack:)
+          @symbol = symbol
+          @klass = klass
+          @stack = stack
+          super "Attempting to set unpermitted ivar #{symbol.inspect} on object of class #{klass} @ #{stack.join "."}"
         end
       end
 
@@ -265,6 +331,9 @@ module Gem::SafeMarshal
       end
 
       class FormatError < StandardError
+      end
+
+      class MethodCallError < StandardError
       end
     end
   end
