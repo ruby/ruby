@@ -197,7 +197,6 @@ require_relative "irb/debug"
 #
 #     IRB.conf[:PROMPT_MODE][:DEFAULT] = {
 #       :PROMPT_I => "%N(%m):%03n> ",
-#       :PROMPT_N => "%N(%m):%03n> ",
 #       :PROMPT_S => "%N(%m):%03n%l ",
 #       :PROMPT_C => "%N(%m):%03n* ",
 #       :RETURN => "%s\n" # used to printf
@@ -207,35 +206,30 @@ require_relative "irb/debug"
 #
 #   # :NULL:
 #   #   :PROMPT_I:
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |
 #   #     %s
 #   # :DEFAULT:
 #   #   :PROMPT_I: ! '%N(%m):%03n> '
-#   #   :PROMPT_N: ! '%N(%m):%03n> '
 #   #   :PROMPT_S: ! '%N(%m):%03n%l '
 #   #   :PROMPT_C: ! '%N(%m):%03n* '
 #   #   :RETURN: |
 #   #     => %s
 #   # :CLASSIC:
 #   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
-#   #   :PROMPT_N: ! '%N(%m):%03n:%i> '
 #   #   :PROMPT_S: ! '%N(%m):%03n:%i%l '
 #   #   :PROMPT_C: ! '%N(%m):%03n:%i* '
 #   #   :RETURN: |
 #   #     %s
 #   # :SIMPLE:
 #   #   :PROMPT_I: ! '>> '
-#   #   :PROMPT_N: ! '>> '
 #   #   :PROMPT_S:
 #   #   :PROMPT_C: ! '?> '
 #   #   :RETURN: |
 #   #     => %s
 #   # :INF_RUBY:
 #   #   :PROMPT_I: ! '%N(%m):%03n> '
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |
@@ -243,7 +237,6 @@ require_relative "irb/debug"
 #   #   :AUTO_INDENT: true
 #   # :XMP:
 #   #   :PROMPT_I:
-#   #   :PROMPT_N:
 #   #   :PROMPT_S:
 #   #   :PROMPT_C:
 #   #   :RETURN: |2
@@ -528,8 +521,6 @@ module IRB
           f = @context.prompt_s
         elsif continue
           f = @context.prompt_c
-        elsif indent > 0
-          f = @context.prompt_n
         else
           f = @context.prompt_i
         end

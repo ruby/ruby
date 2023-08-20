@@ -179,7 +179,6 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     write_irbrc <<~'LINES'
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
-        :PROMPT_N => "%03n> ",
         :PROMPT_S => "%03n> ",
         :PROMPT_C => "%03n> "
       }
@@ -214,7 +213,6 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     write_irbrc <<~'LINES'
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
-        :PROMPT_N => "%03n> ",
         :PROMPT_S => "%03n> ",
         :PROMPT_C => "%03n> "
       }
