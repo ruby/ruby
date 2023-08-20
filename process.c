@@ -1424,7 +1424,7 @@ proc_m_wait(int c, VALUE *v, VALUE _)
  *    Process.wait2(pid = -1, flags = 0) -> [pid, status]
  *
  *  Like Process.waitpid, but returns an array
- *  containing the child process pid and Process::Status status:
+ *  containing the child process +pid+ and Process::Status +status+:
  *
  *    pid = Process.spawn('ruby', '-e', 'exit 13') # => 309581
  *    Process.wait2(pid)
