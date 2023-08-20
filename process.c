@@ -3034,8 +3034,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  <b>Argument +command_line+</b>
  *
  *  \String argument +command_line+ is a command line to be passed to a shell;
- *  it must begin with a shell reserved word or special built-in,
- *  and may also contain arguments and options for that command.
+ *  it must begin with a shell reserved word, begin with a special built-in,
+ *  or contain meta characters.
+ *  It may also contain arguments and options for that command.
  *
  *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
  *  otherwise the shell is determined by environment variable
