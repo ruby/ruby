@@ -8,7 +8,7 @@ module IRB
   module ExtendCommand
     class Edit < Nop
       category "Misc"
-      description 'Open a file with the editor command defined with `ENV["EDITOR"]`.'
+      description 'Open a file with the editor command defined with `ENV["VISUAL"]` or `ENV["EDITOR"]`.'
 
       class << self
         def transform_args(args)
@@ -45,12 +45,12 @@ module IRB
           end
         end
 
-        if editor = ENV['EDITOR']
+        if editor = (ENV['VISUAL'] || ENV['EDITOR'])
           puts "command: '#{editor}'"
           puts "   path: #{path}"
           system(*Shellwords.split(editor), path)
         else
-          puts "Can not find editor setting: ENV['EDITOR']"
+          puts "Can not find editor setting: ENV['VISUAL'] or ENV['EDITOR']"
         end
       end
     end

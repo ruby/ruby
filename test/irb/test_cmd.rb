@@ -920,12 +920,15 @@ module TestIRB
 
   class EditTest < CommandTestCase
     def setup
+      @original_visual = ENV["VISUAL"]
       @original_editor = ENV["EDITOR"]
       # noop the command so nothing gets executed
-      ENV["EDITOR"] = ": code"
+      ENV["VISUAL"] = ": code"
+      ENV["EDITOR"] = ": code2"
     end
 
     def teardown
+      ENV["VISUAL"] = @original_visual
       ENV["EDITOR"] = @original_editor
     end
 
@@ -987,6 +990,19 @@ module TestIRB
       assert_empty err
       assert_match(/path: .*\/lib\/irb\.rb/, out)
       assert_match("command: ': code'", out)
+    end
+
+    def test_edit_with_editor_env_var
+      ENV.delete("VISUAL")
+
+      out, err = execute_lines(
+        "edit",
+        irb_path: __FILE__
+      )
+
+      assert_empty err
+      assert_match("path: #{__FILE__}", out)
+      assert_match("command: ': code2'", out)
     end
   end
 end
