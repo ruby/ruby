@@ -1522,11 +1522,10 @@ rb_detach_process(rb_pid_t pid)
  *  This example does not reap the second child process;
  *  that process appears as a zombie in the process status (+ps+) output:
  *
- *    pid0 = Process.spawn('ruby', '-e', 'exit 13') # => 312691
- *    pid1 = Process.spawn('ruby', '-e', 'exit 14') # => 312716
- *    Process.wait(pid0)                            # => 312691
+ *    pid = Process.spawn('ruby', '-e', 'exit 13') # => 312691
+ *    sleep(1)
  *    # Find zombies.
- *    system("ps -ho pid,state -p #{pid1}")
+ *    system("ps -ho pid,state -p #{pid}")
  *
  *  Output:
  *
