@@ -86,12 +86,14 @@ void
 Init_version(void)
 {
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
-    VALUE version;
-    VALUE ruby_engine_name;
+    VALUE version = MKSTR(version);
+    VALUE ruby_engine_name = MKSTR(engine);
+    // MKSTR macro is a marker for fake.rb
+
     /*
      * The running version of ruby
      */
-    rb_define_global_const("RUBY_VERSION", (version = MKSTR(version)));
+    rb_define_global_const("RUBY_VERSION", /* MKSTR(version) */ version);
     /*
      * The date this ruby was released
      */
@@ -116,12 +118,12 @@ Init_version(void)
     /*
      * The engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
+    rb_define_global_const("RUBY_ENGINE", /* MKSTR(engine) */ ruby_engine_name);
     ruby_set_script_name(ruby_engine_name);
     /*
      * The version of the engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE_VERSION", (1 ? version : MKSTR(version)));
+    rb_define_global_const("RUBY_ENGINE_VERSION", /* MKSTR(version) */ version);
 
     rb_provide("ruby2_keywords.rb");
 }
