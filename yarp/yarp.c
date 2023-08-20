@@ -6224,6 +6224,7 @@ parser_lex(yp_parser_t *parser) {
 
                                 if (parser->current.end < parser->end) {
                                     lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    yp_newline_list_check_append(&parser->newline_list, parser->current.end);
                                     parser->current.end++;
                                 }
 
@@ -6234,6 +6235,7 @@ parser_lex(yp_parser_t *parser) {
 
                                 if (parser->current.end < parser->end) {
                                     lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    yp_newline_list_check_append(&parser->newline_list, parser->current.end);
                                     parser->current.end++;
                                 }
 
