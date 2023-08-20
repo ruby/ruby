@@ -1,6 +1,5 @@
 require 'io/console'
 require 'io/wait'
-require 'timeout'
 require_relative 'terminfo'
 
 class Reline::ANSI
@@ -154,11 +153,13 @@ class Reline::ANSI
   end
 
   @@buf = []
-  def self.inner_getc
+  def self.inner_getc(timeout_second)
     unless @@buf.empty?
       return @@buf.shift
     end
     until c = @@input.raw(intr: true) { @@input.wait_readable(0.1) && @@input.getbyte }
+      timeout_second -= 0.1
+      return nil if timeout_second <= 0
       Reline.core.line_editor.resize
     end
     (c == 0x16 && @@input.raw(min: 0, time: 0, &:getbyte)) || c
@@ -172,40 +173,38 @@ class Reline::ANSI
   @@in_bracketed_paste_mode = false
   START_BRACKETED_PASTE = String.new("\e[200~,", encoding: Encoding::ASCII_8BIT)
   END_BRACKETED_PASTE = String.new("\e[200~.", encoding: Encoding::ASCII_8BIT)
-  def self.getc_with_bracketed_paste
+  def self.getc_with_bracketed_paste(timeout_second)
     buffer = String.new(encoding: Encoding::ASCII_8BIT)
-    buffer << inner_getc
+    buffer << inner_getc(timeout_second)
     while START_BRACKETED_PASTE.start_with?(buffer) or END_BRACKETED_PASTE.start_with?(buffer) do
       if START_BRACKETED_PASTE == buffer
         @@in_bracketed_paste_mode = true
-        return inner_getc
+        return inner_getc(timeout_second)
       elsif END_BRACKETED_PASTE == buffer
         @@in_bracketed_paste_mode = false
         ungetc(-1)
-        return inner_getc
+        return inner_getc(timeout_second)
       end
-      begin
-        succ_c = nil
-        Timeout.timeout(Reline.core.config.keyseq_timeout * 100) {
-          succ_c = inner_getc
-        }
-      rescue Timeout::Error
-        break
-      else
+      succ_c = inner_getc(Reline.core.config.keyseq_timeout)
+
+      if succ_c
         buffer << succ_c
+      else
+        break
       end
     end
     buffer.bytes.reverse_each do |ch|
       ungetc ch
     end
-    inner_getc
+    inner_getc(timeout_second)
   end
 
-  def self.getc
+  # if the usage expects to wait indefinitely, use Float::INFINITY for timeout_second
+  def self.getc(timeout_second)
     if Reline.core.config.enable_bracketed_paste
-      getc_with_bracketed_paste
+      getc_with_bracketed_paste(timeout_second)
     else
-      inner_getc
+      inner_getc(timeout_second)
     end
   end
 
