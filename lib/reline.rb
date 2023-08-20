@@ -433,8 +433,7 @@ module Reline
     end
 
     private def read_2nd_character_of_key_sequence(keyseq_timeout, buffer, c, block)
-      succ_c = io_gate.getc(keyseq_timeout / 1000)
-
+      succ_c = io_gate.getc(keyseq_timeout.fdiv(1000))
       if succ_c
         case key_stroke.match_status(buffer.dup.push(succ_c))
         when :unmatched
@@ -462,7 +461,7 @@ module Reline
     end
 
     private def read_escaped_key(keyseq_timeout, c, block)
-      escaped_c = io_gate.getc(keyseq_timeout / 1000)
+      escaped_c = io_gate.getc(keyseq_timeout.fdiv(1000))
 
       if escaped_c.nil?
         block.([Reline::Key.new(c, c, false)])
