@@ -8707,7 +8707,7 @@ proc_warmup(VALUE _)
  *
  * The working directory of the current process is not changed:
  *
- *   Dir .pwd # => "/var"
+ *   Dir.pwd # => "/var"
  *
  * ==== \File Redirection (\File Descriptor)
  *
