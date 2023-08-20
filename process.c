@@ -1516,6 +1516,9 @@ rb_detach_process(rb_pid_t pid)
  *
  *  Avoids the potential for a child process to become a
  *  {zombie process}[https://en.wikipedia.org/wiki/Zombie_process].
+ *  Process::detach prevents this by setting up a separate Ruby thread
+ *  whose sole job is to reap the status of the process _pid_ when it terminates.
+ *
  *  This method is needed only when the parent process will never wait
  *  for the child process.
  *
@@ -1534,13 +1537,11 @@ rb_detach_process(rb_pid_t pid)
  *  This example also does not reap the second child process,
  *  but it does detach the process so that it does not become a zombie:
  *
- *    pid0 = Process.spawn('ruby', '-e', 'exit 13') # => 313213
- *    pid1 = Process.spawn('ruby', '-e', 'exit 14') # => 313262
- *    Process.wait(pid0)                            # => 313213
- *    sleep 2
- *    thread = Process.detach(pid1)
+ *    pid = Process.spawn('ruby', '-e', 'exit 13') # => 313213
+ *    sleep(1)
+ *    thread = Process.detach(pid)
  *    # => #<Process::Waiter:0x00007f038f48b838 run>
- *    system("ps -ho pid,state -p #{pid1}")         # Finds no zombies.
+ *    system("ps -ho pid,state -p #{pid}")        # Finds no zombies.
  *
  *  The waiting thread can return the pid of the detached child process:
  *
@@ -3014,7 +3015,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  - Invoking the executable at +exe_path+.
  *
  *  The new process is created using the
- *  {exec system call}[https://www.man7.org/linux/man-pages/man1/exec.1p.html];
+ *  {exec system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/execve.html];
  *  it may inherit some of its environment from the calling program
  *  (possibly including open file descriptors).
  *
