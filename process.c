@@ -1544,7 +1544,7 @@ rb_detach_process(rb_pid_t pid)
  *
  *  The waiting thread can return the pid of the detached child process:
  *
- *    thread.join(thread).pid                       # => 313262
+ *    thread.join.pid                       # => 313262
  *
  */
 
