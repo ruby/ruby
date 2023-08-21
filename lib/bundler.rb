@@ -515,7 +515,12 @@ EOF
     end
 
     def safe_load_marshal(data)
-      load_marshal(data, :marshal_proc => SafeMarshal.proc)
+      if Gem.respond_to?(:load_safe_marshal)
+        Gem.load_safe_marshal
+        Gem::SafeMarshal.safe_load(data)
+      else
+        load_marshal(data, :marshal_proc => SafeMarshal.proc)
+      end
     end
 
     def load_gemspec(file, validate = false)
