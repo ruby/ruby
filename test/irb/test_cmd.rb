@@ -62,23 +62,6 @@ module TestIRB
     end
   end
 
-  class CommnadAliasTest < CommandTestCase
-    def test_vars_with_aliases
-      @foo = "foo"
-      $bar = "bar"
-      out, err = execute_lines(
-        "@foo\n",
-        "$bar\n",
-      )
-      assert_empty err
-      assert_match(/"foo"/, out)
-      assert_match(/"bar"/, out)
-    ensure
-      remove_instance_variable(:@foo)
-      $bar = nil
-    end
-  end
-
   class InfoTest < CommandTestCase
     def setup
       super

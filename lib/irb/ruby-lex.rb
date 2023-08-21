@@ -7,7 +7,6 @@
 require "ripper"
 require "jruby" if RUBY_ENGINE == "jruby"
 require_relative "nesting_parser"
-require_relative "statement"
 
 # :stopdoc:
 class RubyLex
@@ -42,6 +41,8 @@ class RubyLex
     end
   end
 
+  attr_reader :line_no
+
   def initialize(context)
     @context = context
     @line_no = 1
@@ -63,16 +64,6 @@ class RubyLex
       result = yield code, line_no
     end
     result
-  end
-
-  def single_line_command?(code)
-    command = code.split(/\s/, 2).first
-    @context.symbol_alias?(command) || @context.transform_args?(command)
-  end
-
-  # io functions
-  def set_input(&block)
-    @input = block
   end
 
   def set_prompt(&block)
@@ -186,62 +177,6 @@ class RubyLex
 
   def increase_line_no(addition)
     @line_no += addition
-  end
-
-  def readmultiline
-    save_prompt_to_context_io([], false, 0)
-
-    # multiline
-    return @input.call if @context.io.respond_to?(:check_termination)
-
-    # nomultiline
-    code = ''
-    line_offset = 0
-    loop do
-      line = @input.call
-      unless line
-        return code.empty? ? nil : code
-      end
-
-      code << line
-      # Accept any single-line input for symbol aliases or commands that transform args
-      return code if single_line_command?(code)
-
-      tokens, opens, terminated = check_code_state(code)
-      return code if terminated
-
-      line_offset += 1
-      continue = should_continue?(tokens)
-      save_prompt_to_context_io(opens, continue, line_offset)
-    end
-  end
-
-  def each_top_level_statement
-    loop do
-      code = readmultiline
-      break unless code
-
-      if code != "\n"
-        yield build_statement(code), @line_no
-      end
-      increase_line_no(code.count("\n"))
-    rescue TerminateLineInput
-    end
-  end
-
-  def build_statement(code)
-    code.force_encoding(@context.io.encoding)
-    command_or_alias, arg = code.split(/\s/, 2)
-    # Transform a non-identifier alias (@, $) or keywords (next, break)
-    command_name = @context.command_aliases[command_or_alias.to_sym]
-    command = command_name || command_or_alias
-    command_class = IRB::ExtendCommandBundle.load_command(command)
-
-    if command_class
-      IRB::Statement::Command.new(code, command, arg, command_class)
-    else
-      IRB::Statement::Expression.new(code, assignment_expression?(code))
-    end
   end
 
   def assignment_expression?(code)

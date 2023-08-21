@@ -4,6 +4,67 @@ require "irb"
 require_relative "helper"
 
 module TestIRB
+  class InputTest < IntegrationTestCase
+    def test_symbol_aliases_are_handled_correctly
+      write_ruby <<~'RUBY'
+        class Foo
+        end
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "$ Foo"
+        type "exit!"
+      end
+
+      assert_include output, "From: #{@ruby_file.path}:1"
+    end
+
+    def test_symbol_aliases_are_handled_correctly_with_singleline_mode
+      @irbrc = Tempfile.new('irbrc')
+      @irbrc.write <<~RUBY
+        IRB.conf[:USE_SINGLELINE] = true
+      RUBY
+      @irbrc.close
+      @envs['IRBRC'] = @irbrc.path
+
+      write_ruby <<~'RUBY'
+        class Foo
+        end
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "irb_info"
+        type "$ Foo"
+        type "exit!"
+      end
+
+      # Make sure it's tested in singleline mode
+      assert_include output, "InputMethod: ReadlineInputMethod"
+      assert_include output, "From: #{@ruby_file.path}:1"
+    ensure
+      @irbrc.unlink if @irbrc
+    end
+
+    def test_symbol_aliases_dont_affect_ruby_syntax
+      write_ruby <<~'RUBY'
+        $foo = "It's a foo"
+        @bar = "It's a bar"
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "$foo"
+        type "@bar"
+        type "exit!"
+      end
+
+      assert_include output, "=> \"It's a foo\""
+      assert_include output, "=> \"It's a bar\""
+    end
+  end
+
   class IrbIOConfigurationTest < TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :indent_level)
 

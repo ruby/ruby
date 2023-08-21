@@ -251,6 +251,22 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
+  def test_ctrl_c_is_handled
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+    LINES
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    # Assignment expression code that turns into non-assignment expression after evaluation
+    write("\C-c")
+    close
+    assert_screen(<<~EOC)
+      start IRB
+      irb(main):001>
+      ^C
+      irb(main):001>
+    EOC
+  end
+
   def test_show_cmds_with_pager_can_quit_with_ctrl_c
     write_irbrc <<~'LINES'
       puts 'start IRB'

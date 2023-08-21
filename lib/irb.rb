@@ -12,6 +12,7 @@ require_relative "irb/context"
 require_relative "irb/extend-command"
 
 require_relative "irb/ruby-lex"
+require_relative "irb/statement"
 require_relative "irb/input-method"
 require_relative "irb/locale"
 require_relative "irb/color"
@@ -550,27 +551,9 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input do
-        signal_status(:IN_INPUT) do
-          if l = @context.io.gets
-            print l if @context.verbose?
-          else
-            if @context.ignore_eof? and @context.io.readable_after_eof?
-              l = "\n"
-              if @context.verbose?
-                printf "Use \"exit\" to leave %s\n", @context.ap_name
-              end
-            else
-              print "\n" if @context.prompting?
-            end
-          end
-          l
-        end
-      end
-
       configure_io
 
-      @scanner.each_top_level_statement do |statement, line_no|
+      each_top_level_statement do |statement, line_no|
         signal_status(:IN_EVAL) do
           begin
             # If the integration with debugger is activated, we need to handle certain input differently
@@ -600,6 +583,86 @@ module IRB
       end
     end
 
+    def read_input
+      signal_status(:IN_INPUT) do
+        if l = @context.io.gets
+          print l if @context.verbose?
+        else
+          if @context.ignore_eof? and @context.io.readable_after_eof?
+            l = "\n"
+            if @context.verbose?
+              printf "Use \"exit\" to leave %s\n", @context.ap_name
+            end
+          else
+            print "\n" if @context.prompting?
+          end
+        end
+        l
+      end
+    end
+
+    def readmultiline
+      @scanner.save_prompt_to_context_io([], false, 0)
+
+      # multiline
+      return read_input if @context.io.respond_to?(:check_termination)
+
+      # nomultiline
+      code = ''
+      line_offset = 0
+      loop do
+        line = read_input
+        unless line
+          return code.empty? ? nil : code
+        end
+
+        code << line
+
+        # Accept any single-line input for symbol aliases or commands that transform args
+        return code if single_line_command?(code)
+
+        tokens, opens, terminated = @scanner.check_code_state(code)
+        return code if terminated
+
+        line_offset += 1
+        continue = @scanner.should_continue?(tokens)
+        @scanner.save_prompt_to_context_io(opens, continue, line_offset)
+      end
+    end
+
+    def each_top_level_statement
+      loop do
+        code = readmultiline
+        break unless code
+
+        if code != "\n"
+          yield build_statement(code), @scanner.line_no
+        end
+        @scanner.increase_line_no(code.count("\n"))
+      rescue RubyLex::TerminateLineInput
+      end
+    end
+
+    def build_statement(code)
+      code.force_encoding(@context.io.encoding)
+      command_or_alias, arg = code.split(/\s/, 2)
+      # Transform a non-identifier alias (@, $) or keywords (next, break)
+      command_name = @context.command_aliases[command_or_alias.to_sym]
+      command = command_name || command_or_alias
+      command_class = ExtendCommandBundle.load_command(command)
+
+      if command_class
+        Statement::Command.new(code, command, arg, command_class)
+      else
+        Statement::Expression.new(code, @scanner.assignment_expression?(code))
+      end
+    end
+
+    def single_line_command?(code)
+      command = code.split(/\s/, 2).first
+      @context.symbol_alias?(command) || @context.transform_args?(command)
+    end
+
     def configure_io
       if @context.io.respond_to?(:check_termination)
         @context.io.check_termination do |code|
@@ -616,7 +679,7 @@ module IRB
             end
           else
             # Accept any single-line input for symbol aliases or commands that transform args
-            next true if @scanner.single_line_command?(code)
+            next true if single_line_command?(code)
 
             _tokens, _opens, terminated = @scanner.check_code_state(code)
             terminated
