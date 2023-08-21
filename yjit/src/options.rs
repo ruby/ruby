@@ -164,7 +164,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         },
 
-        ("dump-disasm", _) => match opt_val.to_string().as_str() {
+        ("dump-disasm", _) => match opt_val {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
             directory => {
                 let pid = std::process::id();
@@ -180,7 +180,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
-        ("stats", _) => match opt_val.to_string().as_str() {
+        ("stats", _) => match opt_val {
             "" => unsafe { OPTIONS.gen_stats = true },
             "quiet" => {
                 unsafe { OPTIONS.gen_stats = true }
