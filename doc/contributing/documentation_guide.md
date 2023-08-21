@@ -198,6 +198,11 @@ or for any text with enclosing markup tags:
     +:my_word+
     <tt>Foo Bar</tt>
 
+Monofont text should also be used for code or commands:
+
+    <tt>return nil</tt>
+    <tt>ls -lrt</tt>
+
 #### Italic Text
 
 The name of a variable (as specified in its call-seq)
