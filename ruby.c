@@ -899,6 +899,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     ruby_features_t feat = opt->features;
     ruby_features_t warn = opt->warn;
     long backtrace_length_limit = opt->backtrace_length_limit;
+    const char *bugreport_path = opt->bugreport_path;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
@@ -952,6 +953,9 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     FEATURE_SET_RESTORE(opt->warn, warn);
     if (BACKTRACE_LENGTH_LIMIT_VALID_P(backtrace_length_limit)) {
         opt->backtrace_length_limit = backtrace_length_limit;
+    }
+    if (bugreport_path) {
+        opt->bugreport_path = bugreport_path;
     }
 
     ruby_xfree(ptr);
@@ -1464,9 +1468,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         }
     }
     else if (is_option_with_arg("bugreport-path", true, true)) {
-        if (!opt->bugreport_path) {
-            opt->bugreport_path = s;
-        }
+        opt->bugreport_path = s;
     }
     else {
         rb_raise(rb_eRuntimeError,
