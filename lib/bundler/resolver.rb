@@ -37,9 +37,9 @@ module Bundler
       root_version = Resolver::Candidate.new(0)
 
       @all_specs = Hash.new do |specs, name|
-        specs[name] = source_for(name).specs.search(name).reject do |s|
-          s.dependencies.any? {|d| d.name == name && !d.requirement.satisfied_by?(s.version) } # ignore versions that depend on themselves incorrectly
-        end.sort_by {|s| [s.version, s.platform.to_s] }
+        matches = source_for(name).specs.search(name)
+        matches = filter_invalid_self_dependencies(matches, name)
+        specs[name] = matches.sort_by {|s| [s.version, s.platform.to_s] }
       end
 
       @sorted_versions = Hash.new do |candidates, package|
@@ -316,6 +316,13 @@ module Bundler
       return specs unless package.ignores_prereleases? && specs.size > 1
 
       specs.reject {|s| s.version.prerelease? }
+    end
+
+    # Ignore versions that depend on themselves incorrectly
+    def filter_invalid_self_dependencies(specs, name)
+      specs.reject do |s|
+        s.dependencies.any? {|d| d.name == name && !d.requirement.satisfied_by?(s.version) }
+      end
     end
 
     def requirement_satisfied_by?(requirement, spec)
