@@ -362,7 +362,7 @@ lex_state_ignored_p(yp_parser_t *parser) {
 
     if (ignored) {
         return YP_IGNORED_NEWLINE_ALL;
-    } else if (parser->lex_state == (YP_LEX_STATE_ARG | YP_LEX_STATE_LABELED)) {
+    } else if ((parser->lex_state & ~((unsigned int) YP_LEX_STATE_LABEL)) == (YP_LEX_STATE_ARG | YP_LEX_STATE_LABELED)) {
         return YP_IGNORED_NEWLINE_PATTERN;
     } else {
         return YP_IGNORED_NEWLINE_NONE;
@@ -8096,7 +8096,6 @@ parse_parameters(
     bool looping = true;
 
     yp_do_loop_stack_push(parser, false);
-
     yp_parameters_order_t order = YP_PARAMETERS_ORDER_NONE;
 
     do {
@@ -10965,6 +10964,12 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     break;
                 }
                 case YP_CASE_PARAMETER: {
+                    // If we're about to lex a label, we need to add the label
+                    // state to make sure the next newline is ignored.
+                    if (parser->current.type == YP_TOKEN_LABEL) {
+                        lex_state_set(parser, parser->lex_state | YP_LEX_STATE_LABEL);
+                    }
+
                     lparen = not_provided(parser);
                     rparen = not_provided(parser);
                     params = parse_parameters(parser, YP_BINDING_POWER_DEFINED, false, false, true);
