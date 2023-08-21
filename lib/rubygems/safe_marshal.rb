@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "stringio"
+
 require_relative "safe_marshal/reader"
 require_relative "safe_marshal/visitors/to_ruby"
 
@@ -31,6 +33,11 @@ module Gem
     PERMITTED_SYMBOLS = %w[
       development
       runtime
+
+      name
+      number
+      platform
+      dependencies
     ].freeze
     private_constant :PERMITTED_SYMBOLS
 

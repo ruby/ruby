@@ -258,7 +258,7 @@ module Gem::SafeMarshal
       end
 
       COMPAT_CLASSES = {}.tap do |h|
-        h[Rational] = RationalCompat if RUBY_VERSION >= "3"
+        h[Rational] = RationalCompat
       end.freeze
       private_constant :COMPAT_CLASSES
 
