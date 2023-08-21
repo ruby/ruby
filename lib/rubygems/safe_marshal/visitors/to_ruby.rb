@@ -305,7 +305,10 @@ module Gem::SafeMarshal
         raise MethodCallError, "Unable to call #{method.inspect} on #{receiver.inspect}, perhaps it is a class using marshal compat, which is not visible in ruby? #{e}"
       end
 
-      class UnpermittedSymbolError < StandardError
+      class Error < StandardError
+      end
+
+      class UnpermittedSymbolError < Error
         def initialize(symbol:, stack:)
           @symbol = symbol
           @stack = stack
@@ -313,7 +316,7 @@ module Gem::SafeMarshal
         end
       end
 
-      class UnpermittedIvarError < StandardError
+      class UnpermittedIvarError < Error
         def initialize(symbol:, klass:, stack:)
           @symbol = symbol
           @klass = klass
@@ -322,7 +325,7 @@ module Gem::SafeMarshal
         end
       end
 
-      class UnpermittedClassError < StandardError
+      class UnpermittedClassError < Error
         def initialize(name:, stack:)
           @name = name
           @stack = stack
@@ -330,10 +333,10 @@ module Gem::SafeMarshal
         end
       end
 
-      class FormatError < StandardError
+      class FormatError < Error
       end
 
-      class MethodCallError < StandardError
+      class MethodCallError < Error
       end
     end
   end

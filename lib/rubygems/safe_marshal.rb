@@ -62,7 +62,7 @@ module Gem
     end
 
     def self.load(input, permitted_classes: [::Symbol], permitted_symbols: [], permitted_ivars: {})
-      root = Reader.new(StringIO.new(input, "r")).read!
+      root = Reader.new(StringIO.new(input, "r").binmode).read!
 
       Visitors::ToRuby.new(
         permitted_classes: permitted_classes,

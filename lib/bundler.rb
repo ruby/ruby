@@ -517,7 +517,11 @@ EOF
     def safe_load_marshal(data)
       if Gem.respond_to?(:load_safe_marshal)
         Gem.load_safe_marshal
-        Gem::SafeMarshal.safe_load(data)
+        begin
+          Gem::SafeMarshal.safe_load(data)
+        rescue Gem::SafeMarshal::Reader::Error, Gem::SafeMarshal::Visitors::ToRuby::Error => e
+          raise MarshalError, "#{e.class}: #{e.message}"
+        end
       else
         load_marshal(data, :marshal_proc => SafeMarshal.proc)
       end

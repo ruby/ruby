@@ -5,7 +5,16 @@ require_relative "elements"
 module Gem
   module SafeMarshal
     class Reader
-      class UnconsumedBytesError < StandardError
+      class Error < StandardError
+      end
+
+      class UnsupportedVersionError < Error
+      end
+
+      class UnconsumedBytesError < Error
+      end
+
+      class NotImplementedError < Error
       end
 
       def initialize(io)
@@ -26,7 +35,7 @@ module Gem
 
       def read_header
         v = @io.read(2)
-        raise "Unsupported marshal version #{v.inspect}, expected #{MARSHAL_VERSION.inspect}" unless v == MARSHAL_VERSION
+        raise UnsupportedVersionError, "Unsupported marshal version #{v.bytes.map(&:ord).join(".")}, expected #{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}" unless v == MARSHAL_VERSION
       end
 
       def read_byte
@@ -80,7 +89,7 @@ module Gem
         when 91 then read_array # ?[
         when 102 then read_float # ?f
         when 105 then Elements::Integer.new int: read_integer # ?i
-        when 108 then read_bignum
+        when 108 then read_bignum # ?l
         when 111 then read_object # ?o
         when 117 then read_user_defined # ?u
         when 123 then read_hash # ?{
@@ -94,7 +103,7 @@ module Gem
         when "S".ord then read_struct
         when "C".ord then read_user_class
         else
-          raise "Unsupported marshal type discriminator #{type.chr.inspect} (#{type})"
+          raise Error, "Unknown marshal type discriminator #{type.chr.inspect} (#{type})"
         end
       end
 
@@ -176,6 +185,38 @@ module Gem
 
       def read_bignum
         Elements::Bignum.new(sign: read_byte, data: @io.read(read_integer * 2))
+      end
+
+      def read_extended_object
+        raise NotImplementedError, "Reading Marshal objects of type extended_object is not implemented"
+      end
+
+      def read_class
+        raise NotImplementedError, "Reading Marshal objects of type class is not implemented"
+      end
+
+      def read_module
+        raise NotImplementedError, "Reading Marshal objects of type module is not implemented"
+      end
+
+      def read_class_or_module
+        raise NotImplementedError, "Reading Marshal objects of type class_or_module is not implemented"
+      end
+
+      def read_data
+        raise NotImplementedError, "Reading Marshal objects of type data is not implemented"
+      end
+
+      def read_regexp
+        raise NotImplementedError, "Reading Marshal objects of type regexp is not implemented"
+      end
+
+      def read_struct
+        raise NotImplementedError, "Reading Marshal objects of type struct is not implemented"
+      end
+
+      def read_user_class
+        raise NotImplementedError, "Reading Marshal objects of type user_class is not implemented"
       end
     end
   end
