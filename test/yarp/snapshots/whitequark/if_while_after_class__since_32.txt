@@ -27,6 +27,7 @@ ProgramNode(0...178)(
        ConstantPathNode(46...82)(
          WhileNode(46...74)(
            (46...51),
+           (71...74),
            TrueNode(52...56)(),
            StatementsNode(58...70)(
              [BreakNode(58...70)(
@@ -69,6 +70,7 @@ ProgramNode(0...178)(
        ConstantPathNode(137...173)(
          WhileNode(137...165)(
            (137...142),
+           (162...165),
            TrueNode(143...147)(),
            StatementsNode(149...161)(
              [BreakNode(149...161)(

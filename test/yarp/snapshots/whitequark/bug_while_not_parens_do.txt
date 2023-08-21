@@ -3,6 +3,7 @@ ProgramNode(0...23)(
   StatementsNode(0...23)(
     [WhileNode(0...23)(
        (0...5),
+       (20...23),
        CallNode(6...16)(
          ParenthesesNode(10...16)(
            StatementsNode(11...15)([TrueNode(11...15)()]),

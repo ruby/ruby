@@ -41,6 +41,7 @@ ProgramNode(0...188)(
      ),
      WhileNode(36...55)(
        (46...51),
+       nil,
        LocalVariableReadNode(52...55)(:foo, 0),
        StatementsNode(36...45)(
          [LocalVariableWriteNode(36...45)(
@@ -88,6 +89,7 @@ ProgramNode(0...188)(
      ),
      WhileNode(77...96)(
        (77...82),
+       (93...96),
        LocalVariableWriteNode(83...88)(
          :a,
          0,
@@ -159,6 +161,7 @@ ProgramNode(0...188)(
           ),
           WhileNode(155...184)(
             (155...160),
+            (181...184),
             LocalVariableReadNode(161...164)(:foo, 0),
             StatementsNode(169...178)(
               [LocalVariableWriteNode(169...178)(

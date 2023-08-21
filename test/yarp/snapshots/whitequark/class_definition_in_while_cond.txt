@@ -3,6 +3,7 @@ ProgramNode(0...197)(
   StatementsNode(0...197)(
     [WhileNode(0...52)(
        (0...5),
+       (49...52),
        SingletonClassNode(6...40)(
          [:a],
          (6...11),
@@ -34,6 +35,7 @@ ProgramNode(0...197)(
      ),
      WhileNode(54...102)(
        (54...59),
+       (99...102),
        SingletonClassNode(60...90)(
          [],
          (60...65),
@@ -59,6 +61,7 @@ ProgramNode(0...197)(
      ),
      WhileNode(104...151)(
        (104...109),
+       (148...151),
        ClassNode(110...139)(
          [:a],
          (110...115),
@@ -92,6 +95,7 @@ ProgramNode(0...197)(
      ),
      WhileNode(153...197)(
        (153...158),
+       (194...197),
        ClassNode(159...185)(
          [],
          (159...164),
