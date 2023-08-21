@@ -121,5 +121,31 @@ RSpec.describe Bundler::RubyDsl do
         end
       end
     end
+
+    context "with a (.tool-versions) file option" do
+      let(:options) { { :file => "foo" } }
+      let(:version) { "3.2.2" }
+      let(:ruby_version) { "3.2.2" }
+      let(:ruby_version_arg) { nil }
+      let(:engine_version) { version }
+      let(:patchlevel) { nil }
+      let(:engine) { "ruby" }
+      let(:project_root) { Pathname.new("/path/to/project") }
+
+      before do
+        allow(Bundler).to receive(:read_file).with(project_root.join("foo")).and_return("nodejs 18.16.0\nruby #{version} # This is a comment\npnpm 8.6.12\n")
+        allow(Bundler).to receive(:root).and_return(Pathname.new("/path/to/project"))
+      end
+
+      it_behaves_like "it stores the ruby version"
+
+      context "and a version" do
+        let(:ruby_version_arg) { "2.0.0" }
+
+        it "raises an error" do
+          expect { subject }.to raise_error(Bundler::GemfileError, "Cannot specify version when using the file option")
+        end
+      end
+    end
   end
 end

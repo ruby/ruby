@@ -74,6 +74,11 @@ you can use the `file` option instead.
 
     ruby file: ".ruby-version"
 
+The version file should conform to any of the following formats:
+
+  - `3.1.2` (.ruby-version)
+  - `ruby 3.1.2` (.tool-versions, read: https://asdf-vm.com/manage/configuration.html#tool-versions)
+
 ### ENGINE
 
 Each application _may_ specify a Ruby engine. If an engine is specified, an
