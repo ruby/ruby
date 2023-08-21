@@ -209,13 +209,6 @@ module YARP
       assert_location(ClassNode, "class Foo < Bar end")
     end
 
-<<<<<<< HEAD:test/yarp/location_test.rb
-=======
-    def test_ClassVariableOperatorWriteNode
-      assert_location(ClassVariableOperatorWriteNode, "@@foo += bar")
-    end
-
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):test/location_test.rb
     def test_ClassVariableReadNode
       assert_location(ClassVariableReadNode, "@@foo")
     end
@@ -236,17 +229,6 @@ module YARP
       assert_location(ConstantPathWriteNode, "::Foo::Bar = baz")
     end
 
-<<<<<<< HEAD:test/yarp/location_test.rb
-=======
-    def test_ConstantPathOperatorWriteNode
-      assert_location(ConstantPathOperatorWriteNode, "Parent::Child += bar")
-    end
-
-    def test_ConstantOperatorWriteNode
-      assert_location(ConstantOperatorWriteNode, "Foo += bar")
-    end
-
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):test/location_test.rb
     def test_ConstantReadNode
       assert_location(ConstantReadNode, "Foo")
       assert_location(ConstantReadNode, "Foo::Bar", 5...8, &:child)
@@ -320,13 +302,6 @@ module YARP
       assert_location(ForwardingSuperNode, "super {}")
     end
 
-<<<<<<< HEAD:test/yarp/location_test.rb
-=======
-    def test_GlobalVariableOperatorWriteNode
-      assert_location(GlobalVariableOperatorWriteNode, "$foo += bar")
-    end
-
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):test/location_test.rb
     def test_GlobalVariableReadNode
       assert_location(GlobalVariableReadNode, "$foo")
     end
@@ -361,13 +336,6 @@ module YARP
       end
     end
 
-<<<<<<< HEAD:test/yarp/location_test.rb
-=======
-    def test_InstanceVariableOperatorWriteNode
-      assert_location(InstanceVariableOperatorWriteNode, "@foo += bar")
-    end
-
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):test/location_test.rb
     def test_InstanceVariableReadNode
       assert_location(InstanceVariableReadNode, "@foo")
     end
@@ -434,15 +402,6 @@ module YARP
       assert_location(LambdaNode, "-> do foo end")
     end
 
-<<<<<<< HEAD:test/yarp/location_test.rb
-=======
-    def test_LocalVariableOperatorWriteNode
-      assert_location(LocalVariableOperatorWriteNode, "foo += bar")
-      assert_location(LocalVariableOperatorWriteNode, "foo = 1; foo += bar", 9...19)
-    end
-
-
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):test/location_test.rb
     def test_LocalVariableReadNode
       assert_location(LocalVariableReadNode, "foo = 1; foo", 9...12)
     end

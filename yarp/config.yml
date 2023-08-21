@@ -736,24 +736,6 @@ nodes:
 
           class Foo end
           ^^^^^^^^^^^^^
-<<<<<<< HEAD:yarp/config.yml
-=======
-  - name: ClassVariableOperatorWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: operator
-        type: constant
-    comment: |
-      Represents assigning to a class variable using an operator that isn't `=`.
-
-          @@target += value
-          ^^^^^^^^^^^^^^^^^
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):config.yml
   - name: ClassVariableReadNode
     comment: |
       Represents referencing a class variable.
@@ -773,24 +755,6 @@ nodes:
 
           @@foo = 1
           ^^^^^^^^^
-<<<<<<< HEAD:yarp/config.yml
-=======
-  - name: ConstantOperatorWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: operator
-        type: constant
-    comment: |
-      Represents assigning to a constant using an operator that isn't `=`.
-
-          Target += value
-          ^^^^^^^^^^^^^^^
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):config.yml
   - name: ConstantPathNode
     child_nodes:
       - name: parent
@@ -804,25 +768,6 @@ nodes:
 
           Foo::Bar
           ^^^^^^^^
-<<<<<<< HEAD:yarp/config.yml
-=======
-  - name: ConstantPathOperatorWriteNode
-    child_nodes:
-      - name: target
-        type: node
-        kind: ConstantPathNode
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: operator
-        type: constant
-    comment: |
-      Represents assigning to a constant path using an operator that isn't `=`.
-
-          Parent::Child += value
-          ^^^^^^^^^^^^^^^^^^^^^^
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):config.yml
   - name: ConstantPathWriteNode
     child_nodes:
       - name: target
@@ -1065,24 +1010,6 @@ nodes:
 
           super
           ^^^^^
-<<<<<<< HEAD:yarp/config.yml
-=======
-  - name: GlobalVariableOperatorWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: operator
-        type: constant
-    comment: |
-      Represents assigning to a global variable using an operator that isn't `=`.
-
-          $target += value
-          ^^^^^^^^^^^^^^^^
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):config.yml
   - name: GlobalVariableReadNode
     comment: |
       Represents referencing a global variable.
@@ -1182,24 +1109,6 @@ nodes:
 
           case a; in b then c end
                   ^^^^^^^^^^^
-<<<<<<< HEAD:yarp/config.yml
-=======
-  - name: InstanceVariableOperatorWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: operator
-        type: constant
-    comment: |
-      Represents assigning to an instance variable using an operator that isn't `=`.
-
-          @target += value
-          ^^^^^^^^^^^^^^^^
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):config.yml
   - name: InstanceVariableReadNode
     comment: |
       Represents referencing an instance variable.
@@ -1337,26 +1246,6 @@ nodes:
 
           ->(value) { value * 2 }
           ^^^^^^^^^^^^^^^^^^^^^^^
-<<<<<<< HEAD:yarp/config.yml
-=======
-  - name: LocalVariableOperatorWriteNode
-    child_nodes:
-      - name: name_loc
-        type: location
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-      - name: constant_id
-        type: constant
-      - name: operator_id
-        type: constant
-    comment: |
-      Represents assigning to a local variable using an operator that isn't `=`.
-
-          target += value
-          ^^^^^^^^^^^^^^^
->>>>>>> 9e680a7598 (Consolidate OperatorAndWrite and OperatorOrWrite nodes):config.yml
   - name: LocalVariableReadNode
     child_nodes:
       - name: constant_id
@@ -1829,7 +1718,6 @@ nodes:
           __ENCODING__
           ^^^^^^^^^^^^
   - name: SourceFileNode
-    is_migrated: true
     child_nodes:
       - name: filepath
         type: string
