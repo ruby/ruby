@@ -577,11 +577,16 @@ module SyncDefaultGems
         when "rubygems"
           # We don't copy any vcr_cassettes to this repository. Because the directory does not
           # exist, rename detection doesn't work. So it starts with the original path `bundler/`.
-          %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
-            if File.exist?(rem)
-              system("git", "reset", rem)
-              rm_rf(rem)
-            end
+          ignored_paths = %w[bundler/spec/support/artifice/vcr_cassettes]
+        when "yarp"
+          # Rename detection never works between ruby/ruby/doc and ruby/yarp/docs
+          # since ruby/ruby/doc is not something owned by YARP.
+          ignored_paths = %w[docs/]
+        end
+        ignored_paths.each do |path|
+          if File.exist?(path)
+            system("git", "reset", path)
+            rm_rf(path)
           end
         end
 
