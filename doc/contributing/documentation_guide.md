@@ -127,7 +127,14 @@ a             #=> [2, 3, 1]
 
 ### Headings
 
-Organize a long discussion with [headings](rdoc-ref:RDoc::MarkupReference@Headings).
+Organize a long discussion for a class or module with [headings](rdoc-ref:RDoc::MarkupReference@Headings).
+
+Do not use formal headings in the documentation for a method or constant.
+
+In the rare case where heading-like structures are needed
+within the documentation for a method or constant, use
+{bold text}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Bold]
+as pseudo-headings.
 
 ### Blank Lines
 
@@ -151,6 +158,14 @@ For a method name in text:
   or a hash mark for an instance method:
   <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
 
+### Embedded Code and Commands
+
+Code or commands embedded in running text (i.e., not in a code block)
+should marked up as
+{monofont}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Monofont].
+
+Code that is a simple string should include the quote marks.
+
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
@@ -167,16 +182,9 @@ We might consider whether to suppress when:
 - The reference is to a class or module that users
   usually don't deal with, including these:
 
-  - \Class.
-  - \Method.
-  - \Module.
-
-### Fonts
-
-Most of the text in the documentation should use the default font
-(which may vary depending on the output format).
-
-#### Monofont Text
+    - \Class.
+    - \Method.
+    - \Module.
 
 Most often, the name of a class, module, constant, or method
 will be autolinked:
@@ -187,49 +195,16 @@ will be autolinked:
 - File.new
 - File#read.
 
-If not, or if you suppress autolinking, consider forcing monofont.
+If not, or if you suppress autolinking, consider forcing
+{monofont}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Monofont].
 
-- +File::RDONLY+.
-- \+Array+.
+#### Variable Names
 
-Monofont text may be forced for a single word with enclosing plus-signs,
-or for any text with enclosing markup tags:
-
-    +:my_word+
-    <tt>Foo Bar</tt>
-
-Monofont text should also be used for code or commands:
-
-    <tt>return nil</tt>
-    <tt>ls -lrt</tt>
-
-#### Italic Text
-
-The name of a variable (as specified in its call-seq)
-should be italicized in the method's discussion.
+The name of a variable (as specified in its call-seq) should be marked up as
+{italic}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Italic].
 
 Also, use italic text for the name of a transient variable
 (i.e., one defined and used only in the discussion, such as _n_).
-
-Italic text may also be used for emphasis.
-
-Italic text may be forced for a single word with enclosing underscores,
-or for any text with enclosing markup tags:
-
-    _Italic_
-    <i>Italic words</i>
-
-#### Bold Text
-
-In the rare case where heading-like structures are needed
-within the documentation for a method or constant,
-use bold text as pseudo-headings.
-
-Bold text may be forced for any text with enclosing markup tags:
-
-    <b>Bold words</b>
-
-Do not use formal headings the documentation for a method or constant.
 
 ### HTML Tags
 
