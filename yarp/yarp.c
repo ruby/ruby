@@ -1197,7 +1197,7 @@ yp_call_node_create(yp_parser_t *parser) {
         },
         .receiver = NULL,
         .operator_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-        .message_loc = YP_LOCATION_NULL_VALUE(parser),
+        .message_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .arguments = NULL,
         .closing_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,

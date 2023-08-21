@@ -64,7 +64,7 @@ ProgramNode(0...1237)(
      CallNode(58...62)(
        CallNode(58...59)(nil, nil, (58...59), nil, nil, nil, nil, 2, "a"),
        (59...60),
-       (0...0),
+       nil,
        (60...61),
        nil,
        (61...62),
@@ -75,7 +75,7 @@ ProgramNode(0...1237)(
      CallNode(64...75)(
        CallNode(64...65)(nil, nil, (64...65), nil, nil, nil, nil, 2, "a"),
        (65...66),
-       (0...0),
+       nil,
        (66...67),
        ArgumentsNode(67...74)(
          [IntegerNode(67...68)(),
@@ -413,7 +413,7 @@ ProgramNode(0...1237)(
      CallNode(212...217)(
        CallNode(212...213)(nil, nil, (212...213), nil, nil, nil, nil, 2, "a"),
        (213...215),
-       (0...0),
+       nil,
        (215...216),
        nil,
        (216...217),
