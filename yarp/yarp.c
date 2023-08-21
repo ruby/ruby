@@ -6183,7 +6183,9 @@ parser_lex(yp_parser_t *parser) {
                                 parser->current.end++;
                             }
 
-                            yp_newline_list_check_append(&parser->newline_list, parser->current.end);
+                            if (peek(parser) == '\n') {
+                                yp_newline_list_append(&parser->newline_list, parser->current.end);
+                            }
 
                             parser->current.end++;
                             if (parser->current.end < parser->end) {
@@ -6191,7 +6193,7 @@ parser_lex(yp_parser_t *parser) {
                             }
                         }
 
-                        switch (*parser->current.end) {
+                        switch (peek(parser)) {
                             case 'i': {
                                 parser->current.end++;
 
