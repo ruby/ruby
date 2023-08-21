@@ -2725,4 +2725,26 @@ EOS
       assert_include(ObjectSpace.dump(obj), '"coderange":"7bit"')
     end;
   end
+
+  def test_warmup_frees_pages
+    assert_separately([{"RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO" => "1.0"}, "-W0"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      TIMES = 10_000
+      ary = Array.new(TIMES)
+      TIMES.times do |i|
+        ary[i] = Object.new
+      end
+      ary.clear
+      ary = nil
+
+      total_pages_before = GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages)
+
+      Process.warmup
+
+      # Number of pages freed should cause equal increase in number of allocatable pages.
+      assert_equal(total_pages_before, GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages))
+      assert_equal(0, GC.stat(:heap_tomb_pages))
+      assert_operator(GC.stat(:total_freed_pages), :>, 0)
+    end;
+  end
 end
