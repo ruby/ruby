@@ -326,12 +326,9 @@ module TestIRB
       @history_file = Tempfile.new('irb_history')
       @history_file.write(history)
       @history_file.close
-      @irbrc = Tempfile.new('irbrc')
-      @irbrc.write <<~RUBY
+      write_rc <<~RUBY
         IRB.conf[:HISTORY_FILE] = "#{@history_file.path}"
       RUBY
-      @irbrc.close
-      @envs['IRBRC'] = @irbrc.path
     end
   end
 end

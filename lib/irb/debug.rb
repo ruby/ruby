@@ -73,7 +73,7 @@ module IRB
         require 'irb/debug/ui'
         IRB.instance_variable_set(:@debugger_irb, irb)
         irb.context.with_debugger = true
-        irb.context.irb_name = "irb:rdbg"
+        irb.context.irb_name += ":rdbg"
       end
 
       def binding_irb?

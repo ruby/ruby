@@ -289,6 +289,25 @@ module TestIRB
       assert_match(/irb:rdbg\(main\):005> next/, output)
     end
 
+    def test_prompt_irb_name_is_kept
+      write_rc <<~RUBY
+        IRB.conf[:IRB_NAME] = "foo"
+      RUBY
+
+      write_ruby <<~'ruby'
+        binding.irb
+        puts "Hello"
+      ruby
+
+      output = run_ruby_file do
+        type "next"
+        type "continue"
+      end
+
+      assert_match(/foo\(main\):001> next/, output)
+      assert_match(/foo:rdbg\(main\):002> continue/, output)
+    end
+
     def test_irb_commands_are_available_after_moving_around_with_the_debugger
       write_ruby <<~'ruby'
         class Foo
