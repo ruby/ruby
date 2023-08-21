@@ -1406,6 +1406,49 @@ RUBYSPEC_CAPIEXT_EXTS =
 ! endif
 !endif
 
+yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/api_node.c
+yarp/api_pack.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/extension.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/node.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/regexp.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/unescape.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/util/yp_memchr.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/util/yp_strpbrk.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/yarp_init.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/api_node.$(OBJEXT): $(top_srcdir)/yarp/ast.h
+yarp/node.$(OBJEXT): $(top_srcdir)/yarp/node.c
+yarp/prettyprint.$(OBJEXT): $(top_srcdir)/yarp/prettyprint.c
+yarp/serialize.$(OBJEXT): $(top_srcdir)/yarp/serialize.c
+yarp/token_type.$(OBJEXT): $(top_srcdir)/yarp/token_type.c
+
+srcs: $(top_srcdir)/yarp/api_node.c
+$(top_srcdir)/yarp/api_node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/ext/yarp/api_node.c.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb ext/yarp/api_node.c $(top_srcdir)/yarp/api_node.c
+
+srcs: $(top_srcdir)/yarp/ast.h
+$(top_srcdir)/yarp/ast.h: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/include/yarp/ast.h.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb include/yarp/ast.h $(top_srcdir)/yarp/ast.h
+
+srcs: $(top_srcdir)/yarp/node.c
+$(top_srcdir)/yarp/node.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/node.c.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/node.c $(top_srcdir)/yarp/node.c
+
+srcs: $(top_srcdir)/yarp/prettyprint.c
+$(top_srcdir)/yarp/prettyprint.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/prettyprint.c.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/prettyprint.c $(top_srcdir)/yarp/prettyprint.c
+
+srcs: $(top_srcdir)/yarp/serialize.c
+$(top_srcdir)/yarp/serialize.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/serialize.c.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/serialize.c $(top_srcdir)/yarp/serialize.c
+
+srcs: $(top_srcdir)/yarp/token_type.c
+$(top_srcdir)/yarp/token_type.c: $(top_srcdir)/yarp/templates/template.rb $(top_srcdir)/yarp/templates/src/token_type.c.erb
+	$(Q) $(BASERUBY) $(top_srcdir)/yarp/templates/template.rb src/token_type.c $(top_srcdir)/yarp/token_type.c
+
 $(RUBYSPEC_CAPIEXT_EXTS): $(RUBYSPEC_CAPIEXT_DEPS)
 rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	@ $(NULLCMD)
