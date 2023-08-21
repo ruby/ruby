@@ -8648,10 +8648,12 @@ static VALUE rb_mProcID_Syscall;
  *
  *  On CRuby, +Process.warmup+:
  *
- *  * Perform a major GC.
+ *  * Performs a major GC.
  *  * Compacts the heap.
  *  * Promotes all surviving objects to the old generation.
- *  * Precompute the coderange of all strings.
+ *  * Precomputes the coderange of all strings.
+ *  * Frees all empty heap pages and increments the allocatable pages counter
+ *    by the number of pages freed.
  */
 
 static VALUE

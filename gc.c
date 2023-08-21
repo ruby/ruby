@@ -9589,11 +9589,55 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
     return Qnil;
 }
 
+static void
+free_empty_pages(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        /* Move all empty pages to the tomb heap for freeing. */
+        rb_size_pool_t *size_pool = &size_pools[i];
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+        rb_heap_t *tomb_heap = SIZE_POOL_TOMB_HEAP(size_pool);
+
+        size_t freed_pages = 0;
+
+        struct heap_page **next_page_ptr = &heap->free_pages;
+        struct heap_page *page = heap->free_pages;
+        while (page) {
+            /* All finalizers should have been ran in gc_start_internal, so there
+            * should be no objects that require finalization. */
+            GC_ASSERT(page->final_slots == 0);
+
+            struct heap_page *next_page = page->free_next;
+
+            if (page->free_slots == page->total_slots) {
+                heap_unlink_page(objspace, heap, page);
+                heap_add_page(objspace, size_pool, tomb_heap, page);
+                freed_pages++;
+            }
+            else {
+                *next_page_ptr = page;
+                next_page_ptr = &page->free_next;
+            }
+
+            page = next_page;
+        }
+
+        *next_page_ptr = NULL;
+
+        size_pool_allocatable_pages_set(objspace, size_pool, size_pool->allocatable_pages + freed_pages);
+    }
+
+    heap_pages_free_unused_pages(objspace);
+}
+
 void
 rb_gc_prepare_heap(void)
 {
     rb_objspace_each_objects(gc_set_candidate_object_i, NULL);
     gc_start_internal(NULL, Qtrue, Qtrue, Qtrue, Qtrue, Qtrue);
+    free_empty_pages();
 }
 
 static int
