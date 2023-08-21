@@ -604,6 +604,14 @@ module SyncDefaultGems
         # UA: unmerged, added by them
         # AA: unmerged, both added
         unmerged = pipe_readlines(%W"git status --porcelain -z")
+
+        # For YARP, we want to handle DD: deleted by both.
+        if gem == "yarp"
+          deleted = unmerged.grep(/^DD /)
+          deleted.map! { |line| line.delete_prefix("DD ") }
+          system(*%W"git rm -f --", *deleted) unless deleted.empty?
+        end
+
         unmerged.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
         unmerged.compact!
         ignore, conflict = unmerged.partition {|name| ignore_file_pattern =~ name}
