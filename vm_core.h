@@ -680,6 +680,7 @@ typedef struct rb_vm_struct {
     VALUE loaded_features;
     VALUE loaded_features_snapshot;
     VALUE loaded_features_realpaths;
+    VALUE loaded_features_realpath_map;
     struct st_table *loaded_features_index;
     struct st_table *loading_table;
 #if EXTSTATIC
