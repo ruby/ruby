@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative 'lib/yarp/version'
+
 Gem::Specification.new do |spec|
   spec.name = "yarp"
-  spec.version = "0.8.0"
+  spec.version = YARP::VERSION
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -67,6 +69,7 @@ Gem::Specification.new do |spec|
     "lib/yarp/pack.rb",
     "lib/yarp/ripper_compat.rb",
     "lib/yarp/serialize.rb",
+    "lib/yarp/version.rb",
     "src/diagnostic.c",
     "src/enc/yp_big5.c",
     "src/enc/yp_euc_jp.c",

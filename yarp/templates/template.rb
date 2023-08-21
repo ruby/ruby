@@ -4,6 +4,11 @@ require "erb"
 require "fileutils"
 require "yaml"
 
+require_relative "../lib/yarp/version"
+
+YARP_VERSION = YARP::VERSION
+YARP_VERSION_MAJOR, YARP_VERSION_MINOR, YARP_VERSION_PATCH = YARP_VERSION.split(".")
+
 COMMON_FLAGS = 1
 
 class Param
@@ -312,6 +317,7 @@ end
 TEMPLATES = [
   "ext/yarp/api_node.c",
   "include/yarp/ast.h",
+  "include/yarp/version.h",
   "java/org/yarp/Loader.java",
   "java/org/yarp/Nodes.java",
   "java/org/yarp/AbstractNodeVisitor.java",

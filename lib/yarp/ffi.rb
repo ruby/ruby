@@ -171,8 +171,10 @@ module YARP
   # the YARP module.
   private_constant :LibRubyParser
 
-  # The version constant is set by reading the result of calling yp_version.
-  VERSION = LibRubyParser.yp_version.read_string
+  library_version = LibRubyParser.yp_version.read_string
+  if library_version != YARP::VERSION
+    raise "The YARP library version (#{library_version}) does not match the expected version (#{YARP::VERSION})"
+  end
 
   def self.dump_internal(source, source_size, filepath)
     LibRubyParser::YPBuffer.with do |buffer|

@@ -13,6 +13,7 @@
 #include "yarp/util/yp_char.h"
 #include "yarp/util/yp_memchr.h"
 #include "yarp/util/yp_strpbrk.h"
+#include "yarp/version.h"
 
 #include <assert.h>
 #include <stdarg.h>
