@@ -558,16 +558,15 @@ module SyncDefaultGems
       puts "Pick #{sha} from #{repo}."
 
       # Attempt to cherry-pick a commit
-      skipped = false
       result = IO.popen(%W"git cherry-pick #{sha}", &:read)
       if result =~ /nothing\ to\ commit/
         `git reset`
-        skipped = true
         puts "Skip empty commit #{sha}"
+        next
       end
-      next if skipped
 
       # Skip empty commits or deal with conflicts
+      skipped = false
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
@@ -585,6 +584,7 @@ module SyncDefaultGems
         end
         ignored_paths.each do |path|
           if File.exist?(path)
+            puts "Removing: #{path}"
             system("git", "reset", path)
             rm_rf(path)
           end
@@ -609,6 +609,12 @@ module SyncDefaultGems
         # UA: unmerged, added by them
         # AA: unmerged, both added
         unmerged = pipe_readlines(%W"git status --porcelain -z")
+        if unmerged.empty?
+          # Everything was removed as `ignored_paths`. Skip this commit.
+          `git reset` && `git checkout .` && `git clean -fd`
+          puts "Skip empty commit #{sha}"
+          next
+        end
 
         # For YARP, we want to handle DD: deleted by both.
         if gem == "yarp"
