@@ -665,6 +665,7 @@ class TestProcess < Test::Unit::TestCase
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_raise
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -682,15 +683,21 @@ class TestProcess < Test::Unit::TestCase
           puts "ok"
         end
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.5
         Process.kill(:USR1, io.pid)
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)} if pid
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_open_fifo_interrupt_print
+    pid = nil
     with_tmpchdir {|d|
       begin
         File.mkfifo("fifo")
@@ -703,6 +710,7 @@ class TestProcess < Test::Unit::TestCase
         puts "start"
         system("cat", :in => "fifo")
       EOS
+        pid = io.pid
         assert_equal("start\n", io.gets)
         sleep 0.2 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
@@ -710,7 +718,13 @@ class TestProcess < Test::Unit::TestCase
         File.write("fifo", "ok\n")
         assert_equal("ok\n", io.read)
       }
+      assert_equal(pid, $?.pid)
+      assert_predicate($?, :success?)
     }
+  ensure
+    if pid
+      assert_raise(Errno::ESRCH) {Process.kill(:KILL, pid)}
+    end
   end unless windows? # does not support fifo
 
   def test_execopts_redirect_pipe
