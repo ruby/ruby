@@ -133,7 +133,7 @@ Do not use formal headings in the documentation for a method or constant.
 
 In the rare case where heading-like structures are needed
 within the documentation for a method or constant, use
-{bold text}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Bold]
+[bold text](rdoc-ref:RDoc::MarkupReference@Bold)
 as pseudo-headings.
 
 ### Blank Lines
