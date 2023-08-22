@@ -832,7 +832,7 @@ module SyncDefaultGems
   ruby #$0 rubygems 97e9768612..9e53702832
 
 \e[1mPick all commits since the last picked commit\e[0m
-  ruby #$0 rubygems -a
+  ruby #$0 -a rubygems
 
 \e[1mList known libraries\e[0m
   ruby #$0 list
