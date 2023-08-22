@@ -630,6 +630,14 @@ module YARP
               end
 
             Token.new([[lineno, column], event, value, lex_state])
+
+          when :on_eof
+            prev_token = result_value[index-1][0]
+            if prev_token.type == :COMMENT && prev_token.location.end_offset < token.location.start_offset
+              tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(result_value[index-1].first.location.end_offset...token.location.start_offset), lex_state])
+            end
+
+            Token.new([[lineno, column], event, value, lex_state])
           else
             Token.new([[lineno, column], event, value, lex_state])
           end
