@@ -1740,11 +1740,11 @@ static inline VALUE
 ec_str_duplicate(struct rb_execution_context_struct *ec, VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (FL_TEST(str, STR_NOEMBED)) {
-        dup = ec_str_alloc_heap(ec, klass);
+    if (STR_EMBED_P(str)) {
+        dup = ec_str_alloc_embed(ec, klass, RSTRING_LEN(str) + TERM_LEN(str));
     }
     else {
-        dup = ec_str_alloc_embed(ec, klass, RSTRING_LEN(str) + TERM_LEN(str));
+        dup = ec_str_alloc_heap(ec, klass);
     }
 
     return str_duplicate_setup(klass, str, dup);
@@ -1754,11 +1754,11 @@ static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (FL_TEST(str, STR_NOEMBED)) {
-        dup = str_alloc_heap(klass);
+    if (STR_EMBED_P(str)) {
+        dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
     }
     else {
-       dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
+        dup = str_alloc_heap(klass);
     }
 
     return str_duplicate_setup(klass, str, dup);
@@ -10710,11 +10710,11 @@ static VALUE
 rb_str_b(VALUE str)
 {
     VALUE str2;
-    if (FL_TEST(str, STR_NOEMBED)) {
-        str2 = str_alloc_heap(rb_cString);
+    if (STR_EMBED_P(str)) {
+        str2 = str_alloc_embed(rb_cString, RSTRING_LEN(str) + TERM_LEN(str));
     }
     else {
-        str2 = str_alloc_embed(rb_cString, RSTRING_LEN(str) + TERM_LEN(str));
+        str2 = str_alloc_heap(rb_cString);
     }
     str_replace_shared_without_enc(str2, str);
 
