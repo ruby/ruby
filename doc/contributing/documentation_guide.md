@@ -200,10 +200,10 @@ If not, or if you suppress autolinking, consider forcing
 ### Variable Names
 
 The name of a variable (as specified in its call-seq) should be marked up as
-[italic](rdoc-ref:RDoc::MarkupReference@Italic).
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
 
-Also, use italic text for the name of a transient variable
-(i.e., one defined and used only in the discussion, such as _n_).
+Also, use monofont text for the name of a transient variable
+(i.e., one defined and used only in the discussion, such as +n+).
 
 ### HTML Tags
 
