@@ -112,6 +112,11 @@ module YARP
         other.end_offset == end_offset
     end
 
+    # Returns a new location that is the union of this location and the other.
+    def to(other)
+      Location.new(source, start_offset, other.end_offset - start_offset)
+    end
+
     def self.null
       new(0, 0)
     end
