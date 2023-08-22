@@ -1,8 +1,8 @@
-ProgramNode(2...30)(
+ProgramNode(0...30)(
   [:b, :a, :c],
-  StatementsNode(2...30)(
-    [MultiWriteNode(2...13)(
-       [MultiWriteNode(2...4)(
+  StatementsNode(0...30)(
+    [MultiWriteNode(0...13)(
+       [MultiWriteNode(1...6)(
           [LocalVariableTargetNode(2...3)(:b, 0),
            SplatNode(3...4)((3...4), nil)],
           nil,
@@ -17,7 +17,7 @@ ProgramNode(2...30)(
      ),
      MultiWriteNode(15...30)(
        [LocalVariableTargetNode(15...16)(:a, 0),
-        MultiWriteNode(19...24)(
+        MultiWriteNode(18...24)(
           [LocalVariableTargetNode(19...20)(:b, 0),
            LocalVariableTargetNode(22...23)(:c, 0)],
           nil,

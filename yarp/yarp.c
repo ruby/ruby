@@ -3164,7 +3164,10 @@ yp_multi_write_node_create(yp_parser_t *parser, const yp_token_t *operator, yp_n
     *node = (yp_multi_write_node_t) {
         {
             .type = YP_NODE_MULTI_WRITE_NODE,
-            .location = { .start = NULL, .end = NULL },
+            .location = {
+                .start = lparen_loc->start,
+                .end = value == NULL ? rparen_loc->end : value->location.end
+            },
         },
         .operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
         .value = value,
@@ -8202,6 +8205,8 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
 
                     if (YP_NODE_TYPE_P(child_target, YP_NODE_MULTI_WRITE_NODE)) {
                         target = (yp_multi_write_node_t *) child_target;
+                        target->base.location.start = lparen.start;
+                        target->base.location.end = rparen.end;
                         target->lparen_loc = (yp_location_t) { .start = lparen.start, .end = lparen.end };
                         target->rparen_loc = (yp_location_t) { .start = rparen.start, .end = rparen.end };
                     } else {
@@ -8218,6 +8223,7 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
                         yp_multi_write_node_targets_append(target, child_target);
                     }
 
+                    target->base.location.start = lparen.start;
                     target->base.location.end = rparen.end;
                     yp_multi_write_node_targets_append(result, (yp_node_t *) target);
                 }
@@ -10690,10 +10696,8 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         }
         case YP_TOKEN_PARENTHESIS_LEFT:
         case YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
-            yp_token_type_t current_token_type = parser->current.type;
+            yp_token_t opening = parser->current;
             parser_lex(parser);
-
-            yp_token_t opening = parser->previous;
             while (accept_any(parser, 2, YP_TOKEN_SEMICOLON, YP_TOKEN_NEWLINE));
 
             // If this is the end of the file or we match a right parenthesis, then
@@ -10712,7 +10716,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             // If we hit a right parenthesis, then we're done parsing the parentheses
             // node, and we can check which kind of node we should return.
             if (match_type_p(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
-                if (current_token_type == YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES) {
+                if (opening.type == YP_TOKEN_PARENTHESIS_LEFT_PARENTHESES) {
                     lex_state_set(parser, YP_LEX_STATE_ENDARG);
                 }
                 parser_lex(parser);
@@ -10730,6 +10734,8 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
                         if (multi_statement->lparen_loc.start == NULL) {
                             multi_write = (yp_multi_write_node_t *) statement;
+                            multi_write->base.location.start = lparen_loc.start;
+                            multi_write->base.location.end = rparen_loc.end;
                             multi_write->lparen_loc = lparen_loc;
                             multi_write->rparen_loc = rparen_loc;
                         } else {
@@ -10780,6 +10786,8 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             context_pop(parser);
             yp_accepts_block_stack_pop(parser);
             expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected a closing parenthesis.");
+
+            
 
             return (yp_node_t *) yp_parentheses_node_create(parser, &opening, (yp_node_t *) statements, &parser->previous);
         }

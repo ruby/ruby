@@ -114,6 +114,8 @@ ProgramNode(0...92)(
      LambdaNode(53...72)(
        [:foo],
        (53...55),
+       (66...68),
+       (69...72),
        BlockParametersNode(56...65)(
          ParametersNode(56...65)(
            [],
@@ -148,6 +150,8 @@ ProgramNode(0...92)(
      LambdaNode(74...92)(
        [:foo],
        (74...76),
+       (86...88),
+       (89...92),
        BlockParametersNode(77...85)(
          ParametersNode(77...85)(
            [],

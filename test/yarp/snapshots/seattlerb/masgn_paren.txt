@@ -1,7 +1,7 @@
-ProgramNode(1...12)(
+ProgramNode(0...12)(
   [:a, :b],
-  StatementsNode(1...12)(
-    [MultiWriteNode(1...12)(
+  StatementsNode(0...12)(
+    [MultiWriteNode(0...12)(
        [LocalVariableTargetNode(1...2)(:a, 0),
         LocalVariableTargetNode(4...5)(:b, 0)],
        (7...8),

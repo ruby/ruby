@@ -1,7 +1,7 @@
-ProgramNode(1...56)(
+ProgramNode(0...56)(
   [:foo, :bar, :baz],
-  StatementsNode(1...56)(
-    [MultiWriteNode(1...17)(
+  StatementsNode(0...56)(
+    [MultiWriteNode(0...17)(
        [LocalVariableTargetNode(1...4)(:foo, 0),
         LocalVariableTargetNode(6...9)(:bar, 0)],
        (11...12),

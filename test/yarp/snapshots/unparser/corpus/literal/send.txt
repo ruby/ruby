@@ -10,8 +10,8 @@ ProgramNode(0...999)(
             (11...14),
             (15...18),
             ParenthesesNode(19...31)(
-              StatementsNode(21...30)(
-                [MultiWriteNode(21...30)(
+              StatementsNode(20...30)(
+                [MultiWriteNode(20...30)(
                    [LocalVariableTargetNode(21...22)(:a, 0),
                     LocalVariableTargetNode(24...25)(:_, 0)],
                    (27...28),

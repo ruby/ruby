@@ -148,7 +148,7 @@ ProgramNode(0...293)(
      ),
      MultiWriteNode(231...258)(
        [LocalVariableTargetNode(231...234)(:foo, 0),
-        MultiWriteNode(237...246)(
+        MultiWriteNode(236...246)(
           [LocalVariableTargetNode(237...240)(:bar, 0),
            LocalVariableTargetNode(242...245)(:baz, 0)],
           nil,
