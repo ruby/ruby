@@ -201,7 +201,7 @@ If not, or if you suppress autolinking, consider forcing
 #### Variable Names
 
 The name of a variable (as specified in its call-seq) should be marked up as
-{italic}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Italic].
+[italic](rdoc-ref:RDoc::MarkupReference@Italic).
 
 Also, use italic text for the name of a transient variable
 (i.e., one defined and used only in the discussion, such as _n_).
