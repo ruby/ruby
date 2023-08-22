@@ -515,5 +515,5 @@ require_relative "yarp/pack"
 if RUBY_ENGINE == "ruby" and !ENV["YARP_FFI_BACKEND"]
   require "yarp/yarp"
 else
-  require "yarp/ffi"
+  require_relative "yarp/ffi"
 end
