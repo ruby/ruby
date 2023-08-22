@@ -69,6 +69,7 @@ The following default gems are updated.
 * bigdecimal 3.1.4
 * bundler 2.5.0.dev
 * csv 3.2.8
+* erb 4.0.3
 * fiddle 1.1.2
 * fileutils 1.7.1
 * irb 1.7.4
