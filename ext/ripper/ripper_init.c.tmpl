@@ -14,7 +14,6 @@
 #include "ripper_init.h"
 
 #define STR_NEW2(ptr) rb_enc_str_new((ptr),strlen(ptr),rb_ruby_parser_enc(p))
-#define NODE_RIPPER NODE_CDECL
 #define RIPPER_VERSION "0.1.0"
 
 ID id_warn, id_warning, id_gets, id_assoc;
@@ -62,7 +61,7 @@ ripper_get_id(VALUE v)
     if (!RB_TYPE_P(v, T_NODE)) return 0;
     nd = (NODE *)v;
     if (!nd_type_p(nd, NODE_RIPPER)) return 0;
-    return nd->nd_vid;
+    return RNODE_RIPPER(nd)->nd_vid;
 }
 
 VALUE
@@ -73,7 +72,7 @@ ripper_get_value(VALUE v)
     if (!RB_TYPE_P(v, T_NODE)) return v;
     nd = (NODE *)v;
     if (!nd_type_p(nd, NODE_RIPPER)) return Qnil;
-    return nd->nd_rval;
+    return RNODE_RIPPER(nd)->nd_rval;
 }
 
 static VALUE
