@@ -4157,27 +4157,30 @@ yp_do_loop_stack_p(yp_parser_t *parser) {
 /* Lexer check helpers                                                        */
 /******************************************************************************/
 
+// Get the next character in the source starting from +cursor+. If that position is beyond the end
+// of the source then return '\0'.
+static inline char
+peek_addr(yp_parser_t *parser, const char *cursor) {
+    if (cursor < parser->end) {
+        return *cursor;
+    } else {
+        return '\0';
+    }
+}
+
 // Get the next character in the source starting from parser->current.end and
 // adding the given offset. If that position is beyond the end of the source
 // then return '\0'.
 static inline char
-peek_at(yp_parser_t *parser, size_t offset) {
-    if (parser->current.end + offset < parser->end) {
-        return parser->current.end[offset];
-    } else {
-        return '\0';
-    }
+peek_at(yp_parser_t *parser, ptrdiff_t offset) {
+    return peek_addr(parser, parser->current.end + offset);
 }
 
 // Get the next character in the source starting from parser->current.end. If
 // that position is beyond the end of the source then return '\0'.
 static inline char
 peek(yp_parser_t *parser) {
-    if (parser->current.end < parser->end) {
-        return *parser->current.end;
-    } else {
-        return '\0';
-    }
+    return peek_addr(parser, parser->current.end);
 }
 
 // Get the next string of length len in the source starting from parser->current.end.
@@ -4518,7 +4521,7 @@ static yp_token_type_t
 lex_numeric_prefix(yp_parser_t *parser) {
     yp_token_type_t type = YP_TOKEN_INTEGER;
 
-    if (parser->current.end[-1] == '0') {
+    if (peek_at(parser, -1) == '0') {
         switch (*parser->current.end) {
             // 0d1111 is a decimal number
             case 'd':
@@ -4601,7 +4604,7 @@ lex_numeric_prefix(yp_parser_t *parser) {
 
     // If the last character that we consumed was an underscore, then this is
     // actually an invalid integer value, and we should return an invalid token.
-    if (parser->current.end[-1] == '_') {
+    if (peek_at(parser, -1) == '_') {
         yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Number literal cannot end with a `_`.");
     }
 
@@ -5083,7 +5086,7 @@ lex_question_mark(yp_parser_t *parser) {
         // an underscore. We check for this case
         if (
             !(parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end) ||
-                *parser->current.end == '_') ||
+              peek(parser) == '_') ||
             (
                 (parser->current.end + encoding_width >= parser->end) ||
                 !char_is_identifier(parser, parser->current.end + encoding_width)
@@ -5356,7 +5359,7 @@ parser_lex(yp_parser_t *parser) {
 
                 case '#': { // comments
                     const char *ending = next_newline(parser->current.end, parser->end - parser->current.end);
-                    while (ending && ending < parser->end && *ending != '\n') {
+                    while (ending && peek_addr(parser, ending) != '\n') {
                         ending = next_newline(ending + 1, parser->end - ending);
                     }
 
@@ -5446,7 +5449,11 @@ parser_lex(yp_parser_t *parser) {
 
                             // If the lex state was ignored, or we hit a '.' or a '&.',
                             // we will lex the ignored newline
-                            if (lex_state_ignored_p(parser) || (following && ((following[0] == '.') || (following + 1 < parser->end && following[0] == '&' && following[1] == '.')))) {
+                            if (lex_state_ignored_p(parser) ||
+                                (following && (
+                                    (peek_addr(parser, following) == '.') ||
+                                    (peek_addr(parser, following) == '&' && peek_addr(parser, following + 1) == '.')
+                                    ))) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
                                 lexed_comment = false;
                                 goto lex_next_token;
@@ -5459,7 +5466,7 @@ parser_lex(yp_parser_t *parser) {
                             // To match ripper, we need to emit an ignored newline even though
                             // its a real newline in the case that we have a beginless range
                             // on a subsequent line.
-                            if ((next_content + 1 < parser->end) && (next_content[1] == '.')) {
+                            if (peek_addr(parser, next_content + 1) == '.') {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
                                 lex_state_set(parser, YP_LEX_STATE_BEG);
                                 parser->command_start = true;
@@ -5477,7 +5484,7 @@ parser_lex(yp_parser_t *parser) {
 
                         // If we hit a &. after a newline, then we're in a call chain and
                         // we need to return the call operator.
-                        if (next_content + 1 < parser->end && next_content[0] == '&' && next_content[1] == '.') {
+                        if (peek_addr(parser, next_content) == '&' && peek_addr(parser, next_content + 1) == '.') {
                             if (!lexed_comment) parser_lex_ignored_newline(parser);
                             lex_state_set(parser, YP_LEX_STATE_DOT);
                             parser->current.start = next_content;
@@ -6098,13 +6105,13 @@ parser_lex(yp_parser_t *parser) {
                         LEX(YP_TOKEN_COLON_COLON);
                     }
 
-                    if (lex_state_end_p(parser) || yp_char_is_whitespace(*parser->current.end) || (*parser->current.end == '#')) {
+                    if (lex_state_end_p(parser) || yp_char_is_whitespace(*parser->current.end) || peek(parser) == '#') {
                         lex_state_set(parser, YP_LEX_STATE_BEG);
                         LEX(YP_TOKEN_COLON);
                     }
 
-                    if ((*parser->current.end == '"') || (*parser->current.end == '\'')) {
-                        lex_mode_push_string(parser, *parser->current.end == '"', false, '\0', *parser->current.end);
+                    if (peek(parser) == '"' || peek(parser) == '\'') {
+                        lex_mode_push_string(parser, peek(parser) == '"', false, '\0', *parser->current.end);
                         parser->current.end++;
                     }
 
@@ -6173,7 +6180,7 @@ parser_lex(yp_parser_t *parser) {
                     }
                     else if(
                         lex_state_beg_p(parser) ||
-                        (lex_state_p(parser, YP_LEX_STATE_FITEM) && (*parser->current.end == 's')) ||
+                        (lex_state_p(parser, YP_LEX_STATE_FITEM) && (peek(parser) == 's')) ||
                         lex_state_spcarg_p(parser, space_seen)
                     ) {
                         if (!parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end)) {
@@ -6341,8 +6348,12 @@ parser_lex(yp_parser_t *parser) {
                         ((parser->current.end - parser->current.start) == 7) &&
                         current_token_starts_line(parser) &&
                         (strncmp(parser->current.start, "__END__", 7) == 0) &&
-                        (parser->current.end == parser->end || *parser->current.end == '\n' || (*parser->current.end == '\r' && parser->current.end[1] == '\n'))
-                    ) {
+                        (
+                            parser->current.end == parser->end ||
+                            peek(parser) == '\n' ||
+                            (peek(parser) == '\r' && peek_at(parser, 1) == '\n'))
+                        )
+                    {
                         parser->current.end = parser->end;
                         parser->current.type = YP_TOKEN___END__;
                         parser_lex_callback(parser);
@@ -6399,7 +6410,7 @@ parser_lex(yp_parser_t *parser) {
 
             if ((whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list, should_stop)) > 0) {
                 parser->current.end += whitespace;
-                if (parser->current.end[-1] == '\n') {
+                if (peek_at(parser, -1) == '\n') {
                     // mutates next_start
                     parser_flush_heredoc_end(parser);
                 }
@@ -6667,7 +6678,7 @@ parser_lex(yp_parser_t *parser) {
 
                     // Otherwise we need to switch back to the parent lex mode and
                     // return the end of the string.
-                    if (*parser->current.end == '\r' && parser->current.end + 1 < parser->end && parser->current.end[1] == '\n') {
+                    if (peek(parser) == '\r' && peek_at(parser, 1) == '\n') {
                         parser->current.end = breakpoint + 2;
                         yp_newline_list_append(&parser->newline_list, breakpoint + 1);
                     } else {
@@ -6773,7 +6784,7 @@ parser_lex(yp_parser_t *parser) {
 
             // If we are immediately following a newline and we have hit the
             // terminator, then we need to return the ending of the heredoc.
-            if (parser->current.start[-1] == '\n') {
+            if (current_token_starts_line(parser)) {
                 const char *start = parser->current.start;
                 if (parser->lex_modes.current->as.heredoc.indent != YP_HEREDOC_INDENT_NONE) {
                     start += yp_strspn_inline_whitespace(start, parser->end - start);
@@ -6783,10 +6794,11 @@ parser_lex(yp_parser_t *parser) {
                     bool matched = true;
                     bool at_end = false;
 
-                    if ((start + ident_length < parser->end) && (start[ident_length] == '\n')) {
+                    if (peek_addr(parser, start + ident_length) == '\n') {
                         parser->current.end = start + ident_length + 1;
                         yp_newline_list_append(&parser->newline_list, start + ident_length);
-                    } else if ((start + ident_length + 1 < parser->end) && (start[ident_length] == '\r') && (start[ident_length + 1] == '\n')) {
+                    } else if (peek_addr(parser, start + ident_length) == '\r' &&
+                               peek_addr(parser, start + ident_length + 1) == '\n') {
                         parser->current.end = start + ident_length + 2;
                         yp_newline_list_append(&parser->newline_list, start + ident_length + 1);
                     } else if (parser->end == (start + ident_length)) {
@@ -6854,7 +6866,9 @@ parser_lex(yp_parser_t *parser) {
                             (strncmp(start, ident_start, ident_length) == 0)
                         ) {
                             // Heredoc terminators must be followed by a newline or EOF to be valid.
-                            if (start + ident_length == parser->end || start[ident_length] == '\n') {
+                            if (start + ident_length == parser->end ||
+                                peek_addr(parser, start + ident_length) == '\n')
+                            {
                                 parser->current.end = breakpoint + 1;
                                 LEX(YP_TOKEN_STRING_CONTENT);
                             }
@@ -6862,11 +6876,9 @@ parser_lex(yp_parser_t *parser) {
                             // They can also be followed by a carriage return and then a
                             // newline. Be sure here that we don't accidentally read off the
                             // end.
-                            if (
-                                (start + ident_length + 1 < parser->end) &&
-                                (start[ident_length] == '\r') &&
-                                (start[ident_length + 1] == '\n')
-                            ) {
+                            if (peek_addr(parser, start + ident_length) == '\r' &&
+                                peek_addr(parser, start + ident_length + 1) == '\n')
+                            {
                                 parser->current.end = breakpoint + 1;
                                 LEX(YP_TOKEN_STRING_CONTENT);
                             }
@@ -6884,9 +6896,10 @@ parser_lex(yp_parser_t *parser) {
                         // stop looping before the newline and not after the
                         // newline so that we can still potentially find the
                         // terminator of the heredoc.
-                        if (breakpoint + 1 < parser->end && breakpoint[1] == '\n') {
+                        if (peek_addr(parser, breakpoint + 1) == '\n') {
                             breakpoint++;
-                        } else if (breakpoint + 2 < parser->end && breakpoint[1] == '\r' && breakpoint[2] == '\n') {
+                        } else if (peek_addr(parser, breakpoint + 1) == '\r' &&
+                                   peek_addr(parser, breakpoint + 2) == '\n') {
                             breakpoint += 2;
                         } else {
                             yp_unescape_type_t unescape_type = (quote == YP_HEREDOC_QUOTE_SINGLE) ? YP_UNESCAPE_MINIMAL : YP_UNESCAPE_ALL;
