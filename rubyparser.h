@@ -146,7 +146,6 @@ enum node_type {
 
 #define nd_stts  u1.node
 
-#define nd_entry u3.id
 #define nd_vid   u1.id
 
 #define nd_var   u1.node
