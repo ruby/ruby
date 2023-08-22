@@ -196,7 +196,7 @@ will be autolinked:
 - File#read.
 
 If not, or if you suppress autolinking, consider forcing
-{monofont}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Monofont].
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
 
 #### Variable Names
 
