@@ -291,7 +291,7 @@ impl Assembler
                     *out = asm.next_opnd_out(Opnd::match_num_bits(&[*truthy, *falsy]));
                     asm.push_insn(insn);
                 },
-                Insn::Mov { dest, src } => {
+                Insn::Mov { dest, src } | Insn::Store { dest, src } => {
                     match (&dest, &src) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             // We load opnd1 because for mov, opnd0 is the output
