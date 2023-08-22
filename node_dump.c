@@ -592,7 +592,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       case NODE_HASH:
         if (!node->nd_brace) {
             ANN("keyword arguments");
-            ANN("format: nd_head");
+            ANN("format: [nd_head]");
             ANN("example: a: 1, b: 2");
         }
         else {
