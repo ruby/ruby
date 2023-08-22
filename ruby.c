@@ -2888,11 +2888,12 @@ ruby_process_options(int argc, char **argv)
     set_progname(external_str_new_cstr(script_name));  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
-    iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
 #ifndef HAVE_SETPROCTITLE
     ruby_init_setproctitle(argc, argv);
 #endif
+
+    iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
     return (void*)(struct RData*)iseq;
 }
