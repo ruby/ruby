@@ -2824,12 +2824,6 @@ yp_interpolated_symbol_node_append(yp_interpolated_symbol_node_t *node, yp_node_
     node->base.location.end = part->location.end;
 }
 
-static inline void
-yp_interpolated_symbol_node_closing_set(yp_interpolated_symbol_node_t *node, const yp_token_t *closing) {
-    node->closing_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(closing);
-    node->base.location.end = closing->end;
-}
-
 // Allocate a new InterpolatedXStringNode node.
 static yp_interpolated_x_string_node_t *
 yp_interpolated_xstring_node_create(yp_parser_t *parser, const yp_token_t *opening, const yp_token_t *closing) {
@@ -4057,20 +4051,20 @@ yp_symbol_node_label_p(yp_node_t *node) {
 
 // Convert the given StringNode node to a SymbolNode node.
 static yp_symbol_node_t *
-yp_string_node_to_symbol_node(yp_parser_t *parser, yp_string_node_t *node) {
+yp_string_node_to_symbol_node(yp_parser_t *parser, yp_string_node_t *node, const yp_token_t *opening, const yp_token_t *closing) {
     yp_symbol_node_t *new_node = YP_ALLOC_NODE(parser, yp_symbol_node_t);
 
     *new_node = (yp_symbol_node_t) {
         {
             .type = YP_NODE_SYMBOL_NODE,
             .location = {
-                .start = node->base.location.start - 2,
-                .end = node->base.location.end + 1
+                .start = opening->start,
+                .end = closing->end
             }
         },
-        .opening_loc = node->opening_loc,
+        .opening_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .value_loc = node->content_loc,
-        .closing_loc = node->closing_loc,
+        .closing_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
         .unescaped = node->unescaped
     };
 
@@ -9576,14 +9570,10 @@ parse_string_part(yp_parser_t *parser) {
 
 static yp_node_t *
 parse_symbol(yp_parser_t *parser, yp_lex_mode_t *lex_mode, yp_lex_state_t next_state) {
-    bool lex_string = lex_mode->mode == YP_LEX_STRING;
-    bool can_be_interpolated = lex_string && lex_mode->as.string.interpolation;
     yp_token_t opening = parser->previous;
 
-    if (!lex_string) {
-        if (next_state != YP_LEX_STATE_NONE) {
-            lex_state_set(parser, next_state);
-        }
+    if (lex_mode->mode != YP_LEX_STRING) {
+        if (next_state != YP_LEX_STATE_NONE) lex_state_set(parser, next_state);
         yp_token_t symbol;
 
         switch (parser->current.type) {
@@ -9613,37 +9603,44 @@ parse_symbol(yp_parser_t *parser, yp_lex_mode_t *lex_mode, yp_lex_state_t next_s
         return (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &symbol, &closing, YP_UNESCAPE_ALL);
     }
 
-    if (can_be_interpolated) {
-        // Create a node_list first. We'll use this to check if it should be an InterpolatedSymbolNode
-        // or a SymbolNode
+    if (lex_mode->as.string.interpolation) {
+        // If we have the end of the symbol, then we can return an empty symbol.
+        if (match_type_p(parser, YP_TOKEN_STRING_END)) {
+            if (next_state != YP_LEX_STATE_NONE) lex_state_set(parser, next_state);
+            parser_lex(parser);
+
+            yp_token_t content = not_provided(parser);
+            yp_token_t closing = parser->previous;
+            return (yp_node_t *) yp_symbol_node_create_and_unescape(parser, &opening, &content, &closing, YP_UNESCAPE_NONE);
+        }
+
+        // Now we can parse the first part of the symbol.
+        yp_node_t *part = parse_string_part(parser);
+
+        // If we got a string part, then it's possible that we could transform
+        // what looks like an interpolated symbol into a regular symbol.
+        if (part && YP_NODE_TYPE_P(part, YP_NODE_STRING_NODE) && match_any_type_p(parser, 2, YP_TOKEN_STRING_END, YP_TOKEN_EOF)) {
+            if (next_state != YP_LEX_STATE_NONE) lex_state_set(parser, next_state);
+            parser_lex(parser);
+
+            return (yp_node_t *) yp_string_node_to_symbol_node(parser, (yp_string_node_t *) part, &opening, &parser->previous);
+        }
+
+        // Create a node_list first. We'll use this to check if it should be an
+        // InterpolatedSymbolNode or a SymbolNode.
         yp_node_list_t node_list = YP_EMPTY_NODE_LIST;
+        if (part) yp_node_list_append(&node_list, part);
 
         while (!match_any_type_p(parser, 2, YP_TOKEN_STRING_END, YP_TOKEN_EOF)) {
-            yp_node_t *part = parse_string_part(parser);
-            if (part != NULL) {
+            if ((part = parse_string_part(parser)) != NULL) {
                 yp_node_list_append(&node_list, part);
             }
         }
 
-        yp_node_t *res;
-        // If the only element on the node_list is a StringNode, we know this is a SymbolNode
-        // and not an InterpolatedSymbolNode
-        if (node_list.size == 1 && YP_NODE_TYPE_P(node_list.nodes[0], YP_NODE_STRING_NODE)) {
-            res = (yp_node_t *)yp_string_node_to_symbol_node(parser, (yp_string_node_t *)node_list.nodes[0]);
-            free(node_list.nodes);
-        }
-        else {
-            yp_interpolated_symbol_node_t *interpolated = yp_interpolated_symbol_node_create(parser, &opening, &node_list, &opening);
-            yp_interpolated_symbol_node_closing_set(interpolated, &parser->current);
-            res = (yp_node_t *) interpolated;
-        }
-
-        if (next_state != YP_LEX_STATE_NONE) {
-            lex_state_set(parser, next_state);
-        }
+        if (next_state != YP_LEX_STATE_NONE) lex_state_set(parser, next_state);
         expect(parser, YP_TOKEN_STRING_END, "Expected a closing delimiter for an interpolated symbol.");
 
-        return res;
+        return (yp_node_t *) yp_interpolated_symbol_node_create(parser, &opening, &node_list, &parser->previous);
     }
 
     yp_token_t content;
