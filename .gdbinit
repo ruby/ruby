@@ -689,11 +689,6 @@ define nd_stts
 end
 
 
-define nd_entry
-  printf "%su3.entry%s: ", $color_highlite, $color_end
-  p ($arg0).u3.entry
-end
-
 define nd_vid
   printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
