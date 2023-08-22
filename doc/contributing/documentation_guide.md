@@ -186,19 +186,18 @@ We might consider whether to suppress when:
     - \Method.
     - \Module.
 
-Most often, the name of a class, module, constant, or method
+Most often, the name of a class, module, or method
 will be autolinked:
 
 - Array.
 - Enumerable.
-- File::RDONLY.
 - File.new
 - File#read.
 
 If not, or if you suppress autolinking, consider forcing
 [monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
 
-#### Variable Names
+### Variable Names
 
 The name of a variable (as specified in its call-seq) should be marked up as
 [italic](rdoc-ref:RDoc::MarkupReference@Italic).
