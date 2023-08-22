@@ -18,7 +18,8 @@ module Gem::BUNDLED_GEMS
     "drb" => "3.4.0",
     "mutex_m" => "3.4.0",
     "csv" => "3.4.0",
-    "base64" => "3.4.0"
+    "base64" => "3.4.0",
+    "bigdecimal" => "3.4.0",
   }.freeze
 
   EXACT = {
