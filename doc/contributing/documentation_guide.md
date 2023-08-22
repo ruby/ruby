@@ -162,7 +162,7 @@ For a method name in text:
 
 Code or commands embedded in running text (i.e., not in a code block)
 should marked up as
-{monofont}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Monofont].
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
 
 Code that is a simple string should include the quote marks.
 
