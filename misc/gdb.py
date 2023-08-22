@@ -92,8 +92,9 @@ class CFP(gdb.Command):
         self.print_env(cfp, -1, self.frame_types(cfp, -1))
         print()
 
-        # We can't calculate BP for the first frame
-        if cfp_index > 0:
+        # We can't calculate BP for the first frame.
+        # vm_base_ptr doesn't work for C frames either.
+        if cfp_index > 0 and self.get_int(f'{cfp}->iseq'):
             if args.stack_size is not None:
                 stack_size = args.stack_size
             else:
