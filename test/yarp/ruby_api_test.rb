@@ -8,7 +8,6 @@ class YARPRubyAPITest < Test::Unit::TestCase
     source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
     assert_equal YARP.lex(source, filepath).value, YARP.lex_file(filepath).value
-
     assert_equal YARP.dump(source, filepath), YARP.dump_file(filepath)
 
     serialized = YARP.dump(source, filepath)
@@ -21,13 +20,20 @@ class YARPRubyAPITest < Test::Unit::TestCase
   end
 
   def test_literal_value_method
-    assert_equal 123, YARP.parse("123").value.statements.body.first.value
-    assert_equal 3.14, YARP.parse("3.14").value.statements.body.first.value
-    assert_equal 42i, YARP.parse("42i").value.statements.body.first.value
-    assert_equal 3.14i, YARP.parse("3.14i").value.statements.body.first.value
-    assert_equal 42r, YARP.parse("42r").value.statements.body.first.value
-    assert_equal 0.5r, YARP.parse("0.5r").value.statements.body.first.value
-    assert_equal 42ri, YARP.parse("42ri").value.statements.body.first.value
-    assert_equal 0.5ri, YARP.parse("0.5ri").value.statements.body.first.value
+    assert_equal 123, parse_expression("123").value
+    assert_equal 3.14, parse_expression("3.14").value
+    assert_equal 42i, parse_expression("42i").value
+    assert_equal 42.1ri, parse_expression("42.1ri").value
+    assert_equal 3.14i, parse_expression("3.14i").value
+    assert_equal 42r, parse_expression("42r").value
+    assert_equal 0.5r, parse_expression("0.5r").value
+    assert_equal 42ri, parse_expression("42ri").value
+    assert_equal 0.5ri, parse_expression("0.5ri").value
+  end
+
+  private
+
+  def parse_expression(source)
+    YARP.parse(source).value.statements.body.first
   end
 end

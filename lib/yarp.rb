@@ -343,7 +343,7 @@ module YARP
 
   class RationalNode < Node
     def value
-      Rational(numeric.value)
+      Rational(slice.chomp("r"))
     end
   end
 
