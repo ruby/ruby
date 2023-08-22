@@ -1417,7 +1417,7 @@ fn guard_object_is_heap(
     asm.cmp(object, Qfalse.into());
     asm.je(Target::side_exit(counter));
 
-    if object_type.diff(Type::UnknownHeap) != TypeDiff::Incompatible {
+    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::UnknownHeap);
     }
 }
