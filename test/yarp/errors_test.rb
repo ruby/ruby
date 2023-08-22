@@ -581,6 +581,8 @@ class ErrorsTest < Test::Unit::TestCase
     expected = LambdaNode(
       [:a, :b],
       Location(),
+      Location(),
+      Location(),
       BlockParametersNode(
         ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], nil, nil),
         [],
@@ -923,6 +925,8 @@ class ErrorsTest < Test::Unit::TestCase
   def test_do_not_allow_forward_arguments_in_lambda_literals
     expected = LambdaNode(
       [:"..."],
+      Location(),
+      Location(),
       Location(),
       BlockParametersNode(ParametersNode([], [], [], nil, [], ForwardingParameterNode(), nil), [], Location(), Location()),
       nil

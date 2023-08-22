@@ -4,6 +4,8 @@ ProgramNode(0...22)(
     [LambdaNode(0...16)(
        [],
        (0...2),
+       (3...4),
+       (15...16),
        nil,
        StatementsNode(7...14)(
          [CallNode(7...14)(

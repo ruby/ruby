@@ -4,6 +4,8 @@ ProgramNode(0...17)(
     [LambdaNode(0...17)(
        [],
        (0...2),
+       (3...5),
+       (14...17),
        nil,
        BeginNode(6...17)(
          nil,

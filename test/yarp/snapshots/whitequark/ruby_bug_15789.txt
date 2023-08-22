@@ -10,6 +10,8 @@ ProgramNode(0...41)(
          [LambdaNode(2...20)(
             [:a],
             (2...4),
+            (17...18),
+            (19...20),
             BlockParametersNode(4...16)(
               ParametersNode(5...15)(
                 [],
@@ -20,6 +22,8 @@ ProgramNode(0...41)(
                    LambdaNode(9...15)(
                      [],
                      (9...11),
+                     (11...12),
+                     (14...15),
                      nil,
                      StatementsNode(12...14)(
                        [CallNode(12...14)(
@@ -63,6 +67,8 @@ ProgramNode(0...41)(
          [LambdaNode(24...41)(
             [:a],
             (24...26),
+            (38...39),
+            (40...41),
             BlockParametersNode(26...37)(
               ParametersNode(27...36)(
                 [],
@@ -74,6 +80,8 @@ ProgramNode(0...41)(
                    LambdaNode(30...36)(
                      [],
                      (30...32),
+                     (32...33),
+                     (35...36),
                      nil,
                      StatementsNode(33...35)(
                        [CallNode(33...35)(

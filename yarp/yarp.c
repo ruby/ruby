@@ -2931,10 +2931,11 @@ static yp_lambda_node_t *
 yp_lambda_node_create(
     yp_parser_t *parser,
     yp_constant_id_list_t *locals,
+    const yp_token_t *operator,
     const yp_token_t *opening,
+    const yp_token_t *closing,
     yp_block_parameters_node_t *parameters,
-    yp_node_t *body,
-    const yp_token_t *closing
+    yp_node_t *body
 ) {
     yp_lambda_node_t *node = YP_ALLOC_NODE(parser, yp_lambda_node_t);
 
@@ -2942,12 +2943,14 @@ yp_lambda_node_create(
         {
             .type = YP_NODE_LAMBDA_NODE,
             .location = {
-                .start = opening->start,
+                .start = operator->start,
                 .end = closing->end
             },
         },
         .locals = *locals,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),
+        .closing_loc = YP_LOCATION_TOKEN_VALUE(closing),
         .parameters = parameters,
         .body = body
     };
@@ -12424,25 +12427,25 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_accepts_block_stack_push(parser, true);
             parser_lex(parser);
 
-            yp_token_t opening = parser->previous;
+            yp_token_t operator = parser->previous;
             yp_parser_scope_push(parser, false);
             yp_block_parameters_node_t *params;
 
             switch (parser->current.type) {
                 case YP_TOKEN_PARENTHESIS_LEFT: {
-                    yp_token_t block_parameters_opening = parser->current;
+                    yp_token_t opening = parser->current;
                     parser_lex(parser);
 
                     if (match_type_p(parser, YP_TOKEN_PARENTHESIS_RIGHT)) {
-                        params = yp_block_parameters_node_create(parser, NULL, &block_parameters_opening);
+                        params = yp_block_parameters_node_create(parser, NULL, &opening);
                     } else {
-                        params = parse_block_parameters(parser, false, &block_parameters_opening, true);
+                        params = parse_block_parameters(parser, false, &opening, true);
                     }
 
                     accept(parser, YP_TOKEN_NEWLINE);
                     expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected ')' after left parenthesis.");
-                    yp_block_parameters_node_closing_set(params, &parser->previous);
 
+                    yp_block_parameters_node_closing_set(params, &parser->previous);
                     break;
                 }
                 case YP_CASE_PARAMETER: {
@@ -12458,16 +12461,20 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 }
             }
 
+            yp_token_t opening;
             yp_node_t *body = NULL;
             parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
 
             if (accept(parser, YP_TOKEN_LAMBDA_BEGIN)) {
+                opening = parser->previous;
+
                 if (!accept(parser, YP_TOKEN_BRACE_RIGHT)) {
                     body = (yp_node_t *) parse_statements(parser, YP_CONTEXT_LAMBDA_BRACES);
                     expect(parser, YP_TOKEN_BRACE_RIGHT, "Expecting '}' to close lambda block.");
                 }
             } else {
                 expect(parser, YP_TOKEN_KEYWORD_DO, "Expected a 'do' keyword or a '{' to open lambda block.");
+                opening = parser->previous;
 
                 if (!match_any_type_p(parser, 3, YP_TOKEN_KEYWORD_END, YP_TOKEN_KEYWORD_RESCUE, YP_TOKEN_KEYWORD_ENSURE)) {
                     body = (yp_node_t *) parse_statements(parser, YP_CONTEXT_LAMBDA_DO_END);
@@ -12484,7 +12491,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_constant_id_list_t locals = parser->current_scope->locals;
             yp_parser_scope_pop(parser);
             yp_accepts_block_stack_pop(parser);
-            return (yp_node_t *) yp_lambda_node_create(parser, &locals, &opening, params, body, &parser->previous);
+            return (yp_node_t *) yp_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, params, body);
         }
         case YP_TOKEN_UPLUS: {
             parser_lex(parser);

@@ -313,6 +313,8 @@ ProgramNode(0...747)(
             [LambdaNode(446...460)(
                [:b],
                (446...448),
+               (452...453),
+               (459...460),
                BlockParametersNode(448...451)(
                  ParametersNode(449...450)(
                    [RequiredParameterNode(449...450)(:b)],

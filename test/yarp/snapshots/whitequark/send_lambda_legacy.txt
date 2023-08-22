@@ -1,4 +1,6 @@
 ProgramNode(0...5)(
   [],
-  StatementsNode(0...5)([LambdaNode(0...5)([], (0...2), nil, nil)])
+  StatementsNode(0...5)(
+    [LambdaNode(0...5)([], (0...2), (2...3), (4...5), nil, nil)]
+  )
 )

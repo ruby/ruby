@@ -1468,7 +1468,11 @@ nodes:
     child_nodes:
       - name: locals
         type: constant[]
+      - name: operator_loc
+        type: location
       - name: opening_loc
+        type: location
+      - name: closing_loc
         type: location
       - name: parameters
         type: node?

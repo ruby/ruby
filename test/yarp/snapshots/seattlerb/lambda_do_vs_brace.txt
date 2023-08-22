@@ -6,7 +6,9 @@ ProgramNode(0...46)(
        nil,
        (0...1),
        nil,
-       ArgumentsNode(2...11)([LambdaNode(2...11)([], (2...4), nil, nil)]),
+       ArgumentsNode(2...11)(
+         [LambdaNode(2...11)([], (2...4), (5...7), (8...11), nil, nil)]
+       ),
        nil,
        nil,
        0,
@@ -17,7 +19,9 @@ ProgramNode(0...46)(
        nil,
        (13...14),
        nil,
-       ArgumentsNode(15...20)([LambdaNode(15...20)([], (15...17), nil, nil)]),
+       ArgumentsNode(15...20)(
+         [LambdaNode(15...20)([], (15...17), (18...19), (19...20), nil, nil)]
+       ),
        nil,
        nil,
        0,
@@ -32,6 +36,8 @@ ProgramNode(0...46)(
          [LambdaNode(24...35)(
             [],
             (24...26),
+            (29...31),
+            (32...35),
             BlockParametersNode(26...28)(nil, [], (26...27), (27...28)),
             nil
           )]
@@ -50,6 +56,8 @@ ProgramNode(0...46)(
          [LambdaNode(39...46)(
             [],
             (39...41),
+            (44...45),
+            (45...46),
             BlockParametersNode(41...43)(nil, [], (41...42), (42...43)),
             nil
           )]

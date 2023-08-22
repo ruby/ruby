@@ -55,6 +55,8 @@ ProgramNode(0...56)(
                LambdaNode(35...56)(
                  [],
                  (35...37),
+                 (38...40),
+                 (53...56),
                  nil,
                  StatementsNode(41...52)(
                    [CallNode(41...52)(

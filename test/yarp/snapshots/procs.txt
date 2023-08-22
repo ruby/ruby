@@ -4,6 +4,8 @@ ProgramNode(0...266)(
     [LambdaNode(0...21)(
        [:a, :b, :c, :d],
        (0...2),
+       (16...17),
+       (20...21),
        BlockParametersNode(3...15)(
          ParametersNode(4...5)(
            [RequiredParameterNode(4...5)(:a)],
@@ -23,6 +25,8 @@ ProgramNode(0...266)(
      LambdaNode(23...39)(
        [],
        (23...25),
+       (26...28),
+       (36...39),
        nil,
        BeginNode(29...39)(
          nil,
@@ -36,6 +40,8 @@ ProgramNode(0...266)(
      LambdaNode(41...69)(
        [],
        (41...43),
+       (44...46),
+       (66...69),
        nil,
        BeginNode(47...69)(
          nil,
@@ -49,6 +55,8 @@ ProgramNode(0...266)(
      LambdaNode(71...81)(
        [],
        (71...73),
+       (74...75),
+       (80...81),
        nil,
        StatementsNode(76...79)(
          [CallNode(76...79)(nil, nil, (76...79), nil, nil, nil, nil, 2, "foo")]
@@ -57,6 +65,8 @@ ProgramNode(0...266)(
      LambdaNode(83...98)(
        [],
        (83...85),
+       (86...88),
+       (95...98),
        nil,
        StatementsNode(90...93)(
          [CallNode(90...93)(nil, nil, (90...93), nil, nil, nil, nil, 2, "foo")]
@@ -65,6 +75,8 @@ ProgramNode(0...266)(
      LambdaNode(100...129)(
        [:a, :b, :c, :d, :e],
        (100...102),
+       (124...125),
+       (128...129),
        BlockParametersNode(103...123)(
          ParametersNode(103...123)(
            [RequiredParameterNode(103...104)(:a)],
@@ -90,6 +102,8 @@ ProgramNode(0...266)(
      LambdaNode(131...171)(
        [:a, :b, :c, :d, :e, :f, :g],
        (131...133),
+       (166...167),
+       (170...171),
        BlockParametersNode(134...165)(
          ParametersNode(135...164)(
            [RequiredParameterNode(135...136)(:a)],
@@ -115,6 +129,8 @@ ProgramNode(0...266)(
      LambdaNode(173...218)(
        [:a, :b, :c, :d, :e, :f, :g],
        (173...175),
+       (208...210),
+       (215...218),
        BlockParametersNode(176...207)(
          ParametersNode(177...206)(
            [RequiredParameterNode(177...178)(:a)],
@@ -140,6 +156,8 @@ ProgramNode(0...266)(
      LambdaNode(220...245)(
        [:a],
        (220...222),
+       (227...228),
+       (244...245),
        BlockParametersNode(223...226)(
          ParametersNode(224...225)(
            [RequiredParameterNode(224...225)(:a)],
@@ -158,6 +176,8 @@ ProgramNode(0...266)(
          [LambdaNode(229...243)(
             [:b],
             (229...231),
+            (234...235),
+            (242...243),
             BlockParametersNode(232...233)(
               ParametersNode(232...233)(
                 [RequiredParameterNode(232...233)(:b)],
@@ -193,6 +213,8 @@ ProgramNode(0...266)(
      LambdaNode(247...266)(
        [:a, :b, :c],
        (247...249),
+       (263...264),
+       (265...266),
        BlockParametersNode(250...262)(
          ParametersNode(251...261)(
            [RequiredDestructuredParameterNode(251...257)(

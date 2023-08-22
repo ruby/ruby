@@ -323,6 +323,8 @@ ProgramNode(0...3743)(
        LambdaNode(343...353)(
          [],
          (343...345),
+         (346...347),
+         (352...353),
          nil,
          StatementsNode(348...351)([LocalVariableReadNode(348...351)(:bar, 1)])
        ),
@@ -868,6 +870,8 @@ ProgramNode(0...3743)(
          LambdaNode(916...926)(
            [],
            (916...918),
+           (919...920),
+           (925...926),
            nil,
            StatementsNode(921...924)(
              [LocalVariableReadNode(921...924)(:bar, 1)]
@@ -876,6 +880,8 @@ ProgramNode(0...3743)(
          LambdaNode(930...940)(
            [],
            (930...932),
+           (933...934),
+           (939...940),
            nil,
            StatementsNode(935...938)(
              [LocalVariableReadNode(935...938)(:bar, 1)]
@@ -2268,6 +2274,8 @@ ProgramNode(0...3743)(
        LambdaNode(1991...2001)(
          [],
          (1991...1993),
+         (1994...1995),
+         (2000...2001),
          nil,
          StatementsNode(1996...1999)(
            [LocalVariableReadNode(1996...1999)(:bar, 1)]
@@ -2898,6 +2906,8 @@ ProgramNode(0...3743)(
           LambdaNode(2727...2737)(
             [],
             (2727...2729),
+            (2730...2731),
+            (2736...2737),
             nil,
             StatementsNode(2732...2735)(
               [LocalVariableReadNode(2732...2735)(:bar, 1)]
@@ -3727,6 +3737,8 @@ ProgramNode(0...3743)(
               [LambdaNode(3647...3657)(
                  [],
                  (3647...3649),
+                 (3650...3651),
+                 (3656...3657),
                  nil,
                  StatementsNode(3652...3655)(
                    [LocalVariableReadNode(3652...3655)(:bar, 1)]

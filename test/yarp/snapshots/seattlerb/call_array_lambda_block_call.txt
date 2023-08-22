@@ -11,6 +11,8 @@ ProgramNode(0...18)(
             [LambdaNode(3...10)(
                [],
                (3...5),
+               (8...9),
+               (9...10),
                BlockParametersNode(5...7)(nil, [], (5...6), (6...7)),
                nil
              )],
