@@ -17,21 +17,6 @@
 #include "internal/parse.h"
 #define T_NODE 0x1b
 
-#define ruby_xmalloc ast->node_buffer->config->malloc
-#undef xfree
-#define xfree ast->node_buffer->config->free
-#define rb_ident_hash_new ast->node_buffer->config->ident_hash_new
-#define rb_xmalloc_mul_add ast->node_buffer->config->xmalloc_mul_add
-#define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
-#define rb_gc_mark ast->node_buffer->config->gc_mark
-#define rb_gc_location ast->node_buffer->config->gc_location
-#define rb_gc_mark_movable ast->node_buffer->config->gc_mark_movable
-#define Qnil ast->node_buffer->config->qnil
-#define Qtrue ast->node_buffer->config->qtrue
-#define NIL_P ast->node_buffer->config->nil_p
-#define rb_hash_aset ast->node_buffer->config->hash_aset
-#define RB_OBJ_WRITE(old, slot, young) ast->node_buffer->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
-
 #else
 
 #include "internal.h"
@@ -42,9 +27,76 @@
 
 #endif
 
-#define NODE_BUF_DEFAULT_LEN 16
+#define NODE_BUF_DEFAULT_SIZE (sizeof(struct RNode) * 16)
 
-typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE * node);
+static void
+init_node_buffer_elem(node_buffer_elem_t *nbe, size_t allocated, void *xmalloc(size_t))
+{
+    nbe->allocated = allocated;
+    nbe->used = 0;
+    nbe->len = 0;
+    nbe->nodes = xmalloc(allocated / sizeof(struct RNode) * sizeof(struct RNode *)); /* All node requires at least RNode */
+}
+
+static void
+init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head, void *xmalloc(size_t))
+{
+    init_node_buffer_elem(head, NODE_BUF_DEFAULT_SIZE, xmalloc);
+    nb->head = nb->last = head;
+    nb->head->next = NULL;
+}
+
+#ifdef UNIVERSAL_PARSER
+#define ruby_xmalloc config->malloc
+#define Qnil config->qnil
+#endif
+
+#ifdef UNIVERSAL_PARSER
+static node_buffer_t *
+rb_node_buffer_new(rb_parser_config_t *config)
+#else
+static node_buffer_t *
+rb_node_buffer_new(void)
+#endif
+{
+    const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_SIZE;
+    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
+    STATIC_ASSERT(
+        integer_overflow,
+        offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_SIZE
+        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
+    node_buffer_t *nb = ruby_xmalloc(alloc_size);
+    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1], ruby_xmalloc);
+    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size), ruby_xmalloc);
+    nb->local_tables = 0;
+    nb->mark_hash = Qnil;
+    nb->tokens = Qnil;
+#ifdef UNIVERSAL_PARSER
+    nb->config = config;
+#endif
+    return nb;
+}
+
+#ifdef UNIVERSAL_PARSER
+#undef ruby_xmalloc
+#define ruby_xmalloc ast->node_buffer->config->malloc
+#undef xfree
+#define xfree ast->node_buffer->config->free
+#define rb_ident_hash_new ast->node_buffer->config->ident_hash_new
+#define rb_xmalloc_mul_add ast->node_buffer->config->xmalloc_mul_add
+#define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
+#define rb_gc_mark ast->node_buffer->config->gc_mark
+#define rb_gc_location ast->node_buffer->config->gc_location
+#define rb_gc_mark_movable ast->node_buffer->config->gc_mark_movable
+#undef Qnil
+#define Qnil ast->node_buffer->config->qnil
+#define Qtrue ast->node_buffer->config->qtrue
+#define NIL_P ast->node_buffer->config->nil_p
+#define rb_hash_aset ast->node_buffer->config->hash_aset
+#define RB_OBJ_WRITE(old, slot, young) ast->node_buffer->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
+#endif
+
+typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE *node);
 static void iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, void *ctx);
 
 /* Setup NODE structure.
@@ -54,18 +106,15 @@ static void iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_
  * objects.
  */
 void
-rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
+rb_node_init(NODE *n, enum node_type type)
 {
-    n->flags = T_NODE;
-    nd_init_type(n, type);
-    n->u1.value = a0;
-    n->u2.value = a1;
-    n->u3.value = a2;
-    n->nd_loc.beg_pos.lineno = 0;
-    n->nd_loc.beg_pos.column = 0;
-    n->nd_loc.end_pos.lineno = 0;
-    n->nd_loc.end_pos.column = 0;
-    n->node_id = -1;
+    RNODE(n)->flags = T_NODE;
+    nd_init_type(RNODE(n), type);
+    RNODE(n)->nd_loc.beg_pos.lineno = 0;
+    RNODE(n)->nd_loc.beg_pos.column = 0;
+    RNODE(n)->nd_loc.end_pos.lineno = 0;
+    RNODE(n)->nd_loc.end_pos.column = 0;
+    RNODE(n)->node_id = -1;
 }
 
 const char *
@@ -96,61 +145,12 @@ ruby_node_name(int node)
 #endif
 
 static void
-init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head)
-{
-    nb->idx = 0;
-    nb->len = NODE_BUF_DEFAULT_LEN;
-    nb->head = nb->last = head;
-    nb->head->len = nb->len;
-    nb->head->next = NULL;
-}
-
-#ifdef UNIVERSAL_PARSER
-static node_buffer_t *
-rb_node_buffer_new(rb_parser_config_t *config)
-{
-    const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
-    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
-    STATIC_ASSERT(
-        integer_overflow,
-        offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE)
-        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
-    node_buffer_t *nb = config->malloc(alloc_size);
-    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
-    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
-    nb->local_tables = 0;
-    nb->mark_hash = config->qnil;
-    nb->tokens = config->qnil;
-    nb->config = config;
-    return nb;
-}
-#else
-static node_buffer_t *
-rb_node_buffer_new(void)
-{
-    const size_t bucket_size = offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
-    const size_t alloc_size = sizeof(node_buffer_t) + (bucket_size * 2);
-    STATIC_ASSERT(
-        integer_overflow,
-        offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE)
-        > sizeof(node_buffer_t) + 2 * sizeof(node_buffer_elem_t));
-    node_buffer_t *nb = ruby_xmalloc(alloc_size);
-    init_node_buffer_list(&nb->unmarkable, (node_buffer_elem_t*)&nb[1]);
-    init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
-    nb->local_tables = 0;
-    nb->mark_hash = Qnil;
-    nb->tokens = Qnil;
-    return nb;
-}
-#endif
-
-static void
 node_buffer_list_free(rb_ast_t *ast, node_buffer_list_t * nb)
 {
     node_buffer_elem_t *nbe = nb->head;
-
     while (nbe != nb->last) {
         void *buf = nbe;
+        xfree(nbe->nodes);
         nbe = nbe->next;
         xfree(buf);
     }
@@ -165,17 +165,17 @@ struct rb_ast_local_table_link {
 };
 
 static void
-free_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
+free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_ARGS:
-        xfree(node->nd_ainfo);
+        xfree(RNODE_ARGS(node)->nd_ainfo);
         break;
       case NODE_ARYPTN:
-        xfree(node->nd_apinfo);
+        xfree(RNODE_ARYPTN(node)->nd_apinfo);
         break;
       case NODE_FNDPTN:
-        xfree(node->nd_fpinfo);
+        xfree(RNODE_FNDPTN(node)->nd_fpinfo);
         break;
     }
 }
@@ -195,20 +195,31 @@ rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
     xfree(nb);
 }
 
+#define buf_add_offset(nbe, offset) ((char *)(nbe->buf) + (offset))
+
 static NODE *
-ast_newnode_in_bucket(rb_ast_t *ast, node_buffer_list_t *nb)
+ast_newnode_in_bucket(rb_ast_t *ast, node_buffer_list_t *nb, size_t size, size_t alignment)
 {
-    if (nb->idx >= nb->len) {
-        long n = nb->len * 2;
+    size_t padding;
+    NODE *ptr;
+
+    padding = alignment - (size_t)buf_add_offset(nb->head, nb->head->used) % alignment;
+    padding = padding == alignment ? 0 : padding;
+
+    if (nb->head->used + size + padding > nb->head->allocated) {
+        size_t n = nb->head->allocated * 2;
         node_buffer_elem_t *nbe;
-        nbe = rb_xmalloc_mul_add(n, sizeof(NODE), offsetof(node_buffer_elem_t, buf));
-        nbe->len = n;
-        nb->idx = 0;
-        nb->len = n;
+        nbe = rb_xmalloc_mul_add(n, sizeof(char *), offsetof(node_buffer_elem_t, buf));
+        init_node_buffer_elem(nbe, n, ruby_xmalloc);
         nbe->next = nb->head;
         nb->head = nbe;
+        padding = 0; /* malloc returns aligned address then no need to add padding */
     }
-    return &nb->head->buf[nb->idx++];
+
+    ptr = (NODE *)buf_add_offset(nb->head, nb->head->used + padding);
+    nb->head->used += (size + padding);
+    nb->head->nodes[nb->head->len++] = ptr;
+    return ptr;
 }
 
 RBIMPL_ATTR_PURE()
@@ -231,12 +242,12 @@ nodetype_markable_p(enum node_type type)
 }
 
 NODE *
-rb_ast_newnode(rb_ast_t *ast, enum node_type type)
+rb_ast_newnode(rb_ast_t *ast, enum node_type type, size_t size, size_t alignment)
 {
     node_buffer_t *nb = ast->node_buffer;
     node_buffer_list_t *bucket =
         (nodetype_markable_p(type) ? &nb->markable : &nb->unmarkable);
-    return ast_newnode_in_bucket(ast, bucket);
+    return ast_newnode_in_bucket(ast, bucket, size, alignment);
 }
 
 #if RUBY_DEBUG
@@ -306,7 +317,7 @@ iterate_buffer_elements(rb_ast_t *ast, node_buffer_elem_t *nbe, long len, node_i
 {
     long cursor;
     for (cursor = 0; cursor < len; cursor++) {
-        func(ast, ctx, &nbe->buf[cursor]);
+        func(ast, ctx, nbe->nodes[cursor]);
     }
 }
 
@@ -315,10 +326,6 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
 {
     node_buffer_elem_t *nbe = nb->head;
 
-    /* iterate over the head first because it's not full */
-    iterate_buffer_elements(ast, nbe, nb->idx, func, ctx);
-
-    nbe = nbe->next;
     while (nbe) {
         iterate_buffer_elements(ast, nbe, nbe->len, func, ctx);
         nbe = nbe->next;
@@ -326,7 +333,7 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
 }
 
 static void
-mark_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
+mark_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
 #ifdef UNIVERSAL_PARSER
     bug_report_func rb_bug = ast->node_buffer->config->bug;
@@ -341,7 +348,7 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-        rb_gc_mark_movable(node->nd_lit);
+        rb_gc_mark_movable(RNODE_LIT(node)->nd_lit);
         break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
@@ -349,7 +356,7 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
 }
 
 static void
-update_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
+update_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
 #ifdef UNIVERSAL_PARSER
     bug_report_func rb_bug = ast->node_buffer->config->bug;
@@ -364,7 +371,7 @@ update_ast_value(rb_ast_t *ast, void *ctx, NODE * node)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DSYM:
-        node->nd_lit = rb_gc_location(node->nd_lit);
+        RNODE_LIT(node)->nd_lit = rb_gc_location(RNODE_LIT(node)->nd_lit);
         break;
       default:
         rb_bug("unreachable");
@@ -418,8 +425,8 @@ buffer_list_size(node_buffer_list_t *nb)
     size_t size = 0;
     node_buffer_elem_t *nbe = nb->head;
     while (nbe != nb->last) {
+        size += offsetof(node_buffer_elem_t, buf) + nbe->used;
         nbe = nbe->next;
-        size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
     }
     return size;
 }
@@ -431,7 +438,7 @@ rb_ast_memsize(const rb_ast_t *ast)
     node_buffer_t *nb = ast->node_buffer;
 
     if (nb) {
-        size += sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+        size += sizeof(node_buffer_t);
         size += buffer_list_size(&nb->unmarkable);
         size += buffer_list_size(&nb->markable);
     }

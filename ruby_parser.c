@@ -356,7 +356,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
-    return arg.succ_block->nd_next;
+    return RNODE_BLOCK(arg.succ_block)->nd_next;
 }
 
 static VALUE
