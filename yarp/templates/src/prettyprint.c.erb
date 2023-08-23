@@ -16,6 +16,10 @@ prettyprint_location(yp_buffer_t *buffer, yp_parser_t *parser, yp_location_t *lo
 static void
 prettyprint_node(yp_buffer_t *buffer, yp_parser_t *parser, yp_node_t *node) {
     switch (YP_NODE_TYPE(node)) {
+        // We do not need to print a ScopeNode as it's not part
+        // of the AST
+        case YP_NODE_SCOPE_NODE:
+          return;
         <%- nodes.each do |node| -%>
         case <%= node.type %>: {
             yp_buffer_append_str(buffer, "<%= node.name %>(", <%= node.name.length + 1 %>);

@@ -50,6 +50,7 @@ enum yp_node_type {
 <%- nodes.each_with_index do |node, index| -%>
     <%= node.type %> = <%= index + 1 %>,
 <%- end -%>
+    YP_NODE_SCOPE_NODE
 };
 
 typedef uint16_t yp_node_type_t;

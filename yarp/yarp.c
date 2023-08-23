@@ -1033,7 +1033,7 @@ YP_ATTRIBUTE_UNUSED yp_scope_node_create(yp_parameters_node_t *parameters, yp_st
 
 // TODO: Implement this for all other nodes which can have a scope
 void
-yp_get_scope_node(yp_node_t *node, yp_scope_node_t *dest) {
+yp_scope_node_init(yp_node_t *node, yp_scope_node_t *dest) {
     yp_parameters_node_t *parameters = NULL;
     yp_statements_node_t *statements;
     yp_constant_id_list_t locals;
