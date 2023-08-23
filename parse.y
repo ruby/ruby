@@ -11261,7 +11261,7 @@ static NODE *
 new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc)
 {
     if (!k) return 0;
-    return NEW_KW_ARG(0, (k), loc);
+    return NEW_KW_ARG((k), loc);
 }
 
 static NODE *
