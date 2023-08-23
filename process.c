@@ -1512,7 +1512,7 @@ rb_detach_process(rb_pid_t pid)
 
 /*
  *  call-seq:
- *    Process.detach(pid) -> thread or nil
+ *    Process.detach(pid) -> thread
  *
  *  Avoids the potential for a child process to become a
  *  {zombie process}[https://en.wikipedia.org/wiki/Zombie_process].
