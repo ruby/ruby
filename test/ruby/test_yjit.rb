@@ -1320,6 +1320,16 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_proc_block_arg
+    assert_compiles(<<~RUBY, result: [:proc, :no_block])
+      def yield_if_given = block_given? ? yield : :no_block
+
+      def call(block_arg = nil) = yield_if_given(&block_arg)
+
+      [call(-> { :proc }), call]
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

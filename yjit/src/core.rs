@@ -59,6 +59,8 @@ pub enum Type {
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
     CArray, // An un-subclassed string of type rb_cArray (can have instance vars in some cases)
 
+    TProc, // A proc object. Could be an instance of a subclass of ::rb_cProc
+
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp
 }
@@ -110,6 +112,8 @@ impl Type {
                 RUBY_T_ARRAY => Type::TArray,
                 RUBY_T_HASH => Type::Hash,
                 RUBY_T_STRING => Type::TString,
+                #[cfg(not(test))]
+                RUBY_T_DATA if unsafe { rb_obj_is_proc(val).test() } => Type::TProc,
                 _ => Type::UnknownHeap,
             }
         }
@@ -155,6 +159,7 @@ impl Type {
             Type::TString => true,
             Type::CString => true,
             Type::BlockParamProxy => true,
+            Type::TProc => true,
             _ => false,
         }
     }
@@ -189,6 +194,7 @@ impl Type {
             Type::Hash => Some(RUBY_T_HASH),
             Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
+            Type::TProc => Some(RUBY_T_DATA),
             Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None,
             Type::BlockParamProxy => None,
         }
