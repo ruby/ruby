@@ -1259,7 +1259,8 @@ main()
 		# __builtin_longjmp in ppc64* Linux does not restore
 		# the TOC register (r2), which is problematic
 		# when a global exit happens from JITted .so code.
-		AS_CASE(["$target_cpu"], [powerpc64*], [
+		# __builtin_setjmp can have issues on arm64 linux (see [Bug #14480]).
+		AS_CASE(["$target_cpu"], [powerpc64*|arm64|aarch64], [
 			ac_cv_func___builtin_setjmp=no
 		])
 		# With gcc-8's -fcf-protection, RJIT's __builtin_longjmp fails.
