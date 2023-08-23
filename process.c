@@ -1516,7 +1516,7 @@ rb_detach_process(rb_pid_t pid)
  *
  *  Avoids the potential for a child process to become a
  *  {zombie process}[https://en.wikipedia.org/wiki/Zombie_process].
- *  Process::detach prevents this by setting up a separate Ruby thread
+ *  Process.detach prevents this by setting up a separate Ruby thread
  *  whose sole job is to reap the status of the process _pid_ when it terminates.
  *
  *  This method is needed only when the parent process will never wait
