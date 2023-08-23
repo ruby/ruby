@@ -267,7 +267,7 @@ jobs:
         env:
           RUBY_DEBUG_LOG: /tmp/log
           RUBY_DEBUG_LOG_FILTER: pthread
-          RUBY_ON_BUG='cat /tmp/log '
+          RUBY_ON_BUG: 'cat /tmp/log '
 
       - run: make install
         if: ${{ matrix.entry.check }}
