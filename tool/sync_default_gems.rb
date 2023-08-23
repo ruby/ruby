@@ -437,21 +437,11 @@ module SyncDefaultGems
     )\z/mx
 
   YARP_IGNORE_FILE_PATTERN =
-    /\A(?:[A-Z]\w*\.(?:md|txt)
-    |[^\/]+\.yml
-    |\.git.*
-    |[A-Z]\w+file
-    |COPYING
-    |CONTRIBUTING\.md
-    |Gemfile
-    |Gemfile\.lock
-    |Makefile\.in
-    |README\.md
+    /\A(?:Makefile\.in
+    |Gemfile.lock
     |bin\/.*
     |configure\.ac
-    |rakelib\/.*
     |rust\/.*
-    |test\/lib\/.*
     |tasks\/.*
     |ext\/yarp\/extconf\.rb
     )\z/mx
@@ -526,11 +516,9 @@ module SyncDefaultGems
     end
 
     # Ignore Merge commits and already-merged commits.
-    case gem
-    when "yarp"
-      ignore_file_pattern = YARP_IGNORE_FILE_PATTERN
-    else
-      ignore_file_pattern = IGNORE_FILE_PATTERN
+    ignore_file_pattern = IGNORE_FILE_PATTERN
+    if gem == "yarp"
+      ignore_file_pattern = Regexp.union(ignore_file_pattern, YARP_IGNORE_FILE_PATTERN)
     end
     commits.delete_if do |sha, subject|
       files = pipe_readlines(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}")
