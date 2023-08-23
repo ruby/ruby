@@ -591,28 +591,28 @@ module SyncDefaultGems
           system(*%w[git add yarp])
         end
 
+        # Skip this commit if everything has been removed as `ignored_paths`.
+        changes = pipe_readlines(%W"git status --porcelain -z")
+        if changes.empty?
+          `git reset` && `git checkout .` && `git clean -fd`
+          puts "Skip empty commit #{sha}"
+          next
+        end
+
+        # For YARP, we want to skip DD: deleted by both.
+        if gem == "yarp"
+          deleted = changes.grep(/^DD /)
+          deleted.map! { |line| line.delete_prefix("DD ") }
+          system(*%W"git rm -f --", *deleted) unless deleted.empty?
+        end
+
         # Discover unmerged files
         # AU: unmerged, added by us
         # DU: unmerged, deleted by us
         # UU: unmerged, both modified
         # UA: unmerged, added by them
         # AA: unmerged, both added
-        unmerged = pipe_readlines(%W"git status --porcelain -z")
-        if unmerged.empty?
-          # Everything was removed as `ignored_paths`. Skip this commit.
-          `git reset` && `git checkout .` && `git clean -fd`
-          puts "Skip empty commit #{sha}"
-          next
-        end
-
-        # For YARP, we want to handle DD: deleted by both.
-        if gem == "yarp"
-          deleted = unmerged.grep(/^DD /)
-          deleted.map! { |line| line.delete_prefix("DD ") }
-          system(*%W"git rm -f --", *deleted) unless deleted.empty?
-        end
-
-        unmerged.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
+        unmerged = changes.map {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
         unmerged.compact!
         ignore, conflict = unmerged.partition {|name| ignore_file_pattern =~ name}
         # Reset ignored files if they conflict
