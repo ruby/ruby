@@ -1538,8 +1538,8 @@ rb_detach_process(rb_pid_t pid)
  *  but it does detach the process so that it does not become a zombie:
  *
  *    pid = Process.spawn('ruby', '-e', 'exit 13') # => 313213
- *    sleep(1)
  *    thread = Process.detach(pid)
+ *    sleep(1)
  *    # => #<Process::Waiter:0x00007f038f48b838 run>
  *    system("ps -ho pid,state -p #{pid}")        # Finds no zombies.
  *
