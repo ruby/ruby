@@ -10787,8 +10787,6 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_accepts_block_stack_pop(parser);
             expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, "Expected a closing parenthesis.");
 
-            
-
             return (yp_node_t *) yp_parentheses_node_create(parser, &opening, (yp_node_t *) statements, &parser->previous);
         }
         case YP_TOKEN_BRACE_LEFT: {
