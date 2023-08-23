@@ -432,14 +432,14 @@ module SyncDefaultGems
     |\.git.*
     |[A-Z]\w+file
     |COPYING
+    |Gemfile.lock
+    |bin\/.*
     |rakelib\/.*
     |test\/lib\/.*
     )\z/mx
 
   YARP_IGNORE_FILE_PATTERN =
     /\A(?:Makefile\.in
-    |Gemfile.lock
-    |bin\/.*
     |configure\.ac
     |rust\/.*
     |tasks\/.*
