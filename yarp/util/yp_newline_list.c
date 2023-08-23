@@ -30,6 +30,7 @@ yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
         if (list->offsets == NULL) return false;
     }
 
+    assert(*cursor == '\n');
     assert(cursor >= list->start);
     size_t newline_offset = (size_t) (cursor - list->start + 1);
     assert(list->size == 0 || newline_offset > list->offsets[list->size - 1]);

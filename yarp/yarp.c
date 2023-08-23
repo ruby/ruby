@@ -5389,7 +5389,7 @@ parser_lex(yp_parser_t *parser) {
                 /* fallthrough */
                 case '\n': {
                     if (parser->heredoc_end == NULL) {
-                        yp_newline_list_append(&parser->newline_list, parser->current.end - 1);
+                        yp_newline_list_check_append(&parser->newline_list, parser->current.end - 1);
                     } else {
                         parser_flush_heredoc_end(parser);
                     }
