@@ -1041,6 +1041,12 @@ yp_scope_node_init(yp_node_t *node, yp_scope_node_t *dest) {
     const char *end = node->location.end;
 
     switch (node->type) {
+      case YP_NODE_CLASS_NODE: {
+          yp_class_node_t *class_node = (yp_class_node_t *) node;
+          statements = (yp_statements_node_t *)class_node->body;
+          locals = class_node->locals;
+          break;
+      }
       case YP_NODE_DEF_NODE: {
           yp_def_node_t *def_node = (yp_def_node_t *) node;
           parameters = def_node->parameters;
@@ -1048,14 +1054,12 @@ yp_scope_node_init(yp_node_t *node, yp_scope_node_t *dest) {
           locals = def_node->locals;
           break;
       }
-
-      case YP_NODE_CLASS_NODE: {
-          yp_class_node_t *class_node = (yp_class_node_t *) node;
-          statements = (yp_statements_node_t *)class_node->body;
-          locals = class_node->locals;
+      case YP_NODE_MODULE_NODE: {
+          yp_module_node_t *module_node = (yp_module_node_t *) node;
+          statements = (yp_statements_node_t *)module_node->body;
+          locals = module_node->locals;
           break;
       }
-
       case YP_NODE_SINGLETON_CLASS_NODE: {
           yp_singleton_class_node_t *singleton_class_node = (yp_singleton_class_node_t *) node;
           statements = (yp_statements_node_t *)singleton_class_node->body;
