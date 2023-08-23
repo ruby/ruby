@@ -263,7 +263,11 @@ jobs:
 
       - run: make
 
-      - run: make test
+      - run: make test BTESTS=-j1
+        env:
+          RUBY_DEBUG_LOG: /tmp/log
+          RUBY_DEBUG_LOG_FILTER=pthread
+          RUBY_ON_BUG='cat /tmp/log '
 
       - run: make install
         if: ${{ matrix.entry.check }}
