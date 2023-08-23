@@ -229,6 +229,19 @@ module IRB
     #
     # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_c
+
+    # TODO: Remove this when developing v2.0
+    def prompt_n
+      warn "IRB::Context#prompt_n is deprecated and will be removed in the next major release."
+      ""
+    end
+
+    # TODO: Remove this when developing v2.0
+    def prompt_n=(_)
+      warn "IRB::Context#prompt_n= is deprecated and will be removed in the next major release."
+      ""
+    end
+
     # Can be either the default <code>IRB.conf[:AUTO_INDENT]</code>, or the
     # mode set by #prompt_mode=
     #
