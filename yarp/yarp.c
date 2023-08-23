@@ -4216,6 +4216,33 @@ next_newline(const char *cursor, ptrdiff_t length) {
     return memchr(cursor, '\n', (size_t) length);
 }
 
+// Return the length of the line ending string starting at +cursor+, or 0 if it is not a line
+// ending. This function is intended to be CRLF/LF agnostic.
+static inline size_t
+match_line_ending_addr(yp_parser_t *parser, const char *cursor) {
+    if (peek_addr(parser, cursor) == '\n') {
+        return 1;
+    }
+    if (peek_addr(parser, cursor) == '\r' && peek_addr(parser, cursor + 1) == '\n') {
+        return 2;
+    }
+    return 0;
+}
+
+// Return the length of the line ending string starting at parser->current.end + offset, or 0 if it
+// is not a line ending. This function is intended to be CRLF/LF agnostic.
+static inline size_t
+match_line_ending_at(yp_parser_t *parser, ptrdiff_t offset) {
+    return match_line_ending_addr(parser, parser->current.end + offset);
+}
+
+// Return the length of the line ending string starting at parser->current.end, or 0 if it is not a
+// line ending. This function is intended to be CRLF/LF agnostic.
+static inline size_t
+match_line_ending(yp_parser_t *parser) {
+    return match_line_ending_addr(parser, parser->current.end);
+}
+
 // Find the start of the encoding comment. This is effectively an inlined
 // version of strnstr with some modifications.
 static inline const char *
@@ -5302,7 +5329,7 @@ parser_lex(yp_parser_t *parser) {
                         space_seen = true;
                         break;
                     case '\r':
-                        if (peek_at(parser, 1) == '\n') {
+                        if (match_line_ending_at(parser, 1)) {
                             chomping = false;
                         } else {
                             parser->current.end++;
@@ -5310,28 +5337,22 @@ parser_lex(yp_parser_t *parser) {
                         }
                         break;
                     case '\\':
-                        if (peek_at(parser, 1) == '\n') {
-                            if (parser->heredoc_end) {
-                                parser->current.end = parser->heredoc_end;
-                                parser->heredoc_end = NULL;
-                            } else {
-                                yp_newline_list_append(&parser->newline_list, parser->current.end + 1);
+                        {
+                            size_t le_len = match_line_ending_at(parser, 1);
+                            if (le_len) {
+                                if (parser->heredoc_end) {
+                                    parser->current.end = parser->heredoc_end;
+                                    parser->heredoc_end = NULL;
+                                } else {
+                                    parser->current.end += le_len + 1;
+                                    yp_newline_list_append(&parser->newline_list, parser->current.end - 1);
+                                    space_seen = true;
+                                }
+                            } else if (yp_char_is_inline_whitespace(*parser->current.end)) {
                                 parser->current.end += 2;
-                                space_seen = true;
-                            }
-                        } else if (peek_at(parser, 1) == '\r' && peek_at(parser, 2) == '\n') {
-                            if (parser->heredoc_end) {
-                                parser->current.end = parser->heredoc_end;
-                                parser->heredoc_end = NULL;
                             } else {
-                                yp_newline_list_append(&parser->newline_list, parser->current.end + 2);
-                                parser->current.end += 3;
-                                space_seen = true;
+                                chomping = false;
                             }
-                        } else if (yp_char_is_inline_whitespace(*parser->current.end)) {
-                            parser->current.end += 2;
-                        } else {
-                            chomping = false;
                         }
                         break;
                     default:
@@ -5376,21 +5397,26 @@ parser_lex(yp_parser_t *parser) {
                     lexed_comment = true;
                 }
                 /* fallthrough */
-                case '\r': {
-                    // The only way you can have carriage returns in this particular loop
-                    // is if you have a carriage return followed by a newline. In that
-                    // case we'll just skip over the carriage return and continue lexing,
-                    // in order to make it so that the newline token encapsulates both the
-                    // carriage return and the newline. Note that we need to check that
-                    // we haven't already lexed a comment here because that falls through
-                    // into here as well.
-                    if (!lexed_comment) parser->current.end++;
-                }
-                /* fallthrough */
-                case '\n': {
-                    if (parser->heredoc_end == NULL) {
-                        yp_newline_list_check_append(&parser->newline_list, parser->current.end - 1);
-                    } else {
+                case '\r':
+                case '\n':
+                {
+                    size_t le_len = match_line_ending_addr(parser, parser->current.end - 1);
+                    if (le_len) {
+                        // The only way you can have carriage returns in this particular loop
+                        // is if you have a carriage return followed by a newline. In that
+                        // case we'll just skip over the carriage return and continue lexing,
+                        // in order to make it so that the newline token encapsulates both the
+                        // carriage return and the newline. Note that we need to check that
+                        // we haven't already lexed a comment here because that falls through
+                        // into here as well.
+                        if (!lexed_comment) parser->current.end += le_len - 1 ; // skip CR
+
+                        if (parser->heredoc_end == NULL) {
+                            yp_newline_list_append(&parser->newline_list, parser->current.end - 1);
+                        }
+                    }
+
+                    if (parser->heredoc_end) {
                         parser_flush_heredoc_end(parser);
                     }
 
@@ -6183,15 +6209,14 @@ parser_lex(yp_parser_t *parser) {
                         if (!parser->encoding.alnum_char(parser->current.end, parser->end - parser->current.end)) {
                             lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
 
-                            if (*parser->current.end == '\r') {
+                            size_t le_len = match_line_ending(parser);
+                            if (le_len) {
+                                parser->current.end += le_len;
+                                yp_newline_list_append(&parser->newline_list, parser->current.end - 1);
+                            } else {
                                 parser->current.end++;
                             }
 
-                            if (peek(parser) == '\n') {
-                                yp_newline_list_append(&parser->newline_list, parser->current.end);
-                            }
-
-                            parser->current.end++;
                             if (parser->current.end < parser->end) {
                                 LEX(YP_TOKEN_STRING_BEGIN);
                             }
@@ -6345,10 +6370,7 @@ parser_lex(yp_parser_t *parser) {
                         ((parser->current.end - parser->current.start) == 7) &&
                         current_token_starts_line(parser) &&
                         (strncmp(parser->current.start, "__END__", 7) == 0) &&
-                        (
-                            parser->current.end == parser->end ||
-                            peek(parser) == '\n' ||
-                            (peek(parser) == '\r' && peek_at(parser, 1) == '\n'))
+                        (parser->current.end == parser->end || match_line_ending(parser))
                         )
                     {
                         parser->current.end = parser->end;
@@ -6675,12 +6697,11 @@ parser_lex(yp_parser_t *parser) {
 
                     // Otherwise we need to switch back to the parent lex mode and
                     // return the end of the string.
-                    if (peek(parser) == '\r' && peek_at(parser, 1) == '\n') {
-                        parser->current.end = breakpoint + 2;
-                        yp_newline_list_append(&parser->newline_list, breakpoint + 1);
+                    size_t le_len = match_line_ending_addr(parser, breakpoint);
+                    if (le_len) {
+                        parser->current.end = breakpoint + le_len;
+                        yp_newline_list_append(&parser->newline_list, parser->current.end - 1);
                     } else {
-                        yp_newline_list_check_append(&parser->newline_list, parser->current.end);
-
                         parser->current.end = breakpoint + 1;
                     }
 
@@ -6791,13 +6812,10 @@ parser_lex(yp_parser_t *parser) {
                     bool matched = true;
                     bool at_end = false;
 
-                    if (peek_addr(parser, start + ident_length) == '\n') {
-                        parser->current.end = start + ident_length + 1;
-                        yp_newline_list_append(&parser->newline_list, start + ident_length);
-                    } else if (peek_addr(parser, start + ident_length) == '\r' &&
-                               peek_addr(parser, start + ident_length + 1) == '\n') {
-                        parser->current.end = start + ident_length + 2;
-                        yp_newline_list_append(&parser->newline_list, start + ident_length + 1);
+                    size_t le_len = match_line_ending_addr(parser, start + ident_length);
+                    if (le_len) {
+                        parser->current.end = start + ident_length + le_len;
+                        yp_newline_list_append(&parser->newline_list, parser->current.end - 1);
                     } else if (parser->end == (start + ident_length)) {
                         parser->current.end = start + ident_length;
                         at_end = true;
@@ -6862,20 +6880,11 @@ parser_lex(yp_parser_t *parser) {
                             (start + ident_length <= parser->end) &&
                             (strncmp(start, ident_start, ident_length) == 0)
                         ) {
-                            // Heredoc terminators must be followed by a newline or EOF to be valid.
-                            if (start + ident_length == parser->end ||
-                                peek_addr(parser, start + ident_length) == '\n')
-                            {
-                                parser->current.end = breakpoint + 1;
-                                LEX(YP_TOKEN_STRING_CONTENT);
-                            }
-
-                            // They can also be followed by a carriage return and then a
-                            // newline. Be sure here that we don't accidentally read off the
-                            // end.
-                            if (peek_addr(parser, start + ident_length) == '\r' &&
-                                peek_addr(parser, start + ident_length + 1) == '\n')
-                            {
+                            // Heredoc terminators must be followed by a newline, CRLF, or EOF to be valid.
+                            if (
+                                start + ident_length == parser->end ||
+                                match_line_ending_addr(parser, start + ident_length)
+                            ) {
                                 parser->current.end = breakpoint + 1;
                                 LEX(YP_TOKEN_STRING_CONTENT);
                             }
@@ -6893,11 +6902,9 @@ parser_lex(yp_parser_t *parser) {
                         // stop looping before the newline and not after the
                         // newline so that we can still potentially find the
                         // terminator of the heredoc.
-                        if (peek_addr(parser, breakpoint + 1) == '\n') {
-                            breakpoint++;
-                        } else if (peek_addr(parser, breakpoint + 1) == '\r' &&
-                                   peek_addr(parser, breakpoint + 2) == '\n') {
-                            breakpoint += 2;
+                        size_t le_len = match_line_ending_addr(parser, breakpoint + 1);
+                        if (le_len) {
+                            breakpoint += le_len;
                         } else {
                             yp_unescape_type_t unescape_type = (quote == YP_HEREDOC_QUOTE_SINGLE) ? YP_UNESCAPE_MINIMAL : YP_UNESCAPE_ALL;
                             size_t difference = yp_unescape_calculate_difference(breakpoint, parser->end, unescape_type, false, &parser->error_list);
@@ -9183,8 +9190,10 @@ parse_heredoc_common_whitespace(yp_parser_t *parser, yp_node_list_t *nodes) {
 
             while (cur_char && cur_char < content_loc->end) {
                 // Any empty newlines aren't included in the minimum whitespace calculation
-                while (cur_char < content_loc->end && *cur_char == '\n') cur_char++;
-                while (cur_char + 1 < content_loc->end && *cur_char == '\r' && cur_char[1] == '\n') cur_char += 2;
+                size_t le_len;
+                while ((le_len = match_line_ending_addr(parser, cur_char))) {
+                    cur_char += le_len;
+                }
 
                 if (cur_char == content_loc->end) break;
 
@@ -9202,8 +9211,9 @@ parse_heredoc_common_whitespace(yp_parser_t *parser, yp_node_list_t *nodes) {
                 // If we hit a newline, then we have encountered a line that contains
                 // only whitespace, and it shouldn't be considered in the calculation of
                 // common leading whitespace.
-                if (*cur_char == '\n') {
-                    cur_char++;
+                le_len = match_line_ending_addr(parser, cur_char);
+                if (le_len) {
+                    cur_char += le_len;
                     continue;
                 }
 

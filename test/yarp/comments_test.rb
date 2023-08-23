@@ -31,6 +31,12 @@ class CommentsTest < Test::Unit::TestCase
     assert_comment source, :__END__, 0..16
   end
 
+  def test_comment___END__crlf
+    source = "__END__\r\ncomment\r\n"
+
+    assert_comment source, :__END__, 0..18
+  end
+
   def test_comment_embedded_document
     source = <<~RUBY
       =begin

@@ -164,7 +164,7 @@ class ErrorsTest < Test::Unit::TestCase
 
   def test_cr_without_lf_in_percent_expression
     assert_errors expression("%\r"), "%\r", [
-      ["Invalid %% token", 0..3],
+      ["Invalid %% token", 0..2],
     ]
   end
 
