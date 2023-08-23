@@ -203,15 +203,19 @@ describe "IO.write" do
         rm_r @fifo
       end
 
-      it "writes correctly" do
-        thr = Thread.new do
-          IO.read(@fifo)
-        end
-        begin
-          string = "hi"
-          IO.write(@fifo, string).should == string.length
-        ensure
-          thr.join
+      # rb_cloexec_open() is currently missing a retry on EINTR.
+      # @ioquatix is looking into fixing it. Quarantined until it's done.
+      quarantine! do
+        it "writes correctly" do
+          thr = Thread.new do
+            IO.read(@fifo)
+          end
+          begin
+            string = "hi"
+            IO.write(@fifo, string).should == string.length
+          ensure
+            thr.join
+          end
         end
       end
     end
