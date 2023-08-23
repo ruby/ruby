@@ -873,10 +873,6 @@ pub struct Block {
     // List of outgoing branches (to successors)
     outgoing: Box<[BranchRef]>,
 
-    // FIXME: should these be code pointers instead?
-    // Offsets for GC managed objects in the mainline code block
-    gc_obj_offsets: Box<[u32]>,
-
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
     cme_dependencies: Box<[Cell<CmePtr>]>,
@@ -968,6 +964,9 @@ pub struct IseqPayload {
     // Blocks that are invalidated but are not yet deallocated.
     // The code GC will free them later.
     pub dead_blocks: Vec<BlockRef>,
+
+    // Offsets for GC managed objects in the mainline code block
+    gc_obj_offsets: Vec<u32>,
 }
 
 impl IseqPayload {
@@ -1137,6 +1136,19 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
     // We don't write VALUEs in the outlined block.
     let cb: &CodeBlock = CodegenGlobals::get_inline_cb();
 
+    // Walk over references to objects in generated code.
+    for offset in payload.gc_obj_offsets.iter() {
+        let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
+        // Creating an unaligned pointer is well defined unlike in C.
+        let value_address = value_address as *const VALUE;
+
+        // SAFETY: these point to YJIT's code buffer
+        unsafe {
+            let object = value_address.read_unaligned();
+            rb_gc_mark_movable(object);
+        };
+    }
+
     for versions in &payload.version_map {
         for block in versions {
             // SAFETY: all blocks inside version_map are initialized.
@@ -1160,19 +1172,6 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
                         unsafe { rb_gc_mark_movable(target_iseq.into()) };
                     }
                 }
-            }
-
-            // Walk over references to objects in generated code.
-            for offset in block.gc_obj_offsets.iter() {
-                let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
-                // Creating an unaligned pointer is well defined unlike in C.
-                let value_address = value_address as *const VALUE;
-
-                // SAFETY: these point to YJIT's code buffer
-                unsafe {
-                    let object = value_address.read_unaligned();
-                    rb_gc_mark_movable(object);
-                };
             }
         }
     }
@@ -1204,6 +1203,28 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
     // For updating VALUEs written into the inline code block.
     let cb = CodegenGlobals::get_inline_cb();
 
+    // Walk over references to objects in generated code.
+    for offset in payload.gc_obj_offsets.iter() {
+        let offset_to_value = offset.as_usize();
+        let value_code_ptr = cb.get_ptr(offset_to_value);
+        let value_ptr: *const u8 = value_code_ptr.raw_ptr();
+        // Creating an unaligned pointer is well defined unlike in C.
+        let value_ptr = value_ptr as *mut VALUE;
+
+        // SAFETY: these point to YJIT's code buffer
+        let object = unsafe { value_ptr.read_unaligned() };
+        let new_addr = unsafe { rb_gc_location(object) };
+
+        // Only write when the VALUE moves, to be copy-on-write friendly.
+        if new_addr != object {
+            for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
+                let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
+                cb.write_mem(byte_code_ptr, byte)
+                    .expect("patching existing code should be within bounds");
+            }
+        }
+    }
+
     for versions in &payload.version_map {
         for version in versions {
             // SAFETY: all blocks inside version_map are initialized
@@ -1216,28 +1237,6 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                 let cur_cme: VALUE = cme_dep.get().into();
                 let new_cme = unsafe { rb_gc_location(cur_cme) }.as_cme();
                 cme_dep.set(new_cme);
-            }
-
-            // Walk over references to objects in generated code.
-            for offset in block.gc_obj_offsets.iter() {
-                let offset_to_value = offset.as_usize();
-                let value_code_ptr = cb.get_ptr(offset_to_value);
-                let value_ptr: *const u8 = value_code_ptr.raw_ptr();
-                // Creating an unaligned pointer is well defined unlike in C.
-                let value_ptr = value_ptr as *mut VALUE;
-
-                // SAFETY: these point to YJIT's code buffer
-                let object = unsafe { value_ptr.read_unaligned() };
-                let new_addr = unsafe { rb_gc_location(object) };
-
-                // Only write when the VALUE moves, to be copy-on-write friendly.
-                if new_addr != object {
-                    for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                        let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                        cb.write_mem(byte_code_ptr, byte)
-                            .expect("patching existing code should be within bounds");
-                    }
-                }
             }
 
             // Update outgoing branch entries
@@ -1422,7 +1421,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
 /// being inside an [IseqPayload] but not ready to be executed, it's
 /// generally unsound to call any Ruby methods during codegen. That has
 /// the potential to run blocks which are not ready.
-unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
+unsafe fn add_block_version(blockref: BlockRef, gc_obj_offsets: Vec<u32>, cb: &CodeBlock) {
     // SAFETY: caller ensures initialization
     let block = unsafe { blockref.as_ref() };
 
@@ -1446,8 +1445,16 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
         obj_written!(iseq, dep.into());
     }
 
+    incr_counter!(compiled_block_count);
+
+    // Mark code pages for code GC
+    let iseq_payload = get_iseq_payload(block.iseq.get()).unwrap();
+    for page in cb.addrs_to_pages(block.start_addr, block.end_addr.get()) {
+        iseq_payload.pages.insert(page);
+    }
+
     // Run write barriers for all objects in generated code.
-    for offset in block.gc_obj_offsets.iter() {
+    for offset in gc_obj_offsets.iter() {
         let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
         // Creating an unaligned pointer is well defined unlike in C.
         let value_address: *const VALUE = value_address.cast();
@@ -1456,13 +1463,8 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
         obj_written!(iseq, object);
     }
 
-    incr_counter!(compiled_block_count);
-
-    // Mark code pages for code GC
-    let iseq_payload = get_iseq_payload(block.iseq.get()).unwrap();
-    for page in cb.addrs_to_pages(block.start_addr, block.end_addr.get()) {
-        iseq_payload.pages.insert(page);
-    }
+    incr_counter_by!(num_gc_obj_refs, gc_obj_offsets.len());
+    iseq_payload.gc_obj_offsets.extend(gc_obj_offsets);
 }
 
 /// Remove a block version from the version map of its parent ISEQ
@@ -1480,11 +1482,9 @@ fn remove_block_version(blockref: &BlockRef) {
 impl JITState {
     // Finish compiling and turn a jit state into a block
     // note that the block is still not in shape.
-    pub fn into_block(self, end_insn_idx: IseqIdx, start_addr: CodePtr, end_addr: CodePtr, gc_obj_offsets: Vec<u32>) -> BlockRef {
+    pub fn into_block(self, end_insn_idx: IseqIdx, start_addr: CodePtr, end_addr: CodePtr) -> BlockRef {
         // Allocate the block and get its pointer
         let blockref: *mut MaybeUninit<Block> = Box::into_raw(Box::new(MaybeUninit::uninit()));
-
-        incr_counter_by!(num_gc_obj_refs, gc_obj_offsets.len());
 
         // Make the new block
         let block = MaybeUninit::new(Block {
@@ -1494,7 +1494,6 @@ impl JITState {
             ctx: self.get_starting_ctx(),
             end_addr: Cell::new(end_addr),
             incoming: MutableBranchList(Cell::default()),
-            gc_obj_offsets: gc_obj_offsets.into_boxed_slice(),
             entry_exit: self.get_block_entry_exit(),
             cme_dependencies: self.method_lookup_assumptions.into_iter().map(Cell::new).collect(),
             // Pending branches => actual branches
@@ -2050,11 +2049,11 @@ fn gen_block_series_body(
     let mut batch = Vec::with_capacity(EXPECTED_BATCH_SIZE);
 
     // Generate code for the first block
-    let first_block = gen_single_block(blockid, start_ctx, ec, cb, ocb).ok()?;
+    let (first_block, gc_obj_offsets) = gen_single_block(blockid, start_ctx, ec, cb, ocb).ok()?;
     batch.push(first_block); // Keep track of this block version
 
     // Add the block version to the VersionMap for this ISEQ
-    unsafe { add_block_version(first_block, cb) };
+    unsafe { add_block_version(first_block, gc_obj_offsets, cb) };
 
     // Loop variable
     let mut last_blockref = first_block;
@@ -2105,10 +2104,10 @@ fn gen_block_series_body(
             return None;
         }
 
-        let new_blockref = result.unwrap();
+        let (new_blockref, gc_obj_offsets) = result.unwrap();
 
         // Add the block version to the VersionMap for this ISEQ
-        unsafe { add_block_version(new_blockref, cb) };
+        unsafe { add_block_version(new_blockref, gc_obj_offsets, cb) };
 
         // Connect the last branch and the new block
         last_branch.targets[0].set(Some(Box::new(BranchTarget::Block(new_blockref))));
@@ -3234,7 +3233,7 @@ mod tests {
         let cb = CodeBlock::new_dummy(1024);
         let dumm_addr = cb.get_write_ptr();
         let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null())
-            .into_block(0, dumm_addr, dumm_addr, vec![]);
+            .into_block(0, dumm_addr, dumm_addr);
         let _dropper = BlockDropper(block);
 
         // Outside of brief moments during construction,

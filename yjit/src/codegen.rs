@@ -824,7 +824,7 @@ pub fn gen_single_block(
     ec: EcPtr,
     cb: &mut CodeBlock,
     ocb: &mut OutlinedCb,
-) -> Result<BlockRef, ()> {
+) -> Result<(BlockRef, Vec<u32>), ()> {
     // Limit the number of specialized versions for this block
     let ctx = limit_block_versions(blockid, start_ctx);
 
@@ -981,7 +981,7 @@ pub fn gen_single_block(
     }
 
     // Block compiled successfully
-    Ok(jit.into_block(end_insn_idx, block_start_addr, end_addr, gc_offsets))
+    Ok((jit.into_block(end_insn_idx, block_start_addr, end_addr), gc_offsets))
 }
 
 fn gen_nop(
