@@ -14,6 +14,20 @@ yp_char_is_hexadecimal_digits(const char *c, size_t length) {
     return true;
 }
 
+// We don't call the char_width function unless we have to because it's
+// expensive to go through the indirection of the function pointer. Instead we
+// provide a fast path that will check if we can just return 1.
+static inline size_t
+yp_char_width(yp_parser_t *parser, const char *start, const char *end) {
+    const unsigned char *uc = (const unsigned char *) start;
+
+    if (parser->encoding_changed || (*uc >= 0x80)) {
+        return parser->encoding.char_width(start, end - start);
+    } else {
+        return 1;
+    }
+}
+
 /******************************************************************************/
 /* Lookup tables for characters                                               */
 /******************************************************************************/
@@ -178,7 +192,7 @@ unescape_char(const unsigned char value, const unsigned char flags) {
 
 // Read a specific escape sequence into the given destination.
 static const char *
-unescape(char *dest, size_t *dest_length, const char *backslash, const char *end, yp_list_t *error_list, const unsigned char flags, bool write_to_str) {
+unescape(yp_parser_t *parser, char *dest, size_t *dest_length, const char *backslash, const char *end, const unsigned char flags, bool write_to_str) {
     switch (backslash[1]) {
         case 'a':
         case 'b':
@@ -218,7 +232,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
         // \unnnn       Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
         case 'u': {
             if ((flags & YP_UNESCAPE_FLAG_CONTROL) | (flags & YP_UNESCAPE_FLAG_META)) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Unicode escape sequence cannot be used with control or meta flags.");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 2, "Unicode escape sequence cannot be used with control or meta flags.");
                 return backslash + 2;
             }
 
@@ -235,11 +249,11 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
 
                     // \u{nnnn} character literal allows only 1-6 hexadecimal digits
                     if (hexadecimal_length > 6)
-                        yp_diagnostic_list_append(error_list, unicode_cursor, unicode_cursor + hexadecimal_length, "invalid Unicode escape.");
+                        yp_diagnostic_list_append(&parser->error_list, unicode_cursor, unicode_cursor + hexadecimal_length, "invalid Unicode escape.");
 
                     // there are not hexadecimal characters
                     if (hexadecimal_length == 0) {
-                        yp_diagnostic_list_append(error_list, unicode_cursor, unicode_cursor + hexadecimal_length, "unterminated Unicode escape");
+                        yp_diagnostic_list_append(&parser->error_list, unicode_cursor, unicode_cursor + hexadecimal_length, "unterminated Unicode escape");
                         return unicode_cursor;
                     }
 
@@ -252,7 +266,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
                     uint32_t value;
                     unescape_unicode(unicode_start, (size_t) (unicode_cursor - unicode_start), &value);
                     if (write_to_str) {
-                        *dest_length += unescape_unicode_write(dest + *dest_length, value, unicode_start, unicode_cursor, error_list);
+                        *dest_length += unescape_unicode_write(dest + *dest_length, value, unicode_start, unicode_cursor, &parser->error_list);
                     }
 
                     unicode_cursor += yp_strspn_whitespace(unicode_cursor, end - unicode_cursor);
@@ -260,7 +274,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
 
                 // ?\u{nnnn} character literal should contain only one codepoint and cannot be like ?\u{nnnn mmmm}
                 if (flags & YP_UNESCAPE_FLAG_EXPECT_SINGLE && codepoints_count > 1)
-                    yp_diagnostic_list_append(error_list, extra_codepoints_start, unicode_cursor - 1, "Multiple codepoints at single character literal");
+                    yp_diagnostic_list_append(&parser->error_list, extra_codepoints_start, unicode_cursor - 1, "Multiple codepoints at single character literal");
 
                 return unicode_cursor + 1;
             }
@@ -270,12 +284,12 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
                 unescape_unicode(backslash + 2, 4, &value);
 
                 if (write_to_str) {
-                    *dest_length += unescape_unicode_write(dest + *dest_length, value, backslash + 2, backslash + 6, error_list);
+                    *dest_length += unescape_unicode_write(dest + *dest_length, value, backslash + 2, backslash + 6, &parser->error_list);
                 }
                 return backslash + 6;
             }
 
-            yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Invalid Unicode escape sequence");
+            yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 2, "Invalid Unicode escape sequence");
             return backslash + 2;
         }
         // \c\M-x       meta control character, where x is an ASCII printable character
@@ -283,18 +297,18 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
         // \cx          control character, where x is an ASCII printable character
         case 'c':
             if (backslash + 2 >= end) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Invalid control escape sequence");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Invalid control escape sequence");
                 return end;
             }
 
             if (flags & YP_UNESCAPE_FLAG_CONTROL) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Control escape sequence cannot be doubled.");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Control escape sequence cannot be doubled.");
                 return backslash + 2;
             }
 
             switch (backslash[2]) {
                 case '\\':
-                    return unescape(dest, dest_length, backslash + 2, end, error_list, flags | YP_UNESCAPE_FLAG_CONTROL, write_to_str);
+                    return unescape(parser, dest, dest_length, backslash + 2, end, flags | YP_UNESCAPE_FLAG_CONTROL, write_to_str);
                 case '?':
                     if (write_to_str) {
                         dest[(*dest_length)++] = (char) unescape_char(0x7f, flags);
@@ -302,7 +316,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
                     return backslash + 3;
                 default: {
                     if (!char_is_ascii_printable(backslash[2])) {
-                        yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Invalid control escape sequence");
+                        yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Invalid control escape sequence");
                         return backslash + 2;
                     }
 
@@ -316,23 +330,23 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
         // \C-?         delete, ASCII 7Fh (DEL)
         case 'C':
             if (backslash + 3 >= end) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Invalid control escape sequence");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Invalid control escape sequence");
                 return end;
             }
 
             if (flags & YP_UNESCAPE_FLAG_CONTROL) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Control escape sequence cannot be doubled.");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Control escape sequence cannot be doubled.");
                 return backslash + 2;
             }
 
             if (backslash[2] != '-') {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Invalid control escape sequence");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Invalid control escape sequence");
                 return backslash + 2;
             }
 
             switch (backslash[3]) {
                 case '\\':
-                    return unescape(dest, dest_length, backslash + 3, end, error_list, flags | YP_UNESCAPE_FLAG_CONTROL, write_to_str);
+                    return unescape(parser, dest, dest_length, backslash + 3, end, flags | YP_UNESCAPE_FLAG_CONTROL, write_to_str);
                 case '?':
                     if (write_to_str) {
                         dest[(*dest_length)++] = (char) unescape_char(0x7f, flags);
@@ -340,7 +354,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
                     return backslash + 4;
                 default:
                     if (!char_is_ascii_printable(backslash[3])) {
-                        yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Invalid control escape sequence");
+                        yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 2, "Invalid control escape sequence");
                         return backslash + 2;
                     }
 
@@ -354,22 +368,22 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
         // \M-x         meta character, where x is an ASCII printable character
         case 'M': {
             if (backslash + 3 >= end) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 1, "Invalid control escape sequence");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 1, "Invalid control escape sequence");
                 return end;
             }
 
             if (flags & YP_UNESCAPE_FLAG_META) {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Meta escape sequence cannot be doubled.");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 2, "Meta escape sequence cannot be doubled.");
                 return backslash + 2;
             }
 
             if (backslash[2] != '-') {
-                yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Invalid meta escape sequence");
+                yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 2, "Invalid meta escape sequence");
                 return backslash + 2;
             }
 
             if (backslash[3] == '\\') {
-                return unescape(dest, dest_length, backslash + 3, end, error_list, flags | YP_UNESCAPE_FLAG_META, write_to_str);
+                return unescape(parser, dest, dest_length, backslash + 3, end, flags | YP_UNESCAPE_FLAG_META, write_to_str);
             }
 
             if (char_is_ascii_printable(backslash[3])) {
@@ -379,7 +393,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
                 return backslash + 4;
             }
 
-            yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Invalid meta escape sequence");
+            yp_diagnostic_list_append(&parser->error_list, backslash, backslash + 2, "Invalid meta escape sequence");
             return backslash + 3;
         }
         // \n
@@ -390,14 +404,17 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
             if (backslash + 2 < end && backslash[2] == '\n') {
                 return backslash + 3;
             }
-
-            /* fallthrough */
+        /* fallthrough */
         // In this case we're escaping something that doesn't need escaping.
         default: {
+            size_t width = yp_char_width(parser, backslash + 1, end);
+
             if (write_to_str) {
-                dest[(*dest_length)++] = backslash[1];
+                memcpy(dest + *dest_length, backslash + 1, width);
+                *dest_length += width;
             }
-            return backslash + 2;
+
+            return backslash + 1 + width;
         }
     }
 }
@@ -431,7 +448,7 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
 // \c? or \C-?    delete, ASCII 7Fh (DEL)
 //
 YP_EXPORTED_FUNCTION void
-yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list) {
+yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unescape_type_t unescape_type) {
     if (unescape_type == YP_UNESCAPE_NONE) {
         // If we're not unescaping then we can reference the source directly.
         return;
@@ -448,7 +465,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unesc
     // within the string.
     char *allocated = malloc(string->length);
     if (allocated == NULL) {
-        yp_diagnostic_list_append(error_list, string->source, string->source + string->length, "Failed to allocate memory for unescaping.");
+        yp_diagnostic_list_append(&parser->error_list, string->source, string->source + string->length, "Failed to allocate memory for unescaping.");
         return;
     }
 
@@ -493,7 +510,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unesc
                 // This is the only type of unescaping left. In this case we need to
                 // handle all of the different unescapes.
                 assert(unescape_type == YP_UNESCAPE_ALL);
-                cursor = unescape(dest, &dest_length, backslash, end, error_list, YP_UNESCAPE_FLAG_NONE, true);
+                cursor = unescape(parser, dest, &dest_length, backslash, end, YP_UNESCAPE_FLAG_NONE, true);
                 break;
         }
 
@@ -521,29 +538,11 @@ yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unesc
     yp_string_owned_init(string, allocated, dest_length + ((size_t) (end - cursor)));
 }
 
-YP_EXPORTED_FUNCTION bool
-yp_unescape_string(const char *start, size_t length, yp_unescape_type_t unescape_type, yp_string_t *result) {
-    bool success;
-
-    yp_parser_t parser;
-    yp_parser_init(&parser, start, length, "");
-
-    yp_list_t error_list = YP_LIST_EMPTY;
-    yp_string_shared_init(result, start, start + length);
-    yp_unescape_manipulate_string(&parser, result, unescape_type, &error_list);
-    success = yp_list_empty_p(&error_list);
-
-    yp_list_free(&error_list);
-    yp_parser_free(&parser);
-
-    return success;
-}
-
 // This function is similar to yp_unescape_manipulate_string, except it doesn't
 // actually perform any string manipulations. Instead, it calculates how long
 // the unescaped character is, and returns that value
-YP_EXPORTED_FUNCTION size_t
-yp_unescape_calculate_difference(const char *backslash, const char *end, yp_unescape_type_t unescape_type, bool expect_single_codepoint, yp_list_t *error_list) {
+size_t
+yp_unescape_calculate_difference(yp_parser_t *parser, const char *backslash, yp_unescape_type_t unescape_type, bool expect_single_codepoint) {
     assert(unescape_type != YP_UNESCAPE_NONE);
 
     switch (backslash[1]) {
@@ -551,7 +550,9 @@ yp_unescape_calculate_difference(const char *backslash, const char *end, yp_unes
         case '\'':
             return 2;
         default: {
-            if (unescape_type == YP_UNESCAPE_MINIMAL) return 2;
+            if (unescape_type == YP_UNESCAPE_MINIMAL) {
+                return 1 + yp_char_width(parser, backslash + 1, parser->end);
+            }
 
             // This is the only type of unescaping left. In this case we need to
             // handle all of the different unescapes.
@@ -561,10 +562,27 @@ yp_unescape_calculate_difference(const char *backslash, const char *end, yp_unes
             if (expect_single_codepoint)
                 flags |= YP_UNESCAPE_FLAG_EXPECT_SINGLE;
 
-            const char *cursor = unescape(NULL, 0, backslash, end, error_list, flags, false);
+            const char *cursor = unescape(parser, NULL, 0, backslash, parser->end, flags, false);
             assert(cursor > backslash);
 
             return (size_t) (cursor - backslash);
         }
     }
+}
+
+// This is one of the main entry points into the extension. It accepts a source
+// string, a type of unescaping, and a pointer to a result string. It returns a
+// boolean indicating whether or not the unescaping was successful.
+YP_EXPORTED_FUNCTION bool
+yp_unescape_string(const char *start, size_t length, yp_unescape_type_t unescape_type, yp_string_t *result) {
+    yp_parser_t parser;
+    yp_parser_init(&parser, start, length, NULL);
+
+    yp_string_shared_init(result, start, start + length);
+    yp_unescape_manipulate_string(&parser, result, unescape_type);
+
+    bool success = yp_list_empty_p(&parser.error_list);
+    yp_parser_free(&parser);
+
+    return success;
 }
