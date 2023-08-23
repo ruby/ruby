@@ -1,41 +1,53 @@
 ProgramNode(0...77)(
   [],
   StatementsNode(0...77)(
-    [ConstantPathOperatorWriteNode(0...8)(
-       ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
+    [OperatorWriteNode(0...8)(
+       ConstantPathWriteNode(0...3)(
+         ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
+         nil,
+         nil
+       ),
        (4...6),
-       IntegerNode(7...8)(),
-       :+
+       :+,
+       IntegerNode(7...8)()
      ),
-     ConstantOperatorWriteNode(10...16)(
-       (10...11),
+     OperatorWriteNode(10...16)(
+       ConstantWriteNode(10...11)((10...11), nil, nil),
        (12...14),
-       IntegerNode(15...16)(),
-       :+
+       :+,
+       IntegerNode(15...16)()
      ),
-     ConstantPathOperatorWriteNode(18...27)(
-       ConstantPathNode(18...22)(
-         ConstantReadNode(18...19)(),
-         ConstantReadNode(21...22)(),
-         (19...21)
+     OperatorWriteNode(18...27)(
+       ConstantPathWriteNode(18...22)(
+         ConstantPathNode(18...22)(
+           ConstantReadNode(18...19)(),
+           ConstantReadNode(21...22)(),
+           (19...21)
+         ),
+         nil,
+         nil
        ),
        (23...25),
-       IntegerNode(26...27)(),
-       :+
+       :+,
+       IntegerNode(26...27)()
      ),
      DefNode(29...50)(
        (33...34),
        nil,
        nil,
        StatementsNode(36...45)(
-         [ConstantPathOperatorOrWriteNode(36...45)(
-            ConstantPathNode(36...39)(
+         [OrWriteNode(36...45)(
+            ConstantPathWriteNode(36...39)(
+              ConstantPathNode(36...39)(
+                nil,
+                ConstantReadNode(38...39)(),
+                (36...38)
+              ),
               nil,
-              ConstantReadNode(38...39)(),
-              (36...38)
+              nil
             ),
-            (40...43),
-            IntegerNode(44...45)()
+            IntegerNode(44...45)(),
+            (40...43)
           )]
        ),
        [],
@@ -51,14 +63,18 @@ ProgramNode(0...77)(
        nil,
        nil,
        StatementsNode(59...72)(
-         [ConstantPathOperatorOrWriteNode(59...72)(
-            ConstantPathNode(59...66)(
-              SelfNode(59...63)(),
-              ConstantReadNode(65...66)(),
-              (63...65)
+         [OrWriteNode(59...72)(
+            ConstantPathWriteNode(59...66)(
+              ConstantPathNode(59...66)(
+                SelfNode(59...63)(),
+                ConstantReadNode(65...66)(),
+                (63...65)
+              ),
+              nil,
+              nil
             ),
-            (67...70),
-            IntegerNode(71...72)()
+            IntegerNode(71...72)(),
+            (67...70)
           )]
        ),
        [],

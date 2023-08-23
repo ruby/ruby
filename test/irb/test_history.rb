@@ -1,8 +1,11 @@
 # frozen_string_literal: false
 require 'irb'
 require 'readline'
+require "tempfile"
 
 require_relative "helper"
+
+return if RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
 
 module TestIRB
   class HistoryTest < TestCase
@@ -205,4 +208,127 @@ module TestIRB
       end
     end
   end
-end if not RUBY_PLATFORM.match?(/solaris|mswin|mingw/i)
+
+  class IRBHistoryIntegrationTest < IntegrationTestCase
+    def test_history_saving_with_debug
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+        end
+
+        binding.irb
+
+        foo
+      RUBY
+
+      output = run_ruby_file do
+        type "'irb session'"
+        type "next"
+        type "'irb:debug session'"
+        type "step"
+        type "irb_info"
+        type "puts Reline::HISTORY.to_a.to_s"
+        type "q!"
+      end
+
+      assert_include(output, "InputMethod: RelineInputMethod")
+      # check that in-memory history is preserved across sessions
+      assert_include output, %q(
+        ["'irb session'", "next", "'irb:debug session'", "step", "irb_info", "puts Reline::HISTORY.to_a.to_s"]
+      ).strip
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'irb session'
+        next
+        'irb:debug session'
+        step
+        irb_info
+        puts Reline::HISTORY.to_a.to_s
+        q!
+      HISTORY
+    end
+
+    def test_history_saving_with_nested_sessions
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit
+      HISTORY
+    end
+
+    def test_history_saving_with_nested_sessions_and_prior_history
+      write_history <<~HISTORY
+        old_history_1
+        old_history_2
+        old_history_3
+      HISTORY
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        old_history_1
+        old_history_2
+        old_history_3
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit
+      HISTORY
+    end
+
+    private
+
+    def write_history(history)
+      @history_file = Tempfile.new('irb_history')
+      @history_file.write(history)
+      @history_file.close
+      write_rc <<~RUBY
+        IRB.conf[:HISTORY_FILE] = "#{@history_file.path}"
+      RUBY
+    end
+  end
+end

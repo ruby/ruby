@@ -621,6 +621,20 @@ pub struct rb_id_table {
     _unused: [u8; 0],
 }
 pub type rb_num_t = ::std::os::raw::c_ulong;
+pub const RUBY_TAG_NONE: ruby_tag_type = 0;
+pub const RUBY_TAG_RETURN: ruby_tag_type = 1;
+pub const RUBY_TAG_BREAK: ruby_tag_type = 2;
+pub const RUBY_TAG_NEXT: ruby_tag_type = 3;
+pub const RUBY_TAG_RETRY: ruby_tag_type = 4;
+pub const RUBY_TAG_REDO: ruby_tag_type = 5;
+pub const RUBY_TAG_RAISE: ruby_tag_type = 6;
+pub const RUBY_TAG_THROW: ruby_tag_type = 7;
+pub const RUBY_TAG_FATAL: ruby_tag_type = 8;
+pub const RUBY_TAG_MASK: ruby_tag_type = 15;
+pub type ruby_tag_type = u32;
+pub const VM_THROW_NO_ESCAPE_FLAG: ruby_vm_throw_flags = 32768;
+pub const VM_THROW_STATE_MASK: ruby_vm_throw_flags = 255;
+pub type ruby_vm_throw_flags = u32;
 #[repr(C)]
 pub struct iseq_inline_constant_cache_entry {
     pub flags: VALUE,
@@ -754,6 +768,10 @@ impl rb_proc_t {
         __bindgen_bitfield_unit
     }
 }
+pub const VM_CHECKMATCH_TYPE_WHEN: vm_check_match_type = 1;
+pub const VM_CHECKMATCH_TYPE_CASE: vm_check_match_type = 2;
+pub const VM_CHECKMATCH_TYPE_RESCUE: vm_check_match_type = 3;
+pub type vm_check_match_type = u32;
 pub const VM_SPECIAL_OBJECT_VMCORE: vm_special_object_type = 1;
 pub const VM_SPECIAL_OBJECT_CBASE: vm_special_object_type = 2;
 pub const VM_SPECIAL_OBJECT_CONST_BASE: vm_special_object_type = 3;
@@ -1148,6 +1166,7 @@ extern "C" {
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;
     pub fn rb_iseq_path(iseq: *const rb_iseq_t) -> VALUE;
+    pub fn rb_vm_env_write(ep: *const VALUE, index: ::std::os::raw::c_int, v: VALUE);
     pub fn rb_vm_bh_to_procval(ec: *const rb_execution_context_t, block_handler: VALUE) -> VALUE;
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
@@ -1253,7 +1272,6 @@ extern "C" {
     pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_get_def_iseq_ptr(def: *mut rb_method_definition_t) -> *const rb_iseq_t;
     pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
-    pub fn rb_get_iseq_body_total_calls(iseq: *const rb_iseq_t) -> ::std::os::raw::c_ulong;
     pub fn rb_get_iseq_body_local_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_parent_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
@@ -1297,6 +1315,7 @@ extern "C" {
     pub fn rb_get_cfp_self(cfp: *mut rb_control_frame_struct) -> VALUE;
     pub fn rb_get_cfp_ep(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;
+    pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
@@ -1340,4 +1359,9 @@ extern "C" {
     pub fn rb_yjit_assert_holding_vm_lock();
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
+    pub fn rb_yjit_set_exception_return(
+        cfp: *mut rb_control_frame_t,
+        leave_exit: *mut ::std::os::raw::c_void,
+        leave_exception: *mut ::std::os::raw::c_void,
+    );
 }

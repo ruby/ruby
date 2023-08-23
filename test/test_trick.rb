@@ -243,6 +243,8 @@ class TestAllRubyQuine < Test::Unit::TestCase
   def test_all_ruby_quine
     stdout_bak = $stdout
     $stdout = StringIO.new
+    verbose_bak = $VERBOSE
+    $VERBOSE = nil
     src = File.read(File.join(__dir__, "../sample/all-ruby-quine.rb"))
 
     eval(src)
@@ -266,5 +268,6 @@ class TestAllRubyQuine < Test::Unit::TestCase
     assert_equal(RUBY_VERSION, out)
   ensure
     $stdout = stdout_bak
+    $VERBOSE = verbose_bak
   end
 end

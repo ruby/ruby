@@ -90,7 +90,7 @@ ProgramNode(0...278)(
      ),
      DefNode(71...97)(
        (79...82),
-       CallNode(75...78)(nil, nil, (75...78), nil, nil, nil, nil, 0, "obj"),
+       CallNode(75...78)(nil, nil, (75...78), nil, nil, nil, nil, 2, "obj"),
        nil,
        StatementsNode(85...97)(
          [CallNode(85...97)(
@@ -125,7 +125,7 @@ ProgramNode(0...278)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "obj"
        ),
        nil,
@@ -167,7 +167,7 @@ ProgramNode(0...278)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "obj"
        ),
        ParametersNode(141...142)(

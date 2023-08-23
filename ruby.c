@@ -210,6 +210,10 @@ enum {
         )
 };
 
+#define BACKTRACE_LENGTH_LIMIT_VALID_P(n) ((n) >= -1)
+#define OPT_BACKTRACE_LENGTH_LIMIT_VALID_P(opt) \
+    BACKTRACE_LENGTH_LIMIT_VALID_P((opt)->backtrace_length_limit)
+
 static ruby_cmdline_options_t *
 cmdline_options_init(ruby_cmdline_options_t *opt)
 {
@@ -227,7 +231,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
 #ifdef MMTK_FORCE_ENABLE /* to use with: ./configure cppflags="-DMMTK_FORCE_ENABLE" */
     opt->features.set |= FEATURE_BIT(mmtk);
 #endif
-    opt->backtrace_length_limit = -1;
+    opt->backtrace_length_limit = LONG_MIN;
 
     return opt;
 }
@@ -919,7 +923,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     VALUE int_enc_name = opt->intern.enc.name;
     ruby_features_t feat = opt->features;
     ruby_features_t warn = opt->warn;
-    int backtrace_length_limit = opt->backtrace_length_limit;
+    long backtrace_length_limit = opt->backtrace_length_limit;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
@@ -970,7 +974,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     }
     FEATURE_SET_RESTORE(opt->features, feat);
     FEATURE_SET_RESTORE(opt->warn, warn);
-    if (backtrace_length_limit >= 0) {
+    if (BACKTRACE_LENGTH_LIMIT_VALID_P(backtrace_length_limit)) {
         opt->backtrace_length_limit = backtrace_length_limit;
     }
 
@@ -1486,8 +1490,12 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_arg("backtrace-limit", Qfalse, Qtrue)) {
         char *e;
         long n = strtol(s, &e, 10);
-        if (errno == ERANGE || n < -1 || *e) rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
-        opt->backtrace_length_limit = (int)n;
+        if (errno == ERANGE || !BACKTRACE_LENGTH_LIMIT_VALID_P(n) || *e) {
+            rb_raise(rb_eRuntimeError, "wrong limit for backtrace length");
+        }
+        else {
+            opt->backtrace_length_limit = n;
+        }
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -2375,7 +2383,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
     if (opt->dump & dump_exit_bits) return Qtrue;
 
-    if (opt->backtrace_length_limit >= 0) {
+    if (OPT_BACKTRACE_LENGTH_LIMIT_VALID_P(opt)) {
         rb_backtrace_length_limit = opt->backtrace_length_limit;
     }
 

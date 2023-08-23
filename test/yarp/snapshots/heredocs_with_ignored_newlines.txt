@@ -1,8 +1,8 @@
-ProgramNode(0...106)(
+ProgramNode(0...23)(
   [],
-  StatementsNode(0...106)(
-    [InterpolatedStringNode(0...14)((0...7), [], (9...14)),
-     InterpolatedStringNode(15...106)(
+  StatementsNode(0...23)(
+    [InterpolatedStringNode(0...7)((0...7), [], (9...14)),
+     InterpolatedStringNode(15...23)(
        (15...23),
        [StringNode(25...100)(
           nil,
@@ -13,8 +13,7 @@ ProgramNode(0...106)(
           "  not here\n" +
           "HERE\n" +
           "\n" +
-          "<<~BUT\n" +
-          "  but\n" +
+          "<<~BUT  but\n" +
           "BUT\n" +
           "  there\n"
         )],

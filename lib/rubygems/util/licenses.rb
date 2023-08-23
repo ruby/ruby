@@ -39,6 +39,8 @@ class Gem::Licenses
     APSL-1.1
     APSL-1.2
     APSL-2.0
+    ASWF-Digital-Assets-1.0
+    ASWF-Digital-Assets-1.1
     Abstyles
     AdaCore-doc
     Adobe-2006
@@ -90,6 +92,7 @@ class Gem::Licenses
     Bitstream-Charter
     Bitstream-Vera
     BlueOak-1.0.0
+    Boehm-GC
     Borceux
     Brian-Gladman-3-Clause
     C-UDA-1.0
@@ -144,6 +147,7 @@ class Gem::Licenses
     CC-BY-SA-3.0
     CC-BY-SA-3.0-AT
     CC-BY-SA-3.0-DE
+    CC-BY-SA-3.0-IGO
     CC-BY-SA-4.0
     CC-PDDC
     CC0-1.0
@@ -281,6 +285,7 @@ class Gem::Licenses
     ImageMagick
     Imlib2
     Info-ZIP
+    Inner-Net-2.0
     Intel
     Intel-ACPI
     Interbase-1.0
@@ -317,16 +322,21 @@ class Gem::Licenses
     LZMA-SDK-9.11-to-9.20
     LZMA-SDK-9.22
     Latex2e
+    Latex2e-translated-notice
     Leptonica
     LiLiQ-P-1.1
     LiLiQ-R-1.1
     LiLiQ-Rplus-1.1
     Libpng
     Linux-OpenIB
+    Linux-man-pages-1-para
     Linux-man-pages-copyleft
+    Linux-man-pages-copyleft-2-para
+    Linux-man-pages-copyleft-var
     MIT
     MIT-0
     MIT-CMU
+    MIT-Festival
     MIT-Modern-Variant
     MIT-Wu
     MIT-advertising
@@ -360,6 +370,7 @@ class Gem::Licenses
     NICTA-1.0
     NIST-PD
     NIST-PD-fallback
+    NIST-Software
     NLOD-1.0
     NLOD-2.0
     NLPL
@@ -412,8 +423,10 @@ class Gem::Licenses
     OLDAP-2.6
     OLDAP-2.7
     OLDAP-2.8
+    OLFL-1.3
     OML
     OPL-1.0
+    OPL-UK-3.0
     OPUBL-1.0
     OSET-PL-2.1
     OSL-1.0
@@ -451,6 +464,7 @@ class Gem::Licenses
     SGI-B-1.0
     SGI-B-1.1
     SGI-B-2.0
+    SGP4
     SHL-0.5
     SHL-0.51
     SISSL
@@ -487,12 +501,14 @@ class Gem::Licenses
     TTWL
     TU-Berlin-1.0
     TU-Berlin-2.0
+    TermReadKey
     UCAR
     UCL-1.0
     UPL-1.0
     Unicode-DFS-2015
     Unicode-DFS-2016
     Unicode-TOU
+    UnixCrypt
     Unlicense
     VOSTROM
     VSL-1.0
@@ -502,12 +518,15 @@ class Gem::Licenses
     W3C-20150513
     WTFPL
     Watcom-1.0
+    Widget-Workshop
     Wsuipa
     X11
     X11-distribute-modifications-variant
     XFree86-1.1
     XSkat
+    Xdebug-1.03
     Xerox
+    Xfig
     Xnet
     YPL-1.0
     YPL-1.1
@@ -527,6 +546,7 @@ class Gem::Licenses
     copyleft-next-0.3.1
     curl
     diffmark
+    dtoa
     dvipdfm
     eCos-2.0
     eGenix
@@ -538,6 +558,7 @@ class Gem::Licenses
     libselinux-1.0
     libtiff
     libutil-David-Nugent
+    metamail
     mpi-permissive
     mpich2
     mplus
@@ -555,9 +576,11 @@ class Gem::Licenses
   # exception identifiers
   EXCEPTION_IDENTIFIERS = %w[
     389-exception
+    Asterisk-exception
     Autoconf-exception-2.0
     Autoconf-exception-3.0
     Autoconf-exception-generic
+    Autoconf-exception-macro
     Bison-exception-2.2
     Bootloader-exception
     CLISP-exception-2.0
@@ -569,6 +592,7 @@ class Gem::Licenses
     GCC-exception-2.0
     GCC-exception-3.1
     GNAT-exception
+    GPL-3.0-interface-exception
     GPL-3.0-linking-exception
     GPL-3.0-linking-source-exception
     GPL-CC-1.0
@@ -576,6 +600,7 @@ class Gem::Licenses
     GStreamer-exception-2008
     KiCad-libraries-exception
     LGPL-3.0-linking-exception
+    LLGPL
     LLVM-exception
     LZMA-exception
     Libtool-exception
@@ -595,13 +620,16 @@ class Gem::Licenses
     Swift-exception
     Universal-FOSS-exception-1.0
     WxWindows-exception-3.1
+    cryptsetup-OpenSSL-exception
     eCos-exception-2.0
     freertos-exception-2.0
     gnu-javamail-exception
     i2p-gpl-java-exception
+    libpri-OpenH323-exception
     mif-exception
     openvpn-openssl-exception
     u-boot-exception-2.0
+    vsftpd-openssl-exception
     x11vnc-openssl-exception
   ].freeze
 

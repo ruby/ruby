@@ -11,8 +11,7 @@ module IRB
 
   module ExtendCommand
     class MultiIRBCommand < Nop
-      def initialize(conf)
-        super
+      def execute(*args)
         extend_irb_context
       end
 
@@ -29,6 +28,10 @@ module IRB
         # this extension patches IRB context like IRB.CurrentContext
         require_relative "../ext/multi-irb"
       end
+
+      def print_debugger_warning
+        warn "Multi-IRB commands are not available when the debugger is enabled."
+      end
     end
 
     class IrbCommand < MultiIRBCommand
@@ -37,6 +40,13 @@ module IRB
 
       def execute(*obj)
         print_deprecated_warning
+
+        if irb_context.with_debugger
+          print_debugger_warning
+          return
+        end
+
+        super
         IRB.irb(nil, *obj)
       end
     end
@@ -47,6 +57,13 @@ module IRB
 
       def execute
         print_deprecated_warning
+
+        if irb_context.with_debugger
+          print_debugger_warning
+          return
+        end
+
+        super
         IRB.JobManager
       end
     end
@@ -57,6 +74,14 @@ module IRB
 
       def execute(key = nil)
         print_deprecated_warning
+
+        if irb_context.with_debugger
+          print_debugger_warning
+          return
+        end
+
+        super
+
         raise CommandArgumentError.new("Please specify the id of target IRB job (listed in the `jobs` command).") unless key
         IRB.JobManager.switch(key)
       end
@@ -68,6 +93,13 @@ module IRB
 
       def execute(*keys)
         print_deprecated_warning
+
+        if irb_context.with_debugger
+          print_debugger_warning
+          return
+        end
+
+        super
         IRB.JobManager.kill(*keys)
       end
     end

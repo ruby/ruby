@@ -20,7 +20,10 @@ describe "IO.foreach" do
       platform_is :windows do
         cmd = "|cmd.exe /C echo hello&echo line2"
       end
-      IO.foreach(cmd) { |l| ScratchPad << l }
+
+      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+        IO.foreach(cmd) { |l| ScratchPad << l }
+      end
       ScratchPad.recorded.should == ["hello\n", "line2\n"]
     end
 
@@ -28,7 +31,9 @@ describe "IO.foreach" do
       it "gets data from a fork when passed -" do
         parent_pid = $$
 
-        IO.foreach("|-") { |l| ScratchPad << l }
+        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+          IO.foreach("|-") { |l| ScratchPad << l }
+        end
 
         if $$ == parent_pid
           ScratchPad.recorded.should == ["hello\n", "from a fork\n"]
@@ -37,6 +42,16 @@ describe "IO.foreach" do
           puts "from a fork"
           exit!
         end
+      end
+    end
+
+    ruby_version_is "3.3" do
+      # https://bugs.ruby-lang.org/issues/19630
+      it "warns about deprecation given a path with a pipe" do
+        cmd = "|echo ok"
+        -> {
+          IO.foreach(cmd).to_a
+        }.should complain(/IO process creation with a leading '\|'/)
       end
     end
   end

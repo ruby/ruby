@@ -33,7 +33,7 @@ module Lrama
       @h[x] = d
       @result[x] = @base_function[x] # F x = F' x
 
-      @relation[x] && @relation[x].each do |y|
+      @relation[x]&.each do |y|
         traverse(y) if @h[y] == 0
         @h[x] = [@h[x], @h[y]].min
         @result[x] |= @result[y] # F x = F x + F y
@@ -43,9 +43,8 @@ module Lrama
         while true do
           z = @stack.pop
           @h[z] = Float::INFINITY
-          @result[z] = @result[x] # F (Top of S) = F x
-
           break if z == x
+          @result[z] = @result[x] # F (Top of S) = F x
         end
       end
     end

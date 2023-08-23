@@ -1,7 +1,5 @@
 # loaded from vm_trace.c
 
-# Document-class: TracePoint
-#
 # A class that provides the functionality of Kernel#set_trace_func in a
 # nice Object-Oriented API.
 #

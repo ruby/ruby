@@ -131,17 +131,34 @@ module OpenSSL::TestUtils
     end
   end
 
-  def openssl?(major = nil, minor = nil, fix = nil, patch = 0)
+  def openssl?(major = nil, minor = nil, fix = nil, patch = 0, status = 0)
     return false if OpenSSL::OPENSSL_VERSION.include?("LibreSSL")
     return true unless major
     OpenSSL::OPENSSL_VERSION_NUMBER >=
-      major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10
+      major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10 +
+      status * 0x1
   end
 
   def libressl?(major = nil, minor = nil, fix = nil)
     version = OpenSSL::OPENSSL_VERSION.scan(/LibreSSL (\d+)\.(\d+)\.(\d+).*/)[0]
     return false unless version
     !major || (version.map(&:to_i) <=> [major, minor, fix]) >= 0
+  end
+
+  # OpenSSL 3: x25519 a decode from and then encode to a pem file corrupts the
+  # key if fips+base provider is used
+  # This issue happens in OpenSSL between 3.0,0 and 3.0.10 or between 3.1.0 and
+  # 3.1.2.
+  # https://github.com/openssl/openssl/issues/21493
+  # https://github.com/openssl/openssl/pull/21519
+  def pend_on_openssl_issue_21493
+    if OpenSSL.fips_mode &&
+      (
+        (openssl?(3, 0, 0, 0) && !openssl?(3, 0, 0, 11)) ||
+        (openssl?(3, 1, 0, 0) && !openssl?(3, 1, 0, 3))
+      )
+      pend('See <https://github.com/openssl/openssl/issues/21493>')
+    end
   end
 end
 

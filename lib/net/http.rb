@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = net/http.rb
 #
@@ -1615,8 +1615,8 @@ module Net   #:nodoc:
                                       write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
-          buf = "CONNECT #{conn_address}:#{@port} HTTP/#{HTTPVersion}\r\n"
-          buf << "Host: #{@address}:#{@port}\r\n"
+          buf = +"CONNECT #{conn_address}:#{@port} HTTP/#{HTTPVersion}\r\n" \
+            "Host: #{@address}:#{@port}\r\n"
           if proxy_user
             credential = ["#{proxy_user}:#{proxy_pass}"].pack('m0')
             buf << "Proxy-Authorization: Basic #{credential}\r\n"

@@ -11,7 +11,7 @@ module Lrama
       end
 
       def current_type
-        current_token && current_token.type
+        current_token&.type
       end
 
       def previous_token
@@ -26,9 +26,7 @@ module Lrama
 
       def consume(*token_types)
         if token_types.include?(current_type)
-          token = current_token
-          self.next
-          return token
+          return self.next
         end
 
         return nil
@@ -42,8 +40,7 @@ module Lrama
         a = []
 
         while token_types.include?(current_type)
-          a << current_token
-          self.next
+          a << self.next
         end
 
         raise "No token is consumed. #{token_types}" if a.empty?

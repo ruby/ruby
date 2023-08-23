@@ -1,9 +1,11 @@
 module IRB
   module HistorySavingAbility # :nodoc:
-    def HistorySavingAbility.extended(obj)
-      IRB.conf[:AT_EXIT].push proc{obj.save_history}
-      obj.load_history
-      obj
+    def support_history_saving?
+      true
+    end
+
+    def reset_history_counter
+      @loaded_history_lines = self.class::HISTORY.size if defined? @loaded_history_lines
     end
 
     def load_history

@@ -2,6 +2,8 @@
 
 require "yarp_test_helper"
 
+return if YARP::BACKEND == :FFI
+
 module UnescapeTest
   class UnescapeNoneTest < Test::Unit::TestCase
     def test_backslash
@@ -15,7 +17,7 @@ module UnescapeTest
     private
 
     def assert_unescape_none(source)
-      assert_equal(source, YARP.unescape_none(source))
+      assert_equal(source, YARP.const_get(:Debug).unescape_none(source))
     end
   end
 
@@ -35,7 +37,7 @@ module UnescapeTest
     private
 
     def assert_unescape_minimal(expected, source)
-      assert_equal(expected, YARP.unescape_minimal(source))
+      assert_equal(expected, YARP.const_get(:Debug).unescape_minimal(source))
     end
   end
 
@@ -83,7 +85,7 @@ module UnescapeTest
       assert_unescape_all("က", "\\u1000", "UTF-8")
       assert_unescape_all("တ", "\\u1010", "UTF-8")
 
-      assert_nil(YARP.unescape_all("\\uxxxx"))
+      assert_nil(unescape_all("\\uxxxx"))
     end
 
     def test_unicode_codepoints
@@ -95,8 +97,8 @@ module UnescapeTest
       assert_unescape_all("𐀐", "\\u{10010}", "UTF-8")
       assert_unescape_all("aĀကတ𐀀𐀐", "\\u{ 61\s100\n1000\t1010\r10000\v10010 }", "UTF-8")
 
-      assert_nil(YARP.unescape_all("\\u{110000}"))
-      assert_nil(YARP.unescape_all("\\u{110000 110001 110002}"))
+      assert_nil(unescape_all("\\u{110000}"))
+      assert_nil(unescape_all("\\u{110000 110001 110002}"))
     end
 
     def test_control_characters
@@ -136,8 +138,12 @@ module UnescapeTest
 
     private
 
+    def unescape_all(source)
+      YARP.const_get(:Debug).unescape_all(source)
+    end
+
     def assert_unescape_all(expected, source, forced_encoding = nil)
-      result = YARP.unescape_all(source)
+      result = unescape_all(source)
       result.force_encoding(forced_encoding) if forced_encoding
       assert_equal(expected, result)
     end

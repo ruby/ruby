@@ -371,7 +371,7 @@ module SyncDefaultGems
       `git checkout ext/digest/depend ext/digest/*/depend`
     when "set"
       sync_lib gem, upstream
-      cp_r("#{upstream}/test", ".")
+      cp_r(Dir.glob("#{upstream}/test/*"), "test/set")
     when "optparse"
       sync_lib gem, upstream
       rm_rf(%w[doc/optparse])
@@ -403,23 +403,19 @@ module SyncDefaultGems
       rm_rf(%w[test/yarp yarp])
 
       # Run the YARP templating scripts
-      system("ruby #{upstream}/templates/template.rb")
       cp_r("#{upstream}/ext/yarp", "yarp")
       cp_r("#{upstream}/lib/.", "lib")
       cp_r("#{upstream}/test", "test/yarp")
       cp_r("#{upstream}/src/.", "yarp")
 
-      # Move all files in enc to be prefixed with yp_ in order
-      # to deconflict them from non-yarp enc files
-      (Dir.entries("yarp/enc/") - ["..", "."]).each do |f|
-        mv "yarp/enc/#{f}", "yarp/enc/yp_#{f}"
-      end
-
       cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
       cp_r("#{upstream}/include/yarp/.", "yarp")
       cp_r("#{upstream}/include/yarp.h", "yarp")
 
-      rm("yarp/config.h")
+      cp_r("#{upstream}/config.yml", "yarp/")
+      cp_r("#{upstream}/templates", "yarp/")
+
+      rm_f("yarp/config.h")
       File.write("yarp/config.h", "#include \"ruby/config.h\"\n")
       rm("yarp/extconf.rb")
 
@@ -436,8 +432,28 @@ module SyncDefaultGems
     |\.git.*
     |[A-Z]\w+file
     |COPYING
-    |\Arakelib\/.*
-    |\Atest\/lib\/.*
+    |rakelib\/.*
+    |test\/lib\/.*
+    )\z/mx
+
+  YARP_IGNORE_FILE_PATTERN =
+    /\A(?:[A-Z]\w*\.(?:md|txt)
+    |[^\/]+\.yml
+    |\.git.*
+    |[A-Z]\w+file
+    |COPYING
+    |CONTRIBUTING\.md
+    |Gemfile
+    |Gemfile\.lock
+    |Makefile\.in
+    |README\.md
+    |bin\/.*
+    |configure\.ac
+    |rakelib\/.*
+    |rust\/.*
+    |test\/lib\/.*
+    |tasks\/.*
+    |ext\/yarp\/extconf\.rb
     )\z/mx
 
   def message_filter(repo, sha, input: ARGF)
@@ -483,6 +499,7 @@ module SyncDefaultGems
     repo, default_branch = REPOSITORIES[gem.to_sym]
     puts "Sync #{repo} with commit history."
 
+    # Fetch the repository to be synchronized
     IO.popen(%W"git remote") do |f|
       unless f.read.split.include?(gem)
         `git remote add #{gem} git@github.com:#{repo}.git`
@@ -490,12 +507,14 @@ module SyncDefaultGems
     end
     system(*%W"git fetch --no-tags #{gem}")
 
+    # If -a is given, discover all commits since the last picked commit
     if ranges == true
       pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
       log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
+    # Parse a given range with git log
     commits = ranges.flat_map do |range|
       unless range.include?("..")
         range = "#{range}~1..#{range}"
@@ -506,10 +525,16 @@ module SyncDefaultGems
       end
     end
 
-    # Ignore Merge commit and insufficiency commit for ruby core repository.
+    # Ignore Merge commits and already-merged commits.
+    case gem
+    when "yarp"
+      ignore_file_pattern = YARP_IGNORE_FILE_PATTERN
+    else
+      ignore_file_pattern = IGNORE_FILE_PATTERN
+    end
     commits.delete_if do |sha, subject|
       files = pipe_readlines(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}")
-      subject.start_with?("Merge", "Auto Merge") or files.all?(IGNORE_FILE_PATTERN)
+      subject.start_with?("Merge", "Auto Merge") or files.all?(ignore_file_pattern)
     end
 
     if commits.empty?
@@ -532,39 +557,84 @@ module SyncDefaultGems
     commits.each do |sha, subject|
       puts "Pick #{sha} from #{repo}."
 
-      skipped = false
+      # Attempt to cherry-pick a commit
       result = IO.popen(%W"git cherry-pick #{sha}", &:read)
       if result =~ /nothing\ to\ commit/
         `git reset`
-        skipped = true
         puts "Skip empty commit #{sha}"
-      end
-      next if skipped
-
-      case gem
-      when "rubygems"
-        %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
-          if File.exist?(rem)
-            system("git", "reset", rem)
-            rm_rf(rem)
-          end
-        end
-        system(*%w[git add spec/bundler])
+        next
       end
 
+      # Skip empty commits or deal with conflicts
+      skipped = false
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
-        result = pipe_readlines(%W"git status --porcelain -z")
-        result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
-        result.compact!
-        ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
+        # Forcibly remove any files that we don't want to copy to this repository.
+        # We also ignore them as new `toplevels` even when they don't conflict.
+        ignored_paths = []
+        case gem
+        when "rubygems"
+          # We don't copy any vcr_cassettes to this repository. Because the directory does not
+          # exist, rename detection doesn't work. So it starts with the original path `bundler/`.
+          ignored_paths += %w[bundler/spec/support/artifice/vcr_cassettes]
+        when "yarp"
+          # Rename detection never works between ruby/ruby/doc and ruby/yarp/docs
+          # since ruby/ruby/doc is not something owned by YARP.
+          ignored_paths += %w[docs/]
+        end
+        ignored_paths.each do |path|
+          if File.exist?(path)
+            puts "Removing: #{path}"
+            system("git", "reset", path)
+            rm_rf(path)
+          end
+        end
+
+        # git has inexact rename detection, so they follow directory renames even for new files.
+        # However, new files are considered a `CONFLICT (file location)`, so you need to git-add them here.
+        # We hope that they are not other kinds of conflicts, assuming we don't modify them in this repository.
+        case gem
+        when "rubygems"
+          system(*%w[git add spec/bundler])
+        when "yarp"
+          system(*%w[git add lib/yarp])
+          system(*%w[git add test/yarp])
+          system(*%w[git add yarp])
+        end
+
+        # Discover unmerged files
+        # AU: unmerged, added by us
+        # DU: unmerged, deleted by us
+        # UU: unmerged, both modified
+        # UA: unmerged, added by them
+        # AA: unmerged, both added
+        unmerged = pipe_readlines(%W"git status --porcelain -z")
+        if unmerged.empty?
+          # Everything was removed as `ignored_paths`. Skip this commit.
+          `git reset` && `git checkout .` && `git clean -fd`
+          puts "Skip empty commit #{sha}"
+          next
+        end
+
+        # For YARP, we want to handle DD: deleted by both.
+        if gem == "yarp"
+          deleted = unmerged.grep(/^DD /)
+          deleted.map! { |line| line.delete_prefix("DD ") }
+          system(*%W"git rm -f --", *deleted) unless deleted.empty?
+        end
+
+        unmerged.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
+        unmerged.compact!
+        ignore, conflict = unmerged.partition {|name| ignore_file_pattern =~ name}
+        # Reset ignored files if they conflict
         unless ignore.empty?
           system(*%W"git reset HEAD --", *ignore)
           File.unlink(*ignore)
           ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/\A.. (.*)/, 1]}
           system(*%W"git checkout HEAD --", *ignore) unless ignore.empty?
         end
+        # If -e option is given, open each conflicted file with an editor
         unless conflict.empty?
           if edit
             case
@@ -576,9 +646,11 @@ module SyncDefaultGems
             end
           end
         end
+        # Attempt to commit the cherry-pick
         skipped = !system({"GIT_EDITOR"=>"true"}, *%W"git cherry-pick --no-edit --continue")
       end
 
+      # Skip the commit if it's empty or the cherry-pick attempt failed
       if skipped
         failed_commits << sha
         `git reset` && `git checkout .` && `git clean -fd`
@@ -586,16 +658,34 @@ module SyncDefaultGems
         next
       end
 
-      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/ rakelib/")
+      # Forcibly remove any new top-level entries, and any changes under
+      # /test/fixtures, /test/lib, or /tool.
+      changed = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD --")
+      toplevels = changed.map {|f| f[%r[\A(?!tool/)[^/]+/?]]}.compact
+      toplevels.delete_if do |top|
+        if system(*%w"git checkout -f HEAD~ --", top, err: File::NULL)
+          # previously existent path
+          system(*%w"git checkout -f HEAD --", top, out: File::NULL)
+          true
+        end
+      end
+      unless toplevels.empty?
+        puts "Remove files added to toplevel: #{toplevels.join(', ')}"
+        system(*%w"git rm -r --", *toplevels)
+      end
+      tools = changed.select {|f|f.start_with?("test/fixtures/", "test/lib/", "tool/")}
       unless tools.empty?
-        system(*%W"git rm --", *tools)
+        system(*%W"git rm -r --", *tools)
         system(*%W"git checkout HEAD~ --", *tools)
+      end
+      unless toplevels.empty? and tools.empty?
+        clean = toplevels + tools
         if system(*%W"git diff --quiet HEAD~")
           `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
-          puts "Skip commit #{sha} only for tools"
+          puts "Skip commit #{sha} only for tools or toplevel"
           next
         end
-        unless system(*%W"git commit --amend --no-edit --", *tools)
+        unless system(*%W"git commit --amend --no-edit --", *clean)
           failed_commits << sha
           `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
           puts "Failed to pick #{sha}"
@@ -603,6 +693,7 @@ module SyncDefaultGems
         end
       end
 
+      # Amend the commit if RDoc references need to be replaced
       head = `git log --format=%H -1 HEAD`.chomp
       system(*%w"git reset --quiet HEAD~ --")
       amend = replace_rdoc_ref_all
@@ -613,6 +704,7 @@ module SyncDefaultGems
 
       puts "Update commit message: #{sha}"
 
+      # Run this script itself (tool/sync_default_gems.rb --message-filter) as a message filter
       IO.popen({"FILTER_BRANCH_SQUELCH_WARNING" => "1"},
                %W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD],
                &:read)
@@ -738,6 +830,9 @@ module SyncDefaultGems
 
 \e[1mPick a commit range from the upstream repository\e[0m
   ruby #$0 rubygems 97e9768612..9e53702832
+
+\e[1mPick all commits since the last picked commit\e[0m
+  ruby #$0 -a rubygems
 
 \e[1mList known libraries\e[0m
   ruby #$0 list

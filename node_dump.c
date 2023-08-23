@@ -61,7 +61,6 @@
 #define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
 #define F_ID(name, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
-#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
 #define F_INT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(node->name)
 #define F_LONG(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(node->name)
 #define F_LIT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(node->name)
@@ -436,9 +435,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         return;
       case NODE_GASGN:
         ANN("global variable assignment");
-        ANN("format: [nd_entry](gvar) = [nd_value]");
+        ANN("format: [nd_vid](gvar) = [nd_value]");
         ANN("example: $x = foo");
-        F_GENTRY(nd_entry, "global variable");
+        F_ID(nd_vid, "global variable");
         LAST_NODE;
         F_NODE(nd_value, "rvalue");
         return;
@@ -592,7 +591,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       case NODE_HASH:
         if (!node->nd_brace) {
             ANN("keyword arguments");
-            ANN("format: nd_head");
+            ANN("format: [nd_head]");
             ANN("example: a: 1, b: 2");
         }
         else {
@@ -651,9 +650,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_GVAR:
         ANN("global variable reference");
-        ANN("format: [nd_entry](gvar)");
+        ANN("format: [nd_vid](gvar)");
         ANN("example: $x");
-        F_GENTRY(nd_entry, "global variable");
+        F_ID(nd_vid, "global variable");
         return;
 
       case NODE_NTH_REF:

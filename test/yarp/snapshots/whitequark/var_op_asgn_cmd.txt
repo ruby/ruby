@@ -1,9 +1,10 @@
 ProgramNode(0...12)(
   [:foo],
   StatementsNode(0...12)(
-    [LocalVariableOperatorWriteNode(0...12)(
-       (0...3),
+    [OperatorWriteNode(0...12)(
+       LocalVariableWriteNode(0...3)(:foo, 0, nil, (0...3), nil),
        (4...6),
+       :+,
        CallNode(7...12)(
          nil,
          nil,
@@ -14,9 +15,7 @@ ProgramNode(0...12)(
          nil,
          0,
          "m"
-       ),
-       :foo,
-       :+
+       )
      )]
   )
 )

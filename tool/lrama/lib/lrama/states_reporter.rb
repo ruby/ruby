@@ -14,13 +14,13 @@ module Lrama
 
     private
 
-    def _report(io, grammar: false, states: false, itemsets: false, lookaheads: false, solved: false, verbose: false)
+    def _report(io, grammar: false, states: false, itemsets: false, lookaheads: false, solved: false, counterexamples: false, verbose: false)
       # TODO: Unused terms
       # TODO: Unused rules
 
       report_conflicts(io)
       report_grammar(io) if grammar
-      report_states(io, itemsets, lookaheads, solved, verbose)
+      report_states(io, itemsets, lookaheads, solved, counterexamples, verbose)
     end
 
     def report_conflicts(io)
@@ -71,7 +71,11 @@ module Lrama
       io << "\n\n"
     end
 
-    def report_states(io, itemsets, lookaheads, solved, verbose)
+    def report_states(io, itemsets, lookaheads, solved, counterexamples, verbose)
+      if counterexamples
+        cex = Counterexamples.new(@states)
+      end
+
       @states.states.each do |state|
         # Report State
         io << "State #{state.id}\n\n"
@@ -194,6 +198,27 @@ module Lrama
           io << "\n" if !state.resolved_conflicts.empty?
         end
 
+        if counterexamples && state.has_conflicts?
+          # Report counterexamples
+          examples = cex.compute(state)
+          examples.each do |example|
+            label0 = example.type == :shift_reduce ? "shift/reduce"  : "reduce/reduce"
+            label1 = example.type == :shift_reduce ? "Shift derivation"  : "First Reduce derivation"
+            label2 = example.type == :shift_reduce ? "Reduce derivation" : "Second Reduce derivation"
+
+            io << "    #{label0} conflict on token #{example.conflict_symbol.id.s_value}:\n"
+            io << "        #{example.path1_item.to_s}\n"
+            io << "        #{example.path2_item.to_s}\n"
+            io << "      #{label1}\n"
+            example.derivations1.render_strings_for_report.each do |str|
+              io << "        #{str}\n"
+            end
+            io << "      #{label2}\n"
+            example.derivations2.render_strings_for_report.each do |str|
+              io << "        #{str}\n"
+            end
+          end
+        end
 
         if verbose
           # Report direct_read_sets

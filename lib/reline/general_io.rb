@@ -1,4 +1,3 @@
-require 'timeout'
 require 'io/wait'
 
 class Reline::GeneralIO
@@ -35,7 +34,7 @@ class Reline::GeneralIO
     yield
   end
 
-  def self.getc
+  def self.getc(_timeout_second)
     unless @@buf.empty?
       return @@buf.shift
     end

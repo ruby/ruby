@@ -3,7 +3,7 @@ ProgramNode(0...38)(
   StatementsNode(0...38)(
     [ArrayNode(0...14)(
        [StringNode(3...6)(nil, (3...6), nil, "foo"),
-        InterpolatedStringNode(0...13)(
+        InterpolatedStringNode(7...13)(
           nil,
           [EmbeddedStatementsNode(7...13)(
              (7...9),
@@ -16,7 +16,7 @@ ProgramNode(0...38)(
                   nil,
                   nil,
                   nil,
-                  0,
+                  2,
                   "bar"
                 )]
              ),
@@ -29,7 +29,7 @@ ProgramNode(0...38)(
      ),
      ArrayNode(16...38)(
        [StringNode(19...22)(nil, (19...22), nil, "foo"),
-        InterpolatedStringNode(0...37)(
+        InterpolatedStringNode(23...37)(
           nil,
           [EmbeddedStatementsNode(23...29)(
              (23...25),
@@ -42,7 +42,7 @@ ProgramNode(0...38)(
                   nil,
                   nil,
                   nil,
-                  0,
+                  2,
                   "bar"
                 )]
              ),

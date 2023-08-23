@@ -8,14 +8,12 @@ MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
 ifeq ($(GITHUB_ACTIONS),true)
-override ACTIONS_GROUP = @echo "\#\#[group]$(patsubst yes-%,%,$@)"
-override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
+# 93(bright yellow) is copied from .github/workflows/mingw.yml
+override ACTIONS_GROUP = @echo "::group::[93m$(@:yes-%=%)[m"
+override ACTIONS_ENDGROUP = @echo "::endgroup::"
 endif
 
 ifneq ($(filter darwin%,$(target_os)),)
-# Remove debug option not to generate thousands of .dSYM
-RJIT_DEBUGFLAGS := $(filter-out -g%,$(RJIT_DEBUGFLAGS))
-
 INSTRUBY_ENV += SDKROOT=
 endif
 INSTRUBY_ARGS += --gnumake
@@ -27,7 +25,7 @@ TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
 TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst exam,test-bundled-gems yes-test-bundler-parallel check,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst exam,test-bundled-gems test-bundler-parallel check,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst check,test-syntax-suggest test-spec test-all test-tool test-short,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
@@ -38,6 +36,7 @@ TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-basic,test-basic test-leaked-globals,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
@@ -45,6 +44,7 @@ TEST_TARGETS := $(patsubst test-bundler-parallel,test-bundler-parallel $(PREPARE
 TEST_TARGETS := $(patsubst test-syntax-suggest,test-syntax-suggest $(PREPARE_SYNTAX_SUGGEST),$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+TEST_TARGETS := $(patsubst yes-%,%,$(filter-out no-%,$(TEST_TARGETS)))
 endif
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
@@ -91,16 +91,31 @@ $(addprefix yes-,$(TEST_TARGETS)): $(TEST_DEPENDS)
 endif
 
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
-	btest-ruby test-knownbug test-basic \
+	btest-ruby test-knownbug test-leaked-globals test-basic \
 	test-testframework test-tool test-ruby test-all \
 	test-spec test-syntax-suggest-prepare test-syntax-suggest \
 	test-bundler-prepare test-bundler test-bundler-parallel \
 	test-bundled-gems-precheck test-bundled-gems-fetch \
 	test-bundled-gems-prepare test-bundled-gems-run \
 	)
-prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
+
+# grep ^yes-test-.*-precheck: template/Makefile.in defs/gmake.mk common.mk
+test_prechecks := $(filter $(ORDERED_TEST_TARGETS),\
+	test-leaked-globals \
+	test-all \
+	test-spec \
+	test-syntax-suggest \
+	test-bundler \
+	test-bundler-parallel \
+	test-bundled-gems\
+	)
+prev_test := $(subst test-bundler-parallel,test-bundler,$(test_prechecks))
+prev_test := $(addsuffix -precheck,$(prev_test))
+first_test_prechecks := $(prev_test)
+
 $(foreach test,$(ORDERED_TEST_TARGETS), \
-	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
+	$(eval yes-$(value test): $(addprefix yes-,$(value prev_test))); \
+	$(eval no-$(value test): $(addprefix no-,$(value prev_test))); \
 	$(eval prev_test := $(value test)))
 endif
 

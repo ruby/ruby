@@ -671,7 +671,7 @@ num_div(VALUE x, VALUE y)
  *  Of the Core and Standard Library classes,
  *  only Rational uses this implementation.
  *
- *  For \Rational +r+ and real number +n+, these expressions are equivalent:
+ *  For Rational +r+ and real number +n+, these expressions are equivalent:
  *
  *    r % n
  *    r-n*(r/n).floor
@@ -1002,7 +1002,7 @@ num_negative_p(VALUE num)
       and +self+
  *  - #divmod: Returns a 2-element array containing the quotient and remainder
  *    results of dividing +self+ by the given value.
- *  - #fdiv: Returns the Float result of dividing +self+ by the given value.
+ *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
  *  - #floor: Returns the greatest number smaller than or equal to +self+.
  *  - #next_float: Returns the next-larger representable \Float.
  *  - #prev_float: Returns the next-smaller representable \Float.
@@ -2335,7 +2335,7 @@ int_half_p_half_down(VALUE num, VALUE n, VALUE f)
 }
 
 /*
- * Assumes num is an Integer, ndigits <= 0
+ * Assumes num is an \Integer, ndigits <= 0
  */
 static VALUE
 rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
@@ -5339,7 +5339,7 @@ int_aref(int const argc, VALUE * const argv, VALUE const num)
  *    1.to_f  # => 1.0
  *    -1.to_f # => -1.0
  *
- *  If the value of +self+ does not fit in a \Float,
+ *  If the value of +self+ does not fit in a Float,
  *  the result is infinity:
  *
  *    (10**400).to_f  # => Infinity
@@ -6032,9 +6032,9 @@ int_s_try_convert(VALUE self, VALUE num)
 /*
  * Document-class: Numeric
  *
- * Numeric is the class from which all higher-level numeric classes should inherit.
+ * \Numeric is the class from which all higher-level numeric classes should inherit.
  *
- * Numeric allows instantiation of heap-allocated objects. Other core numeric classes such as
+ * \Numeric allows instantiation of heap-allocated objects. Other core numeric classes such as
  * Integer are implemented as immediates, which means that each Integer is a single immutable
  * object which is always passed by value.
  *
@@ -6048,9 +6048,9 @@ int_s_try_convert(VALUE self, VALUE num)
  *   1.dup                            #=> 1
  *   1.object_id == 1.dup.object_id   #=> true
  *
- * For this reason, Numeric should be used when defining other numeric classes.
+ * For this reason, \Numeric should be used when defining other numeric classes.
  *
- * Classes which inherit from Numeric must implement +coerce+, which returns a two-member
+ * Classes which inherit from \Numeric must implement +coerce+, which returns a two-member
  * Array containing an object that has been coerced into an instance of the new class
  * and +self+ (see #coerce).
  *

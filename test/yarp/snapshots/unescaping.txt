@@ -1,6 +1,6 @@
-ProgramNode(0...55)(
+ProgramNode(0...39)(
   [],
-  StatementsNode(0...55)(
+  StatementsNode(0...39)(
     [ArrayNode(0...10)(
        [StringNode(1...9)((1...2), (2...8), (8...9), "\u0003{1}")],
        (0...1),
@@ -14,7 +14,7 @@ ProgramNode(0...55)(
        0
      ),
      StringNode(22...30)((22...23), (23...29), (29...30), "\u0003{1}"),
-     InterpolatedStringNode(32...55)(
+     InterpolatedStringNode(32...39)(
        (32...39),
        [StringNode(40...50)(nil, (40...50), nil, "\u0003{1}\n")],
        (50...55)

@@ -29,7 +29,7 @@ ProgramNode(0...37)(
        "td"
      ),
      CallNode(23...37)(
-       CallNode(23...25)(nil, nil, (23...25), nil, nil, nil, nil, 0, "td"),
+       CallNode(23...25)(nil, nil, (23...25), nil, nil, nil, nil, 2, "td"),
        (25...26),
        (26...29),
        nil,

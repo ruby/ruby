@@ -11,7 +11,7 @@ ProgramNode(0...40)(
             (5...6),
             (6...32),
             (32...33),
-            "hello\n" + " my\n" + " dear\n" + " friend"
+            "hello my dear friend"
           )]
        ),
        nil,
@@ -20,12 +20,12 @@ ProgramNode(0...40)(
        "puts"
      ),
      CallNode(35...40)(
-       CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 0, "a"),
+       CallNode(35...36)(nil, nil, (35...36), nil, nil, nil, nil, 2, "a"),
        nil,
        (37...38),
        nil,
        ArgumentsNode(39...40)(
-         [CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 0, "b")]
+         [CallNode(39...40)(nil, nil, (39...40), nil, nil, nil, nil, 2, "b")]
        ),
        nil,
        nil,

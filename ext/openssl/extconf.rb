@@ -13,12 +13,32 @@
 
 require "mkmf"
 
+ssl_dirs = nil
 if defined?(::TruffleRuby)
   # Always respect the openssl prefix chosen by truffle/openssl-prefix
   require 'truffle/openssl-prefix'
-  dir_config_given = dir_config("openssl", ENV["OPENSSL_PREFIX"]).any?
+  ssl_dirs = dir_config("openssl", ENV["OPENSSL_PREFIX"])
 else
-  dir_config_given = dir_config("openssl").any?
+  ssl_dirs = dir_config("openssl")
+end
+dir_config_given = ssl_dirs.any?
+
+_, ssl_ldir = ssl_dirs
+if ssl_ldir&.split(File::PATH_SEPARATOR)&.none? { |dir| File.directory?(dir) }
+  # According to the `mkmf.rb#dir_config`, the `--with-openssl-dir=<dir>` uses
+  # the value of the `File.basename(RbConfig::MAKEFILE_CONFIG["libdir"])` as a
+  # loaded library directory name.
+  ruby_ldir_name = File.basename(RbConfig::MAKEFILE_CONFIG["libdir"])
+
+  raise "OpenSSL library directory could not be found in '#{ssl_ldir}'. " \
+    "You might want to fix this error in one of the following ways.\n" \
+    "  * Recompile OpenSSL by configuring it with --libdir=#{ruby_ldir_name} " \
+    " to specify the OpenSSL library directory.\n" \
+    "  * Recompile Ruby by configuring it with --libdir=<dir> to specify the " \
+    "Ruby library directory.\n" \
+    "  * Compile this openssl gem with --with-openssl-include=<dir> and " \
+    "--with-openssl-lib=<dir> options to specify the OpenSSL include and " \
+    "library directories."
 end
 
 dir_config("kerberos")

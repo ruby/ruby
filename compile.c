@@ -5348,7 +5348,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_GVAR:
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_GVAR),
-                  ID2SYM(node->nd_entry), PUSH_VAL(DEFINED_GVAR));
+                  ID2SYM(node->nd_vid), PUSH_VAL(DEFINED_GVAR));
         return;
 
       case NODE_CVAR:
@@ -9471,7 +9471,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (!popped) {
             ADD_INSN(ret, node, dup);
         }
-        ADD_INSN1(ret, node, setglobal, ID2SYM(node->nd_entry));
+        ADD_INSN1(ret, node, setglobal, ID2SYM(node->nd_vid));
         break;
       }
       case NODE_IASGN:{
@@ -9601,7 +9601,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case NODE_GVAR:{
-        ADD_INSN1(ret, node, getglobal, ID2SYM(node->nd_entry));
+        ADD_INSN1(ret, node, getglobal, ID2SYM(node->nd_vid));
         if (popped) {
             ADD_INSN(ret, node, pop);
         }
@@ -10215,12 +10215,6 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
     }
     printf("---------------------\n");
     fflush(stdout);
-}
-
-bool
-rb_insns_leaf_p(int i)
-{
-    return insn_leaf_p(i);
 }
 
 int

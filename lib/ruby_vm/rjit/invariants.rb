@@ -143,11 +143,11 @@ module RubyVM::RJIT
 
         C.rjit_for_each_iseq do |iseq|
           # Avoid entering past code
-          iseq.body.jit_func = 0
+          iseq.body.jit_entry = 0
           # Avoid reusing past code
           iseq.body.rjit_blocks.clear if iseq.body.rjit_blocks
           # Compile this again if not converted to trace_* insns
-          iseq.body.total_calls = 0
+          iseq.body.jit_entry_calls = 0
         end
       end
     end

@@ -26,8 +26,11 @@ pub struct Options {
     // The number of registers allocated for stack temps
     pub num_temp_regs: usize,
 
-    // Capture and print out stats
+    // Capture stats
     pub gen_stats: bool,
+
+    // Print stats on exit (when gen_stats is also true)
+    pub print_stats: bool,
 
     // Trace locations of exits
     pub gen_trace_exits: bool,
@@ -62,6 +65,7 @@ pub static mut OPTIONS: Options = Options {
     num_temp_regs: 5,
     gen_stats: false,
     gen_trace_exits: false,
+    print_stats: true,
     trace_exits_sample_rate: 0,
     pause: false,
     dump_insns: false,
@@ -160,7 +164,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         },
 
-        ("dump-disasm", _) => match opt_val.to_string().as_str() {
+        ("dump-disasm", _) => match opt_val {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
             directory => {
                 let pid = std::process::id();
@@ -176,7 +180,16 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
-        ("stats", "") => unsafe { OPTIONS.gen_stats = true },
+        ("stats", _) => match opt_val {
+            "" => unsafe { OPTIONS.gen_stats = true },
+            "quiet" => {
+                unsafe { OPTIONS.gen_stats = true }
+                unsafe { OPTIONS.print_stats = false }
+            },
+            _ => {
+                return None;
+            }
+        },
         ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true; OPTIONS.trace_exits_sample_rate = 0 },
         ("trace-exits-sample-rate", sample_rate) => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true; OPTIONS.trace_exits_sample_rate = sample_rate.parse().unwrap(); },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },

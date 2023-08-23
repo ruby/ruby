@@ -1,13 +1,13 @@
-ProgramNode(0...24)(
+ProgramNode(0...10)(
   [:a],
-  StatementsNode(0...24)(
-    [LocalVariableWriteNode(0...24)(
+  StatementsNode(0...10)(
+    [LocalVariableWriteNode(0...10)(
        :a,
        0,
-       InterpolatedStringNode(4...24)(
+       InterpolatedStringNode(4...10)(
          (4...10),
-         [StringNode(11...20)(nil, (11...20), nil, "x\n" + "\n" + "z\n")],
-         (20...24)
+         [StringNode(11...21)(nil, (11...21), nil, "x\n" + "\n" + "z\n")],
+         (21...25)
        ),
        (0...1),
        (2...3)

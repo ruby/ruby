@@ -1,6 +1,10 @@
 #include "yarp/extension.h"
 
+// NOTE: this file should contain only bindings.
+// All non-trivial logic should be in librubyparser so it can be shared its the various callers.
+
 VALUE rb_cYARP;
+VALUE rb_cYARPNode;
 VALUE rb_cYARPSource;
 VALUE rb_cYARPToken;
 VALUE rb_cYARPLocation;
@@ -14,169 +18,34 @@ VALUE rb_cYARPParseResult;
 /* IO of Ruby code                                                            */
 /******************************************************************************/
 
-// Represents an input of Ruby code. It can either be coming from a file or a
-// string. If it's a file, we'll use demand paging to read the contents of the
-// file into a string. If it's already a string, we'll reference it directly.
-typedef struct {
-    const char *source;
-    size_t size;
-} input_t;
-
-// Check if the given filepath is a string. If it's nil, then return NULL. If
-// it's not a string, then raise a type error. Otherwise return the filepath as
-// a C string.
+// Check if the given VALUE is a string. If it's nil, then return NULL. If it's
+// not a string, then raise a type error. Otherwise return the VALUE as a C
+// string.
 static const char *
-check_filepath(VALUE filepath) {
-    // If the filepath is nil, then we don't need to do anything.
-    if (NIL_P(filepath)) {
+check_string(VALUE value) {
+    // If the value is nil, then we don't need to do anything.
+    if (NIL_P(value)) {
         return NULL;
     }
 
-    // Check if the filepath is a string. If it's not, then raise a type error.
-    if (!RB_TYPE_P(filepath, T_STRING)) {
-        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
+    // Check if the value is a string. If it's not, then raise a type error.
+    if (!RB_TYPE_P(value, T_STRING)) {
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(value));
     }
 
-    // Otherwise, return the filepath as a C string.
-    return StringValueCStr(filepath);
+    // Otherwise, return the value as a C string.
+    return RSTRING_PTR(value);
 }
 
-// Read the file indicated by the filepath parameter into source and load its
-// contents and size into the given input_t.
-//
-// We want to use demand paging as much as possible in order to avoid having to
-// read the entire file into memory (which could be detrimental to performance
-// for large files). This means that if we're on windows we'll use
-// `MapViewOfFile`, on POSIX systems that have access to `mmap` we'll use
-// `mmap`, and on other POSIX systems we'll use `read`.
-static int
-input_load_filepath(input_t *input, const char *filepath) {
-#ifdef _WIN32
-    // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (file == INVALID_HANDLE_VALUE) {
-        perror("CreateFile failed");
-        return 1;
-    }
-
-    // Get the file size.
-    DWORD file_size = GetFileSize(file, NULL);
-    if (file_size == INVALID_FILE_SIZE) {
-        CloseHandle(file);
-        perror("GetFileSize failed");
-        return 1;
-    }
-
-    // If the file is empty, then we don't need to do anything else, we'll set
-    // the source to a constant empty string and return.
-    if (!file_size) {
-        CloseHandle(file);
-        input->size = 0;
-        input->source = "";
-        return 0;
-    }
-
-    // Create a mapping of the file.
-    HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (mapping == NULL) {
-        CloseHandle(file);
-        perror("CreateFileMapping failed");
-        return 1;
-    }
-
-    // Map the file into memory.
-    input->source = (const char *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
-    CloseHandle(mapping);
-    CloseHandle(file);
-
-    if (input->source == NULL) {
-        perror("MapViewOfFile failed");
-        return 1;
-    }
-
-    // Set the size of the source.
-    input->size = (size_t) file_size;
-    return 0;
-#else
-    // Open the file for reading
-    int fd = open(filepath, O_RDONLY);
-    if (fd == -1) {
-        perror("open");
-        return 1;
-    }
-
-    // Stat the file to get the file size
-    struct stat sb;
-    if (fstat(fd, &sb) == -1) {
-        close(fd);
-        perror("fstat");
-        return 1;
-    }
-
-    // mmap the file descriptor to virtually get the contents
-    input->size = sb.st_size;
-
-#ifdef HAVE_MMAP
-    if (!input->size) {
-        close(fd);
-        input->source = "";
-        return 0;
-    }
-
-    const char *result = mmap(NULL, input->size, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (result == MAP_FAILED) {
-        perror("Map failed");
-        return 1;
-    } else {
-        input->source = result;
-    }
-#else
-    input->source = malloc(input->size);
-    if (input->source == NULL) return 1;
-
-    ssize_t read_size = read(fd, (void *) input->source, input->size);
-    if (read_size < 0 || (size_t)read_size != input->size) {
-        perror("Read size is incorrect");
-        free((void *) input->source);
-        return 1;
-    }
-#endif
-
-    close(fd);
-    return 0;
-#endif
-}
-
-// Load the contents and size of the given string into the given input_t.
+// Load the contents and size of the given string into the given yp_string_t.
 static void
-input_load_string(input_t *input, VALUE string) {
+input_load_string(yp_string_t *input, VALUE string) {
     // Check if the string is a string. If it's not, then raise a type error.
     if (!RB_TYPE_P(string, T_STRING)) {
         rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(string));
     }
 
-    input->source = RSTRING_PTR(string);
-    input->size = RSTRING_LEN(string);
-}
-
-// Free any resources associated with the given input_t. This is the corollary
-// function to source_file_load. It will unmap the file if it was mapped, or
-// free the memory if it was allocated.
-static void
-input_unload_filepath(input_t *input) {
-    // We don't need to free anything with 0 sized files because we handle that
-    // with a constant string instead.
-    if (!input->size) return;
-    void *memory = (void *) input->source;
-
-#if defined(_WIN32)
-    UnmapViewOfFile(memory);
-#elif defined(HAVE_MMAP)
-    munmap(memory, input->size);
-#else
-    free(memory);
-#endif
+    yp_string_constant_init(input, RSTRING_PTR(string), RSTRING_LEN(string));
 }
 
 /******************************************************************************/
@@ -185,19 +54,19 @@ input_unload_filepath(input_t *input) {
 
 // Dump the AST corresponding to the given input to a string.
 static VALUE
-dump_input(input_t *input, const char *filepath) {
+dump_input(yp_string_t *input, const char *filepath) {
     yp_buffer_t buffer;
     if (!yp_buffer_init(&buffer)) {
         rb_raise(rb_eNoMemError, "failed to allocate memory");
     }
 
     yp_parser_t parser;
-    yp_parser_init(&parser, input->source, input->size, filepath);
+    yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
 
     yp_node_t *node = yp_parse(&parser);
     yp_serialize(&parser, node, &buffer);
 
-    VALUE result = rb_str_new(buffer.value, buffer.length);
+    VALUE result = rb_str_new(yp_buffer_value(&buffer), yp_buffer_length(&buffer));
     yp_node_destroy(&parser, node);
     yp_buffer_free(&buffer);
     yp_parser_free(&parser);
@@ -212,21 +81,21 @@ dump(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    input_t input;
+    yp_string_t input;
     input_load_string(&input, string);
-    return dump_input(&input, check_filepath(filepath));
+    return dump_input(&input, check_string(filepath));
 }
 
 // Dump the AST corresponding to the given file to a string.
 static VALUE
 dump_file(VALUE self, VALUE filepath) {
-    input_t input;
+    yp_string_t input;
 
-    const char *checked = check_filepath(filepath);
-    if (input_load_filepath(&input, checked) != 0) return Qnil;
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = dump_input(&input, checked);
-    input_unload_filepath(&input);
+    yp_string_free(&input);
 
     return value;
 }
@@ -356,13 +225,13 @@ lex_encoding_changed_callback(yp_parser_t *parser) {
 
 // Return an array of tokens corresponding to the given source.
 static VALUE
-lex_input(input_t *input, const char *filepath) {
+lex_input(yp_string_t *input, const char *filepath) {
     yp_parser_t parser;
-    yp_parser_init(&parser, input->source, input->size, filepath);
+    yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
     yp_parser_register_encoding_changed_callback(&parser, lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { rb_str_new(input->source, input->size), offsets };
+    VALUE source_argv[] = { rb_str_new(yp_string_source(input), yp_string_length(input)), offsets };
     VALUE source = rb_class_new_instance(2, source_argv, rb_cYARPSource);
 
     lex_data_t lex_data = {
@@ -410,21 +279,21 @@ lex(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    input_t input;
+    yp_string_t input;
     input_load_string(&input, string);
-    return lex_input(&input, check_filepath(filepath));
+    return lex_input(&input, check_string(filepath));
 }
 
 // Return an array of tokens corresponding to the given file.
 static VALUE
 lex_file(VALUE self, VALUE filepath) {
-    input_t input;
+    yp_string_t input;
 
-    const char *checked = check_filepath(filepath);
-    if (input_load_filepath(&input, checked) != 0) return Qnil;
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = lex_input(&input, checked);
-    input_unload_filepath(&input);
+    yp_string_free(&input);
 
     return value;
 }
@@ -435,9 +304,9 @@ lex_file(VALUE self, VALUE filepath) {
 
 // Parse the given input and return a ParseResult instance.
 static VALUE
-parse_input(input_t *input, const char *filepath) {
+parse_input(yp_string_t *input, const char *filepath) {
     yp_parser_t parser;
-    yp_parser_init(&parser, input->source, input->size, filepath);
+    yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
 
     yp_node_t *node = yp_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
@@ -466,16 +335,17 @@ parse(int argc, VALUE *argv, VALUE self) {
     VALUE filepath;
     rb_scan_args(argc, argv, "11", &string, &filepath);
 
-    input_t input;
+    yp_string_t input;
     input_load_string(&input, string);
 
 #ifdef YARP_DEBUG_MODE_BUILD
-    char* dup = malloc(input.size);
-    memcpy(dup, input.source, input.size);
-    input.source = dup;
+    size_t length = yp_string_length(&input);
+    char* dup = malloc(length);
+    memcpy(dup, yp_string_source(&input), length);
+    yp_string_constant_init(&input, dup, length);
 #endif
 
-    VALUE value = parse_input(&input, check_filepath(filepath));
+    VALUE value = parse_input(&input, check_string(filepath));
 
 #ifdef YARP_DEBUG_MODE_BUILD
     free(dup);
@@ -487,13 +357,13 @@ parse(int argc, VALUE *argv, VALUE self) {
 // Parse the given file and return a ParseResult instance.
 static VALUE
 parse_file(VALUE self, VALUE filepath) {
-    input_t input;
+    yp_string_t input;
 
-    const char *checked = check_filepath(filepath);
-    if (input_load_filepath(&input, checked) != 0) return Qnil;
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = parse_input(&input, checked);
-    input_unload_filepath(&input);
+    yp_string_free(&input);
 
     return value;
 }
@@ -510,7 +380,7 @@ named_captures(VALUE self, VALUE source) {
     yp_string_list_t string_list;
     yp_string_list_init(&string_list);
 
-    if (!yp_regexp_named_capture_group_names(RSTRING_PTR(source), RSTRING_LEN(source), &string_list)) {
+    if (!yp_regexp_named_capture_group_names(RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
         yp_string_list_free(&string_list);
         return Qnil;
     }
@@ -529,30 +399,16 @@ named_captures(VALUE self, VALUE source) {
 // version.
 static VALUE
 unescape(VALUE source, yp_unescape_type_t unescape_type) {
-    yp_string_t string;
-    VALUE result;
+    yp_string_t result;
 
-    yp_list_t error_list;
-    yp_list_init(&error_list);
-
-    const char *start = RSTRING_PTR(source);
-    size_t length = RSTRING_LEN(source);
-
-    yp_parser_t parser;
-    yp_parser_init(&parser, start, length, "");
-
-    yp_unescape_manipulate_string(&parser, start, length, &string, unescape_type, &error_list);
-    if (yp_list_empty_p(&error_list)) {
-        result = rb_str_new(yp_string_source(&string), yp_string_length(&string));
+    if (yp_unescape_string(RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
+        VALUE str = rb_str_new(yp_string_source(&result), yp_string_length(&result));
+        yp_string_free(&result);
+        return str;
     } else {
-        result = Qnil;
+        yp_string_free(&result);
+        return Qnil;
     }
-
-    yp_string_free(&string);
-    yp_list_free(&error_list);
-    yp_parser_free(&parser);
-
-    return result;
 }
 
 // Do not unescape anything in the given string. This is here to provide a
@@ -600,19 +456,37 @@ memsize(VALUE self, VALUE string) {
 // parser for memory and speed.
 static VALUE
 profile_file(VALUE self, VALUE filepath) {
-    input_t input;
+    yp_string_t input;
 
-    const char *checked = check_filepath(filepath);
-    if (input_load_filepath(&input, checked) != 0) return Qnil;
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
     yp_parser_t parser;
-    yp_parser_init(&parser, input.source, input.size, checked);
+    yp_parser_init(&parser, yp_string_source(&input), yp_string_length(&input), checked);
 
     yp_node_t *node = yp_parse(&parser);
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
 
     return Qnil;
+}
+
+// Parse the file and serialize the result. This is mostly used to test this
+// path since it is used by client libraries.
+static VALUE
+parse_serialize_file_metadata(VALUE self, VALUE filepath, VALUE metadata) {
+    yp_string_t input;
+    yp_buffer_t buffer;
+    yp_buffer_init(&buffer);
+
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+
+    yp_parse_serialize(yp_string_source(&input), yp_string_length(&input), &buffer, check_string(metadata));
+    VALUE result = rb_str_new(yp_buffer_value(&buffer), yp_buffer_length(&buffer));
+
+    yp_buffer_free(&buffer);
+    return result;
 }
 
 /******************************************************************************/
@@ -635,6 +509,7 @@ Init_yarp(void) {
     // Grab up references to all of the constants that we're going to need to
     // reference throughout this extension.
     rb_cYARP = rb_define_module("YARP");
+    rb_cYARPNode = rb_define_class_under(rb_cYARP, "Node", rb_cObject);
     rb_cYARPSource = rb_define_class_under(rb_cYARP, "Source", rb_cObject);
     rb_cYARPToken = rb_define_class_under(rb_cYARP, "Token", rb_cObject);
     rb_cYARPLocation = rb_define_class_under(rb_cYARP, "Location", rb_cObject);
@@ -647,6 +522,8 @@ Init_yarp(void) {
     // in yarp.h.
     rb_define_const(rb_cYARP, "VERSION", rb_str_new2(EXPECTED_YARP_VERSION));
 
+    rb_define_const(rb_cYARP, "BACKEND", ID2SYM(rb_intern("CExtension")));
+
     // First, the functions that have to do with lexing and parsing.
     rb_define_singleton_method(rb_cYARP, "dump", dump, -1);
     rb_define_singleton_method(rb_cYARP, "dump_file", dump_file, 1);
@@ -657,13 +534,16 @@ Init_yarp(void) {
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.
-    rb_define_singleton_method(rb_cYARP, "named_captures", named_captures, 1);
-    rb_define_singleton_method(rb_cYARP, "unescape_none", unescape_none, 1);
-    rb_define_singleton_method(rb_cYARP, "unescape_minimal", unescape_minimal, 1);
-    rb_define_singleton_method(rb_cYARP, "unescape_all", unescape_all, 1);
-    rb_define_singleton_method(rb_cYARP, "memsize", memsize, 1);
-    rb_define_singleton_method(rb_cYARP, "profile_file", profile_file, 1);
+    VALUE rb_cYARPDebug = rb_define_module_under(rb_cYARP, "Debug");
+    rb_define_singleton_method(rb_cYARPDebug, "named_captures", named_captures, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_none", unescape_none, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_minimal", unescape_minimal, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "unescape_all", unescape_all, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "memsize", memsize, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "profile_file", profile_file, 1);
+    rb_define_singleton_method(rb_cYARPDebug, "parse_serialize_file_metadata", parse_serialize_file_metadata, 2);
 
-    // Next, initialize the pack API.
+    // Next, initialize the other APIs.
+    Init_yarp_api_node();
     Init_yarp_pack();
 }

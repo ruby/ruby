@@ -561,7 +561,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  <b>Member Names</b>
  *
- *  \Symbol arguments +member_names+
+ *  Symbol arguments +member_names+
  *  determines the members of the new subclass:
  *
  *    Struct.new(:foo, :bar).members        # => [:foo, :bar]

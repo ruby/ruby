@@ -24,7 +24,7 @@ INSN_ENTRY(<%= insn.name %>)
     <%= ope[:decl] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
 % end
 #   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
-    const bool leaf = INSN_ATTR(leaf);
+    const bool MAYBE_UNUSED(leaf) = INSN_ATTR(leaf);
 % insn.pops.reverse_each.with_index.reverse_each do |pop, i|
     <%= pop[:decl] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
 % end
@@ -35,7 +35,7 @@ INSN_ENTRY(<%= insn.name %>)
 % end
 
     /* ### Instruction preambles. ### */
-    if (! leaf) ADD_PC(INSN_ATTR(width));
+    ADD_PC(INSN_ATTR(width));
 % if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
@@ -68,7 +68,6 @@ INSN_ENTRY(<%= insn.name %>)
     VM_ASSERT(!RB_TYPE_P(TOPN(<%= i %>), T_MOVED));
 %   end
 % end
-    if (leaf) ADD_PC(INSN_ATTR(width));
 #   undef INSN_ATTR
 
     /* ### Leave the instruction. ### */

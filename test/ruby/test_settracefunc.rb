@@ -2745,8 +2745,8 @@ CODE
       rescue SyntaxError
       end
     }
-    call_line = lines.shift
-    raise_line = lines.shift
+    _call_line = lines.shift
+    _raise_line = lines.shift
     assert_equal [], lines
   end
 

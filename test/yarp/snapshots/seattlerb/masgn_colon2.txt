@@ -5,7 +5,7 @@ ProgramNode(0...14)(
        [LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
         ConstantPathWriteNode(3...7)(
           ConstantPathNode(3...7)(
-            CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 0, "b"),
+            CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 2, "b"),
             ConstantReadNode(6...7)(),
             (4...6)
           ),

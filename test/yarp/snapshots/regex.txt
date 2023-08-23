@@ -1,6 +1,6 @@
-ProgramNode(0...278)(
+ProgramNode(0...293)(
   [:foo],
-  StatementsNode(0...278)(
+  StatementsNode(0...293)(
     [CallNode(0...9)(
        nil,
        nil,
@@ -40,7 +40,7 @@ ProgramNode(0...278)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "bbb"
              )]
           ),
@@ -71,7 +71,7 @@ ProgramNode(0...278)(
                nil,
                nil,
                nil,
-               0,
+               2,
                "baz"
              )]
           ),
@@ -138,6 +138,29 @@ ProgramNode(0...278)(
        (277...278),
        "pound",
        0
+     ),
+     InterpolatedRegularExpressionNode(280...293)(
+       (280...281),
+       [StringNode(281...285)(nil, (281...285), nil, "aaa "),
+        EmbeddedStatementsNode(285...291)(
+          (285...287),
+          StatementsNode(287...290)(
+            [CallNode(287...290)(
+               nil,
+               nil,
+               (287...290),
+               nil,
+               nil,
+               nil,
+               nil,
+               2,
+               "bbb"
+             )]
+          ),
+          (290...291)
+        )],
+       (291...293),
+       128
      )]
   )
 )

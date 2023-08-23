@@ -15,9 +15,7 @@
 //       int value;
 //     } yp_int_node_t;
 //
-//     yp_list_t list;
-//     yp_list_init(&list);
-//
+//     yp_list_t list = YP_LIST_EMPTY;
 //     yp_int_node_t *node = malloc(sizeof(yp_int_node_t));
 //     node->value = 5;
 //
@@ -45,15 +43,20 @@ typedef struct yp_list_node {
 // This represents the overall linked list. It keeps a pointer to the head and
 // tail so that iteration is easy and pushing new nodes is easy.
 typedef struct {
+    size_t size;
     yp_list_node_t *head;
     yp_list_node_t *tail;
 } yp_list_t;
 
-// Initializes a new list.
-YP_EXPORTED_FUNCTION void yp_list_init(yp_list_t *list);
+// This represents an empty list. It's used to initialize a stack-allocated list
+// as opposed to a method call.
+#define YP_LIST_EMPTY ((yp_list_t) { .size = 0, .head = NULL, .tail = NULL })
 
 // Returns true if the given list is empty.
 YP_EXPORTED_FUNCTION bool yp_list_empty_p(yp_list_t *list);
+
+// Returns the size of the list.
+YP_EXPORTED_FUNCTION size_t yp_list_size(yp_list_t *list);
 
 // Append a node to the given list.
 void yp_list_append(yp_list_t *list, yp_list_node_t *node);

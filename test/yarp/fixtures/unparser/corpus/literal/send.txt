@@ -81,3 +81,4 @@ self.foo=:bar
 x(**foo)
 foo&.!
 foo.~(b)
+a&.+(b)

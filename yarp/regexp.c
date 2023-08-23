@@ -6,16 +6,20 @@ typedef struct {
     const char *cursor;
     const char *end;
     yp_string_list_t *named_captures;
+    bool encoding_changed;
+    yp_encoding_t *encoding;
 } yp_regexp_parser_t;
 
 // This initializes a new parser with the given source.
 static void
-yp_regexp_parser_init(yp_regexp_parser_t *parser, const char *start, const char *end, yp_string_list_t *named_captures) {
+yp_regexp_parser_init(yp_regexp_parser_t *parser, const char *start, const char *end, yp_string_list_t *named_captures, bool encoding_changed, yp_encoding_t *encoding) {
     *parser = (yp_regexp_parser_t) {
         .start = start,
         .cursor = start,
         .end = end,
-        .named_captures = named_captures
+        .named_captures = named_captures,
+        .encoding_changed = encoding_changed,
+        .encoding = encoding
     };
 }
 
@@ -60,7 +64,8 @@ yp_regexp_char_find(yp_regexp_parser_t *parser, char value) {
     if (yp_regexp_char_is_eof(parser)) {
         return false;
     }
-    const char *end = (const char *) memchr(parser->cursor, value, (size_t) (parser->end - parser->cursor));
+
+    const char *end = (const char *) yp_memchr(parser->cursor, value, (size_t) (parser->end - parser->cursor), parser->encoding_changed, parser->encoding);
     if (end == NULL) {
         return false;
     }
@@ -281,7 +286,9 @@ typedef enum {
 #define YP_REGEXP_OPTION_STATE_SLOTS (YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM + 1)
 
 // This is the set of options that are configurable on the regular expression.
-typedef struct { unsigned char values[YP_REGEXP_OPTION_STATE_SLOTS]; } yp_regexp_options_t;
+typedef struct {
+    unsigned char values[YP_REGEXP_OPTION_STATE_SLOTS];
+} yp_regexp_options_t;
 
 // Initialize a new set of options to their default values.
 static void
@@ -300,7 +307,7 @@ yp_regexp_options_init(yp_regexp_options_t *options) {
 static bool
 yp_regexp_options_add(yp_regexp_options_t *options, unsigned char key) {
     if (key >= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key -= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM;
+        key = (unsigned char) (key - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM);
 
         switch (options->values[key]) {
             case YP_REGEXP_OPTION_STATE_INVALID:
@@ -323,7 +330,7 @@ yp_regexp_options_add(yp_regexp_options_t *options, unsigned char key) {
 static bool
 yp_regexp_options_remove(yp_regexp_options_t *options, unsigned char key) {
     if (key >= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= YP_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key -= YP_REGEXP_OPTION_STATE_SLOT_MINIMUM;
+        key = (unsigned char) (key - YP_REGEXP_OPTION_STATE_SLOT_MINIMUM);
 
         switch (options->values[key]) {
             case YP_REGEXP_OPTION_STATE_INVALID:
@@ -372,12 +379,38 @@ yp_regexp_parse_group(yp_regexp_parser_t *parser) {
 
         switch (*parser->cursor) {
             case '#': { // inline comments
-                bool found = yp_regexp_char_find(parser, ')');
-                // the close paren we found is escaped, we need to find another
-                while (found && (parser->start <= parser->cursor - 2) && (*(parser->cursor - 2) == '\\')) {
-                    found = yp_regexp_char_find(parser, ')');
+                if (parser->encoding_changed && parser->encoding->multibyte) {
+                    bool escaped = false;
+
+                    // Here we're going to take a slow path and iterate through
+                    // each multibyte character to find the close paren. We do
+                    // this because \ can be a trailing byte in some encodings.
+                    while (parser->cursor < parser->end) {
+                        if (!escaped && *parser->cursor == ')') {
+                            parser->cursor++;
+                            return true;
+                        }
+
+                        size_t width = parser->encoding->char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
+                        if (width == 0) return false;
+
+                        escaped = (width == 1) && (*parser->cursor == '\\');
+                        parser->cursor += width;
+                    }
+
+                    return false;
+                } else {
+                    // Here we can take the fast path and use memchr to find the
+                    // next ) because we are safe checking backward for \ since
+                    // it cannot be a trailing character.
+                    bool found = yp_regexp_char_find(parser, ')');
+
+                    while (found && (parser->start <= parser->cursor - 2) && (*(parser->cursor - 2) == '\\')) {
+                        found = yp_regexp_char_find(parser, ')');
+                    }
+
+                    return found;
                 }
-                return found;
             }
             case ':': // non-capturing group
             case '=': // positive lookahead
@@ -540,8 +573,8 @@ yp_regexp_parse_pattern(yp_regexp_parser_t *parser) {
 // Parse a regular expression and extract the names of all of the named capture
 // groups.
 YP_EXPORTED_FUNCTION bool
-yp_regexp_named_capture_group_names(const char *source, size_t size, yp_string_list_t *named_captures) {
+yp_regexp_named_capture_group_names(const char *source, size_t size, yp_string_list_t *named_captures, bool encoding_changed, yp_encoding_t *encoding) {
     yp_regexp_parser_t parser;
-    yp_regexp_parser_init(&parser, source, source + size, named_captures);
+    yp_regexp_parser_init(&parser, source, source + size, named_captures, encoding_changed, encoding);
     return yp_regexp_parse_pattern(&parser);
 }

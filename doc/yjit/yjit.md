@@ -166,7 +166,8 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
 - `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
-- `--yjit-stats`: produce statistics after the execution of a program (incurs a small run-time cost)
+- `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
+- `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost) 
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
 - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
@@ -205,9 +206,7 @@ You can also use the `--yjit-stats` command-line option to see which bytecodes c
 
 ### Other Statistics
 
-If you configure with --enable-yjit=dev or --enable-yjit=stats and run with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
-
-You will get a much more limited set of statistics with YJIT enabled but not in dev or stats configuration.
+If you run `ruby` with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
 
 ```rb
 $ RUBYOPT="--yjit --yjit-stats" irb
@@ -241,7 +240,7 @@ Counters starting with "exit_" show reasons for YJIT code taking a side exit (re
 
 Performance counter names are not guaranteed to remain the same between Ruby versions. If you're curious what one does, it's usually best to search the source code for it &mdash; but it may change in a later Ruby version.
 
-Some of these counters are available in non-stats configuration, but most counters are only in stats or dev configuration. The printed text after a --yjit-stats run includes other information that may be named differently than the information in runtime_stats.
+The printed text after a --yjit-stats run includes other information that may be named differently than the information in runtime_stats.
 
 ## Contributing
 

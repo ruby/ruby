@@ -3637,7 +3637,7 @@ tmcmp(struct tm *a, struct tm *b)
  *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
  *     # => 0000-01-01 00:00:00 UTC
  *
- * - \String integers:
+ * - String integers:
  *
  *     a = %w[0 1 1 0 0 0 0 0]
  *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
@@ -4410,7 +4410,7 @@ time_plus(VALUE time1, VALUE time2)
  *
  *  When +other_time+ is given,
  *  returns a Float whose value is the difference
- *  of the numeric values of +self+ and +other_time+:
+ *  of the numeric values of +self+ and +other_time+ in seconds:
  *
  *    t - t # => 0.0
  *

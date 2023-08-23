@@ -1,5 +1,6 @@
 require "forwardable"
-require "lrama/report"
+require "lrama/report/duration"
+require "lrama/states/item"
 
 module Lrama
   # States is passed to a template file
@@ -11,46 +12,7 @@ module Lrama
     include Lrama::Report::Duration
 
     def_delegators "@grammar", :symbols, :terms, :nterms, :rules,
-      :accept_symbol, :eof_symbol, :find_symbol_by_s_value!
-
-    # TODO: Validate position is not over rule rhs
-    Item = Struct.new(:rule, :position, keyword_init: true) do
-      # Optimization for States#setup_state
-      def hash
-        [rule.id, position].hash
-      end
-
-      def rule_id
-        rule.id
-      end
-
-      def next_sym
-        rule.rhs[position]
-      end
-
-      def end_of_rule?
-        rule.rhs.count == position
-      end
-
-      def new_by_next_position
-        Item.new(rule: rule, position: position + 1)
-      end
-
-      def previous_sym
-        rule.rhs[position - 1]
-      end
-
-      def display_name
-        r = rule.rhs.map(&:display_name).insert(position, "•").join(" ")
-        "#{r}  (rule #{rule.id})"
-      end
-
-      # Right after position
-      def display_rest
-        r = rule.rhs[position..-1].map(&:display_name).join(" ")
-        ". #{r}  (rule #{rule.id})"
-      end
-    end
+      :accept_symbol, :eof_symbol, :undef_symbol, :find_symbol_by_s_value!
 
     attr_reader :states, :reads_relation, :includes_relation, :lookback_relation
 
@@ -140,43 +102,27 @@ module Lrama
     end
 
     def direct_read_sets
-      h = {}
-
-      @direct_read_sets.each do |k, v|
-        h[k] = bitmap_to_terms(v)
+      @direct_read_sets.transform_values do |v|
+        bitmap_to_terms(v)
       end
-
-      return h
     end
 
     def read_sets
-      h = {}
-
-      @read_sets.each do |k, v|
-        h[k] = bitmap_to_terms(v)
+      @read_sets.transform_values do |v|
+        bitmap_to_terms(v)
       end
-
-      return h
     end
 
     def follow_sets
-      h = {}
-
-      @follow_sets.each do |k, v|
-        h[k] = bitmap_to_terms(v)
+      @follow_sets.transform_values do |v|
+        bitmap_to_terms(v)
       end
-
-      return h
     end
 
     def la
-      h = {}
-
-      @la.each do |k, v|
-        h[k] = bitmap_to_terms(v)
+      @la.transform_values do |v|
+        bitmap_to_terms(v)
       end
-
-      return h
     end
 
     private
@@ -490,7 +436,7 @@ module Lrama
 
             # Can resolve only when both have prec
             unless shift_prec && reduce_prec
-              state.conflicts << State::Conflict.new(symbols: [sym], reduce: reduce, type: :shift_reduce)
+              state.conflicts << State::ShiftReduceConflict.new(symbols: [sym], shift: shift, reduce: reduce)
               next
             end
 
@@ -539,16 +485,21 @@ module Lrama
 
     def compute_reduce_reduce_conflicts
       states.each do |state|
-        a = []
+        count = state.reduces.count
 
-        state.reduces.each do |reduce|
-          next if reduce.look_ahead.nil?
+        for i in 0...count do
+          reduce1 = state.reduces[i]
+          next if reduce1.look_ahead.nil?
 
-          intersection = a & reduce.look_ahead
-          a += reduce.look_ahead
+          for j in (i+1)...count do
+            reduce2 = state.reduces[j]
+            next if reduce2.look_ahead.nil?
 
-          if !intersection.empty?
-            state.conflicts << State::Conflict.new(symbols: intersection.dup, reduce: reduce, type: :reduce_reduce)
+            intersection = reduce1.look_ahead & reduce2.look_ahead
+
+            if !intersection.empty?
+              state.conflicts << State::ReduceReduceConflict.new(symbols: intersection, reduce1: reduce1, reduce2: reduce2)
+            end
           end
         end
       end

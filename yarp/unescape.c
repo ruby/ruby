@@ -1,4 +1,4 @@
-#include "yarp/unescape.h"
+#include "yarp.h"
 
 /******************************************************************************/
 /* Character checks                                                           */
@@ -64,19 +64,19 @@ unescape_octal(const char *backslash, unsigned char *value) {
         return 2;
     }
 
-    *value = (*value << 3) | (backslash[2] - '0');
+    *value = (unsigned char) ((*value << 3) | (backslash[2] - '0'));
     if (!yp_char_is_octal_digit(backslash[3])) {
         return 3;
     }
 
-    *value = (*value << 3) | (backslash[3] - '0');
+    *value = (unsigned char) ((*value << 3) | (backslash[3] - '0'));
     return 4;
 }
 
 // Convert a hexadecimal digit into its equivalent value.
 static inline unsigned char
 unescape_hexadecimal_digit(const char value) {
-    return (value <= '9') ? (unsigned char) (value - '0') : (value & 0x7) + 9;
+    return (unsigned char) ((value <= '9') ? (value - '0') : (value & 0x7) + 9);
 }
 
 // Scan the 1-2 digits of hexadecimal into the value. Returns the number of
@@ -88,7 +88,7 @@ unescape_hexadecimal(const char *backslash, unsigned char *value) {
         return 3;
     }
 
-    *value = (*value << 4) | unescape_hexadecimal_digit(backslash[3]);
+    *value = (unsigned char) ((*value << 4) | unescape_hexadecimal_digit(backslash[3]));
     return 4;
 }
 
@@ -113,22 +113,22 @@ unescape_unicode_write(char *dest, uint32_t value, const char *start, const char
 
     if (value <= 0x7F) {
         // 0xxxxxxx
-        bytes[0] = value;
+        bytes[0] = (unsigned char) value;
         return 1;
     }
 
     if (value <= 0x7FF) {
         // 110xxxxx 10xxxxxx
-        bytes[0] = 0xC0 | (value >> 6);
-        bytes[1] = 0x80 | (value & 0x3F);
+        bytes[0] = (unsigned char) (0xC0 | (value >> 6));
+        bytes[1] = (unsigned char) (0x80 | (value & 0x3F));
         return 2;
     }
 
     if (value <= 0xFFFF) {
         // 1110xxxx 10xxxxxx 10xxxxxx
-        bytes[0] = 0xE0 | (value >> 12);
-        bytes[1] = 0x80 | ((value >> 6) & 0x3F);
-        bytes[2] = 0x80 | (value & 0x3F);
+        bytes[0] = (unsigned char) (0xE0 | (value >> 12));
+        bytes[1] = (unsigned char) (0x80 | ((value >> 6) & 0x3F));
+        bytes[2] = (unsigned char) (0x80 | (value & 0x3F));
         return 3;
     }
 
@@ -136,10 +136,10 @@ unescape_unicode_write(char *dest, uint32_t value, const char *start, const char
     // the input is invalid.
     if (value <= 0x10FFFF) {
         // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        bytes[0] = 0xF0 | (value >> 18);
-        bytes[1] = 0x80 | ((value >> 12) & 0x3F);
-        bytes[2] = 0x80 | ((value >> 6) & 0x3F);
-        bytes[3] = 0x80 | (value & 0x3F);
+        bytes[0] = (unsigned char) (0xF0 | (value >> 18));
+        bytes[1] = (unsigned char) (0x80 | ((value >> 12) & 0x3F));
+        bytes[2] = (unsigned char) (0x80 | ((value >> 6) & 0x3F));
+        bytes[3] = (unsigned char) (0x80 | (value & 0x3F));
         return 4;
     }
 
@@ -180,22 +180,6 @@ unescape_char(const unsigned char value, const unsigned char flags) {
 static const char *
 unescape(char *dest, size_t *dest_length, const char *backslash, const char *end, yp_list_t *error_list, const unsigned char flags, bool write_to_str) {
     switch (backslash[1]) {
-        // \a \b \e \f \n \r \s \t \v
-        case '\r': {
-            // if this is an \r\n we need to escape both
-            if (write_to_str) {
-                dest[(*dest_length)++] = (char) unescape_char(unescape_chars[(unsigned char) backslash[1]], flags);
-            }
-
-            if (backslash + 2 < end && backslash[2] == '\n') {
-                if (write_to_str) {
-                    dest[(*dest_length)++] = (char) unescape_char(unescape_chars[(unsigned char) backslash[2]], flags);
-                }
-                return backslash + 3;
-            }
-
-            return backslash + 2;
-        }
         case 'a':
         case 'b':
         case 'e':
@@ -398,14 +382,23 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
             yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Invalid meta escape sequence");
             return backslash + 3;
         }
-        // In this case we're escaping something that doesn't need escaping.
-        default:
-            {
-                if (write_to_str) {
-                    dest[(*dest_length)++] = backslash[1];
-                }
-                return backslash + 2;
+        // \n
+        case '\n':
+            return backslash + 2;
+        // \r
+        case '\r':
+            if (backslash + 2 < end && backslash[2] == '\n') {
+                return backslash + 3;
             }
+
+            /* fallthrough */
+        // In this case we're escaping something that doesn't need escaping.
+        default: {
+            if (write_to_str) {
+                dest[(*dest_length)++] = backslash[1];
+            }
+            return backslash + 2;
+        }
     }
 }
 
@@ -438,45 +431,41 @@ unescape(char *dest, size_t *dest_length, const char *backslash, const char *end
 // \c? or \C-?    delete, ASCII 7Fh (DEL)
 //
 YP_EXPORTED_FUNCTION void
-yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t length, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list) {
+yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unescape_type_t unescape_type, yp_list_t *error_list) {
     if (unescape_type == YP_UNESCAPE_NONE) {
         // If we're not unescaping then we can reference the source directly.
-        yp_string_shared_init(string, value, value + length);
         return;
     }
 
-    const char *backslash = yp_memchr(parser, value, '\\', length);
+    const char *backslash = yp_memchr(string->source, '\\', string->length, parser->encoding_changed, &parser->encoding);
 
     if (backslash == NULL) {
         // Here there are no escapes, so we can reference the source directly.
-        yp_string_shared_init(string, value, value + length);
         return;
     }
 
     // Here we have found an escape character, so we need to handle all escapes
     // within the string.
-    char *allocated = malloc(length);
+    char *allocated = malloc(string->length);
     if (allocated == NULL) {
-        yp_diagnostic_list_append(error_list, value, value + length, "Failed to allocate memory for unescaping.");
+        yp_diagnostic_list_append(error_list, string->source, string->source + string->length, "Failed to allocate memory for unescaping.");
         return;
     }
 
-    yp_string_owned_init(string, allocated, length);
-
     // This is the memory address where we're putting the unescaped string.
-    char *dest = string->as.owned.source;
+    char *dest = allocated;
     size_t dest_length = 0;
 
     // This is the current position in the source string that we're looking at.
     // It's going to move along behind the backslash so that we can copy each
     // segment of the string that doesn't contain an escape.
-    const char *cursor = value;
-    const char *end = value + length;
+    const char *cursor = string->source;
+    const char *end = string->source + string->length;
 
     // For each escape found in the source string, we will handle it and update
     // the moving cursor->backslash window.
     while (backslash != NULL && backslash + 1 < end) {
-        assert(dest_length < length);
+        assert(dest_length < string->length);
 
         // This is the size of the segment of the string from the previous escape
         // or the start of the string to the current escape.
@@ -509,7 +498,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t len
         }
 
         if (end > cursor) {
-            backslash = yp_memchr(parser, cursor, '\\', (size_t) (end - cursor));
+            backslash = yp_memchr(cursor, '\\', (size_t) (end - cursor), parser->encoding_changed, &parser->encoding);
         } else {
             backslash = NULL;
         }
@@ -522,10 +511,32 @@ yp_unescape_manipulate_string(yp_parser_t *parser, const char *value, size_t len
         cursor = end;
     }
 
+    // If the string was already allocated, then we need to free that memory
+    // here. That's because we're about to override it with the escaped string.
+    yp_string_free(string);
+
     // We also need to update the length at the end. This is because every escape
     // reduces the length of the final string, and we don't want garbage at the
     // end.
-    string->as.owned.length = dest_length + ((size_t) (end - cursor));
+    yp_string_owned_init(string, allocated, dest_length + ((size_t) (end - cursor)));
+}
+
+YP_EXPORTED_FUNCTION bool
+yp_unescape_string(const char *start, size_t length, yp_unescape_type_t unescape_type, yp_string_t *result) {
+    bool success;
+
+    yp_parser_t parser;
+    yp_parser_init(&parser, start, length, "");
+
+    yp_list_t error_list = YP_LIST_EMPTY;
+    yp_string_shared_init(result, start, start + length);
+    yp_unescape_manipulate_string(&parser, result, unescape_type, &error_list);
+    success = yp_list_empty_p(&error_list);
+
+    yp_list_free(&error_list);
+    yp_parser_free(&parser);
+
+    return success;
 }
 
 // This function is similar to yp_unescape_manipulate_string, except it doesn't

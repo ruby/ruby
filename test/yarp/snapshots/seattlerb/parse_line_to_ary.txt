@@ -5,10 +5,10 @@ ProgramNode(0...10)(
        [LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
         LocalVariableWriteNode(3...4)(:b, 0, nil, (3...4), nil)],
        (5...6),
-       CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 0, "c"),
+       CallNode(7...8)(nil, nil, (7...8), nil, nil, nil, nil, 2, "c"),
        nil,
        nil
      ),
-     CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 0, "d")]
+     CallNode(9...10)(nil, nil, (9...10), nil, nil, nil, nil, 2, "d")]
   )
 )

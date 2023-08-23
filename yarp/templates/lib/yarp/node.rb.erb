@@ -1,0 +1,122 @@
+module YARP
+  <%- nodes.each do |node| -%>
+  <%= "#{node.comment.split("\n").map { |line| line.empty? ? "#" : "# #{line}" }.join("\n  ")}\n  " if node.comment %>class <%= node.name -%> < Node
+    <%- node.params.each do |param| -%>
+    # attr_reader <%= param.name %>: <%= param.rbs_class %>
+    attr_reader :<%= param.name %>
+
+    <%- end -%>
+    # def initialize: (<%= (node.params.map { |param| "#{param.name}: #{param.rbs_class}" } + ["location: Location"]).join(", ") %>) -> void
+    def initialize(<%= (node.params.map(&:name) + ["location"]).join(", ") %>)
+      <%- node.params.each do |param| -%>
+      @<%= param.name %> = <%= param.name %>
+      <%- end -%>
+      @location = location
+    end
+
+    # def accept: (visitor: Visitor) -> void
+    def accept(visitor)
+      visitor.visit_<%= node.human %>(self)
+    end
+    <%- if node.newline == false -%>
+
+    def set_newline_flag(newline_marked)
+      # Never mark <%= node.name %> with a newline flag, mark children instead
+    end
+    <%- elsif node.newline.is_a?(String) -%>
+
+    def set_newline_flag(newline_marked)
+      <%- param = node.params.find { |p| p.name == node.newline } or raise node.newline -%>
+      <%- case param -%>
+      <%- when SingleNodeParam -%>
+      <%= param.name %>.set_newline_flag(newline_marked)
+      <%- when NodeListParam -%>
+      first = <%= param.name %>.first
+      first.set_newline_flag(newline_marked) if first
+      <%- else raise param.class.name -%>
+      <%- end -%>
+    end
+    <%- end -%>
+
+    # def child_nodes: () -> Array[nil | Node]
+    def child_nodes
+      [<%= node.params.map { |param|
+        case param
+        when SingleNodeParam then param.name
+        when NodeListParam then "*#{param.name}"
+        end
+      }.compact.join(", ") %>]
+    end
+
+    # def deconstruct: () -> Array[nil | Node]
+    alias deconstruct child_nodes
+
+    # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
+    def deconstruct_keys(keys)
+      { <%= (node.params.map { |param| "#{param.name}: #{param.name}" } + ["location: location"]).join(", ") %> }
+    end
+    <%- node.params.each do |param| -%>
+    <%- case param -%>
+    <%- when LocationParam -%>
+    <%- raise unless param.name.end_with?("_loc") -%>
+    <%- next if node.params.any? { |other| other.name == param.name.delete_suffix("_loc") } -%>
+
+    # def <%= param.name.delete_suffix("_loc") %>: () -> String
+    def <%= param.name.delete_suffix("_loc") %>
+      <%= param.name %>.slice
+    end
+    <%- when OptionalLocationParam -%>
+    <%- raise unless param.name.end_with?("_loc") -%>
+    <%- next if node.params.any? { |other| other.name == param.name.delete_suffix("_loc") } -%>
+
+    # def <%= param.name.delete_suffix("_loc") %>: () -> String?
+    def <%= param.name.delete_suffix("_loc") %>
+      <%= param.name %>&.slice
+    end
+    <%- when FlagsParam -%>
+    <%- flags.find { |flag| flag.name == param.kind }.tap { |flag| raise "Expected to find #{param.kind}" unless flag }.values.each do |value| -%>
+
+    # def <%= value.name.downcase %>?: () -> bool
+    def <%= value.name.downcase %>?
+      <%= param.name %>.anybits?(<%= param.kind %>::<%= value.name %>)
+    end
+    <%- end -%>
+    <%- end -%>
+    <%- end -%>
+  end
+
+  <%- end -%>
+  <%- flags.each do |flag| -%>
+  module <%= flag.name %>
+    <%- flag.values.each_with_index do |value, index| -%>
+    # <%= value.comment %>
+    <%= value.name %> = 1 << <%= index %>
+<%= "\n" if value != flag.values.last -%>
+    <%- end -%>
+  end
+
+  <%- end -%>
+  class Visitor < BasicVisitor
+    <%- nodes.each do |node| -%>
+    # Visit a <%= node.name %> node
+    alias visit_<%= node.human %> visit_child_nodes
+<%= "\n" if node != nodes.last -%>
+    <%- end -%>
+  end
+
+  module DSL
+    private
+
+    # Create a new Location object
+    def Location(source = nil, start_offset = 0, length = 0)
+      Location.new(source, start_offset, length)
+    end
+    <%- nodes.each do |node| -%>
+
+    # Create a new <%= node.name %> node
+    def <%= node.name %>(<%= (node.params.map(&:name) + ["location = Location()"]).join(", ") %>)
+      <%= node.name %>.new(<%= (node.params.map(&:name) + ["location"]).join(", ") %>)
+    end
+    <%- end -%>
+  end
+end

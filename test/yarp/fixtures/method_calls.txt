@@ -16,6 +16,8 @@ a.(1, 2, 3)
 
 a::b
 
+a::b c
+
 foo.bar = 1
 
 a?
@@ -80,6 +82,8 @@ foo(
 b: :c,
 )
 
+foo &:block
+
 foo a: true, b: false, &:block
 
 some_func 1, kwarg: 2
@@ -137,3 +141,7 @@ foo :a,
 A {} + A {}
 
 lst << A {}
+
+"#{ join (" ") }"
+
+"#{(v)}"

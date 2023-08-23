@@ -283,6 +283,7 @@ fn main() {
         .blocklist_type("rb_control_frame_struct")
         .opaque_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
+        .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")
         .allowlist_type("vm_special_object_type")
         .allowlist_var("VM_ENV_DATA_INDEX_SPECVAL")
@@ -290,6 +291,9 @@ fn main() {
         .allowlist_var("VM_ENV_DATA_SIZE")
         .allowlist_function("rb_iseq_path")
         .allowlist_type("rb_builtin_attr")
+        .allowlist_type("ruby_tag_type")
+        .allowlist_type("ruby_vm_throw_flags")
+        .allowlist_type("vm_check_match_type")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
@@ -326,6 +330,7 @@ fn main() {
         .allowlist_function("rb_yjit_assert_holding_vm_lock")
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
+        .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
@@ -443,6 +448,7 @@ fn main() {
         .allowlist_function("rb_yjit_array_len")
         .allowlist_function("rb_obj_class")
         .allowlist_function("rb_obj_is_proc")
+        .allowlist_function("rb_vm_base_ptr")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

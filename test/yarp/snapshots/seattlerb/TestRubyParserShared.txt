@@ -1,0 +1,216 @@
+ProgramNode(0...689)(
+  [],
+  StatementsNode(0...689)(
+    [ArrayNode(0...7)([], (0...3), (6...7)),
+     ArrayNode(9...26)(
+       [SymbolNode(13...18)(nil, (13...18), nil, "line2"),
+        SymbolNode(19...24)(nil, (19...24), nil, "line3")],
+       (9...12),
+       (25...26)
+     ),
+     ArrayNode(28...35)([], (28...31), (34...35)),
+     ArrayNode(37...54)(
+       [StringNode(41...46)(nil, (41...46), nil, "line2"),
+        StringNode(47...52)(nil, (47...52), nil, "line3")],
+       (37...40),
+       (53...54)
+     ),
+     ArrayNode(56...63)([], (56...59), (62...63)),
+     ArrayNode(65...82)(
+       [SymbolNode(69...74)(nil, (69...74), nil, "line2"),
+        SymbolNode(75...80)(nil, (75...80), nil, "line3")],
+       (65...68),
+       (81...82)
+     ),
+     RegularExpressionNode(84...91)(
+       (84...87),
+       (87...90),
+       (90...91),
+       "\n" + "\n" + "\n",
+       0
+     ),
+     ArrayNode(93...100)([], (93...96), (99...100)),
+     ArrayNode(102...119)(
+       [StringNode(106...111)(nil, (106...111), nil, "line2"),
+        StringNode(112...117)(nil, (112...117), nil, "line3")],
+       (102...105),
+       (118...119)
+     ),
+     ArrayNode(121...139)(
+       [SymbolNode(123...129)((123...124), (124...129), nil, "line2"),
+        SymbolNode(131...137)((131...132), (132...137), nil, "line3")],
+       (121...122),
+       (138...139)
+     ),
+     ClassNode(141...269)(
+       [],
+       (141...146),
+       ConstantReadNode(147...148)(),
+       nil,
+       nil,
+       StatementsNode(168...246)(
+         [DefNode(168...246)(
+            (177...178),
+            SelfNode(172...176)(),
+            ParametersNode(179...200)(
+              [RequiredParameterNode(179...180)(:a),
+               RequiredParameterNode(199...200)(:b)],
+              [],
+              [],
+              nil,
+              [],
+              nil,
+              nil
+            ),
+            StatementsNode(220...225)(
+              [CallNode(220...225)(
+                 LocalVariableReadNode(220...221)(:a, 0),
+                 nil,
+                 (222...223),
+                 nil,
+                 ArgumentsNode(224...225)(
+                   [LocalVariableReadNode(224...225)(:b, 0)]
+                 ),
+                 nil,
+                 nil,
+                 0,
+                 "+"
+               )]
+            ),
+            [:a, :b],
+            (168...171),
+            (176...177),
+            (178...179),
+            (200...201),
+            nil,
+            (243...246)
+          )]
+       ),
+       (266...269)
+     ),
+     ClassNode(293...376)(
+       [],
+       (293...298),
+       ConstantReadNode(299...300)(),
+       nil,
+       nil,
+       StatementsNode(315...358)(
+         [ClassNode(315...358)(
+            [],
+            (315...320),
+            ConstantReadNode(321...322)(),
+            nil,
+            nil,
+            StatementsNode(337...343)(
+              [ConstantWriteNode(337...343)(
+                 (337...338),
+                 IntegerNode(341...343)(),
+                 (339...340)
+               )]
+            ),
+            (355...358)
+          )]
+       ),
+       (373...376)
+     ),
+     ClassNode(395...498)(
+       [],
+       (395...400),
+       ConstantReadNode(401...402)(),
+       nil,
+       nil,
+       StatementsNode(417...480)(
+         [DefNode(417...480)(
+            (421...422),
+            nil,
+            ParametersNode(423...444)(
+              [RequiredParameterNode(423...424)(:a),
+               RequiredParameterNode(443...444)(:b)],
+              [],
+              [],
+              nil,
+              [],
+              nil,
+              nil
+            ),
+            StatementsNode(459...464)(
+              [CallNode(459...464)(
+                 LocalVariableReadNode(459...460)(:a, 0),
+                 nil,
+                 (461...462),
+                 nil,
+                 ArgumentsNode(463...464)(
+                   [LocalVariableReadNode(463...464)(:b, 0)]
+                 ),
+                 nil,
+                 nil,
+                 0,
+                 "+"
+               )]
+            ),
+            [:a, :b],
+            (417...420),
+            nil,
+            (422...423),
+            (444...445),
+            nil,
+            (477...480)
+          )]
+       ),
+       (495...498)
+     ),
+     ModuleNode(517...565)(
+       [],
+       (517...523),
+       ConstantReadNode(524...525)(),
+       StatementsNode(528...561)(
+         [ConstantWriteNode(528...561)(
+            (528...529),
+            ArrayNode(532...561)(
+              [SymbolNode(538...544)((538...539), (539...544), nil, "line3"),
+               SymbolNode(550...556)((550...551), (551...556), nil, "line4")],
+              (532...533),
+              (560...561)
+            ),
+            (530...531)
+          )]
+       ),
+       (562...565)
+     ),
+     ModuleNode(568...651)(
+       [],
+       (568...574),
+       ConstantReadNode(575...576)(),
+       StatementsNode(590...633)(
+         [ModuleNode(590...633)(
+            [],
+            (590...596),
+            ConstantReadNode(597...598)(),
+            StatementsNode(612...618)(
+              [ConstantWriteNode(612...618)(
+                 (612...613),
+                 IntegerNode(616...618)(),
+                 (614...615)
+               )]
+            ),
+            (630...633)
+          )]
+       ),
+       (648...651)
+     ),
+     CallNode(670...689)(
+       nil,
+       nil,
+       (670...671),
+       (671...672),
+       ArgumentsNode(673...687)(
+         [SymbolNode(673...679)((673...674), (674...679), nil, "line2"),
+          SymbolNode(681...687)((681...682), (682...687), nil, "line3")]
+       ),
+       (688...689),
+       nil,
+       0,
+       "x"
+     )]
+  )
+)

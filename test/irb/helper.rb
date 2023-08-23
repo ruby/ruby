@@ -22,7 +22,6 @@ module TestIRB
       attr_reader :list, :line_no
 
       def initialize(list = [])
-        super("test")
         @line_no = 0
         @list = list
       end
@@ -79,13 +78,26 @@ module TestIRB
     end
   end
 
-  class IntegrationTestCase
+  class IntegrationTestCase < TestCase
     LIB = File.expand_path("../../lib", __dir__)
     TIMEOUT_SEC = 3
 
     def setup
+      @envs = {}
+      @tmpfiles = []
+
       unless defined?(PTY)
         omit "Integration tests require PTY."
+      end
+
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+    end
+
+    def teardown
+      @tmpfiles.each do |tmpfile|
+        File.unlink(tmpfile)
       end
     end
 
@@ -98,7 +110,7 @@ module TestIRB
 
       yield
 
-      PTY.spawn(integration_envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
+      PTY.spawn(@envs.merge("TERM" => "dumb"), *cmd) do |read, write, pid|
         Timeout.timeout(TIMEOUT_SEC) do
           while line = safe_gets(read)
             lines << line
@@ -128,7 +140,6 @@ module TestIRB
       MSG
       assert_block(message) { false }
     ensure
-      File.unlink(@ruby_file) if @ruby_file
       FileUtils.remove_entry tmp_dir
     end
 
@@ -175,12 +186,17 @@ module TestIRB
 
     def write_ruby(program)
       @ruby_file = Tempfile.create(%w{irb- .rb})
+      @tmpfiles << @ruby_file
       @ruby_file.write(program)
       @ruby_file.close
     end
 
-    def integration_envs
-      {}
+    def write_rc(content)
+      @irbrc = Tempfile.new('irbrc')
+      @tmpfiles << @irbrc
+      @irbrc.write(content)
+      @irbrc.close
+      @envs['IRBRC'] = @irbrc.path
     end
   end
 end

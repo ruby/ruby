@@ -11,7 +11,7 @@ ProgramNode(2...30)(
           (5...6)
         )],
        (8...9),
-       CallNode(10...13)(nil, nil, (10...13), nil, nil, nil, nil, 0, "foo"),
+       CallNode(10...13)(nil, nil, (10...13), nil, nil, nil, nil, 2, "foo"),
        (0...1),
        (6...7)
      ),
@@ -26,7 +26,7 @@ ProgramNode(2...30)(
           (23...24)
         )],
        (25...26),
-       CallNode(27...30)(nil, nil, (27...30), nil, nil, nil, nil, 0, "foo"),
+       CallNode(27...30)(nil, nil, (27...30), nil, nil, nil, nil, 2, "foo"),
        nil,
        nil
      )]

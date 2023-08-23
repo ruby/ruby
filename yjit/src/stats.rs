@@ -268,11 +268,32 @@ make_counters! {
     send_send_getter,
     send_send_builtin,
     send_iseq_has_rest_and_captured,
-    send_iseq_has_rest_and_send,
+    send_iseq_has_rest_and_splat,
     send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_rest_opt_and_block,
     send_bmethod_ractor,
     send_bmethod_block_arg,
+
+    invokesuper_defined_class_mismatch,
+    invokesuper_kw_splat,
+    invokesuper_kwarg,
+    invokesuper_megamorphic,
+    invokesuper_no_cme,
+    invokesuper_no_me,
+    invokesuper_not_iseq_or_cfunc,
+    invokesuper_refinement,
+
+    invokeblock_megamorphic,
+    invokeblock_none,
+    invokeblock_iseq_arg0_optional,
+    invokeblock_iseq_arg0_has_kw,
+    invokeblock_iseq_arg0_args_splat,
+    invokeblock_iseq_arg0_not_array,
+    invokeblock_iseq_arg0_wrong_len,
+    invokeblock_ifunc_args_splat,
+    invokeblock_ifunc_kw_splat,
+    invokeblock_proc,
+    invokeblock_symbol,
 
     // Method calls that exit to the interpreter
     guard_send_klass_megamorphic,
@@ -290,25 +311,14 @@ make_counters! {
     guard_send_interrupted,
     guard_send_not_fixnums,
     guard_send_not_string,
-    guard_send_mid_mismatch,
+    guard_send_respond_to_mid_mismatch,
+
+    guard_invokesuper_me_changed,
+
+    guard_invokeblock_tag_changed,
+    guard_invokeblock_iseq_block_changed,
 
     traced_cfunc_return,
-
-    invokesuper_me_changed,
-    invokesuper_block,
-
-    invokeblock_none,
-    invokeblock_iseq_arg0_optional,
-    invokeblock_iseq_arg0_has_kw,
-    invokeblock_iseq_arg0_args_splat,
-    invokeblock_iseq_arg0_not_array,
-    invokeblock_iseq_arg0_wrong_len,
-    invokeblock_iseq_block_changed,
-    invokeblock_tag_changed,
-    invokeblock_ifunc_args_splat,
-    invokeblock_ifunc_kw_splat,
-    invokeblock_proc,
-    invokeblock_symbol,
 
     leave_se_interrupt,
     leave_interp_return,
@@ -333,11 +343,12 @@ make_counters! {
 
     opt_plus_overflow,
     opt_minus_overflow,
+    opt_mult_overflow,
 
     opt_mod_zero,
     opt_div_zero,
 
-    lshift_range,
+    lshift_amt_changed,
     lshift_overflow,
 
     opt_aref_argc_not_one,
@@ -353,7 +364,9 @@ make_counters! {
 
     opt_case_dispatch_megamorphic,
 
-    opt_getinlinecache_miss,
+    opt_getconstant_path_ic_miss,
+    opt_getconstant_path_no_ic_entry,
+    opt_getconstant_path_multi_ractor,
 
     expandarray_splat,
     expandarray_postarg,
@@ -423,6 +436,11 @@ make_counters! {
     num_getivar_megamorphic,
     num_setivar_megamorphic,
 
+    num_throw,
+    num_throw_break,
+    num_throw_retry,
+    num_throw_return,
+
     iseq_stack_too_large,
     iseq_too_long,
 
@@ -439,6 +457,17 @@ make_counters! {
 pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
     if get_option!(gen_stats) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
+}
+
+/// Primitive called in yjit.rb
+/// Check if stats generation should print at exit
+#[no_mangle]
+pub extern "C" fn rb_yjit_print_stats_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if get_option!(print_stats) {
         return Qtrue;
     } else {
         return Qfalse;

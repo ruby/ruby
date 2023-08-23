@@ -1302,10 +1302,20 @@ class Gem::Specification < Gem::BasicSpecification
     Gem.load_yaml
 
     yaml_set = false
+    retry_count = 0
 
     array = begin
       Marshal.load str
     rescue ArgumentError => e
+      # Avoid an infinite retry loop when the argument error has nothing to do
+      # with the classes not being defined.
+      # 1 retry each allowed in case all 3 of
+      # - YAML
+      # - YAML::Syck::DefaultKey
+      # - YAML::PrivateType
+      # need to be defined
+      raise if retry_count >= 3
+
       #
       # Some very old marshaled specs included references to `YAML::PrivateType`
       # and `YAML::Syck::DefaultKey` constants due to bugs in the old emitter
@@ -1323,11 +1333,12 @@ class Gem::Specification < Gem::BasicSpecification
       if message.include?("YAML::Syck::")
         YAML.const_set "Syck", YAML unless YAML.const_defined?(:Syck)
 
-        YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey")
-      elsif message.include?("YAML::PrivateType")
+        YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey") && !YAML::Syck.const_defined?(:DefaultKey)
+      elsif message.include?("YAML::PrivateType") && !YAML.const_defined?(:PrivateType)
         YAML.const_set "PrivateType", Class.new
       end
 
+      retry_count += 1
       retry
     ensure
       Object.__send__(:remove_const, "YAML") if yaml_set

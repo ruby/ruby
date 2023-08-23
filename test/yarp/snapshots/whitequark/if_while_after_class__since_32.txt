@@ -32,7 +32,8 @@ ProgramNode(0...178)(
                 ArgumentsNode(64...70)([ConstantReadNode(64...70)()]),
                 (58...63)
               )]
-           )
+           ),
+           0
          ),
          ConstantReadNode(76...82)(),
          (74...76)
@@ -71,7 +72,8 @@ ProgramNode(0...178)(
                 ArgumentsNode(155...161)([ConstantReadNode(155...161)()]),
                 (149...154)
               )]
-           )
+           ),
+           0
          ),
          ConstantReadNode(167...173)(),
          (165...167)

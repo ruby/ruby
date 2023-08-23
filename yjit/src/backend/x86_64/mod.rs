@@ -172,6 +172,7 @@ impl Assembler
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
+                Insn::Mul { left, right, out } |
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
@@ -290,7 +291,7 @@ impl Assembler
                     *out = asm.next_opnd_out(Opnd::match_num_bits(&[*truthy, *falsy]));
                     asm.push_insn(insn);
                 },
-                Insn::Mov { dest, src } => {
+                Insn::Mov { dest, src } | Insn::Store { dest, src } => {
                     match (&dest, &src) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             // We load opnd1 because for mov, opnd0 is the output
@@ -496,17 +497,22 @@ impl Assembler
                     cb.write_byte(0);
                 },
 
+                Insn::FrameSetup => {},
+                Insn::FrameTeardown => {},
+
                 Insn::Add { left, right, .. } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     add(cb, left.into(), opnd1);
                 },
 
-                Insn::FrameSetup => {},
-                Insn::FrameTeardown => {},
-
                 Insn::Sub { left, right, .. } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     sub(cb, left.into(), opnd1);
+                },
+
+                Insn::Mul { left, right, .. } => {
+                    let opnd1 = emit_64bit_immediate(cb, right);
+                    imul(cb, left.into(), opnd1);
                 },
 
                 Insn::And { left, right, .. } => {

@@ -20,7 +20,7 @@ ProgramNode(0...530)(
      BeginNode(36...49)(
        (36...41),
        StatementsNode(44...45)(
-         [CallNode(44...45)(nil, nil, (44...45), nil, nil, nil, nil, 0, "a")]
+         [CallNode(44...45)(nil, nil, (44...45), nil, nil, nil, nil, 2, "a")]
        ),
        nil,
        nil,
@@ -30,7 +30,7 @@ ProgramNode(0...530)(
      BeginNode(51...75)(
        (51...56),
        StatementsNode(59...60)(
-         [CallNode(59...60)(nil, nil, (59...60), nil, nil, nil, nil, 0, "a")]
+         [CallNode(59...60)(nil, nil, (59...60), nil, nil, nil, nil, 2, "a")]
        ),
        RescueNode(61...71)(
          (61...67),
@@ -38,7 +38,7 @@ ProgramNode(0...530)(
          nil,
          nil,
          StatementsNode(70...71)(
-           [CallNode(70...71)(nil, nil, (70...71), nil, nil, nil, nil, 0, "b")]
+           [CallNode(70...71)(nil, nil, (70...71), nil, nil, nil, nil, 2, "b")]
          ),
          nil
        ),
@@ -49,8 +49,8 @@ ProgramNode(0...530)(
      BeginNode(77...105)(
        (77...82),
        StatementsNode(85...90)(
-         [CallNode(85...86)(nil, nil, (85...86), nil, nil, nil, nil, 0, "a"),
-          CallNode(89...90)(nil, nil, (89...90), nil, nil, nil, nil, 0, "b")]
+         [CallNode(85...86)(nil, nil, (85...86), nil, nil, nil, nil, 2, "a"),
+          CallNode(89...90)(nil, nil, (89...90), nil, nil, nil, nil, 2, "b")]
        ),
        RescueNode(91...101)(
          (91...97),
@@ -66,7 +66,7 @@ ProgramNode(0...530)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -117,7 +117,7 @@ ProgramNode(0...530)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "a"
           )]
        ),
@@ -135,7 +135,7 @@ ProgramNode(0...530)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "b"
             )]
          ),
@@ -153,7 +153,7 @@ ProgramNode(0...530)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "c"
               )]
            ),
@@ -172,7 +172,7 @@ ProgramNode(0...530)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "d"
             )]
          ),
@@ -195,7 +195,7 @@ ProgramNode(0...530)(
                  nil,
                  nil,
                  nil,
-                 0,
+                 2,
                  "bar"
                )]
             ),
@@ -219,7 +219,7 @@ ProgramNode(0...530)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             ),
             CallNode(266...269)(
@@ -230,7 +230,7 @@ ProgramNode(0...530)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "bar"
             )]
          ),
@@ -267,7 +267,7 @@ ProgramNode(0...530)(
                 nil,
                 nil,
                 nil,
-                0,
+                2,
                 "bar"
               ),
               (307...310),
@@ -348,7 +348,7 @@ ProgramNode(0...530)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "baz"
             )]
          ),

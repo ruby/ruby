@@ -163,6 +163,10 @@ class TestGc < Test::Unit::TestCase
       assert_operator stat_heap[:total_allocated_pages], :>=, 0
       assert_operator stat_heap[:total_freed_pages], :>=, 0
       assert_operator stat_heap[:force_major_gc_count], :>=, 0
+      assert_operator stat_heap[:force_incremental_marking_finish_count], :>=, 0
+      assert_operator stat_heap[:total_allocated_objects], :>=, 0
+      assert_operator stat_heap[:total_freed_objects], :>=, 0
+      assert_operator stat_heap[:total_freed_objects], :<=, stat_heap[:total_allocated_objects]
     end
 
     GC.stat_heap(0, stat_heap)
@@ -185,6 +189,11 @@ class TestGc < Test::Unit::TestCase
     GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
       GC.stat_heap(i, stat_heap)
 
+      # Remove keys that can vary between invocations
+      %i(total_allocated_objects).each do |sym|
+        stat_heap[sym] = stat_heap_all[i][sym] = 0
+      end
+
       assert_equal stat_heap, stat_heap_all[i]
     end
 
@@ -196,8 +205,10 @@ class TestGc < Test::Unit::TestCase
 
     stat = GC.stat
     stat_heap = GC.stat_heap
-    GC.stat(stat)
-    GC.stat_heap(nil, stat_heap)
+    2.times do
+      GC.stat(stat)
+      GC.stat_heap(nil, stat_heap)
+    end
 
     stat_heap_sum = Hash.new(0)
     stat_heap.values.each do |hash|
@@ -210,6 +221,8 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots] + stat_heap_sum[:heap_tomb_slots]
     assert_equal stat[:total_allocated_pages], stat_heap_sum[:total_allocated_pages]
     assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
+    assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
+    assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
   end
 
   def test_latest_gc_info

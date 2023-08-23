@@ -4,10 +4,10 @@ ProgramNode(0...16)(
     [RangeNode(0...5)(nil, IntegerNode(3...5)(), (0...3), 1),
      RangeNode(8...12)(
        nil,
-       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 0, "a"),
+       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "a"),
        (8...11),
        1
      ),
-     CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 0, "c")]
+     CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 2, "c")]
   )
 )

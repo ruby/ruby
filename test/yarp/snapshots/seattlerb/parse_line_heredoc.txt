@@ -5,7 +5,7 @@ ProgramNode(6...88)(
        :string,
        0,
        CallNode(15...31)(
-         InterpolatedStringNode(15...71)(
+         InterpolatedStringNode(15...25)(
            (15...25),
            [StringNode(32...57)(
               nil,

@@ -226,7 +226,9 @@ module RubyVM::YJIT
   # Avoid calling a method here to not interfere with compilation tests
   if Primitive.rb_yjit_stats_enabled_p
     at_exit do
-      _print_stats
+      if Primitive.rb_yjit_print_stats_p
+        _print_stats
+      end
       _dump_locations
     end
   end
@@ -251,9 +253,11 @@ module RubyVM::YJIT
       out.puts("***YJIT: Printing YJIT statistics on exit***")
 
       print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
+      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
       print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
-      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons: ')
-      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')
+      print_counters(stats, out: out, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')
       print_counters(stats, out: out, prefix: 'leave_', prompt: 'leave exit reasons: ')
       print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
       print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
@@ -262,11 +266,14 @@ module RubyVM::YJIT
       print_counters(stats, out: out, prefix: 'opt_aref_', prompt: 'opt_aref exit reasons: ')
       print_counters(stats, out: out, prefix: 'opt_aref_with_', prompt: 'opt_aref_with exit reasons: ')
       print_counters(stats, out: out, prefix: 'expandarray_', prompt: 'expandarray exit reasons: ')
-      print_counters(stats, out: out, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
+      print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
+      print_counters(stats, out: out, prefix: 'opt_getconstant_path_', prompt: 'opt_getconstant_path exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
 
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
+
+      code_region_overhead = stats[:code_region_size] - (stats[:inline_code_size] + stats[:outlined_code_size])
 
       out.puts "num_send:              " + format_number(13, stats[:num_send])
       out.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
@@ -279,6 +286,10 @@ module RubyVM::YJIT
       end
       out.puts "num_getivar_megamorphic: " + format_number(13, stats[:num_getivar_megamorphic])
       out.puts "num_setivar_megamorphic: " + format_number(13, stats[:num_setivar_megamorphic])
+      out.puts "num_throw:             " + format_number(13, stats[:num_throw])
+      out.puts "num_throw_break:       " + format_number_pct(13, stats[:num_throw_break], stats[:num_throw])
+      out.puts "num_throw_retry:       " + format_number_pct(13, stats[:num_throw_retry], stats[:num_throw])
+      out.puts "num_throw_return:      " + format_number_pct(13, stats[:num_throw_return], stats[:num_throw])
 
       out.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
       out.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
@@ -309,6 +320,8 @@ module RubyVM::YJIT
       out.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
       out.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
       out.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
+      out.puts "code_region_overhead:  " + format_number_pct(13, code_region_overhead, stats[:code_region_size])
+
       out.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
       out.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
       out.puts "live_context_size:     " + format_number(13, stats[:live_context_size])

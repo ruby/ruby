@@ -47,11 +47,8 @@ pub fn yjit_enabled_p() -> bool {
 
 /// Test whether we are ready to compile an ISEQ or not
 #[no_mangle]
-pub extern "C" fn rb_yjit_threshold_hit(iseq: IseqPtr) -> bool {
-
+pub extern "C" fn rb_yjit_threshold_hit(_iseq: IseqPtr, total_calls: u64) -> bool {
     let call_threshold = get_option!(call_threshold) as u64;
-    let total_calls = unsafe { rb_get_iseq_body_total_calls(iseq) } as u64;
-
     return total_calls == call_threshold;
 }
 
@@ -112,8 +109,10 @@ fn rb_bug_panic_hook() {
 
 /// Called from C code to begin compiling a function
 /// NOTE: this should be wrapped in RB_VM_LOCK_ENTER(), rb_vm_barrier() on the C side
+/// If jit_exception is true, compile JIT code for handling exceptions.
+/// See [jit_compile_exception] for details.
 #[no_mangle]
-pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *const u8 {
+pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> *const u8 {
     // Reject ISEQs with very large temp stacks,
     // this will allow us to use u8/i8 values to track stack_size and sp_offset
     let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
@@ -131,7 +130,7 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *con
         return std::ptr::null();
     }
 
-    let maybe_code_ptr = gen_entry_point(iseq, ec);
+    let maybe_code_ptr = gen_entry_point(iseq, ec, jit_exception);
 
     match maybe_code_ptr {
         Some(ptr) => ptr.raw_ptr(),

@@ -1094,6 +1094,25 @@ dependencies: []
     assert_equal(yaml_defined, Object.const_defined?("YAML"))
   end
 
+  def test_handles_dependencies_with_other_syck_requirements_argument_error
+    yaml_defined = Object.const_defined?("YAML")
+
+    data = Marshal.dump(Gem::Specification.new do |s|
+      v = Gem::Version.allocate
+      v.instance_variable_set :@version, "YAML::Syck::DefaultKey"
+      s.instance_variable_set :@version, v
+    end)
+
+    assert_raise(ArgumentError) { Marshal.load(data) }
+    out, err = capture_output do
+      assert_raise(ArgumentError) { Marshal.load(data) }
+    end
+    assert_empty out
+    assert_empty err
+
+    assert_equal(yaml_defined, Object.const_defined?("YAML"))
+  end
+
   def test_initialize
     spec = Gem::Specification.new do |s|
       s.name = "blah"
@@ -3086,8 +3105,20 @@ Please report a bug if this causes problems.
 
     assert_match <<-WARNING, @ui.error
 WARNING:  licenses is empty, but is recommended.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
+  end
+
+  def test_validate_nil_license
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.license = nil
+      @a1.validate
+    end
+
+    assert_empty @ui.error
   end
 
   def test_validate_license_in_a_non_packaging_context
@@ -3126,7 +3157,8 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 
     assert_match <<-WARNING, @ui.error
 WARNING:  license value 'BSD' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
@@ -3184,11 +3216,13 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 
     assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0+ FOO' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
     assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0 FOO' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
@@ -3202,7 +3236,8 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 
     assert_match <<-WARNING, @ui.error
 WARNING:  license value 'GPL-2.0+ WITH Autocofn-exception-2.0' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
@@ -3216,7 +3251,8 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 
     assert_match <<-WARNING, @ui.error
 WARNING:  license value 'ruby' is invalid.  Use a license identifier from
-http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
+http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
 Did you mean 'Ruby'?
     WARNING
   end

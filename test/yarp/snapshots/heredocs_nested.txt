@@ -1,13 +1,13 @@
-ProgramNode(0...47)(
+ProgramNode(0...7)(
   [],
-  StatementsNode(0...47)(
-    [InterpolatedStringNode(0...47)(
+  StatementsNode(0...7)(
+    [InterpolatedStringNode(0...7)(
        (0...7),
        [StringNode(8...12)(nil, (8...12), nil, "pre\n"),
         EmbeddedStatementsNode(12...36)(
           (12...14),
-          StatementsNode(15...35)(
-            [InterpolatedStringNode(15...35)(
+          StatementsNode(15...21)(
+            [InterpolatedStringNode(15...21)(
                (15...21),
                [StringNode(22...30)(nil, (22...30), nil, "  hello\n")],
                (30...35)

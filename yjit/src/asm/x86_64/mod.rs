@@ -635,7 +635,7 @@ fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_r
                 panic!("immediate value too large (num_bits={}, num={uimm:?})", num_bits);
             }
         },
-        _ => unreachable!()
+        _ => panic!("unknown encoding combo: {opnd0:?} {opnd1:?}")
     };
 }
 
@@ -803,6 +803,31 @@ pub fn cdq(cb: &mut CodeBlock) {
 /// cqo - Convert quadword to octaword
 pub fn cqo(cb: &mut CodeBlock) {
     cb.write_bytes(&[0x48, 0x99]);
+}
+
+/// imul - signed integer multiply
+pub fn imul(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
+    assert!(opnd0.num_bits() == 64);
+    assert!(opnd1.num_bits() == 64);
+    assert!(matches!(opnd0, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
+    assert!(matches!(opnd1, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
+
+    match (opnd0, opnd1) {
+        (X86Opnd::Reg(_), X86Opnd::Reg(_) | X86Opnd::Mem(_)) => {
+            //REX.W + 0F AF /rIMUL r64, r/m64
+            // Quadword register := Quadword register * r/m64.
+            write_rm(cb, false, true, opnd0, opnd1, None, &[0x0F, 0xAF]);
+        }
+
+        // Flip the operands to handle this case. This instruction has weird encoding restrictions.
+        (X86Opnd::Mem(_), X86Opnd::Reg(_)) => {
+            //REX.W + 0F AF /rIMUL r64, r/m64
+            // Quadword register := Quadword register * r/m64.
+            write_rm(cb, false, true, opnd1, opnd0, None, &[0x0F, 0xAF]);
+        }
+
+        _ => unreachable!()
+    }
 }
 
 /// Interrupt 3 - trap to debugger
@@ -1223,8 +1248,8 @@ pub fn ret(cb: &mut CodeBlock) {
     cb.write_byte(0xC3);
 }
 
-// Encode a single-operand shift instruction
-fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, _op_mem_cl_pref: u8, op_mem_imm_pref: u8, op_ext: Option<u8>, opnd0: X86Opnd, opnd1: X86Opnd) {
+// Encode a bitwise shift instruction
+fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, op_mem_cl_pref: u8, op_mem_imm_pref: u8, op_ext: u8, opnd0: X86Opnd, opnd1: X86Opnd) {
     assert!(matches!(opnd0, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
 
     // Check the size of opnd0
@@ -1234,16 +1259,26 @@ fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, _op_mem_cl_pref: u8, op_
     let sz_pref = opnd_size == 16;
     let rex_w = opnd_size == 64;
 
-    if let X86Opnd::UImm(imm) = opnd1 {
-        if imm.value == 1 {
-            write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, op_ext, &[op_mem_one_pref]);
-        } else {
-            assert!(imm.num_bits <= 8);
-            write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, op_ext, &[op_mem_imm_pref]);
-            cb.write_byte(imm.value as u8);
+    match opnd1 {
+        X86Opnd::UImm(imm) => {
+            if imm.value == 1 {
+                write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, Some(op_ext), &[op_mem_one_pref]);
+            } else {
+                assert!(imm.num_bits <= 8);
+                write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, Some(op_ext), &[op_mem_imm_pref]);
+                cb.write_byte(imm.value as u8);
+            }
         }
-    } else {
-        unreachable!();
+
+        X86Opnd::Reg(reg) => {
+            // We can only use CL/RCX as the shift amount
+            assert!(reg.reg_no == RCX_REG.reg_no);
+            write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, Some(op_ext), &[op_mem_cl_pref]);
+        }
+
+        _ => {
+            unreachable!("unsupported operands: {:?}, {:?}", opnd0, opnd1);
+        }
     }
 }
 
@@ -1254,7 +1289,7 @@ pub fn sal(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x04),
+        0x04,
         opnd0,
         opnd1
     );
@@ -1267,7 +1302,7 @@ pub fn sar(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x07),
+        0x07,
         opnd0,
         opnd1
     );
@@ -1280,7 +1315,7 @@ pub fn shl(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x04),
+        0x04,
         opnd0,
         opnd1
     );
@@ -1293,7 +1328,7 @@ pub fn shr(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
         0xD1, // opMemOnePref,
         0xD3, // opMemClPref,
         0xC1, // opMemImmPref,
-        Some(0x05),
+        0x05,
         opnd0,
         opnd1
     );

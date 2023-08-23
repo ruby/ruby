@@ -216,9 +216,20 @@ ossl_dh_is_private(VALUE self)
  *     dh.to_pem -> aString
  *     dh.to_s -> aString
  *
- * Encodes this DH to its PEM encoding. Note that any existing per-session
- * public/private keys will *not* get encoded, just the Diffie-Hellman
- * parameters will be encoded.
+ * Serializes the DH parameters to a PEM-encoding.
+ *
+ * Note that any existing per-session public/private keys will *not* get
+ * encoded, just the Diffie-Hellman parameters will be encoded.
+ *
+ * PEM-encoded parameters will look like:
+ *
+ *   -----BEGIN DH PARAMETERS-----
+ *   [...]
+ *   -----END DH PARAMETERS-----
+ *
+ * See also #public_to_pem (X.509 SubjectPublicKeyInfo) and
+ * #private_to_pem (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) for
+ * serialization with the private or public key components.
  */
 static VALUE
 ossl_dh_export(VALUE self)
@@ -244,10 +255,14 @@ ossl_dh_export(VALUE self)
  *  call-seq:
  *     dh.to_der -> aString
  *
- * Encodes this DH to its DER encoding. Note that any existing per-session
- * public/private keys will *not* get encoded, just the Diffie-Hellman
- * parameters will be encoded.
-
+ * Serializes the DH parameters to a DER-encoding
+ *
+ * Note that any existing per-session public/private keys will *not* get
+ * encoded, just the Diffie-Hellman parameters will be encoded.
+ *
+ * See also #public_to_der (X.509 SubjectPublicKeyInfo) and
+ * #private_to_der (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) for
+ * serialization with the private or public key components.
  */
 static VALUE
 ossl_dh_to_der(VALUE self)

@@ -518,12 +518,12 @@ clear_pid_cache(void)
 
 /*
  *  call-seq:
- *     Process.pid   -> integer
+ *    Process.pid -> integer
  *
- *  Returns the process id of this process. Not available on all
- *  platforms.
+ *  Returns the process ID of the current process:
  *
- *     Process.pid   #=> 27415
+ *    Process.pid # => 15668
+ *
  */
 
 static VALUE
@@ -540,18 +540,19 @@ get_ppid(void)
 
 /*
  *  call-seq:
- *     Process.ppid   -> integer
+ *    Process.ppid -> integer
  *
- *  Returns the process id of the parent of this process. Returns
- *  untrustworthy value on Win32/64. Not available on all platforms.
+ *  Returns the process ID of the parent of the current process:
  *
- *     puts "I am #{Process.pid}"
- *     Process.fork { puts "Dad is #{Process.ppid}" }
+ *    puts "Pid is #{Process.pid}."
+ *    fork { puts "Parent pid is #{Process.ppid}." }
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     I am 27417
- *     Dad is 27417
+ *    Pid is 271290.
+ *    Parent pid is 271290.
+ *
+ *  May not return a trustworthy value on certain platforms.
  */
 
 static VALUE
@@ -624,18 +625,25 @@ rb_last_status_get(void)
 
 /*
  *  call-seq:
- *     Process.last_status   -> Process::Status or nil
+ *    Process.last_status -> Process::Status or nil
  *
- *  Returns the status of the last executed child process in the
- *  current thread.
+ *  Returns a Process::Status object representing the most recently exited
+ *  child process in the current thread, or +nil+ if none:
  *
- *     Process.wait Process.spawn("ruby", "-e", "exit 13")
- *     Process.last_status   #=> #<Process::Status: pid 4825 exit 13>
+ *    Process.spawn('ruby', '-e', 'exit 13')
+ *    Process.wait
+ *    Process.last_status # => #<Process::Status: pid 14396 exit 13>
  *
- *  If no child process has ever been executed in the current
- *  thread, this returns +nil+.
+ *    Process.spawn('ruby', '-e', 'exit 14')
+ *    Process.wait
+ *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
  *
- *     Process.last_status   #=> nil
+ *    Process.spawn('ruby', '-e', 'exit 15')
+ *    # 'exit 15' has not been reaped by #wait.
+ *    Process.last_status # => #<Process::Status: pid 4692 exit 14>
+ *    Process.wait
+ *    Process.last_status # => #<Process::Status: pid 1380 exit 15>
+ *
  */
 static VALUE
 proc_s_last_status(VALUE mod)
@@ -1274,48 +1282,137 @@ proc_wait(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     Process.wait()                     -> integer
- *     Process.wait(pid=-1, flags=0)      -> integer
- *     Process.waitpid(pid=-1, flags=0)   -> integer
+ *    Process.wait(pid = -1, flags = 0) -> integer
  *
- *  Waits for a child process to exit, returns its process id, and
- *  sets <code>$?</code> to a Process::Status object
- *  containing information on that process. Which child it waits on
- *  depends on the value of _pid_:
+ *  Waits for a suitable child process to exit, returns its process ID,
+ *  and sets <tt>$?</tt> to a Process::Status object
+ *  containing information on that process.
+ *  Which child it waits for depends on the value of the given +pid+:
  *
- *  > 0::   Waits for the child whose process ID equals _pid_.
+ *  - Positive integer: Waits for the child process whose process ID is +pid+:
  *
- *  0::     Waits for any child whose process group ID equals that of the
- *          calling process.
+ *      pid0 = Process.spawn('ruby', '-e', 'exit 13') # => 230866
+ *      pid1 = Process.spawn('ruby', '-e', 'exit 14') # => 230891
+ *      Process.wait(pid0)                            # => 230866
+ *      $?                                            # => #<Process::Status: pid 230866 exit 13>
+ *      Process.wait(pid1)                            # => 230891
+ *      $?                                            # => #<Process::Status: pid 230891 exit 14>
+ *      Process.wait(pid0)                            # Raises Errno::ECHILD
  *
- *  -1::    Waits for any child process (the default if no _pid_ is
- *          given).
+ *  - <tt>0</tt>: Waits for any child process whose group ID
+ *    is the same as that of the current process:
  *
- *  < -1::  Waits for any child whose process group ID equals the absolute
- *          value of _pid_.
+ *      parent_pgpid = Process.getpgid(Process.pid)
+ *      puts "Parent process group ID is #{parent_pgpid}."
+ *      child0_pid = fork do
+ *        puts "Child 0 pid is #{Process.pid}"
+ *        child0_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 0 process group ID is #{child0_pgid} (same as parent's)."
+ *      end
+ *      child1_pid = fork do
+ *        puts "Child 1 pid is #{Process.pid}"
+ *        Process.setpgid(0, Process.pid)
+ *        child1_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 1 process group ID is #{child1_pgid} (different from parent's)."
+ *      end
+ *      retrieved_pid = Process.wait(0)
+ *      puts "Process.wait(0) returned pid #{retrieved_pid}, which is child 0 pid."
+ *      begin
+ *        Process.wait(0)
+ *      rescue Errno::ECHILD => x
+ *        puts "Raised #{x.class}, because child 1 process group ID differs from parent process group ID."
+ *      end
  *
- *  The _flags_ argument may be a logical or of the flag values
- *  Process::WNOHANG (do not block if no child available)
- *  or Process::WUNTRACED (return stopped children that
- *  haven't been reported). Not all flags are available on all
- *  platforms, but a flag value of zero will work on all platforms.
+ *    Output:
  *
- *  Calling this method raises a SystemCallError if there are no child
- *  processes. Not available on all platforms.
+ *      Parent process group ID is 225764.
+ *      Child 0 pid is 225788
+ *      Child 0 process group ID is 225764 (same as parent's).
+ *      Child 1 pid is 225789
+ *      Child 1 process group ID is 225789 (different from parent's).
+ *      Process.wait(0) returned pid 225788, which is child 0 pid.
+ *      Raised Errno::ECHILD, because child 1 process group ID differs from parent process group ID.
  *
- *     include Process
- *     fork { exit 99 }                 #=> 27429
- *     wait                             #=> 27429
- *     $?.exitstatus                    #=> 99
+ *  - <tt>-1</tt> (default): Waits for any child process:
  *
- *     pid = fork { sleep 3 }           #=> 27440
- *     Time.now                         #=> 2008-03-08 19:56:16 +0900
- *     waitpid(pid, Process::WNOHANG)   #=> nil
- *     Time.now                         #=> 2008-03-08 19:56:16 +0900
- *     waitpid(pid, 0)                  #=> 27440
- *     Time.now                         #=> 2008-03-08 19:56:19 +0900
+ *      parent_pgpid = Process.getpgid(Process.pid)
+ *      puts "Parent process group ID is #{parent_pgpid}."
+ *      child0_pid = fork do
+ *        puts "Child 0 pid is #{Process.pid}"
+ *        child0_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 0 process group ID is #{child0_pgid} (same as parent's)."
+ *      end
+ *      child1_pid = fork do
+ *        puts "Child 1 pid is #{Process.pid}"
+ *        Process.setpgid(0, Process.pid)
+ *        child1_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 1 process group ID is #{child1_pgid} (different from parent's)."
+ *        sleep 3 # To force child 1 to exit later than child 0 exit.
+ *      end
+ *      child_pids = [child0_pid, child1_pid]
+ *      retrieved_pid = Process.wait(-1)
+ *      puts child_pids.include?(retrieved_pid)
+ *      retrieved_pid = Process.wait(-1)
+ *      puts child_pids.include?(retrieved_pid)
+ *
+ *    Output:
+ *
+ *      Parent process group ID is 228736.
+ *      Child 0 pid is 228758
+ *      Child 0 process group ID is 228736 (same as parent's).
+ *      Child 1 pid is 228759
+ *      Child 1 process group ID is 228759 (different from parent's).
+ *      true
+ *      true
+ *
+ *  - Less than <tt>-1</tt>: Waits for any child whose process group ID is <tt>-pid</tt>:
+ *
+ *      parent_pgpid = Process.getpgid(Process.pid)
+ *      puts "Parent process group ID is #{parent_pgpid}."
+ *      child0_pid = fork do
+ *        puts "Child 0 pid is #{Process.pid}"
+ *        child0_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 0 process group ID is #{child0_pgid} (same as parent's)."
+ *      end
+ *      child1_pid = fork do
+ *        puts "Child 1 pid is #{Process.pid}"
+ *        Process.setpgid(0, Process.pid)
+ *        child1_pgid = Process.getpgid(Process.pid)
+ *        puts "Child 1 process group ID is #{child1_pgid} (different from parent's)."
+ *      end
+ *      sleep 1
+ *      retrieved_pid = Process.wait(-child1_pid)
+ *      puts "Process.wait(-child1_pid) returned pid #{retrieved_pid}, which is child 1 pid."
+ *      begin
+ *        Process.wait(-child1_pid)
+ *      rescue Errno::ECHILD => x
+ *        puts "Raised #{x.class}, because there's no longer a child with process group id #{child1_pid}."
+ *      end
+ *
+ *    Output:
+ *
+ *      Parent process group ID is 230083.
+ *      Child 0 pid is 230108
+ *      Child 0 process group ID is 230083 (same as parent's).
+ *      Child 1 pid is 230109
+ *      Child 1 process group ID is 230109 (different from parent's).
+ *      Process.wait(-child1_pid) returned pid 230109, which is child 1 pid.
+ *      Raised Errno::ECHILD, because there's no longer a child with process group id 230109.
+ *
+ *  Argument +flags+ should be given as one of the following constants,
+ *  or as the logical OR of both:
+ *
+ *  - Process::WNOHANG: Does not block if no child process is available.
+ *  - Process:WUNTRACED: May return a stopped child process, even if not yet reported.
+ *
+ *  Not all flags are available on all platforms.
+ *
+ *  Raises Errno::ECHILD if there is no suitable child process.
+ *
+ *  Not available on all platforms.
+ *
+ *  Process.waitpid is an alias for Process.wait.
  */
-
 static VALUE
 proc_m_wait(int c, VALUE *v, VALUE _)
 {
@@ -1329,7 +1426,7 @@ proc_m_wait(int c, VALUE *v, VALUE _)
  *     Process.waitpid2(pid=-1, flags=0)   -> [pid, status]
  *
  *  Waits for a child process to exit (see Process::waitpid for exact
- *  semantics) and returns an array containing the process id and the
+ *  semantics) and returns an array containing the process ID and the
  *  exit status (a Process::Status object) of that
  *  child. Raises a SystemCallError if there are no child processes.
  *

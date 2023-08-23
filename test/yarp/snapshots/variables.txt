@@ -36,7 +36,7 @@ ProgramNode(0...293)(
        IntegerNode(79...80)(),
        (77...78)
      ),
-     CallNode(82...83)(nil, nil, (82...83), nil, nil, nil, nil, 0, "a"),
+     CallNode(82...83)(nil, nil, (82...83), nil, nil, nil, nil, 2, "a"),
      LocalVariableWriteNode(85...92)(
        :abc,
        0,
@@ -173,21 +173,25 @@ ProgramNode(0...293)(
      LocalVariableWriteNode(260...270)(
        :foo,
        0,
-       SplatNode(266...270)(
-         (266...267),
-         LocalVariableReadNode(267...270)(:bar, 0)
+       ArrayNode(266...270)(
+         [SplatNode(266...270)(
+            (266...267),
+            LocalVariableReadNode(267...270)(:bar, 0)
+          )],
+         nil,
+         nil
        ),
        (260...263),
        (264...265)
      ),
-     ConstantPathWriteNode(272...282)(
-       ConstantReadNode(272...275)(),
-       (276...277),
+     ConstantWriteNode(272...282)(
+       (272...275),
        ArrayNode(278...282)(
          [IntegerNode(278...279)(), IntegerNode(281...282)()],
          nil,
          nil
-       )
+       ),
+       (276...277)
      ),
      ParenthesesNode(284...293)(
        StatementsNode(285...292)(
@@ -199,7 +203,7 @@ ProgramNode(0...293)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "a"
           ),
           CallNode(288...289)(
@@ -210,7 +214,7 @@ ProgramNode(0...293)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "b"
           ),
           CallNode(291...292)(
@@ -221,7 +225,7 @@ ProgramNode(0...293)(
             nil,
             nil,
             nil,
-            0,
+            2,
             "c"
           )]
        ),

@@ -3,7 +3,7 @@ require 'reline'
 begin
   require 'yamatanooroti'
 
-  class Reline::TestRendering < Yamatanooroti::TestCase
+  class Reline::RenderingTest < Yamatanooroti::TestCase
     def setup
       @pwd = Dir.pwd
       suffix = '%010d' % Random.rand(0..65535)

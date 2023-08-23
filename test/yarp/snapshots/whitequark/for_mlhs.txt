@@ -10,7 +10,7 @@ ProgramNode(0...28)(
          nil,
          nil
        ),
-       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 0, "foo"),
+       CallNode(12...15)(nil, nil, (12...15), nil, nil, nil, nil, 2, "foo"),
        StatementsNode(17...23)(
          [CallNode(17...23)(
             nil,

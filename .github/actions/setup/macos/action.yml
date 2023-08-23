@@ -13,7 +13,6 @@ runs:
     - name: brew
       shell: bash
       run: |
-        brew upgrade --quiet
         brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool readline
 
     - name: Set ENV

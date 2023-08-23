@@ -225,7 +225,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define bignum_negate p->config->bignum_negate
 #define rb_big_norm   p->config->big_norm
-#define rb_int2big    p->config->int2big
 #define rb_cstr_to_inum p->config->cstr_to_inum
 
 #define rb_float_new   p->config->float_new
@@ -234,7 +233,6 @@ struct rb_imemo_tmpbuf_struct {
 #undef DBL2NUM
 #define DBL2NUM p->config->float_new
 
-#define rb_fix2int          p->config->fix2int
 #undef NUM2INT
 #define NUM2INT             p->config->num2int
 #define rb_int_positive_pow p->config->int_positive_pow
@@ -244,7 +242,6 @@ struct rb_imemo_tmpbuf_struct {
 #define FIX2LONG            p->config->fix2long
 
 #define rb_rational_new  p->config->rational_new
-#define rb_rational_raw  p->config->rational_raw
 #undef rb_rational_raw1
 #define rb_rational_raw1 p->config->rational_raw1
 #define rational_set_num p->config->rational_set_num

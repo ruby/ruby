@@ -154,6 +154,20 @@ end
         Ripper.parse("")
       end
     end;
+
+    # [Bug #19835]
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.parse("class Foo")
+      end
+    end;
+
+    # [Bug #19836]
+    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
+      1_000_000.times do
+        Ripper.parse("-> {")
+      end
+    end;
   end
 
   class TestInput < self

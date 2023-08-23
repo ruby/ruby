@@ -146,7 +146,6 @@ enum node_type {
 
 #define nd_stts  u1.node
 
-#define nd_entry u3.id
 #define nd_vid   u1.id
 
 #define nd_var   u1.node
@@ -458,7 +457,6 @@ typedef struct rb_parser_config_struct {
     /* Bignum */
     void (*bignum_negate)(VALUE b);
     VALUE (*big_norm)(VALUE x);
-    VALUE (*int2big)(intptr_t n);
     VALUE (*cstr_to_inum)(const char *str, int base, int badcheck);
 
     /* Float */
@@ -466,7 +464,6 @@ typedef struct rb_parser_config_struct {
     double (*float_value)(VALUE v);
 
     /* Numeric */
-    long (*fix2int)(VALUE val);
     int (*num2int)(VALUE val);
     VALUE (*int_positive_pow)(long x, unsigned long y);
     VALUE (*int2num)(int v);
@@ -474,7 +471,6 @@ typedef struct rb_parser_config_struct {
 
     /* Rational */
     VALUE (*rational_new)(VALUE x, VALUE y);
-    VALUE (*rational_raw)(VALUE x, VALUE y);
     VALUE (*rational_raw1)(VALUE x);
     void (*rational_set_num)(VALUE r, VALUE n);
     VALUE (*rational_get_num)(VALUE obj);

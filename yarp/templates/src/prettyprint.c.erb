@@ -1,0 +1,106 @@
+#include "yarp/defines.h"
+
+#include <stdio.h>
+
+#include "yarp/ast.h"
+#include "yarp/parser.h"
+#include "yarp/util/yp_buffer.h"
+
+static void
+prettyprint_location(yp_buffer_t *buffer, yp_parser_t *parser, yp_location_t *location) {
+    char printed[] = "[0000-0000]";
+    snprintf(printed, sizeof(printed), "[%04ld-%04ld]", (long int)(location->start - parser->start), (long int)(location->end - parser->start));
+    yp_buffer_append_str(buffer, printed, strlen(printed));
+}
+
+static void
+prettyprint_node(yp_buffer_t *buffer, yp_parser_t *parser, yp_node_t *node) {
+    switch (YP_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+        case <%= node.type %>: {
+            yp_buffer_append_str(buffer, "<%= node.name %>(", <%= node.name.length + 1 %>);
+            <%- node.params.each_with_index do |param, index| -%>
+            <%= "yp_buffer_append_str(buffer, \", \", 2);" if index != 0 -%>
+            <%- case param -%>
+            <%- when NodeParam -%>
+            prettyprint_node(buffer, parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when OptionalNodeParam -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> == NULL) {
+                yp_buffer_append_str(buffer, "nil", 3);
+            } else {
+                prettyprint_node(buffer, parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            }
+            <%- when StringParam -%>
+            yp_buffer_append_str(buffer, "\"", 1);
+            yp_buffer_append_str(buffer, yp_string_source(&((yp_<%= node.human %>_t *)node)-><%= param.name %>), yp_string_length(&((yp_<%= node.human %>_t *)node)-><%= param.name %>));
+            yp_buffer_append_str(buffer, "\"", 1);
+            <%- when NodeListParam -%>
+            yp_buffer_append_str(buffer, "[", 1);
+            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= param.name %>.size; index++) {
+                if (index != 0) yp_buffer_append_str(buffer, ", ", 2);
+                prettyprint_node(buffer, parser, (yp_node_t *) ((yp_<%= node.human %>_t *) node)-><%= param.name %>.nodes[index]);
+            }
+            yp_buffer_append_str(buffer, "]", 1);
+            <%- when LocationListParam -%>
+            yp_buffer_append_str(buffer, "[", 1);
+            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= param.name %>.size; index++) {
+                if (index != 0) yp_buffer_append_str(buffer, ", ", 2);
+                prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>.locations[index]);
+            }
+            yp_buffer_append_str(buffer, "]", 1);
+            <%- when ConstantParam -%>
+            char <%= param.name %>_buffer[12];
+            snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
+            <%- when ConstantListParam -%>
+            yp_buffer_append_str(buffer, "[", 1);
+            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= param.name %>.size; index++) {
+                if (index != 0) yp_buffer_append_str(buffer, ", ", 2);
+                char <%= param.name %>_buffer[12];
+                snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= param.name %>.ids[index]);
+                yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
+            }
+            yp_buffer_append_str(buffer, "]", 1);
+            <%- when LocationParam -%>
+            prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            <%- when OptionalLocationParam -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= param.name %>.start == NULL) {
+                yp_buffer_append_str(buffer, "nil", 3);
+            } else {
+                prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            }
+            <%- when UInt32Param -%>
+            char <%= param.name %>_buffer[12];
+            snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "+%d", ((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
+            <%- when FlagsParam -%>
+            char <%= param.name %>_buffer[12];
+            snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "+%d", node->flags >> <%= COMMON_FLAGS %>);
+            yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
+            <%- else -%>
+            <%- raise -%>
+            <%- end -%>
+            <%- end -%>
+            yp_buffer_append_str(buffer, ")", 1);
+            break;
+        }
+        <%- end -%>
+    }
+}
+
+void
+yp_print_node(yp_parser_t *parser, yp_node_t *node) {
+    yp_buffer_t buffer;
+    if (!yp_buffer_init(&buffer)) return;
+
+    prettyprint_node(&buffer, parser, node);
+    printf("%.*s\n", (int) buffer.length, buffer.value);
+
+    yp_buffer_free(&buffer);
+}
+
+// Pretty-prints the AST represented by the given node to the given buffer.
+YP_EXPORTED_FUNCTION void
+yp_prettyprint(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
+    prettyprint_node(buffer, parser, node);
+}

@@ -76,9 +76,7 @@ getattr(int fd, conmode *t)
 #endif
 
 static ID id_getc, id_console, id_close;
-#if ENABLE_IO_GETPASS
-static ID id_gets, id_chomp_bang;
-#endif
+static ID id_gets, id_flush, id_chomp_bang;
 
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
 # include "ruby/fiber/scheduler.h"
@@ -1534,11 +1532,16 @@ io_getch(int argc, VALUE *argv, VALUE io)
     return rb_funcallv(io, id_getc, argc, argv);
 }
 
-#if ENABLE_IO_GETPASS
 static VALUE
 puts_call(VALUE io)
 {
     return rb_io_write(io, rb_default_rs);
+}
+
+static VALUE
+gets_call(VALUE io)
+{
+    return rb_funcallv(io, id_gets, 0, 0);
 }
 
 static VALUE
@@ -1561,7 +1564,8 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	rb_funcallv(str, id_chomp_bang, 0, 0);
+	const VALUE rs = rb_default_rs; /* rvalue in TruffleRuby */
+	rb_funcallv(str, id_chomp_bang, 1, &rs);
     }
     return str;
 }
@@ -1578,6 +1582,12 @@ str_chomp(VALUE str)
  * see String#chomp!.
  *
  * You must require 'io/console' to use this method.
+ *
+ *    require 'io/console'
+ *    IO::console.getpass("Enter password:")
+ *    Enter password:
+ *    # => "mypassword"
+ *
  */
 static VALUE
 console_getpass(int argc, VALUE *argv, VALUE io)
@@ -1588,6 +1598,7 @@ console_getpass(int argc, VALUE *argv, VALUE io)
     wio = rb_io_get_write_io(io);
     if (wio == io && io == rb_stdin) wio = rb_stderr;
     prompt(argc, argv, wio);
+    rb_io_flush(wio);
     str = rb_ensure(getpass_call, io, puts_call, wio);
     return str_chomp(str);
 }
@@ -1605,11 +1616,10 @@ io_getpass(int argc, VALUE *argv, VALUE io)
 
     rb_check_arity(argc, 0, 1);
     prompt(argc, argv, io);
-    str = str_chomp(rb_funcallv(io, id_gets, 0, 0));
-    puts_call(io);
-    return str;
+    rb_check_funcall(io, id_flush, 0, 0);
+    str = rb_ensure(gets_call, io, puts_call, io);
+    return str_chomp(str);
 }
-#endif
 
 /*
  * IO console methods
@@ -1619,10 +1629,9 @@ Init_console(void)
 {
 #undef rb_intern
     id_getc = rb_intern("getc");
-#if ENABLE_IO_GETPASS
     id_gets = rb_intern("gets");
+    id_flush = rb_intern("flush");
     id_chomp_bang = rb_intern("chomp!");
-#endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
 #define init_rawmode_opt_id(name) \
@@ -1670,16 +1679,12 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "clear_screen", console_clear_screen, 0);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
-#if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
-#endif
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
-#if ENABLE_IO_GETPASS
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
-#endif
     }
     {
 	/* :stopdoc: */

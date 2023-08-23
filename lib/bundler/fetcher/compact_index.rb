@@ -15,7 +15,7 @@ module Bundler
           method.bind(self).call(*args, &blk)
         rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
           raise HTTPError, e.message
-        rescue AuthenticationRequiredError
+        rescue AuthenticationRequiredError, BadAuthenticationError
           # Fail since we got a 401 from the server.
           raise
         rescue HTTPError => e

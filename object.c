@@ -2175,6 +2175,10 @@ rb_class_superclass(VALUE klass)
         if (klass == rb_cBasicObject) return Qnil;
         rb_raise(rb_eTypeError, "uninitialized class");
     }
+
+    if (!RCLASS_SUPERCLASS_DEPTH(klass)) {
+        return Qnil;
+    }
     else {
         super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
         RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
@@ -4250,7 +4254,7 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *    and frozen state.
  *  - #define_singleton_method: Defines a singleton method in +self+
  *    for the given symbol method-name and block or proc.
- *  - #display: Prints +self+ to the given \IO stream or <tt>$stdout</tt>.
+ *  - #display: Prints +self+ to the given IO stream or <tt>$stdout</tt>.
  *  - #dup: Returns a shallow unfrozen copy of +self+.
  *  - #enum_for (aliased as #to_enum): Returns an Enumerator for +self+
  *    using the using the given method, arguments, and block.

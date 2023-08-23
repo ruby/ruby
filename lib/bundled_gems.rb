@@ -18,7 +18,8 @@ module Gem::BUNDLED_GEMS
     "drb" => "3.4.0",
     "mutex_m" => "3.4.0",
     "csv" => "3.4.0",
-    "base64" => "3.4.0"
+    "base64" => "3.4.0",
+    "bigdecimal" => "3.4.0",
   }.freeze
 
   EXACT = {
@@ -59,7 +60,7 @@ module Gem::BUNDLED_GEMS
     else
       return
     end
-    EXACT[n] or PREFIXED[n[%r[\A[^/]+(?=/)]]]
+    EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
   end
 
   def self.warning?(name)
@@ -77,7 +78,7 @@ module Gem::BUNDLED_GEMS
       "#{name} is found in #{gem}"
     else
       return
-    end + " which is not part of the default gems since Ruby #{SINCE[gem]}"
+    end + " which #{RUBY_VERSION < SINCE[gem] ? "will be" : "is"} not part of the default gems since Ruby #{SINCE[gem]}"
   end
 
   bundled_gems = self

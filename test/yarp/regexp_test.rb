@@ -2,33 +2,35 @@
 
 require "yarp_test_helper"
 
+return if YARP::BACKEND == :FFI
+
 class RegexpTest < Test::Unit::TestCase
   ##############################################################################
   # These tests test the actual use case of extracting named capture groups
   ##############################################################################
 
   def test_named_captures_with_arrows
-    assert_equal(["foo"], YARP.named_captures("(?<foo>bar)"))
+    assert_equal(["foo"], named_captures("(?<foo>bar)"))
   end
 
   def test_named_captures_with_single_quotes
-    assert_equal(["foo"], YARP.named_captures("(?'foo'bar)"))
+    assert_equal(["foo"], named_captures("(?'foo'bar)"))
   end
 
   def test_nested_named_captures_with_arrows
-    assert_equal(["foo", "bar"], YARP.named_captures("(?<foo>(?<bar>baz))"))
+    assert_equal(["foo", "bar"], named_captures("(?<foo>(?<bar>baz))"))
   end
 
   def test_nested_named_captures_with_single_quotes
-    assert_equal(["foo", "bar"], YARP.named_captures("(?'foo'(?'bar'baz))"))
+    assert_equal(["foo", "bar"], named_captures("(?'foo'(?'bar'baz))"))
   end
 
   def test_allows_duplicate_named_captures
-    assert_equal(["foo", "foo"], YARP.named_captures("(?<foo>bar)(?<foo>baz)"))
+    assert_equal(["foo", "foo"], named_captures("(?<foo>bar)(?<foo>baz)"))
   end
 
   def test_named_capture_inside_fake_range_quantifier
-    assert_equal(["foo"], YARP.named_captures("foo{1, (?<foo>2)}"))
+    assert_equal(["foo"], named_captures("foo{1, (?<foo>2)}"))
   end
 
   ##############################################################################
@@ -38,154 +40,160 @@ class RegexpTest < Test::Unit::TestCase
   ##############################################################################
 
   def test_alternation
-    refute_nil(YARP.named_captures("foo|bar"))
+    refute_nil(named_captures("foo|bar"))
   end
 
   def test_anchors
-    refute_nil(YARP.named_captures("^foo$"))
+    refute_nil(named_captures("^foo$"))
   end
 
   def test_any
-    refute_nil(YARP.named_captures("."))
+    refute_nil(named_captures("."))
   end
 
   def test_posix_character_classes
-    refute_nil(YARP.named_captures("[[:digit:]]"))
+    refute_nil(named_captures("[[:digit:]]"))
   end
 
   def test_negated_posix_character_classes
-    refute_nil(YARP.named_captures("[[:^digit:]]"))
+    refute_nil(named_captures("[[:^digit:]]"))
   end
 
   def test_invalid_posix_character_classes_should_fall_back_to_regular_classes
-    refute_nil(YARP.named_captures("[[:foo]]"))
+    refute_nil(named_captures("[[:foo]]"))
   end
 
   def test_character_sets
-    refute_nil(YARP.named_captures("[abc]"))
+    refute_nil(named_captures("[abc]"))
   end
 
   def test_nested_character_sets
-    refute_nil(YARP.named_captures("[[abc]]"))
+    refute_nil(named_captures("[[abc]]"))
   end
 
   def test_nested_character_sets_with_operators
-    refute_nil(YARP.named_captures("[[abc] && [def]]"))
+    refute_nil(named_captures("[[abc] && [def]]"))
   end
 
   def test_named_capture_inside_nested_character_set
-    assert_equal([], YARP.named_captures("[foo (?<foo>bar)]"))
+    assert_equal([], named_captures("[foo (?<foo>bar)]"))
   end
 
   def test_negated_character_sets
-    refute_nil(YARP.named_captures("[^abc]"))
+    refute_nil(named_captures("[^abc]"))
   end
 
   def test_character_ranges
-    refute_nil(YARP.named_captures("[a-z]"))
+    refute_nil(named_captures("[a-z]"))
   end
 
   def test_negated_character_ranges
-    refute_nil(YARP.named_captures("[^a-z]"))
+    refute_nil(named_captures("[^a-z]"))
   end
 
   def test_fake_named_captures_inside_character_sets
-    assert_equal([], YARP.named_captures("[a-z(?<foo>)]"))
+    assert_equal([], named_captures("[a-z(?<foo>)]"))
   end
 
   def test_fake_named_capture_inside_character_set_with_escaped_ending
-    assert_equal([], YARP.named_captures("[a-z\\](?<foo>)]"))
+    assert_equal([], named_captures("[a-z\\](?<foo>)]"))
   end
 
   def test_comments
-    refute_nil(YARP.named_captures("(?#foo)"))
+    refute_nil(named_captures("(?#foo)"))
   end
 
   def test_comments_with_escaped_parentheses
-    refute_nil(YARP.named_captures("(?#foo\\)\\))"))
+    refute_nil(named_captures("(?#foo\\)\\))"))
   end
 
   def test_non_capturing_groups
-    refute_nil(YARP.named_captures("(?:foo)"))
+    refute_nil(named_captures("(?:foo)"))
   end
 
   def test_positive_lookaheads
-    refute_nil(YARP.named_captures("(?=foo)"))
+    refute_nil(named_captures("(?=foo)"))
   end
 
   def test_negative_lookaheads
-    refute_nil(YARP.named_captures("(?!foo)"))
+    refute_nil(named_captures("(?!foo)"))
   end
 
   def test_positive_lookbehinds
-    refute_nil(YARP.named_captures("(?<=foo)"))
+    refute_nil(named_captures("(?<=foo)"))
   end
 
   def test_negative_lookbehinds
-    refute_nil(YARP.named_captures("(?<!foo)"))
+    refute_nil(named_captures("(?<!foo)"))
   end
 
   def test_atomic_groups
-    refute_nil(YARP.named_captures("(?>foo)"))
+    refute_nil(named_captures("(?>foo)"))
   end
 
   def test_absence_operator
-    refute_nil(YARP.named_captures("(?~foo)"))
+    refute_nil(named_captures("(?~foo)"))
   end
 
   def test_conditional_expression_with_index
-    refute_nil(YARP.named_captures("(?(1)foo)"))
+    refute_nil(named_captures("(?(1)foo)"))
   end
 
   def test_conditional_expression_with_name
-    refute_nil(YARP.named_captures("(?(foo)bar)"))
+    refute_nil(named_captures("(?(foo)bar)"))
   end
 
   def test_conditional_expression_with_group
-    refute_nil(YARP.named_captures("(?(<foo>)bar)"))
+    refute_nil(named_captures("(?(<foo>)bar)"))
   end
 
   def test_options_on_groups
-    refute_nil(YARP.named_captures("(?imxdau:foo)"))
+    refute_nil(named_captures("(?imxdau:foo)"))
   end
 
   def test_options_on_groups_with_invalid_options
-    assert_nil(YARP.named_captures("(?z:bar)"))
+    assert_nil(named_captures("(?z:bar)"))
   end
 
   def test_options_on_groups_getting_turned_off
-    refute_nil(YARP.named_captures("(?-imx:foo)"))
+    refute_nil(named_captures("(?-imx:foo)"))
   end
 
   def test_options_on_groups_some_getting_turned_on_some_getting_turned_off
-    refute_nil(YARP.named_captures("(?im-x:foo)"))
+    refute_nil(named_captures("(?im-x:foo)"))
   end
 
   def test_star_quantifier
-    refute_nil(YARP.named_captures("foo*"))
+    refute_nil(named_captures("foo*"))
   end
 
   def test_plus_quantifier
-    refute_nil(YARP.named_captures("foo+"))
+    refute_nil(named_captures("foo+"))
   end
 
   def test_question_mark_quantifier
-    refute_nil(YARP.named_captures("foo?"))
+    refute_nil(named_captures("foo?"))
   end
 
   def test_endless_range_quantifier
-    refute_nil(YARP.named_captures("foo{1,}"))
+    refute_nil(named_captures("foo{1,}"))
   end
 
   def test_beginless_range_quantifier
-    refute_nil(YARP.named_captures("foo{,1}"))
+    refute_nil(named_captures("foo{,1}"))
   end
 
   def test_range_quantifier
-    refute_nil(YARP.named_captures("foo{1,2}"))
+    refute_nil(named_captures("foo{1,2}"))
   end
 
   def test_fake_range_quantifier_because_of_spaces
-    refute_nil(YARP.named_captures("foo{1, 2}"))
+    refute_nil(named_captures("foo{1, 2}"))
+  end
+
+  private
+
+  def named_captures(source)
+    YARP.const_get(:Debug).named_captures(source)
   end
 end

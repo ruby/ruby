@@ -26,8 +26,9 @@ environment:
     # is limited, and compatibility issues that happen only in newer versions are rare.
     # You may test some other stuff on GitHub Actions instead.
     - build: vs
-      vs: 120
+      vs: 120 # Visual Studio 2013
       ssl: OpenSSL-v111
+      # The worker image name. This is NOT the Visual Studio version we're using here.
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "UTF-8"
@@ -92,8 +93,8 @@ for:
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
     - >-
-      nmake -l "TESTOPTS=-v --timeout-scale=3.0
-      --excludes=../test/excludes/_appveyor -j%JOBS%
+      nmake -l "TESTOPTS=--timeout-scale=3.0
+      --excludes=../test/.excludes/_appveyor -j%JOBS%
       --exclude win32ole
       --exclude test_bignum
       --exclude test_syntax
@@ -103,7 +104,7 @@ for:
     # separately execute tests without -j which may crash worker with -j.
     - >-
       nmake -l
-      "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor"
+      "TESTOPTS=--timeout-scale=3.0 --excludes=../test/.excludes/_appveyor"
       TESTS="
       ../test/win32ole
       ../test/ruby/test_bignum.rb
@@ -111,7 +112,7 @@ for:
       ../test/open-uri/test_open-uri.rb
       ../test/rubygems/test_bundled_ca.rb
       " test-all
-    - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+    - nmake -l test-spec # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
   - provider: Webhook
     method: POST

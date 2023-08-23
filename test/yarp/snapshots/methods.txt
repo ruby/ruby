@@ -94,7 +94,7 @@ ProgramNode(0...1194)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "b"
          ),
          (101...102),
@@ -121,7 +121,7 @@ ProgramNode(0...1194)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "a"
          ),
          (116...117),
@@ -186,7 +186,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(177...188)(
        (183...184),
-       CallNode(181...182)(nil, nil, (181...182), nil, nil, nil, nil, 0, "a"),
+       CallNode(181...182)(nil, nil, (181...182), nil, nil, nil, nil, 2, "a"),
        nil,
        nil,
        [],
@@ -847,7 +847,7 @@ ProgramNode(0...1194)(
              nil,
              nil,
              nil,
-             0,
+             2,
              "b"
            ),
            (769...770),
@@ -935,7 +935,7 @@ ProgramNode(0...1194)(
              nil,
              nil,
              nil,
-             0,
+             2,
              "b"
            ),
            (833...834),
@@ -967,10 +967,10 @@ ProgramNode(0...1194)(
        nil,
        (872...875)
      ),
-     ConstantPathWriteNode(877...886)(
-       ConstantReadNode(877...882)(),
-       (883...884),
-       IntegerNode(885...886)()
+     ConstantWriteNode(877...886)(
+       (877...882),
+       IntegerNode(885...886)(),
+       (883...884)
      ),
      DefNode(888...903)(
        (898...899),
@@ -1052,7 +1052,7 @@ ProgramNode(0...1194)(
                       nil,
                       nil,
                       nil,
-                      0,
+                      2,
                       "bar"
                     ),
                     (957...959)
@@ -1066,7 +1066,7 @@ ProgramNode(0...1194)(
                       nil,
                       nil,
                       nil,
-                      0,
+                      2,
                       "baz"
                     ),
                     (964...966)
@@ -1080,7 +1080,7 @@ ProgramNode(0...1194)(
                       nil,
                       nil,
                       nil,
-                      0,
+                      2,
                       "qux"
                     ),
                     (971...973)
@@ -1339,7 +1339,7 @@ ProgramNode(0...1194)(
               nil,
               nil,
               nil,
-              0,
+              2,
               "item"
             ),
             nil,

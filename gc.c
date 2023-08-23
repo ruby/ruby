@@ -333,6 +333,14 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #define GC_OLDMALLOC_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
 #endif
 
+#ifndef GC_CAN_COMPILE_COMPACTION
+#if defined(__wasi__) /* WebAssembly doesn't support signals */
+# define GC_CAN_COMPILE_COMPACTION 0
+#else
+# define GC_CAN_COMPILE_COMPACTION 1
+#endif
+#endif
+
 #ifndef PRINT_MEASURE_LINE
 #define PRINT_MEASURE_LINE 0
 #endif
@@ -705,6 +713,9 @@ typedef struct rb_size_pool_struct {
     size_t total_allocated_pages;
     size_t total_freed_pages;
     size_t force_major_gc_count;
+    size_t force_incremental_marking_finish_count;
+    size_t total_allocated_objects;
+    size_t total_freed_objects;
 
     /* Sweeping statistics */
     size_t freed_slots;
@@ -752,7 +763,6 @@ typedef struct rb_objspace {
     } flags;
 
     rb_event_flag_t hook_events;
-    size_t total_allocated_objects;
     VALUE next_object_id;
 
     rb_size_pool_t size_pools[SIZE_POOL_COUNT];
@@ -821,7 +831,6 @@ typedef struct rb_objspace {
 
         /* basic statistics */
         size_t count;
-        size_t total_freed_objects;
         uint64_t marking_time_ns;
         struct timespec marking_start_time;
         uint64_t sweeping_time_ns;
@@ -1206,6 +1215,28 @@ total_freed_pages(rb_objspace_t *objspace)
     return count;
 }
 
+static inline size_t
+total_allocated_objects(rb_objspace_t *objspace)
+{
+    size_t count = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        count += size_pool->total_allocated_objects;
+    }
+    return count;
+}
+
+static inline size_t
+total_freed_objects(rb_objspace_t *objspace)
+{
+    size_t count = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        count += size_pool->total_freed_objects;
+    }
+    return count;
+}
+
 #define gc_mode(objspace)                gc_mode_verify((enum gc_mode)(objspace)->flags.mode)
 #define gc_mode_set(objspace, mode)      ((objspace)->flags.mode = (unsigned int)gc_mode_verify(mode))
 
@@ -1538,9 +1569,6 @@ asan_poison_object_restore(VALUE obj, void *ptr)
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
 
-
-static int rgengc_remembered(rb_objspace_t *objspace, VALUE obj);
-static int rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj);
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
@@ -2324,6 +2352,7 @@ heap_assign_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
     heap_add_freepage(heap, page);
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 static void
 heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, size_t add)
 {
@@ -2337,6 +2366,7 @@ heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 
     GC_ASSERT(size_pool->allocatable_pages == 0);
 }
+#endif
 
 static size_t
 minimum_pages_for_size_pool(rb_objspace_t *objspace, int size_pool_idx)
@@ -2507,42 +2537,7 @@ static void
 gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
     if (UNLIKELY(!ec->cfp)) return;
-    const VALUE *pc = ec->cfp->pc;
-    if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
-        int prev_opcode = rb_vm_insn_addr2opcode((void *)*ec->cfp->iseq->body->iseq_encoded);
-        for (const VALUE *insn = ec->cfp->iseq->body->iseq_encoded; insn < pc; insn += rb_insn_len(prev_opcode)) {
-            prev_opcode = rb_vm_insn_addr2opcode((void *)*insn);
-        }
-
-        /* If the previous instruction is a leaf instruction, then the PC is
-         * the currently executing instruction. We should increment the PC
-         * because the source line is calculated with PC-1 in calc_pos.
-         *
-         * If the previous instruction is not a leaf instruction and the
-         * current instruction is not a leaf instruction, then the PC was
-         * incremented before the instruction was ran (meaning the currently
-         * executing instruction is actually the previous instruction), so we
-         * should not increment the PC otherwise we will calculate the source
-         * line for the next instruction.
-         *
-         * However, this implementation still has a bug. Consider the
-         * following situation:
-         *
-         *   non-leaf
-         *   leaf <-
-         *
-         * Where the PC currently points to a leaf instruction. We don't know
-         * which instruction we really are at since we could be at the non-leaf
-         * instruction (since it incremented the PC before executing the
-         * instruction). We could also be at the leaf instruction since the PC
-         * doesn't get incremented until the instruction finishes.
-         */
-        if (rb_insns_leaf_p(prev_opcode)) {
-            ec->cfp->pc++;
-        }
-    }
     EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, data);
-    ec->cfp->pc = pc;
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
@@ -2607,7 +2602,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         GC_ASSERT(RVALUE_OLD_P(obj) == FALSE);
         GC_ASSERT(RVALUE_WB_UNPROTECTED(obj) == FALSE);
 
-        if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
+        if (RVALUE_REMEMBERED((VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
     }
     RB_VM_LOCK_LEAVE_NO_BARRIER();
 #endif
@@ -2622,9 +2617,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #if USE_MMTK
     }
 #endif
-
-    // TODO: make it atomic, or ractor local
-    objspace->total_allocated_objects++;
 
 #if RGENGC_PROFILE
     if (wb_protected) {
@@ -2851,6 +2843,8 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
             RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
         }
     }
+
+    size_pool->total_allocated_objects++;
 
     return obj;
 }
@@ -4711,7 +4705,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             page->final_slots--;
             page->free_slots++;
             heap_page_add_freeobj(objspace, page, zombie);
-            objspace->profile.total_freed_objects++;
+            page->size_pool->total_freed_objects++;
         }
         RB_VM_LOCK_LEAVE();
 
@@ -5506,7 +5500,7 @@ objspace_available_slots(rb_objspace_t *objspace)
 static size_t
 objspace_live_slots(rb_objspace_t *objspace)
 {
-    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
+    return total_allocated_objects(objspace) - total_freed_objects(objspace) - heap_pages_final_slots;
 }
 
 static size_t
@@ -5622,14 +5616,8 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static void gc_update_references(rb_objspace_t * objspace);
+#if GC_CAN_COMPILE_COMPACTION
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
-
-#ifndef GC_CAN_COMPILE_COMPACTION
-#if defined(__wasi__) /* WebAssembly doesn't support signals */
-# define GC_CAN_COMPILE_COMPACTION 0
-#else
-# define GC_CAN_COMPILE_COMPACTION 1
-#endif
 #endif
 
 #if defined(__MINGW32__) || defined(_WIN32)
@@ -5815,43 +5803,6 @@ install_handlers(void)
 #endif
 
 static void
-revert_stack_objects(VALUE stack_obj, void *ctx)
-{
-    rb_objspace_t * objspace = (rb_objspace_t*)ctx;
-
-    if (BUILTIN_TYPE(stack_obj) == T_MOVED) {
-        /* For now we'll revert the whole page if the object made it to the
-         * stack.  I think we can change this to move just the one object
-         * back though */
-        invalidate_moved_page(objspace, GET_HEAP_PAGE(stack_obj));
-    }
-}
-
-static void
-revert_machine_stack_references(rb_objspace_t *objspace, VALUE v)
-{
-    if (is_pointer_to_heap(objspace, (void *)v)) {
-        if (BUILTIN_TYPE(v) == T_MOVED) {
-            /* For now we'll revert the whole page if the object made it to the
-             * stack.  I think we can change this to move just the one object
-             * back though */
-            invalidate_moved_page(objspace, GET_HEAP_PAGE(v));
-        }
-    }
-}
-
-static void each_machine_stack_value(const rb_execution_context_t *ec, void (*cb)(rb_objspace_t *, VALUE));
-
-static void
-check_stack_for_moved(rb_objspace_t *objspace)
-{
-    rb_execution_context_t *ec = GET_EC();
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
-    rb_vm_each_stack_value(vm, revert_stack_objects, (void*)objspace);
-    each_machine_stack_value(ec, revert_machine_stack_references);
-}
-
-static void
 gc_compact_finish(rb_objspace_t *objspace)
 {
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
@@ -5861,13 +5812,6 @@ gc_compact_finish(rb_objspace_t *objspace)
     }
 
     uninstall_handlers();
-
-    /* The mutator is allowed to run during incremental sweeping. T_MOVED
-     * objects can get pushed on the stack and when the compaction process
-     * finishes up, it may remove the read barrier before anything has a
-     * chance to read from the T_MOVED address. To fix this, we scan the stack
-     * then revert any moved objects that made it to the stack. */
-    check_stack_for_moved(objspace);
 
     gc_update_references(objspace);
     objspace->profile.compact_count++;
@@ -5914,7 +5858,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #if RGENGC_CHECK_MODE
                     if (!is_full_marking(objspace)) {
                         if (RVALUE_OLD_P(vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                        if (rgengc_remembered_sweep(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                        if (RVALUE_REMEMBERED(vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
                     }
 #endif
                     if (obj_free(objspace, vp)) {
@@ -6024,7 +5968,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
                    ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
 
     sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
-    objspace->profile.total_freed_objects += ctx->freed_slots;
+    sweep_page->size_pool->total_freed_objects += ctx->freed_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
@@ -6362,6 +6306,7 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
     gc_sweeping_exit(objspace);
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 static void
 invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_t p, bits_t bitset)
 {
@@ -6434,6 +6379,7 @@ invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page)
         p += BITS_BITLENGTH * BASE_SLOT_SIZE;
     }
 }
+#endif
 
 static void
 gc_compact_start(rb_objspace_t *objspace)
@@ -8529,9 +8475,8 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
         !finalizing &&
         ruby_single_main_ractor != NULL) {
         if (objspace_live_slots(objspace) != data.live_object_count) {
-            fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", "
-                    "objspace->profile.total_freed_objects: %"PRIdSIZE"\n",
-                    heap_pages_final_slots, objspace->profile.total_freed_objects);
+            fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", total_freed_objects: %"PRIdSIZE"\n",
+                    heap_pages_final_slots, total_freed_objects(objspace));
             rb_bug("inconsistent live slot number: expect %"PRIuSIZE", but %"PRIuSIZE".",
                    objspace_live_slots(objspace), data.live_object_count);
         }
@@ -9111,6 +9056,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t 
     else {
         gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %"PRIdSIZE").\n",
                   mark_stack_size(&objspace->mark_stack));
+        size_pool->force_incremental_marking_finish_count++;
         gc_marks_rest(objspace);
     }
 
@@ -9183,12 +9129,6 @@ gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
 /* bit operations */
 
 static int
-rgengc_remembersetbits_get(rb_objspace_t *objspace, VALUE obj)
-{
-    return RVALUE_REMEMBERED(obj);
-}
-
-static int
 rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 {
     struct heap_page *page = GET_HEAP_PAGE(obj);
@@ -9211,7 +9151,7 @@ static int
 rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 {
     gc_report(6, objspace, "rgengc_remember: %s %s\n", obj_info(obj),
-              rgengc_remembersetbits_get(objspace, obj) ? "was already remembered" : "is remembered now");
+              RVALUE_REMEMBERED(obj) ? "was already remembered" : "is remembered now");
 
     check_rvalue_consistency(obj);
 
@@ -9220,7 +9160,7 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
     }
 
 #if RGENGC_PROFILE > 0
-    if (!rgengc_remembered(objspace, obj)) {
+    if (!RVALUE_REMEMBERED(obj)) {
         if (RVALUE_WB_UNPROTECTED(obj) == 0) {
             objspace->profile.total_remembered_normal_object_count++;
 #if RGENGC_PROFILE >= 2
@@ -9231,21 +9171,6 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 #endif /* RGENGC_PROFILE > 0 */
 
     return rgengc_remembersetbits_set(objspace, obj);
-}
-
-static int
-rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj)
-{
-    int result = rgengc_remembersetbits_get(objspace, obj);
-    check_rvalue_consistency(obj);
-    return result;
-}
-
-static int
-rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
-{
-    gc_report(6, objspace, "rgengc_remembered: %s\n", obj_info(obj));
-    return rgengc_remembered_sweep(objspace, obj);
 }
 
 #ifndef PROFILE_REMEMBERSET_MARK
@@ -9354,7 +9279,7 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
     }
 
     /* mark `a' and remember (default behavior) */
-    if (!rgengc_remembered(objspace, a)) {
+    if (!RVALUE_REMEMBERED(a)) {
         RB_VM_LOCK_ENTER_NO_BARRIER();
         {
             rgengc_remember(objspace, a);
@@ -9454,7 +9379,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
         rb_objspace_t *objspace = &rb_objspace;
 
         gc_report(2, objspace, "rb_gc_writebarrier_unprotect: %s %s\n", obj_info(obj),
-                  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
+                  RVALUE_REMEMBERED(obj) ? " (already remembered)" : "");
 
         RB_VM_LOCK_ENTER_NO_BARRIER();
         {
@@ -9906,7 +9831,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
-    objspace->profile.total_allocated_objects_at_gc_start = objspace->total_allocated_objects;
+    objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, do_full_mark);
@@ -11902,7 +11827,7 @@ gc_stat_internal(VALUE hash_or_sym)
     }
 #endif
     /* implementation dependent counters */
-    SET(total_allocated_objects, objspace->total_allocated_objects);
+    SET(total_allocated_objects, total_allocated_objects(objspace));
     SET(malloc_increase_bytes, malloc_increase);
     SET(malloc_increase_bytes_limit, malloc_limit);
 
@@ -11921,7 +11846,7 @@ gc_stat_internal(VALUE hash_or_sym)
         SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
         SET(total_allocated_pages, total_allocated_pages(objspace));
         SET(total_freed_pages, total_freed_pages(objspace));
-        SET(total_freed_objects, objspace->profile.total_freed_objects);
+        SET(total_freed_objects, total_freed_objects(objspace));
         SET(minor_gc_count, objspace->profile.minor_gc_count);
         SET(major_gc_count, objspace->profile.major_gc_count);
         SET(compact_count, objspace->profile.compact_count);
@@ -12022,6 +11947,9 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_total_allocated_pages,
     gc_stat_heap_sym_total_freed_pages,
     gc_stat_heap_sym_force_major_gc_count,
+    gc_stat_heap_sym_force_incremental_marking_finish_count,
+    gc_stat_heap_sym_total_allocated_objects,
+    gc_stat_heap_sym_total_freed_objects,
     gc_stat_heap_sym_last
 };
 
@@ -12041,6 +11969,9 @@ setup_gc_stat_heap_symbols(void)
         S(total_allocated_pages);
         S(total_freed_pages);
         S(force_major_gc_count);
+        S(force_incremental_marking_finish_count);
+        S(total_allocated_objects);
+        S(total_freed_objects);
 #undef S
     }
 }
@@ -12084,6 +12015,9 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(total_allocated_pages, size_pool->total_allocated_pages);
     SET(total_freed_pages, size_pool->total_freed_pages);
     SET(force_major_gc_count, size_pool->force_major_gc_count);
+    SET(force_incremental_marking_finish_count, size_pool->force_incremental_marking_finish_count);
+    SET(total_allocated_objects, size_pool->total_allocated_objects);
+    SET(total_freed_objects, size_pool->total_freed_objects);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
@@ -13700,7 +13634,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
-        size_t live = objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
+        size_t live = objspace->profile.total_allocated_objects_at_gc_start - total_freed_objects(objspace);
         size_t total = objspace->profile.heap_used_at_gc_start * HEAP_PAGE_OBJ_LIMIT;
 
 #if GC_PROFILE_MORE_DETAIL
@@ -14320,7 +14254,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                     APPEND_F("%s", RSTRING_PTR(class_path));
                 }
                 else {
-                    APPEND_S("(annon)");
+                    APPEND_S("(anon)");
                 }
                 break;
             }
@@ -14688,7 +14622,7 @@ Init_GC(void)
         rb_hash_aset(gc_constants, ID2SYM(rb_intern("RB_BUG_INSTEAD_OF_RB_MEMERROR")), Qtrue);
     }
     OBJ_FREEZE(gc_constants);
-    /* internal constants */
+    /* Internal constants in the garbage collector. */
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
 
     rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");

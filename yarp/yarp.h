@@ -59,9 +59,11 @@ YP_EXPORTED_FUNCTION void yp_prettyprint(yp_parser_t *parser, yp_node_t *node, y
 // Serialize the AST represented by the given node to the given buffer.
 YP_EXPORTED_FUNCTION void yp_serialize(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer);
 
-// Parse and serialize the AST represented by the given source to the given
-// buffer.
-YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer);
+// Parse the given source to the AST and serialize the AST to the given buffer.
+YP_EXPORTED_FUNCTION void yp_parse_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *metadata);
+
+// Lex the given source and serialize to the given buffer.
+YP_EXPORTED_FUNCTION void yp_lex_serialize(const char *source, size_t size, const char *filepath, yp_buffer_t *buffer);
 
 // Returns a string representation of the given token type.
 YP_EXPORTED_FUNCTION const char * yp_token_type_to_str(yp_token_type_t token_type);

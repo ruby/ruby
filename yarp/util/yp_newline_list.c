@@ -38,6 +38,15 @@ yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
     return true;
 }
 
+// Conditionally append a new offset to the newline list, if the value passed in is a newline.
+bool
+yp_newline_list_check_append(yp_newline_list_t *list, const char *cursor) {
+    if (*cursor != '\n') {
+        return true;
+    }
+    return yp_newline_list_append(list, cursor);
+}
+
 // Returns the line and column of the given offset, assuming we don't have any
 // information about the previous index that we found.
 static yp_line_column_t

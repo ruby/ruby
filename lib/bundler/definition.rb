@@ -390,8 +390,8 @@ module Bundler
       both_sources.each do |name, (dep, lock_dep)|
         next if dep.nil? || lock_dep.nil?
 
-        gemfile_source = dep.source || sources.default_source
-        lock_source = lock_dep.source || sources.default_source
+        gemfile_source = dep.source || default_source
+        lock_source = lock_dep.source || default_source
         next if lock_source.include?(gemfile_source)
 
         gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
@@ -805,26 +805,27 @@ module Bundler
 
     def converge_specs(specs)
       converged = []
-
-      deps = @dependencies.select do |dep|
-        specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
-      end
+      deps = []
 
       @specs_that_changed_sources = []
 
       specs.each do |s|
+        name = s.name
         dep = @dependencies.find {|d| s.satisfies?(d) }
+        lockfile_source = s.source
 
-        # Replace the locked dependency's source with the equivalent source from the Gemfile
-        s.source = if dep&.source
-          gemfile_source = dep.source
-          lockfile_source = s.source
+        if dep
+          gemfile_source = dep.source || default_source
 
           @specs_that_changed_sources << s if gemfile_source != lockfile_source
+          deps << dep if !dep.source || lockfile_source.include?(dep.source)
+          @unlock[:gems] << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
 
-          gemfile_source
+          # Replace the locked dependency's source with the equivalent source from the Gemfile
+          s.source = gemfile_source
         else
-          sources.get_with_fallback(s.source)
+          # Replace the locked dependency's source with the default source, if the locked source is no longer in the Gemfile
+          s.source = default_source unless sources.get(lockfile_source)
         end
 
         next if @unlock[:sources].include?(s.source.name)
@@ -833,9 +834,9 @@ module Bundler
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
           new_specs = begin
             s.source.specs
-          rescue PathError, GitError
+          rescue PathError
             # if we won't need the source (according to the lockfile),
-            # don't error if the path/git source isn't available
+            # don't error if the path source isn't available
             next if specs.
                     for(requested_dependencies, false).
                     none? {|locked_spec| locked_spec.source == s.source }
@@ -849,11 +850,11 @@ module Bundler
           else
             # If the spec is no longer in the path source, unlock it. This
             # commonly happens if the version changed in the gemspec
-            @unlock[:gems] << s.name
+            @unlock[:gems] << name
           end
         end
 
-        if dep.nil? && requested_dependencies.find {|d| s.name == d.name }
+        if dep.nil? && requested_dependencies.find {|d| name == d.name }
           @unlock[:gems] << s.name
         else
           converged << s
@@ -877,7 +878,7 @@ module Bundler
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
         all_requirements = source_map.all_requirements
         all_requirements = pin_locally_available_names(all_requirements) if @prefer_local
-        { :default => sources.default_source }.merge(all_requirements)
+        { :default => default_source }.merge(all_requirements)
       else
         { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
@@ -886,7 +887,7 @@ module Bundler
         source_requirements[dep.name] = sources.metadata_source
       end
 
-      default_bundler_source = source_requirements["bundler"] || sources.default_source
+      default_bundler_source = source_requirements["bundler"] || default_source
 
       if @unlocking_bundler
         default_bundler_source.add_dependency_names("bundler")
@@ -897,6 +898,10 @@ module Bundler
 
       verify_changed_sources!
       source_requirements
+    end
+
+    def default_source
+      sources.default_source
     end
 
     def verify_changed_sources!

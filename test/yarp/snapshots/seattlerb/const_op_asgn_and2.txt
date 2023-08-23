@@ -1,10 +1,14 @@
 ProgramNode(0...9)(
   [],
   StatementsNode(0...9)(
-    [ConstantPathOperatorAndWriteNode(0...9)(
-       ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
-       (4...7),
-       IntegerNode(8...9)()
+    [AndWriteNode(0...9)(
+       ConstantPathWriteNode(0...3)(
+         ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
+         nil,
+         nil
+       ),
+       IntegerNode(8...9)(),
+       (4...7)
      )]
   )
 )

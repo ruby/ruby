@@ -923,7 +923,7 @@ zstream_discard_input(struct zstream *z, long len)
 	    z->input = Qnil;
 	}
 	else {
-	    z->input = rb_str_substr(z->input, len,
+	    z->input = rb_str_subseq(z->input, len,
 				     RSTRING_LEN(z->input) - len);
 	}
     }

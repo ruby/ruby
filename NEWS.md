@@ -69,26 +69,28 @@ The following default gems are updated.
 * bigdecimal 3.1.4
 * bundler 2.5.0.dev
 * csv 3.2.8
+* erb 4.0.3
 * fiddle 1.1.2
 * fileutils 1.7.1
 * irb 1.7.4
 * nkf 0.1.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
-* reline 0.3.7
+* reline 0.3.8
 * stringio 3.0.8
 * strscan 3.0.7
 * syntax_suggest 1.1.0
 * time 0.2.2
 * timeout 0.4.0
 * uri 0.12.2
-* yarp 0.4.0
+* yarp 0.8.0
 
 The following bundled gems are updated.
 
 * minitest 5.19.0
 * test-unit 3.6.1
 * rexml 3.2.6
+* rss 0.3.0
 * net-imap 0.3.7
 * rbs 3.1.3
 * typeprof 0.21.7

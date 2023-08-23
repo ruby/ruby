@@ -1,9 +1,9 @@
-ProgramNode(0...156)(
+ProgramNode(0...190)(
   [],
-  StatementsNode(0...156)(
+  StatementsNode(0...190)(
     [AndNode(0...19)(
        CallNode(0...7)(
-         CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 0, "foo"),
+         CallNode(4...7)(nil, nil, (4...7), nil, nil, nil, nil, 2, "foo"),
          nil,
          (0...3),
          nil,
@@ -14,7 +14,7 @@ ProgramNode(0...156)(
          "!"
        ),
        CallNode(12...19)(
-         CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 0, "bar"),
+         CallNode(16...19)(nil, nil, (16...19), nil, nil, nil, nil, 2, "bar"),
          nil,
          (12...15),
          nil,
@@ -28,8 +28,8 @@ ProgramNode(0...156)(
      ),
      CallNode(21...37)(
        AndNode(25...36)(
-         CallNode(25...28)(nil, nil, (25...28), nil, nil, nil, nil, 0, "foo"),
-         CallNode(33...36)(nil, nil, (33...36), nil, nil, nil, nil, 0, "bar"),
+         CallNode(25...28)(nil, nil, (25...28), nil, nil, nil, nil, 2, "foo"),
+         CallNode(33...36)(nil, nil, (33...36), nil, nil, nil, nil, 2, "bar"),
          (29...32)
        ),
        nil,
@@ -42,7 +42,7 @@ ProgramNode(0...156)(
        "!"
      ),
      CallNode(39...46)(
-       CallNode(43...46)(nil, nil, (43...46), nil, nil, nil, nil, 0, "foo"),
+       CallNode(43...46)(nil, nil, (43...46), nil, nil, nil, nil, 2, "foo"),
        nil,
        (39...42),
        nil,
@@ -54,7 +54,7 @@ ProgramNode(0...156)(
      ),
      AndNode(48...69)(
        CallNode(48...55)(
-         CallNode(52...55)(nil, nil, (52...55), nil, nil, nil, nil, 0, "foo"),
+         CallNode(52...55)(nil, nil, (52...55), nil, nil, nil, nil, 2, "foo"),
          nil,
          (48...51),
          nil,
@@ -65,7 +65,7 @@ ProgramNode(0...156)(
          "!"
        ),
        CallNode(60...69)(
-         CallNode(66...69)(nil, nil, (66...69), nil, nil, nil, nil, 0, "bar"),
+         CallNode(66...69)(nil, nil, (66...69), nil, nil, nil, nil, 2, "bar"),
          nil,
          (60...63),
          nil,
@@ -79,7 +79,7 @@ ProgramNode(0...156)(
      ),
      AndNode(72...97)(
        CallNode(72...79)(
-         CallNode(76...79)(nil, nil, (76...79), nil, nil, nil, nil, 0, "foo"),
+         CallNode(76...79)(nil, nil, (76...79), nil, nil, nil, nil, 2, "foo"),
          nil,
          (72...75),
          nil,
@@ -90,7 +90,7 @@ ProgramNode(0...156)(
          "!"
        ),
        CallNode(88...97)(
-         CallNode(94...97)(nil, nil, (94...97), nil, nil, nil, nil, 0, "bar"),
+         CallNode(94...97)(nil, nil, (94...97), nil, nil, nil, nil, 2, "bar"),
          nil,
          (88...91),
          nil,
@@ -112,7 +112,7 @@ ProgramNode(0...156)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "foo"
          ),
          nil,
@@ -133,7 +133,7 @@ ProgramNode(0...156)(
            nil,
            nil,
            nil,
-           0,
+           2,
            "bar"
          ),
          nil,
@@ -156,7 +156,7 @@ ProgramNode(0...156)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        nil,
@@ -177,7 +177,7 @@ ProgramNode(0...156)(
          nil,
          nil,
          nil,
-         0,
+         2,
          "foo"
        ),
        nil,
@@ -185,6 +185,84 @@ ProgramNode(0...156)(
        (143...144),
        nil,
        (155...156),
+       nil,
+       0,
+       "!"
+     ),
+     CallNode(158...172)(
+       FlipFlopNode(162...172)(
+         CallNode(162...165)(
+           nil,
+           nil,
+           (162...165),
+           nil,
+           nil,
+           nil,
+           nil,
+           2,
+           "foo"
+         ),
+         CallNode(169...172)(
+           nil,
+           nil,
+           (169...172),
+           nil,
+           nil,
+           nil,
+           nil,
+           2,
+           "bar"
+         ),
+         (166...168),
+         0
+       ),
+       nil,
+       (158...161),
+       nil,
+       nil,
+       nil,
+       nil,
+       0,
+       "!"
+     ),
+     CallNode(174...190)(
+       ParenthesesNode(178...190)(
+         StatementsNode(179...189)(
+           [FlipFlopNode(179...189)(
+              CallNode(179...182)(
+                nil,
+                nil,
+                (179...182),
+                nil,
+                nil,
+                nil,
+                nil,
+                2,
+                "foo"
+              ),
+              CallNode(186...189)(
+                nil,
+                nil,
+                (186...189),
+                nil,
+                nil,
+                nil,
+                nil,
+                2,
+                "bar"
+              ),
+              (183...185),
+              0
+            )]
+         ),
+         (178...179),
+         (189...190)
+       ),
+       nil,
+       (174...177),
+       nil,
+       nil,
+       nil,
        nil,
        0,
        "!"

@@ -11,7 +11,7 @@ ProgramNode(0...20)(
          (7...8),
          ArgumentsNode(8...19)(
            [CallNode(8...19)(
-              InterpolatedStringNode(8...42)(
+              InterpolatedStringNode(8...14)(
                 (8...14),
                 [StringNode(21...26)(nil, (21...26), nil, "\n"),
                  EmbeddedStatementsNode(26...32)(
@@ -25,7 +25,7 @@ ProgramNode(0...20)(
                         nil,
                         nil,
                         nil,
-                        0,
+                        2,
                         "bar"
                       )]
                    ),

@@ -96,12 +96,6 @@ USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
 RJIT_SUPPORT = @RJIT_SUPPORT@
-RJIT_CC = @RJIT_CC@
-RJIT_CFLAGS = @RJIT_CFLAGS@
-RJIT_OPTFLAGS = @RJIT_OPTFLAGS@
-RJIT_DEBUGFLAGS = @RJIT_DEBUGFLAGS@
-RJIT_LDSHARED = @RJIT_LDSHARED@
-RJIT_DLDFLAGS = $(XDLDFLAGS)
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
@@ -292,13 +286,13 @@ all:
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 $(PROGRAM): @XRUBY_LIBPATHENV_WRAPPER@
@@ -319,7 +313,7 @@ $(LIBRUBY_A):
 
 verify-static-library: $(LIBRUBY_A)
 		$(ECHO) verifying static-library $@
-		@$(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
+		@$(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(OUTFLAG)conftest$(EXEEXT)
 		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
@@ -637,9 +631,14 @@ un-runnable:
 	$(Q) exit 1
 
 LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=)
-yes-test-basic: $(DOT_WAIT) leaked-globals
-leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals
+yes-test-basic: $(DOT_WAIT) test-leaked-globals
+leaked-globals: test-leaked-globals
+yes-test-leaked-globals-precheck: $(COMMONOBJS) prog $(tooldir)/leaked-globals
+test-leaked-globals: yes-test-leaked-globals
+yes-test-leaked-globals: yes-test-leaked-globals-precheck
+	$(ACTIONS_GROUP)
 	$(Q) $(XRUBY) $(tooldir)/leaked-globals \
 	  SOEXT=$(SOEXT) NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) \
 	  PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac \
 	  $(COMMONOBJS) $(LIBRUBY_FOR_LEAKED_GLOBALS:yes=$(LIBRUBY_SO))
+	$(ACTIONS_ENDGROUP)

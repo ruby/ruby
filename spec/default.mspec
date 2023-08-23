@@ -70,3 +70,72 @@ end
 class MSpecScript
   prepend JobServer
 end
+
+require 'mspec/runner/formatters/dotted'
+
+class DottedFormatter
+  prepend Module.new {
+    BASE = __dir__ + "/ruby/"
+
+    def initialize(out = nil)
+      super
+      if out
+        @columns = nil
+      else
+        columns = ENV["COLUMNS"]&.to_i
+        @columns = columns&.nonzero? || 80
+      end
+      @dotted = 0
+      @loaded = false
+      @count = 0
+    end
+
+    def register
+      super
+      MSpec.register :load, self
+      MSpec.register :unload, self
+    end
+
+    def after(*)
+      if @columns
+        if @dotted == 0
+          s = sprintf("%6d ", @count)
+          print(s)
+          @dotted += s.size
+        end
+        @count +=1
+      end
+      super
+      if @columns and (@dotted += 1) >= @columns
+        print "\n"
+        @dotted = 0
+      end
+    end
+
+    def load(*)
+      file = MSpec.file || MSpec.files_array.first
+      @loaded = true
+      s = "#{file.delete_prefix(BASE)}:"
+      print s
+      if @columns
+        if (@dotted += s.size) >= @columns
+          print "\n"
+          @dotted = 0
+        else
+          print " "
+          @dotted += 1
+        end
+      end
+      @count = 0
+    end
+
+    def unload
+      super
+      if @loaded
+        print "\n" if @dotted > 0
+        @dotted = 0
+        @loaded = nil
+      end
+    end
+  }
+end

@@ -343,7 +343,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
               String
     end
 
-    unless Array === val && val.all? {|x| x.is_a?(klass) }
+    unless Array === val && val.all? {|x| x.is_a?(klass) || (field == :licenses && x.nil?) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -358,6 +358,8 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
+      next if license.nil?
+
       if license.length > 64
         error "each license must be 64 characters or less"
       end
@@ -368,11 +370,12 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
-      next if Gem::Licenses.match?(license)
+      next if Gem::Licenses.match?(license) || license.nil?
       suggestions = Gem::Licenses.suggestions(license)
       message = <<-WARNING
 license value '#{license}' is invalid.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
+http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
       WARNING
       message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(", ")}?\n" unless suggestions.nil?
       warning(message)
@@ -380,7 +383,8 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
     warning <<-WARNING if licenses.empty?
 licenses is empty, but is recommended.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
+http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license,
+or set it to nil if you don't want to specify a license.
     WARNING
   end
 
