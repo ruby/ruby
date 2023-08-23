@@ -966,7 +966,7 @@ pub struct IseqPayload {
     pub dead_blocks: Vec<BlockRef>,
 
     // Offsets for GC managed objects in the mainline code block
-    gc_obj_offsets: Vec<u32>,
+    pub gc_obj_offsets: Vec<u32>,
 }
 
 impl IseqPayload {
