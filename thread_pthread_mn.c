@@ -396,12 +396,13 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
     struct rb_thread_sched *sched = TH_SCHED(th);
     VM_ASSERT(th->nt != NULL);
     VM_ASSERT(th == sched->running);
+    VM_ASSERT(sched->lock_owner == NULL);
 
     // RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
+    thread_sched_set_lock_owner(sched, th);
     thread_sched_add_running_thread(TH_SCHED(th), th);
-
-    thread_sched_unlock(sched, NULL);
+    thread_sched_unlock(sched, th);
     {
         call_thread_start_func_2(th);
     }
