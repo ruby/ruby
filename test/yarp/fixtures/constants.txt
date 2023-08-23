@@ -12,6 +12,18 @@ ABC
 
 Foo 1
 
+Foo *bar
+
+Foo **bar
+
+Foo &bar
+
+Foo::Bar *baz
+
+Foo::Bar **baz
+
+Foo::Bar &baz
+
 ::A::foo
 
 ::A = 1
