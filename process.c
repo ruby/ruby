@@ -3045,11 +3045,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *  Except for the +COMSPEC+ case,
  *  the entire string +command_line+ is passed as an argument
- *  to {shell option -c}[https://www.man7.org/linux/man-pages/man1/bash.1.html#OPTIONS].
+ *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
  *
- *  The shell performs normal
- *  {shell expansion}[https://www.man7.org/linux/man-pages/man1/bash.1.html#EXPANSION]
- *  on the command line.
+ *  The shell performs normal shell expansion on the command line.
  *
  *  Raises an exception if the new process fails to execute.
  *
