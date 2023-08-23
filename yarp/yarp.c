@@ -5359,9 +5359,6 @@ parser_lex(yp_parser_t *parser) {
 
                 case '#': { // comments
                     const char *ending = next_newline(parser->current.end, parser->end - parser->current.end);
-                    while (ending && peek_addr(parser, ending) != '\n') {
-                        ending = next_newline(ending + 1, parser->end - ending);
-                    }
 
                     parser->current.end = ending == NULL ? parser->end : ending + 1;
                     parser->current.type = YP_TOKEN_COMMENT;
