@@ -8650,8 +8650,7 @@ proc_warmup(VALUE _)
  * Each of these methods creates a process:
  *
  * - Process.exec: Replaces the current process by running a given external command.
- * - Process.spawn: Creates a child process.
- * - Kernel#spawn: Executes the given command and returns its pid without waiting for completion.
+ * - Process.spawn, Kernel#spawn: Executes the given command and returns its pid without waiting for completion.
  * - Kernel#system: Executes the given command in a subshell.
  *
  * Each of these methods accepts:
