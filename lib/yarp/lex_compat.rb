@@ -252,6 +252,23 @@ module YARP
       end
     end
 
+    # If we have an identifier that follows a method name like:
+    #
+    #     def foo bar
+    #
+    # then Ripper will mark bar as END|LABEL if there is a local in a parent
+    # scope named bar because it hasn't pushed the local table yet. We do this
+    # more accurately, so we need to allow comparing against both END and
+    # END|LABEL.
+    class ParamToken < Token
+      def ==(other)
+        (self[0...-1] == other[0...-1]) && (
+          (other[3] == Ripper::EXPR_END) ||
+          (other[3] == Ripper::EXPR_END | Ripper::EXPR_LABEL)
+        )
+      end
+    end
+
     # A heredoc in this case is a list of tokens that belong to the body of the
     # heredoc that should be appended onto the list of tokens when the heredoc
     # closes.
@@ -586,7 +603,17 @@ module YARP
             # want to bother comparing the state on them.
             HeredocEndToken.new([[lineno, column], event, value, lex_state])
           when :on_embexpr_end, :on_ident
-            if lex_state == Ripper::EXPR_END | Ripper::EXPR_LABEL
+            if lex_state == Ripper::EXPR_END
+              # If we have an identifier that follows a method name like:
+              #
+              #     def foo bar
+              #
+              # then Ripper will mark bar as END|LABEL if there is a local in a
+              # parent scope named bar because it hasn't pushed the local table
+              # yet. We do this more accurately, so we need to allow comparing
+              # against both END and END|LABEL.
+              ParamToken.new([[lineno, column], event, value, lex_state])
+            elsif lex_state == Ripper::EXPR_END | Ripper::EXPR_LABEL
               # In the event that we're comparing identifiers, we're going to
               # allow a little divergence. Ripper doesn't account for local
               # variables introduced through named captures in regexes, and we
@@ -630,11 +657,18 @@ module YARP
               end
 
             Token.new([[lineno, column], event, value, lex_state])
-
           when :on_eof
-            prev_token = result_value[index-1][0]
-            if prev_token.type == :COMMENT && prev_token.location.end_offset < token.location.start_offset
-              tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(result_value[index-1].first.location.end_offset...token.location.start_offset), lex_state])
+            previous_token = result_value[index - 1][0]
+
+            # If we're at the end of the file and the previous token was a
+            # comment and there is still whitespace after the comment, then
+            # Ripper will append a on_nl token (even though there isn't
+            # necessarily a newline). We mirror that here.
+            start_offset = previous_token.location.end_offset
+            end_offset = token.location.start_offset
+
+            if previous_token.type == :COMMENT && start_offset < end_offset
+              tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
             end
 
             Token.new([[lineno, column], event, value, lex_state])
@@ -721,7 +755,8 @@ module YARP
         end
       end
 
-      tokens.reject! { |t| t.event == :on_eof }
+      # Drop the EOF token from the list
+      tokens = tokens[0...-1]
 
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
