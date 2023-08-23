@@ -3006,7 +3006,6 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
 /*
  *  call-seq:
  *    exec([env, ] command_line, options = {})
- *    exec([env, ] exe_path, options  = {})
  *    exec([env, ] exe_path, *args, options  = {})
  *
  *  Replaces the current process by doing one of the following:
