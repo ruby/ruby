@@ -39,74 +39,13 @@ bool rb_obj_is_main_ractor(VALUE gv);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mirror some data structures from mmtk-core.
-// TODO: They should be auto-generated.
+// TODO: We are having problem generating the BumpPointer struct from mmtk-core.
+// It should be generated automatically using cbindgen.
 ////////////////////////////////////////////////////////////////////////////////
 
-// This really shouldn't be part of the expr(C) struct in Rust.
-typedef struct {
-    void* field1;
-    void* field2;
-} RustDynRef;
-
-struct MMTk_BumpAllocator {
-    void* tls;
-    void* cursor;
-    void* limit;
-    RustDynRef space;
-    RustDynRef plan;
-};
-
-struct MMTk_LargeObjectAllocator {
-    void* tls;
-    void* space;
-    RustDynRef plan;
-};
-
-struct MMTk_MallocAllocator {
-    void* tls;
-    void* space;
-    RustDynRef plan;
-};
-
-struct MMTk_ImmixAllocator {
-    void* tls;
-    /// Bump pointer
+struct BumpPointer {
     uintptr_t cursor;
-    /// Limit for bump pointer
     uintptr_t limit;
-    void* space;
-    RustDynRef plan;
-    bool hot;
-    bool copy;
-    /// Bump pointer for large objects
-    uintptr_t large_cursor;
-    /// Limit for bump pointer for large objects
-    uintptr_t large_limit;
-    /// Is the current request for large or small?
-    bool request_for_large;
-    /// Hole-searching cursor
-    uintptr_t line1;
-    uintptr_t line2;
-};
-
-#define MMTK_MAX_BUMP_ALLOCATORS 6
-#define MMTK_MAX_LARGE_OBJECT_ALLOCATORS 2
-#define MMTK_MAX_MALLOC_ALLOCATORS 1
-#define MMTK_MAX_IMMIX_ALLOCATORS 1
-#define MMTK_MAX_FREE_LIST_ALLOCATORS 2
-#define MMTK_MAX_MARK_COMPACT_ALLOCATORS 1
-
-struct MMTk_Allocators {
-    struct MMTk_BumpAllocator        bump_pointer[MMTK_MAX_BUMP_ALLOCATORS];
-    struct MMTk_LargeObjectAllocator large_object[MMTK_MAX_LARGE_OBJECT_ALLOCATORS];
-    struct MMTk_MallocAllocator      malloc      [MMTK_MAX_MALLOC_ALLOCATORS];
-    struct MMTk_ImmixAllocator       immix       [MMTK_MAX_IMMIX_ALLOCATORS];
-    // uninteresting fields omittted.
-};
-
-struct MMTk_Mutator {
-    struct MMTk_Allocators allocators;
-    // other uninteresting fields omitted
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +120,7 @@ struct rb_mmtk_values_buffer {
 };
 
 struct rb_mmtk_mutator_local {
-    struct MMTk_ImmixAllocator *immix_allocator;
+    struct BumpPointer *immix_bump_pointer;
     // for prefetching
     uintptr_t last_new_cursor;
     // for prefetching
@@ -256,7 +195,7 @@ rb_mmtk_bind_mutator(MMTk_VMMutatorThread cur_thread)
     cur_thread->mutator = mutator;
     cur_thread->mutator_local = (void*)&rb_mmtk_mutator_local;
 
-    rb_mmtk_mutator_local.immix_allocator = &mutator->allocators.immix[0];
+    rb_mmtk_mutator_local.immix_bump_pointer = (struct BumpPointer*)((char*)mutator + mmtk_get_immix_bump_ptr_offset());
 }
 
 static size_t rb_mmtk_system_physical_memory(void)
@@ -392,9 +331,9 @@ static void*
 rb_mmtk_immix_alloc_fast(size_t size)
 {
     struct rb_mmtk_mutator_local *local = &rb_mmtk_mutator_local;
-    struct MMTk_ImmixAllocator *immix_allocator = local->immix_allocator;
-    uintptr_t cursor = immix_allocator->cursor;
-    uintptr_t limit = immix_allocator->limit;
+    struct BumpPointer *immix_bump_pointer = local->immix_bump_pointer;
+    uintptr_t cursor = immix_bump_pointer->cursor;
+    uintptr_t limit = immix_bump_pointer->limit;
 
     void *result = (void*)cursor;
     uintptr_t new_cursor = cursor + size;
@@ -404,7 +343,7 @@ rb_mmtk_immix_alloc_fast(size_t size)
     if (new_cursor > limit) {
         return NULL;
     } else {
-        immix_allocator->cursor = new_cursor;
+        immix_bump_pointer->cursor = new_cursor;
         local->last_new_cursor = new_cursor; // save for prefetching
         return result;
     }
@@ -1351,7 +1290,7 @@ rb_mmtk_xmalloc_increase_body(size_t new_size, size_t old_size)
 }
 
 static size_t
-rb_mmtk_vm_live_bytes()
+rb_mmtk_vm_live_bytes(void)
 {
     return g_xmalloc_accounting.malloc_total;
 }

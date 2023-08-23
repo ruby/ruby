@@ -191,4 +191,6 @@ size_t mmtk_get_vo_bit_base(void);
 
 void mmtk_gc_poll(MMTk_VMMutatorThread tls);
 
+size_t mmtk_get_immix_bump_ptr_offset(void);
+
 #endif /* MMTK_H */
