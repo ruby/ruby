@@ -149,6 +149,13 @@ FILES_NEED_VPATH = %w[
   enc/trans/single_byte.c
   enc/trans/utf8_mac.c
   enc/trans/utf_16_32.c
+
+  yarp/api_node.c
+  yarp/ast.h
+  yarp/node.c
+  yarp/prettyprint.c
+  yarp/serialize.c
+  yarp/token_type.c
 ]
 
 # Multiple files with same filename.
