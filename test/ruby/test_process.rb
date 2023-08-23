@@ -1799,7 +1799,11 @@ class TestProcess < Test::Unit::TestCase
           loop do
             Process.spawn(cmds.join(sep), opts)
             min = [cmds.size, min].max
-            cmds *= 100
+            begin
+              cmds *= 100
+            rescue ArgumentError
+              raise NoMemoryError
+            end
           end
         rescue NoMemoryError
           size = cmds.size
