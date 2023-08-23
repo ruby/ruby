@@ -492,7 +492,7 @@ module SyncDefaultGems
     # Fetch the repository to be synchronized
     IO.popen(%W"git remote") do |f|
       unless f.read.split.include?(gem)
-        `git remote add #{gem} git@github.com:#{repo}.git`
+        `git remote add #{gem} https://github.com/#{repo}.git`
       end
     end
     system(*%W"git fetch --no-tags #{gem}")
