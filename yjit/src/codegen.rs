@@ -1449,7 +1449,7 @@ fn guard_object_is_array(
     asm.cmp(flags_opnd, (RUBY_T_ARRAY as u64).into());
     asm.jne(Target::side_exit(counter));
 
-    if object_type.diff(Type::TArray) != TypeDiff::Incompatible {
+    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TArray);
     }
 }
@@ -1481,7 +1481,7 @@ fn guard_object_is_string(
     asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
     asm.jne(Target::side_exit(counter));
 
-    if object_type.diff(Type::TString) != TypeDiff::Incompatible {
+    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TString);
     }
 }
