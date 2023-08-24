@@ -80,8 +80,10 @@ describe "Fiber.[]" do
     end
 
     it "can't use invalid keys" do
-      key = Object.new
-      -> { Fiber[key] }.should raise_error(TypeError)
+      invalid_keys = [Object.new, "Foo", 12]
+      invalid_keys.each do |key|
+        -> { Fiber[key] }.should raise_error(TypeError)
+      end
     end
   end
 end
