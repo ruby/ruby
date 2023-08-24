@@ -1468,12 +1468,18 @@ unsafe fn add_block_version(blockref: BlockRef, gc_obj_offsets: Vec<u32>, cb: &C
 }
 
 /// Remove a block version from the version map of its parent ISEQ
-fn remove_block_version(blockref: &BlockRef) {
+fn remove_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     let block = unsafe { blockref.as_ref() };
     let version_list = match get_version_list(block.get_blockid()) {
         Some(version_list) => version_list,
         None => return,
     };
+
+    let iseq_payload = get_iseq_payload(block.iseq.get()).unwrap();
+
+    let block_addr_range = (block.start_addr.into_usize() - cb.get_ptr(0).into_usize()) as u32
+        .. ((block.end_addr.get().into_usize() - cb.get_ptr(0).into_usize()) as u32);
+    iseq_payload.gc_obj_offsets.retain(|gc_obj_offset| !block_addr_range.contains(gc_obj_offset));
 
     // Retain the versions that are not this one
     version_list.retain(|other| blockref != other);
@@ -2095,7 +2101,7 @@ fn gen_block_series_body(
             // Remove previously compiled block
             // versions from the version map
             for blockref in batch {
-                remove_block_version(&blockref);
+                remove_block_version(&blockref, cb);
                 // SAFETY: block was well connected because it was in a version_map
                 unsafe { free_block(blockref, false) };
             }
@@ -2976,7 +2982,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // Remove this block from the version array
-    remove_block_version(blockref);
+    remove_block_version(blockref, cb);
 
     // Get a pointer to the generated code for this block
     let block_start = block.start_addr;
