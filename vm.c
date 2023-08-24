@@ -2449,7 +2449,6 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
         const struct iseq_catch_table *ct;
         unsigned long epc, cont_pc, cont_sp;
         const rb_iseq_t *catch_iseq;
-        rb_control_frame_t *cfp;
         VALUE type;
         const rb_control_frame_t *escape_cfp;
 
@@ -2469,7 +2468,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             rb_vm_pop_frame(ec);
         }
 
-        cfp = ec->cfp;
+        rb_control_frame_t *const cfp = ec->cfp;
         epc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
 
         escape_cfp = NULL;
@@ -2508,7 +2507,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                 }
                 else {
                     /* TAG_BREAK */
-                    *ec->cfp->sp++ = THROW_DATA_VAL(err);
+                    *cfp->sp++ = THROW_DATA_VAL(err);
                     ec->errinfo = Qnil;
                     return Qundef;
                 }
@@ -2581,7 +2580,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         cfp->sp = vm_base_ptr(cfp) + entry->sp;
 
                         if (state != TAG_REDO) {
-                            *ec->cfp->sp++ = THROW_DATA_VAL(err);
+                            *cfp->sp++ = THROW_DATA_VAL(err);
                         }
                         ec->errinfo = Qnil;
                         VM_ASSERT(ec->tag->state == TAG_NONE);
