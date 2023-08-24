@@ -537,6 +537,73 @@ yp_arguments_validate(yp_parser_t *parser, yp_arguments_t *arguments) {
 }
 
 /******************************************************************************/
+/* Scope node functions                                                       */
+/******************************************************************************/
+
+// Generate a scope node from the given node.
+void
+yp_scope_node_init(yp_node_t *node, yp_scope_node_t *scope) {
+    scope->base.type = YP_NODE_SCOPE_NODE;
+    scope->base.location.start = node->location.start;
+    scope->base.location.end = node->location.end;
+
+    scope->parameters = NULL;
+    scope->body = NULL;
+    yp_constant_id_list_init(&scope->locals);
+
+    switch (YP_NODE_TYPE(node)) {
+        case YP_NODE_BLOCK_NODE: {
+            yp_block_node_t *cast = (yp_block_node_t *) node;
+            if (cast->parameters) scope->parameters = cast->parameters->parameters;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case YP_NODE_CLASS_NODE: {
+            yp_class_node_t *cast = (yp_class_node_t *) node;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case YP_NODE_DEF_NODE: {
+            yp_def_node_t *cast = (yp_def_node_t *) node;
+            scope->parameters = cast->parameters;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case YP_NODE_LAMBDA_NODE: {
+            yp_lambda_node_t *cast = (yp_lambda_node_t *) node;
+            if (cast->parameters) scope->parameters = cast->parameters->parameters;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case YP_NODE_MODULE_NODE: {
+            yp_module_node_t *cast = (yp_module_node_t *) node;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        case YP_NODE_PROGRAM_NODE: {
+            yp_program_node_t *cast = (yp_program_node_t *) node;
+            scope->body = (yp_node_t *) cast->statements;
+            scope->locals = cast->locals;
+            break;
+        }
+        case YP_NODE_SINGLETON_CLASS_NODE: {
+            yp_singleton_class_node_t *cast = (yp_singleton_class_node_t *) node;
+            scope->body = cast->body;
+            scope->locals = cast->locals;
+            break;
+        }
+        default:
+            assert(false && "unreachable");
+            break;
+    }
+}
+
+/******************************************************************************/
 /* Node creation functions                                                    */
 /******************************************************************************/
 
@@ -1014,75 +1081,6 @@ yp_block_argument_node_create(yp_parser_t *parser, const yp_token_t *operator, y
     };
 
     return node;
-}
-
-static void
-yp_scope_node_create(yp_parameters_node_t *parameters, yp_node_t *body, yp_constant_id_list_t locals, const char *start, const char *end, yp_scope_node_t *dest)
-{
-    *dest = (yp_scope_node_t) {
-         {
-             .type = YP_NODE_SCOPE_NODE,
-             .location = { .start = start, .end = end },
-         },
-        .parameters = parameters,
-        .body = body,
-        .locals = locals,
-    };
-    return;
-}
-
-// TODO: Implement this for all other nodes which can have a scope
-void
-yp_scope_node_init(yp_node_t *node, yp_scope_node_t *dest) {
-    yp_parameters_node_t *parameters = NULL;
-    yp_node_t *body;
-    yp_constant_id_list_t locals;
-    const char *start = node->location.start;
-    const char *end = node->location.end;
-
-    switch (node->type) {
-      case YP_NODE_BLOCK_NODE: {
-          yp_block_node_t *block_node = (yp_block_node_t *) node;
-          body = block_node->body;
-          locals = block_node->locals;
-          if (block_node->parameters) {
-              parameters = block_node->parameters->parameters;
-          }
-          break;
-      }
-      case YP_NODE_CLASS_NODE: {
-          yp_class_node_t *class_node = (yp_class_node_t *) node;
-          body = class_node->body;
-          locals = class_node->locals;
-          break;
-      }
-      case YP_NODE_DEF_NODE: {
-          yp_def_node_t *def_node = (yp_def_node_t *) node;
-          parameters = def_node->parameters;
-          body = def_node->body;
-          locals = def_node->locals;
-          break;
-      }
-      case YP_NODE_MODULE_NODE: {
-          yp_module_node_t *module_node = (yp_module_node_t *) node;
-          body = module_node->body;
-          locals = module_node->locals;
-          break;
-      }
-      case YP_NODE_SINGLETON_CLASS_NODE: {
-          yp_singleton_class_node_t *singleton_class_node = (yp_singleton_class_node_t *) node;
-          body = singleton_class_node->body;
-          locals = singleton_class_node->locals;
-          break;
-      }
-
-      default:
-        assert(false && "unreachable");
-        return;
-    }
-
-    yp_scope_node_create(parameters, body, locals, start, end, dest);
-    return;
 }
 
 // Allocate and initialize a new BlockNode node.

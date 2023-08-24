@@ -30,7 +30,7 @@ void yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buf
 
 void yp_print_node(yp_parser_t *parser, yp_node_t *node);
 
-// Generate a scope node for a DefNode and ClassNode
+// Generate a scope node from the given node.
 void yp_scope_node_init(yp_node_t *node, yp_scope_node_t *dest);
 
 // The YARP version and the serialization format.

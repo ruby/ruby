@@ -118,7 +118,7 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
         // We do not calculate memsize of a ScopeNode
         // as it should never be generated
         case YP_NODE_SCOPE_NODE:
-          return;
+            return;
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
