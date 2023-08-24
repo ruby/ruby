@@ -35,6 +35,15 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
 
+      it "does not use the full index unnecessarily", :bundler => "< 3" do
+        bundle :install, :artifice => "compact_index", :verbose => true
+
+        expect(out).to include("https://gem.repo1/versions")
+        expect(out).to include("https://gem.repo3/versions")
+        expect(out).not_to include("https://gem.repo1/quick/Marshal.4.8/")
+        expect(out).not_to include("https://gem.repo3/quick/Marshal.4.8/")
+      end
+
       it "fails", :bundler => "3" do
         bundle :install, :artifice => "compact_index", :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")

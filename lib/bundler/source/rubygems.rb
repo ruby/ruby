@@ -399,16 +399,11 @@ module Bundler
         @remote_specs ||= Index.build do |idx|
           index_fetchers = fetchers - api_fetchers
 
-          # gather lists from non-api sites
-          fetch_names(index_fetchers, nil, idx, false)
-
-          # legacy multi-remote sources need special logic to figure out
-          # dependency names and that logic can be very costly if one remote
-          # uses the dependency API but others don't. So use full indexes
-          # consistently in that particular case.
-          allow_api = !multiple_remotes?
-
-          fetch_names(api_fetchers, allow_api && dependency_names, idx, false)
+          if index_fetchers.empty?
+            fetch_names(api_fetchers, dependency_names, idx, false)
+          else
+            fetch_names(fetchers, nil, idx, false)
+          end
         end
       end
 
