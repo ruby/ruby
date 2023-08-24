@@ -3782,6 +3782,21 @@ __END__
     }
   end if /mswin|mingw|bccwin|cygwin/ !~ RUBY_PLATFORM
 
+  def test_open_fifo_write
+    mkcdtmpdir {
+      file = "fifo"
+      File.mkfifo(file)
+      assert_separately(["-", file], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        fifo = ARGV.shift
+        string = "hi"
+        t1 = Thread.new {IO.read(fifo)}
+        assert_equal(string.size, IO.write(fifo, string))
+        assert_equal(string, t1.value)
+      end;
+    }
+  end if /mswin|mingw|bccwin|cygwin/ !~ RUBY_PLATFORM
+
   def test_open_flag
     make_tempfile do |t|
       assert_raise(Errno::EEXIST){ open(t.path, File::WRONLY|File::CREAT, flags: File::EXCL){} }

@@ -321,6 +321,7 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 
     while ((ret = open(pathname, flags, mode)) == -1) {
         int e = errno;
+        if (e == EINTR) continue;
         if (!io_again_p(e)) break;
         if (retry_count++ >= retry_max_count) break;
 
