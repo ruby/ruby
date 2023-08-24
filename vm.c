@@ -2185,14 +2185,13 @@ frame_name(const rb_control_frame_t *cfp)
 // cfp_returning_with_value:
 //     Whether cfp is the last frame in the unwinding process for a non-local return.
 static void
-hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
-                   bool cfp_returning_with_value, int state, struct vm_throw_data *err)
+hook_before_rewind(rb_execution_context_t *ec, bool cfp_returning_with_value, int state, struct vm_throw_data *err)
 {
     if (state == TAG_RAISE && RBASIC(err)->klass == rb_eSysStackError) {
         return;
     }
     else {
-        const rb_iseq_t *iseq = cfp->iseq;
+        const rb_iseq_t *iseq = ec->cfp->iseq;
         rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
 
         switch (VM_FRAME_TYPE(ec->cfp)) {
@@ -2498,7 +2497,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                             ec->errinfo = Qnil;
                             THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
                             // cfp == escape_cfp here so calling with cfp_returning_with_value = true
-                            hook_before_rewind(ec, ec->cfp, true, state, err);
+                            hook_before_rewind(ec, true, state, err);
                             rb_vm_pop_frame(ec);
                             return THROW_DATA_VAL(err);
                         }
@@ -2631,7 +2630,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             return Qundef;
         }
         else {
-            hook_before_rewind(ec, ec->cfp, (cfp == escape_cfp), state, err);
+            hook_before_rewind(ec, (cfp == escape_cfp), state, err);
 
             if (VM_FRAME_FINISHED_P(ec->cfp)) {
                 rb_vm_pop_frame(ec);
