@@ -12737,7 +12737,6 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
         if (block) arg_var(p, block);
 
         args->kw_rest_arg = NEW_DVAR(kw_rest_arg, kw_rest_loc);
-        args->kw_rest_arg->nd_cflag = kw_bits;
     }
     else if (kw_rest_arg == idNil) {
         args->no_kwarg = 1;
