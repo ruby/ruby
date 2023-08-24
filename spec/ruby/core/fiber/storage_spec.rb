@@ -73,6 +73,16 @@ describe "Fiber.[]" do
     it "returns nil if the current fiber has no storage" do
       Fiber.new { Fiber[:life] }.resume.should be_nil
     end
+
+    it "can use dynamically defined keys" do
+      key = :"#{self.class.name}#.#{self.object_id}"
+      Fiber.new { Fiber[key] = 42; Fiber[key] }.resume.should == 42
+    end
+
+    it "can't use invalid keys" do
+      key = Object.new
+      -> { Fiber[key] }.should raise_error(TypeError)
+    end
   end
 end
 
