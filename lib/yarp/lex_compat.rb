@@ -574,19 +574,41 @@ module YARP
       result = YARP.lex(source, @filepath)
       result_value = result.value
       previous_state = nil
-
-      # If there's a UTF-8 byte-order mark as the start of the file, then ripper
-      # sets every token's on the first line back by 6 bytes. It also keeps the
-      # byte order mark in the first token's value. This is weird, and I don't
-      # want to mirror that in our parser. So instead, we'll match up the values
-      # here, and then match up the locations as we process the tokens.
-      bom = source.bytes[0..2] == [0xEF, 0xBB, 0xBF]
-      result_value[0][0].value.prepend("\xEF\xBB\xBF") if bom
+      bom = source.byteslice(0..2) == "\xEF\xBB\xBF"
 
       result_value.each_with_index do |(token, lex_state), index|
         lineno = token.location.start_line
         column = token.location.start_column
-        column -= index == 0 ? 6 : 3 if bom && lineno == 1
+
+        # If there's a UTF-8 byte-order mark as the start of the file, then for
+        # certain tokens ripper sets the first token back by 3 bytes. It also
+        # keeps the byte order mark in the first token's value. This is weird,
+        # and I don't want to mirror that in our parser. So instead, we'll match
+        # up the columns and values here.
+        if bom && lineno == 1
+          column -= 3
+
+          if index == 0 && column == 0
+            flushed =
+              case token.type
+              when :BACK_REFERENCE, :INSTANCE_VARIABLE, :CLASS_VARIABLE,
+                  :GLOBAL_VARIABLE, :NUMBERED_REFERENCE, :PERCENT_LOWER_I,
+                  :PERCENT_LOWER_X, :PERCENT_LOWER_W, :PERCENT_UPPER_I,
+                  :PERCENT_UPPER_W, :STRING_BEGIN
+                true
+              when :REGEXP_BEGIN, :SYMBOL_BEGIN
+                token.value.start_with?("%")
+              else
+                false
+              end
+
+            unless flushed
+              column -= 3
+              value = token.value
+              value.prepend(String.new("\xEF\xBB\xBF", encoding: value.encoding))
+            end
+          end
+        end
 
         event = RIPPER.fetch(token.type)
         value = token.value
@@ -668,6 +690,11 @@ module YARP
             end_offset = token.location.start_offset
 
             if previous_token.type == :COMMENT && start_offset < end_offset
+              if bom
+                start_offset += 3
+                end_offset += 3
+              end
+
               tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
             end
 

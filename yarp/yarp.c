@@ -12876,6 +12876,8 @@ yp_parser_metadata(yp_parser_t *parser, const char *metadata) {
 // Initialize a parser with the given start and end pointers.
 YP_EXPORTED_FUNCTION void
 yp_parser_init(yp_parser_t *parser, const char *source, size_t size, const char *filepath) {
+    assert(source != NULL);
+
     // Set filepath to the file that was passed
     if (!filepath) filepath = "";
     yp_string_t filepath_string;
@@ -12944,14 +12946,15 @@ yp_parser_init(yp_parser_t *parser, const char *source, size_t size, const char 
     size_t newline_size = size / 22;
     yp_newline_list_init(&parser->newline_list, source, newline_size < 4 ? 4 : newline_size);
 
-    assert(source != NULL);
+    // Skip past the UTF-8 BOM if it exists.
     if (size >= 3 && (unsigned char) source[0] == 0xef && (unsigned char) source[1] == 0xbb && (unsigned char) source[2] == 0xbf) {
-        // If the first three bytes of the source are the UTF-8 BOM, then we'll skip
-        // over them.
         parser->current.end += 3;
-    } else if (size >= 2 && source[0] == '#' && source[1] == '!') {
-        // If the first two bytes of the source are a shebang, then we'll indicate
-        // that the encoding comment is at the end of the shebang.
+        parser->encoding_comment_start += 3;
+    }
+
+    // If the first two bytes of the source are a shebang, then we'll indicate
+    // that the encoding comment is at the end of the shebang.
+    if (peek(parser) == '#' && peek_offset(parser, 1) == '!') {
         const char *encoding_comment_start = next_newline(source, (ptrdiff_t) size);
         if (encoding_comment_start) {
             parser->encoding_comment_start = encoding_comment_start + 1;

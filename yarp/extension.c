@@ -221,6 +221,20 @@ static void
 lex_encoding_changed_callback(yp_parser_t *parser) {
     lex_data_t *lex_data = (lex_data_t *) parser->lex_callback->data;
     lex_data->encoding = rb_enc_find(parser->encoding.name);
+
+    // Since we got a new encoding, we need to go back and change the encoding
+    // of the tokens that we've already lexed. This should be a tiny amount
+    // since encoding magic comments need to be the first or second line of the
+    // file.
+    VALUE tokens = lex_data->tokens;
+    for (long index = 0; index < RARRAY_LEN(tokens); index++) {
+        VALUE yields = rb_ary_entry(tokens, index);
+        VALUE token = rb_ary_entry(yields, 0);
+
+        VALUE value = rb_ivar_get(token, rb_intern("@value"));
+        rb_enc_associate(value, lex_data->encoding);
+        ENC_CODERANGE_CLEAR(value);
+    }
 }
 
 // Return an array of tokens corresponding to the given source.
