@@ -261,7 +261,7 @@ jobs:
 
       - run: make showflags
 
-      - run: make
+      - run: make optflags=-O0
 
       - run: make test BTESTS=-j1
         env:
