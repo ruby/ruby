@@ -441,6 +441,7 @@ module SyncDefaultGems
   YARP_IGNORE_FILE_PATTERN =
     /\A(?:Makefile\.in
     |configure\.ac
+    |fuzz\/.*
     |rust\/.*
     |tasks\/.*
     |ext\/yarp\/extconf\.rb
