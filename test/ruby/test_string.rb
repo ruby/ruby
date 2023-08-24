@@ -1941,7 +1941,9 @@ CODE
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").start_with? :not_convertible_to_string}
+  end
 
+  def test_start_with_regexp
     assert_equal(true, S("hello").start_with?(/hel/))
     assert_equal("hel", $&)
     assert_equal(false, S("hello").start_with?(/el/))
@@ -2891,11 +2893,13 @@ CODE
 
   end
 
-  def test_delete_prefix
+  def test_delete_prefix_type_error
     assert_raise(TypeError) { S('hello').delete_prefix(nil) }
     assert_raise(TypeError) { S('hello').delete_prefix(1) }
     assert_raise(TypeError) { S('hello').delete_prefix(/hel/) }
+  end
 
+  def test_delete_prefix
     s = S("hello")
     assert_equal("lo", s.delete_prefix('hel'))
     assert_equal("hello", s)
@@ -2915,8 +2919,9 @@ CODE
     s = S("hello")
     assert_equal("hello", s.delete_prefix("\u{3053 3093}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_prefix_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal("\xe3\x81\x82", s.delete_prefix("\xe3"))
     assert_equal("\xe3\x81\x82", s)
@@ -2925,23 +2930,28 @@ CODE
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s.delete_prefix("\x95"))
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
 
-    # clear coderange
+  end
+
+  def test_delete_prefix_clear_coderange
     s = S("\u{3053 3093}hello")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_prefix("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_prefix_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("bba", s.delete_prefix(klass.new))
     assert_equal("abba", s)
   end
 
-  def test_delete_prefix_bang
+  def test_delete_prefix_bang_type_error
     assert_raise(TypeError) { S('hello').delete_prefix!(nil) }
     assert_raise(TypeError) { S('hello').delete_prefix!(1) }
     assert_raise(TypeError) { S('hello').delete_prefix!(/hel/) }
+  end
 
+  def test_delete_prefix_bang
     s = S("hello")
     assert_equal("lo", s.delete_prefix!('hel'))
     assert_equal("lo", s)
@@ -2961,23 +2971,29 @@ CODE
     s = S("hello")
     assert_equal(nil, s.delete_prefix!("\u{3053 3093}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_prefix_bang_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal(nil, s.delete_prefix!("\xe3"))
     assert_equal("\xe3\x81\x82", s)
 
-    # clear coderange
+  end
+
+  def test_delete_prefix_bang_clear_coderange
     s = S("\u{3053 3093}hello")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_prefix!("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_prefix_bang_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("bba", s.delete_prefix!(klass.new))
     assert_equal("bba", s)
+  end
 
+  def test_delete_prefix_bang_frozen_error
     s = S("ax").freeze
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_prefix!("a")}
 
@@ -2990,11 +3006,13 @@ CODE
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_prefix!(o)}
   end
 
-  def test_delete_suffix
+  def test_delete_suffix_type_error
     assert_raise(TypeError) { S('hello').delete_suffix(nil) }
     assert_raise(TypeError) { S('hello').delete_suffix(1) }
     assert_raise(TypeError) { S('hello').delete_suffix(/hel/) }
+  end
 
+  def test_delete_suffix
     s = S("hello")
     assert_equal("hel", s.delete_suffix('lo'))
     assert_equal("hello", s)
@@ -3014,23 +3032,28 @@ CODE
     s = S("hello")
     assert_equal("hello", s.delete_suffix("\u{3061 306f}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_suffix_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal("\xe3\x81\x82", s.delete_suffix("\x82"))
     assert_equal("\xe3\x81\x82", s)
+  end
 
-    # clear coderange
+  def test_delete_suffix_clear_coderange
     s = S("hello\u{3053 3093}")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_suffix("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_suffix_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.delete_suffix(klass.new))
     assert_equal("abba", s)
+  end
 
+  def test_delete_suffix_newline
     # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified,
     # but delete_suffix does not
     s = "foo\n"
@@ -3041,11 +3064,13 @@ CODE
     assert_equal("foo\r", s.delete_suffix("\n"))
   end
 
-  def test_delete_suffix_bang
+  def test_delete_suffix_bang_type_error
     assert_raise(TypeError) { S('hello').delete_suffix!(nil) }
     assert_raise(TypeError) { S('hello').delete_suffix!(1) }
     assert_raise(TypeError) { S('hello').delete_suffix!(/hel/) }
+  end
 
+  def test_delete_suffix_bang_frozen_error
     s = S("hello").freeze
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_suffix!('lo')}
 
@@ -3056,7 +3081,9 @@ CODE
       "x"
     end
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_suffix!(o)}
+  end
 
+  def test_delete_suffix_bang
     s = S("hello")
     assert_equal("hel", s.delete_suffix!('lo'))
     assert_equal("hel", s)
@@ -3076,8 +3103,9 @@ CODE
     s = S("hello")
     assert_equal(nil, s.delete_suffix!("\u{3061 306f}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_suffix_bang_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal(nil, s.delete_suffix!("\x82"))
     assert_equal("\xe3\x81\x82", s)
@@ -3085,18 +3113,22 @@ CODE
     s = S("\x95\x5c").force_encoding("Shift_JIS")
     assert_equal(nil, s.delete_suffix!("\x5c"))
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
+  end
 
-    # clear coderange
+  def test_delete_suffix_bang_clear_coderange
     s = S("hello\u{3053 3093}")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_suffix!("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_suffix_bang_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.delete_suffix!(klass.new))
     assert_equal("abb", s)
+  end
 
+  def test_delete_suffix_bang_newline
     # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified,
     # but delete_suffix does not
     s = "foo\n"
