@@ -4254,9 +4254,9 @@ rb_proc__fork(VALUE _obj)
  *
  *  Output:
  *
- *    Before the fork: 59063 # => nil
- *    In the child process: 382141
- *    After the fork: 59063 # => nil
+ *    Before the fork: 420496
+ *    After the fork: 420496
+ *    In the child process: 420520
  *
  *  With no block given, the +fork+ call returns twice:
  *
@@ -4265,6 +4265,17 @@ rb_proc__fork(VALUE _obj)
  *
  *  Example:
  *
+ *    puts "This is the first line before the fork (pid #{Process.pid})"
+ *    puts fork
+ *    puts "This is the second line after the fork (pid #{Process.pid})"
+ *
+ *  Output:
+ *
+ *    This is the first line before the fork (pid 420199)
+ *    420223
+ *    This is the second line after the fork (pid 420199)
+ *
+ *    This is the second line after the fork (pid 420223)
  *
  *  In either case, the child process may exit using
  *  Kernel.exit! to avoid the call to Kernel#at_exit.
@@ -4277,8 +4288,11 @@ rb_proc__fork(VALUE _obj)
  *  The thread calling +fork+ is the only thread in the created child process;
  *  +fork+ doesn't copy other threads.
  *
- *  Note that method +fork+ is not available on some platforms;
- *  method Process.respond_to?(:fork) returns whether the method is available.
+ *  Note that method +fork+ is available on some platforms,
+ *  but not on others:
+ *
+ *    Process.respond_to?(:fork) # => true # Would be false on some.
+ *
  *  If not, you may use ::spawn instead of +fork+.
  */
 
