@@ -1082,6 +1082,12 @@ dummy
     assert_equal([[0, :backslash, "\\", [1, 0, 1, 1]]], node.children.last.tokens)
   end
 
+  def test_with_bom
+    assert_error_tolerant("\u{feff}nil", <<~EXP)
+      (SCOPE@1:0-1:3 tbl: [] args: nil body: (NIL@1:0-1:3))
+    EXP
+  end
+
   def assert_error_tolerant(src, expected, keep_tokens: false)
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false

@@ -9021,6 +9021,7 @@ parser_prepare(struct parser_params *p)
             }
 #endif
             p->lex.pbeg = p->lex.pcur;
+            token_flush(p);
             return;
         }
         break;
