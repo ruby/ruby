@@ -25,6 +25,8 @@ test_subtract(RBS::CliTest) running tests without Bundler
 test_subtract_several_subtrahends(RBS::CliTest) running tests without Bundler
 test_subtract_write(RBS::CliTest) running tests without Bundler
 
+test_aref(FiberSingletonTest) the method should not accept String keys
+
 NetSingletonTest depending on external resources
 NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
