@@ -11615,8 +11615,6 @@ gc_set_initial_pages(rb_objspace_t *objspace)
 /*
  * GC tuning environment variables
  *
- * * RUBY_GC_HEAP_INIT_SLOTS
- *   - Initial allocation slots.
  * * RUBY_GC_HEAP_FREE_SLOTS
  *   - Prepare at least this amount of slots after GC.
  *   - Allocate slots if there are not enough slots.
@@ -11663,13 +11661,6 @@ ruby_gc_set_params(void)
         /* ok */
     }
 
-    /* RUBY_GC_HEAP_INIT_SLOTS */
-    size_t global_init_slots = GC_HEAP_INIT_SLOTS;
-    if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &global_init_slots, 0)) {
-        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-            gc_params.size_pool_init_slots[i] = global_init_slots;
-        }
-    }
     gc_set_initial_pages(objspace);
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);

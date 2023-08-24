@@ -1738,6 +1738,13 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     rb_warning_category_update(opt->warn.mask, opt->warn.set);
 
+    /* [Feature #19785] Warning for removed GC environment variable.
+     * Remove this in Ruby 3.4. */
+    if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
+        rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
+                           "environment variables RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS");
+    }
+
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
