@@ -84,10 +84,12 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.00001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
   ].tap do |times|
-    times.concat [
-      Time.at(secs, in: "UTC"),
-      Time.at(secs, in: "Z"),
-    ] unless RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
+    unless RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23" || RUBY_VERSION < "2.7"
+      times.concat [
+        Time.at(secs, in: "UTC"),
+        Time.at(secs, in: "Z"),
+      ]
+    end
   end.each_with_index do |t, i|
     define_method("test_time_#{i} #{t.inspect}") do
       pend "Marshal.load of Time with custom zone is broken before Truffleruby 23" if t.zone.nil? && RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
