@@ -222,6 +222,15 @@ assert_equal 'ok', %q{
   r.take
 }
 
+# fork not allowed inside ractor
+assert_equal 'ok', %q{
+  Ractor.new do
+    Process.fork
+  rescue RuntimeError, NotImplementedError => e
+    :ok
+  end.take
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests

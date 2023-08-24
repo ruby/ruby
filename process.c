@@ -111,6 +111,7 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/variable.h"
 #include "internal/warnings.h"
 #include "rjit.h"
+#include "ractor_core.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/thread.h"
@@ -4371,6 +4372,10 @@ rb_proc__fork(VALUE _obj)
 static VALUE
 rb_f_fork(VALUE obj)
 {
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRuntimeError, "cannot fork from inside ractor");
+    }
+
     rb_pid_t pid;
 
     pid = rb_call_proc__fork();
