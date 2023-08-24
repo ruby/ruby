@@ -20,7 +20,7 @@ module TestIRB
         #{⑤&<<C|⑥
       EOC
       ripper_tokens = Ripper.tokenize(code)
-      rubylex_tokens = RubyLex.ripper_lex_without_warning(code)
+      rubylex_tokens = IRB::RubyLex.ripper_lex_without_warning(code)
       # Assert no missing part
       assert_equal(code, rubylex_tokens.map(&:tok).join)
       # Assert ripper tokens are not removed
@@ -83,7 +83,7 @@ module TestIRB
     end
 
     def test_broken_percent_literal
-      tokens = RubyLex.ripper_lex_without_warning('%wwww')
+      tokens = IRB::RubyLex.ripper_lex_without_warning('%wwww')
       pos_to_index = {}
       tokens.each_with_index { |t, i|
         assert_nil(pos_to_index[t.pos], "There is already another token in the position of #{t.inspect}.")
@@ -92,7 +92,7 @@ module TestIRB
     end
 
     def test_broken_percent_literal_in_method
-      tokens = RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
+      tokens = IRB::RubyLex.ripper_lex_without_warning(<<~EOC.chomp)
         def foo
           %wwww
         end
@@ -106,7 +106,7 @@ module TestIRB
 
     def test_unterminated_code
       ['do', '<<A'].each do |code|
-        tokens = RubyLex.ripper_lex_without_warning(code)
+        tokens = IRB::RubyLex.ripper_lex_without_warning(code)
         assert_equal(code, tokens.map(&:tok).join, "Cannot reconstruct code from tokens")
         error_tokens = tokens.map(&:event).grep(/error/)
         assert_empty(error_tokens, 'Error tokens must be ignored if there is corresponding non-error token')
@@ -115,7 +115,7 @@ module TestIRB
 
     def test_unterminated_heredoc_string_literal
       ['<<A;<<B', "<<A;<<B\n", "%W[\#{<<A;<<B", "%W[\#{<<A;<<B\n"].each do |code|
-        tokens = RubyLex.ripper_lex_without_warning(code)
+        tokens = IRB::RubyLex.ripper_lex_without_warning(code)
         string_literal = IRB::NestingParser.open_tokens(tokens).last
         assert_equal('<<A', string_literal&.tok)
       end
@@ -150,7 +150,7 @@ module TestIRB
 
     def test_assignment_expression
       context = build_context
-      ruby_lex = RubyLex.new(context)
+      ruby_lex = IRB::RubyLex.new(context)
 
       [
         "foo = bar",
@@ -194,12 +194,20 @@ module TestIRB
 
     def test_assignment_expression_with_local_variable
       context = build_context
-      ruby_lex = RubyLex.new(context)
+      ruby_lex = IRB::RubyLex.new(context)
       code = "a /1;x=1#/"
       refute(ruby_lex.assignment_expression?(code), "#{code}: should not be an assignment expression")
       context.workspace.binding.eval('a = 1')
       assert(ruby_lex.assignment_expression?(code), "#{code}: should be an assignment expression")
       refute(ruby_lex.assignment_expression?(""), "empty code should not be an assignment expression")
+    end
+
+    def test_initialising_the_old_top_level_ruby_lex
+      _, err = capture_output do
+        ::RubyLex.new(nil)
+      end
+
+      assert_match(/warning: constant ::RubyLex is deprecated/, err)
     end
 
     private
@@ -239,7 +247,7 @@ module TestIRB
     def check_state(lines, local_variables: [])
       context = build_context(local_variables)
       code = lines.map { |l| "#{l}\n" }.join # code should end with "\n"
-      ruby_lex = RubyLex.new(context)
+      ruby_lex = IRB::RubyLex.new(context)
       tokens, opens, terminated = ruby_lex.check_code_state(code)
       indent_level = ruby_lex.calc_indent_level(opens)
       continue = ruby_lex.should_continue?(tokens)
