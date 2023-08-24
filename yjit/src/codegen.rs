@@ -5063,7 +5063,7 @@ unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> V
 // at sp[-2]. Depending on the frame type, it can serve different purposes,
 // which are covered here by enum variants.
 enum SpecVal {
-    BlockHandler(BlockHandler),
+    BlockHandler(Option<BlockHandler>),
     PrevEP(*const VALUE),
     PrevEPOpnd(Opnd),
 }
@@ -5071,8 +5071,6 @@ enum SpecVal {
 // Each variant represents a branch in vm_caller_setup_arg_block.
 #[derive(Clone, Copy)]
 pub enum BlockHandler {
-    // passing no block
-    None,
     // send, invokesuper: blockiseq operand
     BlockISeq(IseqPtr),
     // invokesuper: GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
@@ -5129,11 +5127,9 @@ fn gen_push_frame(
     // the outer environment depending on the frame type.
     // sp[-2] = specval;
     let specval: Opnd = match frame.specval {
-        SpecVal::BlockHandler(block_handler) => {
+        SpecVal::BlockHandler(None) => VM_BLOCK_HANDLER_NONE.into(),
+        SpecVal::BlockHandler(Some(block_handler)) => {
             match block_handler {
-                BlockHandler::None => {
-                    VM_BLOCK_HANDLER_NONE.into()
-                }
                 BlockHandler::BlockISeq(block_iseq) => {
                     // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
                     // VM_CFP_TO_CAPTURED_BLOCK does &cfp->self, rb_captured_block->code.iseq aliases
@@ -5168,7 +5164,7 @@ fn gen_push_frame(
             asm.or(ep_opnd, 1.into())
         }
     };
-    if let SpecVal::BlockHandler(BlockHandler::AlreadySet) = frame.specval {
+    if let SpecVal::BlockHandler(Some(BlockHandler::AlreadySet)) = frame.specval {
         asm.comment("specval should have been set");
     } else {
         asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
@@ -5416,11 +5412,9 @@ fn gen_send_cfunc(
     let sp = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE as isize) * 3));
 
     let specval = if block_arg_type == Some(Type::BlockParamProxy) {
-        SpecVal::BlockHandler(BlockHandler::BlockParamProxy)
-    } else if let Some(block_handler) = block {
-        SpecVal::BlockHandler(block_handler)
+        SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
     } else {
-        SpecVal::BlockHandler(BlockHandler::None)
+        SpecVal::BlockHandler(block)
     };
 
     let mut frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
@@ -6460,13 +6454,11 @@ fn gen_send_iseq(
         let ep_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32)); // captured->ep
         SpecVal::PrevEPOpnd(ep_opnd)
     } else if let Some(Type::TProc) = block_arg_type {
-        SpecVal::BlockHandler(BlockHandler::AlreadySet)
+        SpecVal::BlockHandler(Some(BlockHandler::AlreadySet))
     } else if let Some(Type::BlockParamProxy) = block_arg_type {
-        SpecVal::BlockHandler(BlockHandler::BlockParamProxy)
-    } else if let Some(block_handler) = block {
-        SpecVal::BlockHandler(block_handler)
+        SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
     } else {
-        SpecVal::BlockHandler(BlockHandler::None)
+        SpecVal::BlockHandler(block)
     };
 
     // Setup the new frame
