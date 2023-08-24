@@ -43,14 +43,16 @@ class TestGemSafeMarshal < Gem::TestCase
   def test_string_with_ivar
     str = String.new("abc")
     str.instance_variable_set :@type, "type"
-    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "String" => %w[@type E] }) do
+    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "String" => %w[@type E @debug_created_info] }) do
       assert_safe_load_as str
     end
   end
 
   def test_time_with_ivar
-    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "Time" => %w[@type offset zone nano_num nano_den submicro], "String" => "E" }) do
-      assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, :runtime }
+    pend "Marshal.load of Time with ivars is broken on jruby, see https://github.com/jruby/jruby/issues/7902" if RUBY_ENGINE == "jruby"
+
+    with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "Time" => %w[@type offset zone nano_num nano_den submicro], "String" => %w[E @debug_created_info] }) do
+      assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, "runtime" }
     end
   end
 
@@ -113,6 +115,8 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_rational
+    pend "truffleruby dumps rationals with ivars set on array, see https://github.com/oracle/truffleruby/issues/3228" if RUBY_ENGINE == "truffleruby"
+
     assert_safe_load_as Rational(1, 3)
   end
 
