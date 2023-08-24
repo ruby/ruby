@@ -4238,27 +4238,62 @@ rb_proc__fork(VALUE _obj)
 
 /*
  *  call-seq:
- *     Kernel.fork  [{ block }]   -> integer or nil
- *     Process.fork [{ block }]   -> integer or nil
+ *    Process.fork { ... } -> integer or nil
+ *    Process.fork -> integer or nil
  *
- *  Creates a subprocess. If a block is specified, that block is run
- *  in the subprocess, and the subprocess terminates with a status of
- *  zero. Otherwise, the +fork+ call returns twice, once in the
- *  parent, returning the process ID of the child, and once in the
- *  child, returning _nil_. The child process can exit using
- *  Kernel.exit! to avoid running any <code>at_exit</code>
- *  functions. The parent process should use Process.wait to collect
- *  the termination statuses of its children or use Process.detach to
- *  register disinterest in their status; otherwise, the operating
- *  system may accumulate zombie processes.
+ *  Creates a child process.
  *
- *  The thread calling fork is the only thread in the created child process.
- *  fork doesn't copy other threads.
+ *  With a block given, runs the block in the child process;
+ *  on block exit, the child terminates with a status of zero:
  *
- *  If fork is not usable, Process.respond_to?(:fork) returns false.
+ *    puts "Before the fork: #{Process.pid}"
+ *    fork do
+ *      puts "In the child process: #{Process.pid}"
+ *    end                   # => 382141
+ *    puts "After the fork: #{Process.pid}"
  *
- *  Note that fork(2) is not available on some platforms like Windows and NetBSD 4.
- *  Therefore you should use spawn() instead of fork().
+ *  Output:
+ *
+ *    Before the fork: 420496
+ *    After the fork: 420496
+ *    In the child process: 420520
+ *
+ *  With no block given, the +fork+ call returns twice:
+ *
+ *  - Once in the parent process, returning the pid of the child process.
+ *  - Once in the child process, returning +nil+.
+ *
+ *  Example:
+ *
+ *    puts "This is the first line before the fork (pid #{Process.pid})"
+ *    puts fork
+ *    puts "This is the second line after the fork (pid #{Process.pid})"
+ *
+ *  Output:
+ *
+ *    This is the first line before the fork (pid 420199)
+ *    420223
+ *    This is the second line after the fork (pid 420199)
+ *
+ *    This is the second line after the fork (pid 420223)
+ *
+ *  In either case, the child process may exit using
+ *  Kernel.exit! to avoid the call to Kernel#at_exit.
+ *
+ *  To avoid zombie processes, the parent process should call either:
+ *
+ *  - Process.wait, to collect the termination statuses of its children.
+ *  - Process.detach, to register disinterest in their status.
+ *
+ *  The thread calling +fork+ is the only thread in the created child process;
+ *  +fork+ doesn't copy other threads.
+ *
+ *  Note that method +fork+ is available on some platforms,
+ *  but not on others:
+ *
+ *    Process.respond_to?(:fork) # => true # Would be false on some.
+ *
+ *  If not, you may use ::spawn instead of +fork+.
  */
 
 static VALUE
