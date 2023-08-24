@@ -54,7 +54,6 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_WithIvars(e)
-        idx = 0
         object_offset = @objects.size
         @stack << "object"
         object = visit(e.object)
@@ -104,8 +103,9 @@ module Gem::SafeMarshal
 
             if zone
               require "time"
-              zone = "+0000" if zone == "UTC" && offset == 0
-              call_method(Time, :force_zone!, object, zone, offset)
+              transformed_zone = zone
+              transformed_zone = "+0000" if ["UTC", "Z"].include?(zone) && offset == 0
+              call_method(Time, :force_zone!, object, transformed_zone, offset)
             elsif offset
               object = object.localtime offset
             end
@@ -131,8 +131,10 @@ module Gem::SafeMarshal
               when FalseClass
                 enc = "US-ASCII"
               else
-              enc = v
+                raise FormatError, "Unexpected value for String :E #{v.inspect}"
               end
+            when :encoding
+              enc = v
             else
               next false
             end

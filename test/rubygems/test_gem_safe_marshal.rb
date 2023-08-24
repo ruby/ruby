@@ -36,8 +36,16 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_string_with_encoding
-    assert_safe_load_as String.new("abc", encoding: "US-ASCII")
-    assert_safe_load_as String.new("abc", encoding: "UTF-8")
+    [
+      String.new("abc", encoding: "US-ASCII"),
+      String.new("abc", encoding: "UTF-8"),
+      String.new("abc", encoding: "Windows-1256"),
+      String.new("abc", encoding: Encoding::BINARY),
+      String.new("abc", encoding: "UTF-32"),
+    ].each do |s|
+      assert_safe_load_as s, additional_methods: [:encoding]
+      assert_safe_load_as [s, s], additional_methods: [->(a) { a.map(&:encoding) }]
+    end
   end
 
   def test_string_with_ivar
@@ -75,7 +83,12 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
-  ].each_with_index do |t, i|
+  ].tap do |times|
+    times.concat [
+      Time.at(secs, in: "UTC"),
+      Time.at(secs, in: "Z"),
+    ] unless RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
+  end.each_with_index do |t, i|
     define_method("test_time_#{i} #{t.inspect}") do
       pend "Marshal.load of Time with custom zone is broken before Truffleruby 23" if t.zone.nil? && RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
 
@@ -167,7 +180,13 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_equal x.to_s, safe_loaded.to_s, "should have equal to_s"
     assert_equal x.inspect, safe_loaded.inspect, "should have equal inspect"
     additional_methods.each do |m|
-      assert_equal loaded.send(m), safe_loaded.send(m), "should have equal #{m}"
+      if m.is_a?(Proc)
+        call = m
+      else
+        call = ->(obj) { obj.__send__(m) }
+      end
+
+      assert_equal call[loaded], call[safe_loaded], "should have equal #{m}"
     end
     assert_equal Marshal.dump(loaded), Marshal.dump(safe_loaded), "should Marshal.dump the same"
   end

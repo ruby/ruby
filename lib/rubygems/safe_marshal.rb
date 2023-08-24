@@ -42,7 +42,7 @@ module Gem
     private_constant :PERMITTED_SYMBOLS
 
     PERMITTED_IVARS = {
-      "String" => %w[E @taguri @debug_created_info],
+      "String" => %w[E encoding @taguri @debug_created_info],
       "Time" => %w[
         offset zone nano_num nano_den submicro
         @_zone @marshal_with_utc_coercion
