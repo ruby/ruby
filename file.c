@@ -4610,7 +4610,7 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
     if (l1 < l2) return l1;
 
     s = p+l1-l2;
-    if (rb_enc_left_char_head(p, s, p+l1, enc) != s) return 0;
+    if (!at_char_boundary(p, s, p+l1, enc)) return 0;
 #if CASEFOLD_FILESYSTEM
 #define fncomp strncasecmp
 #else
