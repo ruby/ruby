@@ -4345,12 +4345,17 @@ exit_status_code(VALUE status)
 NORETURN(static VALUE rb_f_exit_bang(int argc, VALUE *argv, VALUE obj));
 /*
  *  call-seq:
+ *    exit!(status = false)
  *    Process.exit!(status = false)
  *
  *  Exits the process immediately; no exit handlers are called.
  *  Returns exit status +status+ to the underlying operating system.
  *
  *     Process.exit!(true)
+ *
+ *  Values +true+ and +false+ for argument +status+
+ *  indicate, respectively, success and failure;
+ *  The meanings of integer values are system-dependent.
  *
  */
 
@@ -4403,7 +4408,7 @@ NORETURN(static VALUE f_exit(int c, const VALUE *a, VALUE _));
 /*
  *  call-seq:
  *    exit(status = true)
- *    Process::exit(status = true)
+ *    Process.exit(status = true)
  *
  *  Initiates termination of the Ruby script by raising SystemExit;
  *  the exception may be caught.
