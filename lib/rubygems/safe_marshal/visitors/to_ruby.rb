@@ -62,62 +62,29 @@ module Gem::SafeMarshal
         case e.object
         when Elements::UserDefined
           if object.class == ::Time
-            offset = zone = nano_num = nano_den = submicro = nil
+            internal = []
+
             ivars.reject! do |k, v|
               case k
-              when :offset
-                offset = v
-              when :zone
-                zone = v
-              when :nano_num
-                nano_num = v
-              when :nano_den
-                nano_den = v
-              when :submicro
-                submicro = v
+              when :offset, :zone, :nano_num, :nano_den, :submicro
+                internal << [k, v]
+                true
               else
-                next false
-              end
-              true
-            end
-
-            if (nano_den || nano_num) && !(nano_den && nano_num)
-              raise FormatError, "Must have all of nano_den, nano_num for Time #{e.pretty_inspect}"
-            elsif nano_den && nano_num
-              if RUBY_ENGINE == "jruby"
-                nano = Rational(nano_num, nano_den * 1_000_000_000)
-                object = Time.at(object.to_i + nano + object.subsec)
-              elsif RUBY_ENGINE == "truffleruby"
-                if RUBY_ENGINE_VERSION >= "23.0.0"
-                  object = Time.at(object.to_i, Rational(nano_num, nano_den).to_i, :nanosecond)
-                else
-                  object = object.floor + Rational(nano_num, nano_den * 1_000_000_000)
-                end
-              else # assume "ruby"
-                nano = Rational(nano_num, nano_den)
-                nsec, subnano = nano.divmod(1)
-                nano = nsec + subnano
-                object = Time.at(object.to_r, nano, :nanosecond)
+                false
               end
             end
 
-            if zone
-              require "time"
-              transformed_zone = zone
-              transformed_zone = "+0000" if ["UTC", "Z"].include?(zone) && offset == 0
-              call_method(Time, :force_zone!, object, transformed_zone, offset)
-            elsif offset
-              object = object.localtime offset
+            s = e.object.binary_string
+
+            marshal_string = "\x04\bIu:\tTime#{(s.size + 5).chr}#{s.b}".b
+
+            marshal_string << (internal.size + 5).chr
+
+            internal.each do |k, v|
+              marshal_string << ":#{(k.size + 5).chr}#{k}#{Marshal.dump(v)[2..-1]}"
             end
 
-            if RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23.0.0"
-              ivars << [:@offset, offset]
-              ivars << [:@zone, zone]
-              ivars << [:@nano_num, nano_num] if nano_num
-              ivars << [:@nano_den, nano_den] if nano_den
-            end
-
-            @objects[object_offset] = object
+            object = @objects[object_offset] = Marshal.load(marshal_string)
           end
         when Elements::String
           enc = nil
