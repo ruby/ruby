@@ -4345,13 +4345,18 @@ exit_status_code(VALUE status)
 NORETURN(static VALUE rb_f_exit_bang(int argc, VALUE *argv, VALUE obj));
 /*
  *  call-seq:
- *     Process.exit!(status=false)
+ *    exit!(status = false)
+ *    Process.exit!(status = false)
  *
- *  Exits the process immediately. No exit handlers are
- *  run. <em>status</em> is returned to the underlying system as the
- *  exit status.
+ *  Exits the process immediately; no exit handlers are called.
+ *  Returns exit status +status+ to the underlying operating system.
  *
  *     Process.exit!(true)
+ *
+ *  Values +true+ and +false+ for argument +status+
+ *  indicate, respectively, success and failure;
+ *  The meanings of integer values are system-dependent.
+ *
  */
 
 static VALUE
@@ -4402,43 +4407,47 @@ rb_f_exit(int argc, const VALUE *argv)
 NORETURN(static VALUE f_exit(int c, const VALUE *a, VALUE _));
 /*
  *  call-seq:
- *     exit(status=true)
- *     Kernel::exit(status=true)
- *     Process::exit(status=true)
+ *    exit(status = true)
+ *    Process.exit(status = true)
  *
- *  Initiates the termination of the Ruby script by raising the
- *  SystemExit exception. This exception may be caught. The
- *  optional parameter is used to return a status code to the invoking
- *  environment.
- *  +true+ and +FALSE+ of _status_ means success and failure
- *  respectively.  The interpretation of other integer values are
- *  system dependent.
+ *  Initiates termination of the Ruby script by raising SystemExit;
+ *  the exception may be caught.
+ *  Returns exit status +status+ to the underlying operating system.
  *
- *     begin
- *       exit
- *       puts "never get here"
- *     rescue SystemExit
- *       puts "rescued a SystemExit exception"
- *     end
- *     puts "after begin block"
+ *  Values +true+ and +false+ for argument +status+
+ *  indicate, respectively, success and failure;
+ *  The meanings of integer values are system-dependent.
  *
- *  <em>produces:</em>
+ *  Example:
  *
- *     rescued a SystemExit exception
- *     after begin block
+ *    begin
+ *      exit
+ *      puts 'Never get here.'
+ *    rescue SystemExit
+ *      puts 'Rescued a SystemExit exception.'
+ *    end
+ *    puts 'After begin block.'
  *
- *  Just prior to termination, Ruby executes any <code>at_exit</code>
- *  functions (see Kernel::at_exit) and runs any object finalizers
- *  (see ObjectSpace::define_finalizer).
+ *  Output:
  *
- *     at_exit { puts "at_exit function" }
- *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
- *     exit
+ *    Rescued a SystemExit exception.
+ *    After begin block.
  *
- *  <em>produces:</em>
+ *  Just prior to final termination,
+ *  Ruby executes any at-exit procedures (see Kernel::at_exit)
+ *  and any object finalizers (see ObjectSpace::define_finalizer).
  *
- *     at_exit function
- *     in finalizer
+ *  Example:
+ *
+ *    at_exit { puts 'In at_exit function.' }
+ *    ObjectSpace.define_finalizer('string', proc { puts 'In finalizer.' })
+ *    exit
+ *
+ *  Output:
+ *
+ *     In at_exit function.
+ *     In finalizer.
+ *
  */
 
 static VALUE
@@ -4477,14 +4486,16 @@ NORETURN(static VALUE f_abort(int c, const VALUE *a, VALUE _));
 
 /*
  *  call-seq:
- *     abort
- *     Kernel::abort([msg])
- *     Process.abort([msg])
+ *    abort
+ *    Process.abort(msg = nil)
  *
- *  Terminate execution immediately, effectively by calling
- *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
- *  to STDERR prior to terminating. Otherwise, if an exception was raised,
- *  print its message and backtrace.
+ *  Terminates execution immediately, effectively by calling
+ *  <tt>Kernel.exit(false)</tt>.
+ *
+ *  If string argument +msg+ is given,
+ *  it is written to STDERR prior to termination;
+ *  otherwise, if an exception was raised,
+ *  prints its message and backtrace.
  */
 
 static VALUE
