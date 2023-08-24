@@ -504,9 +504,8 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
                     mem::take(&mut payload.dead_blocks)
                         .into_iter()
                         .for_each(|block| unsafe { free_block(block, false) });
+                    payload.gc_obj_offsets.clear();
                 }
-
-                payload.gc_obj_offsets.clear();
             }
 
             // Reset output code entry point
