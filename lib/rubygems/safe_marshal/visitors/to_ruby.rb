@@ -89,7 +89,11 @@ module Gem::SafeMarshal
                 nano = Rational(nano_num, nano_den * 1_000_000_000)
                 object = Time.at(object.to_i + nano + object.subsec)
               elsif RUBY_ENGINE == "truffleruby"
-                object = Time.at(object.to_i, Rational(nano_num, nano_den).to_i, :nanosecond)
+                if RUBY_ENGINE_VERSION >= "23.0.0"
+                  object = Time.at(object.to_i, Rational(nano_num, nano_den).to_i, :nanosecond)
+                else
+                  object = object.floor + Rational(nano_num, nano_den * 1_000_000_000)
+                end
               else # assume "ruby"
                 nano = Rational(nano_num, nano_den)
                 nsec, subnano = nano.divmod(1)
@@ -106,12 +110,19 @@ module Gem::SafeMarshal
               object = object.localtime offset
             end
 
+            if RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23.0.0"
+              ivars << [:@offset, offset]
+              ivars << [:@zone, zone]
+              ivars << [:@nano_num, nano_num] if nano_num
+              ivars << [:@nano_den, nano_den] if nano_den
+            end
+
             @objects[object_offset] = object
           end
         when Elements::String
           enc = nil
 
-          ivars.each do |k, v|
+          ivars.reject! do |k, v|
             case k
             when :E
               case v
@@ -119,17 +130,19 @@ module Gem::SafeMarshal
                 enc = "UTF-8"
               when FalseClass
                 enc = "US-ASCII"
+              else
+              enc = v
               end
             else
-              break
+              next false
             end
-            idx += 1
+            true
           end
 
           object.replace ::String.new(object, encoding: enc)
         end
 
-        ivars[idx..].each do |k, v|
+        ivars.each do |k, v|
           object.instance_variable_set k, v
         end
         object

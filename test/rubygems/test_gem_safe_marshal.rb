@@ -77,7 +77,10 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.00001, :nanosecond),
   ].each_with_index do |t, i|
     define_method("test_time_#{i} #{t.inspect}") do
-      assert_safe_load_as t, additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a]
+      pend "Marshal.load of Time with custom zone is broken before Truffleruby 23" if t.zone.nil? && RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
+
+      additional_methods = [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a]
+      assert_safe_load_as t, additional_methods: additional_methods
     end
   end
 
