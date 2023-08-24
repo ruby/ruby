@@ -3930,8 +3930,7 @@ str_ensure_byte_pos(VALUE str, long pos)
     const char *s = RSTRING_PTR(str);
     const char *e = RSTRING_END(str);
     const char *p = s + pos;
-    const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
-    if (p != pp) {
+    if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
         rb_raise(rb_eIndexError,
                  "offset %ld does not land on character boundary", pos);
     }
@@ -9521,7 +9520,7 @@ chompped_length(VALUE str, VALUE rs)
     if (p[len-1] == newline &&
         (rslen <= 1 ||
          memcmp(rsptr, pp, rslen) == 0)) {
-        if (rb_enc_left_char_head(p, pp, e, enc) == pp)
+        if (at_char_boundary(p, pp, e, enc))
             return len - rslen;
         RB_GC_GUARD(rs);
     }
@@ -10497,7 +10496,7 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
         p = RSTRING_PTR(str);
         e = p + slen;
         s = e - tlen;
-        if (rb_enc_left_char_head(p, s, e, enc) != s)
+        if (!at_char_boundary(p, s, e, enc))
             continue;
         if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
             return Qtrue;
@@ -10605,7 +10604,7 @@ deleted_suffix_length(VALUE str, VALUE suffix)
     suffixptr = RSTRING_PTR(suffix);
     s = strptr + olen - suffixlen;
     if (memcmp(s, suffixptr, suffixlen) != 0) return 0;
-    if (rb_enc_left_char_head(strptr, s, strptr + olen, enc) != s) return 0;
+    if (!at_char_boundary(strptr, s, strptr + olen, enc)) return 0;
 
     return suffixlen;
 }

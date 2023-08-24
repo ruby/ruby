@@ -119,6 +119,12 @@ is_broken_string(VALUE str)
     return rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN;
 }
 
+static inline bool
+at_char_boundary(const char *s, const char *p, const char *e, rb_encoding *enc)
+{
+    return rb_enc_left_char_head(s, p, e, enc) == p;
+}
+
 /* expect tail call optimization */
 // YJIT needs this function to never allocate and never raise
 static inline VALUE

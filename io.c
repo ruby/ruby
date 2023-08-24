@@ -4144,8 +4144,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
                 s = RSTRING_PTR(str);
                 e = RSTRING_END(str);
                 p = e - rslen;
-                pp = rb_enc_left_char_head(s, p, e, enc);
-                if (pp != p) continue;
+                if (!at_char_boundary(s, p, e, enc)) continue;
                 if (!rspara) rscheck(rsptr, rslen, rs);
                 if (memcmp(p, rsptr, rslen) == 0) {
                     if (chomp) {
