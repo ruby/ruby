@@ -1892,6 +1892,23 @@ enum handle_interrupt_timing {
 };
 
 static enum handle_interrupt_timing
+rb_threadptr_pending_interrupt_from_symbol(rb_thread_t *th, VALUE sym)
+{
+    if (sym == sym_immediate) {
+        return INTERRUPT_IMMEDIATE;
+    }
+    else if (sym == sym_on_blocking) {
+        return INTERRUPT_ON_BLOCKING;
+    }
+    else if (sym == sym_never) {
+        return INTERRUPT_NEVER;
+    }
+    else {
+        rb_raise(rb_eThreadError, "unknown mask signature");
+    }
+}
+
+static enum handle_interrupt_timing
 rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 {
     VALUE mask;
@@ -1902,6 +1919,16 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 
     for (i=0; i<mask_stack_len; i++) {
         mask = mask_stack[mask_stack_len-(i+1)];
+
+        if (SYMBOL_P(mask)) {
+            /* do not match RUBY_FATAL_THREAD_KILLED etc */
+            if (err != rb_cInteger) {
+                return rb_threadptr_pending_interrupt_from_symbol(th, mask);
+            }
+            else {
+                continue;
+            }
+        }
 
         for (mod = err; mod; mod = RCLASS_SUPER(mod)) {
             VALUE klass = mod;
@@ -1915,18 +1942,7 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
             }
 
             if ((sym = rb_hash_aref(mask, klass)) != Qnil) {
-                if (sym == sym_immediate) {
-                    return INTERRUPT_IMMEDIATE;
-                }
-                else if (sym == sym_on_blocking) {
-                    return INTERRUPT_ON_BLOCKING;
-                }
-                else if (sym == sym_never) {
-                    return INTERRUPT_NEVER;
-                }
-                else {
-                    rb_raise(rb_eThreadError, "unknown mask signature");
-                }
+                return rb_threadptr_pending_interrupt_from_symbol(th, sym);
             }
         }
         /* try to next mask */
@@ -2018,11 +2034,23 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val, VALUE args)
         rb_raise(rb_eArgError, "unknown mask signature");
     }
 
-    if (maskp) {
-        if (!*maskp) {
+    if (key == rb_eException && (UNDEF_P(*maskp) || NIL_P(*maskp))) {
+        *maskp = val;
+        return ST_CONTINUE;
+    }
+
+    if (RTEST(*maskp)) {
+        if (!RB_TYPE_P(*maskp, T_HASH)) {
+            VALUE prev = *maskp;
             *maskp = rb_ident_hash_new();
+            if (SYMBOL_P(prev)) {
+                rb_hash_aset(*maskp, rb_eException, prev);
+            }
         }
         rb_hash_aset(*maskp, key, val);
+    }
+    else {
+        *maskp = Qfalse;
     }
 
     return ST_CONTINUE;
@@ -2139,7 +2167,7 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val, VALUE args)
 static VALUE
 rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 {
-    VALUE mask;
+    VALUE mask = Qundef;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     volatile VALUE r = Qnil;
@@ -2152,14 +2180,19 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     mask_arg = rb_to_hash_type(mask_arg);
 
     if (OBJ_FROZEN(mask_arg) && rb_hash_compare_by_id_p(mask_arg)) {
-        rb_hash_foreach(mask_arg, handle_interrupt_arg_check_i, 0);
+        mask = Qnil;
+    }
+
+    rb_hash_foreach(mask_arg, handle_interrupt_arg_check_i, (VALUE)&mask);
+
+    if (UNDEF_P(mask)) {
+        return rb_yield(Qnil);
+    }
+
+    if (!RTEST(mask)) {
         mask = mask_arg;
-    } else {
-        mask = 0;
-        rb_hash_foreach(mask_arg, handle_interrupt_arg_check_i, (VALUE)&mask);
-        if (!mask) {
-            return rb_yield(Qnil);
-        }
+    }
+    else if (RB_TYPE_P(mask, T_HASH)) {
         OBJ_FREEZE_RAW(mask);
     }
 
