@@ -41,6 +41,6 @@ YP_EXPORTED_FUNCTION const char * yp_node_type_to_str(yp_node_type_t node_type);
 typedef struct yp_scope_node {
     yp_node_t base;
     struct yp_parameters_node *parameters;
-    struct yp_statements_node *statements;
+    yp_node_t *body;
     yp_constant_id_list_t locals;
 } yp_scope_node_t;
