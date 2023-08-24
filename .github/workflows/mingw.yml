@@ -139,11 +139,12 @@ jobs:
         run: |
           make test
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test'}}
-        shell: cmd
 
       - name: test-all
         timeout-minutes: 45
         run: |
+          # Actions uses UTF8, causes test failures, similar to normal OS setup
+          chcp.com 437
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: >-
@@ -151,7 +152,6 @@ jobs:
             ${{ matrix.test-all-opts }}
           BUNDLER_VERSION:
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/')}}
-        shell: cmd
 
       - name: test-spec
         timeout-minutes: 10
