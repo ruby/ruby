@@ -173,9 +173,12 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_pass_keywords
-    require 'tempfile'
-    t = Tempfile.new
-    assert_kind_of File, URI.open(Tempfile.new.path, mode: 0666)
+    begin
+      f = URI.open(File::NULL, mode: 0666)
+      assert_kind_of File, f
+    ensure
+      f&.close
+    end
 
     o = Object.new
     def o.open(foo: ) foo end
