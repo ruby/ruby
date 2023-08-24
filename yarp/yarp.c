@@ -1017,7 +1017,7 @@ yp_block_argument_node_create(yp_parser_t *parser, const yp_token_t *operator, y
 }
 
 static void
-YP_ATTRIBUTE_UNUSED yp_scope_node_create(yp_parameters_node_t *parameters, yp_node_t *body, yp_constant_id_list_t locals, const char *start, const char *end, yp_scope_node_t *dest)
+yp_scope_node_create(yp_parameters_node_t *parameters, yp_node_t *body, yp_constant_id_list_t locals, const char *start, const char *end, yp_scope_node_t *dest)
 {
     *dest = (yp_scope_node_t) {
          {
@@ -1043,33 +1043,35 @@ yp_scope_node_init(yp_node_t *node, yp_scope_node_t *dest) {
     switch (node->type) {
       case YP_NODE_BLOCK_NODE: {
           yp_block_node_t *block_node = (yp_block_node_t *) node;
-          body = (yp_node_t *)block_node->body;
+          body = block_node->body;
           locals = block_node->locals;
-          parameters = block_node->parameters->parameters;
+          if (block_node->parameters) {
+              parameters = block_node->parameters->parameters;
+          }
           break;
       }
       case YP_NODE_CLASS_NODE: {
           yp_class_node_t *class_node = (yp_class_node_t *) node;
-          body = (yp_node_t *)class_node->body;
+          body = class_node->body;
           locals = class_node->locals;
           break;
       }
       case YP_NODE_DEF_NODE: {
           yp_def_node_t *def_node = (yp_def_node_t *) node;
           parameters = def_node->parameters;
-          body = (yp_node_t *)def_node->body;
+          body = def_node->body;
           locals = def_node->locals;
           break;
       }
       case YP_NODE_MODULE_NODE: {
           yp_module_node_t *module_node = (yp_module_node_t *) node;
-          body = (yp_node_t *)module_node->body;
+          body = module_node->body;
           locals = module_node->locals;
           break;
       }
       case YP_NODE_SINGLETON_CLASS_NODE: {
           yp_singleton_class_node_t *singleton_class_node = (yp_singleton_class_node_t *) node;
-          body = (yp_node_t *)singleton_class_node->body;
+          body = singleton_class_node->body;
           locals = singleton_class_node->locals;
           break;
       }
