@@ -684,9 +684,14 @@ static VALUE bsearch_impl(int argc, VALUE *argv, VALUE range, int is_target_firs
 
 /*
  *  call-seq:
- *     bsearch(target: :first) {|obj| block }  -> value
+ *    bsearch(target: :first) {|obj| block }  -> value
+ *    bsearch(target: :first)                 -> enumerator
  *
  *  Returns an element from +self+ selected by a binary search.
+ *
+ *    r = 1..10
+ *    r.bsearch {|x| x ** 2 >= 10 } # => 4
+ *    r.bsearch(target: :last) {|x| x ** 2 <= 10 } # => 3
  *
  *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  *

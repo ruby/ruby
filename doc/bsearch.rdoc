@@ -15,42 +15,54 @@ Given a block, each of these methods returns an element (or element index) from 
 as determined by a binary search.
 The search finds an element of +self+ which meets
 the given condition in <tt>O(log n)</tt> operations, where +n+ is the count of elements.
-+self+ should be sorted, but this is not checked.
++self+ must be sorted to get the correct value, but this is not checked.
 
 There are two search modes:
 
-Find-minimum mode:: method +bsearch+ returns the first element for which
-                    the block returns +true+;
-                    the block must return +true+ or +false+.
-Find-any mode:: method +bsearch+ some element, if any, for which
-                the block returns zero.
-                the block must return a numeric value.
+Find-by-boolean mode:: method +bsearch+ returns the first (or last) element
+                       that makes the given block return +true+.
+                       If no elements satisfy the condition, +bsearch+ returns +nil+.
+                       The block must return +true+ or +false+.
+Find-by-number mode:: method +bsearch+ returns the first (or last) element
+                      that makes the given block return zero.
+                      If no elements satisfy the condition, +bsearch+ returns +nil+.
+                      The block must return a numeric value.
 
-The block should not mix the modes by sometimes returning +true+ or +false+
+The block must not mix the modes by sometimes returning +true+ or +false+
 and other times returning a numeric value, but this is not checked.
 
-<b>Find-Minimum Mode</b>
+You can pass the argument <tt>target</tt> to specify whether the method returns the first
+or the last matching element. The possible values are <tt>:first</tt> or <tt>:last</tt>.
 
-In find-minimum mode, the block must return +true+ or +false+.
+<b>Find-by-boolean Mode</b>
+
+In find-by-boolean mode, the block must return +true+ or +false+.
 The further requirement (though not checked) is that
 there are no indexes +i+ and +j+ such that:
 
 - <tt>0 <= i < j <= self.size</tt>.
-- The block returns +true+ for <tt>self[i]</tt> and +false+ for <tt>self[j]</tt>.
+- When <tt>target == :first</tt>, the block returns +true+ for <tt>self[i]</tt> and +false+ for <tt>self[j]</tt>.
+- When <tt>target == :last</tt>, the block returns +false+ for <tt>self[i]</tt> and +true+ for <tt>self[j]</tt>.
 
-Less formally: the block is such that all +false+-evaluating elements
+Less formally: When <tt>target == :first</tt>, the block is such that all +false+-evaluating elements
 precede all +true+-evaluating elements.
+When <tt>target == :last</tt>, the block is such that all +true+-evaluating elements
+precede all +false+-evaluating elements.
 
-In find-minimum mode, method +bsearch+ returns the first element
+In find-by-boolean mode, method +bsearch+ returns the first (or last) element
 for which the block returns +true+.
 
 Examples:
 
   a = [0, 4, 7, 10, 12]
+  # same as bsearch(target: :first)
   a.bsearch {|x| x >= 4 } # => 4
   a.bsearch {|x| x >= 6 } # => 7
   a.bsearch {|x| x >= -1 } # => 0
   a.bsearch {|x| x >= 100 } # => nil
+
+  a.bsearch(target: :last) {|x| x <= 8 } # => 7
+  a.bsearch(target: :last) {|x| x <= -10 } # => nil
 
   r = (0...a.size)
   r.bsearch {|i| a[i] >= 4 } #=> 1
@@ -60,7 +72,7 @@ Examples:
   r = (0.0...Float::INFINITY)
   r.bsearch {|x| Math.log(x) >= 0 } #=> 1.0
 
-These blocks make sense in find-minimum mode:
+These blocks make sense in find-by-boolean mode with <tt>target == :first</tt>:
 
   a = [0, 4, 7, 10, 12]
   a.map {|x| x >= 4 } # => [false, true, true, true, true]
@@ -72,9 +84,21 @@ This would not make sense:
 
   a.map {|x| x == 7 } # => [false, false, true, false, false]
 
-<b>Find-Any Mode</b>
+These blocks make sense in find-by-boolean mode with <tt>target == :last</tt>:
 
-In find-any mode, the block must return a numeric value.
+  a = [0, 4, 7, 10, 12]
+  a.map {|x| x <= 0 } # => [true, false, false, false, false]
+  a.map {|x| x <= 6 } # => [true, true, false, false, false]
+  a.map {|x| x <= 100 } # => [true, true, true, true, true]
+  a.map {|x| x <= -1 } # => [false, false, false, false, false]
+
+This would not make sense:
+
+  a.map {|x| x == 7 } # => [false, false, true, false, false]
+
+<b>Find-by-number Mode</b>
+
+In find-by-number mode, the block must return a numeric value.
 The further requirement (though not checked) is that
 there are no indexes +i+ and +j+ such that:
 
@@ -90,7 +114,7 @@ Less formally: the block is such that:
 - All positive-evaluating elements precede all negative-evaluating elements.
 - All zero-evaluating elements precede all negative-evaluating elements.
 
-In find-any mode, method +bsearch+ returns some element
+In find-by-number mode, method +bsearch+ returns the first (or last) element
 for which the block returns zero, or +nil+ if no such element is found.
 
 Examples:
@@ -100,6 +124,8 @@ Examples:
   a.bsearch {|element| -1 <=> element } # => nil
   a.bsearch {|element| 5 <=> element } # => nil
   a.bsearch {|element| 15 <=> element } # => nil
+  a.bsearch { 0 } # => 0
+  a.bsearch(target: :last) { 0 } # => 12
 
   a = [0, 100, 100, 100, 200]
   r = (0..4)
@@ -107,7 +133,7 @@ Examples:
   r.bsearch {|i| 300 - a[i] } #=> nil
   r.bsearch {|i|  50 - a[i] } #=> nil
 
-These blocks make sense in find-any mode:
+These blocks make sense in find-by-number mode:
 
   a = [0, 4, 7, 10, 12]
   a.map {|element| 7 <=> element } # => [1, 1, 0, -1, -1]

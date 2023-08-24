@@ -3531,6 +3531,10 @@ static VALUE rb_ary_bsearch_index(int argc, VALUE *argv, VALUE ary);
  *
  *  Returns an element from +self+ selected by a binary search.
  *
+ *    a = [2, 3, 5, 7, 11]
+ *    a.bsearch {|x| x >= 6 } # => 7
+ *    a.bsearch(target: :last) {|x| x <= 6 } # => 5
+ *
  *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  */
 
