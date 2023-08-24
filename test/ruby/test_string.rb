@@ -1938,6 +1938,8 @@ CODE
     assert_send([S("hello"), :start_with?, S("hel")])
     assert_not_send([S("hello"), :start_with?, S("el")])
     assert_send([S("hello"), :start_with?, S("el"), S("he")])
+    assert_send([S("\xFF\xFE"), :start_with?, S("\xFF")])
+    assert_not_send([S("\u{c4}"), :start_with?, S("\xC3")])
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").start_with? :not_convertible_to_string}
@@ -2930,6 +2932,7 @@ CODE
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s.delete_prefix("\x95"))
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
 
+    assert_equal("\xFE", S("\xFF\xFE").delete_prefix("\xFF"))
   end
 
   def test_delete_prefix_clear_coderange
@@ -2978,6 +2981,9 @@ CODE
     assert_equal(nil, s.delete_prefix!("\xe3"))
     assert_equal("\xe3\x81\x82", s)
 
+    s = S("\xFF\xFE")
+    assert_equal("\xFE", s.delete_prefix!("\xFF"))
+    assert_equal("\xFE", s)
   end
 
   def test_delete_prefix_bang_clear_coderange
