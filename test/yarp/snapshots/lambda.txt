@@ -1,6 +1,6 @@
-ProgramNode(0...51)(
+ProgramNode(0...92)(
   [],
-  StatementsNode(0...51)(
+  StatementsNode(0...92)(
     [LambdaNode(0...14)(
        [:foo],
        (0...2),
@@ -102,6 +102,72 @@ ProgramNode(0...51)(
          [],
          (38...39),
          (47...48)
+       ),
+       nil
+     ),
+     LambdaNode(53...72)(
+       [:foo],
+       (53...55),
+       BlockParametersNode(56...65)(
+         ParametersNode(56...65)(
+           [],
+           [OptionalParameterNode(56...65)(
+              :foo,
+              (56...59),
+              (60...61),
+              CallNode(62...65)(
+                nil,
+                nil,
+                (62...65),
+                nil,
+                nil,
+                nil,
+                nil,
+                2,
+                "bar"
+              )
+            )],
+           [],
+           nil,
+           [],
+           nil,
+           nil
+         ),
+         [],
+         nil,
+         nil
+       ),
+       nil
+     ),
+     LambdaNode(74...92)(
+       [:foo],
+       (74...76),
+       BlockParametersNode(77...85)(
+         ParametersNode(77...85)(
+           [],
+           [],
+           [],
+           nil,
+           [KeywordParameterNode(77...85)(
+              (77...81),
+              CallNode(82...85)(
+                nil,
+                nil,
+                (82...85),
+                nil,
+                nil,
+                nil,
+                nil,
+                2,
+                "bar"
+              )
+            )],
+           nil,
+           nil
+         ),
+         [],
+         nil,
+         nil
        ),
        nil
      )]
