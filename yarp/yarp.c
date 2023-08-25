@@ -1,5 +1,4 @@
 #include "yarp.h"
-#include "yarp/version.h"
 
 // The YARP version and the serialization format.
 const char *

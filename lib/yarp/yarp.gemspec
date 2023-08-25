@@ -1,16 +1,8 @@
 # frozen_string_literal: true
 
-if File.exist?(File.expand_path("version.rb", __dir__))
-  # CRuby
-  require_relative "version"
-else
-  # Within the gem/local repository
-  require_relative "lib/yarp/version"
-end
-
 Gem::Specification.new do |spec|
   spec.name = "yarp"
-  spec.version = YARP::VERSION
+  spec.version = "0.8.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -75,7 +67,6 @@ Gem::Specification.new do |spec|
     "lib/yarp/pack.rb",
     "lib/yarp/ripper_compat.rb",
     "lib/yarp/serialize.rb",
-    "lib/yarp/version.rb",
     "src/diagnostic.c",
     "src/enc/yp_big5.c",
     "src/enc/yp_euc_jp.c",

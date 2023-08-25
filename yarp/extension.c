@@ -545,12 +545,12 @@ RUBY_FUNC_EXPORTED void
 Init_yarp(void) {
     // Make sure that the YARP library version matches the expected version.
     // Otherwise something was compiled incorrectly.
-    if (strcmp(yp_version(), YP_VERSION) != 0) {
+    if (strcmp(yp_version(), EXPECTED_YARP_VERSION) != 0) {
         rb_raise(
             rb_eRuntimeError,
             "The YARP library version (%s) does not match the expected version (%s)",
             yp_version(),
-            YP_VERSION
+            EXPECTED_YARP_VERSION
         );
     }
 
@@ -566,6 +566,9 @@ Init_yarp(void) {
     rb_cYARPParseWarning = rb_define_class_under(rb_cYARP, "ParseWarning", rb_cObject);
     rb_cYARPParseResult = rb_define_class_under(rb_cYARP, "ParseResult", rb_cObject);
 
+    // Define the version string here so that we can use the constants defined
+    // in yarp.h.
+    rb_define_const(rb_cYARP, "VERSION", rb_str_new2(EXPECTED_YARP_VERSION));
     rb_define_const(rb_cYARP, "BACKEND", ID2SYM(rb_intern("CExtension")));
 
     // First, the functions that have to do with lexing and parsing.
