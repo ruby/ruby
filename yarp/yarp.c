@@ -1553,7 +1553,7 @@ yp_case_node_end_keyword_loc_set(yp_case_node_t *node, const yp_token_t *end_key
 
 // Allocate a new ClassNode node.
 static yp_class_node_t *
-yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *class_keyword, yp_node_t *constant_path, const yp_token_t *inheritance_operator, yp_node_t *superclass, yp_node_t *body, const yp_token_t *end_keyword) {
+yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *class_keyword, yp_node_t *constant_path, const yp_token_t *name, const yp_token_t *inheritance_operator, yp_node_t *superclass, yp_node_t *body, const yp_token_t *end_keyword) {
     yp_class_node_t *node = YP_ALLOC_NODE(parser, yp_class_node_t);
 
     *node = (yp_class_node_t) {
@@ -1567,9 +1567,11 @@ yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
         .inheritance_operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(inheritance_operator),
         .superclass = superclass,
         .body = body,
-        .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword)
+        .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword),
+        .name = YP_EMPTY_STRING
     };
 
+    yp_string_shared_init(&node->name, name->start, name->end);
     return node;
 }
 
@@ -2746,7 +2748,7 @@ yp_match_required_node_create(yp_parser_t *parser, yp_node_t *value, yp_node_t *
 
 // Allocate a new ModuleNode node.
 static yp_module_node_t *
-yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *module_keyword, yp_node_t *constant_path, yp_node_t *body, const yp_token_t *end_keyword) {
+yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const yp_token_t *module_keyword, yp_node_t *constant_path, const yp_token_t *name, yp_node_t *body, const yp_token_t *end_keyword) {
     yp_module_node_t *node = YP_ALLOC_NODE(parser, yp_module_node_t);
 
     *node = (yp_module_node_t) {
@@ -2761,9 +2763,11 @@ yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const 
         .module_keyword_loc = YP_LOCATION_TOKEN_VALUE(module_keyword),
         .constant_path = constant_path,
         .body = body,
-        .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword)
+        .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword),
+        .name = YP_EMPTY_STRING
     };
 
+    yp_string_shared_init(&node->name, name->start, name->end);
     return node;
 }
 
@@ -10854,7 +10858,12 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 return (yp_node_t *) yp_singleton_class_node_create(parser, &locals, &class_keyword, &operator, expression, statements, &parser->previous);
             }
 
-            yp_node_t *name = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected to find a class name after `class`.");
+            yp_node_t *constant_path = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected to find a class name after `class`.");
+            yp_token_t name = parser->previous;
+            if (name.type != YP_TOKEN_CONSTANT) {
+                yp_diagnostic_list_append(&parser->error_list, name.start, name.end, "Expected a constant name after `class`.");
+            }
+
             yp_token_t inheritance_operator;
             yp_node_t *superclass;
 
@@ -10895,7 +10904,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_constant_id_list_t locals = parser->current_scope->locals;
             yp_parser_scope_pop(parser);
             yp_do_loop_stack_pop(parser);
-            return (yp_node_t *) yp_class_node_create(parser, &locals, &class_keyword, name, &inheritance_operator, superclass, statements, &parser->previous);
+            return (yp_node_t *) yp_class_node_create(parser, &locals, &class_keyword, constant_path, &name, &inheritance_operator, superclass, statements, &parser->previous);
         }
         case YP_TOKEN_KEYWORD_DEF: {
             yp_token_t def_keyword = parser->current;
@@ -11289,13 +11298,14 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             parser_lex(parser);
 
             yp_token_t module_keyword = parser->previous;
-            yp_node_t *name = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected to find a module name after `module`.");
+            yp_node_t *constant_path = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected to find a module name after `module`.");
+            yp_token_t name;
 
-            // If we can recover from a syntax error that occurred while parsing the
-            // name of the module, then we'll handle that here.
-            if (YP_NODE_TYPE_P(name, YP_NODE_MISSING_NODE)) {
-                yp_token_t end_keyword = (yp_token_t) { .type = YP_TOKEN_MISSING, .start = parser->previous.end, .end = parser->previous.end };
-                return (yp_node_t *) yp_module_node_create(parser, NULL, &module_keyword, name, NULL, &end_keyword);
+            // If we can recover from a syntax error that occurred while parsing
+            // the name of the module, then we'll handle that here.
+            if (YP_NODE_TYPE_P(constant_path, YP_NODE_MISSING_NODE)) {
+                yp_token_t missing = (yp_token_t) { .type = YP_TOKEN_MISSING, .start = parser->previous.end, .end = parser->previous.end };
+                return (yp_node_t *) yp_module_node_create(parser, NULL, &module_keyword, constant_path, &missing, NULL, &missing);
             }
 
             while (accept(parser, YP_TOKEN_COLON_COLON)) {
@@ -11304,7 +11314,15 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 expect(parser, YP_TOKEN_CONSTANT, "Expected to find a module name after `::`.");
                 yp_node_t *constant = (yp_node_t *) yp_constant_read_node_create(parser, &parser->previous);
 
-                name = (yp_node_t *)yp_constant_path_node_create(parser, name, &double_colon, constant);
+                constant_path = (yp_node_t *) yp_constant_path_node_create(parser, constant_path, &double_colon, constant);
+            }
+
+            // Here we retrieve the name of the module. If it wasn't a constant,
+            // then it's possible that `module foo` was passed, which is a
+            // syntax error. We handle that here as well.
+            name = parser->previous;
+            if (name.type != YP_TOKEN_CONSTANT) {
+                yp_diagnostic_list_append(&parser->error_list, name.start, name.end, "Expected to find a module name after `module`.");
             }
 
             yp_parser_scope_push(parser, true);
@@ -11331,7 +11349,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 yp_diagnostic_list_append(&parser->error_list, module_keyword.start, module_keyword.end, "Module definition in method body");
             }
 
-            return (yp_node_t *) yp_module_node_create(parser, &locals, &module_keyword, name, statements, &parser->previous);
+            return (yp_node_t *) yp_module_node_create(parser, &locals, &module_keyword, constant_path, &name, statements, &parser->previous);
         }
         case YP_TOKEN_KEYWORD_NIL:
             parser_lex(parser);

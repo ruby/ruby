@@ -30,7 +30,8 @@ ProgramNode(18...90)(
             (83...86)
           )]
        ),
-       (87...90)
+       (87...90),
+       "ExampleUTF8ClassNameVarietà"
      )]
   )
 )

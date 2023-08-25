@@ -18,9 +18,10 @@ class ErrorsTest < Test::Unit::TestCase
       Location(),
       ConstantReadNode(),
       StatementsNode(
-        [ModuleNode([], Location(), MissingNode(), nil, Location())]
+        [ModuleNode([], Location(), MissingNode(), nil, Location(), "")]
       ),
-      Location()
+      Location(),
+      "Parent"
     )
 
     assert_errors expected, "module Parent module end", [
@@ -391,7 +392,7 @@ class ErrorsTest < Test::Unit::TestCase
       Location(),
       nil,
       nil,
-      StatementsNode([ModuleNode([], Location(), ConstantReadNode(), nil, Location())]),
+      StatementsNode([ModuleNode([], Location(), ConstantReadNode(), nil, Location(), "A")]),
       [],
       Location(),
       nil,
@@ -422,7 +423,7 @@ class ErrorsTest < Test::Unit::TestCase
            BlockNode(
              [],
              nil,
-             StatementsNode([ModuleNode([], Location(), ConstantReadNode(), nil, Location())]),
+             StatementsNode([ModuleNode([], Location(), ConstantReadNode(), nil, Location(), "Foo")]),
              Location(),
              Location()
            ),
@@ -463,7 +464,8 @@ class ErrorsTest < Test::Unit::TestCase
            nil,
            nil,
            nil,
-           Location()
+           Location(),
+           "A"
          )]
       ),
       [],
@@ -963,7 +965,8 @@ class ErrorsTest < Test::Unit::TestCase
       nil,
       nil,
       StatementsNode([ReturnNode(Location(), nil)]),
-      Location()
+      Location(),
+      "A"
     )
 
     assert_errors expected, "class A; return; end", [
@@ -977,7 +980,8 @@ class ErrorsTest < Test::Unit::TestCase
       Location(),
       ConstantReadNode(),
       StatementsNode([ReturnNode(Location(), nil)]),
-      Location()
+      Location(),
+      "A"
     )
 
     assert_errors expected, "module A; return; end", [

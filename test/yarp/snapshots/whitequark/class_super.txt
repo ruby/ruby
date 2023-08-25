@@ -8,7 +8,8 @@ ProgramNode(0...20)(
        (10...11),
        ConstantReadNode(12...15)(),
        nil,
-       (17...20)
+       (17...20),
+       "Foo"
      )]
   )
 )

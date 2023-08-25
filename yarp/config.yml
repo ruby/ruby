@@ -731,6 +731,8 @@ nodes:
         type: node?
       - name: end_keyword_loc
         type: location
+      - name: name
+        type: string
     comment: |
       Represents a class declaration involving the `class` keyword.
 
@@ -1318,6 +1320,8 @@ nodes:
         type: node?
       - name: end_keyword_loc
         type: location
+      - name: name
+        type: string
     comment: |
       Represents a module declaration involving the `module` keyword.
 
