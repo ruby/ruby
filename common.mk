@@ -202,6 +202,11 @@ $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
+main: $(srcdir)/lib/yarp/mutation_visitor.rb
+srcs: $(srcdir)/lib/yarp/mutation_visitor.rb
+$(srcdir)/lib/yarp/mutation_visitor.rb: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/lib/yarp/mutation_visitor.rb.erb
+	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb lib/yarp/mutation_visitor.rb $(srcdir)/lib/yarp/mutation_visitor.rb
+
 main: $(srcdir)/lib/yarp/node.rb
 srcs: $(srcdir)/lib/yarp/node.rb
 $(srcdir)/lib/yarp/node.rb: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/lib/yarp/node.rb.erb
