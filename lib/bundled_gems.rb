@@ -26,6 +26,7 @@ module Gem::BUNDLED_GEMS
   EXACT = {
     "abbrev" => true,
     "base64" => true,
+    "bigdecimal" => true,
     "csv" => true,
     "drb" => true,
     "getoptlong" => true,
