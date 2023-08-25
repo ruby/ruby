@@ -50,6 +50,13 @@ class EncodingTest < Test::Unit::TestCase
     assert_equal Encoding.find("utf-8"), actual
   end
 
+  def test_coding_with_whitespace
+    result = YARP.parse("# coding \t \r  \v   :     \t \v    \r   ascii-8bit \nident")
+    actual = result.value.statements.body.first.name.encoding
+    assert_equal Encoding.find("ascii-8bit"), actual
+  end
+
+
   def test_emacs_style
     result = YARP.parse("# -*- coding: utf-8 -*-\nident")
     actual = result.value.statements.body.first.name.encoding

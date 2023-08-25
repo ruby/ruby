@@ -4328,11 +4328,13 @@ parser_lex_encoding_comment_start(yp_parser_t *parser, const char *cursor, ptrdi
 
     const char *cursor_limit = cursor + length - key_length + 1;
     while ((cursor = yp_memchr(cursor, 'c', (size_t) (cursor_limit - cursor), parser->encoding_changed, &parser->encoding)) != NULL) {
-        if (
-            (strncmp(cursor, "coding", key_length - 1) == 0) &&
-            (cursor[key_length - 1] == ':' || cursor[key_length - 1] == '=')
-        ) {
-            return cursor + key_length;
+        if (strncmp(cursor, "coding", key_length - 1) == 0) {
+            size_t whitespace_after_coding = yp_strspn_inline_whitespace(cursor + key_length - 1, parser->end - (cursor + key_length - 1));
+            size_t cur_pos = key_length + whitespace_after_coding;
+
+            if (cursor[cur_pos - 1] == ':' || cursor[cur_pos - 1] == '=') {
+                return cursor + cur_pos;
+            }
         }
 
         cursor++;
