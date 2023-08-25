@@ -63,6 +63,7 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
 
     steps:
