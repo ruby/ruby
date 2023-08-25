@@ -4,7 +4,7 @@
 # test.
 return if RUBY_ENGINE == "jruby" || RUBY_ENGINE == "truffleruby"
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 class BOMTest < Test::Unit::TestCase
   def test_ident

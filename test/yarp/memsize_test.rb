@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 return if YARP::BACKEND == :FFI
 

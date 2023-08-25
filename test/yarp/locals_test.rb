@@ -13,7 +13,7 @@ return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.2"
 # Ruby is handling large ISeqs on 32-bit machines
 return if RUBY_PLATFORM =~ /i686/
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 class LocalsTest < Test::Unit::TestCase
   invalid = []

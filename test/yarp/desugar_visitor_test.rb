@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 class DesugarVisitorTest < Test::Unit::TestCase
   def test_and_write

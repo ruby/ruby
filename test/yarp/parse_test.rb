@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 class ParseTest < Test::Unit::TestCase
   # When we pretty-print the trees to compare against the snapshots, we want to

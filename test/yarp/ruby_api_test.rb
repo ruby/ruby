@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 class YARPRubyAPITest < Test::Unit::TestCase
   def test_ruby_api
