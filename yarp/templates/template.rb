@@ -4,7 +4,7 @@ require "erb"
 require "fileutils"
 require "yaml"
 
-if File.exist?(File.expand_path("../lib/yarp/version", __dir__))
+if File.exist?(File.expand_path("../lib/yarp/version.rb", __dir__))
   # Within the gem/local repository
   require_relative "../lib/yarp/version"
 else
