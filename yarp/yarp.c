@@ -13482,7 +13482,7 @@ yp_metadata_read_u32(const char *ptr) {
 //   ]*
 // ]
 // ```
-static void
+void
 yp_parser_metadata(yp_parser_t *parser, const char *metadata) {
     uint32_t filepath_size = yp_metadata_read_u32(metadata);
     metadata += 4;

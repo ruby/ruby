@@ -198,66 +198,67 @@ typedef struct {
     VALUE source;
     VALUE tokens;
     rb_encoding *encoding;
-} lex_data_t;
+} parse_lex_data_t;
 
 // This is passed as a callback to the parser. It gets called every time a new
 // token is found. Once found, we initialize a new instance of Token and push it
 // onto the tokens array.
 static void
-lex_token(void *data, yp_parser_t *parser, yp_token_t *token) {
-    lex_data_t *lex_data = (lex_data_t *) parser->lex_callback->data;
+parse_lex_token(void *data, yp_parser_t *parser, yp_token_t *token) {
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
 
     VALUE yields = rb_ary_new_capa(2);
-    rb_ary_push(yields, yp_token_new(parser, token, lex_data->encoding, lex_data->source));
+    rb_ary_push(yields, yp_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source));
     rb_ary_push(yields, INT2FIX(parser->lex_state));
 
-    rb_ary_push(lex_data->tokens, yields);
+    rb_ary_push(parse_lex_data->tokens, yields);
 }
 
 // This is called whenever the encoding changes based on the magic comment at
 // the top of the file. We use it to update the encoding that we are using to
 // create tokens.
 static void
-lex_encoding_changed_callback(yp_parser_t *parser) {
-    lex_data_t *lex_data = (lex_data_t *) parser->lex_callback->data;
-    lex_data->encoding = rb_enc_find(parser->encoding.name);
+parse_lex_encoding_changed_callback(yp_parser_t *parser) {
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
+    parse_lex_data->encoding = rb_enc_find(parser->encoding.name);
 
-    // Since we got a new encoding, we need to go back and change the encoding
-    // of the tokens that we've already lexed. This should be a tiny amount
-    // since encoding magic comments need to be the first or second line of the
+    // Since the encoding changed, we need to go back and change the encoding of
+    // the tokens that were already lexed. This is only going to end up being
+    // one or two tokens, since the encoding can only change at the top of the
     // file.
-    VALUE tokens = lex_data->tokens;
+    VALUE tokens = parse_lex_data->tokens;
     for (long index = 0; index < RARRAY_LEN(tokens); index++) {
         VALUE yields = rb_ary_entry(tokens, index);
         VALUE token = rb_ary_entry(yields, 0);
 
         VALUE value = rb_ivar_get(token, rb_intern("@value"));
-        rb_enc_associate(value, lex_data->encoding);
+        rb_enc_associate(value, parse_lex_data->encoding);
         ENC_CODERANGE_CLEAR(value);
     }
 }
 
-// Return an array of tokens corresponding to the given source.
+// Parse the given input and return a ParseResult containing just the tokens or
+// the nodes and tokens.
 static VALUE
-lex_input(yp_string_t *input, const char *filepath) {
+parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
     yp_parser_t parser;
     yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
-    yp_parser_register_encoding_changed_callback(&parser, lex_encoding_changed_callback);
+    yp_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
     VALUE source_argv[] = { rb_str_new(yp_string_source(input), yp_string_length(input)), offsets };
     VALUE source = rb_class_new_instance(2, source_argv, rb_cYARPSource);
 
-    lex_data_t lex_data = {
+    parse_lex_data_t parse_lex_data = {
         .source = source,
         .tokens = rb_ary_new(),
         .encoding = rb_utf8_encoding()
     };
 
-    lex_data_t *data = &lex_data;
+    parse_lex_data_t *data = &parse_lex_data;
     yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
         .data = (void *) data,
-        .callback = lex_token,
+        .callback = parse_lex_token,
     };
 
     parser.lex_callback = &lex_callback;
@@ -270,20 +271,26 @@ lex_input(yp_string_t *input, const char *filepath) {
         rb_ary_push(offsets, INT2FIX(parser.newline_list.offsets[index]));
     }
 
+    VALUE value;
+    if (return_nodes) {
+        value = rb_ary_new_capa(2);
+        rb_ary_push(value, yp_ast_new(&parser, node, parse_lex_data.encoding));
+        rb_ary_push(value, parse_lex_data.tokens);
+    } else {
+        value = parse_lex_data.tokens;
+    }
+
     VALUE result_argv[] = {
-        lex_data.tokens,
+        value,
         parser_comments(&parser, source),
-        parser_errors(&parser, lex_data.encoding, source),
-        parser_warnings(&parser, lex_data.encoding, source),
+        parser_errors(&parser, parse_lex_data.encoding, source),
+        parser_warnings(&parser, parse_lex_data.encoding, source),
         source
     };
 
-    VALUE result = rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
-
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
-
-    return result;
+    return rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
 }
 
 // Return an array of tokens corresponding to the given string.
@@ -295,7 +302,8 @@ lex(int argc, VALUE *argv, VALUE self) {
 
     yp_string_t input;
     input_load_string(&input, string);
-    return lex_input(&input, check_string(filepath));
+
+    return parse_lex_input(&input, check_string(filepath), false);
 }
 
 // Return an array of tokens corresponding to the given file.
@@ -306,7 +314,7 @@ lex_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = lex_input(&input, checked);
+    VALUE value = parse_lex_input(&input, checked, false);
     yp_string_free(&input);
 
     return value;
@@ -316,65 +324,16 @@ lex_file(VALUE self, VALUE filepath) {
 /* Parsing Ruby code                                                          */
 /******************************************************************************/
 
-// This is passed as a callback to the parser. It gets called every time a new
-// token is found from within a call to parse that accepted a block.
-static void
-parse_token(void *data, yp_parser_t *parser, yp_token_t *token) {
-    lex_data_t *lex_data = (lex_data_t *) parser->lex_callback->data;
-    rb_yield_values(2, yp_token_new(parser, token, lex_data->encoding, lex_data->source), INT2FIX(parser->lex_state));
-}
-
 // Parse the given input and return a ParseResult instance.
 static VALUE
 parse_input(yp_string_t *input, const char *filepath) {
     yp_parser_t parser;
     yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
 
-    VALUE offsets;
-    VALUE source;
-
-    // If a block was given to the parse method, then we're going to register a
-    // lex callback that will yield the tokens to the block. This means you can
-    // get the lexer and the parser output in one method call instead of having
-    // to parse twice.
-    if (rb_block_given_p()) {
-        offsets = rb_ary_new();
-
-        VALUE source_argv[] = { rb_str_new(yp_string_source(input), yp_string_length(input)), offsets };
-        source = rb_class_new_instance(2, source_argv, rb_cYARPSource);
-
-        lex_data_t lex_data = {
-            .source = source,
-            .tokens = Qnil,
-            .encoding = rb_utf8_encoding()
-        };
-
-        lex_data_t *data = &lex_data;
-        yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
-            .data = (void *) data,
-            .callback = parse_token,
-        };
-
-        parser.lex_callback = &lex_callback;
-        yp_parser_register_encoding_changed_callback(&parser, lex_encoding_changed_callback);
-    }
-
     yp_node_t *node = yp_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
 
-    if (rb_block_given_p()) {
-        // Here we need to update the source range to have the correct newline
-        // offsets. We do it here because we've already created the object and
-        // given it over to all of the tokens.
-        for (size_t index = 0; index < parser.newline_list.size; index++) {
-            rb_ary_push(offsets, INT2FIX(parser.newline_list.offsets[index]));
-        }
-    } else {
-        // Since a block was not given, we can just create the source now the
-        // regular way.
-        source = yp_source_new(&parser);
-    }
-
+    VALUE source = yp_source_new(&parser);
     VALUE result_argv[] = {
         yp_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
@@ -426,6 +385,32 @@ parse_file(VALUE self, VALUE filepath) {
     if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
     VALUE value = parse_input(&input, checked);
+    yp_string_free(&input);
+
+    return value;
+}
+
+// Parse the given string and return a ParseResult instance.
+static VALUE
+parse_lex(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    VALUE filepath;
+    rb_scan_args(argc, argv, "11", &string, &filepath);
+
+    yp_string_t input;
+    input_load_string(&input, string);
+    return parse_lex_input(&input, check_string(filepath), true);
+}
+
+// Parse and lex the given file and return a ParseResult instance.
+static VALUE
+parse_lex_file(VALUE self, VALUE filepath) {
+    yp_string_t input;
+
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+
+    VALUE value = parse_lex_input(&input, checked, true);
     yp_string_free(&input);
 
     return value;
@@ -590,6 +575,8 @@ Init_yarp(void) {
     rb_define_singleton_method(rb_cYARP, "lex_file", lex_file, 1);
     rb_define_singleton_method(rb_cYARP, "parse", parse, -1);
     rb_define_singleton_method(rb_cYARP, "parse_file", parse_file, 1);
+    rb_define_singleton_method(rb_cYARP, "parse_lex", parse_lex, -1);
+    rb_define_singleton_method(rb_cYARP, "parse_lex_file", parse_lex_file, 1);
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.

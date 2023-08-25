@@ -170,14 +170,17 @@ yp_serialize_diagnostic_list(yp_parser_t *parser, yp_list_t *list, yp_buffer_t *
     }
 }
 
+static void
+yp_serialize_encoding(yp_encoding_t *encoding, yp_buffer_t *buffer) {
+    size_t encoding_length = strlen(encoding->name);
+    yp_buffer_append_u32(buffer, yp_sizet_to_u32(encoding_length));
+    yp_buffer_append_str(buffer, encoding->name, encoding_length);
+}
+
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
 void
 yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
-    // First, serialize the encoding of the parser.
-    size_t encoding_length = strlen(parser->encoding.name);
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(encoding_length));
-    yp_buffer_append_str(buffer, parser->encoding.name, encoding_length);
-
+    yp_serialize_encoding(&parser->encoding, buffer);
     yp_serialize_comment_list(parser, &parser->comment_list, buffer);
     yp_serialize_diagnostic_list(parser, &parser->error_list, buffer);
     yp_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
@@ -246,9 +249,33 @@ yp_lex_serialize(const char *source, size_t size, const char *filepath, yp_buffe
     // Append 0 to mark end of tokens
     yp_buffer_append_u8(buffer, 0);
 
+    yp_serialize_encoding(&parser.encoding, buffer);
     yp_serialize_comment_list(&parser, &parser.comment_list, buffer);
     yp_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
     yp_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
+
+    yp_node_destroy(&parser, node);
+    yp_parser_free(&parser);
+}
+
+// Parse and serialize both the AST and the tokens represented by the given
+// source to the given buffer.
+YP_EXPORTED_FUNCTION void
+yp_parse_lex_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *metadata) {
+    yp_parser_t parser;
+    yp_parser_init(&parser, source, size, NULL);
+    if (metadata) yp_parser_metadata(&parser, metadata);
+
+    yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
+        .data = (void *) buffer,
+        .callback = serialize_token,
+    };
+
+    parser.lex_callback = &lex_callback;
+    yp_node_t *node = yp_parse(&parser);
+
+    yp_buffer_append_u8(buffer, 0);
+    yp_serialize(&parser, node, buffer);
 
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);

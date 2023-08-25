@@ -90,4 +90,9 @@ class EncodingTest < Test::Unit::TestCase
       assert_equal Encoding.find("utf-8"), actual
     end
   end
+
+  def test_first_lexed_token
+    encoding = YARP.lex("# encoding: ascii-8bit").value[0][0].value.encoding
+    assert_equal Encoding.find("ascii-8bit"), encoding
+  end
 end

@@ -30,6 +30,20 @@ class ParseTest < Test::Unit::TestCase
     assert_equal filepath, find_source_file_node(result.value).filepath
   end
 
+  def test_parse_lex
+    node, tokens = YARP.parse_lex("def foo; end").value
+
+    assert_kind_of YARP::ProgramNode, node
+    assert_equal 5, tokens.length
+  end
+
+  def test_parse_lex_file
+    node, tokens = YARP.parse_lex_file(__FILE__).value
+
+    assert_kind_of YARP::ProgramNode, node
+    refute_empty tokens
+  end
+
   # To accurately compare against Ripper, we need to make sure that we're
   # running on Ruby 3.2+.
   check_ripper = RUBY_VERSION >= "3.2.0"

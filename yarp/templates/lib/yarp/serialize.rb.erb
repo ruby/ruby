@@ -14,11 +14,11 @@ end
 module YARP
   module Serialize
     def self.load(input, serialized)
-      Loader.new(Source.new(input), serialized).load
+      Loader.new(Source.new(input), serialized).load_result
     end
 
     def self.load_tokens(source, serialized)
-      Loader.new(source, serialized).load_tokens
+      Loader.new(source, serialized).load_tokens_result
     end
 
     class Loader
@@ -39,6 +39,17 @@ module YARP
         @source = source
       end
 
+      def load_encoding
+        Encoding.find(io.read(load_varint))
+      end
+
+      def load_metadata
+        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        [comments, errors, warnings]
+      end
+
       def load_tokens
         tokens = []
         while type = TOKEN_TYPES.fetch(load_varint)
@@ -49,34 +60,42 @@ module YARP
           tokens << [YARP::Token.new(type, location.slice, location), lex_state]
         end
 
-        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
-        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        tokens
+      end
+
+      def load_tokens_result
+        tokens = load_tokens
+        encoding = load_encoding
+        comments, errors, warnings = load_metadata
+
+        if encoding != @encoding
+          tokens.each { |token,| token.value.force_encoding(encoding) }
+        end
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-
         YARP::ParseResult.new(tokens, comments, errors, warnings, @source)
       end
 
-      def load
+      def load_nodes
         raise "Invalid serialization" if io.read(4) != "YARP"
         if io.read(3).unpack("C3") != [<%= YARP_VERSION_MAJOR %>, <%= YARP_VERSION_MINOR %>, <%= YARP_VERSION_PATCH %>]
           raise "Invalid serialization version"
         end
 
-        @encoding = Encoding.find(io.read(load_varint))
+        @encoding = load_encoding
         @input = input.force_encoding(@encoding).freeze
 
-        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(io.getbyte), load_location) }
-        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        comments, errors, warnings = load_metadata
 
         @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
 
-        ast = load_node
+        [load_node, comments, errors, warnings]
+      end
 
-        YARP::ParseResult.new(ast, comments, errors, warnings, @source)
+      def load_result
+        node, comments, errors, warnings = load_nodes
+        YARP::ParseResult.new(node, comments, errors, warnings, @source)
       end
 
       private
