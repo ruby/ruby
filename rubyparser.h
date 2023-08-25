@@ -602,6 +602,7 @@ typedef struct rb_parser_config_struct {
     int (*long2int)(long);
     int (*special_const_p)(VALUE);
     int (*builtin_type)(VALUE);
+#undef snprintf
     int (*snprintf)(char *str, size_t n, char const *fmt, ...);
 
     VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
