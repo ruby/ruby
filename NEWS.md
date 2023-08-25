@@ -150,6 +150,7 @@ changelog for details of the default gems or bundled gems.
   * You should keep using YJIT in production.
 
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
+[Feature #18885]: https://bugs.ruby-lang.org/issues/18885
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
