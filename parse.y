@@ -7710,6 +7710,13 @@ parser_mixed_escape(struct parser_params *p, const char *beg, rb_encoding *enc1,
     p->lex.pcur = pos;
 }
 
+static inline char
+nibble_char_upper(unsigned int c)
+{
+    c &= 0xf;
+    return c + (c < 10 ? '0' : 'A' - 10);
+}
+
 static int
 tokadd_string(struct parser_params *p,
               int func, int term, int paren, long *nest,
@@ -7799,12 +7806,11 @@ tokadd_string(struct parser_params *p,
                         pushback(p, c);
                         c = read_escape(p, 0, enc);
 
-                        int i;
-                        char escbuf[5];
-                        snprintf(escbuf, sizeof(escbuf), "\\x%02X", c);
-                        for (i = 0; i < 4; i++) {
-                            tokadd(p, escbuf[i]);
-                        }
+                        char *t = tokspace(p, rb_strlen_lit("\\x00"));
+                        *t++ = '\\';
+                        *t++ = 'x';
+                        *t++ = nibble_char_upper(c >> 4);
+                        *t++ = nibble_char_upper(c);
                         continue;
                       }
                     }

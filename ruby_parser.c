@@ -774,7 +774,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->long2int = rb_long2int;
     config->special_const_p = special_const_p;
     config->builtin_type = builtin_type;
-    config->snprintf = snprintf;
 
     config->node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal;
 
