@@ -9,7 +9,9 @@
 #define rb_encoding void
 #define OnigCodePoint unsigned int
 #include "parser_st.h"
+#ifndef RUBY_RUBY_H
 #include "parser_value.h"
+#endif
 
 #else
 
