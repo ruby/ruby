@@ -13,6 +13,10 @@ end
 
 module YARP
   module Serialize
+    MAJOR_VERSION = 0
+    MINOR_VERSION = 8
+    PATCH_VERSION = 0
+
     def self.load(input, serialized)
       Loader.new(Source.new(input), serialized).load_result
     end
@@ -78,9 +82,7 @@ module YARP
 
       def load_nodes
         raise "Invalid serialization" if io.read(4) != "YARP"
-        if io.read(3).unpack("C3") != [<%= YARP_VERSION_MAJOR %>, <%= YARP_VERSION_MINOR %>, <%= YARP_VERSION_PATCH %>]
-          raise "Invalid serialization version"
-        end
+        raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
 
         @encoding = load_encoding
         @input = input.force_encoding(@encoding).freeze

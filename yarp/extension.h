@@ -1,6 +1,8 @@
 #ifndef YARP_EXT_NODE_H
 #define YARP_EXT_NODE_H
 
+#define EXPECTED_YARP_VERSION "0.8.0"
+
 #include <ruby.h>
 #include <ruby/encoding.h>
 #include "yarp.h"
