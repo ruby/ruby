@@ -225,6 +225,10 @@ srcs: yarp/ast.h
 yarp/ast.h: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/include/yarp/ast.h.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb include/yarp/ast.h $@
 
+srcs: yarp/version.h
+yarp/version.h: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/include/yarp/version.h.erb
+	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb include/yarp/version.h $@
+
 srcs: yarp/node.c
 yarp/node.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/node.c.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/node.c $@

@@ -156,6 +156,7 @@ FILES_NEED_VPATH = %w[
   yarp/prettyprint.c
   yarp/serialize.c
   yarp/token_type.c
+  yarp/version.h
 ]
 
 # Multiple files with same filename.
