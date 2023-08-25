@@ -212,21 +212,27 @@ srcs: $(srcdir)/lib/yarp/serialize.rb
 $(srcdir)/lib/yarp/serialize.rb: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/lib/yarp/serialize.rb.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb lib/yarp/serialize.rb $(srcdir)/lib/yarp/serialize.rb
 
+srcs: yarp/api_node.c
 yarp/api_node.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/ext/yarp/api_node.c.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb ext/yarp/api_node.c $@
 
+srcs: yarp/ast.h
 yarp/ast.h: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/include/yarp/ast.h.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb include/yarp/ast.h $@
 
+srcs: yarp/node.c
 yarp/node.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/node.c.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/node.c $@
 
+srcs: yarp/prettyprint.c
 yarp/prettyprint.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/prettyprint.c.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/prettyprint.c $@
 
+srcs: yarp/serialize.c
 yarp/serialize.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/serialize.c.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/serialize.c $@
 
+srcs: yarp/token_type.c
 yarp/token_type.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/token_type.c.erb
 	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/token_type.c $@
 
