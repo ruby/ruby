@@ -46,7 +46,7 @@ class ParseTest < Test::Unit::TestCase
 
   # To accurately compare against Ripper, we need to make sure that we're
   # running on Ruby 3.2+.
-  check_ripper = RUBY_VERSION >= "3.2.0"
+  ripper_enabled = RUBY_VERSION >= "3.2.0"
 
   # The FOCUS environment variable allows you to specify one particular fixture
   # to test, instead of all of them.
@@ -63,6 +63,22 @@ class ParseTest < Test::Unit::TestCase
     directory = File.dirname(snapshot)
     FileUtils.mkdir_p(directory) unless File.directory?(directory)
 
+    ripper_should_parse = ripper_should_match = ripper_enabled
+
+    # This file has changed behavior in Ripper in Ruby 3.3, so we skip it if
+    # we're on an earlier version.
+    ripper_should_match = false if relative == "seattlerb/pct_w_heredoc_interp_nested.txt" && RUBY_VERSION < "3.3.0"
+
+    # It seems like there are some oddities with nested heredocs and ripper.
+    # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
+    ripper_should_match = false if relative == "seattlerb/heredoc_nested.txt"
+
+    # Ripper seems to have a bug that the regex portions before and after the heredoc are combined
+    # into a single token. See https://bugs.ruby-lang.org/issues/19838.
+    #
+    # Additionally, Ripper cannot parse the %w[] fixture in this file, so set ripper_should_parse to false.
+    ripper_should_match = false if relative == "wrapping_heredoc.txt"
+
     define_method "test_filepath_#{relative}" do
       # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,
       # and explicitly set the external encoding to UTF-8 to override the binmode default.
@@ -70,7 +86,7 @@ class ParseTest < Test::Unit::TestCase
 
       # Make sure that it can be correctly parsed by Ripper. If it can't, then we have a fixture
       # that is invalid Ruby.
-      refute_nil Ripper.sexp_raw(source) if check_ripper
+      refute_nil(Ripper.sexp_raw(source), "Ripper failed to parse") if ripper_should_parse
 
       # Next, assert that there were no errors during parsing.
       result = YARP.parse(source, relative)
@@ -118,25 +134,13 @@ class ParseTest < Test::Unit::TestCase
 
       assert_equal expected_newlines, YARP.const_get(:Debug).newlines(source)
 
-      # This file has changed behavior in Ripper in Ruby 3.3, so we skip it if
-      # we're on an earlier version.
-      return if relative == "seattlerb/pct_w_heredoc_interp_nested.txt" && RUBY_VERSION < "3.3.0"
+      if ripper_should_parse && ripper_should_match
+        # Finally, assert that we can lex the source and get the same tokens as
+        # Ripper.
+        lex_result = YARP.lex_compat(source)
+        assert_equal [], lex_result.errors
+        tokens = lex_result.value
 
-      # It seems like there are some oddities with nested heredocs and ripper.
-      # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
-      return if relative == "seattlerb/heredoc_nested.txt"
-
-      # Ripper seems to have a bug that the regex portions before and after the heredoc are combined
-      # into a single token.
-      return if relative == "wrapping_heredoc.txt"
-
-      # Finally, assert that we can lex the source and get the same tokens as
-      # Ripper.
-      lex_result = YARP.lex_compat(source)
-      assert_equal [], lex_result.errors
-      tokens = lex_result.value
-
-      if check_ripper
         begin
           YARP.lex_ripper(source).zip(tokens).each do |(ripper, yarp)|
             assert_equal ripper, yarp
