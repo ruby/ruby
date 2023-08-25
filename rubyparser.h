@@ -4,6 +4,8 @@
  * This is a header file for librubyparser interface
  */
 
+#include <stdarg.h> /* for va_list */
+
 #ifdef UNIVERSAL_PARSER
 
 #define rb_encoding void
