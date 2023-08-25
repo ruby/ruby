@@ -124,10 +124,10 @@ jobs:
           # warning generates a lot of noise from use of ANYARGS in
           # rb_define_method() and friends.
           # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-          - { name: c99,   env: { append_cc: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c11,   env: { append_cc: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c17,   env: { append_cc: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-          - { name: c2x,   env: { append_cc: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c99,   env: { CFLAGS:   '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c11,   env: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c17,   env: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c2x,   env: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
           - { name: c++98, env: { CXXFLAGS: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++11, env: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++14, env: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
