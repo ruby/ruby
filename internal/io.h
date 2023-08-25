@@ -16,7 +16,7 @@ struct rb_io;
 #include "ruby/io.h"            /* for rb_io_t */
 
 /** Ruby's IO, metadata and buffers. */
-typedef struct rb_io {
+struct rb_io {
 
     /** The IO's Ruby level counterpart. */
     VALUE self;
@@ -108,7 +108,7 @@ typedef struct rb_io {
      * The timeout associated with this IO when performing blocking operations.
      */
     VALUE timeout;
-} rb_io_t;
+};
 
 /* io.c */
 void ruby_set_inplace_mode(const char *);
