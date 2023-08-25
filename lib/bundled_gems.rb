@@ -37,6 +37,7 @@ module Gem::BUNDLED_GEMS
   }.freeze
 
   PREFIXED = {
+    "bigdecimal" => true,
     "csv" => true,
     "drb" => true,
     "rinda" => true,
