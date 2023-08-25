@@ -6,8 +6,8 @@ ProgramNode(0...40)(
        ParenthesesNode(7...19)(
          StatementsNode(8...18)(
            [MultiWriteNode(8...18)(
-              [LocalVariableWriteNode(8...9)(:a, 0, nil, (8...9), nil),
-               LocalVariableWriteNode(11...12)(:b, 0, nil, (11...12), nil)],
+              [LocalVariableTargetNode(8...9)(:a, 0),
+               LocalVariableTargetNode(11...12)(:b, 0)],
               (13...14),
               CallNode(15...18)(
                 nil,
@@ -34,8 +34,8 @@ ProgramNode(0...40)(
        ParenthesesNode(28...40)(
          StatementsNode(29...39)(
            [MultiWriteNode(29...39)(
-              [LocalVariableWriteNode(29...30)(:a, 0, nil, (29...30), nil),
-               LocalVariableWriteNode(32...33)(:b, 0, nil, (32...33), nil)],
+              [LocalVariableTargetNode(29...30)(:a, 0),
+               LocalVariableTargetNode(32...33)(:b, 0)],
               (34...35),
               CallNode(36...39)(
                 nil,

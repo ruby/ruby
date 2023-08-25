@@ -18,8 +18,8 @@ ProgramNode(0...56)(
        ParenthesesNode(38...55)(
          StatementsNode(40...54)(
            [MultiWriteNode(40...54)(
-              [LocalVariableWriteNode(40...41)(:a, 0, nil, (40...41), nil),
-               LocalVariableWriteNode(43...44)(:b, 0, nil, (43...44), nil)],
+              [LocalVariableTargetNode(40...41)(:a, 0),
+               LocalVariableTargetNode(43...44)(:b, 0)],
               (46...47),
               ArrayNode(48...54)(
                 [IntegerNode(49...50)(), IntegerNode(52...53)()],

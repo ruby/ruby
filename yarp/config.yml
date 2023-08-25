@@ -772,6 +772,12 @@ nodes:
 
           @@foo
           ^^^^^
+  - name: ClassVariableTargetNode
+    comment: |
+      Represents writing to a class variable in a context that doesn't have an explicit value.
+
+          @@foo, @@bar = baz
+          ^^^^^  ^^^^^
   - name: ClassVariableWriteNode
     child_nodes:
       - name: name_loc
@@ -883,6 +889,19 @@ nodes:
 
           Parent::Child ||= value
           ^^^^^^^^^^^^^^^^^^^^^^^
+  - name: ConstantPathTargetNode
+    child_nodes:
+      - name: parent
+        type: node?
+      - name: child
+        type: node
+      - name: delimiter_loc
+        type: location
+    comment: |
+      Represents writing to a constant path in a context that doesn't have an explicit value.
+
+          Foo::Foo, Bar::Bar = baz
+          ^^^^^^^^  ^^^^^^^^
   - name: ConstantPathWriteNode
     child_nodes:
       - name: target
@@ -909,6 +928,12 @@ nodes:
 
           Foo
           ^^^
+  - name: ConstantTargetNode
+    comment: |
+      Represents writing to a constant in a context that doesn't have an explicit value.
+
+          Foo, Bar = baz
+          ^^^  ^^^
   - name: ConstantWriteNode
     child_nodes:
       - name: name_loc
@@ -1172,6 +1197,12 @@ nodes:
 
           $foo
           ^^^^
+  - name: GlobalVariableTargetNode
+    comment: |
+      Represents writing to a global variable in a context that doesn't have an explicit value.
+
+          $foo, $bar = baz
+          ^^^^  ^^^^
   - name: GlobalVariableWriteNode
     child_nodes:
       - name: name_loc
@@ -1312,6 +1343,12 @@ nodes:
 
           @foo
           ^^^^
+  - name: InstanceVariableTargetNode
+    comment: |
+      Represents writing to an instance variable in a context that doesn't have an explicit value.
+
+          @foo, @bar = baz
+          ^^^^  ^^^^
   - name: InstanceVariableWriteNode
     child_nodes:
       - name: name_loc
@@ -1509,6 +1546,17 @@ nodes:
 
           foo
           ^^^
+  - name: LocalVariableTargetNode
+    child_nodes:
+      - name: constant_id
+        type: constant
+      - name: depth
+        type: uint32
+    comment: |
+      Represents writing to a local variable in a context that doesn't have an explicit value.
+
+          foo, bar = baz
+          ^^^  ^^^
   - name: LocalVariableWriteNode
     child_nodes:
       - name: constant_id

@@ -12,20 +12,8 @@ ProgramNode(0...999)(
             ParenthesesNode(19...31)(
               StatementsNode(21...30)(
                 [MultiWriteNode(21...30)(
-                   [LocalVariableWriteNode(21...22)(
-                      :a,
-                      0,
-                      nil,
-                      (21...22),
-                      nil
-                    ),
-                    LocalVariableWriteNode(24...25)(
-                      :_,
-                      0,
-                      nil,
-                      (24...25),
-                      nil
-                    )],
+                   [LocalVariableTargetNode(21...22)(:a, 0),
+                    LocalVariableTargetNode(24...25)(:_, 0)],
                    (27...28),
                    CallNode(29...30)(
                      nil,

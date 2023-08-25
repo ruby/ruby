@@ -3,7 +3,7 @@ ProgramNode(0...48)(
   StatementsNode(0...48)(
     [ForNode(0...24)(
        MultiWriteNode(4...5)(
-         [LocalVariableWriteNode(4...5)(:a, 0, nil, (4...5), nil)],
+         [LocalVariableTargetNode(4...5)(:a, 0)],
          nil,
          nil,
          nil,
@@ -30,7 +30,7 @@ ProgramNode(0...48)(
      ),
      ForNode(26...48)(
        MultiWriteNode(30...31)(
-         [LocalVariableWriteNode(30...31)(:a, 0, nil, (30...31), nil)],
+         [LocalVariableTargetNode(30...31)(:a, 0)],
          nil,
          nil,
          nil,
