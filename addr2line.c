@@ -1474,7 +1474,7 @@ static bool
 di_skip_records(DebugInfoReader *reader)
 {
     for (;;) {
-        DebugInfoValue v = {{}};
+        DebugInfoValue v = {{0}};
         uint64_t at = uleb128(&reader->q);
         uint64_t form = uleb128(&reader->q);
         if (!at || !form) return true;
@@ -1791,10 +1791,10 @@ di_read_cu(DebugInfoReader *reader)
         reader->current_addr_base = 0;
         reader->current_rnglists_base = 0;
 
-        DebugInfoValue low_pc = {{}};
+        DebugInfoValue low_pc = {{0}};
         /* enumerate abbrev */
         for (;;) {
-            DebugInfoValue v = {{}};
+            DebugInfoValue v = {{0}};
             if (!di_read_record(reader, &v)) break;
             switch (v.at) {
               case DW_AT_low_pc:
@@ -1820,7 +1820,7 @@ di_read_cu(DebugInfoReader *reader)
                 break;
             case VAL_addr:
                 {
-                    addr_header_t header = {};
+                    addr_header_t header = {0};
                     if (!addr_header_init(reader->obj, &header)) return -1;
                     reader->current_low_pc = read_addr(&header, reader->current_addr_base, low_pc.as.addr_idx);
                 }
@@ -1861,7 +1861,7 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
 
     /* enumerate abbrev */
     for (;;) {
-        DebugInfoValue v = {{}};
+        DebugInfoValue v = {{0}};
         if (!di_read_record(reader, &v)) break;
         switch (v.at) {
           case DW_AT_name:
@@ -1880,16 +1880,16 @@ static bool
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
          line_info_t *lines, int offset) {
 
-    addr_header_t addr_header = {};
+    addr_header_t addr_header = {0};
     if (!addr_header_init(reader->obj, &addr_header)) return false;
 
-    rnglists_header_t rnglists_header = {};
+    rnglists_header_t rnglists_header = {0};
     if (!rnglists_header_init(reader->obj, &rnglists_header)) return false;
 
     while (reader->p < reader->cu_end) {
         DIE die;
-        ranges_t ranges = {};
-        line_info_t line = {};
+        ranges_t ranges = {0};
+        line_info_t line = {0};
 
         if (!di_read_die(reader, &die)) continue;
         /* kprintf("%d:%tx: <%d>\n",__LINE__,die.pos,reader->level,die.tag); */
@@ -1902,7 +1902,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
 
         /* enumerate abbrev */
         for (;;) {
-            DebugInfoValue v = {{}};
+            DebugInfoValue v = {{0}};
             /* ptrdiff_t pos = reader->p - reader->p0; */
             if (!di_read_record(reader, &v)) break;
             /* kprintf("\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form); */
@@ -1993,7 +1993,7 @@ parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t 
     for (j = 0; j < entry_count; j++) {
         const char *format = entry_format;
         for (i = 0; i < entry_format_count; i++) {
-            DebugInfoValue v = {{}};
+            DebugInfoValue v = {{0}};
             unsigned long dw_lnct = uleb128(&format);
             unsigned long dw_form = uleb128(&format);
             if (!debug_info_reader_read_value(&reader, dw_form, &v)) return 0;
