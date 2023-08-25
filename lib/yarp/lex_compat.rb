@@ -574,6 +574,11 @@ module YARP
       result = YARP.lex(source, @filepath)
       result_value = result.value
       previous_state = nil
+
+      # In previous versions of Ruby, Ripper wouldn't flush the bom before the
+      # first token, so we had to have a hack in place to account for that. This
+      # checks for that behavior.
+      bom_flushed = Ripper.lex("\xEF\xBB\xBF# test")[0][0][1] == 0
       bom = source.byteslice(0..2) == "\xEF\xBB\xBF"
 
       result_value.each_with_index do |(token, lex_state), index|
@@ -588,8 +593,12 @@ module YARP
         if bom && lineno == 1
           column -= 3
 
+<<<<<<< HEAD
 =begin
           if index == 0 && column == 0
+=======
+          if index == 0 && column == 0 && !bom_flushed
+>>>>>>> 7710cee2480 (Fix up lex compat on Ruby HEAD)
             flushed =
               case token.type
               when :BACK_REFERENCE, :INSTANCE_VARIABLE, :CLASS_VARIABLE,
