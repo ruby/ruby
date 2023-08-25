@@ -149,26 +149,6 @@ literal_hash(VALUE a)
     return rb_iseq_cdhash_hash(a);
 }
 
-static ID
-script_lines(void)
-{
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-    return script_lines;
-}
-
-static int
-script_lines_defined(void)
-{
-    return rb_const_defined_at(rb_cObject, script_lines());
-}
-
-static VALUE
-script_lines_get(void)
-{
-    return rb_const_get_at(rb_cObject, script_lines());
-}
-
 static VALUE
 syntax_error_new(void)
 {
@@ -548,7 +528,6 @@ struct parser_params {
     unsigned int do_loop: 1;
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
-    unsigned int keep_script_lines: 1;
     unsigned int error_tolerant: 1;
     unsigned int keep_tokens: 1;
 
@@ -6842,20 +6821,6 @@ static void parser_prepare(struct parser_params *p);
 #ifndef RIPPER
 static NODE *parser_append_options(struct parser_params *p, NODE *node);
 
-static VALUE
-debug_lines(struct parser_params *p, VALUE fname)
-{
-    if (script_lines_defined()) {
-        VALUE hash = script_lines_get();
-        if (RB_TYPE_P(hash, T_HASH)) {
-            VALUE lines = rb_ary_new();
-            rb_hash_aset(hash, fname, lines);
-            return lines;
-        }
-    }
-    return 0;
-}
-
 static int
 e_option_supplied(struct parser_params *p)
 {
@@ -6871,7 +6836,6 @@ yycompile0(VALUE arg)
     int cov = FALSE;
 
     if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
-        p->debug_lines = debug_lines(p, p->ruby_sourcefile_string);
         if (p->debug_lines && p->ruby_sourceline > 0) {
             VALUE str = rb_default_rs;
             n = p->ruby_sourceline;
@@ -6885,11 +6849,7 @@ yycompile0(VALUE arg)
         }
     }
 
-    if (p->keep_script_lines || ruby_vm_keep_script_lines) {
-        if (!p->debug_lines) {
-            p->debug_lines = rb_ary_new();
-        }
-
+    if (p->debug_lines) {
         RB_OBJ_WRITE(p->ast, &p->ast->body.script_lines, p->debug_lines);
     }
 
@@ -13981,9 +13941,19 @@ rb_ruby_parser_set_context(rb_parser_t *p, const struct rb_iseq_struct *base, in
 }
 
 void
-rb_ruby_parser_keep_script_lines(rb_parser_t *p)
+rb_ruby_parser_set_script_lines(rb_parser_t *p, VALUE lines)
 {
-    p->keep_script_lines = 1;
+    if (!RTEST(lines)) {
+        lines = Qfalse;
+    }
+    else if (lines == Qtrue) {
+        lines = rb_ary_new();
+    }
+    else {
+        Check_Type(lines, T_ARRAY);
+        rb_ary_modify(lines);
+    }
+    p->debug_lines = lines;
 }
 
 void
@@ -14071,12 +14041,12 @@ rb_parser_error_tolerant(VALUE vparser)
 }
 
 void
-rb_parser_keep_script_lines(VALUE vparser)
+rb_parser_set_script_lines(VALUE vparser, VALUE lines)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    rb_ruby_parser_keep_script_lines(p);
+    rb_ruby_parser_set_script_lines(p, lines);
 }
 
 void

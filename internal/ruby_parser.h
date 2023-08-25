@@ -18,7 +18,7 @@ VALUE rb_parser_encoding(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 void rb_parser_set_options(VALUE, int, int, int, int);
 void *rb_parser_load_file(VALUE parser, VALUE name);
-void rb_parser_keep_script_lines(VALUE vparser);
+void rb_parser_set_script_lines(VALUE vparser, VALUE lines_array);
 void rb_parser_error_tolerant(VALUE vparser);
 void rb_parser_keep_tokens(VALUE vparser);
 

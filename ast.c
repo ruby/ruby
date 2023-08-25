@@ -97,7 +97,7 @@ rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE
 
     StringValue(str);
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_string_path(vparser, Qnil, str, 1);
@@ -121,7 +121,7 @@ rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VAL
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
     if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_file_path(vparser, Qnil, f, 1);
@@ -149,7 +149,7 @@ rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, V
 
     array = rb_check_array_type(array);
     VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser, Qtrue);
     if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
     if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
@@ -184,8 +184,8 @@ node_find(VALUE self, const int node_id)
 
 extern VALUE rb_e_script;
 
-static VALUE
-script_lines(VALUE path)
+VALUE
+rb_script_lines_for(VALUE path, bool add)
 {
     VALUE hash, lines;
     ID script_lines;
@@ -193,9 +193,18 @@ script_lines(VALUE path)
     if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
     hash = rb_const_get_at(rb_cObject, script_lines);
     if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
-    lines = rb_hash_lookup(hash, path);
-    if (!RB_TYPE_P(lines, T_ARRAY)) return Qnil;
+    if (add) {
+        rb_hash_aset(hash, path, lines = rb_ary_new());
+    }
+    else if (!RB_TYPE_P((lines = rb_hash_lookup(hash, path)), T_ARRAY)) {
+        return Qnil;
+    }
     return lines;
+}
+static VALUE
+script_lines(VALUE path)
+{
+    return rb_script_lines_for(path, false);
 }
 
 static VALUE

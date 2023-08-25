@@ -853,12 +853,12 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
 }
 
 void
-rb_parser_keep_script_lines(VALUE vparser)
+rb_parser_set_script_lines(VALUE vparser, VALUE lines)
 {
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    rb_ruby_parser_keep_script_lines(parser->parser_params);
+    rb_ruby_parser_set_script_lines(parser->parser_params, lines);
 }
 
 void

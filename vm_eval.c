@@ -1681,6 +1681,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     }
 
     rb_parser_set_context(parser, parent, FALSE);
+    rb_parser_set_script_lines(parser, RBOOL(ruby_vm_keep_script_lines));
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
         ast->body.coverage_enabled = coverage_enabled;

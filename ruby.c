@@ -2397,6 +2397,8 @@ struct load_file_arg {
     VALUE f;
 };
 
+VALUE rb_script_lines_for(VALUE path, bool add);
+
 static VALUE
 load_file_internal(VALUE argp_v)
 {
@@ -2499,6 +2501,12 @@ load_file_internal(VALUE argp_v)
     }
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
                           opt->do_line, opt->do_split);
+
+    VALUE lines = rb_script_lines_for(orig_fname, true);
+    if (!NIL_P(lines)) {
+        rb_parser_set_script_lines(parser, lines);
+    }
+
     if (NIL_P(f)) {
         f = rb_str_new(0, 0);
         rb_enc_associate(f, enc);
