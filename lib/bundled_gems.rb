@@ -8,6 +8,7 @@ module Gem::BUNDLED_GEMS
     "net-imap" => "3.1.0",
     "net-pop" => "3.1.0",
     "net-smtp" => "3.1.0",
+    "prime" => "3.1.0",
     "abbrev" => "3.4.0",
     "observer" => "3.4.0",
     "getoptlong" => "3.4.0",
