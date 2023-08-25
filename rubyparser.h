@@ -327,8 +327,11 @@ typedef struct rb_ast_struct {
  * Parser Interface
  */
 
+
 typedef struct parser_params rb_parser_t;
+#ifndef INTERNAL_IMEMO_H
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
+#endif
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
