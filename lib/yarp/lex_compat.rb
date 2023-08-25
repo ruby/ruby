@@ -588,6 +588,7 @@ module YARP
         if bom && lineno == 1
           column -= 3
 
+=begin
           if index == 0 && column == 0
             flushed =
               case token.type
@@ -608,6 +609,7 @@ module YARP
               value.prepend(String.new("\xEF\xBB\xBF", encoding: value.encoding))
             end
           end
+=end
         end
 
         event = RIPPER.fetch(token.type)
