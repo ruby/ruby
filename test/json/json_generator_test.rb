@@ -2,7 +2,7 @@
 # encoding: utf-8
 # frozen_string_literal: false
 
-require 'test_helper'
+require_relative 'test_helper'
 
 class JSONGeneratorTest < Test::Unit::TestCase
   include JSON
