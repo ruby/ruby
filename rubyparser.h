@@ -372,8 +372,6 @@ typedef struct rb_parser_config_struct {
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
     NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
-    int (*script_lines_defined)(void);
-    VALUE (*script_lines_get)(void);
 
     /* Object */
     VALUE (*obj_freeze)(VALUE obj);
@@ -535,7 +533,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ractor_make_shareable)(VALUE obj);
 
     /* Compile */
-    int (*vm_keep_script_lines)(void);
     // int rb_local_defined(ID id, const rb_iseq_t *iseq);
     int (*local_defined)(ID, const void*);
     // int rb_dvar_defined(ID id, const rb_iseq_t *iseq);
