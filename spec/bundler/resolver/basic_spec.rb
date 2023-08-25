@@ -347,4 +347,27 @@ RSpec.describe "Resolving" do
 
     should_resolve_as %w[rack-3.0.0 standalone_migrations-1.0.13]
   end
+
+  it "does not ignore versions that incorrectly depend on themselves when dependency_api is not available" do
+    @index = build_index do
+      gem "rack", "3.0.0"
+
+      gem "standalone_migrations", "7.1.0" do
+        dep "rack", "~> 2.0"
+      end
+
+      gem "standalone_migrations", "2.0.4" do
+        dep "standalone_migrations", ">= 2.0.5"
+      end
+
+      gem "standalone_migrations", "1.0.13" do
+        dep "rack", ">= 0"
+      end
+    end
+
+    dep "rack", "~> 3.0"
+    dep "standalone_migrations"
+
+    should_resolve_without_dependency_api %w[rack-3.0.0 standalone_migrations-2.0.4]
+  end
 end
