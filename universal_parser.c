@@ -77,6 +77,7 @@
 #undef T_RATIONAL
 #define T_RATIONAL 0x0f
 
+#ifndef INTERNAL_IMEMO_H
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE reserved;
@@ -84,6 +85,7 @@ struct rb_imemo_tmpbuf_struct {
     struct rb_imemo_tmpbuf_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
 };
+#endif
 
 #undef xmalloc
 #define xmalloc p->config->malloc
