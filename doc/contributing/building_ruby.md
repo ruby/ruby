@@ -162,7 +162,7 @@ with the Ruby script you'd like to run. You can use the following make targets:
 You should configure Ruby without optimization and other flags that may interfere with debugging:
 
 ``` shell
-./configure --enable-debug-env cppflags="-fno-omit-frame-pointer" optflags=-O0 LDFLAGS="-fno-omit-frame-pointer"
+./configure --enable-debug-env optflags="-O0 -fno-omit-frame-pointer"
 ```
 
 ### Building with Address Sanitizer
