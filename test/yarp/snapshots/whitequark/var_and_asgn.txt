@@ -1,10 +1,12 @@
 ProgramNode(0...7)(
   [:a],
   StatementsNode(0...7)(
-    [AndWriteNode(0...7)(
-       LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
+    [LocalVariableAndWriteNode(0...7)(
+       (0...1),
+       (2...5),
        IntegerNode(6...7)(),
-       (2...5)
+       :a,
+       0
      )]
   )
 )

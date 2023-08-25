@@ -25,11 +25,13 @@ ProgramNode(0...40)(
             0,
             "p"
           ),
-          OperatorWriteNode(18...24)(
-            LocalVariableWriteNode(18...19)(:y, 0, nil, (18...19), nil),
+          LocalVariableOperatorWriteNode(18...24)(
+            (18...19),
             (20...22),
+            IntegerNode(23...24)(),
+            :y,
             :*,
-            IntegerNode(23...24)()
+            0
           ),
           ReturnNode(27...35)(
             (27...33),
