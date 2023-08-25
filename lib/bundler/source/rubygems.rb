@@ -275,7 +275,9 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, specs, false)
+        fetch_names(api_fetchers, unmet_dependency_names, remote_specs, false)
+
+        specs.use(remote_specs, false)
       end
 
       def dependency_names_to_double_check

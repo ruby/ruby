@@ -78,6 +78,33 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
   end
 
+  context "without source affinity, and a stdlib gem present in one of the sources", :ruby_repo do
+    let(:default_json_version) { ruby "gem 'json'; require 'json'; puts JSON::VERSION" }
+
+    before do
+      build_repo2 do
+        build_gem "json", default_json_version
+      end
+
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.add_dependency "json", default_json_version
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+    end
+
+    it "works in standalone mode", :bundler => "< 3" do
+      bundle "install --standalone", :artifice => "compact_index"
+    end
+  end
+
   context "with source affinity" do
     context "with sources given by a block" do
       before do
