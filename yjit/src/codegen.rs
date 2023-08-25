@@ -1272,7 +1272,7 @@ fn gen_newarray(
     );
 
     asm.stack_pop(n.as_usize());
-    let stack_ret = asm.stack_push(Type::CArray);
+    let stack_ret = asm.stack_push(Type::TArray);
     asm.mov(stack_ret, new_ary);
 
     Some(KeepCompiling)
@@ -1295,7 +1295,7 @@ fn gen_duparray(
         vec![ary.into()],
     );
 
-    let stack_ret = asm.stack_push(Type::CArray);
+    let stack_ret = asm.stack_push(Type::TArray);
     asm.mov(stack_ret, new_ary);
 
     Some(KeepCompiling)
@@ -1926,7 +1926,7 @@ fn gen_putstring(
         vec![EC, put_val.into()]
     );
 
-    let stack_top = asm.stack_push(Type::CString);
+    let stack_top = asm.stack_push(Type::TString);
     asm.mov(stack_top, str_opnd);
 
     Some(KeepCompiling)
@@ -2722,7 +2722,7 @@ fn gen_concatstrings(
     );
 
     asm.stack_pop(n);
-    let stack_ret = asm.stack_push(Type::CString);
+    let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, return_value);
 
     Some(KeepCompiling)
@@ -4170,9 +4170,14 @@ fn jit_guard_known_klass(
         jit_chain_guard(JCC_JNE, jit, asm, ocb, max_chain_depth, counter);
 
         if known_klass == unsafe { rb_cString } {
-            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CString);
+            // Upgrading to Type::CString here is incorrect.
+            // The guard we put only checks RBASIC_CLASS(obj),
+            // which adding a singleton class can change. We
+            // additionally need to know the string is frozen
+            // to claim Type::CString.
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::TString);
         } else if known_klass == unsafe { rb_cArray } {
-            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CArray);
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::TArray);
         }
     }
 }
@@ -6196,7 +6201,7 @@ fn gen_send_iseq(
         let rest_param = if opts_missing == 0 {
             // All optionals are filled, the rest param goes at the top of the stack
             argc += 1;
-            asm.stack_push(Type::CArray)
+            asm.stack_push(Type::TArray)
         } else {
             // The top of the stack will be a missing optional, but the rest
             // parameter needs to be placed after all the missing optionals.

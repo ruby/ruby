@@ -1,3 +1,28 @@
+# regression test for overly generous guard elision
+assert_equal '[0, :sum, 0, :sum]', %q{
+  # In faulty versions, the following happens:
+  #  1. YJIT puts object on the temp stack with type knowledge
+  #     (CArray or CString) about RBASIC_CLASS(object).
+  #  2. In iter=0, due to the type knowledge, YJIT generates
+  #     a call to sum() without any guard on RBASIC_CLASS(object).
+  #  3. In iter=1, a singleton class is added to the object,
+  #     changing RBASIC_CLASS(object), falsifying the type knowledge.
+  #  4. Because the code from (1) has no class guard, it is incorrectly
+  #     reused and the wrong method is invoked.
+  # Putting a literal is important for gaining type knowledge.
+  def carray(iter)
+    array = []
+    array.sum(iter.times { def array.sum(_) = :sum })
+  end
+
+  def cstring(iter)
+    string = ""
+    string.sum(iter.times { def string.sum(_) = :sum })
+  end
+
+  [carray(0), carray(1), cstring(0), cstring(1)]
+}
+
 # regression test for return type of Integer#/
 # It can return a T_BIGNUM when inputs are T_FIXNUM.
 assert_equal 0x3fffffffffffffff.to_s, %q{

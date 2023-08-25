@@ -57,7 +57,6 @@ pub enum Type {
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
-    CArray, // An un-subclassed string of type rb_cArray (can have instance vars in some cases)
 
     TProc, // A proc object. Could be an instance of a subclass of ::rb_cProc
 
@@ -95,12 +94,8 @@ impl Type {
             // Core.rs can't reference rb_cString because it's linked by Rust-only tests.
             // But CString vs TString is only an optimisation and shouldn't affect correctness.
             #[cfg(not(test))]
-            if val.class_of() == unsafe { rb_cString } {
+            if val.class_of() == unsafe { rb_cString } && val.is_frozen() {
                 return Type::CString;
-            }
-            #[cfg(not(test))]
-            if val.class_of() == unsafe { rb_cArray } {
-                return Type::CArray;
             }
             // We likewise can't reference rb_block_param_proxy, but it's again an optimisation;
             // we can just treat it as a normal Object.
@@ -153,7 +148,6 @@ impl Type {
         match self {
             Type::UnknownHeap => true,
             Type::TArray => true,
-            Type::CArray => true,
             Type::Hash => true,
             Type::HeapSymbol => true,
             Type::TString => true,
@@ -166,11 +160,7 @@ impl Type {
 
     /// Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
     pub fn is_array(&self) -> bool {
-        match self {
-            Type::TArray => true,
-            Type::CArray => true,
-            _ => false,
-        }
+        matches!(self, Type::TArray)
     }
 
     /// Check if it's a T_STRING object (both TString and CString are T_STRING)
@@ -190,7 +180,7 @@ impl Type {
             Type::False => Some(RUBY_T_FALSE),
             Type::Fixnum => Some(RUBY_T_FIXNUM),
             Type::Flonum => Some(RUBY_T_FLOAT),
-            Type::TArray | Type::CArray => Some(RUBY_T_ARRAY),
+            Type::TArray => Some(RUBY_T_ARRAY),
             Type::Hash => Some(RUBY_T_HASH),
             Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
@@ -211,7 +201,6 @@ impl Type {
                 Type::Flonum => Some(rb_cFloat),
                 Type::ImmSymbol | Type::HeapSymbol => Some(rb_cSymbol),
                 Type::CString => Some(rb_cString),
-                Type::CArray => Some(rb_cArray),
                 _ => None,
             }
         }
@@ -263,11 +252,6 @@ impl Type {
 
         // A CString is also a TString.
         if self == Type::CString && dst == Type::TString {
-            return TypeDiff::Compatible(1);
-        }
-
-        // A CArray is also a TArray.
-        if self == Type::CArray && dst == Type::TArray {
             return TypeDiff::Compatible(1);
         }
 
