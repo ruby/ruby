@@ -51,7 +51,9 @@ module Gem::BUNDLED_GEMS
   conf = ::RbConfig::CONFIG
   LIBDIR = (conf["rubylibdir"] + "/").freeze
   ARCHDIR = (conf["rubyarchdir"] + "/").freeze
-  DLEXT = /\.#{Regexp.union([conf["DLEXT"], "so"].uniq)}\z/
+  dlext = [conf["DLEXT"], "so"].uniq
+  DLEXT = /\.#{Regexp.union(dlext)}\z/
+  LIBEXT = /\.#{Regexp.union("rb", *dlext)}\z/
 
   def self.find_gem(path)
     if !path
@@ -69,12 +71,12 @@ module Gem::BUNDLED_GEMS
   def self.warning?(name)
     _t, path = $:.resolve_feature_path(name)
     return unless gem = find_gem(path)
-    caller, = caller_locations(3, 1)
+    caller = caller_locations(3, 3).find {|c| c&.absolute_path}
     return if find_gem(caller&.absolute_path)
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
-      gem = name
+      gem = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     elsif gem
       return if WARNED[gem]
       WARNED[gem] = true
