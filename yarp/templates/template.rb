@@ -4,7 +4,13 @@ require "erb"
 require "fileutils"
 require "yaml"
 
-require_relative "../lib/yarp/version"
+if File.exist?(File.expand_path("../lib/yarp/version", __dir__))
+  # Within the gem/local repository
+  require_relative "../lib/yarp/version"
+else
+  # Within CRuby
+  require_relative "../../lib/yarp/version"
+end
 
 YARP_VERSION = YARP::VERSION
 YARP_VERSION_MAJOR, YARP_VERSION_MINOR, YARP_VERSION_PATCH = YARP_VERSION.split(".")
