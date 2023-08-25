@@ -29,10 +29,6 @@ typedef struct {
     node_buffer_elem_t *last;
 } node_buffer_list_t;
 
-#ifdef UNIVERSAL_PARSER
-typedef struct rb_parser_config_struct rb_parser_config_t;
-#endif
-
 struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
