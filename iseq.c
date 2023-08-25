@@ -1122,6 +1122,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         const rb_iseq_t *outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
         VALUE outer_scope_v = (VALUE)outer_scope;
         rb_parser_set_context(parser, outer_scope, FALSE);
+        rb_parser_set_script_lines(parser, RBOOL(ruby_vm_keep_script_lines));
         RB_GC_GUARD(outer_scope_v);
         ast = (*parse)(parser, file, src, ln);
     }
