@@ -1,0 +1,19 @@
+module YARP
+  # This visitor walks through the tree and copies each node as it is being
+  # visited. This is useful for consumers that want to mutate the tree, as you
+  # can change subtrees in place without effecting the rest of the tree.
+  class MutationVisitor < BasicVisitor
+    <%- nodes.each_with_index do |node, index| -%>
+<%= "\n" if index != 0 -%>
+    # Copy a <%= node.name %> node
+    def visit_<%= node.human %>(node)
+      <%- params = node.params.select { |param| [NodeParam, OptionalNodeParam, NodeListParam].include?(param.class) } -%>
+      <%- if params.any? -%>
+      node.copy(<%= params.map { |param| "#{param.name}: visit(node.#{param.name})" }.join(", ") %>)
+      <%- else -%>
+      node.copy
+      <%- end -%>
+    end
+    <%- end -%>
+  end
+end

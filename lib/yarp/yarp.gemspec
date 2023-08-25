@@ -61,6 +61,7 @@ Gem::Specification.new do |spec|
     "lib/yarp.rb",
     "lib/yarp/ffi.rb",
     "lib/yarp/lex_compat.rb",
+    "lib/yarp/mutation_visitor.rb",
     "lib/yarp/node.rb",
     "lib/yarp/pack.rb",
     "lib/yarp/ripper_compat.rb",

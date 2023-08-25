@@ -315,6 +315,7 @@ TEMPLATES = [
   "java/org/yarp/Loader.java",
   "java/org/yarp/Nodes.java",
   "java/org/yarp/AbstractNodeVisitor.java",
+  "lib/yarp/mutation_visitor.rb",
   "lib/yarp/node.rb",
   "lib/yarp/serialize.rb",
   "src/node.c",

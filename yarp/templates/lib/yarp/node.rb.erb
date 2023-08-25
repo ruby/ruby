@@ -48,6 +48,15 @@ module YARP
       }.compact.join(", ") %>]
     end
 
+    # def copy: (**params) -> <%= node.name %>
+    def copy(**params)
+      <%= node.name %>.new(
+        <%- (node.params.map(&:name) + ["location"]).map do |name| -%>
+        <%= name %>: params.fetch(:<%= name %>) { self.<%= name %> },
+        <%- end -%>
+      )
+    end
+
     # def deconstruct: () -> Array[nil | Node]
     alias deconstruct child_nodes
 
