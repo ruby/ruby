@@ -19771,7 +19771,7 @@ yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_state_stack.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_string.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_string_list.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/util/yp_strpbrk.h
-yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/version.h
+yarp/yarp.$(OBJEXT): {$(VPATH)}/yarp/version.h
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/yarp.c
 yarp/yarp.$(OBJEXT): $(top_srcdir)/yarp/yarp.h
 yarp/yarp.$(OBJEXT): {$(VPATH)}config.h
