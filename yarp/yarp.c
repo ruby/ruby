@@ -6639,7 +6639,10 @@ parser_lex(yp_parser_t *parser) {
                     // through this branch twice -- once with YP_TOKEN_REGEXP_BEGIN and then again
                     // with YP_TOKEN_STRING_CONTENT. Let's avoid tracking the newline twice, by
                     // tracking it only in the REGEXP_BEGIN case.
-                    if (!(lex_mode->as.regexp.terminator == '\n' && parser->current.type != YP_TOKEN_REGEXP_BEGIN)) {
+                    if (
+                        !(lex_mode->as.regexp.terminator == '\n' && parser->current.type != YP_TOKEN_REGEXP_BEGIN)
+                        && parser->heredoc_end == NULL
+                    ) {
                         yp_newline_list_append(&parser->newline_list, breakpoint);
                     }
 

@@ -130,6 +130,14 @@ class ErrorsTest < Test::Unit::TestCase
     ]
   end
 
+  def test_unterminated_regular_expression_with_heredoc
+    source = "<<-END + /b\nEND\n"
+
+    assert_errors expression(source), source, [
+      ["Expected a closing delimiter for a regular expression.", 10..10]
+    ]
+  end
+
   def test_unterminated_xstring
     assert_errors expression("`hello"), "`hello", [
       ["Expected a closing delimiter for an xstring.", 1..1]
