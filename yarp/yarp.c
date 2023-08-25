@@ -7809,7 +7809,148 @@ parse_starred_expression(yp_parser_t *parser, yp_binding_power_t binding_power, 
 
 // Convert the given node into a valid target node.
 static yp_node_t *
-parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_node_t *value) {
+parse_target(yp_parser_t *parser, yp_node_t *target) {
+    yp_token_t operator = not_provided(parser);
+
+    switch (YP_NODE_TYPE(target)) {
+        case YP_NODE_MISSING_NODE:
+            return target;
+        case YP_NODE_CLASS_VARIABLE_READ_NODE: {
+            yp_class_variable_write_node_t *write_node = yp_class_variable_read_node_to_class_variable_write_node(parser, (yp_class_variable_read_node_t *) target, &operator, NULL);
+            yp_node_destroy(parser, target);
+            return (yp_node_t *) write_node;
+        }
+        case YP_NODE_CONSTANT_PATH_NODE:
+            return (yp_node_t *) yp_constant_path_write_node_create(parser, (yp_constant_path_node_t *) target, &operator, NULL);
+        case YP_NODE_CONSTANT_READ_NODE: {
+            yp_constant_write_node_t *node = yp_constant_write_node_create(parser, &target->location, &operator, NULL);
+            yp_node_destroy(parser, target);
+
+            return (yp_node_t *) node;
+        }
+        case YP_NODE_BACK_REFERENCE_READ_NODE:
+        case YP_NODE_NUMBERED_REFERENCE_READ_NODE:
+            yp_diagnostic_list_append(&parser->error_list, target->location.start, target->location.end, "Can't set variable");
+            /* fallthrough */
+        case YP_NODE_GLOBAL_VARIABLE_READ_NODE: {
+            yp_global_variable_write_node_t *result = yp_global_variable_write_node_create(parser, &target->location, &operator, NULL);
+            yp_node_destroy(parser, target);
+
+            return (yp_node_t *) result;
+        }
+        case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
+            yp_local_variable_read_node_t *local_read = (yp_local_variable_read_node_t *) target;
+
+            yp_constant_id_t constant_id = local_read->constant_id;
+            uint32_t depth = local_read->depth;
+
+            yp_location_t name_loc = target->location;
+            yp_node_destroy(parser, target);
+
+            return (yp_node_t *) yp_local_variable_write_node_create(parser, constant_id, depth, NULL, &name_loc, &operator);
+        }
+        case YP_NODE_INSTANCE_VARIABLE_READ_NODE: {
+            yp_node_t *write_node = (yp_node_t *) yp_instance_variable_write_node_create(parser, (yp_instance_variable_read_node_t *) target, &operator, NULL);
+            yp_node_destroy(parser, target);
+            return write_node;
+        }
+        case YP_NODE_MULTI_WRITE_NODE: {
+            yp_multi_write_node_t *multi_write = (yp_multi_write_node_t *) target;
+            yp_multi_write_node_operator_loc_set(multi_write, &operator);
+            return (yp_node_t *) multi_write;
+        }
+        case YP_NODE_SPLAT_NODE: {
+            yp_splat_node_t *splat = (yp_splat_node_t *) target;
+
+            if (splat->expression != NULL) {
+                splat->expression = parse_target(parser, splat->expression);
+            }
+
+            yp_location_t location = { .start = NULL, .end = NULL };
+            yp_multi_write_node_t *multi_write = yp_multi_write_node_create(parser, &operator, NULL, &location, &location);
+            yp_multi_write_node_targets_append(multi_write, (yp_node_t *) splat);
+
+            return (yp_node_t *) multi_write;
+        }
+        case YP_NODE_CALL_NODE: {
+            yp_call_node_t *call = (yp_call_node_t *) target;
+            // If we have no arguments to the call node and we need this to be a
+            // target then this is either a method call or a local variable write.
+            if (
+                (call->opening_loc.start == NULL) &&
+                (call->arguments == NULL) &&
+                (call->block == NULL)
+            ) {
+                if (call->receiver == NULL) {
+                    // When we get here, we have a local variable write, because it
+                    // was previously marked as a method call but now we have an =.
+                    // This looks like:
+                    //
+                    //     foo = 1
+                    //
+                    // When it was parsed in the prefix position, foo was seen as a
+                    // method call with no receiver and no arguments. Now we have an
+                    // =, so we know it's a local variable write.
+                    const yp_location_t message = call->message_loc;
+
+                    yp_parser_local_add_location(parser, message.start, message.end);
+                    yp_node_destroy(parser, target);
+
+                    yp_constant_id_t constant_id = yp_parser_constant_id_location(parser, message.start, message.end);
+                    target = (yp_node_t *) yp_local_variable_write_node_create(parser, constant_id, 0, NULL, &message, &operator);
+
+                    if (token_is_numbered_parameter(message.start, message.end)) {
+                        yp_diagnostic_list_append(&parser->error_list, message.start, message.end, "reserved for numbered parameter");
+                    }
+
+                    return target;
+                }
+
+                // The method name needs to change. If we previously had foo, we now
+                // need foo=. In this case we'll allocate a new owned string, copy
+                // the previous method name in, and append an =.
+                size_t length = yp_string_length(&call->name);
+
+                char *name = calloc(length + 2, sizeof(char));
+                if (name == NULL) return NULL;
+
+                snprintf(name, length + 2, "%.*s=", (int) length, yp_string_source(&call->name));
+
+                // Now switch the name to the new string.
+                yp_string_free(&call->name);
+                yp_string_owned_init(&call->name, name, length + 1);
+
+                return target;
+            }
+
+            // If there is no call operator and the message is "[]" then this is
+            // an aref expression, and we can transform it into an aset
+            // expression.
+            if (
+                (call->operator_loc.start == NULL) &&
+                (call->message_loc.start[0] == '[') &&
+                (call->message_loc.end[-1] == ']') &&
+                (call->block == NULL)
+            ) {
+                // Free the previous name and replace it with "[]=".
+                yp_string_free(&call->name);
+                yp_string_constant_init(&call->name, "[]=", 3);
+                return target;
+            }
+        }
+        /* fallthrough */
+        default:
+            // In this case we have a node that we don't know how to convert into a
+            // target. We need to treat it as an error. For now, we'll mark it as an
+            // error and just skip right past it.
+            yp_diagnostic_list_append(&parser->error_list, operator.start, operator.end, "Unexpected `='.");
+            return target;
+    }
+}
+
+// Convert the given node into a valid write node.
+static yp_node_t *
+parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_node_t *value) {
     switch (YP_NODE_TYPE(target)) {
         case YP_NODE_MISSING_NODE:
             return target;
@@ -7856,18 +7997,15 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
             yp_multi_write_node_t *multi_write = (yp_multi_write_node_t *) target;
             yp_multi_write_node_operator_loc_set(multi_write, operator);
 
-            if (value != NULL) {
-                multi_write->value = value;
-                multi_write->base.location.end = value->location.end;
-            }
-
+            multi_write->value = value;
+            multi_write->base.location.end = value->location.end;
             return (yp_node_t *) multi_write;
         }
         case YP_NODE_SPLAT_NODE: {
             yp_splat_node_t *splat = (yp_splat_node_t *) target;
 
             if (splat->expression != NULL) {
-                splat->expression = parse_target(parser, splat->expression, operator, value);
+                splat->expression = parse_write(parser, splat->expression, operator, value);
             }
 
             yp_location_t location = { .start = NULL, .end = NULL };
@@ -7920,12 +8058,10 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
                 // method call with no arguments. Now we have an =, so we know it's
                 // a method call with an argument. In this case we will create the
                 // arguments node, parse the argument, and add it to the list.
-                if (value) {
-                    yp_arguments_node_t *arguments = yp_arguments_node_create(parser);
-                    call->arguments = arguments;
-                    yp_arguments_node_arguments_append(arguments, value);
-                    target->location.end = arguments->base.location.end;
-                }
+                yp_arguments_node_t *arguments = yp_arguments_node_create(parser);
+                call->arguments = arguments;
+                yp_arguments_node_arguments_append(arguments, value);
+                target->location.end = arguments->base.location.end;
 
                 // The method name needs to change. If we previously had foo, we now
                 // need foo=. In this case we'll allocate a new owned string, copy
@@ -7953,14 +8089,12 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
                 (call->message_loc.end[-1] == ']') &&
                 (call->block == NULL)
             ) {
-                if (value != NULL) {
-                    if (call->arguments == NULL) {
-                        call->arguments = yp_arguments_node_create(parser);
-                    }
-
-                    yp_arguments_node_arguments_append(call->arguments, value);
-                    target->location.end = value->location.end;
+                if (call->arguments == NULL) {
+                    call->arguments = yp_arguments_node_create(parser);
                 }
+
+                yp_arguments_node_arguments_append(call->arguments, value);
+                target->location.end = value->location.end;
 
                 // Free the previous name and replace it with "[]=".
                 yp_string_free(&call->name);
@@ -7973,9 +8107,7 @@ parse_target(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_no
             // syntax error. In this case we'll fall through to our default
             // handling. We need to free the value that we parsed because there
             // is no way for us to attach it to the tree at this point.
-            if (value != NULL) {
-                yp_node_destroy(parser, value);
-            }
+            yp_node_destroy(parser, value);
         }
         /* fallthrough */
         default:
@@ -8003,7 +8135,7 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
     // location that we know requires a multi write, as in the case of a for loop.
     // In this case we will set up the parsing loop slightly differently.
     if (first_target != NULL) {
-        first_target = parse_target(parser, first_target, &operator, NULL);
+        first_target = parse_target(parser, first_target);
 
         if (!match_type_p(parser, YP_TOKEN_COMMA)) {
             return first_target;
@@ -8034,9 +8166,8 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
                 yp_node_t *name = NULL;
 
                 if (token_begins_expression_p(parser->current.type)) {
-                    yp_token_t operator = not_provided(parser);
                     name = parse_expression(parser, binding_power, "Expected an expression after '*'.");
-                    name = parse_target(parser, name, &operator, NULL);
+                    name = parse_target(parser, name);
                 }
 
                 yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &star_operator, name);
@@ -8104,7 +8235,7 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
                 }
 
                 yp_node_t *target = parse_expression(parser, binding_power, "Expected another expression after ','.");
-                target = parse_target(parser, target, &operator, NULL);
+                target = parse_target(parser, target);
 
                 yp_multi_write_node_targets_append(result, target);
             }
@@ -8855,8 +8986,7 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
                 yp_rescue_node_operator_set(rescue, &parser->previous);
 
                 yp_node_t *reference = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected an exception variable after `=>` in rescue statement.");
-                yp_token_t operator = not_provided(parser);
-                reference = parse_target(parser, reference, &operator, NULL);
+                reference = parse_target(parser, reference);
 
                 yp_rescue_node_reference_set(rescue, reference);
                 break;
@@ -8886,8 +9016,7 @@ parse_rescues(yp_parser_t *parser, yp_begin_node_t *parent_node) {
                             yp_rescue_node_operator_set(rescue, &parser->previous);
 
                             yp_node_t *reference = parse_expression(parser, YP_BINDING_POWER_INDEX, "Expected an exception variable after `=>` in rescue statement.");
-                            yp_token_t operator = not_provided(parser);
-                            reference = parse_target(parser, reference, &operator, NULL);
+                            reference = parse_target(parser, reference);
 
                             yp_rescue_node_reference_set(rescue, reference);
                             break;
@@ -12578,7 +12707,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 case YP_CASE_WRITABLE: {
                     parser_lex(parser);
                     yp_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, "Expected a value after =.");
-                    return parse_target(parser, node, &token, value);
+                    return parse_write(parser, node, &token, value);
                 }
                 case YP_NODE_SPLAT_NODE: {
                     yp_splat_node_t *splat_node = (yp_splat_node_t *) node;
@@ -12587,7 +12716,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         case YP_CASE_WRITABLE:
                             parser_lex(parser);
                             yp_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, "Expected a value after =.");
-                            return parse_target(parser, (yp_node_t *) splat_node, &token, value);
+                            return parse_write(parser, (yp_node_t *) splat_node, &token, value);
                         default:
                             break;
                     }
@@ -12684,9 +12813,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     }
 
                     parser_lex(parser);
-
-                    yp_token_t operator = not_provided(parser);
-                    node = parse_target(parser, node, &operator, NULL);
+                    node = parse_target(parser, node);
 
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after &&=");
                     return (yp_node_t *) yp_call_operator_and_write_node_create(parser, (yp_call_node_t *) node, &token, value);
@@ -12787,9 +12914,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                     }
 
                     parser_lex(parser);
-
-                    yp_token_t operator = not_provided(parser);
-                    node = parse_target(parser, node, &operator, NULL);
+                    node = parse_target(parser, node);
 
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after ||=");
                     return (yp_node_t *) yp_call_operator_or_write_node_create(parser, (yp_call_node_t *) node, &token, value);
@@ -12899,10 +13024,9 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                         return result;
                     }
 
-                    yp_token_t operator = not_provided(parser);
-                    node = parse_target(parser, node, &operator, NULL);
-
+                    node = parse_target(parser, node);
                     parser_lex(parser);
+
                     yp_node_t *value = parse_expression(parser, binding_power, "Expected a value after the operator.");
                     return (yp_node_t *) yp_call_operator_write_node_create(parser, (yp_call_node_t *) node, &token, value);
                 }
