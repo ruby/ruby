@@ -157,6 +157,14 @@ with the Ruby script you'd like to run. You can use the following make targets:
 * `make lldb-ruby`: Runs `test.rb` using Ruby in lldb
 * `make gdb-ruby`: Runs `test.rb` using Ruby in gdb
 
+### Compiling for Debugging
+
+You should configure Ruby without optimization and other flags that may interfere with debugging:
+
+``` shell
+./configure --enable-debug-env optflags="-O0 -fno-omit-frame-pointer"
+```
+
 ### Building with Address Sanitizer
 
 Using the address sanitizer is a great way to detect memory issues.
