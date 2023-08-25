@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
-require_relative 'lib/yarp/version'
+if File.exist?(File.expand_path("version.rb", __dir__))
+  # CRuby
+  require_relative "version"
+else
+  # Within the gem/local repository
+  require_relative "lib/yarp/version"
+end
 
 Gem::Specification.new do |spec|
   spec.name = "yarp"
