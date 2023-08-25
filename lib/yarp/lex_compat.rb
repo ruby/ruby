@@ -593,12 +593,7 @@ module YARP
         if bom && lineno == 1
           column -= 3
 
-<<<<<<< HEAD
-=begin
-          if index == 0 && column == 0
-=======
           if index == 0 && column == 0 && !bom_flushed
->>>>>>> 7710cee2480 (Fix up lex compat on Ruby HEAD)
             flushed =
               case token.type
               when :BACK_REFERENCE, :INSTANCE_VARIABLE, :CLASS_VARIABLE,
@@ -618,7 +613,6 @@ module YARP
               value.prepend(String.new("\xEF\xBB\xBF", encoding: value.encoding))
             end
           end
-=end
         end
 
         event = RIPPER.fetch(token.type)
