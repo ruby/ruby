@@ -6614,7 +6614,13 @@ parser_lex(yp_parser_t *parser) {
 
         case YP_LEX_REGEXP: {
             // First, we'll set to start of this token to be the current end.
-            parser->current.start = parser->current.end;
+            if (parser->next_start == NULL) {
+                parser->current.start = parser->current.end;
+            } else {
+                parser->current.start = parser->next_start;
+                parser->current.end = parser->next_start;
+                parser->next_start = NULL;
+            }
 
             // We'll check if we're at the end of the file. If we are, then we need to
             // return the EOF token.
@@ -6693,9 +6699,19 @@ parser_lex(yp_parser_t *parser) {
                 if (*breakpoint == '\\') {
                     size_t difference = yp_unescape_calculate_difference(parser, breakpoint, YP_UNESCAPE_ALL, false);
 
-                    // If the result is an escaped newline, then we need to
-                    // track that newline.
-                    yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
+                    // If the result is an escaped newline ...
+                    if (*(breakpoint + difference - 1) == '\n') {
+                        if (parser->heredoc_end) {
+                            // ... if we are on the same line as a heredoc, flush the heredoc and
+                            // continue parsing after heredoc_end.
+                            parser->current.end = breakpoint + difference;
+                            parser_flush_heredoc_end(parser);
+                            LEX(YP_TOKEN_STRING_CONTENT);
+                        } else {
+                            // ... else track the newline.
+                            yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
+                        }
+                    }
 
                     breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                     continue;
@@ -6833,9 +6849,19 @@ parser_lex(yp_parser_t *parser) {
                         yp_unescape_type_t unescape_type = parser->lex_modes.current->as.string.interpolation ? YP_UNESCAPE_ALL : YP_UNESCAPE_MINIMAL;
                         size_t difference = yp_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
 
-                        // If the result is an escaped newline, then we need to
-                        // track that newline.
-                        yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
+                        // If the result is an escaped newline ...
+                        if (*(breakpoint + difference - 1) == '\n') {
+                            if (parser->heredoc_end) {
+                                // ... if we are on the same line as a heredoc, flush the heredoc and
+                                // continue parsing after heredoc_end.
+                                parser->current.end = breakpoint + difference;
+                                parser_flush_heredoc_end(parser);
+                                LEX(YP_TOKEN_STRING_CONTENT);
+                            } else {
+                                // ... else track the newline.
+                                yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
+                            }
+                        }
 
                         breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                         break;

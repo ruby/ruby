@@ -112,6 +112,10 @@ class ParseTest < Test::Unit::TestCase
       # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
       return if relative == "seattlerb/heredoc_nested.txt"
 
+      # Ripper seems to have a bug that the regex portions before and after the heredoc are combined
+      # into a single token.
+      return if relative == "wrapping_heredoc.txt"
+
       # Finally, assert that we can lex the source and get the same tokens as
       # Ripper.
       lex_result = YARP.lex_compat(source)

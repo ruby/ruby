@@ -1,0 +1,13 @@
+# test regex, string, and lists that wrap a heredoc thanks to an escaped newline
+
+# ripper incorrectly creates a "b\nc" string instead of two separate string tokens
+pp <<-A.gsub(/b\
+a
+A
+c/, "")
+
+# ripper incorrectly creates a "e\nf" string instead of two separate string tokens
+pp <<-A + "e\
+d
+A
+f"
