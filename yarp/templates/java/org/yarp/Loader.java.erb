@@ -95,11 +95,26 @@ public class Loader {
         return new ParseResult(node, comments, errors, warnings);
     }
 
-    private byte[] loadString() {
+    private byte[] loadEmbeddedString() {
         int length = loadVarInt();
         byte[] string = new byte[length];
         buffer.get(string);
         return string;
+    }
+
+    private byte[] loadString() {
+        switch (buffer.get()) {
+            case 1:
+                int start = loadVarInt();
+                int length = loadVarInt();
+                byte[] string = new byte[length];
+                System.arraycopy(source.bytes, start, string, 0, length);
+                return string;
+            case 2:
+                return loadEmbeddedString();
+            default:
+                throw new Error("Expected 0 or 1 but was " + buffer.get());
+        }
     }
 
     private ParseResult.Comment[] loadComments() {
@@ -123,7 +138,7 @@ public class Loader {
 
         // error messages only contain ASCII characters
         for (int i = 0; i < count; i++) {
-            byte[] bytes = loadString();
+            byte[] bytes = loadEmbeddedString();
             String message = new String(bytes, StandardCharsets.US_ASCII);
             Nodes.Location location = loadLocation();
 
@@ -140,7 +155,7 @@ public class Loader {
 
         // warning messages only contain ASCII characters
         for (int i = 0; i < count; i++) {
-            byte[] bytes = loadString();
+            byte[] bytes = loadEmbeddedString();
             String message = new String(bytes, StandardCharsets.US_ASCII);
             Nodes.Location location = loadLocation();
 

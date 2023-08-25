@@ -54,8 +54,8 @@ module YARP
         end
 
         comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
-        errors = load_varint.times.map { ParseError.new(load_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_string, load_location) }
+        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
 
@@ -70,8 +70,8 @@ module YARP
         @input = input.force_encoding(@encoding).freeze
 
         comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(io.getbyte), load_location) }
-        errors = load_varint.times.map { ParseError.new(load_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_string, load_location) }
+        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
 
         @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
@@ -110,8 +110,19 @@ module YARP
         end
       end
 
-      def load_string
+      def load_embedded_string
         io.read(load_varint).force_encoding(encoding)
+      end
+
+      def load_string
+        case io.getbyte
+        when 1
+          input.byteslice(load_varint, load_varint).force_encoding(encoding)
+        when 2
+          load_embedded_string
+        else
+          raise
+        end
       end
 
       def load_location

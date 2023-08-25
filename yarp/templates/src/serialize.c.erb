@@ -15,7 +15,7 @@ yp_sizet_to_u32(size_t value) {
 }
 
 static void
-serialize_location(yp_parser_t *parser, yp_location_t *location, yp_buffer_t *buffer) {
+yp_serialize_location(yp_parser_t *parser, yp_location_t *location, yp_buffer_t *buffer) {
     assert(location->start);
     assert(location->end);
     assert(location->start <= location->end);
@@ -24,13 +24,36 @@ serialize_location(yp_parser_t *parser, yp_location_t *location, yp_buffer_t *bu
     yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(location->end - location->start));
 }
 
+static void
+yp_serialize_string(yp_parser_t *parser, yp_string_t *string, yp_buffer_t *buffer) {
+    switch (string->type) {
+        case YP_STRING_SHARED: {
+            yp_buffer_append_u8(buffer, 1);
+            yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(yp_string_source(string) - parser->start));
+            yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_string_length(string)));
+            break;
+        }
+        case YP_STRING_OWNED:
+        case YP_STRING_CONSTANT: {
+            uint32_t length = yp_sizet_to_u32(yp_string_length(string));
+            yp_buffer_append_u8(buffer, 2);
+            yp_buffer_append_u32(buffer, length);
+            yp_buffer_append_str(buffer, yp_string_source(string), length);
+            break;
+        }
+        case YP_STRING_MAPPED:
+            assert(false && "Cannot serialize mapped strings.");
+            break;
+    }
+}
+
 void
 yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
     yp_buffer_append_u8(buffer, (uint8_t) YP_NODE_TYPE(node));
 
     size_t offset = buffer->length;
 
-    serialize_location(parser, &node->location, buffer);
+    yp_serialize_location(parser, &node->location, buffer);
 
     switch (YP_NODE_TYPE(node)) {
         // We do not need to serialize a ScopeNode ever as
@@ -56,9 +79,7 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
                 yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
             }
             <%- when StringParam -%>
-            uint32_t <%= param.name %>_length = yp_sizet_to_u32(yp_string_length(&((yp_<%= node.human %>_t *)node)-><%= param.name %>));
-            yp_buffer_append_u32(buffer, <%= param.name %>_length);
-            yp_buffer_append_str(buffer, yp_string_source(&((yp_<%= node.human %>_t *)node)-><%= param.name %>), <%= param.name %>_length);
+            yp_serialize_string(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
             <%- when NodeListParam -%>
             uint32_t <%= param.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.size);
             yp_buffer_append_u32(buffer, <%= param.name %>_size);
@@ -69,7 +90,7 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
             uint32_t <%= param.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.size);
             yp_buffer_append_u32(buffer, <%= param.name %>_size);
             for (uint32_t index = 0; index < <%= param.name %>_size; index++) {
-                serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>.locations[index], buffer);
+                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>.locations[index], buffer);
             }
             <%- when ConstantParam -%>
             yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>));
@@ -80,13 +101,13 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
                 yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.ids[index]));
             }
             <%- when LocationParam -%>
-            serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
+            yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
             <%- when OptionalLocationParam -%>
             if (((yp_<%= node.human %>_t *)node)-><%= param.name %>.start == NULL) {
                 yp_buffer_append_u8(buffer, 0);
             } else {
                 yp_buffer_append_u8(buffer, 1);
-                serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
+                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
             }
             <%- when UInt32Param -%>
             yp_buffer_append_u32(buffer, ((yp_<%= node.human %>_t *)node)-><%= param.name %>);
@@ -107,7 +128,8 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
     }
 }
 
-void yp_serialize_comment(yp_parser_t *parser, yp_comment_t *comment, yp_buffer_t *buffer) {
+static void
+yp_serialize_comment(yp_parser_t *parser, yp_comment_t *comment, yp_buffer_t *buffer) {
     // serialize type
     yp_buffer_append_u8(buffer, (uint8_t) comment->type);
 
@@ -116,16 +138,18 @@ void yp_serialize_comment(yp_parser_t *parser, yp_comment_t *comment, yp_buffer_
     yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(comment->end - comment->start));
 }
 
-void yp_serialize_comment_list(yp_parser_t *parser, yp_list_t list, yp_buffer_t *buffer) {
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(&list)));
+static void
+yp_serialize_comment_list(yp_parser_t *parser, yp_list_t *list, yp_buffer_t *buffer) {
+    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(list)));
 
     yp_comment_t *comment;
-    for (comment = (yp_comment_t *) list.head; comment != NULL; comment = (yp_comment_t *) comment->node.next) {
+    for (comment = (yp_comment_t *) list->head; comment != NULL; comment = (yp_comment_t *) comment->node.next) {
         yp_serialize_comment(parser, comment, buffer);
     }
 }
 
-void yp_serialize_diagnostic(yp_parser_t *parser, yp_diagnostic_t *diagnostic, yp_buffer_t *buffer) {
+static void
+yp_serialize_diagnostic(yp_parser_t *parser, yp_diagnostic_t *diagnostic, yp_buffer_t *buffer) {
     // serialize message
     size_t message_length = strlen(diagnostic->message);
     yp_buffer_append_u32(buffer, yp_sizet_to_u32(message_length));
@@ -136,11 +160,12 @@ void yp_serialize_diagnostic(yp_parser_t *parser, yp_diagnostic_t *diagnostic, y
     yp_buffer_append_u32(buffer, yp_ptrdifft_to_u32(diagnostic->end - diagnostic->start));
 }
 
-void yp_serialize_diagnostic_list(yp_parser_t *parser, yp_list_t list, yp_buffer_t *buffer) {
-    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(&list)));
+static void
+yp_serialize_diagnostic_list(yp_parser_t *parser, yp_list_t *list, yp_buffer_t *buffer) {
+    yp_buffer_append_u32(buffer, yp_sizet_to_u32(yp_list_size(list)));
 
     yp_diagnostic_t *diagnostic;
-    for (diagnostic = (yp_diagnostic_t *) list.head; diagnostic != NULL; diagnostic = (yp_diagnostic_t *) diagnostic->node.next) {
+    for (diagnostic = (yp_diagnostic_t *) list->head; diagnostic != NULL; diagnostic = (yp_diagnostic_t *) diagnostic->node.next) {
         yp_serialize_diagnostic(parser, diagnostic, buffer);
     }
 }
@@ -153,14 +178,9 @@ yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) 
     yp_buffer_append_u32(buffer, yp_sizet_to_u32(encoding_length));
     yp_buffer_append_str(buffer, parser->encoding.name, encoding_length);
 
-    // Serialize the comments
-    yp_serialize_comment_list(parser, parser->comment_list, buffer);
-
-    // Serialize the errors
-    yp_serialize_diagnostic_list(parser, parser->error_list, buffer);
-
-    // Serialize the warnings
-    yp_serialize_diagnostic_list(parser, parser->warning_list, buffer);
+    yp_serialize_comment_list(parser, &parser->comment_list, buffer);
+    yp_serialize_diagnostic_list(parser, &parser->error_list, buffer);
+    yp_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
 
     // Here we're going to leave space for the offset of the constant pool in
     // the buffer.
@@ -224,16 +244,11 @@ yp_lex_serialize(const char *source, size_t size, const char *filepath, yp_buffe
     yp_node_t *node = yp_parse(&parser);
 
     // Append 0 to mark end of tokens
-    yp_buffer_append_u32(buffer, 0);
+    yp_buffer_append_u8(buffer, 0);
 
-    // Serialize the comments
-    yp_serialize_comment_list(&parser, parser.comment_list, buffer);
-
-    // Serialize the errors
-    yp_serialize_diagnostic_list(&parser, parser.error_list, buffer);
-
-    // Serialize the warnings
-    yp_serialize_diagnostic_list(&parser, parser.warning_list, buffer);
+    yp_serialize_comment_list(&parser, &parser.comment_list, buffer);
+    yp_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
+    yp_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
 
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
