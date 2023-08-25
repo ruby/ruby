@@ -37,7 +37,7 @@ module YARP
   class Location
     # A Source object that is used to determine more information from the given
     # offset and length.
-    private attr_reader :source
+    protected attr_reader :source
 
     # The byte offset from the beginning of the source where this location
     # starts.
@@ -112,8 +112,13 @@ module YARP
         other.end_offset == end_offset
     end
 
-    # Returns a new location that is the union of this location and the other.
-    def to(other)
+    # Returns a new location that stretches from this location to the given
+    # other location. Raises an error if this location is not before the other
+    # location or if they don't share the same source.
+    def join(other)
+      raise "Incompatible sources" if source != other.source
+      raise "Incompatible locations" if start_offset > other.start_offset
+
       Location.new(source, start_offset, other.end_offset - start_offset)
     end
 
