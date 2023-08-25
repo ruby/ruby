@@ -405,7 +405,7 @@ module SyncDefaultGems
       # Run the YARP templating scripts
       cp_r("#{upstream}/ext/yarp", "yarp")
       cp_r("#{upstream}/lib/.", "lib")
-      cp_r("#{upstream}/test", "test/yarp")
+      cp_r("#{upstream}/test/yarp", "test")
       cp_r("#{upstream}/src/.", "yarp")
 
       cp_r("#{upstream}/yarp.gemspec", "lib/yarp")
@@ -415,10 +415,7 @@ module SyncDefaultGems
       cp_r("#{upstream}/config.yml", "yarp/")
       cp_r("#{upstream}/templates", "yarp/")
 
-      rm_f("yarp/config.h")
-      File.write("yarp/config.h", "#include \"ruby/config.h\"\n")
       rm("yarp/extconf.rb")
-
       mv("yarp_init.c", "yarp/")
     else
       sync_lib gem, upstream
