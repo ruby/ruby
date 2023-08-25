@@ -208,18 +208,9 @@ module YARP
       end
     end
 
-    # It is extremely non obvious which state the parser is in when comments get
-    # dispatched. Because of this we don't both comparing state when comparing
-    # against other comment tokens.
-    class CommentToken < Token
-      def ==(other)
-        self[0...-1] == other[0...-1]
-      end
-    end
-
-    # Heredoc end tokens are emitted in an odd order, so we don't compare the
-    # state on them.
-    class HeredocEndToken < Token
+    # Tokens where state should be ignored
+    # used for :on_comment, :on_heredoc_end, :on_embexpr_end
+    class IgnoreStateToken < Token
       def ==(other)
         self[0...-1] == other[0...-1]
       end
@@ -624,12 +615,12 @@ module YARP
           when :on___end__
             EndContentToken.new([[lineno, column], event, value, lex_state])
           when :on_comment
-            CommentToken.new([[lineno, column], event, value, lex_state])
+            IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_heredoc_end
             # Heredoc end tokens can be emitted in an odd order, so we don't
             # want to bother comparing the state on them.
-            HeredocEndToken.new([[lineno, column], event, value, lex_state])
-          when :on_embexpr_end, :on_ident
+            IgnoreStateToken.new([[lineno, column], event, value, lex_state])
+          when :on_ident
             if lex_state == Ripper::EXPR_END
               # If we have an identifier that follows a method name like:
               #
@@ -649,6 +640,8 @@ module YARP
             else
               Token.new([[lineno, column], event, value, lex_state])
             end
+          when :on_embexpr_end
+            IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_ignored_nl
             # Ignored newlines can occasionally have a LABEL state attached to
             # them which doesn't actually impact anything. We don't mirror that
