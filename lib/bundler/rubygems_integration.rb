@@ -254,8 +254,20 @@ module Bundler
                               "inline Gemfile"
                             end
               be = RUBY_VERSION < ::Gem::BUNDLED_GEMS::SINCE[name] ? "will be" : "is"
-              warn "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[name]}." \
-              " Add it to your #{target_file}.", uplevel: 1
+              message = "#{name} #{be} not part of the default gems since Ruby #{::Gem::BUNDLED_GEMS::SINCE[name]}." \
+              " Add #{name} to your #{target_file}."
+              location = caller_locations(1,1)[0]&.path
+              if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
+                caller_gem = nil
+                Gem.path.each do |path|
+                  if location =~ /#{path}\/gems\/([\w\-\.]+)/
+                    caller_gem = $1
+                    break
+                  end
+                end
+                message += " Also contact author of #{caller_gem} to add #{name} into its gemspec."
+              end
+              warn message, uplevel: 1
             end
           end
           kernel_class.send(:no_warning_require, file)
