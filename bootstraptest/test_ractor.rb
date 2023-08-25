@@ -231,6 +231,24 @@ assert_equal 'ok', %q{
   end.take
 }
 
+# fork marks other ractors as terminated in forked process
+assert_equal 'ok', %q{
+  if Process.respond_to?(:fork)
+    ractor = Ractor.new do
+      sleep 10
+    end
+    r, w = IO.pipe
+    if Process.fork
+      r.read(2)
+    else
+      w.write(ractor.inspect.include?("terminated") ? 'ok' : 'ba')
+      w.close
+    end
+  else
+    :ok
+  end
+}
+
 ###
 ###
 # Ractor still has several memory corruption so skip huge number of tests
