@@ -23,17 +23,17 @@ module Gem::BUNDLED_GEMS
   }.freeze
 
   EXACT = {
-    "abbrev"=>true,
-    "base64"=>true,
-    "csv"=>true,
-    "drb"=>true,
-    "getoptlong"=>true,
-    "mutex_m"=>true,
-    "nkf"=>true, "kconv"=>"nkf",
-    "observer"=>true,
-    "resolv-replace"=>true,
-    "rinda"=>true,
-    "syslog"=>true,
+    "abbrev" => true,
+    "base64" => true,
+    "csv" => true,
+    "drb" => true,
+    "getoptlong" => true,
+    "mutex_m" => true,
+    "nkf" => true, "kconv" => "nkf",
+    "observer" => true,
+    "resolv-replace" => true,
+    "rinda" => true,
+    "syslog" => true,
   }.freeze
 
   PREFIXED = {
