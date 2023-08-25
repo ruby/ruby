@@ -123,23 +123,29 @@ changelog for details of the default gems or bundled gems.
 
 ### YJIT
 
-* Significant performance improvements over 3.2
-  * Splat and rest arguments support has been improved.
+* Major performance improvements over 3.2
+  * Support for splat and rest arguments has been improved.
   * Registers are allocated for stack operations of the virtual machine.
   * More calls with optional arguments are compiled.
-  * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
-    `Kernel#instance_of?`, `Module#===` are specially optimized.
+  * Exception handlers are also compiled.
   * Instance variables no longer exit to the interpreter
     with megamorphic Object Shapes.
+  * Unsupported call types no longer exit to the interpreter.
+  * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
+    `Kernel#instance_of?`, `Module#===` are specially optimized.
+  * Now more than 3x faster than the interpreter on optcarrot!
 * Metadata for compiled code uses a lot less memory.
-* Improved code generation on ARM64
+* Generate more compact code on ARM64
 * Option to start YJIT in paused mode and then later enable it manually
   * `--yjit-pause` and `RubyVM::YJIT.resume`
   * This can be used to enable YJIT only once your application is done booting
+* `ratio_in_yjit` stat produced by `--yjit-stats` is now avaiable in release builds,
+  a special stats or dev build is no longer required.
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
+* `--yjit-stats=quiet` is added to avoid printing stats on exit.
 * The default value for `--yjit-exec-mem-size` is changed from 64 to 128.
-* Multiple bug fixes
+* More thorough testing and multiple bug fixes
 
 ### RJIT
 
