@@ -1145,6 +1145,11 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
 #define idFWD_BLOCK  '&'
 #define idFWD_ALL    idDot3
+#ifdef RIPPER
+#define arg_FWD_BLOCK Qnone
+#else
+#define arg_FWD_BLOCK idFWD_BLOCK
+#endif
 #define FORWARD_ARGS_WITH_RUBY2_KEYWORDS
 
 #define RE_OPTION_ONCE (1<<16)
@@ -5628,7 +5633,7 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
                 | args_forward
                     {
                         add_forwarding_args(p);
-                        $$ = new_args_tail(p, Qnone, $1, ID2VAL(idFWD_BLOCK), &@1);
+                        $$ = new_args_tail(p, Qnone, $1, arg_FWD_BLOCK, &@1);
                     /*%%%*/
                         ($$->nd_ainfo)->forwarding = 1;
                     /*% %*/
