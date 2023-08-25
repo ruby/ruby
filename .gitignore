@@ -265,4 +265,3 @@ lcov*.info
 /yarp/prettyprint.c
 /yarp/serialize.c
 /yarp/token_type.c
-/yarp/version.h
