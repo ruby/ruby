@@ -52,6 +52,16 @@ module YARP
       @length = length
     end
 
+    # Create a new location object with the given options.
+    def copy(**options)
+      Location.new(
+        options.fetch(:source) { source },
+        options.fetch(:start_offset) { start_offset },
+        options.fetch(:length) { length }
+      )
+    end
+
+    # Returns a string representation of this location.
     def inspect
       "#<YARP::Location @start_offset=#{@start_offset} @length=#{@length}>"
     end
@@ -508,6 +518,7 @@ end
 
 require_relative "yarp/lex_compat"
 require_relative "yarp/mutation_visitor"
+require_relative "yarp/desugar_visitor"
 require_relative "yarp/node"
 require_relative "yarp/ripper_compat"
 require_relative "yarp/serialize"

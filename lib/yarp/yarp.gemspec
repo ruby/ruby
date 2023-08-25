@@ -59,6 +59,7 @@ Gem::Specification.new do |spec|
     "include/yarp/util/yp_strpbrk.h",
     "include/yarp/version.h",
     "lib/yarp.rb",
+    "lib/yarp/desugar_visitor.rb",
     "lib/yarp/ffi.rb",
     "lib/yarp/lex_compat.rb",
     "lib/yarp/mutation_visitor.rb",

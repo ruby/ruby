@@ -9,7 +9,7 @@ module YARP
     def visit_<%= node.human %>(node)
       <%- params = node.params.select { |param| [NodeParam, OptionalNodeParam, NodeListParam].include?(param.class) } -%>
       <%- if params.any? -%>
-      node.copy(<%= params.map { |param| "#{param.name}: visit(node.#{param.name})" }.join(", ") %>)
+      node.copy(<%= params.map { |param| "#{param.name}: #{param.is_a?(NodeListParam) ? "visit_all" : "visit"}(node.#{param.name})" }.join(", ") %>)
       <%- else -%>
       node.copy
       <%- end -%>
