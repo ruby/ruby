@@ -10,7 +10,7 @@ ProgramNode(0...56)(
                SymbolNode(13...15)(nil, (13...14), (14...15), "b"),
                CapturePatternNode(16...28)(
                  ConstantReadNode(16...23)(),
-                 LocalVariableWriteNode(27...28)(:x, 0, nil, (27...28), nil),
+                 LocalVariableTargetNode(27...28)(:x, 0),
                  (24...26)
                ),
                nil

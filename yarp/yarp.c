@@ -3075,21 +3075,18 @@ yp_local_variable_write_node_create(yp_parser_t *parser, yp_constant_id_t consta
     return node;
 }
 
-// Allocate and initialize a new LocalVariableWriteNode node without an operator or target.
-static yp_local_variable_write_node_t *
+// Allocate and initialize a new LocalVariableTargetNode node.
+static yp_local_variable_target_node_t *
 yp_local_variable_target_node_create(yp_parser_t *parser, const yp_token_t *name) {
-    yp_local_variable_write_node_t *node = YP_ALLOC_NODE(parser, yp_local_variable_write_node_t);
+    yp_local_variable_target_node_t *node = YP_ALLOC_NODE(parser, yp_local_variable_target_node_t);
 
-    *node = (yp_local_variable_write_node_t) {
+    *node = (yp_local_variable_target_node_t) {
         {
-            .type = YP_NODE_LOCAL_VARIABLE_WRITE_NODE,
+            .type = YP_NODE_LOCAL_VARIABLE_TARGET_NODE,
             .location = YP_LOCATION_TOKEN_VALUE(name)
         },
         .constant_id = yp_parser_constant_id_token(parser, name),
-        .depth = 0,
-        .value = NULL,
-        .name_loc = YP_LOCATION_TOKEN_VALUE(name),
-        .operator_loc = { .start = NULL, .end = NULL }
+        .depth = 0
     };
 
     return node;

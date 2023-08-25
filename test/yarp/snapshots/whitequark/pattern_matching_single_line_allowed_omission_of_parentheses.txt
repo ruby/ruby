@@ -9,8 +9,8 @@ ProgramNode(0...142)(
        ),
        ArrayPatternNode(10...14)(
          nil,
-         [LocalVariableWriteNode(10...11)(:a, 0, nil, (10...11), nil),
-          LocalVariableWriteNode(13...14)(:b, 0, nil, (13...14), nil)],
+         [LocalVariableTargetNode(10...11)(:a, 0),
+          LocalVariableTargetNode(13...14)(:b, 0)],
          nil,
          [],
          nil,
@@ -27,8 +27,8 @@ ProgramNode(0...142)(
        ),
        ArrayPatternNode(29...33)(
          nil,
-         [LocalVariableWriteNode(29...30)(:a, 0, nil, (29...30), nil),
-          LocalVariableWriteNode(32...33)(:b, 0, nil, (32...33), nil)],
+         [LocalVariableTargetNode(29...30)(:a, 0),
+          LocalVariableTargetNode(32...33)(:b, 0)],
          nil,
          [],
          nil,
@@ -99,7 +99,7 @@ ProgramNode(0...142)(
          nil,
          [AssocNode(89...99)(
             SymbolNode(89...93)(nil, (89...92), (92...93), "key"),
-            LocalVariableWriteNode(94...99)(:value, 0, nil, (94...99), nil),
+            LocalVariableTargetNode(94...99)(:value, 0),
             nil
           )],
          nil,
@@ -123,13 +123,7 @@ ProgramNode(0...142)(
          nil,
          [AssocNode(125...135)(
             SymbolNode(125...129)(nil, (125...128), (128...129), "key"),
-            LocalVariableWriteNode(130...135)(
-              :value,
-              0,
-              nil,
-              (130...135),
-              nil
-            ),
+            LocalVariableTargetNode(130...135)(:value, 0),
             nil
           )],
          nil,

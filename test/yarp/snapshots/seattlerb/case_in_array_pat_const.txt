@@ -6,7 +6,7 @@ ProgramNode(0...24)(
        [InNode(8...20)(
           ArrayPatternNode(11...15)(
             ConstantReadNode(11...12)(),
-            [LocalVariableWriteNode(13...14)(:c, 0, nil, (13...14), nil)],
+            [LocalVariableTargetNode(13...14)(:c, 0)],
             nil,
             [],
             (12...13),

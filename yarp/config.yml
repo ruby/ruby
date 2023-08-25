@@ -908,9 +908,9 @@ nodes:
         type: node
         kind: ConstantPathNode
       - name: operator_loc
-        type: location?
+        type: location
       - name: value
-        type: node?
+        type: node
     comment: |
       Represents writing to a constant path.
 
@@ -939,9 +939,9 @@ nodes:
       - name: name_loc
         type: location
       - name: value
-        type: node?
+        type: node
       - name: operator_loc
-        type: location?
+        type: location
     comment: |
       Represents writing to a constant.
 
@@ -1208,9 +1208,9 @@ nodes:
       - name: name_loc
         type: location
       - name: operator_loc
-        type: location?
+        type: location
       - name: value
-        type: node?
+        type: node
     comment: |
       Represents writing to a global variable.
 
@@ -1354,9 +1354,9 @@ nodes:
       - name: name_loc
         type: location
       - name: value
-        type: node?
+        type: node
       - name: operator_loc
-        type: location?
+        type: location
     comment: |
       Represents writing to an instance variable.
 
@@ -1564,11 +1564,11 @@ nodes:
       - name: depth
         type: uint32
       - name: value
-        type: node?
+        type: node
       - name: name_loc
         type: location
       - name: operator_loc
-        type: location?
+        type: location
     comment: |
       Represents writing to a local variable.
 
