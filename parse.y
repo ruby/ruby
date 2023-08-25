@@ -29,6 +29,8 @@
 # include RUBY_EXTCONF_H
 #endif
 
+#include "ruby/internal/config.h"
+
 #include <errno.h>
 #include "internal/ruby_parser.h"
 #include "parser_node.h"
