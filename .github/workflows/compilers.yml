@@ -210,6 +210,7 @@ jobs:
           - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
           - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
 #         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
+          - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
 
     name: ${{ matrix.entry.name }}
 
