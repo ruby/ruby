@@ -606,6 +606,9 @@ typedef struct rb_parser_config_struct {
     int (*builtin_type)(VALUE);
 #undef snprintf
     int (*snprintf)(char *str, size_t n, char const *fmt, ...);
+#ifdef RUBY_SUBST_H
+# define snprintf(...) ruby_snprintf(__VA_ARGS__)
+#endif
 
     VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 
