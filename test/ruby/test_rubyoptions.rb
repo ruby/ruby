@@ -135,12 +135,12 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_debug
-    assert_in_out_err(["--disable-gems", "-de", "p $DEBUG"], "", %w(true), [])
+    assert_in_out_err(["-de", "p $DEBUG"], "", %w(true), [])
 
-    assert_in_out_err(["--disable-gems", "--debug", "-e", "p $DEBUG"],
+    assert_in_out_err(["--debug", "-e", "p $DEBUG"],
                       "", %w(true), [])
 
-    assert_in_out_err(["--disable-gems", "--debug-", "-e", "p $DEBUG"], "", %w(), /invalid option --debug-/)
+    assert_in_out_err(["--debug-", "-e", "p $DEBUG"], "", %w(), /invalid option --debug-/)
   end
 
   q = Regexp.method(:quote)
@@ -211,9 +211,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--disable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --disable: `foobarbazqux'/)
     assert_in_out_err(%w(--disable), "", [], /missing argument for --disable/)
-    assert_in_out_err(%w(--disable-gems -e) + ['p defined? Gem'], "", ["nil"], [])
+    assert_in_out_err(%w(-e) + ['p defined? Gem'], "", ["nil"], [])
     assert_in_out_err(%w(--disable-did_you_mean -e) + ['p defined? DidYouMean'], "", ["nil"], [])
-    assert_in_out_err(%w(--disable-gems -e) + ['p defined? DidYouMean'], "", ["nil"], [])
+    assert_in_out_err(%w(-e) + ['p defined? DidYouMean'], "", ["nil"], [])
   end
 
   def test_kanji
