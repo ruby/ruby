@@ -81,13 +81,13 @@ module SyncDefaultGems
     yaml: "ruby/yaml",
     yarp: ["ruby/yarp", "main"],
     zlib: 'ruby/zlib',
-  }
+  }.transform_keys {|k| k.to_s}
 
   CLASSICAL_DEFAULT_BRANCH = "master"
 
   class << REPOSITORIES
     def [](gem)
-      repo, branch = super
+      repo, branch = super(gem)
       return repo, branch || CLASSICAL_DEFAULT_BRANCH
     end
 
@@ -131,7 +131,7 @@ module SyncDefaultGems
 
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
   def sync_default_gems(gem)
-    repo, = REPOSITORIES[gem.to_sym]
+    repo, = REPOSITORIES[gem]
     puts "Sync #{repo}"
 
     upstream = File.join("..", "..", repo)
@@ -497,7 +497,7 @@ module SyncDefaultGems
   # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
   # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
   def sync_default_gems_with_commits(gem, ranges, edit: nil)
-    repo, default_branch = REPOSITORIES[gem.to_sym]
+    repo, default_branch = REPOSITORIES[gem]
     puts "Sync #{repo} with commit history."
 
     # Fetch the repository to be synchronized
@@ -740,7 +740,7 @@ module SyncDefaultGems
 
   def update_default_gems(gem, release: false)
 
-    repository, default_branch = REPOSITORIES[gem.to_sym]
+    repository, default_branch = REPOSITORIES[gem]
     author, repository = repository.split('/')
 
     puts "Update #{author}/#{repository}"
@@ -778,16 +778,16 @@ module SyncDefaultGems
     if ARGV[1]
       update_default_gems(ARGV[1])
     else
-      REPOSITORIES.each_key {|gem| update_default_gems(gem.to_s)}
+      REPOSITORIES.each_key {|gem| update_default_gems(gem)}
     end
   when "all"
     if ARGV[1] == "release"
       REPOSITORIES.each_key do |gem|
-        update_default_gems(gem.to_s, release: true)
-        sync_default_gems(gem.to_s)
+        update_default_gems(gem, release: true)
+        sync_default_gems(gem)
       end
     else
-      REPOSITORIES.each_key {|gem| sync_default_gems(gem.to_s)}
+      REPOSITORIES.each_key {|gem| sync_default_gems(gem)}
     end
   when "list"
     ARGV.shift
