@@ -417,6 +417,7 @@ module SyncDefaultGems
 
       cp_r("#{upstream}/config.yml", "yarp/")
       cp_r("#{upstream}/templates", "yarp/")
+      rm_rf("yarp/templates/java")
 
       rm("yarp/extconf.rb")
       mv("yarp_init.c", "yarp/")
