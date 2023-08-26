@@ -89,7 +89,7 @@
  */
 #define RUBY_INTERNAL_EVENT_SWITCH          0x040000 /**< Thread switched. */
 #define RUBY_EVENT_SWITCH                   0x040000 /**< @old{RUBY_INTERNAL_EVENT_SWITCH} */
-                                         /* 0x080000 */
+#define RUBY_INTERNAL_EVENT_JIT_SIDE_EXIT   0x080000 /**< RJIT/YJIT side exit. */
 #define RUBY_INTERNAL_EVENT_NEWOBJ          0x100000 /**< Object allocated. */
 #define RUBY_INTERNAL_EVENT_FREEOBJ         0x200000 /**< Object swept. */
 #define RUBY_INTERNAL_EVENT_GC_START        0x400000 /**< GC started. */
