@@ -8151,9 +8151,10 @@ fn gen_getblockparamproxy(
     // Peek at the block handler so we can check whether it's nil
     let comptime_handler = jit.peek_at_block_handler(level);
 
-    // Filter for the 3 cases we currently handle
+    // Filter for the 4 cases we currently handle
     if !(comptime_handler.as_u64() == 0 ||              // no block given
             comptime_handler.as_u64() & 0x3 == 0x1 ||   // iseq block (no associated GC managed object)
+            comptime_handler.as_u64() & 0x3 == 0x3 ||   // ifunc block (no associated GC managed object)
             unsafe { rb_obj_is_proc(comptime_handler) }.test() // block is a Proc
         ) {
         // Missing the symbol case, where we basically need to call Symbol#to_proc at runtime
@@ -8181,7 +8182,7 @@ fn gen_getblockparamproxy(
 
     // Use block handler sample to guide specialization...
     // NOTE: we use jit_chain_guard() in this decision tree, and since
-    // there are only 3 cases, it should never reach the depth limit use
+    // there are only a few cases, it should never reach the depth limit use
     // the exit counter we pass to it.
     //
     // No block given
@@ -8199,15 +8200,18 @@ fn gen_getblockparamproxy(
         );
 
         jit_putobject(asm, Qnil);
-    } else if comptime_handler.as_u64() & 0x3 == 0x1 {
-        // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
-        let block_handler = asm.and(block_handler, 0x3.into());
+    } else if comptime_handler.as_u64() & 0x1 == 0x1 {
+        // This handles two cases which are nearly identical
+        // Block handler is a tagged pointer. Look at the tag.
+        //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
+        //   VM_BH_IFUNC_P():      block_handler & 0x03 == 0x03
+        // So to check for either of those cases we can use: val & 0x1 == 0x1
+        const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
+        // Procs are aligned heap pointers so testing the bit rejects them too.
 
-        // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
-        asm.cmp(block_handler, 0x1.into());
-
+        asm.test(block_handler, 0x1.into());
         jit_chain_guard(
-            JCC_JNZ,
+            JCC_JZ,
             jit,
             asm,
             ocb,
