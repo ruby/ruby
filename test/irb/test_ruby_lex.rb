@@ -203,11 +203,10 @@ module TestIRB
     end
 
     def test_initialising_the_old_top_level_ruby_lex
-      _, err = capture_output do
+      assert_in_out_err(["--disable-gems", "-W:deprecated"], <<~RUBY, [], /warning: constant ::RubyLex is deprecated/)
+        require "irb"
         ::RubyLex.new(nil)
-      end
-
-      assert_match(/warning: constant ::RubyLex is deprecated/, err)
+      RUBY
     end
 
     private
