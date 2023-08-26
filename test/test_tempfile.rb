@@ -209,8 +209,7 @@ puts Tempfile.new('foo').path
 
   def test_tempfile_finalizer_does_not_run_if_unlinked
     bug8768 = '[ruby-core:56521] [Bug #8768]'
-    args = %w(--disable-gems -rtempfile)
-    assert_in_out_err(args, <<-'EOS') do |(filename), (error)|
+    assert_in_out_err(%w(-rtempfile), <<-'EOS') do |(filename), (error)|
       tmp = Tempfile.new('foo')
       puts tmp.path
       tmp.close

@@ -193,7 +193,7 @@ class TestRequire < Test::Unit::TestCase
       File.write(req, "p :ok\n")
       assert_file.exist?(req)
       req[/.rb$/i] = ""
-      assert_in_out_err(['--disable-gems'], <<-INPUT, %w(:ok), [])
+      assert_in_out_err([], <<-INPUT, %w(:ok), [])
         require "#{req}"
         require "#{req}"
       INPUT
@@ -681,7 +681,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
         begin;
           $:.replace([IO::NULL])
           a = Object.new
@@ -709,7 +709,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
         begin;
           $:.replace([IO::NULL])
           a = Object.new
@@ -739,7 +739,7 @@ class TestRequire < Test::Unit::TestCase
         open("foo.rb", "w") {}
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
-        assert_in_out_err(['--disable-gems'], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7383)
+        assert_in_out_err([], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7383)
         begin;
           $:.replace([IO::NULL])
           $:.#{add} "#{tmp}"
@@ -963,7 +963,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_public_method_missing
     # [Bug #19793]
-    assert_separately(["-W0", "--disable-gems", "-rtempfile"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY)
       GC.stress = true
 
       class Object

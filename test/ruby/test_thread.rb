@@ -395,7 +395,7 @@ class TestThread < Test::Unit::TestCase
       end
     INPUT
 
-    assert_in_out_err(%w(--disable-gems -d), <<-INPUT, %w(false 2), %r".+")
+    assert_in_out_err(%w(-d), <<-INPUT, %w(false 2), %r".+")
       p Thread.abort_on_exception
       begin
         t = Thread.new { raise }

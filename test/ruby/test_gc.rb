@@ -228,12 +228,12 @@ class TestGc < Test::Unit::TestCase
   def test_latest_gc_info
     omit 'stress' if GC.stress
 
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
-    GC.start
-    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
-    count.times{ "a" + "b" }
-    assert_equal :newobj, GC.latest_gc_info[:gc_by]
-    eom
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      GC.start
+      count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
+      count.times{ "a" + "b" }
+      assert_equal :newobj, GC.latest_gc_info[:gc_by]
+    RUBY
 
     GC.latest_gc_info(h = {}) # allocate hash and rehearsal
     GC.start
@@ -335,7 +335,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stress_compile_send
-    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "")
+    assert_in_out_err([], <<-EOS, [], [], "")
       GC.stress = true
       begin
         eval("A::B.c(1, 1, d: 234)")
@@ -345,7 +345,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method
-    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:42832]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:42832]")
       GC.stress = true
       10.times do
         obj = Object.new
@@ -357,7 +357,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method_added
-    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:44436]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]")
       class BasicObject
         undef singleton_method_added
         def singleton_method_added(mid)
@@ -404,7 +404,7 @@ class TestGc < Test::Unit::TestCase
         "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.4",
       }
       # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
-      assert_in_out_err([env, "--disable-gems", "-e", "GC.start; 1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "")
+      assert_in_out_err([env, "-e", "GC.start; 1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "")
     end
 
     env = {
@@ -505,19 +505,19 @@ class TestGc < Test::Unit::TestCase
 
   def test_profiler_clear
     omit "for now"
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
-    GC::Profiler.enable
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY', timeout: 30)
+      GC::Profiler.enable
 
-    GC.start
-    assert_equal(1, GC::Profiler.raw_data.size)
-    GC::Profiler.clear
-    assert_equal(0, GC::Profiler.raw_data.size)
+      GC.start
+      assert_equal(1, GC::Profiler.raw_data.size)
+      GC::Profiler.clear
+      assert_equal(0, GC::Profiler.raw_data.size)
 
-    200.times{ GC.start }
-    assert_equal(200, GC::Profiler.raw_data.size)
-    GC::Profiler.clear
-    assert_equal(0, GC::Profiler.raw_data.size)
-    eom
+      200.times{ GC.start }
+      assert_equal(200, GC::Profiler.raw_data.size)
+      GC::Profiler.clear
+      assert_equal(0, GC::Profiler.raw_data.size)
+    RUBY
   end
 
   def test_profiler_total_time
@@ -531,34 +531,34 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_finalizing_main_thread
-    assert_in_out_err(%w[--disable-gems], <<-EOS, ["\"finalize\""], [], "[ruby-dev:46647]")
+    assert_in_out_err([], <<-EOS, ["\"finalize\""], [], "[ruby-dev:46647]")
       ObjectSpace.define_finalizer(Thread.main) { p 'finalize' }
     EOS
   end
 
   def test_expand_heap
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
-    GC.start
-    base_length = GC.stat[:heap_eden_pages]
-    (base_length * 500).times{ 'a' }
-    GC.start
-    base_length = GC.stat[:heap_eden_pages]
-    (base_length * 500).times{ 'a' }
-    GC.start
-    assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
-           "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY')
+      GC.start
+      base_length = GC.stat[:heap_eden_pages]
+      (base_length * 500).times{ 'a' }
+      GC.start
+      base_length = GC.stat[:heap_eden_pages]
+      (base_length * 500).times{ 'a' }
+      GC.start
+      assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
+            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
 
-    a = []
-    (base_length * 500).times{ a << 'a'; nil }
-    GC.start
-    assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
-    eom
+      a = []
+      (base_length * 500).times{ a << 'a'; nil }
+      GC.start
+      assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
+    RUBY
   end
 
   def test_thrashing_for_young_objects
     # This test prevents bugs like [Bug #18929]
 
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'RUBY'
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
       # Grow the heap
       @ary = 100_000.times.map { Object.new }
 
@@ -648,11 +648,11 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_finalizer_passed_object_id
-    assert_in_out_err(%w[--disable-gems], <<-EOS, ["true"], [])
+    assert_in_out_err([], <<~RUBY, ["true"], [])
       o = Object.new
       obj_id = o.object_id
       ObjectSpace.define_finalizer(o, ->(id){ p id == obj_id })
-    EOS
+    RUBY
   end
 
   def test_verify_internal_consistency
