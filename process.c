@@ -3013,6 +3013,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  - Passing string +command_line+ to the shell.
  *  - Invoking the executable at +exe_path+.
  *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *
  *  The new process is created using the
  *  {exec system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/execve.html];
  *  it may inherit some of its environment from the calling program
@@ -3035,8 +3038,19 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *  \String argument +command_line+ is a command line to be passed to a shell;
  *  it must begin with a shell reserved word, begin with a special built-in,
- *  or contain meta characters.
- *  It may also contain arguments and options for that command.
+ *  or contain meta characters:
+ *
+ *    exec('echo')                         # Built-in.
+ *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
+ *    exec('date > date.tmp')              # Contains meta character.
+ *
+ *  The command line may also contain arguments and options for the command:
+ *
+ *    exec('echo "Foo"')
+ *
+ *  Output:
+ *
+ *    Foo
  *
  *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
  *  otherwise the shell is determined by environment variable
@@ -3046,7 +3060,13 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  the entire string +command_line+ is passed as an argument
  *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
  *
- *  The shell performs normal shell expansion on the command line.
+ *  The shell performs normal shell expansion on the command line:
+ *
+ *    exec('echo C*')
+ *
+ *  Output:
+ *
+ *    CONTRIBUTING.md COPYING COPYING.ja
  *
  *  Raises an exception if the new process fails to execute.
  *
@@ -3058,10 +3078,28 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  - A 2-element array containing the path to an executable
  *    and the string to be used as the name of the executing process.
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion.
+ *  Example:
+ *
+ *    exec('/usr/bin/date')
+ *
+ *  Output:
+ *
+ *    Sat Aug 26 09:38:00 AM CDT 2023
+ *
+ *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *
+ *    exec('doesnt_exist') # Raises Errno::ENOENT
  *
  *  If one or more +args+ is given, each is an argument or option
- *  to be passed to the executable.
+ *  to be passed to the executable:
+ *
+ *    exec('echo', 'C*')
+ *    exec('echo', 'hello', 'world')
+ *
+ *  Output:
+ *
+ *    C*
+ *    hello world
  *
  *  Raises an exception if the new process fails to execute.
  */
