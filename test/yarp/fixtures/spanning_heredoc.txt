@@ -1,0 +1,25 @@
+# test regex, string, and lists that span a heredoc thanks to an escaped newline
+
+# ripper incorrectly creates a "b\nb" token instead of two separate string tokens
+pp <<-A.gsub(/b\
+a
+A
+b/, "")
+
+# ripper incorrectly creates a "d\nd" token instead of two separate string tokens
+pp <<-A, "d\
+c
+A
+d"
+
+# ripper gets this right
+pp <<-A, %q[f\
+e
+A
+f]
+
+# ripper incorrectly creates a "h\nh" token instead of two separate string tokens
+pp <<-A, %Q[h\
+g
+A
+h]
