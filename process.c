@@ -3040,9 +3040,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  it must begin with a shell reserved word, begin with a special built-in,
  *  or contain meta characters:
  *
- *    exec('date')                         # Built-in.
+ *    exec('echo')                         # Built-in.
  *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
- *    [Needs example.]                     # Contains meta character.
+ *    exec('date > date.tmp')              # Contains meta character.
  *
  *  Output:
  *
@@ -3092,12 +3092,18 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *  Ruby invokes the executable directly, with no shell and no shell expansion:
  *
- *    [Needs example.]
+ *    exec('doesnt_exist') # Raises Errno::ENOENT
  *
  *  If one or more +args+ is given, each is an argument or option
  *  to be passed to the executable:
  *
- *    [Needs example.]
+ *    exec('echo', 'C*')
+ *    exec('echo', 'hello', 'world')
+ *
+ *  Output:
+ *
+ *    C*
+ *    hello world
  *
  *  Raises an exception if the new process fails to execute.
  */
