@@ -11,9 +11,9 @@ if RUBY_PLATFORM =~ /linux/
     def setup
       super
 
-      @librubyparser_a = File.expand_path(File.join(__dir__, "..", "build", "librubyparser.a"))
-      @librubyparser_so = File.expand_path(File.join(__dir__, "..", "build", "librubyparser.so"))
-      @yarp_so = File.expand_path(File.join(__dir__, "..", "lib", "yarp", "yarp.so"))
+      @librubyparser_a = File.expand_path("../../build/librubyparser.a", __dir__)
+      @librubyparser_so = File.expand_path("../../build/librubyparser.so", __dir__)
+      @yarp_so = File.expand_path("../../lib/yarp/yarp.so", __dir__)
     end
 
     # objdump runner and helpers
