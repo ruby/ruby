@@ -29,3 +29,10 @@ pp <<-A, %w[j\
 i
 A
 j]
+
+# ripper can't parse this successfully, though ruby runs it correctly
+# TODO: yarp does not include the "\n" in "l\nl" in the AST like ruby does
+pp <<-A, %W[l\
+k
+A
+l]
