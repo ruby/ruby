@@ -6901,6 +6901,16 @@ rb_gc_mark_weak(VALUE *ptr)
 
     GC_ASSERT(objspace->rgengc.parent_object == 0 || FL_TEST(objspace->rgengc.parent_object, FL_WB_PROTECTED));
 
+    /* If we are in a minor GC and the other object is old, then obj should
+     * already be marked and cannot be reclaimed in this GC cycle so we don't
+     * need to add it to the weak refences list. */
+    if (!is_full_marking(objspace) && RVALUE_OLD_P(obj)) {
+        GC_ASSERT(RVALUE_MARKED(obj));
+        GC_ASSERT(!objspace->flags.during_compacting);
+
+        return;
+    }
+
     rgengc_check_relation(objspace, obj);
 
     rb_darray_append_without_gc(&objspace->weak_references, ptr);
