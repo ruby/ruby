@@ -2816,10 +2816,11 @@ yp_interpolated_symbol_node_create(yp_parser_t *parser, const yp_token_t *openin
 
 static inline void
 yp_interpolated_symbol_node_append(yp_interpolated_symbol_node_t *node, yp_node_t *part) {
-    yp_node_list_append(&node->parts, part);
-    if (!node->base.location.start) {
+    if (node->parts.size == 0 && node->opening_loc.start == NULL) {
         node->base.location.start = part->location.start;
     }
+
+    yp_node_list_append(&node->parts, part);
     node->base.location.end = part->location.end;
 }
 
