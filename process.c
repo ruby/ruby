@@ -3044,10 +3044,6 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
  *    exec('date > date.tmp')              # Contains meta character.
  *
- *  Output:
- *
- *    Sat Aug 26 09:26:05 AM CDT 2023
- *
  *  The command line may also contain arguments and options for the command:
  *
  *    exec('echo "Foo"')
