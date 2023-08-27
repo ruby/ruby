@@ -1,6 +1,6 @@
-ProgramNode(164...448)(
+ProgramNode(164...541)(
   [],
-  StatementsNode(164...448)(
+  StatementsNode(164...541)(
     [CallNode(164...192)(
        nil,
        nil,
@@ -104,6 +104,29 @@ ProgramNode(164...448)(
             [StringNode(439...442)(nil, (439...442), nil, "h"),
              StringNode(446...447)(nil, (446...447), nil, "h")],
             (447...448)
+          )]
+       ),
+       nil,
+       nil,
+       0,
+       "pp"
+     ),
+     CallNode(520...541)(
+       nil,
+       nil,
+       (520...522),
+       nil,
+       ArgumentsNode(523...541)(
+         [InterpolatedStringNode(523...527)(
+            (523...527),
+            [StringNode(535...537)(nil, (535...537), nil, "i\n")],
+            (537...539)
+          ),
+          ArrayNode(529...541)(
+            [StringNode(532...535)(nil, (532...535), nil, "j\\\n"),
+             StringNode(539...540)(nil, (539...540), nil, "j")],
+            (529...532),
+            (540...541)
           )]
        ),
        nil,

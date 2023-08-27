@@ -6942,9 +6942,19 @@ parser_lex(yp_parser_t *parser) {
                     yp_unescape_type_t unescape_type = lex_mode->as.list.interpolation ? YP_UNESCAPE_ALL : YP_UNESCAPE_MINIMAL;
                     size_t difference = yp_unescape_calculate_difference(parser, breakpoint, unescape_type, false);
 
-                    // If the result is an escaped newline, then we need to
-                    // track that newline.
-                    yp_newline_list_check_append(&parser->newline_list, breakpoint + difference - 1);
+                    // If the result is an escaped newline ...
+                    if (*(breakpoint + difference - 1) == '\n') {
+                        if (parser->heredoc_end) {
+                            // ... if we are on the same line as a heredoc, flush the heredoc and
+                            // continue parsing after heredoc_end.
+                            parser->current.end = breakpoint + difference;
+                            parser_flush_heredoc_end(parser);
+                            LEX(YP_TOKEN_STRING_CONTENT);
+                        } else {
+                            // ... else track the newline.
+                            yp_newline_list_append(&parser->newline_list, breakpoint + difference - 1);
+                        }
+                    }
 
                     breakpoint = yp_strpbrk(parser, breakpoint + difference, breakpoints, parser->end - (breakpoint + difference));
                     continue;
@@ -12098,12 +12108,9 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             accept(parser, YP_TOKEN_WORDS_SEP);
 
             while (!match_any_type_p(parser, 2, YP_TOKEN_STRING_END, YP_TOKEN_EOF)) {
-                if (yp_array_node_size(array) == 0) {
-                    accept(parser, YP_TOKEN_WORDS_SEP);
-                } else {
-                    expect(parser, YP_TOKEN_WORDS_SEP, "Expected a separator for the strings in a `%w` list.");
-                    if (match_type_p(parser, YP_TOKEN_STRING_END)) break;
-                }
+                accept(parser, YP_TOKEN_WORDS_SEP);
+                if (match_type_p(parser, YP_TOKEN_STRING_END)) break;
+
                 expect(parser, YP_TOKEN_STRING_CONTENT, "Expected a string in a `%w` list.");
 
                 yp_token_t opening = not_provided(parser);

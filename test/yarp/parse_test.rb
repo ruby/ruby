@@ -77,7 +77,7 @@ class ParseTest < Test::Unit::TestCase
     # into a single token. See https://bugs.ruby-lang.org/issues/19838.
     #
     # Additionally, Ripper cannot parse the %w[] fixture in this file, so set ripper_should_parse to false.
-    ripper_should_match = false if relative == "spanning_heredoc.txt"
+    ripper_should_parse = false if relative == "spanning_heredoc.txt"
 
     define_method "test_filepath_#{relative}" do
       # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,

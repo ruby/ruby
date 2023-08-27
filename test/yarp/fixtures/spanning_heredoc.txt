@@ -23,3 +23,9 @@ pp <<-A, %Q[h\
 g
 A
 h]
+
+# ripper can't parse this successfully, though ruby runs it correctly
+pp <<-A, %w[j\
+i
+A
+j]
