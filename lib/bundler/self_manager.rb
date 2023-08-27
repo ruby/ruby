@@ -170,6 +170,8 @@ module Bundler
 
       parsed_version = Bundler::LockfileParser.bundled_with
       @lockfile_version = parsed_version ? Gem::Version.new(parsed_version) : nil
+    rescue ArgumentError
+      @lockfile_version = nil
     end
 
     def restart_version
