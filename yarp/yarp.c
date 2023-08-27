@@ -11944,14 +11944,9 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_array_node_t *array = yp_array_node_create(parser, &parser->previous);
 
             while (!match_any_type_p(parser, 2, YP_TOKEN_STRING_END, YP_TOKEN_EOF)) {
-                if (yp_array_node_size(array) == 0) {
-                    accept(parser, YP_TOKEN_WORDS_SEP);
-                } else {
-                    expect(parser, YP_TOKEN_WORDS_SEP, "Expected a separator for the symbols in a `%i` list.");
-                    if (match_type_p(parser, YP_TOKEN_STRING_END)) break;
-                }
-
+                accept(parser, YP_TOKEN_WORDS_SEP);
                 if (match_type_p(parser, YP_TOKEN_STRING_END)) break;
+
                 expect(parser, YP_TOKEN_STRING_CONTENT, "Expected a symbol in a `%i` list.");
 
                 yp_token_t opening = not_provided(parser);

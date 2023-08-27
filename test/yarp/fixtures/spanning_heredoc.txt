@@ -36,3 +36,9 @@ pp <<-A, %W[l\
 k
 A
 l]
+
+# ripper can't parse this successfully, though ruby runs it correctly
+pp <<-A, %i[n\
+m
+A
+n]
