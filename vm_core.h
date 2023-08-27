@@ -642,6 +642,9 @@ typedef struct rb_vm_struct {
         // ractor scheduling
         struct {
             rb_nativethread_lock_t lock;
+            struct rb_ractor_struct *lock_owner;
+            bool locked;
+
             rb_nativethread_cond_t cond; // GRQ
             unsigned int snt_cnt; // count of shared NTs
             unsigned int dnt_cnt; // count of dedicated NTs

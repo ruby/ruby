@@ -414,8 +414,11 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
 
     VM_ASSERT(!th_has_dedicated_nt(th));
 
+    rb_vm_t *vm = th->vm;
+    bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
+
     rb_thread_t *next_th = sched->running;
-    if (next_th && !next_th->nt) {
+    if (!has_ready_ractor && next_th && !next_th->nt) {
         // switch to the next thread
         thread_sched_set_lock_owner(sched, NULL);
         rb_ractor_set_current_ec(th->ractor, NULL);
@@ -701,7 +704,7 @@ timer_thread_polling(rb_vm_t *vm)
       case 0: // timeout
         RUBY_DEBUG_LOG("timeout%s", "");
 
-        rb_native_mutex_lock(&vm->ractor.sched.lock);
+        ractor_sched_lock(vm, NULL);
         {
             // (1-1) timeslice
             timer_thread_check_timeslice(vm);
@@ -712,7 +715,7 @@ timer_thread_polling(rb_vm_t *vm)
                 rb_native_cond_signal(&vm->ractor.sched.cond);
             }
         }
-        rb_native_mutex_unlock(&vm->ractor.sched.lock);
+        ractor_sched_unlock(vm, NULL);
 
         // (1-2)
         native_thread_check_and_create_shared(vm);
