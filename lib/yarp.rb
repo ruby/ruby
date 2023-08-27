@@ -462,10 +462,10 @@ module YARP
           # order here so that we can compare properly.
           if params
             sorted = [
-              *params.requireds.grep(RequiredParameterNode).map(&:constant_id),
-              *params.optionals.map(&:constant_id),
+              *params.requireds.grep(RequiredParameterNode).map(&:name),
+              *params.optionals.map(&:name),
               *((params.rest.name ? params.rest.name.to_sym : :*) if params.rest && params.rest.operator != ","),
-              *params.posts.grep(RequiredParameterNode).map(&:constant_id),
+              *params.posts.grep(RequiredParameterNode).map(&:name),
               *params.keywords.reject(&:value).map { |param| param.name.chomp(":").to_sym },
               *params.keywords.select(&:value).map { |param| param.name.chomp(":").to_sym }
             ]
@@ -485,9 +485,9 @@ module YARP
               when RequiredDestructuredParameterNode
                 param_stack.concat(param.parameters.reverse)
               when RequiredParameterNode
-                sorted << param.constant_id
+                sorted << param.name
               when SplatNode
-                sorted << param.expression.constant_id if param.expression
+                sorted << param.expression.name if param.expression
               end
             end
 

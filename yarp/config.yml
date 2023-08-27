@@ -662,7 +662,7 @@ nodes:
         type: location
       - name: value
         type: node
-      - name: operator_id
+      - name: operator
         type: constant
     comment: |
       Represents the use of an assignment operator on a call.
@@ -1492,7 +1492,7 @@ nodes:
         type: location
       - name: value
         type: node
-      - name: constant_id
+      - name: name
         type: constant
       - name: depth
         type: uint32
@@ -1509,9 +1509,9 @@ nodes:
         type: location
       - name: value
         type: node
-      - name: constant_id
+      - name: name
         type: constant
-      - name: operator_id
+      - name: operator
         type: constant
       - name: depth
         type: uint32
@@ -1528,7 +1528,7 @@ nodes:
         type: location
       - name: value
         type: node
-      - name: constant_id
+      - name: name
         type: constant
       - name: depth
         type: uint32
@@ -1539,7 +1539,7 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: LocalVariableReadNode
     child_nodes:
-      - name: constant_id
+      - name: name
         type: constant
       - name: depth
         type: uint32
@@ -1552,7 +1552,7 @@ nodes:
           ^^^
   - name: LocalVariableTargetNode
     child_nodes:
-      - name: constant_id
+      - name: name
         type: constant
       - name: depth
         type: uint32
@@ -1563,7 +1563,7 @@ nodes:
           ^^^  ^^^
   - name: LocalVariableWriteNode
     child_nodes:
-      - name: constant_id
+      - name: name
         type: constant
       - name: depth
         type: uint32
@@ -1682,7 +1682,7 @@ nodes:
           ^^
   - name: OptionalParameterNode
     child_nodes:
-      - name: constant_id
+      - name: name
         type: constant
       - name: name_loc
         type: location
@@ -1883,7 +1883,7 @@ nodes:
           end
   - name: RequiredParameterNode
     child_nodes:
-      - name: constant_id
+      - name: name
         type: constant
     comment: |
       Represents a required parameter to a method, block, or lambda definition.

@@ -210,8 +210,8 @@ module YARP
     # foo && foo = bar
     def visit_local_variable_and_write_node(node)
       AndNode.new(
-        LocalVariableReadNode.new(node.constant_id, node.depth, node.name_loc),
-        LocalVariableWriteNode.new(node.constant_id, node.depth, node.name_loc, node.value, node.operator_loc, node.location),
+        LocalVariableReadNode.new(node.name, node.depth, node.name_loc),
+        LocalVariableWriteNode.new(node.name, node.depth, node.name_loc, node.value, node.operator_loc, node.location),
         node.operator_loc,
         node.location
       )
@@ -224,8 +224,8 @@ module YARP
     # foo || foo = bar
     def visit_local_variable_or_write_node(node)
       OrNode.new(
-        LocalVariableReadNode.new(node.constant_id, node.depth, node.name_loc),
-        LocalVariableWriteNode.new(node.constant_id, node.depth, node.name_loc, node.value, node.operator_loc, node.location),
+        LocalVariableReadNode.new(node.name, node.depth, node.name_loc),
+        LocalVariableWriteNode.new(node.name, node.depth, node.name_loc, node.value, node.operator_loc, node.location),
         node.operator_loc,
         node.location
       )
@@ -237,7 +237,7 @@ module YARP
     #
     # foo = foo + bar
     def visit_local_variable_operator_write_node(node)
-      desugar_operator_write_node(node, LocalVariableWriteNode, LocalVariableReadNode, arguments: [node.constant_id, node.depth])
+      desugar_operator_write_node(node, LocalVariableWriteNode, LocalVariableReadNode, arguments: [node.name, node.depth])
     end
 
     private
