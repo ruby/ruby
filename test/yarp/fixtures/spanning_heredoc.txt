@@ -42,3 +42,10 @@ pp <<-A, %i[n\
 m
 A
 n]
+
+# ripper gets this one wrong in the same way that YARP does ...
+# TODO: yarp does not include the "\n" in "p\np" in the AST like ruby does
+pp <<-A, %I[p\
+o
+A
+p]

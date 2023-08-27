@@ -12001,6 +12001,19 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                             // to the list of child nodes.
                             yp_node_t *part = parse_string_part(parser);
                             yp_interpolated_symbol_node_append((yp_interpolated_symbol_node_t *) current, part);
+                        } else if (YP_NODE_TYPE_P(current, YP_NODE_SYMBOL_NODE)) {
+                            // If we hit string content and the current node is a string node,
+                            // then we need to convert the current node into an interpolated
+                            // string and add the string content to the list of child nodes.
+                            yp_token_t opening = not_provided(parser);
+                            yp_token_t closing = not_provided(parser);
+                            yp_interpolated_symbol_node_t *interpolated =
+                                yp_interpolated_symbol_node_create(parser, &opening, NULL, &closing);
+                            yp_interpolated_symbol_node_append(interpolated, current);
+
+                            yp_node_t *part = parse_string_part(parser);
+                            yp_interpolated_symbol_node_append(interpolated, part);
+                            current = (yp_node_t *) interpolated;
                         } else {
                             assert(false && "unreachable");
                         }
