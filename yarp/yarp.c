@@ -4693,7 +4693,7 @@ parser_lex_encoding_comment_start(yp_parser_t *parser, const char *cursor, ptrdi
 
     const char *cursor_limit = cursor + length - key_length + 1;
     while ((cursor = yp_memchr(cursor, 'c', (size_t) (cursor_limit - cursor), parser->encoding_changed, &parser->encoding)) != NULL) {
-        if (strncmp(cursor, "coding", key_length - 1) == 0) {
+        if (memcmp(cursor, "coding", key_length - 1) == 0) {
             size_t whitespace_after_coding = yp_strspn_inline_whitespace(cursor + key_length - 1, parser->end - (cursor + key_length - 1));
             size_t cur_pos = key_length + whitespace_after_coding;
 
@@ -5211,7 +5211,7 @@ lex_keyword(yp_parser_t *parser, const char *value, yp_lex_state_t state, yp_tok
     yp_lex_state_t last_state = parser->lex_state;
 
     const size_t vlen = strlen(value);
-    if (parser->current.start + vlen <= parser->end && strncmp(parser->current.start, value, vlen) == 0) {
+    if (parser->current.start + vlen <= parser->end && memcmp(parser->current.start, value, vlen) == 0) {
         if (parser->lex_state & YP_LEX_STATE_FNAME) {
             lex_state_set(parser, YP_LEX_STATE_ENDFN);
         } else {
@@ -5648,7 +5648,7 @@ lex_embdoc(yp_parser_t *parser) {
 
         // If we've hit the end of the embedded documentation then we'll return that
         // token here.
-        if (strncmp(parser->current.end, "=end", 4) == 0 &&
+        if (memcmp(parser->current.end, "=end", 4) == 0 &&
                 (parser->current.end + 4 == parser->end || yp_char_is_whitespace(parser->current.end[4]))) {
             const char *newline = next_newline(parser->current.end, parser->end - parser->current.end);
 
@@ -6151,7 +6151,7 @@ parser_lex(yp_parser_t *parser) {
 
                 // = => =~ == === =begin
                 case '=':
-                    if (current_token_starts_line(parser) && strncmp(peek_string(parser, 5), "begin", 5) == 0 && yp_char_is_whitespace(peek_offset(parser, 5))) {
+                    if (current_token_starts_line(parser) && memcmp(peek_string(parser, 5), "begin", 5) == 0 && yp_char_is_whitespace(peek_offset(parser, 5))) {
                         yp_token_type_t type = lex_embdoc(parser);
 
                         if (type == YP_TOKEN_EOF) {
@@ -6816,7 +6816,7 @@ parser_lex(yp_parser_t *parser) {
                     if (
                         ((parser->current.end - parser->current.start) == 7) &&
                         current_token_starts_line(parser) &&
-                        (strncmp(parser->current.start, "__END__", 7) == 0) &&
+                        (memcmp(parser->current.start, "__END__", 7) == 0) &&
                         (parser->current.end == parser->end || match_eol(parser))
                         )
                     {
@@ -7294,7 +7294,7 @@ parser_lex(yp_parser_t *parser) {
                     start += yp_strspn_inline_whitespace(start, parser->end - start);
                 }
 
-                if ((start + ident_length <= parser->end) && (strncmp(start, ident_start, ident_length) == 0)) {
+                if ((start + ident_length <= parser->end) && (memcmp(start, ident_start, ident_length) == 0)) {
                     bool matched = true;
                     bool at_end = false;
 
@@ -7364,7 +7364,7 @@ parser_lex(yp_parser_t *parser) {
                         // again and return the end of the heredoc.
                         if (
                             (start + ident_length <= parser->end) &&
-                            (strncmp(start, ident_start, ident_length) == 0)
+                            (memcmp(start, ident_start, ident_length) == 0)
                         ) {
                             // Heredoc terminators must be followed by a newline, CRLF, or EOF to be valid.
                             if (

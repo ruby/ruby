@@ -122,7 +122,7 @@ yp_constant_pool_insert(yp_constant_pool_t *pool, const char *start, size_t leng
         // If there is a collision, then we need to check if the content is the
         // same as the content we are trying to insert. If it is, then we can
         // return the id of the existing constant.
-        if ((constant->length == length) && strncmp(constant->start, start, length) == 0) {
+        if ((constant->length == length) && memcmp(constant->start, start, length) == 0) {
             return pool->constants[index].id;
         }
 
