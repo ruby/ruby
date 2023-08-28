@@ -24,6 +24,7 @@ test_collection_update(RBS::CliTest) running tests without Bundler
 test_subtract(RBS::CliTest) running tests without Bundler
 test_subtract_several_subtrahends(RBS::CliTest) running tests without Bundler
 test_subtract_write(RBS::CliTest) running tests without Bundler
+test_subtract_write_removes_definition_if_empty(RBS::CliTest) runnint tests without Bundler
 
 test_aref(FiberSingletonTest) the method should not accept String keys
 
