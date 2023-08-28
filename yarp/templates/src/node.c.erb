@@ -78,29 +78,33 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
     switch (YP_NODE_TYPE(node)) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
-        case <%= node.type %>:
+        case <%= node.type %>: {
+            <%- if node.params.any? { |param| ![LocationParam, OptionalLocationParam, UInt32Param, FlagsParam, ConstantParam].include?(param.class) } -%>
+            yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
+            <%- end -%>
             <%- node.params.each do |param| -%>
             <%- case param -%>
             <%- when LocationParam, OptionalLocationParam, UInt32Param, FlagsParam, ConstantParam -%>
             <%- when NodeParam -%>
-            yp_node_destroy(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_node_destroy(parser, (yp_node_t *)cast-><%= param.name %>);
             <%- when OptionalNodeParam -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> != NULL) {
-                yp_node_destroy(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            if (cast-><%= param.name %> != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)cast-><%= param.name %>);
             }
             <%- when StringParam -%>
-            yp_string_free(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_string_free(&cast-><%= param.name %>);
             <%- when NodeListParam -%>
-            yp_node_list_free(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_node_list_free(parser, &cast-><%= param.name %>);
             <%- when LocationListParam -%>
-            yp_location_list_free(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_location_list_free(&cast-><%= param.name %>);
             <%- when ConstantListParam -%>
-            yp_constant_id_list_free(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            yp_constant_id_list_free(&cast-><%= param.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
             <%- end -%>
             break;
+        }
         <%- end -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         default:
@@ -122,24 +126,25 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
-            memsize->memsize += sizeof(yp_<%= node.human %>_t);
+            yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
+            memsize->memsize += sizeof(*cast);
             <%- node.params.each do |param| -%>
             <%- case param -%>
             <%- when ConstantParam, UInt32Param, FlagsParam, LocationParam, OptionalLocationParam -%>
             <%- when NodeParam -%>
-            yp_node_memsize_node((yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, memsize);
+            yp_node_memsize_node((yp_node_t *)cast-><%= param.name %>, memsize);
             <%- when OptionalNodeParam -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> != NULL) {
-                yp_node_memsize_node((yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, memsize);
+            if (cast-><%= param.name %> != NULL) {
+                yp_node_memsize_node((yp_node_t *)cast-><%= param.name %>, memsize);
             }
             <%- when StringParam -%>
-            memsize->memsize += yp_string_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            memsize->memsize += yp_string_memsize(&cast-><%= param.name %>);
             <%- when NodeListParam -%>
-            yp_node_list_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>, memsize);
+            yp_node_list_memsize(&cast-><%= param.name %>, memsize);
             <%- when LocationListParam -%>
-            memsize->memsize += yp_location_list_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            memsize->memsize += yp_location_list_memsize(&cast-><%= param.name %>);
             <%- when ConstantListParam -%>
-            memsize->memsize += yp_constant_id_list_memsize(&((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+            memsize->memsize += yp_constant_id_list_memsize(&cast-><%= param.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
