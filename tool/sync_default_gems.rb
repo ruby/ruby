@@ -424,26 +424,43 @@ module SyncDefaultGems
     replace_rdoc_ref_all
   end
 
-  IGNORE_FILE_PATTERN =
-    /\A(?:[A-Z]\w*\.(?:md|txt)
-    |[^\/]+\.yml
-    |\.git.*
-    |[A-Z]\w+file
-    |COPYING
-    |Gemfile.lock
-    |bin\/.*
-    |rakelib\/.*
-    |test\/lib\/.*
-    )\z/mx
+  def ignore_file_pattern_for(gem)
+    patterns = []
 
-  YARP_IGNORE_FILE_PATTERN =
-    /\A(?:Makefile\.in
-    |configure\.ac
-    |fuzz\/.*
-    |rust\/.*
-    |tasks\/.*
-    |ext\/yarp\/extconf\.rb
-    )\z/mx
+    # Common patterns
+    patterns << %r[\A(?:
+      [A-Z]\w*\.(?:md|txt)
+      |[^/]+\.yml
+      |\.git.*
+      |[A-Z]\w+file
+      |COPYING
+      |Gemfile.lock
+      |bin/.*
+      |rakelib/.*
+      |test/lib/.*
+    )\z]mx
+
+    # Gem-specific patterns
+    case gem
+    when "racc"
+      %r[\A(?:
+        test/regress/.*
+      )\z]mx
+    when "yarp"
+      %r[\A(?:
+        Makefile\.in
+        |configure\.ac
+        |fuzz/.*
+        |rust/.*
+        |tasks/.*
+        |ext/yarp/extconf\.rb
+      )\z]mx
+    end&.tap do |pattern|
+      patterns << pattern
+    end
+
+    Regexp.union(*patterns)
+  end
 
   def message_filter(repo, sha, input: ARGF)
     log = input.read
@@ -515,10 +532,7 @@ module SyncDefaultGems
     end
 
     # Ignore Merge commits and already-merged commits.
-    ignore_file_pattern = IGNORE_FILE_PATTERN
-    if gem == "yarp"
-      ignore_file_pattern = Regexp.union(ignore_file_pattern, YARP_IGNORE_FILE_PATTERN)
-    end
+    ignore_file_pattern = ignore_file_pattern_for(gem)
     commits.delete_if do |sha, subject|
       files = pipe_readlines(%W"git diff-tree -z --no-commit-id --name-only -r #{sha}")
       subject.start_with?("Merge", "Auto Merge") or files.all?(ignore_file_pattern)
