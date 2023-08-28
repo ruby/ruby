@@ -794,7 +794,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[1], to_value(put_val))
       asm.call(C.rb_ec_str_resurrect)
 
-      stack_top = ctx.stack_push(Type::CString)
+      stack_top = ctx.stack_push(Type::TString)
       asm.mov(stack_top, C_RET)
 
       KeepCompiling
@@ -817,7 +817,7 @@ module RubyVM::RJIT
       asm.call(C.rb_str_concat_literals)
 
       ctx.stack_pop(n)
-      stack_ret = ctx.stack_push(Type::CString)
+      stack_ret = ctx.stack_push(Type::TString)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -932,7 +932,7 @@ module RubyVM::RJIT
       asm.call(C.rb_ec_ary_new_from_values)
 
       ctx.stack_pop(n)
-      stack_ret = ctx.stack_push(Type::CArray)
+      stack_ret = ctx.stack_push(Type::TArray)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -954,7 +954,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[0], ary)
       asm.call(C.rb_ary_resurrect)
 
-      stack_ret = ctx.stack_push(Type::CArray)
+      stack_ret = ctx.stack_push(Type::TArray)
       asm.mov(stack_ret, C_RET)
 
       KeepCompiling
@@ -3082,7 +3082,7 @@ module RubyVM::RJIT
       asm.test(recv_reg, C::RUBY_ENCODING_MASK)
 
       # Push once, use the resulting operand in both branches below.
-      stack_ret = ctx.stack_push(Type::CString)
+      stack_ret = ctx.stack_push(Type::TString)
 
       enc_mismatch = asm.new_label('enc_mismatch')
       asm.jnz(enc_mismatch)
@@ -3779,9 +3779,14 @@ module RubyVM::RJIT
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
 
         if known_klass == C.rb_cString
-          ctx.upgrade_opnd_type(insn_opnd, Type::CString)
+          # Upgrading to Type::CString here is incorrect.
+          # The guard we put only checks RBASIC_CLASS(obj),
+          # which adding a singleton class can change. We
+          # additionally need to know the string is frozen
+          # to claim Type::CString.
+          ctx.upgrade_opnd_type(insn_opnd, Type::TString)
         elsif known_klass == C.rb_cArray
-          ctx.upgrade_opnd_type(insn_opnd, Type::CArray)
+          ctx.upgrade_opnd_type(insn_opnd, Type::TArray)
         end
       end
     end
@@ -4723,7 +4728,7 @@ module RubyVM::RJIT
           asm.call(C.rb_ec_ary_new_from_values)
 
           ctx.stack_pop(n)
-          stack_ret = ctx.stack_push(Type::CArray)
+          stack_ret = ctx.stack_push(Type::TArray)
           asm.mov(stack_ret, C_RET)
         end
       end
