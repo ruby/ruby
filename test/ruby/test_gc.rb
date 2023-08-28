@@ -492,6 +492,45 @@ class TestGc < Test::Unit::TestCase
         assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
       end
     RUBY
+
+    # Check that we don't grow the heap in minor GC if we have alloctable pages.
+    env["RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO"] = "0.3"
+    env["RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO"] = "0.99"
+    env["RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO"] = "1.0"
+    env["RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR"] = "100" # Large value to disable major GC
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+      SIZES = #{sizes}
+
+      # Run a major GC to clear out dead objects.
+      GC.start
+
+      # Disable GC so we can control when GC is ran.
+      GC.disable
+
+      # Run minor GC enough times so that we don't grow the heap because we
+      # haven't yet ran RVALUE_OLD_AGE minor GC cycles.
+      GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE].times { GC.start(full_mark: false) }
+
+      # Fill size pool 0 to over 50% full so that the number of allocatable
+      # pages that will be created will be over the number in heap_allocatable_pages
+      # (calculated using RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO).
+      # 70% was chosen here to guarantee that.
+      ary = []
+      while GC.stat_heap(0, :heap_allocatable_pages) >
+          (GC.stat_heap(0, :heap_allocatable_pages) + GC.stat_heap(0, :heap_eden_pages)) * 0.3
+        ary << Object.new
+      end
+
+      GC.start(full_mark: false)
+
+      # Check that we still have the same number of slots as initially configured.
+      GC.stat_heap.each do |i, s|
+        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
+        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
+        assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
+      end
+    RUBY
   end
 
   def test_profiler_enabled
