@@ -45,7 +45,8 @@ RUN_OPTS      = --disable-gems
 
 # GITPULLOPTIONS = --no-tags
 
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/yarp -I$(UNICODE_HDR_DIR)
+YARP_SRCDIR = $(srcdir)/yarp
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(YARP_SRCDIR) -I$(UNICODE_HDR_DIR)
 
 GEM_HOME =
 GEM_PATH =
@@ -204,42 +205,42 @@ $(YARP_BUILD_DIR)/.time $(YARP_BUILD_DIR)/enc/.time $(YARP_BUILD_DIR)/util/.time
 
 main: $(srcdir)/lib/yarp/mutation_visitor.rb
 srcs: $(srcdir)/lib/yarp/mutation_visitor.rb
-$(srcdir)/lib/yarp/mutation_visitor.rb: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/lib/yarp/mutation_visitor.rb.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb lib/yarp/mutation_visitor.rb $(srcdir)/lib/yarp/mutation_visitor.rb
+$(srcdir)/lib/yarp/mutation_visitor.rb: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/lib/yarp/mutation_visitor.rb.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb lib/yarp/mutation_visitor.rb $(srcdir)/lib/yarp/mutation_visitor.rb
 
 main: $(srcdir)/lib/yarp/node.rb
 srcs: $(srcdir)/lib/yarp/node.rb
-$(srcdir)/lib/yarp/node.rb: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/lib/yarp/node.rb.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb lib/yarp/node.rb $(srcdir)/lib/yarp/node.rb
+$(srcdir)/lib/yarp/node.rb: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/lib/yarp/node.rb.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb lib/yarp/node.rb $(srcdir)/lib/yarp/node.rb
 
 main: $(srcdir)/lib/yarp/serialize.rb
 srcs: $(srcdir)/lib/yarp/serialize.rb
-$(srcdir)/lib/yarp/serialize.rb: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/lib/yarp/serialize.rb.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb lib/yarp/serialize.rb $(srcdir)/lib/yarp/serialize.rb
+$(srcdir)/lib/yarp/serialize.rb: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/lib/yarp/serialize.rb.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb lib/yarp/serialize.rb $(srcdir)/lib/yarp/serialize.rb
 
 srcs: yarp/api_node.c
-yarp/api_node.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/ext/yarp/api_node.c.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb ext/yarp/api_node.c $@
+yarp/api_node.c: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/ext/yarp/api_node.c.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb ext/yarp/api_node.c $@
 
 srcs: yarp/ast.h
-yarp/ast.h: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/include/yarp/ast.h.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb include/yarp/ast.h $@
+yarp/ast.h: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/include/yarp/ast.h.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb include/yarp/ast.h $@
 
 srcs: yarp/node.c
-yarp/node.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/node.c.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/node.c $@
+yarp/node.c: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/src/node.c.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb src/node.c $@
 
 srcs: yarp/prettyprint.c
-yarp/prettyprint.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/prettyprint.c.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/prettyprint.c $@
+yarp/prettyprint.c: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/src/prettyprint.c.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb src/prettyprint.c $@
 
 srcs: yarp/serialize.c
-yarp/serialize.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/serialize.c.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/serialize.c $@
+yarp/serialize.c: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/src/serialize.c.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb src/serialize.c $@
 
 srcs: yarp/token_type.c
-yarp/token_type.c: $(srcdir)/yarp/templates/template.rb $(srcdir)/yarp/templates/src/token_type.c.erb
-	$(Q) $(BASERUBY) $(srcdir)/yarp/templates/template.rb src/token_type.c $@
+yarp/token_type.c: $(YARP_SRCDIR)/config.yml $(YARP_SRCDIR)/templates/template.rb $(YARP_SRCDIR)/templates/src/token_type.c.erb
+	$(Q) $(BASERUBY) $(YARP_SRCDIR)/templates/template.rb src/token_type.c $@
 
 EXPORTOBJS    = $(DLNOBJ) \
 		localeinit.$(OBJEXT) \
