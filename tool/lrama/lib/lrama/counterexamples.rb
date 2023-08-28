@@ -205,7 +205,7 @@ module Lrama
     end
 
     def build_paths_from_state_items(state_items)
-      paths = state_items.zip([nil] + state_items).map do |si, prev_si|
+      state_items.zip([nil] + state_items).map do |si, prev_si|
         case
         when prev_si.nil?
           StartPath.new(si)
@@ -215,8 +215,6 @@ module Lrama
           TransitionPath.new(prev_si, si)
         end
       end
-
-      paths
     end
 
     def shortest_path(conflict_state, conflict_reduce_item, conflict_term)
