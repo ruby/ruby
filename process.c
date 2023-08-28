@@ -4782,7 +4782,7 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *    Mon Aug 28 11:43:10 AM CDT 2023
  *
- *  Assigns the command’s error status to global variable <tt>$?</tt>:
+ *  Assigns the command's error status to global variable <tt>$?</tt>:
  *
  *    system('/usr/bin/date') # => true
  *    $?                      # => #<Process::Status: pid 645605 exit 0>
