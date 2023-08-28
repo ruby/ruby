@@ -55,7 +55,6 @@ module SyncDefaultGems
     prettyprint: "ruby/prettyprint",
     pstore: "ruby/pstore",
     psych: 'ruby/psych',
-    racc: 'ruby/racc',
     rdoc: 'ruby/rdoc',
     readline: "ruby/readline",
     reline: 'ruby/reline',
@@ -442,10 +441,6 @@ module SyncDefaultGems
 
     # Gem-specific patterns
     case gem
-    when "racc"
-      %r[\A(?:
-        test/regress/.*
-      )\z]mx
     when "yarp"
       %r[\A(?:
         Makefile\.in
