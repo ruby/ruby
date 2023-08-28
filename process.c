@@ -4679,56 +4679,120 @@ rb_spawn(int argc, const VALUE *argv)
 
 /*
  *  call-seq:
- *     system([env,] command... [,options], exception: false)    -> true, false or nil
+ *    system([env, ] command_line, options = {}, exception: false) -> true, false, or nil
+ *    system([env, ] exe_path, *args, options  = {}, exception: false) -> true, false, or nil
  *
- *  Executes _command..._ in a subshell.
- *  _command..._ is one of following forms.
+ *  Creates a new child process by doing one of the following
+ *  in that process:
+ *
+ *  - Passing string +command_line+ to the shell.
+ *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
- *  [<code>commandline</code>]
- *    command line string which is passed to the standard shell
- *  [<code>cmdname, arg1, ...</code>]
- *    command name and one or more arguments (no shell)
- *  [<code>[cmdname, argv0], arg1, ...</code>]
- *    command name, <code>argv[0]</code> and zero or more arguments (no shell)
+ *  Returns:
  *
- *  system returns +true+ if the command gives zero exit status,
- *  +false+ for non zero exit status.
- *  Returns +nil+ if command execution fails.
- *  An error status is available in <code>$?</code>.
+ *  - +true+ if the command exits with status zero.
+ *  - +false+ if the exit status is a non-zero integer.
+ *  - +nil+ if the command fails.
  *
- *  If the <code>exception: true</code> argument is passed, the method
- *  raises an exception instead of returning +false+ or +nil+.
+ *  Raises an exception (instead of returning +false+ or +nil+)
+ *  if keyword argument +exception+ is passed a truthy value.
  *
- *  The arguments are processed in the same way as
- *  for Kernel#spawn.
+ *  Assigns the command's error status in global variable <tt>$?</tt>.
  *
- *  The hash arguments, env and options, are same as #exec and #spawn.
- *  See Kernel#spawn for details.
+ *  The new process is created using the
+ *  {system system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/system.html];
+ *  it may inherit some of its environment from the calling program
+ *  (possibly including open file descriptors).
  *
- *     system("echo *")
- *     system("echo", "*")
+ *  Argument +env+, if given, is a hash that affects +ENV+ for the new process;
+ *  see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
  *
- *  <em>produces:</em>
+ *  Argument +options+ is a hash of options for the new process;
+ *  see {Execution Options}[rdoc-ref:Process@Execution+Options].
  *
- *     config.h main.rb
- *     *
+ *  The first required argument is one of the following:
  *
- *  Error handling:
+ *  - +command_line+ if it is a string,
+ *    and if it begins with a shell reserved word or special built-in,
+ *    or if it contains one or more metacharacters.
+ *  - +exe_path+ otherwise.
  *
- *     system("cat nonexistent.txt")
- *     # => false
- *     system("catt nonexistent.txt")
- *     # => nil
+ *  <b>Argument +command_line+</b>
  *
- *     system("cat nonexistent.txt", exception: true)
- *     # RuntimeError (Command failed with exit 1: cat)
- *     system("catt nonexistent.txt", exception: true)
- *     # Errno::ENOENT (No such file or directory - catt)
+ *  \String argument +command_line+ is a command line to be passed to a shell;
+ *  it must begin with a shell reserved word, begin with a special built-in,
+ *  or contain meta characters:
  *
- *  See Kernel#exec for the standard shell.
+ *    system('echo')                             # => true  # Built-in.
+ *    $?                                         # => #<Process::Status: pid 640610 exit 0>
+ *    system('if true; then echo "Foo"; fi')     # => true  # Shell reserved word.
+ *    system('date > /tmp/date.tmp')             # => true  # Contains meta character.
+ *    system('date > /nop/date.tmp')             # => false
+ *    $?                                         # => #<Process::Status: pid 640742 exit 2>
+ *    system('foo')                              # => nil   # Command failed.
+ *    system('date > date.tmp', exception: true) # Raises RuntimeError.
+ *
+ *  The command line may also contain arguments and options for the command:
+ *
+ *    system('echo "Foo"') # => true
+ *
+ *  Output:
+ *
+ *    Foo
+ *
+ *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
+ *  otherwise the shell is determined by environment variable
+ *  <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
+ *
+ *  Except for the +COMSPEC+ case,
+ *  the entire string +command_line+ is passed as an argument
+ *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
+ *
+ *  The shell performs normal shell expansion on the command line:
+ *
+ *    system('echo C*') # => true
+ *
+ *  Output:
+ *
+ *    CONTRIBUTING.md COPYING COPYING.ja
+ *
+ *  Raises an exception if the new process fails to execute.
+ *
+ *  <b>Argument +exe_path+</b>
+ *
+ *  Argument +exe_path+ is one of the following:
+ *
+ *  - The string path to an executable to be called.
+ *  - A 2-element array containing the path to an executable
+ *    and the string to be used as the name of the executing process.
+ *
+ *  Example:
+ *
+ *    system('/usr/bin/date') # => true
+ *
+ *  Output:
+ *
+ *    Mon Aug 28 11:43:10 AM CDT 2023
+ *
+ *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *
+ *    system('doesnt_exist') # => nil
+ *
+ *  If one or more +args+ is given, each is an argument or option
+ *  to be passed to the executable:
+ *
+ *    system('echo', 'C*')             # => true
+ *    system('echo', 'hello', 'world') # => true
+ *
+ *  Output:
+ *
+ *    C*
+ *    hello world
+ *
+ *  Raises an exception if the new process fails to execute.
  */
 
 static VALUE
