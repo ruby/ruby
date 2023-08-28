@@ -455,6 +455,11 @@ module Lrama
 
             # shift_prec == reduce_prec, then check associativity
             case sym.precedence.type
+            when :precedence
+              # %precedence only specifies precedence and not specify associativity
+              # then a conflict is unresolved if precedence is same.
+              state.conflicts << State::ShiftReduceConflict.new(symbols: [sym], shift: shift, reduce: reduce)
+              next
             when :right
               # Shift is selected
               state.resolved_conflicts << State::ResolvedConflict.new(symbol: sym, reduce: reduce, which: :shift, same_prec: true)
@@ -515,9 +520,9 @@ module Lrama
 
         state.default_reduction_rule = state.reduces.map do |r|
           [r.rule, r.rule.id, (r.look_ahead || []).count]
-        end.sort_by do |rule, rule_id, count|
+        end.min_by do |rule, rule_id, count|
           [-count, rule_id]
-        end.first.first
+        end.first
       end
     end
 

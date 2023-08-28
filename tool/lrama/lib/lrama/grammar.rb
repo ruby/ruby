@@ -103,6 +103,10 @@ module Lrama
       set_precedence(sym, Precedence.new(type: :right, precedence: precedence))
     end
 
+    def add_precedence(sym, precedence)
+      set_precedence(sym, Precedence.new(type: :precedence, precedence: precedence))
+    end
+
     def set_precedence(sym, precedence)
       raise "" if sym.nterm?
       sym.precedence = precedence
@@ -310,7 +314,6 @@ module Lrama
       end || (raise "Nterm not found: #{id}")
     end
 
-
     def append_special_symbols
       # YYEMPTY (token_id: -2, number: -2) is added when a template is evaluated
       # term = add_term(id: Token.new(Token::Ident, "YYEMPTY"), token_id: -2)
@@ -512,7 +515,7 @@ module Lrama
               sym.token_id = 11
             when "\""
               sym.token_id = 34
-            when "\'"
+            when "'"
               sym.token_id = 39
             when "\\\\"
               sym.token_id = 92
