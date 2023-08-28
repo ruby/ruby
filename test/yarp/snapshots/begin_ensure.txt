@@ -1,6 +1,6 @@
-ProgramNode(0...94)(
+ProgramNode(0...211)(
   [],
-  StatementsNode(0...94)(
+  StatementsNode(0...211)(
     [BeginNode(0...20)(
        (0...5),
        StatementsNode(6...7)(
@@ -64,6 +64,99 @@ ProgramNode(0...94)(
          (91...94)
        ),
        (91...94)
+     ),
+     BeginNode(96...211)(
+       (96...101),
+       StatementsNode(102...207)(
+         [BeginNode(102...207)(
+            (102...107),
+            StatementsNode(107...203)(
+              [CallNode(107...203)(
+                 SymbolNode(107...109)((107...108), (108...109), nil, "s"),
+                 (109...110),
+                 (110...111),
+                 nil,
+                 ArgumentsNode(112...203)(
+                   [BeginNode(112...203)(
+                      (112...117),
+                      nil,
+                      nil,
+                      nil,
+                      EnsureNode(118...203)(
+                        (118...124),
+                        StatementsNode(125...199)(
+                          [CallNode(125...199)(
+                             ConstantReadNode(125...131)(),
+                             (131...132),
+                             (132...135),
+                             nil,
+                             nil,
+                             nil,
+                             BlockNode(136...199)(
+                               [],
+                               nil,
+                               StatementsNode(141...195)(
+                                 [BeginNode(141...195)(
+                                    (141...146),
+                                    StatementsNode(151...156)(
+                                      [BreakNode(151...156)(nil, (151...156))]
+                                    ),
+                                    nil,
+                                    nil,
+                                    EnsureNode(161...195)(
+                                      (161...167),
+                                      StatementsNode(168...189)(
+                                        [CallNode(168...189)(
+                                           ConstantReadNode(168...174)(),
+                                           (174...175),
+                                           (175...178),
+                                           nil,
+                                           nil,
+                                           nil,
+                                           BlockNode(179...189)(
+                                             [],
+                                             nil,
+                                             nil,
+                                             (179...181),
+                                             (186...189)
+                                           ),
+                                           0,
+                                           "new"
+                                         )]
+                                      ),
+                                      (192...195)
+                                    ),
+                                    (192...195)
+                                  )]
+                               ),
+                               (136...138),
+                               (196...199)
+                             ),
+                             0,
+                             "new"
+                           )]
+                        ),
+                        (200...203)
+                      ),
+                      (200...203)
+                    )]
+                 ),
+                 nil,
+                 nil,
+                 0,
+                 "l"
+               )]
+            ),
+            nil,
+            nil,
+            nil,
+            (204...207)
+          )]
+       ),
+       nil,
+       nil,
+       nil,
+       (208...211)
      )]
   )
 )
