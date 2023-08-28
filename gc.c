@@ -5689,12 +5689,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     if (swept_slots < min_free_slots) {
         bool grow_heap = is_full_marking(objspace);
 
-        if (!is_full_marking(objspace)) {
-            /* The heap is a growth heap if it freed more slots than had empty
-             * slots and used up all of its allocatable pages. */
-            bool is_growth_heap = (size_pool->empty_slots == 0 ||
-                                       size_pool->freed_slots > size_pool->empty_slots) &&
-                                   size_pool->allocatable_pages == 0;
+        /* Consider growing or starting a major GC if we are not currently in a
+         * major GC and we can't allocate any more pages. */
+        if (!is_full_marking(objspace) && size_pool->allocatable_pages == 0) {
+            /* The heap is a growth heap if it freed more slots than had empty slots. */
+            bool is_growth_heap = size_pool->empty_slots == 0 || size_pool->freed_slots > size_pool->empty_slots;
 
             /* Grow this heap if we haven't run at least RVALUE_OLD_AGE minor
              * GC since the last major GC or if this heap is smaller than the
