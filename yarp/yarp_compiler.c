@@ -1,5 +1,47 @@
 #include "yarp.h"
 
+static VALUE
+parse_number(const yp_node_t *node) {
+    const char *start = node->location.start;
+    const char *end = node->location.end;
+    size_t length = end - start;
+
+    char *buffer = malloc(length + 1);
+    memcpy(buffer, start, length);
+
+    buffer[length] = '\0';
+    VALUE number = rb_cstr_to_inum(buffer, -10, Qfalse);
+
+    free(buffer);
+    return number;
+}
+
+static inline VALUE
+parse_string(yp_string_t *string) {
+    return rb_str_new(yp_string_source(string), yp_string_length(string));
+}
+
+static inline ID
+parse_symbol(const char *start, const char *end) {
+    return rb_intern2(start, end - start);
+}
+
+static inline ID
+parse_node_symbol(yp_node_t *node) {
+    return parse_symbol(node->location.start, node->location.end);
+}
+
+static inline ID
+parse_string_symbol(yp_string_t *string) {
+    const char *start = yp_string_source(string);
+    return parse_symbol(start, start + yp_string_length(string));
+}
+
+static inline ID
+parse_location_symbol(yp_location_t *location) {
+    return parse_symbol(location->start, location->end);
+}
+
 /*
  * Compiles a YARP node into instruction sequences
  *
