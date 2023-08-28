@@ -1191,6 +1191,8 @@ rb_vm_bugreport(const void *ctx)
         natural_t depth = 0;
 
         fprintf(stderr, "* Process memory map:\n\n");
+        fprintf(stderr, "%12s-%-12s [%-12s %-12s %12s %12s] PRT REGION/DETAIL\n",
+                        "START", "END", "VSIZ", "RDSNT", "DIRTY", "SWAP");
         while (1) {
             if (vm_region_recurse(mach_task_self(), &addr, &size, &depth,
                         (vm_region_recurse_info_t)&map, &count) != KERN_SUCCESS) {
@@ -1200,9 +1202,13 @@ rb_vm_bugreport(const void *ctx)
             if (map.is_submap) {
                 // We only look at main addresses
                 depth++;
-            }
-            else {
-                fprintf(stderr, "%lx-%lx %s%s%s", addr, (addr+size),
+            } else {
+                fprintf(stderr, "%12lx-%-12lx", addr, (addr+size));
+                fprintf(stderr, " %-12lu", size);
+                fprintf(stderr, " %-12u", map.pages_resident);
+                fprintf(stderr, " %-12u", map.pages_dirtied);
+                fprintf(stderr, " %12u", map.pages_swapped_out);
+                fprintf(stderr, " %s%s%s",
                         ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
                         ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
                     ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
