@@ -55,6 +55,7 @@ module SyncDefaultGems
     prettyprint: "ruby/prettyprint",
     pstore: "ruby/pstore",
     psych: 'ruby/psych',
+    racc: 'ruby/racc',
     rdoc: 'ruby/rdoc',
     readline: "ruby/readline",
     reline: 'ruby/reline',
