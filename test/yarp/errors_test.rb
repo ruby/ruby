@@ -1106,6 +1106,12 @@ class ErrorsTest < Test::Unit::TestCase
     assert_errors expected, "def foo(a = 1,b,*c);end", [["Unexpected parameter *", 16..17]]
   end
 
+  def test_unterminated_global_variable
+    assert_errors expression("$"), "$", [
+      ["Invalid global variable.", 0..1]
+    ]
+  end
+
   private
 
   def assert_errors(expected, source, errors)

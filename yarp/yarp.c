@@ -5124,6 +5124,11 @@ lex_numeric(yp_parser_t *parser) {
 
 static yp_token_type_t
 lex_global_variable(yp_parser_t *parser) {
+    if (parser->current.end >= parser->end) {
+        yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid global variable.");
+        return YP_TOKEN_GLOBAL_VARIABLE;
+    }
+
     switch (*parser->current.end) {
         case '~':  // $~: match-data
         case '*':  // $*: argv
