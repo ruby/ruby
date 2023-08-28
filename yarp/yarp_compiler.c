@@ -126,6 +126,24 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_STRING_CONCAT_NODE: {
+          yp_string_concat_node_t *str_concat_node = (yp_string_concat_node_t *)node;
+          yp_compile_node(iseq, str_concat_node->left, ret, src, popped, compile_context);
+          yp_compile_node(iseq, str_concat_node->right, ret, src, popped, compile_context);
+          return;
+      }
+      case YP_NODE_STRING_NODE: {
+          if (!popped) {
+              yp_string_node_t *string_node = (yp_string_node_t *) node;
+              ADD_INSN1(ret, &dummy_line_node, putstring, parse_string(&string_node->unescaped));
+          }
+          return;
+      }
+      case YP_NODE_SYMBOL_NODE: {
+          yp_symbol_node_t *symbol_node = (yp_symbol_node_t *) node;
+          ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_string_symbol(&symbol_node->unescaped)));
+          return;
+      }
       case YP_NODE_TRUE_NODE:
         if (!popped) {
             ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
