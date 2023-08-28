@@ -60,6 +60,48 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
     switch (YP_NODE_TYPE(node)) {
+      case YP_NODE_FALSE_NODE:
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+        }
+        return;
+      case YP_NODE_FLOAT_NODE: {
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
+          }
+          return;
+      }
+      case YP_NODE_IMAGINARY_NODE: {
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
+          }
+          return;
+      }
+      case YP_NODE_INTEGER_NODE: {
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
+          }
+          return;
+      }
+      case YP_NODE_MISSING_NODE: {
+          return;
+      }
+      case YP_NODE_NIL_NODE:
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, putnil);
+        }
+        return;
+      case YP_NODE_PARENTHESES_NODE: {
+          yp_parentheses_node_t *parentheses_node = (yp_parentheses_node_t *) node;
+
+          if (parentheses_node->body == NULL) {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          } else {
+              yp_compile_node(iseq, parentheses_node->body, ret, src, popped, compile_context);
+          }
+
+          return;
+      }
       case YP_NODE_PROGRAM_NODE: {
           yp_program_node_t *program_node = (yp_program_node_t *) node;
 
@@ -84,6 +126,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_TRUE_NODE:
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+        }
+        return;
       default:
         rb_raise(rb_eNotImpError, "node type %s not implemented", yp_node_type_to_str(node->type));
         return;
