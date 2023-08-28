@@ -12,7 +12,7 @@ class TestFiberQueue < Test::Unit::TestCase
       Fiber.set_scheduler(scheduler)
 
       Fiber.schedule do
-        result = queue.pop(timeout: 0.0001)
+        result = queue.pop(timeout: 0.0010)
       end
 
       scheduler.run
@@ -31,7 +31,7 @@ class TestFiberQueue < Test::Unit::TestCase
       Fiber.set_scheduler(scheduler)
 
       Fiber.schedule do
-        result = queue.pop(timeout: 0.0001)
+        result = queue.pop(timeout: 0.0010)
       end
 
       scheduler.run
