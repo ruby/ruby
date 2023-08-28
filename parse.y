@@ -8355,27 +8355,19 @@ number_literal_suffix(struct parser_params *p, int mask)
 }
 
 static enum yytokentype
-set_number_literal(struct parser_params *p, VALUE v,
-                   enum yytokentype type, int suffix)
+set_number_literal(struct parser_params *p, VALUE v, enum yytokentype type, int suffix)
 {
+    if (!RB_TYPE_P(v, T_RATIONAL) && suffix & NUM_SUFFIX_R) {
+        type = tRATIONAL;
+        v = rb_rational_raw1(v);
+    }
     if (suffix & NUM_SUFFIX_I) {
-        v = rb_complex_raw(INT2FIX(0), v);
         type = tIMAGINARY;
+        v = rb_complex_raw(INT2FIX(0), v);
     }
     set_yylval_literal(v);
     SET_LEX_STATE(EXPR_END);
     return type;
-}
-
-static enum yytokentype
-set_integer_literal(struct parser_params *p, VALUE v, int suffix)
-{
-    enum yytokentype type = tINTEGER;
-    if (suffix & NUM_SUFFIX_R) {
-        v = rb_rational_raw1(v);
-        type = tRATIONAL;
-    }
-    return set_number_literal(p, v, type, suffix);
 }
 
 #ifdef RIPPER
@@ -9074,7 +9066,7 @@ no_digits(struct parser_params *p)
     yyerror0("numeric literal without digits");
     if (peek(p, '_')) nextc(p);
     /* dummy 0, for tUMINUS_NUM at numeric */
-    return set_integer_literal(p, INT2FIX(0), 0);
+    return set_number_literal(p, INT2FIX(0), tINTEGER, 0);
 }
 
 static enum yytokentype
@@ -9115,7 +9107,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 16, FALSE), suffix);
+            return set_number_literal(p, rb_cstr_to_inum(tok(p), 16, FALSE), tINTEGER, suffix);
         }
         if (c == 'b' || c == 'B') {
             /* binary */
@@ -9139,7 +9131,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 2, FALSE), suffix);
+            return set_number_literal(p, rb_cstr_to_inum(tok(p), 2, FALSE), tINTEGER, suffix);
         }
         if (c == 'd' || c == 'D') {
             /* decimal */
@@ -9163,7 +9155,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), suffix);
+            return set_number_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), tINTEGER, suffix);
         }
         if (c == '_') {
             /* 0_0 */
@@ -9195,7 +9187,7 @@ parse_numeric(struct parser_params *p, int c)
                 tokfix(p);
                 if (nondigit) goto trailing_uc;
                 suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-                return set_integer_literal(p, rb_cstr_to_inum(tok(p), 8, FALSE), suffix);
+                return set_number_literal(p, rb_cstr_to_inum(tok(p), 8, FALSE), tINTEGER, suffix);
             }
             if (nondigit) {
                 pushback(p, c);
@@ -9212,7 +9204,7 @@ parse_numeric(struct parser_params *p, int c)
         else {
             pushback(p, c);
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, INT2FIX(0), suffix);
+            return set_number_literal(p, INT2FIX(0), tINTEGER, suffix);
         }
     }
 
@@ -9298,6 +9290,7 @@ parse_numeric(struct parser_params *p, int c)
         if (suffix & NUM_SUFFIX_R) {
             type = tRATIONAL;
             v = parse_rational(p, tok(p), toklen(p), seen_point);
+            return set_number_literal(p, v, type, suffix);
         }
         else {
             double d = strtod(tok(p), 0);
@@ -9310,7 +9303,7 @@ parse_numeric(struct parser_params *p, int c)
         return set_number_literal(p, v, type, suffix);
     }
     suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-    return set_integer_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), suffix);
+    return set_number_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), tINTEGER, suffix);
 }
 
 static enum yytokentype
