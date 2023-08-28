@@ -4698,9 +4698,9 @@ rb_spawn(int argc, const VALUE *argv)
  *  - +nil+ if the command fails.
  *
  *  Raises an exception (instead of returning +false+ or +nil+)
- *  if keyword argument +exception+ is passed a truthy value.
+ *  if keyword argument +exception+ is set to +true+.
  *
- *  Assigns the command's error status in global variable <tt>$?</tt>.
+ *  Assigns the command's error status to global variable <tt>$?</tt>.
  *
  *  The new process is created using the
  *  {system system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/system.html];
@@ -4727,13 +4727,17 @@ rb_spawn(int argc, const VALUE *argv)
  *  or contain meta characters:
  *
  *    system('echo')                             # => true  # Built-in.
- *    $?                                         # => #<Process::Status: pid 640610 exit 0>
  *    system('if true; then echo "Foo"; fi')     # => true  # Shell reserved word.
  *    system('date > /tmp/date.tmp')             # => true  # Contains meta character.
  *    system('date > /nop/date.tmp')             # => false
- *    $?                                         # => #<Process::Status: pid 640742 exit 2>
- *    system('foo')                              # => nil   # Command failed.
  *    system('date > date.tmp', exception: true) # Raises RuntimeError.
+ *
+ *  Assigns the command’s error status to global variable <tt>$?</tt>:
+ *
+ *    system('echo')                             # => true  # Built-in.
+ *    $?                                         # => #<Process::Status: pid 640610 exit 0>
+ *    system('date > /nop/date.tmp')             # => false
+ *    $?                                         # => #<Process::Status: pid 640742 exit 2>
  *
  *  The command line may also contain arguments and options for the command:
  *
@@ -4772,10 +4776,18 @@ rb_spawn(int argc, const VALUE *argv)
  *  Example:
  *
  *    system('/usr/bin/date') # => true
+ *    system('foo')           # => nil   # Command failed.
  *
  *  Output:
  *
  *    Mon Aug 28 11:43:10 AM CDT 2023
+ *
+ *  Assigns the command’s error status to global variable <tt>$?</tt>:
+ *
+ *    system('/usr/bin/date') # => true
+ *    $?                      # => #<Process::Status: pid 645605 exit 0>
+ *    system('foo')           # => nil
+ *    $?                      # => #<Process::Status: pid 645608 exit 127>
  *
  *  Ruby invokes the executable directly, with no shell and no shell expansion:
  *
