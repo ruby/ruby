@@ -197,12 +197,11 @@ def string2cstr(rstring):
     flags = rstring.GetValueForExpressionPath(".basic->flags").unsigned
     if flags & RUBY_T_MASK != RUBY_T_STRING:
         raise TypeError("not a string")
+    clen = int(rstring.GetValueForExpressionPath(".len").value, 0)
     if flags & RUBY_FL_USER1:
         cptr = int(rstring.GetValueForExpressionPath(".as.heap.ptr").value, 0)
-        clen = int(rstring.GetValueForExpressionPath(".as.heap.len").value, 0)
     else:
         cptr = int(rstring.GetValueForExpressionPath(".as.embed.ary").location, 0)
-        clen = int(rstring.GetValueForExpressionPath(".as.embed.len").value, 0)
     return cptr, clen
 
 def output_string(debugger, result, rstring):
