@@ -197,26 +197,7 @@ again:
 }
 
 static void
-yp_compile_if(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context) {
-    yp_parser_t *parser = compile_context->parser;
-    yp_statements_node_t *node_body;
-    yp_node_t *node_else;
-    yp_node_t *predicate;
-
-    if (node->type == YP_NODE_IF_NODE) {
-        yp_if_node_t *if_node = (yp_if_node_t *)node;
-        node_body = if_node->statements;
-        node_else = if_node->consequent;
-        predicate = if_node->predicate;
-    }
-    else {
-        yp_unless_node_t *unless_node = (yp_unless_node_t *)node;
-        node_body = unless_node->statements;
-        node_else = (yp_node_t *)(unless_node->consequent);
-        predicate = unless_node->predicate;
-    }
-
-    const int line = (int)yp_newline_list_line_column(&(parser->newline_list), node->location.start).line;
+yp_compile_if(rb_iseq_t *iseq, const int line, yp_statements_node_t *node_body, yp_node_t *node_else, yp_node_t *predicate, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context) {
     NODE line_node = generate_dummy_line_node(line, line);
 
     DECL_ANCHOR(cond_seq);
@@ -703,7 +684,13 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case YP_NODE_IF_NODE: {
-          yp_compile_if(iseq, node, ret, src, popped, compile_context);
+          const int line = (int)yp_newline_list_line_column(&(parser->newline_list), node->location.start).line;
+          yp_if_node_t *if_node = (yp_if_node_t *)node;
+          yp_statements_node_t *node_body = if_node->statements;
+          yp_node_t *node_else = if_node->consequent;
+          yp_node_t *predicate = if_node->predicate;
+
+          yp_compile_if(iseq, line, node_body, node_else, predicate, ret, src, popped, compile_context);
           return;
       }
       case YP_NODE_IMAGINARY_NODE: {
@@ -1234,7 +1221,13 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case YP_NODE_UNLESS_NODE: {
-          yp_compile_if(iseq, node, ret, src, popped, compile_context);
+          const int line = (int)yp_newline_list_line_column(&(parser->newline_list), node->location.start).line;
+          yp_unless_node_t *unless_node = (yp_unless_node_t *)node;
+          yp_statements_node_t *node_body = unless_node->statements;
+          yp_node_t *node_else = (yp_node_t *)(unless_node->consequent);
+          yp_node_t *predicate = unless_node->predicate;
+
+          yp_compile_if(iseq, line, node_body, node_else, predicate, ret, src, popped, compile_context);
           return;
       }
       case YP_NODE_WHILE_NODE: {
