@@ -48,6 +48,45 @@ yp_optimizable_range_item_p(yp_node_t *node)
     return (!node || node->type == YP_NODE_INTEGER_NODE || node->type == YP_NODE_NIL_NODE);
 }
 
+static bool
+yp_static_node_literal_p(yp_node_t *node)
+{
+    switch(node->type) {
+      case YP_NODE_FALSE_NODE:
+      case YP_NODE_FLOAT_NODE:
+      case YP_NODE_IMAGINARY_NODE:
+      case YP_NODE_INTEGER_NODE:
+      case YP_NODE_NIL_NODE:
+      case YP_NODE_RATIONAL_NODE:
+      case YP_NODE_SELF_NODE:
+      case YP_NODE_STRING_NODE:
+      case YP_NODE_SOURCE_ENCODING_NODE:
+      case YP_NODE_SOURCE_FILE_NODE:
+      case YP_NODE_SOURCE_LINE_NODE:
+      case YP_NODE_SYMBOL_NODE:
+      case YP_NODE_TRUE_NODE:
+        return true;
+      default:
+        return false;
+    }
+}
+
+static inline VALUE
+yp_static_literal_value(yp_node_t *node)
+{
+    switch(node->type) {
+      case YP_NODE_NIL_NODE:
+        return Qnil;
+      case YP_NODE_TRUE_NODE:
+        return Qtrue;
+      case YP_NODE_FALSE_NODE:
+        return Qfalse;
+        // TODO: Implement this method for the other literal nodes described above
+      default:
+        rb_bug("This node type doesn't have a literal valuej");
+    }
+}
+
 static void yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *context);
 
 static int
@@ -126,6 +165,28 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           for (size_t index = 0; index < node_list.size; index++) {
               yp_compile_node(iseq, node_list.nodes[index], ret, src, popped, compile_context);
           }
+          return;
+      }
+      case YP_NODE_ARRAY_NODE: {
+          yp_array_node_t *array_node = (yp_array_node_t *) node;
+          yp_node_list_t elements = array_node->elements;
+          if (elements.size == 1 && yp_static_node_literal_p(elements.nodes[0])) {
+              VALUE ary = rb_ary_hidden_new(1);
+              rb_ary_push(ary, yp_static_literal_value(elements.nodes[0]));
+              OBJ_FREEZE(ary);
+
+              ADD_INSN1(ret, &dummy_line_node, duparray, ary);
+          }
+          else {
+              for (size_t index = 0; index < elements.size; index++) {
+                  yp_compile_node(iseq, elements.nodes[index], ret, src, popped, compile_context);
+              }
+
+              if (!popped) {
+                  ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(elements.size));
+              }
+          }
+
           return;
       }
       case YP_NODE_ASSOC_NODE: {
@@ -309,6 +370,33 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           ID ivar_name = parse_location_symbol(&write_node->name_loc);
           ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(ivar_name));
+          return;
+      }
+      case YP_NODE_HASH_NODE: {
+          yp_hash_node_t *hash_node = (yp_hash_node_t *) node;
+          yp_node_list_t elements = hash_node->elements;
+
+          if (elements.size == 1) {
+              assert(elements.nodes[0]->type == YP_NODE_ASSOC_NODE);
+              yp_assoc_node_t *assoc_node = (yp_assoc_node_t *) elements.nodes[0];
+
+              if (yp_static_node_literal_p(assoc_node->key) &&
+                      yp_static_node_literal_p(assoc_node->value)) {
+                  VALUE hash = rb_hash_new_with_size(1);
+                  hash = rb_obj_hide(hash);
+                  OBJ_FREEZE(hash);
+                  ADD_INSN1(ret, &dummy_line_node, duphash, hash);
+                  return;
+              }
+          }
+
+          for (size_t index = 0; index < elements.size; index++) {
+              yp_compile_node(iseq, elements.nodes[index], ret, src, popped, compile_context);
+          }
+
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
+          }
           return;
       }
       case YP_NODE_IMAGINARY_NODE: {
