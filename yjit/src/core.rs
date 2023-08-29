@@ -18,6 +18,7 @@ use std::cell::*;
 use std::collections::HashSet;
 use std::fmt;
 use std::mem;
+use std::mem::transmute;
 use std::ops::Range;
 use std::rc::Rc;
 use mem::MaybeUninit;
@@ -286,11 +287,6 @@ pub enum TypeDiff {
     Incompatible,
 }
 
-
-
-
-
-
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TempMappingKind
 {
@@ -303,8 +299,6 @@ pub enum TempMappingKind
 // self, a local variable or constant so that we can track its type
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub struct TempMapping(u8);
-
-use std::mem::transmute;
 
 impl TempMapping {
     pub fn map_to_stack(t: Type) -> TempMapping
@@ -325,7 +319,7 @@ impl TempMapping {
 
     pub fn map_to_local(local_idx: u8) -> TempMapping
     {
-        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(TempMappingKind::MapToStack) };
+        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(TempMappingKind::MapToLocal) };
         assert!(local_idx < 8);
         let bits = (kind_bits << 6) | (local_idx & 7);
         TempMapping(bits)
@@ -337,10 +331,7 @@ impl TempMapping {
             return *self;
         }
 
-        // Clear the 5 lowest bits
-        let TempMapping(bits) = self;
-        let bits = *bits & (3 << 6);
-        TempMapping(bits)
+        TempMapping::map_to_stack(Type::Unknown)
     }
 
     pub fn get_kind(&self) -> TempMappingKind
@@ -348,6 +339,7 @@ impl TempMapping {
         // Take the two highest bits
         let TempMapping(bits) = self;
         let kind_bits = bits >> 6;
+        assert!(kind_bits <= 2);
         unsafe { transmute::<u8, TempMappingKind>(kind_bits) }
     }
 
@@ -3183,6 +3175,21 @@ mod tests {
     #[test]
     fn tempmapping_size() {
         assert_eq!(mem::size_of::<TempMapping>(), 1);
+    }
+
+    #[test]
+    fn tempmapping() {
+        let t = TempMapping::map_to_stack(Type::Unknown);
+        assert_eq!(t.get_kind(), MapToStack);
+        assert_eq!(t.get_type(), Type::Unknown);
+
+        let t = TempMapping::map_to_stack(Type::TString);
+        assert_eq!(t.get_kind(), MapToStack);
+        assert_eq!(t.get_type(), Type::TString);
+
+        let t = TempMapping::map_to_local(7);
+        assert_eq!(t.get_kind(), MapToLocal);
+        assert_eq!(t.get_local_idx(), 7);
     }
 
     #[test]
