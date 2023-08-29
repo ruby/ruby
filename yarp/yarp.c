@@ -5908,7 +5908,7 @@ parser_lex(yp_parser_t *parser) {
                             // Here we look for a "." or "&." following a "\n".
                             const char *following = next_newline(next_content, parser->end - next_content);
 
-                            while (following && (following < parser->end)) {
+                            while (following && (following + 1 < parser->end)) {
                                 following++;
                                 following += yp_strspn_inline_whitespace(following, parser->end - following);
 
