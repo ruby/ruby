@@ -45,8 +45,6 @@
 #include "insns_info.inc"
 #include "yarp/yarp.h"
 
-VALUE rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer);
-
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
 static const rb_iseq_t *iseqw_check(VALUE iseqw);
@@ -944,6 +942,8 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     return iseq_translate(iseq);
 }
 
+VALUE rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer, yp_parser_t *parser);
+
 rb_iseq_t *
 rb_iseq_new_with_callback(
     const struct rb_iseq_new_with_callback_callback_func * ifunc,
@@ -1404,8 +1404,9 @@ iseqw_s_compile_yarp(int argc, VALUE *argv, VALUE self)
     prepare_iseq_build(iseq, name, file, path, first_lineno, &node_location, node_id,
                        parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
 
-    rb_iseq_compile_yarp_node(iseq, node);
+    rb_iseq_compile_yarp_node(iseq, node, &parser);
 
+    finish_iseq_build(iseq);
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
 
