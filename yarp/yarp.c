@@ -4902,14 +4902,9 @@ context_push(yp_parser_t *parser, yp_context_t context) {
 
 static void
 context_pop(yp_parser_t *parser) {
-    if (parser->current_context->prev == NULL) {
-        free(parser->current_context);
-        parser->current_context = NULL;
-    } else {
-        yp_context_node_t *prev = parser->current_context->prev;
-        free(parser->current_context);
-        parser->current_context = prev;
-    }
+    yp_context_node_t *prev = parser->current_context->prev;
+    free(parser->current_context);
+    parser->current_context = prev;
 }
 
 static bool
