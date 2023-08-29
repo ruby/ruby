@@ -2,7 +2,7 @@
 
 // Append an error to the given list of diagnostic.
 bool
-yp_diagnostic_list_append(yp_list_t *list, const char *start, const char *end, const char *message) {
+yp_diagnostic_list_append(yp_list_t *list, const uint8_t *start, const uint8_t *end, const char *message) {
     yp_diagnostic_t *diagnostic = (yp_diagnostic_t *) malloc(sizeof(yp_diagnostic_t));
     if (diagnostic == NULL) return false;
 

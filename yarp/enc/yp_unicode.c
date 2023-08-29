@@ -10,7 +10,7 @@ typedef uint32_t yp_unicode_codepoint_t;
 // this table is different from other encodings where we used a lookup table
 // because the indices of those tables are the byte representations, not the
 // codepoints themselves.
-unsigned char yp_encoding_unicode_table[256] = {
+uint8_t yp_encoding_unicode_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -2220,7 +2220,7 @@ static const uint8_t yp_utf_8_dfa[] = {
 };
 
 static yp_unicode_codepoint_t
-yp_utf_8_codepoint(const unsigned char *c, ptrdiff_t n, size_t *width) {
+yp_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
     assert(n >= 1);
     size_t maximum = (size_t) n;
 
@@ -2228,7 +2228,7 @@ yp_utf_8_codepoint(const unsigned char *c, ptrdiff_t n, size_t *width) {
     uint32_t state = 0;
 
     for (size_t index = 0; index < 4 && index < maximum; index++) {
-        uint32_t byte = c[index];
+        uint32_t byte = b[index];
         uint32_t type = yp_utf_8_dfa[byte];
 
         codepoint = (state != 0) ?
@@ -2247,60 +2247,55 @@ yp_utf_8_codepoint(const unsigned char *c, ptrdiff_t n, size_t *width) {
 }
 
 static size_t
-yp_encoding_utf_8_char_width(const char *c, ptrdiff_t n) {
+yp_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
     size_t width;
-    const unsigned char *v = (const unsigned char *) c;
-
-    yp_utf_8_codepoint(v, n, &width);
+    yp_utf_8_codepoint(b, n, &width);
     return width;
 }
 
 size_t
-yp_encoding_utf_8_alpha_char(const char *c, ptrdiff_t n) {
-    const unsigned char *v = (const unsigned char *) c;
-    if (*v < 0x80) {
-        return (yp_encoding_unicode_table[*v] & YP_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
+yp_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    if (*b < 0x80) {
+        return (yp_encoding_unicode_table[*b] & YP_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
     }
 
     size_t width;
-    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(v, n, &width);
+    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(b, n, &width);
 
     if (codepoint <= 0xFF) {
-        return (yp_encoding_unicode_table[(unsigned char) codepoint] & YP_ENCODING_ALPHABETIC_BIT) ? width : 0;
+        return (yp_encoding_unicode_table[(uint8_t) codepoint] & YP_ENCODING_ALPHABETIC_BIT) ? width : 0;
     } else {
         return yp_unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
 size_t
-yp_encoding_utf_8_alnum_char(const char *c, ptrdiff_t n) {
-    const unsigned char *v = (const unsigned char *) c;
-    if (*v < 0x80) {
-        return (yp_encoding_unicode_table[*v] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
+yp_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    if (*b < 0x80) {
+        return (yp_encoding_unicode_table[*b] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
     }
 
     size_t width;
-    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(v, n, &width);
+    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(b, n, &width);
 
     if (codepoint <= 0xFF) {
-        return (yp_encoding_unicode_table[(unsigned char) codepoint] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
+        return (yp_encoding_unicode_table[(uint8_t) codepoint] & (YP_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
     } else {
         return yp_unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
     }
 }
 
 static bool
-yp_encoding_utf_8_isupper_char(const char *c, ptrdiff_t n) {
-    const unsigned char *v = (const unsigned char *) c;
-    if (*v < 0x80) {
-        return (yp_encoding_unicode_table[*v] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
+yp_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    if (*b < 0x80) {
+        return (yp_encoding_unicode_table[*b] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
     }
 
     size_t width;
-    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(v, n, &width);
+    yp_unicode_codepoint_t codepoint = yp_utf_8_codepoint(b, n, &width);
 
     if (codepoint <= 0xFF) {
-        return (yp_encoding_unicode_table[(unsigned char) codepoint] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
+        return (yp_encoding_unicode_table[(uint8_t) codepoint] & YP_ENCODING_UPPERCASE_BIT) ? true : false;
     } else {
         return yp_unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
     }

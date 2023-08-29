@@ -109,14 +109,14 @@ typedef struct yp_lex_mode {
 
             // When lexing a list, it takes into account balancing the
             // terminator if the terminator is one of (), [], {}, or <>.
-            char incrementor;
+            uint8_t incrementor;
 
             // This is the terminator of the list literal.
-            char terminator;
+            uint8_t terminator;
 
             // This is the character set that should be used to delimit the
             // tokens within the list.
-            char breakpoints[11];
+            uint8_t breakpoints[11];
         } list;
 
         struct {
@@ -125,14 +125,14 @@ typedef struct yp_lex_mode {
 
             // When lexing a regular expression, it takes into account balancing
             // the terminator if the terminator is one of (), [], {}, or <>.
-            char incrementor;
+            uint8_t incrementor;
 
             // This is the terminator of the regular expression.
-            char terminator;
+            uint8_t terminator;
 
             // This is the character set that should be used to delimit the
             // tokens within the regular expression.
-            char breakpoints[6];
+            uint8_t breakpoints[6];
         } regexp;
 
         struct {
@@ -149,21 +149,21 @@ typedef struct yp_lex_mode {
 
             // When lexing a string, it takes into account balancing the
             // terminator if the terminator is one of (), [], {}, or <>.
-            char incrementor;
+            uint8_t incrementor;
 
             // This is the terminator of the string. It is typically either a
             // single or double quote.
-            char terminator;
+            uint8_t terminator;
 
             // This is the character set that should be used to delimit the
             // tokens within the string.
-            char breakpoints[6];
+            uint8_t breakpoints[6];
         } string;
 
         struct {
             // These pointers point to the beginning and end of the heredoc
             // identifier.
-            const char *ident_start;
+            const uint8_t *ident_start;
             size_t ident_length;
 
             yp_heredoc_quote_t quote;
@@ -171,7 +171,7 @@ typedef struct yp_lex_mode {
 
             // This is the pointer to the character where lexing should resume
             // once the heredoc has been completely processed.
-            const char *next_start;
+            const uint8_t *next_start;
         } heredoc;
     } as;
 
@@ -239,8 +239,8 @@ typedef enum {
 // This is a node in the linked list of comments that we've found while parsing.
 typedef struct yp_comment {
     yp_list_node_t node;
-    const char *start;
-    const char *end;
+    const uint8_t *start;
+    const uint8_t *end;
     yp_comment_type_t type;
 } yp_comment_t;
 
@@ -252,7 +252,7 @@ typedef void (*yp_encoding_changed_callback_t)(yp_parser_t *parser);
 // the ability here to call out to a user-defined function to get an encoding
 // struct. If the function returns something that isn't NULL, we set that to
 // our encoding and use it to parse identifiers.
-typedef yp_encoding_t *(*yp_encoding_decode_callback_t)(yp_parser_t *parser, const char *name, size_t width);
+typedef yp_encoding_t *(*yp_encoding_decode_callback_t)(yp_parser_t *parser, const uint8_t *name, size_t width);
 
 // When you are lexing through a file, the lexer needs all of the information
 // that the parser additionally provides (for example, the local table). So if
@@ -316,21 +316,21 @@ struct yp_parser {
         size_t index;                           // the current index into the lexer mode stack
     } lex_modes;
 
-    const char *start;   // the pointer to the start of the source
-    const char *end;     // the pointer to the end of the source
+    const uint8_t *start;   // the pointer to the start of the source
+    const uint8_t *end;     // the pointer to the end of the source
     yp_token_t previous; // the previous token we were considering
     yp_token_t current;  // the current token we're considering
 
     // This is a special field set on the parser when we need the parser to jump
     // to a specific location when lexing the next token, as opposed to just
     // using the end of the previous token. Normally this is NULL.
-    const char *next_start;
+    const uint8_t *next_start;
 
     // This field indicates the end of a heredoc whose identifier was found on
     // the current line. If another heredoc is found on the same line, then this
     // will be moved forward to the end of that heredoc. If no heredocs are
     // found on a line then this is NULL.
-    const char *heredoc_end;
+    const uint8_t *heredoc_end;
 
     yp_list_t comment_list;             // the list of comments that have been found while parsing
     yp_list_t warning_list;             // the list of warnings that have been found while parsing
@@ -361,7 +361,7 @@ struct yp_parser {
 
     // This pointer indicates where a comment must start if it is to be
     // considered an encoding comment.
-    const char *encoding_comment_start;
+    const uint8_t *encoding_comment_start;
 
     // This is an optional callback that can be attached to the parser that will
     // be called whenever a new token is lexed by the parser.

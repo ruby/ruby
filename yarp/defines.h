@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -39,6 +40,6 @@
 #   define snprintf _snprintf
 #endif
 
-int yp_strncasecmp(const char *string1, const char *string2, size_t length);
+int yp_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length);
 
 #endif

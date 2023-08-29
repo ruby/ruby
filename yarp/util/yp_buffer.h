@@ -36,6 +36,9 @@ void yp_buffer_append_zeroes(yp_buffer_t *buffer, size_t length);
 // Append a string to the buffer.
 void yp_buffer_append_str(yp_buffer_t *buffer, const char *value, size_t length);
 
+// Append a list of bytes to the buffer.
+void yp_buffer_append_bytes(yp_buffer_t *buffer, const uint8_t *value, size_t length);
+
 // Append a single byte to the buffer.
 void yp_buffer_append_u8(yp_buffer_t *buffer, uint8_t value);
 

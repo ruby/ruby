@@ -38,7 +38,7 @@ yp_serialize_string(yp_parser_t *parser, yp_string_t *string, yp_buffer_t *buffe
             uint32_t length = yp_sizet_to_u32(yp_string_length(string));
             yp_buffer_append_u8(buffer, 2);
             yp_buffer_append_u32(buffer, length);
-            yp_buffer_append_str(buffer, yp_string_source(string), length);
+            yp_buffer_append_bytes(buffer, yp_string_source(string), length);
             break;
         }
         case YP_STRING_MAPPED:
@@ -234,7 +234,7 @@ serialize_token(void *data, yp_parser_t *parser, yp_token_t *token) {
 }
 
 YP_EXPORTED_FUNCTION void
-yp_lex_serialize(const char *source, size_t size, const char *filepath, yp_buffer_t *buffer) {
+yp_lex_serialize(const uint8_t *source, size_t size, const char *filepath, yp_buffer_t *buffer) {
     yp_parser_t parser;
     yp_parser_init(&parser, source, size, filepath);
 
@@ -261,7 +261,7 @@ yp_lex_serialize(const char *source, size_t size, const char *filepath, yp_buffe
 // Parse and serialize both the AST and the tokens represented by the given
 // source to the given buffer.
 YP_EXPORTED_FUNCTION void
-yp_parse_lex_serialize(const char *source, size_t size, yp_buffer_t *buffer, const char *metadata) {
+yp_parse_lex_serialize(const uint8_t *source, size_t size, yp_buffer_t *buffer, const char *metadata) {
     yp_parser_t parser;
     yp_parser_init(&parser, source, size, NULL);
     if (metadata) yp_parser_metadata(&parser, metadata);

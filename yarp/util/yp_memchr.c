@@ -8,7 +8,7 @@
 void *
 yp_memchr(const void *memory, int character, size_t number, bool encoding_changed, yp_encoding_t *encoding) {
     if (encoding_changed && encoding->multibyte && character >= YP_MEMCHR_TRAILING_BYTE_MINIMUM) {
-        const char *source = (const char *) memory;
+        const uint8_t *source = (const uint8_t *) memory;
         size_t index = 0;
 
         while (index < number) {

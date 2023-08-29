@@ -12,7 +12,7 @@ static VALUE rb_cYARP<%= node.name %>;
 <%- end -%>
 
 static VALUE
-yp_location_new(yp_parser_t *parser, const char *start, const char *end, VALUE source) {
+yp_location_new(yp_parser_t *parser, const uint8_t *start, const uint8_t *end, VALUE source) {
     VALUE argv[] = { source, LONG2FIX(start - parser->start), LONG2FIX(end - start) };
     return rb_class_new_instance(3, argv, rb_cYARPLocation);
 }
@@ -24,7 +24,7 @@ yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding, VALU
 
     VALUE argv[] = {
         ID2SYM(type),
-        rb_enc_str_new(token->start, token->end - token->start, encoding),
+        rb_enc_str_new((const char *) token->start, token->end - token->start, encoding),
         location
     };
 
@@ -33,13 +33,13 @@ yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding, VALU
 
 static VALUE
 yp_string_new(yp_string_t *string, rb_encoding *encoding) {
-    return rb_enc_str_new(yp_string_source(string), yp_string_length(string), encoding);
+    return rb_enc_str_new((const char *) yp_string_source(string), yp_string_length(string), encoding);
 }
 
 // Create a YARP::Source object from the given parser.
 VALUE
 yp_source_new(yp_parser_t *parser) {
-    VALUE source = rb_str_new(parser->start, parser->end - parser->start);
+    VALUE source = rb_str_new((const char *) parser->start, parser->end - parser->start);
     VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
 
     for (size_t index = 0; index < parser->newline_list.size; index++) {
@@ -85,7 +85,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
         yp_constant_t constant = parser->constant_pool.constants[index];
 
         if (constant.id != 0) {
-            constants[constant.id - 1] = rb_intern3(constant.start, constant.length, encoding);
+            constants[constant.id - 1] = rb_intern3((const char *) constant.start, constant.length, encoding);
         }
     }
 
