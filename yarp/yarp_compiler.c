@@ -87,7 +87,97 @@ yp_static_literal_value(yp_node_t *node)
     }
 }
 
+static void
+yp_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const yp_node_t *cond,
+                         LABEL *then_label, LABEL *else_label, const char *src, bool popped, yp_compile_context_t *compile_context);
+
+static void
+yp_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, yp_node_t *cond,
+                LABEL *then_label, LABEL *else_label, const char *src, bool popped, yp_compile_context_t *compile_context)
+{
+    yp_parser_t *parser = compile_context->parser;
+    yp_newline_list_t newline_list = parser->newline_list;
+    int lineno = (int)yp_newline_list_line_column(&newline_list, cond->location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    DECL_ANCHOR(seq);
+    INIT_ANCHOR(seq);
+    LABEL *label = NEW_LABEL(lineno);
+    if (!then_label) then_label = label;
+    else if (!else_label) else_label = label;
+
+    yp_compile_branch_condition(iseq, seq, cond, then_label, else_label, src, popped, compile_context);
+
+    if (LIST_INSN_SIZE_ONE(seq)) {
+        INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(seq));
+        if (insn->insn_id == BIN(jump) && (LABEL *)(insn->operands[0]) == label)
+            return;
+    }
+    if (!label->refcnt) {
+        ADD_INSN(seq, &dummy_line_node, putnil);
+    }
+    else {
+        ADD_LABEL(seq, label);
+    }
+    ADD_SEQ(ret, seq);
+    return;
+}
+
 static void yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *context);
+
+static void
+yp_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const yp_node_t *cond,
+                         LABEL *then_label, LABEL *else_label, const char *src, bool popped, yp_compile_context_t *compile_context)
+{
+    yp_parser_t *parser = compile_context->parser;
+    yp_newline_list_t newline_list = parser->newline_list;
+    int lineno = (int) yp_newline_list_line_column(&newline_list, cond->location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+again:
+    switch (YP_NODE_TYPE(cond)) {
+      case YP_NODE_AND_NODE: {
+          yp_and_node_t *and_node = (yp_and_node_t *)cond;
+          yp_compile_logical(iseq, ret, and_node->left, NULL, else_label, src, popped, compile_context);
+          cond = and_node->right;
+          goto again;
+      }
+      case YP_NODE_OR_NODE: {
+          yp_or_node_t *or_node = (yp_or_node_t *)cond;
+          yp_compile_logical(iseq, ret, or_node->left, then_label, NULL, src, popped, compile_context);
+          cond = or_node->right;
+          goto again;
+      }
+      case YP_NODE_FALSE_NODE:
+      case YP_NODE_NIL_NODE:
+        ADD_INSNL(ret, &dummy_line_node, jump, else_label);
+        return;
+      case YP_NODE_FLOAT_NODE:
+      case YP_NODE_IMAGINARY_NODE:
+      case YP_NODE_INTEGER_NODE:
+      case YP_NODE_LAMBDA_NODE:
+      case YP_NODE_RATIONAL_NODE:
+      case YP_NODE_REGULAR_EXPRESSION_NODE:
+      case YP_NODE_STRING_NODE:
+      case YP_NODE_SYMBOL_NODE:
+      case YP_NODE_TRUE_NODE:
+        ADD_INSNL(ret, &dummy_line_node, jump, then_label);
+        return;
+        // TODO: Several more nodes in this case statement
+      default:
+        {
+            DECL_ANCHOR(cond_seq);
+            INIT_ANCHOR(cond_seq);
+
+            yp_compile_node(iseq, cond, cond_seq, src, Qfalse, compile_context);
+            ADD_SEQ(ret, cond_seq);
+        }
+        break;
+    }
+    ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
+    ADD_INSNL(ret, &dummy_line_node, jump, then_label);
+    return;
+}
 
 static int
 yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node)
@@ -758,6 +848,76 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   ADD_INSN(ret, &dummy_line_node, pop);
           }
 
+          return;
+      }
+      case YP_NODE_WHILE_NODE: {
+          yp_while_node_t *while_node = (yp_while_node_t *)node;
+
+          LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
+          LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
+          LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
+          int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
+
+          // TODO: Deal with ensures in here
+          LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(lineno);	/* next  */
+          LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(lineno);	/* redo  */
+          LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(lineno);	/* break */
+          LABEL *end_label = NEW_LABEL(lineno);
+          LABEL *adjust_label = NEW_LABEL(lineno);
+
+          LABEL *next_catch_label = NEW_LABEL(lineno);
+          LABEL *tmp_label = NULL;
+
+          ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
+
+          // begin; end while true
+          if (while_node->base.flags & YP_LOOP_FLAGS_BEGIN_MODIFIER) {
+              ADD_INSNL(ret, &dummy_line_node, jump, next_label);
+          }
+          else {
+              // while true; end
+              tmp_label = NEW_LABEL(lineno);
+              ADD_INSNL(ret, &dummy_line_node, jump, tmp_label);
+          }
+
+          ADD_LABEL(ret, adjust_label);
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          ADD_LABEL(ret, next_catch_label);
+          ADD_INSN(ret, &dummy_line_node, pop);
+          ADD_INSNL(ret, &dummy_line_node, jump, next_label);
+          if (tmp_label) ADD_LABEL(ret, tmp_label);
+
+          ADD_LABEL(ret, redo_label);
+          if (while_node->statements) {
+              yp_compile_node(iseq, (yp_node_t *)while_node->statements, ret, src, Qfalse, compile_context);
+          }
+
+          ADD_LABEL(ret, next_label);
+
+          yp_compile_branch_condition(iseq, ret, while_node->predicate, redo_label, end_label, src, popped, compile_context);
+
+          ADD_LABEL(ret, end_label);
+          ADD_ADJUST_RESTORE(ret, adjust_label);
+
+          ADD_INSN(ret, &dummy_line_node, putnil);
+
+          ADD_LABEL(ret, break_label);
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL,
+                  break_label);
+          ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, NULL,
+                  next_catch_label);
+          ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL,
+                  ISEQ_COMPILE_DATA(iseq)->redo_label);
+
+          ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
+          ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
+          ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
+          ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
           return;
       }
       case YP_NODE_X_STRING_NODE: {
