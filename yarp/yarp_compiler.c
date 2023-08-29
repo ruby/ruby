@@ -871,6 +871,116 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_SCOPE_NODE: {
+          yp_scope_node_t *scope_node = (yp_scope_node_t *)node;
+          yp_constant_id_list_t locals = scope_node->locals;
+
+          yp_parameters_node_t *parameters_node = (yp_parameters_node_t *)scope_node->parameters;
+          yp_node_list_t requireds_list = YP_EMPTY_NODE_LIST;
+          yp_node_list_t optionals_list = YP_EMPTY_NODE_LIST;
+
+
+          if (parameters_node) {
+              requireds_list = parameters_node->requireds;
+              optionals_list = parameters_node->optionals;
+          }
+
+          size_t size = locals.size;
+
+          // Index lookup table buffer size is only the number of the locals
+          st_table *index_lookup_table = st_init_numtable();
+
+          VALUE idtmp = 0;
+          rb_ast_id_table_t *tbl = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + size * sizeof(ID));
+          tbl->size = (int)size;
+
+          // First param gets 0, second param 1, param n...
+          // Calculate the local index for all locals
+          for (size_t i = 0; i < size; i++) {
+              yp_constant_id_t constant_id = locals.ids[i];
+              ID local = compile_context->constants[constant_id - 1];
+              tbl->ids[i] = local;
+              st_insert(index_lookup_table, constant_id, i);
+          }
+
+          yp_compile_context_t scope_compile_context = {
+              .parser = parser,
+              .previous = compile_context,
+              .constants = compile_context->constants,
+              .index_lookup_table = index_lookup_table
+          };
+
+          ISEQ_BODY(iseq)->param.lead_num = (int)requireds_list.size;
+          ISEQ_BODY(iseq)->param.opt_num = (int)optionals_list.size;
+          // TODO: Set all the other nums (good comment by lead_num illustrating what they are)
+          ISEQ_BODY(iseq)->param.size = (unsigned int)size;
+
+          if (optionals_list.size) {
+              LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list.size + 1);
+              LABEL *label;
+
+              // TODO: Should we make an api for NEW_LABEL where you can pass
+              // a pointer to the label it should fill out?  We already
+              // have a list of labels allocated above so it seems wasteful
+              // to do the copies.
+              for (size_t i = 0; i < optionals_list.size; i++) {
+                  label = NEW_LABEL(lineno);
+                  opt_table[i] = label;
+                  ADD_LABEL(ret, label);
+                  yp_node_t *optional_node = optionals_list.nodes[i];
+                  yp_compile_node(iseq, optional_node, ret, src, false, &scope_compile_context);
+              }
+
+              // Set the last label
+              label = NEW_LABEL(lineno);
+              opt_table[optionals_list.size] = label;
+              ADD_LABEL(ret, label);
+
+              ISEQ_BODY(iseq)->param.flags.has_opt = TRUE;
+              ISEQ_BODY(iseq)->param.opt_table = (const VALUE *)opt_table;
+          }
+
+          iseq_set_local_table(iseq, tbl);
+
+          switch (ISEQ_BODY(iseq)->type) {
+            case ISEQ_TYPE_BLOCK:
+              {
+                  LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
+                  LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
+
+                  start->rescued = LABEL_RESCUE_BEG;
+                  end->rescued = LABEL_RESCUE_END;
+
+                  ADD_TRACE(ret, RUBY_EVENT_B_CALL);
+                  NODE dummy_line_node = generate_dummy_line_node(ISEQ_BODY(iseq)->location.first_lineno, -1);
+                  ADD_INSN (ret, &dummy_line_node, nop);
+                  ADD_LABEL(ret, start);
+
+                  yp_compile_node(iseq, (yp_node_t *)(scope_node->body), ret, src, popped, &scope_compile_context);
+
+                  ADD_LABEL(ret, end);
+                  ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
+                  ISEQ_COMPILE_DATA(iseq)->last_line = ISEQ_BODY(iseq)->location.code_location.end_pos.lineno;
+
+                  /* wide range catch handler must put at last */
+                  ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
+                  ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, NULL, end);
+                  break;
+              }
+            default:
+              if (scope_node->body) {
+                  yp_compile_node(iseq, (yp_node_t *)(scope_node->body), ret, src, popped, &scope_compile_context);
+              }
+              else {
+                  ADD_INSN(ret, &dummy_line_node, putnil);
+              }
+          }
+
+          free(index_lookup_table);
+
+          ADD_INSN(ret, &dummy_line_node, leave);
+          return;
+      }
       case YP_NODE_SELF_NODE:
         ADD_INSN(ret, &dummy_line_node, putself);
         return;
