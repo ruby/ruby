@@ -355,12 +355,12 @@ yp_new_child_iseq(rb_iseq_t *iseq, yp_scope_node_t * node, yp_parser_t *parser,
 
 
 static int
-yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node)
+yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node, const char * src, bool popped, yp_compile_context_t *compile_context)
 {
     if (constant_path_node->type == YP_NODE_CONSTANT_PATH_NODE) {
         if (((yp_constant_path_node_t *)constant_path_node)->parent) {
             /* Bar::Foo */
-            // TODO: yp_compile_node(ret, "nd_else->nd_head", cpath->nd_head));
+            yp_compile_node(iseq, ((yp_constant_path_node_t *)constant_path_node)->parent, ret, src, popped, compile_context);
             return VM_DEFINECLASS_FLAG_SCOPED;
         }
         else {
@@ -546,7 +546,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           // TODO: Once we merge constant path nodes correctly, fix this flag
           const int flags = VM_DEFINECLASS_TYPE_CLASS |
               (class_node->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
-              yp_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node);
+              yp_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node, src, popped, compile_context);
 
           if (class_node->superclass) {
               yp_compile_node(iseq, class_node->superclass, ret, src, popped, compile_context);
@@ -956,7 +956,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
 
           const int flags = VM_DEFINECLASS_TYPE_MODULE |
-              yp_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node);
+              yp_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, popped, compile_context);
 
           ADD_INSN (ret, &dummy_line_node, putnil);
           ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));

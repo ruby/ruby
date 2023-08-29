@@ -50,7 +50,7 @@ module YARP
     ############################################################################
 
     def test_ClassVariableReadNode
-      # assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; end; @@yct")
+      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; @@yct; end")
     end
 
     def test_ConstantPathNode
@@ -74,7 +74,7 @@ module YARP
     ############################################################################
 
     def test_ClassVariableWriteNode
-      # assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; end")
+      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; end")
     end
 
     def test_ConstantWriteNode
@@ -90,7 +90,7 @@ module YARP
     end
 
     def test_InstanceVariableWriteNode
-      # assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; end")
+      assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; end")
     end
 
     ############################################################################
