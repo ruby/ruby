@@ -388,7 +388,8 @@ yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *
  * compile_context - Stores parser and local information
  */
 static void
-yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context) {
+yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context)
+{
     yp_parser_t *parser = compile_context->parser;
     yp_newline_list_t newline_list = parser->newline_list;
     int lineno = (int)yp_newline_list_line_column(&newline_list, node->location.start).line;
@@ -457,7 +458,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_ASSOC_NODE: {
           yp_assoc_node_t *assoc_node = (yp_assoc_node_t *) node;
           yp_compile_node(iseq, assoc_node->key, ret, src, popped, compile_context);
-          yp_compile_node(iseq, assoc_node->value, ret, src, popped, compile_context);
+          if (assoc_node->value) {
+              yp_compile_node(iseq, assoc_node->value, ret, src, popped, compile_context);
+          }
           return;
       }
       case YP_NODE_ASSOC_SPLAT_NODE: {
@@ -1183,7 +1186,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   ADD_INSN (ret, &dummy_line_node, nop);
                   ADD_LABEL(ret, start);
 
-                  yp_compile_node(iseq, (yp_node_t *)(scope_node->body), ret, src, popped, &scope_compile_context);
+                  if (scope_node->body) {
+                      yp_compile_node(iseq, (yp_node_t *)(scope_node->body), ret, src, popped, &scope_compile_context);
+                  }
 
                   ADD_LABEL(ret, end);
                   ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
