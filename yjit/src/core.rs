@@ -40,6 +40,7 @@ pub type IseqIdx = u16;
 
 // Represent the type of a value (local/stack/self) in YJIT
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
+#[repr(u8)]
 pub enum Type {
     Unknown,
     UnknownImm,
@@ -288,6 +289,7 @@ pub enum TypeDiff {
 }
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
+#[repr(u8)]
 pub enum TempMappingKind
 {
     MapToStack = 0,
@@ -303,8 +305,8 @@ pub struct TempMapping(u8);
 impl TempMapping {
     pub fn map_to_stack(t: Type) -> TempMapping
     {
-        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(TempMappingKind::MapToStack) };
-        let type_bits = unsafe { transmute::<Type, u8>(t) };
+        let kind_bits = TempMappingKind::MapToStack as u8;
+        let type_bits = t as u8;
         assert!(type_bits < 32);
         let bits = (kind_bits << 6) | (type_bits & 31);
         TempMapping(bits)
@@ -312,14 +314,14 @@ impl TempMapping {
 
     pub fn map_to_self() -> TempMapping
     {
-        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(TempMappingKind::MapToSelf) };
+        let kind_bits = TempMappingKind::MapToSelf as u8;
         let bits = kind_bits << 6;
         TempMapping(bits)
     }
 
     pub fn map_to_local(local_idx: u8) -> TempMapping
     {
-        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(TempMappingKind::MapToLocal) };
+        let kind_bits = TempMappingKind::MapToLocal as u8;
         assert!(local_idx < 8);
         let bits = (kind_bits << 6) | (local_idx & 7);
         TempMapping(bits)
