@@ -307,8 +307,8 @@ impl TempMapping {
     {
         let kind_bits = TempMappingKind::MapToStack as u8;
         let type_bits = t as u8;
-        assert!(type_bits < 32);
-        let bits = (kind_bits << 6) | (type_bits & 31);
+        assert!(type_bits <= 0b11111);
+        let bits = (kind_bits << 6) | (type_bits & 0b11111);
         TempMapping(bits)
     }
 
