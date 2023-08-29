@@ -439,9 +439,9 @@ module IRB
       @scanner = RubyLex.new(@context)
     end
 
-    # A hook point for `debug` command's TracePoint after :IRB_EXIT as well as its clean-up
+    # A hook point for `debug` command's breakpoint after :IRB_EXIT as well as its clean-up
     def debug_break
-      # it means the debug command is executed
+      # it means the debug integration has been activated
       if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:capture_frames_without_irb)
         # after leaving this initial breakpoint, revert the capture_frames patch
         DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :capture_frames_without_irb)
@@ -547,14 +547,13 @@ module IRB
       each_top_level_statement do |statement, line_no|
         signal_status(:IN_EVAL) do
           begin
-            # If the integration with debugger is activated, we need to handle certain input differently
+            # If the integration with debugger is activated, we return certain input if it should be dealt with by debugger
             if @context.with_debugger && statement.should_be_handled_by_debugger?
               return statement.code
             end
 
             @context.evaluate(statement.evaluable_code, line_no)
 
-            # Don't echo if the line ends with a semicolon
             if @context.echo? && !statement.suppresses_echo?
               if statement.is_assignment?
                 if @context.echo_on_assignment?
