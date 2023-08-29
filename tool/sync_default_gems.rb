@@ -522,7 +522,7 @@ module SyncDefaultGems
   # nil:   failed
   #++
 
-  def resolve_conflicts(gem, sha)
+  def resolve_conflicts(gem, sha, edit)
     # Forcibly remove any files that we don't want to copy to this repository.
     # We also ignore them as new `toplevels` even when they don't conflict.
     ignored_paths = []
@@ -576,6 +576,7 @@ module SyncDefaultGems
     # AA: unmerged, both added
     unmerged = changes.map {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
     unmerged.compact!
+    ignore_file_pattern = ignore_file_pattern_for(gem)
     ignore, conflict = unmerged.partition {|name| ignore_file_pattern =~ name}
     # Reset ignored files if they conflict
     unless ignore.empty?
@@ -636,7 +637,7 @@ module SyncDefaultGems
     end
   end
 
-  def pickup_commit(gem, sha)
+  def pickup_commit(gem, sha, edit)
     # Attempt to cherry-pick a commit
     result = IO.popen(%W"git cherry-pick #{sha}", &:read)
     if result =~ /nothing\ to\ commit/
@@ -651,7 +652,7 @@ module SyncDefaultGems
     end
 
     # Skip the commit if it's empty or the cherry-pick attempt failed
-    if  /^CONFLICT/ =~ result and !resolve_conflicts(gem, sha)
+    if  /^CONFLICT/ =~ result and !resolve_conflicts(gem, sha, edit)
       `git reset` && `git checkout .` && `git clean -fd`
       return nil
     end
@@ -715,7 +716,7 @@ module SyncDefaultGems
     ]
     commits.each do |sha, subject|
       puts "Pick #{sha} from #{repo}."
-      case pickup_commit(gem, sha)
+      case pickup_commit(gem, sha, edit)
       when false
         next
       when nil
