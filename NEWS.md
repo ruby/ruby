@@ -70,6 +70,9 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
+  in the future version of Ruby. [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
+
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
   keyword argument. [[Feature #18183]]
 
@@ -171,8 +174,11 @@ changelog for details of the default gems or bundled gems.
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
+[Feature #19351]: https://bugs.ruby-lang.org/issues/19351
 [Feature #19521]: https://bugs.ruby-lang.org/issues/19521
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
+[Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
+[Feature #19843]: https://bugs.ruby-lang.org/issues/19843
