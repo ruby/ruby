@@ -4310,7 +4310,7 @@ rb_ary_reject(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.delete_if # => #<Enumerator: [:foo, "bar", 2]:delete_if>
  *
-3 */
+ */
 
 static VALUE
 rb_ary_delete_if(VALUE ary)
