@@ -7224,6 +7224,12 @@ parser_lex(yp_parser_t *parser) {
                         breakpoint = yp_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
                         break;
                     case '\\': {
+                        // Check that we're not at the end of the file.
+                        if (breakpoint + 1 >= parser->end) {
+                            breakpoint = NULL;
+                            break;
+                        }
+
                         // If we hit escapes, then we need to treat the next token
                         // literally. In this case we'll skip past the next character and
                         // find the next breakpoint.
