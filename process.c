@@ -1197,7 +1197,7 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *  This is an EXPERIMENTAL FEATURE.
  */
 
-VALUE
+static VALUE
 rb_process_status_waitv(int argc, VALUE *argv, VALUE _)
 {
     rb_check_arity(argc, 0, 2);
