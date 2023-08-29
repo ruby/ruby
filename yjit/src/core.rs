@@ -359,7 +359,7 @@ impl TempMapping {
 
         // Take the 3 lowest bits
         let TempMapping(bits) = self;
-        bits & 7
+        bits & 0b111
     }
 }
 
