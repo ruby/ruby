@@ -8,26 +8,16 @@ module YARP
     #
     # @@foo && @@foo = bar
     def visit_class_variable_and_write_node(node)
-      AndNode.new(
-        ClassVariableReadNode.new(node.name_loc),
-        ClassVariableWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_and_write_node(node, ClassVariableReadNode, ClassVariableWriteNode)
     end
 
     # @@foo ||= bar
     #
     # becomes
     #
-    # @@foo || @@foo = bar
+    # defined?(@@foo) ? @@foo : @@foo = bar
     def visit_class_variable_or_write_node(node)
-      OrNode.new(
-        ClassVariableReadNode.new(node.name_loc),
-        ClassVariableWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_or_write_defined_node(node, ClassVariableReadNode, ClassVariableWriteNode)
     end
 
     # @@foo += bar
@@ -36,7 +26,7 @@ module YARP
     #
     # @@foo = @@foo + bar
     def visit_class_variable_operator_write_node(node)
-      desugar_operator_write_node(node, ClassVariableWriteNode, ClassVariableReadNode)
+      desugar_operator_write_node(node, ClassVariableReadNode, ClassVariableWriteNode)
     end
 
     # Foo &&= bar
@@ -45,12 +35,7 @@ module YARP
     #
     # Foo && Foo = bar
     def visit_constant_and_write_node(node)
-      AndNode.new(
-        ConstantReadNode.new(node.name_loc),
-        ConstantWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_and_write_node(node, ConstantReadNode, ConstantWriteNode)
     end
 
     # Foo ||= bar
@@ -59,12 +44,7 @@ module YARP
     #
     # Foo || Foo = bar
     def visit_constant_or_write_node(node)
-      OrNode.new(
-        ConstantReadNode.new(node.name_loc),
-        ConstantWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_or_write_defined_node(node, ConstantReadNode, ConstantWriteNode)
     end
 
     # Foo += bar
@@ -73,7 +53,7 @@ module YARP
     #
     # Foo = Foo + bar
     def visit_constant_operator_write_node(node)
-      desugar_operator_write_node(node, ConstantWriteNode, ConstantReadNode)
+      desugar_operator_write_node(node, ConstantReadNode, ConstantWriteNode)
     end
 
     # Foo::Bar &&= baz
@@ -96,9 +76,19 @@ module YARP
     #
     # Foo::Bar || Foo::Bar = baz
     def visit_constant_path_or_write_node(node)
-      OrNode.new(
-        node.target,
-        ConstantPathWriteNode.new(node.target, node.value, node.operator_loc, node.location),
+      IfNode.new(
+        node.operator_loc,
+        DefinedNode.new(nil, node.target, nil, node.operator_loc, node.target.location),
+        StatementsNode.new([node.target], node.location),
+        ElseNode.new(
+          node.operator_loc,
+          StatementsNode.new(
+            [ConstantPathWriteNode.new(node.target, node.value, node.operator_loc, node.location)],
+            node.location
+          ),
+          node.operator_loc,
+          node.location
+        ),
         node.operator_loc,
         node.location
       )
@@ -135,12 +125,7 @@ module YARP
     #
     # $foo && $foo = bar
     def visit_global_variable_and_write_node(node)
-      AndNode.new(
-        GlobalVariableReadNode.new(node.name_loc),
-        GlobalVariableWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_and_write_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
     end
 
     # $foo ||= bar
@@ -149,12 +134,7 @@ module YARP
     #
     # $foo || $foo = bar
     def visit_global_variable_or_write_node(node)
-      OrNode.new(
-        GlobalVariableReadNode.new(node.name_loc),
-        GlobalVariableWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_or_write_defined_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
     end
 
     # $foo += bar
@@ -163,7 +143,7 @@ module YARP
     #
     # $foo = $foo + bar
     def visit_global_variable_operator_write_node(node)
-      desugar_operator_write_node(node, GlobalVariableWriteNode, GlobalVariableReadNode)
+      desugar_operator_write_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
     end
 
     # @foo &&= bar
@@ -172,12 +152,7 @@ module YARP
     #
     # @foo && @foo = bar
     def visit_instance_variable_and_write_node(node)
-      AndNode.new(
-        InstanceVariableReadNode.new(node.name, node.name_loc),
-        InstanceVariableWriteNode.new(node.name, node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_and_write_node(node, InstanceVariableReadNode, InstanceVariableWriteNode, arguments: [node.name])
     end
 
     # @foo ||= bar
@@ -186,12 +161,7 @@ module YARP
     #
     # @foo || @foo = bar
     def visit_instance_variable_or_write_node(node)
-      OrNode.new(
-        InstanceVariableReadNode.new(node.name, node.name_loc),
-        InstanceVariableWriteNode.new(node.name, node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_or_write_node(node, InstanceVariableReadNode, InstanceVariableWriteNode, arguments: [node.name])
     end
 
     # @foo += bar
@@ -200,7 +170,7 @@ module YARP
     #
     # @foo = @foo + bar
     def visit_instance_variable_operator_write_node(node)
-      desugar_operator_write_node(node, InstanceVariableWriteNode, InstanceVariableReadNode, arguments: [node.name])
+      desugar_operator_write_node(node, InstanceVariableReadNode, InstanceVariableWriteNode, arguments: [node.name])
     end
 
     # foo &&= bar
@@ -209,12 +179,7 @@ module YARP
     #
     # foo && foo = bar
     def visit_local_variable_and_write_node(node)
-      AndNode.new(
-        LocalVariableReadNode.new(node.name, node.depth, node.name_loc),
-        LocalVariableWriteNode.new(node.name, node.depth, node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_and_write_node(node, LocalVariableReadNode, LocalVariableWriteNode, arguments: [node.name, node.depth])
     end
 
     # foo ||= bar
@@ -223,12 +188,7 @@ module YARP
     #
     # foo || foo = bar
     def visit_local_variable_or_write_node(node)
-      OrNode.new(
-        LocalVariableReadNode.new(node.name, node.depth, node.name_loc),
-        LocalVariableWriteNode.new(node.name, node.depth, node.name_loc, node.value, node.operator_loc, node.location),
-        node.operator_loc,
-        node.location
-      )
+      desugar_or_write_node(node, LocalVariableReadNode, LocalVariableWriteNode, arguments: [node.name, node.depth])
     end
 
     # foo += bar
@@ -237,13 +197,23 @@ module YARP
     #
     # foo = foo + bar
     def visit_local_variable_operator_write_node(node)
-      desugar_operator_write_node(node, LocalVariableWriteNode, LocalVariableReadNode, arguments: [node.name, node.depth])
+      desugar_operator_write_node(node, LocalVariableReadNode, LocalVariableWriteNode, arguments: [node.name, node.depth])
     end
 
     private
 
+    # Desugar `x &&= y` to `x && x = y`
+    def desugar_and_write_node(node, read_class, write_class, arguments: [])
+      AndNode.new(
+        read_class.new(*arguments, node.name_loc),
+        write_class.new(*arguments, node.name_loc, node.value, node.operator_loc, node.location),
+        node.operator_loc,
+        node.location
+      )
+    end
+
     # Desugar `x += y` to `x = x + y`
-    def desugar_operator_write_node(node, write_class, read_class, arguments: [])
+    def desugar_operator_write_node(node, read_class, write_class, arguments: [])
       write_class.new(
         *arguments,
         node.name_loc,
@@ -260,6 +230,36 @@ module YARP
           node.location
         ),
         node.operator_loc.copy(start_offset: node.operator_loc.end_offset - 1, length: 1),
+        node.location
+      )
+    end
+
+    # Desugar `x ||= y` to `x || x = y`
+    def desugar_or_write_node(node, read_class, write_class, arguments: [])
+      OrNode.new(
+        read_class.new(*arguments, node.name_loc),
+        write_class.new(*arguments, node.name_loc, node.value, node.operator_loc, node.location),
+        node.operator_loc,
+        node.location
+      )
+    end
+
+    # Don't desugar `x ||= y` to `defined?(x) ? x : x = y`
+    def desugar_or_write_defined_node(node, read_class, write_class)
+      IfNode.new(
+        node.operator_loc,
+        DefinedNode.new(nil, read_class.new(node.name_loc), nil, node.operator_loc, node.name_loc),
+        StatementsNode.new([read_class.new(node.name_loc)], node.location),
+        ElseNode.new(
+          node.operator_loc,
+          StatementsNode.new(
+            [write_class.new(node.name_loc, node.value, node.operator_loc, node.location)],
+            node.location
+          ),
+          node.operator_loc,
+          node.location
+        ),
+        node.operator_loc,
         node.location
       )
     end

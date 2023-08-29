@@ -14,10 +14,10 @@ class DesugarVisitorTest < Test::Unit::TestCase
   end
 
   def test_or_write
-    assert_desugars("(OrNode (ClassVariableReadNode) (ClassVariableWriteNode (CallNode)))", "@@foo ||= bar")
-    assert_desugars("(OrNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (ConstantPathWriteNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (CallNode)))", "Foo::Bar ||= baz")
-    assert_desugars("(OrNode (ConstantReadNode) (ConstantWriteNode (CallNode)))", "Foo ||= bar")
-    assert_desugars("(OrNode (GlobalVariableReadNode) (GlobalVariableWriteNode (CallNode)))", "$foo ||= bar")
+    assert_desugars("(IfNode (DefinedNode (ClassVariableReadNode)) (StatementsNode (ClassVariableReadNode)) (ElseNode (StatementsNode (ClassVariableWriteNode (CallNode)))))", "@@foo ||= bar")
+    assert_desugars("(IfNode (DefinedNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode))) (StatementsNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode))) (ElseNode (StatementsNode (ConstantPathWriteNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (CallNode)))))", "Foo::Bar ||= baz")
+    assert_desugars("(IfNode (DefinedNode (ConstantReadNode)) (StatementsNode (ConstantReadNode)) (ElseNode (StatementsNode (ConstantWriteNode (CallNode)))))", "Foo ||= bar")
+    assert_desugars("(IfNode (DefinedNode (GlobalVariableReadNode)) (StatementsNode (GlobalVariableReadNode)) (ElseNode (StatementsNode (GlobalVariableWriteNode (CallNode)))))", "$foo ||= bar")
     assert_desugars("(OrNode (InstanceVariableReadNode) (InstanceVariableWriteNode (CallNode)))", "@foo ||= bar")
     assert_desugars("(OrNode (LocalVariableReadNode) (LocalVariableWriteNode (CallNode)))", "foo ||= bar")
     assert_desugars("(OrNode (LocalVariableReadNode) (LocalVariableWriteNode (CallNode)))", "foo = 1; foo ||= bar")
