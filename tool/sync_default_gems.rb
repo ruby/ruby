@@ -399,8 +399,9 @@ module SyncDefaultGems
     when "yarp"
       # We don't want to remove yarp_init.c, so we temporarily move it
       # out of the yarp dir, wipe the yarp dir, and then put it back
-      mv("yarp/yarp_init.c", ".") if File.exist? "yarp/yarp_init.c"
-      mv("yarp/yarp_compiler.c", ".") if File.exist? "yarp/yarp_compiler.c"
+      mv("yarp/yarp_init.c", ".")
+      mv("yarp/yarp_compiler.c", ".")
+      mv("test/yarp/compiler_test.rb", ".")
       rm_rf(%w[test/yarp yarp])
 
       # Run the YARP templating scripts
@@ -419,6 +420,7 @@ module SyncDefaultGems
       rm("yarp/extconf.rb")
       mv("yarp_init.c", "yarp/")
       mv("yarp_compiler.c", "yarp/")
+      mv("compiler_test.rb", "test/yarp/")
     else
       sync_lib gem, upstream
     end

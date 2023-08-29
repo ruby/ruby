@@ -199,7 +199,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(190...204)(
        (199...200),
-       InstanceVariableReadNode(194...198)(),
+       InstanceVariableReadNode(194...198)(:var),
        nil,
        nil,
        [],

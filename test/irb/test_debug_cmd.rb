@@ -331,6 +331,39 @@ module TestIRB
       assert_include(output, "InputMethod: RelineInputMethod")
     end
 
+    def test_help_command_is_delegated_to_the_debugger
+      write_ruby <<~'ruby'
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "help"
+        type "continue"
+      end
+
+      assert_include(output, "### Frame control")
+    end
+
+    def test_show_cmds_display_different_content_when_debugger_is_enabled
+      write_ruby <<~'ruby'
+        # disable pager
+        STDIN.singleton_class.define_method(:tty?) { false }
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type "show_cmds"
+        type "continue"
+      end
+
+      # IRB's commands should still be listed
+      assert_match(/show_cmds\s+List all available commands and their description\./, output)
+      # debug gem's commands should be appended at the end
+      assert_match(/Debugging \(from debug\.gem\)\s+### Control flow/, output)
+    end
+
     def test_input_is_evaluated_in_the_context_of_the_current_thread
       write_ruby <<~'ruby'
         current_thread = Thread.current
