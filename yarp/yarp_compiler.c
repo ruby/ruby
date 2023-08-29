@@ -42,6 +42,37 @@ parse_location_symbol(yp_location_t *location) {
     return parse_symbol(location->start, location->end);
 }
 
+static int
+yp_optimizable_range_item_p(yp_node_t *node)
+{
+    return (!node || node->type == YP_NODE_INTEGER_NODE || node->type == YP_NODE_NIL_NODE);
+}
+
+static void yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *context);
+
+static int
+yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node)
+{
+    if (constant_path_node->type == YP_NODE_CONSTANT_PATH_NODE) {
+        if (((yp_constant_path_node_t *)constant_path_node)->parent) {
+            /* Bar::Foo */
+            // TODO: yp_compile_node(ret, "nd_else->nd_head", cpath->nd_head));
+            return VM_DEFINECLASS_FLAG_SCOPED;
+        }
+        else {
+            /* toplevel class ::Foo */
+            ADD_INSN1(ret, line_node, putobject, rb_cObject);
+            return VM_DEFINECLASS_FLAG_SCOPED;
+        }
+    }
+    else {
+        /* class at cbase Foo */
+        ADD_INSN1(ret, line_node, putspecialobject,
+                INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+        return 0;
+    }
+}
+
 /*
  * Compiles a YARP node into instruction sequences
  *
@@ -519,6 +550,42 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
 
           ADD_INSN(ret, &dummy_line_node, leave);
+          return;
+      }
+      case YP_NODE_RANGE_NODE: {
+          yp_range_node_t *range_node = (yp_range_node_t *) node;
+          bool exclusive = (range_node->operator_loc.end - range_node->operator_loc.start) == 3;
+
+          if (yp_optimizable_range_item_p(range_node->left) && yp_optimizable_range_item_p(range_node->right))  {
+              if (!popped) {
+                  yp_node_t *left = range_node->left;
+                  yp_node_t *right = range_node->right;
+                  VALUE val = rb_range_new(
+                          left && left->type == YP_NODE_INTEGER_NODE ? parse_number(left) : Qnil,
+                          right && right->type == YP_NODE_INTEGER_NODE ? parse_number(right) : Qnil,
+                          exclusive
+                          );
+                  ADD_INSN1(ret, &dummy_line_node, putobject, val);
+                  RB_OBJ_WRITTEN(iseq, Qundef, val);
+              }
+          }
+          else {
+              if (range_node->left == NULL) {
+                  ADD_INSN(ret, &dummy_line_node, putnil);
+              } else {
+                  yp_compile_node(iseq, range_node->left, ret, src, popped, compile_context);
+              }
+
+              if (range_node->right == NULL) {
+                  ADD_INSN(ret, &dummy_line_node, putnil);
+              } else {
+                  yp_compile_node(iseq, range_node->right, ret, src, popped, compile_context);
+              }
+
+              if (!popped) {
+                  ADD_INSN1(ret, &dummy_line_node, newrange, INT2FIX(exclusive));
+              }
+          }
           return;
       }
       case YP_NODE_RETURN_NODE: {
