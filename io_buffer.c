@@ -2181,8 +2181,8 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *  call-seq:
  *    copy(source, [offset, [length, [source_offset]]]) -> size
  *
- *  Efficiently copy buffer from a source IO::Buffer into the buffer,
- *  at +offset+ using +memcpy+. For copying String instances, see #set_string.
+ *  Efficiently copy from a source IO::Buffer into the buffer, at +offset+
+ *  using +memcpy+. For copying String instances, see #set_string.
  *
  *    buffer = IO::Buffer.new(32)
  *    # =>
