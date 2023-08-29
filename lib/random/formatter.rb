@@ -241,7 +241,7 @@ module Random::Formatter
   #   prng = Random.new
   #   prng.alphanumeric(10) #=> "i6K93NdqiH"
   #
-  #   Random.alphanumeric(4, chars: [*"0".."9"])' #=> "2952"
+  #   Random.alphanumeric(4, chars: [*"0".."9"]) #=> "2952"
   #   # or
   #   prng = Random.new
   #   prng.alphanumeric(10, chars: [*"!".."/"]) #=> ",.,++%/''."
