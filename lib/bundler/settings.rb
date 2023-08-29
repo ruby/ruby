@@ -104,10 +104,9 @@ module Bundler
 
       value = nil
       configs.each do |_, config|
-        if config[key]
-          value = config[key]
-          break
-        end
+        value = config[key]
+        next if value.nil?
+        break
       end
 
       converted_value(value, name)
