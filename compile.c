@@ -878,7 +878,7 @@ rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t *yarp_pointer, yp_pa
         yp_constant_t constant = parser->constant_pool.constants[index];
 
         if (constant.id != 0) {
-            constants[constant.id - 1] = rb_intern3(constant.start, constant.length, encoding);
+            constants[constant.id - 1] = rb_intern3((const char *) constant.start, constant.length, encoding);
         }
     }
 

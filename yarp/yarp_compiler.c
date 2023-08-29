@@ -2,8 +2,8 @@
 
 static VALUE
 parse_number(const yp_node_t *node) {
-    const char *start = node->location.start;
-    const char *end = node->location.end;
+    const uint8_t *start = node->location.start;
+    const uint8_t *end = node->location.end;
     size_t length = end - start;
 
     char *buffer = malloc(length + 1);
@@ -18,12 +18,12 @@ parse_number(const yp_node_t *node) {
 
 static inline VALUE
 parse_string(yp_string_t *string) {
-    return rb_str_new(yp_string_source(string), yp_string_length(string));
+    return rb_str_new((const char *) yp_string_source(string), yp_string_length(string));
 }
 
 static inline ID
-parse_symbol(const char *start, const char *end) {
-    return rb_intern2(start, end - start);
+parse_symbol(const uint8_t *start, const uint8_t *end) {
+    return rb_intern2((const char *) start, end - start);
 }
 
 static inline ID
@@ -33,7 +33,7 @@ parse_node_symbol(yp_node_t *node) {
 
 static inline ID
 parse_string_symbol(yp_string_t *string) {
-    const char *start = yp_string_source(string);
+    const uint8_t *start = yp_string_source(string);
     return parse_symbol(start, start + yp_string_length(string));
 }
 
@@ -53,7 +53,7 @@ parse_location_symbol(yp_location_t *location) {
  * compile_context - Stores parser and local information
  */
 static void
-yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context) {
+yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, yp_compile_context_t *compile_context) {
     yp_parser_t *parser = compile_context->parser;
     yp_newline_list_t newline_list = parser->newline_list;
     int lineno = (int)yp_newline_list_line_column(&newline_list, node->location.start).line;
