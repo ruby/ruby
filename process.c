@@ -4732,7 +4732,7 @@ rb_spawn(int argc, const VALUE *argv)
  *    system('date > /nop/date.tmp')                  # => false
  *    system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
  *
- *  Assigns the command’s error status to <tt>$?</tt>:
+ *  Assigns the command's error status to <tt>$?</tt>:
  *
  *    system('echo')                             # => true  # Built-in.
  *    $?                                         # => #<Process::Status: pid 640610 exit 0>
