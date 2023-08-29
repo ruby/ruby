@@ -176,6 +176,25 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_name));
           return;
       }
+      case YP_NODE_DEFINED_NODE: {
+          ADD_INSN(ret, &dummy_line_node, putself);
+          yp_defined_node_t *defined_node = (yp_defined_node_t *)node;
+          enum defined_type dtype = DEFINED_CONST;
+          VALUE sym;
+
+          sym = parse_number(defined_node->value);
+
+          ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(dtype), sym, rb_iseq_defined_string(dtype));
+          return;
+      }
+      case YP_NODE_EMBEDDED_STATEMENTS_NODE: {
+          yp_embedded_statements_node_t *embedded_statements_node = (yp_embedded_statements_node_t *)node;
+
+          if (embedded_statements_node->statements)
+              yp_compile_node(iseq, (yp_node_t *) (embedded_statements_node->statements), ret, src, popped, compile_context);
+          // TODO: Concatenate the strings that exist here
+          return;
+      }
       case YP_NODE_EMBEDDED_VARIABLE_NODE: {
           yp_embedded_variable_node_t *embedded_node = (yp_embedded_variable_node_t *)node;
           yp_compile_node(iseq, embedded_node->variable, ret, src, popped, compile_context);
@@ -312,8 +331,76 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
           return;
       }
+      case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
+          yp_local_variable_read_node_t *local_read_node = (yp_local_variable_read_node_t *) node;
+
+          yp_constant_id_t constant_id = local_read_node->name;
+          st_data_t local_index;
+
+          for(uint32_t i = 0; i < local_read_node->depth; i++) {
+              compile_context = compile_context->previous;
+              iseq = (rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq;
+          }
+
+          int num_params = ISEQ_BODY(iseq)->param.size;
+
+          if (!st_lookup(compile_context->index_lookup_table, constant_id, &local_index)) {
+              rb_bug("This local does not exist");
+          }
+
+          int index = num_params - (int)local_index;
+
+          if (!popped) {
+              ADD_GETLOCAL(ret, &dummy_line_node, index, local_read_node->depth);
+          }
+          return;
+      }
+      case YP_NODE_LOCAL_VARIABLE_WRITE_NODE: {
+          yp_local_variable_write_node_t *local_write_node = (yp_local_variable_write_node_t *) node;
+
+          // TODO: Unclear how we get into the case where this has no value
+          if (local_write_node->value) {
+              yp_compile_node(iseq, local_write_node->value, ret, src, false, compile_context);
+          }
+          else {
+              rb_bug("???");
+          }
+
+          if (!popped)
+              ADD_INSN(ret, &dummy_line_node, dup);
+
+          yp_constant_id_t constant_id = local_write_node->name;
+          size_t stack_index;
+
+          if (!st_lookup(compile_context->index_lookup_table, constant_id, &stack_index)) {
+              rb_bug("This local doesn't exist");
+          }
+
+          unsigned int num_params = ISEQ_BODY(iseq)->param.size;
+          size_t index = num_params - stack_index;
+
+          ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
+          return;
+      }
       case YP_NODE_MISSING_NODE: {
           rb_bug("A yp_missing_node_t should not exist in YARP's AST.");
+          return;
+      }
+      case YP_NODE_MULTI_WRITE_NODE: {
+          yp_multi_write_node_t *multi_write_node = (yp_multi_write_node_t *)node;
+          yp_compile_node(iseq, multi_write_node->value, ret, src, popped, compile_context);
+
+          // TODO: int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
+          int flag = 0x00;
+
+          ADD_INSN(ret, &dummy_line_node, dup);
+          ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(multi_write_node->targets.size), INT2FIX(flag));
+          yp_node_list_t node_list = multi_write_node->targets;
+
+          for (size_t index = 0; index < node_list.size; index++) {
+              yp_compile_node(iseq, node_list.nodes[index], ret, src, popped, compile_context);
+          }
+
           return;
       }
       case YP_NODE_NIL_NODE:
@@ -337,6 +424,24 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           yp_compile_node(iseq, or_node->right, ret, src, popped, compile_context);
           ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_OPTIONAL_PARAMETER_NODE: {
+          yp_optional_parameter_node_t *optional_parameter_node = (yp_optional_parameter_node_t *)node;
+          yp_compile_node(iseq, optional_parameter_node->value, ret, src, false, compile_context);
+
+          yp_constant_id_t constant_id = optional_parameter_node->name;
+
+          size_t param_number;
+          if (!st_lookup(compile_context->index_lookup_table, constant_id, &param_number)) {
+              rb_bug("This local doesn't exist");
+          }
+
+          unsigned int num_params = ISEQ_BODY(iseq)->param.size;
+          int index = (int) (num_params - param_number);
+
+          ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
 
           return;
       }
@@ -384,6 +489,17 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_SELF_NODE:
         ADD_INSN(ret, &dummy_line_node, putself);
         return;
+      case YP_NODE_SPLAT_NODE: {
+          yp_splat_node_t *splat_node = (yp_splat_node_t *)node;
+          yp_compile_node(iseq, splat_node->expression, ret, src, popped, compile_context);
+
+          ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+          return;
+      }
       case YP_NODE_STATEMENTS_NODE: {
           yp_statements_node_t *statements_node = (yp_statements_node_t *) node;
           yp_node_list_t node_list = statements_node->body;
@@ -441,6 +557,28 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN(ret, &dummy_line_node, putself);
           ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&xstring_node->unescaped));
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, rb_intern("`"), INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+          return;
+      }
+      case YP_NODE_YIELD_NODE: {
+          unsigned int flag = 0;
+          struct rb_callinfo_kwarg *keywords = NULL;
+
+          VALUE argc = INT2FIX(0);
+
+          ADD_INSN1(ret, &dummy_line_node, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), flag, keywords, FALSE));
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          int level = 0;
+          const rb_iseq_t *tmp_iseq = iseq;
+          for (; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++ ) {
+              tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
+          }
+
+          if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
+
           return;
       }
       default:
