@@ -246,7 +246,7 @@ parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
     yp_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { rb_str_new(yp_string_source(input), yp_string_length(input)), offsets };
+    VALUE source_argv[] = { rb_str_new((const char *) yp_string_source(input), yp_string_length(input)), offsets };
     VALUE source = rb_class_new_instance(2, source_argv, rb_cYARPSource);
 
     parse_lex_data_t parse_lex_data = {
@@ -428,7 +428,7 @@ named_captures(VALUE self, VALUE source) {
     yp_string_list_t string_list;
     yp_string_list_init(&string_list);
 
-    if (!yp_regexp_named_capture_group_names(RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
+    if (!yp_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
         yp_string_list_free(&string_list);
         return Qnil;
     }
@@ -436,7 +436,7 @@ named_captures(VALUE self, VALUE source) {
     VALUE names = rb_ary_new();
     for (size_t index = 0; index < string_list.length; index++) {
         const yp_string_t *string = &string_list.strings[index];
-        rb_ary_push(names, rb_str_new(yp_string_source(string), yp_string_length(string)));
+        rb_ary_push(names, rb_str_new((const char *) yp_string_source(string), yp_string_length(string)));
     }
 
     yp_string_list_free(&string_list);
@@ -449,8 +449,8 @@ static VALUE
 unescape(VALUE source, yp_unescape_type_t unescape_type) {
     yp_string_t result;
 
-    if (yp_unescape_string(RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
-        VALUE str = rb_str_new(yp_string_source(&result), yp_string_length(&result));
+    if (yp_unescape_string((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
+        VALUE str = rb_str_new((const char *) yp_string_source(&result), yp_string_length(&result));
         yp_string_free(&result);
         return str;
     } else {
@@ -484,7 +484,7 @@ static VALUE
 memsize(VALUE self, VALUE string) {
     yp_parser_t parser;
     size_t length = RSTRING_LEN(string);
-    yp_parser_init(&parser, RSTRING_PTR(string), length, NULL);
+    yp_parser_init(&parser, (const uint8_t *) RSTRING_PTR(string), length, NULL);
 
     yp_node_t *node = yp_parse(&parser);
     yp_memsize_t memsize;

@@ -3,7 +3,7 @@
 // Initialize a new newline list with the given capacity. Returns true if the
 // allocation of the offsets succeeds, otherwise returns false.
 bool
-yp_newline_list_init(yp_newline_list_t *list, const char *start, size_t capacity) {
+yp_newline_list_init(yp_newline_list_t *list, const uint8_t *start, size_t capacity) {
     list->offsets = (size_t *) calloc(capacity, sizeof(size_t));
     if (list->offsets == NULL) return false;
 
@@ -23,7 +23,7 @@ yp_newline_list_init(yp_newline_list_t *list, const char *start, size_t capacity
 // Append a new offset to the newline list. Returns true if the reallocation of
 // the offsets succeeds (if one was necessary), otherwise returns false.
 bool
-yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
+yp_newline_list_append(yp_newline_list_t *list, const uint8_t *cursor) {
     if (list->size == list->capacity) {
         list->capacity = (list->capacity * 3) / 2;
         list->offsets = (size_t *) realloc(list->offsets, list->capacity * sizeof(size_t));
@@ -33,6 +33,7 @@ yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
     assert(*cursor == '\n');
     assert(cursor >= list->start);
     size_t newline_offset = (size_t) (cursor - list->start + 1);
+
     assert(list->size == 0 || newline_offset > list->offsets[list->size - 1]);
     list->offsets[list->size++] = newline_offset;
 
@@ -41,7 +42,7 @@ yp_newline_list_append(yp_newline_list_t *list, const char *cursor) {
 
 // Conditionally append a new offset to the newline list, if the value passed in is a newline.
 bool
-yp_newline_list_check_append(yp_newline_list_t *list, const char *cursor) {
+yp_newline_list_check_append(yp_newline_list_t *list, const uint8_t *cursor) {
     if (*cursor != '\n') {
         return true;
     }
@@ -105,7 +106,7 @@ yp_newline_list_line_column_scan(yp_newline_list_t *list, size_t offset) {
 // list, the line and column of the closest offset less than the given offset
 // are returned.
 yp_line_column_t
-yp_newline_list_line_column(yp_newline_list_t *list, const char *cursor) {
+yp_newline_list_line_column(yp_newline_list_t *list, const uint8_t *cursor) {
     assert(cursor >= list->start);
     size_t offset = (size_t) (cursor - list->start);
     yp_line_column_t result;

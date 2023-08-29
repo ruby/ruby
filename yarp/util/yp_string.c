@@ -12,18 +12,19 @@
 
 // Initialize a shared string that is based on initial input.
 void
-yp_string_shared_init(yp_string_t *string, const char *start, const char *end) {
+yp_string_shared_init(yp_string_t *string, const uint8_t *start, const uint8_t *end) {
     assert(start <= end);
+
     *string = (yp_string_t) {
         .type = YP_STRING_SHARED,
-        .source = (char*) start,
+        .source = start,
         .length = (size_t) (end - start)
     };
 }
 
 // Initialize an owned string that is responsible for freeing allocated memory.
 void
-yp_string_owned_init(yp_string_t *string, char *source, size_t length) {
+yp_string_owned_init(yp_string_t *string, uint8_t *source, size_t length) {
     *string = (yp_string_t) {
         .type = YP_STRING_OWNED,
         .source = source,
@@ -36,13 +37,13 @@ void
 yp_string_constant_init(yp_string_t *string, const char *source, size_t length) {
     *string = (yp_string_t) {
         .type = YP_STRING_CONSTANT,
-        .source = (char*) source,
+        .source = (const uint8_t *) source,
         .length = length
     };
 }
 
 static void
-yp_string_mapped_init_internal(yp_string_t *string, char *source, size_t length) {
+yp_string_mapped_init_internal(yp_string_t *string, uint8_t *source, size_t length) {
     *string = (yp_string_t) {
         .type = YP_STRING_MAPPED,
         .source = source,
@@ -67,13 +68,13 @@ yp_string_ensure_owned(yp_string_t *string) {
     if (string->type == YP_STRING_OWNED) return;
 
     size_t length = yp_string_length(string);
-    const char *source = yp_string_source(string);
+    const uint8_t *source = yp_string_source(string);
 
-    char *memory = malloc(length);
+    uint8_t *memory = malloc(length);
     if (!memory) return;
 
     yp_string_owned_init(string, memory, length);
-    memcpy(string->source, source, length);
+    memcpy((void *) string->source, source, length);
 }
 
 // Returns the length associated with the string.
@@ -83,7 +84,7 @@ yp_string_length(const yp_string_t *string) {
 }
 
 // Returns the start pointer associated with the string.
-YP_EXPORTED_FUNCTION const char *
+YP_EXPORTED_FUNCTION const uint8_t *
 yp_string_source(const yp_string_t *string) {
     return string->source;
 }
@@ -91,15 +92,16 @@ yp_string_source(const yp_string_t *string) {
 // Free the associated memory of the given string.
 YP_EXPORTED_FUNCTION void
 yp_string_free(yp_string_t *string) {
+    void *memory = (void *) string->source;
+
     if (string->type == YP_STRING_OWNED) {
-        free(string->source);
+        free(memory);
     } else if (string->type == YP_STRING_MAPPED && string->length) {
-        void *memory = (void *) string->source;
-        #if defined(_WIN32)
+#if defined(_WIN32)
         UnmapViewOfFile(memory);
-        #else
+#else
         munmap(memory, string->length);
-        #endif
+#endif
     }
 }
 
@@ -126,8 +128,8 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        char empty_string[] = "";
-        yp_string_mapped_init_internal(string, empty_string, 0);
+        uint8_t empty[] = "";
+        yp_string_mapped_init_internal(string, empty, 0);
         return true;
     }
 
@@ -140,7 +142,7 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
     }
 
     // Map the file into memory.
-    char *source = (char *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+    uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(mapping);
     CloseHandle(file);
 
@@ -169,12 +171,12 @@ yp_string_mapped_init(yp_string_t *string, const char *filepath) {
 
     // mmap the file descriptor to virtually get the contents
     size_t size = (size_t) sb.st_size;
-    char *source = NULL;
+    uint8_t *source = NULL;
 
     if (size == 0) {
         close(fd);
-        char empty_string[] = "";
-        yp_string_mapped_init_internal(string, empty_string, 0);
+        uint8_t empty[] = "";
+        yp_string_mapped_init_internal(string, empty, 0);
         return true;
     }
 

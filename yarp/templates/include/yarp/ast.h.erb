@@ -21,15 +21,15 @@ typedef enum yp_token_type {
 // type and location information.
 typedef struct {
     yp_token_type_t type;
-    const char *start;
-    const char *end;
+    const uint8_t *start;
+    const uint8_t *end;
 } yp_token_t;
 
 // This represents a range of bytes in the source string to which a node or
 // token corresponds.
 typedef struct {
-    const char *start;
-    const char *end;
+    const uint8_t *start;
+    const uint8_t *end;
 } yp_location_t;
 
 typedef struct {

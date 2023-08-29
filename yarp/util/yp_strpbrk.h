@@ -24,6 +24,6 @@
 // characters that are trailing bytes of multi-byte characters. For example, in
 // Shift-JIS, the backslash character can be a trailing byte. In that case we
 // need to take a slower path and iterate one multi-byte character at a time.
-const char * yp_strpbrk(yp_parser_t *parser, const char *source, const char *charset, ptrdiff_t length);
+const uint8_t * yp_strpbrk(yp_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length);
 
 #endif

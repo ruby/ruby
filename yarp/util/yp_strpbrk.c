@@ -1,12 +1,12 @@
 #include "yarp/util/yp_strpbrk.h"
 
 // This is the slow path that does care about the encoding.
-static inline const char *
-yp_strpbrk_multi_byte(yp_parser_t *parser, const char *source, const char *charset, size_t maximum) {
+static inline const uint8_t *
+yp_strpbrk_multi_byte(yp_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t maximum) {
     size_t index = 0;
 
     while (index < maximum) {
-        if (strchr(charset, source[index]) != NULL) {
+        if (strchr((const char *) charset, source[index]) != NULL) {
             return source + index;
         }
 
@@ -22,12 +22,12 @@ yp_strpbrk_multi_byte(yp_parser_t *parser, const char *source, const char *chars
 }
 
 // This is the fast path that does not care about the encoding.
-static inline const char *
-yp_strpbrk_single_byte(const char *source, const char *charset, size_t maximum) {
+static inline const uint8_t *
+yp_strpbrk_single_byte(const uint8_t *source, const uint8_t *charset, size_t maximum) {
     size_t index = 0;
 
     while (index < maximum) {
-        if (strchr(charset, source[index]) != NULL) {
+        if (strchr((const char *) charset, source[index]) != NULL) {
             return source + index;
         }
 
@@ -54,8 +54,8 @@ yp_strpbrk_single_byte(const char *source, const char *charset, size_t maximum) 
 // characters that are trailing bytes of multi-byte characters. For example, in
 // Shift-JIS, the backslash character can be a trailing byte. In that case we
 // need to take a slower path and iterate one multi-byte character at a time.
-const char *
-yp_strpbrk(yp_parser_t *parser, const char *source, const char *charset, ptrdiff_t length) {
+const uint8_t *
+yp_strpbrk(yp_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length) {
     if (length <= 0) {
         return NULL;
     } else if (parser->encoding_changed && parser->encoding.multibyte) {

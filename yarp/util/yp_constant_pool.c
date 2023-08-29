@@ -48,12 +48,12 @@ yp_constant_id_list_free(yp_constant_id_list_t *list) {
 // A relatively simple hash function (djb2) that is used to hash strings. We are
 // optimizing here for simplicity and speed.
 static inline size_t
-yp_constant_pool_hash(const char *start, size_t length) {
+yp_constant_pool_hash(const uint8_t *start, size_t length) {
     // This is a prime number used as the initial value for the hash function.
     size_t value = 5381;
 
     for (size_t index = 0; index < length; index++) {
-        value = ((value << 5) + value) + ((unsigned char) start[index]);
+        value = ((value << 5) + value) + start[index];
     }
 
     return value;
@@ -109,7 +109,7 @@ yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity) {
 // Insert a constant into a constant pool. Returns the id of the constant, or 0
 // if any potential calls to resize fail.
 yp_constant_id_t
-yp_constant_pool_insert(yp_constant_pool_t *pool, const char *start, size_t length) {
+yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t length) {
     if (pool->size >= (pool->capacity / 4 * 3)) {
         if (!yp_constant_pool_resize(pool)) return 0;
     }

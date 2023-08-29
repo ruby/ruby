@@ -13,9 +13,6 @@ typedef struct {
     size_t capacity;
 } yp_string_list_t;
 
-// Allocate a new yp_string_list_t.
-yp_string_list_t * yp_string_list_alloc(void);
-
 // Initialize a yp_string_list_t with its default values.
 YP_EXPORTED_FUNCTION void yp_string_list_init(yp_string_list_t *string_list);
 

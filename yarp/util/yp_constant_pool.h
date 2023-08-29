@@ -40,7 +40,7 @@ void yp_constant_id_list_free(yp_constant_id_list_t *list);
 
 typedef struct {
     yp_constant_id_t id;
-    const char *start;
+    const uint8_t *start;
     size_t length;
     size_t hash;
 } yp_constant_t;
@@ -59,7 +59,7 @@ bool yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity);
 
 // Insert a constant into a constant pool. Returns the id of the constant, or 0
 // if any potential calls to resize fail.
-yp_constant_id_t yp_constant_pool_insert(yp_constant_pool_t *pool, const char *start, size_t length);
+yp_constant_id_t yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t length);
 
 // Free the memory associated with a constant pool.
 void yp_constant_pool_free(yp_constant_pool_t *pool);
