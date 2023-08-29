@@ -100,7 +100,7 @@ yp_static_literal_value(yp_node_t *node)
         return Qfalse;
         // TODO: Implement this method for the other literal nodes described above
       default:
-        rb_bug("This node type doesn't have a literal valuej");
+        rb_bug("This node type doesn't have a literal value");
     }
 }
 
@@ -423,7 +423,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_CALL_NODE: {
           yp_call_node_t *call_node = (yp_call_node_t *) node;
 
-          ID mid = parse_location_symbol(&call_node->message_loc);
+          ID mid = parse_string_symbol(&call_node->name);
           int flags = 0;
           int orig_argc = 0;
 
@@ -475,13 +475,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_scope_node_t scope_node;
           yp_scope_node_init((yp_node_t *)class_node, &scope_node);
 
-          yp_node_t *recursing_node = class_node->constant_path;
-
-          while (recursing_node->type != YP_NODE_CONSTANT_READ_NODE) {
-              recursing_node = ((yp_constant_path_node_t *)recursing_node)->child;
-          }
-
-          ID class_id = parse_location_symbol(&recursing_node->location);
+          ID class_id = parse_string_symbol(&class_node->name);
 
           VALUE class_name = rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(class_id)));
 
@@ -591,6 +585,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_DEFINED_NODE: {
           ADD_INSN(ret, &dummy_line_node, putself);
           yp_defined_node_t *defined_node = (yp_defined_node_t *)node;
+          // TODO: Correct defined_type
           enum defined_type dtype = DEFINED_CONST;
           VALUE sym;
 
@@ -857,17 +852,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_LOCAL_VARIABLE_WRITE_NODE: {
           yp_local_variable_write_node_t *local_write_node = (yp_local_variable_write_node_t *) node;
+          yp_compile_node(iseq, local_write_node->value, ret, src, false, compile_context);
 
-          // TODO: Unclear how we get into the case where this has no value
-          if (local_write_node->value) {
-              yp_compile_node(iseq, local_write_node->value, ret, src, false, compile_context);
-          }
-          else {
-              rb_bug("???");
-          }
-
-          if (!popped)
+          if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
+          }
 
           yp_constant_id_t constant_id = local_write_node->name;
           size_t stack_index;
@@ -891,14 +880,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_scope_node_t scope_node;
           yp_scope_node_init((yp_node_t *)module_node, &scope_node);
 
-          yp_node_t *recursing_node = module_node->constant_path;
-
-          while (recursing_node->type != YP_NODE_CONSTANT_READ_NODE) {
-              recursing_node = ((yp_constant_path_node_t *)recursing_node)->child;
-          }
-
-          ID module_id = parse_location_symbol(&recursing_node->location);
-
+          ID module_id = parse_string_symbol(&module_node->name);
           VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
 
           const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
