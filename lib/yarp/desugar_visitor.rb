@@ -173,8 +173,8 @@ module YARP
     # @foo && @foo = bar
     def visit_instance_variable_and_write_node(node)
       AndNode.new(
-        InstanceVariableReadNode.new(node.name_loc),
-        InstanceVariableWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
+        InstanceVariableReadNode.new(node.name, node.name_loc),
+        InstanceVariableWriteNode.new(node.name, node.name_loc, node.value, node.operator_loc, node.location),
         node.operator_loc,
         node.location
       )
@@ -187,8 +187,8 @@ module YARP
     # @foo || @foo = bar
     def visit_instance_variable_or_write_node(node)
       OrNode.new(
-        InstanceVariableReadNode.new(node.name_loc),
-        InstanceVariableWriteNode.new(node.name_loc, node.value, node.operator_loc, node.location),
+        InstanceVariableReadNode.new(node.name, node.name_loc),
+        InstanceVariableWriteNode.new(node.name, node.name_loc, node.value, node.operator_loc, node.location),
         node.operator_loc,
         node.location
       )
@@ -200,7 +200,7 @@ module YARP
     #
     # @foo = @foo + bar
     def visit_instance_variable_operator_write_node(node)
-      desugar_operator_write_node(node, InstanceVariableWriteNode, InstanceVariableReadNode)
+      desugar_operator_write_node(node, InstanceVariableWriteNode, InstanceVariableReadNode, arguments: [node.name])
     end
 
     # foo &&= bar

@@ -494,7 +494,7 @@ ProgramNode(0...747)(
           ArrayPatternNode(627...643)(
             nil,
             [PinnedVariableNode(628...631)(
-               InstanceVariableReadNode(629...631)(),
+               InstanceVariableReadNode(629...631)(:a),
                (628...629)
              ),
              PinnedVariableNode(633...636)(

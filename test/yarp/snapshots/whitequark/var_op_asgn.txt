@@ -8,6 +8,7 @@ ProgramNode(0...53)(
        :|
      ),
      InstanceVariableOperatorWriteNode(13...20)(
+       :a,
        (13...15),
        (16...18),
        IntegerNode(19...20)(),

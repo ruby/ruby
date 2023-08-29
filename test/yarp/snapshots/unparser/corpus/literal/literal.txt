@@ -153,7 +153,7 @@ ProgramNode(0...916)(
        (206...207),
        [EmbeddedVariableNode(207...210)(
           (207...208),
-          InstanceVariableReadNode(208...210)()
+          InstanceVariableReadNode(208...210)(:a)
         ),
         StringNode(210...211)(nil, (210...211), nil, " "),
         EmbeddedVariableNode(211...215)(
@@ -267,7 +267,9 @@ ProgramNode(0...916)(
        [StringNode(419...422)(nil, (419...422), nil, "foo"),
         EmbeddedStatementsNode(422...429)(
           (422...424),
-          StatementsNode(424...428)([InstanceVariableReadNode(424...428)()]),
+          StatementsNode(424...428)(
+            [InstanceVariableReadNode(424...428)(:bar)]
+          ),
           (428...429)
         )],
        (429...430)
@@ -300,7 +302,9 @@ ProgramNode(0...916)(
        [StringNode(516...519)(nil, (516...519), nil, "foo"),
         EmbeddedStatementsNode(519...526)(
           (519...521),
-          StatementsNode(521...525)([InstanceVariableReadNode(521...525)()]),
+          StatementsNode(521...525)(
+            [InstanceVariableReadNode(521...525)(:bar)]
+          ),
           (525...526)
         )],
        (526...527),
@@ -311,7 +315,9 @@ ProgramNode(0...916)(
        [StringNode(529...532)(nil, (529...532), nil, "foo"),
         EmbeddedStatementsNode(532...539)(
           (532...534),
-          StatementsNode(534...538)([InstanceVariableReadNode(534...538)()]),
+          StatementsNode(534...538)(
+            [InstanceVariableReadNode(534...538)(:bar)]
+          ),
           (538...539)
         )],
        (539...543),
@@ -501,7 +507,7 @@ ProgramNode(0...916)(
        [IntegerNode(693...694)(),
         SplatNode(696...701)(
           (696...697),
-          InstanceVariableReadNode(697...701)()
+          InstanceVariableReadNode(697...701)(:foo)
         )],
        (692...693),
        (701...702)
@@ -509,7 +515,7 @@ ProgramNode(0...916)(
      ArrayNode(703...713)(
        [SplatNode(704...709)(
           (704...705),
-          InstanceVariableReadNode(705...709)()
+          InstanceVariableReadNode(705...709)(:foo)
         ),
         IntegerNode(711...712)()],
        (703...704),
@@ -518,11 +524,11 @@ ProgramNode(0...916)(
      ArrayNode(714...728)(
        [SplatNode(715...720)(
           (715...716),
-          InstanceVariableReadNode(716...720)()
+          InstanceVariableReadNode(716...720)(:foo)
         ),
         SplatNode(722...727)(
           (722...723),
-          InstanceVariableReadNode(723...727)()
+          InstanceVariableReadNode(723...727)(:baz)
         )],
        (714...715),
        (727...728)

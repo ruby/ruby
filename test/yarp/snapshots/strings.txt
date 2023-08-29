@@ -185,7 +185,7 @@ ProgramNode(0...498)(
        (414...415),
        [EmbeddedVariableNode(415...420)(
           (415...416),
-          InstanceVariableReadNode(416...420)()
+          InstanceVariableReadNode(416...420)(:foo)
         )],
        (420...421)
      ),

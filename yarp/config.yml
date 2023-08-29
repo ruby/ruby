@@ -1298,6 +1298,8 @@ nodes:
                   ^^^^^^^^^^^
   - name: InstanceVariableAndWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -1311,6 +1313,8 @@ nodes:
           ^^^^^^^^^^^^^^^^^
   - name: InstanceVariableOperatorWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -1326,6 +1330,8 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: InstanceVariableOrWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -1338,12 +1344,18 @@ nodes:
           @target ||= value
           ^^^^^^^^^^^^^^^^^
   - name: InstanceVariableReadNode
+    child_nodes:
+      - name: name
+        type: constant
     comment: |
       Represents referencing an instance variable.
 
           @foo
           ^^^^
   - name: InstanceVariableTargetNode
+    child_nodes:
+      - name: name
+        type: constant
     comment: |
       Represents writing to an instance variable in a context that doesn't have an explicit value.
 
@@ -1351,6 +1363,8 @@ nodes:
           ^^^^  ^^^^
   - name: InstanceVariableWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value

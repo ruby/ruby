@@ -3,7 +3,7 @@ ProgramNode(0...56)(
   StatementsNode(0...56)(
     [DefinedNode(0...14)(
        (8...9),
-       InstanceVariableReadNode(9...13)(),
+       InstanceVariableReadNode(9...13)(:foo),
        (13...14),
        (0...8)
      ),

@@ -51,7 +51,7 @@ ProgramNode(0...139)(
        nil
      ),
      MultiWriteNode(47...65)(
-       [InstanceVariableTargetNode(47...51)(),
+       [InstanceVariableTargetNode(47...51)(:foo),
         ClassVariableTargetNode(53...58)()],
        (59...60),
        ArrayNode(61...65)(
