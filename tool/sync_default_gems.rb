@@ -628,7 +628,9 @@ module SyncDefaultGems
       `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
       puts "Skip commit #{sha} only for tools or toplevel"
       return false
-    elsif !system(*%W"git commit --amend --no-edit --", *toplevels, *tools)
+    elsif system(*%W"git commit --amend --no-edit --", *toplevels, *tools)
+      return true
+    else
       `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
       return nil
     end
