@@ -313,6 +313,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case YP_NODE_MISSING_NODE: {
+          rb_bug("A yp_missing_node_t should not exist in YARP's AST.");
           return;
       }
       case YP_NODE_NIL_NODE:
