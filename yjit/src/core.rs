@@ -349,7 +349,7 @@ impl TempMapping {
 
         // Take the 5 lowest bits
         let TempMapping(bits) = self;
-        let type_bits = bits & 31;
+        let type_bits = bits & 0b11111;
         unsafe { transmute::<u8, Type>(type_bits) }
     }
 
