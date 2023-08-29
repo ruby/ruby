@@ -69,6 +69,10 @@ module YARP
       # assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; @yct; end")
     end
 
+    def test_LocalVariableReadNode
+      assert_equal 1, compile("yct = 1; yct")
+    end
+
     ############################################################################
     # Writes                                                                   #
     ############################################################################
@@ -91,6 +95,10 @@ module YARP
 
     def test_InstanceVariableWriteNode
       # assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; end")
+    end
+
+    def test_LocalVariableWriteNode
+      assert_equal 1, compile("yct = 1")
     end
 
     ############################################################################
