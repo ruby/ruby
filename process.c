@@ -1222,7 +1222,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     VALUE status = rb_process_status_wait(pid, flags);
     if (NIL_P(status)) return 0;
 
-    struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    struct rb_process_status *data = rb_check_typeddata(status, &rb_process_status_type);
     pid = data->pid;
 
     if (st) *st = data->status;
@@ -4748,7 +4748,8 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
 
     if (pid > 0) {
         VALUE status = rb_process_status_wait(pid, 0);
-        struct rb_process_status *data = RTYPEDDATA_DATA(status);
+
+        struct rb_process_status *data = rb_check_typeddata(status, &rb_process_status_type);
 
         // Set the last status:
         rb_obj_freeze(status);
