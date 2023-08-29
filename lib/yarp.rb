@@ -95,7 +95,7 @@ module YARP
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
-      source.column(end_offset - 1)
+      source.column(end_offset)
     end
 
     def deconstruct_keys(keys)
