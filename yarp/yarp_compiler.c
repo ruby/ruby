@@ -179,6 +179,89 @@ again:
     return;
 }
 
+static void
+yp_compile_if(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context) {
+    yp_parser_t *parser = compile_context->parser;
+    yp_statements_node_t *node_body;
+    yp_node_t *node_else;
+    yp_node_t *predicate;
+
+    if (node->type == YP_NODE_IF_NODE) {
+        yp_if_node_t *if_node = (yp_if_node_t *)node;
+        node_body = if_node->statements;
+        node_else = if_node->consequent;
+        predicate = if_node->predicate;
+    }
+    else {
+        yp_unless_node_t *unless_node = (yp_unless_node_t *)node;
+        node_body = unless_node->statements;
+        node_else = (yp_node_t *)(unless_node->consequent);
+        predicate = unless_node->predicate;
+    }
+
+    const int line = (int)yp_newline_list_line_column(&(parser->newline_list), node->location.start).line;
+    NODE line_node = generate_dummy_line_node(line, line);
+
+    DECL_ANCHOR(cond_seq);
+
+    LABEL *then_label, *else_label, *end_label;
+
+    INIT_ANCHOR(cond_seq);
+    then_label = NEW_LABEL(line);
+    else_label = NEW_LABEL(line);
+    end_label = 0;
+
+    yp_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, src, popped, compile_context);
+    ADD_SEQ(ret, cond_seq);
+
+    if (then_label->refcnt) {
+        ADD_LABEL(ret, then_label);
+
+        DECL_ANCHOR(then_seq);
+        INIT_ANCHOR(then_seq);
+        if (node_body) {
+            yp_compile_node(iseq, (yp_node_t *)node_body, then_seq, src, popped, compile_context);
+        }
+        else {
+            if (!popped) {
+                ADD_INSN(ret, &line_node, putnil);
+            }
+        }
+
+        if (else_label->refcnt) {
+            end_label = NEW_LABEL(line);
+            ADD_INSNL(then_seq, &line_node, jump, end_label);
+            if (!popped) {
+                ADD_INSN(then_seq, &line_node, pop);
+            }
+        }
+        ADD_SEQ(ret, then_seq);
+    }
+
+    if (else_label->refcnt) {
+        ADD_LABEL(ret, else_label);
+
+        DECL_ANCHOR(else_seq);
+        INIT_ANCHOR(else_seq);
+        if (node_else) {
+            yp_compile_node(iseq, (yp_node_t *)(((yp_else_node_t *)node_else)->statements), else_seq, src, popped, compile_context);
+        }
+        else {
+            if (!popped) {
+                ADD_INSN(ret, &line_node, putnil);
+            }
+        }
+
+        ADD_SEQ(ret, else_seq);
+    }
+
+    if (end_label) {
+        ADD_LABEL(ret, end_label);
+    }
+
+    return;
+}
+
 static int
 yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node)
 {
@@ -487,6 +570,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (!popped) {
               ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
           }
+          return;
+      }
+      case YP_NODE_IF_NODE: {
+          yp_compile_if(iseq, node, ret, src, popped, compile_context);
           return;
       }
       case YP_NODE_IMAGINARY_NODE: {
@@ -848,6 +935,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   ADD_INSN(ret, &dummy_line_node, pop);
           }
 
+          return;
+      }
+      case YP_NODE_UNLESS_NODE: {
+          yp_compile_if(iseq, node, ret, src, popped, compile_context);
           return;
       }
       case YP_NODE_WHILE_NODE: {
