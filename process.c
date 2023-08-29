@@ -3068,7 +3068,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *    CONTRIBUTING.md COPYING COPYING.ja
  *
- *  Raises an exception if the new process fails to execute.
+ *  Raises an exception if the new process could not execute.
  *
  *  <b>Argument +exe_path+</b>
  *
@@ -3101,7 +3101,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *    C*
  *    hello world
  *
- *  Raises an exception if the new process fails to execute.
+ *  Raises an exception if the new process could not execute.
  */
 
 static VALUE
@@ -4695,12 +4695,12 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *  - +true+ if the command exits with status zero.
  *  - +false+ if the exit status is a non-zero integer.
- *  - +nil+ if the command fails.
+ *  - +nil+ if the command could not execute.
  *
  *  Raises an exception (instead of returning +false+ or +nil+)
  *  if keyword argument +exception+ is set to +true+.
  *
- *  Assigns the command's error status to global variable <tt>$?</tt>.
+ *  Assigns the command's error status to <tt>$?</tt>.
  *
  *  The new process is created using the
  *  {system system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/system.html];
@@ -4726,13 +4726,13 @@ rb_spawn(int argc, const VALUE *argv)
  *  it must begin with a shell reserved word, begin with a special built-in,
  *  or contain meta characters:
  *
- *    system('echo')                             # => true  # Built-in.
- *    system('if true; then echo "Foo"; fi')     # => true  # Shell reserved word.
- *    system('date > /tmp/date.tmp')             # => true  # Contains meta character.
- *    system('date > /nop/date.tmp')             # => false
- *    system('date > date.tmp', exception: true) # Raises RuntimeError.
+ *    system('echo')                                  # => true  # Built-in.
+ *    system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
+ *    system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
+ *    system('date > /nop/date.tmp')                  # => false
+ *    system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
  *
- *  Assigns the command’s error status to global variable <tt>$?</tt>:
+ *  Assigns the command’s error status to <tt>$?</tt>:
  *
  *    system('echo')                             # => true  # Built-in.
  *    $?                                         # => #<Process::Status: pid 640610 exit 0>
@@ -4763,7 +4763,7 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *    CONTRIBUTING.md COPYING COPYING.ja
  *
- *  Raises an exception if the new process fails to execute.
+ *  Raises an exception if the new process could not execute.
  *
  *  <b>Argument +exe_path+</b>
  *
@@ -4775,14 +4775,14 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *  Example:
  *
- *    system('/usr/bin/date') # => true
+ *    system('/usr/bin/date') # => true # Path to date on Unix-style system.
  *    system('foo')           # => nil   # Command failed.
  *
  *  Output:
  *
  *    Mon Aug 28 11:43:10 AM CDT 2023
  *
- *  Assigns the command's error status to global variable <tt>$?</tt>:
+ *  Assigns the command's error status to <tt>$?</tt>:
  *
  *    system('/usr/bin/date') # => true
  *    $?                      # => #<Process::Status: pid 645605 exit 0>
@@ -4804,7 +4804,7 @@ rb_spawn(int argc, const VALUE *argv)
  *    C*
  *    hello world
  *
- *  Raises an exception if the new process fails to execute.
+ *  Raises an exception if the new process could not execute.
  */
 
 static VALUE
