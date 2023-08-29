@@ -103,6 +103,18 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_compile_node(iseq, assoc_node->value, ret, src, popped, compile_context);
           return;
       }
+      case YP_NODE_ASSOC_SPLAT_NODE: {
+          yp_assoc_splat_node_t *assoc_splat_node = (yp_assoc_splat_node_t *)node;
+          yp_compile_node(iseq, assoc_splat_node->value, ret, src, popped, compile_context);
+
+          // TODO: Not sure this is accurate, look at FLUSH_CHUNK in the compiler
+          ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(0));
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+          return;
+      }
       case YP_NODE_BEGIN_NODE: {
           yp_begin_node_t *begin_node = (yp_begin_node_t *) node;
           if (begin_node->statements) {
@@ -205,6 +217,47 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         }
         return;
+      case YP_NODE_FLIP_FLOP_NODE: {
+          // TODO: The labels here are wrong, figure out why.....
+          yp_flip_flop_node_t *flip_flop_node = (yp_flip_flop_node_t *)node;
+
+          LABEL *lend = NEW_LABEL(lineno);
+          LABEL *then_label = NEW_LABEL(lineno);
+          LABEL *else_label = NEW_LABEL(lineno);
+          //TODO:         int again = type == NODE_FLIP2;
+          int again = 0;
+
+          rb_num_t cnt = ISEQ_FLIP_CNT_INCREMENT(ISEQ_BODY(iseq)->local_iseq)
+              + VM_SVAR_FLIPFLOP_START;
+          VALUE key = INT2FIX(cnt);
+
+          ADD_INSN2(ret, &dummy_line_node, getspecial, key, INT2FIX(0));
+          ADD_INSNL(ret, &dummy_line_node, branchif, lend);
+
+          yp_compile_node(iseq, flip_flop_node->left, ret, src, popped, compile_context);
+          /* *flip == 0 */
+          ADD_INSNL(ret, &dummy_line_node, branchunless, else_label);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+          ADD_INSN1(ret, &dummy_line_node, setspecial, key);
+          if (!again) {
+              ADD_INSNL(ret, &dummy_line_node, jump, then_label);
+          }
+
+          /* *flip == 1 */
+          ADD_LABEL(ret, lend);
+          yp_compile_node(iseq, flip_flop_node->right, ret, src, popped, compile_context);
+          ADD_INSNL(ret, &dummy_line_node, branchunless, then_label);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+          ADD_INSN1(ret, &dummy_line_node, setspecial, key);
+          ADD_INSNL(ret, &dummy_line_node, jump, then_label);
+          ADD_LABEL(ret, then_label);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+          ADD_INSNL(ret, &dummy_line_node, jump, lend);
+          ADD_LABEL(ret, else_label);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
+          ADD_LABEL(ret, lend);
+          return;
+      }
       case YP_NODE_FLOAT_NODE: {
           if (!popped) {
               ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
