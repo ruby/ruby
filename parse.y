@@ -12114,7 +12114,7 @@ value_expr_check(struct parser_params *p, NODE *node)
             if (node->nd_body->nd_body) {
                 return NULL;
             }
-            /* single line pattern matching */
+            /* single line pattern matching with "=>" operator */
             return void_node ? void_node : node;
 
           case NODE_BLOCK:
