@@ -1240,6 +1240,38 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           return;
       }
+      case YP_NODE_SOURCE_ENCODING_NODE: {
+          const char *encoding = compile_context->parser->encoding.name;
+          if (!popped) {
+              // TODO: This encoding isn't an exact match of what CRuby outputs, for
+              // example "utf8" vs "#<Encoding:UTF-8>". Look into if there's a standard
+              // conversion to the expected format here.
+              ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new_cstr(encoding));
+          }
+          return;
+      }
+      case YP_NODE_SOURCE_FILE_NODE: {
+          yp_source_file_node_t *source_file_node = (yp_source_file_node_t *)node;
+
+          if (!popped) {
+              VALUE filepath;
+              if (source_file_node->filepath.length == 0) {
+                  filepath = rb_fstring_lit("<compiled>");
+              }
+              else {
+                  filepath = parse_string(&source_file_node->filepath);
+              }
+
+              ADD_INSN1(ret, &dummy_line_node, putstring, filepath);
+          }
+          return;
+      }
+      case YP_NODE_SOURCE_LINE_NODE: {
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(lineno));
+          }
+          return;
+      }
       case YP_NODE_SPLAT_NODE: {
           yp_splat_node_t *splat_node = (yp_splat_node_t *)node;
           yp_compile_node(iseq, splat_node->expression, ret, src, popped, compile_context);
