@@ -2,12 +2,14 @@
 
 require_relative "test_helper"
 
-if RUBY_PLATFORM =~ /linux/
+return if RUBY_PLATFORM !~ /linux/
+
+module YARP
   #
   #  examine a yarp dll or static archive for expected external symbols.
   #  these tests only work on a linux system right now.
   #
-  class LibrarySymbolsTest < Test::Unit::TestCase
+  class LibrarySymbolsTest < TestCase
     def setup
       super
 

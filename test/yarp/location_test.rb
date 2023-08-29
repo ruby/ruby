@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 module YARP
-  class LocationTest < Test::Unit::TestCase
+  class LocationTest < TestCase
     def test_AliasNode
       assert_location(AliasNode, "alias foo bar")
     end
