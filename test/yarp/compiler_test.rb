@@ -62,11 +62,11 @@ module YARP
     end
 
     def test_GlobalVariableReadNode
-      # assert_equal 1, compile("$yct = 1; $yct")
+      assert_equal 1, compile("$yct = 1; $yct")
     end
 
     def test_InstanceVariableReadNode
-      # assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; @yct; end")
+      assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; @yct; end")
     end
 
     ############################################################################
@@ -100,17 +100,17 @@ module YARP
     def test_EmbeddedVariableNode
       # assert_equal "1", compile('class YARP::CompilerTest; @yct = 1; "#@yct"; end')
       # assert_equal "1", compile('class YARP::CompilerTest; @@yct = 1; "#@@yct"; end')
-      # assert_equal "1", compile('$yct = 1; "#$yct"')
+      assert_equal "1", compile('$yct = 1; "#$yct"')
     end
 
     def test_InterpolatedStringNode
-      # assert_equal "1 1 1", compile('$yct = 1; "1 #$yct 1"')
-      # assert_equal "1 3 1", compile('"1 #{1 + 2} 1"')
+      assert_equal "1 1 1", compile('$yct = 1; "1 #$yct 1"')
+      assert_equal "1 3 1", compile('"1 #{1 + 2} 1"')
     end
 
     def test_InterpolatedSymbolNode
-      # assert_equal :"1 1 1", compile('$yct = 1; :"1 #$yct 1"')
-      # assert_equal :"1 3 1", compile(':"1 #{1 + 2} 1"')
+      assert_equal :"1 1 1", compile('$yct = 1; :"1 #$yct 1"')
+      assert_equal :"1 3 1", compile(':"1 #{1 + 2} 1"')
     end
 
     def test_StringConcatNode
