@@ -226,11 +226,13 @@ module Random::Formatter
   #
   # The argument _n_ specifies the length, in characters, of the alphanumeric
   # string to be generated.
+  # The argument _chars_ specifies the character list which the result is
+  # consist of.
   #
   # If _n_ is not specified or is nil, 16 is assumed.
   # It may be larger in the future.
   #
-  # The result may contain A-Z, a-z and 0-9.
+  # The result may contain A-Z, a-z and 0-9, unless _chars_ is specified.
   #
   #   require 'random/formatter'
   #
@@ -238,8 +240,13 @@ module Random::Formatter
   #   # or
   #   prng = Random.new
   #   prng.alphanumeric(10) #=> "i6K93NdqiH"
-  def alphanumeric(n=nil)
+  #
+  #   Random.alphanumeric(4, chars: [*"0".."9"])' #=> "2952"
+  #   # or
+  #   prng = Random.new
+  #   prng.alphanumeric(10, chars: [*"!".."/"]) #=> ",.,++%/''."
+  def alphanumeric(n = nil, chars: ALPHANUMERIC)
     n = 16 if n.nil?
-    choose(ALPHANUMERIC, n)
+    choose(chars, n)
   end
 end

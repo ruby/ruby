@@ -83,6 +83,20 @@ module Random::Formatter
       end
     end
 
+    def test_alphanumeric_chars
+      [
+        [[*"0".."9"], /\A\d*\z/],
+        [[*"a".."t"], /\A[a-t]*\z/],
+        ["一二三四五六七八九十".chars, /\A[一二三四五六七八九十]*\z/],
+      ].each do |chars, pattern|
+        10.times do |n|
+          an = @it.alphanumeric(n, chars: chars)
+          assert_match(pattern, an)
+          assert_equal(n, an.length)
+        end
+      end
+    end
+
     def assert_in_range(range, result, mesg = nil)
       assert(range.cover?(result), build_message(mesg, "Expected #{result} to be in #{range}"))
     end

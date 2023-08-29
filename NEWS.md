@@ -64,6 +64,9 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* Random::Formatter#alphanumeric is extended to accept optional `chars`
+  keyword argument. [[Feature #18183]]
+
 The following default gems are updated.
 
 * RubyGems 3.5.0.dev
@@ -156,6 +159,7 @@ changelog for details of the default gems or bundled gems.
 * RJIT exists only for experimental purposes.
   * You should keep using YJIT in production.
 
+[Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
