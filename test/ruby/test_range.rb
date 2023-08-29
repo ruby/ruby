@@ -841,16 +841,68 @@ class TestRange < Test::Unit::TestCase
     assert_equal (1..42).bsearch{}, (1..42).bsearch{false}
   end
 
+  def test_bsearch_target_value
+    assert_nothing_raised do
+      (1..42).bsearch { true }
+    end
+
+    assert_nothing_raised do
+      (1..42).bsearch(target: :first) { true }
+    end
+
+    assert_nothing_raised do
+      (1..42).bsearch(target: :last) { true }
+    end
+
+    assert_raise(ArgumentError) do
+      (1..42).bsearch(target: nil) { true }
+    end
+
+    assert_raise(ArgumentError) do
+      (1..42).bsearch(target: 'first') { true }
+    end
+
+    assert_raise(ArgumentError) do
+      (1..42).bsearch(target: :invalid) { true }
+    end
+  end
+
   def test_bsearch_with_no_block
     enum = (42...666).bsearch
     assert_nil enum.size
     assert_equal 200, enum.each{|x| x >= 200 }
+
+    enum = (0.0..1.0).bsearch
+    assert_nil enum.size
+    assert_in_delta(0.3, enum.each {|x| x >= 0.3 }, 0.0001)
+
+    enum = (2**100..2**105).bsearch
+    assert_nil enum.size
+    assert_equal 2**101, enum.each {|x| x >= 2**101 }
+
+    enum = (0..).bsearch
+    assert_nil enum.size
+    assert_equal 5, enum.each {|x| x >= 5 }
+
+    enum = (..100).bsearch
+    assert_nil enum.size
+    assert_equal 5, enum.each {|x| x >= 5 }
   end
 
   def test_bsearch_for_other_numerics
     assert_raise(TypeError) {
       (Rational(-1,2)..Rational(9,4)).bsearch
     }
+  end
+
+  def test_bsearch_first
+    ary = [3, 4, 7, 9, 12]
+    [2, 4, 6, 8, 10, 100].each do |search|
+      assert_equal(
+        (0...ary.size).bsearch {|i| ary[i] >= search },
+        (0...ary.size).bsearch(target: :first) {|i| ary[i] >= search }
+      )
+    end
   end
 
   def test_bsearch_for_fixnum
@@ -863,6 +915,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (0...ary.size).bsearch {|i| ary[i] >= 100 })
     assert_equal(0, (0...ary.size).bsearch {|i| true })
     assert_equal(nil, (0...ary.size).bsearch {|i| false })
+    assert_equal(nil, (0...ary.size).bsearch {|i| nil })
 
     ary = [0, 100, 100, 100, 200]
     assert_equal(1, (0...ary.size).bsearch {|i| ary[i] >= 100 })
@@ -928,7 +981,6 @@ class TestRange < Test::Unit::TestCase
   def check_bsearch_values(range, search, a)
     from, to = range.begin, range.end
     cmp = range.exclude_end? ? :< : :<=
-    r = nil
 
     a.for "(0) trivial test" do
       r = Range.new(to, from, range.exclude_end?).bsearch do |x|
@@ -944,9 +996,12 @@ class TestRange < Test::Unit::TestCase
 
     # prepare for others
     yielded = []
-    r = range.bsearch do |val|
+    result_by_boolean = range.bsearch do |val|
       yielded << val
       val >= search
+    end
+    result_by_num = range.bsearch do |val|
+      search <=> val
     end
 
     a.for "(1) log test" do
@@ -966,7 +1021,17 @@ class TestRange < Test::Unit::TestCase
                else
                  nil
                end
-      assert_equal expect, r
+      assert_equal expect, result_by_boolean
+
+      expect2 = case
+                when search < from
+                  nil
+                when search.send(cmp, to)
+                  search
+                else
+                  nil
+                end
+      assert_equal expect2, result_by_num
     end
 
     a.for "(3) uniqueness test" do
@@ -977,17 +1042,20 @@ class TestRange < Test::Unit::TestCase
       case
       when range.exclude_end?
         assert_not_include yielded, to
-        assert_not_equal r, to
+        assert_not_equal result_by_boolean, to
+        assert_not_equal result_by_num, to
       when search >= to
         assert_include yielded, to
-        assert_equal search == to ? to : nil, r
+        assert_equal search == to ? to : nil, result_by_boolean
+        assert_equal search == to ? to : nil, result_by_num
       end
     end
 
     a.for "(5) start of range test" do
       if search <= from
         assert_include yielded, from
-        assert_equal from, r
+        assert_equal from, result_by_boolean
+        assert_equal search == from ? from : nil, result_by_num
       end
     end
 
@@ -1028,6 +1096,335 @@ class TestRange < Test::Unit::TestCase
     assert_equal(-bignum * 2 + 1, (...-bignum).bsearch {|i| i > -bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
+  end
+
+  def test_bsearch_find_by_number_mode
+    ary = [3, 4, 7, 9, 12]
+    assert_equal(nil, (0...ary.size).bsearch {|i| 2 - ary[i] })
+    assert_equal(0, (0...ary.size).bsearch {|i| 3 - ary[i] })
+    assert_equal(1, (0...ary.size).bsearch {|i| 4 - ary[i] })
+    assert_equal(2, (0...ary.size).bsearch {|i| 7 - ary[i] })
+    assert_equal(3, (0...ary.size).bsearch {|i| 9 - ary[i] })
+    assert_equal(4, (0...ary.size).bsearch {|i| 12 - ary[i] })
+    assert_equal(nil, (0...ary.size).bsearch {|i| 15 - ary[i] })
+    assert_equal(0, (0...ary.size).bsearch {|i| 0 })
+    assert_equal(nil, (0...ary.size).bsearch {|i| 1 })
+    assert_equal(nil, (0...ary.size).bsearch {|i| -1 })
+
+    assert_equal(1, (0...ary.size).bsearch {|i| (3 - ary[i]) / 6 + 1 })
+
+    assert_equal(1, (0...ary.size).bsearch {|i| (4 - ary[i]).to_r })
+
+    assert_in_delta 0.3, (0.0..1.0).bsearch {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (0.0...1.0).bsearch {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (0.0..).bsearch {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (0.0...).bsearch {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (..1.0).bsearch {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (...1.0).bsearch {|x| 0.3 - x }, 0.0001
+
+    assert_equal 5, (0..).bsearch {|i| 5 - i }
+    assert_equal 0, (0..).bsearch {|i| -i }
+    assert_equal 0, (0..).bsearch {|i| 0 }
+    assert_equal nil, (0..).bsearch {|i| -1 }
+    assert_equal 5, (..100).bsearch {|i| 5 - i }
+    assert_equal nil, (..100).bsearch {|i| 1 }
+
+    assert_equal 2**101, (2**100..2**105).bsearch {|i| 2**101 - i }
+  end
+
+  def test_bsearch_last_typechecks_return_values
+    assert_raise(TypeError) do
+      (1..42).bsearch(target: :last){ "not ok" }
+    end
+    c = eval("class C\u{309a 26a1 26c4 1f300};self;end")
+    assert_raise_with_message(TypeError, /C\u{309a 26a1 26c4 1f300}/) do
+      (1..42).bsearch(target: :last) {c.new}
+    end
+    assert_equal (1..42).bsearch(target: :last){}, (1..42).bsearch(target: :last){false}
+  end
+
+  def test_bsearch_last_with_no_block
+    enum = (42...666).bsearch(target: :last)
+    assert_nil enum.size
+    assert_equal 200, enum.each{|x| x <= 200 }
+
+    enum = (0.0..1.0).bsearch(target: :last)
+    assert_nil enum.size
+    assert_in_delta(0.3, enum.each {|x| x <= 0.3 }, 0.0001)
+
+    enum = (2**100..2**105).bsearch(target: :last)
+    assert_nil enum.size
+    assert_equal 2**101, enum.each {|x| x <= 2**101 }
+
+    enum = (0..).bsearch(target: :last)
+    assert_nil enum.size
+    assert_equal 5, enum.each {|x| x <= 5 }
+
+    enum = (..100).bsearch(target: :last)
+    assert_nil enum.size
+    assert_equal 5, enum.each {|x| x <= 5 }
+  end
+
+  def test_bsearch_last_for_other_numerics
+    assert_raise(TypeError) {
+      (Rational(-1,2)..Rational(9,4)).bsearch(target: :last)
+    }
+  end
+
+  def test_bsearch_last_for_fixnum
+    ary = [3, 4, 7, 9, 12]
+    assert_equal(4, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 20 })
+    assert_equal(3, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 10 })
+    assert_equal(2, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 8 })
+    assert_equal(1, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 5 })
+    assert_equal(0, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 3 })
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 0 })
+    assert_equal(4, (0...ary.size).bsearch(target: :last) {|i| true })
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| false })
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| nil })
+
+    ary = [0, 100, 100, 100, 200]
+    assert_equal(3, (0...ary.size).bsearch(target: :last) {|i| ary[i] <= 100 })
+
+    assert_equal(999_999, (0...).bsearch(target: :last) {|i| i < 1_000_000 })
+    assert_equal(-1_000_001, (...0).bsearch(target: :last) {|i| i < -1_000_000 })
+
+    assert_equal(0, (0..0).bsearch(target: :last) {|i| i <= 0 })
+    assert_equal(nil, (0...0).bsearch(target: :last) {|i| i <= 0 })
+  end
+
+  def test_bsearch_last_for_float
+    inf = Float::INFINITY
+    assert_in_delta(10.0, (0.0...100.0).bsearch(target: :last) {|x| x > 0 && Math.log(x / 10) <= 0 }, 0.0001)
+    assert_in_delta(-10.0, (-inf...0.0).bsearch(target: :last) {|x| x < 0 && Math.log(-x / 10) >= 0 }, 0.0001)
+    assert_in_delta(10.0, (0.0..inf).bsearch(target: :last) {|x| x > 0 && Math.log(x / 10) < 0 }, 0.0001)
+    assert_in_delta(10.0, (-inf..inf).bsearch(target: :last) {|x| x <= 0 || Math.log(x / 10) <= 0 }, 0.0001)
+    assert_equal(nil, (-5..inf).bsearch(target: :last) {|x| x < 0 && Math.log(-x / 10) >= 0 }, 0.0001)
+
+    assert_in_delta(10.0, (10..inf).bsearch(target: :last) {|x| x > 0 && Math.log(x / 10) <= 0 }, 0.0001)
+    assert_equal(nil, (10..inf).bsearch(target: :last) {|x| x > 0 && Math.log(x / 10) < 0 }, 0.0001)
+    assert_in_delta(10.0, (10...inf).bsearch(target: :last) {|x| x > 0 && Math.log(x / 10) <= 0 }, 0.0001)
+
+    assert_equal(nil, (-inf..inf).bsearch(target: :last) { false })
+    assert_equal(inf, (-inf..inf).bsearch(target: :last) { true })
+
+    v = (0..inf).bsearch(target: :last) {|x| x != inf }
+    assert_operator(Float::MAX, :<=, v)
+    assert_operator(inf, :>, v)
+
+    v = (0...inf).bsearch(target: :last) { true }
+    assert_operator(Float::MAX, :<=, v)
+    assert_operator(inf, :>, v)
+
+    v = (0.0...).bsearch(target: :last) { true }
+    assert_operator(Float::MAX, :<=, v)
+    assert_operator(inf, :>, v)
+
+    v = (0.0..).bsearch(target: :last) { true }
+    assert_operator(Float::MAX, :<=, v)
+    assert_equal(1, v.infinite?)
+
+    v = (-1.0..0.0).bsearch(target: :last) {|x| x < 0 } # the nearest negative value to 0.0
+    assert_in_delta(0, v, 0.0001)
+    assert_operator(0, :>, v)
+
+    v = (-1.0...0.0).bsearch(target: :last) {|x| x <= 0 } # the nearest negative value to 0.0
+    assert_in_delta(0, v, 0.0001)
+    assert_operator(0, :>, v)
+
+    assert_equal(0.0, (0.0..1.0).bsearch(target: :last) {|x| x <= 0 })
+    assert_equal(0.0, (0.0...1.0).bsearch(target: :last) {|x| x <= 0 })
+    assert_equal(nil, (0.0..1.0).bsearch(target: :last) {|x| x < 0 })
+    assert_equal(nil, (0.0...1.0).bsearch(target: :last) {|x| x < 0 })
+
+    v = (-Float::MAX..0).bsearch(target: :last) {|x| x <= -Float::MAX }
+    assert_in_delta(-Float::MAX, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (-inf..0).bsearch(target: :last) {|x| x <= -Float::MAX }
+    assert_in_delta(-Float::MAX, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (0..Float::MAX).bsearch(target: :last) {|x| x < Float::MAX }
+    assert_operator(Float::MAX, :>, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (0..inf).bsearch(target: :last) {|x| x <= Float::MAX }
+    assert_in_delta(Float::MAX, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (0..inf).bsearch(target: :last) {|x| x < Float::MAX }
+    assert_operator(Float::MAX, :>, v)
+    assert_equal(nil, v.infinite?)
+
+    assert_in_delta(1.0, (0.0..inf).bsearch(target: :last) {|x| Math.log(x) <= 0 })
+    assert_in_delta(7.0, (0.0..10).bsearch(target: :last) {|x| 7.0 - x })
+
+    assert_equal( 1_000_000.0.prev_float, (0.0..).bsearch(target: :last) {|x| x < 1_000_000 })
+    assert_equal(-1_000_000.0.prev_float, (..0.0).bsearch(target: :last) {|x| x < -1_000_000 })
+  end
+
+  def check_bsearch_last_values(range, search, a)
+    from, to = range.begin, range.end
+    cmp = range.exclude_end? ? :< : :<=
+
+    a.for "(0) trivial test" do
+      r = Range.new(to, from, range.exclude_end?).bsearch(target: :last) do |x|
+        fail "#{to}, #{from}, #{range.exclude_end?}, #{x}"
+      end
+      assert_nil r
+
+      r = (to...to).bsearch(target: :last) do
+        fail
+      end
+      assert_nil r
+    end
+
+    # prepare for others
+    yielded = []
+    result_by_boolean = range.bsearch(target: :last) do |val|
+      yielded << val
+      val <= search
+    end
+    result_by_num = range.bsearch(target: :last) do |val|
+      search <=> val
+    end
+
+    a.for "(1) log test" do
+      max = case from
+            when Float then 65
+            when Integer then Math.log(to-from+(range.exclude_end? ? 0 : 1), 2).to_i + 1
+            end
+      assert_operator yielded.size, :<=, max
+    end
+
+    a.for "(2) coverage test" do
+      real_to = if range.exclude_end?
+                  case range.end
+                  when Float then to.prev_float
+                  when Integer then to - 1
+                  end
+                else
+                  to
+                end
+
+      expect = case
+               when search < from
+                 nil
+               when search < real_to
+                 search
+               else
+                 real_to
+               end
+      assert_equal expect, result_by_boolean
+
+      expect2 = case
+                when search < from
+                  nil
+                when search.send(cmp, to)
+                  search
+                else
+                  nil
+                end
+      assert_equal expect2, result_by_num
+    end
+
+    a.for "(3) uniqueness test" do
+      assert_nil yielded.uniq!
+    end
+
+    a.for "(4) end of range test" do
+      case
+      when range.exclude_end?
+        assert_not_include yielded, to
+        assert_not_equal to, result_by_boolean
+        assert_not_equal result_by_num, to
+      when search >= to
+        assert_include yielded, to
+        assert_equal to, result_by_boolean
+        assert_equal search == to ? to : nil, result_by_num
+      end
+    end
+
+    a.for "(5) start of range test" do
+      if search <= from
+        assert_include yielded, from
+        assert_equal search == from ? from : nil, result_by_boolean
+        assert_equal search == from ? from : nil, result_by_num
+      end
+    end
+
+    a.for "(6) out of range test" do
+      yielded.each do |val|
+        assert_operator from, :<=, val
+        assert_send [val, cmp, to]
+      end
+    end
+  end
+
+  def test_range_bsearch_last_for_floats
+    ints   = [-1 << 100, -123456789, -42, -1, 0, 1, 42, 123456789, 1 << 100]
+    floats = [-Float::INFINITY, -Float::MAX, -42.0, -4.2, -Float::EPSILON, -Float::MIN, 0.0, Float::MIN, Float::EPSILON, Math::PI, 4.2, 42.0, Float::MAX, Float::INFINITY]
+
+    all_assertions do |a|
+      [ints, floats].each do |values|
+        values.combination(2).to_a.product(values).each do |(from, to), search|
+          check_bsearch_last_values(from..to, search, a)
+          check_bsearch_last_values(from...to, search, a)
+        end
+      end
+    end
+  end
+
+  def test_bsearch_last_for_bignum
+    bignum = 2**100
+    ary = [3, 4, 7, 9, 12]
+    assert_equal(nil, (bignum...bignum+ary.size).bsearch(target: :last) {|i| ary[i - bignum] <= 2 })
+    assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch(target: :last) {|i| ary[i - bignum] <= 3 })
+    assert_equal(bignum + 1, (bignum...bignum+ary.size).bsearch(target: :last) {|i| ary[i - bignum] <= 6 })
+    assert_equal(bignum + 2, (bignum...bignum+ary.size).bsearch(target: :last) {|i| ary[i - bignum] <= 8 })
+    assert_equal(bignum + 3, (bignum...bignum+ary.size).bsearch(target: :last) {|i| ary[i - bignum] <= 10 })
+    assert_equal(bignum + 4, (bignum...bignum+ary.size).bsearch(target: :last) {|i| ary[i - bignum] <= 100 })
+    assert_equal(bignum + 4, (bignum...bignum+ary.size).bsearch(target: :last) {|i| true })
+    assert_equal(nil, (bignum...bignum+ary.size).bsearch(target: :last) {|i| false })
+    assert_equal(bignum * 2 - 1, (bignum...).bsearch(target: :last) {|i| i < bignum * 2 })
+    assert_equal(-bignum * 2 - 1, (...-bignum).bsearch(target: :last) {|i| i < -bignum * 2 })
+
+    assert_raise(TypeError) { ("a".."z").bsearch(target: :last) {} }
+  end
+
+  def test_bsearch_last_find_by_number_mode
+    ary = [3, 4, 7, 9, 12]
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| 2 - ary[i] })
+    assert_equal(0, (0...ary.size).bsearch(target: :last) {|i| 3 - ary[i] })
+    assert_equal(1, (0...ary.size).bsearch(target: :last) {|i| 4 - ary[i] })
+    assert_equal(2, (0...ary.size).bsearch(target: :last) {|i| 7 - ary[i] })
+    assert_equal(3, (0...ary.size).bsearch(target: :last) {|i| 9 - ary[i] })
+    assert_equal(4, (0...ary.size).bsearch(target: :last) {|i| 12 - ary[i] })
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| 15 - ary[i] })
+    assert_equal(4, (0...ary.size).bsearch(target: :last) {|i| 0 })
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| 1 })
+    assert_equal(nil, (0...ary.size).bsearch(target: :last) {|i| -1 })
+
+    assert_equal(3, (0...ary.size).bsearch(target: :last) {|i| (3 - ary[i]) / 6 + 1 })
+
+    assert_equal(1, (0...ary.size).bsearch(target: :last) {|i| (4 - ary[i]).to_r })
+
+    assert_in_delta 0.3, (0.0..1.0).bsearch(target: :last) {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (0.0...1.0).bsearch(target: :last) {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (0.0..).bsearch(target: :last) {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (0.0...).bsearch(target: :last) {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (..1.0).bsearch(target: :last) {|x| 0.3 - x }, 0.0001
+    assert_in_delta 0.3, (...1.0).bsearch(target: :last) {|x| 0.3 - x }, 0.0001
+
+    assert_equal 5, (0..).bsearch(target: :last) {|i| 5 - i }
+    assert_equal 0, (0..).bsearch(target: :last) {|i| -i }
+    assert_equal nil, (0..).bsearch(target: :last) {|i| -1 }
+    assert_equal 5, (..100).bsearch(target: :last) {|i| 5 - i }
+    assert_equal 100, (..100).bsearch(target: :last) {|i| 0 }
+    assert_equal nil, (..100).bsearch(target: :last) {|i| 1 }
+
+    assert_equal 2**101, (2**100..2**105).bsearch(target: :last) {|i| 2**101 - i }
   end
 
   def test_each_no_blockarg

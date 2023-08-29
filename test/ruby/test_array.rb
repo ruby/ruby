@@ -3311,34 +3311,75 @@ class TestArray < Test::Unit::TestCase
     assert_equal [1, 2, 42, 100, 666].bsearch{}, [1, 2, 42, 100, 666].bsearch{false}
   end
 
+  def test_bsearch_target_value
+    assert_nothing_raised do
+      [1, 2, 3].bsearch { true }
+    end
+
+    assert_nothing_raised do
+      [1, 2, 3].bsearch(target: :first) { true }
+    end
+
+    assert_nothing_raised do
+      [1, 2, 3].bsearch(target: :last) { true }
+    end
+
+    assert_raise(ArgumentError) do
+      [1, 2, 3].bsearch(target: nil) { true }
+    end
+
+    assert_raise(ArgumentError) do
+      [1, 2, 3].bsearch(target: 'first') { true }
+    end
+
+    assert_raise(ArgumentError) do
+      [1, 2, 3].bsearch(target: :invalid) { true }
+    end
+  end
+
   def test_bsearch_with_no_block
     enum = [1, 2, 42, 100, 666].bsearch
     assert_nil enum.size
     assert_equal 42, enum.each{|x| x >= 33 }
   end
 
-  def test_bsearch_in_find_minimum_mode
+  def test_bsearch_in_find_by_boolean_mode
     a = [0, 4, 7, 10, 12]
     assert_equal(4, a.bsearch {|x| x >=   4 })
     assert_equal(7, a.bsearch {|x| x >=   6 })
     assert_equal(0, a.bsearch {|x| x >=  -1 })
     assert_equal(nil, a.bsearch {|x| x >= 100 })
+    assert_equal(nil, a.bsearch {|x| nil })
+
+    assert_equal(nil, [].bsearch {|x| x < 0 })
   end
 
-  def test_bsearch_in_find_any_mode
+  def test_bsearch_first_in_find_by_boolean_mode
     a = [0, 4, 7, 10, 12]
-    assert_include([4, 7], a.bsearch {|x| 1 - x / 4 })
+    [-1, 3, 5, 8, 11, 15].each do |search|
+      assert_equal(
+        a.bsearch {|x| x >= search },
+        a.bsearch(target: :first) {|x| x >= search }
+      )
+    end
+  end
+
+  def test_bsearch_in_find_by_number_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(4, a.bsearch {|x| 1 - x / 4 })
     assert_equal(nil, a.bsearch {|x| 4 - x / 2 })
     assert_equal(nil, a.bsearch {|x| 1 })
     assert_equal(nil, a.bsearch {|x| -1 })
+    assert_equal(0, a.bsearch{|x| 0 })
 
-    assert_include([4, 7], a.bsearch {|x| (1 - x / 4) * (2**100) })
+    assert_equal(4, a.bsearch {|x| (1 - x / 4) * (2**100) })
     assert_equal(nil, a.bsearch {|x|   1  * (2**100) })
     assert_equal(nil, a.bsearch {|x| (-1) * (2**100) })
 
     assert_equal(4, a.bsearch {|x| (4 - x).to_r })
+    assert_equal(10, a.bsearch {|x| (10 - x).to_r })
 
-    assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+    assert_equal(4, a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
   def test_bsearch_index_typechecks_return_values
@@ -3348,13 +3389,39 @@ class TestArray < Test::Unit::TestCase
     assert_equal [1, 2, 42, 100, 666].bsearch_index {}, [1, 2, 42, 100, 666].bsearch_index {false}
   end
 
+  def test_bsearch_index_target_value
+    assert_nothing_raised do
+      [1, 2, 3].bsearch_index { true }
+    end
+
+    assert_nothing_raised do
+      [1, 2, 3].bsearch_index(target: :first) { true }
+    end
+
+    assert_nothing_raised do
+      [1, 2, 3].bsearch_index(target: :last) { true }
+    end
+
+    assert_raise(ArgumentError) do
+      [1, 2, 3].bsearch_index(target: nil) { true }
+    end
+
+    assert_raise(ArgumentError) do
+      [1, 2, 3].bsearch_index(target: 'first') { true }
+    end
+
+    assert_raise(ArgumentError) do
+      [1, 2, 3].bsearch_index(target: :invalid) { true }
+    end
+  end
+
   def test_bsearch_index_with_no_block
     enum = [1, 2, 42, 100, 666].bsearch_index
     assert_nil enum.size
     assert_equal 2, enum.each{|x| x >= 33 }
   end
 
-  def test_bsearch_index_in_find_minimum_mode
+  def test_bsearch_index_in_find_by_boolean_mode
     a = [0, 4, 7, 10, 12]
     assert_equal(1, a.bsearch_index {|x| x >=   4 })
     assert_equal(2, a.bsearch_index {|x| x >=   6 })
@@ -3362,20 +3429,101 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, a.bsearch_index {|x| x >= 100 })
   end
 
-  def test_bsearch_index_in_find_any_mode
+  def test_bsearch_index_in_find_by_number_mode
     a = [0, 4, 7, 10, 12]
-    assert_include([1, 2], a.bsearch_index {|x| 1 - x / 4 })
+    assert_equal(1, a.bsearch_index {|x| 1 - x / 4 })
     assert_equal(nil, a.bsearch_index {|x| 4 - x / 2 })
     assert_equal(nil, a.bsearch_index {|x| 1 })
     assert_equal(nil, a.bsearch_index {|x| -1 })
+    assert_equal(0, a.bsearch_index {|x| 0 })
 
-    assert_include([1, 2], a.bsearch_index {|x| (1 - x / 4) * (2**100) })
+    assert_equal(1, a.bsearch_index {|x| (1 - x / 4) * (2**100) })
     assert_equal(nil, a.bsearch_index {|x|   1  * (2**100) })
     assert_equal(nil, a.bsearch_index {|x| (-1) * (2**100) })
 
     assert_equal(1, a.bsearch_index {|x| (4 - x).to_r })
+    assert_equal(3, a.bsearch_index {|x| (10 - x).to_r })
 
-    assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+    assert_equal(1, a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
+  def test_bsearch_index_last_in_find_by_boolean_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(nil, a.bsearch_index(target: :last) {|x| x <= -1 })
+    assert_equal(1, a.bsearch_index(target: :last) {|x| x <= 4 })
+    assert_equal(2, a.bsearch_index(target: :last) {|x| x <= 9 })
+    assert_equal(4, a.bsearch_index(target: :last) {|x| x <= 100 })
+
+    assert_equal(nil, [].bsearch_index(target: :last) {|x| false })
+    assert_equal(nil, [].bsearch_index(target: :last) {|x| true })
+    assert_equal(nil, [1].bsearch_index(target: :last) {|x| false })
+    assert_equal(0, [1].bsearch_index(target: :last) {|x| true })
+  end
+
+  def test_bsearch_index_last_in_find_by_number_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(2, a.bsearch_index(target: :last) {|x| 1 - x / 4 })
+    assert_equal(nil, a.bsearch_index(target: :last) {|x| 4 - x / 2 })
+    assert_equal(nil, a.bsearch_index(target: :last) {|x| 1 })
+    assert_equal(nil, a.bsearch_index(target: :last) {|x| -1 })
+    assert_equal(4, a.bsearch_index(target: :last) {|x| 0 })
+
+    assert_equal(2, a.bsearch_index(target: :last) {|x| (1 - x / 4) * (2**100) })
+    assert_equal(nil, a.bsearch_index(target: :last) {|x|   1  * (2**100) })
+    assert_equal(nil, a.bsearch_index(target: :last) {|x| (-1) * (2**100) })
+
+    assert_equal(2, a.bsearch_index(target: :last) {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
+  def test_bsearch_index_last_with_no_block
+    enum = [1, 2, 42, 100, 666].bsearch_index(target: :last)
+    assert_nil enum.size
+    assert_equal 1, enum.each{|x| x <= 33 }
+  end
+
+  def test_bsearch_last_index_typechecks_return_values
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch_index(target: :last) {"not ok"}
+    end
+    assert_equal [1, 2, 42, 100, 666].bsearch_index(target: :last) {}, [1, 2, 42, 100, 666].bsearch_index(target: :last) {false}
+  end
+
+  def test_bsearch_last_in_find_by_boolean_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(nil, a.bsearch(target: :last) {|x| x <= -1 })
+    assert_equal(4, a.bsearch(target: :last) {|x| x <= 4 })
+    assert_equal(7, a.bsearch(target: :last) {|x| x <= 9 })
+    assert_equal(12, a.bsearch(target: :last) {|x| x <= 100 })
+
+    assert_equal(nil, [].bsearch(target: :last) {|x| x < 0 })
+  end
+
+  def test_bsearch_last_in_find_by_number_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(7, a.bsearch(target: :last) {|x| 1 - x / 4 })
+    assert_equal(nil, a.bsearch(target: :last) {|x| 4 - x / 2 })
+    assert_equal(nil, a.bsearch(target: :last) {|x| 1 })
+    assert_equal(nil, a.bsearch(target: :last) {|x| -1 })
+    assert_equal(12, a.bsearch(target: :last) {|x| 0 })
+
+    assert_equal(7, a.bsearch(target: :last) {|x| (1 - x / 4) * (2**100) })
+    assert_equal(nil, a.bsearch(target: :last) {|x|   1  * (2**100) })
+    assert_equal(nil, a.bsearch(target: :last) {|x| (-1) * (2**100) })
+
+    assert_equal(7, a.bsearch(target: :last) {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
+  def test_bsearch_last_with_no_block
+    enum = [1, 10, 42, 100, 666].bsearch(target: :last)
+    assert_nil enum.size
+    assert_equal 10, enum.each{|x| x <= 33 }
+  end
+
+  def test_bsearch_last_typechecks_return_values
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch(target: :last) {"not ok"}
+    end
+    assert_equal [1, 2, 42, 100, 666].bsearch(target: :last) {}, [1, 2, 42, 100, 666].bsearch(target: :last) {false}
   end
 
   def test_shared_marking

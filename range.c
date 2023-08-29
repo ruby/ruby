@@ -614,31 +614,33 @@ is_integer_p(VALUE v)
     return RTEST(is_int) && !UNDEF_P(is_int);
 }
 
-static VALUE
-bsearch_integer_range(VALUE beg, VALUE end, int excl)
-{
-    VALUE satisfied = Qnil;
-    int smaller;
-
-#define BSEARCH_CHECK(expr) \
+#define BSEARCH_CHECK(expr, is_target_first) \
     do { \
         VALUE val = (expr); \
         VALUE v = rb_yield(val); \
         if (FIXNUM_P(v)) { \
-            if (v == INT2FIX(0)) return val; \
-            smaller = (SIGNED_VALUE)v < 0; \
+            if (v == INT2FIX(0)) { \
+                satisfied = val; \
+                smaller = (is_target_first); \
+            } \
+            else { \
+                smaller = (SIGNED_VALUE)v < 0; \
+            } \
         } \
         else if (v == Qtrue) { \
             satisfied = val; \
-            smaller = 1; \
+            smaller = (is_target_first); \
         } \
         else if (!RTEST(v)) { \
-            smaller = 0; \
+            smaller = !(is_target_first); \
         } \
         else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
             int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
-            if (!cmp) return val; \
-            smaller = cmp < 0; \
+            switch (cmp) { \
+              case 0: smaller = (is_target_first); satisfied = val; break; \
+              case 1: smaller = 0; break; \
+              case -1: smaller = 1; \
+            } \
         } \
         else { \
             rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
@@ -647,35 +649,42 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
         } \
     } while (0)
 
+
+static VALUE
+bsearch_integer_range(VALUE beg, VALUE end, int excl, int is_target_first)
+{
+    VALUE satisfied = Qnil;
+    int smaller;
     VALUE low = rb_to_int(beg);
     VALUE high = rb_to_int(end);
-    VALUE mid, org_high;
+    VALUE mid;
     ID id_div;
     CONST_ID(id_div, "div");
 
-    if (excl) high = rb_funcall(high, '-', 1, INT2FIX(1));
-    org_high = high;
+    if (!excl) high = rb_funcall(high, '+', 1, INT2FIX(1));
+    low = rb_funcall(low, '-', 1, INT2FIX(1));
 
-    while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
+    VALUE low_plus_1 = rb_funcall(low, '+', 1, INT2FIX(1));
+    while (rb_cmpint(rb_funcall(low_plus_1, id_cmp, 1, high), low_plus_1, high) < 0) {
         mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
-        BSEARCH_CHECK(mid);
+        BSEARCH_CHECK(mid, is_target_first);
         if (smaller) {
             high = mid;
         }
         else {
-            low = rb_funcall(mid, '+', 1, INT2FIX(1));
+            low = mid;
         }
+        low_plus_1 = rb_funcall(low, '+', 1, INT2FIX(1));
     }
-    if (rb_equal(low, org_high)) {
-        BSEARCH_CHECK(low);
-        if (!smaller) return Qnil;
-    }
+
     return satisfied;
 }
 
+static VALUE bsearch_impl(int argc, VALUE *argv, VALUE range, int is_target_first);
+
 /*
  *  call-seq:
- *     bsearch {|obj| block }  -> value
+ *     bsearch(target: :first) {|obj| block }  -> value
  *
  *  Returns an element from +self+ selected by a binary search.
  *
@@ -684,7 +693,45 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
  */
 
 static VALUE
-range_bsearch(VALUE range)
+range_bsearch(int argc, VALUE *argv, VALUE range)
+{
+    VALUE opt;
+
+    rb_scan_args(argc, argv, "0:", &opt);
+
+    if (NIL_P(opt)) {
+        return bsearch_impl(argc, argv, range, true);
+    }
+
+    static ID keyword_ids[1];
+    VALUE target;
+    ID target_id;
+
+    if (!keyword_ids[0]) {
+        keyword_ids[0] = rb_intern_const("target");
+    }
+
+    rb_get_kwargs(opt, keyword_ids, 0, 1, &target);
+
+    if (!SYMBOL_P(target)) {
+        goto invalid_target;
+    }
+
+    target_id = SYM2ID(target);
+
+    if (target_id == rb_intern("first")) {
+        return bsearch_impl(argc, argv, range, true);
+    }
+    else if (target_id == rb_intern("last")) {
+        return bsearch_impl(argc, argv, range, false);
+    }
+
+  invalid_target:
+    rb_raise(rb_eArgError, "target must be :first or :last");
+}
+
+static VALUE
+bsearch_impl(int argc, VALUE *argv, VALUE range, int is_target_first)
 {
     VALUE beg, end, satisfied = Qnil;
     int smaller;
@@ -701,27 +748,30 @@ range_bsearch(VALUE range)
      *
      * Note that -0.0 is mapped to the same int as 0.0 as we don't want
      * (-1...0.0).bsearch to yield -0.0.
+     *
+     *
+     * If is_target_first is true (which means searching for the first element),
+     * the half-open interval (low, high] indicates where the target is located.
+     *
+     * If is_target_first is false (which means searching for the last element),
+     * the half-open interval [low, high) indicates where the target is located.
      */
 
-#define BSEARCH(conv) \
+#define BSEARCH(conv, is_target_first) \
     do { \
-        RETURN_ENUMERATOR(range, 0, 0); \
-        if (EXCL(range)) high--; \
-        org_high = high; \
-        while (low < high) { \
+        RETURN_ENUMERATOR_KW(range, argc, argv, RB_PASS_KEYWORDS); \
+        if (!EXCL(range)) high++; \
+        low--; \
+        while (low + 1 < high) { \
             mid = ((high < 0) == (low < 0)) ? low + ((high - low) / 2) \
                 : (low < -high) ? -((-1 - low - high)/2 + 1) : (low + high) / 2; \
-            BSEARCH_CHECK(conv(mid)); \
+            BSEARCH_CHECK(conv(mid), is_target_first); \
             if (smaller) { \
                 high = mid; \
             } \
             else { \
-                low = mid + 1; \
+                low = mid; \
             } \
-        } \
-        if (low == org_high) { \
-            BSEARCH_CHECK(conv(low)); \
-            if (!smaller) return Qnil; \
         } \
         return satisfied; \
     } while (0)
@@ -733,43 +783,47 @@ range_bsearch(VALUE range)
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
         long low = FIX2LONG(beg);
         long high = FIX2LONG(end);
-        long mid, org_high;
-        BSEARCH(INT2FIX);
+        long mid;
+        BSEARCH(INT2FIX, is_target_first);
     }
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_FLOAT_TYPE_P(beg) || RB_FLOAT_TYPE_P(end)) {
         int64_t low  = double_as_int64(NIL_P(beg) ? -HUGE_VAL : RFLOAT_VALUE(rb_Float(beg)));
         int64_t high = double_as_int64(NIL_P(end) ?  HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
-        int64_t mid, org_high;
-        BSEARCH(int64_as_double_to_num);
+        int64_t mid;
+        BSEARCH(int64_as_double_to_num, is_target_first);
     }
 #endif
     else if (is_integer_p(beg) && is_integer_p(end)) {
-        RETURN_ENUMERATOR(range, 0, 0);
-        return bsearch_integer_range(beg, end, EXCL(range));
+        RETURN_ENUMERATOR_KW(range, argc, argv, RB_PASS_KEYWORDS);
+        return bsearch_integer_range(beg, end, EXCL(range), is_target_first);
     }
     else if (is_integer_p(beg) && NIL_P(end)) {
         VALUE diff = LONG2FIX(1);
-        RETURN_ENUMERATOR(range, 0, 0);
+        VALUE prev_mid = beg;
+        RETURN_ENUMERATOR_KW(range, argc, argv, RB_PASS_KEYWORDS);
         while (1) {
             VALUE mid = rb_funcall(beg, '+', 1, diff);
-            BSEARCH_CHECK(mid);
+            BSEARCH_CHECK(mid, is_target_first);
             if (smaller) {
-                return bsearch_integer_range(beg, mid, 0);
+                return bsearch_integer_range(prev_mid, mid, 0, is_target_first);
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
+            prev_mid = mid;
         }
     }
     else if (NIL_P(beg) && is_integer_p(end)) {
         VALUE diff = LONG2FIX(-1);
-        RETURN_ENUMERATOR(range, 0, 0);
+        VALUE prev_mid = end;
+        RETURN_ENUMERATOR_KW(range, argc, argv, RB_PASS_KEYWORDS);
         while (1) {
             VALUE mid = rb_funcall(end, '+', 1, diff);
-            BSEARCH_CHECK(mid);
+            BSEARCH_CHECK(mid, is_target_first);
             if (!smaller) {
-                return bsearch_integer_range(mid, end, 0);
+                return bsearch_integer_range(mid, prev_mid, 0, is_target_first);
             }
             diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
+            prev_mid = mid;
         }
     }
     else {
@@ -2395,7 +2449,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
-    rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
+    rb_define_method(rb_cRange, "bsearch", range_bsearch, -1);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_end, 0);
     rb_define_method(rb_cRange, "first", range_first, -1);

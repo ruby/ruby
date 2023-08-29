@@ -3463,65 +3463,43 @@ rb_ary_sort(VALUE ary)
     return ary;
 }
 
-static VALUE rb_ary_bsearch_index(VALUE ary);
-
-/*
- *  call-seq:
- *    array.bsearch {|element| ... } -> object
- *    array.bsearch -> new_enumerator
- *
- *  Returns an element from +self+ selected by a binary search.
- *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
- */
-
 static VALUE
-rb_ary_bsearch(VALUE ary)
+ary_bsearch_index(VALUE ary, int is_target_first)
 {
-    VALUE index_result = rb_ary_bsearch_index(ary);
+    /*
+     * If is_target_first is true (which means searching for the first element),
+     * the half-open interval (low, high] indicates where the target is located.
+     *
+     * If is_target_first is false (which means searching for the last element),
+     * the half-open interval [low, high) indicates where the target is located.
+     */
+    long low = -1, high = RARRAY_LEN(ary), satisfied = -1;
 
-    if (FIXNUM_P(index_result)) {
-        return rb_ary_entry(ary, FIX2LONG(index_result));
-    }
-    return index_result;
-}
-
-/*
- *  call-seq:
- *    array.bsearch_index {|element| ... } -> integer or nil
- *    array.bsearch_index -> new_enumerator
- *
- *  Searches +self+ as described at method #bsearch,
- *  but returns the _index_ of the found element instead of the element itself.
- */
-
-static VALUE
-rb_ary_bsearch_index(VALUE ary)
-{
-    long low = 0, high = RARRAY_LEN(ary), mid;
-    int smaller = 0, satisfied = 0;
-    VALUE v, val;
-
-    RETURN_ENUMERATOR(ary, 0, 0);
-    while (low < high) {
-        mid = low + ((high - low) / 2);
-        val = rb_ary_entry(ary, mid);
-        v = rb_yield(val);
+    while (low + 1 < high) {
+        long mid = low + (high - low) / 2;
+        int smaller = 0;
+        VALUE val = rb_ary_entry(ary, mid);
+        VALUE v = rb_yield(val);
         if (FIXNUM_P(v)) {
-            if (v == INT2FIX(0)) return INT2FIX(mid);
-            smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
+            if (FIXNUM_ZERO_P(v)) {
+                smaller = is_target_first;
+                satisfied = mid;
+            }
+            else {
+                smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
+            }
         }
         else if (v == Qtrue) {
-            satisfied = 1;
-            smaller = 1;
+            smaller = is_target_first;
+            satisfied = mid;
         }
         else if (!RTEST(v)) {
-            smaller = 0;
+            smaller = !is_target_first;
         }
         else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
             const VALUE zero = INT2FIX(0);
             switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
-              case 0: return INT2FIX(mid);
+              case 0: smaller = is_target_first; satisfied = mid; break;
               case 1: smaller = 0; break;
               case -1: smaller = 1;
             }
@@ -3531,17 +3509,90 @@ rb_ary_bsearch_index(VALUE ary)
                      " (must be numeric, true, false or nil)",
                      rb_obj_class(v));
         }
+
         if (smaller) {
             high = mid;
         }
         else {
-            low = mid + 1;
+            low = mid;
         }
     }
-    if (!satisfied) return Qnil;
-    return INT2FIX(low);
+
+    if (satisfied == -1) return Qnil;
+    return INT2FIX(satisfied);
 }
 
+static VALUE rb_ary_bsearch_index(int argc, VALUE *argv, VALUE ary);
+
+/*
+ *  call-seq:
+ *    array.bsearch(target: :first) {|element| ... } -> object
+ *    array.bsearch(target: :first) -> new_enumerator
+ *
+ *  Returns an element from +self+ selected by a binary search.
+ *
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ */
+
+static VALUE
+rb_ary_bsearch(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE index_result = rb_ary_bsearch_index(argc, argv, ary);
+
+    if (FIXNUM_P(index_result)) {
+        return rb_ary_entry(ary, FIX2LONG(index_result));
+    }
+    return index_result;
+}
+
+/*
+ *  call-seq:
+ *    array.bsearch_index(target: :first) {|element| ... } -> integer or nil
+ *    array.bsearch_index(target: :first) -> new_enumerator
+ *
+ *  Searches +self+ as described at method #bsearch,
+ *  but returns the _index_ of the found element instead of the element itself.
+ */
+
+static VALUE
+rb_ary_bsearch_index(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE opt;
+
+    RETURN_ENUMERATOR_KW(ary, argc, argv, RB_PASS_KEYWORDS);
+
+    rb_scan_args(argc, argv, "0:", &opt);
+
+    if (NIL_P(opt)) {
+        return ary_bsearch_index(ary, true);
+    }
+
+    static ID keyword_ids[1];
+    VALUE target;
+    ID target_id;
+
+    if (!keyword_ids[0]) {
+        keyword_ids[0] = rb_intern_const("target");
+    }
+
+    rb_get_kwargs(opt, keyword_ids, 0, 1, &target);
+
+    if (!SYMBOL_P(target)) {
+        goto invalid_target;
+    }
+
+    target_id = SYM2ID(target);
+
+    if (target_id == rb_intern("first")) {
+        return ary_bsearch_index(ary, true);
+    }
+    else if (target_id == rb_intern("last")) {
+        return ary_bsearch_index(ary, false);
+    }
+
+  invalid_target:
+    rb_raise(rb_eArgError, "target must be :first or :last");
+}
 
 static VALUE
 sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
@@ -8710,8 +8761,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "take_while", rb_ary_take_while, 0);
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
-    rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
-    rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
+    rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, -1);
+    rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, -1);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
     rb_define_method(rb_cArray, "all?", rb_ary_all_p, -1);
     rb_define_method(rb_cArray, "none?", rb_ary_none_p, -1);
