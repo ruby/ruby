@@ -322,8 +322,8 @@ impl TempMapping {
     pub fn map_to_local(local_idx: u8) -> TempMapping
     {
         let kind_bits = TempMappingKind::MapToLocal as u8;
-        assert!(local_idx < 8);
-        let bits = (kind_bits << 6) | (local_idx & 7);
+        assert!(local_idx <= 0b111);
+        let bits = (kind_bits << 6) | (local_idx & 0b111);
         TempMapping(bits)
     }
 
