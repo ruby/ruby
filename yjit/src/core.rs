@@ -299,6 +299,12 @@ pub enum TempMappingKind
 
 // Potential mapping of a value on the temporary stack to
 // self, a local variable or constant so that we can track its type
+//
+// The highest two bits represent TempMappingKind, and the rest of
+// the bits are used differently across different kinds.
+// * MapToStack: The lowest 5 bits are used for mapping Type.
+// * MapToSelf: The remaining bits are not used; the type is stored in self_type.
+// * MapToLocal: The lowest 3 bits store the index of a local variable.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub struct TempMapping(u8);
 
