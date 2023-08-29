@@ -13,4 +13,5 @@ class FuzzerTest < Test::Unit::TestCase
   end
 
   snippet "incomplete global variable", "$"
+  snippet "incomplete symbol", ":"
 end

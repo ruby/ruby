@@ -6581,7 +6581,7 @@ parser_lex(yp_parser_t *parser) {
                         LEX(YP_TOKEN_COLON_COLON);
                     }
 
-                    if (lex_state_end_p(parser) || yp_char_is_whitespace(*parser->current.end) || peek(parser) == '#') {
+                    if (lex_state_end_p(parser) || yp_char_is_whitespace(peek(parser)) || peek(parser) == '#') {
                         lex_state_set(parser, YP_LEX_STATE_BEG);
                         LEX(YP_TOKEN_COLON);
                     }
