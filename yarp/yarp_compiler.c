@@ -1,5 +1,22 @@
 #include "yarp.h"
 
+#define OLD_ISEQ NEW_ISEQ
+#undef NEW_ISEQ
+
+#define NEW_ISEQ(node, name, type, line_no) \
+    yp_new_child_iseq(iseq, (node), parser, rb_fstring(name), 0, (type), (line_no))
+
+#define OLD_CHILD_ISEQ NEW_CHILD_ISEQ
+#undef NEW_CHILD_ISEQ
+
+#define NEW_CHILD_ISEQ(node, name, type, line_no) \
+    yp_new_child_iseq(iseq, (node), parser, rb_fstring(name), iseq, (type), (line_no))
+
+rb_iseq_t *
+yp_iseq_new_with_opt(yp_scope_node_t *node, yp_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum rb_iseq_type type, const rb_compile_option_t *option);
+
 static VALUE
 parse_number(const yp_node_t *node) {
     const char *start = node->location.start;
@@ -261,6 +278,22 @@ yp_compile_if(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, co
 
     return;
 }
+
+static rb_iseq_t *
+yp_new_child_iseq(rb_iseq_t *iseq, yp_scope_node_t * node, yp_parser_t *parser,
+               VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
+{
+    debugs("[new_child_iseq]> ---------------------------------------\n");
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
+    rb_iseq_t * ret_iseq = yp_iseq_new_with_opt(node, parser, name,
+            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
+            line_no, parent,
+            isolated_depth ? isolated_depth + 1 : 0,
+            type, ISEQ_COMPILE_DATA(iseq)->option);
+    debugs("[new_child_iseq]< ---------------------------------------\n");
+    return ret_iseq;
+}
+
 
 static int
 yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node)
@@ -1164,6 +1197,11 @@ rb_translate_yarp(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret
 
     yp_compile_node(iseq, node, ret, node->location.start, false, compile_context);
     iseq_set_sequence(iseq, ret);
-
     return Qnil;
 }
+
+#undef NEW_ISEQ
+#define NEW_ISEQ OLD_ISEQ
+
+#undef NEW_CHILD_ISEQ
+#define NEW_CHILD_ISEQ OLD_CHILD_ISEQ

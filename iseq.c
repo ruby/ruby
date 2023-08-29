@@ -945,6 +945,52 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
 VALUE rb_iseq_compile_yarp_node(rb_iseq_t * iseq, const yp_node_t * yarp_pointer, yp_parser_t *parser);
 
 rb_iseq_t *
+yp_iseq_new_with_opt(yp_node_t *node, yp_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum rb_iseq_type type, const rb_compile_option_t *option)
+{
+    rb_iseq_t *iseq = iseq_alloc();
+    rb_compile_option_t new_opt;
+
+    if (option) {
+        new_opt = *option;
+    }
+    else {
+        new_opt = COMPILE_OPTION_DEFAULT;
+    }
+
+    VALUE script_lines = Qnil;
+
+    rb_code_location_t code_loc;
+
+    if (node) {
+        yp_line_column_t start_line_col = yp_newline_list_line_column(&(parser->newline_list), node->location.start);
+        yp_line_column_t end_line_col= yp_newline_list_line_column(&(parser->newline_list), node->location.end);
+        code_loc = (rb_code_location_t) {
+            .beg_pos = {
+                .lineno = (int)start_line_col.line,
+                .column = (int)start_line_col.column
+            },
+                .end_pos = {
+                    .lineno = (int)end_line_col.line,
+                    .column = (int)end_line_col.column
+                },
+        };
+    }
+
+    // TODO: node_id
+    int node_id = -1;
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_loc, node_id,
+            parent, isolated_depth, type, script_lines, &new_opt);
+
+    rb_iseq_compile_yarp_node(iseq, node, parser);
+
+    finish_iseq_build(iseq);
+
+    return iseq_translate(iseq);
+}
+
+rb_iseq_t *
 rb_iseq_new_with_callback(
     const struct rb_iseq_new_with_callback_callback_func * ifunc,
     VALUE name, VALUE path, VALUE realpath,
