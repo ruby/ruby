@@ -420,6 +420,93 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_CALL_NODE: {
+          yp_call_node_t *call_node = (yp_call_node_t *) node;
+
+          ID mid = parse_location_symbol(&call_node->message_loc);
+          int flags = 0;
+          int orig_argc = 0;
+
+          if (call_node->receiver == NULL) {
+              ADD_INSN(ret, &dummy_line_node, putself);
+          } else {
+              yp_compile_node(iseq, call_node->receiver, ret, src, popped, compile_context);
+          }
+
+          if (call_node->arguments == NULL) {
+              if (flags & VM_CALL_FCALL) {
+                  flags |= VM_CALL_VCALL;
+              }
+          } else {
+              yp_arguments_node_t *arguments = call_node->arguments;
+              yp_compile_node(iseq, (yp_node_t *) arguments, ret, src, popped, compile_context);
+              orig_argc = (int)arguments->arguments.size;
+          }
+
+          VALUE block_iseq = Qnil;
+          if (call_node->block != NULL) {
+              // Scope associated with the block
+              yp_scope_node_t scope_node;
+              yp_scope_node_init((yp_node_t *)call_node->block, &scope_node);
+
+              const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+              ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
+              ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, mid, INT2FIX(orig_argc), block_iseq);
+          }
+          else {
+              if (block_iseq == Qnil && flags == 0) {
+                  flags |= VM_CALL_ARGS_SIMPLE;
+              }
+
+              if (call_node->receiver == NULL) {
+                  flags |= VM_CALL_FCALL;
+
+                  if (block_iseq == Qnil && call_node->arguments == NULL) {
+                      flags |= VM_CALL_VCALL;
+                  }
+              }
+
+              ADD_SEND_WITH_FLAG(ret, &dummy_line_node, mid, INT2NUM(orig_argc), INT2FIX(flags));
+          }
+          return;
+      }
+      case YP_NODE_CLASS_NODE: {
+          yp_class_node_t *class_node = (yp_class_node_t *)node;
+          yp_scope_node_t scope_node;
+          yp_scope_node_init((yp_node_t *)class_node, &scope_node);
+
+          yp_node_t *recursing_node = class_node->constant_path;
+
+          while (recursing_node->type != YP_NODE_CONSTANT_READ_NODE) {
+              recursing_node = ((yp_constant_path_node_t *)recursing_node)->child;
+          }
+
+          ID class_id = parse_location_symbol(&recursing_node->location);
+
+          VALUE class_name = rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(class_id)));
+
+          const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(&scope_node, class_name, ISEQ_TYPE_CLASS, lineno);
+
+          // TODO: Once we merge constant path nodes correctly, fix this flag
+          const int flags = VM_DEFINECLASS_TYPE_CLASS |
+              (class_node->superclass ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
+              yp_compile_class_path(ret, iseq, class_node->constant_path, &dummy_line_node);
+
+          if (class_node->superclass) {
+              yp_compile_node(iseq, class_node->superclass, ret, src, popped, compile_context);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          }
+
+          ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(class_id), class_iseq, INT2FIX(flags));
+          RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+          return;
+      }
       case YP_NODE_CLASS_VARIABLE_READ_NODE:
         if (!popped) {
             ID cvar_name = parse_node_symbol((yp_node_t *)node);
@@ -484,6 +571,21 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
           ID constant_name = parse_location_symbol(&constant_write_node->name_loc);
           ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_name));
+          return;
+      }
+      case YP_NODE_DEF_NODE: {
+          yp_def_node_t *def_node = (yp_def_node_t *) node;
+          ID method_name = parse_location_symbol(&def_node->name_loc);
+          yp_scope_node_t scope_node;
+          yp_scope_node_init((yp_node_t *)def_node, &scope_node);
+          rb_iseq_t *method_iseq = NEW_ISEQ(&scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
+
+          ADD_INSN2(ret, &dummy_line_node, definemethod, ID2SYM(method_name), method_iseq);
+          RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)method_iseq);
+
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(method_name));
+          }
           return;
       }
       case YP_NODE_DEFINED_NODE: {
@@ -713,6 +815,22 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements.size * 2));
           return;
       }
+      case YP_NODE_LAMBDA_NODE: {
+          yp_scope_node_t scope_node;
+          yp_scope_node_init((yp_node_t *)node, &scope_node);
+
+          const rb_iseq_t *block = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+          VALUE argc = INT2FIX(0);
+
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+          ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, idLambda, argc, block);
+          RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+          return;
+      }
       case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
           yp_local_variable_read_node_t *local_read_node = (yp_local_variable_read_node_t *) node;
 
@@ -766,6 +884,35 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_MISSING_NODE: {
           rb_bug("A yp_missing_node_t should not exist in YARP's AST.");
+          return;
+      }
+      case YP_NODE_MODULE_NODE: {
+          yp_module_node_t *module_node = (yp_module_node_t *)node;
+          yp_scope_node_t scope_node;
+          yp_scope_node_init((yp_node_t *)module_node, &scope_node);
+
+          yp_node_t *recursing_node = module_node->constant_path;
+
+          while (recursing_node->type != YP_NODE_CONSTANT_READ_NODE) {
+              recursing_node = ((yp_constant_path_node_t *)recursing_node)->child;
+          }
+
+          ID module_id = parse_location_symbol(&recursing_node->location);
+
+          VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
+
+          const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
+
+          const int flags = VM_DEFINECLASS_TYPE_MODULE |
+              yp_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node);
+
+          ADD_INSN (ret, &dummy_line_node, putnil);
+          ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
+          RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)module_iseq);
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
           return;
       }
       case YP_NODE_MULTI_WRITE_NODE: {
@@ -1017,6 +1164,30 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_SELF_NODE:
         ADD_INSN(ret, &dummy_line_node, putself);
         return;
+      case YP_NODE_SINGLETON_CLASS_NODE: {
+          yp_singleton_class_node_t *singleton_class_node = (yp_singleton_class_node_t *)node;
+          yp_scope_node_t scope_node;
+          yp_scope_node_init((yp_node_t *)singleton_class_node, &scope_node);
+
+          const rb_iseq_t *singleton_class = NEW_ISEQ(&scope_node, rb_fstring_lit("singleton class"),
+                  ISEQ_TYPE_CLASS, lineno);
+
+          yp_compile_node(iseq, singleton_class_node->expression, ret, src, popped, compile_context);
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          ID singletonclass;
+          CONST_ID(singletonclass, "singletonclass");
+
+          ADD_INSN3(ret, &dummy_line_node, defineclass,
+                  ID2SYM(singletonclass), singleton_class,
+                  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+          RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          return;
+      }
       case YP_NODE_SPLAT_NODE: {
           yp_splat_node_t *splat_node = (yp_splat_node_t *)node;
           yp_compile_node(iseq, splat_node->expression, ret, src, popped, compile_context);
