@@ -42,7 +42,7 @@ module YARP
     #
     # becomes
     #
-    # Foo || Foo = bar
+    # defined?(Foo) ? Foo : Foo = bar
     def visit_constant_or_write_node(node)
       desugar_or_write_defined_node(node, ConstantReadNode, ConstantWriteNode)
     end
@@ -74,7 +74,7 @@ module YARP
     #
     # becomes
     #
-    # Foo::Bar || Foo::Bar = baz
+    # defined?(Foo::Bar) ? Foo::Bar : Foo::Bar = baz
     def visit_constant_path_or_write_node(node)
       IfNode.new(
         node.operator_loc,
@@ -132,7 +132,7 @@ module YARP
     #
     # becomes
     #
-    # $foo || $foo = bar
+    # defined?($foo) ? $foo : $foo = bar
     def visit_global_variable_or_write_node(node)
       desugar_or_write_defined_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
     end
@@ -244,7 +244,7 @@ module YARP
       )
     end
 
-    # Don't desugar `x ||= y` to `defined?(x) ? x : x = y`
+    # Desugar `x ||= y` to `defined?(x) ? x : x = y`
     def desugar_or_write_defined_node(node, read_class, write_class, arguments: [])
       IfNode.new(
         node.operator_loc,
