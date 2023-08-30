@@ -7413,6 +7413,12 @@ parser_lex(yp_parser_t *parser) {
                         break;
                     }
                     case '\\': {
+                        // Check that we're not at the end of the file.
+                        if (breakpoint + 1 >= parser->end) {
+                            breakpoint = NULL;
+                            break;
+                        }
+
                         // If we hit an escape, then we need to skip past
                         // however many characters the escape takes up. However
                         // it's important that if \n or \r\n are escaped that we

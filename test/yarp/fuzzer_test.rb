@@ -23,4 +23,5 @@ class FuzzerTest < Test::Unit::TestCase
   snippet "incomplete hex number", "0x"
   snippet "incomplete escaped list", "%w[\\"
   snippet "incomplete escaped regex", "/a\\"
+  snippet "unterminated heredoc with unterminated escape at end of file", "<<A\n\\"
 end
