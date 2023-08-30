@@ -26,7 +26,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     end
 
     @gem = util_spec "some_gem" do |s|
-      s.license = "AGPL-3.0"
+      s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
     end
 
@@ -198,8 +198,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     end
 
     error = @ui.error.split "\n"
-    assert_equal "WARNING:  licenses is empty, but is recommended.  Use a license identifier from", error.shift
-    assert_equal "http://spdx.org/licenses or 'Nonstandard' for a nonstandard license,", error.shift
+    assert_equal "WARNING:  licenses is empty, but is recommended. Use an license identifier from", error.shift
+    assert_equal "https://spdx.org/licenses or 'Nonstandard' for a nonstandard license,", error.shift
     assert_equal "or set it to nil if you don't want to specify a license.", error.shift
     assert_equal "WARNING:  See https://guides.rubygems.org/specification-reference/ for help", error.shift
     assert_equal [], error
