@@ -355,7 +355,7 @@ yp_new_child_iseq(rb_iseq_t *iseq, yp_scope_node_t * node, yp_parser_t *parser,
 
 
 static int
-yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node, const char * src, bool popped, yp_compile_context_t *compile_context)
+yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node, const uint8_t * src, bool popped, yp_compile_context_t *compile_context)
 {
     if (constant_path_node->type == YP_NODE_CONSTANT_PATH_NODE) {
         if (((yp_constant_path_node_t *)constant_path_node)->parent) {
