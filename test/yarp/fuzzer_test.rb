@@ -17,4 +17,8 @@ class FuzzerTest < Test::Unit::TestCase
   snippet "incomplete escaped string", '"\\'
   snippet "trailing comment", "1\n#\n"
   snippet "trailing asterisk", "a *"
+  snippet "incomplete decimal number", "0d"
+  snippet "incomplete binary number", "0b"
+  snippet "incomplete octal number", "0o"
+  snippet "incomplete hex number", "0x"
 end

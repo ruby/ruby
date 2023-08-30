@@ -4997,7 +4997,8 @@ lex_numeric_prefix(yp_parser_t *parser) {
             // 0d1111 is a decimal number
             case 'd':
             case 'D':
-                if (yp_char_is_decimal_digit(*++parser->current.end)) {
+                parser->current.end++;
+                if (yp_char_is_decimal_digit(peek(parser))) {
                     parser->current.end += yp_strspn_decimal_number(parser->current.end, parser->end - parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid decimal number.");
@@ -5008,7 +5009,8 @@ lex_numeric_prefix(yp_parser_t *parser) {
             // 0b1111 is a binary number
             case 'b':
             case 'B':
-                if (yp_char_is_binary_digit(*++parser->current.end)) {
+                parser->current.end++;
+                if (yp_char_is_binary_digit(peek(parser))) {
                     parser->current.end += yp_strspn_binary_number(parser->current.end, parser->end - parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid binary number.");
@@ -5019,7 +5021,8 @@ lex_numeric_prefix(yp_parser_t *parser) {
             // 0o1111 is an octal number
             case 'o':
             case 'O':
-                if (yp_char_is_octal_digit(*++parser->current.end)) {
+                parser->current.end++;
+                if (yp_char_is_octal_digit(peek(parser))) {
                     parser->current.end += yp_strspn_octal_number(parser->current.end, parser->end - parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid octal number.");
@@ -5043,7 +5046,8 @@ lex_numeric_prefix(yp_parser_t *parser) {
             // 0x1111 is a hexadecimal number
             case 'x':
             case 'X':
-                if (yp_char_is_hexadecimal_digit(*++parser->current.end)) {
+                parser->current.end++;
+                if (yp_char_is_hexadecimal_digit(peek(parser))) {
                     parser->current.end += yp_strspn_hexadecimal_number(parser->current.end, parser->end - parser->current.end);
                 } else {
                     yp_diagnostic_list_append(&parser->error_list, parser->current.start, parser->current.end, "Invalid hexadecimal number.");
