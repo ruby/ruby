@@ -342,12 +342,14 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     // Verify stack operand types
     let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u8);
     for i in 0..top_idx {
-        let (learned_mapping, learned_type) = ctx.get_opnd_mapping(StackOpnd(i));
+        let learned_mapping = ctx.get_opnd_mapping(StackOpnd(i));
+        let learned_type = ctx.get_opnd_type(StackOpnd(i));
+
         let stack_val = jit.peek_at_stack(ctx, i as isize);
         let val_type = Type::from(stack_val);
 
-        match learned_mapping {
-            TempMapping::MapToSelf => {
+        match learned_mapping.get_kind() {
+            TempMappingKind::MapToSelf => {
                 if self_val != stack_val {
                     panic!(
                         "verify_ctx: stack value was mapped to self, but values did not match!\n  stack: {}\n  self: {}",
@@ -356,8 +358,8 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                     );
                 }
             }
-            TempMapping::MapToLocal(local_idx) => {
-                let local_idx: u8 = local_idx.into();
+            TempMappingKind::MapToLocal => {
+                let local_idx: u8 = learned_mapping.get_local_idx().into();
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(
@@ -368,7 +370,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                     );
                 }
             }
-            TempMapping::MapToStack => {}
+            TempMappingKind::MapToStack => {}
         }
 
         // If the actual type differs from the learned type
@@ -1009,9 +1011,9 @@ fn gen_dup(
     _ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let dup_val = asm.stack_opnd(0);
-    let (mapping, tmp_type) = asm.ctx.get_opnd_mapping(dup_val.into());
+    let mapping = asm.ctx.get_opnd_mapping(dup_val.into());
 
-    let loc0 = asm.stack_push_mapping((mapping, tmp_type));
+    let loc0 = asm.stack_push_mapping(mapping);
     asm.mov(loc0, dup_val);
 
     Some(KeepCompiling)
@@ -2327,7 +2329,7 @@ fn gen_setinstancevariable(
         return None;
     }
 
-    let (_, stack_type) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+    let stack_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
     // Check if the comptime class uses a custom allocator
     let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
@@ -8968,8 +8970,8 @@ mod tests {
 
         let status = gen_swap(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
-        let (_, tmp_type_next) = asm.ctx.get_opnd_mapping(StackOpnd(1));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
+        let tmp_type_next = asm.ctx.get_opnd_type(StackOpnd(1));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Fixnum);
@@ -8981,7 +8983,7 @@ mod tests {
         let (mut jit, _context, mut asm, mut cb, mut ocb) = setup_codegen();
         let status = gen_putnil(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Nil);
@@ -9000,7 +9002,7 @@ mod tests {
 
         let status = gen_putobject(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::True);
@@ -9020,7 +9022,7 @@ mod tests {
 
         let status = gen_putobject(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Fixnum);
@@ -9034,7 +9036,7 @@ mod tests {
         jit.opcode = YARVINSN_putobject_INT2FIX_0_.as_usize();
         let status = gen_putobject_int2fix(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         // Right now we're not testing the generated machine code to make sure a literal 1 or 0 was pushed. I've checked locally.
         assert_eq!(status, Some(KeepCompiling));
