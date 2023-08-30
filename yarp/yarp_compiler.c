@@ -186,7 +186,7 @@ again:
             DECL_ANCHOR(cond_seq);
             INIT_ANCHOR(cond_seq);
 
-            yp_compile_node(iseq, cond, cond_seq, src, Qfalse, compile_context);
+            yp_compile_node(iseq, cond, cond_seq, src, false, compile_context);
             ADD_SEQ(ret, cond_seq);
         }
         break;
@@ -301,7 +301,7 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
 
     ADD_LABEL(ret, redo_label);
     if (statements) {
-        yp_compile_node(iseq, (yp_node_t *)statements, ret, src, Qtrue, compile_context);
+        yp_compile_node(iseq, (yp_node_t *)statements, ret, src, true, compile_context);
     }
 
     ADD_LABEL(ret, next_label);
@@ -358,9 +358,9 @@ static int
 yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *constant_path_node, const NODE *line_node, const uint8_t * src, bool popped, yp_compile_context_t *compile_context)
 {
     if (constant_path_node->type == YP_NODE_CONSTANT_PATH_NODE) {
-        if (((yp_constant_path_node_t *)constant_path_node)->parent) {
+        yp_node_t *parent = ((yp_constant_path_node_t *)constant_path_node)->parent;
+        if (parent) {
             /* Bar::Foo */
-            yp_node_t *parent = ((yp_constant_path_node_t *)constant_path_node)->parent;
             yp_compile_node(iseq, parent, ret, src, popped, compile_context);
             return VM_DEFINECLASS_FLAG_SCOPED;
         }
@@ -730,7 +730,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
         return;
       case YP_NODE_GLOBAL_VARIABLE_WRITE_NODE: {
           yp_global_variable_write_node_t *write_node = (yp_global_variable_write_node_t *) node;
-          yp_compile_node(iseq, write_node->value, ret, src, Qfalse, compile_context);
+          yp_compile_node(iseq, write_node->value, ret, src, false, compile_context);
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
@@ -792,7 +792,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_INSTANCE_VARIABLE_WRITE_NODE: {
           yp_instance_variable_write_node_t *write_node = (yp_instance_variable_write_node_t *) node;
-          yp_compile_node(iseq, write_node->value, ret, src, Qfalse, compile_context);
+          yp_compile_node(iseq, write_node->value, ret, src, false, compile_context);
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
@@ -923,7 +923,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_LOCAL_VARIABLE_WRITE_NODE: {
           yp_local_variable_write_node_t *local_write_node = (yp_local_variable_write_node_t *) node;
-          yp_compile_node(iseq, local_write_node->value, ret, src, Qfalse, compile_context);
+          yp_compile_node(iseq, local_write_node->value, ret, src, false, compile_context);
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
@@ -1260,10 +1260,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           for (size_t index = 0; index < node_list.size; index++) {
               // We only want to have popped == false for the last instruction
               if (!popped && (index != node_list.size - 1)) {
-                  yp_compile_node(iseq, node_list.nodes[index], ret, src, Qtrue, compile_context);
+                  yp_compile_node(iseq, node_list.nodes[index], ret, src, true, compile_context);
               }
               else {
-                  yp_compile_node(iseq, node_list.nodes[index], ret, src, Qfalse, compile_context);
+                  yp_compile_node(iseq, node_list.nodes[index], ret, src, false, compile_context);
               }
           }
           return;
