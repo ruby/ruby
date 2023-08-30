@@ -1243,10 +1243,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_SOURCE_ENCODING_NODE: {
           const char *encoding = compile_context->parser->encoding.name;
           if (!popped) {
-              // TODO: This encoding isn't an exact match of what CRuby outputs, for
-              // example "utf8" vs "#<Encoding:UTF-8>". Look into if there's a standard
-              // conversion to the expected format here.
-              ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new_cstr(encoding));
+              rb_encoding *enc = rb_find_encoding(rb_str_new_cstr(encoding));
+              VALUE enc_name = rb_str_new_cstr(enc->name);
+              VALUE enc_str = rb_str_freeze(rb_sprintf("#<Encoding:%"PRIsVALUE">", enc_name));
+              ADD_INSN1(ret, &dummy_line_node, putobject, enc_str);
           }
           return;
       }
