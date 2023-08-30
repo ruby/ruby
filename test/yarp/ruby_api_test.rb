@@ -43,8 +43,7 @@ class YARPRubyAPITest < Test::Unit::TestCase
       arg.location.join(recv.location)
     end
 
-    other_recv, other_args_node, _ = parse_expression("1234 + 567").child_nodes
-    other_arg = other_args_node.arguments[0]
+    other_arg = parse_expression("1234 + 567").arguments.arguments[0]
 
     assert_raise RuntimeError, "Incompatible sources" do
       other_arg.location.join(recv.location)
