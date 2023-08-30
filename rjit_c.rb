@@ -1514,6 +1514,7 @@ module RubyVM::RJIT # :nodoc: all
       interrupt_lock: [self.rb_nativethread_lock_t, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), interrupt_lock)")],
       unblock: [self.rb_unblock_callback, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), unblock)")],
       locking_mutex: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), locking_mutex)")],
+      sleeping_mutex: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), sleeping_mutex)")],
       keeping_mutexes: [CType::Pointer.new { self.rb_mutex_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), keeping_mutexes)")],
       join_list: [CType::Pointer.new { self.rb_waiting_list }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), join_list)")],
       invoke_arg: [CType::Union.new(

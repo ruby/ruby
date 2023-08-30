@@ -3264,6 +3264,7 @@ thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_UNLESS_NULL(th->last_status);
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
+    RUBY_MARK_UNLESS_NULL(th->sleeping_mutex);
     RUBY_MARK_UNLESS_NULL(th->name);
 
     RUBY_MARK_UNLESS_NULL(th->scheduler);
