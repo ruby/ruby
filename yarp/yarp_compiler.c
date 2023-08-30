@@ -186,7 +186,7 @@ again:
             DECL_ANCHOR(cond_seq);
             INIT_ANCHOR(cond_seq);
 
-            yp_compile_node(iseq, cond, cond_seq, src, Qfalse, compile_context);
+            yp_compile_node(iseq, cond, cond_seq, src, false, compile_context);
             ADD_SEQ(ret, cond_seq);
         }
         break;
@@ -301,7 +301,7 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
 
     ADD_LABEL(ret, redo_label);
     if (statements) {
-        yp_compile_node(iseq, (yp_node_t *)statements, ret, src, Qtrue, compile_context);
+        yp_compile_node(iseq, (yp_node_t *)statements, ret, src, true, compile_context);
     }
 
     ADD_LABEL(ret, next_label);
@@ -1257,10 +1257,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_node_list_t node_list = statements_node->body;
           for (size_t index = 0; index < node_list.size; index++) {
               if (!popped && (index != node_list.size - 1)) {
-                  yp_compile_node(iseq, node_list.nodes[index], ret, src, Qtrue, compile_context);
+                  yp_compile_node(iseq, node_list.nodes[index], ret, src, true, compile_context);
               }
               else {
-                  yp_compile_node(iseq, node_list.nodes[index], ret, src, Qfalse, compile_context);
+                  yp_compile_node(iseq, node_list.nodes[index], ret, src, false, compile_context);
               }
           }
           return;
