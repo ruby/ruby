@@ -40,16 +40,21 @@ class YARPRubyAPITest < Test::Unit::TestCase
     assert_equal 10, joined.length
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     e = assert_rais RuntimeError do
 =======
     assert_raises RuntimeError, "Incompatible locations" do
 >>>>>>> 687213d2e38 (use a more idiomatic form of `assert_raises`)
+=======
+    assert_raise RuntimeError, "Incompatible locations" do
+>>>>>>> b85e01d77d2 (Use assert_raise)
       arg.location.join(recv.location)
     end
 
     other_recv, other_args_node, _ = parse_expression("1234 + 567").child_nodes
     other_arg = other_args_node.arguments[0]
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     e = assert_rais RuntimeError do
 =======
@@ -63,6 +68,13 @@ class YARPRubyAPITest < Test::Unit::TestCase
 =======
     assert_raises RuntimeError, "Incompatible sources" do
 >>>>>>> 687213d2e38 (use a more idiomatic form of `assert_raises`)
+=======
+    assert_raise RuntimeError, "Incompatible sources" do
+      other_arg.location.join(recv.location)
+    end
+
+    assert_raise RuntimeError, "Incompatible sources" do
+>>>>>>> b85e01d77d2 (Use assert_raise)
       recv.location.join(other_arg.location)
     end
   end
