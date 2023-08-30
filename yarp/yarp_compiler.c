@@ -1064,13 +1064,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_PROGRAM_NODE: {
           yp_program_node_t *program_node = (yp_program_node_t *) node;
 
+          yp_scope_node_t scope_node;
+          yp_scope_node_init((yp_node_t *)node, &scope_node);
           if (program_node->statements->body.size == 0) {
               ADD_INSN(ret, &dummy_line_node, putnil);
           } else {
-              yp_compile_node(iseq, (yp_node_t *) program_node->statements, ret, src, popped, compile_context);
+              yp_scope_node_t *res_node = &scope_node;
+              yp_compile_node(iseq, (yp_node_t *) res_node, ret, src, popped, compile_context);
           }
 
-          ADD_INSN(ret, &dummy_line_node, leave);
           return;
       }
       case YP_NODE_RANGE_NODE: {
@@ -1285,7 +1287,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_statements_node_t *statements_node = (yp_statements_node_t *) node;
           yp_node_list_t node_list = statements_node->body;
           for (size_t index = 0; index < node_list.size; index++) {
-              // We only want to have popped == false for the last instruction
               if (!popped && (index != node_list.size - 1)) {
                   yp_compile_node(iseq, node_list.nodes[index], ret, src, true, compile_context);
               }
