@@ -447,10 +447,19 @@ module SyncDefaultGems
 
     # Gem-specific patterns
     case gem
+    when "rubygems"
+      # We don't copy any vcr_cassettes to this repository. Because the directory does not
+      # exist, rename detection doesn't work. So it starts with the original path `bundler/`.
+      %r[\A(?:
+        bundler/spec/support/artifice/vcr_cassettes
+      )\z]mx
     when "yarp"
+      # Rename detection never works between ruby/ruby/doc and ruby/yarp/docs
+      # since ruby/ruby/doc is not something owned by YARP.
       %r[\A(?:
         Makefile\.in
         |configure\.ac
+        |docs/.*
         |fuzz/.*
         |rust/.*
         |tasks/.*
@@ -527,27 +536,6 @@ module SyncDefaultGems
   #++
 
   def resolve_conflicts(gem, sha, edit)
-    # Forcibly remove any files that we don't want to copy to this repository.
-    # We also ignore them as new `toplevels` even when they don't conflict.
-    ignored_paths = []
-    case gem
-    when "rubygems"
-      # We don't copy any vcr_cassettes to this repository. Because the directory does not
-      # exist, rename detection doesn't work. So it starts with the original path `bundler/`.
-      ignored_paths += %w[bundler/spec/support/artifice/vcr_cassettes]
-    when "yarp"
-      # Rename detection never works between ruby/ruby/doc and ruby/yarp/docs
-      # since ruby/ruby/doc is not something owned by YARP.
-      ignored_paths += %w[docs/]
-    end
-    ignored_paths.each do |path|
-      if File.exist?(path)
-        puts "Removing: #{path}"
-        system("git", "reset", path)
-        rm_rf(path)
-      end
-    end
-
     # git has inexact rename detection, so they follow directory renames even for new files.
     # However, new files are considered a `CONFLICT (file location)`, so you need to git-add them here.
     # We hope that they are not other kinds of conflicts, assuming we don't modify them in this repository.
