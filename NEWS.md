@@ -105,8 +105,8 @@ The following bundled gems are updated.
 * rexml 3.2.6
 * rss 0.3.0
 * net-imap 0.3.7
-* rbs 3.1.3
-* typeprof 0.21.7
+* rbs 3.2.1
+* typeprof 0.21.8
 * debug 1.8.0
 
 The following default gem is now bundled.
