@@ -2766,8 +2766,13 @@ yp_interpolated_regular_expression_node_create(yp_parser_t *parser, const yp_tok
 
 static inline void
 yp_interpolated_regular_expression_node_append(yp_interpolated_regular_expression_node_t *node, yp_node_t *part) {
+    if (node->base.location.start > part->location.start) {
+        node->base.location.start = part->location.start;
+    }
+    if (node->base.location.end < part->location.end) {
+        node->base.location.end = part->location.end;
+    }
     yp_node_list_append(&node->parts, part);
-    node->base.location.end = part->location.end;
 }
 
 static inline void
@@ -3600,8 +3605,8 @@ yp_regular_expression_node_create(yp_parser_t *parser, const yp_token_t *opening
             .type = YP_NODE_REGULAR_EXPRESSION_NODE,
             .flags = yp_regular_expression_flags_create(closing),
             .location = {
-                .start = opening->start,
-                .end = closing->end
+                .start = MIN(opening->start, closing->start),
+                .end = MAX(opening->end, closing->end)
             }
         },
         .opening_loc = YP_LOCATION_TOKEN_VALUE(opening),

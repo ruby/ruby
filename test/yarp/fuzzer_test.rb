@@ -33,5 +33,16 @@ module YARP
       A
       /, ""\\
     EOF
+    snippet "regular expression with start and end out of order", <<~RUBY
+      <<-A.g//,
+      A
+      /{/, ''\\
+    RUBY
+    snippet "interpolated regular expression with start and end out of order", <<~RUBY
+      <<-A.g/{/,
+      A
+      a
+      /{/, ''\\
+    RUBY
   end
 end
