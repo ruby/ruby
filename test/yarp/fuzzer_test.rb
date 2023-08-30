@@ -22,5 +22,11 @@ module YARP
     snippet "incomplete escaped list", "%w[\\"
     snippet "incomplete escaped regex", "/a\\"
     snippet "unterminated heredoc with unterminated escape at end of file", "<<A\n\\"
+
+    snippet "statements node with multiple heredocs", <<~EOF
+      for <<A + <<B
+      A
+      B
+    EOF
   end
 end

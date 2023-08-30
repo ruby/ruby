@@ -3908,12 +3908,14 @@ yp_statements_node_location_set(yp_statements_node_t *node, const uint8_t *start
 // Append a new node to the given StatementsNode node's body.
 static void
 yp_statements_node_body_append(yp_statements_node_t *node, yp_node_t *statement) {
-    if (yp_statements_node_body_length(node) == 0) {
+    if (yp_statements_node_body_length(node) == 0 || statement->location.start < node->base.location.start) {
         node->base.location.start = statement->location.start;
+    }
+    if (statement->location.end > node->base.location.end) {
+        node->base.location.end = statement->location.end;
     }
 
     yp_node_list_append(&node->body, statement);
-    node->base.location.end = statement->location.end;
 
     // Every statement gets marked as a place where a newline can occur.
     statement->flags |= YP_NODE_FLAG_NEWLINE;
