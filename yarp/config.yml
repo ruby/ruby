@@ -1703,6 +1703,9 @@ nodes:
                 ^^^^^
           end
   - name: NumberedReferenceReadNode
+    fields:
+      - name: number
+        type: uint32
     comment: |
       Represents reading a numbered reference to a capture in the previous match.
 

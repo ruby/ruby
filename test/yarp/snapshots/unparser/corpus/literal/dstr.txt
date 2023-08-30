@@ -57,7 +57,7 @@ ProgramNode(0...299)(
        [StringNode(146...147)(nil, (146...147), nil, "a"),
         EmbeddedVariableNode(147...150)(
           (147...148),
-          NumberedReferenceReadNode(148...150)()
+          NumberedReferenceReadNode(148...150)(1)
         )],
        (150...151)
      ),

@@ -613,6 +613,38 @@ yp_scope_node_init(yp_node_t *node, yp_scope_node_t *scope) {
 /* Node creation functions                                                    */
 /******************************************************************************/
 
+// Parse the decimal number represented by the range of bytes. returns
+// UINT32_MAX if the number fails to parse. This function assumes that the range
+// of bytes has already been validated to contain only decimal digits.
+static uint32_t
+parse_decimal_number(yp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    ptrdiff_t diff = end - start;
+    assert(diff > 0 && ((unsigned long) diff < SIZE_MAX));
+    size_t length = (size_t) diff;
+
+    char *digits = calloc(length + 1, sizeof(char));
+    memcpy(digits, start, length);
+    digits[length] = '\0';
+
+    char *endptr;
+    errno = 0;
+    unsigned long value = strtoul(digits, &endptr, 10);
+
+    if ((digits == endptr) || (*endptr != '\0') || (errno == ERANGE)) {
+        yp_diagnostic_list_append(&parser->error_list, start, end, "invalid decimal number");
+        value = UINT32_MAX;
+    }
+
+    free(digits);
+
+    if (value > UINT32_MAX) {
+        yp_diagnostic_list_append(&parser->error_list, start, end, "invalid decimal number");
+        value = UINT32_MAX;
+    }
+
+    return (uint32_t) value;
+}
+
 // Parse out the options for a regular expression.
 static inline yp_node_flags_t
 yp_regular_expression_flags_create(const yp_token_t *closing) {
@@ -3289,7 +3321,8 @@ yp_numbered_reference_read_node_create(yp_parser_t *parser, const yp_token_t *na
         {
             .type = YP_NODE_NUMBERED_REFERENCE_READ_NODE,
             .location = YP_LOCATION_TOKEN_VALUE(name),
-        }
+        },
+        .number = parse_decimal_number(parser, name->start + 1, name->end)
     };
 
     return node;
