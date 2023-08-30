@@ -22,4 +22,5 @@ class FuzzerTest < Test::Unit::TestCase
   snippet "incomplete octal number", "0o"
   snippet "incomplete hex number", "0x"
   snippet "incomplete escaped list", "%w[\\"
+  snippet "incomplete escaped regex", "/a\\"
 end

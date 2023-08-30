@@ -7091,6 +7091,12 @@ parser_lex(yp_parser_t *parser) {
                 // literally. In this case we'll skip past the next character
                 // and find the next breakpoint.
                 if (*breakpoint == '\\') {
+                    // Check that we're not at the end of the file.
+                    if (breakpoint + 1 >= parser->end) {
+                        breakpoint = NULL;
+                        continue;
+                    }
+
                     size_t difference = yp_unescape_calculate_difference(parser, breakpoint, YP_UNESCAPE_ALL, false);
 
                     // If the result is an escaped newline ...
