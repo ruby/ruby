@@ -268,7 +268,6 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
-    int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
 
     // TODO: Deal with ensures in here
     LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(lineno);	/* next  */
@@ -279,8 +278,6 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
 
     LABEL *next_catch_label = NEW_LABEL(lineno);
     LABEL *tmp_label = NULL;
-
-    ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
 
     // begin; end while true
     if (flags & YP_LOOP_FLAGS_BEGIN_MODIFIER) {
@@ -334,7 +331,6 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
-    ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
     return;
 }
 
