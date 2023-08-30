@@ -4,7 +4,7 @@ require_relative "test_helper"
 
 module YARP
   # These tests are simply to exercise snippets found by the fuzzer that caused invalid memory access.
-  class FuzzerTest < Test::Unit::TestCase
+  class FuzzerTest < TestCase
     def self.snippet(name, source)
       define_method(:"test_fuzzer_#{name}") { YARP.dump(source) }
     end

@@ -83,22 +83,5 @@ module YARP
         assert_equal expected, actual
       end
     end
-
-    def assert_valid_locations(value, parent: nil)
-      case value
-      when Array
-        value.each do |element|
-          assert_valid_locations(element, parent: value)
-        end
-      when Node
-        value.deconstruct_keys(nil).each_value do |field|
-          assert_valid_locations(field, parent: value)
-        end
-      when Location
-        assert_operator value.start_offset, :<=, value.end_offset, -> {
-          "start_offset > end_offset for #{value.inspect}, parent is #{parent.pretty_inspect}"
-        }
-      end
-    end
   end
 end
