@@ -1244,6 +1244,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           const char *encoding = compile_context->parser->encoding.name;
           if (!popped) {
               rb_encoding *enc = rb_find_encoding(rb_str_new_cstr(encoding));
+              if (!enc) {
+                  rb_bug("Encoding not found!");
+              }
               VALUE enc_name = rb_str_new_cstr(enc->name);
               VALUE enc_str = rb_str_freeze(rb_sprintf("#<Encoding:%"PRIsVALUE">", enc_name));
               ADD_INSN1(ret, &dummy_line_node, putobject, enc_str);
