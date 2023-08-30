@@ -773,7 +773,7 @@ nodes:
           @@target ||= value
           ^^^^^^^^^^^^^^^^^^
   - name: ClassVariableReadNode
-    child_nodes:
+    fields:
       - name: name
         type: constant
     comment: |
@@ -782,7 +782,7 @@ nodes:
           @@foo
           ^^^^^
   - name: ClassVariableTargetNode
-    child_nodes:
+    fields:
       - name: name
         type: constant
     comment: |

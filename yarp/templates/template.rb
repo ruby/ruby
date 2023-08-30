@@ -241,7 +241,7 @@ module YARP
     # Represents an individual flag within a set of flags.
     class Flag
       attr_reader :name, :camelcase, :comment
-  
+
       def initialize(config)
         @name = config.fetch("name")
         @camelcase = @name.split("_").map(&:capitalize).join
