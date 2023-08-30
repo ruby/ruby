@@ -308,7 +308,9 @@ module YARP
 
     def locals
       @locals ||=
-        YAML.load_file(File.expand_path("../config.yml", __dir__)).then do |config|
+        begin
+          config = YAML.load_file(File.expand_path("../config.yml", __dir__))
+
           {
             nodes: config.fetch("nodes").map { |node| NodeType.new(node) }.sort_by(&:name),
             tokens: config.fetch("tokens").map { |token| Token.new(token) },
