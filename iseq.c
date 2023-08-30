@@ -1425,7 +1425,7 @@ iseqw_s_compile_yarp(int argc, VALUE *argv, VALUE self)
     size_t len = RSTRING_LEN(src);
     VALUE name = rb_fstring_lit("<compiled>");
 
-    yp_parser_init(&parser, RSTRING_PTR(src), len, "");
+    yp_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), len, "");
 
     yp_node_t *node = yp_parse(&parser);
 

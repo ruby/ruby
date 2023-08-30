@@ -19,8 +19,8 @@ yp_iseq_new_with_opt(yp_scope_node_t *node, yp_parser_t *parser, VALUE name, VAL
 
 static VALUE
 parse_number(const yp_node_t *node) {
-    const char *start = node->location.start;
-    const char *end = node->location.end;
+    const uint8_t *start = node->location.start;
+    const uint8_t *end = node->location.end;
     size_t length = end - start;
 
     char *buffer = malloc(length + 1);
@@ -35,12 +35,12 @@ parse_number(const yp_node_t *node) {
 
 static inline VALUE
 parse_string(yp_string_t *string) {
-    return rb_str_new(yp_string_source(string), yp_string_length(string));
+    return rb_str_new((const char *) yp_string_source(string), yp_string_length(string));
 }
 
 static inline ID
-parse_symbol(const char *start, const char *end) {
-    return rb_intern2(start, end - start);
+parse_symbol(const uint8_t *start, const uint8_t *end) {
+    return rb_intern2((const char *) start, end - start);
 }
 
 static inline ID
@@ -50,7 +50,7 @@ parse_node_symbol(yp_node_t *node) {
 
 static inline ID
 parse_string_symbol(yp_string_t *string) {
-    const char *start = yp_string_source(string);
+    const uint8_t *start = yp_string_source(string);
     return parse_symbol(start, start + yp_string_length(string));
 }
 
@@ -106,11 +106,11 @@ yp_static_literal_value(yp_node_t *node)
 
 static void
 yp_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const yp_node_t *cond,
-                         LABEL *then_label, LABEL *else_label, const char *src, bool popped, yp_compile_context_t *compile_context);
+                         LABEL *then_label, LABEL *else_label, const uint8_t *src, bool popped, yp_compile_context_t *compile_context);
 
 static void
 yp_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, yp_node_t *cond,
-                LABEL *then_label, LABEL *else_label, const char *src, bool popped, yp_compile_context_t *compile_context)
+                LABEL *then_label, LABEL *else_label, const uint8_t *src, bool popped, yp_compile_context_t *compile_context)
 {
     yp_parser_t *parser = compile_context->parser;
     yp_newline_list_t newline_list = parser->newline_list;
@@ -140,11 +140,11 @@ yp_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, yp_node_t *cond,
     return;
 }
 
-static void yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *context);
+static void yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, yp_compile_context_t *context);
 
 static void
 yp_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const yp_node_t *cond,
-                         LABEL *then_label, LABEL *else_label, const char *src, bool popped, yp_compile_context_t *compile_context)
+                         LABEL *then_label, LABEL *else_label, const uint8_t *src, bool popped, yp_compile_context_t *compile_context)
 {
     yp_parser_t *parser = compile_context->parser;
     yp_newline_list_t newline_list = parser->newline_list;
@@ -197,7 +197,7 @@ again:
 }
 
 static void
-yp_compile_if(rb_iseq_t *iseq, const int line, yp_statements_node_t *node_body, yp_node_t *node_else, yp_node_t *predicate, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context) {
+yp_compile_if(rb_iseq_t *iseq, const int line, yp_statements_node_t *node_body, yp_node_t *node_else, yp_node_t *predicate, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, yp_compile_context_t *compile_context) {
     NODE line_node = generate_dummy_line_node(line, line);
 
     DECL_ANCHOR(cond_seq);
@@ -261,7 +261,7 @@ yp_compile_if(rb_iseq_t *iseq, const int line, yp_statements_node_t *node_body, 
 }
 
 static void
-yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_node_type type, yp_statements_node_t *statements, yp_node_t *predicate, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context)
+yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_node_type type, yp_statements_node_t *statements, yp_node_t *predicate, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, yp_compile_context_t *compile_context)
 {
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -388,7 +388,7 @@ yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *
  * compile_context - Stores parser and local information
  */
 static void
-yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const char * src, bool popped, yp_compile_context_t *compile_context)
+yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, yp_compile_context_t *compile_context)
 {
     yp_parser_t *parser = compile_context->parser;
     yp_newline_list_t newline_list = parser->newline_list;
