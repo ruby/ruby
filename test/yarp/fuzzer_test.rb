@@ -21,4 +21,5 @@ class FuzzerTest < Test::Unit::TestCase
   snippet "incomplete binary number", "0b"
   snippet "incomplete octal number", "0o"
   snippet "incomplete hex number", "0x"
+  snippet "incomplete escaped list", "%w[\\"
 end
