@@ -122,9 +122,10 @@ module SyncDefaultGems
   end
 
   def replace_rdoc_ref_all
-    result = pipe_readlines(%W"git status porcelain -z -- *.c *.rb *.rdoc")
+    result = pipe_readlines(%W"git status --porcelain -z -- *.c *.rb *.rdoc")
     result.map! {|line| line[/\A.M (.*)/, 1]}
     result.compact!
+    return if result.empty?
     result = pipe_readlines(%W"git grep -z -l -F [https://docs.ruby-lang.org/en/master/ --" + result)
     result.inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
   end
