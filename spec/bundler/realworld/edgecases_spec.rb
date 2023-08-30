@@ -8,9 +8,10 @@ RSpec.describe "real world edgecases", :realworld => true do
       require "bundler/source/rubygems/remote"
       require "bundler/fetcher"
       rubygem = Bundler.ui.silence do
-        source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
-        fetcher = Bundler::Fetcher.new(source)
-        index = fetcher.specs([#{name.dump}], nil)
+        remote = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
+        source = Bundler::Source::Rubygems.new
+        fetcher = Bundler::Fetcher.new(remote)
+        index = fetcher.specs([#{name.dump}], source)
         requirement = Gem::Requirement.create(#{requirement.dump})
         index.search(#{name.dump}).select {|spec| requirement.satisfied_by?(spec.version) }.last
       end

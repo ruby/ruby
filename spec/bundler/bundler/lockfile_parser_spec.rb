@@ -22,6 +22,9 @@ RSpec.describe Bundler::LockfileParser do
       peiji-san!
       rake
 
+    CHECKSUMS
+      rake (10.3.2) sha256-814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
+
     RUBY VERSION
        ruby 2.1.3p242
 
@@ -33,7 +36,7 @@ RSpec.describe Bundler::LockfileParser do
     it "returns the attributes" do
       attributes = described_class.sections_in_lockfile(lockfile_contents)
       expect(attributes).to contain_exactly(
-        "BUNDLED WITH", "DEPENDENCIES", "GEM", "GIT", "PLATFORMS", "RUBY VERSION"
+        "BUNDLED WITH", "CHECKSUMS", "DEPENDENCIES", "GEM", "GIT", "PLATFORMS", "RUBY VERSION"
       )
     end
   end
@@ -115,6 +118,7 @@ RSpec.describe Bundler::LockfileParser do
     let(:platforms) { [rb] }
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
+    let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
 
     shared_examples_for "parsing" do
       it "parses correctly" do
@@ -125,6 +129,11 @@ RSpec.describe Bundler::LockfileParser do
         expect(subject.platforms).to eq platforms
         expect(subject.bundler_version).to eq bundler_version
         expect(subject.ruby_version).to eq ruby_version
+        checksums = subject.sources.last.checksum_store.checksums("rake-10.3.2")
+        expect(checksums.size).to eq(1)
+        expected_checksum = Bundler::Checksum.new("sha256", "814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8", "#{lockfile_path}:??:1")
+        expect(checksums.first).to be_match(expected_checksum)
+        expect(checksums.first.sources.first).to match(/#{Regexp.escape(lockfile_path.to_s)}:\d+:\d+/)
       end
     end
 
@@ -148,6 +157,34 @@ RSpec.describe Bundler::LockfileParser do
     context "when a dependency has options" do
       let(:lockfile_contents) { super().sub("peiji-san!", "peiji-san!\n    foo: bar") }
       include_examples "parsing"
+    end
+
+    context "when CHECKSUMS has duplicate checksums that don't match" do
+      let(:lockfile_contents) { super().split(/(?<=CHECKSUMS\n)/m).insert(1, "  rake (10.3.2) sha256-69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b6\n").join }
+
+      it "raises a security error" do
+        expect { subject }.to raise_error(Bundler::SecurityError) do |e|
+          expect(e.message).to match <<~MESSAGE
+            Bundler found multiple different checksums for rake-10.3.2.
+            This means that there are multiple different `rake-10.3.2.gem` files.
+            This is a potential security issue, since Bundler could be attempting to install a different gem than what you expect.
+
+            sha256-814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8 (from #{lockfile_path}:21:1 CHECKSUMS rake (10.3.2))
+            sha256-69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b6 from:
+            * #{lockfile_path}:20:1 CHECKSUMS rake (10.3.2)
+
+            To resolve this issue:
+            1. delete any downloaded gems referenced above
+            2. run `bundle install`
+
+            If you are sure that the new checksum is correct, you can remove the `rake-10.3.2` entry under the lockfile `CHECKSUMS` section and rerun `bundle install`.
+
+            If you wish to continue installing the downloaded gem, and are certain it does not pose a security issue despite the mismatching checksum, do the following:
+            1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
+            2. run `bundle install`
+          MESSAGE
+        end
+      end
     end
   end
 end

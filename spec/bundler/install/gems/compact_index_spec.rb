@@ -882,7 +882,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
 
-      api_checksum = Spec::Checksums::ChecksumsBuilder.new.repo_gem(gem_repo1, "rack", "1.0.0").first.checksums.fetch("sha256")
+      api_checksum = checksum_for_repo_gem(gem_repo1, "rack", "1.0.0").split("sha256-").last
 
       gem_path = if Bundler.feature_flag.global_gem_cache?
         default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "rack-1.0.0.gem")

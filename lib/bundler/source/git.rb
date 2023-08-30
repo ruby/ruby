@@ -11,6 +11,7 @@ module Bundler
 
       def initialize(options)
         @options = options
+        @checksum_store = Checksum::Store.new
         @glob = options["glob"] || DEFAULT_GLOB
 
         @allow_cached = false

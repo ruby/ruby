@@ -528,7 +528,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "update"
 
-    expected_checksums = construct_checksum_section do |c|
+    expected_checksums = checksum_section do |c|
       c.repo_gem gem_repo4, "sorbet", "0.5.10160"
       c.repo_gem gem_repo4, "sorbet-runtime", "0.5.10160"
       c.repo_gem gem_repo4, "sorbet-static", "0.5.10160", Gem::Platform.local
@@ -626,8 +626,8 @@ RSpec.describe "bundle install with specific platforms" do
         sorbet-static
 
       CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.13.0", "x86_64-darwin", :empty => true}
-        #{checksum_for_repo_gem gem_repo4, "sorbet-static", "0.5.10601", "x86_64-darwin", :empty => true}
+        #{gem_no_checksum "nokogiri", "1.13.0", "x86_64-darwin"}
+        #{gem_no_checksum "sorbet-static", "0.5.10601", "x86_64-darwin"}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -682,7 +682,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "update"
 
-    expected_checksums = construct_checksum_section do |c|
+    expected_checksums = checksum_section do |c|
       c.repo_gem gem_repo4, "sorbet", "0.5.10160"
       c.repo_gem gem_repo4, "sorbet-runtime", "0.5.10160"
       c.repo_gem gem_repo4, "sorbet-static", "0.5.10160", Gem::Platform.local
@@ -836,7 +836,7 @@ RSpec.describe "bundle install with specific platforms" do
 
         CHECKSUMS
           #{checksum_for_repo_gem gem_repo4, "sorbet-static", "0.5.10549", "universal-darwin-20"}
-          #{checksum_for_repo_gem gem_repo4, "sorbet-static", "0.5.10549", "universal-darwin-21", :empty => true}
+          #{gem_no_checksum "sorbet-static", "0.5.10549", "universal-darwin-21"}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -899,8 +899,8 @@ RSpec.describe "bundle install with specific platforms" do
         tzinfo (~> 1.2)
 
       CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.13.8", :empty => true}
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.13.8", Gem::Platform.local, :empty => true}
+        #{gem_no_checksum "nokogiri", "1.13.8"}
+        #{gem_no_checksum "nokogiri", "1.13.8", Gem::Platform.local}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -955,8 +955,8 @@ RSpec.describe "bundle install with specific platforms" do
         rack
 
       CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "concurrent-ruby", "1.2.2", :empty => true}
-        #{checksum_for_repo_gem gem_repo4, "rack", "3.0.7", :empty => true}
+        #{gem_no_checksum "concurrent-ruby", "1.2.2"}
+        #{gem_no_checksum "rack", "3.0.7"}
 
       BUNDLED WITH
          #{Bundler::VERSION}

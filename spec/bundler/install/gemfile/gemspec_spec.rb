@@ -449,7 +449,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           it "keeps all platform dependencies in the lockfile" do
             expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
 
-            expected_checksums = construct_checksum_section do |c|
+            expected_checksums = checksum_section do |c|
               c.repo_gem gem_repo2, "platform_specific", "1.0"
               c.repo_gem gem_repo2, "platform_specific", "1.0", "java"
               c.repo_gem gem_repo2, "platform_specific", "1.0", x64_mingw32
@@ -493,7 +493,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           it "keeps all platform dependencies in the lockfile" do
             expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
 
-            expected_checksums = construct_checksum_section do |c|
+            expected_checksums = checksum_section do |c|
               c.repo_gem gem_repo2, "platform_specific", "1.0"
               c.repo_gem gem_repo2, "platform_specific", "1.0", "java"
               c.repo_gem gem_repo2, "platform_specific", "1.0", x64_mingw32
@@ -538,7 +538,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           it "keeps all platform dependencies in the lockfile" do
             expect(the_bundle).to include_gems "foo 1.0", "indirect_platform_specific 1.0", "platform_specific 1.0 RUBY"
 
-            expected_checksums = construct_checksum_section do |c|
+            expected_checksums = checksum_section do |c|
               c.repo_gem gem_repo2, "indirect_platform_specific", "1.0"
               c.repo_gem gem_repo2, "platform_specific", "1.0"
               c.repo_gem gem_repo2, "platform_specific", "1.0", "java"

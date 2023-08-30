@@ -117,54 +117,11 @@ module Bundler
 
     def validate_bundler_checksum(checksum_store)
       return true if Bundler.settings[:disable_checksum_validation]
-
       return true unless source = @package.instance_variable_get(:@gem)
       return true unless source.respond_to?(:with_read_io)
-      digests = Bundler::Checksum.digests_from_file_source(source).transform_values(&:hexdigest!)
 
-      checksum = checksum_store[spec]
-      unless checksum.match_digests?(digests)
-        expected = checksum_store.send(:store)[spec.full_name]
-
-        raise SecurityError, <<~MESSAGE
-          Bundler cannot continue installing #{spec.name} (#{spec.version}).
-          The checksum for the downloaded `#{spec.full_name}.gem` does not match \
-          the known checksum for the gem.
-          This means the contents of the downloaded \
-          gem is different from what was uploaded to the server \
-          or first used by your teammates, and could be a potential security issue.
-
-          To resolve this issue:
-          1. delete the downloaded gem located at: `#{source.path}`
-          2. run `bundle install`
-
-          If you are sure that the new checksum is correct, you can \
-          remove the `#{GemHelpers.lock_name spec.name, spec.version, spec.platform}` entry under the lockfile `CHECKSUMS` \
-          section and rerun `bundle install`.
-
-          If you wish to continue installing the downloaded gem, and are certain it does not pose a \
-          security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
-          2. run `bundle install`
-
-          #{expected.map do |algo, multi|
-            next unless actual = digests[algo]
-            next if actual == multi
-
-            "(More info: The expected #{algo.upcase} checksum was #{multi.digest.inspect}, but the " \
-            "checksum for the downloaded gem was #{actual.inspect}. The expected checksum came from: #{multi.sources.join(", ")})"
-          end.compact.join("\n")}
-          MESSAGE
-      end
-      register_digests(digests, checksum_store, source)
+      checksum_store.register_gem_package spec, source
       true
-    end
-
-    def register_digests(digests, checksum_store, source)
-      checksum_store.register(
-        spec,
-        digests.map {|algo, digest| Checksum::Single.new(algo, digest, "downloaded gem @ `#{source.path}`") }
-      )
     end
   end
 end

@@ -121,8 +121,8 @@ RSpec.describe "bundle install with explicit source paths" do
         demo!
 
       CHECKSUMS
-        aaa (1.0)
-        demo (1.0)
+        #{gem_no_checksum("aaa", "1.0")}
+        #{gem_no_checksum("demo", "1.0")}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -364,8 +364,8 @@ RSpec.describe "bundle install with explicit source paths" do
         foo!
 
       CHECKSUMS
-        foo (0.1.0)
-        #{checksum_for_repo_gem gem_repo4, "graphql", "2.0.15"}
+        #{gem_no_checksum("foo", "0.1.0")}
+        #{checksum_for_repo_gem(gem_repo4, "graphql", "2.0.15")}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -692,8 +692,8 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
 
         CHECKSUMS
-          foo (1.0)
-          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+          #{gem_no_checksum("foo", "1.0")}
+          #{checksum_for_repo_gem(gem_repo1, "rack", "0.9.1")}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -724,8 +724,8 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
 
         CHECKSUMS
-          foo (1.0)
-          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+          #{gem_no_checksum("foo", "1.0")}
+          #{checksum_for_repo_gem(gem_repo1, "rack", "0.9.1")}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -762,8 +762,8 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
 
         CHECKSUMS
-          foo (1.0)
-          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+          #{gem_no_checksum("foo", "1.0")}
+          #{checksum_for_repo_gem(gem_repo1, "rack", "0.9.1")}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -797,9 +797,9 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
 
         CHECKSUMS
-          foo (1.0)
-          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
-          #{checksum_for_repo_gem gem_repo1, "rake", "13.0.1"}
+          #{gem_no_checksum("foo", "1.0")}
+          #{checksum_for_repo_gem(gem_repo1, "rack", "0.9.1")}
+          #{checksum_for_repo_gem(gem_repo1, "rake", "13.0.1")}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -850,8 +850,8 @@ RSpec.describe "bundle install with explicit source paths" do
           foo!
 
         CHECKSUMS
-          foo (1.0)
-          rack (0.9.1)
+          #{gem_no_checksum("foo", "1.0")}
+          #{gem_no_checksum("rack", "0.9.1")}
 
         BUNDLED WITH
            #{Bundler::VERSION}

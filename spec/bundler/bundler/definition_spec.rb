@@ -78,7 +78,7 @@ RSpec.describe Bundler::Definition do
           foo!
 
         CHECKSUMS
-          foo (1.0)
+          #{gem_no_checksum "foo", "1.0"}
           #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
 
         BUNDLED WITH
@@ -137,7 +137,7 @@ RSpec.describe Bundler::Definition do
           foo!
 
         CHECKSUMS
-          foo (1.0)
+          #{gem_no_checksum "foo", "1.0"}
           #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
 
         BUNDLED WITH

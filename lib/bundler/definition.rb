@@ -753,7 +753,7 @@ module Bundler
         # has to be done separately, because we want to keep the locked checksum
         # store for a source, even when doing a full update
         if @locked_gems && locked_source = @locked_gems.sources.find {|s| s == source }
-          source.checksum_store&.use(locked_source.checksum_store)
+          source.checksum_store.register_store(locked_source.checksum_store)
         end
         # If the source is unlockable and the current command allows an unlock of
         # the source (for example, you are doing a `bundle update <foo>` of a git-pinned

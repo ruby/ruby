@@ -509,7 +509,7 @@ RSpec.describe "bundle update" do
 
       original_lockfile = lockfile
 
-      expected_checksums = construct_checksum_section do |c|
+      expected_checksums = checksum_section do |c|
         c.repo_gem gem_repo4, "activesupport", "6.0.4.1"
         c.repo_gem gem_repo4, "tzinfo", "1.2.9"
       end
@@ -541,7 +541,7 @@ RSpec.describe "bundle update" do
 
       # needed because regressing to versions already present on the system
       # won't add a checksum
-      expected_lockfile = expected_lockfile.gsub(/ sha256-[a-f0-9]+$/, "")
+      expected_lockfile = remove_checksums_from_lockfile(expected_lockfile)
 
       lockfile original_lockfile
       bundle "update"

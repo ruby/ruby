@@ -135,7 +135,7 @@ module Bundler
           else
             raise ArgumentError, "The given checksum for #{full_name} (#{digest.inspect}) is not a valid SHA256 hexdigest nor base64digest"
           end
-          @checksum = Checksum::Single.new("sha256", digest, "API response from #{@spec_fetcher.uri}")
+          @checksum = Checksum.new("sha256", digest, "API response from #{@spec_fetcher.uri}")
         when "rubygems"
           @required_rubygems_version = Gem::Requirement.new(v)
         when "ruby"

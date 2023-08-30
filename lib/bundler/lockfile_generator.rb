@@ -69,10 +69,12 @@ module Bundler
     def add_checksums
       out << "\nCHECKSUMS\n"
 
-      empty_store = Checksum::Store.new
-
       definition.resolve.sort_by(&:full_name).each do |spec|
-        out << (spec.source.checksum_store || empty_store)[spec].to_lock
+        lock_name = GemHelpers.lock_name(spec.name, spec.version, spec.platform)
+        out << "  #{lock_name}"
+        checksums = spec.source.checksum_store.checksums(spec.full_name)
+        out << " #{checksums.map(&:to_lock).sort.join(",")}" if checksums
+        out << "\n"
       end
     end
 

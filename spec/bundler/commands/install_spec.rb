@@ -920,7 +920,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "loofah", "~> 2.12.0"
       G
 
-      checksums = construct_checksum_section do |c|
+      checksums = checksum_section do |c|
         c.repo_gem gem_repo4, "crass", "1.0.6"
         c.repo_gem gem_repo4, "loofah", "2.12.0"
         c.repo_gem gem_repo4, "nokogiri", "1.12.4", "x86_64-darwin"
@@ -964,7 +964,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle "install", :artifice => "compact_index"
       end
 
-      expected_checksums = construct_checksum_section do |c|
+      expected_checksums = checksum_section do |c|
         c.repo_gem gem_repo4, "crass", "1.0.6"
         c.repo_gem gem_repo4, "loofah", "2.12.0"
         c.repo_gem gem_repo4, "nokogiri", "1.12.4", "x86_64-darwin"
