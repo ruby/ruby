@@ -68,51 +68,51 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
             size_t length_offset = buffer->length;
             yp_buffer_append_str(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
             <%- end -%>
-            <%- node.params.each do |param| -%>
-            <%- case param -%>
-            <%- when NodeParam -%>
-            yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
-            <%- when OptionalNodeParam -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> == NULL) {
+            <%- node.fields.each do |field| -%>
+            <%- case field -%>
+            <%- when YARP::NodeField -%>
+            yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when YARP::OptionalNodeField -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
                 yp_buffer_append_u8(buffer, 0);
             } else {
-                yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
+                yp_serialize_node(parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
-            <%- when StringParam -%>
-            yp_serialize_string(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
-            <%- when NodeListParam -%>
-            uint32_t <%= param.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.size);
-            yp_buffer_append_u32(buffer, <%= param.name %>_size);
-            for (uint32_t index = 0; index < <%= param.name %>_size; index++) {
-                yp_serialize_node(parser, (yp_node_t *) ((yp_<%= node.human %>_t *)node)-><%= param.name %>.nodes[index], buffer);
+            <%- when YARP::StringField -%>
+            yp_serialize_string(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when YARP::NodeListField -%>
+            uint32_t <%= field.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.size);
+            yp_buffer_append_u32(buffer, <%= field.name %>_size);
+            for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
+                yp_serialize_node(parser, (yp_node_t *) ((yp_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
             }
-            <%- when LocationListParam -%>
-            uint32_t <%= param.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.size);
-            yp_buffer_append_u32(buffer, <%= param.name %>_size);
-            for (uint32_t index = 0; index < <%= param.name %>_size; index++) {
-                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>.locations[index], buffer);
+            <%- when YARP::LocationListField -%>
+            uint32_t <%= field.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.size);
+            yp_buffer_append_u32(buffer, <%= field.name %>_size);
+            for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
+                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>.locations[index], buffer);
             }
-            <%- when ConstantParam -%>
-            yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>));
-            <%- when ConstantListParam -%>
-            uint32_t <%= param.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.size);
-            yp_buffer_append_u32(buffer, <%= param.name %>_size);
-            for (uint32_t index = 0; index < <%= param.name %>_size; index++) {
-                yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= param.name %>.ids[index]));
+            <%- when YARP::ConstantField -%>
+            yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>));
+            <%- when YARP::ConstantListField -%>
+            uint32_t <%= field.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.size);
+            yp_buffer_append_u32(buffer, <%= field.name %>_size);
+            for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
+                yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
             }
-            <%- when LocationParam -%>
-            yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
-            <%- when OptionalLocationParam -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= param.name %>.start == NULL) {
+            <%- when YARP::LocationField -%>
+            yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            <%- when YARP::OptionalLocationField -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
                 yp_buffer_append_u8(buffer, 0);
             } else {
                 yp_buffer_append_u8(buffer, 1);
-                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>, buffer);
+                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
-            <%- when UInt32Param -%>
-            yp_buffer_append_u32(buffer, ((yp_<%= node.human %>_t *)node)-><%= param.name %>);
-            <%- when FlagsParam -%>
-            yp_buffer_append_u32(buffer, node->flags >> <%= COMMON_FLAGS %>);
+            <%- when YARP::UInt32Field -%>
+            yp_buffer_append_u32(buffer, ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
+            <%- when YARP::FlagsField -%>
+            yp_buffer_append_u32(buffer, node->flags >> <%= YARP::COMMON_FLAGS %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>

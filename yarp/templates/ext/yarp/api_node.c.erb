@@ -106,17 +106,17 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
 
             switch (YP_NODE_TYPE(node)) {
                 <%- nodes.each do |node| -%>
-                <%- if node.params.any? { |param| [NodeParam, OptionalNodeParam, NodeListParam].include?(param.class) } -%>
+                <%- if node.fields.any? { |field| [YARP::NodeField, YARP::OptionalNodeField, YARP::NodeListField].include?(field.class) } -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
                     yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
-                    <%- node.params.each do |param| -%>
-                    <%- case param -%>
-                    <%- when NodeParam, OptionalNodeParam -%>
-                    yp_node_stack_push(&node_stack, (yp_node_t *) cast-><%= param.name %>);
-                    <%- when NodeListParam -%>
-                    for (size_t index = 0; index < cast-><%= param.name %>.size; index++) {
-                        yp_node_stack_push(&node_stack, (yp_node_t *) cast-><%= param.name %>.nodes[index]);
+                    <%- node.fields.each do |field| -%>
+                    <%- case field -%>
+                    <%- when YARP::NodeField, YARP::OptionalNodeField -%>
+                    yp_node_stack_push(&node_stack, (yp_node_t *) cast-><%= field.name %>);
+                    <%- when YARP::NodeListField -%>
+                    for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
+                        yp_node_stack_push(&node_stack, (yp_node_t *) cast-><%= field.name %>.nodes[index]);
                     }
                     <%- end -%>
                     <%- end -%>
@@ -135,53 +135,53 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                 <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
-                    <%- if node.params.any? { |param| ![NodeParam, OptionalNodeParam].include?(param.class) } -%>
+                    <%- if node.fields.any? { |field| ![YARP::NodeField, YARP::OptionalNodeField].include?(field.class) } -%>
                     yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
                     <%- end -%>
-                    VALUE argv[<%= node.params.length + 1 %>];
-                    <%- node.params.each_with_index do |param, index| -%>
+                    VALUE argv[<%= node.fields.length + 1 %>];
+                    <%- node.fields.each_with_index do |field, index| -%>
 
-                    // <%= param.name %>
-                    <%- case param -%>
-                    <%- when NodeParam, OptionalNodeParam -%>
+                    // <%= field.name %>
+                    <%- case field -%>
+                    <%- when YARP::NodeField, YARP::OptionalNodeField -%>
                     argv[<%= index %>] = rb_ary_pop(value_stack);
-                    <%- when NodeListParam -%>
-                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= param.name %>.size);
-                    for (size_t index = 0; index < cast-><%= param.name %>.size; index++) {
+                    <%- when YARP::NodeListField -%>
+                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
+                    for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
                         rb_ary_push(argv[<%= index %>], rb_ary_pop(value_stack));
                     }
-                    <%- when StringParam -%>
-                    argv[<%= index %>] = yp_string_new(&cast-><%= param.name %>, encoding);
-                    <%- when LocationListParam -%>
-                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= param.name %>.size);
-                    for (size_t index = 0; index < cast-><%= param.name %>.size; index++) {
-                        yp_location_t location = cast-><%= param.name %>.locations[index];
+                    <%- when YARP::StringField -%>
+                    argv[<%= index %>] = yp_string_new(&cast-><%= field.name %>, encoding);
+                    <%- when YARP::LocationListField -%>
+                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
+                    for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
+                        yp_location_t location = cast-><%= field.name %>.locations[index];
                         rb_ary_push(argv[<%= index %>], yp_location_new(parser, location.start, location.end, source));
                     }
-                    <%- when ConstantParam -%>
-                    argv[<%= index %>] = rb_id2sym(constants[cast-><%= param.name %> - 1]);
-                    <%- when ConstantListParam -%>
-                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= param.name %>.size);
-                    for (size_t index = 0; index < cast-><%= param.name %>.size; index++) {
-                        rb_ary_push(argv[<%= index %>], rb_id2sym(constants[cast-><%= param.name %>.ids[index] - 1]));
+                    <%- when YARP::ConstantField -%>
+                    argv[<%= index %>] = rb_id2sym(constants[cast-><%= field.name %> - 1]);
+                    <%- when YARP::ConstantListField -%>
+                    argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
+                    for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
+                        rb_ary_push(argv[<%= index %>], rb_id2sym(constants[cast-><%= field.name %>.ids[index] - 1]));
                     }
-                    <%- when LocationParam -%>
-                    argv[<%= index %>] = yp_location_new(parser, cast-><%= param.name %>.start, cast-><%= param.name %>.end, source);
-                    <%- when OptionalLocationParam -%>
-                    argv[<%= index %>] = cast-><%= param.name %>.start == NULL ? Qnil : yp_location_new(parser, cast-><%= param.name %>.start, cast-><%= param.name %>.end, source);
-                    <%- when UInt32Param -%>
-                    argv[<%= index %>] = ULONG2NUM(cast-><%= param.name %>);
-                    <%- when FlagsParam -%>
-                    argv[<%= index %>] = ULONG2NUM(node->flags >> <%= COMMON_FLAGS %>);
+                    <%- when YARP::LocationField -%>
+                    argv[<%= index %>] = yp_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
+                    <%- when YARP::OptionalLocationField -%>
+                    argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : yp_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
+                    <%- when YARP::UInt32Field -%>
+                    argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);
+                    <%- when YARP::FlagsField -%>
+                    argv[<%= index %>] = ULONG2NUM(node->flags >> <%= YARP::COMMON_FLAGS %>);
                     <%- else -%>
                     <%- raise -%>
                     <%- end -%>
                     <%- end -%>
 
                     // location
-                    argv[<%= node.params.length %>] = yp_location_new(parser, node->location.start, node->location.end, source);
+                    argv[<%= node.fields.length %>] = yp_location_new(parser, node->location.start, node->location.end, source);
 
-                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.params.length + 1 %>, argv, rb_cYARP<%= node.name %>));
+                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 1 %>, argv, rb_cYARP<%= node.name %>));
                     break;
                 }
                 <%- end -%>

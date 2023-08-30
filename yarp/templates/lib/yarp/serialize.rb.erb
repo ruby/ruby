@@ -179,18 +179,18 @@ module YARP
           <%- if node.needs_serialized_length? -%>
           load_serialized_length
           <%- end -%>
-          <%= node.name %>.new(<%= (node.params.map { |param|
-            case param
-            when NodeParam then "load_node"
-            when OptionalNodeParam then "load_optional_node"
-            when StringParam then "load_string"
-            when NodeListParam then "Array.new(load_varint) { load_node }"
-            when LocationListParam then "Array.new(load_varint) { load_location }"
-            when ConstantParam then "load_constant"
-            when ConstantListParam then "Array.new(load_varint) { load_constant }"
-            when LocationParam then "load_location"
-            when OptionalLocationParam then "load_optional_location"
-            when UInt32Param, FlagsParam then "load_varint"
+          <%= node.name %>.new(<%= (node.fields.map { |field|
+            case field
+            when YARP::NodeField then "load_node"
+            when YARP::OptionalNodeField then "load_optional_node"
+            when YARP::StringField then "load_string"
+            when YARP::NodeListField then "Array.new(load_varint) { load_node }"
+            when YARP::LocationListField then "Array.new(load_varint) { load_location }"
+            when YARP::ConstantField then "load_constant"
+            when YARP::ConstantListField then "Array.new(load_varint) { load_constant }"
+            when YARP::LocationField then "load_location"
+            when YARP::OptionalLocationField then "load_optional_location"
+            when YARP::UInt32Field, YARP::FlagsField then "load_varint"
             else raise
             end
           } + ["location"]).join(", ") -%>)

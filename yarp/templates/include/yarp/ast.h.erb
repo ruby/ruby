@@ -83,17 +83,17 @@ typedef struct yp_node {
 // <%= node.name %>
 typedef struct yp_<%= node.human %> {
     yp_node_t base;
-<%- node.params.grep_v(FlagsParam).each do |param| -%>
-    <%= case param
-    when NodeParam, OptionalNodeParam then "struct #{param.c_type} *#{param.name}"
-    when NodeListParam then "struct yp_node_list #{param.name}"
-    when LocationListParam then "yp_location_list_t #{param.name}"
-    when ConstantParam then "yp_constant_id_t #{param.name}"
-    when ConstantListParam then "yp_constant_id_list_t #{param.name}"
-    when StringParam then "yp_string_t #{param.name}"
-    when LocationParam, OptionalLocationParam then "yp_location_t #{param.name}"
-    when UInt32Param then "uint32_t #{param.name}"
-    else raise param.class.name
+<%- node.fields.grep_v(YARP::FlagsField).each do |field| -%>
+    <%= case field
+    when YARP::NodeField, YARP::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when YARP::NodeListField then "struct yp_node_list #{field.name}"
+    when YARP::LocationListField then "yp_location_list_t #{field.name}"
+    when YARP::ConstantField then "yp_constant_id_t #{field.name}"
+    when YARP::ConstantListField then "yp_constant_id_list_t #{field.name}"
+    when YARP::StringField then "yp_string_t #{field.name}"
+    when YARP::LocationField, YARP::OptionalLocationField then "yp_location_t #{field.name}"
+    when YARP::UInt32Field then "uint32_t #{field.name}"
+    else raise field.class.name
     end
     %>;
 <%- end -%>
@@ -103,7 +103,7 @@ typedef struct yp_<%= node.human %> {
 
 // <%= flag.name %>
 typedef enum {
-    <%- flag.values.each.with_index(COMMON_FLAGS) do |value, index| -%>
+    <%- flag.values.each.with_index(YARP::COMMON_FLAGS) do |value, index| -%>
     YP_<%= flag.human.upcase %>_<%= value.name %> = 1 << <%= index %>,
     <%- end -%>
 } yp_<%= flag.human %>_t;

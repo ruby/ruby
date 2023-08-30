@@ -257,19 +257,19 @@ public class Loader {
             case <%= index + 1 %>:
             <%-
             params = node.needs_serialized_length? ? ["buffer.getInt()"] : []
-            params.concat node.params.map { |param|
-              case param
-              when NodeParam then "#{param.java_cast}loadNode()"
-              when OptionalNodeParam then "#{param.java_cast}loadOptionalNode()"
-              when StringParam then "loadString()"
-              when NodeListParam then "loadNodes()"
-              when LocationListParam then "loadLocations()"
-              when ConstantParam then "loadConstant()"
-              when ConstantListParam then "loadConstants()"
-              when LocationParam then "loadLocation()"
-              when OptionalLocationParam then "loadOptionalLocation()"
-              when UInt32Param then "loadVarInt()"
-              when FlagsParam then "loadFlags()"
+            params.concat node.fields.map { |field|
+              case field
+              when YARP::NodeField then "#{field.java_cast}loadNode()"
+              when YARP::OptionalNodeField then "#{field.java_cast}loadOptionalNode()"
+              when YARP::StringField then "loadString()"
+              when YARP::NodeListField then "loadNodes()"
+              when YARP::LocationListField then "loadLocations()"
+              when YARP::ConstantField then "loadConstant()"
+              when YARP::ConstantListField then "loadConstants()"
+              when YARP::LocationField then "loadLocation()"
+              when YARP::OptionalLocationField then "loadOptionalLocation()"
+              when YARP::UInt32Field then "loadVarInt()"
+              when YARP::FlagsField then "loadFlags()"
               else raise
               end
             }

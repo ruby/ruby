@@ -189,13 +189,13 @@ public abstract class Nodes {
         <%- if node.needs_serialized_length? -%>
         public final int serializedLength;
         <%- end -%>
-        <%- node.params.each do |param| -%>
-        public final <%= param.java_type %> <%= param.name %>;<%= ' // optional' if param.class.name.start_with?('Optional') %>
+        <%- node.fields.each do |field| -%>
+        public final <%= field.java_type %> <%= field.name %>;<%= ' // optional' if field.class.name.start_with?('Optional') %>
         <%- end -%>
 
         <%-
           params = node.needs_serialized_length? ? ["int serializedLength"] : []
-          params.concat node.params.map { "#{_1.java_type} #{_1.name}" }
+          params.concat node.fields.map { "#{_1.java_type} #{_1.name}" }
           params.concat ["int startOffset", "int length"]
         -%>
         public <%=node.name -%>(<%= params.join(", ") %>) {
@@ -203,17 +203,17 @@ public abstract class Nodes {
         <%- if node.needs_serialized_length? -%>
             this.serializedLength = serializedLength;
         <%- end -%>
-        <%- node.params.each do |param| -%>
-            this.<%= param.name %> = <%= param.name %>;
+        <%- node.fields.each do |field| -%>
+            this.<%= field.name %> = <%= field.name %>;
         <%- end -%>
         }
         <%# methods for flags -%>
-        <%- node.params.each do |param| -%>
-        <%- if param.is_a?(FlagsParam) -%>
-        <%- flags.find { |flag| flag.name == param.kind }.tap { raise "Expected to find #{param.kind}" unless _1 }.values.each do |value| -%>
+        <%- node.fields.each do |field| -%>
+        <%- if field.is_a?(YARP::FlagsField) -%>
+        <%- flags.find { |flag| flag.name == field.kind }.tap { raise "Expected to find #{field.kind}" unless _1 }.values.each do |value| -%>
 
         public boolean is<%= value.camelcase %>() {
-            return <%= param.kind %>.is<%= value.camelcase %>(this.<%= param.name %>);
+            return <%= field.kind %>.is<%= value.camelcase %>(this.<%= field.name %>);
         }
         <%- end -%>
         <%- end -%>
@@ -229,52 +229,52 @@ public abstract class Nodes {
 
         @Override
         public void setNewLineFlag(Source source, boolean[] newlineMarked) {
-          <%- param = node.params.find { |p| p.name == node.newline } or raise node.newline -%>
-          <%- case param -%>
-          <%- when SingleNodeParam -%>
-            this.<%= param.name %>.setNewLineFlag(source, newlineMarked);
-          <%- when NodeListParam -%>
-            Node first = this.<%= param.name %>.length > 0 ? this.<%= param.name %>[0] : null;
+          <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
+          <%- case field -%>
+          <%- when YARP::NodeField, YARP::OptionalNodeField -%>
+            this.<%= field.name %>.setNewLineFlag(source, newlineMarked);
+          <%- when YARP::NodeListField -%>
+            Node first = this.<%= field.name %>.length > 0 ? this.<%= field.name %>[0] : null;
             if (first != null) {
                 first.setNewLineFlag(source, newlineMarked);
             }
-          <%- else raise param.class.name -%>
+          <%- else raise field.class.name -%>
           <%- end -%>
         }
         <%- end -%>
 
         public <T> void visitChildNodes(AbstractNodeVisitor<T> visitor) {
-          <%- node.params.each do |param| -%>
-            <%- case param -%>
-            <%- when NodeListParam -%>
-            for (Nodes.Node child : this.<%= param.name %>) {
+          <%- node.fields.each do |field| -%>
+            <%- case field -%>
+            <%- when YARP::NodeListField -%>
+            for (Nodes.Node child : this.<%= field.name %>) {
                 child.accept(visitor);
             }
-            <%- when NodeParam -%>
-            this.<%= param.name %>.accept(visitor);
-            <%- when OptionalNodeParam -%>
-            if (this.<%= param.name %> != null) {
-                this.<%= param.name %>.accept(visitor);
+            <%- when YARP::NodeField -%>
+            this.<%= field.name %>.accept(visitor);
+            <%- when YARP::OptionalNodeField -%>
+            if (this.<%= field.name %> != null) {
+                this.<%= field.name %>.accept(visitor);
             }
             <%- end -%>
           <%- end -%>
         }
 
         public Node[] childNodes() {
-          <%- if node.params.none?(NodeListParam) and node.params.none?(SingleNodeParam) -%>
+          <%- if node.fields.none?(YARP::NodeListField) and node.fields.none?(YARP::NodeKindField) -%>
             return EMPTY_ARRAY;
-          <%- elsif node.params.one?(NodeListParam) and node.params.none?(SingleNodeParam) -%>
-            return this.<%= node.params.grep(NodeListParam).first.name %>;
-          <%- elsif node.params.none?(NodeListParam) -%>
-            return new Node[] { <%= node.params.grep(SingleNodeParam).map { "this.#{_1.name}" }.join(', ') %> };
+          <%- elsif node.fields.one?(YARP::NodeListField) and node.fields.none?(YARP::NodeKindField) -%>
+            return this.<%= node.fields.grep(YARP::NodeListField).first.name %>;
+          <%- elsif node.fields.none?(YARP::NodeListField) -%>
+            return new Node[] { <%= node.fields.grep(YARP::NodeKindField).map { "this.#{_1.name}" }.join(', ') %> };
           <%- else -%>
             ArrayList<Node> childNodes = new ArrayList<>();
-            <%- node.params.each do |param| -%>
-              <%- case param -%>
-              <%- when SingleNodeParam -%>
-            childNodes.add(this.<%= param.name %>);
-              <%- when NodeListParam -%>
-            childNodes.addAll(Arrays.asList(this.<%= param.name %>));
+            <%- node.fields.each do |field| -%>
+              <%- case field -%>
+              <%- when YARP::NodeField, YARP::OptionalNodeField -%>
+            childNodes.add(this.<%= field.name %>);
+              <%- when YARP::NodeListField -%>
+            childNodes.addAll(Arrays.asList(this.<%= field.name %>));
               <%- end -%>
             <%- end -%>
             return childNodes.toArray(EMPTY_ARRAY);

@@ -79,26 +79,26 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
-            <%- if node.params.any? { |param| ![LocationParam, OptionalLocationParam, UInt32Param, FlagsParam, ConstantParam].include?(param.class) } -%>
+            <%- if node.fields.any? { |field| ![YARP::LocationField, YARP::OptionalLocationField, YARP::UInt32Field, YARP::FlagsField, YARP::ConstantField].include?(field.class) } -%>
             yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
             <%- end -%>
-            <%- node.params.each do |param| -%>
-            <%- case param -%>
-            <%- when LocationParam, OptionalLocationParam, UInt32Param, FlagsParam, ConstantParam -%>
-            <%- when NodeParam -%>
-            yp_node_destroy(parser, (yp_node_t *)cast-><%= param.name %>);
-            <%- when OptionalNodeParam -%>
-            if (cast-><%= param.name %> != NULL) {
-                yp_node_destroy(parser, (yp_node_t *)cast-><%= param.name %>);
+            <%- node.fields.each do |field| -%>
+            <%- case field -%>
+            <%- when YARP::LocationField, YARP::OptionalLocationField, YARP::UInt32Field, YARP::FlagsField, YARP::ConstantField -%>
+            <%- when YARP::NodeField -%>
+            yp_node_destroy(parser, (yp_node_t *)cast-><%= field.name %>);
+            <%- when YARP::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                yp_node_destroy(parser, (yp_node_t *)cast-><%= field.name %>);
             }
-            <%- when StringParam -%>
-            yp_string_free(&cast-><%= param.name %>);
-            <%- when NodeListParam -%>
-            yp_node_list_free(parser, &cast-><%= param.name %>);
-            <%- when LocationListParam -%>
-            yp_location_list_free(&cast-><%= param.name %>);
-            <%- when ConstantListParam -%>
-            yp_constant_id_list_free(&cast-><%= param.name %>);
+            <%- when YARP::StringField -%>
+            yp_string_free(&cast-><%= field.name %>);
+            <%- when YARP::NodeListField -%>
+            yp_node_list_free(parser, &cast-><%= field.name %>);
+            <%- when YARP::LocationListField -%>
+            yp_location_list_free(&cast-><%= field.name %>);
+            <%- when YARP::ConstantListField -%>
+            yp_constant_id_list_free(&cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -128,23 +128,23 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
         case <%= node.type %>: {
             yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
             memsize->memsize += sizeof(*cast);
-            <%- node.params.each do |param| -%>
-            <%- case param -%>
-            <%- when ConstantParam, UInt32Param, FlagsParam, LocationParam, OptionalLocationParam -%>
-            <%- when NodeParam -%>
-            yp_node_memsize_node((yp_node_t *)cast-><%= param.name %>, memsize);
-            <%- when OptionalNodeParam -%>
-            if (cast-><%= param.name %> != NULL) {
-                yp_node_memsize_node((yp_node_t *)cast-><%= param.name %>, memsize);
+            <%- node.fields.each do |field| -%>
+            <%- case field -%>
+            <%- when YARP::ConstantField, YARP::UInt32Field, YARP::FlagsField, YARP::LocationField, YARP::OptionalLocationField -%>
+            <%- when YARP::NodeField -%>
+            yp_node_memsize_node((yp_node_t *)cast-><%= field.name %>, memsize);
+            <%- when YARP::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                yp_node_memsize_node((yp_node_t *)cast-><%= field.name %>, memsize);
             }
-            <%- when StringParam -%>
-            memsize->memsize += yp_string_memsize(&cast-><%= param.name %>);
-            <%- when NodeListParam -%>
-            yp_node_list_memsize(&cast-><%= param.name %>, memsize);
-            <%- when LocationListParam -%>
-            memsize->memsize += yp_location_list_memsize(&cast-><%= param.name %>);
-            <%- when ConstantListParam -%>
-            memsize->memsize += yp_constant_id_list_memsize(&cast-><%= param.name %>);
+            <%- when YARP::StringField -%>
+            memsize->memsize += yp_string_memsize(&cast-><%= field.name %>);
+            <%- when YARP::NodeListField -%>
+            yp_node_list_memsize(&cast-><%= field.name %>, memsize);
+            <%- when YARP::LocationListField -%>
+            memsize->memsize += yp_location_list_memsize(&cast-><%= field.name %>);
+            <%- when YARP::ConstantListField -%>
+            memsize->memsize += yp_constant_id_list_memsize(&cast-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
             <%- end -%>
