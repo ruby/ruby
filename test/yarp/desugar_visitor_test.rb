@@ -51,14 +51,36 @@ module YARP
       "(#{parts.join(" ")})"
     end
 
+    # Ensure every node is only present once in the AST.
+    # If the same node is present twice it would most likely indicate it is executed twice, which is invalid semantically.
+    # This also acts as a sanity check that Node#child_nodes returns only nodes or nil (which caught a couple bugs).
+    class EnsureEveryNodeOnceInAST < Visitor
+      def initialize
+        @all_nodes = {}.compare_by_identity
+      end
+
+      def visit(node)
+        if node
+          if @all_nodes.include?(node)
+            raise "#{node.inspect} is present multiple times in the desugared AST and likely executed multiple times"
+          else
+            @all_nodes[node] = true
+          end
+        end
+        super(node)
+      end
+    end
+
     def assert_desugars(expected, source)
       ast = YARP.parse(source).value.accept(DesugarVisitor.new)
       assert_equal expected, ast_inspect(ast.statements.body.last)
+
+      ast.accept(EnsureEveryNodeOnceInAST.new)
     end
 
     def assert_not_desugared(source, reason)
       ast = YARP.parse(source).value
-      assert_equal_nodes(ast, ast.accept(YARP::DesugarVisitor.new))
+      assert_equal_nodes(ast, ast.accept(DesugarVisitor.new))
     end
   end
 end
