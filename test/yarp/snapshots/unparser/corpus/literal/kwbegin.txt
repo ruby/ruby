@@ -259,6 +259,7 @@ ProgramNode(0...530)(
             LocalVariableWriteNode(307...316)(
               :foo,
               0,
+              (307...310),
               CallNode(313...316)(
                 nil,
                 nil,
@@ -270,7 +271,6 @@ ProgramNode(0...530)(
                 2,
                 "bar"
               ),
-              (307...310),
               (311...312)
             )
           )]

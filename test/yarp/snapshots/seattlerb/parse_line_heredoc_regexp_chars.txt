@@ -4,6 +4,7 @@ ProgramNode(6...74)(
     [LocalVariableWriteNode(6...22)(
        :string,
        0,
+       (6...12),
        InterpolatedStringNode(15...22)(
          (15...22),
          [StringNode(23...48)(
@@ -14,7 +15,6 @@ ProgramNode(6...74)(
           )],
          (48...57)
        ),
-       (6...12),
        (13...14)
      ),
      CallNode(63...74)(

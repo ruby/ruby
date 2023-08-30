@@ -147,8 +147,8 @@ ProgramNode(0...131)(
          [LocalVariableWriteNode(124...129)(
             :_a,
             0,
-            IntegerNode(128...129)(),
             (124...126),
+            IntegerNode(128...129)(),
             (127...128)
           )]
        ),

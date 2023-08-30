@@ -513,16 +513,16 @@ module YARP
       expected = BeginNode(
         Location(),
         StatementsNode([
-          LocalVariableWriteNode(:_1, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_2, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_3, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_4, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_5, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_6, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_7, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_8, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_9, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location()),
-          LocalVariableWriteNode(:_10, 0, SymbolNode(Location(), Location(), nil, "a"), Location(), Location())
+          LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(Location(), Location(), nil, "a"), Location())
         ]),
         nil,
         nil,

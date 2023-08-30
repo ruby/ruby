@@ -192,6 +192,7 @@ ProgramNode(0...316)(
        LocalVariableWriteNode(217...235)(
          :a,
          0,
+         (217...218),
          RescueModifierNode(221...235)(
            CallNode(221...224)(
              nil,
@@ -207,7 +208,6 @@ ProgramNode(0...316)(
            (225...231),
            NilNode(232...235)()
          ),
-         (217...218),
          (219...220)
        ),
        StatementsNode(238...241)(

@@ -72,6 +72,7 @@ ProgramNode(0...437)(
      LocalVariableWriteNode(59...85)(
        :foo,
        0,
+       (59...62),
        CallNode(65...85)(
          nil,
          nil,
@@ -99,12 +100,12 @@ ProgramNode(0...437)(
          0,
          "raise"
        ),
-       (59...62),
        (63...64)
      ),
      LocalVariableWriteNode(87...114)(
        :foo,
        0,
+       (87...90),
        RescueModifierNode(93...114)(
          CallNode(93...103)(
            nil,
@@ -132,7 +133,6 @@ ProgramNode(0...437)(
          (104...110),
          NilNode(111...114)()
        ),
-       (87...90),
        (91...92)
      ),
      CallOperatorWriteNode(116...145)(

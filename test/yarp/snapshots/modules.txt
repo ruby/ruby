@@ -9,8 +9,8 @@ ProgramNode(0...140)(
          [LocalVariableWriteNode(9...14)(
             :a,
             0,
-            IntegerNode(13...14)(),
             (9...10),
+            IntegerNode(13...14)(),
             (11...12)
           )]
        ),
@@ -62,8 +62,8 @@ ProgramNode(0...140)(
            [LocalVariableWriteNode(67...72)(
               :x,
               0,
-              IntegerNode(71...72)(),
               (67...68),
+              IntegerNode(71...72)(),
               (69...70)
             )]
          ),

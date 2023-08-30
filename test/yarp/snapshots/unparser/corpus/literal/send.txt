@@ -48,8 +48,8 @@ ProgramNode(0...999)(
          [LocalVariableWriteNode(48...57)(
             :local,
             0,
-            IntegerNode(56...57)(),
             (48...53),
+            IntegerNode(56...57)(),
             (54...55)
           ),
           CallNode(60...69)(

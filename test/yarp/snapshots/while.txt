@@ -123,6 +123,7 @@ ProgramNode(0...314)(
            [LocalVariableWriteNode(179...193)(
               :a,
               0,
+              (179...180),
               CallNode(183...193)(
                 nil,
                 nil,
@@ -134,7 +135,6 @@ ProgramNode(0...314)(
                 0,
                 "tap"
               ),
-              (179...180),
               (181...182)
             )]
          ),
@@ -182,6 +182,7 @@ ProgramNode(0...314)(
            [LocalVariableWriteNode(283...297)(
               :a,
               0,
+              (283...284),
               CallNode(287...297)(
                 nil,
                 nil,
@@ -193,7 +194,6 @@ ProgramNode(0...314)(
                 0,
                 "tap"
               ),
-              (283...284),
               (285...286)
             )]
          ),

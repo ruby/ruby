@@ -453,8 +453,8 @@ ProgramNode(0...402)(
      LocalVariableWriteNode(292...300)(
        :fork,
        0,
-       IntegerNode(299...300)(),
        (292...296),
+       IntegerNode(299...300)(),
        (297...298)
      ),
      CallNode(301...316)(

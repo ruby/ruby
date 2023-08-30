@@ -21,8 +21,8 @@ ProgramNode(0...48)(
           LocalVariableWriteNode(24...29)(
             :b,
             0,
-            IntegerNode(28...29)(),
             (24...25),
+            IntegerNode(28...29)(),
             (26...27)
           ),
           CallNode(32...35)(
@@ -39,8 +39,8 @@ ProgramNode(0...48)(
           LocalVariableWriteNode(38...42)(
             :c,
             0,
-            IntegerNode(41...42)(),
             (38...39),
+            IntegerNode(41...42)(),
             (40...41)
           )]
        ),

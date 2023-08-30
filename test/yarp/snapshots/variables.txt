@@ -43,8 +43,8 @@ ProgramNode(0...293)(
      LocalVariableWriteNode(85...92)(
        :abc,
        0,
-       IntegerNode(91...92)(),
        (85...88),
+       IntegerNode(91...92)(),
        (89...90)
      ),
      MultiWriteNode(94...108)(
@@ -85,30 +85,30 @@ ProgramNode(0...293)(
      LocalVariableWriteNode(152...159)(
        :foo,
        0,
-       IntegerNode(158...159)(),
        (152...155),
+       IntegerNode(158...159)(),
        (156...157)
      ),
      LocalVariableWriteNode(161...171)(
        :foo,
        0,
+       (161...164),
        ArrayNode(167...171)(
          [IntegerNode(167...168)(), IntegerNode(170...171)()],
          nil,
          nil
        ),
-       (161...164),
        (165...166)
      ),
      LocalVariableWriteNode(173...183)(
        :foo,
        0,
+       (173...176),
        ArrayNode(179...183)(
          [IntegerNode(179...180)(), IntegerNode(182...183)()],
          nil,
          nil
        ),
-       (173...176),
        (177...178)
      ),
      MultiWriteNode(185...198)(
@@ -177,6 +177,7 @@ ProgramNode(0...293)(
      LocalVariableWriteNode(260...270)(
        :foo,
        0,
+       (260...263),
        ArrayNode(266...270)(
          [SplatNode(266...270)(
             (266...267),
@@ -185,7 +186,6 @@ ProgramNode(0...293)(
          nil,
          nil
        ),
-       (260...263),
        (264...265)
      ),
      ConstantWriteNode(272...282)(

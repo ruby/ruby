@@ -323,6 +323,7 @@ ProgramNode(0...704)(
      LocalVariableWriteNode(351...367)(
        :a,
        0,
+       (351...352),
        ParenthesesNode(355...367)(
          StatementsNode(356...366)(
            [MultiWriteNode(356...366)(
@@ -337,19 +338,19 @@ ProgramNode(0...704)(
          (355...356),
          (366...367)
        ),
-       (351...352),
        (353...354)
      ),
      LocalVariableWriteNode(368...373)(
        :a,
        0,
-       IntegerNode(372...373)(),
        (368...369),
+       IntegerNode(372...373)(),
        (370...371)
      ),
      LocalVariableWriteNode(374...385)(
        :foo,
        0,
+       (374...377),
        CallNode(380...385)(
          nil,
          nil,
@@ -361,7 +362,6 @@ ProgramNode(0...704)(
          0,
          "foo"
        ),
-       (374...377),
        (378...379)
      ),
      CallNode(386...395)(
@@ -538,8 +538,8 @@ ProgramNode(0...704)(
      LocalVariableWriteNode(507...514)(
        :x,
        0,
-       StringNode(511...514)((511...513), (513...513), (513...514), ""),
        (507...508),
+       StringNode(511...514)((511...513), (513...513), (513...514), ""),
        (509...510)
      ),
      CallNode(515...522)(
@@ -615,6 +615,7 @@ ProgramNode(0...704)(
      LocalVariableWriteNode(562...576)(
        :x,
        0,
+       (562...563),
        InterpolatedStringNode(566...576)(
          (566...576),
          [StringNode(577...579)(nil, (577...579), nil, "  "),
@@ -622,7 +623,6 @@ ProgramNode(0...704)(
           StringNode(582...583)(nil, (582...583), nil, "\n")],
          (583...591)
        ),
-       (562...563),
        (564...565)
      ),
      CallNode(591...605)(

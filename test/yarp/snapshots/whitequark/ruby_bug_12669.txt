@@ -34,6 +34,7 @@ ProgramNode(0...74)(
        LocalVariableWriteNode(25...37)(
          :b,
          0,
+         (25...26),
          CallNode(29...37)(
            nil,
            nil,
@@ -47,7 +48,6 @@ ProgramNode(0...74)(
            0,
            "raise"
          ),
-         (25...26),
          (27...28)
        ),
        :a,
@@ -57,6 +57,7 @@ ProgramNode(0...74)(
      LocalVariableWriteNode(39...56)(
        :a,
        0,
+       (39...40),
        LocalVariableOperatorWriteNode(43...56)(
          (43...44),
          (45...47),
@@ -77,15 +78,16 @@ ProgramNode(0...74)(
          :+,
          0
        ),
-       (39...40),
        (41...42)
      ),
      LocalVariableWriteNode(58...74)(
        :a,
        0,
+       (58...59),
        LocalVariableWriteNode(62...74)(
          :b,
          0,
+         (62...63),
          CallNode(66...74)(
            nil,
            nil,
@@ -99,10 +101,8 @@ ProgramNode(0...74)(
            0,
            "raise"
          ),
-         (62...63),
          (64...65)
        ),
-       (58...59),
        (60...61)
      )]
   )

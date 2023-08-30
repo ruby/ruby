@@ -15,8 +15,8 @@ ProgramNode(0...76)(
            [LocalVariableWriteNode(7...14)(
               :v,
               0,
-              NilNode(11...14)(),
               (7...8),
+              NilNode(11...14)(),
               (9...10)
             ),
             BeginNode(17...72)(

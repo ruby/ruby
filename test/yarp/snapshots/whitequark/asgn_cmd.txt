@@ -4,9 +4,11 @@ ProgramNode(0...30)(
     [LocalVariableWriteNode(0...17)(
        :foo,
        0,
+       (0...3),
        LocalVariableWriteNode(6...17)(
          :bar,
          0,
+         (6...9),
          CallNode(12...17)(
            nil,
            nil,
@@ -18,15 +20,14 @@ ProgramNode(0...30)(
            0,
            "m"
          ),
-         (6...9),
          (10...11)
        ),
-       (0...3),
        (4...5)
      ),
      LocalVariableWriteNode(19...30)(
        :foo,
        0,
+       (19...22),
        CallNode(25...30)(
          nil,
          nil,
@@ -38,7 +39,6 @@ ProgramNode(0...30)(
          0,
          "m"
        ),
-       (19...22),
        (23...24)
      )]
   )

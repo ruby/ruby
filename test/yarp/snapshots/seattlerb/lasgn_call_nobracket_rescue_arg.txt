@@ -4,6 +4,7 @@ ProgramNode(0...16)(
     [LocalVariableWriteNode(0...16)(
        :a,
        0,
+       (0...1),
        CallNode(4...16)(
          nil,
          nil,
@@ -21,7 +22,6 @@ ProgramNode(0...16)(
          0,
          "b"
        ),
-       (0...1),
        (2...3)
      )]
   )
