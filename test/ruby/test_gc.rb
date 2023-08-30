@@ -444,12 +444,12 @@ class TestGc < Test::Unit::TestCase
       # Constant from gc.c.
       GC_HEAP_INIT_SLOTS = 10_000
       GC.stat_heap.each do |_, s|
-        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
-        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
         total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-        # Give a 0.9x delta because integer division in minimum_pages_for_size_pool can sometimes cause number to be
-        # less than GC_HEAP_INIT_SLOTS.
-        assert_operator(total_slots, :>=, GC_HEAP_INIT_SLOTS * 0.9, s)
+        assert_operator(total_slots, :>=, GC_HEAP_INIT_SLOTS, s)
       end
     RUBY
 
@@ -462,10 +462,16 @@ class TestGc < Test::Unit::TestCase
     assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
       SIZES = #{sizes}
       GC.stat_heap.each do |i, s|
-        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
-        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
         total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-        assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
+
+        # The delta is calculated as follows:
+        #  - For allocated pages, each page can vary by 1 slot due to alignment.
+        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
+        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
       end
     RUBY
 
@@ -486,10 +492,16 @@ class TestGc < Test::Unit::TestCase
 
       # Check that we still have the same number of slots as initially configured.
       GC.stat_heap.each do |i, s|
-        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
-        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
         total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-        assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
+
+        # The delta is calculated as follows:
+        #  - For allocated pages, each page can vary by 1 slot due to alignment.
+        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
+        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
       end
     RUBY
 
@@ -525,10 +537,16 @@ class TestGc < Test::Unit::TestCase
 
       # Check that we still have the same number of slots as initially configured.
       GC.stat_heap.each do |i, s|
-        # Sometimes pages will have 1 less slot due to alignment, so always increase slots_per_page by 1.
-        slots_per_page = (s[:heap_eden_slots] / s[:heap_eden_pages]) + 1
+        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        # Allocatable pages are assumed to have lost 1 slot due to alignment.
+        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
+
         total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-        assert_in_epsilon(SIZES[i], total_slots, 0.01, s)
+
+        # The delta is calculated as follows:
+        #  - For allocated pages, each page can vary by 1 slot due to alignment.
+        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
+        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
       end
     RUBY
   end
