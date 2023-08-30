@@ -8,7 +8,7 @@ module YARP
     #
     # @@foo && @@foo = bar
     def visit_class_variable_and_write_node(node)
-      desugar_and_write_node(node, ClassVariableReadNode, ClassVariableWriteNode)
+      desugar_and_write_node(node, ClassVariableReadNode, ClassVariableWriteNode, arguments: [node.name])
     end
 
     # @@foo ||= bar
@@ -17,7 +17,7 @@ module YARP
     #
     # defined?(@@foo) ? @@foo : @@foo = bar
     def visit_class_variable_or_write_node(node)
-      desugar_or_write_defined_node(node, ClassVariableReadNode, ClassVariableWriteNode)
+      desugar_or_write_defined_node(node, ClassVariableReadNode, ClassVariableWriteNode, arguments: [node.name])
     end
 
     # @@foo += bar
@@ -26,7 +26,7 @@ module YARP
     #
     # @@foo = @@foo + bar
     def visit_class_variable_operator_write_node(node)
-      desugar_operator_write_node(node, ClassVariableReadNode, ClassVariableWriteNode)
+      desugar_operator_write_node(node, ClassVariableReadNode, ClassVariableWriteNode, arguments: [node.name])
     end
 
     # Foo &&= bar
@@ -245,15 +245,15 @@ module YARP
     end
 
     # Don't desugar `x ||= y` to `defined?(x) ? x : x = y`
-    def desugar_or_write_defined_node(node, read_class, write_class)
+    def desugar_or_write_defined_node(node, read_class, write_class, arguments: [])
       IfNode.new(
         node.operator_loc,
-        DefinedNode.new(nil, read_class.new(node.name_loc), nil, node.operator_loc, node.name_loc),
-        StatementsNode.new([read_class.new(node.name_loc)], node.location),
+        DefinedNode.new(nil, read_class.new(*arguments, node.name_loc), nil, node.operator_loc, node.name_loc),
+        StatementsNode.new([read_class.new(*arguments, node.name_loc)], node.location),
         ElseNode.new(
           node.operator_loc,
           StatementsNode.new(
-            [write_class.new(node.name_loc, node.value, node.operator_loc, node.location)],
+            [write_class.new(*arguments, node.name_loc, node.value, node.operator_loc, node.location)],
             node.location
           ),
           node.operator_loc,

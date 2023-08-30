@@ -246,7 +246,7 @@ ProgramNode(0...608)(
          [StringNode(598...599)(nil, (598...599), nil, "a"),
           EmbeddedVariableNode(599...603)(
             (599...600),
-            ClassVariableReadNode(600...603)()
+            ClassVariableReadNode(600...603)(:@@a)
           )],
          (603...604)
        ),

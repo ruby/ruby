@@ -502,7 +502,7 @@ ProgramNode(0...747)(
                (633...634)
              ),
              PinnedVariableNode(638...642)(
-               ClassVariableReadNode(639...642)(),
+               ClassVariableReadNode(639...642)(:@@c),
                (638...639)
              )],
             nil,

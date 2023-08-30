@@ -52,7 +52,7 @@ ProgramNode(0...139)(
      ),
      MultiWriteNode(47...65)(
        [InstanceVariableTargetNode(47...51)(:@foo),
-        ClassVariableTargetNode(53...58)()],
+        ClassVariableTargetNode(53...58)(:@@bar)],
        (59...60),
        ArrayNode(61...65)(
          [SplatNode(61...65)(

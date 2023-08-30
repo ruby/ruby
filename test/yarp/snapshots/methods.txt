@@ -910,7 +910,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(811...826)(
        (821...822),
-       ClassVariableReadNode(815...820)(),
+       ClassVariableReadNode(815...820)(:@@var),
        nil,
        nil,
        [],

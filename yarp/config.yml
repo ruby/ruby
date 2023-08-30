@@ -727,6 +727,8 @@ nodes:
           ^^^^^^^^^^^^^
   - name: ClassVariableAndWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -740,6 +742,8 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: ClassVariableOperatorWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -755,6 +759,8 @@ nodes:
           ^^^^^^^^^^^^^^^^^
   - name: ClassVariableOrWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -767,12 +773,18 @@ nodes:
           @@target ||= value
           ^^^^^^^^^^^^^^^^^^
   - name: ClassVariableReadNode
+    child_nodes:
+      - name: name
+        type: constant
     comment: |
       Represents referencing a class variable.
 
           @@foo
           ^^^^^
   - name: ClassVariableTargetNode
+    child_nodes:
+      - name: name
+        type: constant
     comment: |
       Represents writing to a class variable in a context that doesn't have an explicit value.
 
@@ -780,6 +792,8 @@ nodes:
           ^^^^^  ^^^^^
   - name: ClassVariableWriteNode
     child_nodes:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value

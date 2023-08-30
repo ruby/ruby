@@ -1,21 +1,23 @@
 ProgramNode(0...293)(
   [:abc, :foo, :bar, :baz],
   StatementsNode(0...293)(
-    [ClassVariableReadNode(0...5)(),
+    [ClassVariableReadNode(0...5)(:@@abc),
      ClassVariableWriteNode(7...16)(
+       :@@abc,
        (7...12),
        IntegerNode(15...16)(),
        (13...14)
      ),
      MultiWriteNode(18...34)(
-       [ClassVariableTargetNode(18...23)(),
-        ClassVariableTargetNode(25...30)()],
+       [ClassVariableTargetNode(18...23)(:@@foo),
+        ClassVariableTargetNode(25...30)(:@@bar)],
        (31...32),
        IntegerNode(33...34)(),
        nil,
        nil
      ),
      ClassVariableWriteNode(36...48)(
+       :@@foo,
        (36...41),
        ArrayNode(44...48)(
          [IntegerNode(44...45)(), IntegerNode(47...48)()],

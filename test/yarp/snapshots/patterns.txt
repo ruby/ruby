@@ -941,7 +941,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        PinnedVariableNode(974...980)(
-         ClassVariableReadNode(975...980)(),
+         ClassVariableReadNode(975...980)(:@@bar),
          (974...975)
        ),
        (971...973)

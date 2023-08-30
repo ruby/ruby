@@ -20,7 +20,7 @@ ProgramNode(0...498)(
        (122...123),
        [EmbeddedVariableNode(123...129)(
           (123...124),
-          ClassVariableReadNode(124...129)()
+          ClassVariableReadNode(124...129)(:@@foo)
         )],
        (129...130)
      ),

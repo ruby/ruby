@@ -54,8 +54,8 @@ ProgramNode(0...704)(
        (54...55)
      ),
      MultiWriteNode(65...84)(
-       [ClassVariableTargetNode(66...69)(),
-        ClassVariableTargetNode(71...74)()],
+       [ClassVariableTargetNode(66...69)(:@@a),
+        ClassVariableTargetNode(71...74)(:@@b)],
        (76...77),
        ArrayNode(78...84)(
          [IntegerNode(79...80)(), IntegerNode(82...83)()],
@@ -291,6 +291,7 @@ ProgramNode(0...704)(
        )
      ),
      ClassVariableWriteNode(302...309)(
+       :@@a,
        (302...305),
        IntegerNode(308...309)(),
        (306...307)

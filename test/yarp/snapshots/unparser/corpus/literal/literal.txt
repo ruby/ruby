@@ -158,7 +158,7 @@ ProgramNode(0...916)(
         StringNode(210...211)(nil, (210...211), nil, " "),
         EmbeddedVariableNode(211...215)(
           (211...212),
-          ClassVariableReadNode(212...215)()
+          ClassVariableReadNode(212...215)(:@@a)
         ),
         StringNode(215...216)(nil, (215...216), nil, " "),
         EmbeddedVariableNode(216...219)(
