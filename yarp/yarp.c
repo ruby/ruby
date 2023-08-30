@@ -5921,7 +5921,7 @@ parser_lex(yp_parser_t *parser) {
 
                                 // If this is not followed by a comment, then we can break out
                                 // of this loop.
-                                if (*following != '#') break;
+                                if (peek_at(parser, following) != '#') break;
 
                                 // If there is a comment, then we need to find the end of the
                                 // comment and continue searching from there.
