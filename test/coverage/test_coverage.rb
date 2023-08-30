@@ -181,6 +181,18 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_eval_coverage_repeated
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["[3]"], [])
+      Coverage.start(eval: true, lines: true)
+
+      3.times do
+        eval("Object.new", nil, "test.rb")
+      end
+
+      p Coverage.result["test.rb"][:lines]
+    end;
+  end
+
   def test_coverage_supported
     assert Coverage.supported?(:lines)
     assert Coverage.supported?(:oneshot_lines)
