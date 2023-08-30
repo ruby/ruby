@@ -299,6 +299,19 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, Proc.new(&l).lambda?)
   end
 
+  def test_isolated?
+    b = lambda {}
+    assert_not_predicate(b, :isolated?)
+    b = proc {}
+    assert_not_predicate(b, :isolated?)
+    b = lambda {}
+    Ractor.make_shareable(b)
+    assert_predicate(b, :isolated?)
+    b = proc {}
+    Ractor.make_shareable(b)
+    assert_predicate(b, :isolated?)
+  end
+
   def self.helper_test_warn_lamda_with_passed_block &b
     lambda(&b)
   end
