@@ -3,6 +3,7 @@
 module Gem::BundlerVersionFinder
   def self.bundler_version
     v = ENV["BUNDLER_VERSION"]
+    v = nil if v&.empty?
 
     v ||= bundle_update_bundler_version
     return if v == true

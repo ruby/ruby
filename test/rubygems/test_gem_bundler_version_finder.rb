@@ -32,6 +32,11 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     assert_equal v("1.1.1.1"), bvf.bundler_version
   end
 
+  def test_bundler_version_with_empty_env_var
+    ENV["BUNDLER_VERSION"] = ""
+    assert_nil bvf.bundler_version
+  end
+
   def test_bundler_version_with_bundle_update_bundler
     ARGV.replace %w[update --bundler]
     assert_nil bvf.bundler_version
