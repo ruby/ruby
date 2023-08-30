@@ -1742,7 +1742,7 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
      * Remove this in Ruby 3.4. */
     if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
         rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
-                           "environment variables RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS");
+                           "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
 #if USE_RJIT
