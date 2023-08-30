@@ -28,5 +28,10 @@ module YARP
       A
       B
     EOF
+    snippet "create a binary call node with arg before receiver", <<~EOF
+      <<-A.g/{/
+      A
+      /, ""\\
+    EOF
   end
 end

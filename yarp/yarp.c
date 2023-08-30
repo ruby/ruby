@@ -161,6 +161,10 @@ debug_token(yp_token_t * token) {
 
 #endif
 
+/* Macros for min/max.  */
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 /******************************************************************************/
 /* Lex mode manipulations                                                     */
 /******************************************************************************/
@@ -1240,8 +1244,8 @@ static yp_call_node_t *
 yp_call_node_binary_create(yp_parser_t *parser, yp_node_t *receiver, yp_token_t *operator, yp_node_t *argument) {
     yp_call_node_t *node = yp_call_node_create(parser);
 
-    node->base.location.start = receiver->location.start;
-    node->base.location.end = argument->location.end;
+    node->base.location.start = MIN(receiver->location.start, argument->location.start);
+    node->base.location.end = MAX(receiver->location.end, argument->location.end);
 
     node->receiver = receiver;
     node->message_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
