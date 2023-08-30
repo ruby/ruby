@@ -2336,7 +2336,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
                         int line = iobj->insn_info.line_no - 1;
                         if (line >= 0 && line < RARRAY_LEN(ISEQ_LINE_COVERAGE(iseq))) {
-                            RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line, INT2FIX(0));
+                            if (RARRAY_AREF(ISEQ_LINE_COVERAGE(iseq), line) == Qnil)
+                                RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line, INT2FIX(0));
                         }
                     }
                     if (ISEQ_BRANCH_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_BRANCH)) {
