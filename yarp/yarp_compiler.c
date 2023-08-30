@@ -268,28 +268,25 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
-    int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
 
     // TODO: Deal with ensures in here
-    LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(lineno);	/* next  */
-    LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(lineno);	/* redo  */
-    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(lineno);	/* break */
+    LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(lineno); /* next  */
+    LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(lineno);  /* redo  */
+    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(lineno);  /* break */
     LABEL *end_label = NEW_LABEL(lineno);
     LABEL *adjust_label = NEW_LABEL(lineno);
 
     LABEL *next_catch_label = NEW_LABEL(lineno);
     LABEL *tmp_label = NULL;
 
-    ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
-
     // begin; end while true
     if (flags & YP_LOOP_FLAGS_BEGIN_MODIFIER) {
-        ADD_INSNL(ret, &dummy_line_node, jump, next_label);
+        tmp_label = NEW_LABEL(lineno);
+        ADD_INSNL(ret, &dummy_line_node, jump, tmp_label);
     }
     else {
         // while true; end
-        tmp_label = NEW_LABEL(lineno);
-        ADD_INSNL(ret, &dummy_line_node, jump, tmp_label);
+        ADD_INSNL(ret, &dummy_line_node, jump, next_label);
     }
 
     ADD_LABEL(ret, adjust_label);
@@ -334,7 +331,6 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
-    ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
     return;
 }
 
@@ -481,6 +477,19 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (begin_node->statements) {
               yp_compile_node(iseq, (yp_node_t *)begin_node->statements, ret, src, popped, compile_context);
           }
+          return;
+      }
+      case YP_NODE_BREAK_NODE: {
+          yp_break_node_t *break_node = (yp_break_node_t *) node;
+          if (break_node->arguments) {
+              yp_compile_node(iseq, (yp_node_t *)break_node->arguments, ret, src, Qfalse, compile_context);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+
           return;
       }
       case YP_NODE_CALL_NODE: {
@@ -985,6 +994,20 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           return;
       }
+      case YP_NODE_NEXT_NODE: {
+          yp_next_node_t *next_node = (yp_next_node_t *) node;
+          if (next_node->arguments) {
+              yp_compile_node(iseq, (yp_node_t *)next_node->arguments, ret, src, Qfalse, compile_context);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          }
+
+          ADD_INSN(ret, &dummy_line_node, pop);
+          ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+
+          return;
+      }
       case YP_NODE_NIL_NODE:
         if (!popped) {
             ADD_INSN(ret, &dummy_line_node, putnil);
@@ -1084,6 +1107,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   ADD_INSN1(ret, &dummy_line_node, newrange, INT2FIX(exclusive));
               }
           }
+          return;
+      }
+      case YP_NODE_REDO_NODE: {
+          ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
           return;
       }
       case YP_NODE_RETURN_NODE: {
