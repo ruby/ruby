@@ -62,20 +62,23 @@ module Bundler
       end
     end
 
-    def self.call(*args)
-      new(*args).call
+    def self.call(*args, **kwargs)
+      new(*args, **kwargs).call
     end
 
     attr_reader :size
 
-    def initialize(installer, all_specs, size, standalone, force)
+    def initialize(installer, all_specs, size, standalone, force, skip: nil)
       @installer = installer
       @size = size
       @standalone = standalone
       @force = force
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
+      @specs.each do |spec_install|
+        spec_install.state = :installed if skip.include?(spec_install.name)
+      end if skip
       @spec_set = all_specs
-      @rake = @specs.find {|s| s.name == "rake" }
+      @rake = @specs.find {|s| s.name == "rake" unless s.installed? }
     end
 
     def call

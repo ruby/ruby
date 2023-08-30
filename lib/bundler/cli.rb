@@ -660,7 +660,9 @@ module Bundler
     D
     def pristine(*gems)
       require_relative "cli/pristine"
-      Pristine.new(gems).run
+      Bundler.settings.temporary(no_install: false) do
+        Pristine.new(gems).run
+      end
     end
 
     if Bundler.feature_flag.plugins?
