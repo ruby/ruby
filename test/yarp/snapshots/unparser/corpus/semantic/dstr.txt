@@ -208,7 +208,7 @@ ProgramNode(0...608)(
           EmbeddedStatementsNode(564...569)(
             (564...566),
             StatementsNode(566...568)(
-              [InstanceVariableReadNode(566...568)(:a)]
+              [InstanceVariableReadNode(566...568)(:@a)]
             ),
             (568...569)
           )],
@@ -222,7 +222,7 @@ ProgramNode(0...608)(
          [StringNode(576...577)(nil, (576...577), nil, "a"),
           EmbeddedVariableNode(577...580)(
             (577...578),
-            InstanceVariableReadNode(578...580)(:a)
+            InstanceVariableReadNode(578...580)(:@a)
           )],
          (580...581)
        ),

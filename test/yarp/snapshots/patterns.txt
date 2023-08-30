@@ -923,7 +923,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        PinnedVariableNode(961...966)(
-         InstanceVariableReadNode(962...966)(:bar),
+         InstanceVariableReadNode(962...966)(:@bar),
          (961...962)
        ),
        (958...960)

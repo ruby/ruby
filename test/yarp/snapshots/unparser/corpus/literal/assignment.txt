@@ -66,8 +66,8 @@ ProgramNode(0...704)(
        (74...75)
      ),
      MultiWriteNode(85...102)(
-       [InstanceVariableTargetNode(86...88)(:a),
-        InstanceVariableTargetNode(90...92)(:b)],
+       [InstanceVariableTargetNode(86...88)(:@a),
+        InstanceVariableTargetNode(90...92)(:@b)],
        (94...95),
        ArrayNode(96...102)(
          [IntegerNode(97...98)(), IntegerNode(100...101)()],
@@ -296,7 +296,7 @@ ProgramNode(0...704)(
        (306...307)
      ),
      InstanceVariableWriteNode(310...316)(
-       :a,
+       :@a,
        (310...312),
        IntegerNode(315...316)(),
        (313...314)
@@ -606,7 +606,7 @@ ProgramNode(0...704)(
        (543...546)
      ),
      InstanceVariableOrWriteNode(551...561)(
-       :a,
+       :@a,
        (551...553),
        (554...557),
        StringNode(558...561)((558...560), (560...560), (560...561), "")
@@ -700,7 +700,7 @@ ProgramNode(0...704)(
        (665...668)
      ),
      InstanceVariableOrWriteNode(687...704)(
-       :a,
+       :@a,
        (687...689),
        (690...693),
        InterpolatedStringNode(694...704)(

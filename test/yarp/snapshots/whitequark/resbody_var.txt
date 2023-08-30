@@ -10,7 +10,7 @@ ProgramNode(0...73)(
          (13...19),
          [],
          (20...22),
-         InstanceVariableTargetNode(23...26)(:ex),
+         InstanceVariableTargetNode(23...26)(:@ex),
          StatementsNode(28...31)(
            [CallNode(28...31)(
               nil,

@@ -2702,7 +2702,7 @@ yp_instance_variable_read_node_create(yp_parser_t *parser, const yp_token_t *tok
             .type = YP_NODE_INSTANCE_VARIABLE_READ_NODE,
             .location = YP_LOCATION_TOKEN_VALUE(token)
         },
-        .name = yp_parser_constant_id_location(parser, token->start + 1, token->end)
+        .name = yp_parser_constant_id_location(parser, token->start, token->end)
     };
 
     return node;
