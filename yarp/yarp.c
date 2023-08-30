@@ -380,6 +380,9 @@ lex_state_arg_p(yp_parser_t *parser) {
 
 static inline bool
 lex_state_spcarg_p(yp_parser_t *parser, bool space_seen) {
+    if (parser->current.end >= parser->end) {
+        return false;
+    }
     return lex_state_arg_p(parser) && space_seen && !yp_char_is_whitespace(*parser->current.end);
 }
 
