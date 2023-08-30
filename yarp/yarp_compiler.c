@@ -360,7 +360,8 @@ yp_compile_class_path(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const yp_node_t *
     if (constant_path_node->type == YP_NODE_CONSTANT_PATH_NODE) {
         if (((yp_constant_path_node_t *)constant_path_node)->parent) {
             /* Bar::Foo */
-            yp_compile_node(iseq, ((yp_constant_path_node_t *)constant_path_node)->parent, ret, src, popped, compile_context);
+            yp_node_t *parent = ((yp_constant_path_node_t *)constant_path_node)->parent;
+            yp_compile_node(iseq, parent, ret, src, popped, compile_context);
             return VM_DEFINECLASS_FLAG_SCOPED;
         }
         else {
@@ -577,7 +578,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
         return;
       case YP_NODE_CLASS_VARIABLE_WRITE_NODE: {
           yp_class_variable_write_node_t *write_node = (yp_class_variable_write_node_t *) node;
-          yp_compile_node(iseq, write_node->value, ret, src, Qfalse, compile_context);
+          yp_compile_node(iseq, write_node->value, ret, src, false, compile_context);
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
