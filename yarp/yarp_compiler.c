@@ -1043,7 +1043,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (program_node->statements->body.size == 0) {
               ADD_INSN(ret, &dummy_line_node, putnil);
           } else {
-              yp_compile_node(iseq, (yp_node_t *) &scope_node, ret, src, popped, compile_context);
+              yp_scope_node_t *res_node = &scope_node;
+              yp_compile_node(iseq, (yp_node_t *) res_node, ret, src, popped, compile_context);
           }
 
           return;
