@@ -185,7 +185,7 @@ unescape_char(uint8_t value, const uint8_t flags) {
 
 // Read a specific escape sequence into the given destination.
 static const uint8_t *
-unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t *backslash, const uint8_t *end, const uint8_t flags, bool write_to_str) {
+unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t *backslash, const uint8_t *end, const uint8_t flags) {
     switch (backslash[1]) {
         case 'a':
         case 'b':
@@ -196,7 +196,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
         case 's':
         case 't':
         case 'v':
-            if (write_to_str) {
+            if (dest) {
                 dest[(*dest_length)++] = unescape_char(unescape_chars[backslash[1]], flags);
             }
             return backslash + 2;
@@ -206,7 +206,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
             uint8_t value;
             const uint8_t *cursor = backslash + unescape_octal(backslash, &value);
 
-            if (write_to_str) {
+            if (dest) {
                 dest[(*dest_length)++] = unescape_char(value, flags);
             }
             return cursor;
@@ -216,7 +216,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
             uint8_t value;
             const uint8_t *cursor = backslash + unescape_hexadecimal(backslash, &value);
 
-            if (write_to_str) {
+            if (dest) {
                 dest[(*dest_length)++] = unescape_char(value, flags);
             }
             return cursor;
@@ -258,7 +258,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
 
                     uint32_t value;
                     unescape_unicode(unicode_start, (size_t) (unicode_cursor - unicode_start), &value);
-                    if (write_to_str) {
+                    if (dest) {
                         *dest_length += unescape_unicode_write(dest + *dest_length, value, unicode_start, unicode_cursor, &parser->error_list);
                     }
 
@@ -276,7 +276,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
                 uint32_t value;
                 unescape_unicode(backslash + 2, 4, &value);
 
-                if (write_to_str) {
+                if (dest) {
                     *dest_length += unescape_unicode_write(dest + *dest_length, value, backslash + 2, backslash + 6, &parser->error_list);
                 }
                 return backslash + 6;
@@ -301,9 +301,9 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
 
             switch (backslash[2]) {
                 case '\\':
-                    return unescape(parser, dest, dest_length, backslash + 2, end, flags | YP_UNESCAPE_FLAG_CONTROL, write_to_str);
+                    return unescape(parser, dest, dest_length, backslash + 2, end, flags | YP_UNESCAPE_FLAG_CONTROL);
                 case '?':
-                    if (write_to_str) {
+                    if (dest) {
                         dest[(*dest_length)++] = unescape_char(0x7f, flags);
                     }
                     return backslash + 3;
@@ -313,7 +313,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
                         return backslash + 2;
                     }
 
-                    if (write_to_str) {
+                    if (dest) {
                         dest[(*dest_length)++] = unescape_char(backslash[2], flags | YP_UNESCAPE_FLAG_CONTROL);
                     }
                     return backslash + 3;
@@ -339,9 +339,9 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
 
             switch (backslash[3]) {
                 case '\\':
-                    return unescape(parser, dest, dest_length, backslash + 3, end, flags | YP_UNESCAPE_FLAG_CONTROL, write_to_str);
+                    return unescape(parser, dest, dest_length, backslash + 3, end, flags | YP_UNESCAPE_FLAG_CONTROL);
                 case '?':
-                    if (write_to_str) {
+                    if (dest) {
                         dest[(*dest_length)++] = unescape_char(0x7f, flags);
                     }
                     return backslash + 4;
@@ -351,7 +351,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
                         return backslash + 2;
                     }
 
-                    if (write_to_str) {
+                    if (dest) {
                         dest[(*dest_length)++] = unescape_char(backslash[3], flags | YP_UNESCAPE_FLAG_CONTROL);
                     }
                     return backslash + 4;
@@ -376,11 +376,11 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
             }
 
             if (backslash[3] == '\\') {
-                return unescape(parser, dest, dest_length, backslash + 3, end, flags | YP_UNESCAPE_FLAG_META, write_to_str);
+                return unescape(parser, dest, dest_length, backslash + 3, end, flags | YP_UNESCAPE_FLAG_META);
             }
 
             if (char_is_ascii_printable(backslash[3])) {
-                if (write_to_str) {
+                if (dest) {
                     dest[(*dest_length)++] = unescape_char(backslash[3], flags | YP_UNESCAPE_FLAG_META);
                 }
                 return backslash + 4;
@@ -402,7 +402,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
         default: {
             size_t width = yp_char_width(parser, backslash + 1, end);
 
-            if (write_to_str) {
+            if (dest) {
                 memcpy(dest + *dest_length, backslash + 1, width);
                 *dest_length += width;
             }
@@ -503,7 +503,7 @@ yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unesc
                 // This is the only type of unescaping left. In this case we need to
                 // handle all of the different unescapes.
                 assert(unescape_type == YP_UNESCAPE_ALL);
-                cursor = unescape(parser, dest, &dest_length, backslash, end, YP_UNESCAPE_FLAG_NONE, true);
+                cursor = unescape(parser, dest, &dest_length, backslash, end, YP_UNESCAPE_FLAG_NONE);
                 break;
         }
 
@@ -555,7 +555,7 @@ yp_unescape_calculate_difference(yp_parser_t *parser, const uint8_t *backslash, 
             if (expect_single_codepoint)
                 flags |= YP_UNESCAPE_FLAG_EXPECT_SINGLE;
 
-            const uint8_t *cursor = unescape(parser, NULL, 0, backslash, parser->end, flags, false);
+            const uint8_t *cursor = unescape(parser, NULL, 0, backslash, parser->end, flags);
             assert(cursor > backslash);
 
             return (size_t) (cursor - backslash);
