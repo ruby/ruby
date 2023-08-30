@@ -1221,10 +1221,10 @@ nodes:
     fields:
       - name: name_loc
         type: location
-      - name: operator_loc
-        type: location
       - name: value
         type: node
+      - name: operator_loc
+        type: location
     comment: |
       Represents writing to a global variable.
 

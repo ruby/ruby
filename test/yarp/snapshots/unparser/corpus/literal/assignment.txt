@@ -1,7 +1,7 @@
 ProgramNode(0...704)(
   [:a, :b, :foo, :c, :x],
   StatementsNode(0...704)(
-    [GlobalVariableWriteNode(0...6)((0...2), (3...4), IntegerNode(5...6)()),
+    [GlobalVariableWriteNode(0...6)((0...2), IntegerNode(5...6)(), (3...4)),
      MultiWriteNode(7...24)(
        [GlobalVariableTargetNode(8...10)(),
         GlobalVariableTargetNode(12...14)()],

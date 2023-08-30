@@ -28,8 +28,8 @@ ProgramNode(0...293)(
      ),
      GlobalVariableWriteNode(50...58)(
        (50...54),
-       (55...56),
-       IntegerNode(57...58)()
+       IntegerNode(57...58)(),
+       (55...56)
      ),
      GlobalVariableReadNode(60...64)(),
      InstanceVariableReadNode(66...70)(:@abc),
@@ -57,12 +57,12 @@ ProgramNode(0...293)(
      ),
      GlobalVariableWriteNode(110...121)(
        (110...114),
-       (115...116),
        ArrayNode(117...121)(
          [IntegerNode(117...118)(), IntegerNode(120...121)()],
          nil,
          nil
-       )
+       ),
+       (115...116)
      ),
      MultiWriteNode(123...137)(
        [InstanceVariableTargetNode(123...127)(:@foo),
