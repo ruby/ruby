@@ -6,7 +6,7 @@ module YARP
   class DesugarVisitorTest < TestCase
     def test_and_write
       assert_desugars("(AndNode (ClassVariableReadNode) (ClassVariableWriteNode (CallNode)))", "@@foo &&= bar")
-      assert_desugars("(AndNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (ConstantPathWriteNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (CallNode)))", "Foo::Bar &&= baz")
+      assert_not_desugared("Foo::Bar &&= baz", "Desugaring would execute Foo twice or need temporary variables")
       assert_desugars("(AndNode (ConstantReadNode) (ConstantWriteNode (CallNode)))", "Foo &&= bar")
       assert_desugars("(AndNode (GlobalVariableReadNode) (GlobalVariableWriteNode (CallNode)))", "$foo &&= bar")
       assert_desugars("(AndNode (InstanceVariableReadNode) (InstanceVariableWriteNode (CallNode)))", "@foo &&= bar")
@@ -16,7 +16,7 @@ module YARP
 
     def test_or_write
       assert_desugars("(IfNode (DefinedNode (ClassVariableReadNode)) (StatementsNode (ClassVariableReadNode)) (ElseNode (StatementsNode (ClassVariableWriteNode (CallNode)))))", "@@foo ||= bar")
-      assert_desugars("(IfNode (DefinedNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode))) (StatementsNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode))) (ElseNode (StatementsNode (ConstantPathWriteNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (CallNode)))))", "Foo::Bar ||= baz")
+      assert_not_desugared("Foo::Bar ||= baz", "Desugaring would execute Foo twice or need temporary variables")
       assert_desugars("(IfNode (DefinedNode (ConstantReadNode)) (StatementsNode (ConstantReadNode)) (ElseNode (StatementsNode (ConstantWriteNode (CallNode)))))", "Foo ||= bar")
       assert_desugars("(IfNode (DefinedNode (GlobalVariableReadNode)) (StatementsNode (GlobalVariableReadNode)) (ElseNode (StatementsNode (GlobalVariableWriteNode (CallNode)))))", "$foo ||= bar")
       assert_desugars("(OrNode (InstanceVariableReadNode) (InstanceVariableWriteNode (CallNode)))", "@foo ||= bar")
@@ -26,7 +26,7 @@ module YARP
 
     def test_operator_write
       assert_desugars("(ClassVariableWriteNode (CallNode (ClassVariableReadNode) (ArgumentsNode (CallNode))))", "@@foo += bar")
-      assert_desugars("(ConstantPathWriteNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (CallNode (ConstantPathNode (ConstantReadNode) (ConstantReadNode)) (ArgumentsNode (CallNode))))", "Foo::Bar += baz")
+      assert_not_desugared("Foo::Bar += baz", "Desugaring would execute Foo twice or need temporary variables")
       assert_desugars("(ConstantWriteNode (CallNode (ConstantReadNode) (ArgumentsNode (CallNode))))", "Foo += bar")
       assert_desugars("(GlobalVariableWriteNode (CallNode (GlobalVariableReadNode) (ArgumentsNode (CallNode))))", "$foo += bar")
       assert_desugars("(InstanceVariableWriteNode (CallNode (InstanceVariableReadNode) (ArgumentsNode (CallNode))))", "@foo += bar")
@@ -54,6 +54,11 @@ module YARP
     def assert_desugars(expected, source)
       ast = YARP.parse(source).value.accept(DesugarVisitor.new)
       assert_equal expected, ast_inspect(ast.statements.body.last)
+    end
+
+    def assert_not_desugared(source, reason)
+      ast = YARP.parse(source).value
+      assert_equal_nodes(ast, ast.accept(YARP::DesugarVisitor.new))
     end
   end
 end
