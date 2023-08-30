@@ -81,7 +81,7 @@ module SyncDefaultGems
     yaml: "ruby/yaml",
     yarp: ["ruby/yarp", "main"],
     zlib: 'ruby/zlib',
-  }.transform_keys {|k| k.to_s}
+  }.transform_keys(&:to_s)
 
   CLASSICAL_DEFAULT_BRANCH = "master"
 
