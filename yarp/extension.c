@@ -83,7 +83,21 @@ dump(int argc, VALUE *argv, VALUE self) {
 
     yp_string_t input;
     input_load_string(&input, string);
-    return dump_input(&input, check_string(filepath));
+
+#ifdef YARP_DEBUG_MODE_BUILD
+    size_t length = yp_string_length(&input);
+    char* dup = malloc(length);
+    memcpy(dup, yp_string_source(&input), length);
+    yp_string_constant_init(&input, dup, length);
+#endif
+
+    VALUE value = dump_input(&input, check_string(filepath));
+
+#ifdef YARP_DEBUG_MODE_BUILD
+    free(dup);
+#endif
+
+    return value;
 }
 
 // Dump the AST corresponding to the given file to a string.
