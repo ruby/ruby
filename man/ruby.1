@@ -557,9 +557,9 @@ the following 11 environment variables:
 .It Ev RUBY_GC_HEAP_INIT_SLOTS
 Initial allocation slots. Applies to all slot sizes.  Introduced in Ruby 2.1, default: 10000.
 .Pp
-.It Ev RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS
-Initial allocation of slots in a specific size pool.
-The available size pools can be found in `GC.stat_heap`.
+.It Ev RUBY_GC_HEAP_%d_INIT_SLOTS
+Initial allocation of slots in a specific heap.
+The available heaps can be found in the keys of `GC.stat_heap`.
 Introduced in Ruby 3.3.
 .Pp
 .It Ev RUBY_GC_HEAP_FREE_SLOTS

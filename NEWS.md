@@ -13,7 +13,7 @@ Note that each entry is kept to a minimum, see links for details.
   They are not displayed by default even in verbose mode.
   Turn them on with `-W:performance` or `Warning[:performance] = true`. [[Feature #19538]]
 * The `RUBY_GC_HEAP_INIT_SLOTS` environment variable has been deprecated and
-  removed. Environment variables `RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS` should be
+  removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
   used instead.  [[Feature #19785]]
 
 ## Core classes updates
