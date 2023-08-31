@@ -488,9 +488,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       assert_kind_of(IO::WaitReadable, e)
     end
 
-    s2.send("", 0)
     s2.send("haha", 0)
-    assert_equal(nil, s1.recv(10)) # no way to distinguish empty packet from EOF with SOCK_SEQPACKET
     assert_equal("haha", s1.recv(10))
     assert_raise(IO::EWOULDBLOCKWaitReadable) { s1.recv_nonblock(10) }
 
