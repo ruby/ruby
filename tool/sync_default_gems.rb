@@ -447,12 +447,7 @@ module SyncDefaultGems
 
     # Gem-specific patterns
     case gem
-    when "yarp"
-      # Rename detection never works between ruby/ruby/doc and ruby/yarp/docs
-      # since ruby/ruby/doc is not something owned by YARP.
-      %r[\A(?:
-        ext/yarp/extconf\.rb
-      )\z]mx
+    when nil
     end&.tap do |pattern|
       patterns << pattern
     end
