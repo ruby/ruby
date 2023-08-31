@@ -3348,14 +3348,7 @@ primary		: literal
                     /*% %*/
                     /*% ripper: begin!($3) %*/
                     }
-                | tLPAREN_ARG {SET_LEX_STATE(EXPR_ENDARG);} rparen
-                    {
-                    /*%%%*/
-                        $$ = NEW_BEGIN(0, &@$);
-                    /*% %*/
-                    /*% ripper: paren!(0) %*/
-                    }
-                | tLPAREN_ARG stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
+                | tLPAREN_ARG compstmt {SET_LEX_STATE(EXPR_ENDARG);} ')'
                     {
                     /*%%%*/
                         if (nd_type_p($2, NODE_SELF)) $2->nd_state = 0;
