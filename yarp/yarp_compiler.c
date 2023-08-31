@@ -611,18 +611,117 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
-      case YP_NODE_CLASS_VARIABLE_READ_NODE:
-        if (!popped) {
-            ID cvar_name = parse_node_symbol((yp_node_t *)node);
-            ADD_INSN2(
-                    ret,
-                    &dummy_line_node,
-                    getclassvariable,
-                    ID2SYM(cvar_name),
-                    get_cvar_ic_value(iseq, cvar_name)
-                    );
-        }
-        return;
+      case YP_NODE_CLASS_VARIABLE_AND_WRITE_NODE: {
+          yp_class_variable_and_write_node_t *class_variable_and_write_node = (yp_class_variable_and_write_node_t*) node;
+
+          LABEL *set_label= NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          ID class_variable_name_id = compile_context->constants[class_variable_and_write_node->name - 1];
+          VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
+
+          ADD_INSN2(ret, &dummy_line_node, getclassvariable,
+                  class_variable_name_val,
+                  get_cvar_ic_value(iseq, class_variable_name_id));
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_LABEL(ret, set_label);
+          yp_compile_node(iseq, class_variable_and_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN2(ret, &dummy_line_node, setclassvariable,
+                  class_variable_name_val,
+                  get_cvar_ic_value(iseq, class_variable_name_id));
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_CLASS_VARIABLE_OPERATOR_WRITE_NODE: {
+          yp_class_variable_operator_write_node_t *class_variable_operator_write_node = (yp_class_variable_operator_write_node_t*) node;
+
+          ID class_variable_name_id = compile_context->constants[class_variable_operator_write_node->name - 1];
+          VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
+
+          ADD_INSN2(ret, &dummy_line_node, getclassvariable,
+                  class_variable_name_val,
+                  get_cvar_ic_value(iseq, class_variable_name_id));
+
+          yp_compile_node(iseq, class_variable_operator_write_node->value, ret, src, false, compile_context);
+          ID method_id = compile_context->constants[class_variable_operator_write_node->operator - 1];
+
+          int flags = VM_CALL_ARGS_SIMPLE;
+          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN2(ret, &dummy_line_node, setclassvariable,
+                  class_variable_name_val,
+                  get_cvar_ic_value(iseq, class_variable_name_id));
+
+          return;
+      }
+      case YP_NODE_CLASS_VARIABLE_OR_WRITE_NODE: {
+          yp_class_variable_or_write_node_t *class_variable_or_write_node = (yp_class_variable_or_write_node_t*) node;
+
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          ID class_variable_name_id = compile_context->constants[class_variable_or_write_node->name - 1];
+          VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
+
+          ADD_INSN2(ret, &dummy_line_node, getclassvariable,
+                  class_variable_name_val,
+                  get_cvar_ic_value(iseq, class_variable_name_id));
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          yp_compile_node(iseq, class_variable_or_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN2(ret, &dummy_line_node, setclassvariable,
+                  class_variable_name_val,
+                  get_cvar_ic_value(iseq, class_variable_name_id));
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_CLASS_VARIABLE_READ_NODE: {
+          if (!popped) {
+              ID cvar_name = parse_node_symbol((yp_node_t *)node);
+              ADD_INSN2(
+                      ret,
+                      &dummy_line_node,
+                      getclassvariable,
+                      ID2SYM(cvar_name),
+                      get_cvar_ic_value(iseq, cvar_name)
+                      );
+          }
+          return;
+      }
       case YP_NODE_CLASS_VARIABLE_WRITE_NODE: {
           yp_class_variable_write_node_t *write_node = (yp_class_variable_write_node_t *) node;
           yp_compile_node(iseq, write_node->value, ret, src, false, compile_context);
@@ -973,7 +1072,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
 
-
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
@@ -1183,7 +1281,6 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           int flags = VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_VCALL;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
-
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
