@@ -1650,6 +1650,21 @@ eom
     assert_valid_syntax('Foo::Bar() {}')
   end
 
+  def test_command_newline_in_tlparen_args
+    assert_valid_syntax("p (1\n2\n),(3),(4)")
+    assert_valid_syntax("p (\n),(),()")
+    assert_valid_syntax("a.b (1\n2\n),(3),(4)")
+    assert_valid_syntax("a.b (\n),(),()")
+  end
+
+  def test_command_semicolon_in_tlparen_at_the_first_arg
+    bug19281 = '[ruby-core:111499] [Bug #19281]'
+    assert_valid_syntax('p (1;2),(3),(4)', bug19281)
+    assert_valid_syntax('p (;),(),()', bug19281)
+    assert_valid_syntax('a.b (1;2),(3),(4)', bug19281)
+    assert_valid_syntax('a.b (;),(),()', bug19281)
+  end
+
   def test_numbered_parameter
     assert_valid_syntax('proc {_1}')
     assert_equal(3, eval('[1,2].then {_1+_2}'))
