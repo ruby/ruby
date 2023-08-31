@@ -566,7 +566,7 @@ module SyncDefaultGems
       case
       when toplevels.fetch(top = f[%r[\A[^/]+(?=/|\z)]m]) {
              remove << top unless
-               toplevels[top] = system(*%w"git cat-file -e", "#{base}:#{top}")
+               toplevels[top] = system(*%w"git cat-file -e", "#{base}:#{top}", err: File::NULL)
            }
         # Remove any new top-level directories.
         true
@@ -595,7 +595,9 @@ module SyncDefaultGems
     unless remove.empty?
       puts "Remove added files: #{remove.join(', ')}"
       system(*%w"git rm -fr --", *remove)
-      system(*%w"git commit --amend --no-edit --", *remove) if picked
+      if picked
+        system(*%w"git commit --amend --no-edit --", *remove, %i[out err] => File::NULL)
+      end
     end
 
     unless ignore.empty?
