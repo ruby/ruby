@@ -769,7 +769,7 @@ bsearch_impl(int argc, VALUE *argv, VALUE range, int is_target_first)
         low--; \
         while (low + 1 < high) { \
             mid = ((high < 0) == (low < 0)) ? low + ((high - low) / 2) \
-                : (low < -high) ? -((-1 - low - high)/2 + 1) : (low + high) / 2; \
+                : (low + high) / 2; \
             BSEARCH_CHECK(conv(mid), is_target_first); \
             if (smaller) { \
                 high = mid; \
