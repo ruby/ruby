@@ -7436,7 +7436,7 @@ Init_File(void)
      * There are two families of constants here:
      *
      * - Those having to do with {file access}[rdoc-ref:File::Constants@File+Access].
-     * - Those having to do with {file globbing}[rdoc-ref:File::Constants@File+Globbing].
+     * - Those having to do with {filename globbing}[rdoc-ref:File::Constants@Filename+Globbing+Constants+-28File-3A-3AFNM_-2A-29].
      *
      * \File constants defined for the local process may be retrieved
      * with method File::Constants.constants:
