@@ -621,6 +621,13 @@ module YARP
       ]
     end
 
+    def test_unterminated_unicode_brackets_should_be_a_syntax_error
+      assert_errors expression('?\\u{3'), '?\\u{3', [
+        ["invalid Unicode escape.", 1..5],
+        ["invalid Unicode escape.", 1..5],
+      ]
+    end
+
     def test_method_parameters_after_block
       expected = DefNode(
         Location(),

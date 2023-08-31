@@ -22,6 +22,19 @@ module YARP
     snippet "incomplete escaped list", "%w[\\"
     snippet "incomplete escaped regex", "/a\\"
     snippet "unterminated heredoc with unterminated escape at end of file", "<<A\n\\"
+    snippet "escaped octal at end of file 1", '"\\3'
+    snippet "escaped octal at end of file 2", '"\\33'
+    snippet "escaped hex at end of file 1", '"\\x'
+    snippet "escaped hex at end of file 2", '"\\x3'
+    snippet "escaped unicode at end of file 1", '"\\u{3'
+    snippet "escaped unicode at end of file 2", '"\\u{33'
+    snippet "escaped unicode at end of file 3", '"\\u{333'
+    snippet "escaped unicode at end of file 4", '"\\u{3333'
+    snippet "escaped unicode at end of file 5", '"\\u{33333'
+    snippet "escaped unicode at end of file 6", '"\\u{333333'
+    snippet "escaped unicode at end of file 7", '"\\u3'
+    snippet "escaped unicode at end of file 8", '"\\u33'
+    snippet "escaped unicode at end of file 9", '"\\u333'
 
     snippet "statements node with multiple heredocs", <<~EOF
       for <<A + <<B

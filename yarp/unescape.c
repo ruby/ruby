@@ -69,17 +69,15 @@ char_is_ascii_printable(const uint8_t b) {
 // Scan the 1-3 digits of octal into the value. Returns the number of digits
 // scanned.
 static inline size_t
-unescape_octal(const uint8_t *backslash, uint8_t *value) {
+unescape_octal(const uint8_t *backslash, uint8_t *value, const uint8_t *end) {
     *value = (uint8_t) (backslash[1] - '0');
-    if (!yp_char_is_octal_digit(backslash[2])) {
+    if (backslash + 2 >= end || !yp_char_is_octal_digit(backslash[2])) {
         return 2;
     }
-
     *value = (uint8_t) ((*value << 3) | (backslash[2] - '0'));
-    if (!yp_char_is_octal_digit(backslash[3])) {
+    if (backslash + 3 >= end || !yp_char_is_octal_digit(backslash[3])) {
         return 3;
     }
-
     *value = (uint8_t) ((*value << 3) | (backslash[3] - '0'));
     return 4;
 }
@@ -93,12 +91,15 @@ unescape_hexadecimal_digit(const uint8_t value) {
 // Scan the 1-2 digits of hexadecimal into the value. Returns the number of
 // digits scanned.
 static inline size_t
-unescape_hexadecimal(const uint8_t *backslash, uint8_t *value) {
+unescape_hexadecimal(const uint8_t *backslash, uint8_t *value, const uint8_t *end) {
+    *value = 0;
+    if (backslash + 2 >= end || !yp_char_is_hexadecimal_digit(backslash[2])) {
+        return 2;
+    }
     *value = unescape_hexadecimal_digit(backslash[2]);
-    if (!yp_char_is_hexadecimal_digit(backslash[3])) {
+    if (backslash + 3 >=  end || !yp_char_is_hexadecimal_digit(backslash[3])) {
         return 3;
     }
-
     *value = (uint8_t) ((*value << 4) | unescape_hexadecimal_digit(backslash[3]));
     return 4;
 }
@@ -204,7 +205,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9': {
             uint8_t value;
-            const uint8_t *cursor = backslash + unescape_octal(backslash, &value);
+            const uint8_t *cursor = backslash + unescape_octal(backslash, &value, end);
 
             if (dest) {
                 dest[(*dest_length)++] = unescape_char(value, flags);
@@ -214,7 +215,7 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
         // \xnn         hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
         case 'x': {
             uint8_t value;
-            const uint8_t *cursor = backslash + unescape_hexadecimal(backslash, &value);
+            const uint8_t *cursor = backslash + unescape_hexadecimal(backslash, &value, end);
 
             if (dest) {
                 dest[(*dest_length)++] = unescape_char(value, flags);
@@ -236,13 +237,14 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
 
                 unicode_cursor += yp_strspn_whitespace(unicode_cursor, end - unicode_cursor);
 
-                while ((*unicode_cursor != '}') && (unicode_cursor < end)) {
+                while ((unicode_cursor < end) && (*unicode_cursor != '}')) {
                     const uint8_t *unicode_start = unicode_cursor;
                     size_t hexadecimal_length = yp_strspn_hexadecimal_digit(unicode_cursor, end - unicode_cursor);
 
                     // \u{nnnn} character literal allows only 1-6 hexadecimal digits
-                    if (hexadecimal_length > 6)
+                    if (hexadecimal_length > 6) {
                         yp_diagnostic_list_append(&parser->error_list, unicode_cursor, unicode_cursor + hexadecimal_length, "invalid Unicode escape.");
+                    }
 
                     // there are not hexadecimal characters
                     if (hexadecimal_length == 0) {
@@ -269,10 +271,16 @@ unescape(yp_parser_t *parser, uint8_t *dest, size_t *dest_length, const uint8_t 
                 if (flags & YP_UNESCAPE_FLAG_EXPECT_SINGLE && codepoints_count > 1)
                     yp_diagnostic_list_append(&parser->error_list, extra_codepoints_start, unicode_cursor - 1, "Multiple codepoints at single character literal");
 
-                return unicode_cursor + 1;
+
+                if (unicode_cursor < end && *unicode_cursor == '}') {
+                    unicode_cursor++;
+                } else {
+                    yp_diagnostic_list_append(&parser->error_list, backslash, unicode_cursor, "invalid Unicode escape.");
+                }
+                return unicode_cursor;
             }
 
-            if ((backslash + 2) < end && yp_char_is_hexadecimal_digits(backslash + 2, 4)) {
+            if ((backslash + 5) < end && yp_char_is_hexadecimal_digits(backslash + 2, 4)) {
                 uint32_t value;
                 unescape_unicode(backslash + 2, 4, &value);
 
@@ -537,6 +545,10 @@ yp_unescape_manipulate_string(yp_parser_t *parser, yp_string_t *string, yp_unesc
 size_t
 yp_unescape_calculate_difference(yp_parser_t *parser, const uint8_t *backslash, yp_unescape_type_t unescape_type, bool expect_single_codepoint) {
     assert(unescape_type != YP_UNESCAPE_NONE);
+
+    if (backslash + 1 >= parser->end) {
+        return 0;
+    }
 
     switch (backslash[1]) {
         case '\\':
