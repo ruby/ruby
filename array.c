@@ -3573,7 +3573,6 @@ rb_ary_bsearch_index(int argc, VALUE *argv, VALUE ary)
 
     static ID keyword_ids[1];
     VALUE target;
-    ID target_id;
 
     if (!keyword_ids[0]) {
         keyword_ids[0] = rb_intern_const("target");
@@ -3581,21 +3580,16 @@ rb_ary_bsearch_index(int argc, VALUE *argv, VALUE ary)
 
     rb_get_kwargs(opt, keyword_ids, 0, 1, &target);
 
-    if (!SYMBOL_P(target)) {
-        goto invalid_target;
-    }
-
-    target_id = SYM2ID(target);
-
-    if (target_id == rb_intern("first")) {
+    if (target == ID2SYM(rb_intern("first"))) {
         return ary_bsearch_index(ary, true);
     }
-    else if (target_id == rb_intern("last")) {
+    else if (target == ID2SYM(rb_intern("last"))) {
         return ary_bsearch_index(ary, false);
     }
-
-  invalid_target:
-    rb_raise(rb_eArgError, "target must be :first or :last");
+    else {
+        rb_raise(rb_eArgError, "target must be :first or :last");
+        UNREACHABLE_RETURN(Qnil);
+    }
 }
 
 static VALUE
