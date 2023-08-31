@@ -1286,14 +1286,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_STATEMENTS_NODE: {
           yp_statements_node_t *statements_node = (yp_statements_node_t *) node;
           yp_node_list_t node_list = statements_node->body;
-          for (size_t index = 0; index < node_list.size; index++) {
-              if (!popped && (index != node_list.size - 1)) {
-                  yp_compile_node(iseq, node_list.nodes[index], ret, src, true, compile_context);
-              }
-              else {
-                  yp_compile_node(iseq, node_list.nodes[index], ret, src, false, compile_context);
-              }
+          for (size_t index = 0; index < node_list.size - 1; index++) {
+              yp_compile_node(iseq, node_list.nodes[index], ret, src, !popped, compile_context);
           }
+          yp_compile_node(iseq, node_list.nodes[node_list.size - 1], ret, src, false, compile_context);
           return;
       }
       case YP_NODE_STRING_CONCAT_NODE: {
