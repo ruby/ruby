@@ -910,6 +910,13 @@ set_line_body(NODE *body, int line)
     }
 }
 
+static void
+set_embraced_location(NODE *node, const rb_code_location_t *beg, const rb_code_location_t *end)
+{
+    node->nd_body->nd_loc = code_loc_gen(beg, end);
+    nd_set_line(node, beg->end_pos.lineno);
+}
+
 #define yyparse ruby_yyparse
 
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
@@ -2250,8 +2257,7 @@ cmd_brace_block	: tLBRACE_ARG brace_body '}'
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 ;
@@ -2313,6 +2319,14 @@ command		: fcall command_args       %prec tLOWEST
                         $$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
                     /*% %*/
                     /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
+                   }
+                | primary_value tCOLON2 tCONSTANT '{' brace_body '}'
+                    {
+                    /*%%%*/
+                        set_embraced_location($5, &@4, &@6);
+                        $$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, Qnull, $5, &@3, &@$);
+                    /*% %*/
+                    /*% ripper: method_add_block!(command_call!($1, $2, $3, Qnull), $5) %*/
                    }
                 | keyword_super command_args
                     {
@@ -4274,8 +4288,7 @@ do_block	: k_do_block do_body k_end
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 ;
@@ -4393,16 +4406,14 @@ brace_block	: '{' brace_body '}'
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 | k_do do_body k_end
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 ;

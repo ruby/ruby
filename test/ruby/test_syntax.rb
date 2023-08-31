@@ -1640,6 +1640,14 @@ eom
   def test_command_with_cmd_brace_block
     assert_valid_syntax('obj.foo (1) {}')
     assert_valid_syntax('obj::foo (1) {}')
+    assert_valid_syntax('bar {}')
+    assert_valid_syntax('Bar {}')
+    assert_valid_syntax('bar() {}')
+    assert_valid_syntax('Bar() {}')
+    assert_valid_syntax('Foo::bar {}')
+    assert_valid_syntax('Foo::Bar {}')
+    assert_valid_syntax('Foo::bar() {}')
+    assert_valid_syntax('Foo::Bar() {}')
   end
 
   def test_numbered_parameter
