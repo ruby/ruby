@@ -986,8 +986,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
           yp_local_variable_read_node_t *local_read_node = (yp_local_variable_read_node_t *) node;
 
-          int index = yp_lookup_local_index(iseq, compile_context, local_read_node->name);
           if (!popped) {
+              int index = yp_lookup_local_index(iseq, compile_context, local_read_node->name);
               ADD_GETLOCAL(ret, &dummy_line_node, index, local_read_node->depth);
           }
           return;
