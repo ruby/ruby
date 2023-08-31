@@ -624,11 +624,14 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN(ret, &dummy_line_node, putnil);
           ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
           ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(parse_node_symbol((yp_node_t *)constant_read_node)));
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
           return;
       }
       case YP_NODE_CONSTANT_WRITE_NODE: {
           yp_constant_write_node_t *constant_write_node = (yp_constant_write_node_t *) node;
-          yp_compile_node(iseq, constant_write_node->value, ret, src, popped, compile_context);
+          yp_compile_node(iseq, constant_write_node->value, ret, src, false, compile_context);
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
