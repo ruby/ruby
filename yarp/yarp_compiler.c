@@ -947,6 +947,42 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_LOCAL_VARIABLE_OR_WRITE_NODE: {
+          yp_local_variable_or_write_node_t *local_variable_or_write_node = (yp_local_variable_or_write_node_t*) node;
+
+          LABEL *set_label= NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+          ADD_INSNL(ret, &dummy_line_node, branchunless, set_label);
+
+          yp_constant_id_t constant_id = local_variable_or_write_node->name;
+          int depth = local_variable_or_write_node->depth;
+          int local_index = yp_lookup_local_index_with_depth(iseq, compile_context, constant_id, depth);
+          ADD_GETLOCAL(ret, &dummy_line_node, local_index, depth);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_LABEL(ret, set_label);
+          yp_compile_node(iseq, local_variable_or_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_SETLOCAL(ret, &dummy_line_node, local_index, depth);
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
       case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
           yp_local_variable_read_node_t *local_read_node = (yp_local_variable_read_node_t *) node;
 
