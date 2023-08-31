@@ -447,12 +447,6 @@ module SyncDefaultGems
 
     # Gem-specific patterns
     case gem
-    when "rubygems"
-      # We don't copy any vcr_cassettes to this repository. Because the directory does not
-      # exist, rename detection doesn't work. So it starts with the original path `bundler/`.
-      %r[\A(?:
-        bundler/spec/support/artifice/vcr_cassettes
-      )\z]mx
     when "yarp"
       # Rename detection never works between ruby/ruby/doc and ruby/yarp/docs
       # since ruby/ruby/doc is not something owned by YARP.
