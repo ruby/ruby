@@ -334,6 +334,31 @@ yp_compile_while(rb_iseq_t *iseq, int lineno, yp_node_flags_t flags, enum yp_nod
     return;
 }
 
+static int
+yp_lookup_local_index(rb_iseq_t *iseq, yp_compile_context_t *compile_context, yp_constant_id_t constant_id)
+{
+    st_data_t local_index;
+
+    int num_params = ISEQ_BODY(iseq)->param.size;
+
+    if (!st_lookup(compile_context->index_lookup_table, constant_id, &local_index)) {
+        rb_bug("This local does not exist");
+    }
+
+    return num_params - (int)local_index;
+}
+
+static int
+yp_lookup_local_index_with_depth(rb_iseq_t *iseq, yp_compile_context_t *compile_context, yp_constant_id_t constant_id, uint32_t depth)
+{
+    for(uint32_t i = 0; i < depth; i++) {
+        compile_context = compile_context->previous;
+        iseq = (rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    return yp_lookup_local_index(iseq, compile_context, constant_id);
+}
+
 static rb_iseq_t *
 yp_new_child_iseq(rb_iseq_t *iseq, yp_scope_node_t * node, yp_parser_t *parser,
                VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
@@ -925,22 +950,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_LOCAL_VARIABLE_READ_NODE: {
           yp_local_variable_read_node_t *local_read_node = (yp_local_variable_read_node_t *) node;
 
-          yp_constant_id_t constant_id = local_read_node->name;
-          st_data_t local_index;
-
-          for(uint32_t i = 0; i < local_read_node->depth; i++) {
-              compile_context = compile_context->previous;
-              iseq = (rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq;
-          }
-
-          int num_params = ISEQ_BODY(iseq)->param.size;
-
-          if (!st_lookup(compile_context->index_lookup_table, constant_id, &local_index)) {
-              rb_bug("This local does not exist");
-          }
-
-          int index = num_params - (int)local_index;
-
+          int index = yp_lookup_local_index(iseq, compile_context, local_read_node->name);
           if (!popped) {
               ADD_GETLOCAL(ret, &dummy_line_node, index, local_read_node->depth);
           }
@@ -955,14 +965,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
 
           yp_constant_id_t constant_id = local_write_node->name;
-          size_t stack_index;
-
-          if (!st_lookup(compile_context->index_lookup_table, constant_id, &stack_index)) {
-              rb_bug("This local doesn't exist");
-          }
-
-          unsigned int num_params = ISEQ_BODY(iseq)->param.size;
-          size_t index = num_params - stack_index;
+          int index = yp_lookup_local_index(iseq, compile_context, constant_id);
 
           ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
           return;
@@ -1059,15 +1062,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_optional_parameter_node_t *optional_parameter_node = (yp_optional_parameter_node_t *)node;
           yp_compile_node(iseq, optional_parameter_node->value, ret, src, false, compile_context);
 
-          yp_constant_id_t constant_id = optional_parameter_node->name;
-
-          size_t param_number;
-          if (!st_lookup(compile_context->index_lookup_table, constant_id, &param_number)) {
-              rb_bug("This local doesn't exist");
-          }
-
-          unsigned int num_params = ISEQ_BODY(iseq)->param.size;
-          int index = (int) (num_params - param_number);
+          int index = yp_lookup_local_index(iseq, compile_context, optional_parameter_node->name);
 
           ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
 
