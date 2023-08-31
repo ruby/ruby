@@ -875,8 +875,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           LABEL *set_label= NEW_LABEL(lineno);
           LABEL *end_label = NEW_LABEL(lineno);
 
-          ID global_variable_name = parse_location_symbol(&global_variable_and_write_node->name_loc);
-          ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(global_variable_name));
+          VALUE global_variable_name = ID2SYM(parse_location_symbol(&global_variable_and_write_node->name_loc));
+          ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
@@ -895,7 +895,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               ADD_INSN(ret, &dummy_line_node, dup);
           }
 
-          ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(global_variable_name));
+          ADD_INSN1(ret, &dummy_line_node, setglobal, global_variable_name);
           ADD_LABEL(ret, end_label);
 
           return;
