@@ -83,7 +83,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     signature = rsa1024.sign("SHA256", data)
     assert_equal true, rsa1024.verify("SHA256", signature, data)
 
-    signature0 = (<<~'end;').unpack("m")[0]
+    signature0 = (<<~'end;').unpack1("m")
       oLCgbprPvfhM4pjFQiDTFeWI9Sk+Og7Nh9TmIZ/xSxf2CGXQrptlwo7NQ28+
       WA6YQo8jPH4hSuyWIM4Gz4qRYiYRkl5TDMUYob94zm8Si1HxEiS9354tzvqS
       zS8MLW2BtNPuTubMxTItHGTnOzo9sUg0LAHVFt8kHG2NfKAw/gQ=

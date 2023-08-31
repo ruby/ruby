@@ -494,7 +494,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         unless ctx.session_id_context
           # see #6137 - session id may not exceed 32 bytes
           prng = ::Random.new($0.hash)
-          session_id = prng.bytes(16).unpack('H*')[0]
+          session_id = prng.bytes(16).unpack1('H*')
           @ctx.session_id_context = session_id
         end
         @start_immediately = true

@@ -110,7 +110,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     signature = p256.sign("SHA256", data)
     assert_equal true, p256.verify("SHA256", signature, data)
 
-    signature0 = (<<~'end;').unpack("m")[0]
+    signature0 = (<<~'end;').unpack1("m")
       MEQCIEOTY/hD7eI8a0qlzxkIt8LLZ8uwiaSfVbjX2dPAvN11AiAQdCYx56Fq
       QdBp1B4sxJoA8jvODMMklMyBKVmudboA6A==
     end;
