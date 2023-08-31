@@ -10472,7 +10472,7 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
             p = RSTRING_PTR(str);
             e = p + slen;
             s = p + tlen;
-            if (!at_char_boundary(p, s, e, enc))
+            if (!at_char_right_boundary(p, s, e, enc))
                 continue;
             if (memcmp(p, RSTRING_PTR(tmp), tlen) == 0)
                 return Qtrue;
@@ -10554,7 +10554,7 @@ deleted_prefix_length(VALUE str, VALUE prefix)
         }
         const char *strend = strptr + olen;
         const char *after_prefix = strptr + prefixlen;
-        if (!at_char_boundary(strptr, after_prefix, strend, enc)) {
+        if (!at_char_right_boundary(strptr, after_prefix, strend, enc)) {
             /* prefix does not end at char-boundary */
             return 0;
         }
