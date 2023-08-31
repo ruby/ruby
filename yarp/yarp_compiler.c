@@ -947,6 +947,63 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_LOCAL_VARIABLE_AND_WRITE_NODE: {
+          yp_local_variable_and_write_node_t *local_variable_and_write_node = (yp_local_variable_and_write_node_t*) node;
+
+          LABEL *set_label= NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          yp_constant_id_t constant_id = local_variable_and_write_node->name;
+          int depth = local_variable_and_write_node->depth;
+          int local_index = yp_lookup_local_index_with_depth(iseq, compile_context, constant_id, depth);
+          ADD_GETLOCAL(ret, &dummy_line_node, local_index, depth);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_LABEL(ret, set_label);
+          yp_compile_node(iseq, local_variable_and_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_SETLOCAL(ret, &dummy_line_node, local_index, depth);
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_LOCAL_VARIABLE_OPERATOR_WRITE_NODE: {
+          yp_local_variable_operator_write_node_t *local_variable_operator_write_node = (yp_local_variable_operator_write_node_t*) node;
+
+          yp_constant_id_t constant_id = local_variable_operator_write_node->name;
+
+          int depth = local_variable_operator_write_node->depth;
+          int local_index = yp_lookup_local_index_with_depth(iseq, compile_context, constant_id, depth);
+          ADD_GETLOCAL(ret, &dummy_line_node, local_index, depth);
+
+          yp_compile_node(iseq, local_variable_operator_write_node->value, ret, src, false, compile_context);
+          ID method_id = compile_context->constants[local_variable_operator_write_node->operator - 1];
+
+          int flags = VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_VCALL;
+          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_SETLOCAL(ret, &dummy_line_node, local_index, depth);
+
+          return;
+      }
       case YP_NODE_LOCAL_VARIABLE_OR_WRITE_NODE: {
           yp_local_variable_or_write_node_t *local_variable_or_write_node = (yp_local_variable_or_write_node_t*) node;
 
