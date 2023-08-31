@@ -9890,7 +9890,7 @@ parse_heredoc_common_whitespace(yp_parser_t *parser, yp_node_list_t *nodes) {
         yp_node_t *node = nodes->nodes[index];
 
         if (!YP_NODE_TYPE_P(node, YP_NODE_STRING_NODE)) continue;
-        yp_location_t *content_loc = &((yp_string_node_t *) node)->content_loc;
+        const yp_location_t *content_loc = &((yp_string_node_t *) node)->content_loc;
 
         // If the previous node wasn't a string node, we don't want to trim
         // whitespace. This could happen after an interpolated expression or
@@ -10235,7 +10235,7 @@ parse_pattern_hash(yp_parser_t *parser, yp_node_t *first_assoc) {
             yp_node_t *key = ((yp_assoc_node_t *) first_assoc)->key;
 
             if (YP_NODE_TYPE_P(key, YP_NODE_SYMBOL_NODE)) {
-                yp_location_t *value_loc = &((yp_symbol_node_t *) key)->value_loc;
+                const yp_location_t *value_loc = &((yp_symbol_node_t *) key)->value_loc;
                 yp_parser_local_add_location(parser, value_loc->start, value_loc->end);
             }
         }
@@ -10263,7 +10263,7 @@ parse_pattern_hash(yp_parser_t *parser, yp_node_t *first_assoc) {
             if (!match_any_type_p(parser, 7, YP_TOKEN_COMMA, YP_TOKEN_KEYWORD_THEN, YP_TOKEN_BRACE_RIGHT, YP_TOKEN_BRACKET_RIGHT, YP_TOKEN_PARENTHESIS_RIGHT, YP_TOKEN_NEWLINE, YP_TOKEN_SEMICOLON)) {
                 value = parse_pattern(parser, false, "Expected a pattern expression after the key.");
             } else {
-                yp_location_t *value_loc = &((yp_symbol_node_t *) key)->value_loc;
+                const yp_location_t *value_loc = &((yp_symbol_node_t *) key)->value_loc;
                 yp_parser_local_add_location(parser, value_loc->start, value_loc->end);
             }
 
@@ -13215,7 +13215,7 @@ parse_expression_infix(yp_parser_t *parser, yp_node_t *node, yp_binding_power_t 
                 yp_string_list_t named_captures;
                 yp_string_list_init(&named_captures);
 
-                yp_location_t *content_loc = &((yp_regular_expression_node_t *) node)->content_loc;
+                const yp_location_t *content_loc = &((yp_regular_expression_node_t *) node)->content_loc;
 
                 if (yp_regexp_named_capture_group_names(content_loc->start, (size_t) (content_loc->end - content_loc->start), &named_captures, parser->encoding_changed, &parser->encoding)) {
                     for (size_t index = 0; index < named_captures.length; index++) {
