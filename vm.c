@@ -2743,6 +2743,8 @@ rb_vm_update_references(void *ptr)
 
         rb_gc_update_tbl_refs(vm->overloaded_cme_table);
 
+        rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
+
         if (vm->coverages) {
             vm->coverages = rb_gc_location(vm->coverages);
             vm->me2counter = rb_gc_location(vm->me2counter);

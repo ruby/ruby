@@ -6348,7 +6348,7 @@ rb_gc_mark_values(long n, const VALUE *values)
     rb_objspace_t *objspace = &rb_objspace;
 
     for (i=0; i<n; i++) {
-        gc_mark_and_pin(objspace, values[i]);
+        gc_mark(objspace, values[i]);
     }
 }
 
@@ -10133,6 +10133,12 @@ gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
     for (i=0; i<n; i++) {
         UPDATE_IF_MOVED(objspace, values[i]);
     }
+}
+
+void
+rb_gc_update_values(long n, VALUE *values)
+{
+    gc_update_values(&rb_objspace, n, values);
 }
 
 static bool
