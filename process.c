@@ -4872,271 +4872,120 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     spawn([env,] command... [,options])     -> pid
- *     Process.spawn([env,] command... [,options])     -> pid
+ *    spawn([env, ] command_line, options = {}) -> pid
+ *    spawn([env, ] exe_path, *args, options  = {}) -> pid
  *
- *  spawn executes specified command and return its pid.
+ *  Creates a new child process by doing one of the following
+ *  in that process:
  *
- *    pid = spawn("tar xf ruby-2.0.0-p195.tar.bz2")
- *    Process.wait pid
+ *  - Passing string +command_line+ to the shell.
+ *  - Invoking the executable at +exe_path+.
  *
- *    pid = spawn(RbConfig.ruby, "-eputs'Hello, world!'")
- *    Process.wait pid
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
- *  This method is similar to Kernel#system but it doesn't wait for the command
- *  to finish.
+ *  Returns the process ID (pid) of the new process,
+ *  without waiting for it to complete.
  *
- *  The parent process should
- *  use Process.wait to collect
- *  the termination status of its child or
- *  use Process.detach to register
- *  disinterest in their status;
- *  otherwise, the operating system may accumulate zombie processes.
+ *  To avoid zombie processes, the parent process should call either:
  *
- *  spawn has bunch of options to specify process attributes:
+ *  - Process.wait, to collect the termination statuses of its children.
+ *  - Process.detach, to register disinterest in their status.
  *
- *    env: hash
- *      name => val : set the environment variable
- *      name => nil : unset the environment variable
+ *  The new process is created using the
+ *  {exec system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/execve.html];
+ *  it may inherit some of its environment from the calling program
+ *  (possibly including open file descriptors).
  *
- *      the keys and the values except for +nil+ must be strings.
- *    command...:
- *      commandline                 : command line string which is passed to the standard shell
- *      cmdname, arg1, ...          : command name and one or more arguments (This form does not use the shell. See below for caveats.)
- *      [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
- *    options: hash
- *      clearing environment variables:
- *        :unsetenv_others => true   : clear environment variables except specified by env
- *        :unsetenv_others => false  : don't clear (default)
- *      process group:
- *        :pgroup => true or 0 : make a new process group
- *        :pgroup => pgid      : join the specified process group
- *        :pgroup => nil       : don't change the process group (default)
- *      create new process group: Windows only
- *        :new_pgroup => true  : the new process is the root process of a new process group
- *        :new_pgroup => false : don't create a new process group (default)
- *      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
- *        :rlimit_resourcename => limit
- *        :rlimit_resourcename => [cur_limit, max_limit]
- *      umask:
- *        :umask => int
- *      redirection:
- *        key:
- *          FD              : single file descriptor in child process
- *          [FD, FD, ...]   : multiple file descriptor in child process
- *        value:
- *          FD                        : redirect to the file descriptor in parent process
- *          string                    : redirect to file with open(string, "r" or "w")
- *          [string]                  : redirect to file with open(string, File::RDONLY)
- *          [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
- *          [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
- *          [:child, FD]              : redirect to the redirected file descriptor
- *          :close                    : close the file descriptor in child process
- *        FD is one of follows
- *          :in     : the file descriptor 0 which is the standard input
- *          :out    : the file descriptor 1 which is the standard output
- *          :err    : the file descriptor 2 which is the standard error
- *          integer : the file descriptor of specified the integer
- *          io      : the file descriptor specified as io.fileno
- *      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
- *        :close_others => false  : inherit
- *      current directory:
- *        :chdir => str
+ *  Argument +env+, if given, is a hash that affects +ENV+ for the new process;
+ *  see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
  *
- *  The <code>cmdname, arg1, ...</code> form does not use the shell.
- *  However, on different OSes, different things are provided as
- *  built-in commands. An example of this is +'echo'+, which is a
- *  built-in on Windows, but is a normal program on Linux and Mac OS X.
- *  This means that <code>Process.spawn 'echo', '%Path%'</code> will
- *  display the contents of the <tt>%Path%</tt> environment variable
- *  on Windows, but <code>Process.spawn 'echo', '$PATH'</code> prints
- *  the literal <tt>$PATH</tt>.
+ *  Argument +options+ is a hash of options for the new process;
+ *  see {Execution Options}[rdoc-ref:Process@Execution+Options].
  *
- *  If a hash is given as +env+, the environment is
- *  updated by +env+ before <code>exec(2)</code> in the child process.
- *  If a pair in +env+ has nil as the value, the variable is deleted.
+ *  The first required argument is one of the following:
  *
- *    # set FOO as BAR and unset BAZ.
- *    pid = spawn({"FOO"=>"BAR", "BAZ"=>nil}, command)
+ *  - +command_line+ if it is a string,
+ *    and if it begins with a shell reserved word or special built-in,
+ *    or if it contains one or more metacharacters.
+ *  - +exe_path+ otherwise.
  *
- *  If a hash is given as +options+,
- *  it specifies
- *  process group,
- *  create new process group,
- *  resource limit,
- *  current directory,
- *  umask and
- *  redirects for the child process.
- *  Also, it can be specified to clear environment variables.
+ *  <b>Argument +command_line+</b>
  *
- *  The <code>:unsetenv_others</code> key in +options+ specifies
- *  to clear environment variables, other than specified by +env+.
+ *  \String argument +command_line+ is a command line to be passed to a shell;
+ *  it must begin with a shell reserved word, begin with a special built-in,
+ *  or contain meta characters:
  *
- *    pid = spawn(command, :unsetenv_others=>true) # no environment variable
- *    pid = spawn({"FOO"=>"BAR"}, command, :unsetenv_others=>true) # FOO only
+ *    spawn('echo')                         # => 798847
+ *    Process.wait                          # => 798847
+ *    spawn('if true; then echo "Foo"; fi') # => 798848
+ *    Process.wait                          # => 798848
+ *    spawn('date > /tmp/date.tmp')         # => 798879
+ *    Process.wait                          # => 798849
+ *    spawn('date > /nop/date.tmp')         # => 798882 # Issues error message.
+ *    Process.wait                          # => 798882
  *
- *  The <code>:pgroup</code> key in +options+ specifies a process group.
- *  The corresponding value should be true, zero, a positive integer, or nil.
- *  true and zero cause the process to be a process leader of a new process group.
- *  A non-zero positive integer causes the process to join the provided process group.
- *  The default value, nil, causes the process to remain in the same process group.
+ *  The command line may also contain arguments and options for the command:
  *
- *    pid = spawn(command, :pgroup=>true) # process leader
- *    pid = spawn(command, :pgroup=>10) # belongs to the process group 10
+ *    spawn('echo "Foo"') # => 799031
+ *    Process.wait        # => 799031
  *
- *  The <code>:new_pgroup</code> key in +options+ specifies to pass
- *  +CREATE_NEW_PROCESS_GROUP+ flag to <code>CreateProcessW()</code> that is
- *  Windows API. This option is only for Windows.
- *  true means the new process is the root process of the new process group.
- *  The new process has CTRL+C disabled. This flag is necessary for
- *  <code>Process.kill(:SIGINT, pid)</code> on the subprocess.
- *  :new_pgroup is false by default.
+ *  Output:
  *
- *    pid = spawn(command, :new_pgroup=>true)  # new process group
- *    pid = spawn(command, :new_pgroup=>false) # same process group
+ *    Foo
  *
- *  The <code>:rlimit_</code><em>foo</em> key specifies a resource limit.
- *  <em>foo</em> should be one of resource types such as <code>core</code>.
- *  The corresponding value should be an integer or an array which have one or
- *  two integers: same as cur_limit and max_limit arguments for
- *  Process.setrlimit.
+ *  On a Unix-like system, the shell is <tt>/bin/sh</tt>;
+ *  otherwise the shell is determined by environment variable
+ *  <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
  *
- *    cur, max = Process.getrlimit(:CORE)
- *    pid = spawn(command, :rlimit_core=>[0,max]) # disable core temporary.
- *    pid = spawn(command, :rlimit_core=>max) # enable core dump
- *    pid = spawn(command, :rlimit_core=>0) # never dump core.
+ *  Except for the +COMSPEC+ case,
+ *  the entire string +command_line+ is passed as an argument
+ *  to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
  *
- *  The <code>:umask</code> key in +options+ specifies the umask.
+ *  The shell performs normal shell expansion on the command line:
  *
- *    pid = spawn(command, :umask=>077)
+ *    spawn('echo C*') # => 799139
+ *    Process.wait     # => 799139
  *
- *  The :in, :out, :err, an integer, an IO and an array key specifies a redirection.
- *  The redirection maps a file descriptor in the child process.
+ *  Output:
  *
- *  For example, stderr can be merged into stdout as follows:
+ *    CONTRIBUTING.md COPYING COPYING.ja
  *
- *    pid = spawn(command, :err=>:out)
- *    pid = spawn(command, 2=>1)
- *    pid = spawn(command, STDERR=>:out)
- *    pid = spawn(command, STDERR=>STDOUT)
+ *  Raises an exception if the new process could not execute.
  *
- *  The hash keys specifies a file descriptor in the child process
- *  started by #spawn.
- *  :err, 2 and STDERR specifies the standard error stream (stderr).
+ *  <b>Argument +exe_path+</b>
  *
- *  The hash values specifies a file descriptor in the parent process
- *  which invokes #spawn.
- *  :out, 1 and STDOUT specifies the standard output stream (stdout).
+ *  Argument +exe_path+ is one of the following:
  *
- *  In the above example,
- *  the standard output in the child process is not specified.
- *  So it is inherited from the parent process.
+ *  - The string path to an executable to be called.
+ *  - A 2-element array containing the path to an executable
+ *    and the string to be used as the name of the executing process.
  *
- *  The standard input stream (stdin) can be specified by :in, 0 and STDIN.
+ *  Example:
  *
- *  A filename can be specified as a hash value.
+ *    spawn('/usr/bin/date') # => 799198 # Path to date on Unix-style system.
+ *    Process.wait           # => 799198
  *
- *    pid = spawn(command, :in=>File::NULL) # read mode
- *    pid = spawn(command, :out=>File::NULL) # write mode
- *    pid = spawn(command, :err=>"log") # write mode
- *    pid = spawn(command, [:out, :err]=>File::NULL) # write mode
- *    pid = spawn(command, 3=>File::NULL) # read mode
+ *  Output:
  *
- *  For stdout and stderr (and combination of them),
- *  it is opened in write mode.
- *  Otherwise read mode is used.
+ *    Thu Aug 31 10:06:48 AM CDT 2023
  *
- *  For specifying flags and permission of file creation explicitly,
- *  an array is used instead.
+ *  Ruby invokes the executable directly, with no shell and no shell expansion.
  *
- *    pid = spawn(command, :in=>["file"]) # read mode is assumed
- *    pid = spawn(command, :in=>["file", "r"])
- *    pid = spawn(command, :out=>["log", "w"]) # 0644 assumed
- *    pid = spawn(command, :out=>["log", "w", 0600])
- *    pid = spawn(command, :out=>["log", File::WRONLY|File::EXCL|File::CREAT, 0600])
+ *  If one or more +args+ is given, each is an argument or option
+ *  to be passed to the executable:
  *
- *  The array specifies a filename, flags and permission.
- *  The flags can be a string or an integer.
- *  If the flags is omitted or nil, File::RDONLY is assumed.
- *  The permission should be an integer.
- *  If the permission is omitted or nil, 0644 is assumed.
+ *    spawn('echo', 'C*')             # => 799392
+ *    Process.wait                    # => 799392
+ *    spawn('echo', 'hello', 'world') # => 799393
+ *    Process.wait                    # => 799393
  *
- *  If an array of IOs and integers are specified as a hash key,
- *  all the elements are redirected.
+ *  Output:
  *
- *    # stdout and stderr is redirected to log file.
- *    # The file "log" is opened just once.
- *    pid = spawn(command, [:out, :err]=>["log", "w"])
+ *    C*
+ *    hello world
  *
- *  Another way to merge multiple file descriptors is [:child, fd].
- *  \[:child, fd] means the file descriptor in the child process.
- *  This is different from fd.
- *  For example, :err=>:out means redirecting child stderr to parent stdout.
- *  But :err=>[:child, :out] means redirecting child stderr to child stdout.
- *  They differ if stdout is redirected in the child process as follows.
- *
- *    # stdout and stderr is redirected to log file.
- *    # The file "log" is opened just once.
- *    pid = spawn(command, :out=>["log", "w"], :err=>[:child, :out])
- *
- *  \[:child, :out] can be used to merge stderr into stdout in IO.popen.
- *  In this case, IO.popen redirects stdout to a pipe in the child process
- *  and [:child, :out] refers the redirected stdout.
- *
- *    io = IO.popen(["sh", "-c", "echo out; echo err >&2", :err=>[:child, :out]])
- *    p io.read #=> "out\nerr\n"
- *
- *  The <code>:chdir</code> key in +options+ specifies the current directory.
- *
- *    pid = spawn(command, :chdir=>"/var/tmp")
- *
- *  spawn closes all non-standard unspecified descriptors by default.
- *  The "standard" descriptors are 0, 1 and 2.
- *  This behavior is specified by :close_others option.
- *  :close_others doesn't affect the standard descriptors which are
- *  closed only if :close is specified explicitly.
- *
- *    pid = spawn(command, :close_others=>true)  # close 3,4,5,... (default)
- *    pid = spawn(command, :close_others=>false) # don't close 3,4,5,...
- *
- *  :close_others is false by default for spawn and IO.popen.
- *
- *  Note that fds which close-on-exec flag is already set are closed
- *  regardless of :close_others option.
- *
- *  So IO.pipe and spawn can be used as IO.popen.
- *
- *    # similar to r = IO.popen(command)
- *    r, w = IO.pipe
- *    pid = spawn(command, :out=>w)   # r, w is closed in the child process.
- *    w.close
- *
- *  :close is specified as a hash value to close a fd individually.
- *
- *    f = open(foo)
- *    system(command, f=>:close)        # don't inherit f.
- *
- *  If a file descriptor need to be inherited,
- *  io=>io can be used.
- *
- *    # valgrind has --log-fd option for log destination.
- *    # log_w=>log_w indicates log_w.fileno inherits to child process.
- *    log_r, log_w = IO.pipe
- *    pid = spawn("valgrind", "--log-fd=#{log_w.fileno}", "echo", "a", log_w=>log_w)
- *    log_w.close
- *    p log_r.read
- *
- *  It is also possible to exchange file descriptors.
- *
- *    pid = spawn(command, :out=>:err, :err=>:out)
- *
- *  The hash keys specify file descriptors in the child process.
- *  The hash values specifies file descriptors in the parent process.
- *  So the above specifies exchanging stdout and stderr.
- *  Internally, +spawn+ uses an extra file descriptor to resolve such cyclic
- *  file descriptor mapping.
- *
- *  See Kernel.exec for the standard shell.
+ *  Raises an exception if the new process could not execute.
  */
 
 static VALUE
