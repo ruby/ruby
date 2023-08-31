@@ -4776,7 +4776,7 @@ rb_spawn(int argc, const VALUE *argv)
  *  Example:
  *
  *    system('/usr/bin/date') # => true # Path to date on Unix-style system.
- *    system('foo')           # => nil   # Command failed.
+ *    system('foo')           # => nil  # Command failed.
  *
  *  Output:
  *
