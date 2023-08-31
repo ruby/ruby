@@ -700,9 +700,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_defined_node_t *defined_node = (yp_defined_node_t *)node;
           // TODO: Correct defined_type
           enum defined_type dtype = DEFINED_CONST;
-          VALUE sym;
-
-          sym = parse_number(defined_node->value);
+          VALUE sym = parse_number(defined_node->value);
 
           ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(dtype), sym, rb_iseq_defined_string(dtype));
           return;
@@ -772,12 +770,103 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
-      case YP_NODE_GLOBAL_VARIABLE_READ_NODE:
-        if (!popped) {
-            ID gvar_name = parse_node_symbol((yp_node_t *)node);
+      case YP_NODE_GLOBAL_VARIABLE_AND_WRITE_NODE: {
+          yp_global_variable_and_write_node_t *global_variable_and_write_node = (yp_global_variable_and_write_node_t*) node;
+
+          LABEL *set_label= NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          ID gvar_name = parse_location_symbol(&global_variable_and_write_node->name_loc);
             ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(gvar_name));
-        }
-        return;
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_LABEL(ret, set_label);
+          yp_compile_node(iseq, global_variable_and_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(gvar_name));
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
+          yp_global_variable_operator_write_node_t *global_variable_operator_write_node = (yp_global_variable_operator_write_node_t*) node;
+
+          ID gvar_name = parse_location_symbol(&global_variable_operator_write_node->name_loc);
+          ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(gvar_name));
+
+          yp_compile_node(iseq, global_variable_operator_write_node->value, ret, src, false, compile_context);
+          ID method_id = compile_context->constants[global_variable_operator_write_node->operator - 1];
+
+          int flags = VM_CALL_ARGS_SIMPLE;
+          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(gvar_name));
+
+          return;
+      }
+      case YP_NODE_GLOBAL_VARIABLE_OR_WRITE_NODE: {
+          yp_global_variable_or_write_node_t *global_variable_or_write_node = (yp_global_variable_or_write_node_t*) node;
+
+          LABEL *set_label= NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          VALUE gvar_name = ID2SYM(parse_location_symbol(&global_variable_or_write_node->name_loc));
+
+          ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_GVAR), gvar_name, Qtrue);
+
+          ADD_INSNL(ret, &dummy_line_node, branchunless, set_label);
+
+          ADD_INSN1(ret, &dummy_line_node, getglobal, gvar_name);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_LABEL(ret, set_label);
+          yp_compile_node(iseq, global_variable_or_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN1(ret, &dummy_line_node, setglobal, gvar_name);
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_GLOBAL_VARIABLE_READ_NODE: {
+          VALUE gvar_name = ID2SYM(parse_location_symbol((yp_location_t *)(&node->location)));
+          ADD_INSN1(ret, &dummy_line_node, getglobal, gvar_name);
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+          return;
+      }
       case YP_NODE_GLOBAL_VARIABLE_WRITE_NODE: {
           yp_global_variable_write_node_t *write_node = (yp_global_variable_write_node_t *) node;
           yp_compile_node(iseq, write_node->value, ret, src, false, compile_context);
@@ -1080,7 +1169,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           const int flags = VM_DEFINECLASS_TYPE_MODULE |
               yp_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, popped, compile_context);
 
-          ADD_INSN (ret, &dummy_line_node, putnil);
+          ADD_INSN(ret, &dummy_line_node, putnil);
           ADD_INSN3(ret, &dummy_line_node, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
           RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)module_iseq);
 
