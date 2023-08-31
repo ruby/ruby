@@ -67,8 +67,9 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
     #
     # The generated message should look like:
     #     "subjectAltName = IP:not.a.valid.ip.address: bad ip address (value=not.a.valid.ip.address)"
+    #     "subjectAltName = IP:not.a.valid.ip.address: error in extension (name=subjectAltName, value=IP:not.a.valid.ip.address)"
     ef = OpenSSL::X509::ExtensionFactory.new
-    assert_raise_with_message(OpenSSL::X509::ExtensionError, /\(value=not.a.valid.ip.address\)/) {
+    assert_raise_with_message(OpenSSL::X509::ExtensionError, /value=(IP:)?not.a.valid.ip.address\)/) {
       ef.create_ext("subjectAltName", "IP:not.a.valid.ip.address")
     }
   end
