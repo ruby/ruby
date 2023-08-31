@@ -125,6 +125,15 @@ at_char_boundary(const char *s, const char *p, const char *e, rb_encoding *enc)
     return rb_enc_left_char_head(s, p, e, enc) == p;
 }
 
+static inline bool
+at_char_right_boundary(const char *s, const char *p, const char *e, rb_encoding *enc)
+{
+    RUBY_ASSERT(s <= p);
+    RUBY_ASSERT(p <= e);
+
+    return rb_enc_right_char_head(s, p, e, enc) == p;
+}
+
 /* expect tail call optimization */
 // YJIT needs this function to never allocate and never raise
 static inline VALUE
