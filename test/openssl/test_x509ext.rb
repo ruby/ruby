@@ -70,6 +70,14 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     assert_match(%r{http://cps.example.com}, cp.value)
   end
 
+  def test_factory_create_extension_sn_ln
+    ef = OpenSSL::X509::ExtensionFactory.new
+    bc_sn = ef.create_extension("basicConstraints", "critical, CA:TRUE, pathlen:2")
+    bc_ln = ef.create_extension("X509v3 Basic Constraints", "critical, CA:TRUE, pathlen:2")
+    assert_equal(@basic_constraints.to_der, bc_sn.to_der)
+    assert_equal(@basic_constraints.to_der, bc_ln.to_der)
+  end
+
   def test_dup
     ext = OpenSSL::X509::Extension.new(@basic_constraints.to_der)
     assert_equal(@basic_constraints.to_der, ext.to_der)
