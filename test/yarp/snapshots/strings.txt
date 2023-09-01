@@ -177,7 +177,7 @@ ProgramNode(0...498)(
        (405...406),
        [EmbeddedVariableNode(406...411)(
           (406...407),
-          GlobalVariableReadNode(407...411)()
+          GlobalVariableReadNode(407...411)(:$foo)
         )],
        (411...412)
      ),

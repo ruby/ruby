@@ -959,7 +959,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        PinnedVariableNode(988...993)(
-         GlobalVariableReadNode(989...993)(),
+         GlobalVariableReadNode(989...993)(:$bar),
          (988...989)
        ),
        (985...987)

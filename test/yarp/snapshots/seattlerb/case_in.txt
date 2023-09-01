@@ -498,7 +498,7 @@ ProgramNode(0...747)(
                (628...629)
              ),
              PinnedVariableNode(633...636)(
-               GlobalVariableReadNode(634...636)(),
+               GlobalVariableReadNode(634...636)(:$b),
                (633...634)
              ),
              PinnedVariableNode(638...642)(

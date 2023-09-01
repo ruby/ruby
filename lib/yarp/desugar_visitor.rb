@@ -62,7 +62,7 @@ module YARP
     #
     # $foo && $foo = bar
     def visit_global_variable_and_write_node(node)
-      desugar_and_write_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
+      desugar_and_write_node(node, GlobalVariableReadNode, GlobalVariableWriteNode, arguments: [node.name])
     end
 
     # $foo ||= bar
@@ -71,7 +71,7 @@ module YARP
     #
     # defined?($foo) ? $foo : $foo = bar
     def visit_global_variable_or_write_node(node)
-      desugar_or_write_defined_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
+      desugar_or_write_defined_node(node, GlobalVariableReadNode, GlobalVariableWriteNode, arguments: [node.name])
     end
 
     # $foo += bar
@@ -80,7 +80,7 @@ module YARP
     #
     # $foo = $foo + bar
     def visit_global_variable_operator_write_node(node)
-      desugar_operator_write_node(node, GlobalVariableReadNode, GlobalVariableWriteNode)
+      desugar_operator_write_node(node, GlobalVariableReadNode, GlobalVariableWriteNode, arguments: [node.name])
     end
 
     # @foo &&= bar

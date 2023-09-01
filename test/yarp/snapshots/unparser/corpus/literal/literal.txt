@@ -163,7 +163,7 @@ ProgramNode(0...916)(
         StringNode(215...216)(nil, (215...216), nil, " "),
         EmbeddedVariableNode(216...219)(
           (216...217),
-          GlobalVariableReadNode(217...219)()
+          GlobalVariableReadNode(217...219)(:$a)
         )],
        (219...220)
      ),

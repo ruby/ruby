@@ -1,7 +1,12 @@
 ProgramNode(0...22)(
   [:测试],
   StatementsNode(0...22)(
-    [GlobalVariableWriteNode(0...11)((0...7), IntegerNode(10...11)(), (8...9)),
+    [GlobalVariableWriteNode(0...11)(
+       :$测试,
+       (0...7),
+       IntegerNode(10...11)(),
+       (8...9)
+     ),
      LocalVariableWriteNode(12...22)(
        :测试,
        0,

@@ -234,7 +234,7 @@ ProgramNode(0...608)(
          [StringNode(587...588)(nil, (587...588), nil, "a"),
           EmbeddedVariableNode(588...591)(
             (588...589),
-            GlobalVariableReadNode(589...591)()
+            GlobalVariableReadNode(589...591)(:$a)
           )],
          (591...592)
        ),

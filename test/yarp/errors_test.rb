@@ -1006,8 +1006,8 @@ module YARP
       expected = BeginNode(
         Location(),
         StatementsNode([
-          GlobalVariableWriteNode(Location(), NilNode(), Location()),
-          GlobalVariableWriteNode(Location(), NilNode(), Location())
+          GlobalVariableWriteNode(:$+, Location(), NilNode(), Location()),
+          GlobalVariableWriteNode(:$1466, Location(), NilNode(), Location())
         ]),
         nil,
         nil,

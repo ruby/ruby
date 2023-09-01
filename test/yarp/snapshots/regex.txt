@@ -21,7 +21,7 @@ ProgramNode(0...293)(
        [StringNode(29...33)(nil, (29...33), nil, "aaa "),
         EmbeddedVariableNode(33...38)(
           (33...34),
-          GlobalVariableReadNode(34...38)()
+          GlobalVariableReadNode(34...38)(:$bbb)
         )],
        (38...39),
        0

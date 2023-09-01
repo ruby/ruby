@@ -1166,6 +1166,8 @@ nodes:
           ^^^^^
   - name: GlobalVariableAndWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -1179,6 +1181,8 @@ nodes:
           ^^^^^^^^^^^^^^^^^
   - name: GlobalVariableOperatorWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -1194,6 +1198,8 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: GlobalVariableOrWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -1206,12 +1212,18 @@ nodes:
           $target ||= value
           ^^^^^^^^^^^^^^^^^
   - name: GlobalVariableReadNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents referencing a global variable.
 
           $foo
           ^^^^
   - name: GlobalVariableTargetNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents writing to a global variable in a context that doesn't have an explicit value.
 
@@ -1219,6 +1231,8 @@ nodes:
           ^^^^  ^^^^
   - name: GlobalVariableWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value

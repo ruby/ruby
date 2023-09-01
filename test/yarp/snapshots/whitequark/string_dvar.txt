@@ -15,7 +15,7 @@ ProgramNode(0...14)(
         StringNode(9...10)(nil, (9...10), nil, " "),
         EmbeddedVariableNode(10...13)(
           (10...11),
-          GlobalVariableReadNode(11...13)()
+          GlobalVariableReadNode(11...13)(:$a)
         )],
        (13...14)
      )]

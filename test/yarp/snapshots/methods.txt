@@ -173,7 +173,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(161...175)(
        (170...171),
-       GlobalVariableReadNode(165...169)(),
+       GlobalVariableReadNode(165...169)(:$var),
        nil,
        nil,
        [],
