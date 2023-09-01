@@ -608,7 +608,6 @@ module YARP
 
       assert_errors expected, '"\u{0000001}"', [
         ["invalid Unicode escape.", 4..11],
-        ["invalid Unicode escape.", 4..11]
       ]
     end
 
@@ -617,13 +616,11 @@ module YARP
 
       assert_errors expected, '"\u{000z}"', [
         ["unterminated Unicode escape", 7..7],
-        ["unterminated Unicode escape", 7..7]
       ]
     end
 
     def test_unterminated_unicode_brackets_should_be_a_syntax_error
       assert_errors expression('?\\u{3'), '?\\u{3', [
-        ["invalid Unicode escape.", 1..5],
         ["invalid Unicode escape.", 1..5],
       ]
     end

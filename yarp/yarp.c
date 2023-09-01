@@ -7548,6 +7548,17 @@ yp_symbol_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *openin
 }
 
 static yp_string_node_t *
+yp_char_literal_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *opening, const yp_token_t *content, const yp_token_t *closing, yp_unescape_type_t unescape_type) {
+    yp_string_node_t *node = yp_string_node_create(parser, opening, content, closing);
+
+    assert((content->end - content->start) >= 0);
+    yp_string_shared_init(&node->unescaped, content->start, content->end);
+
+    yp_unescape_manipulate_char_literal(parser, &node->unescaped, unescape_type);
+    return node;
+}
+
+static yp_string_node_t *
 yp_string_node_create_and_unescape(yp_parser_t *parser, const yp_token_t *opening, const yp_token_t *content, const yp_token_t *closing, yp_unescape_type_t unescape_type) {
     yp_string_node_t *node = yp_string_node_create(parser, opening, content, closing);
 
@@ -10921,7 +10932,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
 
             yp_token_t closing = not_provided(parser);
 
-            return (yp_node_t *) yp_string_node_create_and_unescape(parser, &opening, &content, &closing, YP_UNESCAPE_ALL);
+            return (yp_node_t *) yp_char_literal_node_create_and_unescape(parser, &opening, &content, &closing, YP_UNESCAPE_ALL);
         }
         case YP_TOKEN_CLASS_VARIABLE: {
             parser_lex(parser);
