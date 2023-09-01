@@ -472,6 +472,16 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_BACK_REFERENCE_READ_NODE: {
+          if (!popped) {
+              // Since a back reference is `$<char>`, ruby represents the ID as the
+              // an rb_intern on the value after the `$`.
+              char *char_ptr = (char *)(node->location.start) + 1;
+              ID backref_val = INT2FIX(rb_intern2(char_ptr, 1)) << 1 | 1;
+              ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(1), backref_val);
+          }
+          return;
+      }
       case YP_NODE_BEGIN_NODE: {
           yp_begin_node_t *begin_node = (yp_begin_node_t *) node;
           if (begin_node->statements) {
@@ -1019,6 +1029,13 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN(ret, &dummy_line_node, putnil);
         }
         return;
+      case YP_NODE_NUMBERED_REFERENCE_READ_NODE: {
+          if (!popped) {
+              uint32_t reference_number = ((yp_numbered_reference_read_node_t *)node)->number;
+              ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(1), INT2FIX(reference_number << 1));
+          }
+          return;
+      }
       case YP_NODE_OR_NODE: {
           yp_or_node_t *or_node = (yp_or_node_t *) node;
 
