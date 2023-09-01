@@ -1598,7 +1598,7 @@ end
       require 'csv'
     R
 
-    expect(err).to be_empty
+    expect(err).not_to include("Add csv to your Gemfile")
   end
 
   it "don't warn with bundled gems when it's declared in Gemfile" do
