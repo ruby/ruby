@@ -5277,7 +5277,7 @@ ruby_setsid(void)
  *  - Process::PRIO_USER: return priority for user.
  *
  *  Argument +id+ is the ID for the process, process group, or user;
- *  zero specified the current id for +kind+.
+ *  zero specified the current ID for +kind+.
  *
  *  Examples:
  *
