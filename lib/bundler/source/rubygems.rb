@@ -380,7 +380,7 @@ module Bundler
 
       def cached_specs
         @cached_specs ||= begin
-          idx = @allow_local ? installed_specs.dup : Index.new
+          idx = Index.new
 
           Dir["#{cache_path}/*.gem"].each do |gemfile|
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
