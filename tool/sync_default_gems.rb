@@ -602,6 +602,7 @@ module SyncDefaultGems
 
     unless ignore.empty?
       puts "Reset ignored files: #{ignore.join(', ')}"
+      system(*%W"git rm -r --", *ignore)
       system(*%W"git checkout -f", base, "--", *ignore)
     end
 
