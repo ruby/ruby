@@ -764,6 +764,102 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_CONSTANT_AND_WRITE_NODE: {
+          yp_constant_and_write_node_t *constant_and_write_node = (yp_constant_and_write_node_t*) node;
+
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          VALUE constant_name = ID2SYM(parse_location_symbol(&constant_and_write_node->name_loc));
+
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+          ADD_INSN1(ret, &dummy_line_node, getconstant, constant_name);
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          yp_compile_node(iseq, constant_and_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+          ADD_INSN1(ret, &dummy_line_node, setconstant, constant_name);
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
+      case YP_NODE_CONSTANT_OPERATOR_WRITE_NODE: {
+          yp_constant_operator_write_node_t *constant_operator_write_node = (yp_constant_operator_write_node_t*) node;
+
+          ID constant_name = parse_location_symbol(&constant_operator_write_node->name_loc);
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+          ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(constant_name));
+
+          yp_compile_node(iseq, constant_operator_write_node->value, ret, src, false, compile_context);
+          ID method_id = compile_context->constants[constant_operator_write_node->operator - 1];
+
+          int flags = VM_CALL_ARGS_SIMPLE;
+          ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
+
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+          ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_name));
+
+          return;
+      }
+      case YP_NODE_CONSTANT_OR_WRITE_NODE: {
+          yp_constant_or_write_node_t *constant_or_write_node = (yp_constant_or_write_node_t*) node;
+
+          LABEL *set_label= NEW_LABEL(lineno);
+          LABEL *end_label = NEW_LABEL(lineno);
+
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          VALUE constant_name = ID2SYM(parse_location_symbol(&constant_or_write_node->name_loc));
+
+          ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_CONST), constant_name, Qtrue);
+
+          ADD_INSNL(ret, &dummy_line_node, branchunless, set_label);
+
+          ADD_INSN(ret, &dummy_line_node, putnil);
+          ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+          ADD_INSN1(ret, &dummy_line_node, getconstant, constant_name);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
+
+          ADD_LABEL(ret, set_label);
+          yp_compile_node(iseq, constant_or_write_node->value, ret, src, false, compile_context);
+
+          if (!popped) {
+              ADD_INSN(ret, &dummy_line_node, dup);
+          }
+
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+          ADD_INSN1(ret, &dummy_line_node, setconstant, constant_name);
+          ADD_LABEL(ret, end_label);
+
+          return;
+      }
       case YP_NODE_CONSTANT_WRITE_NODE: {
           yp_constant_write_node_t *constant_write_node = (yp_constant_write_node_t *) node;
           yp_compile_node(iseq, constant_write_node->value, ret, src, false, compile_context);
