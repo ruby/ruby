@@ -91,9 +91,10 @@ unescape_hexadecimal_digit(const uint8_t value) {
 // Scan the 1-2 digits of hexadecimal into the value. Returns the number of
 // digits scanned.
 static inline size_t
-unescape_hexadecimal(const uint8_t *backslash, uint8_t *value, const uint8_t *end) {
+unescape_hexadecimal(const uint8_t *backslash, uint8_t *value, const uint8_t *end, yp_list_t *error_list) {
     *value = 0;
     if (backslash + 2 >= end || !yp_char_is_hexadecimal_digit(backslash[2])) {
+        if (error_list) yp_diagnostic_list_append(error_list, backslash, backslash + 2, "Invalid hex escape.");
         return 2;
     }
     *value = unescape_hexadecimal_digit(backslash[2]);
@@ -223,7 +224,7 @@ unescape(
         // \xnn         hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
         case 'x': {
             uint8_t value;
-            const uint8_t *cursor = backslash + unescape_hexadecimal(backslash, &value, end);
+            const uint8_t *cursor = backslash + unescape_hexadecimal(backslash, &value, end, error_list);
 
             if (dest) {
                 dest[(*dest_length)++] = unescape_char(value, flags);

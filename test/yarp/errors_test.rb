@@ -603,6 +603,12 @@ module YARP
       ]
     end
 
+    def test_invalid_hex_escape
+      assert_errors expression('"\\xx"'), '"\\xx"', [
+        ["Invalid hex escape.", 1..3],
+      ]
+    end
+
     def test_do_not_allow_more_than_6_hexadecimal_digits_in_u_Unicode_character_notation
       expected = StringNode(Location(), Location(), Location(), "\u0001")
 
