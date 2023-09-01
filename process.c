@@ -5175,7 +5175,7 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
  *  call-seq:
  *    Process.getsid(pid = nil) -> integer
  *
- *  Returns the session ID of the given process id +pid+,
+ *  Returns the session ID of the given process ID +pid+,
  *  or of the current process if not given:
  *
  *    Process.getsid                # => 27422
