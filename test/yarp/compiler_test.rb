@@ -81,6 +81,19 @@ module YARP
       assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; end")
     end
 
+    def test_ClassVariableAndWriteNode
+      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 0; @@yct &&= 1; end")
+    end
+
+    def test_ClassVariableOrWriteNode
+      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 1; @@yct ||= 0; end")
+      assert_equal 1, compile("class YARP::CompilerTest; @@yct = nil; @@yct ||= 1; end")
+    end
+
+    def test_ClassVariableOperatorWriteNode
+      assert_equal 1, compile("class YARP::CompilerTest; @@yct = 0; @@yct += 1; end")
+    end
+
     def test_ConstantWriteNode
       assert_equal 1, compile("YCT = 1")
     end
@@ -93,12 +106,48 @@ module YARP
       assert_equal 1, compile("$yct = 1")
     end
 
+    def test_GlobalVariableAndWriteNode
+      assert_equal 1, compile("$yct = 0; $yct &&= 1")
+    end
+
+    def test_GlobalVariableOrWriteNode
+      assert_equal 1, compile("$yct ||= 1")
+    end
+
+    def test_GlobalVariableOperatorWriteNode
+      assert_equal 1, compile("$yct = 0; $yct += 1")
+    end
+
     def test_InstanceVariableWriteNode
       assert_equal 1, compile("class YARP::CompilerTest; @yct = 1; end")
     end
 
+    def test_InstanceVariableAndWriteNode
+      assert_equal 1, compile("@yct = 0; @yct &&= 1")
+    end
+
+    def test_InstanceVariableOrWriteNode
+      assert_equal 1, compile("@yct ||= 1")
+    end
+
+    def test_InstanceVariableOperatorWriteNode
+      assert_equal 1, compile("@yct = 0; @yct += 1")
+    end
+
     def test_LocalVariableWriteNode
       assert_equal 1, compile("yct = 1")
+    end
+
+    def test_LocalVariableAndWriteNode
+      assert_equal 1, compile("yct = 0; yct &&= 1")
+    end
+
+    def test_LocalVariableOrWriteNode
+      assert_equal 1, compile("yct ||= 1")
+    end
+
+    def test_LocalVariableOperatorWriteNode
+      assert_equal 1, compile("yct = 0; yct += 1")
     end
 
     ############################################################################
