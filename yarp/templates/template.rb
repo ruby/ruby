@@ -339,7 +339,10 @@ end
 if __FILE__ == $0
   if ARGV.empty?
     YARP::TEMPLATES.each { |filepath| YARP.template(filepath) }
-  else
+  else # ruby/ruby
+    if ENV["LANG"] == "C"
+      Encoding.default_external = Encoding::UTF_8
+    end
     name, write_to = ARGV
     YARP.template(name, write_to: write_to)
   end
