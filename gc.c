@@ -955,7 +955,7 @@ struct heap_page {
     struct {
         unsigned int before_sweep : 1;
         unsigned int has_remembered_objects : 1;
-        unsigned int has_uncollectible_shady_objects : 1;
+        unsigned int has_uncollectible_wb_unprotected_objects : 1;
         unsigned int in_tomb : 1;
     } flags;
 
@@ -6733,7 +6733,7 @@ gc_remember_unprotected(rb_objspace_t *objspace, VALUE obj)
     bits_t *uncollectible_bits = &page->uncollectible_bits[0];
 
     if (!MARKED_IN_BITMAP(uncollectible_bits, obj)) {
-        page->flags.has_uncollectible_shady_objects = TRUE;
+        page->flags.has_uncollectible_wb_unprotected_objects = TRUE;
         MARK_IN_BITMAP(uncollectible_bits, obj);
         objspace->rgengc.uncollectible_wb_unprotected_objects++;
 
@@ -7851,7 +7851,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
                (void *)page, remembered_old_objects, obj ? obj_info(obj) : "");
     }
 
-    if (page->flags.has_uncollectible_shady_objects == FALSE && has_remembered_shady == TRUE) {
+    if (page->flags.has_uncollectible_wb_unprotected_objects == FALSE && has_remembered_shady == TRUE) {
         rb_bug("page %p's has_remembered_shady should be false, but there are remembered shady objects. %s",
                (void *)page, obj ? obj_info(obj) : "");
     }
@@ -8713,16 +8713,16 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_report(1, objspace, "rgengc_rememberset_mark: start\n");
 
     ccan_list_for_each(&heap->pages, page, page_node) {
-        if (page->flags.has_remembered_objects | page->flags.has_uncollectible_shady_objects) {
+        if (page->flags.has_remembered_objects | page->flags.has_uncollectible_wb_unprotected_objects) {
             uintptr_t p = page->start;
             bits_t bitset, bits[HEAP_PAGE_BITMAP_LIMIT];
             bits_t *remembered_bits = page->remembered_bits;
             bits_t *uncollectible_bits = page->uncollectible_bits;
             bits_t *wb_unprotected_bits = page->wb_unprotected_bits;
 #if PROFILE_REMEMBERSET_MARK
-            if (page->flags.has_remembered_objects && page->flags.has_uncollectible_shady_objects) has_both++;
+            if (page->flags.has_remembered_objects && page->flags.has_uncollectible_wb_unprotected_objects) has_both++;
             else if (page->flags.has_remembered_objects) has_old++;
-            else if (page->flags.has_uncollectible_shady_objects) has_shady++;
+            else if (page->flags.has_uncollectible_wb_unprotected_objects) has_shady++;
 #endif
             for (j=0; j<HEAP_PAGE_BITMAP_LIMIT; j++) {
                 bits[j] = remembered_bits[j] | (uncollectible_bits[j] & wb_unprotected_bits[j]);
@@ -8765,7 +8765,7 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
         memset(&page->marking_bits[0],    0, HEAP_PAGE_BITMAP_SIZE);
         memset(&page->remembered_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
         memset(&page->pinned_bits[0],     0, HEAP_PAGE_BITMAP_SIZE);
-        page->flags.has_uncollectible_shady_objects = FALSE;
+        page->flags.has_uncollectible_wb_unprotected_objects = FALSE;
         page->flags.has_remembered_objects = FALSE;
     }
 }
@@ -10616,7 +10616,7 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace,
     VALUE v = (VALUE)vstart;
     asan_unlock_freelist(page);
     asan_lock_freelist(page);
-    page->flags.has_uncollectible_shady_objects = FALSE;
+    page->flags.has_uncollectible_wb_unprotected_objects = FALSE;
     page->flags.has_remembered_objects = FALSE;
 
     /* For each object on the page */
@@ -10630,7 +10630,7 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace,
             break;
           default:
             if (RVALUE_WB_UNPROTECTED(v)) {
-                page->flags.has_uncollectible_shady_objects = TRUE;
+                page->flags.has_uncollectible_wb_unprotected_objects = TRUE;
             }
             if (RVALUE_REMEMBERED(v)) {
                 page->flags.has_remembered_objects = TRUE;
