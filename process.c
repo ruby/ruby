@@ -5618,7 +5618,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  The resources available and supported are system-dependent,
  *  and may include (here expressed as symbols):
  *
- *  - +:AS+: Total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite).
+ *  - +:AS+: Total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD except 4.4BSD-Lite).
  *  - +:CORE+: Core size (bytes) (SUSv3).
  *  - +:CPU+: CPU time (seconds) (SUSv3).
  *  - +:DATA+: Data segment (bytes) (SUSv3).
