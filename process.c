@@ -5017,22 +5017,18 @@ rb_f_spawn(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     sleep([duration])    -> integer
+ *    sleep(secs = nil) -> slept_secs
  *
- *  Suspends the current thread for _duration_ seconds (which may be any number,
- *  including a +Float+ with fractional seconds). Returns the actual number of
- *  seconds slept (rounded), which may be less than that asked for if another
- *  thread calls Thread#run. Called without an argument, sleep()
- *  will sleep forever.
+ *  Suspends execution of the current thread for the number of seconds
+ *  specified by numeric argument +secs+, or forever if +secs+ is +nil+;
+ *  returns the integer number of seconds suspended (rounded).
  *
- *  If the +duration+ is not supplied, or is +nil+, the thread sleeps forever.
- *  Threads in this state may still be interrupted by other threads.
+ *    Time.new  # => 2008-03-08 19:56:19 +0900
+ *    sleep 1.2 # => 1
+ *    Time.new  # => 2008-03-08 19:56:20 +0900
+ *    sleep 1.9 # => 2
+ *    Time.new  # => 2008-03-08 19:56:22 +0900
  *
- *     Time.new    #=> 2008-03-08 19:56:19 +0900
- *     sleep 1.2   #=> 1
- *     Time.new    #=> 2008-03-08 19:56:20 +0900
- *     sleep 1.9   #=> 2
- *     Time.new    #=> 2008-03-08 19:56:22 +0900
  */
 
 static VALUE
@@ -5063,13 +5059,13 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
 #if (defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)) || defined(HAVE_GETPGID)
 /*
  *  call-seq:
- *     Process.getpgrp   -> integer
+ *    Process.getpgrp -> integer
  *
- *  Returns the process group ID for this process. Not available on
- *  all platforms.
+ *  Returns the process group ID for the current process:
  *
- *     Process.getpgid(0)   #=> 25527
- *     Process.getpgrp      #=> 25527
+ *    Process.getpgid(0) # => 25527
+ *    Process.getpgrp    # => 25527
+ *
  */
 
 static VALUE
@@ -5095,10 +5091,11 @@ proc_getpgrp(VALUE _)
 #if defined(HAVE_SETPGID) || (defined(HAVE_SETPGRP) && defined(SETPGRP_VOID))
 /*
  *  call-seq:
- *     Process.setpgrp   -> 0
+ *    Process.setpgrp -> 0
  *
- *  Equivalent to <code>setpgid(0,0)</code>. Not available on all
- *  platforms.
+ *  Equivalent to <tt>setpgid(0, 0)</tt>.
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -5123,12 +5120,13 @@ proc_setpgrp(VALUE _)
 #if defined(HAVE_GETPGID)
 /*
  *  call-seq:
- *     Process.getpgid(pid)   -> integer
+ *    Process.getpgid(pid) -> integer
  *
- *  Returns the process group ID for the given process id. Not
- *  available on all platforms.
+ *  Returns the process group ID for the given process id +pid+:
  *
- *     Process.getpgid(Process.ppid())   #=> 25527
+ *    Process.getpgid(Process.ppid) # => 25527
+ *
+ * Not available on all platforms.
  */
 
 static VALUE
@@ -5148,10 +5146,12 @@ proc_getpgid(VALUE obj, VALUE pid)
 #ifdef HAVE_SETPGID
 /*
  *  call-seq:
- *     Process.setpgid(pid, integer)   -> 0
+ *    Process.setpgid(pid, pgid) -> 0
  *
- *  Sets the process group ID of _pid_ (0 indicates this
- *  process) to <em>integer</em>. Not available on all platforms.
+ *  Sets the process group ID for the process given by process ID +pid+
+ *  to +pgid+.
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -5173,15 +5173,16 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 #ifdef HAVE_GETSID
 /*
  *  call-seq:
- *     Process.getsid()      -> integer
- *     Process.getsid(pid)   -> integer
+ *    Process.getsid(pid = nil) -> integer
  *
- *  Returns the session ID for the given process id. If not given,
- *  return current process sid. Not available on all platforms.
+ *  Returns the session ID of the given process id +pid+,
+ *  or of the current process if not given:
  *
- *     Process.getsid()                #=> 27422
- *     Process.getsid(0)               #=> 27422
- *     Process.getsid(Process.pid())   #=> 27422
+ *    Process.getsid                # => 27422
+ *    Process.getsid(0)             # => 27422
+ *    Process.getsid(Process.pid()) # => 27422
+ *
+ *  Not available on all platforms.
  */
 static VALUE
 proc_getsid(int argc, VALUE *argv, VALUE _)
@@ -5208,13 +5209,15 @@ static rb_pid_t ruby_setsid(void);
 #endif
 /*
  *  call-seq:
- *     Process.setsid   -> integer
+ *    Process.setsid -> integer
  *
- *  Establishes this process as a new session and process group
- *  leader, with no controlling tty. Returns the session id. Not
- *  available on all platforms.
+ *  Establishes the current process as a new session and process group leader,
+ *  with no controlling tty;
+ *  returns the session id:
  *
- *     Process.setsid   #=> 27422
+ *    Process.setsid # => 27422
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -5262,19 +5265,26 @@ ruby_setsid(void)
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
- *     Process.getpriority(kind, integer)   -> integer
+ *    Process.getpriority(kind, id)   -> integer
  *
- *  Gets the scheduling priority for specified process, process group,
- *  or user. <em>kind</em> indicates the kind of entity to find: one
- *  of Process::PRIO_PGRP,
- *  Process::PRIO_USER, or
- *  Process::PRIO_PROCESS. _integer_ is an id
- *  indicating the particular process, process group, or user (an id
- *  of 0 means _current_). Lower priorities are more favorable
- *  for scheduling. Not available on all platforms.
+ *  Returns the scheduling priority for specified process, process group,
+ *  or user.
  *
- *     Process.getpriority(Process::PRIO_USER, 0)      #=> 19
- *     Process.getpriority(Process::PRIO_PROCESS, 0)   #=> 19
+ *  Argument +kind+ is one of:
+ *
+ *  - Process::PRIO_PROCESS: return priority for process.
+ *  - Process::PRIO_PGRP: return priority for process group.
+ *  - Process::PRIO_USER: return priority for user.
+ *
+ *  Argument +id+ is the ID for the process, process group, or user;
+ *  zero specified the current id for +kind+.
+ *
+ *  Examples:
+ *
+ *    Process.getpriority(Process::PRIO_USER, 0)    # => 19
+ *    Process.getpriority(Process::PRIO_PROCESS, 0) # => 19
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -5298,14 +5308,18 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
- *     Process.setpriority(kind, integer, priority)   -> 0
+ *    Process.setpriority(kind, integer, priority) -> 0
  *
  *  See Process.getpriority.
  *
- *     Process.setpriority(Process::PRIO_USER, 0, 19)      #=> 0
- *     Process.setpriority(Process::PRIO_PROCESS, 0, 19)   #=> 0
- *     Process.getpriority(Process::PRIO_USER, 0)          #=> 19
- *     Process.getpriority(Process::PRIO_PROCESS, 0)       #=> 19
+ *  Examples:
+ *
+ *    Process.setpriority(Process::PRIO_USER, 0, 19)    # => 0
+ *    Process.setpriority(Process::PRIO_PROCESS, 0, 19) # => 0
+ *    Process.getpriority(Process::PRIO_USER, 0)        # => 19
+ *    Process.getpriority(Process::PRIO_PROCESS, 0)     # => 19
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -5553,22 +5567,16 @@ rlimit_resource_value(VALUE rval)
 #if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
 /*
  *  call-seq:
- *     Process.getrlimit(resource)   -> [cur_limit, max_limit]
+ *    Process.getrlimit(resource) -> [cur_limit, max_limit]
  *
- *  Gets the resource limit of the process.
- *  _cur_limit_ means current (soft) limit and
- *  _max_limit_ means maximum (hard) limit.
+ *  Returns a 2-element array of the current (soft) limit
+ *  and maximum (hard) limit for the given +resource+:
  *
- *  _resource_ indicates the kind of resource to limit.
- *  It is specified as a symbol such as <code>:CORE</code>,
- *  a string such as <code>"CORE"</code> or
- *  a constant such as Process::RLIMIT_CORE.
- *  See Process.setrlimit for details.
+ *    Process.getrlimit(:CORE) # => [0, 18446744073709551615]
  *
- *  _cur_limit_ and _max_limit_ may be Process::RLIM_INFINITY,
- *  Process::RLIM_SAVED_MAX or
- *  Process::RLIM_SAVED_CUR.
- *  See Process.setrlimit and the system getrlimit(2) manual for details.
+ *  See Process.setrlimit.
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -5588,54 +5596,54 @@ proc_getrlimit(VALUE obj, VALUE resource)
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 /*
  *  call-seq:
- *     Process.setrlimit(resource, cur_limit, max_limit)        -> nil
- *     Process.setrlimit(resource, cur_limit)                   -> nil
+ *    Process.setrlimit(resource, cur_limit, max_limit = cur_limit) -> nil
  *
- *  Sets the resource limit of the process.
- *  _cur_limit_ means current (soft) limit and
- *  _max_limit_ means maximum (hard) limit.
+ *  Sets limits for the current process for the given +resource+
+ *  to +cur_limit+ (soft limit) and +max_limit+ (hard limit);
+ *  returns +nil+.
  *
- *  If _max_limit_ is not given, _cur_limit_ is used.
+ *  Argument +resource+ specifies the resource whose limits are to be set;
+ *  the argument may be given as a symbol, as a string, or as a constant
+ *  beginning with <tt>Process::RLIMIT_</tt>
+ *  (e.g., +:CORE+, <tt>'CORE'</tt>, or <tt>Process::RLIMIT_CORE</tt>.
  *
- *  _resource_ indicates the kind of resource to limit.
- *  It should be a symbol such as <code>:CORE</code>,
- *  a string such as <code>"CORE"</code> or
- *  a constant such as Process::RLIMIT_CORE.
- *  The available resources are OS dependent.
- *  Ruby may support following resources.
+ *  The resources available and supported are system-dependent,
+ *  and may include (here expressed as symbols):
  *
- *  [AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
- *  [CORE] core size (bytes) (SUSv3)
- *  [CPU] CPU time (seconds) (SUSv3)
- *  [DATA] data segment (bytes) (SUSv3)
- *  [FSIZE] file size (bytes) (SUSv3)
- *  [MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
- *  [MSGQUEUE] allocation for POSIX message queues (bytes) (GNU/Linux)
- *  [NICE] ceiling on process's nice(2) value (number) (GNU/Linux)
- *  [NOFILE] file descriptors (number) (SUSv3)
- *  [NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
- *  [NPTS] number of pseudo terminals (number) (FreeBSD)
- *  [RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
- *  [RTPRIO] ceiling on the process's real-time priority (number) (GNU/Linux)
- *  [RTTIME] CPU time for real-time process (us) (GNU/Linux)
- *  [SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
- *  [SIGPENDING] number of queued signals allowed (signals) (GNU/Linux)
- *  [STACK] stack size (bytes) (SUSv3)
+ *  - +:AS+: Total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite).
+ *  - +:CORE+: Core size (bytes) (SUSv3).
+ *  - +:CPU+: CPU time (seconds) (SUSv3).
+ *  - +:DATA+: Data segment (bytes) (SUSv3).
+ *  - +:FSIZE+: File size (bytes) (SUSv3).
+ *  - +:MEMLOCK+: Total size for mlock(2) (bytes) (4.4BSD, GNU/Linux).
+ *  - +:MSGQUEUE+: Allocation for POSIX message queues (bytes) (GNU/Linux).
+ *  - +:NICE+: Ceiling on process's nice(2) value (number) (GNU/Linux).
+ *  - +:NOFILE+: File descriptors (number) (SUSv3).
+ *  - +:NPROC+: Number of processes for the user (number) (4.4BSD, GNU/Linux).
+ *  - +:NPTS+: Number of pseudo terminals (number) (FreeBSD).
+ *  - +:RSS+: Resident memory size (bytes) (4.2BSD, GNU/Linux).
+ *  - +:RTPRIO+: Ceiling on the process's real-time priority (number) (GNU/Linux).
+ *  - +:RTTIME+: CPU time for real-time process (us) (GNU/Linux).
+ *  - +:SBSIZE+: All socket buffers (bytes) (NetBSD, FreeBSD).
+ *  - +:SIGPENDING+: Number of queued signals allowed (signals) (GNU/Linux).
+ *  - +:STACK+: Stack size (bytes) (SUSv3).
  *
- *  _cur_limit_ and _max_limit_ may be
- *  <code>:INFINITY</code>, <code>"INFINITY"</code> or
- *  Process::RLIM_INFINITY,
- *  which means that the resource is not limited.
- *  They may be Process::RLIM_SAVED_MAX,
- *  Process::RLIM_SAVED_CUR and
- *  corresponding symbols and strings too.
- *  See system setrlimit(2) manual for details.
+ *  Arguments +cur_limit+ and +max_limit+ may be:
  *
- *  The following example raises the soft limit of core size to
- *  the hard limit to try to make core dump possible.
+ *  - Integers (+max_limit+ should not be smaller than +cur_limit+).
+ *  - Symbol +:SAVED_MAX+, string <tt>'SAVED_MAX'</tt>,
+ *    or constant <tt>Process::RLIM_SAVED_MAX: saved maximum limit.
+ *  - Symbol +:SAVED_CUR+, string <tt>'SAVED_CUR'</tt>,
+ *    or constant <tt>Process::RLIM_SAVED_CUR: saved current limit.
+ *  - Symbol +:INFINITY+, string <tt>'INFINITY'</tt>,
+ *    or constant <tt>Process::RLIM_INFINITY: no limit on resource.
+ *
+ *  This example raises the soft limit of core size to
+ *  the hard limit to try to make core dump possible:
  *
  *    Process.setrlimit(:CORE, Process.getrlimit(:CORE)[1])
  *
+ *  Not available on all platforms.
  */
 
 static VALUE
