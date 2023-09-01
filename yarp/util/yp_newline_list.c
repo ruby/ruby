@@ -25,7 +25,7 @@ yp_newline_list_init(yp_newline_list_t *list, const uint8_t *start, size_t capac
 bool
 yp_newline_list_append(yp_newline_list_t *list, const uint8_t *cursor) {
     if (list->size == list->capacity) {
-        size_t * original_offsets = list->offsets;
+        size_t *original_offsets = list->offsets;
 
         list->capacity = (list->capacity * 3) / 2;
         list->offsets = (size_t *) calloc(list->capacity, sizeof(size_t));
