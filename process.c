@@ -5570,7 +5570,15 @@ rlimit_resource_value(VALUE rval)
  *    Process.getrlimit(resource) -> [cur_limit, max_limit]
  *
  *  Returns a 2-element array of the current (soft) limit
- *  and maximum (hard) limit for the given +resource+:
+ *  and maximum (hard) limit for the given +resource+.
+ *
+ *  Argument +resource+ specifies the resource whose limits are to be returned;
+ *  see Process.setrlimit.
+ *
+ *  Each of the returned values +cur_limit+ and +max_limit+ is an integer;
+ *  see Process.setrlimit.
+ *
+ *  Example:
  *
  *    Process.getrlimit(:CORE) # => [0, 18446744073709551615]
  *
