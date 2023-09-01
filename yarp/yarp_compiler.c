@@ -474,10 +474,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_BACK_REFERENCE_READ_NODE: {
           if (!popped) {
-              // Since a back reference is `$'`, ruby represents the ID as the following:
-              // It's not hardcoded in any variable we can use in yarp, just a rb_intern
-              // on the value after the `$`.
-              ID backref_val = INT2FIX(rb_intern("'")) << 1 | 1;
+              // Since a back reference is `$<char>`, ruby represents the ID as the
+              // an rb_intern on the value after the `$`.
+              char *char_ptr = (char *)(node->location.start) + 1;
+              ID backref_val = INT2FIX(rb_intern2(char_ptr, 1)) << 1 | 1;
               ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(1), backref_val);
           }
           return;
