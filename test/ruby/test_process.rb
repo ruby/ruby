@@ -2732,6 +2732,8 @@ EOS
   def test_warmup_frees_pages
     assert_separately([{"RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO" => "1.0"}, "-W0"], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      GC.start
+
       TIMES = 10_000
       ary = Array.new(TIMES)
       TIMES.times do |i|
