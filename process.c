@@ -5122,7 +5122,7 @@ proc_setpgrp(VALUE _)
  *  call-seq:
  *    Process.getpgid(pid) -> integer
  *
- *  Returns the process group ID for the given process id +pid+:
+ *  Returns the process group ID for the given process ID +pid+:
  *
  *    Process.getpgid(Process.ppid) # => 25527
  *
