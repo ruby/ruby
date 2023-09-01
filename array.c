@@ -2176,9 +2176,14 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
             ARY_SET_LEN(ary, alen);
         }
         if (rlen > 0) {
-            if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
-            /* give up wb-protected ary */
-            RB_OBJ_WB_UNPROTECT_FOR(ARRAY, ary);
+            if (rofs == -1) {
+                rb_gc_writebarrier_remember(ary);
+            }
+            else {
+                /* In this case, we're copying from a region in this array, so
+                 * we don't need to fire the write barrier. */
+                rptr = RARRAY_CONST_PTR(ary) + rofs;
+            }
 
             /* do not use RARRAY_PTR() because it can causes GC.
              * ary can contain T_NONE object because it is not cleared.
