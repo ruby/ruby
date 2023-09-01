@@ -5213,7 +5213,7 @@ static rb_pid_t ruby_setsid(void);
  *
  *  Establishes the current process as a new session and process group leader,
  *  with no controlling tty;
- *  returns the session id:
+ *  returns the session ID:
  *
  *    Process.setsid # => 27422
  *
