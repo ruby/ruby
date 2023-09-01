@@ -2706,6 +2706,9 @@ EOS
   def test_warmup_run_major_gc_and_compact
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      # Run a GC to ensure that we are not in the middle of a GC run
+      GC.start
+
       major_gc_count = GC.stat(:major_gc_count)
       compact_count = GC.stat(:compact_count)
       Process.warmup
