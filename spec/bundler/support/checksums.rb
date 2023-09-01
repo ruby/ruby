@@ -9,26 +9,22 @@ module Spec
       end
 
       def repo_gem(repo, name, version, platform = Gem::Platform::RUBY)
-        gem_file = File.join(repo, "gems", "#{Bundler::GemHelpers.spec_full_name(name, version, platform)}.gem")
+        name_tuple = Gem::NameTuple.new(name, version, platform)
+        gem_file = File.join(repo, "gems", "#{name_tuple.full_name}.gem")
         File.open(gem_file, "rb") do |f|
-          checksums = Bundler::Checksum.from_io(f, "ChecksumsBuilder")
-          checksum_entry(checksums, name, version, platform)
+          @checksums[name_tuple] = Bundler::Checksum.from_gem(f, "#{gem_file} (via ChecksumsBuilder#repo_gem)")
         end
       end
 
       def no_checksum(name, version, platform = Gem::Platform::RUBY)
-        checksum_entry(nil, name, version, platform)
-      end
-
-      def checksum_entry(checksums, name, version, platform = Gem::Platform::RUBY)
-        lock_name = Bundler::GemHelpers.lock_name(name, version, platform)
-        @checksums[lock_name] = checksums
+        name_tuple = Gem::NameTuple.new(name, version, platform)
+        @checksums[name_tuple] = nil
       end
 
       def to_lock
-        @checksums.map do |lock_name, checksums|
-          checksums &&= " #{checksums.map(&:to_lock).join(",")}"
-          "  #{lock_name}#{checksums}\n"
+        @checksums.map do |name_tuple, checksum|
+          checksum &&= " #{checksum.to_lock}"
+          "  #{name_tuple.lock_name}#{checksum}\n"
         end.sort.join.strip
       end
     end

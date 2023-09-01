@@ -2,37 +2,38 @@
 
 module Bundler
   class Checksum
+    DEFAULT_ALGORITHM = "sha256"
+    private_constant :DEFAULT_ALGORITHM
     DEFAULT_BLOCK_SIZE = 16_384
     private_constant :DEFAULT_BLOCK_SIZE
 
     class << self
-      def from_gem_source(source, digest_algorithms: %w[sha256])
-        raise ArgumentError, "not a valid gem source: #{source}" unless source.respond_to?(:with_read_io)
-
-        source.with_read_io do |io|
-          checksums = from_io(io, "#{source.path || source.inspect} gem source hexdigest", :digest_algorithms => digest_algorithms)
-          io.rewind
-          return checksums
-        end
+      def from_gem(io, pathname, algo = DEFAULT_ALGORITHM)
+        digest = Bundler::SharedHelpers.digest(algo.upcase).new
+        buf = String.new(:capacity => DEFAULT_BLOCK_SIZE)
+        digest << io.readpartial(DEFAULT_BLOCK_SIZE, buf) until io.eof?
+        Checksum.new(algo, digest.hexdigest!, Source.new(:gem, pathname))
       end
 
-      def from_io(io, source, digest_algorithms: %w[sha256])
-        digests = digest_algorithms.to_h do |algo|
-          [algo.to_s, Bundler::SharedHelpers.digest(algo.upcase).new]
+      def from_api(digest, source_uri)
+        # transform the bytes from base64 to hex, switch to unpack1 when we drop older rubies
+        hexdigest = digest.length == 44 ? digest.unpack("m0").first.unpack("H*").first : digest
+
+        if hexdigest.length != 64
+          raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hexdigest nor base64digest"
         end
 
-        until io.eof?
-          ret = io.read DEFAULT_BLOCK_SIZE
-          digests.each_value {|digest| digest << ret }
-        end
+        Checksum.new(DEFAULT_ALGORITHM, hexdigest, Source.new(:api, source_uri))
+      end
 
-        digests.map do |algo, digest|
-          Checksum.new(algo, digest.hexdigest!, source)
-        end
+      def from_lock(lock_checksum, lockfile_location)
+        algo, digest = lock_checksum.strip.split("-", 2)
+        Checksum.new(algo, digest, Source.new(:lock, lockfile_location))
       end
     end
 
     attr_reader :algo, :digest, :sources
+
     def initialize(algo, digest, source)
       @algo = algo
       @digest = digest
@@ -62,18 +63,79 @@ module Bundler
     end
 
     def merge!(other)
-      raise ArgumentError, "cannot merge checksums of different algorithms" unless algo == other.algo
-
-      unless digest == other.digest
-        raise SecurityError, <<~MESSAGE
-          #{other}
-          #{to_lock} from:
-          * #{sources.join("\n* ")}
-        MESSAGE
-      end
-
+      return nil unless match?(other)
       @sources.concat(other.sources).uniq!
       self
+    end
+
+    def formatted_sources
+      sources.join("\n    and ").concat("\n")
+    end
+
+    def removable?
+      sources.all?(&:removable?)
+    end
+
+    def removal_instructions
+      msg = +""
+      i = 1
+      sources.each do |source|
+        msg << "  #{i}. #{source.removal}\n"
+        i += 1
+      end
+      msg << "  #{i}. run `bundle install`\n"
+    end
+
+    def inspect
+      abbr = "#{algo}-#{digest[0, 8]}"
+      from = "from #{sources.join(" and ")}"
+      "#<#{self.class}:#{object_id} #{abbr} #{from}>"
+    end
+
+    class Source
+      attr_reader :type, :location
+
+      def initialize(type, location)
+        @type = type
+        @location = location
+      end
+
+      def removable?
+        type == :lock || type == :gem
+      end
+
+      def ==(other)
+        other.is_a?(self.class) && other.type == type && other.location == location
+      end
+
+      # phrased so that the usual string format is grammatically correct
+      #   rake (10.3.2) sha256-abc123 from #{to_s}
+      def to_s
+        case type
+        when :lock
+          "the lockfile CHECKSUMS at #{location}"
+        when :gem
+          "the gem at #{location}"
+        when :api
+          "the API at #{location}"
+        else
+          "#{location} (#{type})"
+        end
+      end
+
+      # A full sentence describing how to remove the checksum
+      def removal
+        case type
+        when :lock
+          "remove the matching checksum in #{location}"
+        when :gem
+          "remove the gem at #{location}"
+        when :api
+          "checksums from #{location} cannot be locally modified, you may need to update your sources"
+        else
+          "remove #{location} (#{type})"
+        end
+      end
     end
 
     class Store
@@ -86,89 +148,81 @@ module Bundler
 
       def initialize_copy(other)
         @store = {}
-        other.store.each do |full_name, checksums|
-          store[full_name] = checksums.dup
+        other.store.each do |name_tuple, checksums|
+          store[name_tuple] = checksums.dup
         end
       end
 
-      def checksums(full_name)
-        store[full_name]
+      def inspect
+        "#<#{self.class}:#{object_id} size=#{store.size}>"
       end
 
-      def register_gem_package(spec, source)
-        new_checksums = Checksum.from_gem_source(source)
-        new_checksums.each do |checksum|
-          register spec.full_name, checksum
-        end
-      rescue SecurityError
-        expected = checksums(spec.full_name)
-        gem_lock_name = GemHelpers.lock_name(spec.name, spec.version, spec.platform)
-        raise SecurityError, <<~MESSAGE
-          Bundler cannot continue installing #{gem_lock_name}.
-          The checksum for the downloaded `#{spec.full_name}.gem` does not match \
-          the known checksum for the gem.
-          This means the contents of the downloaded \
-          gem is different from what was uploaded to the server \
-          or first used by your teammates, and could be a potential security issue.
-
-          To resolve this issue:
-          1. delete the downloaded gem located at: `#{source.path}`
-          2. run `bundle install`
-
-          If you are sure that the new checksum is correct, you can \
-          remove the `#{gem_lock_name}` entry under the lockfile `CHECKSUMS` \
-          section and rerun `bundle install`.
-
-          If you wish to continue installing the downloaded gem, and are certain it does not pose a \
-          security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
-          2. run `bundle install`
-
-          #{expected.map do |checksum|
-            next unless actual = new_checksums.find {|c| c.algo == checksum.algo }
-            next if actual.digest == checksum.digest
-
-            "(More info: The expected #{checksum.algo.upcase} checksum was #{checksum.digest.inspect}, but the " \
-            "checksum for the downloaded gem was #{actual.digest.inspect}. The expected checksum came from: #{checksum.sources.join(", ")})"
-          end.compact.join("\n")}
-        MESSAGE
+      def fetch(spec, algo = DEFAULT_ALGORITHM)
+        store[spec.name_tuple]&.fetch(algo, nil)
       end
 
-      def register(full_name, checksum)
+      # Replace when the new checksum is from the same source.
+      # The primary purpose of this registering checksums from gems where there are
+      # duplicates of the same gem (according to full_name) in the index.
+      # In particular, this is when 2 gems have two similar platforms, e.g.
+      # "darwin20" and "darwin-20", both of which resolve to darwin-20.
+      # In the Index, the later gem replaces the former, so we do that here.
+      #
+      # However, if the new checksum is from a different source, we register like normal.
+      # This ensures a mismatch error where there are multiple top level sources
+      # that contain the same gem with different checksums.
+      def replace(spec, checksum)
+        return if Bundler.settings[:disable_checksum_validation]
         return unless checksum
 
-        sums = (store[full_name] ||= [])
-        sums.find {|c| c.algo == checksum.algo }&.merge!(checksum) || sums << checksum
-      rescue SecurityError => e
-        raise e.exception(<<~MESSAGE)
-          Bundler found multiple different checksums for #{full_name}.
-          This means that there are multiple different `#{full_name}.gem` files.
-          This is a potential security issue, since Bundler could be attempting \
-          to install a different gem than what you expect.
+        name_tuple = spec.name_tuple
+        checksums = (store[name_tuple] ||= {})
+        existing = checksums[checksum.algo]
 
-          #{e.message}
-          To resolve this issue:
-          1. delete any downloaded gems referenced above
-          2. run `bundle install`
-
-          If you are sure that the new checksum is correct, you can \
-          remove the `#{full_name}` entry under the lockfile `CHECKSUMS` \
-          section and rerun `bundle install`.
-
-          If you wish to continue installing the downloaded gem, and are certain it does not pose a \
-          security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
-          2. run `bundle install`
-        MESSAGE
+        # we assume only one source because this is used while building the index
+        if !existing || existing.sources.first == checksum.sources.first
+          checksums[checksum.algo] = checksum
+        else
+          register_checksum(name_tuple, checksum)
+        end
       end
 
-      def replace(full_name, checksum)
-        store[full_name] = checksum ? [checksum] : nil
+      def register(spec, checksum)
+        return if Bundler.settings[:disable_checksum_validation]
+        return unless checksum
+        register_checksum(spec.name_tuple, checksum)
       end
 
-      def register_store(other)
-        other.store.each do |full_name, checksums|
-          checksums.each {|checksum| register(full_name, checksum) }
+      def merge!(other)
+        other.store.each do |name_tuple, checksums|
+          checksums.each do |_algo, checksum|
+            register_checksum(name_tuple, checksum)
+          end
+        end
+      end
+
+      def to_lock(spec)
+        name_tuple = spec.name_tuple
+        if checksums = store[name_tuple]
+          "#{name_tuple.lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
+        else
+          name_tuple.lock_name
+        end
+      end
+
+      private
+
+      def register_checksum(name_tuple, checksum)
+        return unless checksum
+        checksums = (store[name_tuple] ||= {})
+        existing = checksums[checksum.algo]
+
+        if !existing
+          checksums[checksum.algo] = checksum
+        elsif existing.merge!(checksum)
+          checksum
+        else
+          raise ChecksumMismatchError.new(name_tuple, existing, checksum)
         end
       end
     end

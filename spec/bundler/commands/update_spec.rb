@@ -551,7 +551,7 @@ RSpec.describe "bundle update" do
       lockfile original_lockfile
       bundle "lock --update"
       expect(the_bundle).to include_gems("activesupport 6.0.4.1", "tzinfo 1.2.9")
-      expect(lockfile).to eq expected_lockfile
+      expect(lockfile).to eq(expected_lockfile)
     end
   end
 

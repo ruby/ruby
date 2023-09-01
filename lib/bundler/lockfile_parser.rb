@@ -101,7 +101,10 @@ module Bundler
           "Run `git checkout HEAD -- #{@lockfile_path}` first to get a clean lock."
       end
 
-      lockfile.split(/((?:\r?\n)+)/).each_slice(2) do |line, whitespace|
+      lockfile.split(/((?:\r?\n)+)/) do |line|
+        # split alternates between the line and the following whitespace
+        next @pos.advance!(line) if line.match?(/^\s*$/)
+
         if SOURCE.include?(line)
           @parse_method = :parse_source
           parse_source(line)
@@ -121,7 +124,6 @@ module Bundler
           send(@parse_method, line)
         end
         @pos.advance!(line)
-        @pos.advance!(whitespace)
       end
       @specs = @specs.values.sort_by!(&:full_name)
     rescue ArgumentError => e
@@ -217,23 +219,23 @@ module Bundler
 
       spaces = $1
       return unless spaces.size == 2
+      checksums = $6
+      return unless checksums
       name = $2
       version = $3
       platform = $4
-      checksums = $6
-      return unless checksums
 
       version = Gem::Version.new(version)
       platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
-      full_name = GemHelpers.spec_full_name(name, version, platform)
+      full_name = Gem::NameTuple.new(name, version, platform).full_name
       # Don't raise exception if there's a checksum for a gem that's not in the lockfile,
       # we prefer to heal invalid lockfiles
       return unless spec = @specs[full_name]
 
-      checksums.split(",").each do |c|
-        algo, digest = c.split("-", 2)
-        lock_name = GemHelpers.lock_name(spec.name, spec.version, spec.platform)
-        spec.source.checksum_store.register(full_name, Checksum.new(algo, digest, "#{@lockfile_path}:#{@pos} CHECKSUMS #{lock_name}"))
+      checksums.split(",") do |lock_checksum|
+        column = line.index(lock_checksum) + 1
+        checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
+        spec.source.checksum_store.register(spec, checksum)
       end
     end
 

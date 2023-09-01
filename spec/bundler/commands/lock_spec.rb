@@ -91,14 +91,16 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --update"
 
-    expect(read_lockfile).to eq(@lockfile)
+    expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, "(2.3.2)"))
+  end
 
+  it "writes a lockfile when there is an outdated lockfile using a bundle is frozen" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1")
 
     bundle "lock --update", :env => { "BUNDLE_FROZEN" => "true" }
 
     # No checksums for the updated gems
-    expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, " (2.3.2)"))
+    expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, "(2.3.2)"))
   end
 
   it "does not fetch remote specs when using the --local option" do

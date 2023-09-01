@@ -20,7 +20,19 @@ module Bundler
     end
 
     def full_name
-      @full_name ||= GemHelpers.spec_full_name(@name, @version, platform)
+      @full_name ||= if platform == Gem::Platform::RUBY
+        "#{@name}-#{@version}"
+      else
+        "#{@name}-#{@version}-#{platform}"
+      end
+    end
+
+    def lock_name
+      @lock_name ||= name_tuple.lock_name
+    end
+
+    def name_tuple
+      Gem::NameTuple.new(@name, @version, @platform)
     end
 
     def ==(other)
@@ -57,7 +69,7 @@ module Bundler
 
     def to_lock
       out = String.new
-      out << "    #{GemHelpers.lock_name(name, version, platform)}\n"
+      out << "    #{lock_name}\n"
 
       dependencies.sort_by(&:to_s).uniq.each do |dep|
         next if dep.type == :development
@@ -113,7 +125,7 @@ module Bundler
     end
 
     def to_s
-      @to_s ||= GemHelpers.lock_name(name, version, platform)
+      lock_name
     end
 
     def git_version

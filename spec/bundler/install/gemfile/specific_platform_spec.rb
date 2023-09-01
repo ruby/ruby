@@ -759,6 +759,11 @@ RSpec.describe "bundle install with specific platforms" do
 
       bundle "update"
 
+      expected_checksums = checksum_section do |c|
+        c.repo_gem gem_repo4, "nokogiri", "1.14.0", "x86_64-linux"
+        c.repo_gem gem_repo4, "sorbet-static", "0.5.10696", "x86_64-linux"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo4)}/
@@ -772,6 +777,9 @@ RSpec.describe "bundle install with specific platforms" do
         DEPENDENCIES
           nokogiri
           sorbet-static
+
+        CHECKSUMS
+          #{expected_checksums}
 
         BUNDLED WITH
            #{Bundler::VERSION}

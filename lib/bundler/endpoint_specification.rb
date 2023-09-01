@@ -126,16 +126,11 @@ module Bundler
         case k.to_s
         when "checksum"
           next if Bundler.settings[:disable_checksum_validation]
-          digest = v.last
-          if digest.length == 64
-            # nothing to do, it's a hexdigest
-          elsif digest.length == 44
-            # transform the bytes from base64 to hex
-            digest = digest.unpack("m0").first.unpack("H*").first
-          else
-            raise ArgumentError, "The given checksum for #{full_name} (#{digest.inspect}) is not a valid SHA256 hexdigest nor base64digest"
+          begin
+            @checksum = Checksum.from_api(v.last, @spec_fetcher.uri)
+          rescue ArgumentError => e
+            raise ArgumentError, "Invalid checksum for #{full_name}: #{e.message}"
           end
-          @checksum = Checksum.new("sha256", digest, "API response from #{@spec_fetcher.uri}")
         when "rubygems"
           @required_rubygems_version = Gem::Requirement.new(v)
         when "ruby"

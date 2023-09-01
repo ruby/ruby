@@ -890,25 +890,21 @@ The checksum of /versions does not match the checksum provided by the server! So
         default_cache_path.dirname.join("rack-1.0.0.gem")
       end
 
-      expect(exitstatus).to eq(19)
-      expect(err).
-        to eq <<~E.strip
-          Bundler cannot continue installing rack (1.0.0).
-          The checksum for the downloaded `rack-1.0.0.gem` does not match the known checksum for the gem.
-          This means the contents of the downloaded gem is different from what was uploaded to the server or first used by your teammates, and could be a potential security issue.
+      expect(exitstatus).to eq(37)
+      expect(err).to eq <<~E.strip
+        Bundler found mismatched checksums. This is a potential security risk.
+          rack (1.0.0) sha256-2222222222222222222222222222222222222222222222222222222222222222
+            from the API at http://localgemserver.test/
+          rack (1.0.0) sha256-#{api_checksum}
+            from the gem at #{gem_path}
 
-          To resolve this issue:
-          1. delete the downloaded gem located at: `#{gem_path}`
+        If you trust the API at http://localgemserver.test/, to resolve this issue you can:
+          1. remove the gem at #{gem_path}
           2. run `bundle install`
 
-          If you are sure that the new checksum is correct, you can remove the `rack (1.0.0)` entry under the lockfile `CHECKSUMS` section and rerun `bundle install`.
-
-          If you wish to continue installing the downloaded gem, and are certain it does not pose a security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
-          2. run `bundle install`
-
-          (More info: The expected SHA256 checksum was "69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b69b", but the checksum for the downloaded gem was "#{api_checksum}". The expected checksum came from: API response from http://localgemserver.test/)
-        E
+        To ignore checksum security warnings, disable checksum validation with
+          `bundle config set --local disable_checksum_validation true`
+      E
     end
 
     it "raises when the checksum is the wrong length" do
@@ -917,7 +913,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         gem "rack"
       G
       expect(exitstatus).to eq(14)
-      expect(err).to include("The given checksum for rack-0.9.1 (\"checksum!\") is not a valid SHA256 hexdigest nor base64digest")
+      expect(err).to include("Invalid checksum for rack-0.9.1: \"checksum!\" is not a valid SHA256 hexdigest nor base64digest")
     end
 
     it "does not raise when disable_checksum_validation is set" do

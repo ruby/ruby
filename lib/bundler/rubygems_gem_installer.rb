@@ -60,10 +60,6 @@ module Bundler
       end
     end
 
-    def pre_install_checks
-      super && validate_bundler_checksum(options[:bundler_checksum_store])
-    end
-
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
       extension_dir = spec.extension_dir
@@ -98,6 +94,18 @@ module Bundler
       end
     end
 
+    def gem_checksum
+      return nil if Bundler.settings[:disable_checksum_validation]
+      return nil unless source = @package.instance_variable_get(:@gem)
+      return nil unless source.respond_to?(:with_read_io)
+
+      source.with_read_io do |io|
+        Checksum.from_gem(io, source.path)
+      ensure
+        io.rewind
+      end
+    end
+
     private
 
     def prepare_extension_build(extension_dir)
@@ -113,15 +121,6 @@ module Bundler
       raise unless File.exist?(dir)
 
       raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
-    end
-
-    def validate_bundler_checksum(checksum_store)
-      return true if Bundler.settings[:disable_checksum_validation]
-      return true unless source = @package.instance_variable_get(:@gem)
-      return true unless source.respond_to?(:with_read_io)
-
-      checksum_store.register_gem_package spec, source
-      true
     end
   end
 end

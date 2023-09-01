@@ -178,7 +178,6 @@ module Bundler
           :wrappers => true,
           :env_shebang => true,
           :build_args => options[:build_args],
-          :bundler_checksum_store => spec.source.checksum_store,
           :bundler_extension_cache_path => extension_cache_path(spec)
         )
 
@@ -196,6 +195,8 @@ module Bundler
 
           spec.__swap__(s)
         end
+
+        spec.source.checksum_store.register(spec, installer.gem_checksum)
 
         message = "Installing #{version_message(spec, options[:previous_spec])}"
         message += " with native extensions" if spec.extensions.any?

@@ -67,15 +67,10 @@ module Bundler
     end
 
     def add_checksums
-      out << "\nCHECKSUMS\n"
-
-      definition.resolve.sort_by(&:full_name).each do |spec|
-        lock_name = GemHelpers.lock_name(spec.name, spec.version, spec.platform)
-        out << "  #{lock_name}"
-        checksums = spec.source.checksum_store.checksums(spec.full_name)
-        out << " #{checksums.map(&:to_lock).sort.join(",")}" if checksums
-        out << "\n"
+      checksums = definition.resolve.map do |spec|
+        spec.source.checksum_store.to_lock(spec)
       end
+      add_section("CHECKSUMS", checksums)
     end
 
     def add_locked_ruby_version

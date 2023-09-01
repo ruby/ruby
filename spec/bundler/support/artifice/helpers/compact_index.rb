@@ -79,11 +79,13 @@ class CompactIndexAPI < Endpoint
               reqs = d.requirement.requirements.map {|r| r.join(" ") }.join(", ")
               CompactIndex::Dependency.new(d.name, reqs)
             end
-            checksum = begin
-                         Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").hexdigest
-                       rescue StandardError
-                         nil
-                       end
+            begin
+              checksum = ENV.fetch("BUNDLER_SPEC_#{name.upcase}_CHECKSUM") do
+                Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").hexdigest
+              end
+            rescue StandardError
+              checksum = nil
+            end
             CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,
               deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s)
           end
