@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "yarp"
-  spec.version = "0.9.0"
+  spec.version = "0.10.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
