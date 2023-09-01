@@ -730,7 +730,7 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
       else if (flag == Qfalse)  { (o)->mem = 0; } \
   }
 #define SET_COMPILE_OPTION_NUM(o, h, mem) \
-  { VALUE num = rb_hash_aref(opt, ID2SYM(rb_intern(#mem))); \
+  { VALUE num = rb_hash_aref((h), ID2SYM(rb_intern(#mem))); \
       if (!NIL_P(num)) (o)->mem = NUM2INT(num); \
   }
     SET_COMPILE_OPTION(option, opt, inline_const_cache);
