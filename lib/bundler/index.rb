@@ -10,8 +10,8 @@ module Bundler
       i
     end
 
-    attr_reader :specs, :all_specs, :sources
-    protected :specs, :all_specs
+    attr_reader :specs, :duplicates, :sources
+    protected :specs, :duplicates
 
     RUBY = "ruby"
     NULL = "\0"
@@ -20,20 +20,20 @@ module Bundler
       @sources = []
       @cache = {}
       @specs = Hash.new {|h, k| h[k] = {} }
-      @all_specs = Hash.new {|h, k| h[k] = EMPTY_SEARCH }
+      @duplicates = {}
     end
 
     def initialize_copy(o)
       @sources = o.sources.dup
       @cache = {}
       @specs = Hash.new {|h, k| h[k] = {} }
-      @all_specs = Hash.new {|h, k| h[k] = EMPTY_SEARCH }
+      @duplicates = {}
 
       o.specs.each do |name, hash|
         @specs[name] = hash.dup
       end
-      o.all_specs.each do |name, array|
-        @all_specs[name] = array.dup
+      o.duplicates.each do |name, array|
+        @duplicates[name] = array.dup
       end
     end
 
@@ -47,7 +47,9 @@ module Bundler
     end
 
     def search_all(name)
-      all_matches = local_search(name) + @all_specs[name]
+      all_matches = specs_by_name(name) # always returns a new Array
+      dupes = @duplicates[name]
+      all_matches.concat(dupes) if dupes
       @sources.each do |source|
         all_matches.concat(source.search_all(name))
       end
@@ -78,10 +80,11 @@ module Bundler
 
     alias_method :[], :search
 
-    def <<(spec)
+    def add(spec)
       @specs[spec.name][spec.full_name] = spec
       spec
     end
+    alias_method :<<, :add
 
     def each(&blk)
       return enum_for(:each) unless blk
@@ -115,15 +118,25 @@ module Bundler
       names.uniq
     end
 
-    def use(other, override_dupes = false)
+    # Combines indexes proritizing existing specs, like `Hash#reverse_merge!`
+    # Duplicate specs found in `other` are stored in `@duplicates`.
+    def use(other)
       return unless other
-      other.each do |s|
-        if (dupes = search_by_spec(s)) && !dupes.empty?
-          # safe to << since it's a new array when it has contents
-          @all_specs[s.name] = dupes << s
-          next unless override_dupes
+      other.each do |spec|
+        exist?(spec) ? add_duplicate(spec) : add(spec)
+      end
+      self
+    end
+
+    # Combines indexes proritizing specs from `other`, like `Hash#merge!`
+    # Duplicate specs found in `self` are saved in `@duplicates`.
+    def merge!(other)
+      return unless other
+      other.each do |spec|
+        if existing = find_by_spec(spec)
+          add_duplicate(existing)
         end
-        self << s
+        add spec
       end
       self
     end
@@ -157,6 +170,10 @@ module Bundler
 
     private
 
+    def add_duplicate(spec)
+      (@duplicates[spec.name] ||= []) << spec
+    end
+
     def specs_by_name_and_version(name, version)
       specs_by_name(name).select {|spec| spec.version == version }
     end
@@ -168,8 +185,16 @@ module Bundler
     EMPTY_SEARCH = [].freeze
 
     def search_by_spec(spec)
-      spec = @specs[spec.name][spec.full_name]
+      spec = find_by_spec(spec)
       spec ? [spec] : EMPTY_SEARCH
+    end
+
+    def find_by_spec(spec)
+      @specs[spec.name][spec.full_name]
+    end
+
+    def exist?(spec)
+      @specs[spec.name].key?(spec.full_name)
     end
   end
 end

@@ -128,12 +128,12 @@ module Bundler
       def specs
         @specs ||= begin
           # remote_specs usually generates a way larger Index than the other
-          # sources, and large_idx.use small_idx is way faster than
-          # small_idx.use large_idx.
-          idx = @allow_remote ? remote_specs.dup : Index.new
-          idx.use(cached_specs, :override_dupes) if @allow_cached || @allow_remote
-          idx.use(installed_specs, :override_dupes) if @allow_local
-          idx
+          # sources, and large_idx.merge! small_idx is way faster than
+          # small_idx.merge! large_idx.
+          index = @allow_remote ? remote_specs.dup : Index.new
+          index.merge!(cached_specs) if @allow_cached || @allow_remote
+          index.merge!(installed_specs) if @allow_local
+          index
         end
       end
 
@@ -276,7 +276,7 @@ module Bundler
 
         fetch_names(api_fetchers, unmet_dependency_names, remote_specs)
 
-        specs.use(remote_specs, false)
+        specs.use remote_specs
       end
 
       def dependency_names_to_double_check
