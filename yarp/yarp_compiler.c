@@ -495,14 +495,14 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_CALL_NODE: {
           yp_call_node_t *call_node = (yp_call_node_t *) node;
 
-          ID mid = parse_string_symbol(&call_node->name);
+          ID method_id = parse_string_symbol(&call_node->name);
           int flags = 0;
           int orig_argc = 0;
 
           if (call_node->receiver == NULL) {
               ADD_INSN(ret, &dummy_line_node, putself);
           } else {
-              yp_compile_node(iseq, call_node->receiver, ret, src, popped, compile_context);
+              yp_compile_node(iseq, call_node->receiver, ret, src, false, compile_context);
           }
 
           if (call_node->arguments == NULL) {
@@ -511,7 +511,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               }
           } else {
               yp_arguments_node_t *arguments = call_node->arguments;
-              yp_compile_node(iseq, (yp_node_t *) arguments, ret, src, popped, compile_context);
+              yp_compile_node(iseq, (yp_node_t *) arguments, ret, src, false, compile_context);
               orig_argc = (int)arguments->arguments.size;
           }
 
@@ -523,7 +523,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
               const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(&scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
               ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
-              ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, mid, INT2FIX(orig_argc), block_iseq);
+              ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq);
           }
           else {
               if (block_iseq == Qnil && flags == 0) {
@@ -538,7 +538,10 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   }
               }
 
-              ADD_SEND_WITH_FLAG(ret, &dummy_line_node, mid, INT2NUM(orig_argc), INT2FIX(flags));
+              ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(orig_argc), INT2FIX(flags));
+          }
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
           }
           return;
       }
@@ -1323,7 +1326,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_statements_node_t *statements_node = (yp_statements_node_t *) node;
           yp_node_list_t node_list = statements_node->body;
           for (size_t index = 0; index < node_list.size - 1; index++) {
-              yp_compile_node(iseq, node_list.nodes[index], ret, src, !popped, compile_context);
+              yp_compile_node(iseq, node_list.nodes[index], ret, src, true, compile_context);
           }
           yp_compile_node(iseq, node_list.nodes[node_list.size - 1], ret, src, false, compile_context);
           return;
