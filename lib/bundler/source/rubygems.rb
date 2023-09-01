@@ -274,7 +274,7 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, remote_specs, false)
+        fetch_names(api_fetchers, unmet_dependency_names, remote_specs)
 
         specs.use(remote_specs, false)
       end
@@ -401,22 +401,22 @@ module Bundler
           index_fetchers = fetchers - api_fetchers
 
           if index_fetchers.empty?
-            fetch_names(api_fetchers, dependency_names, idx, false)
+            fetch_names(api_fetchers, dependency_names, idx)
           else
-            fetch_names(fetchers, nil, idx, false)
+            fetch_names(fetchers, nil, idx)
           end
         end
       end
 
-      def fetch_names(fetchers, dependency_names, index, override_dupes)
+      def fetch_names(fetchers, dependency_names, index)
         fetchers.each do |f|
           if dependency_names
             Bundler.ui.info "Fetching gem metadata from #{URICredentialsFilter.credential_filtered_uri(f.uri)}", Bundler.ui.debug?
-            index.use f.specs_with_retry(dependency_names, self), override_dupes
+            index.use f.specs_with_retry(dependency_names, self)
             Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
           else
             Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
-            index.use f.specs_with_retry(nil, self), override_dupes
+            index.use f.specs_with_retry(nil, self)
           end
         end
       end
