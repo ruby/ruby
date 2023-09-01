@@ -110,21 +110,9 @@ module Bundler
     def parse_source(line)
       case line
       when SPECS
-        case @type
-        when PATH
-          @current_source = TYPES[@type].from_lock(@opts)
-          @sources << @current_source
-        when GIT
-          @current_source = TYPES[@type].from_lock(@opts)
-          @sources << @current_source
-        when GEM
-          @opts["remotes"] = Array(@opts.delete("remote")).reverse
-          @current_source = TYPES[@type].from_lock(@opts)
-          @sources << @current_source
-        when PLUGIN
-          @current_source = Plugin.source_from_lock(@opts)
-          @sources << @current_source
-        end
+        return unless TYPES.key?(@type)
+        @current_source = TYPES[@type].from_lock(@opts)
+        @sources << @current_source
       when OPTIONS
         value = $2
         value = true if value == "true"

@@ -88,6 +88,7 @@ module Bundler
       end
 
       def self.from_lock(options)
+        options["remotes"] = Array(options.delete("remote")).reverse
         new(options)
       end
 
