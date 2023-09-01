@@ -70,8 +70,7 @@ typedef struct yp_node {
     // existed in the original grammar and ripper, but it's not a 1:1 mapping.
     yp_node_type_t type;
 
-    // This represents any flags on the node. Currently, this is only a newline
-    // flag
+    // This represents any flags on the node
     yp_node_flags_t flags;
 
     // This is the location of the node in the source. It's a range of bytes
@@ -81,6 +80,15 @@ typedef struct yp_node {
 <%- nodes.each do |node| -%>
 
 // <%= node.name %>
+//
+// Type: <%= node.type %>
+<%- if (node_flags = node.fields.find { |field| field.is_a? YARP::FlagsField }) -%>
+// Flags:
+<%- found = flags.find { |flag| flag.name == node_flags.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
+<%- found.values.each do |value| -%>
+//    YP_<%= found.human.upcase %>_<%= value.name %>
+<%- end -%>
+<%- end -%>
 typedef struct yp_<%= node.human %> {
     yp_node_t base;
 <%- node.fields.grep_v(YARP::FlagsField).each do |field| -%>
