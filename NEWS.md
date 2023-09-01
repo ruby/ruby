@@ -96,7 +96,7 @@ The following default gems are updated.
 * time 0.2.2
 * timeout 0.4.0
 * uri 0.12.2
-* yarp 0.9.0
+* yarp 0.10.0
 
 The following bundled gems are updated.
 
