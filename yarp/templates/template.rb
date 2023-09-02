@@ -264,13 +264,8 @@ module YARP
     def template(name, write_to: nil)
       filepath = "templates/#{name}.erb"
       template = File.expand_path("../#{filepath}", __dir__)
-      write_to ||= File.expand_path("../#{name}", __dir__)
 
-      if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-        erb = ERB.new(File.read(template), trim_mode: "-")
-      else
-        erb = ERB.new(File.read(template), nil, "-")
-      end
+      erb = read_template(template)
       erb.filename = template
 
       non_ruby_heading = <<~HEADING
@@ -299,12 +294,33 @@ module YARP
           non_ruby_heading
         end
 
+      write_to ||= File.expand_path("../#{name}", __dir__)
       contents = heading + erb.result_with_hash(locals)
+
       FileUtils.mkdir_p(File.dirname(write_to))
       File.write(write_to, contents)
     end
 
     private
+
+    def read_template(filepath)
+      previous_verbosity = $VERBOSE
+      previous_default_external = Encoding.default_external
+      $VERBOSE = nil
+
+      begin
+        Encoding.default_external = Encoding::UTF_8
+
+        if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+          ERB.new(File.read(filepath), trim_mode: "-")
+        else
+          ERB.new(File.read(filepath), nil, "-")
+        end
+      ensure
+        Encoding.default_external = previous_default_external
+        $VERBOSE = previous_verbosity
+      end
+    end
 
     def locals
       @locals ||=
@@ -340,7 +356,6 @@ if __FILE__ == $0
   if ARGV.empty?
     YARP::TEMPLATES.each { |filepath| YARP.template(filepath) }
   else # ruby/ruby
-    Encoding.default_external = Encoding::UTF_8
     name, write_to = ARGV
     YARP.template(name, write_to: write_to)
   end
