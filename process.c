@@ -6931,15 +6931,22 @@ static int rb_daemon(int nochdir, int noclose);
 
 /*
  *  call-seq:
- *     Process.daemon()                        -> 0
- *     Process.daemon(nochdir=nil,noclose=nil) -> 0
+ *    Process.daemon(nochdir = nil, noclose = nil) -> 0
  *
- *  Detach the process from controlling terminal and run in the
- *  background as system daemon.  Unless the argument _nochdir_ is
- *  +true+, it changes the current working directory to the root
- *  ("/"). Unless the argument _noclose_ is +true+, daemon() will
- *  redirect standard input, standard output and standard error to
- *  null device.  Return zero on success, or raise one of Errno::*.
+ *  Detaches the current process from its controlling terminal
+ *  and runs it in the background as system daemon;
+ *  returns zero.
+ *
+ *  By default:
+ *
+ *  - Changes the current working directory to the root directory.
+ *  - Redirects $stdin, $stdout, and $stderr to the null device.
+ *
+ *  If optional argument +nochdir+ is +true+,
+ *  does not change the current working directory.
+ *
+ *  If optional argument +noclose+ is +true+,
+ *  does not redirect $stdin, $stdout, or $stderr.
  */
 
 static VALUE
@@ -7196,13 +7203,14 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.euid           -> integer
- *     Process::UID.eid       -> integer
- *     Process::Sys.geteuid   -> integer
+ *    Process.euid         -> integer
+ *    Process::UID.eid     -> integer
+ *    Process::Sys.geteuid -> integer
  *
- *  Returns the effective user ID for this process.
+ *  Returns the effective user ID for the current process.
  *
- *     Process.euid   #=> 501
+ *    Process.euid # => 501
+ *
  */
 
 static VALUE
@@ -7238,10 +7246,11 @@ proc_seteuid(rb_uid_t uid)
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID)
 /*
  *  call-seq:
- *     Process.euid= user
+ *    Process.euid = new_euid -> new_euid
  *
- *  Sets the effective user ID for this process. Not available on all
- *  platforms.
+ *  Sets the effective user ID for the current process.
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -7319,14 +7328,15 @@ p_uid_grant_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.egid          -> integer
- *     Process::GID.eid      -> integer
- *     Process::Sys.geteid   -> integer
+ *    Process.egid        -> integer
+ *    Process::GID.eid    -> integer
+ *    Process::Sys.geteid -> integer
  *
- *  Returns the effective group ID for this process. Not available on
- *  all platforms.
+ *  Returns the effective group ID for the current process:
  *
- *     Process.egid   #=> 500
+ *    Process.egid # => 500
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -7340,10 +7350,11 @@ proc_getegid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID) || defined(_POSIX_SAVED_IDS)
 /*
  *  call-seq:
- *     Process.egid = integer   -> integer
+ *    Process.egid = new_egid -> new_egid
  *
- *  Sets the effective group ID for this process. Not available on all
- *  platforms.
+ *  Sets the effective group ID for the current process.
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -7816,14 +7827,14 @@ get_clk_tck(void)
 
 /*
  *  call-seq:
- *     Process.times   -> aProcessTms
+ *    Process.times -> process_tms
  *
- *  Returns a <code>Tms</code> structure (see Process::Tms)
- *  that contains user and system CPU times for this process,
- *  and also for children processes.
+ *  Returns a Process::Tms structure that contains user and system CPU times
+ *  for the current process, and for its children processes:
  *
- *     t = Process.times
- *     [ t.utime, t.stime, t.cutime, t.cstime ]   #=> [0.0, 0.02, 0.00, 0.00]
+ *    Process.times
+ *    # => #<struct Process::Tms utime=55.122118, stime=35.533068, cutime=0.0, cstime=0.002846>
+ *
  */
 
 VALUE
