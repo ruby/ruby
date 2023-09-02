@@ -6855,7 +6855,7 @@ proc_setgroups(VALUE obj, VALUE ary)
  *  Example:
  *
  *     Process.groups                # => [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
- *     Process.initgroups('me', 30 ) # => [30, 6, 10, 11]
+ *     Process.initgroups('me', 30)  # => [30, 6, 10, 11]
  *     Process.groups                # => [30, 6, 10, 11]
  *
  *  Not available on all platforms.
