@@ -5640,11 +5640,11 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *
  *  - Integers (+max_limit+ should not be smaller than +cur_limit+).
  *  - Symbol +:SAVED_MAX+, string <tt>'SAVED_MAX'</tt>,
- *    or constant <tt>Process::RLIM_SAVED_MAX: saved maximum limit.
+ *    or constant <tt>Process::RLIM_SAVED_MAX</tt>: saved maximum limit.
  *  - Symbol +:SAVED_CUR+, string <tt>'SAVED_CUR'</tt>,
- *    or constant <tt>Process::RLIM_SAVED_CUR: saved current limit.
+ *    or constant <tt>Process::RLIM_SAVED_CUR</tt>: saved current limit.
  *  - Symbol +:INFINITY+, string <tt>'INFINITY'</tt>,
- *    or constant <tt>Process::RLIM_INFINITY: no limit on resource.
+ *    or constant <tt>Process::RLIM_INFINITY</tt>: no limit on resource.
  *
  *  This example raises the soft limit of core size to
  *  the hard limit to try to make core dump possible:
