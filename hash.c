@@ -2287,7 +2287,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *    h.key(0) # => :foo
  *    h.key(2) # => :bar
  *
- *  Returns +nil+ if so such value is found.
+ *  Returns +nil+ if no such value is found.
  */
 
 static VALUE
