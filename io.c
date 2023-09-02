@@ -11372,7 +11372,7 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
  *  a file-oriented I/O stream. Arguments and results are platform
  *  dependent.
  *
- *  If +argument is a number, its value is passed directly;
+ *  If +argument+ is a number, its value is passed directly;
  *  if it is a string, it is interpreted as a binary sequence of bytes.
  *  (Array#pack might be a useful way to build this string.)
  *
