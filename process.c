@@ -6253,7 +6253,7 @@ proc_getuid(VALUE obj)
  *  call-seq:
  *    Process.uid = new_uid -> new_uid
  *
- *  Sets the (user) user ID for the current process to +new_uid+:0
+ *  Sets the (user) user ID for the current process to +new_uid+:
  *
  *    Process.uid = 1000 # => 1000
  *
