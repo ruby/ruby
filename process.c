@@ -6230,13 +6230,14 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 
 /*
  *  call-seq:
- *     Process.uid           -> integer
- *     Process::UID.rid      -> integer
- *     Process::Sys.getuid   -> integer
+ *    Process.uid         -> integer
+ *    Process::UID.rid    -> integer
+ *    Process::Sys.getuid -> integer
  *
- *  Returns the (real) user ID of this process.
+ *  Returns the (real) user ID of the current process.
  *
- *     Process.uid   #=> 501
+ *    Process.uid # => 1000
+ *
  */
 
 static VALUE
@@ -6250,10 +6251,13 @@ proc_getuid(VALUE obj)
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRUID) || defined(HAVE_SETUID)
 /*
  *  call-seq:
- *     Process.uid= user   -> numeric
+ *    Process.uid = new_uid -> new_uid
  *
- *  Sets the (user) user ID for this process. Not available on all
- *  platforms.
+ *  Sets the (user) user ID for the current process to +new_uid+:
+ *
+ *    Process.uid = 1000 # => 1000
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -6628,13 +6632,14 @@ p_sys_issetugid(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.gid           -> integer
- *     Process::GID.rid      -> integer
- *     Process::Sys.getgid   -> integer
+ *    Process.gid         -> integer
+ *    Process::GID.rid    -> integer
+ *    Process::Sys.getgid -> integer
  *
- *  Returns the (real) group ID for this process.
+ *  Returns the (real) group ID for the current process:
  *
- *     Process.gid   #=> 500
+ *    Process.gid # => 1000
+ *
  */
 
 static VALUE
@@ -6648,9 +6653,12 @@ proc_getgid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETRGID) || defined(HAVE_SETGID)
 /*
  *  call-seq:
- *     Process.gid= integer   -> integer
+ *    Process.gid = new_gid -> new_gid
  *
- *  Sets the group ID for this process.
+ *  Sets the group ID for the current process to +new_gid+:
+ *
+ *    Process.gid = 1000 # => 1000
+ *
  */
 
 static VALUE
@@ -6734,26 +6742,23 @@ maxgroups(void)
 #ifdef HAVE_GETGROUPS
 /*
  *  call-seq:
- *     Process.groups   -> array
+ *    Process.groups -> array
  *
- *  Get an Array of the group IDs in the
- *  supplemental group access list for this process.
+ *  Returns an array of the group IDs
+ *  in the supplemental group access list for the current process:
  *
- *     Process.groups   #=> [27, 6, 10, 11]
+ *    Process.groups # => [4, 24, 27, 30, 46, 122, 135, 136, 1000]
  *
- *  Note that this method is just a wrapper of getgroups(2).
- *  This means that the following characteristics of
- *  the result completely depend on your system:
+ *  These properties of the returned array are system-dependent:
  *
- *  - the result is sorted
- *  - the result includes effective GIDs
- *  - the result does not include duplicated GIDs
- *  - the result size does not exceed the value of Process.maxgroups
+ *  - Whether (and how) the array is sorted.
+ *  - Whether the array includes effective group IDs.
+ *  - Whether the array includes duplicate group IDs.
+ *  - Whether the array size exceeds the value of Process.maxgroups.
  *
- *  You can make sure to get a sorted unique GID list of
- *  the current process by this expression:
+ *  Use this call to get a sorted and unique array:
  *
- *     Process.groups.uniq.sort
+ *    Process.groups.uniq.sort
  *
  */
 
@@ -6790,14 +6795,14 @@ proc_getgroups(VALUE obj)
 #ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
- *     Process.groups= array   -> array
+ *    Process.groups = new_groups -> new_groups
  *
- *  Set the supplemental group access list to the given
- *  Array of group IDs.
+ *  Sets the supplemental group access list to the given
+ *  array of group IDs.
  *
- *     Process.groups   #=> [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
- *     Process.groups = [27, 6, 10, 11]   #=> [27, 6, 10, 11]
- *     Process.groups   #=> [27, 6, 10, 11]
+ *    Process.groups                     # => [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
+ *    Process.groups = [27, 6, 10, 11]   # => [27, 6, 10, 11]
+ *    Process.groups                     # => [27, 6, 10, 11]
  *
  */
 
@@ -6839,19 +6844,21 @@ proc_setgroups(VALUE obj, VALUE ary)
 #ifdef HAVE_INITGROUPS
 /*
  *  call-seq:
- *     Process.initgroups(username, gid)   -> array
+ *     Process.initgroups(username, gid) -> array
  *
- *  Initializes the supplemental group access list by reading the
- *  system group database and using all groups of which the given user
- *  is a member. The group with the specified _gid_ is also added to
- *  the list. Returns the resulting Array of the GIDs of all the
- *  groups in the supplementary group access list. Not available on
- *  all platforms.
+ *  Sets the supplemental group access list;
+ *  the new list includes:
  *
- *     Process.groups   #=> [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
- *     Process.initgroups( "mgranger", 30 )   #=> [30, 6, 10, 11]
- *     Process.groups   #=> [30, 6, 10, 11]
+ *  - The group IDs of those groups to which the user given by +username+ belongs.
+ *  - The group ID +gid+.
  *
+ *  Example:
+ *
+ *     Process.groups                # => [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
+ *     Process.initgroups('me', 30)  # => [30, 6, 10, 11]
+ *     Process.groups                # => [30, 6, 10, 11]
+ *
+ *  Not available on all platforms.
  */
 
 static VALUE
@@ -6869,12 +6876,13 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 #if defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX)
 /*
  *  call-seq:
- *     Process.maxgroups   -> integer
+ *    Process.maxgroups -> integer
  *
- *  Returns the maximum number of GIDs allowed in the supplemental
- *  group access list.
+ *  Returns the maximum number of group IDs allowed
+ *  in the supplemental group access list:
  *
- *     Process.maxgroups   #=> 32
+ *    Process.maxgroups # => 32
+ *
  */
 
 static VALUE
@@ -6889,10 +6897,10 @@ proc_getmaxgroups(VALUE obj)
 #ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
- *     Process.maxgroups= integer   -> integer
+ *    Process.maxgroups = new_max -> new_max
  *
- *  Sets the maximum number of GIDs allowed in the supplemental group
- *  access list.
+ *  Sets the maximum number of group IDs allowed
+ *  in the supplemental group access list.
  */
 
 static VALUE
