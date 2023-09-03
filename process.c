@@ -8121,32 +8121,31 @@ ruby_real_ms_time(void)
  *  this method supports the following clocks on the indicated platforms
  *  (raises Errno::EINVAL if called with an unsupported clock):
  *
- *  - +:CLOCK_REALTIME+: SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12, Windows-8/Server-2012.
- *    Time.now is recommended over +:CLOCK_REALTIME:.
-
- *  - +:CLOCK_MONOTONIC+: SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12, Windows-2000.
- *  - +:CLOCK_PROCESS_CPUTIME_ID+: SUSv3 to 4, Linux 2.5.63, FreeBSD 9.3, OpenBSD 5.4, macOS 10.12.
- *  - +:CLOCK_THREAD_CPUTIME_ID+: SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12.
- *  - +:CLOCK_VIRTUAL+: FreeBSD 3.0, OpenBSD 2.1.
- *  - +:CLOCK_PROF+: FreeBSD 3.0, OpenBSD 2.1.
- *  - +:CLOCK_REALTIME_FAST+: FreeBSD 8.1.
- *  - +:CLOCK_REALTIME_PRECISE+: FreeBSD 8.1.
- *  - +:CLOCK_REALTIME_COARSE+: Linux 2.6.32.
- *  - +:CLOCK_REALTIME_ALARM+: Linux 3.0.
- *  - +:CLOCK_MONOTONIC_FAST+: FreeBSD 8.1.
- *  - +:CLOCK_MONOTONIC_PRECISE+: FreeBSD 8.1.
- *  - +:CLOCK_MONOTONIC_COARSE+: Linux 2.6.32.
- *  - +:CLOCK_MONOTONIC_RAW+: Linux 2.6.28, macOS 10.12.
- *  - +:CLOCK_MONOTONIC_RAW_APPROX+: macOS 10.12.
  *  - +:CLOCK_BOOTTIME+: Linux 2.6.39.
  *  - +:CLOCK_BOOTTIME_ALARM+: Linux 3.0.
- *  - +:CLOCK_UPTIME+: FreeBSD 7.0, OpenBSD 5.5.
- *  - +:CLOCK_UPTIME_FAST+: FreeBSD 8.1.
- *  - +:CLOCK_UPTIME_RAW+: macOS 10.12.
- *  - +:CLOCK_UPTIME_RAW_APPROX+: macOS 10.12.
- *  - +:CLOCK_UPTIME_PRECISE+: FreeBSD 8.1.
+ *  - +:CLOCK_MONOTONIC+: SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12, Windows-2000.
+ *  - +:CLOCK_MONOTONIC_COARSE+: Linux 2.6.32.
+ *  - +:CLOCK_MONOTONIC_FAST+: FreeBSD 8.1.
+ *  - +:CLOCK_MONOTONIC_PRECISE+: FreeBSD 8.1.
+ *  - +:CLOCK_MONOTONIC_RAW+: Linux 2.6.28, macOS 10.12.
+ *  - +:CLOCK_MONOTONIC_RAW_APPROX+: macOS 10.12.
+ *  - +:CLOCK_PROCESS_CPUTIME_ID+: SUSv3 to 4, Linux 2.5.63, FreeBSD 9.3, OpenBSD 5.4, macOS 10.12.
+ *  - +:CLOCK_PROF+: FreeBSD 3.0, OpenBSD 2.1.
+ *  - +:CLOCK_REALTIME+: SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12, Windows-8/Server-2012.
+ *    Time.now is recommended over +:CLOCK_REALTIME:.
+ *  - +:CLOCK_REALTIME_ALARM+: Linux 3.0.
+ *  - +:CLOCK_REALTIME_COARSE+: Linux 2.6.32.
+ *  - +:CLOCK_REALTIME_FAST+: FreeBSD 8.1.
+ *  - +:CLOCK_REALTIME_PRECISE+: FreeBSD 8.1.
  *  - +:CLOCK_SECOND+: FreeBSD 8.1.
  *  - +:CLOCK_TAI+: Linux 3.10.
+ *  - +:CLOCK_THREAD_CPUTIME_ID+: SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12.
+ *  - +:CLOCK_UPTIME+: FreeBSD 7.0, OpenBSD 5.5.
+ *  - +:CLOCK_UPTIME_FAST+: FreeBSD 8.1.
+ *  - +:CLOCK_UPTIME_PRECISE+: FreeBSD 8.1.
+ *  - +:CLOCK_UPTIME_RAW+: macOS 10.12.
+ *  - +:CLOCK_UPTIME_RAW_APPROX+: macOS 10.12.
+ *  - +:CLOCK_VIRTUAL+: FreeBSD 3.0, OpenBSD 2.1.
  *
  *  Note that SUS stands for Single Unix Specification.
  *  SUS contains POSIX and clock_gettime is defined in the POSIX part.
@@ -8209,9 +8208,10 @@ ruby_real_ms_time(void)
  *      The resolution is <tt>1/CLOCKS_PER_SEC</tt>.
  *      +CLOCKS_PER_SEC+ is the C-level macro defined by time.h.
  *      SUS defines +CLOCKS_PER_SEC+ as 1000000;
- *      non-Unix systems may define it differently.
- *      If +CLOCKS_PER_SEC+ is 1000000 as SUS, the resolution is 1 microsecond.
- *      If +CLOCKS_PER_SEC+ is 1000000 and clock_t is 32 bits integer type,
+ *      other systems may define it differently.
+ *      If +CLOCKS_PER_SEC+ is 1000000 (as in SUS),
+ *      the resolution is 1 microsecond.
+ *      If +CLOCKS_PER_SEC+ is 1000000 and clock_t is a 32-bit integer type,
  *      it cannot represent over 72 minutes.
  *
  *  <b>Argument +unit+</b>
@@ -8225,7 +8225,24 @@ ruby_real_ms_time(void)
  *  - +:microsecond+: Number of microseconds as an integer.
  *  - +:millisecond+: Number of milliseconds as an integer.
  *  - +:nanosecond+: Number of nanoseconds as an integer.
- *  - +:unit:second+: Number of seconds as an integer.
+ *  - +::second+: Number of seconds as an integer.
+ *
+ *  Examples:
+ *
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :float_microsecond)
+ *    # => 203605054.825
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :float_millisecond)
+ *    # => 203643.696848
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :float_second)
+ *    # => 203.762181929
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :microsecond)
+ *    # => 204123212
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :millisecond)
+ *    # => 204298
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :nanosecond)
+ *    # => 204602286036
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID, :second)
+ *    # => 204
  *
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent
@@ -8443,16 +8460,22 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
  *
  *  See Process.clock_gettime for the values of +clock_id+ and +unit+.
  *
+ *  Examples:
+ *
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :float_microsecond) # => 0.001
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :float_millisecond) # => 1.0e-06
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :float_second)      # => 1.0e-09
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :microsecond)       # => 0
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :millisecond)       # => 0
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :nanosecond)        # => 1
+ *    Process.clock_getres(:CLOCK_PROCESS_CPUTIME_ID, :second)            # => 0
+ *
  *  In addition to the values for +unit+ supported in Process.clock_gettime,
- *  this method supports:
+ *  this method supports +:hertz+, the integer number of clock ticks per second
+ *  (which is the reciprocal of +:float_second+):
  *
- *  - +:hertz+: \Integer number of clock ticks per second
- *    (the reciprocal of +:float_second+):
- *
- *      Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)
- *      # => 100.0
- *      Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :float_second)
- *      # => 0.01
+ *    Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)        # => 100.0
+ *    Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :float_second) # => 0.01
  *
  *  <b>Accuracy</b>:
  *  Note that the returned resolution may be inaccurate on some platforms
