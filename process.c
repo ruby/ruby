@@ -8451,7 +8451,7 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *    Process.clock_getres(clock_id, unit = :float_second) -> number
+ *    Process.clock_getres(clock_id, unit = :float_second)  -> number
  *
  *  Returns a clock resolution as determined by POSIX function
  *  {clock_getres()}[https://man7.org/linux/man-pages/man3/clock_getres.3.html]:
