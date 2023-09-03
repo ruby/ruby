@@ -8096,130 +8096,150 @@ ruby_real_ms_time(void)
 
 /*
  *  call-seq:
- *     Process.clock_gettime(clock_id [, unit])   -> number
+ *    Process.clock_gettime(clock_id, unit = :float_second) -> number
  *
- *  Returns a time returned by POSIX clock_gettime() function.
+ *  Returns a clock time as determined by POSIX function
+ *  {clock_gettime()}[https://man7.org/linux/man-pages/man3/clock_gettime.3.html]:
  *
- *    p Process.clock_gettime(Process::CLOCK_MONOTONIC)
- *    #=> 896053.968060096
+ *    Process.clock_gettime(:CLOCK_PROCESS_CPUTIME_ID) # => 198.650379677
  *
- *  +clock_id+ specifies a kind of clock.
- *  It is specified as a constant which begins with <code>Process::CLOCK_</code>
- *  such as Process::CLOCK_REALTIME and Process::CLOCK_MONOTONIC.
+ *  Argument +clock_id+ should be a symbol or a constant that specifies
+ *  the clock whose time is to be returned;
+ *  see below.
  *
- *  The supported constants depends on OS and version.
- *  Ruby provides following types of +clock_id+ if available.
+ *  Optional argument +unit+ should be a symbol that specifies
+ *  the unit to be used in the returned clock time;
+ *  see below.
  *
- *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12, Windows-8/Server-2012
- *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12, Windows-2000
- *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 9.3, OpenBSD 5.4, macOS 10.12
- *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12
- *  [CLOCK_VIRTUAL] FreeBSD 3.0, OpenBSD 2.1
- *  [CLOCK_PROF] FreeBSD 3.0, OpenBSD 2.1
- *  [CLOCK_REALTIME_FAST] FreeBSD 8.1
- *  [CLOCK_REALTIME_PRECISE] FreeBSD 8.1
- *  [CLOCK_REALTIME_COARSE] Linux 2.6.32
- *  [CLOCK_REALTIME_ALARM] Linux 3.0
- *  [CLOCK_MONOTONIC_FAST] FreeBSD 8.1
- *  [CLOCK_MONOTONIC_PRECISE] FreeBSD 8.1
- *  [CLOCK_MONOTONIC_COARSE] Linux 2.6.32
- *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28, macOS 10.12
- *  [CLOCK_MONOTONIC_RAW_APPROX] macOS 10.12
- *  [CLOCK_BOOTTIME] Linux 2.6.39
- *  [CLOCK_BOOTTIME_ALARM] Linux 3.0
- *  [CLOCK_UPTIME] FreeBSD 7.0, OpenBSD 5.5
- *  [CLOCK_UPTIME_FAST] FreeBSD 8.1
- *  [CLOCK_UPTIME_RAW] macOS 10.12
- *  [CLOCK_UPTIME_RAW_APPROX] macOS 10.12
- *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
- *  [CLOCK_SECOND] FreeBSD 8.1
- *  [CLOCK_TAI] Linux 3.10
+ *  <b>Argument +clock_id+</b>
+ *
+ *  Argument +clock_id+ specifies the clock whose time is to be returned;
+ *  it may be a constant such as <tt>Process::CLOCK_REALTIME</tt>,
+ *  or a symbol shorthand such as +:CLOCK_REALTIME+.
+ *
+ *  The supported clocks depend on the underlying operating system;
+ *  this method supports the following clocks on the indicated platforms
+ *  (raises Errno::EINVAL if called with an unsupported clock):
+ *
+ *  - +:CLOCK_REALTIME+: SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12, Windows-8/Server-2012.
+ *    Time.now is recommended over +:CLOCK_REALTIME:.
+
+ *  - +:CLOCK_MONOTONIC+: SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12, Windows-2000.
+ *  - +:CLOCK_PROCESS_CPUTIME_ID+: SUSv3 to 4, Linux 2.5.63, FreeBSD 9.3, OpenBSD 5.4, macOS 10.12.
+ *  - +:CLOCK_THREAD_CPUTIME_ID+: SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12.
+ *  - +:CLOCK_VIRTUAL+: FreeBSD 3.0, OpenBSD 2.1.
+ *  - +:CLOCK_PROF+: FreeBSD 3.0, OpenBSD 2.1.
+ *  - +:CLOCK_REALTIME_FAST+: FreeBSD 8.1.
+ *  - +:CLOCK_REALTIME_PRECISE+: FreeBSD 8.1.
+ *  - +:CLOCK_REALTIME_COARSE+: Linux 2.6.32.
+ *  - +:CLOCK_REALTIME_ALARM+: Linux 3.0.
+ *  - +:CLOCK_MONOTONIC_FAST+: FreeBSD 8.1.
+ *  - +:CLOCK_MONOTONIC_PRECISE+: FreeBSD 8.1.
+ *  - +:CLOCK_MONOTONIC_COARSE+: Linux 2.6.32.
+ *  - +:CLOCK_MONOTONIC_RAW+: Linux 2.6.28, macOS 10.12.
+ *  - +:CLOCK_MONOTONIC_RAW_APPROX+: macOS 10.12.
+ *  - +:CLOCK_BOOTTIME+: Linux 2.6.39.
+ *  - +:CLOCK_BOOTTIME_ALARM+: Linux 3.0.
+ *  - +:CLOCK_UPTIME+: FreeBSD 7.0, OpenBSD 5.5.
+ *  - +:CLOCK_UPTIME_FAST+: FreeBSD 8.1.
+ *  - +:CLOCK_UPTIME_RAW+: macOS 10.12.
+ *  - +:CLOCK_UPTIME_RAW_APPROX+: macOS 10.12.
+ *  - +:CLOCK_UPTIME_PRECISE+: FreeBSD 8.1.
+ *  - +:CLOCK_SECOND+: FreeBSD 8.1.
+ *  - +:CLOCK_TAI+: Linux 3.10.
  *
  *  Note that SUS stands for Single Unix Specification.
  *  SUS contains POSIX and clock_gettime is defined in the POSIX part.
- *  SUS defines CLOCK_REALTIME mandatory but
- *  CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID and CLOCK_THREAD_CPUTIME_ID are optional.
+ *  SUS defines +:CLOCK_REALTIME+ mandatory but
+ *  +:CLOCK_MONOTONIC+, +:CLOCK_PROCESS_CPUTIME_ID+,
+ *  and +:CLOCK_THREAD_CPUTIME_ID+ are optional.
  *
- *  Also, several symbols are accepted as +clock_id+.
- *  There are emulations for clock_gettime().
+ *  Certain emulations are used when the given +clock_id+
+ *  is not supported directly:
  *
- *  For example, Process::CLOCK_REALTIME is defined as
- *  +:GETTIMEOFDAY_BASED_CLOCK_REALTIME+ when clock_gettime() is not available.
+ *  - Emulations for +:CLOCK_REALTIME+:
  *
- *  Emulations for +CLOCK_REALTIME+:
- *  [:GETTIMEOFDAY_BASED_CLOCK_REALTIME]
- *    Use gettimeofday() defined by SUS.
- *    (SUSv4 obsoleted it, though.)
- *    The resolution is 1 microsecond.
- *  [:TIME_BASED_CLOCK_REALTIME]
- *    Use time() defined by ISO C.
- *    The resolution is 1 second.
+ *    - +:GETTIMEOFDAY_BASED_CLOCK_REALTIME+:
+ *      Use gettimeofday() defined by SUS (SUSv4 obsoleted it, though).
+ *      The resolution is 1 microsecond.
+ *    - +:TIME_BASED_CLOCK_REALTIME+:
+ *      Use time() defined by ISO C.
+ *      The resolution is 1 second.
  *
- *  Emulations for +CLOCK_MONOTONIC+:
- *  [:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC]
- *    Use mach_absolute_time(), available on Darwin.
- *    The resolution is CPU dependent.
- *  [:TIMES_BASED_CLOCK_MONOTONIC]
- *    Use the result value of times() defined by POSIX.
- *    POSIX defines it as "times() shall return the elapsed real time, in clock ticks, since an arbitrary point in the past (for example, system start-up time)".
- *    For example, GNU/Linux returns a value based on jiffies and it is monotonic.
- *    However, 4.4BSD uses gettimeofday() and it is not monotonic.
- *    (FreeBSD uses clock_gettime(CLOCK_MONOTONIC) instead, though.)
- *    The resolution is the clock tick.
- *    "getconf CLK_TCK" command shows the clock ticks per second.
- *    (The clock ticks per second is defined by HZ macro in older systems.)
- *    If it is 100 and clock_t is 32 bits integer type, the resolution is 10 millisecond and
- *    cannot represent over 497 days.
+ *  - Emulations for +:CLOCK_MONOTONIC+:
  *
- *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
- *  [:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
- *    Use getrusage() defined by SUS.
- *    getrusage() is used with RUSAGE_SELF to obtain the time only for
- *    the calling process (excluding the time for child processes).
- *    The result is addition of user time (ru_utime) and system time (ru_stime).
- *    The resolution is 1 microsecond.
- *  [:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
- *    Use times() defined by POSIX.
- *    The result is addition of user time (tms_utime) and system time (tms_stime).
- *    tms_cutime and tms_cstime are ignored to exclude the time for child processes.
- *    The resolution is the clock tick.
- *    "getconf CLK_TCK" command shows the clock ticks per second.
- *    (The clock ticks per second is defined by HZ macro in older systems.)
- *    If it is 100, the resolution is 10 millisecond.
- *  [:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID]
- *    Use clock() defined by ISO C.
- *    The resolution is 1/CLOCKS_PER_SEC.
- *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
- *    SUS defines CLOCKS_PER_SEC is 1000000.
- *    Non-Unix systems may define it a different value, though.
- *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 microsecond.
- *    If CLOCKS_PER_SEC is 1000000 and clock_t is 32 bits integer type, it cannot represent over 72 minutes.
+ *    - +:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC+:
+ *      Use mach_absolute_time(), available on Darwin.
+ *      The resolution is CPU dependent.
+ *    - +:TIMES_BASED_CLOCK_MONOTONIC+:
+ *      Use the result value of times() defined by POSIX, thus:
+ *      >>>
+ *        Upon successful completion, times() shall return the elapsed real time,
+ *        in clock ticks, since an arbitrary point in the past
+ *        (for example, system start-up time).
  *
- *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
+ *      For example, GNU/Linux returns a value based on jiffies and it is monotonic.
+ *      However, 4.4BSD uses gettimeofday() and it is not monotonic.
+ *      (FreeBSD uses +:CLOCK_MONOTONIC+ instead, though.)
  *
- *  +unit+ specifies a type of the return value.
+ *      The resolution is the clock tick.
+ *      "getconf CLK_TCK" command shows the clock ticks per second.
+ *      (The clock ticks-per-second is defined by HZ macro in older systems.)
+ *      If it is 100 and clock_t is 32 bits integer type,
+ *      the resolution is 10 millisecond and cannot represent over 497 days.
  *
- *  [:float_second] number of seconds as a float (default)
- *  [:float_millisecond] number of milliseconds as a float
- *  [:float_microsecond] number of microseconds as a float
- *  [:second] number of seconds as an integer
- *  [:millisecond] number of milliseconds as an integer
- *  [:microsecond] number of microseconds as an integer
- *  [:nanosecond] number of nanoseconds as an integer
+ *  - Emulations for +:CLOCK_PROCESS_CPUTIME_ID+:
+ *
+ *    - +:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID+:
+ *      Use getrusage() defined by SUS.
+ *      getrusage() is used with RUSAGE_SELF to obtain the time only for
+ *      the calling process (excluding the time for child processes).
+ *      The result is addition of user time (ru_utime) and system time (ru_stime).
+ *      The resolution is 1 microsecond.
+ *    - +:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID+:
+ *      Use times() defined by POSIX.
+ *      The result is addition of user time (tms_utime) and system time (tms_stime).
+ *      tms_cutime and tms_cstime are ignored to exclude the time for child processes.
+ *      The resolution is the clock tick.
+ *      "getconf CLK_TCK" command shows the clock ticks per second.
+ *      (The clock ticks per second is defined by HZ macro in older systems.)
+ *      If it is 100, the resolution is 10 millisecond.
+ *    - +:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID+:
+ *      Use clock() defined by ISO C.
+ *      The resolution is <tt>1/CLOCKS_PER_SEC</tt>.
+ *      +CLOCKS_PER_SEC+ is the C-level macro defined by time.h.
+ *      SUS defines +CLOCKS_PER_SEC+ as 1000000;
+ *      non-Unix systems may define it differently.
+ *      If +CLOCKS_PER_SEC+ is 1000000 as SUS, the resolution is 1 microsecond.
+ *      If +CLOCKS_PER_SEC+ is 1000000 and clock_t is 32 bits integer type,
+ *      it cannot represent over 72 minutes.
+ *
+ *  <b>Argument +unit+</b>
+ *
+ *  Optional argument +unit+ (default +:float_second+)
+ *  specifies the unit for the returned value.
+ *
+ *  - +:float_microsecond+: Number of microseconds as a float.
+ *  - +:float_millisecond+: Number of milliseconds as a float.
+ *  - +:float_second+: Number of seconds as a float.
+ *  - +:microsecond+: Number of microseconds as an integer.
+ *  - +:millisecond+: Number of milliseconds as an integer.
+ *  - +:nanosecond+: Number of nanoseconds as an integer.
+ *  - +:unit:second+: Number of seconds as an integer.
  *
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent
- *  the return value for CLOCK_REALTIME.
+ *  the return value for +:CLOCK_REALTIME+.
  *  If the exact nanoseconds value is required, use +:nanosecond+ as the +unit+.
  *
- *  The origin (zero) of the returned value varies.
- *  For example, system start up time, process start up time, the Epoch, etc.
+ *  The origin (time zero) of the returned value is system-dependent,
+ *  and may be, for example, system start up time,
+ *  process start up time, the Epoch, etc.
  *
- *  The origin in CLOCK_REALTIME is defined as the Epoch
- *  (1970-01-01 00:00:00 UTC).
- *  But some systems count leap seconds and others doesn't.
- *  So the result can be interpreted differently across systems.
- *  Time.now is recommended over CLOCK_REALTIME.
+ *  The origin in +:CLOCK_REALTIME+ is defined as the Epoch:
+ *  <tt>1970-01-01 00:00:00 UTC</tt>;
+ *  some systems count leap seconds and others don't,
+ *  so the result may vary across systems.
  */
 static VALUE
 rb_clock_gettime(int argc, VALUE *argv, VALUE _)
@@ -8227,7 +8247,7 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
     int ret;
 
     struct timetick tt;
-    timetick_int_t numerators[2];
+    timetick_int_t numeratorsunit2];
     timetick_int_t denominators[2];
     int num_numerators = 0;
     int num_denominators = 0;
@@ -8414,45 +8434,33 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *     Process.clock_getres(clock_id [, unit])   -> number
+ *    Process.clock_getres(clock_id, unit = :float_second) -> number
  *
- *  Returns an estimate of the resolution of a +clock_id+ using the POSIX
- *  <code>clock_getres()</code> function.
+ *  Returns a clock resolution as determined by POSIX function
+ *  {clock_getres()}[https://man7.org/linux/man-pages/man3/clock_getres.3.html]:
  *
- *  Note the reported resolution is often inaccurate on most platforms due to
- *  underlying bugs for this function and therefore the reported resolution
- *  often differs from the actual resolution of the clock in practice.
- *  Inaccurate reported resolutions have been observed for various clocks including
- *  CLOCK_MONOTONIC and CLOCK_MONOTONIC_RAW when using Linux, macOS, BSD or AIX
- *  platforms, when using ARM processors, or when using virtualization.
+ *    Process.clock_getres(:CLOCK_REALTIME) # => 1.0e-09
  *
- *  +clock_id+ specifies a kind of clock.
- *  See the document of +Process.clock_gettime+ for details.
- *  +clock_id+ can be a symbol as for +Process.clock_gettime+.
+ *  See Process.clock_gettime for the values of +clock_id+ and +unit+.
  *
- *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
+ *  In addition to the values for +unit+ supported in Process.clock_gettime,
+ *  this method supports:
  *
- *  +unit+ specifies the type of the return value.
- *  +Process.clock_getres+ accepts +unit+ as +Process.clock_gettime+.
- *  The default value, +:float_second+, is also the same as
- *  +Process.clock_gettime+.
+ *  - +:hertz+: \Integer number of clock ticks per second
+ *    (the reciprocal of +:float_second+):
  *
- *  +Process.clock_getres+ also accepts +:hertz+ as +unit+.
- *  +:hertz+ means the reciprocal of +:float_second+.
+ *      Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)
+ *      # => 100.0
+ *      Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :float_second)
+ *      # => 0.01
  *
- *  +:hertz+ can be used to obtain the exact value of
- *  the clock ticks per second for the times() function and
- *  CLOCKS_PER_SEC for the clock() function.
- *
- *  <code>Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)</code>
- *  returns the clock ticks per second.
- *
- *  <code>Process.clock_getres(:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)</code>
- *  returns CLOCKS_PER_SEC.
- *
- *    p Process.clock_getres(Process::CLOCK_MONOTONIC)
- *    #=> 1.0e-09
- *
+ *  <b>Accuracy</b>:
+ *  Note that the returned resolution may be inaccurate on some platforms
+ *  due to underlying bugs.
+ *  Inaccurate resolutions have been reported for various clocks including
+ *  +:CLOCK_MONOTONIC+ and +:CLOCK_MONOTONIC_RAW+
+ *  on Linux, macOS, BSD or AIX platforms, when using ARM processors,
+ *  or when using virtualization.
  */
 static VALUE
 rb_clock_getres(int argc, VALUE *argv, VALUE _)
