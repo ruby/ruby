@@ -8149,7 +8149,7 @@ ruby_real_ms_time(void)
  *
  *  Note that SUS stands for Single Unix Specification.
  *  SUS contains POSIX and clock_gettime is defined in the POSIX part.
- *  SUS defines +:CLOCK_REALTIME+ mandatory but
+ *  SUS defines +:CLOCK_REALTIME+ as mandatory but
  *  +:CLOCK_MONOTONIC+, +:CLOCK_PROCESS_CPUTIME_ID+,
  *  and +:CLOCK_THREAD_CPUTIME_ID+ are optional.
  *
