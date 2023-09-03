@@ -8159,7 +8159,7 @@ ruby_real_ms_time(void)
  *  - Emulations for +:CLOCK_REALTIME+:
  *
  *    - +:GETTIMEOFDAY_BASED_CLOCK_REALTIME+:
- *      Use gettimeofday() defined by SUS (SUSv4 obsoleted it, though).
+ *      Use gettimeofday() defined by SUS (deprecated in SUSv4).
  *      The resolution is 1 microsecond.
  *    - +:TIME_BASED_CLOCK_REALTIME+:
  *      Use time() defined by ISO C.
