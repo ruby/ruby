@@ -657,8 +657,7 @@ module Bundler
       locked_index = Index.new
       locked_index.use(@locked_specs.select {|s| source.can_lock?(s) })
 
-      # order here matters, since Index#== is checking source.specs.include?(locked_index)
-      locked_index != source.specs
+      !locked_index.subset?(source.specs)
     rescue PathError, GitError => e
       Bundler.ui.debug "Assuming that #{source} has not changed since fetching its specs errored (#{e})"
       false

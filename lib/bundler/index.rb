@@ -145,8 +145,7 @@ module Bundler
     end
 
     # Whether all the specs in self are in other
-    # TODO: rename to #include?
-    def ==(other)
+    def subset?(other)
       all? do |spec|
         other_spec = other[spec].first
         other_spec && dependencies_eql?(spec, other_spec) && spec.source == other_spec.source
