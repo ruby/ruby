@@ -8264,7 +8264,7 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
     int ret;
 
     struct timetick tt;
-    timetick_int_t numeratorsunit2];
+    timetick_int_t numerators[2];
     timetick_int_t denominators[2];
     int num_numerators = 0;
     int num_denominators = 0;
