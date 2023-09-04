@@ -1008,30 +1008,26 @@ cont_mark(void *ptr)
     rb_execution_context_mark(&cont->saved_ec);
     rb_gc_mark(cont_thread_value(cont));
 
-    
     if (cont->machine.stack) {
         if (cont->type == CONTINUATION_CONTEXT) {
             /* cont */
-            
+
             rb_gc_mark_locations(cont->machine.stack,
                                  cont->machine.stack + cont->machine.stack_size);
         }
         else {
             /* fiber */
-            
+
             const rb_fiber_t *fiber = (rb_fiber_t*)cont;
 
             if (!FIBER_TERMINATED_P(fiber)) {
                     rb_fiber_record_mark(&cont->saved_ec, cont->machine.stack,
                                         cont->machine.stack + cont->machine.stack_size);
-                
+
             }
-            
+
         }
     }
-    
-
-   
 
     if (cont->saved_vm_stack.ptr) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
@@ -1041,7 +1037,7 @@ cont_mark(void *ptr)
         rb_gc_mark_locations(cont->saved_vm_stack.ptr,
                              cont->saved_vm_stack.ptr, cont->saved_ec.stack_size);
 #endif
-        
+
     }
 
     RUBY_MARK_LEAVE("cont");
@@ -1142,7 +1138,7 @@ fiber_compact(void *ptr)
 
     cont_compact(&fiber->cont);
     fiber_verify(fiber);
-} 
+}
 
 static void
 fiber_mark(void *ptr)
@@ -3523,7 +3519,7 @@ Init_Cont(void)
 modify stack barrier during fiber control transfer
 */
 
-void 
+void
 rb_stack_barrier(void (*yield)(rb_fiber_t *, rb_fiber_t *), rb_fiber_t *new_fiber, rb_fiber_t *old_fiber) {
     rb_stack_barrier_set(&(old_fiber->fiber_record), old_fiber->stack.current);
     rb_stack_barrier_set(&(new_fiber->fiber_record), NULL);
@@ -3532,13 +3528,13 @@ rb_stack_barrier(void (*yield)(rb_fiber_t *, rb_fiber_t *), rb_fiber_t *new_fibe
 
 
 //Set the stack barrier to some location in the stack
-void 
+void
 rb_stack_barrier_set(struct fiber_record_struct *fiber_record, void * destination) {
     fiber_record->stack_barrier = destination;
 }
 
-void 
-fiber_record_init(struct fiber_record_struct *new_record, void *ptr) 
+void
+fiber_record_init(struct fiber_record_struct *new_record, void *ptr)
 {
     rb_fiber_t *fiber = ptr;
     new_record->head = NULL;

@@ -6652,7 +6652,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 }
 #endif
 
-void 
+void
 fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, const VALUE *start, const VALUE *end,
                  void (*cb)(rb_objspace_t *, VALUE));
 
@@ -6663,7 +6663,7 @@ fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record
 void
 fiber_record_mark_list(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, void (*cb)(rb_objspace_t *, VALUE));
 
-void 
+void
 fiber_record_free(struct fiber_record_struct *fiber_record);
 
 static void
@@ -14144,7 +14144,7 @@ fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record
                     fiber_record->head->next = new_node;
                     fiber_record->tail = new_node;
                 }
-            } 
+            }
             else {
                 if (fiber_record->tail) {
                     //head is null
@@ -14156,7 +14156,7 @@ fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record
                     //both null
                     fiber_record->head = new_node;
                     fiber_record->tail = new_node;
-                    
+
                 }
             }
              //8 bytes per 1 address on a 64-bit machine
@@ -14168,16 +14168,16 @@ fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record
     }
 }
 
-void 
+void
 fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, const VALUE *start, const VALUE *end,
-                 void (*cb)(rb_objspace_t *, VALUE)) 
+                 void (*cb)(rb_objspace_t *, VALUE))
 {
     struct fiber_record_struct *fiber_record = get_fiber_record(ec);
 
     if (!fiber_record || fiber_record->stack_barrier == NULL) {
         each_stack_location(objspace, ec, start, end, cb);
         RB_DEBUG_COUNTER_INC(fiber_full_stack_scan);
-            
+
         if (fiber_record) fiber_record_free(fiber_record);
     }
     else {
@@ -14193,7 +14193,7 @@ fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, con
                 fiber_record_mark_list(objspace, fiber_record, cb);
             }
         }
-        else {   
+        else {
             //inactive without record
             VALUE *stack_start = start;
             VALUE *stack_end = end;
@@ -14215,13 +14215,13 @@ void rb_fiber_record_mark(const rb_execution_context_t *ec, const VALUE *start, 
 
 void
 fiber_record_mark_list(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, void (*cb)(rb_objspace_t *, VALUE)) {
-    
+
     if (fiber_record->head == NULL) return;
 
     struct fiber_stack_object *current = fiber_record->head->next;
 
     //RB_DEBUG_COUNTER_INC(record_obj_mark);
-    
+
     while (current != NULL) {
         cb(objspace, *(current->stack_obj));
         current = current->next;
@@ -14230,19 +14230,19 @@ fiber_record_mark_list(rb_objspace_t *objspace, struct fiber_record_struct *fibe
     }
 }
 
-void 
+void
 fiber_record_free(struct fiber_record_struct *fiber_record) {
 
     if (fiber_record->head == NULL) return;
 
     struct fiber_stack_object *current = fiber_record->head;
-    
+
     while (current != NULL) {
         struct fiber_stack_object *removed = current;
         current = current->next;
         free(removed);
         RB_DEBUG_COUNTER_INC(stack_obj_remove);
     }
-    fiber_record->head = NULL; 
-    fiber_record->tail = NULL; 
+    fiber_record->head = NULL;
+    fiber_record->tail = NULL;
 }
