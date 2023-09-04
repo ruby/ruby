@@ -14094,8 +14094,8 @@ rb_gc_is_full_marking(void) {
 static void
 fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, const VALUE *start, const VALUE *end, void (*cb)(rb_objspace_t *, VALUE))
 {
-    register long n;
-    register VALUE *x = start;
+    ptrdiff_t n;
+    const VALUE *x = start;
 
     if (end <= start) return;
     n = end - start;
@@ -14196,11 +14196,11 @@ fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, con
         }
         else {
             //inactive without record
-            VALUE *stack_start = start;
-            VALUE *stack_end = end;
+            const VALUE *stack_start = start;
+            const VALUE *stack_end = end;
             #if defined(__mc68000__)
-                VALUE *stack_start = (VALUE*)((char*)stack_start + 2);
-                VALUE *stack_end = (VALUE*)((char*)stack_end - 2);
+                const VALUE *stack_start = (VALUE*)((char*)stack_start + 2);
+                const VALUE *stack_end = (VALUE*)((char*)stack_end - 2);
             #endif
 
             fiber_record_mark_and_add_locations(objspace, fiber_record, stack_start, stack_end, cb);

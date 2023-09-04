@@ -133,7 +133,7 @@ bool rb_gc_is_full_marking(void);
 struct fiber_stack_object
 {
     //a pointer to a object pointer on a fiber stack
-    VALUE *stack_obj;
+    const VALUE *stack_obj;
     struct fiber_stack_object *next;
 };
 
