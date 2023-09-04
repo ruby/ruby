@@ -304,21 +304,11 @@ module YARP
     private
 
     def read_template(filepath)
-      previous_verbosity = $VERBOSE
-      previous_default_external = Encoding.default_external
-      $VERBOSE = nil
-
-      begin
-        Encoding.default_external = Encoding::UTF_8
-
-        if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
-          ERB.new(File.read(filepath), trim_mode: "-")
-        else
-          ERB.new(File.read(filepath), nil, "-")
-        end
-      ensure
-        Encoding.default_external = previous_default_external
-        $VERBOSE = previous_verbosity
+      template = File.read(filepath, encoding: Encoding::UTF_8)
+      if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+        ERB.new(template, trim_mode: "-")
+      else
+        ERB.new(template, nil, "-")
       end
     end
 
