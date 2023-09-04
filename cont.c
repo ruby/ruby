@@ -1067,7 +1067,7 @@ cont_free(void *ptr)
     }
     else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
-        fiber_record_free(&(fiber->fiber_record));
+        rb_fiber_record_free(&(fiber->fiber_record));
         coroutine_destroy(&fiber->context);
         fiber_stack_release(fiber);
     }
@@ -2003,6 +2003,21 @@ static VALUE
 fiber_alloc(VALUE klass)
 {
     return TypedData_Wrap_Struct(klass, &fiber_data_type, 0);
+}
+
+static void
+fiber_record_init(struct fiber_record_struct *new_record, void *ptr)
+{
+    rb_fiber_t *fiber = ptr;
+    new_record->head = NULL;
+    new_record->tail = NULL;
+    new_record->fiber = (void *)fiber;
+    new_record->stack_barrier = NULL;
+}
+
+struct fiber_record_struct* rb_get_fiber_record(const rb_execution_context_t* ec) {
+    rb_fiber_t *fiber = ec->fiber_ptr;
+    return &fiber->fiber_record;
 }
 
 static rb_fiber_t*
@@ -3531,21 +3546,6 @@ rb_stack_barrier(void (*yield)(rb_fiber_t *, rb_fiber_t *), rb_fiber_t *new_fibe
 void
 rb_stack_barrier_set(struct fiber_record_struct *fiber_record, void * destination) {
     fiber_record->stack_barrier = destination;
-}
-
-void
-fiber_record_init(struct fiber_record_struct *new_record, void *ptr)
-{
-    rb_fiber_t *fiber = ptr;
-    new_record->head = NULL;
-    new_record->tail = NULL;
-    new_record->fiber = (void *)fiber;
-    new_record->stack_barrier = NULL;
-}
-
-struct fiber_record_struct* get_fiber_record(const rb_execution_context_t* ec) {
-    rb_fiber_t *fiber = ec->fiber_ptr;
-    return &fiber->fiber_record;
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN

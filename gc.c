@@ -6652,20 +6652,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 }
 #endif
 
-void
-fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, const VALUE *start, const VALUE *end,
-                 void (*cb)(rb_objspace_t *, VALUE));
-
-void
-fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, const VALUE *start, const VALUE *end,
-                        void (*cb)(rb_objspace_t *, VALUE));
-
-void
-fiber_record_mark_list(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, void (*cb)(rb_objspace_t *, VALUE));
-
-void
-fiber_record_free(struct fiber_record_struct *fiber_record);
-
 static void
 each_machine_stack_value(const rb_execution_context_t *ec, void (*cb)(rb_objspace_t *, VALUE))
 {
@@ -14104,10 +14090,9 @@ rb_gc_is_full_marking(void) {
     return is_full_marking(objspace);
 }
 
-//use to create new list
-void
-fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, const VALUE *start, const VALUE *end,
-                        void (*cb)(rb_objspace_t *, VALUE))
+// use to create new list
+static void
+fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, const VALUE *start, const VALUE *end, void (*cb)(rb_objspace_t *, VALUE))
 {
     register long n;
     register VALUE *x = start;
@@ -14168,17 +14153,33 @@ fiber_record_mark_and_add_locations(rb_objspace_t *objspace, struct fiber_record
     }
 }
 
-void
-fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, const VALUE *start, const VALUE *end,
-                 void (*cb)(rb_objspace_t *, VALUE))
+static void
+fiber_record_mark_list(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, void (*cb)(rb_objspace_t *, VALUE)) {
+
+    if (fiber_record->head == NULL) return;
+
+    struct fiber_stack_object *current = fiber_record->head->next;
+
+    //RB_DEBUG_COUNTER_INC(record_obj_mark);
+
+    while (current != NULL) {
+        cb(objspace, *(current->stack_obj));
+        current = current->next;
+        RB_DEBUG_COUNTER_ADD(stack_scan_bytes, 8);
+        //RB_DEBUG_COUNTER_INC(record_obj_mark);
+    }
+}
+
+static void
+fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, const VALUE *start, const VALUE *end, void (*cb)(rb_objspace_t *, VALUE))
 {
-    struct fiber_record_struct *fiber_record = get_fiber_record(ec);
+    struct fiber_record_struct *fiber_record = rb_get_fiber_record(ec);
 
     if (!fiber_record || fiber_record->stack_barrier == NULL) {
         each_stack_location(objspace, ec, start, end, cb);
         RB_DEBUG_COUNTER_INC(fiber_full_stack_scan);
 
-        if (fiber_record) fiber_record_free(fiber_record);
+        if (fiber_record) rb_fiber_record_free(fiber_record);
     }
     else {
         //full gc should mark as normal
@@ -14208,30 +14209,14 @@ fiber_record_mark(rb_objspace_t *objspace, const rb_execution_context_t *ec, con
     }
 }
 
-void rb_fiber_record_mark(const rb_execution_context_t *ec, const VALUE *start, const VALUE *end) {
-    struct fiber_record_struct *fiber_record = get_fiber_record(ec);
+void
+rb_fiber_record_mark(const rb_execution_context_t *ec, const VALUE *start, const VALUE *end) {
+    struct fiber_record_struct *fiber_record = rb_get_fiber_record(ec);
     fiber_record_mark(&rb_objspace, ec, start, end, gc_mark_maybe);
 }
 
 void
-fiber_record_mark_list(rb_objspace_t *objspace, struct fiber_record_struct *fiber_record, void (*cb)(rb_objspace_t *, VALUE)) {
-
-    if (fiber_record->head == NULL) return;
-
-    struct fiber_stack_object *current = fiber_record->head->next;
-
-    //RB_DEBUG_COUNTER_INC(record_obj_mark);
-
-    while (current != NULL) {
-        cb(objspace, *(current->stack_obj));
-        current = current->next;
-        RB_DEBUG_COUNTER_ADD(stack_scan_bytes, 8);
-        //RB_DEBUG_COUNTER_INC(record_obj_mark);
-    }
-}
-
-void
-fiber_record_free(struct fiber_record_struct *fiber_record) {
+rb_fiber_record_free(struct fiber_record_struct *fiber_record) {
 
     if (fiber_record->head == NULL) return;
 

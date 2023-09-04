@@ -152,11 +152,9 @@ struct fiber_record_struct
 
 };
 
-void fiber_record_init(struct fiber_record_struct *new_record, void *ptr);
-void fiber_record_free(struct fiber_record_struct *fiber_record);
-struct fiber_record_struct* get_fiber_record(const rb_execution_context_t* ec);
+void rb_fiber_record_free(struct fiber_record_struct *fiber_record);
+struct fiber_record_struct* rb_get_fiber_record(const rb_execution_context_t* ec);
 void rb_fiber_record_mark(const rb_execution_context_t *ec, const VALUE *start, const VALUE *end);
-
 
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
