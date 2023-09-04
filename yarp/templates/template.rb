@@ -168,7 +168,7 @@ module YARP
       @name = config.fetch("name")
 
       type = @name.gsub(/(?<=.)[A-Z]/, "_\\0")
-      @type = "YP_NODE_#{type.upcase}"
+      @type = "YP_#{type.upcase}"
       @human = type.downcase
 
       @fields =
