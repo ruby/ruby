@@ -18,13 +18,14 @@ use std::cell::*;
 use std::collections::HashSet;
 use std::fmt;
 use std::mem;
+use std::mem::transmute;
 use std::ops::Range;
 use std::rc::Rc;
 use mem::MaybeUninit;
 use std::ptr;
 use ptr::NonNull;
 use YARVOpnd::*;
-use TempMapping::*;
+use TempMappingKind::*;
 use crate::invariants::*;
 
 // Maximum number of temp value types we keep track of
@@ -39,6 +40,7 @@ pub type IseqIdx = u16;
 
 // Represent the type of a value (local/stack/self) in YJIT
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
+#[repr(u8)]
 pub enum Type {
     Unknown,
     UnknownImm,
@@ -57,7 +59,8 @@ pub enum Type {
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
-    CArray, // An un-subclassed string of type rb_cArray (can have instance vars in some cases)
+
+    TProc, // A proc object. Could be an instance of a subclass of ::rb_cProc
 
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp
@@ -93,12 +96,8 @@ impl Type {
             // Core.rs can't reference rb_cString because it's linked by Rust-only tests.
             // But CString vs TString is only an optimisation and shouldn't affect correctness.
             #[cfg(not(test))]
-            if val.class_of() == unsafe { rb_cString } {
+            if val.class_of() == unsafe { rb_cString } && val.is_frozen() {
                 return Type::CString;
-            }
-            #[cfg(not(test))]
-            if val.class_of() == unsafe { rb_cArray } {
-                return Type::CArray;
             }
             // We likewise can't reference rb_block_param_proxy, but it's again an optimisation;
             // we can just treat it as a normal Object.
@@ -110,6 +109,8 @@ impl Type {
                 RUBY_T_ARRAY => Type::TArray,
                 RUBY_T_HASH => Type::Hash,
                 RUBY_T_STRING => Type::TString,
+                #[cfg(not(test))]
+                RUBY_T_DATA if unsafe { rb_obj_is_proc(val).test() } => Type::TProc,
                 _ => Type::UnknownHeap,
             }
         }
@@ -149,23 +150,19 @@ impl Type {
         match self {
             Type::UnknownHeap => true,
             Type::TArray => true,
-            Type::CArray => true,
             Type::Hash => true,
             Type::HeapSymbol => true,
             Type::TString => true,
             Type::CString => true,
             Type::BlockParamProxy => true,
+            Type::TProc => true,
             _ => false,
         }
     }
 
     /// Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
     pub fn is_array(&self) -> bool {
-        match self {
-            Type::TArray => true,
-            Type::CArray => true,
-            _ => false,
-        }
+        matches!(self, Type::TArray)
     }
 
     /// Check if it's a T_STRING object (both TString and CString are T_STRING)
@@ -185,10 +182,11 @@ impl Type {
             Type::False => Some(RUBY_T_FALSE),
             Type::Fixnum => Some(RUBY_T_FIXNUM),
             Type::Flonum => Some(RUBY_T_FLOAT),
-            Type::TArray | Type::CArray => Some(RUBY_T_ARRAY),
+            Type::TArray => Some(RUBY_T_ARRAY),
             Type::Hash => Some(RUBY_T_HASH),
             Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
+            Type::TProc => Some(RUBY_T_DATA),
             Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None,
             Type::BlockParamProxy => None,
         }
@@ -205,7 +203,6 @@ impl Type {
                 Type::Flonum => Some(rb_cFloat),
                 Type::ImmSymbol | Type::HeapSymbol => Some(rb_cSymbol),
                 Type::CString => Some(rb_cString),
-                Type::CArray => Some(rb_cArray),
                 _ => None,
             }
         }
@@ -260,11 +257,6 @@ impl Type {
             return TypeDiff::Compatible(1);
         }
 
-        // A CArray is also a TArray.
-        if self == Type::CArray && dst == Type::TArray {
-            return TypeDiff::Compatible(1);
-        }
-
         // Specific heap type into unknown heap type is imperfect but valid
         if self.is_heap() && dst == Type::UnknownHeap {
             return TypeDiff::Compatible(1);
@@ -296,63 +288,92 @@ pub enum TypeDiff {
     Incompatible,
 }
 
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
+#[repr(u8)]
+pub enum TempMappingKind
+{
+    MapToStack = 0,
+    MapToSelf = 1,
+    MapToLocal = 2,
+}
+
 // Potential mapping of a value on the temporary stack to
 // self, a local variable or constant so that we can track its type
+//
+// The highest two bits represent TempMappingKind, and the rest of
+// the bits are used differently across different kinds.
+// * MapToStack: The lowest 5 bits are used for mapping Type.
+// * MapToSelf: The remaining bits are not used; the type is stored in self_type.
+// * MapToLocal: The lowest 3 bits store the index of a local variable.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
-pub enum TempMapping {
-    MapToStack, // Normal stack value
-    MapToSelf,  // Temp maps to the self operand
-    MapToLocal(LocalIndex), // Temp maps to a local variable with index
-                //ConstMapping,         // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
-}
+pub struct TempMapping(u8);
 
-// Index used by MapToLocal. Using this instead of u8 makes TempMapping 1 byte.
-#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
-pub enum LocalIndex {
-    Local0,
-    Local1,
-    Local2,
-    Local3,
-    Local4,
-    Local5,
-    Local6,
-    Local7,
-}
-
-impl From<LocalIndex> for u8 {
-    fn from(idx: LocalIndex) -> Self {
-        match idx {
-            LocalIndex::Local0 => 0,
-            LocalIndex::Local1 => 1,
-            LocalIndex::Local2 => 2,
-            LocalIndex::Local3 => 3,
-            LocalIndex::Local4 => 4,
-            LocalIndex::Local5 => 5,
-            LocalIndex::Local6 => 6,
-            LocalIndex::Local7 => 7,
-        }
+impl TempMapping {
+    pub fn map_to_stack(t: Type) -> TempMapping
+    {
+        let kind_bits = TempMappingKind::MapToStack as u8;
+        let type_bits = t as u8;
+        assert!(type_bits <= 0b11111);
+        let bits = (kind_bits << 6) | (type_bits & 0b11111);
+        TempMapping(bits)
     }
-}
 
-impl From<u8> for LocalIndex {
-    fn from(idx: u8) -> Self {
-        match idx {
-            0 => LocalIndex::Local0,
-            1 => LocalIndex::Local1,
-            2 => LocalIndex::Local2,
-            3 => LocalIndex::Local3,
-            4 => LocalIndex::Local4,
-            5 => LocalIndex::Local5,
-            6 => LocalIndex::Local6,
-            7 => LocalIndex::Local7,
-            _ => unreachable!("{idx} was larger than {MAX_LOCAL_TYPES}"),
+    pub fn map_to_self() -> TempMapping
+    {
+        let kind_bits = TempMappingKind::MapToSelf as u8;
+        let bits = kind_bits << 6;
+        TempMapping(bits)
+    }
+
+    pub fn map_to_local(local_idx: u8) -> TempMapping
+    {
+        let kind_bits = TempMappingKind::MapToLocal as u8;
+        assert!(local_idx <= 0b111);
+        let bits = (kind_bits << 6) | (local_idx & 0b111);
+        TempMapping(bits)
+    }
+
+    pub fn without_type(&self) -> TempMapping
+    {
+        if self.get_kind() != TempMappingKind::MapToStack {
+            return *self;
         }
+
+        TempMapping::map_to_stack(Type::Unknown)
+    }
+
+    pub fn get_kind(&self) -> TempMappingKind
+    {
+        // Take the two highest bits
+        let TempMapping(bits) = self;
+        let kind_bits = bits >> 6;
+        assert!(kind_bits <= 2);
+        unsafe { transmute::<u8, TempMappingKind>(kind_bits) }
+    }
+
+    pub fn get_type(&self) -> Type
+    {
+        assert!(self.get_kind() == TempMappingKind::MapToStack);
+
+        // Take the 5 lowest bits
+        let TempMapping(bits) = self;
+        let type_bits = bits & 0b11111;
+        unsafe { transmute::<u8, Type>(type_bits) }
+    }
+
+    pub fn get_local_idx(&self) -> u8
+    {
+        assert!(self.get_kind() == TempMappingKind::MapToLocal);
+
+        // Take the 3 lowest bits
+        let TempMapping(bits) = self;
+        bits & 0b111
     }
 }
 
 impl Default for TempMapping {
     fn default() -> Self {
-        MapToStack
+        TempMapping::map_to_stack(Type::Unknown)
     }
 }
 
@@ -434,9 +455,6 @@ pub struct Context {
 
     // Local variable types we keep track of
     local_types: [Type; MAX_LOCAL_TYPES],
-
-    // Temporary variable types we keep track of
-    temp_types: [Type; MAX_TEMP_TYPES],
 
     // Type we track for self
     self_type: Type,
@@ -1657,10 +1675,11 @@ impl Context {
 
                 let mapping = self.temp_mapping[stack_idx];
 
-                match mapping {
+                match mapping.get_kind() {
                     MapToSelf => self.self_type,
-                    MapToStack => self.temp_types[(self.stack_size - 1 - idx) as usize],
-                    MapToLocal(idx) => {
+                    MapToStack => mapping.get_type(),
+                    MapToLocal => {
+                        let idx = mapping.get_local_idx();
                         assert!((idx as usize) < MAX_LOCAL_TYPES);
                         return self.local_types[idx as usize];
                     }
@@ -1697,11 +1716,15 @@ impl Context {
 
                 let mapping = self.temp_mapping[stack_idx];
 
-                match mapping {
+                match mapping.get_kind() {
                     MapToSelf => self.self_type.upgrade(opnd_type),
-                    MapToStack => self.temp_types[stack_idx].upgrade(opnd_type),
-                    MapToLocal(idx) => {
-                        let idx = idx as usize;
+                    MapToStack => {
+                        let mut temp_type = mapping.get_type();
+                        temp_type.upgrade(opnd_type);
+                        self.temp_mapping[stack_idx] = TempMapping::map_to_stack(temp_type);
+                    }
+                    MapToLocal => {
+                        let idx = mapping.get_local_idx() as usize;
                         assert!(idx < MAX_LOCAL_TYPES);
                         self.local_types[idx].upgrade(opnd_type);
                     }
@@ -1715,29 +1738,29 @@ impl Context {
     This is can be used with stack_push_mapping or set_opnd_mapping to copy
     a stack value's type while maintaining the mapping.
     */
-    pub fn get_opnd_mapping(&self, opnd: YARVOpnd) -> (TempMapping, Type) {
+    pub fn get_opnd_mapping(&self, opnd: YARVOpnd) -> TempMapping {
         let opnd_type = self.get_opnd_type(opnd);
 
         match opnd {
-            SelfOpnd => (MapToSelf, opnd_type),
+            SelfOpnd => TempMapping::map_to_self(),
             StackOpnd(idx) => {
                 assert!(idx < self.stack_size);
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
                 if stack_idx < MAX_TEMP_TYPES {
-                    (self.temp_mapping[stack_idx], opnd_type)
+                    self.temp_mapping[stack_idx]
                 } else {
                     // We can't know the source of this stack operand, so we assume it is
                     // a stack-only temporary. type will be UNKNOWN
                     assert!(opnd_type == Type::Unknown);
-                    (MapToStack, opnd_type)
+                    TempMapping::map_to_stack(opnd_type)
                 }
             }
         }
     }
 
     /// Overwrite both the type and mapping of a stack operand.
-    pub fn set_opnd_mapping(&mut self, opnd: YARVOpnd, (mapping, opnd_type): (TempMapping, Type)) {
+    pub fn set_opnd_mapping(&mut self, opnd: YARVOpnd, mapping: TempMapping) {
         match opnd {
             SelfOpnd => unreachable!("self always maps to self"),
             StackOpnd(idx) => {
@@ -1755,9 +1778,6 @@ impl Context {
                 }
 
                 self.temp_mapping[stack_idx] = mapping;
-
-                // Only used when mapping == MAP_STACK
-                self.temp_types[stack_idx] = opnd_type;
             }
         }
     }
@@ -1776,16 +1796,16 @@ impl Context {
         }
 
         // If any values on the stack map to this local we must detach them
-        for (i, mapping) in ctx.temp_mapping.iter_mut().enumerate() {
-            *mapping = match *mapping {
-                MapToStack => MapToStack,
-                MapToSelf => MapToSelf,
-                MapToLocal(idx) => {
+        for mapping in ctx.temp_mapping.iter_mut() {
+            *mapping = match mapping.get_kind() {
+                MapToStack => *mapping,
+                MapToSelf => *mapping,
+                MapToLocal => {
+                    let idx = mapping.get_local_idx();
                     if idx as usize == local_idx {
-                        ctx.temp_types[i] = ctx.local_types[idx as usize];
-                        MapToStack
+                        TempMapping::map_to_stack(ctx.local_types[idx as usize])
                     } else {
-                        MapToLocal(idx)
+                        TempMapping::map_to_local(idx)
                     }
                 }
             }
@@ -1799,14 +1819,10 @@ impl Context {
     pub fn clear_local_types(&mut self) {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
-        for (i, mapping) in self.temp_mapping.iter_mut().enumerate() {
-            *mapping = match *mapping {
-                MapToStack => MapToStack,
-                MapToSelf => MapToSelf,
-                MapToLocal(idx) => {
-                    self.temp_types[i] = self.local_types[idx as usize];
-                    MapToStack
-                }
+        for mapping in self.temp_mapping.iter_mut() {
+            if mapping.get_kind() == MapToLocal {
+                let idx = mapping.get_local_idx();
+                *mapping = TempMapping::map_to_stack(self.local_types[idx as usize]);
             }
         }
 
@@ -1863,12 +1879,12 @@ impl Context {
 
         // For each value on the temp stack
         for i in 0..src.stack_size {
-            let (src_mapping, src_type) = src.get_opnd_mapping(StackOpnd(i));
-            let (dst_mapping, dst_type) = dst.get_opnd_mapping(StackOpnd(i));
+            let src_mapping = src.get_opnd_mapping(StackOpnd(i));
+            let dst_mapping = dst.get_opnd_mapping(StackOpnd(i));
 
             // If the two mappings aren't the same
             if src_mapping != dst_mapping {
-                if dst_mapping == MapToStack {
+                if dst_mapping.get_kind() == MapToStack {
                     // We can safely drop information about the source of the temp
                     // stack operand.
                     diff += 1;
@@ -1876,6 +1892,9 @@ impl Context {
                     return TypeDiff::Incompatible;
                 }
             }
+
+            let src_type = src.get_opnd_type(StackOpnd(i));
+            let dst_type = dst.get_opnd_type(StackOpnd(i));
 
             diff += match src_type.diff(dst_type) {
                 TypeDiff::Compatible(diff) => diff,
@@ -1906,10 +1925,10 @@ impl Context {
 impl Assembler {
     /// Push one new value on the temp stack with an explicit mapping
     /// Return a pointer to the new stack top
-    pub fn stack_push_mapping(&mut self, (mapping, temp_type): (TempMapping, Type)) -> Opnd {
+    pub fn stack_push_mapping(&mut self, mapping: TempMapping) -> Opnd {
         // If type propagation is disabled, store no types
         if get_option!(no_type_prop) {
-            return self.stack_push_mapping((mapping, Type::Unknown));
+            return self.stack_push_mapping(mapping.without_type());
         }
 
         let stack_size: usize = self.ctx.stack_size.into();
@@ -1917,9 +1936,9 @@ impl Assembler {
         // Keep track of the type and mapping of the value
         if stack_size < MAX_TEMP_TYPES {
             self.ctx.temp_mapping[stack_size] = mapping;
-            self.ctx.temp_types[stack_size] = temp_type;
 
-            if let MapToLocal(idx) = mapping {
+            if mapping.get_kind() == MapToLocal {
+                let idx = mapping.get_local_idx();
                 assert!((idx as usize) < MAX_LOCAL_TYPES);
             }
         }
@@ -1938,12 +1957,12 @@ impl Assembler {
     /// Push one new value on the temp stack
     /// Return a pointer to the new stack top
     pub fn stack_push(&mut self, val_type: Type) -> Opnd {
-        return self.stack_push_mapping((MapToStack, val_type));
+        return self.stack_push_mapping(TempMapping::map_to_stack(val_type));
     }
 
     /// Push the self value on the stack
     pub fn stack_push_self(&mut self) -> Opnd {
-        return self.stack_push_mapping((MapToSelf, Type::Unknown));
+        return self.stack_push_mapping(TempMapping::map_to_self());
     }
 
     /// Push a local variable on the stack
@@ -1952,7 +1971,7 @@ impl Assembler {
             return self.stack_push(Type::Unknown);
         }
 
-        return self.stack_push_mapping((MapToLocal((local_idx as u8).into()), Type::Unknown));
+        return self.stack_push_mapping(TempMapping::map_to_local((local_idx as u8).into()));
     }
 
     // Pop N values off the stack
@@ -1967,8 +1986,7 @@ impl Assembler {
             let idx: usize = (self.ctx.stack_size as usize) - i - 1;
 
             if idx < MAX_TEMP_TYPES {
-                self.ctx.temp_types[idx] = Type::Unknown;
-                self.ctx.temp_mapping[idx] = MapToStack;
+                self.ctx.temp_mapping[idx] = TempMapping::map_to_stack(Type::Unknown);
             }
         }
 
@@ -1986,7 +2004,6 @@ impl Assembler {
 
         for i in method_name_index..(self.ctx.stack_size - 1) as usize {
             if i + 1 < MAX_TEMP_TYPES {
-                self.ctx.temp_types[i] = self.ctx.temp_types[i + 1];
                 self.ctx.temp_mapping[i] = self.ctx.temp_mapping[i + 1];
             }
         }
@@ -3162,6 +3179,31 @@ impl<T> RefUnchecked for Cell<T> {
 #[cfg(test)]
 mod tests {
     use crate::core::*;
+
+    #[test]
+    fn tempmapping_size() {
+        assert_eq!(mem::size_of::<TempMapping>(), 1);
+    }
+
+    #[test]
+    fn tempmapping() {
+        let t = TempMapping::map_to_stack(Type::Unknown);
+        assert_eq!(t.get_kind(), MapToStack);
+        assert_eq!(t.get_type(), Type::Unknown);
+
+        let t = TempMapping::map_to_stack(Type::TString);
+        assert_eq!(t.get_kind(), MapToStack);
+        assert_eq!(t.get_type(), Type::TString);
+
+        let t = TempMapping::map_to_local(7);
+        assert_eq!(t.get_kind(), MapToLocal);
+        assert_eq!(t.get_local_idx(), 7);
+    }
+
+    #[test]
+    fn context_size() {
+        assert_eq!(mem::size_of::<Context>(), 21);
+    }
 
     #[test]
     fn types() {

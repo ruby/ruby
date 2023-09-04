@@ -4,8 +4,8 @@ ProgramNode(0...13)(
     [LocalVariableWriteNode(0...3)(
        :t,
        0,
-       IntegerNode(2...3)(),
        (0...1),
+       IntegerNode(2...3)(),
        (1...2)
      ),
      IfNode(4...13)(

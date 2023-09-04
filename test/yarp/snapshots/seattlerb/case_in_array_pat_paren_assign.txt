@@ -8,7 +8,7 @@ ProgramNode(0...29)(
             ConstantReadNode(11...12)(),
             [CapturePatternNode(13...19)(
                ConstantReadNode(13...14)(),
-               LocalVariableWriteNode(18...19)(:d, 0, nil, (18...19), nil),
+               LocalVariableTargetNode(18...19)(:d, 0),
                (15...17)
              )],
             nil,

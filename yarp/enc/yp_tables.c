@@ -2,7 +2,7 @@
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ASCII character.
-static unsigned char yp_encoding_ascii_table[256] = {
+static uint8_t yp_encoding_ascii_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -24,7 +24,7 @@ static unsigned char yp_encoding_ascii_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-1 character.
-static unsigned char yp_encoding_iso_8859_1_table[256] = {
+static uint8_t yp_encoding_iso_8859_1_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -46,7 +46,7 @@ static unsigned char yp_encoding_iso_8859_1_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-2 character.
-static unsigned char yp_encoding_iso_8859_2_table[256] = {
+static uint8_t yp_encoding_iso_8859_2_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -68,7 +68,7 @@ static unsigned char yp_encoding_iso_8859_2_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-3 character.
-static unsigned char yp_encoding_iso_8859_3_table[256] = {
+static uint8_t yp_encoding_iso_8859_3_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -90,7 +90,7 @@ static unsigned char yp_encoding_iso_8859_3_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-4 character.
-static unsigned char yp_encoding_iso_8859_4_table[256] = {
+static uint8_t yp_encoding_iso_8859_4_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -112,7 +112,7 @@ static unsigned char yp_encoding_iso_8859_4_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-5 character.
-static unsigned char yp_encoding_iso_8859_5_table[256] = {
+static uint8_t yp_encoding_iso_8859_5_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -134,7 +134,7 @@ static unsigned char yp_encoding_iso_8859_5_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-6 character.
-static unsigned char yp_encoding_iso_8859_6_table[256] = {
+static uint8_t yp_encoding_iso_8859_6_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -156,7 +156,7 @@ static unsigned char yp_encoding_iso_8859_6_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-7 character.
-static unsigned char yp_encoding_iso_8859_7_table[256] = {
+static uint8_t yp_encoding_iso_8859_7_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -178,7 +178,7 @@ static unsigned char yp_encoding_iso_8859_7_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-8 character.
-static unsigned char yp_encoding_iso_8859_8_table[256] = {
+static uint8_t yp_encoding_iso_8859_8_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -200,7 +200,7 @@ static unsigned char yp_encoding_iso_8859_8_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-9 character.
-static unsigned char yp_encoding_iso_8859_9_table[256] = {
+static uint8_t yp_encoding_iso_8859_9_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -222,7 +222,7 @@ static unsigned char yp_encoding_iso_8859_9_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-10 character.
-static unsigned char yp_encoding_iso_8859_10_table[256] = {
+static uint8_t yp_encoding_iso_8859_10_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -244,7 +244,7 @@ static unsigned char yp_encoding_iso_8859_10_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-11 character.
-static unsigned char yp_encoding_iso_8859_11_table[256] = {
+static uint8_t yp_encoding_iso_8859_11_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -266,7 +266,7 @@ static unsigned char yp_encoding_iso_8859_11_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-13 character.
-static unsigned char yp_encoding_iso_8859_13_table[256] = {
+static uint8_t yp_encoding_iso_8859_13_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -288,7 +288,7 @@ static unsigned char yp_encoding_iso_8859_13_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-14 character.
-static unsigned char yp_encoding_iso_8859_14_table[256] = {
+static uint8_t yp_encoding_iso_8859_14_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -310,7 +310,7 @@ static unsigned char yp_encoding_iso_8859_14_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-15 character.
-static unsigned char yp_encoding_iso_8859_15_table[256] = {
+static uint8_t yp_encoding_iso_8859_15_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -332,7 +332,7 @@ static unsigned char yp_encoding_iso_8859_15_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding ISO-8859-16 character.
-static unsigned char yp_encoding_iso_8859_16_table[256] = {
+static uint8_t yp_encoding_iso_8859_16_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -354,7 +354,7 @@ static unsigned char yp_encoding_iso_8859_16_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding KOI8-R character.
-static unsigned char yp_encoding_koi8_r_table[256] = {
+static uint8_t yp_encoding_koi8_r_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -376,7 +376,7 @@ static unsigned char yp_encoding_koi8_r_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding windows-1251 character.
-static unsigned char yp_encoding_windows_1251_table[256] = {
+static uint8_t yp_encoding_windows_1251_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -398,7 +398,7 @@ static unsigned char yp_encoding_windows_1251_table[256] = {
 
 // Each element of the following table contains a bitfield that indicates a
 // piece of information about the corresponding windows-1252 character.
-static unsigned char yp_encoding_windows_1252_table[256] = {
+static uint8_t yp_encoding_windows_1252_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -419,34 +419,32 @@ static unsigned char yp_encoding_windows_1252_table[256] = {
 };
 
 static size_t
-yp_encoding_ascii_char_width(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    const unsigned char v = (const unsigned char) *c;
-    return v < 0x80 ? 1 : 0;
+yp_encoding_ascii_char_width(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
+    return *b < 0x80 ? 1 : 0;
 }
 
 size_t
-yp_encoding_ascii_alpha_char(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (yp_encoding_ascii_table[(const unsigned char) *c] & YP_ENCODING_ALPHABETIC_BIT);
+yp_encoding_ascii_alpha_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
+    return (yp_encoding_ascii_table[*b] & YP_ENCODING_ALPHABETIC_BIT);
 }
 
 size_t
-yp_encoding_ascii_alnum_char(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (yp_encoding_ascii_table[(const unsigned char) *c] & YP_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0;
+yp_encoding_ascii_alnum_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
+    return (yp_encoding_ascii_table[*b] & YP_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0;
 }
 
 bool
-yp_encoding_ascii_isupper_char(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return (yp_encoding_ascii_table[(const unsigned char) *c] & YP_ENCODING_UPPERCASE_BIT);
+yp_encoding_ascii_isupper_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
+    return (yp_encoding_ascii_table[*b] & YP_ENCODING_UPPERCASE_BIT);
 }
 
 static size_t
-yp_encoding_koi8_r_char_width(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    const unsigned char v = (const unsigned char) *c;
-    return ((v >= 0x20 && v <= 0x7E) || (v >= 0x80)) ? 1 : 0;
+yp_encoding_koi8_r_char_width(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
+    return ((*b >= 0x20 && *b <= 0x7E) || (*b >= 0x80)) ? 1 : 0;
 }
 
 static size_t
-yp_encoding_single_char_width(YP_ATTRIBUTE_UNUSED const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
+yp_encoding_single_char_width(YP_ATTRIBUTE_UNUSED const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {
     return 1;
 }
 
@@ -469,14 +467,14 @@ yp_encoding_t yp_encoding_ascii_8bit = {
 };
 
 #define YP_ENCODING_TABLE(s, i, w) \
-    static size_t yp_encoding_ ##i ## _alpha_char(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (yp_encoding_ ##i ## _table[(const unsigned char) *c] & YP_ENCODING_ALPHABETIC_BIT);           \
+    static size_t yp_encoding_ ##i ## _alpha_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
+        return (yp_encoding_ ##i ## _table[*b] & YP_ENCODING_ALPHABETIC_BIT);           \
     }                                                                                                         \
-    static size_t yp_encoding_ ##i ## _alnum_char(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (yp_encoding_ ##i ## _table[(const unsigned char) *c] & YP_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0; \
+    static size_t yp_encoding_ ##i ## _alnum_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
+        return (yp_encoding_ ##i ## _table[*b] & YP_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0; \
     }                                                                                                         \
-    static bool yp_encoding_ ##i ## _isupper_char(const char *c, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
-        return (yp_encoding_ ##i ## _table[(const unsigned char) *c] & YP_ENCODING_UPPERCASE_BIT);            \
+    static bool yp_encoding_ ##i ## _isupper_char(const uint8_t *b, YP_ATTRIBUTE_UNUSED ptrdiff_t n) {           \
+        return (yp_encoding_ ##i ## _table[*b] & YP_ENCODING_UPPERCASE_BIT);            \
     }                                                                                                         \
     yp_encoding_t yp_encoding_ ##i = {                                                                        \
         .name = s,                                                                                            \

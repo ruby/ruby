@@ -1,10 +1,10 @@
-ProgramNode(2...9)(
+ProgramNode(0...9)(
   [:a, :b],
-  StatementsNode(2...9)(
-    [MultiWriteNode(2...9)(
-       [MultiWriteNode(2...5)(
-          [LocalVariableWriteNode(2...3)(:a, 0, nil, (2...3), nil),
-           LocalVariableWriteNode(4...5)(:b, 0, nil, (4...5), nil)],
+  StatementsNode(0...9)(
+    [MultiWriteNode(0...9)(
+       [MultiWriteNode(1...6)(
+          [LocalVariableTargetNode(2...3)(:a, 0),
+           LocalVariableTargetNode(4...5)(:b, 0)],
           nil,
           nil,
           (1...2),

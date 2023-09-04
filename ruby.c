@@ -1774,6 +1774,13 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     rb_warning_category_update(opt->warn.mask, opt->warn.set);
 
+    /* [Feature #19785] Warning for removed GC environment variable.
+     * Remove this in Ruby 3.4. */
+    if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
+        rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
+                           "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
+    }
+
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
@@ -2437,6 +2444,8 @@ struct load_file_arg {
     VALUE f;
 };
 
+VALUE rb_script_lines_for(VALUE path, bool add);
+
 static VALUE
 load_file_internal(VALUE argp_v)
 {
@@ -2539,6 +2548,12 @@ load_file_internal(VALUE argp_v)
     }
     rb_parser_set_options(parser, opt->do_print, opt->do_loop,
                           opt->do_line, opt->do_split);
+
+    VALUE lines = rb_script_lines_for(orig_fname, true);
+    if (!NIL_P(lines)) {
+        rb_parser_set_script_lines(parser, lines);
+    }
+
     if (NIL_P(f)) {
         f = rb_str_new(0, 0);
         rb_enc_associate(f, enc);
@@ -2928,11 +2943,12 @@ ruby_process_options(int argc, char **argv)
     set_progname(external_str_new_cstr(script_name));  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
-    iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
 #ifndef HAVE_SETPROCTITLE
     ruby_init_setproctitle(argc, argv);
 #endif
+
+    iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
     return (void*)(struct RData*)iseq;
 }

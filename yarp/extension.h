@@ -1,11 +1,11 @@
 #ifndef YARP_EXT_NODE_H
 #define YARP_EXT_NODE_H
 
+#define EXPECTED_YARP_VERSION "0.10.0"
+
 #include <ruby.h>
 #include <ruby/encoding.h>
 #include "yarp.h"
-
-#define EXPECTED_YARP_VERSION "0.8.0"
 
 VALUE yp_source_new(yp_parser_t *parser);
 VALUE yp_token_new(yp_parser_t *parser, yp_token_t *token, rb_encoding *encoding, VALUE source);

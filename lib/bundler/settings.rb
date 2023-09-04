@@ -102,10 +102,12 @@ module Bundler
     def [](name)
       key = key_for(name)
 
-      values = configs.values
-      values.map! {|config| config[key] }
-      values.compact!
-      value = values.first
+      value = nil
+      configs.each do |_, config|
+        value = config[key]
+        next if value.nil?
+        break
+      end
 
       converted_value(value, name)
     end
@@ -316,7 +318,7 @@ module Bundler
     private
 
     def configs
-      {
+      @configs ||= {
         :temporary => @temporary,
         :local => @local_config,
         :env => @env_config,

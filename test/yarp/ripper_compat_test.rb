@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 module YARP
-  class RipperCompatTest < Test::Unit::TestCase
+  class RipperCompatTest < TestCase
     def test_1_plus_2
       assert_equivalent("1 + 2")
     end

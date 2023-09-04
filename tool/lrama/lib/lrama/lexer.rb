@@ -30,7 +30,6 @@ module Lrama
       @grammar_rules = []
       @epilogue = []
 
-      #
       @bison_declarations_tokens = []
       @grammar_rules_tokens = []
 
@@ -155,6 +154,8 @@ module Lrama
           tokens << create_token(Token::P_left, ss[0], line, ss.pos - column)
         when ss.scan(/%right/)
           tokens << create_token(Token::P_right, ss[0], line, ss.pos - column)
+        when ss.scan(/%precedence/)
+          tokens << create_token(Token::P_precedence, ss[0], line, ss.pos - column)
         when ss.scan(/%prec/)
           tokens << create_token(Token::P_prec, ss[0], line, ss.pos - column)
         when ss.scan(/{/)
@@ -223,7 +224,7 @@ module Lrama
           references << [:dollar, ss[2], tag, str.length, str.length + ss[0].length - 1]
         when ss.scan(/@\$/) # @$
           references << [:at, "$", nil, str.length, str.length + ss[0].length - 1]
-        when ss.scan(/@(\d)+/) # @1
+        when ss.scan(/@(\d+)/) # @1
           references << [:at, Integer(ss[1]), nil, str.length, str.length + ss[0].length - 1]
         when ss.scan(/{/)
           brace_count += 1
@@ -314,8 +315,6 @@ module Lrama
           str << ss.getch
           next
         end
-
-        str << ss[0]
       end
 
       line # Reach to end of input

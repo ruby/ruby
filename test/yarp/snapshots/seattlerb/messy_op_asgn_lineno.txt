@@ -9,18 +9,13 @@ ProgramNode(0...15)(
        ArgumentsNode(2...15)(
          [ParenthesesNode(2...15)(
             StatementsNode(3...14)(
-              [OperatorWriteNode(3...14)(
-                 ConstantPathWriteNode(3...7)(
-                   ConstantPathNode(3...7)(
-                     ConstantReadNode(3...4)(),
-                     ConstantReadNode(6...7)(),
-                     (4...6)
-                   ),
-                   nil,
-                   nil
+              [ConstantPathOperatorWriteNode(3...14)(
+                 ConstantPathNode(3...7)(
+                   ConstantReadNode(3...4)(),
+                   ConstantReadNode(6...7)(),
+                   (4...6)
                  ),
                  (8...10),
-                 :*,
                  CallNode(11...14)(
                    nil,
                    nil,
@@ -43,7 +38,8 @@ ProgramNode(0...15)(
                    nil,
                    0,
                    "d"
-                 )
+                 ),
+                 :*
                )]
             ),
             (2...3),

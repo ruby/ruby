@@ -3,36 +3,42 @@ ProgramNode(0...314)(
   StatementsNode(0...314)(
     [WhileNode(0...18)(
        (0...5),
+       (15...18),
        TrueNode(6...10)(),
        StatementsNode(12...13)([IntegerNode(12...13)()]),
        0
      ),
      WhileNode(20...32)(
        (22...27),
+       nil,
        TrueNode(28...32)(),
        StatementsNode(20...21)([IntegerNode(20...21)()]),
        0
      ),
      WhileNode(34...50)(
        (40...45),
+       nil,
        TrueNode(46...50)(),
        StatementsNode(34...39)([BreakNode(34...39)(nil, (34...39))]),
        0
      ),
      WhileNode(52...67)(
        (57...62),
+       nil,
        TrueNode(63...67)(),
        StatementsNode(52...56)([NextNode(52...56)(nil, (52...56))]),
        0
      ),
      WhileNode(69...86)(
        (76...81),
+       nil,
        TrueNode(82...86)(),
        StatementsNode(69...75)([ReturnNode(69...75)((69...75), nil)]),
        0
      ),
      WhileNode(88...109)(
        (99...104),
+       nil,
        CallNode(105...109)(
          nil,
          nil,
@@ -64,6 +70,7 @@ ProgramNode(0...314)(
      ),
      WhileNode(111...161)(
        (111...116),
+       (158...161),
        DefNode(117...149)(
          (126...129),
          SelfNode(121...125)(),
@@ -105,6 +112,7 @@ ProgramNode(0...314)(
      ),
      WhileNode(163...210)(
        (163...168),
+       (207...210),
        ClassNode(169...198)(
          [:a],
          (169...174),
@@ -115,6 +123,7 @@ ProgramNode(0...314)(
            [LocalVariableWriteNode(179...193)(
               :a,
               0,
+              (179...180),
               CallNode(183...193)(
                 nil,
                 nil,
@@ -126,17 +135,18 @@ ProgramNode(0...314)(
                 0,
                 "tap"
               ),
-              (179...180),
               (181...182)
             )]
          ),
-         (195...198)
+         (195...198),
+         "Foo"
        ),
        StatementsNode(200...205)([BreakNode(200...205)(nil, (200...205))]),
        0
      ),
      WhileNode(212...260)(
        (212...217),
+       (257...260),
        SingletonClassNode(218...248)(
          [],
          (218...223),
@@ -162,6 +172,7 @@ ProgramNode(0...314)(
      ),
      WhileNode(262...314)(
        (262...267),
+       (311...314),
        SingletonClassNode(268...302)(
          [:a],
          (268...273),
@@ -171,6 +182,7 @@ ProgramNode(0...314)(
            [LocalVariableWriteNode(283...297)(
               :a,
               0,
+              (283...284),
               CallNode(287...297)(
                 nil,
                 nil,
@@ -182,7 +194,6 @@ ProgramNode(0...314)(
                 0,
                 "tap"
               ),
-              (283...284),
               (285...286)
             )]
          ),

@@ -381,19 +381,16 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 static inline rb_jit_func_t
 jit_compile(rb_execution_context_t *ec)
 {
-    // Increment the ISEQ's call counter
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     bool yjit_enabled = rb_yjit_compile_new_iseqs();
-    if (yjit_enabled || rb_rjit_call_p) {
-        body->jit_entry_calls++;
-    }
-    else {
+    if (!(yjit_enabled || rb_rjit_call_p)) {
         return NULL;
     }
 
-    // Trigger JIT compilation if not compiled
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_entry == NULL) {
+        body->jit_entry_calls++;
         if (yjit_enabled) {
             if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
                 rb_yjit_compile_iseq(iseq, ec, false);
@@ -436,19 +433,18 @@ jit_exec(rb_execution_context_t *ec)
 static inline rb_jit_func_t
 jit_compile_exception(rb_execution_context_t *ec)
 {
-    // Increment the ISEQ's call counter
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    if (rb_yjit_compile_new_iseqs()) {
-        body->jit_exception_calls++;
-    }
-    else {
+    if (!rb_yjit_compile_new_iseqs()) {
         return NULL;
     }
 
-    // Trigger JIT compilation if not compiled
-    if (body->jit_exception == NULL && rb_yjit_threshold_hit(iseq, body->jit_exception_calls)) {
-        rb_yjit_compile_iseq(iseq, ec, true);
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
+    if (body->jit_exception == NULL) {
+        body->jit_exception_calls++;
+        if (rb_yjit_threshold_hit(iseq, body->jit_exception_calls)) {
+            rb_yjit_compile_iseq(iseq, ec, true);
+        }
     }
     return body->jit_exception;
 }
@@ -2197,14 +2193,13 @@ frame_name(const rb_control_frame_t *cfp)
 // cfp_returning_with_value:
 //     Whether cfp is the last frame in the unwinding process for a non-local return.
 static void
-hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
-                   bool cfp_returning_with_value, int state, struct vm_throw_data *err)
+hook_before_rewind(rb_execution_context_t *ec, bool cfp_returning_with_value, int state, struct vm_throw_data *err)
 {
     if (state == TAG_RAISE && RBASIC(err)->klass == rb_eSysStackError) {
         return;
     }
     else {
-        const rb_iseq_t *iseq = cfp->iseq;
+        const rb_iseq_t *iseq = ec->cfp->iseq;
         rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
 
         switch (VM_FRAME_TYPE(ec->cfp)) {
@@ -2461,7 +2456,6 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
         const struct iseq_catch_table *ct;
         unsigned long epc, cont_pc, cont_sp;
         const rb_iseq_t *catch_iseq;
-        rb_control_frame_t *cfp;
         VALUE type;
         const rb_control_frame_t *escape_cfp;
 
@@ -2481,7 +2475,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             rb_vm_pop_frame(ec);
         }
 
-        cfp = ec->cfp;
+        rb_control_frame_t *const cfp = ec->cfp;
         epc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
 
         escape_cfp = NULL;
@@ -2511,7 +2505,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                             ec->errinfo = Qnil;
                             THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
                             // cfp == escape_cfp here so calling with cfp_returning_with_value = true
-                            hook_before_rewind(ec, ec->cfp, true, state, err);
+                            hook_before_rewind(ec, true, state, err);
                             rb_vm_pop_frame(ec);
                             return THROW_DATA_VAL(err);
                         }
@@ -2520,7 +2514,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                 }
                 else {
                     /* TAG_BREAK */
-                    *ec->cfp->sp++ = THROW_DATA_VAL(err);
+                    *cfp->sp++ = THROW_DATA_VAL(err);
                     ec->errinfo = Qnil;
                     return Qundef;
                 }
@@ -2593,7 +2587,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         cfp->sp = vm_base_ptr(cfp) + entry->sp;
 
                         if (state != TAG_REDO) {
-                            *ec->cfp->sp++ = THROW_DATA_VAL(err);
+                            *cfp->sp++ = THROW_DATA_VAL(err);
                         }
                         ec->errinfo = Qnil;
                         VM_ASSERT(ec->tag->state == TAG_NONE);
@@ -2644,7 +2638,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             return Qundef;
         }
         else {
-            hook_before_rewind(ec, ec->cfp, (cfp == escape_cfp), state, err);
+            hook_before_rewind(ec, (cfp == escape_cfp), state, err);
 
             if (VM_FRAME_FINISHED_P(ec->cfp)) {
                 rb_vm_pop_frame(ec);
@@ -2756,6 +2750,8 @@ rb_vm_update_references(void *ptr)
         vm->orig_progname = rb_gc_location(vm->orig_progname);
 
         rb_gc_update_tbl_refs(vm->overloaded_cme_table);
+
+        rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
 
         if (vm->coverages) {
             vm->coverages = rb_gc_location(vm->coverages);

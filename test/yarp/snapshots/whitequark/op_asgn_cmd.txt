@@ -77,28 +77,13 @@ ProgramNode(0...64)(
        ),
        :+
      ),
-     OperatorWriteNode(32...47)(
-       ConstantPathWriteNode(32...38)(
-         ConstantPathNode(32...38)(
-           CallNode(32...35)(
-             nil,
-             nil,
-             (32...35),
-             nil,
-             nil,
-             nil,
-             nil,
-             2,
-             "foo"
-           ),
-           ConstantReadNode(37...38)(),
-           (35...37)
-         ),
-         nil,
-         nil
+     ConstantPathOperatorWriteNode(32...47)(
+       ConstantPathNode(32...38)(
+         CallNode(32...35)(nil, nil, (32...35), nil, nil, nil, nil, 2, "foo"),
+         ConstantReadNode(37...38)(),
+         (35...37)
        ),
        (39...41),
-       :+,
        CallNode(42...47)(
          nil,
          nil,
@@ -121,7 +106,8 @@ ProgramNode(0...64)(
          nil,
          0,
          "m"
-       )
+       ),
+       :+
      ),
      CallOperatorWriteNode(49...64)(
        CallNode(49...55)(

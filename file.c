@@ -4610,7 +4610,7 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
     if (l1 < l2) return l1;
 
     s = p+l1-l2;
-    if (rb_enc_left_char_head(p, s, p+l1, enc) != s) return 0;
+    if (!at_char_boundary(p, s, p+l1, enc)) return 0;
 #if CASEFOLD_FILESYSTEM
 #define fncomp strncasecmp
 #else
@@ -7436,7 +7436,7 @@ Init_File(void)
      * There are two families of constants here:
      *
      * - Those having to do with {file access}[rdoc-ref:File::Constants@File+Access].
-     * - Those having to do with {file globbing}[rdoc-ref:File::Constants@File+Globbing].
+     * - Those having to do with {filename globbing}[rdoc-ref:File::Constants@Filename+Globbing+Constants+-28File-3A-3AFNM_-2A-29].
      *
      * \File constants defined for the local process may be retrieved
      * with method File::Constants.constants:

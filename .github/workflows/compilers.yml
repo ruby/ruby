@@ -31,7 +31,7 @@ concurrency:
 # environment variables (plus the "echo $GITHUB_ENV" hack) is to reroute that
 # restriction.
 env:
-  default_cc: clang-16
+  default_cc: clang-17
   append_cc: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
@@ -85,6 +85,7 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
+          - { name: clang-18,  env: { default_cc: clang-18 } }
           - { name: clang-17,  env: { default_cc: clang-17 } }
           - { name: clang-16,  env: { default_cc: clang-16 } }
           - { name: clang-15,  env: { default_cc: clang-15 } }
@@ -123,15 +124,17 @@ jobs:
           # warning generates a lot of noise from use of ANYARGS in
           # rb_define_method() and friends.
           # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-          - { name: c99,   env: { append_cc: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c11,   env: { append_cc: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-#         - { name: c17,   env: { append_cc: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
-          - { name: c2x,   env: { append_cc: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c99,   env: { CFLAGS:   '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c11,   env: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c17,   env: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c23,   env: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
           - { name: c++98, env: { CXXFLAGS: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++11, env: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++14, env: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 #         - { name: c++17, env: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-          - { name: c++2a, env: { CXXFLAGS: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++20, env: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++23, env: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+          - { name: c++26, env: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 
           - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
 #         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
@@ -207,13 +210,14 @@ jobs:
           - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
           - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
 #         - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
+          - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
 
     name: ${{ matrix.entry.name }}
 
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-16' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-17' }}
       options: --user root
 
     if: >-
@@ -221,6 +225,7 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
 
     env: ${{ matrix.entry.env || matrix.env }}
@@ -229,7 +234,7 @@ jobs:
       - run: id
         working-directory:
 
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

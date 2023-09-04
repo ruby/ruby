@@ -8,7 +8,8 @@ ProgramNode(0...29)(
        nil,
        nil,
        nil,
-       (10...13)
+       (10...13),
+       "Foo"
      ),
      ClassNode(15...29)(
        [],
@@ -17,7 +18,8 @@ ProgramNode(0...29)(
        nil,
        nil,
        nil,
-       (26...29)
+       (26...29),
+       "Foo"
      )]
   )
 )

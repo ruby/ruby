@@ -1165,10 +1165,10 @@ Init_openssl(void)
 #if defined(LIBRESSL_VERSION_NUMBER)
     /*
      * Version number of LibreSSL the ruby OpenSSL extension was built with
-     * (base 16). The format is <tt>0xMNNFFPPS (major minor fix patch
+     * (base 16). The format is <tt>0xMNNFF00f (major minor fix 00
      * status)</tt>. This constant is only defined in LibreSSL cases.
      *
-     * See also the man page OPENSSL_VERSION_NUMBER(3).
+     * See also the man page LIBRESSL_VERSION_NUMBER(3).
      */
     rb_define_const(mOSSL, "LIBRESSL_VERSION_NUMBER", INT2NUM(LIBRESSL_VERSION_NUMBER));
 #endif

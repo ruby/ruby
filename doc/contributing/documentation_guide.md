@@ -127,7 +127,14 @@ a             #=> [2, 3, 1]
 
 ### Headings
 
-Organize a long discussion with [headings](rdoc-ref:RDoc::MarkupReference@Headings).
+Organize a long discussion for a class or module with [headings](rdoc-ref:RDoc::MarkupReference@Headings).
+
+Do not use formal headings in the documentation for a method or constant.
+
+In the rare case where heading-like structures are needed
+within the documentation for a method or constant, use
+[bold text](rdoc-ref:RDoc::MarkupReference@Bold)
+as pseudo-headings.
 
 ### Blank Lines
 
@@ -151,6 +158,14 @@ For a method name in text:
   or a hash mark for an instance method:
   <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
 
+### Embedded Code and Commands
+
+Code or commands embedded in running text (i.e., not in a code block)
+should marked up as
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+Code that is a simple string should include the quote marks.
+
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
@@ -167,9 +182,28 @@ We might consider whether to suppress when:
 - The reference is to a class or module that users
   usually don't deal with, including these:
 
-  - \Class.
-  - \Method.
-  - \Module.
+    - \Class.
+    - \Method.
+    - \Module.
+
+Most often, the name of a class, module, or method
+will be autolinked:
+
+- Array.
+- Enumerable.
+- File.new
+- File#read.
+
+If not, or if you suppress autolinking, consider forcing
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+### Variable Names
+
+The name of a variable (as specified in its call-seq) should be marked up as
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+Also, use monofont text for the name of a transient variable
+(i.e., one defined and used only in the discussion, such as +n+).
 
 ### HTML Tags
 

@@ -47,6 +47,35 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
+  def test_nomultiline
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+    LINES
+    start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb --nomultiline}, startup_message: 'start IRB')
+    write(<<~EOC)
+      if true
+      if false
+      a = "hello
+      world"
+      puts a
+      end
+      end
+    EOC
+    close
+    assert_screen(<<~EOC)
+      start IRB
+      irb(main):001> if true
+      irb(main):002*   if false
+      irb(main):003*     a = "hello
+      irb(main):004" world"
+      irb(main):005*     puts a
+      irb(main):006*     end
+      irb(main):007*   end
+      => nil
+      irb(main):008>
+    EOC
+  end
+
   def test_multiline_paste
     write_irbrc <<~'LINES'
       puts 'start IRB'
@@ -179,7 +208,6 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     write_irbrc <<~'LINES'
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
-        :PROMPT_N => "%03n> ",
         :PROMPT_S => "%03n> ",
         :PROMPT_C => "%03n> "
       }
@@ -214,7 +242,6 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     write_irbrc <<~'LINES'
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
-        :PROMPT_N => "%03n> ",
         :PROMPT_S => "%03n> ",
         :PROMPT_C => "%03n> "
       }

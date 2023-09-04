@@ -342,12 +342,14 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     // Verify stack operand types
     let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u8);
     for i in 0..top_idx {
-        let (learned_mapping, learned_type) = ctx.get_opnd_mapping(StackOpnd(i));
+        let learned_mapping = ctx.get_opnd_mapping(StackOpnd(i));
+        let learned_type = ctx.get_opnd_type(StackOpnd(i));
+
         let stack_val = jit.peek_at_stack(ctx, i as isize);
         let val_type = Type::from(stack_val);
 
-        match learned_mapping {
-            TempMapping::MapToSelf => {
+        match learned_mapping.get_kind() {
+            TempMappingKind::MapToSelf => {
                 if self_val != stack_val {
                     panic!(
                         "verify_ctx: stack value was mapped to self, but values did not match!\n  stack: {}\n  self: {}",
@@ -356,8 +358,8 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                     );
                 }
             }
-            TempMapping::MapToLocal(local_idx) => {
-                let local_idx: u8 = local_idx.into();
+            TempMappingKind::MapToLocal => {
+                let local_idx: u8 = learned_mapping.get_local_idx().into();
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(
@@ -368,7 +370,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                     );
                 }
             }
-            TempMapping::MapToStack => {}
+            TempMappingKind::MapToStack => {}
         }
 
         // If the actual type differs from the learned type
@@ -1009,9 +1011,9 @@ fn gen_dup(
     _ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     let dup_val = asm.stack_opnd(0);
-    let (mapping, tmp_type) = asm.ctx.get_opnd_mapping(dup_val.into());
+    let mapping = asm.ctx.get_opnd_mapping(dup_val.into());
 
-    let loc0 = asm.stack_push_mapping((mapping, tmp_type));
+    let loc0 = asm.stack_push_mapping(mapping);
     asm.mov(loc0, dup_val);
 
     Some(KeepCompiling)
@@ -1272,7 +1274,7 @@ fn gen_newarray(
     );
 
     asm.stack_pop(n.as_usize());
-    let stack_ret = asm.stack_push(Type::CArray);
+    let stack_ret = asm.stack_push(Type::TArray);
     asm.mov(stack_ret, new_ary);
 
     Some(KeepCompiling)
@@ -1295,7 +1297,7 @@ fn gen_duparray(
         vec![ary.into()],
     );
 
-    let stack_ret = asm.stack_push(Type::CArray);
+    let stack_ret = asm.stack_push(Type::TArray);
     asm.mov(stack_ret, new_ary);
 
     Some(KeepCompiling)
@@ -1417,7 +1419,7 @@ fn guard_object_is_heap(
     asm.cmp(object, Qfalse.into());
     asm.je(Target::side_exit(counter));
 
-    if object_type.diff(Type::UnknownHeap) != TypeDiff::Incompatible {
+    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::UnknownHeap);
     }
 }
@@ -1449,7 +1451,7 @@ fn guard_object_is_array(
     asm.cmp(flags_opnd, (RUBY_T_ARRAY as u64).into());
     asm.jne(Target::side_exit(counter));
 
-    if object_type.diff(Type::TArray) != TypeDiff::Incompatible {
+    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TArray);
     }
 }
@@ -1481,7 +1483,7 @@ fn guard_object_is_string(
     asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
     asm.jne(Target::side_exit(counter));
 
-    if object_type.diff(Type::TString) != TypeDiff::Incompatible {
+    if Type::UnknownHeap.diff(object_type) != TypeDiff::Incompatible {
         asm.ctx.upgrade_opnd_type(object_opnd, Type::TString);
     }
 }
@@ -1926,7 +1928,7 @@ fn gen_putstring(
         vec![EC, put_val.into()]
     );
 
-    let stack_top = asm.stack_push(Type::CString);
+    let stack_top = asm.stack_push(Type::TString);
     asm.mov(stack_top, str_opnd);
 
     Some(KeepCompiling)
@@ -2327,7 +2329,7 @@ fn gen_setinstancevariable(
         return None;
     }
 
-    let (_, stack_type) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+    let stack_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
     // Check if the comptime class uses a custom allocator
     let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
@@ -2722,7 +2724,7 @@ fn gen_concatstrings(
     );
 
     asm.stack_pop(n);
-    let stack_ret = asm.stack_push(Type::CString);
+    let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, return_value);
 
     Some(KeepCompiling)
@@ -4170,9 +4172,14 @@ fn jit_guard_known_klass(
         jit_chain_guard(JCC_JNE, jit, asm, ocb, max_chain_depth, counter);
 
         if known_klass == unsafe { rb_cString } {
-            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CString);
+            // Upgrading to Type::CString here is incorrect.
+            // The guard we put only checks RBASIC_CLASS(obj),
+            // which adding a singleton class can change. We
+            // additionally need to know the string is frozen
+            // to claim Type::CString.
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::TString);
         } else if known_klass == unsafe { rb_cArray } {
-            asm.ctx.upgrade_opnd_type(insn_opnd, Type::CArray);
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::TArray);
         }
     }
 }
@@ -5063,9 +5070,7 @@ unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> V
 // at sp[-2]. Depending on the frame type, it can serve different purposes,
 // which are covered here by enum variants.
 enum SpecVal {
-    None,
-    BlockHandler(BlockHandler),
-    BlockParamProxy,
+    BlockHandler(Option<BlockHandler>),
     PrevEP(*const VALUE),
     PrevEPOpnd(Opnd),
 }
@@ -5077,6 +5082,11 @@ pub enum BlockHandler {
     BlockISeq(IseqPtr),
     // invokesuper: GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
     LEPSpecVal,
+    // part of the allocate-free block forwarding scheme
+    BlockParamProxy,
+    // To avoid holding the block arg (e.g. proc and symbol) across C calls,
+    // we might need to set the block handler early in the call sequence
+    AlreadySet,
 }
 
 struct ControlFrame {
@@ -5124,10 +5134,8 @@ fn gen_push_frame(
     // the outer environment depending on the frame type.
     // sp[-2] = specval;
     let specval: Opnd = match frame.specval {
-        SpecVal::None => {
-            VM_BLOCK_HANDLER_NONE.into()
-        }
-        SpecVal::BlockHandler(block_handler) => {
+        SpecVal::BlockHandler(None) => VM_BLOCK_HANDLER_NONE.into(),
+        SpecVal::BlockHandler(Some(block_handler)) => {
             match block_handler {
                 BlockHandler::BlockISeq(block_iseq) => {
                     // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
@@ -5142,17 +5150,18 @@ fn gen_push_frame(
                     let lep_opnd = gen_get_lep(jit, asm);
                     asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
                 }
+                BlockHandler::BlockParamProxy => {
+                    let ep_opnd = gen_get_lep(jit, asm);
+                    let block_handler = asm.load(
+                        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+                    );
+
+                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_handler);
+
+                    block_handler
+                }
+                BlockHandler::AlreadySet => 0.into(), // unused
             }
-        }
-        SpecVal::BlockParamProxy => {
-            let ep_opnd = gen_get_lep(jit, asm);
-            let block_handler = asm.load(
-                Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
-            );
-
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_handler);
-
-            block_handler
         }
         SpecVal::PrevEP(prev_ep) => {
             let tagged_prev_ep = (prev_ep as usize) | 1;
@@ -5160,9 +5169,13 @@ fn gen_push_frame(
         }
         SpecVal::PrevEPOpnd(ep_opnd) => {
             asm.or(ep_opnd, 1.into())
-        },
+        }
     };
-    asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
+    if let SpecVal::BlockHandler(Some(BlockHandler::AlreadySet)) = frame.specval {
+        asm.comment("specval should have been set");
+    } else {
+        asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
+    }
 
     // Write env flags at sp[-1]
     // sp[-1] = frame_type;
@@ -5406,11 +5419,9 @@ fn gen_send_cfunc(
     let sp = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE as isize) * 3));
 
     let specval = if block_arg_type == Some(Type::BlockParamProxy) {
-        SpecVal::BlockParamProxy
-    } else if let Some(block_handler) = block {
-        SpecVal::BlockHandler(block_handler)
+        SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
     } else {
-        SpecVal::None
+        SpecVal::BlockHandler(block)
     };
 
     let mut frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
@@ -5794,13 +5805,7 @@ fn gen_send_iseq(
     }
     let mut opts_missing: i32 = opt_num - opts_filled;
 
-
     let block_arg = flags & VM_CALL_ARGS_BLOCKARG != 0;
-    let block_arg_type = if block_arg {
-        Some(asm.ctx.get_opnd_type(StackOpnd(0)))
-    } else {
-        None
-    };
 
     exit_if_stack_too_large(iseq)?;
     exit_if_tail_call(asm, ci)?;
@@ -5816,7 +5821,7 @@ fn gen_send_iseq(
     exit_if_wrong_number_arguments(asm, opts_filled, flags, opt_num, iseq_has_rest)?;
     exit_if_doing_kw_and_opts_missing(asm, doing_kw_call, opts_missing)?;
     exit_if_has_rest_and_optional_and_block(asm, iseq_has_rest, opt_num, iseq, block_arg)?;
-    exit_if_unsupported_block_arg_type(asm, block_arg_type)?;
+    let block_arg_type = exit_if_unsupported_block_arg_type(jit, asm, block_arg)?;
 
     // Block parameter handling. This mirrors setup_parameters_complex().
     if iseq_has_block_param {
@@ -6003,12 +6008,35 @@ fn gen_send_iseq(
             // We don't need the actual stack value
             asm.stack_pop(1);
         }
+        Some(Type::TProc) => {
+            // Place the proc as the block handler. We do this early because
+            // the block arg being at the top of the stack gets in the way of
+            // rest param handling later. Also, since there are C calls that
+            // come later, we can't hold this value in a register and place it
+            // near the end when we push a new control frame.
+            asm.comment("guard block arg is a proc");
+            // Simple predicate, no need for jit_prepare_routine_call().
+            let is_proc = asm.ccall(rb_obj_is_proc as _, vec![asm.stack_opnd(0)]);
+            asm.cmp(is_proc, Qfalse.into());
+            jit_chain_guard(
+                JCC_JE,
+                jit,
+                asm,
+                ocb,
+                SEND_MAX_CHAIN_DEPTH,
+                Counter::guard_send_block_arg_type,
+            );
+
+            let proc = asm.stack_pop(1);
+            let callee_ep = -argc + num_locals + VM_ENV_DATA_SIZE as i32 - 1;
+            let callee_specval = callee_ep + VM_ENV_DATA_INDEX_SPECVAL;
+            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
+            asm.store(callee_specval, proc);
+        }
         None => {
             // Nothing to do
         }
-        _ => {
-            assert!(false);
-        }
+        _ => unreachable!(),
     }
 
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
@@ -6175,7 +6203,7 @@ fn gen_send_iseq(
         let rest_param = if opts_missing == 0 {
             // All optionals are filled, the rest param goes at the top of the stack
             argc += 1;
-            asm.stack_push(Type::CArray)
+            asm.stack_push(Type::TArray)
         } else {
             // The top of the stack will be a missing optional, but the rest
             // parameter needs to be placed after all the missing optionals.
@@ -6432,12 +6460,12 @@ fn gen_send_iseq(
     } else if let Some(captured_opnd) = captured_opnd {
         let ep_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32)); // captured->ep
         SpecVal::PrevEPOpnd(ep_opnd)
-    } else if block_arg_type == Some(Type::BlockParamProxy) {
-        SpecVal::BlockParamProxy
-    } else if let Some(block_handler) = block {
-        SpecVal::BlockHandler(block_handler)
+    } else if let Some(Type::TProc) = block_arg_type {
+        SpecVal::BlockHandler(Some(BlockHandler::AlreadySet))
+    } else if let Some(Type::BlockParamProxy) = block_arg_type {
+        SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
     } else {
-        SpecVal::None
+        SpecVal::BlockHandler(block)
     };
 
     // Setup the new frame
@@ -6642,20 +6670,35 @@ fn exit_if_has_rest_and_optional_and_block(asm: &mut Assembler, iseq_has_rest: b
 }
 
 #[must_use]
-fn exit_if_unsupported_block_arg_type(asm: &mut Assembler, block_arg_type: Option<Type>) -> Option<()> {
+fn exit_if_unsupported_block_arg_type(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    supplying_block_arg: bool
+) -> Option<Option<Type>> {
+    let block_arg_type = if supplying_block_arg {
+        asm.ctx.get_opnd_type(StackOpnd(0))
+    } else {
+        // Passing no block argument
+        return Some(None);
+    };
+
     match block_arg_type {
-        Some(Type::Nil | Type::BlockParamProxy) => {
+        Type::Nil | Type::BlockParamProxy => {
             // We'll handle this later
+            Some(Some(block_arg_type))
         }
-        None => {
-            // Nothing to do
+        _ if {
+            let sample_block_arg = jit.peek_at_stack(&asm.ctx, 0);
+            unsafe { rb_obj_is_proc(sample_block_arg) }.test()
+        } => {
+            // Speculate that we'll have a proc as the block arg
+            Some(Some(Type::TProc))
         }
         _ => {
             gen_counter_incr(asm, Counter::send_block_arg);
-            return None
+            None
         }
     }
-    Some(())
 }
 
 #[must_use]
@@ -8108,9 +8151,10 @@ fn gen_getblockparamproxy(
     // Peek at the block handler so we can check whether it's nil
     let comptime_handler = jit.peek_at_block_handler(level);
 
-    // Filter for the 3 cases we currently handle
+    // Filter for the 4 cases we currently handle
     if !(comptime_handler.as_u64() == 0 ||              // no block given
             comptime_handler.as_u64() & 0x3 == 0x1 ||   // iseq block (no associated GC managed object)
+            comptime_handler.as_u64() & 0x3 == 0x3 ||   // ifunc block (no associated GC managed object)
             unsafe { rb_obj_is_proc(comptime_handler) }.test() // block is a Proc
         ) {
         // Missing the symbol case, where we basically need to call Symbol#to_proc at runtime
@@ -8138,7 +8182,7 @@ fn gen_getblockparamproxy(
 
     // Use block handler sample to guide specialization...
     // NOTE: we use jit_chain_guard() in this decision tree, and since
-    // there are only 3 cases, it should never reach the depth limit use
+    // there are only a few cases, it should never reach the depth limit use
     // the exit counter we pass to it.
     //
     // No block given
@@ -8156,15 +8200,18 @@ fn gen_getblockparamproxy(
         );
 
         jit_putobject(asm, Qnil);
-    } else if comptime_handler.as_u64() & 0x3 == 0x1 {
-        // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
-        let block_handler = asm.and(block_handler, 0x3.into());
+    } else if comptime_handler.as_u64() & 0x1 == 0x1 {
+        // This handles two cases which are nearly identical
+        // Block handler is a tagged pointer. Look at the tag.
+        //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
+        //   VM_BH_IFUNC_P():      block_handler & 0x03 == 0x03
+        // So to check for either of those cases we can use: val & 0x1 == 0x1
+        const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
+        // Procs are aligned heap pointers so testing the bit rejects them too.
 
-        // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
-        asm.cmp(block_handler, 0x1.into());
-
+        asm.test(block_handler, 0x1.into());
         jit_chain_guard(
-            JCC_JNZ,
+            JCC_JZ,
             jit,
             asm,
             ocb,
@@ -8927,8 +8974,8 @@ mod tests {
 
         let status = gen_swap(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
-        let (_, tmp_type_next) = asm.ctx.get_opnd_mapping(StackOpnd(1));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
+        let tmp_type_next = asm.ctx.get_opnd_type(StackOpnd(1));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Fixnum);
@@ -8940,7 +8987,7 @@ mod tests {
         let (mut jit, _context, mut asm, mut cb, mut ocb) = setup_codegen();
         let status = gen_putnil(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Nil);
@@ -8959,7 +9006,7 @@ mod tests {
 
         let status = gen_putobject(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::True);
@@ -8979,7 +9026,7 @@ mod tests {
 
         let status = gen_putobject(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         assert_eq!(status, Some(KeepCompiling));
         assert_eq!(tmp_type_top, Type::Fixnum);
@@ -8993,7 +9040,7 @@ mod tests {
         jit.opcode = YARVINSN_putobject_INT2FIX_0_.as_usize();
         let status = gen_putobject_int2fix(&mut jit, &mut asm, &mut ocb);
 
-        let (_, tmp_type_top) = asm.ctx.get_opnd_mapping(StackOpnd(0));
+        let tmp_type_top = asm.ctx.get_opnd_type(StackOpnd(0));
 
         // Right now we're not testing the generated machine code to make sure a literal 1 or 0 was pushed. I've checked locally.
         assert_eq!(status, Some(KeepCompiling));

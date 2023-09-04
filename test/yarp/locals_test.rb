@@ -13,95 +13,97 @@ return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.2"
 # Ruby is handling large ISeqs on 32-bit machines
 return if RUBY_PLATFORM =~ /i686/
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
-class LocalsTest < Test::Unit::TestCase
-  invalid = []
-  todos = []
+module YARP
+  class LocalsTest < TestCase
+    invalid = []
+    todos = []
 
-  # Invalid break
-  invalid << "break.txt"
-  invalid << "if.txt"
-  invalid << "rescue.txt"
-  invalid << "seattlerb/block_break.txt"
-  invalid << "unless.txt"
-  invalid << "whitequark/break.txt"
-  invalid << "whitequark/break_block.txt"
+    # Invalid break
+    invalid << "break.txt"
+    invalid << "if.txt"
+    invalid << "rescue.txt"
+    invalid << "seattlerb/block_break.txt"
+    invalid << "unless.txt"
+    invalid << "whitequark/break.txt"
+    invalid << "whitequark/break_block.txt"
 
-  # Invalid next
-  invalid << "next.txt"
-  invalid << "seattlerb/block_next.txt"
-  invalid << "unparser/corpus/literal/control.txt"
-  invalid << "whitequark/next.txt"
-  invalid << "whitequark/next_block.txt"
+    # Invalid next
+    invalid << "next.txt"
+    invalid << "seattlerb/block_next.txt"
+    invalid << "unparser/corpus/literal/control.txt"
+    invalid << "whitequark/next.txt"
+    invalid << "whitequark/next_block.txt"
 
-  # Invalid redo
-  invalid << "keywords.txt"
-  invalid << "whitequark/redo.txt"
+    # Invalid redo
+    invalid << "keywords.txt"
+    invalid << "whitequark/redo.txt"
 
-  # Invalid retry
-  invalid << "whitequark/retry.txt"
+    # Invalid retry
+    invalid << "whitequark/retry.txt"
 
-  # Invalid yield
-  invalid << "seattlerb/dasgn_icky2.txt"
-  invalid << "seattlerb/yield_arg.txt"
-  invalid << "seattlerb/yield_call_assocs.txt"
-  invalid << "seattlerb/yield_empty_parens.txt"
-  invalid << "unparser/corpus/literal/yield.txt"
-  invalid << "whitequark/args_assocs.txt"
-  invalid << "whitequark/args_assocs_legacy.txt"
-  invalid << "whitequark/yield.txt"
-  invalid << "yield.txt"
+    # Invalid yield
+    invalid << "seattlerb/dasgn_icky2.txt"
+    invalid << "seattlerb/yield_arg.txt"
+    invalid << "seattlerb/yield_call_assocs.txt"
+    invalid << "seattlerb/yield_empty_parens.txt"
+    invalid << "unparser/corpus/literal/yield.txt"
+    invalid << "whitequark/args_assocs.txt"
+    invalid << "whitequark/args_assocs_legacy.txt"
+    invalid << "whitequark/yield.txt"
+    invalid << "yield.txt"
 
-  # Dead code eliminated
-  invalid << "whitequark/ruby_bug_10653.txt"
+    # Dead code eliminated
+    invalid << "whitequark/ruby_bug_10653.txt"
 
-  # case :a
-  # in Symbol(*lhs, x, *rhs)
-  # end
-  todos << "seattlerb/case_in.txt"
+    # case :a
+    # in Symbol(*lhs, x, *rhs)
+    # end
+    todos << "seattlerb/case_in.txt"
 
-  # <<~HERE
-  #   #{<<~THERE}
-  #   THERE
-  # HERE
-  todos << "seattlerb/heredoc_nested.txt"
+    # <<~HERE
+    #   #{<<~THERE}
+    #   THERE
+    # HERE
+    todos << "seattlerb/heredoc_nested.txt"
 
-  base = File.join(__dir__, "fixtures")
-  skips = invalid | todos
+    base = File.join(__dir__, "fixtures")
+    skips = invalid | todos
 
-  Dir["**/*.txt", base: base].each do |relative|
-    next if skips.include?(relative)
+    Dir["**/*.txt", base: base].each do |relative|
+      next if skips.include?(relative)
 
-    filepath = File.join(base, relative)
-    define_method("test_#{relative}") { assert_locals(filepath) }
-  end
+      filepath = File.join(base, relative)
+      define_method("test_#{relative}") { assert_locals(filepath) }
+    end
 
-  def setup
-    @previous_default_external = Encoding.default_external
-    ignore_warnings { Encoding.default_external = Encoding::UTF_8 }
-  end
+    def setup
+      @previous_default_external = Encoding.default_external
+      ignore_warnings { Encoding.default_external = Encoding::UTF_8 }
+    end
 
-  def teardown
-    ignore_warnings { Encoding.default_external = @previous_default_external }
-  end
+    def teardown
+      ignore_warnings { Encoding.default_external = @previous_default_external }
+    end
 
-  private
+    private
 
-  def assert_locals(filepath)
-    source = File.read(filepath)
+    def assert_locals(filepath)
+      source = File.read(filepath)
 
-    expected = YARP.const_get(:Debug).cruby_locals(source)
-    actual = YARP.const_get(:Debug).yarp_locals(source)
+      expected = Debug.cruby_locals(source)
+      actual = Debug.yarp_locals(source)
 
-    assert_equal(expected, actual)
-  end
+      assert_equal(expected, actual)
+    end
 
-  def ignore_warnings
-    previous_verbosity = $VERBOSE
-    $VERBOSE = nil
-    yield
-  ensure
-    $VERBOSE = previous_verbosity
+    def ignore_warnings
+      previous_verbosity = $VERBOSE
+      $VERBOSE = nil
+      yield
+    ensure
+      $VERBOSE = previous_verbosity
+    end
   end
 end

@@ -2154,9 +2154,6 @@ AC_CHECK_FUNCS(__sinpi)
 AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
     [AC_CHECK_FUNCS(statx)])
 
-AS_CASE(["$ac_cv_func_memset_s:$ac_cv_func_qsort_s"], [*yes*],
-    [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
-
 AS_IF([test "$ac_cv_func_getcwd" = yes], [
     AC_CACHE_CHECK(if getcwd allocates buffer if NULL is given, [rb_cv_getcwd_malloc],
 	[AC_RUN_IFELSE([AC_LANG_SOURCE([[
@@ -2224,6 +2221,27 @@ AS_IF([test x$rb_cv_builtin___builtin_choose_expr = xyes], [
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_trap, [__builtin_trap()])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(0, 0)])
+
+AS_IF([test "$rb_cv_builtin___builtin_mul_overflow" != no], [
+  AC_CACHE_CHECK(for __builtin_mul_overflow with long long arguments, rb_cv_use___builtin_mul_overflow_long_long, [
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#pragma clang optimize off
+
+int
+main(void)
+{
+    long long x = 0, y;
+    __builtin_mul_overflow(x, x, &y);
+
+    return 0;
+}
+]])],
+	rb_cv_use___builtin_mul_overflow_long_long=yes,
+	rb_cv_use___builtin_mul_overflow_long_long=no)])
+])
+AS_IF([test "$rb_cv_use___builtin_mul_overflow_long_long" = yes], [
+  AC_DEFINE(USE___BUILTIN_MUL_OVERFLOW_LONG_LONG, 1)
+])
 
 AS_IF([test "$ac_cv_func_qsort_r" != no], [
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,

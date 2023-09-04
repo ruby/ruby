@@ -195,7 +195,7 @@ ProgramNode(0...747)(
             [SymbolNode(292...294)((292...293), (293...294), nil, "b")],
             SplatNode(296...298)(
               (296...297),
-              LocalVariableWriteNode(297...298)(:_, 0, nil, (297...298), nil)
+              LocalVariableTargetNode(297...298)(:_, 0)
             ),
             [SymbolNode(300...302)((300...301), (301...302), nil, "c")],
             nil,
@@ -262,12 +262,12 @@ ProgramNode(0...747)(
             ConstantReadNode(369...375)(),
             SplatNode(376...380)(
               (376...377),
-              LocalVariableWriteNode(377...380)(:lhs, 0, nil, (377...380), nil)
+              LocalVariableTargetNode(377...380)(:lhs, 0)
             ),
-            [LocalVariableWriteNode(382...383)(:x, 0, nil, (382...383), nil)],
+            [LocalVariableTargetNode(382...383)(:x, 0)],
             SplatNode(385...389)(
               (385...386),
-              LocalVariableWriteNode(386...389)(:rhs, 0, nil, (386...389), nil)
+              LocalVariableTargetNode(386...389)(:rhs, 0)
             ),
             (375...376),
             (389...390)
@@ -287,12 +287,12 @@ ProgramNode(0...747)(
             ConstantReadNode(407...413)(),
             SplatNode(414...418)(
               (414...415),
-              LocalVariableWriteNode(415...418)(:lhs, 0, nil, (415...418), nil)
+              LocalVariableTargetNode(415...418)(:lhs, 0)
             ),
-            [LocalVariableWriteNode(420...421)(:x, 0, nil, (420...421), nil)],
+            [LocalVariableTargetNode(420...421)(:x, 0)],
             SplatNode(423...427)(
               (423...424),
-              LocalVariableWriteNode(424...427)(:rhs, 0, nil, (424...427), nil)
+              LocalVariableTargetNode(424...427)(:rhs, 0)
             ),
             (413...414),
             (427...428)
@@ -313,6 +313,8 @@ ProgramNode(0...747)(
             [LambdaNode(446...460)(
                [:b],
                (446...448),
+               (452...453),
+               (459...460),
                BlockParametersNode(448...451)(
                  ParametersNode(449...450)(
                    [RequiredParameterNode(449...450)(:b)],
@@ -329,7 +331,7 @@ ProgramNode(0...747)(
                ),
                StatementsNode(454...458)([TrueNode(454...458)()])
              ),
-             LocalVariableWriteNode(462...463)(:c, 0, nil, (462...463), nil)],
+             LocalVariableTargetNode(462...463)(:c, 0)],
             nil,
             [],
             (445...446),
@@ -349,20 +351,14 @@ ProgramNode(0...747)(
           ArrayPatternNode(481...506)(
             nil,
             [SymbolNode(482...484)((482...483), (483...484), nil, "a"),
-             LocalVariableWriteNode(486...487)(:b, 0, nil, (486...487), nil),
-             LocalVariableWriteNode(489...490)(:c, 0, nil, (489...490), nil),
+             LocalVariableTargetNode(486...487)(:b, 0),
+             LocalVariableTargetNode(489...490)(:c, 0),
              ArrayPatternNode(492...505)(
                nil,
                [SymbolNode(493...495)((493...494), (494...495), nil, "d")],
                SplatNode(497...499)(
                  (497...498),
-                 LocalVariableWriteNode(498...499)(
-                   :e,
-                   0,
-                   nil,
-                   (498...499),
-                   nil
-                 )
+                 LocalVariableTargetNode(498...499)(:e, 0)
                ),
                [NilNode(501...504)()],
                (492...493),
@@ -408,13 +404,7 @@ ProgramNode(0...747)(
             [ArrayPatternNode(550...557)(
                nil,
                [SymbolNode(551...553)((551...552), (552...553), nil, "b"),
-                LocalVariableWriteNode(555...556)(
-                  :c,
-                  0,
-                  nil,
-                  (555...556),
-                  nil
-                )],
+                LocalVariableTargetNode(555...556)(:c, 0)],
                nil,
                [],
                (550...551),
@@ -504,15 +494,15 @@ ProgramNode(0...747)(
           ArrayPatternNode(627...643)(
             nil,
             [PinnedVariableNode(628...631)(
-               InstanceVariableReadNode(629...631)(),
+               InstanceVariableReadNode(629...631)(:@a),
                (628...629)
              ),
              PinnedVariableNode(633...636)(
-               GlobalVariableReadNode(634...636)(),
+               GlobalVariableReadNode(634...636)(:$b),
                (633...634)
              ),
              PinnedVariableNode(638...642)(
-               ClassVariableReadNode(639...642)(),
+               ClassVariableReadNode(639...642)(:@@c),
                (638...639)
              )],
             nil,

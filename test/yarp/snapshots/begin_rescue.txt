@@ -223,7 +223,7 @@ ProgramNode(0...578)(
          (187...193),
          [ConstantReadNode(194...203)()],
          (204...206),
-         LocalVariableWriteNode(207...209)(:ex, 0, nil, (207...209), nil),
+         LocalVariableTargetNode(207...209)(:ex, 0),
          StatementsNode(212...213)(
            [CallNode(212...213)(
               nil,
@@ -241,7 +241,7 @@ ProgramNode(0...578)(
            (214...220),
            [ConstantReadNode(221...237)(), ConstantReadNode(239...255)()],
            (256...258),
-           LocalVariableWriteNode(259...261)(:ex, 0, nil, (259...261), nil),
+           LocalVariableTargetNode(259...261)(:ex, 0),
            StatementsNode(264...265)(
              [CallNode(264...265)(
                 nil,
@@ -281,7 +281,7 @@ ProgramNode(0...578)(
          (281...287),
          [ConstantReadNode(288...297)()],
          (298...300),
-         LocalVariableWriteNode(301...303)(:ex, 0, nil, (301...303), nil),
+         LocalVariableTargetNode(301...303)(:ex, 0),
          StatementsNode(306...307)(
            [CallNode(306...307)(
               nil,
@@ -532,7 +532,7 @@ ProgramNode(0...578)(
          (489...495),
          [ConstantReadNode(496...505)(), ConstantReadNode(507...522)()],
          (523...525),
-         LocalVariableWriteNode(526...528)(:ex, 0, nil, (526...528), nil),
+         LocalVariableTargetNode(526...528)(:ex, 0),
          StatementsNode(531...532)(
            [CallNode(531...532)(
               nil,
@@ -571,7 +571,7 @@ ProgramNode(0...578)(
          (548...554),
          [ConstantReadNode(555...564)()],
          (565...567),
-         LocalVariableWriteNode(568...570)(:ex, 0, nil, (568...570), nil),
+         LocalVariableTargetNode(568...570)(:ex, 0),
          StatementsNode(573...574)(
            [CallNode(573...574)(
               nil,

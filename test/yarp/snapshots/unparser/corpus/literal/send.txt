@@ -6,25 +6,14 @@ ProgramNode(0...999)(
        (0...6),
        ConstantReadNode(7...8)(),
        StatementsNode(11...31)(
-         [OrWriteNode(11...31)(
-            LocalVariableWriteNode(11...14)(:foo, 0, nil, (11...14), nil),
+         [LocalVariableOrWriteNode(11...31)(
+            (11...14),
+            (15...18),
             ParenthesesNode(19...31)(
-              StatementsNode(21...30)(
-                [MultiWriteNode(21...30)(
-                   [LocalVariableWriteNode(21...22)(
-                      :a,
-                      0,
-                      nil,
-                      (21...22),
-                      nil
-                    ),
-                    LocalVariableWriteNode(24...25)(
-                      :_,
-                      0,
-                      nil,
-                      (24...25),
-                      nil
-                    )],
+              StatementsNode(20...30)(
+                [MultiWriteNode(20...30)(
+                   [LocalVariableTargetNode(21...22)(:a, 0),
+                    LocalVariableTargetNode(24...25)(:_, 0)],
                    (27...28),
                    CallNode(29...30)(
                      nil,
@@ -44,10 +33,12 @@ ProgramNode(0...999)(
               (19...20),
               (30...31)
             ),
-            (15...18)
+            :foo,
+            0
           )]
        ),
-       (32...35)
+       (32...35),
+       "A"
      ),
      ModuleNode(37...73)(
        [:local],
@@ -57,8 +48,8 @@ ProgramNode(0...999)(
          [LocalVariableWriteNode(48...57)(
             :local,
             0,
-            IntegerNode(56...57)(),
             (48...53),
+            IntegerNode(56...57)(),
             (54...55)
           ),
           CallNode(60...69)(
@@ -73,7 +64,8 @@ ProgramNode(0...999)(
             "bar"
           )]
        ),
-       (70...73)
+       (70...73),
+       "A"
      ),
      CallNode(74...89)(
        ClassNode(74...85)(
@@ -83,7 +75,8 @@ ProgramNode(0...999)(
          nil,
          nil,
          nil,
-         (82...85)
+         (82...85),
+         "A"
        ),
        (85...86),
        (86...89),
@@ -100,7 +93,8 @@ ProgramNode(0...999)(
          (90...96),
          ConstantReadNode(97...98)(),
          nil,
-         (99...102)
+         (99...102),
+         "A"
        ),
        (102...103),
        (103...106),
@@ -287,6 +281,7 @@ ProgramNode(0...999)(
      CallNode(255...272)(
        UntilNode(255...268)(
          (255...260),
+         (265...268),
          CallNode(261...264)(
            nil,
            nil,
@@ -313,6 +308,7 @@ ProgramNode(0...999)(
      CallNode(273...290)(
        WhileNode(273...286)(
          (273...278),
+         (283...286),
          CallNode(279...282)(
            nil,
            nil,

@@ -4,6 +4,7 @@ ProgramNode(0...12)(
     [LocalVariableWriteNode(0...12)(
        :a,
        0,
+       (0...1),
        ArrayNode(4...12)(
          [CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "b"),
           SplatNode(7...9)(
@@ -14,7 +15,6 @@ ProgramNode(0...12)(
          nil,
          nil
        ),
-       (0...1),
        (2...3)
      )]
   )

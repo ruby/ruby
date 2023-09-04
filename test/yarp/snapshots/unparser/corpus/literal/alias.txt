@@ -2,8 +2,8 @@ ProgramNode(0...31)(
   [],
   StatementsNode(0...31)(
     [AliasNode(0...15)(
-       GlobalVariableReadNode(6...10)(),
-       GlobalVariableReadNode(11...15)(),
+       GlobalVariableReadNode(6...10)(:$foo),
+       GlobalVariableReadNode(11...15)(:$bar),
        (0...5)
      ),
      AliasNode(16...31)(

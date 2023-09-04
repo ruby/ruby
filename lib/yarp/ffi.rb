@@ -70,7 +70,8 @@ module YARP
       "yarp.h",
       "yp_version",
       "yp_parse_serialize",
-      "yp_lex_serialize"
+      "yp_lex_serialize",
+      "yp_parse_lex_serialize"
     )
 
     load_exported_functions_from(
@@ -221,6 +222,31 @@ module YARP
   def self.parse_file(filepath)
     LibRubyParser::YPString.with(filepath) do |string|
       parse(string.read, filepath)
+    end
+  end
+
+  # Mirror the YARP.parse_lex API by using the serialization API.
+  def self.parse_lex(code, filepath = nil)
+    LibRubyParser::YPBuffer.with do |buffer|
+      metadata = [filepath.bytesize, filepath.b, 0].pack("LA*L") if filepath
+      LibRubyParser.yp_parse_lex_serialize(code, code.bytesize, buffer.pointer, metadata)
+
+      source = Source.new(code)
+      loader = Serialize::Loader.new(source, buffer.read)
+
+      tokens = loader.load_tokens
+      node, comments, errors, warnings = loader.load_nodes
+
+      tokens.each { |token,| token.value.force_encoding(loader.encoding) }
+
+      ParseResult.new([node, tokens], comments, errors, warnings, source)
+    end
+  end
+
+  # Mirror the YARP.parse_lex_file API by using the serialization API.
+  def self.parse_lex_file(filepath)
+    LibRubyParser::YPString.with(filepath) do |string|
+      parse_lex(string.read, filepath)
     end
   end
 end

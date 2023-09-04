@@ -1,10 +1,9 @@
 ProgramNode(0...437)(
   [:foo],
   StatementsNode(0...437)(
-    [OperatorWriteNode(0...27)(
-       LocalVariableWriteNode(0...3)(:foo, 0, nil, (0...3), nil),
+    [LocalVariableOperatorWriteNode(0...27)(
+       (0...3),
        (4...6),
-       :+,
        CallNode(7...27)(
          nil,
          nil,
@@ -31,12 +30,14 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       )
-     ),
-     OperatorWriteNode(29...57)(
-       LocalVariableWriteNode(29...32)(:foo, 0, nil, (29...32), nil),
-       (33...35),
+       ),
+       :foo,
        :+,
+       0
+     ),
+     LocalVariableOperatorWriteNode(29...57)(
+       (29...32),
+       (33...35),
        RescueModifierNode(36...57)(
          CallNode(36...46)(
            nil,
@@ -63,11 +64,15 @@ ProgramNode(0...437)(
          ),
          (47...53),
          NilNode(54...57)()
-       )
+       ),
+       :foo,
+       :+,
+       0
      ),
      LocalVariableWriteNode(59...85)(
        :foo,
        0,
+       (59...62),
        CallNode(65...85)(
          nil,
          nil,
@@ -95,12 +100,12 @@ ProgramNode(0...437)(
          0,
          "raise"
        ),
-       (59...62),
        (63...64)
      ),
      LocalVariableWriteNode(87...114)(
        :foo,
        0,
+       (87...90),
        RescueModifierNode(93...114)(
          CallNode(93...103)(
            nil,
@@ -128,7 +133,6 @@ ProgramNode(0...437)(
          (104...110),
          NilNode(111...114)()
        ),
-       (87...90),
        (91...92)
      ),
      CallOperatorWriteNode(116...145)(
@@ -299,16 +303,13 @@ ProgramNode(0...437)(
        ),
        :+
      ),
-     OrWriteNode(242...273)(
-       ConstantPathWriteNode(242...248)(
-         ConstantPathNode(242...248)(
-           LocalVariableReadNode(242...245)(:foo, 0),
-           ConstantReadNode(247...248)(),
-           (245...247)
-         ),
-         nil,
-         nil
+     ConstantPathOrWriteNode(242...273)(
+       ConstantPathNode(242...248)(
+         LocalVariableReadNode(242...245)(:foo, 0),
+         ConstantReadNode(247...248)(),
+         (245...247)
        ),
+       (249...252),
        CallNode(253...273)(
          nil,
          nil,
@@ -335,19 +336,15 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       ),
-       (249...252)
+       )
      ),
-     OrWriteNode(275...307)(
-       ConstantPathWriteNode(275...281)(
-         ConstantPathNode(275...281)(
-           LocalVariableReadNode(275...278)(:foo, 0),
-           ConstantReadNode(280...281)(),
-           (278...280)
-         ),
-         nil,
-         nil
+     ConstantPathOrWriteNode(275...307)(
+       ConstantPathNode(275...281)(
+         LocalVariableReadNode(275...278)(:foo, 0),
+         ConstantReadNode(280...281)(),
+         (278...280)
        ),
+       (282...285),
        RescueModifierNode(286...307)(
          CallNode(286...296)(
            nil,
@@ -374,8 +371,7 @@ ProgramNode(0...437)(
          ),
          (297...303),
          NilNode(304...307)()
-       ),
-       (282...285)
+       )
      ),
      CallOperatorWriteNode(309...339)(
        CallNode(309...315)(

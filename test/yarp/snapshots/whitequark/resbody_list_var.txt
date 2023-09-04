@@ -20,7 +20,7 @@ ProgramNode(0...39)(
             "foo"
           )],
          (24...26),
-         LocalVariableWriteNode(27...29)(:ex, 0, nil, (27...29), nil),
+         LocalVariableTargetNode(27...29)(:ex, 0),
          StatementsNode(31...34)(
            [CallNode(31...34)(
               nil,

@@ -90,6 +90,18 @@ module TestIRB
         ], out)
     end
 
+    def test_prompt_n_deprecation
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new))
+
+      _, err = capture_output do
+        irb.context.prompt_n = "foo"
+        irb.context.prompt_n
+      end
+
+      assert_include err, "IRB::Context#prompt_n is deprecated"
+      assert_include err, "IRB::Context#prompt_n= is deprecated"
+    end
+
     def test_output_to_pipe
       require 'stringio'
       input = TestInputMethod.new(["n=1"])
@@ -454,7 +466,6 @@ module TestIRB
     def test_default_return_format
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
-        :PROMPT_N => "%03n> ",
         :PROMPT_S => "%03n> ",
         :PROMPT_C => "%03n> "
         # without :RETURN

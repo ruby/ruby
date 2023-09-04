@@ -20,7 +20,7 @@ ProgramNode(0...498)(
        (122...123),
        [EmbeddedVariableNode(123...129)(
           (123...124),
-          ClassVariableReadNode(124...129)()
+          ClassVariableReadNode(124...129)(:@@foo)
         )],
        (129...130)
      ),
@@ -177,7 +177,7 @@ ProgramNode(0...498)(
        (405...406),
        [EmbeddedVariableNode(406...411)(
           (406...407),
-          GlobalVariableReadNode(407...411)()
+          GlobalVariableReadNode(407...411)(:$foo)
         )],
        (411...412)
      ),
@@ -185,7 +185,7 @@ ProgramNode(0...498)(
        (414...415),
        [EmbeddedVariableNode(415...420)(
           (415...416),
-          InstanceVariableReadNode(416...420)()
+          InstanceVariableReadNode(416...420)(:@foo)
         )],
        (420...421)
      ),

@@ -2,10 +2,6 @@
 
 module IRB
   module Debug
-    BINDING_IRB_FRAME_REGEXPS = [
-      '<internal:prelude>',
-      binding.method(:irb).source_location.first,
-    ].map { |file| /\A#{Regexp.escape(file)}:\d+:in `irb'\z/ }
     IRB_DIR = File.expand_path('..', __dir__)
 
     class << self
@@ -74,14 +70,6 @@ module IRB
         IRB.instance_variable_set(:@debugger_irb, irb)
         irb.context.with_debugger = true
         irb.context.irb_name += ":rdbg"
-      end
-
-      def binding_irb?
-        caller.any? do |frame|
-          BINDING_IRB_FRAME_REGEXPS.any? do |regexp|
-            frame.match?(regexp)
-          end
-        end
       end
 
       module SkipPathHelperForIRB

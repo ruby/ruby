@@ -12,17 +12,17 @@
 // This struct represents a string value.
 typedef struct {
     enum { YP_STRING_SHARED, YP_STRING_OWNED, YP_STRING_CONSTANT, YP_STRING_MAPPED } type;
-    char *source;
+    const uint8_t *source;
     size_t length;
 } yp_string_t;
 
 #define YP_EMPTY_STRING ((yp_string_t) { .type = YP_STRING_CONSTANT, .source = NULL, .length = 0 })
 
 // Initialize a shared string that is based on initial input.
-void yp_string_shared_init(yp_string_t *string, const char *start, const char *end);
+void yp_string_shared_init(yp_string_t *string, const uint8_t *start, const uint8_t *end);
 
 // Initialize an owned string that is responsible for freeing allocated memory.
-void yp_string_owned_init(yp_string_t *string, char *source, size_t length);
+void yp_string_owned_init(yp_string_t *string, uint8_t *source, size_t length);
 
 // Initialize a constant string that doesn't own its memory source.
 void yp_string_constant_init(yp_string_t *string, const char *source, size_t length);
@@ -49,7 +49,7 @@ void yp_string_ensure_owned(yp_string_t *string);
 YP_EXPORTED_FUNCTION size_t yp_string_length(const yp_string_t *string);
 
 // Returns the start pointer associated with the string.
-YP_EXPORTED_FUNCTION const char * yp_string_source(const yp_string_t *string);
+YP_EXPORTED_FUNCTION const uint8_t * yp_string_source(const yp_string_t *string);
 
 // Free the associated memory of the given string.
 YP_EXPORTED_FUNCTION void yp_string_free(yp_string_t *string);

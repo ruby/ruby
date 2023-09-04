@@ -15,7 +15,7 @@ ProgramNode(0...131)(
        (71...74),
        [EmbeddedStatementsNode(74...81)(
           (74...76),
-          StatementsNode(76...80)([InstanceVariableReadNode(76...80)()]),
+          StatementsNode(76...80)([InstanceVariableReadNode(76...80)(:@bar)]),
           (80...81)
         ),
         StringNode(81...84)(nil, (81...84), nil, "baz")],

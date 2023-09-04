@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 module YARP
-  class HeredocDedentTest < Test::Unit::TestCase
+  class HeredocDedentTest < TestCase
     filepath = File.expand_path("fixtures/tilde_heredocs.txt", __dir__)
 
     File.read(filepath).split(/(?=\n)\n(?=<)/).each_with_index do |heredoc, index|

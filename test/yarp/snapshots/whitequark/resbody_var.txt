@@ -10,7 +10,7 @@ ProgramNode(0...73)(
          (13...19),
          [],
          (20...22),
-         InstanceVariableWriteNode(23...26)((23...26), nil, nil),
+         InstanceVariableTargetNode(23...26)(:@ex),
          StatementsNode(28...31)(
            [CallNode(28...31)(
               nil,
@@ -49,7 +49,7 @@ ProgramNode(0...73)(
          (51...57),
          [],
          (58...60),
-         LocalVariableWriteNode(61...63)(:ex, 0, nil, (61...63), nil),
+         LocalVariableTargetNode(61...63)(:ex, 0),
          StatementsNode(65...68)(
            [CallNode(65...68)(
               nil,

@@ -21,7 +21,8 @@ ProgramNode(0...83)(
        StatementsNode(36...38)(
          [CallNode(36...38)(nil, nil, (36...38), nil, nil, nil, nil, 2, "_1")]
        ),
-       (40...43)
+       (40...43),
+       "A"
      ),
      DefNode(45...64)(
        (54...55),
@@ -45,7 +46,8 @@ ProgramNode(0...83)(
        StatementsNode(76...78)(
          [CallNode(76...78)(nil, nil, (76...78), nil, nil, nil, nil, 2, "_1")]
        ),
-       (80...83)
+       (80...83),
+       "A"
      )]
   )
 )

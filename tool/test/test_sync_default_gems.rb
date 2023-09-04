@@ -87,7 +87,7 @@ module Test_SyncDefaultGems
       system(*%W"git config --global user.name", "Ruby")
       system(*%W"git config --global init.defaultBranch default")
       @target = "sync-test"
-      SyncDefaultGems::REPOSITORIES[@target.to_sym] = ["ruby/#{@target}", "default"]
+      SyncDefaultGems::REPOSITORIES[@target] = ["ruby/#{@target}", "default"]
       @sha = {}
       @origdir = Dir.pwd
       Dir.chdir(@testdir)
@@ -113,7 +113,7 @@ module Test_SyncDefaultGems
     def teardown
       if @target
         Dir.chdir(@origdir)
-        SyncDefaultGems::REPOSITORIES.delete(@target.to_sym)
+        SyncDefaultGems::REPOSITORIES.delete(@target)
         ENV.update(@git_config)
         FileUtils.rm_rf(@testdir)
       end

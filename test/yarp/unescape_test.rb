@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
 return if YARP::BACKEND == :FFI
 
-module UnescapeTest
-  class UnescapeNoneTest < Test::Unit::TestCase
+module YARP
+  class UnescapeNoneTest < TestCase
     def test_backslash
       assert_unescape_none("\\")
     end
@@ -17,11 +17,11 @@ module UnescapeTest
     private
 
     def assert_unescape_none(source)
-      assert_equal(source, YARP.const_get(:Debug).unescape_none(source))
+      assert_equal(source, Debug.unescape_none(source))
     end
   end
 
-  class UnescapeMinimalTest < Test::Unit::TestCase
+  class UnescapeMinimalTest < TestCase
     def test_backslash
       assert_unescape_minimal("\\", "\\\\")
     end
@@ -37,11 +37,11 @@ module UnescapeTest
     private
 
     def assert_unescape_minimal(expected, source)
-      assert_equal(expected, YARP.const_get(:Debug).unescape_minimal(source))
+      assert_equal(expected, Debug.unescape_minimal(source))
     end
   end
 
-  class UnescapeAllTest < Test::Unit::TestCase
+  class UnescapeAllTest < TestCase
     def test_backslash
       assert_unescape_all("\\", "\\\\")
     end
@@ -139,7 +139,7 @@ module UnescapeTest
     private
 
     def unescape_all(source)
-      YARP.const_get(:Debug).unescape_all(source)
+      Debug.unescape_all(source)
     end
 
     def assert_unescape_all(expected, source, forced_encoding = nil)

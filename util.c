@@ -13,6 +13,10 @@
 # define MINGW_HAS_SECURE_API 1
 #endif
 
+#ifndef __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1 /* for qsort_s() */
+#endif
+
 #include "ruby/internal/config.h"
 
 #include <ctype.h>

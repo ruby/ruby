@@ -1,14 +1,12 @@
 ProgramNode(0...74)(
   [:a, :b],
   StatementsNode(0...74)(
-    [OperatorWriteNode(0...18)(
-       LocalVariableWriteNode(0...1)(:a, 0, nil, (0...1), nil),
+    [LocalVariableOperatorWriteNode(0...18)(
+       (0...1),
        (2...4),
-       :+,
-       OperatorWriteNode(5...18)(
-         LocalVariableWriteNode(5...6)(:b, 0, nil, (5...6), nil),
+       LocalVariableOperatorWriteNode(5...18)(
+         (5...6),
          (7...9),
-         :+,
          CallNode(10...18)(
            nil,
            nil,
@@ -21,16 +19,22 @@ ProgramNode(0...74)(
            nil,
            0,
            "raise"
-         )
-       )
-     ),
-     OperatorWriteNode(20...37)(
-       LocalVariableWriteNode(20...21)(:a, 0, nil, (20...21), nil),
-       (22...24),
+         ),
+         :b,
+         :+,
+         0
+       ),
+       :a,
        :+,
+       0
+     ),
+     LocalVariableOperatorWriteNode(20...37)(
+       (20...21),
+       (22...24),
        LocalVariableWriteNode(25...37)(
          :b,
          0,
+         (25...26),
          CallNode(29...37)(
            nil,
            nil,
@@ -44,17 +48,19 @@ ProgramNode(0...74)(
            0,
            "raise"
          ),
-         (25...26),
          (27...28)
-       )
+       ),
+       :a,
+       :+,
+       0
      ),
      LocalVariableWriteNode(39...56)(
        :a,
        0,
-       OperatorWriteNode(43...56)(
-         LocalVariableWriteNode(43...44)(:b, 0, nil, (43...44), nil),
+       (39...40),
+       LocalVariableOperatorWriteNode(43...56)(
+         (43...44),
          (45...47),
-         :+,
          CallNode(48...56)(
            nil,
            nil,
@@ -67,17 +73,21 @@ ProgramNode(0...74)(
            nil,
            0,
            "raise"
-         )
+         ),
+         :b,
+         :+,
+         0
        ),
-       (39...40),
        (41...42)
      ),
      LocalVariableWriteNode(58...74)(
        :a,
        0,
+       (58...59),
        LocalVariableWriteNode(62...74)(
          :b,
          0,
+         (62...63),
          CallNode(66...74)(
            nil,
            nil,
@@ -91,10 +101,8 @@ ProgramNode(0...74)(
            0,
            "raise"
          ),
-         (62...63),
          (64...65)
        ),
-       (58...59),
        (60...61)
      )]
   )

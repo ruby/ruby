@@ -8,11 +8,11 @@ ProgramNode(0...35)(
             nil,
             [AssocNode(11...15)(
                SymbolNode(11...13)(nil, (11...12), (12...13), "b"),
-               LocalVariableWriteNode(14...15)(:c, 0, nil, (14...15), nil),
+               LocalVariableTargetNode(14...15)(:c, 0),
                nil
              ),
              AssocSplatNode(17...23)(
-               LocalVariableWriteNode(19...23)(:rest, 0, nil, (19...23), nil),
+               LocalVariableTargetNode(19...23)(:rest, 0),
                (17...19)
              )],
             nil,

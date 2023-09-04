@@ -29,6 +29,8 @@
 # include RUBY_EXTCONF_H
 #endif
 
+#include "ruby/internal/config.h"
+
 #include <errno.h>
 #include "internal/ruby_parser.h"
 #include "parser_node.h"
@@ -147,26 +149,6 @@ literal_hash(VALUE a)
 {
     if (!hash_literal_key_p(a)) return (st_index_t)a;
     return rb_iseq_cdhash_hash(a);
-}
-
-static ID
-script_lines(void)
-{
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-    return script_lines;
-}
-
-static int
-script_lines_defined(void)
-{
-    return rb_const_defined_at(rb_cObject, script_lines());
-}
-
-static VALUE
-script_lines_get(void)
-{
-    return rb_const_get_at(rb_cObject, script_lines());
 }
 
 static VALUE
@@ -548,7 +530,6 @@ struct parser_params {
     unsigned int do_loop: 1;
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
-    unsigned int keep_script_lines: 1;
     unsigned int error_tolerant: 1;
     unsigned int keep_tokens: 1;
 
@@ -929,6 +910,13 @@ set_line_body(NODE *body, int line)
     }
 }
 
+static void
+set_embraced_location(NODE *node, const rb_code_location_t *beg, const rb_code_location_t *end)
+{
+    node->nd_body->nd_loc = code_loc_gen(beg, end);
+    nd_set_line(node, beg->end_pos.lineno);
+}
+
 #define yyparse ruby_yyparse
 
 static NODE* cond(struct parser_params *p, NODE *node, const YYLTYPE *loc);
@@ -1164,6 +1152,11 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
 #define idFWD_BLOCK  '&'
 #define idFWD_ALL    idDot3
+#ifdef RIPPER
+#define arg_FWD_BLOCK Qnone
+#else
+#define arg_FWD_BLOCK idFWD_BLOCK
+#endif
 #define FORWARD_ARGS_WITH_RUBY2_KEYWORDS
 
 #define RE_OPTION_ONCE (1<<16)
@@ -2264,8 +2257,7 @@ cmd_brace_block	: tLBRACE_ARG brace_body '}'
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 ;
@@ -2327,6 +2319,14 @@ command		: fcall command_args       %prec tLOWEST
                         $$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
                     /*% %*/
                     /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
+                   }
+                | primary_value tCOLON2 tCONSTANT '{' brace_body '}'
+                    {
+                    /*%%%*/
+                        set_embraced_location($5, &@4, &@6);
+                        $$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, Qnull, $5, &@3, &@$);
+                    /*% %*/
+                    /*% ripper: method_add_block!(command_call!($1, $2, $3, Qnull), $5) %*/
                    }
                 | keyword_super command_args
                     {
@@ -3362,14 +3362,7 @@ primary		: literal
                     /*% %*/
                     /*% ripper: begin!($3) %*/
                     }
-                | tLPAREN_ARG {SET_LEX_STATE(EXPR_ENDARG);} rparen
-                    {
-                    /*%%%*/
-                        $$ = NEW_BEGIN(0, &@$);
-                    /*% %*/
-                    /*% ripper: paren!(0) %*/
-                    }
-                | tLPAREN_ARG stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
+                | tLPAREN_ARG compstmt {SET_LEX_STATE(EXPR_ENDARG);} ')'
                     {
                     /*%%%*/
                         if (nd_type_p($2, NODE_SELF)) $2->nd_state = 0;
@@ -4288,8 +4281,7 @@ do_block	: k_do_block do_body k_end
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 ;
@@ -4407,16 +4399,14 @@ brace_block	: '{' brace_body '}'
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 | k_do do_body k_end
                     {
                         $$ = $2;
                     /*%%%*/
-                        $$->nd_body->nd_loc = code_loc_gen(&@1, &@3);
-                        nd_set_line($$, @1.end_pos.lineno);
+                        set_embraced_location($$, &@1, &@3);
                     /*% %*/
                     }
                 ;
@@ -5647,7 +5637,7 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
                 | args_forward
                     {
                         add_forwarding_args(p);
-                        $$ = new_args_tail(p, Qnone, $1, ID2VAL(idFWD_BLOCK), &@1);
+                        $$ = new_args_tail(p, Qnone, $1, arg_FWD_BLOCK, &@1);
                     /*%%%*/
                         ($$->nd_ainfo)->forwarding = 1;
                     /*% %*/
@@ -6842,20 +6832,6 @@ static void parser_prepare(struct parser_params *p);
 #ifndef RIPPER
 static NODE *parser_append_options(struct parser_params *p, NODE *node);
 
-static VALUE
-debug_lines(struct parser_params *p, VALUE fname)
-{
-    if (script_lines_defined()) {
-        VALUE hash = script_lines_get();
-        if (RB_TYPE_P(hash, T_HASH)) {
-            VALUE lines = rb_ary_new();
-            rb_hash_aset(hash, fname, lines);
-            return lines;
-        }
-    }
-    return 0;
-}
-
 static int
 e_option_supplied(struct parser_params *p)
 {
@@ -6871,7 +6847,6 @@ yycompile0(VALUE arg)
     int cov = FALSE;
 
     if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string)) {
-        p->debug_lines = debug_lines(p, p->ruby_sourcefile_string);
         if (p->debug_lines && p->ruby_sourceline > 0) {
             VALUE str = rb_default_rs;
             n = p->ruby_sourceline;
@@ -6885,11 +6860,7 @@ yycompile0(VALUE arg)
         }
     }
 
-    if (p->keep_script_lines || ruby_vm_keep_script_lines) {
-        if (!p->debug_lines) {
-            p->debug_lines = rb_ary_new();
-        }
-
+    if (p->debug_lines) {
         RB_OBJ_WRITE(p->ast, &p->ast->body.script_lines, p->debug_lines);
     }
 
@@ -7748,6 +7719,13 @@ parser_mixed_escape(struct parser_params *p, const char *beg, rb_encoding *enc1,
     p->lex.pcur = pos;
 }
 
+static inline char
+nibble_char_upper(unsigned int c)
+{
+    c &= 0xf;
+    return c + (c < 10 ? '0' : 'A' - 10);
+}
+
 static int
 tokadd_string(struct parser_params *p,
               int func, int term, int paren, long *nest,
@@ -7837,12 +7815,11 @@ tokadd_string(struct parser_params *p,
                         pushback(p, c);
                         c = read_escape(p, 0, enc);
 
-                        int i;
-                        char escbuf[5];
-                        snprintf(escbuf, sizeof(escbuf), "\\x%02X", c);
-                        for (i = 0; i < 4; i++) {
-                            tokadd(p, escbuf[i]);
-                        }
+                        char *t = tokspace(p, rb_strlen_lit("\\x00"));
+                        *t++ = '\\';
+                        *t++ = 'x';
+                        *t++ = nibble_char_upper(c >> 4);
+                        *t++ = nibble_char_upper(c);
                         continue;
                       }
                     }
@@ -9059,6 +9036,7 @@ parser_prepare(struct parser_params *p)
             }
 #endif
             p->lex.pbeg = p->lex.pcur;
+            token_flush(p);
             return;
         }
         break;
@@ -11261,7 +11239,7 @@ static NODE *
 new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc)
 {
     if (!k) return 0;
-    return NEW_KW_ARG(0, (k), loc);
+    return NEW_KW_ARG((k), loc);
 }
 
 static NODE *
@@ -12140,7 +12118,7 @@ value_expr_check(struct parser_params *p, NODE *node)
             if (node->nd_body->nd_body) {
                 return NULL;
             }
-            /* single line pattern matching */
+            /* single line pattern matching with "=>" operator */
             return void_node ? void_node : node;
 
           case NODE_BLOCK:
@@ -12763,7 +12741,6 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
         if (block) arg_var(p, block);
 
         args->kw_rest_arg = NEW_DVAR(kw_rest_arg, kw_rest_loc);
-        args->kw_rest_arg->nd_cflag = kw_bits;
     }
     else if (kw_rest_arg == idNil) {
         args->no_kwarg = 1;
@@ -13981,9 +13958,19 @@ rb_ruby_parser_set_context(rb_parser_t *p, const struct rb_iseq_struct *base, in
 }
 
 void
-rb_ruby_parser_keep_script_lines(rb_parser_t *p)
+rb_ruby_parser_set_script_lines(rb_parser_t *p, VALUE lines)
 {
-    p->keep_script_lines = 1;
+    if (!RTEST(lines)) {
+        lines = Qfalse;
+    }
+    else if (lines == Qtrue) {
+        lines = rb_ary_new();
+    }
+    else {
+        Check_Type(lines, T_ARRAY);
+        rb_ary_modify(lines);
+    }
+    p->debug_lines = lines;
 }
 
 void
@@ -14071,12 +14058,12 @@ rb_parser_error_tolerant(VALUE vparser)
 }
 
 void
-rb_parser_keep_script_lines(VALUE vparser)
+rb_parser_set_script_lines(VALUE vparser, VALUE lines)
 {
     struct parser_params *p;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    rb_ruby_parser_keep_script_lines(p);
+    rb_ruby_parser_set_script_lines(p, lines);
 }
 
 void

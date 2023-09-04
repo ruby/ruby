@@ -3,7 +3,7 @@ ProgramNode(0...42)(
   StatementsNode(0...42)(
     [DefinedNode(0...13)(
        nil,
-       InstanceVariableReadNode(9...13)(),
+       InstanceVariableReadNode(9...13)(:@foo),
        nil,
        (0...8)
      ),

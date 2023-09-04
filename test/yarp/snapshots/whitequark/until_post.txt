@@ -3,6 +3,7 @@ ProgramNode(0...24)(
   StatementsNode(0...24)(
     [UntilNode(0...24)(
        (15...20),
+       nil,
        CallNode(21...24)(nil, nil, (21...24), nil, nil, nil, nil, 2, "foo"),
        StatementsNode(0...14)(
          [BeginNode(0...14)(

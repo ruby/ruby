@@ -10,6 +10,8 @@ ProgramNode(0...22)(
          [LambdaNode(2...13)(
             [],
             (2...4),
+            (5...7),
+            (10...13),
             nil,
             StatementsNode(8...9)([IntegerNode(8...9)()])
           )]

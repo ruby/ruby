@@ -2,8 +2,8 @@ ProgramNode(0...32)(
   [],
   StatementsNode(0...32)(
     [AliasNode(0...17)(
-       SymbolNode(6...11)(nil, (8...10), nil, "<<"),
-       SymbolNode(12...17)(nil, (14...16), nil, ">>"),
+       SymbolNode(6...11)((6...8), (8...10), (10...11), "<<"),
+       SymbolNode(12...17)((12...14), (14...16), (16...17), ">>"),
        (0...5)
      ),
      AliasNode(19...32)(

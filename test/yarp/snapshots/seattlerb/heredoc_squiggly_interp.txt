@@ -4,6 +4,7 @@ ProgramNode(0...10)(
     [LocalVariableWriteNode(0...10)(
        :a,
        0,
+       (0...1),
        InterpolatedStringNode(4...10)(
          (4...10),
          [StringNode(11...22)(nil, (11...22), nil, "    w\n" + "x"),
@@ -15,7 +16,6 @@ ProgramNode(0...10)(
           StringNode(27...36)(nil, (27...36), nil, " y\n" + "  z\n")],
          (36...42)
        ),
-       (0...1),
        (2...3)
      )]
   )

@@ -8,8 +8,15 @@ require "tempfile"
 
 puts "Using YARP backend: #{YARP::BACKEND}" if ENV["YARP_FFI_BACKEND"]
 
+# It is useful to have a diff even if the strings to compare are big
+# However, ruby/ruby does not have a version of Test::Unit with access to
+# max_diff_target_string_size
+if defined?(Test::Unit::Assertions::AssertionMessage)
+  Test::Unit::Assertions::AssertionMessage.max_diff_target_string_size = 5000
+end
+
 module YARP
-  module Assertions
+  class TestCase < ::Test::Unit::TestCase
     private
 
     def assert_equal_nodes(expected, actual, compare_location: true, parent: nil)
@@ -31,18 +38,17 @@ module YARP
             parent: actual
           )
         end
-      when YARP::SourceFileNode
+      when SourceFileNode
         deconstructed_expected = expected.deconstruct_keys(nil)
         deconstructed_actual = actual.deconstruct_keys(nil)
         assert_equal deconstructed_expected.keys, deconstructed_actual.keys
 
-        # Filepaths can be different if test suites were run
-        # on different machines.
-        # We accommodate for this by comparing the basenames,
-        # and not the absolute filepaths
+        # Filepaths can be different if test suites were run on different
+        # machines. We accommodate for this by comparing the basenames, and not
+        # the absolute filepaths.
         assert_equal deconstructed_expected.except(:filepath), deconstructed_actual.except(:filepath)
         assert_equal File.basename(deconstructed_expected[:filepath]), File.basename(deconstructed_actual[:filepath])
-      when YARP::Node
+      when Node
         deconstructed_expected = expected.deconstruct_keys(nil)
         deconstructed_actual = actual.deconstruct_keys(nil)
         assert_equal deconstructed_expected.keys, deconstructed_actual.keys
@@ -55,10 +61,11 @@ module YARP
             parent: actual
           )
         end
-      when YARP::Location
+      when Location
         assert_operator actual.start_offset, :<=, actual.end_offset, -> {
           "start_offset > end_offset for #{actual.inspect}, parent is #{parent.pretty_inspect}"
         }
+
         if compare_location
           assert_equal(
             expected.start_offset,
@@ -71,30 +78,10 @@ module YARP
             actual.end_offset,
             -> { "End locations were different. Parent: #{parent.pretty_inspect}" }
           )
-
         end
       else
         assert_equal expected, actual
       end
     end
-
-    def assert_valid_locations(value, parent: nil)
-      case value
-      when Array
-        value.each do |element|
-          assert_valid_locations(element, parent: value)
-        end
-      when YARP::Node
-        value.deconstruct_keys(nil).each_value do |field|
-          assert_valid_locations(field, parent: value)
-        end
-      when YARP::Location
-        assert_operator value.start_offset, :<=, value.end_offset, -> {
-          "start_offset > end_offset for #{value.inspect}, parent is #{parent.pretty_inspect}"
-        }
-      end
-    end
   end
 end
-
-Test::Unit::TestCase.include(YARP::Assertions)

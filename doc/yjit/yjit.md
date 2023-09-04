@@ -224,17 +224,17 @@ irb(main):001:0> RubyVM::YJIT.runtime_stats
 
 Some of the counters include:
 
-:yjit_insns_count - how many Ruby bytecode instructions have been executed
-:binding_allocations - number of bindings allocated
-:binding_set - number of variables set via a binding
-:code_gc_count - number of garbage collections of compiled code since process start
-:vm_insns_count - number of instructions executed by the Ruby interpreter
-:compiled_iseq_count - number of bytecode sequences compiled
-:inline_code_size - size in bytes of compiled YJIT blocks
-:outline_code_size - size in bytes of YJIT error-handling compiled code
-:side_exit_count - number of side exits taken at runtime
-:total_exit_count - number of exits, including side exits, taken at runtime
-:avg_len_in_yjit - avg. number of instructions in compiled blocks before exiting to interpreter
+* :yjit_insns_count - how many Ruby bytecode instructions have been executed
+* :binding_allocations - number of bindings allocated
+* :binding_set - number of variables set via a binding
+* :code_gc_count - number of garbage collections of compiled code since process start
+* :vm_insns_count - number of instructions executed by the Ruby interpreter
+* :compiled_iseq_count - number of bytecode sequences compiled
+* :inline_code_size - size in bytes of compiled YJIT blocks
+* :outline_code_size - size in bytes of YJIT error-handling compiled code
+* :side_exit_count - number of side exits taken at runtime
+* :total_exit_count - number of exits, including side exits, taken at runtime
+* :avg_len_in_yjit - avg. number of instructions in compiled blocks before exiting to interpreter
 
 Counters starting with "exit_" show reasons for YJIT code taking a side exit (return to the interpreter.) See yjit_hacking.md for more details.
 

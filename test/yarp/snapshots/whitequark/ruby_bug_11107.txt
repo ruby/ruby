@@ -10,6 +10,8 @@ ProgramNode(0...24)(
          [LambdaNode(2...24)(
             [],
             (2...4),
+            (7...9),
+            (21...24),
             BlockParametersNode(4...6)(nil, [], (4...5), (5...6)),
             StatementsNode(10...20)(
               [CallNode(10...20)(

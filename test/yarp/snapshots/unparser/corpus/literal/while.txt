@@ -32,6 +32,7 @@ ProgramNode(0...620)(
               StatementsNode(27...60)(
                 [WhileNode(27...60)(
                    (27...32),
+                   (57...60),
                    CallNode(33...36)(
                      nil,
                      nil,
@@ -47,8 +48,8 @@ ProgramNode(0...620)(
                      [LocalVariableWriteNode(43...52)(
                         :foo,
                         0,
-                        LocalVariableReadNode(49...52)(:bar, 0),
                         (43...46),
+                        LocalVariableReadNode(49...52)(:bar, 0),
                         (47...48)
                       )]
                    ),
@@ -62,7 +63,8 @@ ProgramNode(0...620)(
             "foo"
           )]
        ),
-       (65...68)
+       (65...68),
+       "A"
      ),
      DefNode(70...110)(
        (74...77),
@@ -71,6 +73,7 @@ ProgramNode(0...620)(
        StatementsNode(80...106)(
          [WhileNode(80...106)(
             (90...95),
+            nil,
             CallNode(96...106)(
               LocalVariableReadNode(96...99)(:foo, 0),
               nil,
@@ -98,6 +101,7 @@ ProgramNode(0...620)(
               [LocalVariableWriteNode(80...89)(
                  :foo,
                  0,
+                 (80...83),
                  CallNode(86...89)(
                    nil,
                    nil,
@@ -109,7 +113,6 @@ ProgramNode(0...620)(
                    2,
                    "bar"
                  ),
-                 (80...83),
                  (84...85)
                )]
             ),
@@ -131,11 +134,13 @@ ProgramNode(0...620)(
        StatementsNode(123...142)(
          [WhileNode(123...142)(
             (133...138),
+            nil,
             LocalVariableReadNode(139...142)(:foo, 0),
             StatementsNode(123...132)(
               [LocalVariableWriteNode(123...132)(
                  :foo,
                  0,
+                 (123...126),
                  CallNode(129...132)(
                    nil,
                    nil,
@@ -147,14 +152,14 @@ ProgramNode(0...620)(
                    2,
                    "bar"
                  ),
-                 (123...126),
                  (127...128)
                )]
             ),
             0
           )]
        ),
-       (143...146)
+       (143...146),
+       "A"
      ),
      ModuleNode(148...182)(
        [:foo],
@@ -163,11 +168,13 @@ ProgramNode(0...620)(
        StatementsNode(159...178)(
          [UntilNode(159...178)(
             (169...174),
+            nil,
             LocalVariableReadNode(175...178)(:foo, 0),
             StatementsNode(159...168)(
               [LocalVariableWriteNode(159...168)(
                  :foo,
                  0,
+                 (159...162),
                  CallNode(165...168)(
                    nil,
                    nil,
@@ -179,14 +186,14 @@ ProgramNode(0...620)(
                    2,
                    "bar"
                  ),
-                 (159...162),
                  (163...164)
                )]
             ),
             0
           )]
        ),
-       (179...182)
+       (179...182),
+       "A"
      ),
      ModuleNode(184...228)(
        [:foo],
@@ -195,6 +202,7 @@ ProgramNode(0...620)(
        StatementsNode(195...224)(
          [WhileNode(195...224)(
             (195...200),
+            (221...224),
             CallNode(201...204)(
               nil,
               nil,
@@ -210,6 +218,7 @@ ProgramNode(0...620)(
               [LocalVariableWriteNode(209...218)(
                  :foo,
                  0,
+                 (209...212),
                  CallNode(215...218)(
                    nil,
                    nil,
@@ -221,14 +230,14 @@ ProgramNode(0...620)(
                    2,
                    "bar"
                  ),
-                 (209...212),
                  (213...214)
                )]
             ),
             0
           )]
        ),
-       (225...228)
+       (225...228),
+       "A"
      ),
      ModuleNode(230...299)(
        [],
@@ -261,6 +270,7 @@ ProgramNode(0...620)(
               StatementsNode(258...291)(
                 [WhileNode(258...291)(
                    (258...263),
+                   (288...291),
                    CallNode(264...267)(
                      nil,
                      nil,
@@ -276,6 +286,7 @@ ProgramNode(0...620)(
                      [LocalVariableWriteNode(274...283)(
                         :foo,
                         0,
+                        (274...277),
                         CallNode(280...283)(
                           nil,
                           nil,
@@ -287,7 +298,6 @@ ProgramNode(0...620)(
                           2,
                           "bar"
                         ),
-                        (274...277),
                         (278...279)
                       )]
                    ),
@@ -301,7 +311,8 @@ ProgramNode(0...620)(
             "each"
           )]
        ),
-       (296...299)
+       (296...299),
+       "A"
      ),
      ModuleNode(301...370)(
        [],
@@ -334,11 +345,13 @@ ProgramNode(0...620)(
               StatementsNode(329...362)(
                 [WhileNode(329...362)(
                    (329...334),
+                   (359...362),
                    LocalVariableReadNode(335...338)(:foo, 0),
                    StatementsNode(345...354)(
                      [LocalVariableWriteNode(345...354)(
                         :foo,
                         0,
+                        (345...348),
                         CallNode(351...354)(
                           nil,
                           nil,
@@ -350,7 +363,6 @@ ProgramNode(0...620)(
                           2,
                           "bar"
                         ),
-                        (345...348),
                         (349...350)
                       )]
                    ),
@@ -364,15 +376,18 @@ ProgramNode(0...620)(
             "each"
           )]
        ),
-       (367...370)
+       (367...370),
+       "A"
      ),
      LocalVariableWriteNode(371...402)(
        :x,
        0,
+       (371...372),
        ParenthesesNode(375...402)(
          StatementsNode(376...401)(
            [WhileNode(376...401)(
               (392...397),
+              nil,
               CallNode(398...401)(
                 nil,
                 nil,
@@ -412,11 +427,11 @@ ProgramNode(0...620)(
          (375...376),
          (401...402)
        ),
-       (371...372),
        (373...374)
      ),
      WhileNode(403...428)(
        (419...424),
+       nil,
        CallNode(425...428)(
          nil,
          nil,
@@ -454,6 +469,7 @@ ProgramNode(0...620)(
      ),
      UntilNode(429...460)(
        (451...456),
+       nil,
        CallNode(457...460)(
          nil,
          nil,
@@ -502,6 +518,7 @@ ProgramNode(0...620)(
      ),
      WhileNode(461...492)(
        (483...488),
+       nil,
        CallNode(489...492)(
          nil,
          nil,
@@ -548,15 +565,23 @@ ProgramNode(0...620)(
        ),
        1
      ),
-     WhileNode(493...508)((493...498), FalseNode(499...504)(), nil, 0),
+     WhileNode(493...508)(
+       (493...498),
+       (505...508),
+       FalseNode(499...504)(),
+       nil,
+       0
+     ),
      WhileNode(509...528)(
        (509...514),
+       (525...528),
        FalseNode(515...520)(),
        StatementsNode(523...524)([IntegerNode(523...524)()]),
        0
      ),
      WhileNode(529...556)(
        (529...534),
+       (553...556),
        ParenthesesNode(535...544)(
          StatementsNode(536...543)(
            [CallNode(536...543)(
@@ -579,15 +604,23 @@ ProgramNode(0...620)(
        ),
        0
      ),
-     UntilNode(557...572)((557...562), FalseNode(563...568)(), nil, 0),
+     UntilNode(557...572)(
+       (557...562),
+       (569...572),
+       FalseNode(563...568)(),
+       nil,
+       0
+     ),
      UntilNode(573...592)(
        (573...578),
+       (589...592),
        FalseNode(579...584)(),
        StatementsNode(587...588)([IntegerNode(587...588)()]),
        0
      ),
      UntilNode(593...620)(
        (593...598),
+       (617...620),
        ParenthesesNode(599...608)(
          StatementsNode(600...607)(
            [CallNode(600...607)(

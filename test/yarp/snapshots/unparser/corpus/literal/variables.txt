@@ -2,10 +2,10 @@ ProgramNode(0...66)(
   [],
   StatementsNode(0...66)(
     [CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-     InstanceVariableReadNode(2...4)(),
-     ClassVariableReadNode(5...8)(),
-     GlobalVariableReadNode(9...11)(),
-     NumberedReferenceReadNode(12...14)(),
+     InstanceVariableReadNode(2...4)(:@a),
+     ClassVariableReadNode(5...8)(:@@a),
+     GlobalVariableReadNode(9...11)(:$a),
+     NumberedReferenceReadNode(12...14)(1),
      BackReferenceReadNode(15...17)(),
      ConstantReadNode(18...23)(),
      ConstantPathNode(24...37)(

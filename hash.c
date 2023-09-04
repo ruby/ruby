@@ -2291,7 +2291,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *    h.key(0) # => :foo
  *    h.key(2) # => :bar
  *
- *  Returns +nil+ if so such value is found.
+ *  Returns +nil+ if no such value is found.
  */
 
 static VALUE
@@ -3776,7 +3776,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
  *  Returns the Integer hash-code for the hash.
  *
  *  Two \Hash objects have the same hash-code if their content is the same
- *  (regardless or order):
+ *  (regardless of order):
  *    h1 = {foo: 0, bar: 1, baz: 2}
  *    h2 = {baz: 2, bar: 1, foo: 0}
  *    h2.hash == h1.hash # => true

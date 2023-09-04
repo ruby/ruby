@@ -51,7 +51,7 @@ ProgramNode(0...38)(
            StringNode(29...32)(nil, (29...32), nil, "foo"),
            EmbeddedVariableNode(32...37)(
              (32...33),
-             InstanceVariableReadNode(33...37)()
+             InstanceVariableReadNode(33...37)(:@baz)
            )],
           nil
         )],

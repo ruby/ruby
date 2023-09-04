@@ -9,7 +9,7 @@ ProgramNode(0...28)(
             [SymbolNode(12...14)((12...13), (13...14), nil, "b")],
             SplatNode(16...18)(
               (16...17),
-              LocalVariableWriteNode(17...18)(:c, 0, nil, (17...18), nil)
+              LocalVariableTargetNode(17...18)(:c, 0)
             ),
             [],
             (11...12),

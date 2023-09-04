@@ -207,7 +207,9 @@ ProgramNode(0...608)(
          [StringNode(563...564)(nil, (563...564), nil, "a"),
           EmbeddedStatementsNode(564...569)(
             (564...566),
-            StatementsNode(566...568)([InstanceVariableReadNode(566...568)()]),
+            StatementsNode(566...568)(
+              [InstanceVariableReadNode(566...568)(:@a)]
+            ),
             (568...569)
           )],
          (569...570)
@@ -220,7 +222,7 @@ ProgramNode(0...608)(
          [StringNode(576...577)(nil, (576...577), nil, "a"),
           EmbeddedVariableNode(577...580)(
             (577...578),
-            InstanceVariableReadNode(578...580)()
+            InstanceVariableReadNode(578...580)(:@a)
           )],
          (580...581)
        ),
@@ -232,7 +234,7 @@ ProgramNode(0...608)(
          [StringNode(587...588)(nil, (587...588), nil, "a"),
           EmbeddedVariableNode(588...591)(
             (588...589),
-            GlobalVariableReadNode(589...591)()
+            GlobalVariableReadNode(589...591)(:$a)
           )],
          (591...592)
        ),
@@ -244,7 +246,7 @@ ProgramNode(0...608)(
          [StringNode(598...599)(nil, (598...599), nil, "a"),
           EmbeddedVariableNode(599...603)(
             (599...600),
-            ClassVariableReadNode(600...603)()
+            ClassVariableReadNode(600...603)(:@@a)
           )],
          (603...604)
        ),

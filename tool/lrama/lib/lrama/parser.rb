@@ -159,6 +159,14 @@ module Lrama
             grammar.add_right(sym, precedence_number)
           end
           precedence_number += 1
+        when T::P_precedence
+          # %precedence (ident|char|string)+
+          ts.next
+          while (id = ts.consume(T::Ident, T::Char, T::String)) do
+            sym = grammar.add_term(id: id)
+            grammar.add_precedence(sym, precedence_number)
+          end
+          precedence_number += 1
         when nil
           # end of input
           raise "Reach to end of input within declarations"

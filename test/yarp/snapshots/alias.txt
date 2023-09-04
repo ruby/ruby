@@ -31,7 +31,7 @@ ProgramNode(0...199)(
        (61...66)
      ),
      AliasNode(86...97)(
-       GlobalVariableReadNode(92...94)(),
+       GlobalVariableReadNode(92...94)(:$a),
        BackReferenceReadNode(95...97)(),
        (86...91)
      ),
@@ -41,8 +41,8 @@ ProgramNode(0...199)(
        (99...104)
      ),
      AliasNode(114...129)(
-       GlobalVariableReadNode(120...124)(),
-       GlobalVariableReadNode(125...129)(),
+       GlobalVariableReadNode(120...124)(:$foo),
+       GlobalVariableReadNode(125...129)(:$bar),
        (114...119)
      ),
      AliasNode(131...143)(

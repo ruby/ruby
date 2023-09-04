@@ -1,19 +1,21 @@
 # frozen_string_literal: true
 
-require "yarp_test_helper"
+require_relative "test_helper"
 
-if RUBY_PLATFORM =~ /linux/
+return if RUBY_PLATFORM !~ /linux/
+
+module YARP
   #
   #  examine a yarp dll or static archive for expected external symbols.
   #  these tests only work on a linux system right now.
   #
-  class LibrarySymbolsTest < Test::Unit::TestCase
+  class LibrarySymbolsTest < TestCase
     def setup
       super
 
-      @librubyparser_a = File.expand_path(File.join(__dir__, "..", "build", "librubyparser.a"))
-      @librubyparser_so = File.expand_path(File.join(__dir__, "..", "build", "librubyparser.so"))
-      @yarp_so = File.expand_path(File.join(__dir__, "..", "lib", "yarp", "yarp.so"))
+      @librubyparser_a = File.expand_path("../../build/librubyparser.a", __dir__)
+      @librubyparser_so = File.expand_path("../../build/librubyparser.so", __dir__)
+      @yarp_so = File.expand_path("../../lib/yarp/yarp.so", __dir__)
     end
 
     # objdump runner and helpers

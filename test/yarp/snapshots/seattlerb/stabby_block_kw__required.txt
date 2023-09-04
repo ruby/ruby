@@ -4,6 +4,8 @@ ProgramNode(0...11)(
     [LambdaNode(0...11)(
        [:k],
        (0...2),
+       (8...9),
+       (10...11),
        BlockParametersNode(3...7)(
          ParametersNode(4...6)(
            [],

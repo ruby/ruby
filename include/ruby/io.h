@@ -138,6 +138,7 @@ struct rb_io_encoding {
 };
 
 #ifndef HAVE_RB_IO_T
+#define HAVE_RB_IO_T 1
 /** Ruby's IO, metadata and buffers. */
 struct rb_io {
     /** The IO's Ruby level counterpart. */

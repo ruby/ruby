@@ -6,7 +6,7 @@ ProgramNode(0...15)(
        nil,
        (0...1),
        nil,
-       ArgumentsNode(2...4)([InstanceVariableReadNode(2...4)()]),
+       ArgumentsNode(2...4)([InstanceVariableReadNode(2...4)(:@b)]),
        nil,
        BlockNode(5...15)(
          [:c],

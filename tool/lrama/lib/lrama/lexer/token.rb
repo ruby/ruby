@@ -61,6 +61,7 @@ module Lrama
       define_type(:P_nonassoc)       # %nonassoc
       define_type(:P_left)           # %left
       define_type(:P_right)          # %right
+      define_type(:P_precedence)     # %precedence
       define_type(:P_prec)           # %prec
       define_type(:User_code)        # { ... }
       define_type(:Tag)              # <int>

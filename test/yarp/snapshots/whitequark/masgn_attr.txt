@@ -13,7 +13,7 @@ ProgramNode(0...63)(
           0,
           "A="
         ),
-        LocalVariableWriteNode(8...11)(:foo, 0, nil, (8...11), nil)],
+        LocalVariableTargetNode(8...11)(:foo, 0)],
        (12...13),
        LocalVariableReadNode(14...17)(:foo, 0),
        nil,
@@ -61,7 +61,7 @@ ProgramNode(0...63)(
           0,
           "a="
         ),
-        LocalVariableWriteNode(54...57)(:foo, 0, nil, (54...57), nil)],
+        LocalVariableTargetNode(54...57)(:foo, 0)],
        (58...59),
        LocalVariableReadNode(60...63)(:foo, 0),
        nil,

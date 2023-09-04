@@ -20,7 +20,7 @@ ProgramNode(0...43)(
                nil
              ),
              AssocSplatNode(20...26)(
-               LocalVariableWriteNode(22...26)(:rest, 0, nil, (22...26), nil),
+               LocalVariableTargetNode(22...26)(:rest, 0),
                (20...22)
              )],
             nil,

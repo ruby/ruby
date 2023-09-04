@@ -138,20 +138,6 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(1234, Integer(1234))
     assert_equal(1, Integer(1.234))
 
-    # base argument
-    assert_equal(1234, Integer("1234", 10))
-    assert_equal(668, Integer("1234", 8))
-    assert_equal(4660, Integer("1234", 16))
-    assert_equal(49360, Integer("1234", 36))
-    # decimal, not octal
-    assert_equal(1234, Integer("01234", 10))
-    assert_raise(ArgumentError) { Integer("0x123", 10) }
-    assert_raise(ArgumentError) { Integer(1234, 10) }
-    assert_raise(ArgumentError) { Integer(12.34, 10) }
-    assert_raise(ArgumentError) { Integer(Object.new, 1) }
-
-    assert_raise(ArgumentError) { Integer(1, 1, 1) }
-
     assert_equal(2 ** 50, Integer(2.0 ** 50))
     assert_raise(TypeError) { Integer(nil) }
 
@@ -250,6 +236,32 @@ class TestInteger < Test::Unit::TestCase
       "0x10"
     end
     assert_equal(16, Integer(obj))
+  end
+
+  def test_Integer_with_base
+    assert_equal(1234, Integer("1234", 10))
+    assert_equal(668, Integer("1234", 8))
+    assert_equal(4660, Integer("1234", 16))
+    assert_equal(49360, Integer("1234", 36))
+    # decimal, not octal
+    assert_equal(1234, Integer("01234", 10))
+    assert_raise(ArgumentError) { Integer("0x123", 10) }
+    assert_raise(ArgumentError) { Integer(1234, 10) }
+    assert_raise(ArgumentError) { Integer(12.34, 10) }
+    assert_raise(ArgumentError) { Integer(Object.new, 1) }
+
+    assert_raise(ArgumentError) { Integer(1, 1, 1) }
+
+    def (base = Object.new).to_int
+      8
+    end
+    assert_equal(8, Integer("10", base))
+
+    assert_raise(TypeError) { Integer("10", "8") }
+    def (base = Object.new).to_int
+      "8"
+    end
+    assert_raise(TypeError) { Integer("10", base) }
   end
 
   def test_int_p

@@ -7,7 +7,7 @@ ProgramNode(0...29)(
           HashPatternNode(11...17)(
             nil,
             [AssocSplatNode(11...17)(
-               LocalVariableWriteNode(13...17)(:rest, 0, nil, (13...17), nil),
+               LocalVariableTargetNode(13...17)(:rest, 0),
                (11...13)
              )],
             nil,

@@ -118,12 +118,6 @@ syntax_error_append(VALUE exc, VALUE file, int line, int column,
 }
 
 static int
-vm_keep_script_lines(void)
-{
-    return ruby_vm_keep_script_lines;
-}
-
-static int
 local_defined(ID id, const void *p)
 {
     return rb_local_defined(id, (const rb_iseq_t *)p);
@@ -401,24 +395,6 @@ int2fix(long i)
     return INT2FIX(i);
 }
 
-static int
-script_lines_defined(void)
-{
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-
-    return rb_const_defined_at(rb_cObject, script_lines);
-}
-
-static VALUE
-script_lines_get(void)
-{
-    ID script_lines;
-    CONST_ID(script_lines, "SCRIPT_LINES__");
-
-    return rb_const_get_at(rb_cObject, script_lines);
-}
-
 static VALUE
 syntax_error_new(void)
 {
@@ -597,8 +573,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->compile_callback         = rb_suppress_tracing;
     config->reg_named_capture_assign = reg_named_capture_assign;
-    config->script_lines_defined     = script_lines_defined;
-    config->script_lines_get         = script_lines_get;
 
     config->obj_freeze = rb_obj_freeze;
     config->obj_hide = rb_obj_hide;
@@ -743,7 +717,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->ractor_make_shareable = rb_ractor_make_shareable;
 
-    config->vm_keep_script_lines = vm_keep_script_lines;
     config->local_defined        = local_defined;
     config->dvar_defined         = dvar_defined;
 
@@ -801,7 +774,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->long2int = rb_long2int;
     config->special_const_p = special_const_p;
     config->builtin_type = builtin_type;
-    config->snprintf = snprintf;
 
     config->node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal;
 
@@ -853,12 +825,12 @@ rb_parser_set_context(VALUE vparser, const struct rb_iseq_struct *base, int main
 }
 
 void
-rb_parser_keep_script_lines(VALUE vparser)
+rb_parser_set_script_lines(VALUE vparser, VALUE lines)
 {
     struct ruby_parser *parser;
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    rb_ruby_parser_keep_script_lines(parser->parser_params);
+    rb_ruby_parser_set_script_lines(parser->parser_params, lines);
 }
 
 void

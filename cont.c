@@ -2118,7 +2118,7 @@ rb_fiber_storage_get(VALUE self)
 static int
 fiber_storage_validate_each(VALUE key, VALUE value, VALUE _argument)
 {
-    rb_check_id(&key);
+    Check_Type(key, T_SYMBOL);
 
     return ST_CONTINUE;
 }
@@ -2190,8 +2190,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
 static VALUE
 rb_fiber_storage_aref(VALUE class, VALUE key)
 {
-    ID id = rb_check_id(&key);
-    if (!id) return Qnil;
+    Check_Type(key, T_SYMBOL);
 
     VALUE storage = fiber_storage_get(fiber_current(), FALSE);
     if (storage == Qnil) return Qnil;
@@ -2212,8 +2211,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
 static VALUE
 rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 {
-    ID id = rb_check_id(&key);
-    if (!id) return Qnil;
+    Check_Type(key, T_SYMBOL);
 
     VALUE storage = fiber_storage_get(fiber_current(), value != Qnil);
     if (storage == Qnil) return Qnil;

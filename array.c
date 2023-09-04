@@ -3769,8 +3769,8 @@ rb_ary_bsearch_index(VALUE ary)
             const VALUE zero = INT2FIX(0);
             switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
               case 0: return INT2FIX(mid);
-              case 1: smaller = 1; break;
-              case -1: smaller = 0;
+              case 1: smaller = 0; break;
+              case -1: smaller = 1;
             }
         }
         else {
@@ -4557,7 +4557,7 @@ rb_ary_reject(VALUE ary)
  *    a = [:foo, 'bar', 2]
  *    a.delete_if # => #<Enumerator: [:foo, "bar", 2]:delete_if>
  *
-3 */
+ */
 
 static VALUE
 rb_ary_delete_if(VALUE ary)

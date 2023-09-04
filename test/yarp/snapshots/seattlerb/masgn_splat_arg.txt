@@ -3,16 +3,13 @@ ProgramNode(0...9)(
   StatementsNode(0...9)(
     [MultiWriteNode(0...9)(
        [MultiWriteNode(0...2)(
-          [SplatNode(0...2)(
-             (0...1),
-             LocalVariableWriteNode(1...2)(:a, 0, nil, (1...2), nil)
-           )],
+          [SplatNode(0...2)((0...1), LocalVariableTargetNode(1...2)(:a, 0))],
           nil,
           nil,
           nil,
           nil
         ),
-        LocalVariableWriteNode(4...5)(:b, 0, nil, (4...5), nil)],
+        LocalVariableTargetNode(4...5)(:b, 0)],
        (6...7),
        CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "c"),
        nil,

@@ -88,11 +88,13 @@ ProgramNode(0...402)(
            (61...62)
          ),
          StatementsNode(63...72)(
-           [OperatorWriteNode(63...72)(
-              LocalVariableWriteNode(63...67)(:memo, 0, nil, (63...67), nil),
+           [LocalVariableOperatorWriteNode(63...72)(
+              (63...67),
               (68...70),
+              LocalVariableReadNode(71...72)(:x, 0),
+              :memo,
               :+,
-              LocalVariableReadNode(71...72)(:x, 0)
+              0
             )]
          ),
          (51...52),
@@ -451,8 +453,8 @@ ProgramNode(0...402)(
      LocalVariableWriteNode(292...300)(
        :fork,
        0,
-       IntegerNode(299...300)(),
        (292...296),
+       IntegerNode(299...300)(),
        (297...298)
      ),
      CallNode(301...316)(

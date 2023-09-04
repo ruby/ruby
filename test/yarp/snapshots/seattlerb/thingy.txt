@@ -4,7 +4,7 @@ ProgramNode(0...15)(
     [CallNode(0...6)(
        CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "f"),
        (1...2),
-       (0...0),
+       nil,
        (2...3),
        ArgumentsNode(3...5)([IntegerNode(3...5)()]),
        (5...6),
@@ -15,7 +15,7 @@ ProgramNode(0...15)(
      CallNode(8...15)(
        CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "f"),
        (9...11),
-       (0...0),
+       nil,
        (11...12),
        ArgumentsNode(12...14)([IntegerNode(12...14)()]),
        (14...15),

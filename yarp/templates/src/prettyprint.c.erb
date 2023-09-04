@@ -16,67 +16,71 @@ prettyprint_location(yp_buffer_t *buffer, yp_parser_t *parser, yp_location_t *lo
 static void
 prettyprint_node(yp_buffer_t *buffer, yp_parser_t *parser, yp_node_t *node) {
     switch (YP_NODE_TYPE(node)) {
+        // We do not need to print a ScopeNode as it's not part
+        // of the AST
+        case YP_NODE_SCOPE_NODE:
+            return;
         <%- nodes.each do |node| -%>
         case <%= node.type %>: {
             yp_buffer_append_str(buffer, "<%= node.name %>(", <%= node.name.length + 1 %>);
-            <%- node.params.each_with_index do |param, index| -%>
+            <%- node.fields.each_with_index do |field, index| -%>
             <%= "yp_buffer_append_str(buffer, \", \", 2);" if index != 0 -%>
-            <%- case param -%>
-            <%- when NodeParam -%>
-            prettyprint_node(buffer, parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
-            <%- when OptionalNodeParam -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= param.name %> == NULL) {
+            <%- case field -%>
+            <%- when YARP::NodeField -%>
+            prettyprint_node(buffer, parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= field.name %>);
+            <%- when YARP::OptionalNodeField -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
                 yp_buffer_append_str(buffer, "nil", 3);
             } else {
-                prettyprint_node(buffer, parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+                prettyprint_node(buffer, parser, (yp_node_t *)((yp_<%= node.human %>_t *)node)-><%= field.name %>);
             }
-            <%- when StringParam -%>
+            <%- when YARP::StringField -%>
             yp_buffer_append_str(buffer, "\"", 1);
-            yp_buffer_append_str(buffer, yp_string_source(&((yp_<%= node.human %>_t *)node)-><%= param.name %>), yp_string_length(&((yp_<%= node.human %>_t *)node)-><%= param.name %>));
+            yp_buffer_append_bytes(buffer, yp_string_source(&((yp_<%= node.human %>_t *)node)-><%= field.name %>), yp_string_length(&((yp_<%= node.human %>_t *)node)-><%= field.name %>));
             yp_buffer_append_str(buffer, "\"", 1);
-            <%- when NodeListParam -%>
+            <%- when YARP::NodeListField -%>
             yp_buffer_append_str(buffer, "[", 1);
-            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= param.name %>.size; index++) {
+            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= field.name %>.size; index++) {
                 if (index != 0) yp_buffer_append_str(buffer, ", ", 2);
-                prettyprint_node(buffer, parser, (yp_node_t *) ((yp_<%= node.human %>_t *) node)-><%= param.name %>.nodes[index]);
+                prettyprint_node(buffer, parser, (yp_node_t *) ((yp_<%= node.human %>_t *) node)-><%= field.name %>.nodes[index]);
             }
             yp_buffer_append_str(buffer, "]", 1);
-            <%- when LocationListParam -%>
+            <%- when YARP::LocationListField -%>
             yp_buffer_append_str(buffer, "[", 1);
-            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= param.name %>.size; index++) {
+            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= field.name %>.size; index++) {
                 if (index != 0) yp_buffer_append_str(buffer, ", ", 2);
-                prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>.locations[index]);
+                prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>.locations[index]);
             }
             yp_buffer_append_str(buffer, "]", 1);
-            <%- when ConstantParam -%>
-            char <%= param.name %>_buffer[12];
-            snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= param.name %>);
-            yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
-            <%- when ConstantListParam -%>
+            <%- when YARP::ConstantField -%>
+            char <%= field.name %>_buffer[12];
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
+            yp_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            <%- when YARP::ConstantListField -%>
             yp_buffer_append_str(buffer, "[", 1);
-            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= param.name %>.size; index++) {
+            for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= field.name %>.size; index++) {
                 if (index != 0) yp_buffer_append_str(buffer, ", ", 2);
-                char <%= param.name %>_buffer[12];
-                snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= param.name %>.ids[index]);
-                yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
+                char <%= field.name %>_buffer[12];
+                snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]);
+                yp_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
             }
             yp_buffer_append_str(buffer, "]", 1);
-            <%- when LocationParam -%>
-            prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>);
-            <%- when OptionalLocationParam -%>
-            if (((yp_<%= node.human %>_t *)node)-><%= param.name %>.start == NULL) {
+            <%- when YARP::LocationField -%>
+            prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>);
+            <%- when YARP::OptionalLocationField -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= field.name %>.start == NULL) {
                 yp_buffer_append_str(buffer, "nil", 3);
             } else {
-                prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= param.name %>);
+                prettyprint_location(buffer, parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>);
             }
-            <%- when UInt32Param -%>
-            char <%= param.name %>_buffer[12];
-            snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "+%d", ((yp_<%= node.human %>_t *)node)-><%= param.name %>);
-            yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
-            <%- when FlagsParam -%>
-            char <%= param.name %>_buffer[12];
-            snprintf(<%= param.name %>_buffer, sizeof(<%= param.name %>_buffer), "+%d", node->flags >> <%= COMMON_FLAGS %>);
-            yp_buffer_append_str(buffer, <%= param.name %>_buffer, strlen(<%= param.name %>_buffer));
+            <%- when YARP::UInt32Field -%>
+            char <%= field.name %>_buffer[12];
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "+%d", ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
+            yp_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            <%- when YARP::FlagsField -%>
+            char <%= field.name %>_buffer[12];
+            snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "+%d", node->flags >> <%= YARP::COMMON_FLAGS %>);
+            yp_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
             <%- else -%>
             <%- raise -%>
             <%- end -%>

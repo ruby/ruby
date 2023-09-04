@@ -296,6 +296,7 @@ make_counters! {
     invokeblock_symbol,
 
     // Method calls that exit to the interpreter
+    guard_send_block_arg_type,
     guard_send_klass_megamorphic,
     guard_send_se_cf_overflow,
     guard_send_se_protected_check_failed,

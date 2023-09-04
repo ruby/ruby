@@ -4,9 +4,12 @@ ProgramNode(0...19)(
     [LocalVariableWriteNode(0...19)(
        :m,
        0,
+       (0...1),
        LambdaNode(4...19)(
          [:args],
          (4...6),
+         (13...15),
+         (16...19),
          BlockParametersNode(7...12)(
            ParametersNode(7...12)(
              [],
@@ -23,7 +26,6 @@ ProgramNode(0...19)(
          ),
          nil
        ),
-       (0...1),
        (2...3)
      )]
   )

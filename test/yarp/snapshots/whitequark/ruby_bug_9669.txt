@@ -25,6 +25,7 @@ ProgramNode(0...33)(
      LocalVariableWriteNode(21...33)(
        :o,
        0,
+       (21...22),
        HashNode(25...33)(
          (25...26),
          [AssocNode(27...31)(
@@ -34,7 +35,6 @@ ProgramNode(0...33)(
           )],
          (32...33)
        ),
-       (21...22),
        (23...24)
      )]
   )

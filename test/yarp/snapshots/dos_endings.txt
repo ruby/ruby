@@ -35,13 +35,14 @@ ProgramNode(0...108)(
      LocalVariableWriteNode(75...84)(
        :x,
        0,
-       StringNode(79...84)((79...82), (82...82), (82...84), ""),
        (75...76),
+       StringNode(79...84)((79...82), (82...82), (82...84), ""),
        (77...78)
      ),
      LocalVariableWriteNode(88...108)(
        :a,
        0,
+       (88...89),
        CallNode(92...108)(
          nil,
          nil,
@@ -74,7 +75,6 @@ ProgramNode(0...108)(
          0,
          "foo"
        ),
-       (88...89),
        (90...91)
      )]
   )

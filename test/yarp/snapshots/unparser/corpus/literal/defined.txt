@@ -3,7 +3,7 @@ ProgramNode(0...56)(
   StatementsNode(0...56)(
     [DefinedNode(0...14)(
        (8...9),
-       InstanceVariableReadNode(9...13)(),
+       InstanceVariableReadNode(9...13)(:@foo),
        (13...14),
        (0...8)
      ),
@@ -16,10 +16,10 @@ ProgramNode(0...56)(
      DefinedNode(29...56)(
        (37...38),
        ParenthesesNode(38...55)(
-         StatementsNode(40...54)(
-           [MultiWriteNode(40...54)(
-              [LocalVariableWriteNode(40...41)(:a, 0, nil, (40...41), nil),
-               LocalVariableWriteNode(43...44)(:b, 0, nil, (43...44), nil)],
+         StatementsNode(39...54)(
+           [MultiWriteNode(39...54)(
+              [LocalVariableTargetNode(40...41)(:a, 0),
+               LocalVariableTargetNode(43...44)(:b, 0)],
               (46...47),
               ArrayNode(48...54)(
                 [IntegerNode(49...50)(), IntegerNode(52...53)()],

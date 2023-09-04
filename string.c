@@ -3612,6 +3612,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
           case ENC_CODERANGE_7BIT:
             // If RHS is 7bit we can do simple concatenation
             str_buf_cat4(str, RSTRING_PTR(str2), RSTRING_LEN(str2), true);
+            RB_GC_GUARD(str2);
             return str;
           case ENC_CODERANGE_VALID:
             // If RHS is valid, we can do simple concatenation if encodings are the same
@@ -3621,6 +3622,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
                 if (UNLIKELY(str_cr != ENC_CODERANGE_VALID)) {
                     ENC_CODERANGE_SET(str, RB_ENC_CODERANGE_AND(str_cr, str2_cr));
                 }
+                RB_GC_GUARD(str2);
                 return str;
             }
         }
@@ -4297,8 +4299,7 @@ str_ensure_byte_pos(VALUE str, long pos)
     const char *s = RSTRING_PTR(str);
     const char *e = RSTRING_END(str);
     const char *p = s + pos;
-    const char *pp = rb_enc_left_char_head(s, p, e, rb_enc_get(str));
-    if (p != pp) {
+    if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
         rb_raise(rb_eIndexError,
                  "offset %ld does not land on character boundary", pos);
     }
@@ -9926,7 +9927,7 @@ chompped_length(VALUE str, VALUE rs)
     if (p[len-1] == newline &&
         (rslen <= 1 ||
          memcmp(rsptr, pp, rslen) == 0)) {
-        if (rb_enc_left_char_head(p, pp, e, enc) == pp)
+        if (at_char_boundary(p, pp, e, enc))
             return len - rslen;
         RB_GC_GUARD(rs);
     }
@@ -10867,10 +10868,20 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
                 return Qtrue;
         }
         else {
+            const char *p, *s, *e;
+            long slen, tlen;
+            rb_encoding *enc;
+
             StringValue(tmp);
-            rb_enc_check(str, tmp);
-            if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
-            if (memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+            enc = rb_enc_check(str, tmp);
+            if ((tlen = RSTRING_LEN(tmp)) == 0) return Qtrue;
+            if ((slen = RSTRING_LEN(str)) < tlen) continue;
+            p = RSTRING_PTR(str);
+            e = p + slen;
+            s = p + tlen;
+            if (!at_char_right_boundary(p, s, e, enc))
+                continue;
+            if (memcmp(p, RSTRING_PTR(tmp), tlen) == 0)
                 return Qtrue;
         }
     }
@@ -10889,12 +10900,13 @@ static VALUE
 rb_str_end_with(int argc, VALUE *argv, VALUE str)
 {
     int i;
-    char *p, *s, *e;
-    rb_encoding *enc;
 
     for (i=0; i<argc; i++) {
         VALUE tmp = argv[i];
+        const char *p, *s, *e;
         long slen, tlen;
+        rb_encoding *enc;
+
         StringValue(tmp);
         enc = rb_enc_check(str, tmp);
         if ((tlen = RSTRING_LEN(tmp)) == 0) return Qtrue;
@@ -10902,9 +10914,9 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
         p = RSTRING_PTR(str);
         e = p + slen;
         s = e - tlen;
-        if (rb_enc_left_char_head(p, s, e, enc) != s)
+        if (!at_char_boundary(p, s, e, enc))
             continue;
-        if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+        if (memcmp(s, RSTRING_PTR(tmp), tlen) == 0)
             return Qtrue;
     }
     return Qfalse;
@@ -10922,12 +10934,17 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 static long
 deleted_prefix_length(VALUE str, VALUE prefix)
 {
-    char *strptr, *prefixptr;
+    const char *strptr, *prefixptr;
     long olen, prefixlen;
+    rb_encoding *enc = rb_enc_get(str);
 
     StringValue(prefix);
-    if (is_broken_string(prefix)) return 0;
-    rb_enc_check(str, prefix);
+
+    if (!is_broken_string(prefix) ||
+        !rb_enc_asciicompat(enc) ||
+        !rb_enc_asciicompat(rb_enc_get(prefix))) {
+        enc = rb_enc_check(str, prefix);
+    }
 
     /* return 0 if not start with prefix */
     prefixlen = RSTRING_LEN(prefix);
@@ -10937,6 +10954,19 @@ deleted_prefix_length(VALUE str, VALUE prefix)
     strptr = RSTRING_PTR(str);
     prefixptr = RSTRING_PTR(prefix);
     if (memcmp(strptr, prefixptr, prefixlen) != 0) return 0;
+    if (is_broken_string(prefix)) {
+        if (!is_broken_string(str)) {
+            /* prefix in a valid string cannot be broken */
+            return 0;
+        }
+        const char *strend = strptr + olen;
+        const char *after_prefix = strptr + prefixlen;
+        if (!at_char_right_boundary(strptr, after_prefix, strend, enc)) {
+            /* prefix does not end at char-boundary */
+            return 0;
+        }
+    }
+    /* prefix part in `str` also should be valid. */
 
     return prefixlen;
 }
@@ -10993,7 +11023,7 @@ rb_str_delete_prefix(VALUE str, VALUE prefix)
 static long
 deleted_suffix_length(VALUE str, VALUE suffix)
 {
-    char *strptr, *suffixptr, *s;
+    const char *strptr, *suffixptr;
     long olen, suffixlen;
     rb_encoding *enc;
 
@@ -11008,9 +11038,10 @@ deleted_suffix_length(VALUE str, VALUE suffix)
     if (olen < suffixlen) return 0;
     strptr = RSTRING_PTR(str);
     suffixptr = RSTRING_PTR(suffix);
-    s = strptr + olen - suffixlen;
-    if (memcmp(s, suffixptr, suffixlen) != 0) return 0;
-    if (rb_enc_left_char_head(strptr, s, strptr + olen, enc) != s) return 0;
+    const char *strend = strptr + olen;
+    const char *before_suffix = strend - suffixlen;
+    if (memcmp(before_suffix, suffixptr, suffixlen) != 0) return 0;
+    if (!at_char_boundary(strptr, before_suffix, strend, enc)) return 0;
 
     return suffixlen;
 }

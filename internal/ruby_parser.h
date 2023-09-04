@@ -1,8 +1,9 @@
 #ifndef INTERNAL_RUBY_PARSE_H
 #define INTERNAL_RUBY_PARSE_H
 
-#include "rubyparser.h"
 #include "internal.h"
+#include "internal/imemo.h"
+#include "rubyparser.h"
 #include "vm.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -18,7 +19,7 @@ VALUE rb_parser_encoding(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 void rb_parser_set_options(VALUE, int, int, int, int);
 void *rb_parser_load_file(VALUE parser, VALUE name);
-void rb_parser_keep_script_lines(VALUE vparser);
+void rb_parser_set_script_lines(VALUE vparser, VALUE lines_array);
 void rb_parser_error_tolerant(VALUE vparser);
 void rb_parser_keep_tokens(VALUE vparser);
 

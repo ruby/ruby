@@ -58,35 +58,30 @@ module IRB # :nodoc:
     @CONF[:PROMPT] = {
       :NULL => {
         :PROMPT_I => nil,
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "%s\n"
       },
       :DEFAULT => {
         :PROMPT_I => "%N(%m):%03n> ",
-        :PROMPT_N => "%N(%m):%03n> ",
         :PROMPT_S => "%N(%m):%03n%l ",
         :PROMPT_C => "%N(%m):%03n* ",
         :RETURN => "=> %s\n"
       },
       :CLASSIC => {
         :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
         :PROMPT_S => "%N(%m):%03n:%i%l ",
         :PROMPT_C => "%N(%m):%03n:%i* ",
         :RETURN => "%s\n"
       },
       :SIMPLE => {
         :PROMPT_I => ">> ",
-        :PROMPT_N => ">> ",
         :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
       :INF_RUBY => {
         :PROMPT_I => "%N(%m):%03n> ",
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "%s\n",
@@ -94,7 +89,6 @@ module IRB # :nodoc:
       },
       :XMP => {
         :PROMPT_I => nil,
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "    ==>%s\n"

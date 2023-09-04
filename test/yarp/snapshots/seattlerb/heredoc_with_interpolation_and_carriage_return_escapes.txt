@@ -6,7 +6,7 @@ ProgramNode(0...5)(
        [StringNode(6...11)(nil, (6...11), nil, "foo\r"),
         EmbeddedVariableNode(11...16)(
           (11...12),
-          InstanceVariableReadNode(12...16)()
+          InstanceVariableReadNode(12...16)(:@bar)
         ),
         StringNode(16...17)(nil, (16...17), nil, "\n")],
        (17...21)

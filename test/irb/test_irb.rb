@@ -94,8 +94,8 @@ module TestIRB
     end
 
     def setup
-      @irb = build_irb
       save_encodings
+      @irb = build_irb
     end
 
     def teardown

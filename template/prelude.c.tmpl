@@ -43,7 +43,10 @@ class Prelude
     lineno = 0
     result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
-      line.force_encoding("ASCII-8BIT") if line.respond_to?(:force_encoding)
+      if line.respond_to?(:force_encoding)
+        enc = line.encoding
+        line.force_encoding("ASCII-8BIT")
+      end
       line.rstrip!
       lineno += 1
       @preludes[filename] ||= result
@@ -71,6 +74,7 @@ class Prelude
           orig
         end
       end
+      comment.force_encoding(enc) if enc and comment
       lines << [line, comment]
     end
     result << (start_line || 1)

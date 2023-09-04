@@ -1,34 +1,39 @@
 ProgramNode(0...53)(
   [:a],
   StatementsNode(0...53)(
-    [OperatorWriteNode(0...11)(
-       ClassVariableWriteNode(0...5)((0...5), nil, nil),
+    [ClassVariableOperatorWriteNode(0...11)(
+       :@@var,
+       (0...5),
        (6...8),
-       :|,
-       IntegerNode(9...11)()
+       IntegerNode(9...11)(),
+       :|
      ),
-     OperatorWriteNode(13...20)(
-       InstanceVariableWriteNode(13...15)((13...15), nil, nil),
+     InstanceVariableOperatorWriteNode(13...20)(
+       :@a,
+       (13...15),
        (16...18),
-       :|,
-       IntegerNode(19...20)()
+       IntegerNode(19...20)(),
+       :|
      ),
-     OperatorWriteNode(22...28)(
-       LocalVariableWriteNode(22...23)(:a, 0, nil, (22...23), nil),
+     LocalVariableOperatorWriteNode(22...28)(
+       (22...23),
        (24...26),
+       IntegerNode(27...28)(),
+       :a,
        :+,
-       IntegerNode(27...28)()
+       0
      ),
      DefNode(30...53)(
        (34...35),
        nil,
        nil,
        StatementsNode(37...48)(
-         [OperatorWriteNode(37...48)(
-            ClassVariableWriteNode(37...42)((37...42), nil, nil),
+         [ClassVariableOperatorWriteNode(37...48)(
+            :@@var,
+            (37...42),
             (43...45),
-            :|,
-            IntegerNode(46...48)()
+            IntegerNode(46...48)(),
+            :|
           )]
        ),
        [],

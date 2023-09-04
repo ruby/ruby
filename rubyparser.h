@@ -4,12 +4,16 @@
  * This is a header file for librubyparser interface
  */
 
+#include <stdarg.h> /* for va_list */
+
 #ifdef UNIVERSAL_PARSER
 
 #define rb_encoding void
 #define OnigCodePoint unsigned int
 #include "parser_st.h"
+#ifndef RUBY_RUBY_H
 #include "parser_value.h"
+#endif
 
 #else
 
@@ -327,8 +331,11 @@ typedef struct rb_ast_struct {
  * Parser Interface
  */
 
+
 typedef struct parser_params rb_parser_t;
+#ifndef INTERNAL_IMEMO_H
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
+#endif
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
@@ -365,8 +372,6 @@ typedef struct rb_parser_config_struct {
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
     NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
-    int (*script_lines_defined)(void);
-    VALUE (*script_lines_get)(void);
 
     /* Object */
     VALUE (*obj_freeze)(VALUE obj);
@@ -528,7 +533,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ractor_make_shareable)(VALUE obj);
 
     /* Compile */
-    int (*vm_keep_script_lines)(void);
     // int rb_local_defined(ID id, const rb_iseq_t *iseq);
     int (*local_defined)(ID, const void*);
     // int rb_dvar_defined(ID id, const rb_iseq_t *iseq);
@@ -597,7 +601,6 @@ typedef struct rb_parser_config_struct {
     int (*long2int)(long);
     int (*special_const_p)(VALUE);
     int (*builtin_type)(VALUE);
-    int (*snprintf)(char *str, size_t n, char const *fmt, ...);
 
     VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 

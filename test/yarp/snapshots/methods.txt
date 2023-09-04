@@ -173,7 +173,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(161...175)(
        (170...171),
-       GlobalVariableReadNode(165...169)(),
+       GlobalVariableReadNode(165...169)(:$var),
        nil,
        nil,
        [],
@@ -199,7 +199,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(190...204)(
        (199...200),
-       InstanceVariableReadNode(194...198)(),
+       InstanceVariableReadNode(194...198)(:@var),
        nil,
        nil,
        [],
@@ -298,8 +298,8 @@ ProgramNode(0...1194)(
      LocalVariableWriteNode(275...280)(
        :a,
        0,
-       IntegerNode(279...280)(),
        (275...276),
+       IntegerNode(279...280)(),
        (277...278)
      ),
      DefNode(282...291)(
@@ -589,8 +589,8 @@ ProgramNode(0...1194)(
          [LocalVariableWriteNode(537...542)(
             :b,
             0,
-            IntegerNode(541...542)(),
             (537...538),
+            IntegerNode(541...542)(),
             (539...540)
           )]
        ),
@@ -839,6 +839,7 @@ ProgramNode(0...1194)(
          LocalVariableWriteNode(769...774)(
            :c,
            0,
+           (769...770),
            CallNode(773...774)(
              nil,
              nil,
@@ -850,7 +851,6 @@ ProgramNode(0...1194)(
              2,
              "b"
            ),
-           (769...770),
            (771...772)
          ),
          (768...769),
@@ -910,7 +910,7 @@ ProgramNode(0...1194)(
      ),
      DefNode(811...826)(
        (821...822),
-       ClassVariableReadNode(815...820)(),
+       ClassVariableReadNode(815...820)(:@@var),
        nil,
        nil,
        [],
@@ -927,6 +927,7 @@ ProgramNode(0...1194)(
          LocalVariableWriteNode(833...838)(
            :a,
            0,
+           (833...834),
            CallNode(837...838)(
              nil,
              nil,
@@ -938,7 +939,6 @@ ProgramNode(0...1194)(
              2,
              "b"
            ),
-           (833...834),
            (835...836)
          ),
          (832...833),

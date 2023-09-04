@@ -1,4 +1,6 @@
 ProgramNode(0...17)(
   [],
-  StatementsNode(0...17)([SymbolNode(0...17)(nil, (2...16), nil, "Varietà")])
+  StatementsNode(0...17)(
+    [SymbolNode(0...17)((0...2), (2...16), (16...17), "Varietà")]
+  )
 )

@@ -237,7 +237,7 @@ module Bundler
       end
 
       def spec_names
-        if @allow_remote && dependency_api_available?
+        if dependency_api_available?
           remote_specs.spec_names
         else
           []
@@ -245,7 +245,7 @@ module Bundler
       end
 
       def unmet_deps
-        if @allow_remote && dependency_api_available?
+        if dependency_api_available?
           remote_specs.unmet_dependency_names
         else
           []
@@ -260,7 +260,6 @@ module Bundler
       end
 
       def double_check_for(unmet_dependency_names)
-        return unless @allow_remote
         return unless dependency_api_available?
 
         unmet_dependency_names = unmet_dependency_names.call
@@ -275,7 +274,9 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, specs, false)
+        fetch_names(api_fetchers, unmet_dependency_names, remote_specs, false)
+
+        specs.use(remote_specs, false)
       end
 
       def dependency_names_to_double_check
@@ -392,23 +393,18 @@ module Bundler
       end
 
       def api_fetchers
-        fetchers.select {|f| f.use_api && f.fetchers.first.api_fetcher? }
+        fetchers.select(&:api_fetcher?)
       end
 
       def remote_specs
         @remote_specs ||= Index.build do |idx|
           index_fetchers = fetchers - api_fetchers
 
-          # gather lists from non-api sites
-          fetch_names(index_fetchers, nil, idx, false)
-
-          # legacy multi-remote sources need special logic to figure out
-          # dependency names and that logic can be very costly if one remote
-          # uses the dependency API but others don't. So use full indexes
-          # consistently in that particular case.
-          allow_api = !multiple_remotes?
-
-          fetch_names(api_fetchers, allow_api && dependency_names, idx, false)
+          if index_fetchers.empty?
+            fetch_names(api_fetchers, dependency_names, idx, false)
+          else
+            fetch_names(fetchers, nil, idx, false)
+          end
         end
       end
 

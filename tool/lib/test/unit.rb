@@ -24,42 +24,6 @@ require 'optparse'
 # See Test::Unit
 module Test
 
-  class << self
-    ##
-    # Filter object for backtraces.
-
-    attr_accessor :backtrace_filter
-  end
-
-  class BacktraceFilter # :nodoc:
-    def filter bt
-      return ["No backtrace"] unless bt
-
-      new_bt = []
-      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
-
-      unless $DEBUG then
-        bt.each do |line|
-          break if pattern.match?(line)
-          new_bt << line
-        end
-
-        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
-        new_bt = bt.dup if new_bt.empty?
-      else
-        new_bt = bt.dup
-      end
-
-      new_bt
-    end
-  end
-
-  self.backtrace_filter = BacktraceFilter.new
-
-  def self.filter_backtrace bt # :nodoc:
-    backtrace_filter.filter bt
-  end
-
   ##
   # Test::Unit is an implementation of the xUnit testing framework for Ruby.
   module Unit

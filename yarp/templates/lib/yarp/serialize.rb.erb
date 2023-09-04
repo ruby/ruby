@@ -14,15 +14,15 @@ end
 module YARP
   module Serialize
     MAJOR_VERSION = 0
-    MINOR_VERSION = 8
+    MINOR_VERSION = 10
     PATCH_VERSION = 0
 
     def self.load(input, serialized)
-      Loader.new(Source.new(input), serialized).load
+      Loader.new(Source.new(input), serialized).load_result
     end
 
     def self.load_tokens(source, serialized)
-      Loader.new(source, serialized).load_tokens
+      Loader.new(source, serialized).load_tokens_result
     end
 
     class Loader
@@ -43,6 +43,17 @@ module YARP
         @source = source
       end
 
+      def load_encoding
+        Encoding.find(io.read(load_varint))
+      end
+
+      def load_metadata
+        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
+        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        [comments, errors, warnings]
+      end
+
       def load_tokens
         tokens = []
         while type = TOKEN_TYPES.fetch(load_varint)
@@ -53,32 +64,40 @@ module YARP
           tokens << [YARP::Token.new(type, location.slice, location), lex_state]
         end
 
-        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
-        errors = load_varint.times.map { ParseError.new(load_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_string, load_location) }
+        tokens
+      end
+
+      def load_tokens_result
+        tokens = load_tokens
+        encoding = load_encoding
+        comments, errors, warnings = load_metadata
+
+        if encoding != @encoding
+          tokens.each { |token,| token.value.force_encoding(encoding) }
+        end
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-
         YARP::ParseResult.new(tokens, comments, errors, warnings, @source)
       end
 
-      def load
+      def load_nodes
         raise "Invalid serialization" if io.read(4) != "YARP"
         raise "Invalid serialization" if io.read(3).unpack("C3") != [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION]
 
-        @encoding = Encoding.find(io.read(load_varint))
+        @encoding = load_encoding
         @input = input.force_encoding(@encoding).freeze
 
-        comments = load_varint.times.map { Comment.new(Comment::TYPES.fetch(io.getbyte), load_location) }
-        errors = load_varint.times.map { ParseError.new(load_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_string, load_location) }
+        comments, errors, warnings = load_metadata
 
         @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
 
-        ast = load_node
+        [load_node, comments, errors, warnings]
+      end
 
-        YARP::ParseResult.new(ast, comments, errors, warnings, @source)
+      def load_result
+        node, comments, errors, warnings = load_nodes
+        YARP::ParseResult.new(node, comments, errors, warnings, @source)
       end
 
       private
@@ -110,8 +129,19 @@ module YARP
         end
       end
 
-      def load_string
+      def load_embedded_string
         io.read(load_varint).force_encoding(encoding)
+      end
+
+      def load_string
+        case io.getbyte
+        when 1
+          input.byteslice(load_varint, load_varint).force_encoding(encoding)
+        when 2
+          load_embedded_string
+        else
+          raise
+        end
       end
 
       def load_location
@@ -149,18 +179,18 @@ module YARP
           <%- if node.needs_serialized_length? -%>
           load_serialized_length
           <%- end -%>
-          <%= node.name %>.new(<%= (node.params.map { |param|
-            case param
-            when NodeParam then "load_node"
-            when OptionalNodeParam then "load_optional_node"
-            when StringParam then "load_string"
-            when NodeListParam then "Array.new(load_varint) { load_node }"
-            when LocationListParam then "Array.new(load_varint) { load_location }"
-            when ConstantParam then "load_constant"
-            when ConstantListParam then "Array.new(load_varint) { load_constant }"
-            when LocationParam then "load_location"
-            when OptionalLocationParam then "load_optional_location"
-            when UInt32Param, FlagsParam then "load_varint"
+          <%= node.name %>.new(<%= (node.fields.map { |field|
+            case field
+            when YARP::NodeField then "load_node"
+            when YARP::OptionalNodeField then "load_optional_node"
+            when YARP::StringField then "load_string"
+            when YARP::NodeListField then "Array.new(load_varint) { load_node }"
+            when YARP::LocationListField then "Array.new(load_varint) { load_location }"
+            when YARP::ConstantField then "load_constant"
+            when YARP::ConstantListField then "Array.new(load_varint) { load_constant }"
+            when YARP::LocationField then "load_location"
+            when YARP::OptionalLocationField then "load_optional_location"
+            when YARP::UInt32Field, YARP::FlagsField then "load_varint"
             else raise
             end
           } + ["location"]).join(", ") -%>)

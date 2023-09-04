@@ -37,7 +37,7 @@ module YARP
   class Location
     # A Source object that is used to determine more information from the given
     # offset and length.
-    private attr_reader :source
+    protected attr_reader :source
 
     # The byte offset from the beginning of the source where this location
     # starts.
@@ -52,6 +52,16 @@ module YARP
       @length = length
     end
 
+    # Create a new location object with the given options.
+    def copy(**options)
+      Location.new(
+        options.fetch(:source) { source },
+        options.fetch(:start_offset) { start_offset },
+        options.fetch(:length) { length }
+      )
+    end
+
+    # Returns a string representation of this location.
     def inspect
       "#<YARP::Location @start_offset=#{@start_offset} @length=#{@length}>"
     end
@@ -102,6 +112,16 @@ module YARP
         other.end_offset == end_offset
     end
 
+    # Returns a new location that stretches from this location to the given
+    # other location. Raises an error if this location is not before the other
+    # location or if they don't share the same source.
+    def join(other)
+      raise "Incompatible sources" if source != other.source
+      raise "Incompatible locations" if start_offset > other.start_offset
+
+      Location.new(source, start_offset, other.end_offset - start_offset)
+    end
+
     def self.null
       new(0, 0)
     end
@@ -121,6 +141,10 @@ module YARP
     def deconstruct_keys(keys)
       { type: type, location: location }
     end
+
+    def inspect
+      "#<YARP::Comment @type=#{@type.inspect} @location=#{@location.inspect}>"
+    end
   end
 
   # This represents an error that was encountered during parsing.
@@ -135,6 +159,10 @@ module YARP
     def deconstruct_keys(keys)
       { message: message, location: location }
     end
+
+    def inspect
+      "#<YARP::ParseError @message=#{@message.inspect} @location=#{@location.inspect}>"
+    end
   end
 
   # This represents a warning that was encountered during parsing.
@@ -148,6 +176,10 @@ module YARP
 
     def deconstruct_keys(keys)
       { message: message, location: location }
+    end
+
+    def inspect
+      "#<YARP::ParseWarning @message=#{@message.inspect} @location=#{@location.inspect}>"
     end
   end
 
@@ -303,13 +335,77 @@ module YARP
         q.nest(2) do
           deconstructed = deconstruct_keys([])
           deconstructed.delete(:location)
-
           q.breakable("")
           q.seplist(deconstructed, lambda { q.comma_breakable }, :each_value) { |value| q.pp(value) }
         end
         q.breakable("")
         q.text(")")
       end
+    end
+  end
+
+  # This object is responsible for generating the output for the inspect method
+  # implementations of child nodes.
+  class NodeInspector
+    attr_reader :prefix, :output
+
+    def initialize(prefix = "")
+      @prefix = prefix
+      @output = +""
+    end
+
+    # Appends a line to the output with the current prefix.
+    def <<(line)
+      output << "#{prefix}#{line}"
+    end
+
+    # This generates a string that is used as the header of the inspect output
+    # for any given node.
+    def header(node)
+      output = +"@ #{node.class.name.split("::").last} ("
+      output << "location: (#{node.location.start_offset}...#{node.location.end_offset})"
+      output << ", newline: true" if node.newline?
+      output << ")\n"
+      output
+    end
+
+    # Generates a string that represents a list of nodes. It handles properly
+    # using the box drawing characters to make the output look nice.
+    def list(prefix, nodes)
+      output = +"(length: #{nodes.length})\n"
+      last_index = nodes.length - 1
+
+      nodes.each_with_index do |node, index|
+        pointer, preadd = (index == last_index) ? ["└── ", "    "] : ["├── ", "│   "]
+        node_prefix = "#{prefix}#{preadd}"
+        output << node.inspect(NodeInspector.new(node_prefix)).sub(node_prefix, "#{prefix}#{pointer}")
+      end
+
+      output
+    end
+
+    # Generates a string that represents a location field on a node.
+    def location(value)
+      if value
+        "(#{value.start_offset}...#{value.end_offset}) = #{value.slice.inspect}"
+      else
+        "∅"
+      end
+    end
+
+    # Generates a string that represents a child node.
+    def child_node(node, append)
+      node.inspect(child_inspector(append)).delete_prefix(prefix)
+    end
+
+    # Returns a new inspector that can be used to inspect a child node.
+    def child_inspector(append)
+      NodeInspector.new("#{prefix}#{append}")
+    end
+
+    # Returns the output as a string.
+    def to_str
+      output
     end
   end
 
@@ -333,7 +429,7 @@ module YARP
 
   class RationalNode < Node
     def value
-      Rational(numeric.value)
+      Rational(slice.chomp("r"))
     end
   end
 
@@ -442,10 +538,10 @@ module YARP
           # order here so that we can compare properly.
           if params
             sorted = [
-              *params.requireds.grep(RequiredParameterNode).map(&:constant_id),
-              *params.optionals.map(&:constant_id),
+              *params.requireds.grep(RequiredParameterNode).map(&:name),
+              *params.optionals.map(&:name),
               *((params.rest.name ? params.rest.name.to_sym : :*) if params.rest && params.rest.operator != ","),
-              *params.posts.grep(RequiredParameterNode).map(&:constant_id),
+              *params.posts.grep(RequiredParameterNode).map(&:name),
               *params.keywords.reject(&:value).map { |param| param.name.chomp(":").to_sym },
               *params.keywords.select(&:value).map { |param| param.name.chomp(":").to_sym }
             ]
@@ -465,9 +561,9 @@ module YARP
               when RequiredDestructuredParameterNode
                 param_stack.concat(param.parameters.reverse)
               when RequiredParameterNode
-                sorted << param.constant_id
+                sorted << param.name
               when SplatNode
-                sorted << param.expression.constant_id if param.expression
+                sorted << param.expression.name if param.expression
               end
             end
 
@@ -507,6 +603,8 @@ module YARP
 end
 
 require_relative "yarp/lex_compat"
+require_relative "yarp/mutation_visitor"
+require_relative "yarp/desugar_visitor"
 require_relative "yarp/node"
 require_relative "yarp/ripper_compat"
 require_relative "yarp/serialize"

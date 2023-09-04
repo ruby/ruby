@@ -83,7 +83,21 @@ dump(int argc, VALUE *argv, VALUE self) {
 
     yp_string_t input;
     input_load_string(&input, string);
-    return dump_input(&input, check_string(filepath));
+
+#ifdef YARP_DEBUG_MODE_BUILD
+    size_t length = yp_string_length(&input);
+    char* dup = malloc(length);
+    memcpy(dup, yp_string_source(&input), length);
+    yp_string_constant_init(&input, dup, length);
+#endif
+
+    VALUE value = dump_input(&input, check_string(filepath));
+
+#ifdef YARP_DEBUG_MODE_BUILD
+    free(dup);
+#endif
+
+    return value;
 }
 
 // Dump the AST corresponding to the given file to a string.
@@ -198,52 +212,67 @@ typedef struct {
     VALUE source;
     VALUE tokens;
     rb_encoding *encoding;
-} lex_data_t;
+} parse_lex_data_t;
 
 // This is passed as a callback to the parser. It gets called every time a new
 // token is found. Once found, we initialize a new instance of Token and push it
 // onto the tokens array.
 static void
-lex_token(void *data, yp_parser_t *parser, yp_token_t *token) {
-    lex_data_t *lex_data = (lex_data_t *) parser->lex_callback->data;
+parse_lex_token(void *data, yp_parser_t *parser, yp_token_t *token) {
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
 
     VALUE yields = rb_ary_new_capa(2);
-    rb_ary_push(yields, yp_token_new(parser, token, lex_data->encoding, lex_data->source));
+    rb_ary_push(yields, yp_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source));
     rb_ary_push(yields, INT2FIX(parser->lex_state));
 
-    rb_ary_push(lex_data->tokens, yields);
+    rb_ary_push(parse_lex_data->tokens, yields);
 }
 
 // This is called whenever the encoding changes based on the magic comment at
 // the top of the file. We use it to update the encoding that we are using to
 // create tokens.
 static void
-lex_encoding_changed_callback(yp_parser_t *parser) {
-    lex_data_t *lex_data = (lex_data_t *) parser->lex_callback->data;
-    lex_data->encoding = rb_enc_find(parser->encoding.name);
+parse_lex_encoding_changed_callback(yp_parser_t *parser) {
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
+    parse_lex_data->encoding = rb_enc_find(parser->encoding.name);
+
+    // Since the encoding changed, we need to go back and change the encoding of
+    // the tokens that were already lexed. This is only going to end up being
+    // one or two tokens, since the encoding can only change at the top of the
+    // file.
+    VALUE tokens = parse_lex_data->tokens;
+    for (long index = 0; index < RARRAY_LEN(tokens); index++) {
+        VALUE yields = rb_ary_entry(tokens, index);
+        VALUE token = rb_ary_entry(yields, 0);
+
+        VALUE value = rb_ivar_get(token, rb_intern("@value"));
+        rb_enc_associate(value, parse_lex_data->encoding);
+        ENC_CODERANGE_CLEAR(value);
+    }
 }
 
-// Return an array of tokens corresponding to the given source.
+// Parse the given input and return a ParseResult containing just the tokens or
+// the nodes and tokens.
 static VALUE
-lex_input(yp_string_t *input, const char *filepath) {
+parse_lex_input(yp_string_t *input, const char *filepath, bool return_nodes) {
     yp_parser_t parser;
     yp_parser_init(&parser, yp_string_source(input), yp_string_length(input), filepath);
-    yp_parser_register_encoding_changed_callback(&parser, lex_encoding_changed_callback);
+    yp_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE offsets = rb_ary_new();
-    VALUE source_argv[] = { rb_str_new(yp_string_source(input), yp_string_length(input)), offsets };
+    VALUE source_argv[] = { rb_str_new((const char *) yp_string_source(input), yp_string_length(input)), offsets };
     VALUE source = rb_class_new_instance(2, source_argv, rb_cYARPSource);
 
-    lex_data_t lex_data = {
+    parse_lex_data_t parse_lex_data = {
         .source = source,
         .tokens = rb_ary_new(),
         .encoding = rb_utf8_encoding()
     };
 
-    lex_data_t *data = &lex_data;
+    parse_lex_data_t *data = &parse_lex_data;
     yp_lex_callback_t lex_callback = (yp_lex_callback_t) {
         .data = (void *) data,
-        .callback = lex_token,
+        .callback = parse_lex_token,
     };
 
     parser.lex_callback = &lex_callback;
@@ -256,20 +285,26 @@ lex_input(yp_string_t *input, const char *filepath) {
         rb_ary_push(offsets, INT2FIX(parser.newline_list.offsets[index]));
     }
 
+    VALUE value;
+    if (return_nodes) {
+        value = rb_ary_new_capa(2);
+        rb_ary_push(value, yp_ast_new(&parser, node, parse_lex_data.encoding));
+        rb_ary_push(value, parse_lex_data.tokens);
+    } else {
+        value = parse_lex_data.tokens;
+    }
+
     VALUE result_argv[] = {
-        lex_data.tokens,
+        value,
         parser_comments(&parser, source),
-        parser_errors(&parser, lex_data.encoding, source),
-        parser_warnings(&parser, lex_data.encoding, source),
+        parser_errors(&parser, parse_lex_data.encoding, source),
+        parser_warnings(&parser, parse_lex_data.encoding, source),
         source
     };
 
-    VALUE result = rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
-
     yp_node_destroy(&parser, node);
     yp_parser_free(&parser);
-
-    return result;
+    return rb_class_new_instance(5, result_argv, rb_cYARPParseResult);
 }
 
 // Return an array of tokens corresponding to the given string.
@@ -281,7 +316,8 @@ lex(int argc, VALUE *argv, VALUE self) {
 
     yp_string_t input;
     input_load_string(&input, string);
-    return lex_input(&input, check_string(filepath));
+
+    return parse_lex_input(&input, check_string(filepath), false);
 }
 
 // Return an array of tokens corresponding to the given file.
@@ -292,7 +328,7 @@ lex_file(VALUE self, VALUE filepath) {
     const char *checked = check_string(filepath);
     if (!yp_string_mapped_init(&input, checked)) return Qnil;
 
-    VALUE value = lex_input(&input, checked);
+    VALUE value = parse_lex_input(&input, checked, false);
     yp_string_free(&input);
 
     return value;
@@ -368,6 +404,32 @@ parse_file(VALUE self, VALUE filepath) {
     return value;
 }
 
+// Parse the given string and return a ParseResult instance.
+static VALUE
+parse_lex(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    VALUE filepath;
+    rb_scan_args(argc, argv, "11", &string, &filepath);
+
+    yp_string_t input;
+    input_load_string(&input, string);
+    return parse_lex_input(&input, check_string(filepath), true);
+}
+
+// Parse and lex the given file and return a ParseResult instance.
+static VALUE
+parse_lex_file(VALUE self, VALUE filepath) {
+    yp_string_t input;
+
+    const char *checked = check_string(filepath);
+    if (!yp_string_mapped_init(&input, checked)) return Qnil;
+
+    VALUE value = parse_lex_input(&input, checked, true);
+    yp_string_free(&input);
+
+    return value;
+}
+
 /******************************************************************************/
 /* Utility functions exposed to make testing easier                           */
 /******************************************************************************/
@@ -380,7 +442,7 @@ named_captures(VALUE self, VALUE source) {
     yp_string_list_t string_list;
     yp_string_list_init(&string_list);
 
-    if (!yp_regexp_named_capture_group_names(RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
+    if (!yp_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &yp_encoding_utf_8)) {
         yp_string_list_free(&string_list);
         return Qnil;
     }
@@ -388,7 +450,7 @@ named_captures(VALUE self, VALUE source) {
     VALUE names = rb_ary_new();
     for (size_t index = 0; index < string_list.length; index++) {
         const yp_string_t *string = &string_list.strings[index];
-        rb_ary_push(names, rb_str_new(yp_string_source(string), yp_string_length(string)));
+        rb_ary_push(names, rb_str_new((const char *) yp_string_source(string), yp_string_length(string)));
     }
 
     yp_string_list_free(&string_list);
@@ -401,8 +463,8 @@ static VALUE
 unescape(VALUE source, yp_unescape_type_t unescape_type) {
     yp_string_t result;
 
-    if (yp_unescape_string(RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
-        VALUE str = rb_str_new(yp_string_source(&result), yp_string_length(&result));
+    if (yp_unescape_string((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), unescape_type, &result)) {
+        VALUE str = rb_str_new((const char *) yp_string_source(&result), yp_string_length(&result));
         yp_string_free(&result);
         return str;
     } else {
@@ -436,7 +498,7 @@ static VALUE
 memsize(VALUE self, VALUE string) {
     yp_parser_t parser;
     size_t length = RSTRING_LEN(string);
-    yp_parser_init(&parser, RSTRING_PTR(string), length, NULL);
+    yp_parser_init(&parser, (const uint8_t *) RSTRING_PTR(string), length, NULL);
 
     yp_node_t *node = yp_parse(&parser);
     yp_memsize_t memsize;
@@ -521,7 +583,6 @@ Init_yarp(void) {
     // Define the version string here so that we can use the constants defined
     // in yarp.h.
     rb_define_const(rb_cYARP, "VERSION", rb_str_new2(EXPECTED_YARP_VERSION));
-
     rb_define_const(rb_cYARP, "BACKEND", ID2SYM(rb_intern("CExtension")));
 
     // First, the functions that have to do with lexing and parsing.
@@ -531,6 +592,8 @@ Init_yarp(void) {
     rb_define_singleton_method(rb_cYARP, "lex_file", lex_file, 1);
     rb_define_singleton_method(rb_cYARP, "parse", parse, -1);
     rb_define_singleton_method(rb_cYARP, "parse_file", parse_file, 1);
+    rb_define_singleton_method(rb_cYARP, "parse_lex", parse_lex, -1);
+    rb_define_singleton_method(rb_cYARP, "parse_lex_file", parse_lex_file, 1);
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.

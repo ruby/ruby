@@ -4144,8 +4144,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
                 s = RSTRING_PTR(str);
                 e = RSTRING_END(str);
                 p = e - rslen;
-                pp = rb_enc_left_char_head(s, p, e, enc);
-                if (pp != p) continue;
+                if (!at_char_boundary(s, p, e, enc)) continue;
                 if (!rspara) rscheck(rsptr, rslen, rs);
                 if (memcmp(p, rsptr, rslen) == 0) {
                     if (chomp) {
@@ -8945,6 +8944,10 @@ rb_p_result(int argc, const VALUE *argv)
  *     0..4
  *     [0..4, 0..4, 0..4]
  *
+ *  Kernel#p is designed for debugging purposes.
+ *  Ruby implementations may define Kernel#p to be uninterruptible
+ *  in whole or in part.
+ *  On CRuby, Kernel#p's writing of data is uninterruptible.
  */
 
 static VALUE
@@ -11369,7 +11372,7 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
  *  a file-oriented I/O stream. Arguments and results are platform
  *  dependent.
  *
- *  If +argument is a number, its value is passed directly;
+ *  If +argument+ is a number, its value is passed directly;
  *  if it is a string, it is interpreted as a binary sequence of bytes.
  *  (Array#pack might be a useful way to build this string.)
  *

@@ -2,13 +2,13 @@ ProgramNode(0...24)(
   [],
   StatementsNode(0...24)(
     [AliasNode(0...11)(
-       GlobalVariableReadNode(6...8)(),
+       GlobalVariableReadNode(6...8)(:$a),
        BackReferenceReadNode(9...11)(),
        (0...5)
      ),
      AliasNode(13...24)(
-       GlobalVariableReadNode(19...21)(),
-       GlobalVariableReadNode(22...24)(),
+       GlobalVariableReadNode(19...21)(:$a),
+       GlobalVariableReadNode(22...24)(:$b),
        (13...18)
      )]
   )

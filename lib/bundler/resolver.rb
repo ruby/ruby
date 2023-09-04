@@ -37,9 +37,17 @@ module Bundler
       root_version = Resolver::Candidate.new(0)
 
       @all_specs = Hash.new do |specs, name|
-        specs[name] = source_for(name).specs.search(name).reject do |s|
-          s.dependencies.any? {|d| d.name == name && !d.requirement.satisfied_by?(s.version) } # ignore versions that depend on themselves incorrectly
-        end.sort_by {|s| [s.version, s.platform.to_s] }
+        source = source_for(name)
+        matches = source.specs.search(name)
+
+        # Don't bother to check for circular deps when no dependency API are
+        # available, since it's too slow to be usable. That edge case won't work
+        # but resolution other than that should work fine and reasonably fast.
+        if source.respond_to?(:dependency_api_available?) && source.dependency_api_available?
+          matches = filter_invalid_self_dependencies(matches, name)
+        end
+
+        specs[name] = matches.sort_by {|s| [s.version, s.platform.to_s] }
       end
 
       @sorted_versions = Hash.new do |candidates, package|
@@ -316,6 +324,13 @@ module Bundler
       return specs unless package.ignores_prereleases? && specs.size > 1
 
       specs.reject {|s| s.version.prerelease? }
+    end
+
+    # Ignore versions that depend on themselves incorrectly
+    def filter_invalid_self_dependencies(specs, name)
+      specs.reject do |s|
+        s.dependencies.any? {|d| d.name == name && !d.requirement.satisfied_by?(s.version) }
+      end
     end
 
     def requirement_satisfied_by?(requirement, spec)

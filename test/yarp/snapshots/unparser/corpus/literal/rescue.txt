@@ -29,6 +29,7 @@ ProgramNode(0...64)(
      LocalVariableWriteNode(37...64)(
        :x,
        0,
+       (37...38),
        ParenthesesNode(41...64)(
          StatementsNode(42...63)(
            [RescueModifierNode(42...63)(
@@ -65,7 +66,6 @@ ProgramNode(0...64)(
          (41...42),
          (63...64)
        ),
-       (37...38),
        (39...40)
      )]
   )
