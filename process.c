@@ -8639,38 +8639,107 @@ get_PROCESS_ID(ID _x, VALUE *_y)
 
 /*
  *  call-seq:
- *     Process.kill(signal, pid, *pids)    -> integer
+ *    Process.kill(signal, *ids) -> count
  *
- *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. If _pid_ is negative, results are dependent
- *  on the operating system. _signal_ may be an integer signal number or
- *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
- *  negative (or starts with a minus sign), kills process groups instead of
- *  processes. Not all signals are available on all platforms.
- *  The keys and values of Signal.list are known signal names and numbers,
- *  respectively.
+ *  Sends a signal to each process specified by +ids+
+ *  (which must specify at least one ID).
  *
- *     pid = fork do
- *        Signal.trap("HUP") { puts "Ouch!"; exit }
- *        # ... do some work ...
- *     end
- *     # ...
- *     Process.kill("HUP", pid)
- *     Process.wait
+ *  For each given +id+, if +id+ is:
  *
- *  <em>produces:</em>
+ *  - Positive, sends the signal to the process whose process ID is +id+.
+ *  - Zero, send the signal to all processes in the current process group.
+ *  - Negative, sends the signal to a system-dependent collection of processes.
+ *
+ *  Argument +signal+ specifies the signal to be sent;
+ *  the argument may be:
+ *
+ *  - An integer signal number: e.g., +-29+, +0+, +29+.
+ *  - A signal name (string), with or without leading <tt>'SIG'</tt>,
+ *    and with or without a further prefixed minus sign (<tt>'-'</tt>):
+ *    e.g.:
+ *
+ *    - <tt>'SIGPOLL'</tt>.
+ *    - <tt>'POLL'</tt>,
+ *    - <tt>'-SIGPOLL'</tt>.
+ *    - <tt>'-POLL'</tt>.
+ *
+ *  - A signal symbol, with or without leading <tt>'SIG'</tt>,
+ *    and with or without a further prefixed minus sign (<tt>'-'</tt>):
+ *    e.g.:
+ *
+ *    - +:SIGPOLL+.
+ *    - +:POLL+.
+ *    - <tt>:'-SIGPOLL'</tt>.
+ *    - <tt>:'-POLL'</tt>.
+ *
+ *  If +signal+ is:
+ *
+ *  - A non-negative integer, or a signal name or symbol
+ *    without prefixed <tt>'-'</tt>,
+ *    each process with process ID +id+ is signalled.
+ *  - A negative integer, or a signal name or symbol
+ *    with prefixed <tt>'-'</tt>,
+ *    each process group with group ID +id+ is signalled.
+ *
+ *  The signal non-negative integers and strings are:
+ *
+ *  - +0+ (<tt>'SIGEXIT'</tt>): Exit the current process.
+ *  - +1+ (<tt>'SIGHUP'</tt>): Hang up controlling terminal or process.
+ *  - +2+ (<tt>'SIGINT'</tt>): \Interrupt from keyboard, Ctrl-C.
+ *  - +3+ (<tt>'SIGQUIT'</tt>): Quit from keyboard, Ctrl-\.
+ *  - +4+ (<tt>'SIGILL'</tt>): Illegal instruction.
+ *  - +5+ (<tt>'SIGTRAP'</tt>): Breakpoint for debugging.
+ *  - +6+ (<tt>'SIGIOT'</tt>): Abnormal termination.
+ *  - +7+ (<tt>'SIGBUS'</tt>): Bus error.
+ *  - +8+ (<tt>'SIGFPE'</tt>): Floating-point exception.
+ *  - +9+ (<tt>'SIGKILL'</tt>): Forced-process termination.
+ *  - +10+ (<tt>'SIGUSR1'</tt>): Available to processes.
+ *  - +11+ (<tt>'SIGSEGV'</tt>): Invalid memory reference.
+ *  - +12+ (<tt>'SIGUSR2'</tt>): Available to processes.
+ *  - +13+ (<tt>'SIGPIPE'</tt>): Write to pipe with no readers.
+ *  - +14+ (<tt>'SIGALRM'</tt>): Real-timer clock.
+ *  - +15+ (<tt>'SIGTERM'</tt>): \Process termination.
+ *  - +17+ (<tt>'SIGCHLD'</tt>): Child process stopped or terminated
+      or got a signal if traced.
+ *  - +18+ (<tt>'SIGCONT'</tt>): Resume execution, if stopped.
+ *  - +19+ (<tt>'SIGSTOP'</tt>): Stop process execution, Ctrl-Z.
+ *  - +20+ (<tt>'SIGTSTP'</tt>): Stop process issued from tty.
+ *  - +21+ (<tt>'SIGTTIN'</tt>): Background process requires input.
+ *  - +22+ (<tt>'SIGTTOU'</tt>): Background process requires output.
+ *  - +23+ (<tt>'SIGURG'</tt>): Urgent condition on socket.
+ *  - +24+ (<tt>'SIGXCPU'</tt>): CPU time limit exceeded.
+ *  - +25+ (<tt>'SIGXFSZ'</tt>): File size limit exceeded.
+ *  - +26+ (<tt>'SIGVTALRM'</tt>): Virtual timer clock.
+ *  - +27+ (<tt>'SIGPROF'</tt>): Profile timer clock.
+ *  - +28+ (<tt>'SIGWINCH'</tt>): Window resizing.
+ *  - +29+ (<tt>'SIGPOLL'</tt>): I/O now possible.
+ *  - +30+ (<tt>'SIGPWR'</tt>): Power supply failure.
+ *  - +31+ (<tt>'SIGSYS'</tt>, <tt>'SIGUNUSED'</tt>): Bad system call.
+ *
+ *  Example:
+ *
+ *    pid = fork do
+ *      Signal.trap("HUP") { puts "Ouch!"; exit }
+ *      # ... do some work ...
+ *    end
+ *    # ...
+ *    Process.kill("HUP", pid)
+ *    Process.wait
+ *
+ *  Output:
  *
  *     Ouch!
  *
- *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
- *  RangeError will be raised.  Otherwise unless _signal_ is a String
- *  or a Symbol, and a known signal name, ArgumentError will be
- *  raised.
+ *  Exceptions:
  *
- *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
- *  when failed because of no privilege, will be raised.  In these
- *  cases, signals may have been sent to preceding processes.
+ *  - Raises Errno::EINVAL or RangeError if +signal+ is an integer
+ *    but invalid.
+ *  - Raises ArgumentError if +signal+ is a string or symbol
+ *    but invalid.
+ *  - Raises Errno::ESRCH or RangeError if one of +ids+ is invalid.
+ *  - Raises Errno::EPERM if needed permissions are not in force.
+ *
+ *  In the last two cases, signals may have been sent to some processes.
  */
 
 static VALUE
