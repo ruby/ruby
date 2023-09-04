@@ -8642,7 +8642,8 @@ get_PROCESS_ID(ID _x, VALUE *_y)
  *    Process.kill(signal, *ids) -> count
  *
  *  Sends a signal to each process specified by +ids+
- *  (which must specify at least one ID).
+ *  (which must specify at least one ID);
+ *  returns the count of signals sent.
  *
  *  For each given +id+, if +id+ is:
  *
