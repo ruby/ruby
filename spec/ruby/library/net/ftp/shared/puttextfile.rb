@@ -3,7 +3,7 @@ describe :net_ftp_puttextfile, shared: true do
     @server = NetFTPSpecs::DummyFTP.new
     @server.serve_once
 
-    @local_fixture_file  = File.dirname(__FILE__) + "/../fixtures/puttextfile"
+    @local_fixture_file  = __dir__ + "/../fixtures/puttextfile"
     @remote_tmp_file = tmp("textfile", false)
 
     @ftp = Net::FTP.new

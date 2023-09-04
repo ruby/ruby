@@ -85,7 +85,7 @@ describe "File.absolute_path" do
   end
 
   it "accepts a second argument of a directory from which to resolve the path" do
-    File.absolute_path(__FILE__, File.dirname(__FILE__)).should == @abs
+    File.absolute_path(__FILE__, __dir__).should == @abs
   end
 
   it "calls #to_path on its argument" do

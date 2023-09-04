@@ -24,7 +24,7 @@ describe "BigDecimal#add" do
   end
 
   it "returns a + b with given precision" do
-    # documentation states, that precision ist optional, but it ain't,
+    # documentation states that precision is optional, but it ain't,
     @two.add(@one, 1).should == @three
     @one .add(@two, 1).should == @three
     @one.add(@one_minus, 1).should == @zero

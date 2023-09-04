@@ -14,7 +14,7 @@ describe "Numeric#clone" do
     1.clone.frozen?.should == true
   end
 
-  it "accepts optonal keyword argument :freeze" do
+  it "accepts optional keyword argument :freeze" do
     value = 1
     value.clone(freeze: true).should equal(value)
   end

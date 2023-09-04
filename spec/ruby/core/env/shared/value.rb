@@ -16,6 +16,13 @@ describe :env_value, shared: true do
     ENV.send(@method, "foo").should == false
   end
 
+  it "coerces the value element with #to_str" do
+    ENV["foo"] = "bar"
+    v = mock('value')
+    v.should_receive(:to_str).and_return("bar")
+    ENV.send(@method, v).should == true
+  end
+
   it "returns nil if the argument is not a String and does not respond to #to_str" do
     ENV.send(@method, Object.new).should == nil
   end
