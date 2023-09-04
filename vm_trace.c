@@ -569,10 +569,6 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
  *       line prog.rb:3             :test           Test
  *       line prog.rb:4             :test           Test
  *     return prog.rb:5             :test           Test
- *
- * Note that for +c-call+ and +c-return+ events, the binding returned is the
- * binding of the nearest Ruby method calling the C method, since C methods
- * themselves do not have bindings.
  */
 
 static VALUE
