@@ -1657,7 +1657,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*%%%*/
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
 		| defn_head f_opt_paren_args '=' command
 		    {
@@ -1931,14 +1931,14 @@ command		: fcall command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, Qnull, &@3, &@$);
 		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idCOLON2), $3, $4) %*/
+		    /*% ripper: command_call!($1, $2, $3, $4) %*/
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
 		    {
 		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
 		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idCOLON2), $3, $4), $5) %*/
+		    /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
 		   }
 		| keyword_super command_args
 		    {
@@ -2409,7 +2409,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		    /*%%%*/
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $6, &@$);
 		    /*% %*/
-		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $6) %*/
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
 		    {
@@ -3910,14 +3910,14 @@ method_call	: fcall paren_args
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
 			nd_set_line($$, @3.end_pos.lineno);
 		    /*% %*/
-		    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), $3), $4) %*/
+		    /*% ripper: method_add_arg!(call!($1, $2, $3), $4) %*/
 		    }
 		| primary_value tCOLON2 operation3
 		    {
 		    /*%%%*/
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, Qnull, &@3, &@$);
 		    /*% %*/
-		    /*% ripper: call!($1, ID2VAL(idCOLON2), $3) %*/
+		    /*% ripper: call!($1, $2, $3) %*/
 		    }
 		| primary_value call_op paren_args
 		    {
@@ -3933,7 +3933,7 @@ method_call	: fcall paren_args
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, ID2VAL(idCall), $3, &@2, &@$);
 			nd_set_line($$, @2.end_pos.lineno);
 		    /*% %*/
-		    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), ID2VAL(idCall)), $3) %*/
+		    /*% ripper: method_add_arg!(call!($1, $2, ID2VAL(idCall)), $3) %*/
 		    }
 		| keyword_super paren_args
 		    {
