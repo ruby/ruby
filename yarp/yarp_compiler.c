@@ -359,6 +359,12 @@ yp_lookup_local_index_with_depth(rb_iseq_t *iseq, yp_compile_context_t *compile_
     return yp_lookup_local_index(iseq, compile_context, constant_id);
 }
 
+static ID
+yp_constant_id_lookup(yp_compile_context_t *compile_context, ID constant)
+{
+    return compile_context->constants[constant - 1];
+}
+
 static rb_iseq_t *
 yp_new_child_iseq(rb_iseq_t *iseq, yp_scope_node_t * node, yp_parser_t *parser,
                VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
@@ -616,7 +622,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           LABEL *end_label = NEW_LABEL(lineno);
 
-          ID class_variable_name_id = compile_context->constants[class_variable_and_write_node->name - 1];
+          ID class_variable_name_id = yp_constant_id_lookup(compile_context, class_variable_and_write_node->name);
           VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
 
           ADD_INSN2(ret, &dummy_line_node, getclassvariable,
@@ -649,7 +655,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_CLASS_VARIABLE_OPERATOR_WRITE_NODE: {
           yp_class_variable_operator_write_node_t *class_variable_operator_write_node = (yp_class_variable_operator_write_node_t*) node;
 
-          ID class_variable_name_id = compile_context->constants[class_variable_operator_write_node->name - 1];
+          ID class_variable_name_id = yp_constant_id_lookup(compile_context, class_variable_operator_write_node->name);
           VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
 
           ADD_INSN2(ret, &dummy_line_node, getclassvariable,
@@ -657,7 +663,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   get_cvar_ic_value(iseq, class_variable_name_id));
 
           yp_compile_node(iseq, class_variable_operator_write_node->value, ret, src, false, compile_context);
-          ID method_id = compile_context->constants[class_variable_operator_write_node->operator - 1];
+          ID method_id = yp_constant_id_lookup(compile_context, class_variable_operator_write_node->operator);
 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
@@ -677,7 +683,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           LABEL *end_label = NEW_LABEL(lineno);
 
-          ID class_variable_name_id = compile_context->constants[class_variable_or_write_node->name - 1];
+          ID class_variable_name_id = yp_constant_id_lookup(compile_context, class_variable_or_write_node->name);
           VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
 
           ADD_INSN2(ret, &dummy_line_node, getclassvariable,
@@ -805,7 +811,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(constant_name));
 
           yp_compile_node(iseq, constant_operator_write_node->value, ret, src, false, compile_context);
-          ID method_id = compile_context->constants[constant_operator_write_node->operator - 1];
+          ID method_id = yp_constant_id_lookup(compile_context, constant_operator_write_node->operator);
 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
@@ -999,7 +1005,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(global_variable_name));
 
           yp_compile_node(iseq, global_variable_operator_write_node->value, ret, src, false, compile_context);
-          ID method_id = compile_context->constants[global_variable_operator_write_node->operator - 1];
+          ID method_id = yp_constant_id_lookup(compile_context, global_variable_operator_write_node->operator);
 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
@@ -1116,7 +1122,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           LABEL *end_label = NEW_LABEL(lineno);
 
-          ID instance_variable_name_id = compile_context->constants[instance_variable_and_write_node->name - 1];
+          ID instance_variable_name_id = yp_constant_id_lookup(compile_context, instance_variable_and_write_node->name);
+
           VALUE instance_variable_name_val = ID2SYM(instance_variable_name_id);
 
           ADD_INSN2(ret, &dummy_line_node, getinstancevariable,
@@ -1149,7 +1156,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE: {
           yp_instance_variable_operator_write_node_t *instance_variable_operator_write_node = (yp_instance_variable_operator_write_node_t*) node;
 
-          ID instance_variable_name_id = compile_context->constants[instance_variable_operator_write_node->name - 1];
+          ID instance_variable_name_id = yp_constant_id_lookup(compile_context, instance_variable_operator_write_node->name);
           VALUE instance_variable_name_val = ID2SYM(instance_variable_name_id);
 
           ADD_INSN2(ret, &dummy_line_node, getinstancevariable,
@@ -1157,7 +1164,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   get_ivar_ic_value(iseq, instance_variable_name_id));
 
           yp_compile_node(iseq, instance_variable_operator_write_node->value, ret, src, false, compile_context);
-          ID method_id = compile_context->constants[instance_variable_operator_write_node->operator - 1];
+          ID method_id = yp_constant_id_lookup(compile_context, instance_variable_operator_write_node->operator);
 
           int flags = VM_CALL_ARGS_SIMPLE;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
@@ -1177,7 +1184,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           LABEL *end_label = NEW_LABEL(lineno);
 
-          ID instance_variable_name_id = compile_context->constants[instance_variable_or_write_node->name - 1];
+          ID instance_variable_name_id = yp_constant_id_lookup(compile_context, instance_variable_or_write_node->name);
           VALUE instance_variable_name_val = ID2SYM(instance_variable_name_id);
 
           ADD_INSN2(ret, &dummy_line_node, getinstancevariable,
@@ -1365,7 +1372,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_GETLOCAL(ret, &dummy_line_node, local_index, depth);
 
           yp_compile_node(iseq, local_variable_operator_write_node->value, ret, src, false, compile_context);
-          ID method_id = compile_context->constants[local_variable_operator_write_node->operator - 1];
+          ID method_id = yp_constant_id_lookup(compile_context, local_variable_operator_write_node->operator);
 
           int flags = VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_VCALL;
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, method_id, INT2NUM(1), INT2FIX(flags));
@@ -1645,7 +1652,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           // Calculate the local index for all locals
           for (size_t i = 0; i < size; i++) {
               yp_constant_id_t constant_id = locals.ids[i];
-              ID local = compile_context->constants[constant_id - 1];
+              ID local = yp_constant_id_lookup(compile_context, constant_id);
               tbl->ids[i] = local;
               st_insert(index_lookup_table, constant_id, i);
           }
