@@ -380,7 +380,7 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
     VALUE new_val = *(((VALUE *)new_key_ptr) + 1);
 
     if (existing) {
-        assert(orig_pair[0] == *(VALUE *)new_key);
+        assert(*(VALUE *)*key == new_key);
     }
     else {
         VALUE *pair = xmalloc(sizeof(VALUE) * 2);
@@ -449,6 +449,9 @@ wmap_delete(VALUE self, VALUE key)
     st_data_t orig_val_data;
     if (st_delete(w->table, &orig_key_data, &orig_val_data)) {
         VALUE orig_val = *(VALUE *)orig_val_data;
+
+        rb_gc_remove_weak(self, (VALUE *)orig_key_data);
+        rb_gc_remove_weak(self, (VALUE *)orig_val_data);
 
         wmap_free_entry((VALUE *)orig_key_data, (VALUE *)orig_val_data);
 
@@ -775,6 +778,8 @@ wkmap_delete(VALUE self, VALUE key)
     st_data_t orig_val_data;
     if (st_delete(w->table, &orig_key_data, &orig_val_data)) {
         VALUE orig_val = (VALUE)orig_val_data;
+
+        rb_gc_remove_weak(self, (VALUE *)orig_key_data);
 
         ruby_sized_xfree((VALUE *)orig_key_data, sizeof(VALUE));
 
