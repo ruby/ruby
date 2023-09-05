@@ -8716,8 +8716,8 @@ get_PROCESS_ID(ID _x, VALUE *_y)
  *  - +SIGPWR+: Power supply failure.
  *  - +SIGSYS+, +SIGUNUSED+: Bad system call.
  *
- *  Use `Signal.list` to see which signals are supported, and the
- *  actual values.
+ *  Use Signal.list to see which signals are supported, and the actual
+ *  values.
  *
  *  Additionally, signal +0+ is useful to determine if the process exists.
  *
