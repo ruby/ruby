@@ -8,7 +8,7 @@ ProgramNode(0...39)(
        ),
        RescueNode(13...34)(
          (13...19),
-         [ConstantReadNode(20...29)()],
+         [ConstantReadNode(20...29)(:Exception)],
          nil,
          nil,
          StatementsNode(31...34)(

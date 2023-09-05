@@ -285,13 +285,13 @@ ProgramNode(0...704)(
      ConstantPathWriteNode(288...301)(
        ConstantPathNode(288...293)(
          nil,
-         ConstantReadNode(290...293)(),
+         ConstantReadNode(290...293)(:Foo),
          (288...290)
        ),
        (294...295),
        ConstantPathNode(296...301)(
          nil,
-         ConstantReadNode(298...301)(),
+         ConstantReadNode(298...301)(:Bar),
          (296...298)
        )
      ),
@@ -308,6 +308,7 @@ ProgramNode(0...704)(
        (313...314)
      ),
      ConstantWriteNode(317...326)(
+       :CONST,
        (317...322),
        IntegerNode(325...326)(),
        (323...324)
@@ -315,11 +316,11 @@ ProgramNode(0...704)(
      ConstantPathWriteNode(327...350)(
        ConstantPathNode(327...346)(
          ConstantPathNode(327...339)(
-           ConstantReadNode(327...331)(),
-           ConstantReadNode(333...339)(),
+           ConstantReadNode(327...331)(:Name),
+           ConstantReadNode(333...339)(:Spaced),
            (331...333)
          ),
-         ConstantReadNode(341...346)(),
+         ConstantReadNode(341...346)(:CONST),
          (339...341)
        ),
        (347...348),

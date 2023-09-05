@@ -7,7 +7,7 @@ ProgramNode(0...52)(
           IfNode(11...20)(
             (13...15),
             TrueNode(16...20)(),
-            StatementsNode(11...12)([ConstantReadNode(11...12)()]),
+            StatementsNode(11...12)([ConstantReadNode(11...12)(:A)]),
             nil,
             nil
           ),
@@ -21,7 +21,7 @@ ProgramNode(0...52)(
           UnlessNode(29...43)(
             (31...37),
             FalseNode(38...43)(),
-            StatementsNode(29...30)([ConstantReadNode(29...30)()]),
+            StatementsNode(29...30)([ConstantReadNode(29...30)(:D)]),
             nil,
             nil
           ),

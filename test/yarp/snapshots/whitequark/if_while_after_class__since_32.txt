@@ -8,11 +8,11 @@ ProgramNode(0...178)(
          IfNode(6...25)(
            (6...8),
            TrueNode(9...13)(),
-           StatementsNode(15...21)([ConstantReadNode(15...21)()]),
+           StatementsNode(15...21)([ConstantReadNode(15...21)(:Object)]),
            nil,
            (22...25)
          ),
-         ConstantReadNode(27...33)(),
+         ConstantReadNode(27...33)(:Kernel),
          (25...27)
        ),
        nil,
@@ -31,13 +31,13 @@ ProgramNode(0...178)(
            TrueNode(52...56)(),
            StatementsNode(58...70)(
              [BreakNode(58...70)(
-                ArgumentsNode(64...70)([ConstantReadNode(64...70)()]),
+                ArgumentsNode(64...70)([ConstantReadNode(64...70)(:Object)]),
                 (58...63)
               )]
            ),
            0
          ),
-         ConstantReadNode(76...82)(),
+         ConstantReadNode(76...82)(:Kernel),
          (74...76)
        ),
        nil,
@@ -53,11 +53,11 @@ ProgramNode(0...178)(
          IfNode(96...115)(
            (96...98),
            TrueNode(99...103)(),
-           StatementsNode(105...111)([ConstantReadNode(105...111)()]),
+           StatementsNode(105...111)([ConstantReadNode(105...111)(:Object)]),
            nil,
            (112...115)
          ),
-         ConstantReadNode(117...123)(),
+         ConstantReadNode(117...123)(:Kernel),
          (115...117)
        ),
        nil,
@@ -74,13 +74,15 @@ ProgramNode(0...178)(
            TrueNode(143...147)(),
            StatementsNode(149...161)(
              [BreakNode(149...161)(
-                ArgumentsNode(155...161)([ConstantReadNode(155...161)()]),
+                ArgumentsNode(155...161)(
+                  [ConstantReadNode(155...161)(:Object)]
+                ),
                 (149...154)
               )]
            ),
            0
          ),
-         ConstantReadNode(167...173)(),
+         ConstantReadNode(167...173)(:Kernel),
          (165...167)
        ),
        nil,

@@ -26,7 +26,7 @@ ProgramNode(0...44)(
      ConstantPathWriteNode(22...32)(
        ConstantPathNode(22...28)(
          CallNode(22...25)(nil, nil, (22...25), nil, nil, nil, nil, 2, "foo"),
-         ConstantReadNode(27...28)(),
+         ConstantReadNode(27...28)(:A),
          (25...27)
        ),
        (29...30),

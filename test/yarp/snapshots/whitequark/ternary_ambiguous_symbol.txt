@@ -20,7 +20,7 @@ ProgramNode(0...13)(
        StatementsNode(10...11)([LocalVariableReadNode(10...11)(:t, 0)]),
        ElseNode(11...13)(
          (11...12),
-         StatementsNode(12...13)([ConstantReadNode(12...13)()]),
+         StatementsNode(12...13)([ConstantReadNode(12...13)(:T)]),
          nil
        ),
        nil

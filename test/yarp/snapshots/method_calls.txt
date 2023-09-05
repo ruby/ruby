@@ -897,7 +897,7 @@ ProgramNode(0...1237)(
        "some_func"
      ),
      CallNode(697...715)(
-       ConstantReadNode(697...703)(),
+       ConstantReadNode(697...703)(:Kernel),
        (703...704),
        (704...711),
        (711...712),
@@ -947,8 +947,8 @@ ProgramNode(0...1237)(
      ),
      CallNode(745...757)(
        ConstantPathNode(745...749)(
-         ConstantReadNode(745...746)(),
-         ConstantReadNode(748...749)(),
+         ConstantReadNode(745...746)(:A),
+         ConstantReadNode(748...749)(:B),
          (746...748)
        ),
        (749...751),
@@ -964,8 +964,8 @@ ProgramNode(0...1237)(
      ),
      CallNode(759...772)(
        ConstantPathNode(759...763)(
-         ConstantReadNode(759...760)(),
-         ConstantReadNode(762...763)(),
+         ConstantReadNode(759...760)(:A),
+         ConstantReadNode(762...763)(:B),
          (760...762)
        ),
        (763...765),
@@ -981,8 +981,8 @@ ProgramNode(0...1237)(
      ),
      CallNode(774...791)(
        ConstantPathNode(774...778)(
-         ConstantReadNode(774...775)(),
-         ConstantReadNode(777...778)(),
+         ConstantReadNode(774...775)(:A),
+         ConstantReadNode(777...778)(:B),
          (775...777)
        ),
        (778...780),
@@ -1175,7 +1175,7 @@ ProgramNode(0...1237)(
          [ClassNode(905...929)(
             [],
             (905...910),
-            ConstantReadNode(911...914)(),
+            ConstantReadNode(911...914)(:Bar),
             nil,
             nil,
             StatementsNode(915...925)(
@@ -1209,7 +1209,7 @@ ProgramNode(0...1237)(
          [ModuleNode(935...960)(
             [],
             (935...941),
-            ConstantReadNode(942...945)(),
+            ConstantReadNode(942...945)(:Bar),
             StatementsNode(946...956)(
               [CallNode(946...956)(
                  nil,

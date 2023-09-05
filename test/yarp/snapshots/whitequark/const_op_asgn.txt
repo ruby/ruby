@@ -2,12 +2,13 @@ ProgramNode(0...77)(
   [],
   StatementsNode(0...77)(
     [ConstantPathOperatorWriteNode(0...8)(
-       ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
+       ConstantPathNode(0...3)(nil, ConstantReadNode(2...3)(:A), (0...2)),
        (4...6),
        IntegerNode(7...8)(),
        :+
      ),
      ConstantOperatorWriteNode(10...16)(
+       :A,
        (10...11),
        (12...14),
        IntegerNode(15...16)(),
@@ -15,8 +16,8 @@ ProgramNode(0...77)(
      ),
      ConstantPathOperatorWriteNode(18...27)(
        ConstantPathNode(18...22)(
-         ConstantReadNode(18...19)(),
-         ConstantReadNode(21...22)(),
+         ConstantReadNode(18...19)(:B),
+         ConstantReadNode(21...22)(:A),
          (19...21)
        ),
        (23...25),
@@ -31,7 +32,7 @@ ProgramNode(0...77)(
          [ConstantPathOrWriteNode(36...45)(
             ConstantPathNode(36...39)(
               nil,
-              ConstantReadNode(38...39)(),
+              ConstantReadNode(38...39)(:A),
               (36...38)
             ),
             (40...43),
@@ -54,7 +55,7 @@ ProgramNode(0...77)(
          [ConstantPathOrWriteNode(59...72)(
             ConstantPathNode(59...66)(
               SelfNode(59...63)(),
-              ConstantReadNode(65...66)(),
+              ConstantReadNode(65...66)(:A),
               (63...65)
             ),
             (67...70),

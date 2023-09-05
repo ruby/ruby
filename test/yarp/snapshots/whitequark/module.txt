@@ -4,7 +4,7 @@ ProgramNode(0...15)(
     [ModuleNode(0...15)(
        [],
        (0...6),
-       ConstantReadNode(7...10)(),
+       ConstantReadNode(7...10)(:Foo),
        nil,
        (12...15),
        "Foo"

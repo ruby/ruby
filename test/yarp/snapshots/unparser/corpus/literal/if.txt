@@ -52,7 +52,7 @@ ProgramNode(0...246)(
      ModuleNode(102...133)(
        [:foo],
        (102...108),
-       ConstantReadNode(109...110)(),
+       ConstantReadNode(109...110)(:A),
        StatementsNode(113...129)(
          [IfNode(113...129)(
             (123...125),
@@ -86,7 +86,7 @@ ProgramNode(0...246)(
      ModuleNode(135...170)(
        [:foo],
        (135...141),
-       ConstantReadNode(142...143)(),
+       ConstantReadNode(142...143)(:B),
        StatementsNode(146...166)(
          [UnlessNode(146...166)(
             (156...162),

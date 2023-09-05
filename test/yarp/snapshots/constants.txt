@@ -2,35 +2,40 @@ ProgramNode(0...792)(
   [],
   StatementsNode(0...792)(
     [ConstantPathNode(0...4)(
-       ConstantReadNode(0...1)(),
-       ConstantReadNode(3...4)(),
+       ConstantReadNode(0...1)(:A),
+       ConstantReadNode(3...4)(:B),
        (1...3)
      ),
      ConstantPathNode(6...13)(
        ConstantPathNode(6...10)(
-         ConstantReadNode(6...7)(),
-         ConstantReadNode(9...10)(),
+         ConstantReadNode(6...7)(:A),
+         ConstantReadNode(9...10)(:B),
          (7...9)
        ),
-       ConstantReadNode(12...13)(),
+       ConstantReadNode(12...13)(:C),
        (10...12)
      ),
      ConstantPathNode(15...19)(
        CallNode(15...16)(nil, nil, (15...16), nil, nil, nil, nil, 2, "a"),
-       ConstantReadNode(18...19)(),
+       ConstantReadNode(18...19)(:B),
        (16...18)
      ),
      ConstantPathWriteNode(21...29)(
        ConstantPathNode(21...25)(
-         ConstantReadNode(21...22)(),
-         ConstantReadNode(24...25)(),
+         ConstantReadNode(21...22)(:A),
+         ConstantReadNode(24...25)(:B),
          (22...24)
        ),
        (26...27),
        IntegerNode(28...29)()
      ),
-     ConstantWriteNode(31...36)((31...32), IntegerNode(35...36)(), (33...34)),
-     ConstantReadNode(38...41)(),
+     ConstantWriteNode(31...36)(
+       :A,
+       (31...32),
+       IntegerNode(35...36)(),
+       (33...34)
+     ),
+     ConstantReadNode(38...41)(:ABC),
      CallNode(43...48)(
        nil,
        nil,
@@ -123,7 +128,7 @@ ProgramNode(0...792)(
        "Foo"
      ),
      CallNode(81...94)(
-       ConstantReadNode(81...84)(),
+       ConstantReadNode(81...84)(:Foo),
        (84...86),
        (86...89),
        nil,
@@ -149,7 +154,7 @@ ProgramNode(0...792)(
        "Bar"
      ),
      CallNode(96...110)(
-       ConstantReadNode(96...99)(),
+       ConstantReadNode(96...99)(:Foo),
        (99...101),
        (101...104),
        nil,
@@ -177,7 +182,7 @@ ProgramNode(0...792)(
        "Bar"
      ),
      CallNode(112...125)(
-       ConstantReadNode(112...115)(),
+       ConstantReadNode(112...115)(:Foo),
        (115...117),
        (117...120),
        nil,
@@ -205,7 +210,7 @@ ProgramNode(0...792)(
      CallNode(127...135)(
        ConstantPathNode(127...130)(
          nil,
-         ConstantReadNode(129...130)(),
+         ConstantReadNode(129...130)(:A),
          (127...129)
        ),
        (130...132),
@@ -220,7 +225,7 @@ ProgramNode(0...792)(
      ConstantPathWriteNode(137...144)(
        ConstantPathNode(137...140)(
          nil,
-         ConstantReadNode(139...140)(),
+         ConstantReadNode(139...140)(:A),
          (137...139)
        ),
        (141...142),
@@ -230,10 +235,10 @@ ProgramNode(0...792)(
        ConstantPathNode(146...152)(
          ConstantPathNode(146...149)(
            nil,
-           ConstantReadNode(148...149)(),
+           ConstantReadNode(148...149)(:A),
            (146...148)
          ),
-         ConstantReadNode(151...152)(),
+         ConstantReadNode(151...152)(:B),
          (149...151)
        ),
        (153...154),
@@ -242,19 +247,19 @@ ProgramNode(0...792)(
      ConstantPathNode(158...164)(
        ConstantPathNode(158...161)(
          nil,
-         ConstantReadNode(160...161)(),
+         ConstantReadNode(160...161)(:A),
          (158...160)
        ),
-       ConstantReadNode(163...164)(),
+       ConstantReadNode(163...164)(:B),
        (161...163)
      ),
      ConstantPathNode(166...169)(
        nil,
-       ConstantReadNode(168...169)(),
+       ConstantReadNode(168...169)(:A),
        (166...168)
      ),
      CallNode(171...179)(
-       ConstantReadNode(171...172)(),
+       ConstantReadNode(171...172)(:A),
        (172...174),
        (174...179),
        nil,
@@ -266,8 +271,8 @@ ProgramNode(0...792)(
      ),
      CallNode(181...191)(
        ConstantPathNode(181...185)(
-         ConstantReadNode(181...182)(),
-         ConstantReadNode(184...185)(),
+         ConstantReadNode(181...182)(:A),
+         ConstantReadNode(184...185)(:B),
          (182...184)
        ),
        (185...187),
@@ -280,7 +285,7 @@ ProgramNode(0...792)(
        "true"
      ),
      CallNode(193...197)(
-       ConstantReadNode(193...194)(),
+       ConstantReadNode(193...194)(:A),
        (194...196),
        (196...197),
        nil,
@@ -291,7 +296,7 @@ ProgramNode(0...792)(
        "&"
      ),
      CallNode(199...203)(
-       ConstantReadNode(199...200)(),
+       ConstantReadNode(199...200)(:A),
        (200...202),
        (202...203),
        nil,
@@ -302,7 +307,7 @@ ProgramNode(0...792)(
        "`"
      ),
      CallNode(205...209)(
-       ConstantReadNode(205...206)(),
+       ConstantReadNode(205...206)(:A),
        (206...208),
        (208...209),
        nil,
@@ -313,7 +318,7 @@ ProgramNode(0...792)(
        "!"
      ),
      CallNode(211...216)(
-       ConstantReadNode(211...212)(),
+       ConstantReadNode(211...212)(:A),
        (212...214),
        (214...216),
        nil,
@@ -324,7 +329,7 @@ ProgramNode(0...792)(
        "!="
      ),
      CallNode(218...222)(
-       ConstantReadNode(218...219)(),
+       ConstantReadNode(218...219)(:A),
        (219...221),
        (221...222),
        nil,
@@ -335,7 +340,7 @@ ProgramNode(0...792)(
        "^"
      ),
      CallNode(224...229)(
-       ConstantReadNode(224...225)(),
+       ConstantReadNode(224...225)(:A),
        (225...227),
        (227...229),
        nil,
@@ -346,7 +351,7 @@ ProgramNode(0...792)(
        "=="
      ),
      CallNode(231...237)(
-       ConstantReadNode(231...232)(),
+       ConstantReadNode(231...232)(:A),
        (232...234),
        (234...237),
        nil,
@@ -357,7 +362,7 @@ ProgramNode(0...792)(
        "==="
      ),
      CallNode(239...244)(
-       ConstantReadNode(239...240)(),
+       ConstantReadNode(239...240)(:A),
        (240...242),
        (242...244),
        nil,
@@ -368,7 +373,7 @@ ProgramNode(0...792)(
        "=~"
      ),
      CallNode(246...250)(
-       ConstantReadNode(246...247)(),
+       ConstantReadNode(246...247)(:A),
        (247...249),
        (249...250),
        nil,
@@ -379,7 +384,7 @@ ProgramNode(0...792)(
        ">"
      ),
      CallNode(252...257)(
-       ConstantReadNode(252...253)(),
+       ConstantReadNode(252...253)(:A),
        (253...255),
        (255...257),
        nil,
@@ -390,7 +395,7 @@ ProgramNode(0...792)(
        ">="
      ),
      CallNode(259...264)(
-       ConstantReadNode(259...260)(),
+       ConstantReadNode(259...260)(:A),
        (260...262),
        (262...264),
        nil,
@@ -401,7 +406,7 @@ ProgramNode(0...792)(
        ">>"
      ),
      CallNode(266...271)(
-       ConstantReadNode(266...267)(),
+       ConstantReadNode(266...267)(:A),
        (267...269),
        (269...271),
        nil,
@@ -412,12 +417,12 @@ ProgramNode(0...792)(
        "<<"
      ),
      ConstantPathNode(273...281)(
-       ConstantReadNode(273...274)(),
-       ConstantReadNode(280...281)(),
+       ConstantReadNode(273...274)(:A),
+       ConstantReadNode(280...281)(:C),
        (274...276)
      ),
      CallNode(283...291)(
-       ConstantReadNode(283...284)(),
+       ConstantReadNode(283...284)(:A),
        (284...286),
        (286...291),
        nil,
@@ -428,7 +433,7 @@ ProgramNode(0...792)(
        "alias"
      ),
      CallNode(293...299)(
-       ConstantReadNode(293...294)(),
+       ConstantReadNode(293...294)(:A),
        (294...296),
        (296...299),
        nil,
@@ -439,7 +444,7 @@ ProgramNode(0...792)(
        "and"
      ),
      CallNode(301...309)(
-       ConstantReadNode(301...302)(),
+       ConstantReadNode(301...302)(:A),
        (302...304),
        (304...309),
        nil,
@@ -450,12 +455,12 @@ ProgramNode(0...792)(
        "begin"
      ),
      ConstantPathNode(311...319)(
-       ConstantReadNode(311...312)(),
-       ConstantReadNode(314...319)(),
+       ConstantReadNode(311...312)(:A),
+       ConstantReadNode(314...319)(:BEGIN),
        (312...314)
      ),
      CallNode(321...329)(
-       ConstantReadNode(321...322)(),
+       ConstantReadNode(321...322)(:A),
        (322...324),
        (324...329),
        nil,
@@ -466,7 +471,7 @@ ProgramNode(0...792)(
        "break"
      ),
      CallNode(331...339)(
-       ConstantReadNode(331...332)(),
+       ConstantReadNode(331...332)(:A),
        (332...334),
        (334...339),
        nil,
@@ -477,7 +482,7 @@ ProgramNode(0...792)(
        "class"
      ),
      CallNode(341...347)(
-       ConstantReadNode(341...342)(),
+       ConstantReadNode(341...342)(:A),
        (342...344),
        (344...347),
        nil,
@@ -488,7 +493,7 @@ ProgramNode(0...792)(
        "def"
      ),
      CallNode(349...359)(
-       ConstantReadNode(349...350)(),
+       ConstantReadNode(349...350)(:A),
        (350...352),
        (352...359),
        nil,
@@ -499,7 +504,7 @@ ProgramNode(0...792)(
        "defined"
      ),
      CallNode(361...366)(
-       ConstantReadNode(361...362)(),
+       ConstantReadNode(361...362)(:A),
        (362...364),
        (364...366),
        nil,
@@ -510,7 +515,7 @@ ProgramNode(0...792)(
        "do"
      ),
      CallNode(368...375)(
-       ConstantReadNode(368...369)(),
+       ConstantReadNode(368...369)(:A),
        (369...371),
        (371...375),
        nil,
@@ -521,7 +526,7 @@ ProgramNode(0...792)(
        "else"
      ),
      CallNode(377...385)(
-       ConstantReadNode(377...378)(),
+       ConstantReadNode(377...378)(:A),
        (378...380),
        (380...385),
        nil,
@@ -532,7 +537,7 @@ ProgramNode(0...792)(
        "elsif"
      ),
      CallNode(387...393)(
-       ConstantReadNode(387...388)(),
+       ConstantReadNode(387...388)(:A),
        (388...390),
        (390...393),
        nil,
@@ -543,12 +548,12 @@ ProgramNode(0...792)(
        "end"
      ),
      ConstantPathNode(395...401)(
-       ConstantReadNode(395...396)(),
-       ConstantReadNode(398...401)(),
+       ConstantReadNode(395...396)(:A),
+       ConstantReadNode(398...401)(:END),
        (396...398)
      ),
      CallNode(403...412)(
-       ConstantReadNode(403...404)(),
+       ConstantReadNode(403...404)(:A),
        (404...406),
        (406...412),
        nil,
@@ -559,7 +564,7 @@ ProgramNode(0...792)(
        "ensure"
      ),
      CallNode(414...422)(
-       ConstantReadNode(414...415)(),
+       ConstantReadNode(414...415)(:A),
        (415...417),
        (417...422),
        nil,
@@ -570,7 +575,7 @@ ProgramNode(0...792)(
        "false"
      ),
      CallNode(424...430)(
-       ConstantReadNode(424...425)(),
+       ConstantReadNode(424...425)(:A),
        (425...427),
        (427...430),
        nil,
@@ -581,7 +586,7 @@ ProgramNode(0...792)(
        "for"
      ),
      CallNode(432...437)(
-       ConstantReadNode(432...433)(),
+       ConstantReadNode(432...433)(:A),
        (433...435),
        (435...437),
        nil,
@@ -592,7 +597,7 @@ ProgramNode(0...792)(
        "if"
      ),
      CallNode(439...444)(
-       ConstantReadNode(439...440)(),
+       ConstantReadNode(439...440)(:A),
        (440...442),
        (442...444),
        nil,
@@ -603,7 +608,7 @@ ProgramNode(0...792)(
        "in"
      ),
      CallNode(446...453)(
-       ConstantReadNode(446...447)(),
+       ConstantReadNode(446...447)(:A),
        (447...449),
        (449...453),
        nil,
@@ -614,7 +619,7 @@ ProgramNode(0...792)(
        "next"
      ),
      CallNode(455...461)(
-       ConstantReadNode(455...456)(),
+       ConstantReadNode(455...456)(:A),
        (456...458),
        (458...461),
        nil,
@@ -625,7 +630,7 @@ ProgramNode(0...792)(
        "nil"
      ),
      CallNode(463...469)(
-       ConstantReadNode(463...464)(),
+       ConstantReadNode(463...464)(:A),
        (464...466),
        (466...469),
        nil,
@@ -636,7 +641,7 @@ ProgramNode(0...792)(
        "not"
      ),
      CallNode(471...476)(
-       ConstantReadNode(471...472)(),
+       ConstantReadNode(471...472)(:A),
        (472...474),
        (474...476),
        nil,
@@ -647,7 +652,7 @@ ProgramNode(0...792)(
        "or"
      ),
      CallNode(478...485)(
-       ConstantReadNode(478...479)(),
+       ConstantReadNode(478...479)(:A),
        (479...481),
        (481...485),
        nil,
@@ -658,7 +663,7 @@ ProgramNode(0...792)(
        "redo"
      ),
      CallNode(487...496)(
-       ConstantReadNode(487...488)(),
+       ConstantReadNode(487...488)(:A),
        (488...490),
        (490...496),
        nil,
@@ -669,7 +674,7 @@ ProgramNode(0...792)(
        "rescue"
      ),
      CallNode(498...506)(
-       ConstantReadNode(498...499)(),
+       ConstantReadNode(498...499)(:A),
        (499...501),
        (501...506),
        nil,
@@ -680,7 +685,7 @@ ProgramNode(0...792)(
        "retry"
      ),
      CallNode(508...517)(
-       ConstantReadNode(508...509)(),
+       ConstantReadNode(508...509)(:A),
        (509...511),
        (511...517),
        nil,
@@ -691,7 +696,7 @@ ProgramNode(0...792)(
        "return"
      ),
      CallNode(519...526)(
-       ConstantReadNode(519...520)(),
+       ConstantReadNode(519...520)(:A),
        (520...522),
        (522...526),
        nil,
@@ -702,7 +707,7 @@ ProgramNode(0...792)(
        "self"
      ),
      CallNode(528...536)(
-       ConstantReadNode(528...529)(),
+       ConstantReadNode(528...529)(:A),
        (529...531),
        (531...536),
        nil,
@@ -713,7 +718,7 @@ ProgramNode(0...792)(
        "super"
      ),
      CallNode(538...545)(
-       ConstantReadNode(538...539)(),
+       ConstantReadNode(538...539)(:A),
        (539...541),
        (541...545),
        nil,
@@ -724,7 +729,7 @@ ProgramNode(0...792)(
        "then"
      ),
      CallNode(547...554)(
-       ConstantReadNode(547...548)(),
+       ConstantReadNode(547...548)(:A),
        (548...550),
        (550...554),
        nil,
@@ -735,7 +740,7 @@ ProgramNode(0...792)(
        "true"
      ),
      CallNode(556...564)(
-       ConstantReadNode(556...557)(),
+       ConstantReadNode(556...557)(:A),
        (557...559),
        (559...564),
        nil,
@@ -746,7 +751,7 @@ ProgramNode(0...792)(
        "undef"
      ),
      CallNode(566...575)(
-       ConstantReadNode(566...567)(),
+       ConstantReadNode(566...567)(:A),
        (567...569),
        (569...575),
        nil,
@@ -757,7 +762,7 @@ ProgramNode(0...792)(
        "unless"
      ),
      CallNode(577...585)(
-       ConstantReadNode(577...578)(),
+       ConstantReadNode(577...578)(:A),
        (578...580),
        (580...585),
        nil,
@@ -768,7 +773,7 @@ ProgramNode(0...792)(
        "until"
      ),
      CallNode(587...594)(
-       ConstantReadNode(587...588)(),
+       ConstantReadNode(587...588)(:A),
        (588...590),
        (590...594),
        nil,
@@ -779,7 +784,7 @@ ProgramNode(0...792)(
        "when"
      ),
      CallNode(596...604)(
-       ConstantReadNode(596...597)(),
+       ConstantReadNode(596...597)(:A),
        (597...599),
        (599...604),
        nil,
@@ -790,7 +795,7 @@ ProgramNode(0...792)(
        "while"
      ),
      CallNode(606...614)(
-       ConstantReadNode(606...607)(),
+       ConstantReadNode(606...607)(:A),
        (607...609),
        (609...614),
        nil,
@@ -801,7 +806,7 @@ ProgramNode(0...792)(
        "yield"
      ),
      CallNode(616...631)(
-       ConstantReadNode(616...617)(),
+       ConstantReadNode(616...617)(:A),
        (617...619),
        (619...631),
        nil,
@@ -812,7 +817,7 @@ ProgramNode(0...792)(
        "__ENCODING__"
      ),
      CallNode(633...644)(
-       ConstantReadNode(633...634)(),
+       ConstantReadNode(633...634)(:A),
        (634...636),
        (636...644),
        nil,
@@ -823,7 +828,7 @@ ProgramNode(0...792)(
        "__FILE__"
      ),
      CallNode(646...657)(
-       ConstantReadNode(646...647)(),
+       ConstantReadNode(646...647)(:A),
        (647...649),
        (649...657),
        nil,
@@ -834,7 +839,7 @@ ProgramNode(0...792)(
        "__LINE__"
      ),
      CallNode(659...663)(
-       ConstantReadNode(659...660)(),
+       ConstantReadNode(659...660)(:A),
        (660...662),
        (662...663),
        nil,
@@ -845,7 +850,7 @@ ProgramNode(0...792)(
        "<"
      ),
      CallNode(665...671)(
-       ConstantReadNode(665...666)(),
+       ConstantReadNode(665...666)(:A),
        (666...668),
        (668...671),
        nil,
@@ -856,7 +861,7 @@ ProgramNode(0...792)(
        "<=>"
      ),
      CallNode(673...678)(
-       ConstantReadNode(673...674)(),
+       ConstantReadNode(673...674)(:A),
        (674...676),
        (676...678),
        nil,
@@ -867,7 +872,7 @@ ProgramNode(0...792)(
        "<<"
      ),
      CallNode(680...684)(
-       ConstantReadNode(680...681)(),
+       ConstantReadNode(680...681)(:A),
        (681...683),
        (683...684),
        nil,
@@ -878,7 +883,7 @@ ProgramNode(0...792)(
        "-"
      ),
      CallNode(686...690)(
-       ConstantReadNode(686...687)(),
+       ConstantReadNode(686...687)(:A),
        (687...689),
        (689...690),
        nil,
@@ -889,7 +894,7 @@ ProgramNode(0...792)(
        "%"
      ),
      CallNode(692...697)(
-       ConstantReadNode(692...693)(),
+       ConstantReadNode(692...693)(:A),
        (693...695),
        (695...696),
        nil,
@@ -912,7 +917,7 @@ ProgramNode(0...792)(
        "%"
      ),
      CallNode(699...704)(
-       ConstantReadNode(699...700)(),
+       ConstantReadNode(699...700)(:A),
        (700...702),
        (702...703),
        nil,
@@ -935,7 +940,7 @@ ProgramNode(0...792)(
        "%"
      ),
      CallNode(706...711)(
-       ConstantReadNode(706...707)(),
+       ConstantReadNode(706...707)(:A),
        (707...709),
        (709...710),
        nil,
@@ -958,29 +963,29 @@ ProgramNode(0...792)(
        "%"
      ),
      CallNode(713...718)(
-       ConstantReadNode(713...714)(),
+       ConstantReadNode(713...714)(:A),
        (714...716),
        (716...717),
        nil,
-       ArgumentsNode(717...718)([ConstantReadNode(717...718)()]),
+       ArgumentsNode(717...718)([ConstantReadNode(717...718)(:I)]),
        nil,
        nil,
        0,
        "%"
      ),
      CallNode(720...725)(
-       ConstantReadNode(720...721)(),
+       ConstantReadNode(720...721)(:A),
        (721...723),
        (723...724),
        nil,
-       ArgumentsNode(724...725)([ConstantReadNode(724...725)()]),
+       ArgumentsNode(724...725)([ConstantReadNode(724...725)(:W)]),
        nil,
        nil,
        0,
        "%"
      ),
      CallNode(727...731)(
-       ConstantReadNode(727...728)(),
+       ConstantReadNode(727...728)(:A),
        (728...730),
        (730...731),
        nil,
@@ -991,7 +996,7 @@ ProgramNode(0...792)(
        "|"
      ),
      CallNode(733...737)(
-       ConstantReadNode(733...734)(),
+       ConstantReadNode(733...734)(:A),
        (734...736),
        (736...737),
        nil,
@@ -1002,7 +1007,7 @@ ProgramNode(0...792)(
        "+"
      ),
      CallNode(739...743)(
-       ConstantReadNode(739...740)(),
+       ConstantReadNode(739...740)(:A),
        (740...742),
        (742...743),
        nil,
@@ -1013,7 +1018,7 @@ ProgramNode(0...792)(
        "/"
      ),
      CallNode(745...749)(
-       ConstantReadNode(745...746)(),
+       ConstantReadNode(745...746)(:A),
        (746...748),
        (748...749),
        nil,
@@ -1024,7 +1029,7 @@ ProgramNode(0...792)(
        "*"
      ),
      CallNode(751...756)(
-       ConstantReadNode(751...752)(),
+       ConstantReadNode(751...752)(:A),
        (752...754),
        (754...756),
        nil,
@@ -1035,7 +1040,7 @@ ProgramNode(0...792)(
        "**"
      ),
      CallNode(758...762)(
-       ConstantReadNode(758...759)(),
+       ConstantReadNode(758...759)(:A),
        (759...761),
        (761...762),
        nil,
@@ -1047,7 +1052,7 @@ ProgramNode(0...792)(
      ),
      ConstantPathNode(764...772)(
        CallNode(764...768)(
-         ConstantReadNode(764...765)(),
+         ConstantReadNode(764...765)(:A),
          (765...767),
          (767...768),
          nil,
@@ -1057,12 +1062,12 @@ ProgramNode(0...792)(
          0,
          "_"
        ),
-       ConstantReadNode(771...772)(),
+       ConstantReadNode(771...772)(:C),
        (768...770)
      ),
      RangeNode(774...792)(
        CallNode(774...778)(
-         ConstantReadNode(774...775)(),
+         ConstantReadNode(774...775)(:A),
          (775...777),
          (777...778),
          nil,
@@ -1073,7 +1078,7 @@ ProgramNode(0...792)(
          "_"
        ),
        CallNode(782...792)(
-         ConstantReadNode(782...783)(),
+         ConstantReadNode(782...783)(:A),
          (783...785),
          (785...792),
          nil,

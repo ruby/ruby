@@ -86,7 +86,7 @@ ProgramNode(0...211)(
                         (118...124),
                         StatementsNode(125...199)(
                           [CallNode(125...199)(
-                             ConstantReadNode(125...131)(),
+                             ConstantReadNode(125...131)(:Module),
                              (131...132),
                              (132...135),
                              nil,
@@ -107,7 +107,9 @@ ProgramNode(0...211)(
                                       (161...167),
                                       StatementsNode(168...189)(
                                         [CallNode(168...189)(
-                                           ConstantReadNode(168...174)(),
+                                           ConstantReadNode(168...174)(
+                                             :Module
+                                           ),
                                            (174...175),
                                            (175...178),
                                            nil,

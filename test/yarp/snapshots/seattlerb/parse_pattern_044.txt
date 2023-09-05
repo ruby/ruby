@@ -5,7 +5,7 @@ ProgramNode(0...31)(
        CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "obj"),
        [InNode(9...27)(
           ArrayPatternNode(12...20)(
-            ConstantReadNode(12...18)(),
+            ConstantReadNode(12...18)(:Object),
             [],
             nil,
             [],

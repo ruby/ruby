@@ -5,9 +5,9 @@ ProgramNode(0...29)(
        SymbolNode(5...7)((5...6), (6...7), nil, "a"),
        [InNode(8...25)(
           ArrayPatternNode(11...20)(
-            ConstantReadNode(11...12)(),
+            ConstantReadNode(11...12)(:B),
             [CapturePatternNode(13...19)(
-               ConstantReadNode(13...14)(),
+               ConstantReadNode(13...14)(:C),
                LocalVariableTargetNode(18...19)(:d, 0),
                (15...17)
              )],

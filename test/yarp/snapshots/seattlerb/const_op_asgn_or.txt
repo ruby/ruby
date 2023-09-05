@@ -3,8 +3,8 @@ ProgramNode(0...10)(
   StatementsNode(0...10)(
     [ConstantPathOrWriteNode(0...10)(
        ConstantPathNode(0...4)(
-         ConstantReadNode(0...1)(),
-         ConstantReadNode(3...4)(),
+         ConstantReadNode(0...1)(:X),
+         ConstantReadNode(3...4)(:Y),
          (1...3)
        ),
        (5...8),

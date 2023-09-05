@@ -2,10 +2,14 @@ ProgramNode(0...15)(
   [],
   StatementsNode(0...15)(
     [MultiWriteNode(0...15)(
-       [ConstantPathTargetNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
+       [ConstantPathTargetNode(0...3)(
+          nil,
+          ConstantReadNode(2...3)(:A),
+          (0...2)
+        ),
         ConstantPathTargetNode(5...8)(
           nil,
-          ConstantReadNode(7...8)(),
+          ConstantReadNode(7...8)(:B),
           (5...7)
         )],
        (9...10),

@@ -6,7 +6,7 @@ ProgramNode(0...34)(
        nil,
        RescueNode(7...23)(
          (7...13),
-         [ConstantReadNode(14...23)()],
+         [ConstantReadNode(14...23)(:LoadError)],
          nil,
          nil,
          nil,

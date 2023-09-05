@@ -111,7 +111,8 @@ ProgramNode(0...272)(
        ),
        [WhenNode(147...167)(
           (147...151),
-          [ConstantReadNode(152...158)(), ConstantReadNode(160...167)()],
+          [ConstantReadNode(152...158)(:FooBar),
+           ConstantReadNode(160...167)(:BazBonk)],
           nil
         )],
        nil,

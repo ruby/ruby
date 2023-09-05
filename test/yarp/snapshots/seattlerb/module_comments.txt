@@ -4,7 +4,7 @@ ProgramNode(24...77)(
     [ModuleNode(24...77)(
        [],
        (24...30),
-       ConstantReadNode(31...32)(),
+       ConstantReadNode(31...32)(:X),
        StatementsNode(46...73)(
          [DefNode(46...73)(
             (50...54),

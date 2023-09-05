@@ -240,7 +240,7 @@ ProgramNode(0...747)(
        SymbolNode(338...340)((338...339), (339...340), nil, "a"),
        [InNode(341...352)(
           ArrayPatternNode(344...352)(
-            ConstantReadNode(344...350)(),
+            ConstantReadNode(344...350)(:Symbol),
             [],
             nil,
             [],
@@ -259,7 +259,7 @@ ProgramNode(0...747)(
        SymbolNode(363...365)((363...364), (364...365), nil, "a"),
        [InNode(366...390)(
           FindPatternNode(369...390)(
-            ConstantReadNode(369...375)(),
+            ConstantReadNode(369...375)(:Symbol),
             SplatNode(376...380)(
               (376...377),
               LocalVariableTargetNode(377...380)(:lhs, 0)
@@ -284,7 +284,7 @@ ProgramNode(0...747)(
        SymbolNode(401...403)((401...402), (402...403), nil, "a"),
        [InNode(404...428)(
           FindPatternNode(407...428)(
-            ConstantReadNode(407...413)(),
+            ConstantReadNode(407...413)(:Symbol),
             SplatNode(414...418)(
               (414...415),
               LocalVariableTargetNode(415...418)(:lhs, 0)
@@ -382,9 +382,9 @@ ProgramNode(0...747)(
        [InNode(520...532)(
           ArrayPatternNode(523...532)(
             nil,
-            [ConstantReadNode(524...525)()],
+            [ConstantReadNode(524...525)(:A)],
             SplatNode(527...528)((527...528), nil),
-            [ConstantReadNode(530...531)()],
+            [ConstantReadNode(530...531)(:B)],
             (523...524),
             (531...532)
           ),

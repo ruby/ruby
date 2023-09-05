@@ -217,7 +217,7 @@ ProgramNode(0...382)(
              2,
              "type"
            ),
-           ConstantReadNode(288...289)(),
+           ConstantReadNode(288...289)(:B),
            (285...287)
          ),
          nil,

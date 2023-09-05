@@ -867,6 +867,8 @@ nodes:
           ^^^^^^^^^
   - name: ConstantAndWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -880,6 +882,8 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: ConstantOperatorWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -895,6 +899,8 @@ nodes:
           ^^^^^^^^^^^^^^^
   - name: ConstantOrWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: operator_loc
@@ -997,12 +1003,18 @@ nodes:
           ::Foo::Bar = 1
           ^^^^^^^^^^^^^^
   - name: ConstantReadNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents referencing a constant.
 
           Foo
           ^^^
   - name: ConstantTargetNode
+    fields:
+      - name: name
+        type: constant
     comment: |
       Represents writing to a constant in a context that doesn't have an explicit value.
 
@@ -1010,6 +1022,8 @@ nodes:
           ^^^  ^^^
   - name: ConstantWriteNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value

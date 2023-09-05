@@ -47,8 +47,8 @@ ProgramNode(0...49)(
             nil,
             ArgumentsNode(36...44)(
               [ConstantPathNode(36...40)(
-                 ConstantReadNode(36...37)(),
-                 ConstantReadNode(39...40)(),
+                 ConstantReadNode(36...37)(:A),
+                 ConstantReadNode(39...40)(:B),
                  (37...39)
                ),
                StringNode(42...44)((42...43), (43...43), (43...44), "")]

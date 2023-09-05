@@ -11,8 +11,8 @@ ProgramNode(0...15)(
             StatementsNode(3...14)(
               [ConstantPathOperatorWriteNode(3...14)(
                  ConstantPathNode(3...7)(
-                   ConstantReadNode(3...4)(),
-                   ConstantReadNode(6...7)(),
+                   ConstantReadNode(3...4)(:B),
+                   ConstantReadNode(6...7)(:C),
                    (4...6)
                  ),
                  (8...10),

@@ -4,7 +4,7 @@ ProgramNode(0...140)(
     [ModuleNode(0...18)(
        [:a],
        (0...6),
-       ConstantReadNode(7...8)(),
+       ConstantReadNode(7...8)(:A),
        StatementsNode(9...14)(
          [LocalVariableWriteNode(9...14)(
             :a,
@@ -45,7 +45,7 @@ ProgramNode(0...140)(
        (40...46),
        ConstantPathNode(47...51)(
          CallNode(47...48)(nil, nil, (47...48), nil, nil, nil, nil, 2, "m"),
-         ConstantReadNode(50...51)(),
+         ConstantReadNode(50...51)(:M),
          (48...50)
        ),
        nil,
@@ -55,7 +55,7 @@ ProgramNode(0...140)(
      ModuleNode(57...85)(
        [:x],
        (57...63),
-       ConstantReadNode(64...65)(),
+       ConstantReadNode(64...65)(:A),
        BeginNode(67...85)(
          nil,
          StatementsNode(67...72)(
@@ -78,7 +78,11 @@ ProgramNode(0...140)(
      ModuleNode(87...101)(
        [],
        (87...93),
-       ConstantPathNode(94...97)(nil, ConstantReadNode(96...97)(), (94...96)),
+       ConstantPathNode(94...97)(
+         nil,
+         ConstantReadNode(96...97)(:A),
+         (94...96)
+       ),
        nil,
        (98...101),
        "A"
@@ -88,7 +92,7 @@ ProgramNode(0...140)(
        (103...109),
        ConstantPathNode(110...116)(
          CallNode(110...113)(
-           ConstantReadNode(110...111)(),
+           ConstantReadNode(110...111)(:A),
            nil,
            (111...113),
            (111...112),
@@ -98,7 +102,7 @@ ProgramNode(0...140)(
            0,
            "[]"
          ),
-         ConstantReadNode(115...116)(),
+         ConstantReadNode(115...116)(:B),
          (113...115)
        ),
        nil,
@@ -110,7 +114,7 @@ ProgramNode(0...140)(
        (122...128),
        ConstantPathNode(129...136)(
          CallNode(129...133)(
-           ConstantReadNode(129...130)(),
+           ConstantReadNode(129...130)(:A),
            nil,
            (130...133),
            (130...131),
@@ -120,7 +124,7 @@ ProgramNode(0...140)(
            0,
            "[]"
          ),
-         ConstantReadNode(135...136)(),
+         ConstantReadNode(135...136)(:B),
          (133...135)
        ),
        nil,

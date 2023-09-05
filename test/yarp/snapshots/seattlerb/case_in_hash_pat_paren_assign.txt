@@ -5,7 +5,7 @@ ProgramNode(0...28)(
        SymbolNode(5...7)((5...6), (6...7), nil, "a"),
        [InNode(8...24)(
           HashPatternNode(11...19)(
-            ConstantReadNode(11...12)(),
+            ConstantReadNode(11...12)(:B),
             [AssocNode(13...18)(
                SymbolNode(13...15)(nil, (13...14), (14...15), "a"),
                IntegerNode(16...18)(),

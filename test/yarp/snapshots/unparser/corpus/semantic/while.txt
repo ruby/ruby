@@ -140,7 +140,7 @@ ProgramNode(0...188)(
      ModuleNode(132...188)(
        [:foo],
        (132...138),
-       ConstantReadNode(139...140)(),
+       ConstantReadNode(139...140)(:A),
        StatementsNode(143...184)(
          [LocalVariableWriteNode(143...152)(
             :foo,

@@ -17,7 +17,7 @@ module YARP
       expected = ModuleNode(
         [],
         Location(),
-        ConstantReadNode(),
+        ConstantReadNode(:Parent),
         StatementsNode(
           [ModuleNode([], Location(), MissingNode(), nil, Location(), "")]
         ),
@@ -393,7 +393,7 @@ module YARP
         Location(),
         nil,
         nil,
-        StatementsNode([ModuleNode([], Location(), ConstantReadNode(), nil, Location(), "A")]),
+        StatementsNode([ModuleNode([], Location(), ConstantReadNode(:A), nil, Location(), "A")]),
         [],
         Location(),
         nil,
@@ -424,7 +424,7 @@ module YARP
             BlockNode(
               [],
               nil,
-              StatementsNode([ModuleNode([], Location(), ConstantReadNode(), nil, Location(), "Foo")]),
+              StatementsNode([ModuleNode([], Location(), ConstantReadNode(:Foo), nil, Location(), "Foo")]),
               Location(),
               Location()
             ),
@@ -459,7 +459,7 @@ module YARP
           [ClassNode(
             [],
             Location(),
-            ConstantReadNode(),
+            ConstantReadNode(:A),
             nil,
             nil,
             nil,
@@ -974,7 +974,7 @@ module YARP
       expected = ClassNode(
         [],
         Location(),
-        ConstantReadNode(),
+        ConstantReadNode(:A),
         nil,
         nil,
         StatementsNode([ReturnNode(Location(), nil)]),
@@ -991,7 +991,7 @@ module YARP
       expected = ModuleNode(
         [],
         Location(),
-        ConstantReadNode(),
+        ConstantReadNode(:A),
         StatementsNode([ReturnNode(Location(), nil)]),
         Location(),
         "A"

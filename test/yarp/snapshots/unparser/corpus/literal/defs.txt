@@ -47,7 +47,7 @@ ProgramNode(0...266)(
      ),
      DefNode(72...93)(
        (80...83),
-       ConstantReadNode(76...79)(),
+       ConstantReadNode(76...79)(:Foo),
        nil,
        StatementsNode(86...89)(
          [CallNode(86...89)(nil, nil, (86...89), nil, nil, nil, nil, 2, "bar")]
@@ -162,8 +162,8 @@ ProgramNode(0...266)(
        ParenthesesNode(162...176)(
          CallNode(163...175)(
            ConstantPathNode(163...171)(
-             ConstantReadNode(163...166)(),
-             ConstantReadNode(168...171)(),
+             ConstantReadNode(163...166)(:Foo),
+             ConstantReadNode(168...171)(:Bar),
              (166...168)
            ),
            (171...172),
@@ -204,8 +204,8 @@ ProgramNode(0...266)(
        (207...210),
        ParenthesesNode(196...206)(
          ConstantPathNode(197...205)(
-           ConstantReadNode(197...200)(),
-           ConstantReadNode(202...205)(),
+           ConstantReadNode(197...200)(:Foo),
+           ConstantReadNode(202...205)(:Bar),
            (200...202)
          ),
          (196...197),
@@ -235,7 +235,7 @@ ProgramNode(0...266)(
      ),
      DefNode(222...243)(
        (230...233),
-       ConstantReadNode(226...229)(),
+       ConstantReadNode(226...229)(:Foo),
        nil,
        StatementsNode(236...239)(
          [CallNode(236...239)(

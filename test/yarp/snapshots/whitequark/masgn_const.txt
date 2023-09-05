@@ -2,7 +2,11 @@ ProgramNode(0...34)(
   [:foo],
   StatementsNode(0...34)(
     [MultiWriteNode(0...14)(
-       [ConstantPathTargetNode(0...3)(nil, ConstantReadNode(2...3)(), (0...2)),
+       [ConstantPathTargetNode(0...3)(
+          nil,
+          ConstantReadNode(2...3)(:A),
+          (0...2)
+        ),
         LocalVariableTargetNode(5...8)(:foo, 0)],
        (9...10),
        LocalVariableReadNode(11...14)(:foo, 0),
@@ -12,7 +16,7 @@ ProgramNode(0...34)(
      MultiWriteNode(16...34)(
        [ConstantPathTargetNode(16...23)(
           SelfNode(16...20)(),
-          ConstantReadNode(22...23)(),
+          ConstantReadNode(22...23)(:A),
           (20...22)
         ),
         LocalVariableTargetNode(25...28)(:foo, 0)],

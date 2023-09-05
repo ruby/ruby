@@ -2,7 +2,7 @@ ProgramNode(0...11)(
   [],
   StatementsNode(0...11)(
     [CallOrWriteNode(0...11)(
-       ConstantReadNode(0...1)(),
+       ConstantReadNode(0...1)(:A),
        (1...2),
        (2...3),
        nil,

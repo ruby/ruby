@@ -1,6 +1,6 @@
 ProgramNode(0...8)(
   [],
   StatementsNode(0...8)(
-    [ConstantWriteNode(0...8)((0...3), IntegerNode(6...8)(), (4...5))]
+    [ConstantWriteNode(0...8)(:Foo, (0...3), IntegerNode(6...8)(), (4...5))]
   )
 )

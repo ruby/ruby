@@ -4,7 +4,7 @@ ProgramNode(0...33)(
     [ClassNode(0...33)(
        [],
        (0...5),
-       ConstantReadNode(6...7)(),
+       ConstantReadNode(6...7)(:X),
        nil,
        nil,
        StatementsNode(10...29)(

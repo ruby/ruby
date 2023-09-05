@@ -1058,7 +1058,7 @@ ProgramNode(0...3743)(
          2,
          "foo"
        ),
-       ConstantReadNode(1053...1056)(),
+       ConstantReadNode(1053...1056)(:Foo),
        (1050...1052)
      ),
      MatchRequiredNode(1057...1077)(
@@ -1075,11 +1075,11 @@ ProgramNode(0...3743)(
        ),
        ConstantPathNode(1064...1077)(
          ConstantPathNode(1064...1072)(
-           ConstantReadNode(1064...1067)(),
-           ConstantReadNode(1069...1072)(),
+           ConstantReadNode(1064...1067)(:Foo),
+           ConstantReadNode(1069...1072)(:Bar),
            (1067...1069)
          ),
-         ConstantReadNode(1074...1077)(),
+         ConstantReadNode(1074...1077)(:Baz),
          (1072...1074)
        ),
        (1061...1063)
@@ -1098,7 +1098,7 @@ ProgramNode(0...3743)(
        ),
        ConstantPathNode(1085...1090)(
          nil,
-         ConstantReadNode(1087...1090)(),
+         ConstantReadNode(1087...1090)(:Foo),
          (1085...1087)
        ),
        (1082...1084)
@@ -1119,13 +1119,13 @@ ProgramNode(0...3743)(
          ConstantPathNode(1098...1108)(
            ConstantPathNode(1098...1103)(
              nil,
-             ConstantReadNode(1100...1103)(),
+             ConstantReadNode(1100...1103)(:Foo),
              (1098...1100)
            ),
-           ConstantReadNode(1105...1108)(),
+           ConstantReadNode(1105...1108)(:Bar),
            (1103...1105)
          ),
-         ConstantReadNode(1110...1113)(),
+         ConstantReadNode(1110...1113)(:Baz),
          (1108...1110)
        ),
        (1095...1097)
@@ -1143,7 +1143,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1122...1127)(
-         ConstantReadNode(1122...1125)(),
+         ConstantReadNode(1122...1125)(:Foo),
          [],
          nil,
          [],
@@ -1165,7 +1165,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1135...1141)(
-         ConstantReadNode(1135...1138)(),
+         ConstantReadNode(1135...1138)(:Foo),
          [IntegerNode(1139...1140)()],
          nil,
          [],
@@ -1187,7 +1187,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1149...1161)(
-         ConstantReadNode(1149...1152)(),
+         ConstantReadNode(1149...1152)(:Foo),
          [IntegerNode(1153...1154)(),
           IntegerNode(1156...1157)(),
           IntegerNode(1159...1160)()],
@@ -1211,7 +1211,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1169...1177)(
-         ConstantReadNode(1169...1172)(),
+         ConstantReadNode(1169...1172)(:Foo),
          [LocalVariableTargetNode(1173...1176)(:bar, 0)],
          nil,
          [],
@@ -1233,7 +1233,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1185...1199)(
-         ConstantReadNode(1185...1188)(),
+         ConstantReadNode(1185...1188)(:Foo),
          [],
          SplatNode(1189...1193)(
            (1189...1190),
@@ -1258,7 +1258,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1207...1221)(
-         ConstantReadNode(1207...1210)(),
+         ConstantReadNode(1207...1210)(:Foo),
          [LocalVariableTargetNode(1211...1214)(:bar, 0)],
          SplatNode(1216...1220)(
            (1216...1217),
@@ -1283,7 +1283,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        FindPatternNode(1229...1249)(
-         ConstantReadNode(1229...1232)(),
+         ConstantReadNode(1229...1232)(:Foo),
          SplatNode(1233...1237)(
            (1233...1234),
            LocalVariableTargetNode(1234...1237)(:bar, 0)
@@ -1311,7 +1311,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1258...1263)(
-         ConstantReadNode(1258...1261)(),
+         ConstantReadNode(1258...1261)(:Foo),
          [],
          nil,
          [],
@@ -1333,7 +1333,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1271...1277)(
-         ConstantReadNode(1271...1274)(),
+         ConstantReadNode(1271...1274)(:Foo),
          [IntegerNode(1275...1276)()],
          nil,
          [],
@@ -1355,7 +1355,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1285...1297)(
-         ConstantReadNode(1285...1288)(),
+         ConstantReadNode(1285...1288)(:Foo),
          [IntegerNode(1289...1290)(),
           IntegerNode(1292...1293)(),
           IntegerNode(1295...1296)()],
@@ -1379,9 +1379,9 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1305...1315)(
-         ConstantReadNode(1305...1308)(),
+         ConstantReadNode(1305...1308)(:Foo),
          [ArrayPatternNode(1309...1314)(
-            ConstantReadNode(1309...1312)(),
+            ConstantReadNode(1309...1312)(:Foo),
             [],
             nil,
             [],
@@ -1408,7 +1408,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1323...1331)(
-         ConstantReadNode(1323...1326)(),
+         ConstantReadNode(1323...1326)(:Foo),
          [LocalVariableTargetNode(1327...1330)(:bar, 0)],
          nil,
          [],
@@ -1430,7 +1430,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1339...1353)(
-         ConstantReadNode(1339...1342)(),
+         ConstantReadNode(1339...1342)(:Foo),
          [],
          SplatNode(1343...1347)(
            (1343...1344),
@@ -1455,7 +1455,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        ArrayPatternNode(1361...1375)(
-         ConstantReadNode(1361...1364)(),
+         ConstantReadNode(1361...1364)(:Foo),
          [LocalVariableTargetNode(1365...1368)(:bar, 0)],
          SplatNode(1370...1374)(
            (1370...1371),
@@ -1480,7 +1480,7 @@ ProgramNode(0...3743)(
          "foo"
        ),
        FindPatternNode(1383...1403)(
-         ConstantReadNode(1383...1386)(),
+         ConstantReadNode(1383...1386)(:Foo),
          SplatNode(1387...1391)(
            (1387...1388),
            LocalVariableTargetNode(1388...1391)(:bar, 0)
@@ -3819,11 +3819,11 @@ ProgramNode(0...3743)(
          "foo"
        ),
        HashPatternNode(3712...3743)(
-         ConstantReadNode(3712...3713)(),
+         ConstantReadNode(3712...3713)(:A),
          [AssocNode(3717...3741)(
             SymbolNode(3717...3721)(nil, (3717...3720), (3720...3721), "bar"),
             HashPatternNode(3722...3741)(
-              ConstantReadNode(3722...3723)(),
+              ConstantReadNode(3722...3723)(:B),
               [AssocNode(3729...3737)(
                  SymbolNode(3729...3735)(
                    nil,

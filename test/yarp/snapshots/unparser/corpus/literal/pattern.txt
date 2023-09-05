@@ -5,7 +5,7 @@ ProgramNode(0...408)(
        CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "foo"),
        [InNode(9...38)(
           ArrayPatternNode(12...26)(
-            ConstantReadNode(12...13)(),
+            ConstantReadNode(12...13)(:A),
             [IntegerNode(14...15)(), IntegerNode(17...18)()],
             SplatNode(20...22)(
               (20...21),
@@ -46,7 +46,7 @@ ProgramNode(0...408)(
         ),
         InNode(60...80)(
           HashPatternNode(63...68)(
-            ConstantReadNode(63...64)(),
+            ConstantReadNode(63...64)(:A),
             [AssocNode(65...67)(
                SymbolNode(65...67)(nil, (65...66), (66...67), "x"),
                nil,
@@ -235,7 +235,7 @@ ProgramNode(0...408)(
        ),
        [InNode(355...372)(
           ArrayPatternNode(358...372)(
-            ConstantReadNode(358...359)(),
+            ConstantReadNode(358...359)(:A),
             [IntegerNode(360...361)(), IntegerNode(363...364)()],
             SplatNode(366...368)(
               (366...367),
@@ -266,7 +266,7 @@ ProgramNode(0...408)(
          "foo"
        ),
        [InNode(386...390)(
-          ConstantReadNode(389...390)(),
+          ConstantReadNode(389...390)(:A),
           nil,
           (386...388),
           nil

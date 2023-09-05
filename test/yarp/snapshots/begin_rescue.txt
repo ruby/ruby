@@ -221,7 +221,7 @@ ProgramNode(0...578)(
        ),
        RescueNode(187...265)(
          (187...193),
-         [ConstantReadNode(194...203)()],
+         [ConstantReadNode(194...203)(:Exception)],
          (204...206),
          LocalVariableTargetNode(207...209)(:ex, 0),
          StatementsNode(212...213)(
@@ -239,7 +239,8 @@ ProgramNode(0...578)(
          ),
          RescueNode(214...265)(
            (214...220),
-           [ConstantReadNode(221...237)(), ConstantReadNode(239...255)()],
+           [ConstantReadNode(221...237)(:AnotherException),
+            ConstantReadNode(239...255)(:OneMoreException)],
            (256...258),
            LocalVariableTargetNode(259...261)(:ex, 0),
            StatementsNode(264...265)(
@@ -279,7 +280,7 @@ ProgramNode(0...578)(
        ),
        RescueNode(281...307)(
          (281...287),
-         [ConstantReadNode(288...297)()],
+         [ConstantReadNode(288...297)(:Exception)],
          (298...300),
          LocalVariableTargetNode(301...303)(:ex, 0),
          StatementsNode(306...307)(
@@ -452,7 +453,7 @@ ProgramNode(0...578)(
        ),
        RescueNode(406...424)(
          (406...412),
-         [ConstantReadNode(413...422)()],
+         [ConstantReadNode(413...422)(:Exception)],
          nil,
          nil,
          StatementsNode(423...424)(
@@ -491,7 +492,8 @@ ProgramNode(0...578)(
        ),
        RescueNode(438...473)(
          (438...444),
-         [ConstantReadNode(445...454)(), ConstantReadNode(456...471)()],
+         [ConstantReadNode(445...454)(:Exception),
+          ConstantReadNode(456...471)(:CustomException)],
          nil,
          nil,
          StatementsNode(472...473)(
@@ -530,7 +532,8 @@ ProgramNode(0...578)(
        ),
        RescueNode(489...532)(
          (489...495),
-         [ConstantReadNode(496...505)(), ConstantReadNode(507...522)()],
+         [ConstantReadNode(496...505)(:Exception),
+          ConstantReadNode(507...522)(:CustomException)],
          (523...525),
          LocalVariableTargetNode(526...528)(:ex, 0),
          StatementsNode(531...532)(
@@ -569,7 +572,7 @@ ProgramNode(0...578)(
        ),
        RescueNode(548...574)(
          (548...554),
-         [ConstantReadNode(555...564)()],
+         [ConstantReadNode(555...564)(:Exception)],
          (565...567),
          LocalVariableTargetNode(568...570)(:ex, 0),
          StatementsNode(573...574)(

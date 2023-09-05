@@ -81,7 +81,7 @@ ProgramNode(0...530)(
        nil,
        RescueNode(113...121)(
          (113...119),
-         [ConstantReadNode(120...121)()],
+         [ConstantReadNode(120...121)(:A)],
          nil,
          nil,
          nil,
@@ -96,7 +96,7 @@ ProgramNode(0...530)(
        nil,
        RescueNode(133...148)(
          (133...139),
-         [ConstantReadNode(140...141)()],
+         [ConstantReadNode(140...141)(:A)],
          (142...144),
          LocalVariableTargetNode(145...148)(:foo, 0),
          nil,
@@ -123,7 +123,7 @@ ProgramNode(0...530)(
        ),
        RescueNode(164...189)(
          (164...170),
-         [ConstantReadNode(171...172)()],
+         [ConstantReadNode(171...172)(:A)],
          nil,
          nil,
          StatementsNode(175...176)(
@@ -141,7 +141,7 @@ ProgramNode(0...530)(
          ),
          RescueNode(177...189)(
            (177...183),
-           [ConstantReadNode(184...185)()],
+           [ConstantReadNode(184...185)(:B)],
            nil,
            nil,
            StatementsNode(188...189)(
@@ -249,7 +249,9 @@ ProgramNode(0...530)(
               nil,
               (283...288),
               (288...289),
-              ArgumentsNode(289...298)([ConstantReadNode(289...298)()]),
+              ArgumentsNode(289...298)(
+                [ConstantReadNode(289...298)(:Exception)]
+              ),
               (298...299),
               nil,
               0,
@@ -277,7 +279,7 @@ ProgramNode(0...530)(
        ),
        RescueNode(317...333)(
          (317...323),
-         [ConstantReadNode(324...333)()],
+         [ConstantReadNode(324...333)(:Exception)],
          nil,
          nil,
          nil,
@@ -309,7 +311,8 @@ ProgramNode(0...530)(
        StatementsNode(384...387)([LocalVariableReadNode(384...387)(:foo, 0)]),
        RescueNode(388...424)(
          (388...394),
-         [ConstantReadNode(395...404)(), ConstantReadNode(406...411)()],
+         [ConstantReadNode(395...404)(:Exception),
+          ConstantReadNode(406...411)(:Other)],
          (412...414),
          LocalVariableTargetNode(415...418)(:bar, 0),
          StatementsNode(421...424)(
@@ -326,7 +329,7 @@ ProgramNode(0...530)(
        StatementsNode(438...441)([LocalVariableReadNode(438...441)(:bar, 0)]),
        RescueNode(442...483)(
          (442...448),
-         [ConstantReadNode(449...458)(),
+         [ConstantReadNode(449...458)(:SomeError),
           SplatNode(460...464)(
             (460...461),
             LocalVariableReadNode(461...464)(:bar, 0)

@@ -20,7 +20,7 @@ ProgramNode(0...100)(
      ),
      DefNode(20...39)(
        (31...34),
-       ConstantReadNode(24...30)(),
+       ConstantReadNode(24...30)(:String),
        nil,
        nil,
        [],
@@ -33,7 +33,7 @@ ProgramNode(0...100)(
      ),
      DefNode(41...61)(
        (53...56),
-       ConstantReadNode(45...51)(),
+       ConstantReadNode(45...51)(:String),
        nil,
        nil,
        [],

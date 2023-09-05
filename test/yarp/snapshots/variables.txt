@@ -191,6 +191,7 @@ ProgramNode(0...293)(
        (264...265)
      ),
      ConstantWriteNode(272...282)(
+       :Foo,
        (272...275),
        ArrayNode(278...282)(
          [IntegerNode(278...279)(), IntegerNode(281...282)()],

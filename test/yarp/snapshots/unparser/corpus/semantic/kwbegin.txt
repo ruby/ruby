@@ -81,7 +81,7 @@ ProgramNode(0...215)(
        nil,
        RescueNode(118...126)(
          (118...124),
-         [ConstantReadNode(125...126)()],
+         [ConstantReadNode(125...126)(:A)],
          nil,
          nil,
          nil,
@@ -96,7 +96,7 @@ ProgramNode(0...215)(
        nil,
        RescueNode(144...152)(
          (144...150),
-         [ConstantReadNode(151...152)()],
+         [ConstantReadNode(151...152)(:A)],
          nil,
          nil,
          nil,
@@ -123,7 +123,7 @@ ProgramNode(0...215)(
        ),
        RescueNode(175...200)(
          (175...181),
-         [ConstantReadNode(182...183)()],
+         [ConstantReadNode(182...183)(:A)],
          nil,
          nil,
          StatementsNode(186...187)(
@@ -141,7 +141,7 @@ ProgramNode(0...215)(
          ),
          RescueNode(188...200)(
            (188...194),
-           [ConstantReadNode(195...196)()],
+           [ConstantReadNode(195...196)(:B)],
            nil,
            nil,
            StatementsNode(199...200)(

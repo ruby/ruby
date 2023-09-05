@@ -6,8 +6,8 @@ ProgramNode(0...27)(
        [InNode(8...23)(
           ArrayPatternNode(11...18)(
             ConstantPathNode(11...15)(
-              ConstantReadNode(11...12)(),
-              ConstantReadNode(14...15)(),
+              ConstantReadNode(11...12)(:B),
+              ConstantReadNode(14...15)(:C),
               (12...14)
             ),
             [LocalVariableTargetNode(16...17)(:d, 0)],

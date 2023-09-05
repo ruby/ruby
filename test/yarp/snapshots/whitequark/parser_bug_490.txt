@@ -13,6 +13,7 @@ ProgramNode(0...132)(
             SelfNode(16...20)(),
             StatementsNode(22...29)(
               [ConstantWriteNode(22...29)(
+                 :A,
                  (22...23),
                  NilNode(26...29)(),
                  (24...25)
@@ -43,7 +44,7 @@ ProgramNode(0...132)(
               [ClassNode(63...75)(
                  [],
                  (63...68),
-                 ConstantReadNode(69...70)(),
+                 ConstantReadNode(69...70)(:C),
                  nil,
                  nil,
                  nil,
@@ -76,7 +77,7 @@ ProgramNode(0...132)(
               [ModuleNode(109...122)(
                  [],
                  (109...115),
-                 ConstantReadNode(116...117)(),
+                 ConstantReadNode(116...117)(:M),
                  nil,
                  (119...122),
                  "M"

@@ -742,7 +742,7 @@ ProgramNode(0...737)(
            nil,
            RescueNode(365...386)(
              (365...371),
-             [ConstantReadNode(372...381)()],
+             [ConstantReadNode(372...381)(:Exception)],
              (382...384),
              LocalVariableTargetNode(385...386)(:e, 0),
              nil,
@@ -785,7 +785,7 @@ ProgramNode(0...737)(
            ),
            RescueNode(402...431)(
              (402...408),
-             [ConstantReadNode(409...418)()],
+             [ConstantReadNode(409...418)(:Exception)],
              (419...421),
              LocalVariableTargetNode(422...425)(:bar, 0),
              StatementsNode(428...431)(
@@ -830,7 +830,7 @@ ProgramNode(0...737)(
            ),
            RescueNode(447...475)(
              (447...453),
-             [ConstantReadNode(454...463)(),
+             [ConstantReadNode(454...463)(:SomeError),
               SplatNode(465...469)(
                 (465...466),
                 CallNode(466...469)(
@@ -899,7 +899,7 @@ ProgramNode(0...737)(
            ),
            RescueNode(491...532)(
              (491...497),
-             [ConstantReadNode(498...507)(),
+             [ConstantReadNode(498...507)(:SomeError),
               SplatNode(509...513)(
                 (509...510),
                 CallNode(510...513)(
@@ -1036,7 +1036,7 @@ ProgramNode(0...737)(
            ),
            RescueNode(581...597)(
              (581...587),
-             [ConstantReadNode(588...597)()],
+             [ConstantReadNode(588...597)(:LoadError)],
              nil,
              nil,
              nil,

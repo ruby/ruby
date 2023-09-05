@@ -5,7 +5,7 @@ ProgramNode(0...32)(
        SymbolNode(5...7)((5...6), (6...7), nil, "a"),
        [InNode(8...28)(
           ArrayPatternNode(11...19)(
-            ConstantReadNode(11...12)(),
+            ConstantReadNode(11...12)(:A),
             [],
             SplatNode(13...18)(
               (13...14),

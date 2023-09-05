@@ -298,7 +298,7 @@ ProgramNode(0...437)(
      ConstantPathOrWriteNode(242...273)(
        ConstantPathNode(242...248)(
          LocalVariableReadNode(242...245)(:foo, 0),
-         ConstantReadNode(247...248)(),
+         ConstantReadNode(247...248)(:C),
          (245...247)
        ),
        (249...252),
@@ -333,7 +333,7 @@ ProgramNode(0...437)(
      ConstantPathOrWriteNode(275...307)(
        ConstantPathNode(275...281)(
          LocalVariableReadNode(275...278)(:foo, 0),
-         ConstantReadNode(280...281)(),
+         ConstantReadNode(280...281)(:C),
          (278...280)
        ),
        (282...285),

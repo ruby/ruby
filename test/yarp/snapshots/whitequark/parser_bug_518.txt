@@ -4,9 +4,9 @@ ProgramNode(0...15)(
     [ClassNode(0...15)(
        [],
        (0...5),
-       ConstantReadNode(6...7)(),
+       ConstantReadNode(6...7)(:A),
        (8...9),
-       ConstantReadNode(10...11)(),
+       ConstantReadNode(10...11)(:B),
        nil,
        (12...15),
        "A"

@@ -76,7 +76,7 @@ ProgramNode(0...64)(
      ConstantPathOperatorWriteNode(32...47)(
        ConstantPathNode(32...38)(
          CallNode(32...35)(nil, nil, (32...35), nil, nil, nil, nil, 2, "foo"),
-         ConstantReadNode(37...38)(),
+         ConstantReadNode(37...38)(:A),
          (35...37)
        ),
        (39...41),

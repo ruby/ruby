@@ -65,7 +65,7 @@ ProgramNode(0...197)(
        ClassNode(110...139)(
          [:a],
          (110...115),
-         ConstantReadNode(116...119)(),
+         ConstantReadNode(116...119)(:Foo),
          nil,
          nil,
          StatementsNode(120...134)(
@@ -99,7 +99,7 @@ ProgramNode(0...197)(
        ClassNode(159...185)(
          [],
          (159...164),
-         ConstantReadNode(165...168)(),
+         ConstantReadNode(165...168)(:Foo),
          nil,
          nil,
          StatementsNode(170...180)(

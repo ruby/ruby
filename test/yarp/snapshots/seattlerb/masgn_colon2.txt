@@ -5,7 +5,7 @@ ProgramNode(0...14)(
        [LocalVariableTargetNode(0...1)(:a, 0),
         ConstantPathTargetNode(3...7)(
           CallNode(3...4)(nil, nil, (3...4), nil, nil, nil, nil, 2, "b"),
-          ConstantReadNode(6...7)(),
+          ConstantReadNode(6...7)(:C),
           (4...6)
         )],
        (8...9),

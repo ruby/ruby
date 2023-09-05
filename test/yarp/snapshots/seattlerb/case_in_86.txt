@@ -13,7 +13,7 @@ ProgramNode(0...43)(
             nil,
             [ConstantPathNode(17...27)(
                nil,
-               ConstantReadNode(19...27)(),
+               ConstantReadNode(19...27)(:NilClass),
                (17...19)
              )],
             SplatNode(29...30)((29...30), nil),

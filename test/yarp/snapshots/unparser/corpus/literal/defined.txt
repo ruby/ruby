@@ -9,7 +9,7 @@ ProgramNode(0...56)(
      ),
      DefinedNode(15...28)(
        (23...24),
-       ConstantReadNode(24...27)(),
+       ConstantReadNode(24...27)(:Foo),
        (27...28),
        (15...23)
      ),

@@ -968,13 +968,14 @@ ProgramNode(0...1194)(
        (872...875)
      ),
      ConstantWriteNode(877...886)(
+       :Const,
        (877...882),
        IntegerNode(885...886)(),
        (883...884)
      ),
      DefNode(888...903)(
        (898...899),
-       ConstantReadNode(892...897)(),
+       ConstantReadNode(892...897)(:Const),
        nil,
        nil,
        [],

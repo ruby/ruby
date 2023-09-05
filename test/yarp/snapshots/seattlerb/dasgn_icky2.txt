@@ -26,7 +26,7 @@ ProgramNode(0...76)(
               ),
               RescueNode(35...66)(
                 (35...41),
-                [ConstantReadNode(42...51)()],
+                [ConstantReadNode(42...51)(:Exception)],
                 (52...54),
                 LocalVariableTargetNode(55...56)(:v, 0),
                 StatementsNode(61...66)([BreakNode(61...66)(nil, (61...66))]),

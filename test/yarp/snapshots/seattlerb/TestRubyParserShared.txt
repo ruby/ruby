@@ -45,7 +45,7 @@ ProgramNode(0...689)(
      ClassNode(141...269)(
        [],
        (141...146),
-       ConstantReadNode(147...148)(),
+       ConstantReadNode(147...148)(:X),
        nil,
        nil,
        StatementsNode(168...246)(
@@ -92,18 +92,19 @@ ProgramNode(0...689)(
      ClassNode(293...376)(
        [],
        (293...298),
-       ConstantReadNode(299...300)(),
+       ConstantReadNode(299...300)(:X),
        nil,
        nil,
        StatementsNode(315...358)(
          [ClassNode(315...358)(
             [],
             (315...320),
-            ConstantReadNode(321...322)(),
+            ConstantReadNode(321...322)(:Y),
             nil,
             nil,
             StatementsNode(337...343)(
               [ConstantWriteNode(337...343)(
+                 :Z,
                  (337...338),
                  IntegerNode(341...343)(),
                  (339...340)
@@ -119,7 +120,7 @@ ProgramNode(0...689)(
      ClassNode(395...498)(
        [],
        (395...400),
-       ConstantReadNode(401...402)(),
+       ConstantReadNode(401...402)(:X),
        nil,
        nil,
        StatementsNode(417...480)(
@@ -166,9 +167,10 @@ ProgramNode(0...689)(
      ModuleNode(517...565)(
        [],
        (517...523),
-       ConstantReadNode(524...525)(),
+       ConstantReadNode(524...525)(:X),
        StatementsNode(528...561)(
          [ConstantWriteNode(528...561)(
+            :X,
             (528...529),
             ArrayNode(532...561)(
               [SymbolNode(538...544)((538...539), (539...544), nil, "line3"),
@@ -185,14 +187,15 @@ ProgramNode(0...689)(
      ModuleNode(568...651)(
        [],
        (568...574),
-       ConstantReadNode(575...576)(),
+       ConstantReadNode(575...576)(:X),
        StatementsNode(590...633)(
          [ModuleNode(590...633)(
             [],
             (590...596),
-            ConstantReadNode(597...598)(),
+            ConstantReadNode(597...598)(:Y),
             StatementsNode(612...618)(
               [ConstantWriteNode(612...618)(
+                 :Z,
                  (612...613),
                  IntegerNode(616...618)(),
                  (614...615)
