@@ -8682,53 +8682,23 @@ get_PROCESS_ID(ID _x, VALUE *_y)
  *    with prefixed <tt>'-'</tt>,
  *    each process group with group ID +id+ is signalled.
  *
- *  The actual signal values are platform dependent, an example of
- *  signal names which are supported on many platforms are:
- *
- *  - +SIGHUP+: Hang up controlling terminal or process.
- *  - +SIGINT+: \Interrupt from keyboard, Ctrl-C by default in general.
- *  - +SIGQUIT+: Quit from keyboard, Ctrl-\ by default in general.
- *  - +SIGILL+: Illegal instruction.
- *  - +SIGTRAP+: Breakpoint for debugging.
- *  - +SIGIOT+: Abnormal termination.
- *  - +SIGBUS+: Bus error.
- *  - +SIGFPE+: Floating-point exception.
- *  - +SIGKILL+: Forced-process termination.
- *  - +SIGUSR1+: Available to processes.
- *  - +SIGSEGV+: Invalid memory reference.
- *  - +SIGUSR2+: Available to processes.
- *  - +SIGPIPE+: Write to pipe with no readers.
- *  - +SIGALRM+: Real-timer clock.
- *  - +SIGTERM+: \Process termination.
- *  - +SIGCHLD+: Child process stopped or terminated or got a signal if traced.
- *  - +SIGCONT+: Resume execution, if stopped.
- *  - +SIGSTOP+: Stop process execution, Ctrl-Z by default in general.
- *  - +SIGTSTP+: Stop process issued from tty.
- *  - +SIGTTIN+: Background process requires input.
- *  - +SIGTTOU+: Background process requires output.
- *  - +SIGURG+: Urgent condition on socket.
- *  - +SIGXCPU+: CPU time limit exceeded.
- *  - +SIGXFSZ+: File size limit exceeded.
- *  - +SIGVTALRM+: Virtual timer clock.
- *  - +SIGPROF+: Profile timer clock.
- *  - +SIGWINCH+: Window resizing.
- *  - +SIGPOLL+: I/O now possible.
- *  - +SIGPWR+: Power supply failure.
- *  - +SIGSYS+, +SIGUNUSED+: Bad system call.
- *
- *  Use Signal.list to see which signals are supported, and the actual
- *  values.
+ *  Use method Signal.list to see which signals are supported
+ *  by Ruby on the underlying platform;
+ *  the method returns a hash of the string names
+ *  and non-negative integer values of the supported signals.
+ *  The size and content of the returned hash varies widely
+ *  among platforms.
  *
  *  Additionally, signal +0+ is useful to determine if the process exists.
  *
  *  Example:
  *
  *    pid = fork do
- *      Signal.trap("HUP") { puts "Ouch!"; exit }
+ *      Signal.trap('HUP') { puts 'Ouch!'; exit }
  *      # ... do some work ...
  *    end
  *    # ...
- *    Process.kill("HUP", pid)
+ *    Process.kill('HUP', pid)
  *    Process.wait
  *
  *  Output:
