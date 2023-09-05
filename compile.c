@@ -4125,9 +4125,10 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 }
 
 static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label);
 
+#define COMPILE_SINGLE 2
 static int
 compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
                 LABEL *then_label, LABEL *else_label)
@@ -4146,28 +4147,39 @@ compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
             return COMPILE_OK;
     }
     if (!label->refcnt) {
-        ADD_INSN(seq, cond, putnil);
+        return COMPILE_SINGLE;
     }
-    else {
-        ADD_LABEL(seq, label);
-    }
+    ADD_LABEL(seq, label);
     ADD_SEQ(ret, seq);
     return COMPILE_OK;
 }
 
 static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
 {
+    int ok;
+    DECL_ANCHOR(ignore);
+
   again:
     switch (nd_type(cond)) {
       case NODE_AND:
-        CHECK(compile_logical(iseq, ret, cond->nd_1st, NULL, else_label));
+        CHECK(ok = compile_logical(iseq, ret, cond->nd_1st, NULL, else_label));
         cond = cond->nd_2nd;
+        if (ok == COMPILE_SINGLE) {
+            INIT_ANCHOR(ignore);
+            ret = ignore;
+            then_label = NEW_LABEL(nd_line(cond));
+        }
         goto again;
       case NODE_OR:
-        CHECK(compile_logical(iseq, ret, cond->nd_1st, then_label, NULL));
+        CHECK(ok = compile_logical(iseq, ret, cond->nd_1st, then_label, NULL));
         cond = cond->nd_2nd;
+        if (ok == COMPILE_SINGLE) {
+            INIT_ANCHOR(ignore);
+            ret = ignore;
+            else_label = NEW_LABEL(nd_line(cond));
+        }
         goto again;
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
