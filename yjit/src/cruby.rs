@@ -96,7 +96,7 @@ pub type size_t = u64;
 pub type RedefinitionFlag = u32;
 
 #[allow(dead_code)]
-#[allow(clippy::useless_transmute)]
+#[allow(clippy::all)]
 mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
