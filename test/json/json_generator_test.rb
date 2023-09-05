@@ -396,6 +396,7 @@ EOT
       included = false
 
       Module.alias_method(:included_orig, :included)
+      Module.remove_method(:included)
       Module.define_method(:included) do |base|
         included_orig(base)
         included = true
@@ -408,6 +409,7 @@ EOT
       assert included
     ensure
       if Module.private_method_defined?(:included_orig)
+        Module.remove_method(:included) if Module.method_defined?(:included)
         Module.alias_method(:included, :included_orig)
         Module.remove_method(:included_orig)
       end
