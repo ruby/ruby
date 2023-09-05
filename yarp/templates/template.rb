@@ -314,7 +314,7 @@ module YARP
         ERB.new(template, trim_mode: "-")
       end
     else
-      def erb
+      def erb(template)
         ERB.new(template, nil, "-")
       end
     end
