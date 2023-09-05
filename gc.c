@@ -2057,7 +2057,7 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
     }
 
     if (has_pages_in_tomb_heap) {
-        for (i = j = 1; j < heap_allocated_pages; i++) {
+        for (i = j = 0; j < heap_allocated_pages; i++) {
             struct heap_page *page = heap_pages_sorted[i];
 
             if (page->flags.in_tomb && page->free_slots == page->total_slots) {
@@ -2076,6 +2076,11 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
         uintptr_t himem = (uintptr_t)hipage->start + (hipage->total_slots * hipage->slot_size);
         GC_ASSERT(himem <= heap_pages_himem);
         heap_pages_himem = himem;
+
+        struct heap_page *lopage = heap_pages_sorted[0];
+        uintptr_t lomem = (uintptr_t)lopage->start;
+        GC_ASSERT(lomem >= heap_pages_lomem);
+        heap_pages_lomem = lomem;
 
         GC_ASSERT(j == heap_allocated_pages);
     }
