@@ -6924,6 +6924,27 @@ rb_gc_mark_weak(VALUE *ptr)
     objspace->profile.weak_references_count++;
 }
 
+void
+rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    /* If we're not incremental marking, then the state of the objects can't
+     * change so we don't need to do anything. */
+    if (!is_incremental_marking(objspace)) return;
+    /* If parent_obj has not been marked, then ptr has not yet been marked
+     * weak, so we don't need to do anything. */
+    if (!RVALUE_MARKED(parent_obj)) return;
+
+    VALUE **ptr_ptr;
+    rb_darray_foreach(objspace->weak_references, i, ptr_ptr) {
+        if (*ptr_ptr == ptr) {
+            *ptr_ptr = NULL;
+            break;
+        }
+    }
+}
+
 /* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
  * This function is only for GC_END_MARK timing.
  */
@@ -8151,6 +8172,8 @@ gc_update_weak_references(rb_objspace_t *objspace)
     size_t retained_weak_references_count = 0;
     VALUE **ptr_ptr;
     rb_darray_foreach(objspace->weak_references, i, ptr_ptr) {
+        if (!ptr_ptr) continue;
+
         VALUE obj = **ptr_ptr;
 
         if (RB_SPECIAL_CONST_P(obj)) continue;
