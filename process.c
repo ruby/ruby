@@ -8719,7 +8719,7 @@ get_PROCESS_ID(ID _x, VALUE *_y)
  *  Use `Signal.list` to see which signals are supported, and the
  *  actual values.
  *
- *  Also, integer +0+ is usefull to examine if the process exists.
+ *  Additionally, signal +0+ is useful to determine if the process exists.
  *
  *  Example:
  *
