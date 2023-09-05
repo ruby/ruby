@@ -374,17 +374,23 @@ nonspecial_obj_id(VALUE obj)
 }
 
 static int
-wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key, int existing)
+wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int existing)
 {
-    if (existing) {
-        VALUE *orig_pair = ((VALUE *)*key);
-        assert(orig_pair[0] == *(VALUE *)new_key);
+    VALUE new_key = *(VALUE *)new_key_ptr;
+    VALUE new_val = *(((VALUE *)new_key_ptr) + 1);
 
-        wmap_free_entry(orig_pair, orig_pair + 1);
+    if (existing) {
+        assert(orig_pair[0] == *(VALUE *)new_key);
+    }
+    else {
+        VALUE *pair = xmalloc(sizeof(VALUE) * 2);
+
+        *key = (st_data_t)pair;
+        *val = (st_data_t)(pair + 1);
     }
 
-    *key = new_key;
-    *val = (st_data_t)(((VALUE *)new_key) + 1);
+    *(VALUE *)*key = new_key;
+    *(VALUE *)*val = new_val;
 
     return ST_CONTINUE;
 }
@@ -396,9 +402,7 @@ wmap_aset(VALUE self, VALUE key, VALUE val)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
 
-    VALUE *pair = xmalloc(sizeof(VALUE) * 2);
-    pair[0] = key;
-    pair[1] = val;
+    VALUE pair[2] = { key, val };
 
     st_update(w->table, (st_data_t)pair, wmap_aset_replace, (st_data_t)pair);
 
@@ -678,7 +682,7 @@ wkmap_aref(VALUE self, VALUE key)
 }
 
 struct wkmap_aset_args {
-    VALUE *new_key;
+    VALUE new_key;
     VALUE new_val;
 };
 
@@ -687,13 +691,11 @@ wkmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t data_args, int exis
 {
     struct wkmap_aset_args *args = (struct wkmap_aset_args *)data_args;
 
-    if (existing) {
-        VALUE *orig_key_ptr = ((VALUE *)*key);
-
-        ruby_sized_xfree(orig_key_ptr, sizeof(VALUE));
+    if (!existing) {
+        *key = (st_data_t)xmalloc(sizeof(VALUE));
     }
 
-    *key = (st_data_t)args->new_key;
+    *(VALUE *)*key = args->new_key;
     *val = (st_data_t)args->new_val;
 
     return ST_CONTINUE;
@@ -722,15 +724,12 @@ wkmap_aset(VALUE self, VALUE key, VALUE val)
         UNREACHABLE_RETURN(Qnil);
     }
 
-    VALUE *key_ptr = xmalloc(sizeof(VALUE));
-    *key_ptr = key;
-
     struct wkmap_aset_args args = {
-        .new_key = key_ptr,
+        .new_key = key,
         .new_val = val,
     };
 
-    st_update(w->table, (st_data_t)key_ptr, wkmap_aset_replace, (st_data_t)&args);
+    st_update(w->table, (st_data_t)&key, wkmap_aset_replace, (st_data_t)&args);
 
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
