@@ -595,7 +595,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
-      - name: operator_loc
+      - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?

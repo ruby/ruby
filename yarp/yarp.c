@@ -1250,7 +1250,7 @@ yp_call_node_create(yp_parser_t *parser) {
             .location = YP_LOCATION_NULL_VALUE(parser),
         },
         .receiver = NULL,
-        .operator_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .call_operator_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .message_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .opening_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .arguments = NULL,
@@ -1323,7 +1323,7 @@ yp_call_node_call_create(yp_parser_t *parser, yp_node_t *receiver, yp_token_t *o
     }
 
     node->receiver = receiver;
-    node->operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
+    node->call_operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
     node->message_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(message);
     node->opening_loc = arguments->opening_loc;
     node->arguments = arguments->arguments;
@@ -1400,7 +1400,7 @@ yp_call_node_shorthand_create(yp_parser_t *parser, yp_node_t *receiver, yp_token
     }
 
     node->receiver = receiver;
-    node->operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
+    node->call_operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
     node->opening_loc = arguments->opening_loc;
     node->arguments = arguments->arguments;
     node->closing_loc = arguments->closing_loc;
@@ -8073,7 +8073,7 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
             // an aref expression, and we can transform it into an aset
             // expression.
             if (
-                (call->operator_loc.start == NULL) &&
+                (call->call_operator_loc.start == NULL) &&
                 (call->message_loc.start[0] == '[') &&
                 (call->message_loc.end[-1] == ']') &&
                 (call->block == NULL)
@@ -8229,7 +8229,7 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
             // an aref expression, and we can transform it into an aset
             // expression.
             if (
-                (call->operator_loc.start == NULL) &&
+                (call->call_operator_loc.start == NULL) &&
                 (call->message_loc.start[0] == '[') &&
                 (call->message_loc.end[-1] == ']') &&
                 (call->block == NULL)
