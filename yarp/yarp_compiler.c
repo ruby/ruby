@@ -421,8 +421,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_ALIAS_NODE: {
           yp_alias_node_t *alias_node = (yp_alias_node_t *) node;
 
-          ADD_INSN1(ret, &dummy_line_node, putspecialobject, VM_SPECIAL_OBJECT_VMCORE);
-          ADD_INSN1(ret, &dummy_line_node, putspecialobject, VM_SPECIAL_OBJECT_CBASE);
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+          ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
           yp_compile_node(iseq, alias_node->new_name, ret, src, popped, compile_context);
           yp_compile_node(iseq, alias_node->old_name, ret, src, popped, compile_context);
