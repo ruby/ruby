@@ -591,6 +591,37 @@ nodes:
 
           break foo
           ^^^^^^^^^
+  - name: CallAndWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: string
+      - name: write_name
+        type: string
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `&&=` operator on a call.
+
+          foo.bar &&= value
+          ^^^^^^^^^^^^^^^^^
   - name: CallNode
     fields:
       - name: receiver
@@ -634,50 +665,70 @@ nodes:
 
           foo&.bar
           ^^^^^^^^
-  - name: CallOperatorAndWriteNode
-    fields:
-      - name: target
-        type: node
-        kind: CallNode
-      - name: operator_loc
-        type: location
-      - name: value
-        type: node
-    comment: |
-      Represents the use of the `&&=` operator on a call.
-
-          foo.bar &&= value
-          ^^^^^^^^^^^^^^^^^
-  - name: CallOperatorOrWriteNode
-    fields:
-      - name: target
-        type: node
-        kind: CallNode
-      - name: value
-        type: node
-      - name: operator_loc
-        type: location
-    comment: |
-      Represents the use of the `||=` operator on a call.
-
-          foo.bar ||= value
-          ^^^^^^^^^^^^^^^^^
   - name: CallOperatorWriteNode
     fields:
-      - name: target
-        type: node
-        kind: CallNode
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: string
+      - name: write_name
+        type: string
+      - name: operator
+        type: constant
       - name: operator_loc
         type: location
       - name: value
         type: node
-      - name: operator
-        type: constant
     comment: |
       Represents the use of an assignment operator on a call.
 
           foo.bar += baz
           ^^^^^^^^^^^^^^
+  - name: CallOrWriteNode
+    fields:
+      - name: receiver
+        type: node?
+      - name: call_operator_loc
+        type: location?
+      - name: message_loc
+        type: location?
+      - name: opening_loc
+        type: location?
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location?
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: read_name
+        type: string
+      - name: write_name
+        type: string
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents the use of the `||=` operator on a call.
+
+          foo.bar ||= value
+          ^^^^^^^^^^^^^^^^^
   - name: CapturePatternNode
     fields:
       - name: value

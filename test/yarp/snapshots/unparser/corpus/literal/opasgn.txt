@@ -105,334 +105,304 @@ ProgramNode(0...233)(
        "[]="
      ),
      CallOperatorWriteNode(84...92)(
-       CallNode(84...87)(
-         LocalVariableReadNode(84...85)(:a, 0),
-         (85...86),
-         (86...87),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
+       LocalVariableReadNode(84...85)(:a, 0),
+       (85...86),
+       (86...87),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
+       :+,
        (88...90),
-       IntegerNode(91...92)(),
-       :+
+       IntegerNode(91...92)()
      ),
      CallOperatorWriteNode(93...101)(
-       CallNode(93...96)(
-         LocalVariableReadNode(93...94)(:a, 0),
-         (94...95),
-         (95...96),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
+       LocalVariableReadNode(93...94)(:a, 0),
+       (94...95),
+       (95...96),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
+       :-,
        (97...99),
-       IntegerNode(100...101)(),
-       :-
+       IntegerNode(100...101)()
      ),
      CallOperatorWriteNode(102...111)(
-       CallNode(102...105)(
-         LocalVariableReadNode(102...103)(:a, 0),
-         (103...104),
-         (104...105),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
+       LocalVariableReadNode(102...103)(:a, 0),
+       (103...104),
+       (104...105),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
+       :**,
        (106...109),
-       IntegerNode(110...111)(),
-       :**
+       IntegerNode(110...111)()
      ),
      CallOperatorWriteNode(112...120)(
-       CallNode(112...115)(
-         LocalVariableReadNode(112...113)(:a, 0),
-         (113...114),
-         (114...115),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
+       LocalVariableReadNode(112...113)(:a, 0),
+       (113...114),
+       (114...115),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
+       :*,
        (116...118),
-       IntegerNode(119...120)(),
-       :*
+       IntegerNode(119...120)()
      ),
      CallOperatorWriteNode(121...129)(
-       CallNode(121...124)(
-         LocalVariableReadNode(121...122)(:a, 0),
-         (122...123),
-         (123...124),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
+       LocalVariableReadNode(121...122)(:a, 0),
+       (122...123),
+       (123...124),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
+       :/,
        (125...127),
-       IntegerNode(128...129)(),
-       :/
+       IntegerNode(128...129)()
      ),
-     CallOperatorAndWriteNode(130...139)(
-       CallNode(130...133)(
-         LocalVariableReadNode(130...131)(:a, 0),
-         (131...132),
-         (132...133),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
+     CallAndWriteNode(130...139)(
+       LocalVariableReadNode(130...131)(:a, 0),
+       (131...132),
+       (132...133),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
        (134...137),
        CallNode(138...139)(nil, nil, (138...139), nil, nil, nil, nil, 2, "b")
      ),
-     CallOperatorOrWriteNode(140...149)(
-       CallNode(140...143)(
-         LocalVariableReadNode(140...141)(:a, 0),
-         (141...142),
-         (142...143),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "b="
-       ),
-       IntegerNode(148...149)(),
-       (144...147)
+     CallOrWriteNode(140...149)(
+       LocalVariableReadNode(140...141)(:a, 0),
+       (141...142),
+       (142...143),
+       nil,
+       nil,
+       nil,
+       0,
+       "b",
+       "b=",
+       (144...147),
+       IntegerNode(148...149)()
      ),
      CallOperatorWriteNode(150...159)(
-       CallNode(150...154)(
-         LocalVariableReadNode(150...151)(:a, 0),
-         nil,
-         (151...154),
-         (151...152),
-         ArgumentsNode(152...153)(
-           [CallNode(152...153)(
-              nil,
-              nil,
-              (152...153),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (153...154),
-         nil,
-         0,
-         "[]="
+       LocalVariableReadNode(150...151)(:a, 0),
+       nil,
+       (151...154),
+       (151...152),
+       ArgumentsNode(152...153)(
+         [CallNode(152...153)(
+            nil,
+            nil,
+            (152...153),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
+       (153...154),
+       0,
+       "[]",
+       "[]=",
+       :+,
        (155...157),
-       IntegerNode(158...159)(),
-       :+
+       IntegerNode(158...159)()
      ),
      CallOperatorWriteNode(160...169)(
-       CallNode(160...164)(
-         LocalVariableReadNode(160...161)(:a, 0),
-         nil,
-         (161...164),
-         (161...162),
-         ArgumentsNode(162...163)(
-           [CallNode(162...163)(
-              nil,
-              nil,
-              (162...163),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (163...164),
-         nil,
-         0,
-         "[]="
+       LocalVariableReadNode(160...161)(:a, 0),
+       nil,
+       (161...164),
+       (161...162),
+       ArgumentsNode(162...163)(
+         [CallNode(162...163)(
+            nil,
+            nil,
+            (162...163),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
+       (163...164),
+       0,
+       "[]",
+       "[]=",
+       :-,
        (165...167),
-       IntegerNode(168...169)(),
-       :-
+       IntegerNode(168...169)()
      ),
      CallOperatorWriteNode(170...180)(
-       CallNode(170...174)(
-         LocalVariableReadNode(170...171)(:a, 0),
-         nil,
-         (171...174),
-         (171...172),
-         ArgumentsNode(172...173)(
-           [CallNode(172...173)(
-              nil,
-              nil,
-              (172...173),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (173...174),
-         nil,
-         0,
-         "[]="
+       LocalVariableReadNode(170...171)(:a, 0),
+       nil,
+       (171...174),
+       (171...172),
+       ArgumentsNode(172...173)(
+         [CallNode(172...173)(
+            nil,
+            nil,
+            (172...173),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
+       (173...174),
+       0,
+       "[]",
+       "[]=",
+       :**,
        (175...178),
-       IntegerNode(179...180)(),
-       :**
+       IntegerNode(179...180)()
      ),
      CallOperatorWriteNode(181...190)(
-       CallNode(181...185)(
-         LocalVariableReadNode(181...182)(:a, 0),
-         nil,
-         (182...185),
-         (182...183),
-         ArgumentsNode(183...184)(
-           [CallNode(183...184)(
-              nil,
-              nil,
-              (183...184),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (184...185),
-         nil,
-         0,
-         "[]="
+       LocalVariableReadNode(181...182)(:a, 0),
+       nil,
+       (182...185),
+       (182...183),
+       ArgumentsNode(183...184)(
+         [CallNode(183...184)(
+            nil,
+            nil,
+            (183...184),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
+       (184...185),
+       0,
+       "[]",
+       "[]=",
+       :*,
        (186...188),
-       IntegerNode(189...190)(),
-       :*
+       IntegerNode(189...190)()
      ),
      CallOperatorWriteNode(191...200)(
-       CallNode(191...195)(
-         LocalVariableReadNode(191...192)(:a, 0),
-         nil,
-         (192...195),
-         (192...193),
-         ArgumentsNode(193...194)(
-           [CallNode(193...194)(
-              nil,
-              nil,
-              (193...194),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (194...195),
-         nil,
-         0,
-         "[]="
+       LocalVariableReadNode(191...192)(:a, 0),
+       nil,
+       (192...195),
+       (192...193),
+       ArgumentsNode(193...194)(
+         [CallNode(193...194)(
+            nil,
+            nil,
+            (193...194),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
+       (194...195),
+       0,
+       "[]",
+       "[]=",
+       :/,
        (196...198),
-       IntegerNode(199...200)(),
-       :/
+       IntegerNode(199...200)()
      ),
-     CallOperatorAndWriteNode(201...211)(
-       CallNode(201...205)(
-         LocalVariableReadNode(201...202)(:a, 0),
-         nil,
-         (202...205),
-         (202...203),
-         ArgumentsNode(203...204)(
-           [CallNode(203...204)(
-              nil,
-              nil,
-              (203...204),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (204...205),
-         nil,
-         0,
-         "[]="
+     CallAndWriteNode(201...211)(
+       LocalVariableReadNode(201...202)(:a, 0),
+       nil,
+       (202...205),
+       (202...203),
+       ArgumentsNode(203...204)(
+         [CallNode(203...204)(
+            nil,
+            nil,
+            (203...204),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
+       (204...205),
+       0,
+       "[]",
+       "[]=",
        (206...209),
        CallNode(210...211)(nil, nil, (210...211), nil, nil, nil, nil, 2, "b")
      ),
-     CallOperatorOrWriteNode(212...222)(
-       CallNode(212...216)(
-         LocalVariableReadNode(212...213)(:a, 0),
-         nil,
-         (213...216),
-         (213...214),
-         ArgumentsNode(214...215)(
-           [CallNode(214...215)(
-              nil,
-              nil,
-              (214...215),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            )]
-         ),
-         (215...216),
-         nil,
-         0,
-         "[]="
+     CallOrWriteNode(212...222)(
+       LocalVariableReadNode(212...213)(:a, 0),
+       nil,
+       (213...216),
+       (213...214),
+       ArgumentsNode(214...215)(
+         [CallNode(214...215)(
+            nil,
+            nil,
+            (214...215),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "b"
+          )]
        ),
-       IntegerNode(221...222)(),
-       (217...220)
+       (215...216),
+       0,
+       "[]",
+       "[]=",
+       (217...220),
+       IntegerNode(221...222)()
      ),
      CallOperatorWriteNode(223...233)(
-       CallNode(223...228)(
-         CallNode(223...226)(
-           nil,
-           nil,
-           (223...226),
-           nil,
-           nil,
-           nil,
-           nil,
-           2,
-           "foo"
-         ),
-         (226...227),
-         (227...228),
+       CallNode(223...226)(
+         nil,
+         nil,
+         (223...226),
          nil,
          nil,
          nil,
          nil,
-         0,
-         "A="
+         2,
+         "foo"
        ),
+       (226...227),
+       (227...228),
+       nil,
+       nil,
+       nil,
+       0,
+       "A",
+       "A=",
+       :+,
        (229...231),
-       IntegerNode(232...233)(),
-       :+
+       IntegerNode(232...233)()
      )]
   )
 )

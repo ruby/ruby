@@ -136,17 +136,16 @@ ProgramNode(0...437)(
        (91...92)
      ),
      CallOperatorWriteNode(116...145)(
-       CallNode(116...121)(
-         LocalVariableReadNode(116...119)(:foo, 0),
-         (119...120),
-         (120...121),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "C="
-       ),
+       LocalVariableReadNode(116...119)(:foo, 0),
+       (119...120),
+       (120...121),
+       nil,
+       nil,
+       nil,
+       0,
+       "C",
+       "C=",
+       :+,
        (122...124),
        CallNode(125...145)(
          nil,
@@ -174,21 +173,19 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       ),
-       :+
+       )
      ),
      CallOperatorWriteNode(147...177)(
-       CallNode(147...152)(
-         LocalVariableReadNode(147...150)(:foo, 0),
-         (150...151),
-         (151...152),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "C="
-       ),
+       LocalVariableReadNode(147...150)(:foo, 0),
+       (150...151),
+       (151...152),
+       nil,
+       nil,
+       nil,
+       0,
+       "C",
+       "C=",
+       :+,
        (153...155),
        RescueModifierNode(156...177)(
          CallNode(156...166)(
@@ -216,21 +213,19 @@ ProgramNode(0...437)(
          ),
          (167...173),
          NilNode(174...177)()
-       ),
-       :+
+       )
      ),
      CallOperatorWriteNode(179...208)(
-       CallNode(179...184)(
-         LocalVariableReadNode(179...182)(:foo, 0),
-         (182...183),
-         (183...184),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "m="
-       ),
+       LocalVariableReadNode(179...182)(:foo, 0),
+       (182...183),
+       (183...184),
+       nil,
+       nil,
+       nil,
+       0,
+       "m",
+       "m=",
+       :+,
        (185...187),
        CallNode(188...208)(
          nil,
@@ -258,21 +253,19 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       ),
-       :+
+       )
      ),
      CallOperatorWriteNode(210...240)(
-       CallNode(210...215)(
-         LocalVariableReadNode(210...213)(:foo, 0),
-         (213...214),
-         (214...215),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "m="
-       ),
+       LocalVariableReadNode(210...213)(:foo, 0),
+       (213...214),
+       (214...215),
+       nil,
+       nil,
+       nil,
+       0,
+       "m",
+       "m=",
+       :+,
        (216...218),
        RescueModifierNode(219...240)(
          CallNode(219...229)(
@@ -300,8 +293,7 @@ ProgramNode(0...437)(
          ),
          (230...236),
          NilNode(237...240)()
-       ),
-       :+
+       )
      ),
      ConstantPathOrWriteNode(242...273)(
        ConstantPathNode(242...248)(
@@ -374,17 +366,16 @@ ProgramNode(0...437)(
        )
      ),
      CallOperatorWriteNode(309...339)(
-       CallNode(309...315)(
-         LocalVariableReadNode(309...312)(:foo, 0),
-         (312...314),
-         (314...315),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "m="
-       ),
+       LocalVariableReadNode(309...312)(:foo, 0),
+       (312...314),
+       (314...315),
+       nil,
+       nil,
+       nil,
+       0,
+       "m",
+       "m=",
+       :+,
        (316...318),
        CallNode(319...339)(
          nil,
@@ -412,21 +403,19 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       ),
-       :+
+       )
      ),
      CallOperatorWriteNode(341...372)(
-       CallNode(341...347)(
-         LocalVariableReadNode(341...344)(:foo, 0),
-         (344...346),
-         (346...347),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "m="
-       ),
+       LocalVariableReadNode(341...344)(:foo, 0),
+       (344...346),
+       (346...347),
+       nil,
+       nil,
+       nil,
+       0,
+       "m",
+       "m=",
+       :+,
        (348...350),
        RescueModifierNode(351...372)(
          CallNode(351...361)(
@@ -454,21 +443,19 @@ ProgramNode(0...437)(
          ),
          (362...368),
          NilNode(369...372)()
-       ),
-       :+
+       )
      ),
      CallOperatorWriteNode(374...404)(
-       CallNode(374...380)(
-         LocalVariableReadNode(374...377)(:foo, 0),
-         nil,
-         (377...380),
-         (377...378),
-         ArgumentsNode(378...379)([IntegerNode(378...379)()]),
-         (379...380),
-         nil,
-         0,
-         "[]="
-       ),
+       LocalVariableReadNode(374...377)(:foo, 0),
+       nil,
+       (377...380),
+       (377...378),
+       ArgumentsNode(378...379)([IntegerNode(378...379)()]),
+       (379...380),
+       0,
+       "[]",
+       "[]=",
+       :+,
        (381...383),
        CallNode(384...404)(
          nil,
@@ -496,21 +483,19 @@ ProgramNode(0...437)(
          nil,
          0,
          "raise"
-       ),
-       :+
+       )
      ),
      CallOperatorWriteNode(406...437)(
-       CallNode(406...412)(
-         LocalVariableReadNode(406...409)(:foo, 0),
-         nil,
-         (409...412),
-         (409...410),
-         ArgumentsNode(410...411)([IntegerNode(410...411)()]),
-         (411...412),
-         nil,
-         0,
-         "[]="
-       ),
+       LocalVariableReadNode(406...409)(:foo, 0),
+       nil,
+       (409...412),
+       (409...410),
+       ArgumentsNode(410...411)([IntegerNode(410...411)()]),
+       (411...412),
+       0,
+       "[]",
+       "[]=",
+       :+,
        (413...415),
        RescueModifierNode(416...437)(
          CallNode(416...426)(
@@ -538,8 +523,7 @@ ProgramNode(0...437)(
          ),
          (427...433),
          NilNode(434...437)()
-       ),
-       :+
+       )
      )]
   )
 )

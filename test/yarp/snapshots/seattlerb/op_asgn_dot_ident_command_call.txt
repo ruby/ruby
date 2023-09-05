@@ -1,18 +1,17 @@
 ProgramNode(0...11)(
   [],
   StatementsNode(0...11)(
-    [CallOperatorOrWriteNode(0...11)(
-       CallNode(0...3)(
-         ConstantReadNode(0...1)(),
-         (1...2),
-         (2...3),
-         nil,
-         nil,
-         nil,
-         nil,
-         0,
-         "B="
-       ),
+    [CallOrWriteNode(0...11)(
+       ConstantReadNode(0...1)(),
+       (1...2),
+       (2...3),
+       nil,
+       nil,
+       nil,
+       0,
+       "B",
+       "B=",
+       (4...7),
        CallNode(8...11)(
          nil,
          nil,
@@ -23,8 +22,7 @@ ProgramNode(0...11)(
          nil,
          0,
          "c"
-       ),
-       (4...7)
+       )
      )]
   )
 )

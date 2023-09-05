@@ -1,18 +1,17 @@
 ProgramNode(0...16)(
   [],
   StatementsNode(0...16)(
-    [CallOperatorOrWriteNode(0...16)(
-       CallNode(0...5)(
-         CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-         nil,
-         (1...5),
-         (1...2),
-         ArgumentsNode(2...4)([SymbolNode(2...4)((2...3), (3...4), nil, "b")]),
-         (4...5),
-         nil,
-         0,
-         "[]="
-       ),
+    [CallOrWriteNode(0...16)(
+       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
+       nil,
+       (1...5),
+       (1...2),
+       ArgumentsNode(2...4)([SymbolNode(2...4)((2...3), (3...4), nil, "b")]),
+       (4...5),
+       0,
+       "[]",
+       "[]=",
+       (6...9),
        CallNode(10...16)(
          nil,
          nil,
@@ -25,8 +24,7 @@ ProgramNode(0...16)(
          nil,
          0,
          "c"
-       ),
-       (6...9)
+       )
      )]
   )
 )

@@ -2,17 +2,16 @@ ProgramNode(0...11)(
   [],
   StatementsNode(0...11)(
     [CallOperatorWriteNode(0...11)(
-       CallNode(0...4)(
-         CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-         (1...3),
-         (3...4),
-         nil,
-         nil,
-         nil,
-         nil,
-         1,
-         "b="
-       ),
+       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
+       (1...3),
+       (3...4),
+       nil,
+       nil,
+       nil,
+       1,
+       "b",
+       "b=",
+       :+,
        (5...7),
        CallNode(8...11)(
          nil,
@@ -24,8 +23,7 @@ ProgramNode(0...11)(
          nil,
          0,
          "x"
-       ),
-       :+
+       )
      )]
   )
 )
