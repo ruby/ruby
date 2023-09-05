@@ -715,7 +715,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_CLASS_VARIABLE_READ_NODE: {
           if (!popped) {
-              ID cvar_name = parse_node_symbol((yp_node_t *)node);
+              yp_class_variable_read_node_t *class_variable_read_node = (yp_class_variable_read_node_t *) node;
+              ID cvar_name = yp_constant_id_lookup(compile_context, class_variable_read_node->name);
               ADD_INSN2(
                       ret,
                       &dummy_line_node,
@@ -733,7 +734,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               ADD_INSN(ret, &dummy_line_node, dup);
           }
 
-          ID cvar_name = parse_location_symbol(&write_node->name_loc);
+          ID cvar_name = yp_constant_id_lookup(compile_context, write_node->name);
           ADD_INSN2(ret, &dummy_line_node, setclassvariable, ID2SYM(cvar_name), get_cvar_ic_value(iseq, cvar_name));
           return;
       }
@@ -974,7 +975,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           LABEL *end_label = NEW_LABEL(lineno);
 
-          VALUE global_variable_name = ID2SYM(parse_location_symbol(&global_variable_and_write_node->name_loc));
+          VALUE global_variable_name = ID2SYM(yp_constant_id_lookup(compile_context, global_variable_and_write_node->name));
+
           ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
 
           if (!popped) {
@@ -1001,7 +1003,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
           yp_global_variable_operator_write_node_t *global_variable_operator_write_node = (yp_global_variable_operator_write_node_t*) node;
 
-          ID global_variable_name = parse_location_symbol(&global_variable_operator_write_node->name_loc);
+          VALUE global_variable_name = ID2SYM(yp_constant_id_lookup(compile_context, global_variable_operator_write_node->name));
           ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(global_variable_name));
 
           yp_compile_node(iseq, global_variable_operator_write_node->value, ret, src, false, compile_context);
@@ -1026,7 +1028,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           LABEL *end_label = NEW_LABEL(lineno);
 
           ADD_INSN(ret, &dummy_line_node, putnil);
-          VALUE global_variable_name = ID2SYM(parse_location_symbol(&global_variable_or_write_node->name_loc));
+          VALUE global_variable_name = ID2SYM(yp_constant_id_lookup(compile_context, global_variable_or_write_node->name));
 
           ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_GVAR), global_variable_name, Qtrue);
 
@@ -1057,7 +1059,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case YP_NODE_GLOBAL_VARIABLE_READ_NODE: {
-          VALUE global_variable_name = ID2SYM(parse_location_symbol((yp_location_t *)(&node->location)));
+          yp_global_variable_read_node_t *global_variable_read_node = (yp_global_variable_read_node_t *)node;
+          VALUE global_variable_name = ID2SYM(yp_constant_id_lookup(compile_context, global_variable_read_node->name));
           ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
           if (popped) {
               ADD_INSN(ret, &dummy_line_node, pop);
@@ -1070,7 +1073,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, dup);
           }
-          ID ivar_name = parse_location_symbol(&write_node->name_loc);
+          ID ivar_name = yp_constant_id_lookup(compile_context, write_node->name);
           ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(ivar_name));
           return;
       }
@@ -1217,7 +1220,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_INSTANCE_VARIABLE_READ_NODE: {
           if (!popped) {
-              ID ivar_name = parse_node_symbol((yp_node_t *)node);
+              yp_instance_variable_read_node_t *instance_variable_read_node = (yp_instance_variable_read_node_t *) node;
+              ID ivar_name = yp_constant_id_lookup(compile_context, instance_variable_read_node->name);
               ADD_INSN2(ret, &dummy_line_node, getinstancevariable,
                       ID2SYM(ivar_name),
                       get_ivar_ic_value(iseq, ivar_name));
@@ -1232,7 +1236,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               ADD_INSN(ret, &dummy_line_node, dup);
           }
 
-          ID ivar_name = parse_location_symbol(&write_node->name_loc);
+          ID ivar_name = yp_constant_id_lookup(compile_context, write_node->name);
           ADD_INSN2(ret, &dummy_line_node, setinstancevariable,
                   ID2SYM(ivar_name),
                   get_ivar_ic_value(iseq, ivar_name));
