@@ -95,7 +95,9 @@ module YARP
     end
 
     def test_ConstantWriteNode
-      assert_equal 1, compile("YCT = 1")
+      # We use Time.now here to avoid assigning the constant mutliple times if we
+      # run with `--repeat_count`
+      assert_equal 1, compile("YCT_#{Time.now.to_i} = 1")
     end
 
     def test_ConstantPathWriteNode
