@@ -8682,11 +8682,14 @@ get_PROCESS_ID(ID _x, VALUE *_y)
  *    with prefixed <tt>'-'</tt>,
  *    each process group with group ID +id+ is signalled.
  *
- *  \Method <tt>Signal.list</tt> returns a hash of the string names
- *  and non-negative integer values of each signal that is supported
+ *  Use method Signal.list to see which signals are supported
  *  by Ruby on the underlying platform;
- *  the size and content of the returned hash varies widely
+ *  the method returns a hash of the string names
+ *  and non-negative integer values of the supported signals.
+ *  The size and content of the returned hash varies widely
  *  among platforms.
+ *
+ *  Additionally, signal +0+ is useful to determine if the process exists.
  *
  *  Example:
  *
