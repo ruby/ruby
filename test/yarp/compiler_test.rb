@@ -13,8 +13,8 @@ module YARP
     def test_FloatNode
       assert_equal 1.0, compile("1.0")
       assert_equal 1.0e0, compile("1.0e0")
-      assert_equal +1.0e+0, compile("+1.0e+0")
-      assert_equal -1.0e-0, compile("-1.0e-0")
+      assert_equal(+1.0e+0, compile("+1.0e+0"))
+      assert_equal(-1.0e-0, compile("-1.0e-0"))
     end
 
     def test_ImaginaryNode
@@ -25,8 +25,8 @@ module YARP
 
     def test_IntegerNode
       assert_equal 1, compile("1")
-      assert_equal +1, compile("+1")
-      assert_equal -1, compile("-1")
+      assert_equal(+1, compile("+1"))
+      assert_equal(-1, compile("-1"))
       # assert_equal 0x10, compile("0x10")
       # assert_equal 0b10, compile("0b10")
       # assert_equal 0o10, compile("0o10")
