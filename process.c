@@ -8682,40 +8682,44 @@ get_PROCESS_ID(ID _x, VALUE *_y)
  *    with prefixed <tt>'-'</tt>,
  *    each process group with group ID +id+ is signalled.
  *
- *  The signal non-negative integers and strings are:
+ *  The actual signal values are platform dependent, an example of
+ *  signal names which are supported on many platforms are:
  *
- *  - +0+ (<tt>'SIGEXIT'</tt>): Exit the current process.
- *  - +1+ (<tt>'SIGHUP'</tt>): Hang up controlling terminal or process.
- *  - +2+ (<tt>'SIGINT'</tt>): \Interrupt from keyboard, Ctrl-C.
- *  - +3+ (<tt>'SIGQUIT'</tt>): Quit from keyboard, Ctrl-\.
- *  - +4+ (<tt>'SIGILL'</tt>): Illegal instruction.
- *  - +5+ (<tt>'SIGTRAP'</tt>): Breakpoint for debugging.
- *  - +6+ (<tt>'SIGIOT'</tt>): Abnormal termination.
- *  - +7+ (<tt>'SIGBUS'</tt>): Bus error.
- *  - +8+ (<tt>'SIGFPE'</tt>): Floating-point exception.
- *  - +9+ (<tt>'SIGKILL'</tt>): Forced-process termination.
- *  - +10+ (<tt>'SIGUSR1'</tt>): Available to processes.
- *  - +11+ (<tt>'SIGSEGV'</tt>): Invalid memory reference.
- *  - +12+ (<tt>'SIGUSR2'</tt>): Available to processes.
- *  - +13+ (<tt>'SIGPIPE'</tt>): Write to pipe with no readers.
- *  - +14+ (<tt>'SIGALRM'</tt>): Real-timer clock.
- *  - +15+ (<tt>'SIGTERM'</tt>): \Process termination.
- *  - +17+ (<tt>'SIGCHLD'</tt>): Child process stopped or terminated
-      or got a signal if traced.
- *  - +18+ (<tt>'SIGCONT'</tt>): Resume execution, if stopped.
- *  - +19+ (<tt>'SIGSTOP'</tt>): Stop process execution, Ctrl-Z.
- *  - +20+ (<tt>'SIGTSTP'</tt>): Stop process issued from tty.
- *  - +21+ (<tt>'SIGTTIN'</tt>): Background process requires input.
- *  - +22+ (<tt>'SIGTTOU'</tt>): Background process requires output.
- *  - +23+ (<tt>'SIGURG'</tt>): Urgent condition on socket.
- *  - +24+ (<tt>'SIGXCPU'</tt>): CPU time limit exceeded.
- *  - +25+ (<tt>'SIGXFSZ'</tt>): File size limit exceeded.
- *  - +26+ (<tt>'SIGVTALRM'</tt>): Virtual timer clock.
- *  - +27+ (<tt>'SIGPROF'</tt>): Profile timer clock.
- *  - +28+ (<tt>'SIGWINCH'</tt>): Window resizing.
- *  - +29+ (<tt>'SIGPOLL'</tt>): I/O now possible.
- *  - +30+ (<tt>'SIGPWR'</tt>): Power supply failure.
- *  - +31+ (<tt>'SIGSYS'</tt>, <tt>'SIGUNUSED'</tt>): Bad system call.
+ *  - +SIGHUP+: Hang up controlling terminal or process.
+ *  - +SIGINT+: \Interrupt from keyboard, Ctrl-C by default in general.
+ *  - +SIGQUIT+: Quit from keyboard, Ctrl-\ by default in general.
+ *  - +SIGILL+: Illegal instruction.
+ *  - +SIGTRAP+: Breakpoint for debugging.
+ *  - +SIGIOT+: Abnormal termination.
+ *  - +SIGBUS+: Bus error.
+ *  - +SIGFPE+: Floating-point exception.
+ *  - +SIGKILL+: Forced-process termination.
+ *  - +SIGUSR1+: Available to processes.
+ *  - +SIGSEGV+: Invalid memory reference.
+ *  - +SIGUSR2+: Available to processes.
+ *  - +SIGPIPE+: Write to pipe with no readers.
+ *  - +SIGALRM+: Real-timer clock.
+ *  - +SIGTERM+: \Process termination.
+ *  - +SIGCHLD+: Child process stopped or terminated or got a signal if traced.
+ *  - +SIGCONT+: Resume execution, if stopped.
+ *  - +SIGSTOP+: Stop process execution, Ctrl-Z by default in general.
+ *  - +SIGTSTP+: Stop process issued from tty.
+ *  - +SIGTTIN+: Background process requires input.
+ *  - +SIGTTOU+: Background process requires output.
+ *  - +SIGURG+: Urgent condition on socket.
+ *  - +SIGXCPU+: CPU time limit exceeded.
+ *  - +SIGXFSZ+: File size limit exceeded.
+ *  - +SIGVTALRM+: Virtual timer clock.
+ *  - +SIGPROF+: Profile timer clock.
+ *  - +SIGWINCH+: Window resizing.
+ *  - +SIGPOLL+: I/O now possible.
+ *  - +SIGPWR+: Power supply failure.
+ *  - +SIGSYS+, +SIGUNUSED+: Bad system call.
+ *
+ *  Use `Signal.list` to see which signals are supported, and the
+ *  actual values.
+ *
+ *  Additionally, signal +0+ is useful to determine if the process exists.
  *
  *  Example:
  *
