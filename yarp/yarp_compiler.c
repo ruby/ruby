@@ -359,10 +359,16 @@ yp_lookup_local_index_with_depth(rb_iseq_t *iseq, yp_compile_context_t *compile_
     return yp_lookup_local_index(iseq, compile_context, constant_id);
 }
 
+// This returns the CRuby ID which maps to the yp_constant_id_t
+//
+// Constant_ids in YARP are indexes of the constants in YARP's constant pool.
+// We add a constants mapping on the compile_context which is a mapping from
+// these constant_id indexes to the CRuby IDs that they represent.
+// This helper method allows easy access to those IDs
 static ID
-yp_constant_id_lookup(yp_compile_context_t *compile_context, ID constant)
+yp_constant_id_lookup(yp_compile_context_t *compile_context, yp_constant_id_t constant_id)
 {
-    return compile_context->constants[constant - 1];
+    return compile_context->constants[constant_id - 1];
 }
 
 static rb_iseq_t *
@@ -1004,7 +1010,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_global_variable_operator_write_node_t *global_variable_operator_write_node = (yp_global_variable_operator_write_node_t*) node;
 
           VALUE global_variable_name = ID2SYM(yp_constant_id_lookup(compile_context, global_variable_operator_write_node->name));
-          ADD_INSN1(ret, &dummy_line_node, getglobal, ID2SYM(global_variable_name));
+          ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
 
           yp_compile_node(iseq, global_variable_operator_write_node->value, ret, src, false, compile_context);
           ID method_id = yp_constant_id_lookup(compile_context, global_variable_operator_write_node->operator);
@@ -1017,7 +1023,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               ADD_INSN(ret, &dummy_line_node, dup);
           }
 
-          ADD_INSN1(ret, &dummy_line_node, setglobal, ID2SYM(global_variable_name));
+          ADD_INSN1(ret, &dummy_line_node, setglobal, global_variable_name);
 
           return;
       }
