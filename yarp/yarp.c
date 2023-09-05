@@ -1175,7 +1175,7 @@ yp_block_parameters_node_create(yp_parser_t *parser, yp_parameters_node_t *param
         .parameters = parameters,
         .opening_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = { .start = NULL, .end = NULL },
-        .locals = YP_EMPTY_LOCATION_LIST
+        .locals = YP_EMPTY_NODE_LIST
     };
 
     return node;
@@ -1190,14 +1190,30 @@ yp_block_parameters_node_closing_set(yp_block_parameters_node_t *node, const yp_
     node->closing_loc = YP_LOCATION_TOKEN_VALUE(closing);
 }
 
+// Allocate and initialize a new BlockLocalVariableNode node.
+static yp_block_local_variable_node_t *
+yp_block_local_variable_node_create(yp_parser_t *parser, const yp_token_t *name) {
+    assert(name->type == YP_TOKEN_IDENTIFIER || name->type == YP_TOKEN_MISSING);
+    yp_block_local_variable_node_t *node = YP_ALLOC_NODE(parser, yp_block_local_variable_node_t);
+
+    *node = (yp_block_local_variable_node_t) {
+        {
+            .type = YP_NODE_BLOCK_LOCAL_VARIABLE_NODE,
+            .location = YP_LOCATION_TOKEN_VALUE(name),
+        },
+        .name = yp_parser_constant_id_token(parser, name)
+    };
+
+    return node;
+}
+
 // Append a new block-local variable to a BlockParametersNode node.
 static void
-yp_block_parameters_node_append_local(yp_block_parameters_node_t *node, const yp_token_t *local) {
-    assert(local->type == YP_TOKEN_IDENTIFIER || local->type == YP_TOKEN_MISSING);
+yp_block_parameters_node_append_local(yp_block_parameters_node_t *node, const yp_block_local_variable_node_t *local) {
+    yp_node_list_append(&node->locals, (yp_node_t *) local);
 
-    yp_location_list_append(&node->locals, local);
-    if (node->base.location.start == NULL) node->base.location.start = local->start;
-    node->base.location.end = local->end;
+    if (node->base.location.start == NULL) node->base.location.start = local->base.location.start;
+    node->base.location.end = local->base.location.end;
 }
 
 // Allocate and initialize a new BreakNode node.
@@ -9283,7 +9299,9 @@ parse_block_parameters(
         do {
             expect(parser, YP_TOKEN_IDENTIFIER, "Expected a local variable name.");
             yp_parser_local_add_token(parser, &parser->previous);
-            yp_block_parameters_node_append_local(block_parameters, &parser->previous);
+
+            yp_block_local_variable_node_t *local = yp_block_local_variable_node_create(parser, &parser->previous);
+            yp_block_parameters_node_append_local(block_parameters, local);
         } while (accept(parser, YP_TOKEN_COMMA));
     }
 

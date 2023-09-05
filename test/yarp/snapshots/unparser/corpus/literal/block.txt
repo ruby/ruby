@@ -91,7 +91,7 @@ ProgramNode(0...737)(
              nil,
              nil
            ),
-           [(44...45)],
+           [BlockLocalVariableNode(44...45)(:x)],
            (39...40),
            (45...46)
          ),
@@ -326,7 +326,7 @@ ProgramNode(0...737)(
              nil,
              nil
            ),
-           [(181...182)],
+           [BlockLocalVariableNode(181...182)(:b)],
            (176...177),
            (182...183)
          ),
@@ -366,7 +366,7 @@ ProgramNode(0...737)(
              nil,
              nil
            ),
-           [(200...201)],
+           [BlockLocalVariableNode(200...201)(:b)],
            (196...197),
            (201...202)
          ),
@@ -398,7 +398,8 @@ ProgramNode(0...737)(
          [:a, :b],
          BlockParametersNode(215...223)(
            nil,
-           [(218...219), (221...222)],
+           [BlockLocalVariableNode(218...219)(:a),
+            BlockLocalVariableNode(221...222)(:b)],
            (215...216),
            (222...223)
          ),

@@ -73,17 +73,6 @@ module YARP
     end
   end
 
-  # This represents a field on a node that is a list of locations.
-  class LocationListField < Field
-    def rbs_class
-      "Array[Location]"
-    end
-
-    def java_type
-      "Location[]"
-    end
-  end
-
   # This represents a field on a node that is the ID of a string interned
   # through the parser's constant pool.
   class ConstantField < Field
@@ -205,7 +194,6 @@ module YARP
       when "node?"      then OptionalNodeField
       when "node[]"     then NodeListField
       when "string"     then StringField
-      when "location[]" then LocationListField
       when "constant"   then ConstantField
       when "constant[]" then ConstantListField
       when "location"   then LocationField

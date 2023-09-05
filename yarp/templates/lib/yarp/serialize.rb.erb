@@ -185,7 +185,6 @@ module YARP
             when YARP::OptionalNodeField then "load_optional_node"
             when YARP::StringField then "load_string"
             when YARP::NodeListField then "Array.new(load_varint) { load_node }"
-            when YARP::LocationListField then "Array.new(load_varint) { load_location }"
             when YARP::ConstantField then "load_constant"
             when YARP::ConstantListField then "Array.new(load_varint) { load_constant }"
             when YARP::LocationField then "load_location"

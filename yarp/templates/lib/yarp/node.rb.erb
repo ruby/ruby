@@ -100,7 +100,7 @@ module YARP
       <%- case field -%>
       <%- when YARP::NodeListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{inspector.list("#{inspector.prefix}<%= preadd %>", <%= field.name %>)}"
-      <%- when YARP::LocationListField, YARP::ConstantListField -%>
+      <%- when YARP::ConstantListField -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when YARP::NodeField -%>
       inspector << "<%= pointer %><%= field.name %>:\n"

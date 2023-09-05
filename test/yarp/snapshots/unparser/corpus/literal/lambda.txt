@@ -110,7 +110,7 @@ ProgramNode(0...80)(
            nil,
            nil
          ),
-         [(74...75)],
+         [BlockLocalVariableNode(74...75)(:c)],
          (67...68),
          (75...76)
        ),

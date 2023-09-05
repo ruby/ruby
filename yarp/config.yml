@@ -520,6 +520,15 @@ nodes:
 
           bar(&args)
           ^^^^^^^^^^
+  - name: BlockLocalVariableNode
+    fields:
+      - name: name
+        type: constant
+    comment: |
+      Represents a block local variable.
+
+          a { |; b| }
+                 ^
   - name: BlockNode
     fields:
       - name: locals
@@ -556,7 +565,7 @@ nodes:
         type: node?
         kind: ParametersNode
       - name: locals
-        type: location[]
+        type: node[]
       - name: opening_loc
         type: location?
       - name: closing_loc

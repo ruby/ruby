@@ -250,7 +250,7 @@ ProgramNode(0...550)(
          [:a],
          BlockParametersNode(117...123)(
            nil,
-           [(120...121)],
+           [BlockLocalVariableNode(120...121)(:a)],
            (117...118),
            (122...123)
          ),
@@ -272,7 +272,7 @@ ProgramNode(0...550)(
          [:a],
          BlockParametersNode(130...134)(
            nil,
-           [(132...133)],
+           [BlockLocalVariableNode(132...133)(:a)],
            (130...131),
            (133...134)
          ),

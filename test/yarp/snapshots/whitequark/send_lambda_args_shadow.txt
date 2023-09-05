@@ -16,7 +16,8 @@ ProgramNode(0...19)(
            nil,
            nil
          ),
-         [(6...9), (11...14)],
+         [BlockLocalVariableNode(6...9)(:foo),
+          BlockLocalVariableNode(11...14)(:bar)],
          (2...3),
          (14...15)
        ),

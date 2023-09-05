@@ -10,7 +10,12 @@ ProgramNode(0...10)(
        nil,
        BlockNode(2...10)(
          [:b],
-         BlockParametersNode(4...8)(nil, [(6...7)], (4...5), (7...8)),
+         BlockParametersNode(4...8)(
+           nil,
+           [BlockLocalVariableNode(6...7)(:b)],
+           (4...5),
+           (7...8)
+         ),
          nil,
          (2...3),
          (9...10)

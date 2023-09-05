@@ -86,12 +86,6 @@ yp_serialize_node(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) {
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
                 yp_serialize_node(parser, (yp_node_t *) ((yp_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
             }
-            <%- when YARP::LocationListField -%>
-            uint32_t <%= field.name %>_size = yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            yp_buffer_append_u32(buffer, <%= field.name %>_size);
-            for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
-                yp_serialize_location(parser, &((yp_<%= node.human %>_t *)node)-><%= field.name %>.locations[index], buffer);
-            }
             <%- when YARP::ConstantField -%>
             yp_buffer_append_u32(buffer, yp_sizet_to_u32(((yp_<%= node.human %>_t *)node)-><%= field.name %>));
             <%- when YARP::ConstantListField -%>
