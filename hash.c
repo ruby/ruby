@@ -484,7 +484,7 @@ rb_hash_dump(VALUE hash)
     rb_obj_info_dump(hash);
 
     if (RHASH_AR_TABLE_P(hash)) {
-        unsigned i, n = 0, bound = RHASH_AR_TABLE_BOUND(hash);
+        unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
 
         fprintf(stderr, "  size:%u bound:%u\n",
                 RHASH_AR_TABLE_SIZE(hash), bound);
@@ -501,7 +501,6 @@ rb_hash_dump(VALUE hash)
                         rb_raw_obj_info(b1, 0x100, k),
                         rb_raw_obj_info(b2, 0x100, v),
                         ar_hint(hash, i));
-                n++;
             }
             else {
                 fprintf(stderr, "  %d empty\n", i);
@@ -995,8 +994,6 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         return -1;
     }
 
-    HASH_ASSERT(RHASH_AR_TABLE(hash));
-
     bin = ar_find_entry(hash, hash_value, key);
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_SIZE) {
@@ -1004,7 +1001,6 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         }
         else if (bin >= RHASH_AR_TABLE_MAX_BOUND) {
             bin = ar_compact_table(hash);
-            HASH_ASSERT(RHASH_AR_TABLE(hash));
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
