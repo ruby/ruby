@@ -19,6 +19,10 @@ module YARP
   class TestCase < ::Test::Unit::TestCase
     private
 
+    def assert_raises(*args, &block)
+      raise "Use assert_raise instead"
+    end
+
     def assert_equal_nodes(expected, actual, compare_location: true, parent: nil)
       assert_equal expected.class, actual.class
 

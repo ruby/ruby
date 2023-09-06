@@ -3,37 +3,37 @@
 require_relative "test_helper"
 
 module YARP
-  class PatternTest < Test::Unit::TestCase
+  class PatternTest < TestCase
     def test_invalid_syntax
-      assert_raises(Pattern::CompilationError) { scan("", "<>") }
+      assert_raise(Pattern::CompilationError) { scan("", "<>") }
     end
 
     def test_invalid_constant
-      assert_raises(Pattern::CompilationError) { scan("", "Foo") }
+      assert_raise(Pattern::CompilationError) { scan("", "Foo") }
     end
 
     def test_invalid_nested_constant
-      assert_raises(Pattern::CompilationError) { scan("", "Foo::Bar") }
+      assert_raise(Pattern::CompilationError) { scan("", "Foo::Bar") }
     end
 
     def test_regexp_with_interpolation
-      assert_raises(Pattern::CompilationError) { scan("", "/\#{foo}/") }
+      assert_raise(Pattern::CompilationError) { scan("", "/\#{foo}/") }
     end
 
     def test_string_with_interpolation
-      assert_raises(Pattern::CompilationError) { scan("", '"#{foo}"') }
+      assert_raise(Pattern::CompilationError) { scan("", '"#{foo}"') }
     end
 
     def test_symbol_with_interpolation
-      assert_raises(Pattern::CompilationError) { scan("", ":\"\#{foo}\"") }
+      assert_raise(Pattern::CompilationError) { scan("", ":\"\#{foo}\"") }
     end
 
     def test_invalid_node
-      assert_raises(Pattern::CompilationError) { scan("", "IntegerNode[^foo]") }
+      assert_raise(Pattern::CompilationError) { scan("", "IntegerNode[^foo]") }
     end
 
     def test_self
-      assert_raises(Pattern::CompilationError) { scan("", "self") }
+      assert_raise(Pattern::CompilationError) { scan("", "self") }
     end
 
     def test_array_pattern_no_constant
