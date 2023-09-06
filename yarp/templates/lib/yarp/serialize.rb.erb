@@ -18,7 +18,13 @@ module YARP
     PATCH_VERSION = 0
 
     def self.load(input, serialized)
-      Loader.new(Source.new(input), serialized).load_result
+      input = input.dup
+      source = Source.new(input)
+      loader = Loader.new(source, serialized)
+      result = loader.load_result
+
+      input.force_encoding(loader.encoding)
+      result
     end
 
     def self.load_tokens(source, serialized)

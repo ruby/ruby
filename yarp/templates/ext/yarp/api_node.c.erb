@@ -38,8 +38,8 @@ yp_string_new(yp_string_t *string, rb_encoding *encoding) {
 
 // Create a YARP::Source object from the given parser.
 VALUE
-yp_source_new(yp_parser_t *parser) {
-    VALUE source = rb_str_new((const char *) parser->start, parser->end - parser->start);
+yp_source_new(yp_parser_t *parser, rb_encoding *encoding) {
+    VALUE source = rb_enc_str_new((const char *) parser->start, parser->end - parser->start, encoding);
     VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
 
     for (size_t index = 0; index < parser->newline_list.size; index++) {
@@ -78,7 +78,7 @@ yp_node_stack_pop(yp_node_stack_node_t **stack) {
 
 VALUE
 yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
-    VALUE source = yp_source_new(parser);
+    VALUE source = yp_source_new(parser, encoding);
     ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
 
     for (size_t index = 0; index < parser->constant_pool.capacity; index++) {

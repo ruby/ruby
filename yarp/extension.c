@@ -347,7 +347,7 @@ parse_input(yp_string_t *input, const char *filepath) {
     yp_node_t *node = yp_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding.name);
 
-    VALUE source = yp_source_new(&parser);
+    VALUE source = yp_source_new(&parser, encoding);
     VALUE result_argv[] = {
         yp_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
