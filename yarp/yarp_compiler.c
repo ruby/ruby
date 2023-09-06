@@ -100,7 +100,8 @@ yp_static_literal_value(yp_node_t *node)
         return Qfalse;
         // TODO: Implement this method for the other literal nodes described above
       default:
-        rb_bug("This node type doesn't have a literal value");
+        rb_raise(rb_eArgError, "Don't have a literal value for this type");
+        return Qfalse;
     }
 }
 
@@ -257,6 +258,9 @@ yp_compile_if(rb_iseq_t *iseq, const int line, yp_statements_node_t *node_body, 
         ADD_LABEL(ret, end_label);
     }
 
+    if (popped) {
+        ADD_INSN(ret, &line_node, pop);
+    }
     return;
 }
 
@@ -511,6 +515,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_begin_node_t *begin_node = (yp_begin_node_t *) node;
           if (begin_node->statements) {
               yp_compile_node(iseq, (yp_node_t *)begin_node->statements, ret, src, popped, compile_context);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
           }
           return;
       }
@@ -901,8 +908,16 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_NODE_EMBEDDED_STATEMENTS_NODE: {
           yp_embedded_statements_node_t *embedded_statements_node = (yp_embedded_statements_node_t *)node;
 
-          if (embedded_statements_node->statements)
+          if (embedded_statements_node->statements) {
               yp_compile_node(iseq, (yp_node_t *) (embedded_statements_node->statements), ret, src, popped, compile_context);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          }
+
+          if (popped) {
+              ADD_INSN(ret, &dummy_line_node, pop);
+          }
           // TODO: Concatenate the strings that exist here
           return;
       }
@@ -1239,27 +1254,33 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_INTERPOLATED_STRING_NODE: {
           yp_interpolated_string_node_t *interp_string_node= (yp_interpolated_string_node_t *) node;
+          size_t parts_size = interp_string_node->parts.size;
 
-          for (size_t index = 0; index < interp_string_node->parts.size; index++) {
-              yp_node_t *part = interp_string_node->parts.nodes[index];
+          if (parts_size > 0) {
+              for (size_t index = 0; index < parts_size; index++) {
+                  yp_node_t *part = interp_string_node->parts.nodes[index];
 
-              switch (part->type) {
-                case YP_NODE_STRING_NODE: {
-                    yp_string_node_t *string_node = (yp_string_node_t *) part;
-                    ADD_INSN1(ret, &dummy_line_node, putobject,parse_string(&string_node->unescaped));
-                    break;
-                }
-                default:
-                  yp_compile_node(iseq, part, ret, src, popped, compile_context);
-                  ADD_INSN(ret, &dummy_line_node, dup);
-                  ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
-                  ADD_INSN(ret, &dummy_line_node, anytostring);
-                  break;
+                  switch (part->type) {
+                    case YP_NODE_STRING_NODE: {
+                        yp_string_node_t *string_node = (yp_string_node_t *) part;
+                        ADD_INSN1(ret, &dummy_line_node, putobject,parse_string(&string_node->unescaped));
+                        break;
+                    }
+                    default:
+                      yp_compile_node(iseq, part, ret, src, popped, compile_context);
+                      ADD_INSN(ret, &dummy_line_node, dup);
+                      ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
+                      ADD_INSN(ret, &dummy_line_node, anytostring);
+                      break;
+                  }
+              }
+
+              if (parts_size > 1) {
+                  ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(interp_string_node->parts.size)));
               }
           }
-
-          if (interp_string_node->parts.size > 1) {
-              ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(interp_string_node->parts.size)));
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
           }
           return;
       }
@@ -1707,6 +1728,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   if (scope_node->body) {
                       yp_compile_node(iseq, (yp_node_t *)(scope_node->body), ret, src, popped, &scope_compile_context);
                   }
+                  else {
+                      ADD_INSN(ret, &dummy_line_node, putnil);
+                  }
 
                   ADD_LABEL(ret, end);
                   ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
@@ -1732,7 +1756,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           return;
       }
       case YP_NODE_SELF_NODE:
-        ADD_INSN(ret, &dummy_line_node, putself);
+        if (!popped) {
+            ADD_INSN(ret, &dummy_line_node, putself);
+        }
         return;
       case YP_NODE_SINGLETON_CLASS_NODE: {
           yp_singleton_class_node_t *singleton_class_node = (yp_singleton_class_node_t *)node;
@@ -1808,7 +1834,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           for (size_t index = 0; index < node_list.size - 1; index++) {
               yp_compile_node(iseq, node_list.nodes[index], ret, src, true, compile_context);
           }
-          yp_compile_node(iseq, node_list.nodes[node_list.size - 1], ret, src, false, compile_context);
+          if (node_list.size > 0) {
+              yp_compile_node(iseq, node_list.nodes[node_list.size - 1], ret, src, popped, compile_context);
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          }
           return;
       }
       case YP_NODE_STRING_CONCAT_NODE: {
@@ -1826,7 +1857,9 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_SYMBOL_NODE: {
           yp_symbol_node_t *symbol_node = (yp_symbol_node_t *) node;
-          ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_string_symbol(&symbol_node->unescaped)));
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_string_symbol(&symbol_node->unescaped)));
+          }
           return;
       }
       case YP_NODE_TRUE_NODE:
@@ -1838,8 +1871,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_undef_node_t *undef_node = (yp_undef_node_t *) node;
 
           for (size_t index = 0; index < undef_node->names.size; index++) {
-              ADD_INSN1(ret, &dummy_line_node, putspecialobject, VM_SPECIAL_OBJECT_VMCORE);
-              ADD_INSN1(ret, &dummy_line_node, putspecialobject, VM_SPECIAL_OBJECT_CBASE);
+              ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+              ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
               yp_compile_node(iseq, undef_node->names.nodes[index], ret, src, popped, compile_context);
 
