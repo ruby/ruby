@@ -4702,6 +4702,34 @@ fn jit_rb_str_bytesize(
     true
 }
 
+fn jit_rb_str_getbyte(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    asm.comment("String#getbyte");
+    extern "C" {
+        fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
+    }
+    // Raises when non-integers are passed in
+    jit_prepare_routine_call(jit, asm);
+
+    let index = asm.stack_pop(1);
+    let recv = asm.stack_pop(1);
+    let ret_opnd = asm.ccall(rb_str_getbyte as *const u8, vec![recv, index]);
+
+    // Can either return a FIXNUM or nil
+    let out_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(out_opnd, ret_opnd);
+
+    true
+}
+
 // Codegen for rb_str_to_s()
 // When String#to_s is called on a String instance, the method returns self and
 // most of the overhead comes from setting up the method call. We observed that
@@ -8750,6 +8778,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
+            self.yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
