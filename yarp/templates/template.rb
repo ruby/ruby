@@ -85,6 +85,18 @@ module YARP
     end
   end
 
+  # This represents a field on a node that is the ID of a string interned
+  # through the parser's constant pool and can be optionally null.
+  class OptionalConstantField < Field
+    def rbs_class
+      "Symbol?"
+    end
+
+    def java_type
+      "byte[]"
+    end
+  end
+
   # This represents a field on a node that is a list of IDs that are associated
   # with strings interned through the parser's constant pool.
   class ConstantListField < Field
@@ -195,6 +207,7 @@ module YARP
       when "node[]"     then NodeListField
       when "string"     then StringField
       when "constant"   then ConstantField
+      when "constant?"  then OptionalConstantField
       when "constant[]" then ConstantListField
       when "location"   then LocationField
       when "location?"  then OptionalLocationField
@@ -275,7 +288,8 @@ module YARP
 
       HEADING
 
-      heading = if File.extname(filepath.gsub(".erb", "")) == ".rb"
+      heading =
+        if File.extname(filepath.gsub(".erb", "")) == ".rb"
           ruby_heading
         else
           non_ruby_heading

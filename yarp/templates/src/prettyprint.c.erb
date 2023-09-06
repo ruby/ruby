@@ -49,6 +49,14 @@ prettyprint_node(yp_buffer_t *buffer, yp_parser_t *parser, yp_node_t *node) {
             char <%= field.name %>_buffer[12];
             snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
             yp_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            <%- when YARP::OptionalConstantField -%>
+            if (((yp_<%= node.human %>_t *)node)-><%= field.name %> == 0) {
+                yp_buffer_append_str(buffer, "nil", 3);
+            } else {
+                char <%= field.name %>_buffer[12];
+                snprintf(<%= field.name %>_buffer, sizeof(<%= field.name %>_buffer), "%u", ((yp_<%= node.human %>_t *)node)-><%= field.name %>);
+                yp_buffer_append_str(buffer, <%= field.name %>_buffer, strlen(<%= field.name %>_buffer));
+            }
             <%- when YARP::ConstantListField -%>
             yp_buffer_append_str(buffer, "[", 1);
             for (uint32_t index = 0; index < ((yp_<%= node.human %>_t *)node)-><%= field.name %>.size; index++) {

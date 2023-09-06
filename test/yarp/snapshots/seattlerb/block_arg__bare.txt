@@ -11,7 +11,7 @@ ProgramNode(0...13)(
          nil,
          [],
          nil,
-         BlockParameterNode(6...7)(nil, (6...7))
+         BlockParameterNode(6...7)(nil, nil, (6...7))
        ),
        nil,
        [:&],

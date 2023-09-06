@@ -11,7 +11,7 @@ ProgramNode(0...20)(
          nil,
          [KeywordParameterNode(6...10)((6...8), IntegerNode(9...10)())],
          nil,
-         BlockParameterNode(12...14)((13...14), (12...13))
+         BlockParameterNode(12...14)(:b, (13...14), (12...13))
        ),
        nil,
        [:a, :b],

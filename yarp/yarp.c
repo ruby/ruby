@@ -437,6 +437,13 @@ yp_parser_constant_id_token(yp_parser_t *parser, const yp_token_t *token) {
     return yp_parser_constant_id_location(parser, token->start, token->end);
 }
 
+// Retrieve the constant pool id for the given token. If the token is not
+// provided, then return 0.
+static inline yp_constant_id_t
+yp_parser_optional_constant_id_token(yp_parser_t *parser, const yp_token_t *token) {
+    return token->type == YP_TOKEN_NOT_PROVIDED ? 0 : yp_parser_constant_id_token(parser, token);
+}
+
 // Mark any range nodes in this subtree as flipflops.
 static void
 yp_flip_flop(yp_node_t *node) {
@@ -1134,6 +1141,7 @@ yp_block_parameter_node_create(yp_parser_t *parser, const yp_token_t *name, cons
                 .end = (name->type == YP_TOKEN_NOT_PROVIDED ? operator->end : name->end)
             },
         },
+        .name = yp_parser_optional_constant_id_token(parser, name),
         .name_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(name),
         .operator_loc = YP_LOCATION_TOKEN_VALUE(operator)
     };

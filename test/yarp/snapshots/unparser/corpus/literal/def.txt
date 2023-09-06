@@ -781,7 +781,7 @@ ProgramNode(0...913)(
          RestParameterNode(654...658)((654...655), (655...658)),
          [],
          nil,
-         BlockParameterNode(660...666)((661...666), (660...661))
+         BlockParameterNode(660...666)(:block, (661...666), (660...661))
        ),
        StatementsNode(670...673)(
          [CallNode(670...673)(
@@ -840,7 +840,7 @@ ProgramNode(0...913)(
          nil,
          [],
          nil,
-         BlockParameterNode(729...735)((730...735), (729...730))
+         BlockParameterNode(729...735)(:block, (730...735), (729...730))
        ),
        StatementsNode(739...742)(
          [CallNode(739...742)(
@@ -873,7 +873,7 @@ ProgramNode(0...913)(
          nil,
          [],
          nil,
-         BlockParameterNode(761...767)((762...767), (761...762))
+         BlockParameterNode(761...767)(:block, (762...767), (761...762))
        ),
        StatementsNode(771...774)([LocalVariableReadNode(771...774)(:bar, 0)]),
        [:bar, :block],

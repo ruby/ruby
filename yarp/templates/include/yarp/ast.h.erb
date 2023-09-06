@@ -95,7 +95,7 @@ typedef struct yp_<%= node.human %> {
     <%= case field
     when YARP::NodeField, YARP::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
     when YARP::NodeListField then "struct yp_node_list #{field.name}"
-    when YARP::ConstantField then "yp_constant_id_t #{field.name}"
+    when YARP::ConstantField, YARP::OptionalConstantField then "yp_constant_id_t #{field.name}"
     when YARP::ConstantListField then "yp_constant_id_list_t #{field.name}"
     when YARP::StringField then "yp_string_t #{field.name}"
     when YARP::LocationField, YARP::OptionalLocationField then "yp_location_t #{field.name}"

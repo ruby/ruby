@@ -112,7 +112,7 @@ module YARP
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when YARP::ConstantField, YARP::StringField, YARP::UInt32Field -%>
+      <%- when YARP::ConstantField, YARP::OptionalConstantField, YARP::StringField, YARP::UInt32Field -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when YARP::FlagsField -%>
       <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>

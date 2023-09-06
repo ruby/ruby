@@ -23,7 +23,7 @@ ProgramNode(0...28)(
              RestParameterNode(16...18)((16...17), (17...18)),
              [],
              nil,
-             BlockParameterNode(23...25)((24...25), (23...24))
+             BlockParameterNode(23...25)(:e, (24...25), (23...24))
            ),
            [],
            (4...5),

@@ -154,6 +154,8 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                     argv[<%= index %>] = yp_string_new(&cast-><%= field.name %>, encoding);
                     <%- when YARP::ConstantField -%>
                     argv[<%= index %>] = rb_id2sym(constants[cast-><%= field.name %> - 1]);
+                    <%- when YARP::OptionalConstantField -%>
+                    argv[<%= index %>] = cast-><%= field.name %> == 0 ? Qnil : rb_id2sym(constants[cast-><%= field.name %> - 1]);
                     <%- when YARP::ConstantListField -%>
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {

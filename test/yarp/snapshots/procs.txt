@@ -93,7 +93,7 @@ ProgramNode(0...266)(
            [KeywordParameterNode(113...115)((113...115), nil),
             KeywordParameterNode(117...119)((117...119), nil)],
            nil,
-           BlockParameterNode(121...123)((122...123), (121...122))
+           BlockParameterNode(121...123)(:e, (122...123), (121...122))
          ),
          [],
          nil,
@@ -120,7 +120,7 @@ ProgramNode(0...266)(
            [KeywordParameterNode(149...151)((149...151), nil),
             KeywordParameterNode(153...155)((153...155), nil)],
            KeywordRestParameterNode(157...160)((157...159), (159...160)),
-           BlockParameterNode(162...164)((163...164), (162...163))
+           BlockParameterNode(162...164)(:g, (163...164), (162...163))
          ),
          [],
          (134...135),
@@ -147,7 +147,7 @@ ProgramNode(0...266)(
            [KeywordParameterNode(191...193)((191...193), nil),
             KeywordParameterNode(195...197)((195...197), nil)],
            KeywordRestParameterNode(199...202)((199...201), (201...202)),
-           BlockParameterNode(204...206)((205...206), (204...205))
+           BlockParameterNode(204...206)(:g, (205...206), (204...205))
          ),
          [],
          (176...177),

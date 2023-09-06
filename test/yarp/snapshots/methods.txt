@@ -876,7 +876,7 @@ ProgramNode(0...1194)(
          nil,
          [],
          nil,
-         BlockParameterNode(789...791)((790...791), (789...790))
+         BlockParameterNode(789...791)(:b, (790...791), (789...790))
        ),
        nil,
        [:b],
@@ -897,7 +897,7 @@ ProgramNode(0...1194)(
          nil,
          [],
          nil,
-         BlockParameterNode(803...804)(nil, (803...804))
+         BlockParameterNode(803...804)(nil, nil, (803...804))
        ),
        nil,
        [:&],

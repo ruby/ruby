@@ -55,12 +55,12 @@ yp_node_destroy(yp_parser_t *parser, yp_node_t *node) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
-            <%- if node.fields.any? { |field| ![YARP::LocationField, YARP::OptionalLocationField, YARP::UInt32Field, YARP::FlagsField, YARP::ConstantField].include?(field.class) } -%>
+            <%- if node.fields.any? { |field| ![YARP::LocationField, YARP::OptionalLocationField, YARP::UInt32Field, YARP::FlagsField, YARP::ConstantField, YARP::OptionalConstantField].include?(field.class) } -%>
             yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when YARP::LocationField, YARP::OptionalLocationField, YARP::UInt32Field, YARP::FlagsField, YARP::ConstantField -%>
+            <%- when YARP::LocationField, YARP::OptionalLocationField, YARP::UInt32Field, YARP::FlagsField, YARP::ConstantField, YARP::OptionalConstantField -%>
             <%- when YARP::NodeField -%>
             yp_node_destroy(parser, (yp_node_t *)cast-><%= field.name %>);
             <%- when YARP::OptionalNodeField -%>
@@ -104,7 +104,7 @@ yp_node_memsize_node(yp_node_t *node, yp_memsize_t *memsize) {
             memsize->memsize += sizeof(*cast);
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when YARP::ConstantField, YARP::UInt32Field, YARP::FlagsField, YARP::LocationField, YARP::OptionalLocationField -%>
+            <%- when YARP::ConstantField, YARP::OptionalConstantField, YARP::UInt32Field, YARP::FlagsField, YARP::LocationField, YARP::OptionalLocationField -%>
             <%- when YARP::NodeField -%>
             yp_node_memsize_node((yp_node_t *)cast-><%= field.name %>, memsize);
             <%- when YARP::OptionalNodeField -%>

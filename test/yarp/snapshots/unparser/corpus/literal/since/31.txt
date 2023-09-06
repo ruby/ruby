@@ -11,7 +11,7 @@ ProgramNode(0...51)(
          nil,
          [],
          nil,
-         BlockParameterNode(8...9)(nil, (8...9))
+         BlockParameterNode(8...9)(nil, nil, (8...9))
        ),
        StatementsNode(13...19)(
          [CallNode(13...19)(
@@ -46,7 +46,7 @@ ProgramNode(0...51)(
          nil,
          [],
          nil,
-         BlockParameterNode(36...37)(nil, (36...37))
+         BlockParameterNode(36...37)(nil, nil, (36...37))
        ),
        StatementsNode(41...47)(
          [CallNode(41...47)(

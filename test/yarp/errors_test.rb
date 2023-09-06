@@ -644,7 +644,7 @@ module YARP
           nil,
           [],
           nil,
-          BlockParameterNode(Location(), Location())
+          BlockParameterNode(:block, Location(), Location())
         ),
         nil,
         [:block, :a],
@@ -664,7 +664,7 @@ module YARP
       expected = DefNode(
         Location(),
         nil,
-        ParametersNode([], [], [RequiredParameterNode(:a)], nil, [], nil, BlockParameterNode(nil, Location())),
+        ParametersNode([], [], [RequiredParameterNode(:a)], nil, [], nil, BlockParameterNode(nil, nil, Location())),
         nil,
         [:&, :a],
         Location(),
@@ -1087,7 +1087,7 @@ module YARP
       expected = DefNode(
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], nil, BlockParameterNode(Location(), Location())),
+        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], nil, BlockParameterNode(:a, Location(), Location())),
         nil,
         [:a, :b],
         Location(),
