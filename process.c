@@ -861,11 +861,10 @@ pst_inspect(VALUE st)
  *
  *  Returns whether the value of #to_i == +other+:
  *
- *    Process.spawn('cat /nop') # => 1156807
- *    Process::Status.wait      # => #<Process::Status: pid 1156807 exit 1>
- *    stat = $?                 # => #<Process::Status: pid 1155508 exit 1>
- *    sprintf('%x', stat.to_i)  # => "100"
- *    stat == 0x100             # => true
+ *    `cat /nop`
+ *    stat = $?                # => #<Process::Status: pid 1170366 exit 1>
+ *    sprintf('%x', stat.to_i) # => "100"
+ *    stat == 0x100            # => true
  *
  */
 
@@ -883,8 +882,7 @@ pst_equal(VALUE st1, VALUE st2)
  *
  *  Returns the logical AND of the value of #to_i with +mask+:
  *
- *    Process.spawn('cat /nop') # => 1156531
- *    Process::Status.wait      # => #<Process::Status: pid 1156531 exit 1>
+ *    `cat /nop`
  *    stat = $?                 # => #<Process::Status: pid 1155508 exit 1>
  *    sprintf('%x', stat.to_i)  # => "100"
  *    stat & 0x00               # => 0
@@ -906,8 +904,7 @@ pst_bitand(VALUE st1, VALUE st2)
  *
  *  Returns the value of #to_i, shifted +places+ to the right:
  *
- *     Process.spawn('cat /nop') # => 1157114
- *     Process::Status.wait      # => #<Process::Status: pid 1157114 exit 1>
+ *     `cat /nop`
  *     stat = $?                 # => #<Process::Status: pid 1155508 exit 1>
  *     stat.to_i                 # => 256
  *     stat >> 1                 # => 128
@@ -1170,7 +1167,8 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *     Process::Status.wait(pid = -1, flags = 0) -> Process::Status
  *
  *  Like Process.wait, but returns a Process::Status object
- *  (instead of an integer pid or nil).
+ *  (instead of an integer pid or nil);
+ *  see Process.wait for the values of +pid+ and +flags+.
  *
  *  If there are child processes,
  *  waits for a child process to exit and returns a Process::Status object
