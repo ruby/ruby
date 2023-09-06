@@ -2035,10 +2035,10 @@ fn jit_chain_guard(
     }
 }
 
-// up to 5 different classes, and embedded or not for each
+// up to 10 different classes, and embedded or not for each
 pub const GET_IVAR_MAX_DEPTH: i32 = 10;
 
-// up to 5 different classes, and embedded or not for each
+// up to 10 different classes, and embedded or not for each
 pub const SET_IVAR_MAX_DEPTH: i32 = 10;
 
 // hashes and arrays
@@ -2047,11 +2047,8 @@ pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
 // expandarray
 pub const EXPANDARRAY_MAX_CHAIN_DEPTH: i32 = 4;
 
-// up to 10 different classes
-pub const SEND_MAX_DEPTH: i32 = 20;
-
-// up to 20 different methods for send
-pub const SEND_MAX_CHAIN_DEPTH: i32 = 20;
+// up to 5 different methods for send
+pub const SEND_MAX_DEPTH: i32 = 5;
 
 // up to 20 different offsets for case-when
 pub const CASE_WHEN_MAX_DEPTH: i32 = 20;
@@ -4385,7 +4382,7 @@ fn jit_rb_kernel_instance_of(
         jit,
         asm,
         ocb,
-        SEND_MAX_CHAIN_DEPTH,
+        SEND_MAX_DEPTH,
         Counter::guard_send_instance_of_class_mismatch,
     );
 
@@ -4975,7 +4972,7 @@ fn jit_obj_respond_to(
         jit,
         asm,
         ocb,
-        SEND_MAX_CHAIN_DEPTH,
+        SEND_MAX_DEPTH,
         Counter::guard_send_respond_to_mid_mismatch,
     );
 
@@ -6027,7 +6024,7 @@ fn gen_send_iseq(
                 jit,
                 asm,
                 ocb,
-                SEND_MAX_CHAIN_DEPTH,
+                SEND_MAX_DEPTH,
                 Counter::guard_send_block_arg_type,
             );
 
@@ -7175,7 +7172,7 @@ fn gen_send_general(
                             jit,
                             asm,
                             ocb,
-                            SEND_MAX_CHAIN_DEPTH,
+                            SEND_MAX_DEPTH,
                             Counter::guard_send_send_chain,
                         );
 
@@ -7417,7 +7414,7 @@ fn gen_invokeblock_specialized(
     }
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
-    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
         gen_counter_incr(asm, Counter::invokeblock_megamorphic);
         return None;
     }
@@ -7451,7 +7448,7 @@ fn gen_invokeblock_specialized(
             jit,
             asm,
             ocb,
-            SEND_MAX_CHAIN_DEPTH,
+            SEND_MAX_DEPTH,
             Counter::guard_invokeblock_tag_changed,
         );
 
@@ -7467,7 +7464,7 @@ fn gen_invokeblock_specialized(
             jit,
             asm,
             ocb,
-            SEND_MAX_CHAIN_DEPTH,
+            SEND_MAX_DEPTH,
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
@@ -7510,7 +7507,7 @@ fn gen_invokeblock_specialized(
             jit,
             asm,
             ocb,
-            SEND_MAX_CHAIN_DEPTH,
+            SEND_MAX_DEPTH,
             Counter::guard_invokeblock_tag_changed,
         );
 
@@ -7591,7 +7588,7 @@ fn gen_invokesuper_specialized(
     };
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
-    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_CHAIN_DEPTH {
+    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
         gen_counter_incr(asm, Counter::invokesuper_megamorphic);
         return None;
     }
@@ -7675,7 +7672,7 @@ fn gen_invokesuper_specialized(
         jit,
         asm,
         ocb,
-        SEND_MAX_CHAIN_DEPTH,
+        SEND_MAX_DEPTH,
         Counter::guard_invokesuper_me_changed,
     );
 
