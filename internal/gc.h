@@ -189,6 +189,17 @@ struct rb_objspace; /* in vm_core.h */
 # define SIZE_POOL_COUNT 5
 #endif
 
+/* Used in places that could malloc during, which can cause the GC to run. We
+ * need to temporarily disable the GC to allow the malloc to happen.
+ * Allocating memory during GC is a bad idea, so use this only when absolutely
+ * necessary. */
+#define DURING_GC_COULD_MALLOC_REGION_START() \
+    assert(rb_during_gc()); \
+    VALUE _already_disabled = rb_gc_disable_no_rest()
+
+#define DURING_GC_COULD_MALLOC_REGION_END() \
+    if (_already_disabled == Qfalse) rb_gc_enable()
+
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;
     struct heap_page *using_page;

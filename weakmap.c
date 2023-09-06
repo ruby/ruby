@@ -122,7 +122,11 @@ wmap_compact_table_i(st_data_t key, st_data_t val, st_data_t data)
         if (key_obj != new_key_obj) {
             *(VALUE *)key = new_key_obj;
 
-            st_insert(table, key, val);
+            DURING_GC_COULD_MALLOC_REGION_START();
+            {
+                st_insert(table, key, val);
+            }
+            DURING_GC_COULD_MALLOC_REGION_END();
 
             return ST_DELETE;
         }

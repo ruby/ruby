@@ -9799,15 +9799,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
     return FALSE;
 }
 
-/* Used in places that could malloc, which can cause the GC to run. We need to
- * temporarily disable the GC to allow the malloc to happen. */
-#define COULD_MALLOC_REGION_START() \
-    GC_ASSERT(during_gc); \
-    VALUE _already_disabled = rb_gc_disable_no_rest(); \
-
-#define COULD_MALLOC_REGION_END() \
-    if (_already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
-
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size)
 {
@@ -9840,11 +9831,11 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
 
     if (FL_TEST((VALUE)src, FL_EXIVAR)) {
         /* Resizing the st table could cause a malloc */
-        COULD_MALLOC_REGION_START();
+        DURING_GC_COULD_MALLOC_REGION_START();
         {
             rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
         }
-        COULD_MALLOC_REGION_END();
+        DURING_GC_COULD_MALLOC_REGION_END();
     }
 
     st_data_t srcid = (st_data_t)src, id;
@@ -9854,12 +9845,12 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
         gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
         /* Resizing the st table could cause a malloc */
-        COULD_MALLOC_REGION_START();
+        DURING_GC_COULD_MALLOC_REGION_START();
         {
             st_delete(objspace->obj_to_id_tbl, &srcid, 0);
             st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
         }
-        COULD_MALLOC_REGION_END();
+        DURING_GC_COULD_MALLOC_REGION_END();
     }
 
     /* Move the object */
