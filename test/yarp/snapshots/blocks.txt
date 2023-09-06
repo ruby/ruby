@@ -405,7 +405,7 @@ ProgramNode(0...402)(
               )],
              [],
              nil,
-             [KeywordParameterNode(270...272)((270...272), nil)],
+             [KeywordParameterNode(270...272)(:z, (270...272), nil)],
              nil,
              nil
            ),
@@ -561,10 +561,12 @@ ProgramNode(0...402)(
                   [],
                   nil,
                   [KeywordParameterNode(365...369)(
+                     :a,
                      (365...367),
                      IntegerNode(368...369)()
                    ),
                    KeywordParameterNode(373...377)(
+                     :b,
                      (373...375),
                      IntegerNode(376...377)()
                    )],

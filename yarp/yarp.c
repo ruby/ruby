@@ -3067,6 +3067,7 @@ yp_keyword_parameter_node_create(yp_parser_t *parser, const yp_token_t *name, yp
                 .end = value == NULL ? name->end : value->location.end
             },
         },
+        .name = yp_parser_constant_id_location(parser, name->start, name->end - 1),
         .name_loc = YP_LOCATION_TOKEN_VALUE(name),
         .value = value
     };

@@ -17,10 +17,12 @@ ProgramNode(0...33)(
              [],
              nil,
              [KeywordParameterNode(6...14)(
+                :kw,
                 (6...9),
                 SymbolNode(10...14)((10...11), (11...14), nil, "val")
               ),
               KeywordParameterNode(16...26)(
+                :kw2,
                 (16...20),
                 SymbolNode(21...26)((21...22), (22...26), nil, "val2")
               )],

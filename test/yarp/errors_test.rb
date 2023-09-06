@@ -714,7 +714,7 @@ module YARP
           [],
           [RequiredParameterNode(:a)],
           nil,
-          [KeywordParameterNode(Location(), nil)],
+          [KeywordParameterNode(:b, Location(), nil)],
           nil,
           nil
         ),
@@ -741,7 +741,7 @@ module YARP
           [],
           [],
           nil,
-          [KeywordParameterNode(Location(), nil)],
+          [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(Location(), Location()),
           nil
         ),
@@ -788,7 +788,7 @@ module YARP
           [],
           [RequiredParameterNode(:a)],
           nil,
-          [KeywordParameterNode(Location(), nil)],
+          [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(Location(), Location()),
           nil
         ),
@@ -817,7 +817,7 @@ module YARP
           [],
           [RequiredParameterNode(:a)],
           nil,
-          [KeywordParameterNode(Location(), nil)],
+          [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(Location(), Location()),
           nil
         ),
@@ -846,7 +846,7 @@ module YARP
           [],
           [RequiredParameterNode(:a)],
           nil,
-          [KeywordParameterNode(Location(), nil)],
+          [KeywordParameterNode(:b, Location(), nil)],
           KeywordRestParameterNode(Location(), Location()),
           nil
         ),

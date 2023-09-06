@@ -9,8 +9,12 @@ ProgramNode(0...24)(
          [],
          [],
          nil,
-         [KeywordParameterNode(9...13)((9...11), IntegerNode(12...13)()),
-          KeywordParameterNode(15...19)((15...17), IntegerNode(18...19)())],
+         [KeywordParameterNode(9...13)(:b, (9...11), IntegerNode(12...13)()),
+          KeywordParameterNode(15...19)(
+            :c,
+            (15...17),
+            IntegerNode(18...19)()
+          )],
          nil,
          nil
        ),

@@ -76,6 +76,7 @@ ProgramNode(0...41)(
                 [],
                 nil,
                 [KeywordParameterNode(27...36)(
+                   :a,
                    (27...29),
                    LambdaNode(30...36)(
                      [],

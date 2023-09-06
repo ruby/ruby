@@ -12,7 +12,7 @@ ProgramNode(0...13)(
            [],
            [],
            nil,
-           [KeywordParameterNode(4...8)((4...6), IntegerNode(6...8)())],
+           [KeywordParameterNode(4...8)(:k, (4...6), IntegerNode(6...8)())],
            nil,
            nil
          ),

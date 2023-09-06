@@ -807,6 +807,7 @@ ProgramNode(0...550)(
              [],
              nil,
              [KeywordParameterNode(403...409)(
+                :foo,
                 (403...407),
                 IntegerNode(408...409)()
               )],
@@ -840,10 +841,12 @@ ProgramNode(0...550)(
              [],
              nil,
              [KeywordParameterNode(422...428)(
+                :foo,
                 (422...426),
                 IntegerNode(427...428)()
               ),
               KeywordParameterNode(430...436)(
+                :bar,
                 (430...434),
                 IntegerNode(435...436)()
               )],
@@ -876,7 +879,7 @@ ProgramNode(0...550)(
              [],
              [],
              nil,
-             [KeywordParameterNode(456...460)((456...460), nil)],
+             [KeywordParameterNode(456...460)(:foo, (456...460), nil)],
              nil,
              nil
            ),

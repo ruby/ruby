@@ -1556,6 +1556,8 @@ nodes:
               ^^^^
   - name: KeywordParameterNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: value
