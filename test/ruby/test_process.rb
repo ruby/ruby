@@ -2742,6 +2742,9 @@ EOS
       ary.clear
       ary = nil
 
+      # Disable GC so we can make sure GC only runs in Process.warmup
+      GC.disable
+
       total_pages_before = GC.stat(:heap_eden_pages) + GC.stat(:heap_allocatable_pages)
 
       Process.warmup
