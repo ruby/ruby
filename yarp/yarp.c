@@ -428,7 +428,13 @@ debug_lex_state_set(yp_parser_t *parser, yp_lex_state_t state, char const * call
 // Retrieve the constant pool id for the given location.
 static inline yp_constant_id_t
 yp_parser_constant_id_location(yp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    return yp_constant_pool_insert(&parser->constant_pool, start, (size_t) (end - start));
+    return yp_constant_pool_insert_shared(&parser->constant_pool, start, (size_t) (end - start));
+}
+
+// Retrieve the constant pool id for the given string.
+static inline yp_constant_id_t
+yp_parser_constant_id_owned(yp_parser_t *parser, const uint8_t *start, size_t length) {
+    return yp_constant_pool_insert_owned(&parser->constant_pool, start, length);
 }
 
 // Retrieve the constant pool id for the given token.
@@ -4610,15 +4616,19 @@ yp_parser_local_depth(yp_parser_t *parser, yp_token_t *token) {
     return -1;
 }
 
+// Add a constant id to the local table of the current scope.
+static inline void
+yp_parser_local_add(yp_parser_t *parser, yp_constant_id_t constant_id) {
+    if (!yp_constant_id_list_includes(&parser->current_scope->locals, constant_id)) {
+        yp_constant_id_list_append(&parser->current_scope->locals, constant_id);
+    }
+}
+
 // Add a local variable from a location to the current scope.
 static yp_constant_id_t
 yp_parser_local_add_location(yp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     yp_constant_id_t constant_id = yp_parser_constant_id_location(parser, start, end);
-
-    if (!yp_constant_id_list_includes(&parser->current_scope->locals, constant_id)) {
-        yp_constant_id_list_append(&parser->current_scope->locals, constant_id);
-    }
-
+    if (constant_id != 0) yp_parser_local_add(parser, constant_id);
     return constant_id;
 }
 
@@ -4626,6 +4636,13 @@ yp_parser_local_add_location(yp_parser_t *parser, const uint8_t *start, const ui
 static inline void
 yp_parser_local_add_token(yp_parser_t *parser, yp_token_t *token) {
     yp_parser_local_add_location(parser, token->start, token->end);
+}
+
+// Add a local variable from an owned string to the current scope.
+static inline void
+yp_parser_local_add_owned(yp_parser_t *parser, const uint8_t *start, size_t length) {
+    yp_constant_id_t constant_id = yp_parser_constant_id_owned(parser, start, length);
+    if (constant_id != 0) yp_parser_local_add(parser, constant_id);
 }
 
 // Add a parameter name to the current scope and check whether the name of the
@@ -4644,7 +4661,9 @@ yp_parser_parameter_name_check(yp_parser_t *parser, yp_token_t *name) {
     }
 }
 
-// Pop the current scope off the scope stack.
+// Pop the current scope off the scope stack. Note that we specifically do not
+// free the associated constant list because we assume that we have already
+// transferred ownership of the list to the AST somewhere.
 static void
 yp_parser_scope_pop(yp_parser_t *parser) {
     yp_scope_t *scope = parser->current_scope;
@@ -13757,7 +13776,10 @@ yp_parser_metadata(yp_parser_t *parser, const char *metadata) {
             uint32_t local_size = yp_metadata_read_u32(metadata);
             metadata += 4;
 
-            yp_parser_local_add_location(parser, (const uint8_t *) metadata, (const uint8_t *) (metadata + local_size));
+            uint8_t *constant = malloc(local_size);
+            memcpy(constant, metadata, local_size);
+
+            yp_parser_local_add_owned(parser, constant, (size_t) local_size);
             metadata += local_size;
         }
     }
@@ -13895,6 +13917,15 @@ yp_parser_free(yp_parser_t *parser) {
     yp_comment_list_free(&parser->comment_list);
     yp_constant_pool_free(&parser->constant_pool);
     yp_newline_list_free(&parser->newline_list);
+
+    while (parser->current_scope != NULL) {
+        // Normally, popping the scope doesn't free the locals since it is
+        // assumed that ownership has transferred to the AST. However if we have
+        // scopes while we're freeing the parser, it's likely they came from
+        // eval scopes and we need to free them explicitly here.
+        yp_constant_id_list_free(&parser->current_scope->locals);
+        yp_parser_scope_pop(parser);
+    }
 
     while (parser->lex_modes.index >= YP_LEX_STACK_SIZE) {
         lex_mode_pop(parser);

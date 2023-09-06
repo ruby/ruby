@@ -163,11 +163,16 @@ module YARP
 
         unless constant
           offset = constant_pool_offset + index * 8
-
           start = serialized.unpack1("L", offset: offset)
           length = serialized.unpack1("L", offset: offset + 4)
 
-          constant = input.byteslice(start, length).to_sym
+          constant =
+            if start.nobits?(1 << 31)
+              input.byteslice(start, length).to_sym
+            else
+              serialized.byteslice(start & ((1 << 31) - 1), length).to_sym
+            end
+
           constant_pool[index] = constant
         end
 

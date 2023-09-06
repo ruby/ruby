@@ -206,12 +206,31 @@ yp_serialize_content(yp_parser_t *parser, yp_node_t *node, yp_buffer_t *buffer) 
         // If we find a constant at this index, serialize it at the correct
         // index in the buffer.
         if (constant->id != 0) {
-            size_t buffer_offset = offset + ((constant->id - 1) * 8);
+            size_t buffer_offset = offset + ((((size_t) constant->id) - 1) * 8);
 
-            uint32_t source_offset = yp_ptrdifft_to_u32(constant->start - parser->start);
+            if (constant->owned) {
+                // Since this is an owned constant, we are going to write its
+                // contents into the buffer after the constant pool. So
+                // effectively in place of the source offset, we have a buffer
+                // offset. We will add a leading 1 to indicate that this is a
+                // buffer offset.
+                uint32_t content_offset = yp_sizet_to_u32(buffer->length);
+                uint32_t owned_mask = (uint32_t) (1 << 31);
+
+                assert(content_offset < owned_mask);
+                content_offset |= owned_mask;
+
+                memcpy(buffer->value + buffer_offset, &content_offset, 4);
+                yp_buffer_append_bytes(buffer, constant->start, constant->length);
+            } else {
+                // Since this is a shared constant, we are going to write its
+                // source offset directly into the buffer.
+                uint32_t source_offset = yp_ptrdifft_to_u32(constant->start - parser->start);
+                memcpy(buffer->value + buffer_offset, &source_offset, 4);
+            }
+
+            // Now we can write the length of the constant into the buffer.
             uint32_t constant_length = yp_sizet_to_u32(constant->length);
-
-            memcpy(buffer->value + buffer_offset, &source_offset, 4);
             memcpy(buffer->value + buffer_offset + 4, &constant_length, 4);
         }
     }

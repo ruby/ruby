@@ -8,6 +8,7 @@
 
 #include "yarp/defines.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -39,7 +40,8 @@ size_t yp_constant_id_list_memsize(yp_constant_id_list_t *list);
 void yp_constant_id_list_free(yp_constant_id_list_t *list);
 
 typedef struct {
-    yp_constant_id_t id;
+    unsigned int id: 31;
+    bool owned: 1;
     const uint8_t *start;
     size_t length;
     size_t hash;
@@ -57,9 +59,14 @@ typedef struct {
 // Initialize a new constant pool with a given capacity.
 bool yp_constant_pool_init(yp_constant_pool_t *pool, size_t capacity);
 
-// Insert a constant into a constant pool. Returns the id of the constant, or 0
-// if any potential calls to resize fail.
-yp_constant_id_t yp_constant_pool_insert(yp_constant_pool_t *pool, const uint8_t *start, size_t length);
+// Insert a constant into a constant pool that is a slice of a source string.
+// Returns the id of the constant, or 0 if any potential calls to resize fail.
+yp_constant_id_t yp_constant_pool_insert_shared(yp_constant_pool_t *pool, const uint8_t *start, size_t length);
+
+// Insert a constant into a constant pool from memory that is now owned by the
+// constant pool. Returns the id of the constant, or 0 if any potential calls to
+// resize fail.
+yp_constant_id_t yp_constant_pool_insert_owned(yp_constant_pool_t *pool, const uint8_t *start, size_t length);
 
 // Free the memory associated with a constant pool.
 void yp_constant_pool_free(yp_constant_pool_t *pool);
