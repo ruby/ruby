@@ -249,7 +249,7 @@ pub enum JCCKinds {
 
 #[inline(always)]
 fn gen_counter_incr(asm: &mut Assembler, counter: Counter) {
-    // Assert that default counters do not require --yjit-stats
+    // Assert that default counters are not incremented by generated code as this would impact performance
     assert!(!DEFAULT_COUNTERS.contains(&counter), "gen_counter_incr incremented {:?}", counter);
 
     if get_option!(gen_stats) {
