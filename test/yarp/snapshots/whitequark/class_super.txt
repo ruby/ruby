@@ -9,7 +9,6 @@ ProgramNode(0...20)(
        ConstantReadNode(12...15)(:Bar),
        nil,
        (17...20),
-       :Foo,
        :Foo
      )]
   )

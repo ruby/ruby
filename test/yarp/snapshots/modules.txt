@@ -15,7 +15,6 @@ ProgramNode(0...140)(
           )]
        ),
        (15...18),
-       :A,
        :A
      ),
      InterpolatedStringNode(20...38)(
@@ -51,7 +50,6 @@ ProgramNode(0...140)(
        ),
        nil,
        (52...55),
-       :M,
        :M
      ),
      ModuleNode(57...85)(
@@ -75,7 +73,6 @@ ProgramNode(0...140)(
          (82...85)
        ),
        (82...85),
-       :A,
        :A
      ),
      ModuleNode(87...101)(
@@ -88,7 +85,6 @@ ProgramNode(0...140)(
        ),
        nil,
        (98...101),
-       :A,
        :A
      ),
      ModuleNode(103...120)(
@@ -111,7 +107,6 @@ ProgramNode(0...140)(
        ),
        nil,
        (117...120),
-       :B,
        :B
      ),
      ModuleNode(122...140)(
@@ -134,7 +129,6 @@ ProgramNode(0...140)(
        ),
        nil,
        (137...140),
-       :B,
        :B
      )]
   )

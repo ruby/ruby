@@ -19,7 +19,6 @@ ProgramNode(0...178)(
        nil,
        nil,
        (35...38),
-       :Kernel,
        :Kernel
      ),
      ClassNode(40...87)(
@@ -45,7 +44,6 @@ ProgramNode(0...178)(
        nil,
        nil,
        (84...87),
-       :Kernel,
        :Kernel
      ),
      ModuleNode(89...128)(
@@ -64,7 +62,6 @@ ProgramNode(0...178)(
        ),
        nil,
        (125...128),
-       :Kernel,
        :Kernel
      ),
      ModuleNode(130...178)(
@@ -90,7 +87,6 @@ ProgramNode(0...178)(
        ),
        nil,
        (175...178),
-       :Kernel,
        :Kernel
      )]
   )

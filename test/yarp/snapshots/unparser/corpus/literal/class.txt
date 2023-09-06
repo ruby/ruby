@@ -9,7 +9,6 @@ ProgramNode(0...213)(
        nil,
        nil,
        (8...11),
-       :A,
        :A
      ),
      SingletonClassNode(13...27)(
@@ -42,7 +41,6 @@ ProgramNode(0...213)(
        nil,
        nil,
        (60...63),
-       :B,
        :B
      ),
      ClassNode(65...82)(
@@ -61,7 +59,6 @@ ProgramNode(0...213)(
        nil,
        nil,
        (79...82),
-       :C,
        :C
      ),
      ClassNode(84...99)(
@@ -72,7 +69,6 @@ ProgramNode(0...213)(
        ConstantReadNode(94...95)(:B),
        nil,
        (96...99),
-       :A,
        :A
      ),
      ClassNode(101...119)(
@@ -87,7 +83,6 @@ ProgramNode(0...213)(
        ),
        nil,
        (116...119),
-       :A,
        :A
      ),
      ClassNode(121...142)(
@@ -106,7 +101,6 @@ ProgramNode(0...213)(
        ),
        nil,
        (139...142),
-       :B,
        :B
      ),
      ClassNode(144...198)(
@@ -156,7 +150,6 @@ ProgramNode(0...213)(
           )]
        ),
        (195...198),
-       :A,
        :A
      ),
      ClassNode(200...213)(
@@ -171,7 +164,6 @@ ProgramNode(0...213)(
        nil,
        nil,
        (210...213),
-       :A,
        :A
      )]
   )

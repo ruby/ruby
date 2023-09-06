@@ -19,7 +19,6 @@ ProgramNode(0...48)(
        nil,
        nil,
        (45...48),
-       :Foo,
        :Foo
      )]
   )

@@ -9,7 +9,6 @@ ProgramNode(0...29)(
        nil,
        nil,
        (10...13),
-       :Foo,
        :Foo
      ),
      ClassNode(15...29)(
@@ -20,7 +19,6 @@ ProgramNode(0...29)(
        nil,
        nil,
        (26...29),
-       :Foo,
        :Foo
      )]
   )

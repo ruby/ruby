@@ -782,8 +782,6 @@ nodes:
         type: location
       - name: name
         type: constant
-      - name: name_constant
-        type: constant
     comment: |
       Represents a class declaration involving the `class` keyword.
 
@@ -1741,8 +1739,6 @@ nodes:
       - name: end_keyword_loc
         type: location
       - name: name
-        type: constant
-      - name: name_constant
         type: constant
     comment: |
       Represents a module declaration involving the `module` keyword.

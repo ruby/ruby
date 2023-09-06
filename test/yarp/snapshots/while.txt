@@ -139,7 +139,6 @@ ProgramNode(0...314)(
             )]
          ),
          (195...198),
-         :Foo,
          :Foo
        ),
        StatementsNode(200...205)([BreakNode(200...205)(nil, (200...205))]),
