@@ -5226,12 +5226,13 @@ fn gen_push_frame(
     let ep = asm.sub(sp, SIZEOF_VALUE.into());
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
 
-    asm.comment("switch to new CFP");
     let new_cfp = asm.lea(cfp_opnd(0));
     if set_sp_cfp {
+        asm.comment("switch to new CFP");
         asm.mov(CFP, new_cfp);
         asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
     } else {
+        asm.comment("set ec->cfp");
         asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
     }
 }
