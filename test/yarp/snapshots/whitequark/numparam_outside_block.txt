@@ -25,6 +25,7 @@ ProgramNode(0...83)(
        :A
      ),
      DefNode(45...64)(
+       :m,
        (54...55),
        SelfNode(49...53)(),
        nil,

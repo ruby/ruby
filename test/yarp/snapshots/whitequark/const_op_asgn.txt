@@ -25,6 +25,7 @@ ProgramNode(0...77)(
        :+
      ),
      DefNode(29...50)(
+       :x,
        (33...34),
        nil,
        nil,
@@ -48,6 +49,7 @@ ProgramNode(0...77)(
        (47...50)
      ),
      DefNode(52...77)(
+       :x,
        (56...57),
        nil,
        nil,

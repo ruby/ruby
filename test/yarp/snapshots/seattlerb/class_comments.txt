@@ -9,6 +9,7 @@ ProgramNode(19...71)(
        nil,
        StatementsNode(40...67)(
          [DefNode(40...67)(
+            :blah,
             (44...48),
             nil,
             nil,

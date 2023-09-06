@@ -2,6 +2,7 @@ ProgramNode(0...93)(
   [],
   StatementsNode(0...93)(
     [DefNode(0...14)(
+       :BEGIN,
        (4...9),
        nil,
        nil,
@@ -15,6 +16,7 @@ ProgramNode(0...93)(
        (11...14)
      ),
      DefNode(16...28)(
+       :END,
        (20...23),
        nil,
        nil,
@@ -28,6 +30,7 @@ ProgramNode(0...93)(
        (25...28)
      ),
      DefNode(30...45)(
+       :String,
        (34...40),
        nil,
        nil,
@@ -41,6 +44,7 @@ ProgramNode(0...93)(
        (42...45)
      ),
      DefNode(47...63)(
+       :String=,
        (51...58),
        nil,
        nil,
@@ -54,6 +58,7 @@ ProgramNode(0...93)(
        (60...63)
      ),
      DefNode(65...77)(
+       :foo,
        (69...72),
        nil,
        nil,
@@ -67,6 +72,7 @@ ProgramNode(0...93)(
        (74...77)
      ),
      DefNode(79...93)(
+       :until,
        (83...88),
        nil,
        nil,

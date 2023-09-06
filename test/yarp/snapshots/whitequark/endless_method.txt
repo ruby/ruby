@@ -2,6 +2,7 @@ ProgramNode(0...78)(
   [],
   StatementsNode(0...78)(
     [DefNode(0...14)(
+       :foo,
        (4...7),
        nil,
        nil,
@@ -15,6 +16,7 @@ ProgramNode(0...78)(
        nil
      ),
      DefNode(16...34)(
+       :inc,
        (20...23),
        nil,
        ParametersNode(24...25)(
@@ -48,6 +50,7 @@ ProgramNode(0...78)(
        nil
      ),
      DefNode(36...54)(
+       :foo,
        (44...47),
        CallNode(40...43)(nil, nil, (40...43), nil, nil, nil, nil, 2, "obj"),
        nil,
@@ -61,6 +64,7 @@ ProgramNode(0...78)(
        nil
      ),
      DefNode(56...78)(
+       :inc,
        (64...67),
        CallNode(60...63)(nil, nil, (60...63), nil, nil, nil, nil, 2, "obj"),
        ParametersNode(68...69)(

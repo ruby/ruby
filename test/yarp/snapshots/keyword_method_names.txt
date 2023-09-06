@@ -2,6 +2,7 @@ ProgramNode(0...185)(
   [],
   StatementsNode(0...185)(
     [DefNode(0...11)(
+       :def,
        (4...7),
        nil,
        nil,
@@ -15,6 +16,7 @@ ProgramNode(0...185)(
        (8...11)
      ),
      DefNode(13...32)(
+       :ensure,
        (22...28),
        SelfNode(17...21)(),
        nil,
@@ -34,6 +36,7 @@ ProgramNode(0...185)(
        nil,
        ArgumentsNode(42...68)(
          [DefNode(42...68)(
+            :foo,
             (46...49),
             nil,
             nil,
@@ -65,6 +68,7 @@ ProgramNode(0...185)(
        "private"
      ),
      DefNode(70...89)(
+       :m,
        (74...75),
        nil,
        ParametersNode(76...84)(
@@ -86,6 +90,7 @@ ProgramNode(0...185)(
        (86...89)
      ),
      DefNode(91...113)(
+       :a,
        (108...109),
        SourceEncodingNode(95...107)(),
        nil,
@@ -101,6 +106,7 @@ ProgramNode(0...185)(
      StringNode(115...121)((115...117), (117...120), (120...121), "abc"),
      StringNode(123...129)((123...125), (125...128), (128...129), "abc"),
      DefNode(131...149)(
+       :a,
        (144...145),
        SourceFileNode(135...143)("keyword_method_names.txt"),
        nil,
@@ -114,6 +120,7 @@ ProgramNode(0...185)(
        (146...149)
      ),
      DefNode(151...169)(
+       :a,
        (164...165),
        SourceLineNode(155...163)(),
        nil,
@@ -127,6 +134,7 @@ ProgramNode(0...185)(
        (166...169)
      ),
      DefNode(171...185)(
+       :a,
        (180...181),
        NilNode(175...178)(),
        nil,

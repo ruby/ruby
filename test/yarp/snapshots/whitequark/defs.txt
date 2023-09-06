@@ -2,6 +2,7 @@ ProgramNode(0...100)(
   [],
   StatementsNode(0...100)(
     [DefNode(0...18)(
+       :foo,
        (10...13),
        ParenthesesNode(4...9)(
          CallNode(5...8)(nil, nil, (5...8), nil, nil, nil, nil, 2, "foo"),
@@ -19,6 +20,7 @@ ProgramNode(0...100)(
        (15...18)
      ),
      DefNode(20...39)(
+       :foo,
        (31...34),
        ConstantReadNode(24...30)(:String),
        nil,
@@ -32,6 +34,7 @@ ProgramNode(0...100)(
        (36...39)
      ),
      DefNode(41...61)(
+       :foo,
        (53...56),
        ConstantReadNode(45...51)(:String),
        nil,
@@ -45,6 +48,7 @@ ProgramNode(0...100)(
        (58...61)
      ),
      DefNode(63...80)(
+       :foo,
        (72...75),
        SelfNode(67...71)(),
        nil,
@@ -58,6 +62,7 @@ ProgramNode(0...100)(
        (77...80)
      ),
      DefNode(82...100)(
+       :foo,
        (92...95),
        SelfNode(86...90)(),
        nil,

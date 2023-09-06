@@ -390,6 +390,7 @@ module YARP
 
     def test_module_definition_in_method_body
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         nil,
@@ -410,6 +411,7 @@ module YARP
 
     def test_module_definition_in_method_body_within_block
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         nil,
@@ -452,6 +454,7 @@ module YARP
 
     def test_class_definition_in_method_body
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         nil,
@@ -483,6 +486,7 @@ module YARP
 
     def test_bad_arguments
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([
@@ -550,6 +554,7 @@ module YARP
 
     def test_do_not_allow_trailing_commas_in_method_parameters
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -633,6 +638,7 @@ module YARP
 
     def test_method_parameters_after_block
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -660,6 +666,7 @@ module YARP
 
     def test_method_with_arguments_after_anonymous_block
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([], [], [RequiredParameterNode(:a)], nil, [], nil, BlockParameterNode(nil, nil, Location())),
@@ -680,6 +687,7 @@ module YARP
 
     def test_method_parameters_after_arguments_forwarding
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -707,6 +715,7 @@ module YARP
 
     def test_keywords_parameters_before_required_parameters
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -734,6 +743,7 @@ module YARP
 
     def test_rest_keywords_parameters_before_required_parameters
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -754,6 +764,7 @@ module YARP
         nil,
         Location()
       )
+
       assert_errors expected, "def foo(**rest, b:)\nend", [
         ["Unexpected parameter order", 16..18]
       ]
@@ -761,6 +772,7 @@ module YARP
 
     def test_double_arguments_forwarding
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([], [], [], nil, [], ForwardingParameterNode(), nil),
@@ -781,6 +793,7 @@ module YARP
 
     def test_multiple_error_in_parameters_order
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -810,6 +823,7 @@ module YARP
 
     def test_switching_to_optional_arguments_twice
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -839,6 +853,7 @@ module YARP
 
     def test_switching_to_named_arguments_twice
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -868,6 +883,7 @@ module YARP
 
     def test_returning_to_optional_parameters_multiple_times
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode(
@@ -913,6 +929,7 @@ module YARP
 
     def test_setter_method_cannot_be_defined_in_an_endless_method_definition
       expected = DefNode(
+        :a=,
         Location(),
         nil,
         nil,
@@ -1026,6 +1043,7 @@ module YARP
       # duplicated parameter names for positional parameters.
       unless RUBY_VERSION < "3.1.0"
         expected = DefNode(
+          :foo,
           Location(),
           nil,
           ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:a)], [], [], nil, [], nil, nil),
@@ -1045,6 +1063,7 @@ module YARP
       end
 
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], RestParameterNode(:a, Location(), Location()), [], nil, nil),
@@ -1063,6 +1082,7 @@ module YARP
       ]
 
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], KeywordRestParameterNode(:a, Location(), Location()), nil),
@@ -1081,6 +1101,7 @@ module YARP
       ]
 
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], [], nil, [], nil, BlockParameterNode(:a, Location(), Location())),
@@ -1099,6 +1120,7 @@ module YARP
       ]
 
       expected = DefNode(
+        :foo,
         Location(),
         nil,
         ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode())], [RequiredParameterNode(:b)], RestParameterNode(:c, Location(), Location()), [], nil, nil),

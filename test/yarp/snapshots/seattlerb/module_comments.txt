@@ -7,6 +7,7 @@ ProgramNode(24...77)(
        ConstantReadNode(31...32)(:X),
        StatementsNode(46...73)(
          [DefNode(46...73)(
+            :blah,
             (50...54),
             nil,
             nil,

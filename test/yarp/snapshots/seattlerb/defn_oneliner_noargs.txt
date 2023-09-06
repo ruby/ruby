@@ -2,6 +2,7 @@ ProgramNode(0...17)(
   [],
   StatementsNode(0...17)(
     [DefNode(0...17)(
+       :exec,
        (4...8),
        nil,
        nil,

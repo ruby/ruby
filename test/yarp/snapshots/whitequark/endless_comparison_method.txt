@@ -2,6 +2,7 @@ ProgramNode(0...179)(
   [],
   StatementsNode(0...179)(
     [DefNode(0...28)(
+       :!=,
        (4...6),
        nil,
        ParametersNode(7...12)(
@@ -35,6 +36,7 @@ ProgramNode(0...179)(
        nil
      ),
      DefNode(30...58)(
+       :!=,
        (34...36),
        nil,
        ParametersNode(37...42)(
@@ -68,6 +70,7 @@ ProgramNode(0...179)(
        nil
      ),
      DefNode(60...88)(
+       :<=,
        (64...66),
        nil,
        ParametersNode(67...72)(
@@ -101,6 +104,7 @@ ProgramNode(0...179)(
        nil
      ),
      DefNode(90...118)(
+       :==,
        (94...96),
        nil,
        ParametersNode(97...102)(
@@ -134,6 +138,7 @@ ProgramNode(0...179)(
        nil
      ),
      DefNode(120...149)(
+       :===,
        (124...127),
        nil,
        ParametersNode(128...133)(
@@ -167,6 +172,7 @@ ProgramNode(0...179)(
        nil
      ),
      DefNode(151...179)(
+       :>=,
        (155...157),
        nil,
        ParametersNode(158...163)(

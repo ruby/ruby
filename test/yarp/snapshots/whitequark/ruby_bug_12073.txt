@@ -28,6 +28,7 @@ ProgramNode(0...49)(
        "a"
      ),
      DefNode(15...49)(
+       :foo,
        (19...22),
        nil,
        ParametersNode(23...28)(

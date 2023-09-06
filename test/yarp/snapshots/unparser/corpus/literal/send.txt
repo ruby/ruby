@@ -128,6 +128,7 @@ ProgramNode(0...999)(
          ParenthesesNode(133...152)(
            StatementsNode(134...151)(
              [DefNode(134...145)(
+                :foo,
                 (138...141),
                 nil,
                 nil,
@@ -234,6 +235,7 @@ ProgramNode(0...999)(
      ),
      CallNode(218...238)(
        DefNode(218...234)(
+         :foo,
          (227...230),
          SelfNode(222...226)(),
          nil,
@@ -257,6 +259,7 @@ ProgramNode(0...999)(
      ),
      CallNode(239...254)(
        DefNode(239...250)(
+         :foo,
          (243...246),
          nil,
          nil,

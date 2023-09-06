@@ -50,6 +50,7 @@ ProgramNode(0...689)(
        nil,
        StatementsNode(168...246)(
          [DefNode(168...246)(
+            :y,
             (177...178),
             SelfNode(172...176)(),
             ParametersNode(179...200)(
@@ -125,6 +126,7 @@ ProgramNode(0...689)(
        nil,
        StatementsNode(417...480)(
          [DefNode(417...480)(
+            :y,
             (421...422),
             nil,
             ParametersNode(423...444)(

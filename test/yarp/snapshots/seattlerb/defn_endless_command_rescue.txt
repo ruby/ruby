@@ -2,6 +2,7 @@ ProgramNode(0...43)(
   [],
   StatementsNode(0...43)(
     [DefNode(0...43)(
+       :some_method,
        (4...15),
        nil,
        nil,

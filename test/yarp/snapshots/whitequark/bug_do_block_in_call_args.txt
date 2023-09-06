@@ -8,6 +8,7 @@ ProgramNode(0...33)(
        nil,
        ArgumentsNode(4...33)(
          [DefNode(4...33)(
+            :foo,
             (8...11),
             nil,
             nil,

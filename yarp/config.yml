@@ -1039,6 +1039,8 @@ nodes:
           ^^^^^^^
   - name: DefNode
     fields:
+      - name: name
+        type: constant
       - name: name_loc
         type: location
       - name: receiver

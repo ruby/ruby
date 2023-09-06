@@ -67,6 +67,7 @@ ProgramNode(0...620)(
        :A
      ),
      DefNode(70...110)(
+       :foo,
        (74...77),
        nil,
        nil,

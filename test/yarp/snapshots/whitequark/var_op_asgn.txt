@@ -24,6 +24,7 @@ ProgramNode(0...53)(
        0
      ),
      DefNode(30...53)(
+       :a,
        (34...35),
        nil,
        nil,

@@ -227,6 +227,7 @@ ProgramNode(0...316)(
        (242...245)
      ),
      DefNode(247...291)(
+       :some_method,
        (251...262),
        nil,
        nil,
@@ -258,6 +259,7 @@ ProgramNode(0...316)(
        nil
      ),
      DefNode(293...316)(
+       :a,
        (297...298),
        nil,
        nil,

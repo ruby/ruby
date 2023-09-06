@@ -2,6 +2,7 @@ ProgramNode(19...36)(
   [],
   StatementsNode(19...36)(
     [DefNode(19...36)(
+       :blah,
        (28...32),
        SelfNode(23...27)(),
        nil,

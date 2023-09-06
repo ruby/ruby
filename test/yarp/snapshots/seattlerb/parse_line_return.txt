@@ -2,6 +2,7 @@ ProgramNode(6...77)(
   [],
   StatementsNode(6...77)(
     [DefNode(6...77)(
+       :blah,
        (10...14),
        nil,
        nil,

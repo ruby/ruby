@@ -2,6 +2,7 @@ ProgramNode(0...40)(
   [],
   StatementsNode(0...40)(
     [DefNode(0...18)(
+       :foo,
        (4...7),
        nil,
        ParametersNode(8...12)(
@@ -24,6 +25,7 @@ ProgramNode(0...40)(
        (15...18)
      ),
      DefNode(20...40)(
+       :foo,
        (24...27),
        nil,
        ParametersNode(28...34)(

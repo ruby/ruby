@@ -2,6 +2,7 @@ ProgramNode(0...1194)(
   [:a, :c],
   StatementsNode(0...1194)(
     [DefNode(0...23)(
+       :foo,
        (4...7),
        nil,
        ParametersNode(8...18)(
@@ -28,6 +29,7 @@ ProgramNode(0...1194)(
        (20...23)
      ),
      DefNode(25...74)(
+       :foo,
        (29...32),
        nil,
        ParametersNode(33...69)(
@@ -64,6 +66,7 @@ ProgramNode(0...1194)(
        (71...74)
      ),
      DefNode(77...95)(
+       :a,
        (81...82),
        nil,
        nil,
@@ -84,6 +87,7 @@ ProgramNode(0...1194)(
        (92...95)
      ),
      DefNode(97...110)(
+       :a,
        (105...106),
        ParenthesesNode(101...104)(
          CallNode(102...103)(
@@ -111,6 +115,7 @@ ProgramNode(0...1194)(
        (107...110)
      ),
      DefNode(112...126)(
+       :b,
        (121...122),
        ParenthesesNode(116...119)(
          CallNode(117...118)(
@@ -138,6 +143,7 @@ ProgramNode(0...1194)(
        (123...126)
      ),
      DefNode(128...143)(
+       :a,
        (138...139),
        FalseNode(132...137)(),
        nil,
@@ -151,6 +157,7 @@ ProgramNode(0...1194)(
        (140...143)
      ),
      DefNode(145...159)(
+       :a,
        (149...150),
        nil,
        ParametersNode(151...154)(
@@ -172,6 +179,7 @@ ProgramNode(0...1194)(
        (156...159)
      ),
      DefNode(161...175)(
+       :a,
        (170...171),
        GlobalVariableReadNode(165...169)(:$var),
        nil,
@@ -185,6 +193,7 @@ ProgramNode(0...1194)(
        (172...175)
      ),
      DefNode(177...188)(
+       :b,
        (183...184),
        CallNode(181...182)(nil, nil, (181...182), nil, nil, nil, nil, 2, "a"),
        nil,
@@ -198,6 +207,7 @@ ProgramNode(0...1194)(
        (185...188)
      ),
      DefNode(190...204)(
+       :a,
        (199...200),
        InstanceVariableReadNode(194...198)(:@var),
        nil,
@@ -211,6 +221,7 @@ ProgramNode(0...1194)(
        (201...204)
      ),
      DefNode(206...219)(
+       :a,
        (210...211),
        nil,
        ParametersNode(212...214)(
@@ -233,6 +244,7 @@ ProgramNode(0...1194)(
      ),
      StringNode(221...227)((221...223), (223...226), (226...227), "abc"),
      DefNode(229...242)(
+       :a,
        (233...234),
        nil,
        ParametersNode(235...237)(
@@ -254,6 +266,7 @@ ProgramNode(0...1194)(
        (239...242)
      ),
      DefNode(244...258)(
+       :a,
        (248...249),
        nil,
        ParametersNode(250...253)(
@@ -275,6 +288,7 @@ ProgramNode(0...1194)(
        (255...258)
      ),
      DefNode(260...273)(
+       :a,
        (264...265),
        nil,
        ParametersNode(266...268)(
@@ -303,6 +317,7 @@ ProgramNode(0...1194)(
        (277...278)
      ),
      DefNode(282...291)(
+       :a,
        (286...287),
        nil,
        nil,
@@ -316,6 +331,7 @@ ProgramNode(0...1194)(
        (288...291)
      ),
      DefNode(293...310)(
+       :a,
        (297...298),
        nil,
        ParametersNode(299...306)(
@@ -339,6 +355,7 @@ ProgramNode(0...1194)(
        (307...310)
      ),
      DefNode(312...325)(
+       :a,
        (320...321),
        NilNode(316...319)(),
        nil,
@@ -352,6 +369,7 @@ ProgramNode(0...1194)(
        (322...325)
      ),
      DefNode(327...345)(
+       :a,
        (331...332),
        nil,
        ParametersNode(333...341)(
@@ -378,6 +396,7 @@ ProgramNode(0...1194)(
        (342...345)
      ),
      DefNode(347...366)(
+       :a,
        (351...352),
        nil,
        ParametersNode(353...361)(
@@ -404,6 +423,7 @@ ProgramNode(0...1194)(
        (363...366)
      ),
      DefNode(368...389)(
+       :a,
        (372...373),
        nil,
        ParametersNode(374...384)(
@@ -431,6 +451,7 @@ ProgramNode(0...1194)(
      ),
      StringNode(391...397)((391...393), (393...396), (396...397), "abc"),
      DefNode(399...421)(
+       :a,
        (403...404),
        nil,
        ParametersNode(405...417)(
@@ -463,6 +484,7 @@ ProgramNode(0...1194)(
        (418...421)
      ),
      DefNode(423...434)(
+       :a,
        (427...428),
        nil,
        nil,
@@ -476,6 +498,7 @@ ProgramNode(0...1194)(
        (431...434)
      ),
      DefNode(436...454)(
+       :a,
        (440...441),
        nil,
        ParametersNode(442...450)(
@@ -502,6 +525,7 @@ ProgramNode(0...1194)(
        (451...454)
      ),
      DefNode(456...467)(
+       :a,
        (460...461),
        nil,
        ParametersNode(462...463)(
@@ -523,6 +547,7 @@ ProgramNode(0...1194)(
        (464...467)
      ),
      DefNode(469...501)(
+       :a,
        (473...474),
        nil,
        nil,
@@ -543,6 +568,7 @@ ProgramNode(0...1194)(
        (498...501)
      ),
      DefNode(503...515)(
+       :a,
        (507...508),
        nil,
        ParametersNode(509...511)(
@@ -564,6 +590,7 @@ ProgramNode(0...1194)(
        (512...515)
      ),
      DefNode(517...529)(
+       :a,
        (521...522),
        nil,
        ParametersNode(523...524)(
@@ -585,6 +612,7 @@ ProgramNode(0...1194)(
        (526...529)
      ),
      DefNode(531...546)(
+       :a,
        (535...536),
        nil,
        nil,
@@ -606,6 +634,7 @@ ProgramNode(0...1194)(
        (543...546)
      ),
      DefNode(548...562)(
+       :a,
        (557...558),
        SelfNode(552...556)(),
        nil,
@@ -619,6 +648,7 @@ ProgramNode(0...1194)(
        (559...562)
      ),
      DefNode(564...578)(
+       :a,
        (573...574),
        TrueNode(568...572)(),
        nil,
@@ -632,6 +662,7 @@ ProgramNode(0...1194)(
        (575...578)
      ),
      DefNode(580...589)(
+       :a,
        (584...585),
        nil,
        nil,
@@ -645,6 +676,7 @@ ProgramNode(0...1194)(
        (586...589)
      ),
      DefNode(591...625)(
+       :hi,
        (595...597),
        nil,
        nil,
@@ -674,6 +706,7 @@ ProgramNode(0...1194)(
        (622...625)
      ),
      DefNode(627...638)(
+       :foo,
        (631...634),
        nil,
        nil,
@@ -687,6 +720,7 @@ ProgramNode(0...1194)(
        nil
      ),
      DefNode(639...650)(
+       :bar,
        (643...646),
        nil,
        nil,
@@ -700,6 +734,7 @@ ProgramNode(0...1194)(
        nil
      ),
      DefNode(652...670)(
+       :foo,
        (656...659),
        nil,
        ParametersNode(660...663)(
@@ -721,6 +756,7 @@ ProgramNode(0...1194)(
        nil
      ),
      DefNode(672...685)(
+       :foo,
        (676...679),
        nil,
        nil,
@@ -734,6 +770,7 @@ ProgramNode(0...1194)(
        nil
      ),
      DefNode(687...706)(
+       :a,
        (691...692),
        nil,
        ParametersNode(693...694)(
@@ -767,6 +804,7 @@ ProgramNode(0...1194)(
        (703...706)
      ),
      DefNode(708...731)(
+       :a,
        (712...713),
        nil,
        ParametersNode(714...717)(
@@ -800,6 +838,7 @@ ProgramNode(0...1194)(
        (728...731)
      ),
      DefNode(733...762)(
+       :a,
        (737...738),
        nil,
        ParametersNode(739...742)(
@@ -837,6 +876,7 @@ ProgramNode(0...1194)(
        (759...762)
      ),
      DefNode(764...781)(
+       :a,
        (776...777),
        ParenthesesNode(768...775)(
          LocalVariableWriteNode(769...774)(
@@ -870,6 +910,7 @@ ProgramNode(0...1194)(
        (778...781)
      ),
      DefNode(783...795)(
+       :a,
        (787...788),
        nil,
        ParametersNode(789...791)(
@@ -891,6 +932,7 @@ ProgramNode(0...1194)(
        (792...795)
      ),
      DefNode(797...809)(
+       :a,
        (801...802),
        nil,
        ParametersNode(803...804)(
@@ -912,6 +954,7 @@ ProgramNode(0...1194)(
        (806...809)
      ),
      DefNode(811...826)(
+       :a,
        (821...822),
        ClassVariableReadNode(815...820)(:@@var),
        nil,
@@ -925,6 +968,7 @@ ProgramNode(0...1194)(
        (823...826)
      ),
      DefNode(828...845)(
+       :C,
        (840...841),
        ParenthesesNode(832...839)(
          LocalVariableWriteNode(833...838)(
@@ -958,6 +1002,7 @@ ProgramNode(0...1194)(
        (842...845)
      ),
      DefNode(847...875)(
+       :Array_function,
        (856...870),
        SelfNode(851...855)(),
        nil,
@@ -977,6 +1022,7 @@ ProgramNode(0...1194)(
        (883...884)
      ),
      DefNode(888...903)(
+       :a,
        (898...899),
        ConstantReadNode(892...897)(:Const),
        nil,
@@ -990,6 +1036,7 @@ ProgramNode(0...1194)(
        (900...903)
      ),
      DefNode(905...936)(
+       :a,
        (909...910),
        nil,
        ParametersNode(911...914)(
@@ -1036,6 +1083,7 @@ ProgramNode(0...1194)(
        (933...936)
      ),
      DefNode(938...980)(
+       :foo,
        (942...945),
        nil,
        nil,
@@ -1106,6 +1154,7 @@ ProgramNode(0...1194)(
        (977...980)
      ),
      DefNode(982...1006)(
+       :bar,
        (986...989),
        nil,
        ParametersNode(990...1001)(
@@ -1142,6 +1191,7 @@ ProgramNode(0...1194)(
        (1003...1006)
      ),
      DefNode(1008...1031)(
+       :bar,
        (1012...1015),
        nil,
        ParametersNode(1016...1026)(
@@ -1178,6 +1228,7 @@ ProgramNode(0...1194)(
        (1028...1031)
      ),
      DefNode(1033...1055)(
+       :bar,
        (1037...1040),
        nil,
        ParametersNode(1041...1050)(
@@ -1214,6 +1265,7 @@ ProgramNode(0...1194)(
        (1052...1055)
      ),
      DefNode(1057...1082)(
+       :bar,
        (1061...1064),
        nil,
        ParametersNode(1065...1077)(
@@ -1251,6 +1303,7 @@ ProgramNode(0...1194)(
        (1079...1082)
      ),
      DefNode(1084...1108)(
+       :bar,
        (1088...1091),
        nil,
        ParametersNode(1092...1103)(
@@ -1288,6 +1341,7 @@ ProgramNode(0...1194)(
        (1105...1108)
      ),
      DefNode(1110...1133)(
+       :bar,
        (1114...1117),
        nil,
        ParametersNode(1118...1128)(
@@ -1325,6 +1379,7 @@ ProgramNode(0...1194)(
        (1130...1133)
      ),
      DefNode(1135...1167)(
+       :method,
        (1139...1145),
        nil,
        ParametersNode(1146...1147)(
@@ -1386,6 +1441,7 @@ ProgramNode(0...1194)(
        (1164...1167)
      ),
      DefNode(1169...1194)(
+       :foo,
        (1173...1176),
        nil,
        ParametersNode(1177...1189)(

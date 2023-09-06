@@ -2,6 +2,7 @@ ProgramNode(0...86)(
   [],
   StatementsNode(0...86)(
     [DefNode(0...12)(
+       :foo,
        (4...7),
        nil,
        nil,
@@ -15,6 +16,7 @@ ProgramNode(0...86)(
        nil
      ),
      DefNode(14...37)(
+       :foo,
        (18...21),
        nil,
        nil,
@@ -34,6 +36,7 @@ ProgramNode(0...86)(
        nil
      ),
      DefNode(39...56)(
+       :foo,
        (48...51),
        SelfNode(43...47)(),
        nil,
@@ -47,6 +50,7 @@ ProgramNode(0...86)(
        nil
      ),
      DefNode(58...86)(
+       :foo,
        (67...70),
        SelfNode(62...66)(),
        nil,

@@ -66,6 +66,7 @@ ProgramNode(0...106)(
             "include"
           ),
           DefNode(80...102)(
+            :foo,
             (84...87),
             nil,
             nil,
