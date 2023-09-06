@@ -249,6 +249,9 @@ pub enum JCCKinds {
 
 #[inline(always)]
 fn gen_counter_incr(asm: &mut Assembler, counter: Counter) {
+    // Assert that default counters are not incremented by generated code as this would impact performance
+    assert!(!DEFAULT_COUNTERS.contains(&counter), "gen_counter_incr incremented {:?}", counter);
+
     if get_option!(gen_stats) {
         asm.comment(&format!("increment counter {}", counter.get_name()));
         let ptr = get_counter_ptr(&counter.get_name());
@@ -8581,9 +8584,6 @@ pub struct CodegenGlobals {
 
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
-
-    /// How many times code GC has been executed.
-    code_gc_count: usize,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -8679,7 +8679,6 @@ impl CodegenGlobals {
             global_inval_patches: Vec::new(),
             method_codegen_table: HashMap::new(),
             ocb_pages,
-            code_gc_count: 0,
         };
 
         // Register the method codegen functions
@@ -8840,14 +8839,6 @@ impl CodegenGlobals {
 
     pub fn get_ocb_pages() -> &'static Vec<usize> {
         &CodegenGlobals::get_instance().ocb_pages
-    }
-
-    pub fn incr_code_gc_count() {
-        CodegenGlobals::get_instance().code_gc_count += 1;
-    }
-
-    pub fn get_code_gc_count() -> usize {
-        CodegenGlobals::get_instance().code_gc_count
     }
 }
 
