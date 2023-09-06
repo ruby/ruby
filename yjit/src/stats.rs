@@ -163,6 +163,17 @@ macro_rules! make_counters {
     }
 }
 
+/// The list of counters that are available without --yjit-stats.
+/// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
+pub const DEFAULT_COUNTERS: [Counter; 6] = [
+    Counter::code_gc_count,
+    Counter::compiled_iseq_entry,
+    Counter::compiled_iseq_count,
+    Counter::compiled_blockid_count,
+    Counter::compiled_block_count,
+    Counter::compiled_branch_count,
+];
+
 /// Macro to increase a counter by name and count
 macro_rules! incr_counter_by {
     // Unsafe is ok here because options are initialized
@@ -424,6 +435,8 @@ make_counters! {
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
 
+    code_gc_count,
+
     num_gc_obj_refs,
 
     num_send,
@@ -571,9 +584,6 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         // Live pages
         hash_aset_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
 
-        // Code GC count
-        hash_aset_usize!(hash, "code_gc_count", CodegenGlobals::get_code_gc_count());
-
         // Size of memory region allocated for JIT code
         hash_aset_usize!(hash, "code_region_size", cb.mapped_region_size());
 
@@ -594,13 +604,23 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         hash_aset_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
     }
 
-    // If we're not generating stats, the hash is done
+    // If we're not generating stats, put only default counters
     if !get_option!(gen_stats) {
+        for counter in DEFAULT_COUNTERS {
+            // Get the counter value
+            let counter_ptr = get_counter_ptr(&counter.get_name());
+            let counter_val = unsafe { *counter_ptr };
+
+            // Put counter into hash
+            let key = rust_str_to_sym(&counter.get_name());
+            let value = VALUE::fixnum_from_usize(counter_val as usize);
+            unsafe { rb_hash_aset(hash, key, value); }
+        }
+
         return hash;
     }
 
     // If the stats feature is enabled
-
     unsafe {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
