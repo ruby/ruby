@@ -321,23 +321,34 @@ class TestInteger < Test::Unit::TestCase
     begin;
       called = false
       Integer.class_eval do
-        alias old_plus +
-        undef +
-        define_method(:+){|x| called = true; 1}
+        alias old_succ succ
+        undef succ
+        define_method(:succ){|x| called = true; x+1}
         alias old_lt <
         undef <
         define_method(:<){|x| called = true}
       end
+
+      fix = 1
+      fix.times{break 0}
+      fix_called = called
+
+      called = false
+
       big = 2**65
       big.times{break 0}
+      big_called = called
+
       Integer.class_eval do
-        undef +
-        alias + old_plus
+        undef succ
+        alias succ old_succ
         undef <
         alias < old_lt
       end
+
+      # Asssert that Fixnum and Bignum behave consistently
       bug18377 = "[ruby-core:106361]"
-      assert_equal(false, called, bug18377)
+      assert_equal(fix_called, big_called, bug18377)
     end;
   end
 
