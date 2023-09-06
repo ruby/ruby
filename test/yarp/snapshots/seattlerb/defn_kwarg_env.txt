@@ -10,7 +10,7 @@ ProgramNode(0...45)(
          [],
          nil,
          [],
-         KeywordRestParameterNode(9...18)((9...11), (11...18)),
+         KeywordRestParameterNode(9...18)(:testing, (11...18), (9...11)),
          nil
        ),
        StatementsNode(20...41)(

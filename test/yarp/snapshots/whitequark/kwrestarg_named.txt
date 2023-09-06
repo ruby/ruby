@@ -10,7 +10,7 @@ ProgramNode(0...17)(
          [],
          nil,
          [],
-         KeywordRestParameterNode(6...11)((6...8), (8...11)),
+         KeywordRestParameterNode(6...11)(:foo, (8...11), (6...8)),
          nil
        ),
        nil,

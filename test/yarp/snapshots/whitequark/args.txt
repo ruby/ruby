@@ -340,7 +340,7 @@ ProgramNode(0...690)(
             (269...273),
             IntegerNode(274...275)()
           )],
-         KeywordRestParameterNode(277...282)((277...279), (279...282)),
+         KeywordRestParameterNode(277...282)(:baz, (279...282), (277...279)),
          BlockParameterNode(284...286)(:b, (285...286), (284...285))
        ),
        nil,
@@ -361,7 +361,7 @@ ProgramNode(0...690)(
          [],
          nil,
          [],
-         KeywordRestParameterNode(300...305)((300...302), (302...305)),
+         KeywordRestParameterNode(300...305)(:baz, (302...305), (300...302)),
          BlockParameterNode(307...309)(:b, (308...309), (307...308))
        ),
        nil,
@@ -382,7 +382,7 @@ ProgramNode(0...690)(
          [],
          RestParameterNode(322...323)((322...323), nil),
          [],
-         KeywordRestParameterNode(325...327)((325...327), nil),
+         KeywordRestParameterNode(325...327)(nil, nil, (325...327)),
          nil
        ),
        nil,

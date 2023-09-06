@@ -115,7 +115,7 @@ ProgramNode(0...434)(
          [],
          nil,
          [],
-         KeywordRestParameterNode(110...113)((110...112), (112...113)),
+         KeywordRestParameterNode(110...113)(:b, (112...113), (110...112)),
          nil
        ),
        nil,

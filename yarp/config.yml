@@ -1574,10 +1574,12 @@ nodes:
           end
   - name: KeywordRestParameterNode
     fields:
-      - name: operator_loc
-        type: location
+      - name: name
+        type: constant?
       - name: name_loc
         type: location?
+      - name: operator_loc
+        type: location
     comment: |
       Represents a keyword rest parameter to a method, block, or lambda definition.
 

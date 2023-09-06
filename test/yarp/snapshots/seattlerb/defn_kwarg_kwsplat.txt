@@ -10,7 +10,7 @@ ProgramNode(0...20)(
          [],
          nil,
          [KeywordParameterNode(6...10)(:b, (6...8), IntegerNode(9...10)())],
-         KeywordRestParameterNode(12...15)((12...14), (14...15)),
+         KeywordRestParameterNode(12...15)(:c, (14...15), (12...14)),
          nil
        ),
        nil,

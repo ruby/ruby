@@ -17,7 +17,7 @@ ProgramNode(0...17)(
              [],
              nil,
              [KeywordParameterNode(5...9)(:b, (5...7), IntegerNode(8...9)())],
-             KeywordRestParameterNode(11...14)((11...13), (13...14)),
+             KeywordRestParameterNode(11...14)(:c, (13...14), (11...13)),
              nil
            ),
            [],
