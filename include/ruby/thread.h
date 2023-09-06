@@ -190,11 +190,41 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
  */
 #define RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS_
 
-#define RUBY_INTERNAL_THREAD_EVENT_STARTED    1 << 0 /** thread started */
+/**
+ * Triggered when a new thread is started.
+ *
+ * @note       The callback will be called *without* the GVL held.
+ */
+#define RUBY_INTERNAL_THREAD_EVENT_STARTED    1 << 0
+
+/**
+* Triggered when a thread attempt to acquire the GVL.
+*
+* @note       The callback will be called *without* the GVL held.
+*/
 #define RUBY_INTERNAL_THREAD_EVENT_READY      1 << 1 /** acquiring GVL */
+
+/**
+ * Triggered when a thread successfuly acquired the GVL.
+ *
+ * @note       The callback will be called *with* the GVL held.
+ */
 #define RUBY_INTERNAL_THREAD_EVENT_RESUMED    1 << 2 /** acquired GVL */
+
+/**
+ * Triggered when a thread released the GVL.
+ *
+ * @note       The callback will be called *without* the GVL held.
+ */
 #define RUBY_INTERNAL_THREAD_EVENT_SUSPENDED  1 << 3 /** released GVL */
+
+/**
+ * Triggered when a thread exits.
+ *
+ * @note       The callback will be called *without* the GVL held.
+ */
 #define RUBY_INTERNAL_THREAD_EVENT_EXITED     1 << 4 /** thread terminated */
+
 #define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
 
 typedef void rb_internal_thread_event_data_t; // for future extension.
@@ -212,6 +242,8 @@ typedef struct rb_internal_thread_event_hook rb_internal_thread_event_hook_t;
  * @param[in]  data    Passed as-is to `func`.
  * @return     An opaque pointer to the hook, to unregister it later.
  * @note       This functionality is a noop on Windows.
+ * @note       The callback will be called without the GVL held, except for the
+               RESUMED event.
  * @warning    This function MUST not be called from a thread event callback.
  */
 rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
