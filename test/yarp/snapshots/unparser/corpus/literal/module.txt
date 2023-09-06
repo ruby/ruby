@@ -7,7 +7,8 @@ ProgramNode(0...106)(
        ConstantReadNode(7...8)(:A),
        nil,
        (9...12),
-       "A"
+       "A",
+       :A
      ),
      ModuleNode(14...29)(
        [],
@@ -19,7 +20,8 @@ ProgramNode(0...106)(
        ),
        nil,
        (26...29),
-       "B"
+       "B",
+       :B
      ),
      ModuleNode(31...49)(
        [],
@@ -35,7 +37,8 @@ ProgramNode(0...106)(
        ),
        nil,
        (46...49),
-       "C"
+       "C",
+       :C
      ),
      ModuleNode(51...106)(
        [],
@@ -82,7 +85,8 @@ ProgramNode(0...106)(
           )]
        ),
        (103...106),
-       "A"
+       "A",
+       :A
      )]
   )
 )

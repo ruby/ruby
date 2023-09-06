@@ -780,6 +780,8 @@ nodes:
         type: location
       - name: name
         type: string
+      - name: name_constant
+        type: constant
     comment: |
       Represents a class declaration involving the `class` keyword.
 
@@ -1738,6 +1740,8 @@ nodes:
         type: location
       - name: name
         type: string
+      - name: name_constant
+        type: constant
     comment: |
       Represents a module declaration involving the `module` keyword.
 

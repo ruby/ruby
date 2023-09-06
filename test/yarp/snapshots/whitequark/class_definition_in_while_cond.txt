@@ -88,7 +88,8 @@ ProgramNode(0...197)(
             )]
          ),
          (136...139),
-         "Foo"
+         "Foo",
+         :Foo
        ),
        StatementsNode(141...146)([BreakNode(141...146)(nil, (141...146))]),
        0
@@ -116,7 +117,8 @@ ProgramNode(0...197)(
             )]
          ),
          (182...185),
-         "Foo"
+         "Foo",
+         :Foo
        ),
        StatementsNode(187...192)([BreakNode(187...192)(nil, (187...192))]),
        0

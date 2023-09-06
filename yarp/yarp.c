@@ -1660,7 +1660,8 @@ yp_class_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const y
         .superclass = superclass,
         .body = body,
         .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword),
-        .name = YP_EMPTY_STRING
+        .name = YP_EMPTY_STRING,
+        .name_constant = yp_parser_constant_id_token(parser, name)
     };
 
     yp_string_shared_init(&node->name, name->start, name->end);
@@ -3310,7 +3311,8 @@ yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const 
         .constant_path = constant_path,
         .body = body,
         .end_keyword_loc = YP_LOCATION_TOKEN_VALUE(end_keyword),
-        .name = YP_EMPTY_STRING
+        .name = YP_EMPTY_STRING,
+        .name_constant = yp_parser_constant_id_token(parser, name)
     };
 
     yp_string_shared_init(&node->name, name->start, name->end);

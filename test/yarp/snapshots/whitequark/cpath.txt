@@ -7,7 +7,8 @@ ProgramNode(0...39)(
        ConstantPathNode(7...12)(nil, ConstantReadNode(9...12)(:Foo), (7...9)),
        nil,
        (14...17),
-       "Foo"
+       "Foo",
+       :Foo
      ),
      ModuleNode(19...39)(
        [],
@@ -19,7 +20,8 @@ ProgramNode(0...39)(
        ),
        nil,
        (36...39),
-       "Foo"
+       "Foo",
+       :Foo
      )]
   )
 )
