@@ -15,7 +15,7 @@ ProgramNode(0...19)(
              [],
              [],
              [],
-             RestParameterNode(7...12)((7...8), (8...12)),
+             RestParameterNode(7...12)(:args, (8...12), (7...8)),
              [],
              nil,
              nil

@@ -604,7 +604,7 @@ ProgramNode(0...402)(
              [RequiredParameterNode(393...396)(:bar)],
              [],
              [],
-             RestParameterNode(396...397)((396...397), nil),
+             RestParameterNode(396...397)(nil, nil, (396...397)),
              [],
              nil,
              nil

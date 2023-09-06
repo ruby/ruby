@@ -549,7 +549,7 @@ ProgramNode(0...1194)(
          [],
          [],
          [],
-         RestParameterNode(509...511)((509...510), (510...511)),
+         RestParameterNode(509...511)(:b, (510...511), (509...510)),
          [],
          nil,
          nil
@@ -570,7 +570,7 @@ ProgramNode(0...1194)(
          [],
          [],
          [],
-         RestParameterNode(523...524)((523...524), nil),
+         RestParameterNode(523...524)(nil, nil, (523...524)),
          [],
          nil,
          nil
@@ -740,7 +740,7 @@ ProgramNode(0...1194)(
          [],
          [],
          [],
-         RestParameterNode(693...694)((693...694), nil),
+         RestParameterNode(693...694)(nil, nil, (693...694)),
          [],
          nil,
          nil

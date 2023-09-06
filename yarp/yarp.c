@@ -3900,8 +3900,9 @@ yp_rest_parameter_node_create(yp_parser_t *parser, const yp_token_t *operator, c
                 .end = (name->type == YP_TOKEN_NOT_PROVIDED ? operator->end : name->end)
             }
         },
-        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
-        .name_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(name)
+        .name = yp_parser_optional_constant_id_token(parser, name),
+        .name_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(name),
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator)
     };
 
     return node;

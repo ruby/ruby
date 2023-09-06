@@ -8,7 +8,7 @@ ProgramNode(0...43)(
          [RequiredParameterNode(8...16)(:argument)],
          [],
          [],
-         RestParameterNode(18...19)((18...19), nil),
+         RestParameterNode(18...19)(nil, nil, (18...19)),
          [],
          nil,
          nil

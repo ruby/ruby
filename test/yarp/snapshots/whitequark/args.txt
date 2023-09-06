@@ -380,7 +380,7 @@ ProgramNode(0...690)(
          [],
          [],
          [],
-         RestParameterNode(322...323)((322...323), nil),
+         RestParameterNode(322...323)(nil, nil, (322...323)),
          [],
          KeywordRestParameterNode(325...327)(nil, nil, (325...327)),
          nil
@@ -401,7 +401,7 @@ ProgramNode(0...690)(
          [],
          [],
          [],
-         RestParameterNode(340...342)((340...341), (341...342)),
+         RestParameterNode(340...342)(:r, (341...342), (340...341)),
          [],
          nil,
          BlockParameterNode(344...346)(:b, (345...346), (344...345))
@@ -422,7 +422,7 @@ ProgramNode(0...690)(
          [],
          [],
          [RequiredParameterNode(363...364)(:p)],
-         RestParameterNode(359...361)((359...360), (360...361)),
+         RestParameterNode(359...361)(:r, (360...361), (359...360)),
          [],
          nil,
          BlockParameterNode(366...368)(:b, (367...368), (366...367))
@@ -477,7 +477,7 @@ ProgramNode(0...690)(
          [RequiredParameterNode(412...413)(:a)],
          [],
          [],
-         RestParameterNode(415...417)((415...416), (416...417)),
+         RestParameterNode(415...417)(:r, (416...417), (415...416)),
          [],
          nil,
          BlockParameterNode(419...421)(:b, (420...421), (419...420))
@@ -498,7 +498,7 @@ ProgramNode(0...690)(
          [RequiredParameterNode(434...435)(:a)],
          [],
          [RequiredParameterNode(441...442)(:p)],
-         RestParameterNode(437...439)((437...438), (438...439)),
+         RestParameterNode(437...439)(:r, (438...439), (437...438)),
          [],
          nil,
          BlockParameterNode(444...446)(:b, (445...446), (444...445))
@@ -550,7 +550,7 @@ ProgramNode(0...690)(
             IntegerNode(487...488)()
           )],
          [],
-         RestParameterNode(490...492)((490...491), (491...492)),
+         RestParameterNode(490...492)(:r, (491...492), (490...491)),
          [],
          nil,
          BlockParameterNode(494...496)(:b, (495...496), (494...495))
@@ -576,7 +576,7 @@ ProgramNode(0...690)(
             IntegerNode(514...515)()
           )],
          [RequiredParameterNode(521...522)(:p)],
-         RestParameterNode(517...519)((517...518), (518...519)),
+         RestParameterNode(517...519)(:r, (518...519), (517...518)),
          [],
          nil,
          BlockParameterNode(524...526)(:b, (525...526), (524...525))
@@ -700,7 +700,7 @@ ProgramNode(0...690)(
             IntegerNode(626...627)()
           )],
          [],
-         RestParameterNode(629...631)((629...630), (630...631)),
+         RestParameterNode(629...631)(:r, (630...631), (629...630)),
          [],
          nil,
          BlockParameterNode(633...635)(:b, (634...635), (633...634))
@@ -726,7 +726,7 @@ ProgramNode(0...690)(
             IntegerNode(650...651)()
           )],
          [RequiredParameterNode(657...658)(:p)],
-         RestParameterNode(653...655)((653...654), (654...655)),
+         RestParameterNode(653...655)(:r, (654...655), (653...654)),
          [],
          nil,
          BlockParameterNode(660...662)(:b, (661...662), (660...661))

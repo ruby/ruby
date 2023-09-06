@@ -2059,10 +2059,12 @@ nodes:
       `ex` is in the `exception` field.
   - name: RestParameterNode
     fields:
-      - name: operator_loc
-        type: location
+      - name: name
+        type: constant?
       - name: name_loc
         type: location?
+      - name: operator_loc
+        type: location
     comment: |
       Represents a rest parameter to a method, block, or lambda definition.
 

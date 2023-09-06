@@ -540,7 +540,7 @@ module YARP
             sorted = [
               *params.requireds.grep(RequiredParameterNode).map(&:name),
               *params.optionals.map(&:name),
-              *((params.rest.name ? params.rest.name.to_sym : :*) if params.rest && params.rest.operator != ","),
+              *((params.rest.name || :*) if params.rest && params.rest.operator != ","),
               *params.posts.grep(RequiredParameterNode).map(&:name),
               *params.keywords.reject(&:value).map(&:name),
               *params.keywords.select(&:value).map(&:name)

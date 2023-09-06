@@ -13,7 +13,7 @@ ProgramNode(0...24)(
             IntegerNode(11...12)()
           )],
          [RequiredParameterNode(18...19)(:c)],
-         RestParameterNode(14...16)((14...15), (15...16)),
+         RestParameterNode(14...16)(:b, (15...16), (14...15)),
          [],
          nil,
          nil
