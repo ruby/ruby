@@ -19,10 +19,10 @@ module YARP
         Location(),
         ConstantReadNode(:Parent),
         StatementsNode(
-          [ModuleNode([], Location(), MissingNode(), nil, Location(), "", :"")]
+          [ModuleNode([], Location(), MissingNode(), nil, Location(), :"", :"")]
         ),
         Location(),
-        "Parent",
+        :Parent,
         :Parent
       )
 
@@ -394,7 +394,7 @@ module YARP
         Location(),
         nil,
         nil,
-        StatementsNode([ModuleNode([], Location(), ConstantReadNode(:A), nil, Location(), "A", :A)]),
+        StatementsNode([ModuleNode([], Location(), ConstantReadNode(:A), nil, Location(), :A, :A)]),
         [],
         Location(),
         nil,
@@ -425,7 +425,7 @@ module YARP
             BlockNode(
               [],
               nil,
-              StatementsNode([ModuleNode([], Location(), ConstantReadNode(:Foo), nil, Location(), "Foo", :Foo)]),
+              StatementsNode([ModuleNode([], Location(), ConstantReadNode(:Foo), nil, Location(), :Foo, :Foo)]),
               Location(),
               Location()
             ),
@@ -465,7 +465,7 @@ module YARP
             nil,
             nil,
             Location(),
-            "A",
+            :A,
             :A
           )]
         ),
@@ -981,7 +981,7 @@ module YARP
         nil,
         StatementsNode([ReturnNode(Location(), nil)]),
         Location(),
-        "A",
+        :A,
         :A
       )
 
@@ -997,7 +997,7 @@ module YARP
         ConstantReadNode(:A),
         StatementsNode([ReturnNode(Location(), nil)]),
         Location(),
-        "A",
+        :A,
         :A
       )
 

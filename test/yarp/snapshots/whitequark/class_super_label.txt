@@ -21,7 +21,7 @@ ProgramNode(0...20)(
        ),
        nil,
        (17...20),
-       "Foo",
+       :Foo,
        :Foo
      )]
   )

@@ -31,7 +31,7 @@ ProgramNode(18...90)(
           )]
        ),
        (87...90),
-       "ExampleUTF8ClassNameVarietà",
+       :ExampleUTF8ClassNameVarietà,
        :ExampleUTF8ClassNameVarietà
      )]
   )

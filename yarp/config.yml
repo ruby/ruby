@@ -779,7 +779,7 @@ nodes:
       - name: end_keyword_loc
         type: location
       - name: name
-        type: string
+        type: constant
       - name: name_constant
         type: constant
     comment: |
@@ -1739,7 +1739,7 @@ nodes:
       - name: end_keyword_loc
         type: location
       - name: name
-        type: string
+        type: constant
       - name: name_constant
         type: constant
     comment: |

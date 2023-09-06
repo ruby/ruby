@@ -49,7 +49,7 @@ ProgramNode(0...132)(
                  nil,
                  nil,
                  (72...75),
-                 "C",
+                 :C,
                  :C
                )]
             ),
@@ -81,7 +81,7 @@ ProgramNode(0...132)(
                  ConstantReadNode(116...117)(:M),
                  nil,
                  (119...122),
-                 "M",
+                 :M,
                  :M
                )]
             ),
