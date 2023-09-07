@@ -597,7 +597,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_scope_node_t scope_node;
           yp_scope_node_init((yp_node_t *)class_node, &scope_node);
 
-          ID class_id = yp_constant_id_lookup(compile_context, class_node->name_constant);
+          ID class_id = yp_constant_id_lookup(compile_context, class_node->name);
 
           VALUE class_name = rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(class_id)));
 
@@ -1463,7 +1463,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_scope_node_t scope_node;
           yp_scope_node_init((yp_node_t *)module_node, &scope_node);
 
-          ID module_id = yp_constant_id_lookup(compile_context, module_node->name_constant);
+          ID module_id = yp_constant_id_lookup(compile_context, module_node->name);
           VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
 
           const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
