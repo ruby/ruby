@@ -910,7 +910,7 @@ pst_bitand(VALUE st1, VALUE st2)
  *     stat >> 1                 # => 128
  *     stat >> 2                 # => 64
  *
- *  Returns zero if +places+ is negative.
+ *  The behavior is unspecified if +places+ is negative.
  */
 
 static VALUE
