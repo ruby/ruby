@@ -178,6 +178,11 @@ module YARP
       assert_equal :"1 3 1", compile(':"1 #{1 + 2} 1"')
     end
 
+    def test_InterpolatedXStringNode
+      assert_equal "1\n", compile('`echo #{1}`')
+      assert_equal "100", compile('`printf "100"`')
+    end
+
     def test_StringConcatNode
       # assert_equal "YARP::CompilerTest", compile('"YARP" "::" "CompilerTest"')
     end
