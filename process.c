@@ -870,6 +870,8 @@ pst_equal(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat & mask -> integer
  *
+ *  The use of this method is discouraged; use other attribute methods.
+ *
  *  Returns the logical AND of the value of #to_i with +mask+:
  *
  *    `cat /nop`
@@ -889,6 +891,25 @@ pst_bitand(VALUE st1, VALUE st2)
     if (mask < 0) {
         rb_raise(rb_eArgError, "negative mask value: %d", mask);
     }
+#define WARN_SUGGEST(suggest) rb_warn("Use " suggest " instead of Process::Status#&")
+    switch (mask) {
+      case 0x80:
+        WARN_SUGGEST("Process::Status#coredump?");
+        break;
+      case 0x7f:
+        WARN_SUGGEST("Process::Status#signaled? or Process::Status#termsig");
+        break;
+      case 0xff:
+        WARN_SUGGEST("Process::Status#exited?, Process::Status#stopped? or Process::Status#coredump?");
+        break;
+      case 0xff00:
+        WARN_SUGGEST("Process::Status#exitstatus or Process::Status#stopsig");
+        break;
+      default:
+        WARN_SUGGEST("other Process::Status predicates");
+        break;
+    }
+#undef WARN_SUGGEST
     status &= mask;
 
     return INT2NUM(status);
@@ -898,6 +919,8 @@ pst_bitand(VALUE st1, VALUE st2)
 /*
  *  call-seq:
  *    stat >> places -> integer
+ *
+ *  The use of this method is discouraged; use other predicate methods.
  *
  *  Returns the value of #to_i, shifted +places+ to the right:
  *
@@ -919,6 +942,19 @@ pst_rshift(VALUE st1, VALUE st2)
     if (places < 0) {
         rb_raise(rb_eArgError, "negative shift value: %d", places);
     }
+#define WARN_SUGGEST(suggest) rb_warn("Use " suggest " instead of Process::Status#>>")
+    switch (places) {
+      case 7:
+        WARN_SUGGEST("Process::Status#coredump?");
+        break;
+      case 8:
+        WARN_SUGGEST("Process::Status#exitstatus or Process::Status#stopsig");
+        break;
+      default:
+        WARN_SUGGEST("other Process::Status attributes");
+        break;
+    }
+#undef WARN_SUGGEST
     status >>= places;
 
     return INT2NUM(status);
