@@ -1298,6 +1298,38 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+          yp_interpolated_regular_expression_node_t *interp_regular_expression_node= (yp_interpolated_regular_expression_node_t *) node;
+          size_t parts_size = interp_regular_expression_node->parts.size;
+
+          if (parts_size > 0) {
+              for (size_t index = 0; index < parts_size; index++) {
+                  yp_node_t *part = interp_regular_expression_node->parts.nodes[index];
+
+                  switch (part->type) {
+                    case YP_NODE_STRING_NODE: {
+                        yp_regular_expression_node_t *regular_expression_node = (yp_regular_expression_node_t *) part;
+                        ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&regular_expression_node->unescaped));
+                        break;
+                    }
+                    default:
+                      yp_compile_node(iseq, part, ret, src, popped, compile_context);
+                      ADD_INSN(ret, &dummy_line_node, dup);
+                      ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
+                      ADD_INSN(ret, &dummy_line_node, anytostring);
+                      break;
+                  }
+              }
+
+              if (parts_size > 1) {
+                  ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(0), INT2FIX((int)(interp_regular_expression_node->parts.size)));
+              }
+          }
+          else {
+              ADD_INSN(ret, &dummy_line_node, putnil);
+          }
+          return;
+      }
       case YP_NODE_INTERPOLATED_STRING_NODE: {
           yp_interpolated_string_node_t *interp_string_node = (yp_interpolated_string_node_t *) node;
           yp_interpolated_node_compile(interp_string_node->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
@@ -1629,6 +1661,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_REDO_NODE: {
           ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
+          return;
+      }
+      case YP_NODE_REGULAR_EXPRESSION_NODE: {
+          if (!popped) {
+              yp_regular_expression_node_t *regular_expression_node = (yp_regular_expression_node_t *) node;
+              VALUE regex_str = parse_string(&regular_expression_node->unescaped);
+              VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), 0);
+              ADD_INSN1(ret, &dummy_line_node, putobject, regex);
+          }
           return;
       }
       case YP_NODE_RETURN_NODE: {
