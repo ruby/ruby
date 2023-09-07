@@ -4706,7 +4706,7 @@ fn jit_rb_str_bytesize(
     );
 
     let len = asm.load(str_len_opnd);
-    let shifted_val = asm.lshift(len, Opnd::UImm(1 as u64));
+    let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
 
     let out_opnd = asm.stack_push(Type::Fixnum);
