@@ -5194,9 +5194,6 @@ fn gen_push_frame(
                     let block_handler = asm.load(
                         Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
                     );
-
-                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_handler);
-
                     block_handler
                 }
                 BlockHandler::AlreadySet => 0.into(), // unused
