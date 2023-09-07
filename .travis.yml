@@ -82,12 +82,12 @@ env:
   - &ppc64le-linux
     name: ppc64le-linux
     arch: ppc64le
-    <<: *gcc-10
+    compiler: gcc
 
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    <<: *gcc-10
+    compiler: gcc
 
   - &arm32-linux
     name: arm32-linux
