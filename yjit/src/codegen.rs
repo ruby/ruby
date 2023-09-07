@@ -4697,10 +4697,21 @@ fn jit_rb_str_bytesize(
     asm.comment("String#bytesize");
 
     let recv = asm.stack_pop(1);
-    let ret_opnd = asm.ccall(rb_str_bytesize as *const u8, vec![recv]);
+
+    asm.comment("get string length");
+    let str_len_opnd = Opnd::mem(
+        std::os::raw::c_long::BITS as u8,
+        asm.load(recv),
+        RUBY_OFFSET_RSTRING_LEN as i32,
+    );
+
+    let len = asm.load(str_len_opnd);
+    let shifted_val = asm.lshift(len, Opnd::UImm(1));
+    let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
 
     let out_opnd = asm.stack_push(Type::Fixnum);
-    asm.mov(out_opnd, ret_opnd);
+
+    asm.mov(out_opnd, out_val);
 
     true
 }
