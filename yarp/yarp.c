@@ -516,7 +516,6 @@ not_provided(yp_parser_t *parser) {
 #define YP_LOCATION_NODE_BASE_VALUE(node) ((yp_location_t) { .start = (node)->base.location.start, .end = (node)->base.location.end })
 #define YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE ((yp_location_t) { .start = NULL, .end = NULL })
 #define YP_OPTIONAL_LOCATION_TOKEN_VALUE(token) ((token)->type == YP_TOKEN_NOT_PROVIDED ? YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE : YP_LOCATION_TOKEN_VALUE(token))
-#define YP_TOKEN_NOT_PROVIDED_VALUE(parser) ((yp_token_t) { .type = YP_TOKEN_NOT_PROVIDED, .start = (parser)->start, .end = (parser)->start })
 
 // This is a special out parameter to the parse_arguments_list function that
 // includes opening and closing parentheses in addition to the arguments since
@@ -4560,7 +4559,6 @@ yp_yield_node_create(yp_parser_t *parser, const yp_token_t *keyword, const yp_lo
 
 
 #undef YP_EMPTY_STRING
-#undef YP_TOKEN_NOT_PROVIDED_VALUE
 #undef YP_ALLOC_NODE
 
 /******************************************************************************/
