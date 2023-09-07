@@ -20,6 +20,10 @@ module YARP
       offsets.bsearch_index { |offset| offset > value } || offsets.length
     end
 
+    def line_offset(value)
+      offsets[line(value) - 1]
+    end
+
     def column(value)
       value - offsets[line(value) - 1]
     end
@@ -46,10 +50,14 @@ module YARP
     # The length of this location in bytes.
     attr_reader :length
 
+    # The list of comments attached to this location
+    attr_reader :comments
+
     def initialize(source, start_offset, length)
       @source = source
       @start_offset = start_offset
       @length = length
+      @comments = []
     end
 
     # Create a new location object with the given options.
@@ -79,6 +87,12 @@ module YARP
     # The line number where this location starts.
     def start_line
       source.line(start_offset)
+    end
+
+    # The content of the line where this location starts before this location.
+    def start_line_slice
+      offset = source.line_offset(start_offset)
+      source.slice(offset, start_offset - offset)
     end
 
     # The line number where this location ends.
@@ -140,6 +154,11 @@ module YARP
 
     def deconstruct_keys(keys)
       { type: type, location: location }
+    end
+
+    # Returns true if the comment happens on the same line as other code and false if the comment is by itself
+    def trailing?
+      type == :inline && !location.start_line_slice.strip.empty?
     end
 
     def inspect
@@ -228,6 +247,154 @@ module YARP
 
     def failure?
       !success?
+    end
+
+    # CommentAttacher is a utility class to attach comments to locations in the AST
+    class CommentAttacher
+      attr_reader :parse_result
+
+      def initialize(parse_result)
+        @parse_result = parse_result
+      end
+
+      def attach!
+        parse_result.comments.each do |comment|
+          preceding, enclosing, following = nearest_targets(parse_result.value, comment)
+          target =
+            if comment.trailing?
+              preceding || following || enclosing || NodeTarget.new(parse_result.value)
+            else
+              # If a comment exists on its own line, prefer a leading comment.
+              following || preceding || enclosing || NodeTarget.new(parse_result.value)
+            end
+
+          target << comment
+        end
+      end
+
+      # A target for attaching comments that is based on a specific node
+      class NodeTarget
+        attr_reader :node
+
+        def initialize(node)
+          @node = node
+        end
+
+        def start_offset
+          node.location.start_offset
+        end
+
+        def end_offset
+          node.location.end_offset
+        end
+
+        def encloses?(comment)
+          start_offset <= comment.location.start_offset && comment.location.end_offset <= end_offset
+        end
+
+        def <<(comment)
+          node.location.comments << comment
+        end
+      end
+
+      # A target for attaching comments that is based on a location, which could be a part of a node. For example, the
+      # `end` token of a ClassNode
+      class LocationTarget
+        attr_reader :location
+
+        def initialize(location)
+          @location = location
+        end
+
+        def start_offset
+          location.start_offset
+        end
+
+        def end_offset
+          location.end_offset
+        end
+
+        def encloses?(comment)
+          false
+        end
+
+        def <<(comment)
+          location.comments << comment
+        end
+      end
+
+      private
+
+      # Responsible for finding the nearest targets to the given comment within the context of the given encapsulating
+      # node.
+      def nearest_targets(node, comment)
+        comment_start = comment.location.start_offset
+        comment_end = comment.location.end_offset
+
+        targets = []
+        node.deconstruct_keys(nil).each do |key, value|
+          next if key == :location
+
+          case value
+          when StatementsNode
+            targets.concat(value.body.map { |node| NodeTarget.new(node) })
+          when Node
+            targets << NodeTarget.new(value)
+          when Location
+            targets << LocationTarget.new(value)
+          when Array
+            targets.concat(value.map { |node| NodeTarget.new(node) }) if value.first.is_a?(Node)
+          end
+        end
+
+        targets.sort_by!(&:start_offset)
+        preceding = nil
+        following = nil
+
+        left = 0
+        right = targets.length
+
+        # This is a custom binary search that finds the nearest nodes to the given comment. When it finds a node that
+        # completely encapsulates the comment, it recursed downward into the tree.
+        while left < right
+          middle = (left + right) / 2
+          target = targets[middle]
+
+          target_start = target.start_offset
+          target_end = target.end_offset
+
+          if target.encloses?(comment)
+            # The comment is completely contained by this target. Abandon the binary search at this level.
+            return nearest_targets(target.node, comment)
+          end
+
+          if target_end <= comment_start
+            # This target falls completely before the comment. Because we will never consider this target or any targets
+            # before it again, this target must be the closest preceding target we have encountered so far.
+            preceding = target
+            left = middle + 1
+            next
+          end
+
+          if comment_end <= target_start
+            # This target falls completely after the comment. Because we will never consider this target or any targets
+            # after it again, this target must be the closest following target we have encountered so far.
+            following = target
+            right = middle
+            next
+          end
+
+          # This should only happen if there is a bug in this parser.
+          raise "Comment location overlaps with target location"
+        end
+
+        [preceding, NodeTarget.new(node), following]
+      end
+    end
+
+    # Attach the list of comments to their respective locations in the AST
+    def attach_comments!
+      CommentAttacher.new(self).attach!
     end
 
     # Keep in sync with Java MarkNewlinesVisitor

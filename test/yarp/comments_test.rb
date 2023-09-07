@@ -55,6 +55,30 @@ module YARP
       assert_comment source, :embdoc, 0..24
     end
 
+    def test_attaching_comments
+      source = <<~RUBY
+        # Foo class
+        class Foo
+          # bar method
+          def bar
+            # baz invocation
+            baz
+          end # bar end
+        end # Foo end
+      RUBY
+
+      result = YARP.parse(source)
+      result.attach_comments!
+      tree = result.value
+      class_node = tree.statements.body.first
+      method_node = class_node.body.body.first
+      call_node = method_node.body.body.first
+
+      assert_equal("# Foo class\n# Foo end\n", class_node.location.comments.map { |c| c.location.slice }.join)
+      assert_equal("# bar method\n# bar end\n", method_node.location.comments.map { |c| c.location.slice }.join)
+      assert_equal("# baz invocation\n", call_node.location.comments.map { |c| c.location.slice }.join)
+    end
+
     private
 
     def assert_comment(source, type, location)
