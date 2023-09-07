@@ -1306,18 +1306,15 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               for (size_t index = 0; index < parts_size; index++) {
                   yp_node_t *part = interp_regular_expression_node->parts.nodes[index];
 
-                  switch (part->type) {
-                    case YP_NODE_STRING_NODE: {
-                        yp_regular_expression_node_t *regular_expression_node = (yp_regular_expression_node_t *) part;
-                        ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&regular_expression_node->unescaped));
-                        break;
-                    }
-                    default:
+                  if (YP_NODE_TYPE_P(part, YP_NODE_STRING_NODE)) {
+                      yp_string_node_t *string_node = (yp_string_node_t *) part;
+                      ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&string_node->unescaped));
+                  }
+                  else {
                       yp_compile_node(iseq, part, ret, src, popped, compile_context);
                       ADD_INSN(ret, &dummy_line_node, dup);
                       ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
                       ADD_INSN(ret, &dummy_line_node, anytostring);
-                      break;
                   }
               }
 
@@ -1667,6 +1664,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           if (!popped) {
               yp_regular_expression_node_t *regular_expression_node = (yp_regular_expression_node_t *) node;
               VALUE regex_str = parse_string(&regular_expression_node->unescaped);
+              // TODO: Replace 0 with regex options
               VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), 0);
               ADD_INSN1(ret, &dummy_line_node, putobject, regex);
           }
