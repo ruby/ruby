@@ -877,12 +877,19 @@ pst_equal(VALUE st1, VALUE st2)
  *    sprintf('%x', stat.to_i)  # => "100"
  *    stat & 0x00               # => 0
  *
+ *  ArgumentError is raised if +mask+ is negative.
  */
 
 static VALUE
 pst_bitand(VALUE st1, VALUE st2)
 {
-    int status = PST2INT(st1) & NUM2INT(st2);
+    int status = PST2INT(st1);
+    int mask = NUM2INT(st2);
+
+    if (mask < 0) {
+        rb_raise(rb_eArgError, "negative mask value: %d", mask);
+    }
+    status &= mask;
 
     return INT2NUM(status);
 }
@@ -900,13 +907,19 @@ pst_bitand(VALUE st1, VALUE st2)
  *     stat >> 1                 # => 128
  *     stat >> 2                 # => 64
  *
- *  The behavior is unspecified if +places+ is negative.
+ *  ArgumentError is raised if +places+ is negative.
  */
 
 static VALUE
 pst_rshift(VALUE st1, VALUE st2)
 {
-    int status = PST2INT(st1) >> NUM2INT(st2);
+    int status = PST2INT(st1);
+    int places = NUM2INT(st2);
+
+    if (places < 0) {
+        rb_raise(rb_eArgError, "negative shift value: %d", places);
+    }
+    status >>= places;
 
     return INT2NUM(status);
 }
