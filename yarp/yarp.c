@@ -7045,9 +7045,16 @@ parser_lex(yp_parser_t *parser) {
             // going to trim it off the beginning and create a new token.
             size_t whitespace;
 
-            bool should_stop = parser->heredoc_end;
+            if (parser->heredoc_end) {
+                whitespace = yp_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
+                if (peek_offset(parser, (ptrdiff_t)whitespace) == '\n') {
+                    whitespace += 1;
+                }
+            } else {
+                whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list);
+            }
 
-            if ((whitespace = yp_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->newline_list, should_stop)) > 0) {
+            if (whitespace > 0) {
                 parser->current.end += whitespace;
                 if (peek_offset(parser, -1) == '\n') {
                     // mutates next_start
