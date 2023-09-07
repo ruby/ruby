@@ -2,6 +2,10 @@
 
 module YARP
   class CompilerTest < Test::Unit::TestCase
+    def test_empty_program
+      assert_nil compile("")
+    end
+
     ############################################################################
     # Literals                                                                 #
     ############################################################################
