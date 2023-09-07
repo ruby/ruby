@@ -1550,12 +1550,6 @@ vm_block_handler_verify(MAYBE_UNUSED(VALUE block_handler))
               (vm_block_handler_type(block_handler), 1));
 }
 
-static inline int
-vm_cfp_forwarded_bh_p(const rb_control_frame_t *cfp, VALUE block_handler)
-{
-    return ((VALUE) cfp->block_code) == block_handler;
-}
-
 static inline enum rb_block_type
 vm_block_type(const struct rb_block *block)
 {
