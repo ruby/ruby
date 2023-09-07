@@ -2,10 +2,8 @@ ProgramNode(0...143)(
   [:i, :j, :k],
   StatementsNode(0...143)(
     [ForNode(0...20)(
-       MultiWriteNode(4...5)(
+       MultiTargetNode(4...5)(
          [LocalVariableTargetNode(4...5)(:i, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),
@@ -22,10 +20,8 @@ ProgramNode(0...143)(
        (17...20)
      ),
      ForNode(22...44)(
-       MultiWriteNode(26...27)(
+       MultiTargetNode(26...27)(
          [LocalVariableTargetNode(26...27)(:i, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),
@@ -42,11 +38,9 @@ ProgramNode(0...143)(
        (41...44)
      ),
      ForNode(46...68)(
-       MultiWriteNode(50...53)(
+       MultiTargetNode(50...53)(
          [LocalVariableTargetNode(50...51)(:i, 0),
           LocalVariableTargetNode(52...53)(:j, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),
@@ -63,12 +57,10 @@ ProgramNode(0...143)(
        (65...68)
      ),
      ForNode(70...94)(
-       MultiWriteNode(74...79)(
+       MultiTargetNode(74...79)(
          [LocalVariableTargetNode(74...75)(:i, 0),
           LocalVariableTargetNode(76...77)(:j, 0),
           LocalVariableTargetNode(78...79)(:k, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),
@@ -85,10 +77,8 @@ ProgramNode(0...143)(
        (91...94)
      ),
      ForNode(96...119)(
-       MultiWriteNode(100...101)(
+       MultiTargetNode(100...101)(
          [LocalVariableTargetNode(100...101)(:i, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),
@@ -105,10 +95,8 @@ ProgramNode(0...143)(
        (116...119)
      ),
      ForNode(121...143)(
-       MultiWriteNode(125...126)(
+       MultiTargetNode(125...126)(
          [LocalVariableTargetNode(125...126)(:i, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),

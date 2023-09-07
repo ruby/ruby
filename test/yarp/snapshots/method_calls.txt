@@ -348,56 +348,58 @@ ProgramNode(0...1237)(
        "b"
      ),
      MultiWriteNode(181...204)(
-       [CallNode(181...188)(
-          CallNode(181...184)(
+       MultiTargetNode(181...197)(
+         [CallNode(181...188)(
+            CallNode(181...184)(
+              nil,
+              nil,
+              (181...184),
+              nil,
+              nil,
+              nil,
+              nil,
+              2,
+              "foo"
+            ),
+            (184...185),
+            (185...188),
             nil,
             nil,
-            (181...184),
             nil,
             nil,
-            nil,
-            nil,
-            2,
-            "foo"
+            0,
+            "foo="
           ),
-          (184...185),
-          (185...188),
-          nil,
-          nil,
-          nil,
-          nil,
-          0,
-          "foo="
-        ),
-        CallNode(190...197)(
-          CallNode(190...193)(
+          CallNode(190...197)(
+            CallNode(190...193)(
+              nil,
+              nil,
+              (190...193),
+              nil,
+              nil,
+              nil,
+              nil,
+              2,
+              "bar"
+            ),
+            (193...194),
+            (194...197),
             nil,
             nil,
-            (190...193),
             nil,
             nil,
-            nil,
-            nil,
-            2,
-            "bar"
-          ),
-          (193...194),
-          (194...197),
-          nil,
-          nil,
-          nil,
-          nil,
-          0,
-          "bar="
-        )],
+            0,
+            "bar="
+          )],
+         nil,
+         nil
+       ),
        (198...199),
        ArrayNode(200...204)(
          [IntegerNode(200...201)(), IntegerNode(203...204)()],
          nil,
          nil
-       ),
-       nil,
-       nil
+       )
      ),
      CallNode(206...210)(
        CallNode(206...207)(nil, nil, (206...207), nil, nil, nil, nil, 2, "a"),

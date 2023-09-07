@@ -2,11 +2,9 @@ ProgramNode(0...28)(
   [:a, :b],
   StatementsNode(0...28)(
     [ForNode(0...28)(
-       MultiWriteNode(4...8)(
+       MultiTargetNode(4...8)(
          [LocalVariableTargetNode(4...5)(:a, 0),
           LocalVariableTargetNode(7...8)(:b, 0)],
-         nil,
-         nil,
          nil,
          nil
        ),

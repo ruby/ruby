@@ -1751,20 +1751,30 @@ nodes:
 
           module Foo end
           ^^^^^^^^^^^^^^
-  - name: MultiWriteNode
+  - name: MultiTargetNode
     fields:
       - name: targets
         type: node[]
-      - name: operator_loc
-        type: location?
-      - name: value
-        type: node?
       - name: lparen_loc
         type: location?
       - name: rparen_loc
         type: location?
     comment: |
       Represents a multi-target expression.
+
+          a, b, c = 1, 2, 3
+          ^^^^^^^
+  - name: MultiWriteNode
+    fields:
+      - name: target
+        type: node
+        kind: MultiTargetNode
+      - name: operator_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents a write to a multi-target expression.
 
           a, b, c = 1, 2, 3
           ^^^^^^^^^^^^^^^^^

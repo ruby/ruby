@@ -3320,32 +3320,27 @@ yp_module_node_create(yp_parser_t *parser, yp_constant_id_list_t *locals, const 
     return node;
 }
 
-// Allocate a new MultiWriteNode node.
-static yp_multi_write_node_t *
-yp_multi_write_node_create(yp_parser_t *parser, const yp_token_t *operator, yp_node_t *value, const yp_location_t *lparen_loc, const yp_location_t *rparen_loc) {
-    yp_multi_write_node_t *node = YP_ALLOC_NODE(parser, yp_multi_write_node_t);
+// Allocate and initialize new MultiTargetNode node.
+static yp_multi_target_node_t *
+yp_multi_target_node_create(yp_parser_t *parser) {
+    yp_multi_target_node_t *node = YP_ALLOC_NODE(parser, yp_multi_target_node_t);
 
-    *node = (yp_multi_write_node_t) {
+    *node = (yp_multi_target_node_t) {
         {
-            .type = YP_MULTI_WRITE_NODE,
-            .location = {
-                .start = lparen_loc->start,
-                .end = value == NULL ? rparen_loc->end : value->location.end
-            },
+            .type = YP_MULTI_TARGET_NODE,
+            .location = { .start = NULL, .end = NULL }
         },
-        .operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
-        .value = value,
-        .lparen_loc = *lparen_loc,
-        .rparen_loc = *rparen_loc,
-        .targets = YP_EMPTY_NODE_LIST
+        .targets = YP_EMPTY_NODE_LIST,
+        .lparen_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .rparen_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
     };
 
     return node;
 }
 
-// Append a target to a MultiWriteNode node.
+// Append a target to a MultiTargetNode node.
 static void
-yp_multi_write_node_targets_append(yp_multi_write_node_t *node, yp_node_t *target) {
+yp_multi_target_node_targets_append(yp_multi_target_node_t *node, yp_node_t *target) {
     yp_node_list_append(&node->targets, target);
 
     if (node->base.location.start == NULL || (node->base.location.start > target->location.start)) {
@@ -3357,9 +3352,25 @@ yp_multi_write_node_targets_append(yp_multi_write_node_t *node, yp_node_t *targe
     }
 }
 
-static inline void
-yp_multi_write_node_operator_loc_set(yp_multi_write_node_t *node, const yp_token_t *operator) {
-    node->operator_loc = YP_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
+// Allocate a new MultiWriteNode node.
+static yp_multi_write_node_t *
+yp_multi_write_node_create(yp_parser_t *parser, yp_multi_target_node_t *target, const yp_token_t *operator, yp_node_t *value) {
+    yp_multi_write_node_t *node = YP_ALLOC_NODE(parser, yp_multi_write_node_t);
+
+    *node = (yp_multi_write_node_t) {
+        {
+            .type = YP_MULTI_WRITE_NODE,
+            .location = {
+                .start = target->base.location.start,
+                .end = value->location.end
+            }
+        },
+        .target = target,
+        .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
+        .value = value
+    };
+
+    return node;
 }
 
 // Allocate and initialize a new NextNode node.
@@ -8080,7 +8091,7 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
             assert(sizeof(yp_instance_variable_target_node_t) == sizeof(yp_instance_variable_read_node_t));
             target->type = YP_INSTANCE_VARIABLE_TARGET_NODE;
             return target;
-        case YP_MULTI_WRITE_NODE:
+        case YP_MULTI_TARGET_NODE:
             return target;
         case YP_SPLAT_NODE: {
             yp_splat_node_t *splat = (yp_splat_node_t *) target;
@@ -8089,13 +8100,10 @@ parse_target(yp_parser_t *parser, yp_node_t *target) {
                 splat->expression = parse_target(parser, splat->expression);
             }
 
-            yp_token_t operator = not_provided(parser);
-            yp_location_t location = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE;
+            yp_multi_target_node_t *multi_target = yp_multi_target_node_create(parser);
+            yp_multi_target_node_targets_append(multi_target, (yp_node_t *) splat);
 
-            yp_multi_write_node_t *multi_write = yp_multi_write_node_create(parser, &operator, NULL, &location, &location);
-            yp_multi_write_node_targets_append(multi_write, (yp_node_t *) splat);
-
-            return (yp_node_t *) multi_write;
+            return (yp_node_t *) multi_target;
         }
         case YP_CALL_NODE: {
             yp_call_node_t *call = (yp_call_node_t *) target;
@@ -8221,14 +8229,8 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
             yp_node_destroy(parser, target);
             return write_node;
         }
-        case YP_MULTI_WRITE_NODE: {
-            yp_multi_write_node_t *multi_write = (yp_multi_write_node_t *) target;
-            yp_multi_write_node_operator_loc_set(multi_write, operator);
-
-            multi_write->value = value;
-            multi_write->base.location.end = value->location.end;
-            return (yp_node_t *) multi_write;
-        }
+        case YP_MULTI_TARGET_NODE:
+            return (yp_node_t *) yp_multi_write_node_create(parser, (yp_multi_target_node_t *) target, operator, value);
         case YP_SPLAT_NODE: {
             yp_splat_node_t *splat = (yp_splat_node_t *) target;
 
@@ -8236,11 +8238,10 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
                 splat->expression = parse_write(parser, splat->expression, operator, value);
             }
 
-            yp_location_t location = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE;
-            yp_multi_write_node_t *multi_write = yp_multi_write_node_create(parser, operator, value, &location, &location);
-            yp_multi_write_node_targets_append(multi_write, (yp_node_t *) splat);
+            yp_multi_target_node_t *multi_target = yp_multi_target_node_create(parser);
+            yp_multi_target_node_targets_append(multi_target, (yp_node_t *) splat);
 
-            return (yp_node_t *) multi_write;
+            return (yp_node_t *) yp_multi_write_node_create(parser, multi_target, operator, value);
         }
         case YP_CALL_NODE: {
             yp_call_node_t *call = (yp_call_node_t *) target;
@@ -8371,11 +8372,9 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
         }
     }
 
-    yp_location_t lparen_loc = YP_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE;
-    yp_multi_write_node_t *result = yp_multi_write_node_create(parser, &operator, NULL, &lparen_loc, &lparen_loc);
-
+    yp_multi_target_node_t *result = yp_multi_target_node_create(parser);
     if (first_target != NULL) {
-        yp_multi_write_node_targets_append(result, first_target);
+        yp_multi_target_node_targets_append(result, first_target);
     }
 
     bool has_splat = false;
@@ -8400,7 +8399,7 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
                 }
 
                 yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &star_operator, name);
-                yp_multi_write_node_targets_append(result, splat);
+                yp_multi_target_node_targets_append(result, splat);
                 has_splat = true;
             } else if (accept(parser, YP_TOKEN_PARENTHESIS_LEFT)) {
                 // Here we have a parenthesized list of targets. We'll recurse down into
@@ -8414,39 +8413,29 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
                 expect(parser, YP_TOKEN_PARENTHESIS_RIGHT, YP_ERR_EXPECT_RPAREN_AFTER_MULTI);
                 yp_token_t rparen = parser->previous;
 
-                if (YP_NODE_TYPE_P(child_target, YP_MULTI_WRITE_NODE) && first_target == NULL && result->targets.size == 0) {
+                if (YP_NODE_TYPE_P(child_target, YP_MULTI_TARGET_NODE) && first_target == NULL && result->targets.size == 0) {
                     yp_node_destroy(parser, (yp_node_t *) result);
-                    result = (yp_multi_write_node_t *) child_target;
+                    result = (yp_multi_target_node_t *) child_target;
                     result->base.location.start = lparen.start;
                     result->base.location.end = rparen.end;
                     result->lparen_loc = YP_LOCATION_TOKEN_VALUE(&lparen);
                     result->rparen_loc = YP_LOCATION_TOKEN_VALUE(&rparen);
                 } else {
-                    yp_multi_write_node_t *target;
+                    yp_multi_target_node_t *target;
 
-                    if (YP_NODE_TYPE_P(child_target, YP_MULTI_WRITE_NODE)) {
-                        target = (yp_multi_write_node_t *) child_target;
-                        target->base.location.start = lparen.start;
-                        target->base.location.end = rparen.end;
-                        target->lparen_loc = YP_LOCATION_TOKEN_VALUE(&lparen);
-                        target->rparen_loc = YP_LOCATION_TOKEN_VALUE(&rparen);
+                    if (YP_NODE_TYPE_P(child_target, YP_MULTI_TARGET_NODE)) {
+                        target = (yp_multi_target_node_t *) child_target;
                     } else {
-                        yp_token_t operator = not_provided(parser);
-
-                        target = yp_multi_write_node_create(
-                            parser,
-                            &operator,
-                            NULL,
-                            &YP_LOCATION_TOKEN_VALUE(&lparen),
-                            &YP_LOCATION_TOKEN_VALUE(&rparen)
-                        );
-
-                        yp_multi_write_node_targets_append(target, child_target);
+                        target = yp_multi_target_node_create(parser);
+                        yp_multi_target_node_targets_append(target, child_target);
                     }
 
                     target->base.location.start = lparen.start;
                     target->base.location.end = rparen.end;
-                    yp_multi_write_node_targets_append(result, (yp_node_t *) target);
+                    target->lparen_loc = YP_LOCATION_TOKEN_VALUE(&lparen);
+                    target->rparen_loc = YP_LOCATION_TOKEN_VALUE(&rparen);
+
+                    yp_multi_target_node_targets_append(result, (yp_node_t *) target);
                 }
             } else {
                 if (!token_begins_expression_p(parser->current.type) && !match_type_p(parser, YP_TOKEN_USTAR)) {
@@ -8462,14 +8451,14 @@ parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t b
                     // We need to indicate this somehow in the tree, so we'll add an
                     // anonymous splat.
                     yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &parser->previous, NULL);
-                    yp_multi_write_node_targets_append(result, splat);
+                    yp_multi_target_node_targets_append(result, splat);
                     return (yp_node_t *) result;
                 }
 
                 yp_node_t *target = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
                 target = parse_target(parser, target);
 
-                yp_multi_write_node_targets_append(result, target);
+                yp_multi_target_node_targets_append(result, target);
             }
         } while (accept(parser, YP_TOKEN_COMMA));
     }
@@ -9681,7 +9670,7 @@ parse_conditional(yp_parser_t *parser, yp_context_t context) {
 // can be transformed into write targets.
 #define YP_CASE_WRITABLE YP_CLASS_VARIABLE_READ_NODE: case YP_CONSTANT_PATH_NODE: \
     case YP_CONSTANT_READ_NODE: case YP_GLOBAL_VARIABLE_READ_NODE: case YP_LOCAL_VARIABLE_READ_NODE: \
-    case YP_INSTANCE_VARIABLE_READ_NODE: case YP_MULTI_WRITE_NODE: case YP_BACK_REFERENCE_READ_NODE: \
+    case YP_INSTANCE_VARIABLE_READ_NODE: case YP_MULTI_TARGET_NODE: case YP_BACK_REFERENCE_READ_NODE: \
     case YP_NUMBERED_REFERENCE_READ_NODE
 
 // Parse a node that is part of a string. If the subsequent tokens cannot be
@@ -10956,29 +10945,27 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 yp_accepts_block_stack_pop(parser);
 
                 // If we have a single statement and are ending on a right parenthesis,
-                // then we need to check if this is possibly a multiple assignment node.
-                if (binding_power == YP_BINDING_POWER_STATEMENT && YP_NODE_TYPE_P(statement, YP_MULTI_WRITE_NODE)) {
-                    yp_multi_write_node_t *multi_statement = (yp_multi_write_node_t *) statement;
+                // then we need to check if this is possibly a multiple target node.
+                if (binding_power == YP_BINDING_POWER_STATEMENT && YP_NODE_TYPE_P(statement, YP_MULTI_TARGET_NODE)) {
+                    yp_node_t *target;
+                    yp_multi_target_node_t *multi_target = (yp_multi_target_node_t *) statement;
 
-                    if (multi_statement->value == NULL) {
-                        yp_location_t lparen_loc = YP_LOCATION_TOKEN_VALUE(&opening);
-                        yp_location_t rparen_loc = YP_LOCATION_TOKEN_VALUE(&parser->previous);
-                        yp_multi_write_node_t *multi_write;
+                    yp_location_t lparen_loc = YP_LOCATION_TOKEN_VALUE(&opening);
+                    yp_location_t rparen_loc = YP_LOCATION_TOKEN_VALUE(&parser->previous);
 
-                        if (multi_statement->lparen_loc.start == NULL) {
-                            multi_write = (yp_multi_write_node_t *) statement;
-                            multi_write->base.location.start = lparen_loc.start;
-                            multi_write->base.location.end = rparen_loc.end;
-                            multi_write->lparen_loc = lparen_loc;
-                            multi_write->rparen_loc = rparen_loc;
-                        } else {
-                            yp_token_t operator = not_provided(parser);
-                            multi_write = yp_multi_write_node_create(parser, &operator, NULL, &lparen_loc, &rparen_loc);
-                            yp_multi_write_node_targets_append(multi_write, statement);
-                        }
-
-                        return parse_targets(parser, (yp_node_t *) multi_write, YP_BINDING_POWER_INDEX);
+                    if (multi_target->lparen_loc.start == NULL) {
+                        multi_target->base.location.start = lparen_loc.start;
+                        multi_target->base.location.end = rparen_loc.end;
+                        multi_target->lparen_loc = lparen_loc;
+                        multi_target->rparen_loc = rparen_loc;
+                        target = (yp_node_t *) multi_target;
+                    } else {
+                        yp_multi_target_node_t *parent_target = yp_multi_target_node_create(parser);
+                        yp_multi_target_node_targets_append(parent_target, (yp_node_t *) multi_target);
+                        target = (yp_node_t *) parent_target;
                     }
+
+                    return parse_targets(parser, target, YP_BINDING_POWER_INDEX);
                 }
 
                 // If we have a single statement and are ending on a right parenthesis

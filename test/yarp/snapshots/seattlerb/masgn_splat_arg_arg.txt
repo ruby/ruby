@@ -2,19 +2,19 @@ ProgramNode(0...12)(
   [:a, :b, :c],
   StatementsNode(0...12)(
     [MultiWriteNode(0...12)(
-       [MultiWriteNode(0...2)(
-          [SplatNode(0...2)((0...1), LocalVariableTargetNode(1...2)(:a, 0))],
-          nil,
-          nil,
-          nil,
-          nil
-        ),
-        LocalVariableTargetNode(4...5)(:b, 0),
-        LocalVariableTargetNode(7...8)(:c, 0)],
+       MultiTargetNode(0...8)(
+         [MultiTargetNode(0...2)(
+            [SplatNode(0...2)((0...1), LocalVariableTargetNode(1...2)(:a, 0))],
+            nil,
+            nil
+          ),
+          LocalVariableTargetNode(4...5)(:b, 0),
+          LocalVariableTargetNode(7...8)(:c, 0)],
+         nil,
+         nil
+       ),
        (9...10),
-       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "d"),
-       nil,
-       nil
+       CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "d")
      )]
   )
 )
