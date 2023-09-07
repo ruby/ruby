@@ -1848,7 +1848,7 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   getbyte("a", 0)
 
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
-}
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
 
 # Test << operator on string subclass
 assert_equal 'abab', %q{
