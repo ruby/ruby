@@ -2,16 +2,14 @@ ProgramNode(1...9)(
   [:a, :b],
   StatementsNode(1...9)(
     [MultiWriteNode(1...9)(
-       MultiTargetNode(1...6)(
-         [MultiTargetNode(1...6)(
-            [LocalVariableTargetNode(2...3)(:a, 0),
-             LocalVariableTargetNode(4...5)(:b, 0)],
-            (1...2),
-            (5...6)
-          )],
-         nil,
-         nil
-       ),
+       [MultiTargetNode(1...6)(
+          [LocalVariableTargetNode(2...3)(:a, 0),
+           LocalVariableTargetNode(4...5)(:b, 0)],
+          (1...2),
+          (5...6)
+        )],
+       nil,
+       nil,
        (7...8),
        CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "c")
      )]

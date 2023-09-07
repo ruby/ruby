@@ -3365,10 +3365,16 @@ yp_multi_write_node_create(yp_parser_t *parser, yp_multi_target_node_t *target, 
                 .end = value->location.end
             }
         },
-        .target = target,
+        .targets = target->targets,
+        .lparen_loc = target->lparen_loc,
+        .rparen_loc = target->rparen_loc,
         .operator_loc = YP_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
+
+    // Explicitly do not call yp_node_destroy here because we want to keep
+    // around all of the information within the MultiWriteNode node.
+    free(target);
 
     return node;
 }

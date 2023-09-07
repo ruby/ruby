@@ -18,12 +18,10 @@ ProgramNode(0...56)(
        ParenthesesNode(38...55)(
          StatementsNode(39...54)(
            [MultiWriteNode(39...54)(
-              MultiTargetNode(39...45)(
-                [LocalVariableTargetNode(40...41)(:a, 0),
-                 LocalVariableTargetNode(43...44)(:b, 0)],
-                (39...40),
-                (44...45)
-              ),
+              [LocalVariableTargetNode(40...41)(:a, 0),
+               LocalVariableTargetNode(43...44)(:b, 0)],
+              (39...40),
+              (44...45),
               (46...47),
               ArrayNode(48...54)(
                 [IntegerNode(49...50)(), IntegerNode(52...53)()],

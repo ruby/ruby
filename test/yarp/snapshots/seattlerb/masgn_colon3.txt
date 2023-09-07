@@ -2,20 +2,18 @@ ProgramNode(0...15)(
   [],
   StatementsNode(0...15)(
     [MultiWriteNode(0...15)(
-       MultiTargetNode(0...8)(
-         [ConstantPathTargetNode(0...3)(
-            nil,
-            ConstantReadNode(2...3)(:A),
-            (0...2)
-          ),
-          ConstantPathTargetNode(5...8)(
-            nil,
-            ConstantReadNode(7...8)(:B),
-            (5...7)
-          )],
-         nil,
-         nil
-       ),
+       [ConstantPathTargetNode(0...3)(
+          nil,
+          ConstantReadNode(2...3)(:A),
+          (0...2)
+        ),
+        ConstantPathTargetNode(5...8)(
+          nil,
+          ConstantReadNode(7...8)(:B),
+          (5...7)
+        )],
+       nil,
+       nil,
        (9...10),
        ArrayNode(11...15)(
          [IntegerNode(11...12)(), IntegerNode(14...15)()],

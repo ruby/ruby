@@ -317,52 +317,50 @@ ProgramNode(0...511)(
        "[]="
      ),
      MultiWriteNode(191...212)(
-       MultiTargetNode(191...205)(
-         [CallNode(191...197)(
-            CallNode(191...194)(
-              nil,
-              nil,
-              (191...194),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "foo"
-            ),
+       [CallNode(191...197)(
+          CallNode(191...194)(
             nil,
-            (194...197),
-            (194...195),
-            ArgumentsNode(195...196)([IntegerNode(195...196)()]),
-            (196...197),
             nil,
-            0,
-            "[]="
+            (191...194),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "foo"
           ),
-          CallNode(199...205)(
-            CallNode(199...202)(
-              nil,
-              nil,
-              (199...202),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "bar"
-            ),
+          nil,
+          (194...197),
+          (194...195),
+          ArgumentsNode(195...196)([IntegerNode(195...196)()]),
+          (196...197),
+          nil,
+          0,
+          "[]="
+        ),
+        CallNode(199...205)(
+          CallNode(199...202)(
             nil,
-            (202...205),
-            (202...203),
-            ArgumentsNode(203...204)([IntegerNode(203...204)()]),
-            (204...205),
             nil,
-            0,
-            "[]="
-          )],
-         nil,
-         nil
-       ),
+            (199...202),
+            nil,
+            nil,
+            nil,
+            nil,
+            2,
+            "bar"
+          ),
+          nil,
+          (202...205),
+          (202...203),
+          ArgumentsNode(203...204)([IntegerNode(203...204)()]),
+          (204...205),
+          nil,
+          0,
+          "[]="
+        )],
+       nil,
+       nil,
        (206...207),
        ArrayNode(208...212)(
          [IntegerNode(208...209)(), IntegerNode(211...212)()],

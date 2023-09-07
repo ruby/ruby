@@ -223,7 +223,7 @@ module YARP
 
     def test_ClassVariableTargetNode
       assert_location(ClassVariableTargetNode, "@@foo, @@bar = baz", 0...5) do |node|
-        node.target.targets.first
+        node.targets.first
       end
     end
 
@@ -251,7 +251,7 @@ module YARP
 
     def test_ConstantPathTargetNode
       assert_location(ConstantPathTargetNode, "::Foo, ::Bar = baz", 0...5) do |node|
-        node.target.targets.first
+        node.targets.first
       end
     end
 
@@ -280,7 +280,7 @@ module YARP
 
     def test_ConstantTargetNode
       assert_location(ConstantTargetNode, "Foo, Bar = baz", 0...3) do |node|
-        node.target.targets.first
+        node.targets.first
       end
     end
 
@@ -378,7 +378,7 @@ module YARP
 
     def test_GlobalVariableTargetNode
       assert_location(GlobalVariableTargetNode, "$foo, $bar = baz", 0...4) do |node|
-        node.target.targets.first
+        node.targets.first
       end
     end
 
@@ -430,7 +430,7 @@ module YARP
 
     def test_InstanceVariableTargetNode
       assert_location(InstanceVariableTargetNode, "@foo, @bar = baz", 0...4) do |node|
-        node.target.targets.first
+        node.targets.first
       end
     end
 
@@ -517,7 +517,7 @@ module YARP
 
     def test_LocalVariableTargetNode
       assert_location(LocalVariableTargetNode, "foo, bar = baz", 0...3) do |node|
-        node.target.targets.first
+        node.targets.first
       end
     end
 
@@ -539,7 +539,7 @@ module YARP
 
     def test_MultiTargetNode
       assert_location(MultiTargetNode, "for foo, bar in baz do end", 4...12, &:index)
-      assert_location(MultiTargetNode, "foo, bar = baz", 0...8, &:target)
+      assert_location(MultiTargetNode, "foo, (bar, baz) = qux", 5...15) { |node| node.targets.last }
     end
 
     def test_MultiWriteNode
@@ -695,7 +695,7 @@ module YARP
     end
 
     def test_SplatNode
-      assert_location(SplatNode, "*foo = bar", 0...4) { |node| node.target.targets.first }
+      assert_location(SplatNode, "*foo = bar", 0...4) { |node| node.targets.first }
     end
 
     def test_StatementsNode

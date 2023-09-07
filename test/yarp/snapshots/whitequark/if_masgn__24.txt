@@ -6,12 +6,10 @@ ProgramNode(0...20)(
        ParenthesesNode(3...15)(
          StatementsNode(4...14)(
            [MultiWriteNode(4...14)(
-              MultiTargetNode(4...8)(
-                [LocalVariableTargetNode(4...5)(:a, 0),
-                 LocalVariableTargetNode(7...8)(:b, 0)],
-                nil,
-                nil
-              ),
+              [LocalVariableTargetNode(4...5)(:a, 0),
+               LocalVariableTargetNode(7...8)(:b, 0)],
+              nil,
+              nil,
               (9...10),
               CallNode(11...14)(
                 nil,

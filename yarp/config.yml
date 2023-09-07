@@ -1766,9 +1766,12 @@ nodes:
           ^^^^^^^
   - name: MultiWriteNode
     fields:
-      - name: target
-        type: node
-        kind: MultiTargetNode
+      - name: targets
+        type: node[]
+      - name: lparen_loc
+        type: location?
+      - name: rparen_loc
+        type: location?
       - name: operator_loc
         type: location
       - name: value
