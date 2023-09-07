@@ -290,6 +290,28 @@ delete_from_waitq(VALUE value)
     return Qnil;
 }
 
+static void
+do_mutex_lock_check_interrupts(int interruptible_p, rb_fiber_t *fiber, rb_mutex_t *mutex, rb_thread_t *thread)
+{
+    // We extracted this function because we suspect there can be a codegen bug
+    // on ppc64le and moving this code to a separate function seems to fix the
+    // problem, at least in my tests.
+    if (interruptible_p) {
+        /* release mutex before checking for interrupts...as interrupt checking
+         * code might call rb_raise() */
+        if (mutex->fiber == fiber) {
+            mutex->fiber = 0;
+        }
+
+        RUBY_VM_CHECK_INTS_BLOCKING(thread->ec); /* may release mutex */
+
+        if (!mutex->fiber) {
+            mutex->fiber = fiber;
+        }
+    }
+}
+
+
 static VALUE
 do_mutex_lock(VALUE self, int interruptible_p)
 {
@@ -378,15 +400,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 rb_ractor_sleeper_threads_dec(th->ractor);
             }
 
-            if (interruptible_p) {
-                /* release mutex before checking for interrupts...as interrupt checking
-                 * code might call rb_raise() */
-                if (mutex->fiber == fiber) mutex->fiber = 0;
-                RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
-                if (!mutex->fiber) {
-                    mutex->fiber = fiber;
-                }
-            }
+            do_mutex_lock_check_interrupts(interruptible_p, fiber, mutex, th);
         }
 
         if (mutex->fiber == fiber) mutex_locked(th, self);
