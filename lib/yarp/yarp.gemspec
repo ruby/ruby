@@ -68,6 +68,8 @@ Gem::Specification.new do |spec|
     "lib/yarp/pattern.rb",
     "lib/yarp/ripper_compat.rb",
     "lib/yarp/serialize.rb",
+    "lib/yarp/parse_result/comments.rb",
+    "lib/yarp/parse_result/newlines.rb",
     "src/diagnostic.c",
     "src/enc/yp_big5.c",
     "src/enc/yp_euc_jp.c",
