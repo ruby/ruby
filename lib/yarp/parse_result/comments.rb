@@ -100,9 +100,7 @@ module YARP
         comment_end = comment.location.end_offset
 
         targets = []
-        node.deconstruct_keys(nil).each do |key, value|
-          next if key == :location
-
+        node.comment_targets.map do |value|
           case value
           when StatementsNode
             targets.concat(value.body.map { |node| NodeTarget.new(node) })
@@ -110,8 +108,6 @@ module YARP
             targets << NodeTarget.new(value)
           when Location
             targets << LocationTarget.new(value)
-          when Array
-            targets.concat(value.map { |node| NodeTarget.new(node) }) if value.first.is_a?(Node)
           end
         end
 
@@ -165,6 +161,8 @@ module YARP
         [preceding, NodeTarget.new(node), following]
       end
     end
+
+    private_constant :Comments
 
     # Attach the list of comments to their respective locations in the tree.
     def attach_comments!

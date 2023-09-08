@@ -48,6 +48,16 @@ module YARP
       }.compact.join(", ") %>]
     end
 
+    # def comment_targets: () -> Array[Node | Location]
+    def comment_targets
+      [<%= node.fields.map { |field|
+        case field
+        when YARP::NodeField, YARP::LocationField then field.name
+        when YARP::OptionalNodeField, YARP::NodeListField, YARP::OptionalLocationField then "*#{field.name}"
+        end
+      }.compact.join(", ") %>]
+    end
+
     # def copy: (**params) -> <%= node.name %>
     def copy(**params)
       <%= node.name %>.new(

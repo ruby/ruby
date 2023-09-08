@@ -17,7 +17,7 @@ module YARP
     # Note that the logic in this file should be kept in sync with the Java
     # MarkNewlinesVisitor, since that visitor is responsible for marking the
     # newlines for JRuby/TruffleRuby.
-    class MarkNewlinesVisitor < Visitor
+    class Newlines < Visitor
       def initialize(newline_marked)
         @newline_marked = newline_marked
       end
@@ -50,12 +50,11 @@ module YARP
       end
     end
 
-    private_constant :MarkNewlinesVisitor
+    private_constant :Newlines
 
     # Walk the tree and mark nodes that are on a new line.
     def mark_newlines!
-      newline_marked = Array.new(1 + source.offsets.size, false)
-      value.accept(MarkNewlinesVisitor.new(newline_marked))
+      value.accept(Newlines.new(Array.new(1 + source.offsets.size, false)))
     end
   end
 end
