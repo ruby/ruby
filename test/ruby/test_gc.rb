@@ -303,7 +303,8 @@ class TestGc < Test::Unit::TestCase
       # Create some objects and place it in a WeakMap
       wmap = ObjectSpace::WeakMap.new
       ary = Array.new(count)
-      count.times do |i|
+      enum = count.times
+      enum.each.with_index do |i|
         obj = Object.new
         ary[i] = obj
         wmap[obj] = nil
