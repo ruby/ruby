@@ -85,9 +85,20 @@ module YARP
         # and explicitly set the external encoding to UTF-8 to override the binmode default.
         source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
-        # Make sure that it can be correctly parsed by Ripper. If it can't, then we have a fixture
-        # that is invalid Ruby.
-        refute_nil(Ripper.sexp_raw(source), "Ripper failed to parse") if ripper_should_parse
+        if ripper_should_parse
+          src = source
+
+          case relative
+          when /break|next|redo|if|unless|rescue|control|keywords/
+            # Uncaught syntax errors: Invalid break, Invalid next
+            src = "->{\n#{src}\n}"
+            ripper_should_match = false
+          end
+
+          # Make sure that it can be correctly parsed by Ripper. If it can't, then we have a fixture
+          # that is invalid Ruby.
+          refute_nil(Ripper.sexp_raw(src), "Ripper failed to parse")
+        end
 
         # Next, assert that there were no errors during parsing.
         result = YARP.parse(source, relative)
