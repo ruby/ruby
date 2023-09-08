@@ -5091,8 +5091,6 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         const NODE *ln = lhsn->nd_head;
         switch (nd_type(ln)) {
           case NODE_LASGN:
-            MEMORY(ln->nd_vid);
-            break;
           case NODE_DASGN:
           case NODE_IASGN:
           case NODE_CVASGN:
