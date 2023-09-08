@@ -1832,6 +1832,24 @@ assert_equal 'true', %q{
   jittable_method
 }
 
+# test getbyte on string class
+assert_equal '[97, :nil, 97, :nil, :raised]', %q{
+  def getbyte(s, i)
+   byte = begin
+    s.getbyte(i)
+   rescue TypeError
+    :raised
+   end
+
+   byte || :nil
+  end
+
+  getbyte("a", 0)
+  getbyte("a", 0)
+
+  [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
 # Test << operator on string subclass
 assert_equal 'abab', %q{
   class MyString < String; end
