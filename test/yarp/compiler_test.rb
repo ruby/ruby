@@ -15,30 +15,35 @@ module YARP
     end
 
     def test_FloatNode
-      assert_equal 1.0, compile("1.0")
-      assert_equal 1.0e0, compile("1.0e0")
-      assert_equal(+1.0e+0, compile("+1.0e+0"))
-      assert_equal(-1.0e-0, compile("-1.0e-0"))
+      assert_equal 1.2, compile("1.2")
+      assert_equal 1.2e3, compile("1.2e3")
+      assert_equal(+1.2e+3, compile("+1.2e+3"))
+      assert_equal(-1.2e-3, compile("-1.2e-3"))
     end
 
     def test_ImaginaryNode
-      # assert_equal 1i, compile("1i")
-      # assert_equal +1.0i, compile("+1.0i")
-      # assert_equal 1ri, compile("1ri")
+      assert_equal 1i, compile("1i")
+      assert_equal +1.0i, compile("+1.0i")
+      assert_equal 1ri, compile("1ri")
     end
 
     def test_IntegerNode
       assert_equal 1, compile("1")
       assert_equal(+1, compile("+1"))
       assert_equal(-1, compile("-1"))
-      # assert_equal 0x10, compile("0x10")
-      # assert_equal 0b10, compile("0b10")
-      # assert_equal 0o10, compile("0o10")
-      # assert_equal 010, compile("010")
+      assert_equal 0x10, compile("0x10")
+      assert_equal 0b10, compile("0b10")
+      assert_equal 0o10, compile("0o10")
+      assert_equal 010, compile("010")
     end
 
     def test_NilNode
       assert_nil compile("nil")
+    end
+
+    def test_RationalNode
+      assert_equal 1.2r, compile("1.2r")
+      assert_equal +1.2r, compile("+1.2r")
     end
 
     def test_SelfNode

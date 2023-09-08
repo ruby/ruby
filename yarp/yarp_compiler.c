@@ -18,7 +18,19 @@ yp_iseq_new_with_opt(yp_scope_node_t *node, yp_parser_t *parser, VALUE name, VAL
                      enum rb_iseq_type type, const rb_compile_option_t *option);
 
 static VALUE
-parse_number(const yp_node_t *node) {
+parse_integer(const yp_node_t *node)
+{
+    const char *start = (const char *)node->location.start;
+    const char *end = (const char *)node->location.end;
+    size_t length = end - start;
+    VALUE number = rb_int_parse_cstr(start, length, NULL, NULL, -10, RB_INT_PARSE_DEFAULT);
+
+    return number;
+}
+
+static VALUE
+parse_float(const yp_node_t *node)
+{
     const uint8_t *start = node->location.start;
     const uint8_t *end = node->location.end;
     size_t length = end - start;
@@ -27,19 +39,79 @@ parse_number(const yp_node_t *node) {
     memcpy(buffer, start, length);
 
     buffer[length] = '\0';
-    VALUE number = rb_cstr_to_inum(buffer, -10, Qfalse);
+    VALUE number = DBL2NUM(rb_cstr_to_dbl(buffer, 0));
 
     free(buffer);
     return number;
 }
 
+static VALUE
+parse_rational(const yp_node_t *node)
+{
+    const uint8_t *start = node->location.start;
+    const uint8_t *end = node->location.end - 1;
+    size_t length = end - start;
+
+    char *buffer = malloc(length + 1);
+    memcpy(buffer, start, length);
+
+    buffer[length] = '\0';
+
+    VALUE res;
+    if (YP_NODE_TYPE_P(((yp_rational_node_t *)node)->numeric, YP_NODE_FLOAT_NODE)) {
+        char *decimal = memchr(buffer, '.', length);
+        RUBY_ASSERT(decimal);
+        size_t seen_decimal = decimal - buffer;
+        size_t fraclen = length - seen_decimal - 1;
+        memmove(decimal, decimal + 1, fraclen + 1);
+
+        VALUE v = rb_cstr_to_inum(buffer, 10, false);
+
+        res = rb_rational_new(v, rb_int_positive_pow(10, fraclen));
+    }
+    else {
+        RUBY_ASSERT(YP_NODE_TYPE_P(((yp_rational_node_t *)node)->numeric, YP_NODE_INTEGER_NODE));
+        VALUE number = rb_cstr_to_inum(buffer, 10, false);
+        res = rb_rational_raw(number, INT2FIX(1));
+    }
+
+    free(buffer);
+    return res;
+}
+
+static VALUE
+parse_imaginary(yp_imaginary_node_t *node)
+{
+    VALUE imaginary_part;
+    switch (YP_NODE_TYPE(node->numeric)) {
+      case YP_NODE_FLOAT_NODE: {
+          imaginary_part = parse_float(node->numeric);
+          break;
+      }
+      case YP_NODE_INTEGER_NODE: {
+          imaginary_part = parse_integer(node->numeric);
+          break;
+      }
+      case YP_NODE_RATIONAL_NODE: {
+          imaginary_part = parse_rational(node->numeric);
+          break;
+      }
+      default:
+        rb_bug("Unexpected numeric type on imaginary number");
+    }
+
+    return rb_complex_raw(INT2FIX(0), imaginary_part);
+}
+
 static inline VALUE
-parse_string(yp_string_t *string) {
+parse_string(yp_string_t *string)
+{
     return rb_str_new((const char *) yp_string_source(string), yp_string_length(string));
 }
 
 static inline ID
-parse_symbol(const uint8_t *start, const uint8_t *end) {
+parse_symbol(const uint8_t *start, const uint8_t *end)
+{
     return rb_intern2((const char *) start, end - start);
 }
 
@@ -938,7 +1010,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_defined_node_t *defined_node = (yp_defined_node_t *)node;
           // TODO: Correct defined_type
           enum defined_type dtype = DEFINED_CONST;
-          VALUE sym = parse_number(defined_node->value);
+          VALUE sym = parse_integer(defined_node->value);
 
           ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(dtype), sym, rb_iseq_defined_string(dtype));
           return;
@@ -1012,7 +1084,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_FLOAT_NODE: {
           if (!popped) {
-              ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_float(node));
           }
           return;
       }
@@ -1162,7 +1234,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_IMAGINARY_NODE: {
           if (!popped) {
-              ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_imaginary((yp_imaginary_node_t *)node));
           }
           return;
       }
@@ -1290,7 +1362,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_INTEGER_NODE: {
           if (!popped) {
-              ADD_INSN1(ret, &dummy_line_node, putobject, parse_number(node));
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_integer(node));
           }
           return;
       }
@@ -1621,8 +1693,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
                   yp_node_t *left = range_node->left;
                   yp_node_t *right = range_node->right;
                   VALUE val = rb_range_new(
-                          left && left->type == YP_NODE_INTEGER_NODE ? parse_number(left) : Qnil,
-                          right && right->type == YP_NODE_INTEGER_NODE ? parse_number(right) : Qnil,
+                          left && YP_NODE_TYPE_P(left, YP_NODE_INTEGER_NODE) ? parse_integer(left) : Qnil,
+                          right && YP_NODE_TYPE_P(right, YP_NODE_INTEGER_NODE) ? parse_integer(right) : Qnil,
                           exclusive
                           );
                   ADD_INSN1(ret, &dummy_line_node, putobject, val);
@@ -1645,6 +1717,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               if (!popped) {
                   ADD_INSN1(ret, &dummy_line_node, newrange, INT2FIX(exclusive));
               }
+          }
+          return;
+      }
+      case YP_NODE_RATIONAL_NODE: {
+          if (!popped) {
+              ADD_INSN1(ret, &dummy_line_node, putobject, parse_rational(node));
           }
           return;
       }
