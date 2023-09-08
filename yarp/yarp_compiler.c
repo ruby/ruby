@@ -52,13 +52,13 @@ parse_rational(const yp_node_t *node)
     const uint8_t *end = node->location.end - 1;
     size_t length = end - start;
 
-    char *buffer = malloc(length + 1);
-    memcpy(buffer, start, length);
-
-    buffer[length] = '\0';
-
     VALUE res;
     if (YP_NODE_TYPE_P(((yp_rational_node_t *)node)->numeric, YP_NODE_FLOAT_NODE)) {
+        char *buffer = malloc(length + 1);
+        memcpy(buffer, start, length);
+
+        buffer[length] = '\0';
+
         char *decimal = memchr(buffer, '.', length);
         RUBY_ASSERT(decimal);
         size_t seen_decimal = decimal - buffer;
@@ -66,16 +66,16 @@ parse_rational(const yp_node_t *node)
         memmove(decimal, decimal + 1, fraclen + 1);
 
         VALUE v = rb_cstr_to_inum(buffer, 10, false);
-
         res = rb_rational_new(v, rb_int_positive_pow(10, fraclen));
+
+        free(buffer);
     }
     else {
         RUBY_ASSERT(YP_NODE_TYPE_P(((yp_rational_node_t *)node)->numeric, YP_NODE_INTEGER_NODE));
-        VALUE number = rb_cstr_to_inum(buffer, 10, false);
+        VALUE number = rb_int_parse_cstr((const char *)start, length, NULL, NULL, -10, RB_INT_PARSE_DEFAULT);
         res = rb_rational_raw(number, INT2FIX(1));
     }
 
-    free(buffer);
     return res;
 }
 
