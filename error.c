@@ -205,7 +205,6 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
  *   deprecation warnings
  *   * assignment of non-nil value to <code>$,</code> and <code>$;</code>
  *   * keyword arguments
- *   * proc/lambda without block
  *   etc.
  *
  * +:experimental+ ::
