@@ -358,10 +358,6 @@ yp_interpolated_node_compile(yp_node_list_t parts, rb_iseq_t *iseq, NODE dummy_l
                 ADD_INSN(ret, &dummy_line_node, anytostring);
             }
         }
-
-        if (parts_size > 1) {
-            ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(parts_size)));
-        }
     }
     else {
         ADD_INSN(ret, &dummy_line_node, putnil);
@@ -1298,14 +1294,33 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
           return;
       }
+      case YP_NODE_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+          yp_interpolated_regular_expression_node_t *interp_regular_expression_node= (yp_interpolated_regular_expression_node_t *) node;
+          yp_interpolated_node_compile(interp_regular_expression_node->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
+          if (interp_regular_expression_node->parts.size > 1) {
+              ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(0), INT2FIX((int)(interp_regular_expression_node->parts.size)));
+          }
+
+          return;
+      }
       case YP_NODE_INTERPOLATED_STRING_NODE: {
           yp_interpolated_string_node_t *interp_string_node = (yp_interpolated_string_node_t *) node;
           yp_interpolated_node_compile(interp_string_node->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
+
+          size_t parts_size = interp_string_node->parts.size;
+          if (parts_size > 1) {
+              ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(parts_size)));
+          }
           return;
       }
       case YP_NODE_INTERPOLATED_SYMBOL_NODE: {
           yp_interpolated_symbol_node_t *interp_symbol_node = (yp_interpolated_symbol_node_t *) node;
           yp_interpolated_node_compile(interp_symbol_node->parts, iseq, dummy_line_node, ret, src, popped, compile_context);
+
+          size_t parts_size = interp_symbol_node->parts.size;
+          if (parts_size > 1) {
+              ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(parts_size)));
+          }
 
           if (!popped) {
               ADD_INSN(ret, &dummy_line_node, intern);
@@ -1320,6 +1335,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           yp_interpolated_x_string_node_t *interp_x_string_node = (yp_interpolated_x_string_node_t *) node;
           ADD_INSN(ret, &dummy_line_node, putself);
           yp_interpolated_node_compile(interp_x_string_node->parts, iseq, dummy_line_node, ret, src, false, compile_context);
+
+          size_t parts_size = interp_x_string_node->parts.size;
+          if (parts_size > 1) {
+              ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX((int)(parts_size)));
+          }
+
 
           ADD_SEND_WITH_FLAG(ret, &dummy_line_node, rb_intern("`"), INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
           if (popped) {
@@ -1629,6 +1650,16 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       }
       case YP_NODE_REDO_NODE: {
           ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
+          return;
+      }
+      case YP_NODE_REGULAR_EXPRESSION_NODE: {
+          if (!popped) {
+              yp_regular_expression_node_t *regular_expression_node = (yp_regular_expression_node_t *) node;
+              VALUE regex_str = parse_string(&regular_expression_node->unescaped);
+              // TODO: Replace 0 with regex options
+              VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), 0);
+              ADD_INSN1(ret, &dummy_line_node, putobject, regex);
+          }
           return;
       }
       case YP_NODE_RETURN_NODE: {

@@ -168,6 +168,12 @@ module YARP
       assert_equal "1", compile('$yct = 1; "#$yct"')
     end
 
+    def test_InterpolatedRegularExpressionNode
+      assert_equal /1 1 1/, compile('$yct = 1; /1 #$yct 1/')
+      assert_equal /1 3 1/, compile('/1 #{1 + 2} 1/')
+      assert_equal /1 2 3 1/, compile('/1 #{"2"} #{1 + 2} 1/')
+    end
+
     def test_InterpolatedStringNode
       assert_equal "1 1 1", compile('$yct = 1; "1 #$yct 1"')
       assert_equal "1 3 1", compile('"1 #{1 + 2} 1"')
@@ -181,6 +187,10 @@ module YARP
     def test_InterpolatedXStringNode
       assert_equal "1\n", compile('`echo #{1}`')
       assert_equal "100", compile('`printf "100"`')
+    end
+
+    def test_RegularExpressionNode
+      assert_equal /yct/, compile('/yct/')
     end
 
     def test_StringConcatNode
