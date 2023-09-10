@@ -1976,7 +1976,7 @@ rb_f_owner(VALUE _)
 {
     rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
     if (!prev_cfp) return Qnil;
-    rb_callable_method_entry_t *me = rb_vm_frame_method_entry(prev_cfp);
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(prev_cfp);
     return me ? me->owner : Qnil;
 }
 
