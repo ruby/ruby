@@ -1467,8 +1467,8 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning
-PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *fmt, ...), 2, 3);
-# define compile_error parser_compile_error
+PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const rb_code_location_t *loc, const char *fmt, ...), 3, 4);
+# define compile_error(p, ...) parser_compile_error(p, NULL, __VA_ARGS__)
 #endif
 
 static NODE *
@@ -6683,7 +6683,7 @@ parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 }
 
 static int
-parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
+parser_yyerror(struct parser_params *p, const rb_code_location_t *yylloc, const char *msg)
 {
 #if 0
     YYLTYPE current;
@@ -6696,7 +6696,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
         yylloc = 0;
     }
 #endif
-    compile_error(p, "%s", msg);
+    parser_compile_error(p, yylloc, "%s", msg);
     parser_show_error_line(p, yylloc);
     return 0;
 }
@@ -14487,9 +14487,19 @@ rb_parser_printf(struct parser_params *p, const char *fmt, ...)
 }
 
 static void
-parser_compile_error(struct parser_params *p, const char *fmt, ...)
+parser_compile_error(struct parser_params *p, const rb_code_location_t *loc, const char *fmt, ...)
 {
     va_list ap;
+    int lineno, column;
+
+    if (loc) {
+        lineno = loc->end_pos.lineno;
+        column = loc->end_pos.column;
+    }
+    else {
+        lineno = p->ruby_sourceline;
+        column = rb_long2int(p->lex.pcur - p->lex.pbeg);
+    }
 
     rb_io_flush(p->debug_output);
     p->error_p = 1;
@@ -14497,8 +14507,7 @@ parser_compile_error(struct parser_params *p, const char *fmt, ...)
     p->error_buffer =
         rb_syntax_error_append(p->error_buffer,
                                p->ruby_sourcefile_string,
-                               p->ruby_sourceline,
-                               rb_long2int(p->lex.pcur - p->lex.pbeg),
+                               lineno, column,
                                p->enc, fmt, ap);
     va_end(ap);
 }
