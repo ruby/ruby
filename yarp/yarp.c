@@ -11806,12 +11806,12 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     name = parser->previous;
                     break;
                 case YP_TOKEN_IDENTIFIER: {
-                    yp_parser_scope_push(parser, true);
                     parser_lex(parser);
 
                     if (match_any_type_p(parser, 2, YP_TOKEN_DOT, YP_TOKEN_COLON_COLON)) {
                         receiver = parse_variable_call(parser);
 
+                        yp_parser_scope_push(parser, true);
                         lex_state_set(parser, YP_LEX_STATE_FNAME);
                         parser_lex(parser);
 
@@ -11822,6 +11822,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                             yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_DEF_NAME_AFTER_RECEIVER);
                         }
                     } else {
+                        yp_parser_scope_push(parser, true);
                         name = parser->previous;
                     }
 

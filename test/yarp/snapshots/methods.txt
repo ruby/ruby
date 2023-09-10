@@ -1,8 +1,8 @@
-@ ProgramNode (location: (0...1194))
-├── locals: [:a, :c]
+@ ProgramNode (location: (0...1220))
+├── locals: [:a, :c, :foo]
 └── statements:
-    @ StatementsNode (location: (0...1194))
-    └── body: (length: 60)
+    @ StatementsNode (location: (0...1220))
+    └── body: (length: 62)
         ├── @ DefNode (location: (0...23))
         │   ├── name: :foo
         │   ├── name_loc: (4...7) = "foo"
@@ -1584,32 +1584,56 @@
         │   ├── rparen_loc: (1147...1148) = ")"
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (1164...1167) = "end"
-        └── @ DefNode (location: (1169...1194))
-            ├── name: :foo
-            ├── name_loc: (1173...1176) = "foo"
-            ├── receiver: ∅
-            ├── parameters:
-            │   @ ParametersNode (location: (1177...1189))
-            │   ├── requireds: (length: 4)
-            │   │   ├── @ RequiredParameterNode (location: (1177...1179))
-            │   │   │   └── name: :_a
-            │   │   ├── @ RequiredParameterNode (location: (1181...1183))
-            │   │   │   └── name: :_a
-            │   │   ├── @ RequiredParameterNode (location: (1185...1186))
-            │   │   │   └── name: :b
-            │   │   └── @ RequiredParameterNode (location: (1188...1189))
-            │   │       └── name: :c
-            │   ├── optionals: (length: 0)
-            │   ├── rest: ∅
-            │   ├── posts: (length: 0)
-            │   ├── keywords: (length: 0)
-            │   ├── keyword_rest: ∅
-            │   └── block: ∅
+        ├── @ DefNode (location: (1169...1194))
+        │   ├── name: :foo
+        │   ├── name_loc: (1173...1176) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (1177...1189))
+        │   │   ├── requireds: (length: 4)
+        │   │   │   ├── @ RequiredParameterNode (location: (1177...1179))
+        │   │   │   │   └── name: :_a
+        │   │   │   ├── @ RequiredParameterNode (location: (1181...1183))
+        │   │   │   │   └── name: :_a
+        │   │   │   ├── @ RequiredParameterNode (location: (1185...1186))
+        │   │   │   │   └── name: :b
+        │   │   │   └── @ RequiredParameterNode (location: (1188...1189))
+        │   │   │       └── name: :c
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:_a, :b, :c]
+        │   ├── def_keyword_loc: (1169...1172) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (1176...1177) = "("
+        │   ├── rparen_loc: (1189...1190) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (1191...1194) = "end"
+        ├── @ LocalVariableWriteNode (location: (1196...1203))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (1196...1199) = "foo"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (1202...1203))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (1200...1201) = "="
+        └── @ DefNode (location: (1204...1220))
+            ├── name: :bar
+            ├── name_loc: (1212...1215) = "bar"
+            ├── receiver:
+            │   @ LocalVariableReadNode (location: (1208...1211))
+            │   ├── name: :foo
+            │   └── depth: 0
+            ├── parameters: ∅
             ├── body: ∅
-            ├── locals: [:_a, :b, :c]
-            ├── def_keyword_loc: (1169...1172) = "def"
-            ├── operator_loc: ∅
-            ├── lparen_loc: (1176...1177) = "("
-            ├── rparen_loc: (1189...1190) = ")"
+            ├── locals: []
+            ├── def_keyword_loc: (1204...1207) = "def"
+            ├── operator_loc: (1211...1212) = "."
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
             ├── equal_loc: ∅
-            └── end_keyword_loc: (1191...1194) = "end"
+            └── end_keyword_loc: (1217...1220) = "end"
