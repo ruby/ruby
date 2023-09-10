@@ -413,6 +413,8 @@ EOM
   # extracted.
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
+    real_destination_dir = File.realpath(destination_dir)
+
     directories = []
     symlinks = []
 
@@ -428,7 +430,7 @@ EOM
           real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
 
           raise Gem::Package::SymlinkError.new(full_name, real_destination, destination_dir) unless
-            normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
+            normalize_path(real_destination).start_with? normalize_path(real_destination_dir + "/")
 
           symlinks << [full_name, link_target, destination, real_destination]
         end
