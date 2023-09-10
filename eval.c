@@ -1965,6 +1965,23 @@ rb_f_callee_name(VALUE _)
 
 /*
  *  call-seq:
+ *     __owner__         -> mod
+ *
+ *  Returns the owner of the current method.
+ *  If called outside of a method, it returns <code>nil</code>.
+ */
+
+static VALUE
+rb_f_owner(VALUE _)
+{
+    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
+    if (!prev_cfp) return Qnil;
+    rb_callable_method_entry_t *me = rb_vm_frame_method_entry(prev_cfp);
+    return me ? me->owner : Qnil;
+}
+
+/*
+ *  call-seq:
  *     __dir__         -> string
  *
  *  Returns the canonicalized absolute path of the directory of the file from
@@ -2063,6 +2080,7 @@ Init_eval(void)
 
     rb_define_global_function("__method__", rb_f_method_name, 0);
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
+    rb_define_global_function("__owner__", rb_f_owner, 0);
     rb_define_global_function("__dir__", f_current_dirname, 0);
 
     rb_define_method(rb_cModule, "include", rb_mod_include, -1);
