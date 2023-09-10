@@ -89,9 +89,9 @@ module YARP
           src = source
 
           case relative
-          when /break|next|redo|if|unless|rescue|control|keywords/
+          when /break|next|redo|if|unless|rescue|control|keywords|retry/
             # Uncaught syntax errors: Invalid break, Invalid next
-            src = "->{\n#{src}\n}"
+            src = "->do\nrescue\n#{src}\nend"
             ripper_should_match = false
           end
 

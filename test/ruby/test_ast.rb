@@ -247,6 +247,19 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_invalid_retry
+    msg = /Invalid retry/
+    assert_invalid_parse(msg, "retry")
+    assert_invalid_parse(msg, "def m; retry; end")
+    assert_invalid_parse(msg, "begin retry; end")
+    assert_parse("begin rescue; retry; end")
+    assert_invalid_parse(msg, "begin rescue; else; retry; end")
+    assert_invalid_parse(msg, "begin rescue; ensure; retry; end")
+    assert_parse("nil rescue retry")
+    assert_invalid_parse(msg, "END {retry}")
+    assert_invalid_parse(msg, "begin rescue; END {retry}; end")
+  end
+
   def test_node_id_for_location
     exception = begin
                   raise

@@ -372,9 +372,11 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-c -e break), "", [], ["-e:1: Invalid break", :*])
     assert_in_out_err(%w(-c -e next), "", [], ["-e:1: Invalid next", :*])
     assert_in_out_err(%w(-c -e redo), "", [], ["-e:1: Invalid redo", :*])
+    assert_in_out_err(%w(-c -e retry), "", [], ["-e:1: Invalid retry", :*])
     assert_in_out_err(%w(-c -e begin -e break -e end), "", [], ["-e:2: Invalid break", :*])
     assert_in_out_err(%w(-c -e begin -e next -e end), "", [], ["-e:2: Invalid next", :*])
     assert_in_out_err(%w(-c -e begin -e redo -e end), "", [], ["-e:2: Invalid redo", :*])
+    assert_in_out_err(%w(-c -e begin -e retry -e end), "", [], ["-e:2: Invalid retry", :*])
   end
 
   def test_invalid_option
