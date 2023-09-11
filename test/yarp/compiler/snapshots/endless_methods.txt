@@ -1,0 +1,24 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,22)>
+0000 definemethod                           :foo, foo
+0003 definemethod                           :bar, bar                 (   2)
+0006 definemethod                           :method, method           (   4)
+0009 putobject                              :method
+0011 leave
+
+== disasm: #<ISeq:foo@<compiled>:0 (0,0)-(0,11)>
+0000 putobject_INT2FIX_1_
+0001 leave
+
+== disasm: #<ISeq:bar@<compiled>:2 (2,0)-(3,0)>
+0000 putself                                                          (   2)
+0001 putstring                              ""
+0003 opt_send_without_block                 <calldata!mid:A, argc:1, FCALL|ARGS_SIMPLE>
+0005 leave
+
+== disasm: #<ISeq:method@<compiled>:4 (4,0)-(5,0)>
+0000 putobject_INT2FIX_1_                                             (   4)
+0001 putobject                              2
+0003 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0005 putobject                              3
+0007 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0009 leave

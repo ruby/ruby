@@ -1,0 +1,18 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,35)>
+0000 putself
+0001 send                                   <calldata!mid:f, argc:0>, block in <compiled>
+0004 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,2)-(1,0)>
+local table (size: 3, argc: 1 [opts: 2, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] b@1<Opt=0> [ 1] c@2<Opt=4>
+0000 putobject                              42
+0002 setlocal_WC_0                          b@1
+0004 putobject                              24
+0006 setlocal_WC_0                          c@2
+0008 nop                                    [Bc]
+0009 getlocal_WC_0                          a@0
+0011 getlocal_WC_0                          b@1
+0013 getlocal_WC_0                          c@2
+0015 newarray                               3
+0017 leave                                  [Br]

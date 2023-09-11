@@ -1,0 +1,5 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,11)>
+0000 putobject                              :foo
+0002 putobject                              :bar
+0004 newarray                               2
+0006 leave

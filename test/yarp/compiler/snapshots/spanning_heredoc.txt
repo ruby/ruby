@@ -1,0 +1,65 @@
+== disasm: #<ISeq:<compiled>@<compiled>:3 (3,0)-(51,0)>
+0000 putself                                                          (   3)
+0001 putobject                              "a\n"
+0003 putobject                              "b"
+0005 putobject                              "b"
+0007 toregexp                               0, 2
+0010 putstring                              ""                        (   6)
+0012 opt_send_without_block                 <calldata!mid:gsub, argc:2, ARGS_SIMPLE>(   3)
+0014 opt_send_without_block                 <calldata!mid:pp, argc:1, FCALL|ARGS_SIMPLE>
+0016 pop
+0017 putself                                                          (   9)
+0018 putobject                              "c\n"
+0020 putobject                              "d"
+0022 putobject                              "d"
+0024 concatstrings                          2
+0026 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0028 pop
+0029 putself                                                          (  15)
+0030 putobject                              "e\n"
+0032 putobject                              "f\\\n"
+0034 putobject                              "f"
+0036 concatstrings                          2
+0038 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0040 pop
+0041 putself                                                          (  21)
+0042 putobject                              "g\n"
+0044 putobject                              "h"
+0046 putobject                              "h"
+0048 concatstrings                          2
+0050 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0052 pop
+0053 putself                                                          (  27)
+0054 putobject                              "i\n"
+0056 putstring                              "j\\\n"
+0058 putstring                              "j"                       (  30)
+0060 newarray                               2                         (  27)
+0062 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0064 pop
+0065 putself                                                          (  34)
+0066 putobject                              "k\n"
+0068 putobject                              "l"
+0070 putobject                              "l"
+0072 concatstrings                          2
+0074 newarray                               1
+0076 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0078 pop
+0079 putself                                                          (  40)
+0080 putobject                              "m\n"
+0082 putobject                              :"n\\\n"
+0084 putobject                              :n                        (  43)
+0086 newarray                               2                         (  40)
+0088 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0090 pop
+0091 putself                                                          (  47)
+0092 putobject                              "o\n"
+0094 putobject                              :p
+0096 dup
+0097 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0099 anytostring
+0100 putobject                              "p"
+0102 concatstrings                          2
+0104 intern
+0105 newarray                               1
+0107 opt_send_without_block                 <calldata!mid:pp, argc:2, FCALL|ARGS_SIMPLE>
+0109 leave                                                            (   3)

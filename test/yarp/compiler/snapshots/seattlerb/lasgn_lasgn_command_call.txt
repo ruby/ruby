@@ -1,0 +1,11 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,11)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0        [ 1] b@1
+0000 putself
+0001 putobject_INT2FIX_1_
+0002 opt_send_without_block                 <calldata!mid:c, argc:1, FCALL|ARGS_SIMPLE>
+0004 dup
+0005 setlocal_WC_0                          b@1
+0007 dup
+0008 setlocal_WC_0                          a@0
+0010 leave

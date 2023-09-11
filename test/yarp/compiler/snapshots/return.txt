@@ -1,0 +1,12 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(22,9)>
+0000 putnil
+0001 leave                                  [Re]
+0002 splatarray                             true                      (   4)
+0004 pop
+0005 leave                                  [Re]
+0006 leave                                                            (   8)[Re]
+0007 leave                                                            (  13)[Re]
+0008 putnil                                                           (  20)
+0009 leave                                  [Re]
+0010 putnil                                                           (  22)
+0011 leave

@@ -1,0 +1,14 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(7,1)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] o@0
+0000 definemethod                           :a, a
+0003 duphash                                {:a=>1}                   (   5)
+0005 dup                                                              (   4)
+0006 setlocal_WC_0                          o@0
+0008 leave
+
+== disasm: #<ISeq:a@<compiled>:0 (0,0)-(2,3)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] b@0
+0000 putnil                                                           (   1)
+0001 leave                                  [Re]

@@ -1,0 +1,10 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,6)-(4,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] string@0
+0000 putobject                              "        very long string\n"
+0002 opt_send_without_block                 <calldata!mid:strip, argc:0, ARGS_SIMPLE>
+0004 setlocal_WC_0                          string@0
+0006 putself                                                          (   3)
+0007 getlocal_WC_0                          string@0
+0009 opt_send_without_block                 <calldata!mid:puts, argc:1, FCALL|ARGS_SIMPLE>
+0011 leave

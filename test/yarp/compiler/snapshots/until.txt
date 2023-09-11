@@ -1,0 +1,47 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(10,21)>
+0000 jump                                   4
+0002 putnil
+0003 pop
+0004 putnil
+0005 pop
+0006 jump                                   10                        (   2)
+0008 putnil
+0009 pop
+0010 putnil
+0011 pop
+0012 jump                                   21                        (   4)
+0014 putnil
+0015 pop
+0016 jump                                   21
+0018 putnil
+0019 jump                                   22
+0021 putnil
+0022 pop
+0023 jump                                   29                        (   6)
+0025 putnil
+0026 pop
+0027 jump                                   29
+0029 putnil
+0030 pop
+0031 jump                                   39                        (   8)
+0033 putnil
+0034 pop
+0035 jump                                   39
+0037 putnil
+0038 leave                                  [Re]
+0039 putnil
+0040 pop
+0041 jump                                   55                        (  10)
+0043 putnil
+0044 pop
+0045 jump                                   55
+0047 putself
+0048 putobject                              :a
+0050 putobject                              :b
+0052 opt_send_without_block                 <calldata!mid:foo, argc:2, FCALL|ARGS_SIMPLE>
+0054 pop
+0055 putself
+0056 opt_send_without_block                 <calldata!mid:bar?, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0058 branchunless                           47
+0060 putnil
+0061 leave

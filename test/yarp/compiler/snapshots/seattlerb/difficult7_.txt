@@ -1,0 +1,20 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,6)-(4,0)>
+0000 putobject                              :a                        (   1)
+0002 putself
+0003 send                                   <calldata!mid:lambda, argc:0>, block in <compiled>
+0006 putobject                              :e                        (   3)
+0008 putnil
+0009 newhash                                4
+0011 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:1 (1,26)-(2,0)>
+0000 nop                                                              (   1)[Bc]
+0001 putself
+0002 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0004 branchunless                           10
+0006 putself                                                          (   2)
+0007 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0009 leave                                                            (   1)[Br]
+0010 putself                                                          (   2)
+0011 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0013 leave                                                            (   1)[Br]

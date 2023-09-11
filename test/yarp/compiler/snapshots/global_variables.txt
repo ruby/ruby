@@ -1,0 +1,43 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(92,4)>
+0000 getglobal                              :$global_variable
+0002 pop
+0003 getglobal                              :$_                       (   2)
+0005 pop
+0006 getglobal                              :$-w                      (   4)
+0008 pop
+0009 getglobal                              :$LOAD_PATH               (   6)
+0011 pop
+0012 getglobal                              :$stdin                   (   8)
+0014 pop
+0015 getglobal                              :$stdout                  (  10)
+0017 pop
+0018 getglobal                              :$stderr                  (  12)
+0020 pop
+0021 getglobal                              :$!                       (  14)
+0023 pop
+0024 getglobal                              :$?                       (  16)
+0026 pop
+0027 getglobal                              :$~                       (  18)
+0029 pop
+0030 getglobal                              :$:                       (  28)
+0032 pop
+0033 getglobal                              :$;                       (  30)
+0035 pop
+0036 getglobal                              :$,                       (  32)
+0038 pop
+0039 getglobal                              :$DEBUG                   (  34)
+0041 pop
+0042 getglobal                              :$FILENAME                (  36)
+0044 pop
+0045 getglobal                              :$0                       (  38)
+0047 pop
+0048 getglobal                              :$-0                      (  40)
+0050 pop
+0051 getglobal                              :$LOADED_FEATURES         (  42)
+0053 pop
+0054 getglobal                              :$VERBOSE                 (  44)
+0056 pop
+0057 getglobal                              :$-K                      (  46)
+0059 pop
+0060 putobject                              :$-K                      (  92)
+0062 leave

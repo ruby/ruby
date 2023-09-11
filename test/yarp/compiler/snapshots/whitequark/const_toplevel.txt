@@ -1,0 +1,4 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,5)>
+0000 putobject                              false
+0002 getconstant                            :Foo
+0004 leave

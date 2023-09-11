@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,6)>
+0000 putobject                              " some\n heredocs\n"
+0002 leave

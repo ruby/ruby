@@ -1,0 +1,11 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,15)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 branchunless                           13
+0005 putself
+0006 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0008 putstring                              ""
+0010 opt_and                                <calldata!mid:&, argc:1, ARGS_SIMPLE>[CcCr]
+0012 leave
+0013 putnil
+0014 leave

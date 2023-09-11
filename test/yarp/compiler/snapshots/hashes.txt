@@ -1,0 +1,50 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(19,12)>
+0000 putself                                                          (   5)
+0001 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 pop
+0004 putself
+0005 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0007 pop
+0008 putself
+0009 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0011 pop
+0012 putself
+0013 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0015 pop
+0016 putself                                                          (   7)
+0017 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0019 pop
+0020 putself
+0021 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0023 pop
+0024 putself
+0025 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0027 pop
+0028 newarraykwsplat                        0
+0030 pop
+0031 putself                                                          (  10)
+0032 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0034 pop
+0035 putself                                                          (  11)
+0036 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0038 pop
+0039 putself                                                          (  17)
+0040 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0042 pop
+0043 putself
+0044 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0046 pop
+0047 putself
+0048 opt_send_without_block                 <calldata!mid:e, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0050 pop
+0051 newarraykwsplat                        0
+0053 pop
+0054 putself
+0055 opt_send_without_block                 <calldata!mid:g, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0057 pop
+0058 putobject                              :a                        (  19)
+0060 putself
+0061 opt_send_without_block                 <calldata!mid:b?, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0063 opt_not                                <calldata!mid:!, argc:0, ARGS_SIMPLE>[CcCr]
+0065 newhash                                2
+0067 leave

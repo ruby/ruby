@@ -1,0 +1,65 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(39,3)>
+0000 definemethod                           :foo, foo
+0003 definemethod                           :foo, foo                 (   3)
+0006 definemethod                           :foo, foo                 (   7)
+0009 definemethod                           :bar, bar                 (  12)
+0012 definemethod                           :bar, bar                 (  16)
+0015 definemethod                           :bar, bar                 (  21)
+0018 definemethod                           :bar, bar                 (  25)
+0021 definemethod                           :bar, bar                 (  29)
+0024 definemethod                           :bar, bar                 (  33)
+0027 definemethod                           :bar, bar                 (  37)
+0030 putobject                              :bar
+0032 leave
+
+== disasm: #<ISeq:foo@<compiled>:0 (0,0)-(1,3)>
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:foo@<compiled>:3 (3,0)-(6,0)>
+0000 putself                                                          (   4)
+0001 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (   3)
+
+== disasm: #<ISeq:foo@<compiled>:7 (7,0)-(11,0)>
+0000 putself                                                          (   8)
+0001 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 pop
+0004 putself                                                          (   9)
+0005 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0007 leave                                                            (   7)
+
+== disasm: #<ISeq:bar@<compiled>:12 (12,0)-(15,0)>
+0000 putself                                                          (  13)
+0001 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  12)
+
+== disasm: #<ISeq:bar@<compiled>:16 (16,0)-(20,0)>
+0000 putself                                                          (  18)
+0001 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  16)
+
+== disasm: #<ISeq:bar@<compiled>:21 (21,0)-(24,0)>
+0000 putself                                                          (  22)
+0001 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  21)
+
+== disasm: #<ISeq:bar@<compiled>:25 (25,0)-(28,0)>
+0000 putself                                                          (  26)
+0001 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  25)
+
+== disasm: #<ISeq:bar@<compiled>:29 (29,0)-(32,0)>
+0000 putself                                                          (  30)
+0001 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  29)
+
+== disasm: #<ISeq:bar@<compiled>:33 (33,0)-(36,0)>
+0000 putself                                                          (  34)
+0001 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  33)
+
+== disasm: #<ISeq:bar@<compiled>:37 (37,0)-(40,0)>
+0000 putself                                                          (  38)
+0001 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave                                                            (  37)

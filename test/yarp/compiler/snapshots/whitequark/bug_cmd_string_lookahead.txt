@@ -1,0 +1,9 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,17)>
+0000 putself
+0001 putstring                              "foo"
+0003 send                                   <calldata!mid:desc, argc:1>, block in <compiled>
+0006 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,11)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]

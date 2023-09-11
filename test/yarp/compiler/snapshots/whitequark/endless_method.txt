@@ -1,0 +1,31 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,22)>
+0000 definemethod                           :foo, foo
+0003 definemethod                           :inc, inc                 (   2)
+0006 definemethod                           :foo, foo                 (   4)
+0009 definemethod                           :inc, inc                 (   6)
+0012 putobject                              :inc
+0014 leave
+
+== disasm: #<ISeq:foo@<compiled>:0 (0,0)-(0,14)>
+0000 putobject                              42
+0002 leave
+
+== disasm: #<ISeq:inc@<compiled>:2 (2,0)-(3,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] x@0<Arg>
+0000 getlocal_WC_0                          x@0                       (   2)
+0002 putobject_INT2FIX_1_
+0003 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0005 leave
+
+== disasm: #<ISeq:foo@<compiled>:4 (4,0)-(5,0)>
+0000 putobject                              42                        (   4)
+0002 leave
+
+== disasm: #<ISeq:inc@<compiled>:6 (6,0)-(7,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] x@0<Arg>
+0000 getlocal_WC_0                          x@0                       (   6)
+0002 putobject_INT2FIX_1_
+0003 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0005 leave

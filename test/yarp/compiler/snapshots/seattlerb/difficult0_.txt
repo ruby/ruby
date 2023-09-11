@@ -1,0 +1,11 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(3,8)>
+0000 putself
+0001 putobject                              "  a\n"
+0003 putobject                              "b\n"
+0005 putobject                              "  c"
+0007 concatstrings                          2
+0009 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0011 putstring                              "d"                       (   3)
+0013 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0015 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0017 leave

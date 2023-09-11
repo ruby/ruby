@@ -1,0 +1,26 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,31)>
+0000 putself
+0001 send                                   <calldata!mid:tap, argc:0>, block in <compiled>
+0004 pop
+0005 putself                                                          (   3)
+0006 send                                   <calldata!mid:tap, argc:0>, block in <compiled>
+0009 pop
+0010 putobject_INT2FIX_1_                                             (   5)
+0011 send                                   <calldata!mid:tap, argc:0>, block in <compiled>
+0014 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,27)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:3 (3,0)-(3,0)>
+0000 putnil                                                           (   3)[Bc]
+0001 leave                                                            (   2)[Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:5 (5,0)-(5,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] n@0<Arg>
+0000 putself                                                          (   4)[Bc]
+0001 getlocal_WC_0                          n@0
+0003 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0005 leave                                  [Br]

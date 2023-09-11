@@ -1,0 +1,28 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(5,15)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 pop
+0004 putself                                                          (   1)
+0005 putobject_INT2FIX_1_
+0006 opt_send_without_block                 <calldata!mid:foo, argc:1, FCALL|ARGS_SIMPLE>
+0008 pop
+0009 putself                                                          (   3)
+0010 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0012 putself
+0013 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0015 opt_send_without_block                 <calldata!mid:===, argc:1, ARGS_SIMPLE>
+0017 opt_send_without_block                 <calldata!mid:c, argc:0, ARGS_SIMPLE>
+0019 putself
+0020 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0022 opt_eq                                 <calldata!mid:==, argc:1, ARGS_SIMPLE>[CcCr]
+0024 pop
+0025 putself                                                          (   5)
+0026 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0028 putself
+0029 opt_send_without_block                 <calldata!mid:d, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0031 opt_send_without_block                 <calldata!mid:c, argc:0, ARGS_SIMPLE>
+0033 putself
+0034 opt_send_without_block                 <calldata!mid:c, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0036 opt_send_without_block                 <calldata!mid:===, argc:1, ARGS_SIMPLE>
+0038 opt_eq                                 <calldata!mid:==, argc:1, ARGS_SIMPLE>[CcCr]
+0040 leave

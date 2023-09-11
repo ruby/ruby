@@ -1,0 +1,4 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,1)>
+0000 putobject                              "  some text\n"           (   3)
+0002 newarray                               1
+0004 leave

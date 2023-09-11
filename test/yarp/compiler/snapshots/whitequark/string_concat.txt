@@ -1,0 +1,9 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,14)>
+0000 putobject                              "foo"
+0002 getinstancevariable                    :@a, <is:0>
+0005 dup
+0006 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0008 anytostring
+0009 concatstrings                          2
+0011 putstring                              "bar"
+0013 leave

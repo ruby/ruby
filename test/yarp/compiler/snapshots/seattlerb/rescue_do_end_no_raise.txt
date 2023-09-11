@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(8,3)>
+0000 putself
+0001 send                                   <calldata!mid:tap, argc:0>, block in <compiled>
+0004 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,4)-(9,0)>
+0000 putobject                              :begin                    (   1)[Bc]
+0002 leave                                  [Br]

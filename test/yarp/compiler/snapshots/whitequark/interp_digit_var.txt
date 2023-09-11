@@ -1,0 +1,25 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,1)-(85,0)>
+0000 putself                                                          (  36)
+0001 putobject                              "\#@1"
+0003 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0005 putself                                                          (  38)
+0006 putobject                              "\#@@1"
+0008 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0010 putself                                                          (  60)
+0011 putobject                              "\#@1"
+0013 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0015 putself                                                          (  62)
+0016 putobject                              "\#@@1"
+0018 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0020 putobject                              "\#@1\n"                  (  64)
+0022 putobject                              "\#@@1\n"                 (  68)
+0024 putobject                              "\#@1\n"                  (  72)
+0026 putobject                              "\#@@1\n"                 (  76)
+0028 putself                                                          (  80)
+0029 putobject                              "\#@1\n"
+0031 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0033 pop
+0034 putself                                                          (  84)
+0035 putobject                              "\#@@1\n"
+0037 opt_send_without_block                 <calldata!mid:`, argc:1, FCALL|ARGS_SIMPLE>
+0039 leave

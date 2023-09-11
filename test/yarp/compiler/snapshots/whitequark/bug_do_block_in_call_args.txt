@@ -1,0 +1,15 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,33)>
+0000 putself
+0001 definemethod                           :foo, foo
+0004 putobject                              :foo
+0006 opt_send_without_block                 <calldata!mid:bar, argc:1, FCALL|ARGS_SIMPLE>
+0008 leave
+
+== disasm: #<ISeq:foo@<compiled>:0 (0,4)-(1,0)>
+0000 putself
+0001 send                                   <calldata!mid:each, argc:0>, block in foo
+0004 leave
+
+== disasm: #<ISeq:block in foo@<compiled>:0 (0,23)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]

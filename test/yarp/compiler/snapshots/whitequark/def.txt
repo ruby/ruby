@@ -1,0 +1,33 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(10,14)>
+0000 definemethod                           :BEGIN, BEGIN
+0003 definemethod                           :END, END                 (   2)
+0006 definemethod                           :String, String           (   4)
+0009 definemethod                           :String=, String=         (   6)
+0012 definemethod                           :foo, foo                 (   8)
+0015 definemethod                           :until, until             (  10)
+0018 putobject                              :until
+0020 leave
+
+== disasm: #<ISeq:BEGIN@<compiled>:0 (0,0)-(0,14)>
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:END@<compiled>:2 (2,0)-(3,0)>
+0000 putnil                                                           (   2)
+0001 leave
+
+== disasm: #<ISeq:String@<compiled>:4 (4,0)-(5,0)>
+0000 putnil                                                           (   4)
+0001 leave
+
+== disasm: #<ISeq:String=@<compiled>:6 (6,0)-(7,0)>
+0000 putnil                                                           (   6)
+0001 leave
+
+== disasm: #<ISeq:foo@<compiled>:8 (8,0)-(9,0)>
+0000 putnil                                                           (   8)
+0001 leave
+
+== disasm: #<ISeq:until@<compiled>:10 (10,0)-(11,0)>
+0000 putnil                                                           (  10)
+0001 leave

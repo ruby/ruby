@@ -1,0 +1,18 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(16,20)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] x@0        [ 1] a@1
+0000 putself
+0001 putstring                              "hi"
+0003 putstring                              "there"                   (   1)
+0005 opt_send_without_block                 <calldata!mid:puts, argc:1, FCALL|ARGS_SIMPLE>
+0007 pop
+0008 putobject                              "    1     2\r\n    3\r\n"(   6)
+0010 putstring                              ""                        (  12)
+0012 setlocal_WC_0                          x@0
+0014 putself                                                          (  16)
+0015 putobject                              "\nbaz\r\n"
+0017 opt_send_without_block                 <calldata!mid:chop, argc:0, ARGS_SIMPLE>
+0019 opt_send_without_block                 <calldata!mid:foo, argc:1, FCALL|ARGS_SIMPLE>
+0021 dup
+0022 setlocal_WC_0                          a@1
+0024 leave

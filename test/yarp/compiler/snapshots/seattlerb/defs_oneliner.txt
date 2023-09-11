@@ -1,0 +1,12 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,32)>
+0000 definemethod                           :exec, exec
+0003 putobject                              :exec
+0005 leave
+
+== disasm: #<ISeq:exec@<compiled>:0 (0,0)-(0,32)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] cmd@0<Arg>
+0000 putself
+0001 getlocal_WC_0                          cmd@0
+0003 opt_send_without_block                 <calldata!mid:system, argc:1, FCALL|ARGS_SIMPLE>
+0005 leave

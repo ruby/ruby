@@ -1,0 +1,5 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,7)>
+0000 putself
+0001 putobject_INT2FIX_1_
+0002 opt_aref                               <calldata!mid:[], argc:1, ARGS_SIMPLE>[CcCr]
+0004 leave

@@ -1,0 +1,22 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,27)>
+0000 putspecialobject                       1
+0002 putspecialobject                       2
+0004 putobject                              :foo
+0006 opt_send_without_block                 <calldata!mid:core#undef_method, argc:2, ARGS_SIMPLE>
+0008 pop
+0009 putspecialobject                       1
+0011 putspecialobject                       2
+0013 putobject                              :bar
+0015 opt_send_without_block                 <calldata!mid:core#undef_method, argc:2, ARGS_SIMPLE>
+0017 pop
+0018 putspecialobject                       1
+0020 putspecialobject                       2
+0022 putobject                              "foo"
+0024 putobject_INT2FIX_1_
+0025 dup
+0026 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0028 anytostring
+0029 concatstrings                          2
+0031 intern
+0032 opt_send_without_block                 <calldata!mid:core#undef_method, argc:2, ARGS_SIMPLE>
+0034 leave

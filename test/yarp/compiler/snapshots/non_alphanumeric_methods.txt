@@ -1,0 +1,182 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(104,3)>
+0000 definemethod                           :!, !
+0003 definemethod                           :!=, !=                   (   3)
+0006 definemethod                           :!~, !~                   (   6)
+0009 definemethod                           :%, %                     (   9)
+0012 definemethod                           :+, +                     (  12)
+0015 definemethod                           :&, &                     (  15)
+0018 definemethod                           :*, *                     (  18)
+0021 definemethod                           :**, **                   (  21)
+0024 definemethod                           :+, +                     (  26)
+0027 definemethod                           :+, +                     (  29)
+0030 definemethod                           :+, +                     (  32)
+0033 definemethod                           :+, +                     (  35)
+0036 definemethod                           :+, +                     (  38)
+0039 definemethod                           :+@, +@                   (  41)
+0042 definemethod                           :-, -                     (  44)
+0045 definemethod                           :-, -                     (  47)
+0048 definemethod                           :-@, -@                   (  49)
+0051 definemethod                           :/, /                     (  52)
+0054 definemethod                           :<, <                     (  55)
+0057 definemethod                           :<<, <<                   (  58)
+0060 definemethod                           :<=, <=                   (  61)
+0063 definemethod                           :<=>, <=>                 (  64)
+0066 definemethod                           :==, ==                   (  67)
+0069 definemethod                           :===, ===                 (  70)
+0072 definemethod                           :=~, =~                   (  73)
+0075 definemethod                           :>, >                     (  76)
+0078 definemethod                           :>=, >=                   (  79)
+0081 definemethod                           :>>, >>                   (  82)
+0084 definemethod                           :[], []                   (  85)
+0087 definemethod                           :[]=, []=                 (  88)
+0090 definemethod                           :^, ^                     (  91)
+0093 definemethod                           :`, `                     (  94)
+0096 definemethod                           :`, `                     (  97)
+0099 definemethod                           :|, |                     ( 100)
+0102 definemethod                           :~, ~                     ( 103)
+0105 putobject                              :~
+0107 leave
+
+== disasm: #<ISeq:!@<compiled>:0 (0,0)-(1,3)>
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:!=@<compiled>:3 (3,0)-(5,0)>
+0000 putnil                                                           (   3)
+0001 leave
+
+== disasm: #<ISeq:!~@<compiled>:6 (6,0)-(8,0)>
+0000 putnil                                                           (   6)
+0001 leave
+
+== disasm: #<ISeq:%@<compiled>:9 (9,0)-(11,0)>
+0000 putnil                                                           (   9)
+0001 leave
+
+== disasm: #<ISeq:+@<compiled>:12 (12,0)-(14,0)>
+0000 putnil                                                           (  12)
+0001 leave
+
+== disasm: #<ISeq:&@<compiled>:15 (15,0)-(17,0)>
+0000 putnil                                                           (  15)
+0001 leave
+
+== disasm: #<ISeq:*@<compiled>:18 (18,0)-(20,0)>
+0000 putnil                                                           (  18)
+0001 leave
+
+== disasm: #<ISeq:**@<compiled>:21 (21,0)-(23,0)>
+0000 putnil                                                           (  21)
+0001 leave
+
+== disasm: #<ISeq:+@<compiled>:26 (26,0)-(28,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] b@0
+0000 putnil                                                           (  26)
+0001 leave
+
+== disasm: #<ISeq:+@<compiled>:29 (29,0)-(31,0)>
+0000 putnil                                                           (  29)
+0001 leave
+
+== disasm: #<ISeq:+@<compiled>:32 (32,0)-(34,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] b@0<Arg>
+0000 putnil                                                           (  32)
+0001 leave
+
+== disasm: #<ISeq:+@<compiled>:35 (35,0)-(37,0)>
+0000 putnil                                                           (  35)
+0001 leave
+
+== disasm: #<ISeq:+@<compiled>:38 (38,0)-(40,0)>
+0000 putnil                                                           (  38)
+0001 leave
+
+== disasm: #<ISeq:+@@<compiled>:41 (41,0)-(43,0)>
+0000 putnil                                                           (  41)
+0001 leave
+
+== disasm: #<ISeq:-@<compiled>:44 (44,0)-(46,0)>
+0000 putnil                                                           (  44)
+0001 leave
+
+== disasm: #<ISeq:-@<compiled>:47 (47,0)-(48,0)>
+0000 putnil                                                           (  47)
+0001 leave
+
+== disasm: #<ISeq:-@@<compiled>:49 (49,0)-(51,0)>
+0000 putnil                                                           (  49)
+0001 leave
+
+== disasm: #<ISeq:/@<compiled>:52 (52,0)-(54,0)>
+0000 putnil                                                           (  52)
+0001 leave
+
+== disasm: #<ISeq:<@<compiled>:55 (55,0)-(57,0)>
+0000 putnil                                                           (  55)
+0001 leave
+
+== disasm: #<ISeq:<<@<compiled>:58 (58,0)-(60,0)>
+0000 putnil                                                           (  58)
+0001 leave
+
+== disasm: #<ISeq:<=@<compiled>:61 (61,0)-(63,0)>
+0000 putnil                                                           (  61)
+0001 leave
+
+== disasm: #<ISeq:<=>@<compiled>:64 (64,0)-(66,0)>
+0000 putnil                                                           (  64)
+0001 leave
+
+== disasm: #<ISeq:==@<compiled>:67 (67,0)-(69,0)>
+0000 putnil                                                           (  67)
+0001 leave
+
+== disasm: #<ISeq:===@<compiled>:70 (70,0)-(72,0)>
+0000 putnil                                                           (  70)
+0001 leave
+
+== disasm: #<ISeq:=~@<compiled>:73 (73,0)-(75,0)>
+0000 putnil                                                           (  73)
+0001 leave
+
+== disasm: #<ISeq:>@<compiled>:76 (76,0)-(78,0)>
+0000 putnil                                                           (  76)
+0001 leave
+
+== disasm: #<ISeq:>=@<compiled>:79 (79,0)-(81,0)>
+0000 putnil                                                           (  79)
+0001 leave
+
+== disasm: #<ISeq:>>@<compiled>:82 (82,0)-(84,0)>
+0000 putnil                                                           (  82)
+0001 leave
+
+== disasm: #<ISeq:[]@<compiled>:85 (85,0)-(87,0)>
+0000 putnil                                                           (  85)
+0001 leave
+
+== disasm: #<ISeq:[]=@<compiled>:88 (88,0)-(90,0)>
+0000 putnil                                                           (  88)
+0001 leave
+
+== disasm: #<ISeq:^@<compiled>:91 (91,0)-(93,0)>
+0000 putnil                                                           (  91)
+0001 leave
+
+== disasm: #<ISeq:`@<compiled>:94 (94,0)-(96,0)>
+0000 putnil                                                           (  94)
+0001 leave
+
+== disasm: #<ISeq:`@<compiled>:97 (97,0)-(99,0)>
+0000 putnil                                                           (  97)
+0001 leave
+
+== disasm: #<ISeq:|@<compiled>:100 (100,0)-(102,0)>
+0000 putnil                                                           ( 100)
+0001 leave
+
+== disasm: #<ISeq:~@<compiled>:103 (103,0)-(105,0)>
+0000 putnil                                                           ( 103)
+0001 leave

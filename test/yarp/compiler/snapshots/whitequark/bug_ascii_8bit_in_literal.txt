@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:1 (1,9)-(2,0)>
+0000 putstring                              "\xD0\xBF\xD1\x80\xD0\xBE\xD0\xB2\xD0\xB5\xD1\x80\xD0\xBA\xD0\xB0"(   1)
+0002 leave

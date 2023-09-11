@@ -1,0 +1,51 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,45)>
+0000 definemethod                           :m, m
+0003 definemethod                           :m, m                     (   2)
+0006 definemethod                           :m, m                     (   4)
+0009 putobject                              :m
+0011 leave
+
+== disasm: #<ISeq:m@<compiled>:0 (0,0)-(0,39)>
+0000 putself
+0001 putnil
+0002 defineclass                            :singletonclass, singleton class, 1
+0006 leave
+
+== disasm: #<ISeq:singleton class@<compiled>:0 (0,7)-(1,0)>
+0000 putnil
+0001 dup
+0002 putspecialobject                       3
+0004 setconstant                            :A
+0006 leave
+
+== disasm: #<ISeq:m@<compiled>:2 (2,0)-(3,0)>
+0000 putself                                                          (   2)
+0001 putnil
+0002 defineclass                            :singletonclass, singleton class, 1
+0006 leave
+
+== disasm: #<ISeq:singleton class@<compiled>:2 (2,8)-(3,0)>
+0000 putspecialobject                       3                         (   2)
+0002 putnil
+0003 defineclass                            :C, <class:C>, 0
+0007 leave
+
+== disasm: #<ISeq:<class:C>@<compiled>:2 (2,23)-(3,0)>
+0000 putnil                                                           (   2)
+0001 leave
+
+== disasm: #<ISeq:m@<compiled>:4 (4,0)-(5,0)>
+0000 putself                                                          (   4)
+0001 putnil
+0002 defineclass                            :singletonclass, singleton class, 1
+0006 leave
+
+== disasm: #<ISeq:singleton class@<compiled>:4 (4,8)-(5,0)>
+0000 putspecialobject                       3                         (   4)
+0002 putnil
+0003 defineclass                            :M, <module:M>, 2
+0007 leave
+
+== disasm: #<ISeq:<module:M>@<compiled>:4 (4,23)-(5,0)>
+0000 putnil                                                           (   4)
+0001 leave

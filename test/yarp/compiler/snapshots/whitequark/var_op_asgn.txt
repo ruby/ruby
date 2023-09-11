@@ -1,0 +1,26 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,23)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 getclassvariable                       :@@var, <is:2>
+0003 putobject                              10
+0005 opt_or                                 <calldata!mid:|, argc:1, ARGS_SIMPLE>[CcCr]
+0007 setclassvariable                       :@@var, <is:2>
+0010 getinstancevariable                    :@a, <is:0>               (   2)
+0013 putobject_INT2FIX_1_
+0014 opt_or                                 <calldata!mid:|, argc:1, ARGS_SIMPLE>[CcCr]
+0016 setinstancevariable                    :@a, <is:1>
+0019 getlocal_WC_0                          a@0                       (   4)
+0021 putobject_INT2FIX_1_
+0022 opt_plus                               <calldata!mid:+, argc:1, FCALL|VCALL|ARGS_SIMPLE>[CcCr]
+0024 setlocal_WC_0                          a@0
+0026 definemethod                           :a, a                     (   6)
+0029 putobject                              :a
+0031 leave
+
+== disasm: #<ISeq:a@<compiled>:6 (6,1)-(7,0)>
+0000 getclassvariable                       :@@var, <is:0>            (   6)
+0003 putobject                              10
+0005 opt_or                                 <calldata!mid:|, argc:1, ARGS_SIMPLE>[CcCr]
+0007 dup
+0008 setclassvariable                       :@@var, <is:0>
+0011 leave

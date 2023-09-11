@@ -1,0 +1,256 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(72,3)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] x@0
+0000 putspecialobject                       3
+0002 putnil
+0003 defineclass                            :A, <module:A>, 2
+0007 pop
+0008 definemethod                           :foo, foo                 (   8)
+0011 putspecialobject                       3                         (  12)
+0013 putnil
+0014 defineclass                            :A, <module:A>, 2
+0018 pop
+0019 putspecialobject                       3                         (  16)
+0021 putnil
+0022 defineclass                            :A, <module:A>, 2
+0026 pop
+0027 putspecialobject                       3                         (  20)
+0029 putnil
+0030 defineclass                            :A, <module:A>, 2
+0034 pop
+0035 putspecialobject                       3                         (  26)
+0037 putnil
+0038 defineclass                            :A, <module:A>, 2
+0042 pop
+0043 putspecialobject                       3                         (  34)
+0045 putnil
+0046 defineclass                            :A, <module:A>, 2
+0050 pop
+0051 jump                                   57                        (  42)
+0053 putnil
+0054 pop
+0055 jump                                   61
+0057 putself                                                          (  43)
+0058 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0060 pop
+0061 putself                                                          (  44)
+0062 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0064 branchif                               57
+0066 putnil                                                           (  42)
+0067 setlocal_WC_0                          x@0                       (  41)
+0069 jump                                   75                        (  44)
+0071 putnil
+0072 pop
+0073 jump                                   79
+0075 putself                                                          (  46)
+0076 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0078 pop
+0079 putself                                                          (  47)
+0080 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0082 branchif                               75
+0084 putnil                                                           (  44)
+0085 pop
+0086 jump                                   92                        (  47)
+0088 putnil
+0089 pop
+0090 jump                                   100
+0092 putself                                                          (  49)
+0093 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0095 pop
+0096 putself                                                          (  50)
+0097 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0099 pop
+0100 putself                                                          (  51)
+0101 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0103 branchunless                           92
+0105 putnil                                                           (  47)
+0106 pop
+0107 jump                                   113                       (  51)
+0109 putnil
+0110 pop
+0111 jump                                   121
+0113 putself                                                          (  53)
+0114 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0116 pop
+0117 putself                                                          (  54)
+0118 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0120 pop
+0121 putself                                                          (  55)
+0122 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0124 branchif                               113
+0126 putnil                                                           (  51)
+0127 pop
+0128 jump                                   132                       (  55)
+0130 putnil
+0131 pop
+0132 putnil
+0133 pop
+0134 jump                                   138                       (  57)
+0136 putnil
+0137 pop
+0138 putnil
+0139 pop
+0140 jump                                   144                       (  60)
+0142 putnil
+0143 pop
+0144 putself                                                          (  61)
+0145 send                                   <calldata!mid:foo, argc:0>, block in <compiled>
+0148 branchif                               144
+0150 putnil                                                           (  60)
+0151 pop
+0152 jump                                   156                       (  64)
+0154 putnil
+0155 pop
+0156 jump                                   156                       (  65)
+0158 putnil                                                           (  64)
+0159 pop
+0160 jump                                   164                       (  66)
+0162 putnil
+0163 pop
+0164 jump                                   164                       (  67)
+0166 putnil                                                           (  66)
+0167 pop
+0168 jump                                   172                       (  69)
+0170 putnil
+0171 pop
+0172 putself                                                          (  70)
+0173 send                                   <calldata!mid:foo, argc:0>, block in <compiled>
+0176 branchunless                           172
+0178 putnil                                                           (  69)
+0179 leave
+
+== disasm: #<ISeq:<module:A>@<compiled>:0 (0,0)-(6,3)>
+0000 putself                                                          (   1)
+0001 send                                   <calldata!mid:foo, argc:0>, block in <module:A>
+0004 leave
+
+== disasm: #<ISeq:block in <module:A>@<compiled>:1 (1,15)-(6,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] bar@0<Arg> [ 1] foo@1
+0000 nop                                                              (   1)[Bc]
+0001 jump                                   11                        (   2)
+0003 putnil
+0004 pop
+0005 jump                                   11
+0007 getlocal_WC_0                          bar@0                     (   3)
+0009 setlocal_WC_0                          foo@1
+0011 putself                                                          (   2)
+0012 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0014 branchif                               7
+0016 putnil
+0017 leave                                                            (   1)[Br]
+
+== disasm: #<ISeq:foo@<compiled>:8 (8,0)-(11,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 jump                                   11                        (   9)
+0002 putnil
+0003 pop
+0004 jump                                   11
+0006 putself
+0007 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0009 setlocal_WC_0                          foo@0
+0011 getlocal_WC_0                          foo@0
+0013 putself
+0014 opt_send_without_block                 <calldata!mid:baz, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0016 opt_neq                                <calldata!mid:==, argc:1, ARGS_SIMPLE>, <calldata!mid:!=, argc:1, ARGS_SIMPLE>[CcCr]
+0019 branchif                               6
+0021 putnil
+0022 leave                                                            (   8)
+
+== disasm: #<ISeq:<module:A>@<compiled>:12 (12,0)-(15,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 jump                                   11                        (  13)
+0002 putnil
+0003 pop
+0004 jump                                   11
+0006 putself
+0007 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0009 setlocal_WC_0                          foo@0
+0011 getlocal_WC_0                          foo@0
+0013 branchif                               6
+0015 putnil
+0016 leave                                                            (  12)
+
+== disasm: #<ISeq:<module:A>@<compiled>:16 (16,0)-(19,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 jump                                   11                        (  17)
+0002 putnil
+0003 pop
+0004 jump                                   11
+0006 putself
+0007 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0009 setlocal_WC_0                          foo@0
+0011 getlocal_WC_0                          foo@0
+0013 branchunless                           6
+0015 putnil
+0016 leave                                                            (  16)
+
+== disasm: #<ISeq:<module:A>@<compiled>:20 (20,0)-(25,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 jump                                   11                        (  21)
+0002 putnil
+0003 pop
+0004 jump                                   11
+0006 putself                                                          (  22)
+0007 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0009 setlocal_WC_0                          foo@0
+0011 putself                                                          (  21)
+0012 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0014 branchif                               6
+0016 putnil
+0017 leave                                                            (  20)
+
+== disasm: #<ISeq:<module:A>@<compiled>:26 (26,0)-(33,0)>
+0000 putself                                                          (  27)
+0001 send                                   <calldata!mid:each, argc:0>, block in <module:A>
+0004 leave                                                            (  26)
+
+== disasm: #<ISeq:block in <module:A>@<compiled>:27 (27,16)-(32,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] baz@0<Arg> [ 1] foo@1
+0000 nop                                                              (  27)[Bc]
+0001 jump                                   12                        (  28)
+0003 putnil
+0004 pop
+0005 jump                                   12
+0007 putself                                                          (  29)
+0008 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0010 setlocal_WC_0                          foo@1
+0012 putself                                                          (  28)
+0013 opt_send_without_block                 <calldata!mid:foo, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0015 branchif                               7
+0017 putnil
+0018 leave                                                            (  27)[Br]
+
+== disasm: #<ISeq:<module:A>@<compiled>:34 (34,0)-(41,0)>
+0000 putself                                                          (  35)
+0001 send                                   <calldata!mid:each, argc:0>, block in <module:A>
+0004 leave                                                            (  34)
+
+== disasm: #<ISeq:block in <module:A>@<compiled>:35 (35,16)-(40,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0<Arg>
+0000 nop                                                              (  35)[Bc]
+0001 jump                                   12                        (  36)
+0003 putnil
+0004 pop
+0005 jump                                   12
+0007 putself                                                          (  37)
+0008 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0010 setlocal_WC_0                          foo@0
+0012 getlocal_WC_0                          foo@0                     (  36)
+0014 branchif                               7
+0016 putnil
+0017 leave                                                            (  35)[Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:61 (61,0)-(62,0)>
+0000 putnil                                                           (  61)[Bc]
+0001 leave                                                            (  60)[Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:70 (70,0)-(71,0)>
+0000 putnil                                                           (  70)[Bc]
+0001 leave                                                            (  69)[Br]

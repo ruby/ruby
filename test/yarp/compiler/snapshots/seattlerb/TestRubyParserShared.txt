@@ -1,0 +1,87 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(91,1)>
+0000 putspecialobject                       3                         (  50)
+0002 putnil
+0003 defineclass                            :X, <class:X>, 0
+0007 pop
+0008 putspecialobject                       3                         (  58)
+0010 putnil
+0011 defineclass                            :X, <class:X>, 0
+0015 pop
+0016 putspecialobject                       3                         (  65)
+0018 putnil
+0019 defineclass                            :X, <class:X>, 0
+0023 pop
+0024 putspecialobject                       3                         (  73)
+0026 putnil
+0027 defineclass                            :X, <module:X>, 2
+0031 pop
+0032 putspecialobject                       3                         (  81)
+0034 putnil
+0035 defineclass                            :X, <module:X>, 2
+0039 pop
+0040 putself                                                          (  88)
+0041 putobject                              :line2                    (  89)
+0043 putobject                              :line3                    (  90)
+0045 opt_send_without_block                 <calldata!mid:x, argc:2, FCALL|ARGS_SIMPLE>(  88)
+0047 leave
+
+== disasm: #<ISeq:<class:X>@<compiled>:50 (50,1)-(56,0)>
+0000 definemethod                           :y, y                     (  51)
+0003 putobject                              :y
+0005 leave                                                            (  50)
+
+== disasm: #<ISeq:y@<compiled>:51 (51,27)-(55,0)>
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] b@1<Arg>
+0000 getlocal_WC_0                          a@0                       (  53)
+0002 getlocal_WC_0                          b@1
+0004 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0006 leave                                                            (  51)
+
+== disasm: #<ISeq:<class:X>@<compiled>:58 (58,0)-(63,0)>
+0000 putspecialobject                       3                         (  59)
+0002 putnil
+0003 defineclass                            :Y, <class:Y>, 0
+0007 leave                                                            (  58)
+
+== disasm: #<ISeq:<class:Y>@<compiled>:59 (59,22)-(62,0)>
+0000 putobject                              42                        (  60)
+0002 dup
+0003 putspecialobject                       3
+0005 setconstant                            :Z
+0007 leave                                                            (  59)
+
+== disasm: #<ISeq:<class:X>@<compiled>:65 (65,0)-(71,0)>
+0000 definemethod                           :y, y                     (  66)
+0003 putobject                              :y
+0005 leave                                                            (  65)
+
+== disasm: #<ISeq:y@<compiled>:66 (66,22)-(70,0)>
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] b@1<Arg>
+0000 getlocal_WC_0                          a@0                       (  68)
+0002 getlocal_WC_0                          b@1
+0004 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0006 leave                                                            (  66)
+
+== disasm: #<ISeq:<module:X>@<compiled>:73 (73,0)-(79,0)>
+0000 putobject                              :line3                    (  75)
+0002 putobject                              :line4                    (  76)
+0004 newarray                               2                         (  74)
+0006 dup
+0007 putspecialobject                       3
+0009 setconstant                            :X
+0011 leave                                                            (  73)
+
+== disasm: #<ISeq:<module:X>@<compiled>:81 (81,0)-(86,0)>
+0000 putspecialobject                       3                         (  82)
+0002 putnil
+0003 defineclass                            :Y, <module:Y>, 2
+0007 leave                                                            (  81)
+
+== disasm: #<ISeq:<module:Y>@<compiled>:82 (82,22)-(85,0)>
+0000 putobject                              42                        (  83)
+0002 dup
+0003 putspecialobject                       3
+0005 setconstant                            :Z
+0007 leave                                                            (  82)

@@ -1,0 +1,9 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,8)>
+0000 putobject                              "a "
+0002 putself
+0003 opt_send_without_block                 <calldata!mid:b, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0005 dup
+0006 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0008 anytostring
+0009 concatstrings                          2
+0011 leave

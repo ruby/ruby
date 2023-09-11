@@ -1,0 +1,9 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,17)>
+0000 definemethod                           :exec, exec
+0003 putobject                              :exec
+0005 leave
+
+== disasm: #<ISeq:exec@<compiled>:0 (0,0)-(0,17)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:system, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 leave

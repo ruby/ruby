@@ -1,0 +1,5 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,24)>
+0000 putobject                              :a
+0002 putobject                              42                        (   1)
+0004 newhash                                2
+0006 leave

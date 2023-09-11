@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(8,13)>
+0000 putobject                              /wtf/                     (   8)
+0002 leave

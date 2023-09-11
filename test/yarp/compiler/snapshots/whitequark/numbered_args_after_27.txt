@@ -1,0 +1,45 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,13)>
+0000 putspecialobject                       1
+0002 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0005 pop
+0006 putspecialobject                       1                         (   2)
+0008 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0011 pop
+0012 putself                                                          (   4)
+0013 send                                   <calldata!mid:m, argc:0>, block in <compiled>
+0016 pop
+0017 putself                                                          (   6)
+0018 send                                   <calldata!mid:m, argc:0>, block in <compiled>
+0021 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,0)-(0,17)>
+0000 putself                                [Bc]
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putself
+0004 opt_send_without_block                 <calldata!mid:_9, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0008 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:2 (2,0)-(3,0)>
+0000 putself                                                          (   2)[Bc]
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putself
+0004 opt_send_without_block                 <calldata!mid:_9, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0008 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:5 (5,0)-(5,0)>
+0000 putself                                                          (   4)[Bc]
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putself
+0004 opt_send_without_block                 <calldata!mid:_9, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0008 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:7 (7,0)-(7,0)>
+0000 putself                                                          (   6)[Bc]
+0001 opt_send_without_block                 <calldata!mid:_1, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 putself
+0004 opt_send_without_block                 <calldata!mid:_9, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0006 opt_plus                               <calldata!mid:+, argc:1, ARGS_SIMPLE>[CcCr]
+0008 leave                                  [Br]

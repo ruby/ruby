@@ -1,0 +1,28 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,26)>
+0000 putself
+0001 putobject                              :do
+0003 putobject                              true
+0005 newhash                                2
+0007 opt_send_without_block                 <calldata!mid:assert, argc:1, FCALL|ARGS_SIMPLE>
+0009 pop
+0010 putself                                                          (   2)
+0011 putself
+0012 opt_send_without_block                 <calldata!mid:dogs, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0014 opt_send_without_block                 <calldata!mid:assert, argc:1, FCALL|ARGS_SIMPLE>
+0016 pop
+0017 putself                                                          (   4)
+0018 putobject                              :x
+0020 putspecialobject                       1
+0022 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0025 newhash                                2
+0027 opt_send_without_block                 <calldata!mid:f, argc:1, FCALL|ARGS_SIMPLE>
+0029 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:4 (4,6)-(5,0)>
+0000 putself                                                          (   4)[Bc]
+0001 send                                   <calldata!mid:meth, argc:0>, block (2 levels) in <compiled>
+0004 leave                                  [Br]
+
+== disasm: #<ISeq:block (2 levels) in <compiled>@<compiled>:4 (4,17)-(5,0)>
+0000 putnil                                                           (   4)[Bc]
+0001 leave                                  [Br]

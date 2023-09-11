@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,4)>
+0000 putobject                              false                     (   1)
+0002 opt_not                                <calldata!mid:!, argc:0, ARGS_SIMPLE>[CcCr]
+0004 dup
+0005 branchunless                           10
+0007 pop
+0008 putobject                              true                      (   2)
+0010 leave

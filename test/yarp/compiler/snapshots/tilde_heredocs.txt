@@ -1,0 +1,59 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(87,6)>
+0000 putobject                              "a\n"
+0002 putobject                              "\ta\nb\n\t\tc\n"         (   4)
+0004 putobject_INT2FIX_1_                                             (  11)
+0005 dup                                                              (  10)
+0006 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0008 anytostring
+0009 pop
+0010 putobject                              " a\n"
+0012 concatstrings                          2
+0014 putobject                              "a "                      (  14)
+0016 putobject_INT2FIX_1_                                             (  15)
+0017 dup                                                              (  14)
+0018 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0020 anytostring
+0021 pop
+0022 putobject                              "\n"
+0024 concatstrings                          3
+0026 putobject                              " a\n"                    (  18)
+0028 putobject_INT2FIX_1_                                             (  20)
+0029 dup                                                              (  18)
+0030 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0032 anytostring
+0033 pop
+0034 putobject                              "\n"
+0036 concatstrings                          3
+0038 putobject                              "a\n"                     (  23)
+0040 putobject_INT2FIX_1_                                             (  25)
+0041 dup                                                              (  23)
+0042 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0044 anytostring
+0045 pop
+0046 putobject                              "\n"
+0048 concatstrings                          3
+0050 putobject                              "a\nb\n"                  (  28)
+0052 putobject                              "a\n b\n"                 (  33)
+0054 putobject                              "\ta\nb\n"                (  38)
+0056 putobject                              "a \#{1}\n"               (  43)
+0058 putobject                              "a\n b\n"                 (  47)
+0060 putobject                              " a\nb\n"                 (  52)
+0062 putobject                              "a\nb\n"                  (  57)
+0064 putobject                              "a\n\nb\n"                (  62)
+0066 putobject                              "a\n\nb\n"                (  68)
+0068 putobject                              "a\n\n\n\nb\n"            (  74)
+0070 putobject                              "\n"                      (  82)
+0072 putobject_INT2FIX_1_                                             (  84)
+0073 dup                                                              (  82)
+0074 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0076 anytostring
+0077 pop
+0078 putobject                              "a\n"
+0080 concatstrings                          3
+0082 putobject_INT2FIX_1_                                             (  89)
+0083 dup                                                              (  87)
+0084 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0086 anytostring
+0087 putobject                              "\n\tb\n"
+0089 concatstrings                          2
+0091 leave

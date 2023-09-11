@@ -1,0 +1,10 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,11)>
+0000 putstring                              "a\nb"
+0002 putstring                              "c"                       (   1)
+0004 putstring                              "d"
+0006 putstring                              "ef"                      (   2)
+0008 putstring                              "gy"                      (   4)
+0010 putstring                              "hy"
+0012 putstring                              "iy"
+0014 newarray                               7
+0016 leave

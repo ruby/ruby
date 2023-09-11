@@ -1,0 +1,141 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(18,52)>
+0000 jump                                   4
+0002 putnil
+0003 pop
+0004 jump                                   4
+0006 putnil
+0007 pop
+0008 jump                                   12                        (   2)
+0010 putnil
+0011 pop
+0012 jump                                   12
+0014 putnil
+0015 pop
+0016 jump                                   20                        (   4)
+0018 putnil
+0019 pop
+0020 putnil
+0021 jump                                   24
+0023 putnil
+0024 pop
+0025 jump                                   29                        (   6)
+0027 putnil
+0028 pop
+0029 jump                                   29
+0031 putnil
+0032 pop
+0033 jump                                   37                        (   8)
+0035 putnil
+0036 pop
+0037 putnil
+0038 leave                                  [Re]
+0039 putnil
+0040 pop
+0041 jump                                   55                        (  10)
+0043 putnil
+0044 pop
+0045 jump                                   55
+0047 putself
+0048 putobject                              :a
+0050 putobject                              :b
+0052 opt_send_without_block                 <calldata!mid:foo, argc:2, FCALL|ARGS_SIMPLE>
+0054 pop
+0055 putself
+0056 opt_send_without_block                 <calldata!mid:bar?, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0058 branchif                               47
+0060 putnil
+0061 pop
+0062 jump                                   71                        (  12)
+0064 putnil
+0065 pop
+0066 jump                                   71
+0068 putnil
+0069 jump                                   77
+0071 definemethod                           :foo, foo
+0074 jump                                   68
+0076 putnil
+0077 pop
+0078 jump                                   87                        (  14)
+0080 putnil
+0081 pop
+0082 jump                                   87
+0084 putnil                                                           (  15)
+0085 jump                                   97
+0087 putspecialobject                       3
+0089 putnil
+0090 defineclass                            :Foo, <class:Foo>, 0
+0094 branchif                               84
+0096 putnil                                                           (  14)
+0097 pop
+0098 jump                                   107                       (  16)
+0100 putnil
+0101 pop
+0102 jump                                   107
+0104 putnil                                                           (  17)
+0105 jump                                   116
+0107 putself                                                          (  16)
+0108 putnil                                                           (  17)
+0109 defineclass                            :singletonclass, singleton class, 1
+0113 branchif                               104
+0115 putnil                                                           (  16)
+0116 pop
+0117 jump                                   125                       (  18)
+0119 putnil
+0120 pop
+0121 jump                                   125
+0123 putnil                                                           (  19)
+0124 leave
+0125 putself                                                          (  18)
+0126 putnil                                                           (  19)
+0127 defineclass                            :singletonclass, singleton class, 1
+0131 branchif                               123
+0133 putnil                                                           (  18)
+0134 leave
+
+== disasm: #<ISeq:foo@<compiled>:12 (12,7)-(13,0)>
+local table (size: 1, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Opt=0>
+0000 putself                                                          (  12)
+0001 send                                   <calldata!mid:tap, argc:0>, block in foo
+0004 setlocal_WC_0                          a@0
+0006 putnil
+0007 leave
+
+== disasm: #<ISeq:block in foo@<compiled>:12 (12,28)-(13,0)>
+0000 putnil                                                           (  12)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:<class:Foo>@<compiled>:15 (15,0)-(15,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putself                                                          (  14)
+0001 send                                   <calldata!mid:tap, argc:0>, block in <class:Foo>
+0004 dup
+0005 setlocal_WC_0                          a@0
+0007 leave
+
+== disasm: #<ISeq:block in <class:Foo>@<compiled>:14 (14,25)-(15,0)>
+0000 putnil                                                           (  14)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:singleton class@<compiled>:17 (17,0)-(17,0)>
+0000 putself                                                          (  16)
+0001 send                                   <calldata!mid:tap, argc:0>, block in singleton class
+0004 leave
+
+== disasm: #<ISeq:block in singleton class@<compiled>:16 (16,26)-(17,0)>
+0000 putnil                                                           (  16)[Bc]
+0001 leave                                  [Br]
+
+== disasm: #<ISeq:singleton class@<compiled>:19 (19,0)-(19,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0
+0000 putself                                                          (  18)
+0001 send                                   <calldata!mid:tap, argc:0>, block in singleton class
+0004 dup
+0005 setlocal_WC_0                          a@0
+0007 leave
+
+== disasm: #<ISeq:block in singleton class@<compiled>:18 (18,30)-(19,0)>
+0000 putnil                                                           (  18)[Bc]
+0001 leave                                  [Br]

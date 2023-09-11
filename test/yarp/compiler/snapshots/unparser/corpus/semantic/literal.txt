@@ -1,0 +1,15 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(13,10)>
+0000 getinstancevariable                    :@bar, <is:0>             (  10)
+0003 dup
+0004 objtostring                            <calldata!mid:to_s, argc:0, FCALL|ARGS_SIMPLE>
+0006 anytostring
+0007 pop
+0008 putobject                              "baz"
+0010 toregexp                               0, 2
+0013 putself                                                          (  13)
+0014 putself
+0015 putself
+0016 opt_send_without_block                 <calldata!mid:bar, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0018 opt_send_without_block                 <calldata!mid:foo, argc:1, FCALL|ARGS_SIMPLE>
+0020 opt_send_without_block                 <calldata!mid:w, argc:1, FCALL|ARGS_SIMPLE>
+0022 leave

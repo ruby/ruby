@@ -1,0 +1,17 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,28)>
+0000 putself
+0001 putspecialobject                       1
+0003 send                                   <calldata!mid:lambda, argc:0, FCALL>, block in <compiled>
+0006 putobject                              :a                        (   1)
+0008 putobject_INT2FIX_1_
+0009 newhash                                2
+0011 send                                   <calldata!mid:p, argc:2>, block in <compiled>
+0014 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,2)-(1,0)>
+0000 putobject                              :hello[Bc]
+0002 leave                                  [Br]
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:1 (1,0)-(1,0)>
+0000 putnil                                 [Bc]
+0001 leave                                  [Br]

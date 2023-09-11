@@ -1,0 +1,10 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,27)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0        [ 1] b@1
+0000 putself
+0001 defined                                constant, nil, "constant"
+0005 putself                                                          (   1)
+0006 defined                                constant, nil, "constant"
+0010 putself                                                          (   2)
+0011 defined                                constant, nil, "constant"
+0015 leave

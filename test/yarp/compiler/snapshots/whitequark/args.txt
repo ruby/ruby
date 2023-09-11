@@ -1,0 +1,232 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(62,21)>
+0000 definemethod                           :f, f
+0003 definemethod                           :f, f                     (   2)
+0006 definemethod                           :f, f                     (   4)
+0009 definemethod                           :f, f                     (   6)
+0012 definemethod                           :f, f                     (   8)
+0015 definemethod                           :f, f                     (  10)
+0018 definemethod                           :f, f                     (  12)
+0021 definemethod                           :f, f                     (  14)
+0024 definemethod                           :f, f                     (  16)
+0027 definemethod                           :f, f                     (  18)
+0030 definemethod                           :f, f                     (  20)
+0033 definemethod                           :f, f                     (  22)
+0036 definemethod                           :f, f                     (  24)
+0039 definemethod                           :f, f                     (  26)
+0042 definemethod                           :f, f                     (  28)
+0045 definemethod                           :f, f                     (  30)
+0048 definemethod                           :f, f                     (  32)
+0051 definemethod                           :f, f                     (  34)
+0054 definemethod                           :f, f                     (  36)
+0057 definemethod                           :f, f                     (  38)
+0060 definemethod                           :f, f                     (  40)
+0063 definemethod                           :f, f                     (  42)
+0066 definemethod                           :f, f                     (  44)
+0069 definemethod                           :f, f                     (  46)
+0072 definemethod                           :f, f                     (  48)
+0075 definemethod                           :f, f                     (  50)
+0078 definemethod                           :f, f                     (  53)
+0081 definemethod                           :f, f                     (  56)
+0084 definemethod                           :f, f                     (  58)
+0087 definemethod                           :f, f                     (  60)
+0090 definemethod                           :f, f                     (  62)
+0093 putobject                              :f
+0095 leave
+
+== disasm: #<ISeq:f@<compiled>:0 (0,0)-(0,13)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] b@0
+0000 putnil
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:2 (2,0)-(3,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (   2)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:4 (4,0)-(5,0)>
+0000 putnil                                                           (   4)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:6 (6,0)-(7,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] p@0<Arg>
+0000 putnil                                                           (   6)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:8 (8,0)-(9,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] r@0<Arg>
+0000 putnil                                                           (   8)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:10 (10,0)-(11,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] r@0<Arg>   [ 1] p@1
+0000 putnil                                                           (  10)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:12 (12,0)-(13,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] a@0<Arg>
+0000 putnil                                                           (  12)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:14 (14,0)-(15,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] p@1
+0000 putnil                                                           (  14)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:16 (16,0)-(17,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] r@1
+0000 putnil                                                           (  16)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:18 (18,0)-(19,0)>
+local table (size: 3, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] r@1        [ 1] p@2
+0000 putnil                                                           (  18)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:20 (20,0)-(21,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] a1@1
+0000 putnil                                                           (  20)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:22 (22,0)-(23,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] foo@0      [ 1] b@1
+0000 putnil                                                           (  22)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:24 (24,0)-(25,0)>
+local table (size: 4, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] foo@0      [ 3] bar@1      [ 2] baz@2      [ 1] b@3
+0000 putnil                                                           (  24)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:26 (26,0)-(27,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] baz@0      [ 1] b@1
+0000 putnil                                                           (  26)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:28 (28,0)-(29,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] *@0        [ 1] **@1
+0000 putnil                                                           (  28)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:30 (30,0)-(31,0)>
+local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] r@0        [ 1] b@1
+0000 putnil                                                           (  30)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:32 (32,0)-(33,0)>
+local table (size: 3, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] r@0        [ 2] p@1        [ 1] b@2
+0000 putnil                                                           (  32)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:34 (34,0)-(35,0)>
+0000 putnil                                                           (  34)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:36 (36,0)-(37,0)>
+local table (size: 2, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a@0<Arg>   [ 1] b@1
+0000 putnil                                                           (  36)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:38 (38,0)-(39,0)>
+local table (size: 3, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] r@1        [ 1] b@2
+0000 putnil                                                           (  38)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:40 (40,0)-(41,0)>
+local table (size: 4, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] a@0<Arg>   [ 3] r@1        [ 2] p@2        [ 1] b@3
+0000 putnil                                                           (  40)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:42 (42,0)-(43,0)>
+local table (size: 3, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a@0<Arg>   [ 2] o@1<Opt=0> [ 1] b@2
+0000 putobject_INT2FIX_1_                                             (  42)
+0001 setlocal_WC_0                          o@1
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:44 (44,0)-(45,0)>
+local table (size: 4, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] a@0<Arg>   [ 3] o@1<Opt=0> [ 2] r@2        [ 1] b@3
+0000 putobject_INT2FIX_1_                                             (  44)
+0001 setlocal_WC_0                          o@1
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:46 (46,0)-(47,0)>
+local table (size: 5, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 5] a@0<Arg>   [ 4] o@1<Opt=0> [ 3] r@2        [ 2] p@3        [ 1] b@4
+0000 putobject_INT2FIX_1_                                             (  46)
+0001 setlocal_WC_0                          o@1
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:48 (48,0)-(49,0)>
+local table (size: 4, argc: 1 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] a@0<Arg>   [ 3] o@1<Opt=0> [ 2] p@2        [ 1] b@3
+0000 putobject_INT2FIX_1_                                             (  48)
+0001 setlocal_WC_0                          o@1
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:50 (50,0)-(52,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 putnil                                                           (  50)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:53 (53,0)-(55,0)>
+local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] foo@0
+0000 putnil                                                           (  53)
+0001 leave
+
+== disasm: #<ISeq:f@<compiled>:56 (56,0)-(57,0)>
+local table (size: 2, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] o@0<Opt=0> [ 1] b@1
+0000 putobject_INT2FIX_1_                                             (  56)
+0001 setlocal_WC_0                          o@0
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:58 (58,0)-(59,0)>
+local table (size: 3, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] o@0<Opt=0> [ 2] r@1        [ 1] b@2
+0000 putobject_INT2FIX_1_                                             (  58)
+0001 setlocal_WC_0                          o@0
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:60 (60,0)-(61,0)>
+local table (size: 4, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 4] o@0<Opt=0> [ 3] r@1        [ 2] p@2        [ 1] b@3
+0000 putobject_INT2FIX_1_                                             (  60)
+0001 setlocal_WC_0                          o@0
+0003 putnil
+0004 leave
+
+== disasm: #<ISeq:f@<compiled>:62 (62,0)-(63,0)>
+local table (size: 3, argc: 0 [opts: 1, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] o@0<Opt=0> [ 2] p@1        [ 1] b@2
+0000 putobject_INT2FIX_1_                                             (  62)
+0001 setlocal_WC_0                          o@0
+0003 putnil
+0004 leave

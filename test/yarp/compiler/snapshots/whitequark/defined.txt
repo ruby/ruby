@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(4,13)>
+0000 putself
+0001 defined                                constant, nil, "constant"
+0005 putself                                                          (   2)
+0006 defined                                constant, nil, "constant"
+0010 putself                                                          (   4)
+0011 defined                                constant, nil, "constant"
+0015 leave

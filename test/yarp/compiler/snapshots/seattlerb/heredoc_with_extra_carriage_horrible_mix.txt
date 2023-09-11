@@ -1,0 +1,3 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,7)>
+0000 putobject                              "body\r\n"
+0002 leave

@@ -1,0 +1,7 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,14)>
+0000 putspecialobject                       1
+0002 putspecialobject                       2
+0004 putobject                              :foo
+0006 putobject                              :bar
+0008 opt_send_without_block                 <calldata!mid:core#set_method_alias, argc:3, ARGS_SIMPLE>
+0010 leave

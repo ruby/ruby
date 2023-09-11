@@ -1,0 +1,16 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(2,3)>
+0000 putspecialobject                       3
+0002 putnil
+0003 defineclass                            :X, <class:X>, 0
+0007 leave
+
+== disasm: #<ISeq:<class:X>@<compiled>:0 (0,0)-(2,3)>
+0000 definemethod                           :==, ==                   (   1)
+0003 putobject                              :==
+0005 leave
+
+== disasm: #<ISeq:==@<compiled>:1 (1,10)-(2,0)>
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] o@0<Arg>
+0000 putobject                              42                        (   1)
+0002 leave

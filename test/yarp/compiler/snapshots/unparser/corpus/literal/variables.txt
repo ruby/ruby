@@ -1,0 +1,23 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(9,17)>
+0000 putself
+0001 opt_send_without_block                 <calldata!mid:a, argc:0, FCALL|VCALL|ARGS_SIMPLE>
+0003 pop
+0004 getglobal                              :$a                       (   3)
+0006 pop
+0007 putnil                                                           (   6)
+0008 putobject                              true
+0010 getconstant                            :CONST
+0012 pop
+0013 putnil                                                           (   7)
+0014 putobject                              true
+0016 getconstant                            :SCOPED
+0018 pop
+0019 putobject                              false
+0021 getconstant                            :CONST
+0023 putobject                              false                     (   8)
+0025 getconstant                            :TOPLEVEL
+0027 putobject                              false                     (   9)
+0029 getconstant                            :TOPLEVEL
+0031 putobject                              false
+0033 getconstant                            :CONST
+0035 leave

@@ -1,0 +1,8 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,20)>
+0000 definemethod                           :return, return
+0003 putobject                              :return
+0005 leave
+
+== disasm: #<ISeq:return@<compiled>:0 (0,0)-(0,20)>
+0000 putnil
+0001 leave

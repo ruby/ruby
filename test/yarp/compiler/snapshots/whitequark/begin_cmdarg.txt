@@ -1,0 +1,10 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(0,28)>
+0000 putself
+0001 putobject_INT2FIX_1_
+0002 send                                   <calldata!mid:times, argc:0>, block in <compiled>
+0005 opt_send_without_block                 <calldata!mid:p, argc:1, FCALL|ARGS_SIMPLE>
+0007 leave
+
+== disasm: #<ISeq:block in <compiled>@<compiled>:0 (0,16)-(1,0)>
+0000 putobject_INT2FIX_1_                   [Bc]
+0001 leave                                  [Br]

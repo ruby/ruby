@@ -1,0 +1,7 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(6,11)>
+0000 putnil
+0001 leave                                  [Re]
+0002 putnil                                                           (   4)
+0003 leave                                  [Re]
+0004 putnil                                                           (   6)
+0005 leave

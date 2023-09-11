@@ -1,0 +1,4 @@
+== disasm: #<ISeq:<compiled>@<compiled>:0 (0,0)-(3,8)>
+0000 putnil
+0001 putobject                              "way over\n<<HERE\n  not here\nHERE\n\n<<~BUT  but\nBUT\n  there\n"(   3)
+0003 leave
