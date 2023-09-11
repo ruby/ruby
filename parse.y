@@ -1493,10 +1493,12 @@ add_block_exit(struct parser_params *p, NODE *node)
         compile_error(p, "unexpected node: %s", ruby_node_name(nd_type(node)));
         break;
     }
-    NODE *exits = p->exits;
-    if (exits) {
-        exits->nd_end->nd_next = node;
-        exits->nd_end = node;
+    if (!p->ctxt.in_defined) {
+        NODE *exits = p->exits;
+        if (exits) {
+            exits->nd_end->nd_next = node;
+            exits->nd_end = node;
+        }
     }
     return node;
 }
@@ -3865,11 +3867,13 @@ primary		: literal
                     }
                 | keyword_retry
                     {
-                        switch (p->ctxt.in_rescue) {
-                          case before_rescue: yyerror1(&@1, "Invalid retry without rescue"); break;
-                          case after_rescue: /* ok */ break;
-                          case after_else: yyerror1(&@1, "Invalid retry after else"); break;
-                          case after_ensure: yyerror1(&@1, "Invalid retry after ensure"); break;
+                        if (!p->ctxt.in_defined) {
+                            switch (p->ctxt.in_rescue) {
+                              case before_rescue: yyerror1(&@1, "Invalid retry without rescue"); break;
+                              case after_rescue: /* ok */ break;
+                              case after_else: yyerror1(&@1, "Invalid retry after else"); break;
+                              case after_ensure: yyerror1(&@1, "Invalid retry after ensure"); break;
+                            }
                         }
                     /*%%%*/
                         $$ = NEW_RETRY(&@$);
