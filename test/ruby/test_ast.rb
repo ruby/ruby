@@ -244,6 +244,15 @@ class TestAst < Test::Unit::TestCase
       assert_invalid_parse(msg, "def m; #{code}; end")
       assert_invalid_parse(msg, "begin; #{code}; end")
       assert_parse("END {#{code}}")
+
+      assert_parse("defined?(#{code})")
+      assert_parse("def m; defined?(#{code}); end")
+      assert_parse("begin; defined?(#{code}); end")
+
+      next if code.include?(" ")
+      assert_parse("defined? #{code}")
+      assert_parse("def m; defined? #{code}; end")
+      assert_parse("begin; defined? #{code}; end")
     end
   end
 
@@ -258,6 +267,22 @@ class TestAst < Test::Unit::TestCase
     assert_parse("nil rescue retry")
     assert_invalid_parse(msg, "END {retry}")
     assert_invalid_parse(msg, "begin rescue; END {retry}; end")
+
+    assert_parse("defined?(retry)")
+    assert_parse("def m; defined?(retry); end")
+    assert_parse("begin defined?(retry); end")
+    assert_parse("begin rescue; else; defined?(retry); end")
+    assert_parse("begin rescue; ensure; defined?(retry); end")
+    assert_parse("END {defined?(retry)}")
+    assert_parse("begin rescue; END {defined?(retry)}; end")
+    assert_parse("defined? retry")
+
+    assert_parse("def m; defined? retry; end")
+    assert_parse("begin defined? retry; end")
+    assert_parse("begin rescue; else; defined? retry; end")
+    assert_parse("begin rescue; ensure; defined? retry; end")
+    assert_parse("END {defined? retry}")
+    assert_parse("begin rescue; END {defined? retry}; end")
   end
 
   def test_node_id_for_location
