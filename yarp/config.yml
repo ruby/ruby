@@ -345,10 +345,10 @@ flags:
     values:
       - name: IGNORE_CASE
         comment: "i - ignores the case of characters when matching"
-      - name: MULTI_LINE
-        comment: "m - allows $ to match the end of lines within strings"
       - name: EXTENDED
         comment: "x - ignores whitespace and allows comments in regular expressions"
+      - name: MULTI_LINE
+        comment: "m - allows $ to match the end of lines within strings"
       - name: EUC_JP
         comment: "e - forces the EUC-JP encoding"
       - name: ASCII_8BIT
