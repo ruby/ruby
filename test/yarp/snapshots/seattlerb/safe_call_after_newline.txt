@@ -1,16 +1,25 @@
-ProgramNode(0...5)(
-  [],
-  StatementsNode(0...5)(
-    [CallNode(0...5)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-       (2...4),
-       (4...5),
-       nil,
-       nil,
-       nil,
-       nil,
-       1,
-       "b"
-     )]
-  )
-)
+@ ProgramNode (location: (0...5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...5))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...5))
+            ├── receiver:
+            │   @ CallNode (location: (0...1))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...1) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "a"
+            ├── call_operator_loc: (2...4) = "&."
+            ├── message_loc: (4...5) = "b"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            ├── flags: safe_navigation
+            └── name: "b"

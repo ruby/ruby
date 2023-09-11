@@ -1,20 +1,26 @@
-ProgramNode(0...17)(
-  [],
-  StatementsNode(0...17)(
-    [LambdaNode(0...17)(
-       [],
-       (0...2),
-       (3...5),
-       (14...17),
-       nil,
-       BeginNode(6...17)(
-         nil,
-         nil,
-         RescueNode(6...12)((6...12), [], nil, nil, nil, nil),
-         nil,
-         nil,
-         (14...17)
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...17))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...17))
+    └── body: (length: 1)
+        └── @ LambdaNode (location: (0...17))
+            ├── locals: []
+            ├── operator_loc: (0...2) = "->"
+            ├── opening_loc: (3...5) = "do"
+            ├── closing_loc: (14...17) = "end"
+            ├── parameters: ∅
+            └── body:
+                @ BeginNode (location: (6...17))
+                ├── begin_keyword_loc: ∅
+                ├── statements: ∅
+                ├── rescue_clause:
+                │   @ RescueNode (location: (6...12))
+                │   ├── keyword_loc: (6...12) = "rescue"
+                │   ├── exceptions: (length: 0)
+                │   ├── operator_loc: ∅
+                │   ├── reference: ∅
+                │   ├── statements: ∅
+                │   └── consequent: ∅
+                ├── else_clause: ∅
+                ├── ensure_clause: ∅
+                └── end_keyword_loc: (14...17) = "end"

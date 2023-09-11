@@ -1,12 +1,15 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [IfNode(0...10)(
-       (3...5),
-       TrueNode(6...10)(),
-       StatementsNode(0...3)([FloatNode(0...3)()]),
-       nil,
-       nil
-     )]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ IfNode (location: (0...10))
+            ├── if_keyword_loc: (3...5) = "if"
+            ├── predicate:
+            │   @ TrueNode (location: (6...10))
+            ├── statements:
+            │   @ StatementsNode (location: (0...3))
+            │   └── body: (length: 1)
+            │       └── @ FloatNode (location: (0...3))
+            ├── consequent: ∅
+            └── end_keyword_loc: ∅

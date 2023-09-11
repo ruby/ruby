@@ -1,32 +1,38 @@
-ProgramNode(0...24)(
-  [],
-  StatementsNode(0...24)(
-    [DefNode(0...24)(
-       :f,
-       (4...5),
-       nil,
-       ParametersNode(6...19)(
-         [RequiredParameterNode(6...7)(:a)],
-         [],
-         [],
-         nil,
-         [KeywordParameterNode(9...13)(:b, (9...11), IntegerNode(12...13)()),
-          KeywordParameterNode(15...19)(
-            :c,
-            (15...17),
-            IntegerNode(18...19)()
-          )],
-         nil,
-         nil
-       ),
-       nil,
-       [:a, :b, :c],
-       (0...3),
-       nil,
-       (5...6),
-       (19...20),
-       nil,
-       (21...24)
-     )]
-  )
-)
+@ ProgramNode (location: (0...24))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...24))
+    └── body: (length: 1)
+        └── @ DefNode (location: (0...24))
+            ├── name: :f
+            ├── name_loc: (4...5) = "f"
+            ├── receiver: ∅
+            ├── parameters:
+            │   @ ParametersNode (location: (6...19))
+            │   ├── requireds: (length: 1)
+            │   │   └── @ RequiredParameterNode (location: (6...7))
+            │   │       └── name: :a
+            │   ├── optionals: (length: 0)
+            │   ├── posts: (length: 0)
+            │   ├── rest: ∅
+            │   ├── keywords: (length: 2)
+            │   │   ├── @ KeywordParameterNode (location: (9...13))
+            │   │   │   ├── name: :b
+            │   │   │   ├── name_loc: (9...11) = "b:"
+            │   │   │   └── value:
+            │   │   │       @ IntegerNode (location: (12...13))
+            │   │   └── @ KeywordParameterNode (location: (15...19))
+            │   │       ├── name: :c
+            │   │       ├── name_loc: (15...17) = "c:"
+            │   │       └── value:
+            │   │           @ IntegerNode (location: (18...19))
+            │   ├── keyword_rest: ∅
+            │   └── block: ∅
+            ├── body: ∅
+            ├── locals: [:a, :b, :c]
+            ├── def_keyword_loc: (0...3) = "def"
+            ├── operator_loc: ∅
+            ├── lparen_loc: (5...6) = "("
+            ├── rparen_loc: (19...20) = ")"
+            ├── equal_loc: ∅
+            └── end_keyword_loc: (21...24) = "end"

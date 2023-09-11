@@ -1,10 +1,14 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [InterpolatedStringNode(0...10)(
-       (0...10),
-       [StringNode(11...15)(nil, (11...15), nil, "\#${\n")],
-       (15...23)
-     )]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (0...10))
+            ├── opening_loc: (0...10) = "<<-HEREDOC"
+            ├── parts: (length: 1)
+            │   └── @ StringNode (location: (11...15))
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (11...15) = "\#${\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\#${\n"
+            └── closing_loc: (15...23) = "HEREDOC\n"

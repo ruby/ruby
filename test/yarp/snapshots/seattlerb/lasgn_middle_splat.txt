@@ -1,21 +1,48 @@
-ProgramNode(0...12)(
-  [:a],
-  StatementsNode(0...12)(
-    [LocalVariableWriteNode(0...12)(
-       :a,
-       0,
-       (0...1),
-       ArrayNode(4...12)(
-         [CallNode(4...5)(nil, nil, (4...5), nil, nil, nil, nil, 2, "b"),
-          SplatNode(7...9)(
-            (7...8),
-            CallNode(8...9)(nil, nil, (8...9), nil, nil, nil, nil, 2, "c")
-          ),
-          CallNode(11...12)(nil, nil, (11...12), nil, nil, nil, nil, 2, "d")],
-         nil,
-         nil
-       ),
-       (2...3)
-     )]
-  )
-)
+@ ProgramNode (location: (0...12))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (0...12))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (0...12))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (0...1) = "a"
+            ├── value:
+            │   @ ArrayNode (location: (4...12))
+            │   ├── elements: (length: 3)
+            │   │   ├── @ CallNode (location: (4...5))
+            │   │   │   ├── receiver: ∅
+            │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── message_loc: (4...5) = "b"
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── arguments: ∅
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   ├── block: ∅
+            │   │   │   ├── flags: variable_call
+            │   │   │   └── name: "b"
+            │   │   ├── @ SplatNode (location: (7...9))
+            │   │   │   ├── operator_loc: (7...8) = "*"
+            │   │   │   └── expression:
+            │   │   │       @ CallNode (location: (8...9))
+            │   │   │       ├── receiver: ∅
+            │   │   │       ├── call_operator_loc: ∅
+            │   │   │       ├── message_loc: (8...9) = "c"
+            │   │   │       ├── opening_loc: ∅
+            │   │   │       ├── arguments: ∅
+            │   │   │       ├── closing_loc: ∅
+            │   │   │       ├── block: ∅
+            │   │   │       ├── flags: variable_call
+            │   │   │       └── name: "c"
+            │   │   └── @ CallNode (location: (11...12))
+            │   │       ├── receiver: ∅
+            │   │       ├── call_operator_loc: ∅
+            │   │       ├── message_loc: (11...12) = "d"
+            │   │       ├── opening_loc: ∅
+            │   │       ├── arguments: ∅
+            │   │       ├── closing_loc: ∅
+            │   │       ├── block: ∅
+            │   │       ├── flags: variable_call
+            │   │       └── name: "d"
+            │   ├── opening_loc: ∅
+            │   └── closing_loc: ∅
+            └── operator_loc: (2...3) = "="

@@ -307,20 +307,7 @@ module YARP
     end
 
     def pretty_print(q)
-      q.group do
-        q.text(self.class.name.split("::").last)
-        location.pretty_print(q)
-        q.text("[Li:#{location.start_line}]") if newline?
-        q.text("(")
-        q.nest(2) do
-          deconstructed = deconstruct_keys([])
-          deconstructed.delete(:location)
-          q.breakable("")
-          q.seplist(deconstructed, lambda { q.comma_breakable }, :each_value) { |value| q.pp(value) }
-        end
-        q.breakable("")
-        q.text(")")
-      end
+      q.text(inspect.chomp)
     end
   end
 

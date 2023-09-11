@@ -1,14 +1,18 @@
-ProgramNode(0...6)(
-  [],
-  StatementsNode(0...6)(
-    [HashNode(0...6)(
-       (0...1),
-       [AssocNode(2...4)(
-          SymbolNode(2...4)(nil, (2...3), (3...4), "y"),
-          nil,
-          nil
-        )],
-       (5...6)
-     )]
-  )
-)
+@ ProgramNode (location: (0...6))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...6))
+    └── body: (length: 1)
+        └── @ HashNode (location: (0...6))
+            ├── opening_loc: (0...1) = "{"
+            ├── elements: (length: 1)
+            │   └── @ AssocNode (location: (2...4))
+            │       ├── key:
+            │       │   @ SymbolNode (location: (2...4))
+            │       │   ├── opening_loc: ∅
+            │       │   ├── value_loc: (2...3) = "y"
+            │       │   ├── closing_loc: (3...4) = ":"
+            │       │   └── unescaped: "y"
+            │       ├── value: ∅
+            │       └── operator_loc: ∅
+            └── closing_loc: (5...6) = "}"

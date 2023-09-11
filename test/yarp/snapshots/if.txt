@@ -1,340 +1,409 @@
-ProgramNode(0...382)(
-  [],
-  StatementsNode(0...382)(
-    [IfNode(0...15)(
-       (0...2),
-       TrueNode(3...7)(),
-       StatementsNode(9...10)([IntegerNode(9...10)()]),
-       nil,
-       (12...15)
-     ),
-     IfNode(17...37)(
-       (17...19),
-       TrueNode(20...24)(),
-       StatementsNode(25...26)([IntegerNode(25...26)()]),
-       ElseNode(27...37)(
-         (27...31),
-         StatementsNode(32...33)([IntegerNode(32...33)()]),
-         (34...37)
-       ),
-       (34...37)
-     ),
-     IfNode(39...112)(
-       (39...41),
-       TrueNode(42...46)(),
-       StatementsNode(52...56)([TrueNode(52...56)()]),
-       IfNode(57...112)(
-         (57...62),
-         FalseNode(63...68)(),
-         StatementsNode(74...79)([FalseNode(74...79)()]),
-         IfNode(80...112)(
-           (80...85),
-           NilNode(86...89)(),
-           StatementsNode(95...98)([NilNode(95...98)()]),
-           ElseNode(99...112)(
-             (99...103),
-             StatementsNode(104...108)([SelfNode(104...108)()]),
-             (109...112)
-           ),
-           (109...112)
-         ),
-         (109...112)
-       ),
-       (109...112)
-     ),
-     IfNode(114...123)(
-       (116...118),
-       TrueNode(119...123)(),
-       StatementsNode(114...115)([IntegerNode(114...115)()]),
-       nil,
-       nil
-     ),
-     IfNode(125...138)(
-       (131...133),
-       TrueNode(134...138)(),
-       StatementsNode(125...130)([BreakNode(125...130)(nil, (125...130))]),
-       nil,
-       nil
-     ),
-     IfNode(140...152)(
-       (145...147),
-       TrueNode(148...152)(),
-       StatementsNode(140...144)([NextNode(140...144)(nil, (140...144))]),
-       nil,
-       nil
-     ),
-     IfNode(154...168)(
-       (161...163),
-       TrueNode(164...168)(),
-       StatementsNode(154...160)([ReturnNode(154...160)((154...160), nil)]),
-       nil,
-       nil
-     ),
-     IfNode(170...200)(
-       (170...172),
-       CallNode(173...182)(
-         nil,
-         nil,
-         (173...182),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "exit_loop"
-       ),
-       StatementsNode(188...196)(
-         [BreakNode(188...196)(
-            ArgumentsNode(194...196)([IntegerNode(194...196)()]),
-            (188...193)
-          )]
-       ),
-       nil,
-       (197...200)
-     ),
-     IfNode(202...221)(
-       (202...204),
-       CallNode(205...208)(
-         nil,
-         nil,
-         (205...208),
-         nil,
-         nil,
-         nil,
-         nil,
-         2,
-         "foo"
-       ),
-       StatementsNode(214...217)(
-         [CallNode(214...217)(
-            nil,
-            nil,
-            (214...217),
-            nil,
-            nil,
-            nil,
-            nil,
-            2,
-            "bar"
-          )]
-       ),
-       nil,
-       (218...221)
-     ),
-     IfNode(223...234)(
-       (230...232),
-       CallNode(233...234)(nil, nil, (233...234), nil, nil, nil, nil, 2, "c"),
-       StatementsNode(223...229)(
-         [IfNode(223...229)(
-            (225...227),
-            CallNode(228...229)(
-              nil,
-              nil,
-              (228...229),
-              nil,
-              nil,
-              nil,
-              nil,
-              2,
-              "b"
-            ),
-            StatementsNode(223...224)(
-              [CallNode(223...224)(
-                 nil,
-                 nil,
-                 (223...224),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 2,
-                 "a"
-               )]
-            ),
-            nil,
-            nil
-          )]
-       ),
-       nil,
-       nil
-     ),
-     IfNode(236...259)(
-       (236...238),
-       TrueNode(239...243)(),
-       StatementsNode(246...250)(
-         [CallNode(246...250)(
-            nil,
-            nil,
-            (246...247),
-            nil,
-            ArgumentsNode(248...250)(
-              [KeywordHashNode(248...250)(
-                 [AssocNode(248...250)(
-                    SymbolNode(248...250)(nil, (248...249), (249...250), "b"),
-                    nil,
-                    nil
-                  )]
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "a"
-          )]
-       ),
-       ElseNode(251...259)((251...255), nil, (256...259)),
-       (256...259)
-     ),
-     IfNode(261...293)(
-       (261...263),
-       MatchPredicateNode(264...273)(
-         CallNode(264...268)(
-           nil,
-           nil,
-           (264...268),
-           nil,
-           nil,
-           nil,
-           nil,
-           2,
-           "type"
-         ),
-         IntegerNode(272...273)(),
-         (269...271)
-       ),
-       nil,
-       IfNode(274...293)(
-         (274...279),
-         MatchPredicateNode(280...289)(
-           CallNode(280...284)(
-             nil,
-             nil,
-             (280...284),
-             nil,
-             nil,
-             nil,
-             nil,
-             2,
-             "type"
-           ),
-           ConstantReadNode(288...289)(:B),
-           (285...287)
-         ),
-         nil,
-         nil,
-         (290...293)
-       ),
-       (290...293)
-     ),
-     IfNode(295...382)(
-       (295...297),
-       IntegerNode(298...299)(),
-       StatementsNode(302...321)(
-         [CallNode(302...321)(
-            nil,
-            nil,
-            (302...308),
-            nil,
-            nil,
-            nil,
-            BlockNode(309...321)(
-              [:_],
-              BlockParametersNode(312...315)(
-                ParametersNode(313...314)(
-                  [RequiredParameterNode(313...314)(:_)],
-                  [],
-                  [],
-                  nil,
-                  [],
-                  nil,
-                  nil
-                ),
-                [],
-                (312...313),
-                (314...315)
-              ),
-              nil,
-              (309...311),
-              (318...321)
-            ),
-            0,
-            "lambda"
-          )]
-       ),
-       IfNode(322...382)(
-         (322...327),
-         IntegerNode(328...329)(),
-         StatementsNode(332...351)(
-           [CallNode(332...351)(
-              nil,
-              nil,
-              (332...338),
-              nil,
-              nil,
-              nil,
-              BlockNode(339...351)(
-                [:_],
-                BlockParametersNode(342...345)(
-                  ParametersNode(343...344)(
-                    [RequiredParameterNode(343...344)(:_)],
-                    [],
-                    [],
-                    nil,
-                    [],
-                    nil,
-                    nil
-                  ),
-                  [],
-                  (342...343),
-                  (344...345)
-                ),
-                nil,
-                (339...341),
-                (348...351)
-              ),
-              0,
-              "lambda"
-            )]
-         ),
-         ElseNode(352...382)(
-           (352...356),
-           StatementsNode(359...378)(
-             [CallNode(359...378)(
-                nil,
-                nil,
-                (359...365),
-                nil,
-                nil,
-                nil,
-                BlockNode(366...378)(
-                  [:_],
-                  BlockParametersNode(369...372)(
-                    ParametersNode(370...371)(
-                      [RequiredParameterNode(370...371)(:_)],
-                      [],
-                      [],
-                      nil,
-                      [],
-                      nil,
-                      nil
-                    ),
-                    [],
-                    (369...370),
-                    (371...372)
-                  ),
-                  nil,
-                  (366...368),
-                  (375...378)
-                ),
-                0,
-                "lambda"
-              )]
-           ),
-           (379...382)
-         ),
-         (379...382)
-       ),
-       (379...382)
-     )]
-  )
-)
+@ ProgramNode (location: (0...382))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...382))
+    └── body: (length: 13)
+        ├── @ IfNode (location: (0...15))
+        │   ├── if_keyword_loc: (0...2) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (3...7))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (9...10))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (9...10))
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (12...15) = "end"
+        ├── @ IfNode (location: (17...37))
+        │   ├── if_keyword_loc: (17...19) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (20...24))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (25...26))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (25...26))
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (27...37))
+        │   │   ├── else_keyword_loc: (27...31) = "else"
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (32...33))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ IntegerNode (location: (32...33))
+        │   │   └── end_keyword_loc: (34...37) = "end"
+        │   └── end_keyword_loc: (34...37) = "end"
+        ├── @ IfNode (location: (39...112))
+        │   ├── if_keyword_loc: (39...41) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (42...46))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (52...56))
+        │   │   └── body: (length: 1)
+        │   │       └── @ TrueNode (location: (52...56))
+        │   ├── consequent:
+        │   │   @ IfNode (location: (57...112))
+        │   │   ├── if_keyword_loc: (57...62) = "elsif"
+        │   │   ├── predicate:
+        │   │   │   @ FalseNode (location: (63...68))
+        │   │   ├── statements:
+        │   │   │   @ StatementsNode (location: (74...79))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ FalseNode (location: (74...79))
+        │   │   ├── consequent:
+        │   │   │   @ IfNode (location: (80...112))
+        │   │   │   ├── if_keyword_loc: (80...85) = "elsif"
+        │   │   │   ├── predicate:
+        │   │   │   │   @ NilNode (location: (86...89))
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (95...98))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ NilNode (location: (95...98))
+        │   │   │   ├── consequent:
+        │   │   │   │   @ ElseNode (location: (99...112))
+        │   │   │   │   ├── else_keyword_loc: (99...103) = "else"
+        │   │   │   │   ├── statements:
+        │   │   │   │   │   @ StatementsNode (location: (104...108))
+        │   │   │   │   │   └── body: (length: 1)
+        │   │   │   │   │       └── @ SelfNode (location: (104...108))
+        │   │   │   │   └── end_keyword_loc: (109...112) = "end"
+        │   │   │   └── end_keyword_loc: (109...112) = "end"
+        │   │   └── end_keyword_loc: (109...112) = "end"
+        │   └── end_keyword_loc: (109...112) = "end"
+        ├── @ IfNode (location: (114...123))
+        │   ├── if_keyword_loc: (116...118) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (119...123))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (114...115))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IntegerNode (location: (114...115))
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (125...138))
+        │   ├── if_keyword_loc: (131...133) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (134...138))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (125...130))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (125...130))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (125...130) = "break"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (140...152))
+        │   ├── if_keyword_loc: (145...147) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (148...152))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (140...144))
+        │   │   └── body: (length: 1)
+        │   │       └── @ NextNode (location: (140...144))
+        │   │           ├── arguments: ∅
+        │   │           └── keyword_loc: (140...144) = "next"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (154...168))
+        │   ├── if_keyword_loc: (161...163) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (164...168))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (154...160))
+        │   │   └── body: (length: 1)
+        │   │       └── @ ReturnNode (location: (154...160))
+        │   │           ├── keyword_loc: (154...160) = "return"
+        │   │           └── arguments: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (170...200))
+        │   ├── if_keyword_loc: (170...172) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (173...182))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (173...182) = "exit_loop"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "exit_loop"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (188...196))
+        │   │   └── body: (length: 1)
+        │   │       └── @ BreakNode (location: (188...196))
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (194...196))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (194...196))
+        │   │           └── keyword_loc: (188...193) = "break"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (197...200) = "end"
+        ├── @ IfNode (location: (202...221))
+        │   ├── if_keyword_loc: (202...204) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (205...208))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (205...208) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "foo"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (214...217))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (214...217))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (214...217) = "bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: variable_call
+        │   │           └── name: "bar"
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: (218...221) = "end"
+        ├── @ IfNode (location: (223...234))
+        │   ├── if_keyword_loc: (230...232) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (233...234))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (233...234) = "c"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: "c"
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (223...229))
+        │   │   └── body: (length: 1)
+        │   │       └── @ IfNode (location: (223...229))
+        │   │           ├── if_keyword_loc: (225...227) = "if"
+        │   │           ├── predicate:
+        │   │           │   @ CallNode (location: (228...229))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (228...229) = "b"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: variable_call
+        │   │           │   └── name: "b"
+        │   │           ├── statements:
+        │   │           │   @ StatementsNode (location: (223...224))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ CallNode (location: (223...224))
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── message_loc: (223...224) = "a"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           ├── block: ∅
+        │   │           │           ├── flags: variable_call
+        │   │           │           └── name: "a"
+        │   │           ├── consequent: ∅
+        │   │           └── end_keyword_loc: ∅
+        │   ├── consequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (236...259))
+        │   ├── if_keyword_loc: (236...238) = "if"
+        │   ├── predicate:
+        │   │   @ TrueNode (location: (239...243))
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (246...250))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (246...250))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (246...247) = "a"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (248...250))
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ KeywordHashNode (location: (248...250))
+        │   │           │           └── elements: (length: 1)
+        │   │           │               └── @ AssocNode (location: (248...250))
+        │   │           │                   ├── key:
+        │   │           │                   │   @ SymbolNode (location: (248...250))
+        │   │           │                   │   ├── opening_loc: ∅
+        │   │           │                   │   ├── value_loc: (248...249) = "b"
+        │   │           │                   │   ├── closing_loc: (249...250) = ":"
+        │   │           │                   │   └── unescaped: "b"
+        │   │           │                   ├── value: ∅
+        │   │           │                   └── operator_loc: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: 
+        │   │           └── name: "a"
+        │   ├── consequent:
+        │   │   @ ElseNode (location: (251...259))
+        │   │   ├── else_keyword_loc: (251...255) = "else"
+        │   │   ├── statements: ∅
+        │   │   └── end_keyword_loc: (256...259) = "end"
+        │   └── end_keyword_loc: (256...259) = "end"
+        ├── @ IfNode (location: (261...293))
+        │   ├── if_keyword_loc: (261...263) = "if"
+        │   ├── predicate:
+        │   │   @ MatchPredicateNode (location: (264...273))
+        │   │   ├── value:
+        │   │   │   @ CallNode (location: (264...268))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (264...268) = "type"
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── arguments: ∅
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: variable_call
+        │   │   │   └── name: "type"
+        │   │   ├── pattern:
+        │   │   │   @ IntegerNode (location: (272...273))
+        │   │   └── operator_loc: (269...271) = "in"
+        │   ├── statements: ∅
+        │   ├── consequent:
+        │   │   @ IfNode (location: (274...293))
+        │   │   ├── if_keyword_loc: (274...279) = "elsif"
+        │   │   ├── predicate:
+        │   │   │   @ MatchPredicateNode (location: (280...289))
+        │   │   │   ├── value:
+        │   │   │   │   @ CallNode (location: (280...284))
+        │   │   │   │   ├── receiver: ∅
+        │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── message_loc: (280...284) = "type"
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   ├── arguments: ∅
+        │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   ├── block: ∅
+        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   └── name: "type"
+        │   │   │   ├── pattern:
+        │   │   │   │   @ ConstantReadNode (location: (288...289))
+        │   │   │   │   └── name: :B
+        │   │   │   └── operator_loc: (285...287) = "in"
+        │   │   ├── statements: ∅
+        │   │   ├── consequent: ∅
+        │   │   └── end_keyword_loc: (290...293) = "end"
+        │   └── end_keyword_loc: (290...293) = "end"
+        └── @ IfNode (location: (295...382))
+            ├── if_keyword_loc: (295...297) = "if"
+            ├── predicate:
+            │   @ IntegerNode (location: (298...299))
+            ├── statements:
+            │   @ StatementsNode (location: (302...321))
+            │   └── body: (length: 1)
+            │       └── @ CallNode (location: (302...321))
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── message_loc: (302...308) = "lambda"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           ├── block:
+            │           │   @ BlockNode (location: (309...321))
+            │           │   ├── locals: [:_]
+            │           │   ├── parameters:
+            │           │   │   @ BlockParametersNode (location: (312...315))
+            │           │   │   ├── parameters:
+            │           │   │   │   @ ParametersNode (location: (313...314))
+            │           │   │   │   ├── requireds: (length: 1)
+            │           │   │   │   │   └── @ RequiredParameterNode (location: (313...314))
+            │           │   │   │   │       └── name: :_
+            │           │   │   │   ├── optionals: (length: 0)
+            │           │   │   │   ├── posts: (length: 0)
+            │           │   │   │   ├── rest: ∅
+            │           │   │   │   ├── keywords: (length: 0)
+            │           │   │   │   ├── keyword_rest: ∅
+            │           │   │   │   └── block: ∅
+            │           │   │   ├── locals: (length: 0)
+            │           │   │   ├── opening_loc: (312...313) = "|"
+            │           │   │   └── closing_loc: (314...315) = "|"
+            │           │   ├── body: ∅
+            │           │   ├── opening_loc: (309...311) = "do"
+            │           │   └── closing_loc: (318...321) = "end"
+            │           ├── flags: 
+            │           └── name: "lambda"
+            ├── consequent:
+            │   @ IfNode (location: (322...382))
+            │   ├── if_keyword_loc: (322...327) = "elsif"
+            │   ├── predicate:
+            │   │   @ IntegerNode (location: (328...329))
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (332...351))
+            │   │   └── body: (length: 1)
+            │   │       └── @ CallNode (location: (332...351))
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── message_loc: (332...338) = "lambda"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           ├── block:
+            │   │           │   @ BlockNode (location: (339...351))
+            │   │           │   ├── locals: [:_]
+            │   │           │   ├── parameters:
+            │   │           │   │   @ BlockParametersNode (location: (342...345))
+            │   │           │   │   ├── parameters:
+            │   │           │   │   │   @ ParametersNode (location: (343...344))
+            │   │           │   │   │   ├── requireds: (length: 1)
+            │   │           │   │   │   │   └── @ RequiredParameterNode (location: (343...344))
+            │   │           │   │   │   │       └── name: :_
+            │   │           │   │   │   ├── optionals: (length: 0)
+            │   │           │   │   │   ├── posts: (length: 0)
+            │   │           │   │   │   ├── rest: ∅
+            │   │           │   │   │   ├── keywords: (length: 0)
+            │   │           │   │   │   ├── keyword_rest: ∅
+            │   │           │   │   │   └── block: ∅
+            │   │           │   │   ├── locals: (length: 0)
+            │   │           │   │   ├── opening_loc: (342...343) = "|"
+            │   │           │   │   └── closing_loc: (344...345) = "|"
+            │   │           │   ├── body: ∅
+            │   │           │   ├── opening_loc: (339...341) = "do"
+            │   │           │   └── closing_loc: (348...351) = "end"
+            │   │           ├── flags: 
+            │   │           └── name: "lambda"
+            │   ├── consequent:
+            │   │   @ ElseNode (location: (352...382))
+            │   │   ├── else_keyword_loc: (352...356) = "else"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (359...378))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ CallNode (location: (359...378))
+            │   │   │           ├── receiver: ∅
+            │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── message_loc: (359...365) = "lambda"
+            │   │   │           ├── opening_loc: ∅
+            │   │   │           ├── arguments: ∅
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           ├── block:
+            │   │   │           │   @ BlockNode (location: (366...378))
+            │   │   │           │   ├── locals: [:_]
+            │   │   │           │   ├── parameters:
+            │   │   │           │   │   @ BlockParametersNode (location: (369...372))
+            │   │   │           │   │   ├── parameters:
+            │   │   │           │   │   │   @ ParametersNode (location: (370...371))
+            │   │   │           │   │   │   ├── requireds: (length: 1)
+            │   │   │           │   │   │   │   └── @ RequiredParameterNode (location: (370...371))
+            │   │   │           │   │   │   │       └── name: :_
+            │   │   │           │   │   │   ├── optionals: (length: 0)
+            │   │   │           │   │   │   ├── posts: (length: 0)
+            │   │   │           │   │   │   ├── rest: ∅
+            │   │   │           │   │   │   ├── keywords: (length: 0)
+            │   │   │           │   │   │   ├── keyword_rest: ∅
+            │   │   │           │   │   │   └── block: ∅
+            │   │   │           │   │   ├── locals: (length: 0)
+            │   │   │           │   │   ├── opening_loc: (369...370) = "|"
+            │   │   │           │   │   └── closing_loc: (371...372) = "|"
+            │   │   │           │   ├── body: ∅
+            │   │   │           │   ├── opening_loc: (366...368) = "do"
+            │   │   │           │   └── closing_loc: (375...378) = "end"
+            │   │   │           ├── flags: 
+            │   │   │           └── name: "lambda"
+            │   │   └── end_keyword_loc: (379...382) = "end"
+            │   └── end_keyword_loc: (379...382) = "end"
+            └── end_keyword_loc: (379...382) = "end"

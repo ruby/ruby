@@ -1,15 +1,23 @@
-ProgramNode(0...33)(
-  [],
-  StatementsNode(0...33)(
-    [InterpolatedStringNode(0...4)(
-       (0...4),
-       [StringNode(5...25)(nil, (5...25), nil, "    1     2\n" + "    3\n")],
-       (25...27)
-     ),
-     InterpolatedStringNode(29...33)(
-       (29...33),
-       [StringNode(34...54)(nil, (34...54), nil, "1 2\n" + "3\n")],
-       (54...56)
-     )]
-  )
-)
+@ ProgramNode (location: (0...33))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...33))
+    └── body: (length: 2)
+        ├── @ InterpolatedStringNode (location: (0...4))
+        │   ├── opening_loc: (0...4) = "<<-E"
+        │   ├── parts: (length: 1)
+        │   │   └── @ StringNode (location: (5...25))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (5...25) = "    1 \\\n    2\n    3\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "    1     2\n    3\n"
+        │   └── closing_loc: (25...27) = "E\n"
+        └── @ InterpolatedStringNode (location: (29...33))
+            ├── opening_loc: (29...33) = "<<~E"
+            ├── parts: (length: 1)
+            │   └── @ StringNode (location: (34...54))
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (34...54) = "    1 \\\n    2\n    3\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "1 2\n3\n"
+            └── closing_loc: (54...56) = "E\n"

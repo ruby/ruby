@@ -1,44 +1,58 @@
-ProgramNode(0...22)(
-  [],
-  StatementsNode(0...22)(
-    [LambdaNode(0...16)(
-       [],
-       (0...2),
-       (3...4),
-       (15...16),
-       nil,
-       StatementsNode(7...14)(
-         [CallNode(7...14)(
-            CallNode(7...9)(nil, nil, (7...9), nil, nil, nil, nil, 2, "_1"),
-            nil,
-            (10...11),
-            nil,
-            ArgumentsNode(12...14)(
-              [CallNode(12...14)(
-                 nil,
-                 nil,
-                 (12...14),
-                 nil,
-                 nil,
-                 nil,
-                 nil,
-                 2,
-                 "_2"
-               )]
-            ),
-            nil,
-            nil,
-            0,
-            "+"
-          )]
-       )
-     ),
-     ParenthesesNode(17...22)(
-       StatementsNode(18...21)(
-         [RangeNode(18...21)(nil, IntegerNode(20...21)(), (18...20), 0)]
-       ),
-       (17...18),
-       (21...22)
-     )]
-  )
-)
+@ ProgramNode (location: (0...22))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...22))
+    └── body: (length: 2)
+        ├── @ LambdaNode (location: (0...16))
+        │   ├── locals: []
+        │   ├── operator_loc: (0...2) = "->"
+        │   ├── opening_loc: (3...4) = "{"
+        │   ├── closing_loc: (15...16) = "}"
+        │   ├── parameters: ∅
+        │   └── body:
+        │       @ StatementsNode (location: (7...14))
+        │       └── body: (length: 1)
+        │           └── @ CallNode (location: (7...14))
+        │               ├── receiver:
+        │               │   @ CallNode (location: (7...9))
+        │               │   ├── receiver: ∅
+        │               │   ├── call_operator_loc: ∅
+        │               │   ├── message_loc: (7...9) = "_1"
+        │               │   ├── opening_loc: ∅
+        │               │   ├── arguments: ∅
+        │               │   ├── closing_loc: ∅
+        │               │   ├── block: ∅
+        │               │   ├── flags: variable_call
+        │               │   └── name: "_1"
+        │               ├── call_operator_loc: ∅
+        │               ├── message_loc: (10...11) = "+"
+        │               ├── opening_loc: ∅
+        │               ├── arguments:
+        │               │   @ ArgumentsNode (location: (12...14))
+        │               │   └── arguments: (length: 1)
+        │               │       └── @ CallNode (location: (12...14))
+        │               │           ├── receiver: ∅
+        │               │           ├── call_operator_loc: ∅
+        │               │           ├── message_loc: (12...14) = "_2"
+        │               │           ├── opening_loc: ∅
+        │               │           ├── arguments: ∅
+        │               │           ├── closing_loc: ∅
+        │               │           ├── block: ∅
+        │               │           ├── flags: variable_call
+        │               │           └── name: "_2"
+        │               ├── closing_loc: ∅
+        │               ├── block: ∅
+        │               ├── flags: 
+        │               └── name: "+"
+        └── @ ParenthesesNode (location: (17...22))
+            ├── body:
+            │   @ StatementsNode (location: (18...21))
+            │   └── body: (length: 1)
+            │       └── @ RangeNode (location: (18...21))
+            │           ├── left: ∅
+            │           ├── right:
+            │           │   @ IntegerNode (location: (20...21))
+            │           ├── operator_loc: (18...20) = ".."
+            │           └── flags: 
+            ├── opening_loc: (17...18) = "("
+            └── closing_loc: (21...22) = ")"

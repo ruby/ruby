@@ -1,4 +1,9 @@
-ProgramNode(0...2)(
-  [],
-  StatementsNode(0...2)([ParenthesesNode(0...2)(nil, (0...1), (1...2))])
-)
+@ ProgramNode (location: (0...2))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...2))
+    └── body: (length: 1)
+        └── @ ParenthesesNode (location: (0...2))
+            ├── body: ∅
+            ├── opening_loc: (0...1) = "("
+            └── closing_loc: (1...2) = ")"

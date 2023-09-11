@@ -1,4 +1,9 @@
-ProgramNode(0...4)(
-  [],
-  StatementsNode(0...4)([ArrayNode(0...4)([], (0...3), (3...4))])
-)
+@ ProgramNode (location: (0...4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...4))
+    └── body: (length: 1)
+        └── @ ArrayNode (location: (0...4))
+            ├── elements: (length: 0)
+            ├── opening_loc: (0...3) = "%w("
+            └── closing_loc: (3...4) = ")"

@@ -1,6 +1,12 @@
-ProgramNode(0...5)(
-  [],
-  StatementsNode(0...5)(
-    [LambdaNode(0...5)([], (0...2), (2...3), (4...5), nil, nil)]
-  )
-)
+@ ProgramNode (location: (0...5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...5))
+    └── body: (length: 1)
+        └── @ LambdaNode (location: (0...5))
+            ├── locals: []
+            ├── operator_loc: (0...2) = "->"
+            ├── opening_loc: (2...3) = "{"
+            ├── closing_loc: (4...5) = "}"
+            ├── parameters: ∅
+            └── body: ∅

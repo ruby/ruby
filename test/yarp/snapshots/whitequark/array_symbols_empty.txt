@@ -1,7 +1,13 @@
-ProgramNode(0...10)(
-  [],
-  StatementsNode(0...10)(
-    [ArrayNode(0...4)([], (0...3), (3...4)),
-     ArrayNode(6...10)([], (6...9), (9...10))]
-  )
-)
+@ ProgramNode (location: (0...10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...10))
+    └── body: (length: 2)
+        ├── @ ArrayNode (location: (0...4))
+        │   ├── elements: (length: 0)
+        │   ├── opening_loc: (0...3) = "%I("
+        │   └── closing_loc: (3...4) = ")"
+        └── @ ArrayNode (location: (6...10))
+            ├── elements: (length: 0)
+            ├── opening_loc: (6...9) = "%i["
+            └── closing_loc: (9...10) = "]"

@@ -1,29 +1,37 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [CallNode(0...11)(
-       nil,
-       nil,
-       (0...3),
-       (3...4),
-       ArgumentsNode(4...10)(
-         [KeywordHashNode(4...10)(
-            [AssocNode(4...6)(
-               SymbolNode(4...6)(nil, (4...5), (5...6), "a"),
-               nil,
-               nil
-             ),
-             AssocNode(8...10)(
-               SymbolNode(8...10)(nil, (8...9), (9...10), "b"),
-               nil,
-               nil
-             )]
-          )]
-       ),
-       (10...11),
-       nil,
-       0,
-       "foo"
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ CallNode (location: (0...11))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (0...3) = "foo"
+            ├── opening_loc: (3...4) = "("
+            ├── arguments:
+            │   @ ArgumentsNode (location: (4...10))
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (4...10))
+            │           └── elements: (length: 2)
+            │               ├── @ AssocNode (location: (4...6))
+            │               │   ├── key:
+            │               │   │   @ SymbolNode (location: (4...6))
+            │               │   │   ├── opening_loc: ∅
+            │               │   │   ├── value_loc: (4...5) = "a"
+            │               │   │   ├── closing_loc: (5...6) = ":"
+            │               │   │   └── unescaped: "a"
+            │               │   ├── value: ∅
+            │               │   └── operator_loc: ∅
+            │               └── @ AssocNode (location: (8...10))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (8...10))
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── value_loc: (8...9) = "b"
+            │                   │   ├── closing_loc: (9...10) = ":"
+            │                   │   └── unescaped: "b"
+            │                   ├── value: ∅
+            │                   └── operator_loc: ∅
+            ├── closing_loc: (10...11) = ")"
+            ├── block: ∅
+            ├── flags: 
+            └── name: "foo"

@@ -1,4 +1,7 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)([FloatNode(0...5)(), FloatNode(7...11)()])
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 2)
+        ├── @ FloatNode (location: (0...5))
+        └── @ FloatNode (location: (7...11))

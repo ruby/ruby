@@ -1,529 +1,569 @@
-ProgramNode(0...437)(
-  [:foo],
-  StatementsNode(0...437)(
-    [LocalVariableOperatorWriteNode(0...27)(
-       (0...3),
-       (4...6),
-       CallNode(7...27)(
-         nil,
-         nil,
-         (7...12),
-         nil,
-         ArgumentsNode(13...27)(
-           [RescueModifierNode(13...27)(
-              CallNode(13...16)(
-                nil,
-                nil,
-                (13...16),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (17...23),
-              NilNode(24...27)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       ),
-       :foo,
-       :+,
-       0
-     ),
-     LocalVariableOperatorWriteNode(29...57)(
-       (29...32),
-       (33...35),
-       RescueModifierNode(36...57)(
-         CallNode(36...46)(
-           nil,
-           nil,
-           (36...41),
-           (41...42),
-           ArgumentsNode(42...45)(
-             [CallNode(42...45)(
-                nil,
-                nil,
-                (42...45),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (45...46),
-           nil,
-           0,
-           "raise"
-         ),
-         (47...53),
-         NilNode(54...57)()
-       ),
-       :foo,
-       :+,
-       0
-     ),
-     LocalVariableWriteNode(59...85)(
-       :foo,
-       0,
-       (59...62),
-       CallNode(65...85)(
-         nil,
-         nil,
-         (65...70),
-         nil,
-         ArgumentsNode(71...85)(
-           [RescueModifierNode(71...85)(
-              CallNode(71...74)(
-                nil,
-                nil,
-                (71...74),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (75...81),
-              NilNode(82...85)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       ),
-       (63...64)
-     ),
-     LocalVariableWriteNode(87...114)(
-       :foo,
-       0,
-       (87...90),
-       RescueModifierNode(93...114)(
-         CallNode(93...103)(
-           nil,
-           nil,
-           (93...98),
-           (98...99),
-           ArgumentsNode(99...102)(
-             [CallNode(99...102)(
-                nil,
-                nil,
-                (99...102),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (102...103),
-           nil,
-           0,
-           "raise"
-         ),
-         (104...110),
-         NilNode(111...114)()
-       ),
-       (91...92)
-     ),
-     CallOperatorWriteNode(116...145)(
-       LocalVariableReadNode(116...119)(:foo, 0),
-       (119...120),
-       (120...121),
-       nil,
-       nil,
-       nil,
-       0,
-       "C",
-       "C=",
-       :+,
-       (122...124),
-       CallNode(125...145)(
-         nil,
-         nil,
-         (125...130),
-         nil,
-         ArgumentsNode(131...145)(
-           [RescueModifierNode(131...145)(
-              CallNode(131...134)(
-                nil,
-                nil,
-                (131...134),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (135...141),
-              NilNode(142...145)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       )
-     ),
-     CallOperatorWriteNode(147...177)(
-       LocalVariableReadNode(147...150)(:foo, 0),
-       (150...151),
-       (151...152),
-       nil,
-       nil,
-       nil,
-       0,
-       "C",
-       "C=",
-       :+,
-       (153...155),
-       RescueModifierNode(156...177)(
-         CallNode(156...166)(
-           nil,
-           nil,
-           (156...161),
-           (161...162),
-           ArgumentsNode(162...165)(
-             [CallNode(162...165)(
-                nil,
-                nil,
-                (162...165),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (165...166),
-           nil,
-           0,
-           "raise"
-         ),
-         (167...173),
-         NilNode(174...177)()
-       )
-     ),
-     CallOperatorWriteNode(179...208)(
-       LocalVariableReadNode(179...182)(:foo, 0),
-       (182...183),
-       (183...184),
-       nil,
-       nil,
-       nil,
-       0,
-       "m",
-       "m=",
-       :+,
-       (185...187),
-       CallNode(188...208)(
-         nil,
-         nil,
-         (188...193),
-         nil,
-         ArgumentsNode(194...208)(
-           [RescueModifierNode(194...208)(
-              CallNode(194...197)(
-                nil,
-                nil,
-                (194...197),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (198...204),
-              NilNode(205...208)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       )
-     ),
-     CallOperatorWriteNode(210...240)(
-       LocalVariableReadNode(210...213)(:foo, 0),
-       (213...214),
-       (214...215),
-       nil,
-       nil,
-       nil,
-       0,
-       "m",
-       "m=",
-       :+,
-       (216...218),
-       RescueModifierNode(219...240)(
-         CallNode(219...229)(
-           nil,
-           nil,
-           (219...224),
-           (224...225),
-           ArgumentsNode(225...228)(
-             [CallNode(225...228)(
-                nil,
-                nil,
-                (225...228),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (228...229),
-           nil,
-           0,
-           "raise"
-         ),
-         (230...236),
-         NilNode(237...240)()
-       )
-     ),
-     ConstantPathOrWriteNode(242...273)(
-       ConstantPathNode(242...248)(
-         LocalVariableReadNode(242...245)(:foo, 0),
-         ConstantReadNode(247...248)(:C),
-         (245...247)
-       ),
-       (249...252),
-       CallNode(253...273)(
-         nil,
-         nil,
-         (253...258),
-         nil,
-         ArgumentsNode(259...273)(
-           [RescueModifierNode(259...273)(
-              CallNode(259...262)(
-                nil,
-                nil,
-                (259...262),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (263...269),
-              NilNode(270...273)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       )
-     ),
-     ConstantPathOrWriteNode(275...307)(
-       ConstantPathNode(275...281)(
-         LocalVariableReadNode(275...278)(:foo, 0),
-         ConstantReadNode(280...281)(:C),
-         (278...280)
-       ),
-       (282...285),
-       RescueModifierNode(286...307)(
-         CallNode(286...296)(
-           nil,
-           nil,
-           (286...291),
-           (291...292),
-           ArgumentsNode(292...295)(
-             [CallNode(292...295)(
-                nil,
-                nil,
-                (292...295),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (295...296),
-           nil,
-           0,
-           "raise"
-         ),
-         (297...303),
-         NilNode(304...307)()
-       )
-     ),
-     CallOperatorWriteNode(309...339)(
-       LocalVariableReadNode(309...312)(:foo, 0),
-       (312...314),
-       (314...315),
-       nil,
-       nil,
-       nil,
-       0,
-       "m",
-       "m=",
-       :+,
-       (316...318),
-       CallNode(319...339)(
-         nil,
-         nil,
-         (319...324),
-         nil,
-         ArgumentsNode(325...339)(
-           [RescueModifierNode(325...339)(
-              CallNode(325...328)(
-                nil,
-                nil,
-                (325...328),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (329...335),
-              NilNode(336...339)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       )
-     ),
-     CallOperatorWriteNode(341...372)(
-       LocalVariableReadNode(341...344)(:foo, 0),
-       (344...346),
-       (346...347),
-       nil,
-       nil,
-       nil,
-       0,
-       "m",
-       "m=",
-       :+,
-       (348...350),
-       RescueModifierNode(351...372)(
-         CallNode(351...361)(
-           nil,
-           nil,
-           (351...356),
-           (356...357),
-           ArgumentsNode(357...360)(
-             [CallNode(357...360)(
-                nil,
-                nil,
-                (357...360),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (360...361),
-           nil,
-           0,
-           "raise"
-         ),
-         (362...368),
-         NilNode(369...372)()
-       )
-     ),
-     CallOperatorWriteNode(374...404)(
-       LocalVariableReadNode(374...377)(:foo, 0),
-       nil,
-       (377...380),
-       (377...378),
-       ArgumentsNode(378...379)([IntegerNode(378...379)()]),
-       (379...380),
-       0,
-       "[]",
-       "[]=",
-       :+,
-       (381...383),
-       CallNode(384...404)(
-         nil,
-         nil,
-         (384...389),
-         nil,
-         ArgumentsNode(390...404)(
-           [RescueModifierNode(390...404)(
-              CallNode(390...393)(
-                nil,
-                nil,
-                (390...393),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              ),
-              (394...400),
-              NilNode(401...404)()
-            )]
-         ),
-         nil,
-         nil,
-         0,
-         "raise"
-       )
-     ),
-     CallOperatorWriteNode(406...437)(
-       LocalVariableReadNode(406...409)(:foo, 0),
-       nil,
-       (409...412),
-       (409...410),
-       ArgumentsNode(410...411)([IntegerNode(410...411)()]),
-       (411...412),
-       0,
-       "[]",
-       "[]=",
-       :+,
-       (413...415),
-       RescueModifierNode(416...437)(
-         CallNode(416...426)(
-           nil,
-           nil,
-           (416...421),
-           (421...422),
-           ArgumentsNode(422...425)(
-             [CallNode(422...425)(
-                nil,
-                nil,
-                (422...425),
-                nil,
-                nil,
-                nil,
-                nil,
-                2,
-                "bar"
-              )]
-           ),
-           (425...426),
-           nil,
-           0,
-           "raise"
-         ),
-         (427...433),
-         NilNode(434...437)()
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...437))
+├── locals: [:foo]
+└── statements:
+    @ StatementsNode (location: (0...437))
+    └── body: (length: 14)
+        ├── @ LocalVariableOperatorWriteNode (location: (0...27))
+        │   ├── name_loc: (0...3) = "foo"
+        │   ├── operator_loc: (4...6) = "+="
+        │   ├── value:
+        │   │   @ CallNode (location: (7...27))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (7...12) = "raise"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (13...27))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ RescueModifierNode (location: (13...27))
+        │   │   │           ├── expression:
+        │   │   │           │   @ CallNode (location: (13...16))
+        │   │   │           │   ├── receiver: ∅
+        │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── message_loc: (13...16) = "bar"
+        │   │   │           │   ├── opening_loc: ∅
+        │   │   │           │   ├── arguments: ∅
+        │   │   │           │   ├── closing_loc: ∅
+        │   │   │           │   ├── block: ∅
+        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   └── name: "bar"
+        │   │   │           ├── keyword_loc: (17...23) = "rescue"
+        │   │   │           └── rescue_expression:
+        │   │   │               @ NilNode (location: (24...27))
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: 
+        │   │   └── name: "raise"
+        │   ├── name: :foo
+        │   ├── operator: :+
+        │   └── depth: 0
+        ├── @ LocalVariableOperatorWriteNode (location: (29...57))
+        │   ├── name_loc: (29...32) = "foo"
+        │   ├── operator_loc: (33...35) = "+="
+        │   ├── value:
+        │   │   @ RescueModifierNode (location: (36...57))
+        │   │   ├── expression:
+        │   │   │   @ CallNode (location: (36...46))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (36...41) = "raise"
+        │   │   │   ├── opening_loc: (41...42) = "("
+        │   │   │   ├── arguments:
+        │   │   │   │   @ ArgumentsNode (location: (42...45))
+        │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (42...45))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (42...45) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── closing_loc: (45...46) = ")"
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: 
+        │   │   │   └── name: "raise"
+        │   │   ├── keyword_loc: (47...53) = "rescue"
+        │   │   └── rescue_expression:
+        │   │       @ NilNode (location: (54...57))
+        │   ├── name: :foo
+        │   ├── operator: :+
+        │   └── depth: 0
+        ├── @ LocalVariableWriteNode (location: (59...85))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (59...62) = "foo"
+        │   ├── value:
+        │   │   @ CallNode (location: (65...85))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (65...70) = "raise"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (71...85))
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ RescueModifierNode (location: (71...85))
+        │   │   │           ├── expression:
+        │   │   │           │   @ CallNode (location: (71...74))
+        │   │   │           │   ├── receiver: ∅
+        │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── message_loc: (71...74) = "bar"
+        │   │   │           │   ├── opening_loc: ∅
+        │   │   │           │   ├── arguments: ∅
+        │   │   │           │   ├── closing_loc: ∅
+        │   │   │           │   ├── block: ∅
+        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   └── name: "bar"
+        │   │   │           ├── keyword_loc: (75...81) = "rescue"
+        │   │   │           └── rescue_expression:
+        │   │   │               @ NilNode (location: (82...85))
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: 
+        │   │   └── name: "raise"
+        │   └── operator_loc: (63...64) = "="
+        ├── @ LocalVariableWriteNode (location: (87...114))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (87...90) = "foo"
+        │   ├── value:
+        │   │   @ RescueModifierNode (location: (93...114))
+        │   │   ├── expression:
+        │   │   │   @ CallNode (location: (93...103))
+        │   │   │   ├── receiver: ∅
+        │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── message_loc: (93...98) = "raise"
+        │   │   │   ├── opening_loc: (98...99) = "("
+        │   │   │   ├── arguments:
+        │   │   │   │   @ ArgumentsNode (location: (99...102))
+        │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │       └── @ CallNode (location: (99...102))
+        │   │   │   │           ├── receiver: ∅
+        │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── message_loc: (99...102) = "bar"
+        │   │   │   │           ├── opening_loc: ∅
+        │   │   │   │           ├── arguments: ∅
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           ├── block: ∅
+        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           └── name: "bar"
+        │   │   │   ├── closing_loc: (102...103) = ")"
+        │   │   │   ├── block: ∅
+        │   │   │   ├── flags: 
+        │   │   │   └── name: "raise"
+        │   │   ├── keyword_loc: (104...110) = "rescue"
+        │   │   └── rescue_expression:
+        │   │       @ NilNode (location: (111...114))
+        │   └── operator_loc: (91...92) = "="
+        ├── @ CallOperatorWriteNode (location: (116...145))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (116...119))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: (119...120) = "."
+        │   ├── message_loc: (120...121) = "C"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── flags: 
+        │   ├── read_name: "C"
+        │   ├── write_name: "C="
+        │   ├── operator: :+
+        │   ├── operator_loc: (122...124) = "+="
+        │   └── value:
+        │       @ CallNode (location: (125...145))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── message_loc: (125...130) = "raise"
+        │       ├── opening_loc: ∅
+        │       ├── arguments:
+        │       │   @ ArgumentsNode (location: (131...145))
+        │       │   └── arguments: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (131...145))
+        │       │           ├── expression:
+        │       │           │   @ CallNode (location: (131...134))
+        │       │           │   ├── receiver: ∅
+        │       │           │   ├── call_operator_loc: ∅
+        │       │           │   ├── message_loc: (131...134) = "bar"
+        │       │           │   ├── opening_loc: ∅
+        │       │           │   ├── arguments: ∅
+        │       │           │   ├── closing_loc: ∅
+        │       │           │   ├── block: ∅
+        │       │           │   ├── flags: variable_call
+        │       │           │   └── name: "bar"
+        │       │           ├── keyword_loc: (135...141) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (142...145))
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       ├── flags: 
+        │       └── name: "raise"
+        ├── @ CallOperatorWriteNode (location: (147...177))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (147...150))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: (150...151) = "."
+        │   ├── message_loc: (151...152) = "C"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── flags: 
+        │   ├── read_name: "C"
+        │   ├── write_name: "C="
+        │   ├── operator: :+
+        │   ├── operator_loc: (153...155) = "+="
+        │   └── value:
+        │       @ RescueModifierNode (location: (156...177))
+        │       ├── expression:
+        │       │   @ CallNode (location: (156...166))
+        │       │   ├── receiver: ∅
+        │       │   ├── call_operator_loc: ∅
+        │       │   ├── message_loc: (156...161) = "raise"
+        │       │   ├── opening_loc: (161...162) = "("
+        │       │   ├── arguments:
+        │       │   │   @ ArgumentsNode (location: (162...165))
+        │       │   │   └── arguments: (length: 1)
+        │       │   │       └── @ CallNode (location: (162...165))
+        │       │   │           ├── receiver: ∅
+        │       │   │           ├── call_operator_loc: ∅
+        │       │   │           ├── message_loc: (162...165) = "bar"
+        │       │   │           ├── opening_loc: ∅
+        │       │   │           ├── arguments: ∅
+        │       │   │           ├── closing_loc: ∅
+        │       │   │           ├── block: ∅
+        │       │   │           ├── flags: variable_call
+        │       │   │           └── name: "bar"
+        │       │   ├── closing_loc: (165...166) = ")"
+        │       │   ├── block: ∅
+        │       │   ├── flags: 
+        │       │   └── name: "raise"
+        │       ├── keyword_loc: (167...173) = "rescue"
+        │       └── rescue_expression:
+        │           @ NilNode (location: (174...177))
+        ├── @ CallOperatorWriteNode (location: (179...208))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (179...182))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: (182...183) = "."
+        │   ├── message_loc: (183...184) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── flags: 
+        │   ├── read_name: "m"
+        │   ├── write_name: "m="
+        │   ├── operator: :+
+        │   ├── operator_loc: (185...187) = "+="
+        │   └── value:
+        │       @ CallNode (location: (188...208))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── message_loc: (188...193) = "raise"
+        │       ├── opening_loc: ∅
+        │       ├── arguments:
+        │       │   @ ArgumentsNode (location: (194...208))
+        │       │   └── arguments: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (194...208))
+        │       │           ├── expression:
+        │       │           │   @ CallNode (location: (194...197))
+        │       │           │   ├── receiver: ∅
+        │       │           │   ├── call_operator_loc: ∅
+        │       │           │   ├── message_loc: (194...197) = "bar"
+        │       │           │   ├── opening_loc: ∅
+        │       │           │   ├── arguments: ∅
+        │       │           │   ├── closing_loc: ∅
+        │       │           │   ├── block: ∅
+        │       │           │   ├── flags: variable_call
+        │       │           │   └── name: "bar"
+        │       │           ├── keyword_loc: (198...204) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (205...208))
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       ├── flags: 
+        │       └── name: "raise"
+        ├── @ CallOperatorWriteNode (location: (210...240))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (210...213))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: (213...214) = "."
+        │   ├── message_loc: (214...215) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── flags: 
+        │   ├── read_name: "m"
+        │   ├── write_name: "m="
+        │   ├── operator: :+
+        │   ├── operator_loc: (216...218) = "+="
+        │   └── value:
+        │       @ RescueModifierNode (location: (219...240))
+        │       ├── expression:
+        │       │   @ CallNode (location: (219...229))
+        │       │   ├── receiver: ∅
+        │       │   ├── call_operator_loc: ∅
+        │       │   ├── message_loc: (219...224) = "raise"
+        │       │   ├── opening_loc: (224...225) = "("
+        │       │   ├── arguments:
+        │       │   │   @ ArgumentsNode (location: (225...228))
+        │       │   │   └── arguments: (length: 1)
+        │       │   │       └── @ CallNode (location: (225...228))
+        │       │   │           ├── receiver: ∅
+        │       │   │           ├── call_operator_loc: ∅
+        │       │   │           ├── message_loc: (225...228) = "bar"
+        │       │   │           ├── opening_loc: ∅
+        │       │   │           ├── arguments: ∅
+        │       │   │           ├── closing_loc: ∅
+        │       │   │           ├── block: ∅
+        │       │   │           ├── flags: variable_call
+        │       │   │           └── name: "bar"
+        │       │   ├── closing_loc: (228...229) = ")"
+        │       │   ├── block: ∅
+        │       │   ├── flags: 
+        │       │   └── name: "raise"
+        │       ├── keyword_loc: (230...236) = "rescue"
+        │       └── rescue_expression:
+        │           @ NilNode (location: (237...240))
+        ├── @ ConstantPathOrWriteNode (location: (242...273))
+        │   ├── target:
+        │   │   @ ConstantPathNode (location: (242...248))
+        │   │   ├── parent:
+        │   │   │   @ LocalVariableReadNode (location: (242...245))
+        │   │   │   ├── name: :foo
+        │   │   │   └── depth: 0
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (247...248))
+        │   │   │   └── name: :C
+        │   │   └── delimiter_loc: (245...247) = "::"
+        │   ├── operator_loc: (249...252) = "||="
+        │   └── value:
+        │       @ CallNode (location: (253...273))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── message_loc: (253...258) = "raise"
+        │       ├── opening_loc: ∅
+        │       ├── arguments:
+        │       │   @ ArgumentsNode (location: (259...273))
+        │       │   └── arguments: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (259...273))
+        │       │           ├── expression:
+        │       │           │   @ CallNode (location: (259...262))
+        │       │           │   ├── receiver: ∅
+        │       │           │   ├── call_operator_loc: ∅
+        │       │           │   ├── message_loc: (259...262) = "bar"
+        │       │           │   ├── opening_loc: ∅
+        │       │           │   ├── arguments: ∅
+        │       │           │   ├── closing_loc: ∅
+        │       │           │   ├── block: ∅
+        │       │           │   ├── flags: variable_call
+        │       │           │   └── name: "bar"
+        │       │           ├── keyword_loc: (263...269) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (270...273))
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       ├── flags: 
+        │       └── name: "raise"
+        ├── @ ConstantPathOrWriteNode (location: (275...307))
+        │   ├── target:
+        │   │   @ ConstantPathNode (location: (275...281))
+        │   │   ├── parent:
+        │   │   │   @ LocalVariableReadNode (location: (275...278))
+        │   │   │   ├── name: :foo
+        │   │   │   └── depth: 0
+        │   │   ├── child:
+        │   │   │   @ ConstantReadNode (location: (280...281))
+        │   │   │   └── name: :C
+        │   │   └── delimiter_loc: (278...280) = "::"
+        │   ├── operator_loc: (282...285) = "||="
+        │   └── value:
+        │       @ RescueModifierNode (location: (286...307))
+        │       ├── expression:
+        │       │   @ CallNode (location: (286...296))
+        │       │   ├── receiver: ∅
+        │       │   ├── call_operator_loc: ∅
+        │       │   ├── message_loc: (286...291) = "raise"
+        │       │   ├── opening_loc: (291...292) = "("
+        │       │   ├── arguments:
+        │       │   │   @ ArgumentsNode (location: (292...295))
+        │       │   │   └── arguments: (length: 1)
+        │       │   │       └── @ CallNode (location: (292...295))
+        │       │   │           ├── receiver: ∅
+        │       │   │           ├── call_operator_loc: ∅
+        │       │   │           ├── message_loc: (292...295) = "bar"
+        │       │   │           ├── opening_loc: ∅
+        │       │   │           ├── arguments: ∅
+        │       │   │           ├── closing_loc: ∅
+        │       │   │           ├── block: ∅
+        │       │   │           ├── flags: variable_call
+        │       │   │           └── name: "bar"
+        │       │   ├── closing_loc: (295...296) = ")"
+        │       │   ├── block: ∅
+        │       │   ├── flags: 
+        │       │   └── name: "raise"
+        │       ├── keyword_loc: (297...303) = "rescue"
+        │       └── rescue_expression:
+        │           @ NilNode (location: (304...307))
+        ├── @ CallOperatorWriteNode (location: (309...339))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (309...312))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: (312...314) = "::"
+        │   ├── message_loc: (314...315) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── flags: 
+        │   ├── read_name: "m"
+        │   ├── write_name: "m="
+        │   ├── operator: :+
+        │   ├── operator_loc: (316...318) = "+="
+        │   └── value:
+        │       @ CallNode (location: (319...339))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── message_loc: (319...324) = "raise"
+        │       ├── opening_loc: ∅
+        │       ├── arguments:
+        │       │   @ ArgumentsNode (location: (325...339))
+        │       │   └── arguments: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (325...339))
+        │       │           ├── expression:
+        │       │           │   @ CallNode (location: (325...328))
+        │       │           │   ├── receiver: ∅
+        │       │           │   ├── call_operator_loc: ∅
+        │       │           │   ├── message_loc: (325...328) = "bar"
+        │       │           │   ├── opening_loc: ∅
+        │       │           │   ├── arguments: ∅
+        │       │           │   ├── closing_loc: ∅
+        │       │           │   ├── block: ∅
+        │       │           │   ├── flags: variable_call
+        │       │           │   └── name: "bar"
+        │       │           ├── keyword_loc: (329...335) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (336...339))
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       ├── flags: 
+        │       └── name: "raise"
+        ├── @ CallOperatorWriteNode (location: (341...372))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (341...344))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: (344...346) = "::"
+        │   ├── message_loc: (346...347) = "m"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── flags: 
+        │   ├── read_name: "m"
+        │   ├── write_name: "m="
+        │   ├── operator: :+
+        │   ├── operator_loc: (348...350) = "+="
+        │   └── value:
+        │       @ RescueModifierNode (location: (351...372))
+        │       ├── expression:
+        │       │   @ CallNode (location: (351...361))
+        │       │   ├── receiver: ∅
+        │       │   ├── call_operator_loc: ∅
+        │       │   ├── message_loc: (351...356) = "raise"
+        │       │   ├── opening_loc: (356...357) = "("
+        │       │   ├── arguments:
+        │       │   │   @ ArgumentsNode (location: (357...360))
+        │       │   │   └── arguments: (length: 1)
+        │       │   │       └── @ CallNode (location: (357...360))
+        │       │   │           ├── receiver: ∅
+        │       │   │           ├── call_operator_loc: ∅
+        │       │   │           ├── message_loc: (357...360) = "bar"
+        │       │   │           ├── opening_loc: ∅
+        │       │   │           ├── arguments: ∅
+        │       │   │           ├── closing_loc: ∅
+        │       │   │           ├── block: ∅
+        │       │   │           ├── flags: variable_call
+        │       │   │           └── name: "bar"
+        │       │   ├── closing_loc: (360...361) = ")"
+        │       │   ├── block: ∅
+        │       │   ├── flags: 
+        │       │   └── name: "raise"
+        │       ├── keyword_loc: (362...368) = "rescue"
+        │       └── rescue_expression:
+        │           @ NilNode (location: (369...372))
+        ├── @ CallOperatorWriteNode (location: (374...404))
+        │   ├── receiver:
+        │   │   @ LocalVariableReadNode (location: (374...377))
+        │   │   ├── name: :foo
+        │   │   └── depth: 0
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (377...380) = "[0]"
+        │   ├── opening_loc: (377...378) = "["
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (378...379))
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ IntegerNode (location: (378...379))
+        │   ├── closing_loc: (379...380) = "]"
+        │   ├── flags: 
+        │   ├── read_name: "[]"
+        │   ├── write_name: "[]="
+        │   ├── operator: :+
+        │   ├── operator_loc: (381...383) = "+="
+        │   └── value:
+        │       @ CallNode (location: (384...404))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── message_loc: (384...389) = "raise"
+        │       ├── opening_loc: ∅
+        │       ├── arguments:
+        │       │   @ ArgumentsNode (location: (390...404))
+        │       │   └── arguments: (length: 1)
+        │       │       └── @ RescueModifierNode (location: (390...404))
+        │       │           ├── expression:
+        │       │           │   @ CallNode (location: (390...393))
+        │       │           │   ├── receiver: ∅
+        │       │           │   ├── call_operator_loc: ∅
+        │       │           │   ├── message_loc: (390...393) = "bar"
+        │       │           │   ├── opening_loc: ∅
+        │       │           │   ├── arguments: ∅
+        │       │           │   ├── closing_loc: ∅
+        │       │           │   ├── block: ∅
+        │       │           │   ├── flags: variable_call
+        │       │           │   └── name: "bar"
+        │       │           ├── keyword_loc: (394...400) = "rescue"
+        │       │           └── rescue_expression:
+        │       │               @ NilNode (location: (401...404))
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       ├── flags: 
+        │       └── name: "raise"
+        └── @ CallOperatorWriteNode (location: (406...437))
+            ├── receiver:
+            │   @ LocalVariableReadNode (location: (406...409))
+            │   ├── name: :foo
+            │   └── depth: 0
+            ├── call_operator_loc: ∅
+            ├── message_loc: (409...412) = "[0]"
+            ├── opening_loc: (409...410) = "["
+            ├── arguments:
+            │   @ ArgumentsNode (location: (410...411))
+            │   └── arguments: (length: 1)
+            │       └── @ IntegerNode (location: (410...411))
+            ├── closing_loc: (411...412) = "]"
+            ├── flags: 
+            ├── read_name: "[]"
+            ├── write_name: "[]="
+            ├── operator: :+
+            ├── operator_loc: (413...415) = "+="
+            └── value:
+                @ RescueModifierNode (location: (416...437))
+                ├── expression:
+                │   @ CallNode (location: (416...426))
+                │   ├── receiver: ∅
+                │   ├── call_operator_loc: ∅
+                │   ├── message_loc: (416...421) = "raise"
+                │   ├── opening_loc: (421...422) = "("
+                │   ├── arguments:
+                │   │   @ ArgumentsNode (location: (422...425))
+                │   │   └── arguments: (length: 1)
+                │   │       └── @ CallNode (location: (422...425))
+                │   │           ├── receiver: ∅
+                │   │           ├── call_operator_loc: ∅
+                │   │           ├── message_loc: (422...425) = "bar"
+                │   │           ├── opening_loc: ∅
+                │   │           ├── arguments: ∅
+                │   │           ├── closing_loc: ∅
+                │   │           ├── block: ∅
+                │   │           ├── flags: variable_call
+                │   │           └── name: "bar"
+                │   ├── closing_loc: (425...426) = ")"
+                │   ├── block: ∅
+                │   ├── flags: 
+                │   └── name: "raise"
+                ├── keyword_loc: (427...433) = "rescue"
+                └── rescue_expression:
+                    @ NilNode (location: (434...437))

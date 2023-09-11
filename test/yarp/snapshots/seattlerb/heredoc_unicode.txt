@@ -1,10 +1,14 @@
-ProgramNode(0...9)(
-  [],
-  StatementsNode(0...9)(
-    [InterpolatedStringNode(0...9)(
-       (0...9),
-       [StringNode(10...12)(nil, (10...12), nil, ".\n")],
-       (12...20)
-     )]
-  )
-)
+@ ProgramNode (location: (0...9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...9))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (0...9))
+            ├── opening_loc: (0...9) = "<<OOTPÜT"
+            ├── parts: (length: 1)
+            │   └── @ StringNode (location: (10...12))
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (10...12) = ".\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: ".\n"
+            └── closing_loc: (12...20) = "OOTPÜT\n"

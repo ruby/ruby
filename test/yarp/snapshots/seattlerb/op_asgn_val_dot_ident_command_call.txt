@@ -1,28 +1,40 @@
-ProgramNode(0...11)(
-  [],
-  StatementsNode(0...11)(
-    [CallOrWriteNode(0...11)(
-       CallNode(0...1)(nil, nil, (0...1), nil, nil, nil, nil, 2, "a"),
-       (1...2),
-       (2...3),
-       nil,
-       nil,
-       nil,
-       0,
-       "b",
-       "b=",
-       (4...7),
-       CallNode(8...11)(
-         nil,
-         nil,
-         (8...9),
-         nil,
-         ArgumentsNode(10...11)([IntegerNode(10...11)()]),
-         nil,
-         nil,
-         0,
-         "c"
-       )
-     )]
-  )
-)
+@ ProgramNode (location: (0...11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (0...11))
+    └── body: (length: 1)
+        └── @ CallOrWriteNode (location: (0...11))
+            ├── receiver:
+            │   @ CallNode (location: (0...1))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── message_loc: (0...1) = "a"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   ├── flags: variable_call
+            │   └── name: "a"
+            ├── call_operator_loc: (1...2) = "."
+            ├── message_loc: (2...3) = "b"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── flags: 
+            ├── read_name: "b"
+            ├── write_name: "b="
+            ├── operator_loc: (4...7) = "||="
+            └── value:
+                @ CallNode (location: (8...11))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── message_loc: (8...9) = "c"
+                ├── opening_loc: ∅
+                ├── arguments:
+                │   @ ArgumentsNode (location: (10...11))
+                │   └── arguments: (length: 1)
+                │       └── @ IntegerNode (location: (10...11))
+                ├── closing_loc: ∅
+                ├── block: ∅
+                ├── flags: 
+                └── name: "c"
