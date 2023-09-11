@@ -192,10 +192,35 @@ module YARP
       refute_nil(named_captures("foo{1, 2}"))
     end
 
+    ##############################################################################
+    # These test that flag values are correct.
+    ##############################################################################
+
+    def test_flag_ignorecase
+      assert_equal(Regexp::IGNORECASE, flags("i"))
+    end
+
+    def test_flag_extended
+      assert_equal(Regexp::EXTENDED, flags("x"))
+    end
+
+    def test_flag_multiline
+      assert_equal(Regexp::MULTILINE, flags("m"))
+    end
+
+    def test_flag_combined
+      value = Regexp::IGNORECASE | Regexp::MULTILINE | Regexp::EXTENDED
+      assert_equal(value, flags("mix"))
+    end
+
     private
 
     def named_captures(source)
       Debug.named_captures(source)
+    end
+
+    def flags(str)
+      YARP.parse("/foo/#{str}").value.child_nodes.first.child_nodes.first.flags
     end
   end
 end
