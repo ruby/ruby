@@ -1488,6 +1488,25 @@ nodes:
 
           1
           ^
+  - name: InterpolatedMatchLastLineNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: parts
+        type: node[]
+      - name: closing_loc
+        type: location
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    newline: parts
+    comment: |
+      Represents a regular expression literal that contains interpolation that
+      is being used in the predicate of a conditional to implicitly match
+      against the last line read by an IO object.
+
+          if /foo #{bar} baz/ then end
+             ^^^^^^^^^^^^^^^^
   - name: InterpolatedRegularExpressionNode
     fields:
       - name: opening_loc
@@ -1702,6 +1721,26 @@ nodes:
 
           foo = 1
           ^^^^^^^
+  - name: MatchLastLineNode
+    fields:
+      - name: opening_loc
+        type: location
+      - name: content_loc
+        type: location
+      - name: closing_loc
+        type: location
+      - name: unescaped
+        type: string
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
+    comment: |
+      Represents a regular expression literal used in the predicate of a
+      conditional to implicitly match against the last line read by an IO
+      object.
+
+          if /foo/i then end
+             ^^^^^^
   - name: MatchPredicateNode
     fields:
       - name: value

@@ -6,7 +6,7 @@
         ├── @ IfNode (location: (0...18))
         │   ├── if_keyword_loc: (0...2) = "if"
         │   ├── predicate:
-        │   │   @ RegularExpressionNode (location: (3...8))
+        │   │   @ MatchLastLineNode (location: (3...8))
         │   │   ├── opening_loc: (3...4) = "/"
         │   │   ├── content_loc: (4...7) = "foo"
         │   │   ├── closing_loc: (7...8) = "/"

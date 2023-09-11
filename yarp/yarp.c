@@ -450,20 +450,27 @@ yp_parser_optional_constant_id_token(yp_parser_t *parser, const yp_token_t *toke
     return token->type == YP_TOKEN_NOT_PROVIDED ? 0 : yp_parser_constant_id_token(parser, token);
 }
 
-// Mark any range nodes in this subtree as flipflops.
+// The predicate of conditional nodes can change what would otherwise be regular
+// nodes into specialized nodes. For example:
+//
+// if foo .. bar         => RangeNode becomes FlipFlopNode
+// if foo and bar .. baz => RangeNode becomes FlipFlopNode
+// if /foo/              => RegularExpressionNode becomes MatchLastLineNode
+// if /foo #{bar}/       => InterpolatedRegularExpressionNode becomes InterpolatedMatchLastLineNode
+//
 static void
-yp_flip_flop(yp_node_t *node) {
+yp_conditional_predicate(yp_node_t *node) {
     switch (YP_NODE_TYPE(node)) {
         case YP_AND_NODE: {
             yp_and_node_t *cast = (yp_and_node_t *) node;
-            yp_flip_flop(cast->left);
-            yp_flip_flop(cast->right);
+            yp_conditional_predicate(cast->left);
+            yp_conditional_predicate(cast->right);
             break;
         }
         case YP_OR_NODE: {
             yp_or_node_t *cast = (yp_or_node_t *) node;
-            yp_flip_flop(cast->left);
-            yp_flip_flop(cast->right);
+            yp_conditional_predicate(cast->left);
+            yp_conditional_predicate(cast->right);
             break;
         }
         case YP_PARENTHESES_NODE: {
@@ -471,7 +478,7 @@ yp_flip_flop(yp_node_t *node) {
 
             if ((cast->body != NULL) && YP_NODE_TYPE_P(cast->body, YP_STATEMENTS_NODE)) {
                 yp_statements_node_t *statements = (yp_statements_node_t *) cast->body;
-                if (statements->body.size == 1) yp_flip_flop(statements->body.nodes[0]);
+                if (statements->body.size == 1) yp_conditional_predicate(statements->body.nodes[0]);
             }
 
             break;
@@ -479,19 +486,36 @@ yp_flip_flop(yp_node_t *node) {
         case YP_RANGE_NODE: {
             yp_range_node_t *cast = (yp_range_node_t *) node;
             if (cast->left) {
-                yp_flip_flop(cast->left);
+                yp_conditional_predicate(cast->left);
             }
             if (cast->right) {
-                yp_flip_flop(cast->right);
+                yp_conditional_predicate(cast->right);
             }
 
             // Here we change the range node into a flip flop node. We can do
             // this since the nodes are exactly the same except for the type.
+            // We're only asserting against the size when we should probably
+            // assert against the entire layout, but we'll assume tests will
+            // catch this.
             assert(sizeof(yp_range_node_t) == sizeof(yp_flip_flop_node_t));
             node->type = YP_FLIP_FLOP_NODE;
 
             break;
         }
+        case YP_REGULAR_EXPRESSION_NODE:
+            // Here we change the regular expression node into a match last line
+            // node. We can do this since the nodes are exactly the same except
+            // for the type.
+            assert(sizeof(yp_regular_expression_node_t) == sizeof(yp_match_last_line_node_t));
+            node->type = YP_MATCH_LAST_LINE_NODE;
+            break;
+        case YP_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+            // Here we change the interpolated regular expression node into an
+            // interpolated match last line node. We can do this since the nodes
+            // are exactly the same except for the type.
+            assert(sizeof(yp_interpolated_regular_expression_node_t) == sizeof(yp_interpolated_match_last_line_node_t));
+            node->type = YP_INTERPOLATED_MATCH_LAST_LINE_NODE;
+            break;
         default:
             break;
     }
@@ -2562,7 +2586,7 @@ yp_if_node_create(yp_parser_t *parser,
     yp_node_t *consequent,
     const yp_token_t *end_keyword
 ) {
-    yp_flip_flop(predicate);
+    yp_conditional_predicate(predicate);
     yp_if_node_t *node = YP_ALLOC_NODE(parser, yp_if_node_t);
 
     const uint8_t *end;
@@ -2598,7 +2622,7 @@ yp_if_node_create(yp_parser_t *parser,
 // Allocate and initialize new IfNode node in the modifier form.
 static yp_if_node_t *
 yp_if_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_token_t *if_keyword, yp_node_t *predicate) {
-    yp_flip_flop(predicate);
+    yp_conditional_predicate(predicate);
     yp_if_node_t *node = YP_ALLOC_NODE(parser, yp_if_node_t);
 
     yp_statements_node_t *statements = yp_statements_node_create(parser);
@@ -2626,7 +2650,7 @@ yp_if_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_t
 // Allocate and initialize an if node from a ternary expression.
 static yp_if_node_t *
 yp_if_node_ternary_create(yp_parser_t *parser, yp_node_t *predicate, yp_node_t *true_expression, const yp_token_t *colon, yp_node_t *false_expression) {
-    yp_flip_flop(predicate);
+    yp_conditional_predicate(predicate);
 
     yp_statements_node_t *if_statements = yp_statements_node_create(parser);
     yp_statements_node_body_append(if_statements, true_expression);
@@ -4326,7 +4350,7 @@ yp_undef_node_append(yp_undef_node_t *node, yp_node_t *name) {
 // Allocate a new UnlessNode node.
 static yp_unless_node_t *
 yp_unless_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *predicate, yp_statements_node_t *statements) {
-    yp_flip_flop(predicate);
+    yp_conditional_predicate(predicate);
     yp_unless_node_t *node = YP_ALLOC_NODE(parser, yp_unless_node_t);
 
     const uint8_t *end;
@@ -4358,7 +4382,7 @@ yp_unless_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t 
 // Allocate and initialize new UnlessNode node in the modifier form.
 static yp_unless_node_t *
 yp_unless_node_modifier_create(yp_parser_t *parser, yp_node_t *statement, const yp_token_t *unless_keyword, yp_node_t *predicate) {
-    yp_flip_flop(predicate);
+    yp_conditional_predicate(predicate);
     yp_unless_node_t *node = YP_ALLOC_NODE(parser, yp_unless_node_t);
 
     yp_statements_node_t *statements = yp_statements_node_create(parser);
@@ -12027,7 +12051,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     arguments.closing_loc = YP_LOCATION_TOKEN_VALUE(&parser->previous);
                 } else {
                     receiver = parse_expression(parser, YP_BINDING_POWER_COMPOSITION, YP_ERR_NOT_EXPRESSION);
-                    yp_flip_flop(receiver);
+                    yp_conditional_predicate(receiver);
 
                     if (!parser->recovering) {
                         accept(parser, YP_TOKEN_NEWLINE);
@@ -12037,7 +12061,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 }
             } else {
                 receiver = parse_expression(parser, YP_BINDING_POWER_DEFINED, YP_ERR_NOT_EXPRESSION);
-                yp_flip_flop(receiver);
+                yp_conditional_predicate(receiver);
             }
 
             return (yp_node_t *) yp_call_node_not_create(parser, receiver, &message, &arguments);
@@ -12633,7 +12657,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *receiver = parse_expression(parser, yp_binding_powers[parser->previous.type].right, YP_ERR_UNARY_RECEIVER_BANG);
             yp_call_node_t *node = yp_call_node_unary_create(parser, &operator, receiver, "!");
 
-            yp_flip_flop(receiver);
+            yp_conditional_predicate(receiver);
             return (yp_node_t *) node;
         }
         case YP_TOKEN_TILDE: {

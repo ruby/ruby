@@ -450,6 +450,10 @@ module YARP
       assert_location(IntegerNode, "0o1_000")
     end
 
+    def test_InterpolatedMatchLastLineNode
+      assert_location(InterpolatedMatchLastLineNode, "if /foo \#{bar}/ then end", 3...15, &:predicate)
+    end
+
     def test_InterpolatedRegularExpressionNode
       assert_location(InterpolatedRegularExpressionNode, "/\#{foo}/")
     end
@@ -523,6 +527,10 @@ module YARP
 
     def test_LocalVariableWriteNode
       assert_location(LocalVariableWriteNode, "foo = bar")
+    end
+
+    def test_MatchLastLineNode
+      assert_location(MatchLastLineNode, "if /foo/ then end", 3...8, &:predicate)
     end
 
     def test_MatchPredicateNode

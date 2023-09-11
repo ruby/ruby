@@ -5,7 +5,7 @@
     └── body: (length: 2)
         ├── @ CallNode (location: (0...6))
         │   ├── receiver:
-        │   │   @ RegularExpressionNode (location: (1...6))
+        │   │   @ MatchLastLineNode (location: (1...6))
         │   │   ├── opening_loc: (1...2) = "/"
         │   │   ├── content_loc: (2...5) = "wat"
         │   │   ├── closing_loc: (5...6) = "/"
@@ -22,7 +22,7 @@
         └── @ IfNode (location: (8...21))
             ├── if_keyword_loc: (8...10) = "if"
             ├── predicate:
-            │   @ RegularExpressionNode (location: (11...16))
+            │   @ MatchLastLineNode (location: (11...16))
             │   ├── opening_loc: (11...12) = "/"
             │   ├── content_loc: (12...15) = "wat"
             │   ├── closing_loc: (15...16) = "/"
