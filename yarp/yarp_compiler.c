@@ -125,11 +125,6 @@ parse_symbol(const uint8_t *start, const uint8_t *end)
 }
 
 static inline ID
-parse_node_symbol(yp_node_t *node) {
-    return parse_symbol(node->location.start, node->location.end);
-}
-
-static inline ID
 parse_string_symbol(yp_string_t *string) {
     const uint8_t *start = yp_string_source(string);
     return parse_symbol(start, start + yp_string_length(string));
@@ -862,7 +857,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
               YP_COMPILE(constant_path_node->parent);
           }
           ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
-          ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(parse_node_symbol((yp_node_t *)constant_path_node->child)));
+
+          assert(YP_NODE_TYPE_P(constant_path_node->child, YP_CONSTANT_READ_NODE));
+          yp_constant_read_node_t *child = (yp_constant_read_node_t *) constant_path_node->child;
+
+          ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(yp_constant_id_lookup(compile_context, child->name)));
           return;
       }
       case YP_CONSTANT_PATH_WRITE_NODE: {
@@ -878,12 +877,11 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_var_name));
           return;
       }
-
       case YP_CONSTANT_READ_NODE: {
           yp_constant_read_node_t *constant_read_node = (yp_constant_read_node_t *) node;
           ADD_INSN(ret, &dummy_line_node, putnil);
           ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
-          ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(parse_node_symbol((yp_node_t *)constant_read_node)));
+          ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(yp_constant_id_lookup(compile_context, constant_read_node->name)));
           if (popped) {
               ADD_INSN(ret, &dummy_line_node, pop);
           }
@@ -894,7 +892,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
 
           LABEL *end_label = NEW_LABEL(lineno);
 
-          VALUE constant_name = ID2SYM(parse_location_symbol(&constant_and_write_node->name_loc));
+          VALUE constant_name = ID2SYM(yp_constant_id_lookup(compile_context, constant_and_write_node->name));
 
           ADD_INSN(ret, &dummy_line_node, putnil);
           ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
@@ -924,7 +922,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
       case YP_CONSTANT_OPERATOR_WRITE_NODE: {
           yp_constant_operator_write_node_t *constant_operator_write_node = (yp_constant_operator_write_node_t*) node;
 
-          ID constant_name = parse_location_symbol(&constant_operator_write_node->name_loc);
+          ID constant_name = yp_constant_id_lookup(compile_context, constant_operator_write_node->name);
           ADD_INSN(ret, &dummy_line_node, putnil);
           ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
           ADD_INSN1(ret, &dummy_line_node, getconstant, ID2SYM(constant_name));
@@ -952,7 +950,7 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           LABEL *end_label = NEW_LABEL(lineno);
 
           ADD_INSN(ret, &dummy_line_node, putnil);
-          VALUE constant_name = ID2SYM(parse_location_symbol(&constant_or_write_node->name_loc));
+          VALUE constant_name = ID2SYM(yp_constant_id_lookup(compile_context, constant_or_write_node->name));
 
           ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_CONST), constant_name, Qtrue);
 
@@ -994,13 +992,12 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
           }
 
           ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-          ID constant_name = parse_location_symbol(&constant_write_node->name_loc);
-          ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(constant_name));
+          ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(yp_constant_id_lookup(compile_context, constant_write_node->name)));
           return;
       }
       case YP_DEF_NODE: {
           yp_def_node_t *def_node = (yp_def_node_t *) node;
-          ID method_name = parse_location_symbol(&def_node->name_loc);
+          ID method_name = yp_constant_id_lookup(compile_context, def_node->name);
           yp_scope_node_t scope_node;
           yp_scope_node_init((yp_node_t *)def_node, &scope_node);
           rb_iseq_t *method_iseq = NEW_ISEQ(&scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
