@@ -875,10 +875,10 @@ static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VA
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
 
-/* Make a new temporal node, which should not be appeared in the
+/* Make a new internal node, which should not be appeared in the
  * result AST and does not have node_id and location. */
-static NODE* node_new_temporal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
-#define NODE_NEW_TEMPORAL(t,a0,a1,a2) node_new_temporal(p, (t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
+static NODE* node_new_internal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
+#define NODE_NEW_INTERNAL(t,a0,a1,a2) node_new_internal(p, (t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 
 static NODE *nd_set_loc(NODE *nd, const YYLTYPE *loc);
 
@@ -2177,7 +2177,7 @@ def_name	: fname
                         YYSTYPE c = {.ctxt = p->ctxt};
                         numparam_name(p, fname);
                         NODE *save =
-                            NODE_NEW_TEMPORAL(NODE_SELF,
+                            NODE_NEW_INTERNAL(NODE_SELF,
                                               /*head*/numparam_push(p),
                                               /*nth*/p->max_numparam,
                                               /*cval*/c.val);
@@ -10578,7 +10578,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
 #define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
 static NODE*
-node_new_temporal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
+node_new_internal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     NODE *n = rb_ast_newnode(p->ast, type);
 
@@ -10589,7 +10589,7 @@ node_new_temporal(struct parser_params *p, enum node_type type, VALUE a0, VALUE 
 static NODE*
 node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2, const rb_code_location_t *loc)
 {
-    NODE *n = node_new_temporal(p, type, a0, a1, a2);
+    NODE *n = node_new_internal(p, type, a0, a1, a2);
 
     nd_set_loc(n, loc);
     nd_set_node_id(n, parser_get_node_id(p));
