@@ -389,30 +389,6 @@ module YARP
     end
   end
 
-  class FloatNode < Node
-    def value
-      Float(slice)
-    end
-  end
-
-  class ImaginaryNode < Node
-    def value
-      Complex(0, numeric.value)
-    end
-  end
-
-  class IntegerNode < Node
-    def value
-      Integer(slice)
-    end
-  end
-
-  class RationalNode < Node
-    def value
-      Rational(slice.chomp("r"))
-    end
-  end
-
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
@@ -598,4 +574,58 @@ if RUBY_ENGINE == "ruby" and !ENV["YARP_FFI_BACKEND"]
   require "yarp/yarp"
 else
   require_relative "yarp/ffi"
+end
+
+# Reopening the YARP module after yarp/node is required so that constant
+# reflection APIs will find the constants defined in the node file before these.
+# This block is meant to contain extra APIs we define on YARP nodes that aren't
+# templated and are meant as convenience methods.
+module YARP
+  class FloatNode < Node
+    # Returns the value of the node as a Ruby Float.
+    def value
+      Float(slice)
+    end
+  end
+
+  class ImaginaryNode < Node
+    # Returns the value of the node as a Ruby Complex.
+    def value
+      Complex(0, numeric.value)
+    end
+  end
+
+  class IntegerNode < Node
+    # Returns the value of the node as a Ruby Integer.
+    def value
+      Integer(slice)
+    end
+  end
+
+  class InterpolatedRegularExpressionNode < Node
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression. This mirrors the Regexp#options method in Ruby.
+    # Note that this is effectively masking only the three common flags that are
+    # used in Ruby, and does not include the full set of flags like encoding.
+    def options
+      flags & 0b111
+    end
+  end
+
+  class RationalNode < Node
+    # Returns the value of the node as a Ruby Rational.
+    def value
+      Rational(slice.chomp("r"))
+    end
+  end
+
+  class RegularExpressionNode < Node
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression. This mirrors the Regexp#options method in Ruby.
+    # Note that this is effectively masking only the three common flags that are
+    # used in Ruby, and does not include the full set of flags like encoding.
+    def options
+      flags & 0b111
+    end
+  end
 end

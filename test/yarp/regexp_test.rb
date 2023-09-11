@@ -197,20 +197,20 @@ module YARP
     ##############################################################################
 
     def test_flag_ignorecase
-      assert_equal(Regexp::IGNORECASE, flags("i"))
+      assert_equal(Regexp::IGNORECASE, options("i"))
     end
 
     def test_flag_extended
-      assert_equal(Regexp::EXTENDED, flags("x"))
+      assert_equal(Regexp::EXTENDED, options("x"))
     end
 
     def test_flag_multiline
-      assert_equal(Regexp::MULTILINE, flags("m"))
+      assert_equal(Regexp::MULTILINE, options("m"))
     end
 
     def test_flag_combined
       value = Regexp::IGNORECASE | Regexp::MULTILINE | Regexp::EXTENDED
-      assert_equal(value, flags("mix"))
+      assert_equal(value, options("mix"))
     end
 
     private
@@ -219,8 +219,19 @@ module YARP
       Debug.named_captures(source)
     end
 
-    def flags(str)
-      YARP.parse("/foo/#{str}").value.child_nodes.first.child_nodes.first.flags
+    def options(flags)
+      options =
+        ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
+          YARP.parse(source).value.statements.body.first.options
+        end
+
+      # Check that we get the same set of options from both regular expressions
+      # and interpolated regular expressions.
+      assert_equal(1, options.uniq.length)
+
+      # Return the options from the first regular expression since we know they
+      # are the same.
+      options.first
     end
   end
 end
