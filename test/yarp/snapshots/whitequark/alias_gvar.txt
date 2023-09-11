@@ -3,14 +3,14 @@
 └── statements:
     @ StatementsNode (location: (0...24))
     └── body: (length: 2)
-        ├── @ AliasNode (location: (0...11))
+        ├── @ AliasGlobalVariableNode (location: (0...11))
         │   ├── new_name:
         │   │   @ GlobalVariableReadNode (location: (6...8))
         │   │   └── name: :$a
         │   ├── old_name:
         │   │   @ BackReferenceReadNode (location: (9...11))
         │   └── keyword_loc: (0...5) = "alias"
-        └── @ AliasNode (location: (13...24))
+        └── @ AliasGlobalVariableNode (location: (13...24))
             ├── new_name:
             │   @ GlobalVariableReadNode (location: (19...21))
             │   └── name: :$a

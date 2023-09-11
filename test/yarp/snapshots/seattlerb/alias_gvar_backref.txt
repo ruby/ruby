@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (0...15))
     └── body: (length: 1)
-        └── @ AliasNode (location: (0...15))
+        └── @ AliasGlobalVariableNode (location: (0...15))
             ├── new_name:
             │   @ GlobalVariableReadNode (location: (6...12))
             │   └── name: :$MATCH

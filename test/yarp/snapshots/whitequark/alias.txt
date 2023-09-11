@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (0...14))
     └── body: (length: 1)
-        └── @ AliasNode (location: (0...14))
+        └── @ AliasMethodNode (location: (0...14))
             ├── new_name:
             │   @ SymbolNode (location: (6...10))
             │   ├── opening_loc: (6...7) = ":"

@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (0...31))
     └── body: (length: 2)
-        ├── @ AliasNode (location: (0...15))
+        ├── @ AliasGlobalVariableNode (location: (0...15))
         │   ├── new_name:
         │   │   @ GlobalVariableReadNode (location: (6...10))
         │   │   └── name: :$foo
@@ -11,7 +11,7 @@
         │   │   @ GlobalVariableReadNode (location: (11...15))
         │   │   └── name: :$bar
         │   └── keyword_loc: (0...5) = "alias"
-        └── @ AliasNode (location: (16...31))
+        └── @ AliasMethodNode (location: (16...31))
             ├── new_name:
             │   @ SymbolNode (location: (22...26))
             │   ├── opening_loc: (22...23) = ":"

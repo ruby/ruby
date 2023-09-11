@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (0...199))
     └── body: (length: 12)
-        ├── @ AliasNode (location: (0...15))
+        ├── @ AliasMethodNode (location: (0...15))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (6...10))
         │   │   ├── opening_loc: (6...7) = ":"
@@ -17,7 +17,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "bar"
         │   └── keyword_loc: (0...5) = "alias"
-        ├── @ AliasNode (location: (17...38))
+        ├── @ AliasMethodNode (location: (17...38))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (23...30))
         │   │   ├── opening_loc: (23...26) = "%s["
@@ -31,7 +31,7 @@
         │   │   ├── closing_loc: (37...38) = "]"
         │   │   └── unescaped: "def"
         │   └── keyword_loc: (17...22) = "alias"
-        ├── @ AliasNode (location: (40...59))
+        ├── @ AliasMethodNode (location: (40...59))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (46...52))
         │   │   ├── opening_loc: (46...48) = ":'"
@@ -45,7 +45,7 @@
         │   │   ├── closing_loc: (58...59) = "'"
         │   │   └── unescaped: "def"
         │   └── keyword_loc: (40...45) = "alias"
-        ├── @ AliasNode (location: (61...84))
+        ├── @ AliasMethodNode (location: (61...84))
         │   ├── new_name:
         │   │   @ InterpolatedSymbolNode (location: (67...77))
         │   │   ├── opening_loc: (67...69) = ":\""
@@ -71,14 +71,14 @@
         │   │   ├── closing_loc: (83...84) = "'"
         │   │   └── unescaped: "def"
         │   └── keyword_loc: (61...66) = "alias"
-        ├── @ AliasNode (location: (86...97))
+        ├── @ AliasGlobalVariableNode (location: (86...97))
         │   ├── new_name:
         │   │   @ GlobalVariableReadNode (location: (92...94))
         │   │   └── name: :$a
         │   ├── old_name:
         │   │   @ BackReferenceReadNode (location: (95...97))
         │   └── keyword_loc: (86...91) = "alias"
-        ├── @ AliasNode (location: (99...112))
+        ├── @ AliasMethodNode (location: (99...112))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (105...108))
         │   │   ├── opening_loc: ∅
@@ -92,7 +92,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "bar"
         │   └── keyword_loc: (99...104) = "alias"
-        ├── @ AliasNode (location: (114...129))
+        ├── @ AliasGlobalVariableNode (location: (114...129))
         │   ├── new_name:
         │   │   @ GlobalVariableReadNode (location: (120...124))
         │   │   └── name: :$foo
@@ -100,7 +100,7 @@
         │   │   @ GlobalVariableReadNode (location: (125...129))
         │   │   └── name: :$bar
         │   └── keyword_loc: (114...119) = "alias"
-        ├── @ AliasNode (location: (131...143))
+        ├── @ AliasMethodNode (location: (131...143))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (137...140))
         │   │   ├── opening_loc: ∅
@@ -114,7 +114,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "if"
         │   └── keyword_loc: (131...136) = "alias"
-        ├── @ AliasNode (location: (145...158))
+        ├── @ AliasMethodNode (location: (145...158))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (151...154))
         │   │   ├── opening_loc: ∅
@@ -128,7 +128,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "<=>"
         │   └── keyword_loc: (145...150) = "alias"
-        ├── @ AliasNode (location: (160...175))
+        ├── @ AliasMethodNode (location: (160...175))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (166...169))
         │   │   ├── opening_loc: (166...167) = ":"
@@ -142,7 +142,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "eql?"
         │   └── keyword_loc: (160...165) = "alias"
-        ├── @ AliasNode (location: (177...186))
+        ├── @ AliasMethodNode (location: (177...186))
         │   ├── new_name:
         │   │   @ SymbolNode (location: (183...184))
         │   │   ├── opening_loc: ∅
@@ -156,7 +156,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "B"
         │   └── keyword_loc: (177...182) = "alias"
-        └── @ AliasNode (location: (188...199))
+        └── @ AliasMethodNode (location: (188...199))
             ├── new_name:
             │   @ SymbolNode (location: (194...196))
             │   ├── opening_loc: (194...195) = ":"

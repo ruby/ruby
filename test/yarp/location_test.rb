@@ -4,8 +4,12 @@ require_relative "test_helper"
 
 module YARP
   class LocationTest < TestCase
-    def test_AliasNode
-      assert_location(AliasNode, "alias foo bar")
+    def test_AliasGlobalVariableNode
+      assert_location(AliasGlobalVariableNode, "alias $foo $bar")
+    end
+
+    def test_AliasMethodNode
+      assert_location(AliasMethodNode, "alias foo bar")
     end
 
     def test_AlternationPatternNode

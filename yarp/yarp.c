@@ -735,15 +735,37 @@ yp_missing_node_create(yp_parser_t *parser, const uint8_t *start, const uint8_t 
     return node;
 }
 
-// Allocate and initialize a new alias node.
-static yp_alias_node_t *
-yp_alias_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *new_name, yp_node_t *old_name) {
+// Allocate and initialize a new AliasGlobalVariableNode node.
+static yp_alias_global_variable_node_t *
+yp_alias_global_variable_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *new_name, yp_node_t *old_name) {
     assert(keyword->type == YP_TOKEN_KEYWORD_ALIAS);
-    yp_alias_node_t *node = YP_ALLOC_NODE(parser, yp_alias_node_t);
+    yp_alias_global_variable_node_t *node = YP_ALLOC_NODE(parser, yp_alias_global_variable_node_t);
 
-    *node = (yp_alias_node_t) {
+    *node = (yp_alias_global_variable_node_t) {
         {
-            .type = YP_ALIAS_NODE,
+            .type = YP_ALIAS_GLOBAL_VARIABLE_NODE,
+            .location = {
+                .start = keyword->start,
+                .end = old_name->location.end
+            },
+        },
+        .new_name = new_name,
+        .old_name = old_name,
+        .keyword_loc = YP_LOCATION_TOKEN_VALUE(keyword)
+    };
+
+    return node;
+}
+
+// Allocate and initialize a new AliasMethodNode node.
+static yp_alias_method_node_t *
+yp_alias_method_node_create(yp_parser_t *parser, const yp_token_t *keyword, yp_node_t *new_name, yp_node_t *old_name) {
+    assert(keyword->type == YP_TOKEN_KEYWORD_ALIAS);
+    yp_alias_method_node_t *node = YP_ALLOC_NODE(parser, yp_alias_method_node_t);
+
+    *node = (yp_alias_method_node_t) {
+        {
+            .type = YP_ALIAS_METHOD_NODE,
             .location = {
                 .start = keyword->start,
                 .end = old_name->location.end
@@ -11413,13 +11435,6 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
             yp_node_t *old_name = parse_alias_argument(parser, false);
 
             switch (YP_NODE_TYPE(new_name)) {
-                case YP_SYMBOL_NODE:
-                case YP_INTERPOLATED_SYMBOL_NODE: {
-                    if (!YP_NODE_TYPE_P(old_name, YP_SYMBOL_NODE) && !YP_NODE_TYPE_P(old_name, YP_INTERPOLATED_SYMBOL_NODE)) {
-                        yp_diagnostic_list_append(&parser->error_list, old_name->location.start, old_name->location.end, YP_ERR_ALIAS_ARGUMENT);
-                    }
-                    break;
-                }
                 case YP_BACK_REFERENCE_READ_NODE:
                 case YP_NUMBERED_REFERENCE_READ_NODE:
                 case YP_GLOBAL_VARIABLE_READ_NODE: {
@@ -11430,13 +11445,19 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                     } else {
                         yp_diagnostic_list_append(&parser->error_list, old_name->location.start, old_name->location.end, YP_ERR_ALIAS_ARGUMENT);
                     }
-                    break;
-                }
-                default:
-                    break;
-            }
 
-            return (yp_node_t *) yp_alias_node_create(parser, &keyword, new_name, old_name);
+                    return (yp_node_t *) yp_alias_global_variable_node_create(parser, &keyword, new_name, old_name);
+                }
+                case YP_SYMBOL_NODE:
+                case YP_INTERPOLATED_SYMBOL_NODE: {
+                    if (!YP_NODE_TYPE_P(old_name, YP_SYMBOL_NODE) && !YP_NODE_TYPE_P(old_name, YP_INTERPOLATED_SYMBOL_NODE)) {
+                        yp_diagnostic_list_append(&parser->error_list, old_name->location.start, old_name->location.end, YP_ERR_ALIAS_ARGUMENT);
+                    }
+                }
+                /* fallthrough */
+                default:
+                    return (yp_node_t *) yp_alias_method_node_create(parser, &keyword, new_name, old_name);
+            }
         }
         case YP_TOKEN_KEYWORD_CASE: {
             parser_lex(parser);

@@ -370,7 +370,7 @@ flags:
       - name: ONCE
         comment: "o - only interpolates values into the regular expression once"
 nodes:
-  - name: AliasNode
+  - name: AliasGlobalVariableNode
     fields:
       - name: new_name
         type: node
@@ -379,7 +379,20 @@ nodes:
       - name: keyword_loc
         type: location
     comment: |
-      Represents the use of the `alias` keyword.
+      Represents the use of the `alias` keyword to alias a global variable.
+
+          alias $foo $bar
+          ^^^^^^^^^^^^^^^
+  - name: AliasMethodNode
+    fields:
+      - name: new_name
+        type: node
+      - name: old_name
+        type: node
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of the `alias` keyword to alias a method.
 
           alias foo bar
           ^^^^^^^^^^^^^
