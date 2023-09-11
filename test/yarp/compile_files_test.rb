@@ -48,6 +48,7 @@ module YARP
       alias.txt
       arrays.txt
       classes.txt
+      integer_operations.txt
       methods.txt
       modules.txt
       not.txt
@@ -78,8 +79,11 @@ module YARP
       whitequark/if_else.txt
       whitequark/if_while_after_class__since_32.txt
       whitequark/keyword_argument_omission.txt
+      whitequark/lvar_injecting_match.txt
+      whitequark/non_lvar_injecting_match.txt
       whitequark/parser_bug_830.txt
       whitequark/send_attr_asgn.txt
+      whitequark/send_binary_op.txt
       whitequark/unless.txt
       whitequark/unless_else.txt
     )
