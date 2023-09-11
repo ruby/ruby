@@ -110,6 +110,10 @@
 #include "internal/sanitizers.h"
 #endif
 
+#if USE_MMTK
+#include "internal/mmtk.h"
+#endif
+
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -2295,5 +2299,115 @@ rb_st_nth_key(st_table *tab, st_index_t index)
         rb_bug("unreachable");
     }
 }
+
+#if USE_MMTK
+
+void
+rb_mmtk_st_update_fstring_table(st_table *tab, bool use_rust)
+{
+    if (use_rust) {
+        st_table_entry *entries = tab->entries + tab->entries_start;
+        size_t len = tab->entries_bound - tab->entries_start;
+        size_t removed_entries = mmtk_update_fstring_table_entries(entries, len);
+        tab->num_entries -= removed_entries;
+    } else {
+        for (st_index_t ind = tab->entries_start; ind < tab->entries_bound; ind++) {
+            if (DELETED_ENTRY_P(&tab->entries[ind])) {
+                continue;
+            }
+
+            st_data_t key = tab->entries[ind].key;
+            RUBY_ASSERT(key == tab->entries[ind].record);
+
+            // A Ruby value can be (1) non-reference, (2) ref to reachable object, or (3) ref to unreachable object.
+            bool key_is_ref = !RB_SPECIAL_CONST_P(key);
+            bool key_points_to_unreachable_object = key_is_ref && !mmtk_is_reachable((MMTk_ObjectReference)key);
+
+            // If the key points to unreachable object, delete this entry.
+            // We assume the key is equal to the value.
+            if (key_points_to_unreachable_object) {
+                MARK_ENTRY_DELETED(&tab->entries[ind]);
+                tab->num_entries--;
+                continue;
+            }
+
+            // If the key points to reachable object, forward it.
+            if (key_is_ref && !key_points_to_unreachable_object) {
+                st_data_t new_key = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)key);
+                if (new_key != 0) {
+                    tab->entries[ind].key = new_key;
+                    tab->entries[ind].record = new_key;
+                }
+            }
+        }
+    }
+
+    st_index_t num_bins = get_bins_num(tab);
+    unsigned int const size_ind = get_size_ind(tab);
+
+    // Delete bins that point to deleted entries.
+    for (st_index_t ind = 0; ind < num_bins; ind++) {
+        st_index_t bin = get_bin(tab->bins, size_ind, ind);
+        if (DELETED_ENTRY_P(&tab->entries[bin])) {
+            MARK_BIN_DELETED(tab, ind);
+        }
+    }
+}
+
+void
+rb_mmtk_st_update_entries_after_tracing(st_table *tab)
+{
+    // Delete entries that have unreachable keys or unreachable values.
+    for (st_index_t ind = tab->entries_start; ind < tab->entries_bound; ind++) {
+        if (DELETED_ENTRY_P(&tab->entries[ind])) {
+            continue;
+        }
+
+        st_data_t key = tab->entries[ind].key;
+        st_data_t value = tab->entries[ind].record;
+
+        // A Ruby value can be (1) non-reference, (2) ref to reachable object, or (3) ref to unreachable object.
+        bool key_is_ref = !RB_SPECIAL_CONST_P(key);
+        bool value_is_ref = !RB_SPECIAL_CONST_P(value);
+
+        bool key_points_to_unreachable_object = key_is_ref && !mmtk_is_reachable((MMTk_ObjectReference)key);
+        bool value_points_to_unreachable_object = value_is_ref && !mmtk_is_reachable((MMTk_ObjectReference)value);
+
+        // If either key or value points to unreachable object, delete this entry.
+        if (key_points_to_unreachable_object || value_points_to_unreachable_object) {
+            MARK_ENTRY_DELETED(&tab->entries[ind]);
+            tab->num_entries--;
+            continue;
+        }
+
+        // If the key points to reachable object, forward it.
+        if (key_is_ref && !key_points_to_unreachable_object) {
+            st_data_t new_key = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)key);
+            if (new_key != 0) {
+                tab->entries[ind].key = new_key;
+            }
+        }
+
+        // If the value points to reachable object, forward it.
+        if (value_is_ref && !value_points_to_unreachable_object) {
+            st_data_t new_value = (st_data_t)mmtk_get_forwarded_object((MMTk_ObjectReference)value);
+            if (new_value != 0) {
+                tab->entries[ind].record = new_value;
+            }
+        }
+    }
+
+    st_index_t num_bins = get_bins_num(tab);
+    unsigned int const size_ind = get_size_ind(tab);
+
+    // Delete bins that point to deleted entries.
+    for (st_index_t ind = 0; ind < num_bins; ind++) {
+        st_index_t bin = get_bin(tab->bins, size_ind, ind);
+        if (DELETED_ENTRY_P(&tab->entries[bin])) {
+            MARK_BIN_DELETED(tab, ind);
+        }
+    }
+}
+#endif
 
 #endif

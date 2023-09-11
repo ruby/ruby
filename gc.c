@@ -14952,13 +14952,42 @@ rb_mmtk_update_global_weak_tables_early(void)
 void
 rb_mmtk_update_frozen_strings_table(void)
 {
-    // Update the fstring_table, and remove dead objects.
-    // Values are the same as keys.
-    rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
-                              false,
-                              true,
-                              rb_mmtk_on_fstring_table_delete,
-                              NULL);
+    const char *es = getenv("MMTK_RUBY_FAST_FSTRING_CLEANUP");
+    int fast_state = 0;
+    if (es != NULL) {
+        sscanf(es, "%d", &fast_state);
+    }
+    fprintf(stderr, "Using fast fstring_table_cleanup? %d\n", fast_state);
+
+    size_t size1 = GET_VM()->frozen_strings->num_entries;
+
+    struct timespec time1;
+    clock_gettime(CLOCK_MONOTONIC, &time1);
+
+    if (fast_state == 0) {
+        // Update the fstring_table, and remove dead objects.
+        // Values are the same as keys.
+        rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
+                                false,
+                                true,
+                                rb_mmtk_on_fstring_table_delete,
+                                NULL);
+
+    } else {
+        RUBY_ASSERT(fast_state == 1 || fast_state == 2);
+        bool use_rust = fast_state == 2;
+        rb_mmtk_st_update_fstring_table(GET_VM()->frozen_strings, use_rust);
+    }
+
+    struct timespec time2;
+    clock_gettime(CLOCK_MONOTONIC, &time2);
+
+    double difftime = (time2.tv_sec - time1.tv_sec) * 1000000000.0 + (double)time2.tv_nsec - (double)time1.tv_nsec;
+    fprintf(stderr, "fstring table processed in %lf ns\n", difftime);
+
+    size_t size2 = GET_VM()->frozen_strings->num_entries;
+    fprintf(stderr, "fstring table size: %zu -> %zu.  Removed: %zu\n",
+        size1, size2, size1-size2);
 
     RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
 }
