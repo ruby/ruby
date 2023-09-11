@@ -58,12 +58,8 @@ TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
 LIBTRANS=enc/libtrans.$(LIBEXT)
 UNICODE_HDR_DIR = --missing-unicode-header-dir--
 
-encs: all
-% if MODULE_TYPE == :static
-all: libenc libtrans
-% else
-all: enc trans
-%end
+encs all: <%= MODULE_TYPE == :static ? "lib" : "mod" %>encs
+modencs: enc trans
 libencs: libenc libtrans
 enc: $(ENCSOS)
 libenc: $(LIBENC)
