@@ -1830,7 +1830,7 @@ update-man-date: PHONY
 ChangeLog:
 	$(ECHO) Generating $@
 	-$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs \
-	-e 'VCS.detect(ARGV[0]).export_changelog("@", nil, nil, ARGV[1])' \
+	-e 'VCS.detect(ARGV[0]).export_changelog(path: ARGV[1])' \
 	"$(srcdir)" $@
 
 HELP_EXTRA_TASKS = ""
