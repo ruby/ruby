@@ -42,7 +42,7 @@ module YARP
       )
 
       assert_errors expected, "for in 1..10\ni\nend", [
-        ["Expected an index after `for`", 0..0]
+        ["Expected an index after `for`", 0..3]
       ]
     end
 
@@ -58,7 +58,7 @@ module YARP
       )
 
       assert_errors expected, "for end", [
-        ["Expected an index after `for`", 0..0],
+        ["Expected an index after `for`", 0..3],
         ["Expected an `in` after the index in a `for` statement", 3..3],
         ["Expected a collection after the `in` in a `for` statement", 3..3]
       ]

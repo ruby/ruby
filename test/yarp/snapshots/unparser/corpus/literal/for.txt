@@ -13,13 +13,9 @@
         │   │   └── arguments: (length: 1)
         │   │       └── @ ForNode (location: (4...29))
         │   │           ├── index:
-        │   │           │   @ MultiTargetNode (location: (8...9))
-        │   │           │   ├── targets: (length: 1)
-        │   │           │   │   └── @ LocalVariableTargetNode (location: (8...9))
-        │   │           │   │       ├── name: :a
-        │   │           │   │       └── depth: 0
-        │   │           │   ├── lparen_loc: ∅
-        │   │           │   └── rparen_loc: ∅
+        │   │           │   @ LocalVariableTargetNode (location: (8...9))
+        │   │           │   ├── name: :a
+        │   │           │   └── depth: 0
         │   │           ├── collection:
         │   │           │   @ CallNode (location: (13...16))
         │   │           │   ├── receiver: ∅
@@ -54,13 +50,9 @@
         │   └── name: "bar"
         ├── @ ForNode (location: (31...56))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (35...36))
-        │   │   ├── targets: (length: 1)
-        │   │   │   └── @ LocalVariableTargetNode (location: (35...36))
-        │   │   │       ├── name: :a
-        │   │   │       └── depth: 0
-        │   │   ├── lparen_loc: ∅
-        │   │   └── rparen_loc: ∅
+        │   │   @ LocalVariableTargetNode (location: (35...36))
+        │   │   ├── name: :a
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ CallNode (location: (40...43))
         │   │   ├── receiver: ∅

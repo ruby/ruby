@@ -5,13 +5,9 @@
     └── body: (length: 6)
         ├── @ ForNode (location: (0...20))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (4...5))
-        │   │   ├── targets: (length: 1)
-        │   │   │   └── @ LocalVariableTargetNode (location: (4...5))
-        │   │   │       ├── name: :i
-        │   │   │       └── depth: 0
-        │   │   ├── lparen_loc: ∅
-        │   │   └── rparen_loc: ∅
+        │   │   @ LocalVariableTargetNode (location: (4...5))
+        │   │   ├── name: :i
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ RangeNode (location: (9...14))
         │   │   ├── left:
@@ -34,13 +30,9 @@
         │   └── end_keyword_loc: (17...20) = "end"
         ├── @ ForNode (location: (22...44))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (26...27))
-        │   │   ├── targets: (length: 1)
-        │   │   │   └── @ LocalVariableTargetNode (location: (26...27))
-        │   │   │       ├── name: :i
-        │   │   │       └── depth: 0
-        │   │   ├── lparen_loc: ∅
-        │   │   └── rparen_loc: ∅
+        │   │   @ LocalVariableTargetNode (location: (26...27))
+        │   │   ├── name: :i
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ RangeNode (location: (31...36))
         │   │   ├── left:
@@ -130,13 +122,9 @@
         │   └── end_keyword_loc: (91...94) = "end"
         ├── @ ForNode (location: (96...119))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (100...101))
-        │   │   ├── targets: (length: 1)
-        │   │   │   └── @ LocalVariableTargetNode (location: (100...101))
-        │   │   │       ├── name: :i
-        │   │   │       └── depth: 0
-        │   │   ├── lparen_loc: ∅
-        │   │   └── rparen_loc: ∅
+        │   │   @ LocalVariableTargetNode (location: (100...101))
+        │   │   ├── name: :i
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ RangeNode (location: (105...110))
         │   │   ├── left:
@@ -159,13 +147,9 @@
         │   └── end_keyword_loc: (116...119) = "end"
         └── @ ForNode (location: (121...143))
             ├── index:
-            │   @ MultiTargetNode (location: (125...126))
-            │   ├── targets: (length: 1)
-            │   │   └── @ LocalVariableTargetNode (location: (125...126))
-            │   │       ├── name: :i
-            │   │       └── depth: 0
-            │   ├── lparen_loc: ∅
-            │   └── rparen_loc: ∅
+            │   @ LocalVariableTargetNode (location: (125...126))
+            │   ├── name: :i
+            │   └── depth: 0
             ├── collection:
             │   @ RangeNode (location: (130...135))
             │   ├── left:

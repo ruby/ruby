@@ -5,13 +5,9 @@
     └── body: (length: 2)
         ├── @ ForNode (location: (0...24))
         │   ├── index:
-        │   │   @ MultiTargetNode (location: (4...5))
-        │   │   ├── targets: (length: 1)
-        │   │   │   └── @ LocalVariableTargetNode (location: (4...5))
-        │   │   │       ├── name: :a
-        │   │   │       └── depth: 0
-        │   │   ├── lparen_loc: ∅
-        │   │   └── rparen_loc: ∅
+        │   │   @ LocalVariableTargetNode (location: (4...5))
+        │   │   ├── name: :a
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ CallNode (location: (9...12))
         │   │   ├── receiver: ∅
@@ -47,13 +43,9 @@
         │   └── end_keyword_loc: (21...24) = "end"
         └── @ ForNode (location: (26...48))
             ├── index:
-            │   @ MultiTargetNode (location: (30...31))
-            │   ├── targets: (length: 1)
-            │   │   └── @ LocalVariableTargetNode (location: (30...31))
-            │   │       ├── name: :a
-            │   │       └── depth: 0
-            │   ├── lparen_loc: ∅
-            │   └── rparen_loc: ∅
+            │   @ LocalVariableTargetNode (location: (30...31))
+            │   ├── name: :a
+            │   └── depth: 0
             ├── collection:
             │   @ CallNode (location: (35...38))
             │   ├── receiver: ∅

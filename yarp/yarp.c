@@ -8561,108 +8561,46 @@ parse_write(yp_parser_t *parser, yp_node_t *target, yp_token_t *operator, yp_nod
 // target node or a multi-target node.
 static yp_node_t *
 parse_targets(yp_parser_t *parser, yp_node_t *first_target, yp_binding_power_t binding_power) {
-    yp_token_t operator = not_provided(parser);
-
-    // The first_target parameter can be NULL in the case that we're parsing a
-    // location that we know requires a multi write, as in the case of a for loop.
-    // In this case we will set up the parsing loop slightly differently.
-    if (first_target != NULL) {
-        first_target = parse_target(parser, first_target);
-
-        if (!match1(parser, YP_TOKEN_COMMA)) {
-            return first_target;
-        }
-    }
+    first_target = parse_target(parser, first_target);
+    if (!match1(parser, YP_TOKEN_COMMA)) return first_target;
 
     yp_multi_target_node_t *result = yp_multi_target_node_create(parser);
-    if (first_target != NULL) {
-        yp_multi_target_node_targets_append(result, first_target);
-    }
+    yp_multi_target_node_targets_append(result, first_target);
+    bool has_splat = YP_NODE_TYPE_P(first_target, YP_SPLAT_NODE);
 
-    bool has_splat = false;
-
-    if (first_target == NULL || accept1(parser, YP_TOKEN_COMMA)) {
-        do {
-            if (accept1(parser, YP_TOKEN_USTAR)) {
-                // Here we have a splat operator. It can have a name or be anonymous. It
-                // can be the final target or be in the middle if there haven't been any
-                // others yet.
-
-                if (has_splat) {
-                    yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_MULTI_ASSIGN_MULTI_SPLATS);
-                }
-
-                yp_token_t star_operator = parser->previous;
-                yp_node_t *name = NULL;
-
-                if (token_begins_expression_p(parser->current.type)) {
-                    name = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_STAR);
-                    name = parse_target(parser, name);
-                }
-
-                yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &star_operator, name);
-                yp_multi_target_node_targets_append(result, splat);
-                has_splat = true;
-            } else if (accept1(parser, YP_TOKEN_PARENTHESIS_LEFT)) {
-                // Here we have a parenthesized list of targets. We'll recurse down into
-                // the parentheses by calling parse_targets again and then finish out
-                // the node when it returns.
-
-                yp_token_t lparen = parser->previous;
-                yp_node_t *first_child_target = parse_expression(parser, YP_BINDING_POWER_STATEMENT, YP_ERR_EXPECT_EXPRESSION_AFTER_LPAREN);
-                yp_node_t *child_target = parse_targets(parser, first_child_target, YP_BINDING_POWER_STATEMENT);
-
-                expect1(parser, YP_TOKEN_PARENTHESIS_RIGHT, YP_ERR_EXPECT_RPAREN_AFTER_MULTI);
-                yp_token_t rparen = parser->previous;
-
-                if (YP_NODE_TYPE_P(child_target, YP_MULTI_TARGET_NODE) && first_target == NULL && result->targets.size == 0) {
-                    yp_node_destroy(parser, (yp_node_t *) result);
-                    result = (yp_multi_target_node_t *) child_target;
-                    result->base.location.start = lparen.start;
-                    result->base.location.end = rparen.end;
-                    result->lparen_loc = YP_LOCATION_TOKEN_VALUE(&lparen);
-                    result->rparen_loc = YP_LOCATION_TOKEN_VALUE(&rparen);
-                } else {
-                    yp_multi_target_node_t *target;
-
-                    if (YP_NODE_TYPE_P(child_target, YP_MULTI_TARGET_NODE)) {
-                        target = (yp_multi_target_node_t *) child_target;
-                    } else {
-                        target = yp_multi_target_node_create(parser);
-                        yp_multi_target_node_targets_append(target, child_target);
-                    }
-
-                    target->base.location.start = lparen.start;
-                    target->base.location.end = rparen.end;
-                    target->lparen_loc = YP_LOCATION_TOKEN_VALUE(&lparen);
-                    target->rparen_loc = YP_LOCATION_TOKEN_VALUE(&rparen);
-
-                    yp_multi_target_node_targets_append(result, (yp_node_t *) target);
-                }
-            } else {
-                if (!token_begins_expression_p(parser->current.type) && !match1(parser, YP_TOKEN_USTAR)) {
-                    if (first_target == NULL && result->targets.size == 0) {
-                        // If we get here, then we weren't able to parse anything at all, so
-                        // we need to return a missing node.
-                        yp_node_destroy(parser, (yp_node_t *) result);
-                        yp_diagnostic_list_append(&parser->error_list, operator.start, operator.end, YP_ERR_FOR_INDEX);
-                        return (yp_node_t *) yp_missing_node_create(parser, operator.start, operator.end);
-                    }
-
-                    // If we get here, then we have a trailing , in a multi write node.
-                    // We need to indicate this somehow in the tree, so we'll add an
-                    // anonymous splat.
-                    yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &parser->previous, NULL);
-                    yp_multi_target_node_targets_append(result, splat);
-                    return (yp_node_t *) result;
-                }
-
-                yp_node_t *target = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
-                target = parse_target(parser, target);
-
-                yp_multi_target_node_targets_append(result, target);
+    while (accept1(parser, YP_TOKEN_COMMA)) {
+        if (accept1(parser, YP_TOKEN_USTAR)) {
+            // Here we have a splat operator. It can have a name or be
+            // anonymous. It can be the final target or be in the middle if
+            // there haven't been any others yet.
+            if (has_splat) {
+                yp_diagnostic_list_append(&parser->error_list, parser->previous.start, parser->previous.end, YP_ERR_MULTI_ASSIGN_MULTI_SPLATS);
             }
-        } while (accept1(parser, YP_TOKEN_COMMA));
+
+            yp_token_t star_operator = parser->previous;
+            yp_node_t *name = NULL;
+
+            if (token_begins_expression_p(parser->current.type)) {
+                name = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_STAR);
+                name = parse_target(parser, name);
+            }
+
+            yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &star_operator, name);
+            yp_multi_target_node_targets_append(result, splat);
+            has_splat = true;
+        } else if (token_begins_expression_p(parser->current.type)) {
+            yp_node_t *target = parse_expression(parser, binding_power, YP_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
+            target = parse_target(parser, target);
+
+            yp_multi_target_node_targets_append(result, target);
+        } else {
+            // If we get here, then we have a trailing , in a multi target node.
+            // We need to indicate this somehow in the tree, so we'll add an
+            // anonymous splat.
+            yp_node_t *splat = (yp_node_t *) yp_splat_node_create(parser, &parser->previous, NULL);
+            yp_multi_target_node_targets_append(result, splat);
+            break;
+        }
     }
 
     return (yp_node_t *) result;
@@ -11323,7 +11261,7 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
                 // If we have a single statement and are ending on a right
                 // parenthesis, then we need to check if this is possibly a
                 // multiple target node.
-                if (binding_power == YP_BINDING_POWER_STATEMENT && YP_NODE_TYPE_P(statement, YP_MULTI_TARGET_NODE)) {
+                if (YP_NODE_TYPE_P(statement, YP_MULTI_TARGET_NODE)) {
                     yp_multi_target_node_t *multi_target;
                     if (((yp_multi_target_node_t *) statement)->lparen_loc.start == NULL) {
                         multi_target = (yp_multi_target_node_t *) statement;
@@ -12390,8 +12328,29 @@ parse_expression_prefix(yp_parser_t *parser, yp_binding_power_t binding_power) {
         case YP_TOKEN_KEYWORD_FOR: {
             parser_lex(parser);
             yp_token_t for_keyword = parser->previous;
+            yp_node_t *index;
 
-            yp_node_t *index = parse_targets(parser, NULL, YP_BINDING_POWER_INDEX);
+            // First, parse out the first index expression.
+            if (accept1(parser, YP_TOKEN_USTAR)) {
+                yp_token_t star_operator = parser->previous;
+                yp_node_t *name = NULL;
+
+                if (token_begins_expression_p(parser->current.type)) {
+                    name = parse_expression(parser, YP_BINDING_POWER_INDEX, YP_ERR_EXPECT_EXPRESSION_AFTER_STAR);
+                    name = parse_target(parser, name);
+                }
+
+                index = (yp_node_t *) yp_splat_node_create(parser, &star_operator, name);
+            } else if (token_begins_expression_p(parser->current.type)) {
+                index = parse_expression(parser, YP_BINDING_POWER_INDEX, YP_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
+            } else {
+                yp_diagnostic_list_append(&parser->error_list, for_keyword.start, for_keyword.end, YP_ERR_FOR_INDEX);
+                index = (yp_node_t *) yp_missing_node_create(parser, for_keyword.start, for_keyword.end);
+            }
+
+            // Now, if there are multiple index expressions, parse them out.
+            index = parse_targets(parser, index, YP_BINDING_POWER_INDEX);
+
             yp_do_loop_stack_push(parser, true);
 
             expect1(parser, YP_TOKEN_KEYWORD_IN, YP_ERR_FOR_IN);
