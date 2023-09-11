@@ -22,6 +22,7 @@
             │       │   │   @ StatementsNode (location: (17...19))
             │       │   │   └── body: (length: 1)
             │       │   │       └── @ IntegerNode (location: (17...19))
+            │       │   │           └── flags: decimal
             │       │   ├── consequent: ∅
             │       │   └── end_keyword_loc: (20...23) = "end"
             │       └── operator_loc: ∅

@@ -14,6 +14,7 @@
         │   ├── operator_loc: (4...6) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (7...8))
+        │   │   └── flags: decimal
         │   └── operator: :+
         ├── @ ConstantOperatorWriteNode (location: (10...16))
         │   ├── name: :A
@@ -21,6 +22,7 @@
         │   ├── operator_loc: (12...14) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (15...16))
+        │   │   └── flags: decimal
         │   └── operator: :+
         ├── @ ConstantPathOperatorWriteNode (location: (18...27))
         │   ├── target:
@@ -35,6 +37,7 @@
         │   ├── operator_loc: (23...25) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (26...27))
+        │   │   └── flags: decimal
         │   └── operator: :+
         ├── @ DefNode (location: (29...50))
         │   ├── name: :x
@@ -55,6 +58,7 @@
         │   │           ├── operator_loc: (40...43) = "||="
         │   │           └── value:
         │   │               @ IntegerNode (location: (44...45))
+        │   │               └── flags: decimal
         │   ├── locals: []
         │   ├── def_keyword_loc: (29...32) = "def"
         │   ├── operator_loc: ∅
@@ -82,6 +86,7 @@
             │           ├── operator_loc: (67...70) = "||="
             │           └── value:
             │               @ IntegerNode (location: (71...72))
+            │               └── flags: decimal
             ├── locals: []
             ├── def_keyword_loc: (52...55) = "def"
             ├── operator_loc: ∅

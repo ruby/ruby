@@ -20,6 +20,7 @@
         │   │           ├── name_loc: (8...9) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (12...13))
+        │   │           │   └── flags: decimal
         │   │           └── operator_loc: (10...11) = "="
         │   ├── end_keyword_loc: (14...17) = "end"
         │   └── name: :A
@@ -97,6 +98,7 @@
         │   │           ├── name_loc: (89...90) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (93...94))
+        │   │           │   └── flags: decimal
         │   │           └── operator_loc: (91...92) = "="
         │   ├── end_keyword_loc: (95...98) = "end"
         │   └── name: :A
@@ -284,6 +286,7 @@
         │   │       └── @ CallNode (location: (316...321))
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (316...317))
+        │   │           │   └── flags: decimal
         │   │           ├── call_operator_loc: ∅
         │   │           ├── message_loc: (318...319) = "+"
         │   │           ├── opening_loc: ∅
@@ -291,6 +294,7 @@
         │   │           │   @ ArgumentsNode (location: (320...321))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (320...321))
+        │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: 
@@ -308,6 +312,7 @@
         │   │       └── @ CallNode (location: (341...346))
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (341...342))
+        │   │           │   └── flags: decimal
         │   │           ├── call_operator_loc: ∅
         │   │           ├── message_loc: (343...344) = "+"
         │   │           ├── opening_loc: ∅
@@ -315,6 +320,7 @@
         │   │           │   @ ArgumentsNode (location: (345...346))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (345...346))
+        │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: 
@@ -339,6 +345,7 @@
             │   │   @ ArgumentsNode (location: (364...365))
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (364...365))
+            │   │           └── flags: decimal
             │   ├── closing_loc: (365...366) = "]"
             │   ├── block: ∅
             │   ├── flags: 

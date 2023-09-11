@@ -242,6 +242,7 @@
         │   │   │       ├── operator_loc: (180...181) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (182...183))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)
@@ -270,6 +271,7 @@
         │   │   │       ├── operator_loc: (204...205) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (206...207))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)
@@ -313,6 +315,7 @@
         │   │   │       ├── operator_loc: (239...240) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (241...242))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)

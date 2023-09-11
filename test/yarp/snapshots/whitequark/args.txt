@@ -352,6 +352,7 @@
         │   │   │       ├── name_loc: (236...240) = "foo:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (241...242))
+        │   │   │           └── flags: decimal
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (244...246))
@@ -382,11 +383,13 @@
         │   │   │   │   ├── name_loc: (261...265) = "foo:"
         │   │   │   │   └── value:
         │   │   │   │       @ IntegerNode (location: (266...267))
+        │   │   │   │       └── flags: decimal
         │   │   │   └── @ KeywordParameterNode (location: (269...275))
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (269...273) = "bar:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (274...275))
+        │   │   │           └── flags: decimal
         │   │   ├── keyword_rest:
         │   │   │   @ KeywordRestParameterNode (location: (277...282))
         │   │   │   ├── name: :baz
@@ -643,6 +646,7 @@
         │   │   │       ├── operator_loc: (463...464) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (464...465))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)
@@ -676,6 +680,7 @@
         │   │   │       ├── operator_loc: (486...487) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (487...488))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (490...492))
@@ -713,6 +718,7 @@
         │   │   │       ├── operator_loc: (513...514) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (514...515))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (521...522))
         │   │   │       └── name: :p
@@ -752,6 +758,7 @@
         │   │   │       ├── operator_loc: (543...544) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (544...545))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (547...548))
         │   │   │       └── name: :p
@@ -812,6 +819,7 @@
         │   │   │       ├── name_loc: (583...587) = "foo:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (588...590))
+        │   │   │           └── flags: decimal
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -836,6 +844,7 @@
         │   │   │       ├── operator_loc: (605...606) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (606...607))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)
@@ -867,6 +876,7 @@
         │   │   │       ├── operator_loc: (625...626) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (626...627))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (629...631))
@@ -902,6 +912,7 @@
         │   │   │       ├── operator_loc: (649...650) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (650...651))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (657...658))
         │   │   │       └── name: :p
@@ -939,6 +950,7 @@
             │   │       ├── operator_loc: (676...677) = "="
             │   │       └── value:
             │   │           @ IntegerNode (location: (677...678))
+            │   │           └── flags: decimal
             │   ├── posts: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (680...681))
             │   │       └── name: :p

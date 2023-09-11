@@ -12,6 +12,7 @@
         │   │   @ StatementsNode (location: (10...12))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (10...12))
+        │   │           └── flags: decimal
         │   ├── locals: []
         │   ├── def_keyword_loc: (0...3) = "def"
         │   ├── operator_loc: ∅
@@ -30,6 +31,7 @@
         │   │       └── @ RescueModifierNode (location: (24...37))
         │   │           ├── expression:
         │   │           │   @ IntegerNode (location: (24...26))
+        │   │           │   └── flags: decimal
         │   │           ├── keyword_loc: (27...33) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (34...37))
@@ -50,6 +52,7 @@
         │   │   @ StatementsNode (location: (54...56))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (54...56))
+        │   │           └── flags: decimal
         │   ├── locals: []
         │   ├── def_keyword_loc: (39...42) = "def"
         │   ├── operator_loc: (47...48) = "."
@@ -69,6 +72,7 @@
             │       └── @ RescueModifierNode (location: (73...86))
             │           ├── expression:
             │           │   @ IntegerNode (location: (73...75))
+            │           │   └── flags: decimal
             │           ├── keyword_loc: (76...82) = "rescue"
             │           └── rescue_expression:
             │               @ NilNode (location: (83...86))

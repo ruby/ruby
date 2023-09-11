@@ -11,6 +11,7 @@
         │   │   @ StatementsNode (location: (9...10))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (9...10))
+        │   │           └── flags: decimal
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (12...15) = "end"
         ├── @ IfNode (location: (17...37))
@@ -21,6 +22,7 @@
         │   │   @ StatementsNode (location: (25...26))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (25...26))
+        │   │           └── flags: decimal
         │   ├── consequent:
         │   │   @ ElseNode (location: (27...37))
         │   │   ├── else_keyword_loc: (27...31) = "else"
@@ -28,6 +30,7 @@
         │   │   │   @ StatementsNode (location: (32...33))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ IntegerNode (location: (32...33))
+        │   │   │           └── flags: decimal
         │   │   └── end_keyword_loc: (34...37) = "end"
         │   └── end_keyword_loc: (34...37) = "end"
         ├── @ IfNode (location: (39...112))
@@ -75,6 +78,7 @@
         │   │   @ StatementsNode (location: (114...115))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (114...115))
+        │   │           └── flags: decimal
         │   ├── consequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ IfNode (location: (125...138))
@@ -134,6 +138,7 @@
         │   │           │   @ ArgumentsNode (location: (194...196))
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (194...196))
+        │   │           │           └── flags: decimal
         │   │           └── keyword_loc: (188...193) = "break"
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (197...200) = "end"
@@ -264,6 +269,7 @@
         │   │   │   └── name: "type"
         │   │   ├── pattern:
         │   │   │   @ IntegerNode (location: (272...273))
+        │   │   │   └── flags: decimal
         │   │   └── operator_loc: (269...271) = "in"
         │   ├── statements: ∅
         │   ├── consequent:
@@ -294,6 +300,7 @@
             ├── if_keyword_loc: (295...297) = "if"
             ├── predicate:
             │   @ IntegerNode (location: (298...299))
+            │   └── flags: decimal
             ├── statements:
             │   @ StatementsNode (location: (302...321))
             │   └── body: (length: 1)
@@ -333,6 +340,7 @@
             │   ├── if_keyword_loc: (322...327) = "elsif"
             │   ├── predicate:
             │   │   @ IntegerNode (location: (328...329))
+            │   │   └── flags: decimal
             │   ├── statements:
             │   │   @ StatementsNode (location: (332...351))
             │   │   └── body: (length: 1)

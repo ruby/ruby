@@ -54,11 +54,13 @@
         │   ├── operator_loc: (26...27) = "="
         │   └── value:
         │       @ IntegerNode (location: (28...29))
+        │       └── flags: decimal
         ├── @ ConstantWriteNode (location: (31...36))
         │   ├── name: :A
         │   ├── name_loc: (31...32) = "A"
         │   ├── value:
         │   │   @ IntegerNode (location: (35...36))
+        │   │   └── flags: decimal
         │   └── operator_loc: (33...34) = "="
         ├── @ ConstantReadNode (location: (38...41))
         │   └── name: :ABC
@@ -71,6 +73,7 @@
         │   │   @ ArgumentsNode (location: (47...48))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (47...48))
+        │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -262,6 +265,7 @@
         │   ├── operator_loc: (141...142) = "="
         │   └── value:
         │       @ IntegerNode (location: (143...144))
+        │       └── flags: decimal
         ├── @ ConstantPathWriteNode (location: (146...156))
         │   ├── target:
         │   │   @ ConstantPathNode (location: (146...152))
@@ -279,6 +283,7 @@
         │   ├── operator_loc: (153...154) = "="
         │   └── value:
         │       @ IntegerNode (location: (155...156))
+        │       └── flags: decimal
         ├── @ ConstantPathNode (location: (158...164))
         │   ├── parent:
         │   │   @ ConstantPathNode (location: (158...161))

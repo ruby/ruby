@@ -27,6 +27,7 @@
             │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (21...22))
+            │       │   │       │   └── flags: decimal
             │       │   │       └── operator_loc: ∅
             │       │   ├── kwrest: ∅
             │       │   ├── opening_loc: (17...18) = "["
@@ -35,6 +36,7 @@
             │       │   @ StatementsNode (location: (26...27))
             │       │   └── body: (length: 1)
             │       │       └── @ IntegerNode (location: (26...27))
+            │       │           └── flags: decimal
             │       ├── in_loc: (8...10) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

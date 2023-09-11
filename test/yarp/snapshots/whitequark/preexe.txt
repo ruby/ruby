@@ -8,6 +8,7 @@
             │   @ StatementsNode (location: (8...9))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (8...9))
+            │           └── flags: decimal
             ├── keyword_loc: (0...5) = "BEGIN"
             ├── opening_loc: (6...7) = "{"
             └── closing_loc: (10...11) = "}"

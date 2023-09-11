@@ -8,6 +8,7 @@
         │   ├── operator_loc: (2...4) = "+="
         │   ├── value:
         │   │   @ IntegerNode (location: (5...6))
+        │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :+
         │   └── depth: 0
@@ -16,6 +17,7 @@
         │   ├── operator_loc: (9...11) = "-="
         │   ├── value:
         │   │   @ IntegerNode (location: (12...13))
+        │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :-
         │   └── depth: 0
@@ -24,6 +26,7 @@
         │   ├── operator_loc: (16...19) = "**="
         │   ├── value:
         │   │   @ IntegerNode (location: (20...21))
+        │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :**
         │   └── depth: 0
@@ -32,6 +35,7 @@
         │   ├── operator_loc: (24...26) = "*="
         │   ├── value:
         │   │   @ IntegerNode (location: (27...28))
+        │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :*
         │   └── depth: 0
@@ -40,6 +44,7 @@
         │   ├── operator_loc: (31...33) = "/="
         │   ├── value:
         │   │   @ IntegerNode (location: (34...35))
+        │   │   └── flags: decimal
         │   ├── name: :a
         │   ├── operator: :/
         │   └── depth: 0
@@ -64,6 +69,7 @@
         │   ├── operator_loc: (46...49) = "||="
         │   ├── value:
         │   │   @ IntegerNode (location: (50...51))
+        │   │   └── flags: decimal
         │   ├── name: :a
         │   └── depth: 0
         ├── @ CallNode (location: (52...65))
@@ -77,6 +83,7 @@
         │   │   │           ├── operator_loc: (55...58) = "||="
         │   │   │           ├── value:
         │   │   │           │   @ IntegerNode (location: (59...60))
+        │   │   │           │   └── flags: decimal
         │   │   │           ├── name: :a
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (52...53) = "("
@@ -154,6 +161,7 @@
         │   ├── operator_loc: (88...90) = "+="
         │   └── value:
         │       @ IntegerNode (location: (91...92))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (93...101))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (93...94))
@@ -171,6 +179,7 @@
         │   ├── operator_loc: (97...99) = "-="
         │   └── value:
         │       @ IntegerNode (location: (100...101))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (102...111))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (102...103))
@@ -188,6 +197,7 @@
         │   ├── operator_loc: (106...109) = "**="
         │   └── value:
         │       @ IntegerNode (location: (110...111))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (112...120))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (112...113))
@@ -205,6 +215,7 @@
         │   ├── operator_loc: (116...118) = "*="
         │   └── value:
         │       @ IntegerNode (location: (119...120))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (121...129))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (121...122))
@@ -222,6 +233,7 @@
         │   ├── operator_loc: (125...127) = "/="
         │   └── value:
         │       @ IntegerNode (location: (128...129))
+        │       └── flags: decimal
         ├── @ CallAndWriteNode (location: (130...139))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (130...131))
@@ -263,6 +275,7 @@
         │   ├── operator_loc: (144...147) = "||="
         │   └── value:
         │       @ IntegerNode (location: (148...149))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (150...159))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (150...151))
@@ -292,6 +305,7 @@
         │   ├── operator_loc: (155...157) = "+="
         │   └── value:
         │       @ IntegerNode (location: (158...159))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (160...169))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (160...161))
@@ -321,6 +335,7 @@
         │   ├── operator_loc: (165...167) = "-="
         │   └── value:
         │       @ IntegerNode (location: (168...169))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (170...180))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (170...171))
@@ -350,6 +365,7 @@
         │   ├── operator_loc: (175...178) = "**="
         │   └── value:
         │       @ IntegerNode (location: (179...180))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (181...190))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (181...182))
@@ -379,6 +395,7 @@
         │   ├── operator_loc: (186...188) = "*="
         │   └── value:
         │       @ IntegerNode (location: (189...190))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (191...200))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (191...192))
@@ -408,6 +425,7 @@
         │   ├── operator_loc: (196...198) = "/="
         │   └── value:
         │       @ IntegerNode (location: (199...200))
+        │       └── flags: decimal
         ├── @ CallAndWriteNode (location: (201...211))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (201...202))
@@ -473,6 +491,7 @@
         │   ├── operator_loc: (217...220) = "||="
         │   └── value:
         │       @ IntegerNode (location: (221...222))
+        │       └── flags: decimal
         └── @ CallOperatorWriteNode (location: (223...233))
             ├── receiver:
             │   @ CallNode (location: (223...226))
@@ -497,3 +516,4 @@
             ├── operator_loc: (229...231) = "+="
             └── value:
                 @ IntegerNode (location: (232...233))
+                └── flags: decimal

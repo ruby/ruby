@@ -11,5 +11,6 @@
             │   @ StatementsNode (location: (0...5))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (0...5))
+            │           └── flags: decimal
             ├── consequent: ∅
             └── end_keyword_loc: ∅

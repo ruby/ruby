@@ -12,6 +12,7 @@
         │   │   @ StatementsNode (location: (12...13))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (12...13))
+        │   │           └── flags: decimal
         │   └── flags: 
         ├── @ WhileNode (location: (20...32))
         │   ├── keyword_loc: (22...27) = "while"
@@ -22,6 +23,7 @@
         │   │   @ StatementsNode (location: (20...21))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (20...21))
+        │   │           └── flags: decimal
         │   └── flags: 
         ├── @ WhileNode (location: (34...50))
         │   ├── keyword_loc: (40...45) = "while"

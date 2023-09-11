@@ -22,6 +22,7 @@
             │   │   │   │   @ StatementsNode (location: (24...26))
             │   │   │   │   └── body: (length: 1)
             │   │   │   │       └── @ IntegerNode (location: (24...26))
+            │   │   │   │           └── flags: decimal
             │   │   │   └── closing_loc: (26...27) = "}"
             │   │   └── @ StringNode (location: (27...36))
             │   │       ├── opening_loc: ∅

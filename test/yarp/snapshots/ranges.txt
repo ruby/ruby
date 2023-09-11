@@ -11,6 +11,7 @@
         │   │           ├── left: ∅
         │   │           ├── right:
         │   │           │   @ IntegerNode (location: (4...5))
+        │   │           │   └── flags: decimal
         │   │           ├── operator_loc: (1...4) = "..."
         │   │           └── flags: exclude_end
         │   ├── opening_loc: (0...1) = "("
@@ -23,6 +24,7 @@
         │   │           ├── left: ∅
         │   │           ├── right:
         │   │           │   @ IntegerNode (location: (11...12))
+        │   │           │   └── flags: decimal
         │   │           ├── operator_loc: (9...11) = ".."
         │   │           └── flags: 
         │   ├── opening_loc: (8...9) = "("
@@ -30,8 +32,10 @@
         ├── @ RangeNode (location: (15...20))
         │   ├── left:
         │   │   @ IntegerNode (location: (15...16))
+        │   │   └── flags: decimal
         │   ├── right:
         │   │   @ IntegerNode (location: (19...20))
+        │   │   └── flags: decimal
         │   ├── operator_loc: (16...19) = "..."
         │   └── flags: exclude_end
         ├── @ CallNode (location: (22...31))
@@ -56,6 +60,7 @@
         │   │           ├── left: ∅
         │   │           ├── right:
         │   │           │   @ IntegerNode (location: (29...30))
+        │   │           │   └── flags: decimal
         │   │           ├── operator_loc: (26...29) = "..."
         │   │           └── flags: exclude_end
         │   ├── closing_loc: (30...31) = "]"
@@ -97,6 +102,7 @@
         │   │       └── @ RangeNode (location: (51...55))
         │   │           ├── left:
         │   │           │   @ IntegerNode (location: (51...52))
+        │   │           │   └── flags: decimal
         │   │           ├── right: ∅
         │   │           ├── operator_loc: (52...55) = "..."
         │   │           └── flags: exclude_end
@@ -105,8 +111,10 @@
         ├── @ RangeNode (location: (58...62))
         │   ├── left:
         │   │   @ IntegerNode (location: (58...59))
+        │   │   └── flags: decimal
         │   ├── right:
         │   │   @ IntegerNode (location: (61...62))
+        │   │   └── flags: decimal
         │   ├── operator_loc: (59...61) = ".."
         │   └── flags: 
         ├── @ HashNode (location: (64...78))
@@ -144,6 +152,7 @@
             │       └── @ RangeNode (location: (81...84))
             │           ├── left:
             │           │   @ IntegerNode (location: (81...82))
+            │           │   └── flags: decimal
             │           ├── right: ∅
             │           ├── operator_loc: (82...84) = ".."
             │           └── flags: 

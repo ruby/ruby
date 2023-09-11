@@ -30,3 +30,4 @@
                 ├── keyword_loc: (9...15) = "rescue"
                 └── rescue_expression:
                     @ IntegerNode (location: (16...18))
+                    └── flags: decimal

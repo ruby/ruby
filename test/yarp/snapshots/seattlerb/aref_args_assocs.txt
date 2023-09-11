@@ -10,8 +10,10 @@
             │           └── @ AssocNode (location: (1...7))
             │               ├── key:
             │               │   @ IntegerNode (location: (1...2))
+            │               │   └── flags: decimal
             │               ├── value:
             │               │   @ IntegerNode (location: (6...7))
+            │               │   └── flags: decimal
             │               └── operator_loc: (3...5) = "=>"
             ├── opening_loc: (0...1) = "["
             └── closing_loc: (7...8) = "]"

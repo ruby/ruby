@@ -32,6 +32,7 @@
         │   │                   │   └── unescaped: "foo"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (17...18))
+        │   │                   │   └── flags: decimal
         │   │                   └── operator_loc: (14...16) = "=>"
         │   ├── closing_loc: (18...19) = ")"
         │   ├── block: ∅
@@ -66,6 +67,7 @@
             │       │           │   └── unescaped: "foo"
             │       │           ├── value:
             │       │           │   @ IntegerNode (location: (38...39))
+            │       │           │   └── flags: decimal
             │       │           └── operator_loc: (35...37) = "=>"
             │       └── @ BlockArgumentNode (location: (41...45))
             │           ├── expression:

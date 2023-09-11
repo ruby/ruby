@@ -8,9 +8,13 @@
             │   @ ArrayNode (location: (0...12))
             │   ├── elements: (length: 4)
             │   │   ├── @ IntegerNode (location: (1...2))
+            │   │   │   └── flags: decimal
             │   │   ├── @ IntegerNode (location: (4...5))
+            │   │   │   └── flags: decimal
             │   │   ├── @ IntegerNode (location: (7...8))
+            │   │   │   └── flags: decimal
             │   │   └── @ IntegerNode (location: (10...11))
+            │   │       └── flags: decimal
             │   ├── opening_loc: (0...1) = "["
             │   └── closing_loc: (11...12) = "]"
             ├── call_operator_loc: ∅

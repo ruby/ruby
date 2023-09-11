@@ -17,6 +17,7 @@
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (9...10))
+            │   │       │   └── flags: decimal
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (10...11) = "}"
             ├── conditions: (length: 1)

@@ -34,6 +34,7 @@
             │           │   @ StatementsNode (location: (27...29))
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (27...29))
+            │           │           └── flags: decimal
             │           ├── locals: [:o]
             │           ├── def_keyword_loc: (10...13) = "def"
             │           ├── operator_loc: (18...19) = "."

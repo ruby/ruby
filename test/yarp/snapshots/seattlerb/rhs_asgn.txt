@@ -6,6 +6,7 @@
         └── @ MatchRequiredNode (location: (0...7))
             ├── value:
             │   @ IntegerNode (location: (0...2))
+            │   └── flags: decimal
             ├── pattern:
             │   @ LocalVariableTargetNode (location: (6...7))
             │   ├── name: :n

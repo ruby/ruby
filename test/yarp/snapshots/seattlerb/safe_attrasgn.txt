@@ -22,6 +22,7 @@
             │   @ ArgumentsNode (location: (7...8))
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (7...8))
+            │           └── flags: decimal
             ├── closing_loc: ∅
             ├── block: ∅
             ├── flags: safe_navigation

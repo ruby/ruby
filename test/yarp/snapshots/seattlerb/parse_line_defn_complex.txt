@@ -41,6 +41,7 @@
             │       │   ├── operator_loc: (20...22) = "*="
             │       │   ├── value:
             │       │   │   @ IntegerNode (location: (23...24))
+            │       │   │   └── flags: decimal
             │       │   ├── name: :y
             │       │   ├── operator: :*
             │       │   └── depth: 0

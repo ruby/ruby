@@ -889,8 +889,8 @@ module YARP
         ParametersNode(
           [RequiredParameterNode(:a)],
           [
-            OptionalParameterNode(:b, Location(), Location(), IntegerNode()),
-            OptionalParameterNode(:d, Location(), Location(), IntegerNode())
+            OptionalParameterNode(:b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL)),
+            OptionalParameterNode(:d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))
           ],
           [RequiredParameterNode(:c), RequiredParameterNode(:e)],
           nil,
@@ -933,7 +933,7 @@ module YARP
         Location(),
         nil,
         nil,
-        StatementsNode([IntegerNode()]),
+        StatementsNode([IntegerNode(IntegerBaseFlags::DECIMAL)]),
         [],
         Location(),
         nil,
@@ -1123,7 +1123,7 @@ module YARP
         :foo,
         Location(),
         nil,
-        ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode())], [RequiredParameterNode(:b)], RestParameterNode(:c, Location(), Location()), [], nil, nil),
+        ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], [RequiredParameterNode(:b)], RestParameterNode(:c, Location(), Location()), [], nil, nil),
         nil,
         [:a, :b, :c],
         Location(),

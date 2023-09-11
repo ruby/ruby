@@ -26,8 +26,10 @@
             │               └── @ AssocNode (location: (4...8))
             │                   ├── key:
             │                   │   @ IntegerNode (location: (4...5))
+            │                   │   └── flags: decimal
             │                   ├── value:
             │                   │   @ IntegerNode (location: (7...8))
+            │                   │   └── flags: decimal
             │                   └── operator_loc: (5...7) = "=>"
             ├── closing_loc: (9...10) = ")"
             ├── block: ∅

@@ -9,6 +9,7 @@
         │   ├── name_loc: (0...1) = "t"
         │   ├── value:
         │   │   @ IntegerNode (location: (2...3))
+        │   │   └── flags: decimal
         │   └── operator_loc: (1...2) = "="
         └── @ IfNode (location: (4...13))
             ├── if_keyword_loc: ∅

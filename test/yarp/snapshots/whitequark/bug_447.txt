@@ -38,6 +38,7 @@
             │       │   ├── opening_loc: (15...16) = "["
             │       │   └── closing_loc: (16...17) = "]"
             │       └── @ IntegerNode (location: (19...20))
+            │           └── flags: decimal
             ├── closing_loc: ∅
             ├── block:
             │   @ BlockNode (location: (21...27))

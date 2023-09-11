@@ -19,6 +19,7 @@
             │   │   │   │   @ ArgumentsNode (location: (35...36))
             │   │   │   │   └── arguments: (length: 1)
             │   │   │   │       └── @ IntegerNode (location: (35...36))
+            │   │   │   │           └── flags: decimal
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
             │   │   │   ├── flags: 

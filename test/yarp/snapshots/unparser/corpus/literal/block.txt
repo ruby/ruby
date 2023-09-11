@@ -164,6 +164,7 @@
         │   │   @ ArgumentsNode (location: (68...69))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (68...69))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (69...70) = ")"
         │   ├── block:
         │   │   @ BlockNode (location: (71...80))

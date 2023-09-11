@@ -4,4 +4,6 @@
     @ StatementsNode (location: (0...31))
     └── body: (length: 2)
         ├── @ IntegerNode (location: (0...1))
+        │   └── flags: decimal
         └── @ IntegerNode (location: (30...31))
+            └── flags: decimal

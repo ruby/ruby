@@ -17,6 +17,7 @@
         │   │   │       ├── operator_loc: (10...11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (12...13))
+        │   │   │           └── flags: decimal
         │   │   ├── posts: (length: 0)
         │   │   ├── rest: ∅
         │   │   ├── keywords: (length: 0)
@@ -44,12 +45,14 @@
             │   │   │   ├── operator_loc: (29...30) = "="
             │   │   │   └── value:
             │   │   │       @ IntegerNode (location: (30...31))
+            │   │   │       └── flags: decimal
             │   │   └── @ OptionalParameterNode (location: (33...38))
             │   │       ├── name: :bar
             │   │       ├── name_loc: (33...36) = "bar"
             │   │       ├── operator_loc: (36...37) = "="
             │   │       └── value:
             │   │           @ IntegerNode (location: (37...38))
+            │   │           └── flags: decimal
             │   ├── posts: (length: 0)
             │   ├── rest: ∅
             │   ├── keywords: (length: 0)

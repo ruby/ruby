@@ -23,6 +23,7 @@
         ├── @ ArrayNode (location: (8...20))
         │   ├── elements: (length: 3)
         │   │   ├── @ IntegerNode (location: (9...10))
+        │   │   │   └── flags: decimal
         │   │   ├── @ SplatNode (location: (12...16))
         │   │   │   ├── operator_loc: (12...13) = "*"
         │   │   │   └── expression:
@@ -37,11 +38,13 @@
         │   │   │       ├── flags: variable_call
         │   │   │       └── name: "foo"
         │   │   └── @ IntegerNode (location: (18...19))
+        │   │       └── flags: decimal
         │   ├── opening_loc: (8...9) = "["
         │   └── closing_loc: (19...20) = "]"
         └── @ ArrayNode (location: (22...31))
             ├── elements: (length: 2)
             │   ├── @ IntegerNode (location: (23...24))
+            │   │   └── flags: decimal
             │   └── @ SplatNode (location: (26...30))
             │       ├── operator_loc: (26...27) = "*"
             │       └── expression:

@@ -24,4 +24,5 @@
             ├── name_loc: (35...36) = "d"
             ├── value:
             │   @ IntegerNode (location: (39...41))
+            │   └── flags: decimal
             └── operator_loc: (37...38) = "="

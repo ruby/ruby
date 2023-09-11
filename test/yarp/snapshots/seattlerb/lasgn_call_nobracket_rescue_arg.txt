@@ -19,9 +19,11 @@
             │   │       └── @ RescueModifierNode (location: (6...16))
             │   │           ├── expression:
             │   │           │   @ IntegerNode (location: (6...7))
+            │   │           │   └── flags: decimal
             │   │           ├── keyword_loc: (8...14) = "rescue"
             │   │           └── rescue_expression:
             │   │               @ IntegerNode (location: (15...16))
+            │   │               └── flags: decimal
             │   ├── closing_loc: ∅
             │   ├── block: ∅
             │   ├── flags: 

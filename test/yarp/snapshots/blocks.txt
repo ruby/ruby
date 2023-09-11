@@ -122,6 +122,7 @@
         │   │   @ ArgumentsNode (location: (48...49))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (48...49))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (49...50) = ")"
         │   ├── block:
         │   │   @ BlockNode (location: (51...74))
@@ -329,6 +330,7 @@
         │   │   │   │   │           │   @ ArgumentsNode (location: (161...162))
         │   │   │   │   │           │   └── arguments: (length: 1)
         │   │   │   │   │           │       └── @ IntegerNode (location: (161...162))
+        │   │   │   │   │           │           └── flags: decimal
         │   │   │   │   │           ├── closing_loc: (162...163) = "]"
         │   │   │   │   │           ├── block: ∅
         │   │   │   │   │           ├── flags: 
@@ -502,6 +504,7 @@
         │   │   │   │   │       ├── operator_loc: (265...266) = "="
         │   │   │   │   │       └── value:
         │   │   │   │   │           @ IntegerNode (location: (267...268))
+        │   │   │   │   │           └── flags: decimal
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── keywords: (length: 1)
@@ -561,6 +564,7 @@
         │   ├── name_loc: (292...296) = "fork"
         │   ├── value:
         │   │   @ IntegerNode (location: (299...300))
+        │   │   └── flags: decimal
         │   └── operator_loc: (297...298) = "="
         ├── @ CallNode (location: (301...316))
         │   ├── receiver: ∅
@@ -688,11 +692,13 @@
         │   │           │   │   │   │   │   ├── name_loc: (365...367) = "a:"
         │   │           │   │   │   │   │   └── value:
         │   │           │   │   │   │   │       @ IntegerNode (location: (368...369))
+        │   │           │   │   │   │   │       └── flags: decimal
         │   │           │   │   │   │   └── @ KeywordParameterNode (location: (373...377))
         │   │           │   │   │   │       ├── name: :b
         │   │           │   │   │   │       ├── name_loc: (373...375) = "b:"
         │   │           │   │   │   │       └── value:
         │   │           │   │   │   │           @ IntegerNode (location: (376...377))
+        │   │           │   │   │   │           └── flags: decimal
         │   │           │   │   │   ├── keyword_rest: ∅
         │   │           │   │   │   └── block: ∅
         │   │           │   │   ├── locals: (length: 0)

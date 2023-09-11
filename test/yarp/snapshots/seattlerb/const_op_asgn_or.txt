@@ -16,3 +16,4 @@
             ├── operator_loc: (5...8) = "||="
             └── value:
                 @ IntegerNode (location: (9...10))
+                └── flags: decimal

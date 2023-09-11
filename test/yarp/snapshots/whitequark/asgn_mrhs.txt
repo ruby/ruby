@@ -44,6 +44,7 @@
         │   │   │   │   ├── flags: variable_call
         │   │   │   │   └── name: "bar"
         │   │   │   └── @ IntegerNode (location: (23...24))
+        │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (16...17) = "="

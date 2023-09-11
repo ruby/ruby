@@ -11,6 +11,7 @@
         │   │   @ StatementsNode (location: (13...14))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (13...14))
+        │   │           └── flags: decimal
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (16...19) = "end"
         ├── @ UnlessNode (location: (21...45))
@@ -21,6 +22,7 @@
         │   │   @ StatementsNode (location: (33...34))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (33...34))
+        │   │           └── flags: decimal
         │   ├── consequent:
         │   │   @ ElseNode (location: (35...45))
         │   │   ├── else_keyword_loc: (35...39) = "else"
@@ -28,6 +30,7 @@
         │   │   │   @ StatementsNode (location: (40...41))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ IntegerNode (location: (40...41))
+        │   │   │           └── flags: decimal
         │   │   └── end_keyword_loc: (42...45) = "end"
         │   └── end_keyword_loc: (42...45) = "end"
         ├── @ UnlessNode (location: (47...60))
@@ -38,6 +41,7 @@
         │   │   @ StatementsNode (location: (47...48))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (47...48))
+        │   │           └── flags: decimal
         │   ├── consequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ UnlessNode (location: (62...79))

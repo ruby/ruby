@@ -8,8 +8,11 @@
             │   @ ArrayNode (location: (5...14))
             │   ├── elements: (length: 3)
             │   │   ├── @ IntegerNode (location: (6...7))
+            │   │   │   └── flags: decimal
             │   │   ├── @ IntegerNode (location: (9...10))
+            │   │   │   └── flags: decimal
             │   │   └── @ IntegerNode (location: (12...13))
+            │   │       └── flags: decimal
             │   ├── opening_loc: (5...6) = "["
             │   └── closing_loc: (13...14) = "]"
             ├── conditions: (length: 1)
@@ -19,7 +22,9 @@
             │       │   ├── constant: ∅
             │       │   ├── requireds: (length: 2)
             │       │   │   ├── @ IntegerNode (location: (19...20))
+            │       │   │   │   └── flags: decimal
             │       │   │   └── @ IntegerNode (location: (22...23))
+            │       │   │       └── flags: decimal
             │       │   ├── rest: ∅
             │       │   ├── posts: (length: 0)
             │       │   ├── opening_loc: (18...19) = "["

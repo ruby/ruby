@@ -39,6 +39,7 @@
         │   │           │   │   @ StatementsNode (location: (10...11))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (10...11))
+        │   │           │   │           └── flags: decimal
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
         │   ├── closing_loc: (11...12) = ")"
@@ -57,6 +58,7 @@
         │   │       │   └── unescaped: "foo"
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (23...24))
+        │   │       │   └── flags: decimal
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (25...26) = "}"
         └── @ HashNode (location: (28...50))
@@ -71,6 +73,7 @@
             │   │   │   └── unescaped: "foo"
             │   │   ├── value:
             │   │   │   @ IntegerNode (location: (37...38))
+            │   │   │   └── flags: decimal
             │   │   └── operator_loc: ∅
             │   └── @ AssocNode (location: (40...49))
             │       ├── key:

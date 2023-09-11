@@ -198,6 +198,7 @@
         │   │                       │   │   │   @ StatementsNode (location: (208...210))
         │   │                       │   │   │   └── body: (length: 1)
         │   │                       │   │   │       └── @ IntegerNode (location: (208...210))
+        │   │                       │   │   │           └── flags: decimal
         │   │                       │   │   └── closing_loc: (210...211) = "}"
         │   │                       │   └── @ StringNode (location: (211...212))
         │   │                       │       ├── opening_loc: ∅

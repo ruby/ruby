@@ -20,6 +20,7 @@
             │   @ StatementsNode (location: (6...7))
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (6...7))
+            │           └── flags: decimal
             ├── consequent:
             │   @ ElseNode (location: (8...11))
             │   ├── else_keyword_loc: (8...9) = ":"
@@ -27,5 +28,6 @@
             │   │   @ StatementsNode (location: (10...11))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (10...11))
+            │   │           └── flags: decimal
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

@@ -9,6 +9,7 @@
         │       @ ArgumentsNode (location: (7...17))
         │       └── arguments: (length: 2)
         │           ├── @ IntegerNode (location: (7...8))
+        │           │   └── flags: decimal
         │           └── @ KeywordHashNode (location: (10...17))
         │               └── elements: (length: 1)
         │                   └── @ AssocNode (location: (10...17))
@@ -20,6 +21,7 @@
         │                       │   └── unescaped: "z"
         │                       ├── value:
         │                       │   @ IntegerNode (location: (16...17))
+        │                       │   └── flags: decimal
         │                       └── operator_loc: (13...15) = "=>"
         ├── @ ReturnNode (location: (19...45))
         │   ├── keyword_loc: (19...25) = "return"
@@ -27,6 +29,7 @@
         │       @ ArgumentsNode (location: (26...45))
         │       └── arguments: (length: 2)
         │           ├── @ IntegerNode (location: (26...27))
+        │           │   └── flags: decimal
         │           └── @ KeywordHashNode (location: (29...45))
         │               └── elements: (length: 2)
         │                   ├── @ AssocNode (location: (29...36))
@@ -38,6 +41,7 @@
         │                   │   │   └── unescaped: "z"
         │                   │   ├── value:
         │                   │   │   @ IntegerNode (location: (35...36))
+        │                   │   │   └── flags: decimal
         │                   │   └── operator_loc: (32...34) = "=>"
         │                   └── @ AssocNode (location: (38...45))
         │                       ├── key:
@@ -48,6 +52,7 @@
         │                       │   └── unescaped: "w"
         │                       ├── value:
         │                       │   @ IntegerNode (location: (44...45))
+        │                       │   └── flags: decimal
         │                       └── operator_loc: (41...43) = "=>"
         ├── @ ReturnNode (location: (47...61))
         │   ├── keyword_loc: (47...53) = "return"
@@ -73,6 +78,7 @@
         │               │                   │   └── unescaped: "z"
         │               │                   ├── value:
         │               │                   │   @ IntegerNode (location: (60...61))
+        │               │                   │   └── flags: decimal
         │               │                   └── operator_loc: (58...60) = "=>"
         │               ├── closing_loc: ∅
         │               ├── block: ∅
@@ -102,6 +108,7 @@
         │               │                   │   └── unescaped: "z"
         │               │                   ├── value:
         │               │                   │   @ IntegerNode (location: (74...75))
+        │               │                   │   └── flags: decimal
         │               │                   └── operator_loc: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
@@ -131,6 +138,7 @@
         │               │                   │   └── unescaped: "z"
         │               │                   ├── value:
         │               │                   │   @ IntegerNode (location: (88...89))
+        │               │                   │   └── flags: decimal
         │               │                   └── operator_loc: ∅
         │               ├── closing_loc: (89...90) = ")"
         │               ├── block: ∅
@@ -165,6 +173,7 @@
                         │                   │   └── name: "z"
                         │                   ├── value:
                         │                   │   @ IntegerNode (location: (104...105))
+                        │                   │   └── flags: decimal
                         │                   └── operator_loc: (102...104) = "=>"
                         ├── closing_loc: (105...106) = ")"
                         ├── block: ∅

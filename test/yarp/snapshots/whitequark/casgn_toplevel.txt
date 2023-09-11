@@ -14,3 +14,4 @@
             ├── operator_loc: (6...7) = "="
             └── value:
                 @ IntegerNode (location: (8...10))
+                └── flags: decimal

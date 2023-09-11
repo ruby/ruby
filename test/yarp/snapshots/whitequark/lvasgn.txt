@@ -9,6 +9,7 @@
         │   ├── name_loc: (0...3) = "var"
         │   ├── value:
         │   │   @ IntegerNode (location: (6...8))
+        │   │   └── flags: decimal
         │   └── operator_loc: (4...5) = "="
         └── @ LocalVariableReadNode (location: (10...13))
             ├── name: :var

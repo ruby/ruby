@@ -46,6 +46,7 @@
         │   │       │   ├── flags: 
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (10...11))
+        │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (12...18))
@@ -319,6 +320,7 @@
         │   │       │   ├── flags: 
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (120...121))
+        │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (122...128))
@@ -598,6 +600,7 @@
         │   │       │   ├── flags: 
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (233...234))
+        │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (235...241))
@@ -901,6 +904,7 @@
         │   │       │   ├── flags: 
         │   │       │   └── name: "b"
         │   │       └── @ IntegerNode (location: (343...344))
+        │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (345...351))

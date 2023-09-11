@@ -15,5 +15,6 @@
             │       │   └── unescaped: "s1"
             │       ├── value:
             │       │   @ IntegerNode (location: (9...10))
+            │       │   └── flags: decimal
             │       └── operator_loc: (6...8) = "=>"
             └── closing_loc: (12...13) = "}"

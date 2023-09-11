@@ -25,12 +25,14 @@
             │   │   │   │   │   ├── operator_loc: (7...8) = "="
             │   │   │   │   │   └── value:
             │   │   │   │   │       @ IntegerNode (location: (8...9))
+            │   │   │   │   │       └── flags: decimal
             │   │   │   │   └── @ OptionalParameterNode (location: (11...14))
             │   │   │   │       ├── name: :c
             │   │   │   │       ├── name_loc: (11...12) = "c"
             │   │   │   │       ├── operator_loc: (12...13) = "="
             │   │   │   │       └── value:
             │   │   │   │           @ IntegerNode (location: (13...14))
+            │   │   │   │           └── flags: decimal
             │   │   │   ├── posts: (length: 0)
             │   │   │   ├── rest: ∅
             │   │   │   ├── keywords: (length: 0)

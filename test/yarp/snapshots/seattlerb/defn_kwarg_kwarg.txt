@@ -21,11 +21,13 @@
             │   │   │   ├── name_loc: (9...11) = "b:"
             │   │   │   └── value:
             │   │   │       @ IntegerNode (location: (12...13))
+            │   │   │       └── flags: decimal
             │   │   └── @ KeywordParameterNode (location: (15...19))
             │   │       ├── name: :c
             │   │       ├── name_loc: (15...17) = "c:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (18...19))
+            │   │           └── flags: decimal
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅

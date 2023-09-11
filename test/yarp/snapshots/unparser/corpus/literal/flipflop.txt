@@ -35,6 +35,7 @@
         │   │   │           │   │           │   @ ArgumentsNode (location: (10...11))
         │   │   │           │   │           │   └── arguments: (length: 1)
         │   │   │           │   │           │       └── @ IntegerNode (location: (10...11))
+        │   │   │           │   │           │           └── flags: decimal
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: 
@@ -65,6 +66,7 @@
         │   │   │           │   │           │   @ ArgumentsNode (location: (20...21))
         │   │   │           │   │           │   └── arguments: (length: 1)
         │   │   │           │   │           │       └── @ IntegerNode (location: (20...21))
+        │   │   │           │   │           │           └── flags: decimal
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
         │   │   │           │   │           ├── flags: 
@@ -122,6 +124,7 @@
             │   │           │   │           │   @ ArgumentsNode (location: (44...45))
             │   │           │   │           │   └── arguments: (length: 1)
             │   │           │   │           │       └── @ IntegerNode (location: (44...45))
+            │   │           │   │           │           └── flags: decimal
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
             │   │           │   │           ├── flags: 
@@ -152,6 +155,7 @@
             │   │           │   │           │   @ ArgumentsNode (location: (55...56))
             │   │           │   │           │   └── arguments: (length: 1)
             │   │           │   │           │       └── @ IntegerNode (location: (55...56))
+            │   │           │   │           │           └── flags: decimal
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
             │   │           │   │           ├── flags: 

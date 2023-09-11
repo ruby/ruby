@@ -6,6 +6,8 @@
         └── @ ArrayNode (location: (0...6))
             ├── elements: (length: 2)
             │   ├── @ IntegerNode (location: (1...2))
+            │   │   └── flags: decimal
             │   └── @ IntegerNode (location: (4...5))
+            │       └── flags: decimal
             ├── opening_loc: (0...1) = "["
             └── closing_loc: (5...6) = "]"

@@ -9,3 +9,4 @@
         └── @ RationalNode (location: (7...10))
             └── numeric:
                 @ IntegerNode (location: (7...9))
+                └── flags: decimal

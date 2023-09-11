@@ -20,13 +20,16 @@
         │       @ ArgumentsNode (location: (36...37))
         │       └── arguments: (length: 1)
         │           └── @ IntegerNode (location: (36...37))
+        │               └── flags: decimal
         ├── @ ReturnNode (location: (38...49))
         │   ├── keyword_loc: (38...44) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (45...49))
         │       └── arguments: (length: 2)
         │           ├── @ IntegerNode (location: (45...46))
+        │           │   └── flags: decimal
         │           └── @ IntegerNode (location: (48...49))
+        │               └── flags: decimal
         ├── @ ReturnNode (location: (50...69))
         │   ├── keyword_loc: (50...56) = "return"
         │   └── arguments:
@@ -40,6 +43,7 @@
         │               │   @ StatementsNode (location: (64...65))
         │               │   └── body: (length: 1)
         │               │       └── @ IntegerNode (location: (64...65))
+        │               │           └── flags: decimal
         │               ├── consequent:
         │               │   @ ElseNode (location: (66...69))
         │               │   ├── else_keyword_loc: (66...67) = ":"
@@ -47,6 +51,7 @@
         │               │   │   @ StatementsNode (location: (68...69))
         │               │   │   └── body: (length: 1)
         │               │   │       └── @ IntegerNode (location: (68...69))
+        │               │   │           └── flags: decimal
         │               │   └── end_keyword_loc: ∅
         │               └── end_keyword_loc: ∅
         ├── @ BreakNode (location: (70...88))
@@ -61,6 +66,7 @@
         │   │           │   @ StatementsNode (location: (83...84))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ IntegerNode (location: (83...84))
+        │   │           │           └── flags: decimal
         │   │           ├── consequent:
         │   │           │   @ ElseNode (location: (85...88))
         │   │           │   ├── else_keyword_loc: (85...86) = ":"
@@ -68,6 +74,7 @@
         │   │           │   │   @ StatementsNode (location: (87...88))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (87...88))
+        │   │           │   │           └── flags: decimal
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
         │   └── keyword_loc: (70...75) = "break"
@@ -83,6 +90,7 @@
         │   │           │   @ StatementsNode (location: (101...102))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ IntegerNode (location: (101...102))
+        │   │           │           └── flags: decimal
         │   │           ├── consequent:
         │   │           │   @ ElseNode (location: (103...106))
         │   │           │   ├── else_keyword_loc: (103...104) = ":"
@@ -90,6 +98,7 @@
         │   │           │   │   @ StatementsNode (location: (105...106))
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (105...106))
+        │   │           │   │           └── flags: decimal
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
         │   └── keyword_loc: (89...93) = "next"
@@ -107,6 +116,7 @@
                         │   @ StatementsNode (location: (130...131))
                         │   └── body: (length: 1)
                         │       └── @ IntegerNode (location: (130...131))
+                        │           └── flags: decimal
                         ├── consequent:
                         │   @ ElseNode (location: (132...144))
                         │   ├── else_keyword_loc: (132...136) = "else"
@@ -114,5 +124,6 @@
                         │   │   @ StatementsNode (location: (139...140))
                         │   │   └── body: (length: 1)
                         │   │       └── @ IntegerNode (location: (139...140))
+                        │   │           └── flags: decimal
                         │   └── end_keyword_loc: (141...144) = "end"
                         └── end_keyword_loc: (141...144) = "end"

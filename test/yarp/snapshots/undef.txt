@@ -90,6 +90,7 @@
         │   │       │       │   @ StatementsNode (location: (97...98))
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ IntegerNode (location: (97...98))
+        │   │       │       │           └── flags: decimal
         │   │       │       └── closing_loc: (98...99) = "}"
         │   │       └── closing_loc: (99...100) = "\""
         │   └── keyword_loc: (84...89) = "undef"

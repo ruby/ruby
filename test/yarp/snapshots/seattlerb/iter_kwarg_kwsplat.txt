@@ -27,6 +27,7 @@
             │   │   │   │       ├── name_loc: (5...7) = "b:"
             │   │   │   │       └── value:
             │   │   │   │           @ IntegerNode (location: (8...9))
+            │   │   │   │           └── flags: decimal
             │   │   │   ├── keyword_rest:
             │   │   │   │   @ KeywordRestParameterNode (location: (11...14))
             │   │   │   │   ├── name: :c

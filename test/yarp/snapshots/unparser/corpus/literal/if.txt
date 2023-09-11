@@ -31,20 +31,24 @@
         │   ├── if_keyword_loc: (19...21) = "if"
         │   ├── predicate:
         │   │   @ IntegerNode (location: (22...23))
+        │   │   └── flags: decimal
         │   ├── statements:
         │   │   @ StatementsNode (location: (26...27))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (26...27))
+        │   │           └── flags: decimal
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (28...31) = "end"
         ├── @ IfNode (location: (32...53))
         │   ├── if_keyword_loc: (32...34) = "if"
         │   ├── predicate:
         │   │   @ IntegerNode (location: (35...36))
+        │   │   └── flags: decimal
         │   ├── statements:
         │   │   @ StatementsNode (location: (39...40))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (39...40))
+        │   │           └── flags: decimal
         │   ├── consequent:
         │   │   @ ElseNode (location: (41...53))
         │   │   ├── else_keyword_loc: (41...45) = "else"
@@ -52,12 +56,14 @@
         │   │   │   @ StatementsNode (location: (48...49))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ IntegerNode (location: (48...49))
+        │   │   │           └── flags: decimal
         │   │   └── end_keyword_loc: (50...53) = "end"
         │   └── end_keyword_loc: (50...53) = "end"
         ├── @ UnlessNode (location: (54...72))
         │   ├── keyword_loc: (54...60) = "unless"
         │   ├── predicate:
         │   │   @ IntegerNode (location: (61...62))
+        │   │   └── flags: decimal
         │   ├── statements:
         │   │   @ StatementsNode (location: (65...68))
         │   │   └── body: (length: 1)
@@ -68,10 +74,12 @@
         │   ├── keyword_loc: (73...79) = "unless"
         │   ├── predicate:
         │   │   @ IntegerNode (location: (80...81))
+        │   │   └── flags: decimal
         │   ├── statements:
         │   │   @ StatementsNode (location: (84...85))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (84...85))
+        │   │           └── flags: decimal
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (86...89) = "end"
         ├── @ IfNode (location: (90...100))

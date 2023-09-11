@@ -28,6 +28,7 @@
             │           │       │           │   │       └── @ CallNode (location: (8...11))
             │           │       │           │   │           ├── receiver:
             │           │       │           │   │           │   @ IntegerNode (location: (8...9))
+            │           │       │           │   │           │   └── flags: decimal
             │           │       │           │   │           ├── call_operator_loc: ∅
             │           │       │           │   │           ├── message_loc: (9...10) = "+"
             │           │       │           │   │           ├── opening_loc: ∅
@@ -35,6 +36,7 @@
             │           │       │           │   │           │   @ ArgumentsNode (location: (10...11))
             │           │       │           │   │           │   └── arguments: (length: 1)
             │           │       │           │   │           │       └── @ IntegerNode (location: (10...11))
+            │           │       │           │   │           │           └── flags: decimal
             │           │       │           │   │           ├── closing_loc: ∅
             │           │       │           │   │           ├── block: ∅
             │           │       │           │   │           ├── flags: 

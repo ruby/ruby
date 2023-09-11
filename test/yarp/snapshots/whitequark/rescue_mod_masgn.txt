@@ -32,6 +32,8 @@
                     @ ArrayNode (location: (23...29))
                     ├── elements: (length: 2)
                     │   ├── @ IntegerNode (location: (24...25))
+                    │   │   └── flags: decimal
                     │   └── @ IntegerNode (location: (27...28))
+                    │       └── flags: decimal
                     ├── opening_loc: (23...24) = "["
                     └── closing_loc: (28...29) = "]"

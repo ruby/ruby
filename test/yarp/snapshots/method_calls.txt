@@ -171,8 +171,11 @@
         │   │   @ ArgumentsNode (location: (67...74))
         │   │   └── arguments: (length: 3)
         │   │       ├── @ IntegerNode (location: (67...68))
+        │   │       │   └── flags: decimal
         │   │       ├── @ IntegerNode (location: (70...71))
+        │   │       │   └── flags: decimal
         │   │       └── @ IntegerNode (location: (73...74))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (74...75) = ")"
         │   ├── block: ∅
         │   ├── flags: 
@@ -248,6 +251,7 @@
         │   │   @ ArgumentsNode (location: (101...102))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (101...102))
+        │   │           └── flags: decimal
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: 
@@ -534,7 +538,9 @@
         │       @ ArrayNode (location: (200...204))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (200...201))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (203...204))
+        │       │       └── flags: decimal
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (206...210))
@@ -817,6 +823,7 @@
         │   │   @ ArgumentsNode (location: (345...391))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (345...348))
+        │   │       │   └── flags: decimal
         │   │       └── @ HashNode (location: (350...391))
         │   │           ├── opening_loc: (350...351) = "{"
         │   │           ├── elements: (length: 3)
@@ -1253,6 +1260,7 @@
         │   │   @ ArgumentsNode (location: (684...695))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (684...685))
+        │   │       │   └── flags: decimal
         │   │       └── @ KeywordHashNode (location: (687...695))
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (687...695))
@@ -1264,6 +1272,7 @@
         │   │                   │   └── unescaped: "kwarg"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (694...695))
+        │   │                   │   └── flags: decimal
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -1280,6 +1289,7 @@
         │   │   @ ArgumentsNode (location: (712...714))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (712...714))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (714...715) = ")"
         │   ├── block: ∅
         │   ├── flags: 
@@ -1439,6 +1449,7 @@
         │   │                   │   └── unescaped: "a"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (802...804))
+        │   │                   │   └── flags: decimal
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: (804...805) = ")"
         │   ├── block: ∅
@@ -1731,6 +1742,7 @@
         │   │           │       └── @ CallNode (location: (988...1004))
         │   │           │           ├── receiver:
         │   │           │           │   @ IntegerNode (location: (988...989))
+        │   │           │           │   └── flags: decimal
         │   │           │           ├── call_operator_loc: (989...990) = "."
         │   │           │           ├── message_loc: (990...995) = "times"
         │   │           │           ├── opening_loc: ∅
@@ -1744,6 +1756,7 @@
         │   │           │           │   │   @ StatementsNode (location: (999...1000))
         │   │           │           │   │   └── body: (length: 1)
         │   │           │           │   │       └── @ IntegerNode (location: (999...1000))
+        │   │           │           │   │           └── flags: decimal
         │   │           │           │   ├── opening_loc: (996...998) = "do"
         │   │           │           │   └── closing_loc: (1001...1004) = "end"
         │   │           │           ├── flags: 

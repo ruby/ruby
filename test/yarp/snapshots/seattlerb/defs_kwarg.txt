@@ -20,6 +20,7 @@
             │   │       ├── name_loc: (11...13) = "b:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (14...15))
+            │   │           └── flags: decimal
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅

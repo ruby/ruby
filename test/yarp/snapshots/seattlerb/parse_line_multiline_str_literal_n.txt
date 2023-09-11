@@ -9,3 +9,4 @@
         │   ├── closing_loc: (5...6) = "\""
         │   └── unescaped: "a\nb"
         └── @ IntegerNode (location: (7...8))
+            └── flags: decimal

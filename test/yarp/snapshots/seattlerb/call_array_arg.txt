@@ -6,6 +6,7 @@
         └── @ CallNode (location: (0...13))
             ├── receiver:
             │   @ IntegerNode (location: (0...1))
+            │   └── flags: decimal
             ├── call_operator_loc: ∅
             ├── message_loc: (2...4) = "=="
             ├── opening_loc: ∅

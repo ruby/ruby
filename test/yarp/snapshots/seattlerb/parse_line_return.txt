@@ -24,6 +24,7 @@
             │           │               @ ArgumentsNode (location: (53...55))
             │           │               └── arguments: (length: 1)
             │           │                   └── @ IntegerNode (location: (53...55))
+            │           │                       └── flags: decimal
             │           ├── consequent: ∅
             │           └── end_keyword_loc: (64...67) = "end"
             ├── locals: []

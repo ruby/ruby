@@ -12,6 +12,7 @@
         │   │       │   @ StatementsNode (location: (3...4))
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ IntegerNode (location: (3...4))
+        │   │       │           └── flags: decimal
         │   │       └── closing_loc: (4...5) = "}"
         │   └── closing_loc: (5...6) = "\""
         └── @ ArrayNode (location: (8...16))
@@ -25,6 +26,7 @@
             │       │       │   @ StatementsNode (location: (13...14))
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ IntegerNode (location: (13...14))
+            │       │       │           └── flags: decimal
             │       │       └── closing_loc: (14...15) = "}"
             │       └── closing_loc: ∅
             ├── opening_loc: (8...11) = "%W\""

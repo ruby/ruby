@@ -76,6 +76,7 @@
         │       │   @ NilNode (location: (97...100))
         │       ├── right:
         │       │   @ IntegerNode (location: (104...105))
+        │       │   └── flags: decimal
         │       └── operator_loc: (101...103) = "||"
         ├── @ RescueModifierNode (location: (107...129))
         │   ├── expression:
@@ -99,6 +100,7 @@
         │       │   @ StatementsNode (location: (124...125))
         │       │   └── body: (length: 1)
         │       │       └── @ IntegerNode (location: (124...125))
+        │       │           └── flags: decimal
         │       ├── consequent:
         │       │   @ ElseNode (location: (126...129))
         │       │   ├── else_keyword_loc: (126...127) = ":"
@@ -106,6 +108,7 @@
         │       │   │   @ StatementsNode (location: (128...129))
         │       │   │   └── body: (length: 1)
         │       │   │       └── @ IntegerNode (location: (128...129))
+        │       │   │           └── flags: decimal
         │       │   └── end_keyword_loc: ∅
         │       └── end_keyword_loc: ∅
         ├── @ BeginNode (location: (131...155))
@@ -293,6 +296,7 @@
         │   │           │       └── @ RescueModifierNode (location: (278...291))
         │   │           │           ├── expression:
         │   │           │           │   @ IntegerNode (location: (278...280))
+        │   │           │           │   └── flags: decimal
         │   │           │           ├── keyword_loc: (281...287) = "rescue"
         │   │           │           └── rescue_expression:
         │   │           │               @ NilNode (location: (288...291))

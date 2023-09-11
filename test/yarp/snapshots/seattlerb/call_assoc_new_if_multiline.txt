@@ -33,6 +33,7 @@
             │                   │   │   @ StatementsNode (location: (11...12))
             │                   │   │   └── body: (length: 1)
             │                   │   │       └── @ IntegerNode (location: (11...12))
+            │                   │   │           └── flags: decimal
             │                   │   ├── consequent:
             │                   │   │   @ ElseNode (location: (13...23))
             │                   │   │   ├── else_keyword_loc: (13...17) = "else"
@@ -40,6 +41,7 @@
             │                   │   │   │   @ StatementsNode (location: (18...19))
             │                   │   │   │   └── body: (length: 1)
             │                   │   │   │       └── @ IntegerNode (location: (18...19))
+            │                   │   │   │           └── flags: decimal
             │                   │   │   └── end_keyword_loc: (20...23) = "end"
             │                   │   └── end_keyword_loc: (20...23) = "end"
             │                   └── operator_loc: ∅

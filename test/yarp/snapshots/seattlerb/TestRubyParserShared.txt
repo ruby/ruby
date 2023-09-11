@@ -181,6 +181,7 @@
         │   │           │           ├── name_loc: (337...338) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (341...343))
+        │   │           │           │   └── flags: decimal
         │   │           │           └── operator_loc: (339...340) = "="
         │   │           ├── end_keyword_loc: (355...358) = "end"
         │   │           └── name: :Y
@@ -297,6 +298,7 @@
         │   │           │           ├── name_loc: (612...613) = "Z"
         │   │           │           ├── value:
         │   │           │           │   @ IntegerNode (location: (616...618))
+        │   │           │           │   └── flags: decimal
         │   │           │           └── operator_loc: (614...615) = "="
         │   │           ├── end_keyword_loc: (630...633) = "end"
         │   │           └── name: :Y

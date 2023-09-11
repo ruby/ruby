@@ -22,6 +22,7 @@
             │   │   │       ├── name_loc: (4...6) = "k:"
             │   │   │       └── value:
             │   │   │           @ IntegerNode (location: (6...8))
+            │   │   │           └── flags: decimal
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

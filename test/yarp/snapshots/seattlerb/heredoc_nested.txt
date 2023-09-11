@@ -35,5 +35,6 @@
             │   │   │       └── unescaped: "a\n"
             │   │   └── closing_loc: (19...21) = "A\n"
             │   └── @ IntegerNode (location: (21...22))
+            │       └── flags: decimal
             ├── opening_loc: (0...1) = "["
             └── closing_loc: (22...23) = "]"

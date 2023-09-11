@@ -34,6 +34,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ IntegerNode (location: (18...19))
+        │   │   └── flags: decimal
         │   └── operator_loc: (15...17) = "=>"
         ├── @ MatchRequiredNode (location: (20...30))
         │   ├── value:
@@ -66,6 +67,7 @@
         │   │   @ ImaginaryNode (location: (38...40))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (38...39))
+        │   │       └── flags: decimal
         │   └── operator_loc: (35...37) = "=>"
         ├── @ MatchRequiredNode (location: (41...50))
         │   ├── value:
@@ -83,6 +85,7 @@
         │   │   @ RationalNode (location: (48...50))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (48...49))
+        │   │       └── flags: decimal
         │   └── operator_loc: (45...47) = "=>"
         ├── @ MatchRequiredNode (location: (51...62))
         │   ├── value:
@@ -496,8 +499,10 @@
         │   │   @ RangeNode (location: (362...368))
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (362...363))
+        │   │   │   └── flags: decimal
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (367...368))
+        │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (364...366) = ".."
         │   │   └── flags: 
         │   └── operator_loc: (359...361) = "=>"
@@ -540,10 +545,12 @@
         │   │   │   @ ImaginaryNode (location: (394...396))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (394...395))
+        │   │   │       └── flags: decimal
         │   │   ├── right:
         │   │   │   @ ImaginaryNode (location: (400...402))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (400...401))
+        │   │   │       └── flags: decimal
         │   │   ├── operator_loc: (397...399) = ".."
         │   │   └── flags: 
         │   └── operator_loc: (391...393) = "=>"
@@ -565,10 +572,12 @@
         │   │   │   @ RationalNode (location: (410...412))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (410...411))
+        │   │   │       └── flags: decimal
         │   │   ├── right:
         │   │   │   @ RationalNode (location: (416...418))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (416...417))
+        │   │   │       └── flags: decimal
         │   │   ├── operator_loc: (413...415) = ".."
         │   │   └── flags: 
         │   └── operator_loc: (407...409) = "=>"
@@ -1268,6 +1277,7 @@
         │   │   @ PinnedExpressionNode (location: (1002...1006))
         │   │   ├── expression:
         │   │   │   @ IntegerNode (location: (1004...1005))
+        │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (1002...1003) = "^"
         │   │   ├── lparen_loc: (1003...1004) = "("
         │   │   └── rparen_loc: (1005...1006) = ")"
@@ -1471,6 +1481,7 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (1139...1140))
+        │   │   │       └── flags: decimal
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (1138...1139) = "("
@@ -1495,8 +1506,11 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 3)
         │   │   │   ├── @ IntegerNode (location: (1153...1154))
+        │   │   │   │   └── flags: decimal
         │   │   │   ├── @ IntegerNode (location: (1156...1157))
+        │   │   │   │   └── flags: decimal
         │   │   │   └── @ IntegerNode (location: (1159...1160))
+        │   │   │       └── flags: decimal
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (1152...1153) = "("
@@ -1672,6 +1686,7 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (1275...1276))
+        │   │   │       └── flags: decimal
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (1274...1275) = "["
@@ -1696,8 +1711,11 @@
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 3)
         │   │   │   ├── @ IntegerNode (location: (1289...1290))
+        │   │   │   │   └── flags: decimal
         │   │   │   ├── @ IntegerNode (location: (1292...1293))
+        │   │   │   │   └── flags: decimal
         │   │   │   └── @ IntegerNode (location: (1295...1296))
+        │   │   │       └── flags: decimal
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: (1288...1289) = "["
@@ -2288,6 +2306,7 @@
         │   │   └── name: "foo"
         │   ├── pattern:
         │   │   @ IntegerNode (location: (1666...1667))
+        │   │   └── flags: decimal
         │   └── operator_loc: (1663...1665) = "in"
         ├── @ MatchPredicateNode (location: (1668...1678))
         │   ├── value:
@@ -2320,6 +2339,7 @@
         │   │   @ ImaginaryNode (location: (1686...1688))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (1686...1687))
+        │   │       └── flags: decimal
         │   └── operator_loc: (1683...1685) = "in"
         ├── @ MatchPredicateNode (location: (1689...1698))
         │   ├── value:
@@ -2337,6 +2357,7 @@
         │   │   @ RationalNode (location: (1696...1698))
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (1696...1697))
+        │   │       └── flags: decimal
         │   └── operator_loc: (1693...1695) = "in"
         ├── @ MatchPredicateNode (location: (1699...1710))
         │   ├── value:
@@ -2774,6 +2795,7 @@
         │   │   └── @ InNode (location: (2039...2048))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (2042...2043))
+        │   │       │   └── flags: decimal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (2039...2041) = "in"
         │   │       └── then_loc: (2044...2048) = "then"
@@ -2820,6 +2842,7 @@
         │   │       │   @ ImaginaryNode (location: (2092...2094))
         │   │       │   └── numeric:
         │   │       │       @ IntegerNode (location: (2092...2093))
+        │   │       │       └── flags: decimal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (2089...2091) = "in"
         │   │       └── then_loc: (2095...2099) = "then"
@@ -2844,6 +2867,7 @@
         │   │       │   @ RationalNode (location: (2117...2119))
         │   │       │   └── numeric:
         │   │       │       @ IntegerNode (location: (2117...2118))
+        │   │       │       └── flags: decimal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (2114...2116) = "in"
         │   │       └── then_loc: (2120...2124) = "then"
@@ -3453,6 +3477,7 @@
         │   │       │   │   @ StatementsNode (location: (2794...2795))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ IntegerNode (location: (2794...2795))
+        │   │       │   │           └── flags: decimal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -3521,6 +3546,7 @@
         │   │       │   │       └── @ ImaginaryNode (location: (2858...2860))
         │   │       │   │           └── numeric:
         │   │       │   │               @ IntegerNode (location: (2858...2859))
+        │   │       │   │               └── flags: decimal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -3556,6 +3582,7 @@
         │   │       │   │       └── @ RationalNode (location: (2890...2892))
         │   │       │   │           └── numeric:
         │   │       │   │               @ IntegerNode (location: (2890...2891))
+        │   │       │   │               └── flags: decimal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅

@@ -8,4 +8,5 @@
             ├── name_loc: (0...5) = "@@var"
             ├── value:
             │   @ IntegerNode (location: (8...10))
+            │   └── flags: decimal
             └── operator_loc: (6...7) = "="

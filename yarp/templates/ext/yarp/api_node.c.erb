@@ -135,7 +135,7 @@ yp_ast_new(yp_parser_t *parser, yp_node_t *node, rb_encoding *encoding) {
                 <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
-                    <%- if node.fields.any? { |field| ![YARP::NodeField, YARP::OptionalNodeField].include?(field.class) } -%>
+                    <%- if node.fields.any? { |field| ![YARP::NodeField, YARP::OptionalNodeField, YARP::FlagsField].include?(field.class) } -%>
                     yp_<%= node.human %>_t *cast = (yp_<%= node.human %>_t *) node;
                     <%- end -%>
                     VALUE argv[<%= node.fields.length + 1 %>];

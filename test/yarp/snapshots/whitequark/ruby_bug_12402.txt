@@ -487,6 +487,7 @@
         │   │   @ ArgumentsNode (location: (378...379))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (378...379))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (379...380) = "]"
         │   ├── flags: 
         │   ├── read_name: "[]"
@@ -533,6 +534,7 @@
             │   @ ArgumentsNode (location: (410...411))
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (410...411))
+            │           └── flags: decimal
             ├── closing_loc: (411...412) = "]"
             ├── flags: 
             ├── read_name: "[]"

@@ -181,6 +181,7 @@
         │   │   │   │   @ ArgumentsNode (location: (139...140))
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (139...140))
+        │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (140...141) = ")"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: 

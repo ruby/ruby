@@ -10,4 +10,5 @@
             │   @ ArgumentsNode (location: (6...8))
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (6...8))
+            │           └── flags: decimal
             └── rparen_loc: ∅

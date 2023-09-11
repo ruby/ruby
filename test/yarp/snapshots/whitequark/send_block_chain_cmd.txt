@@ -14,6 +14,7 @@
         │   │   │   @ ArgumentsNode (location: (5...6))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (5...6))
+        │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (7...13))
@@ -55,6 +56,7 @@
         │   │   │   @ ArgumentsNode (location: (28...29))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (28...29))
+        │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (30...36))
@@ -102,6 +104,7 @@
         │   │   │   @ ArgumentsNode (location: (58...59))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (58...59))
+        │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (60...66))
@@ -137,6 +140,7 @@
         │   │   │   @ ArgumentsNode (location: (80...81))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (80...81))
+        │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (82...88))
@@ -178,6 +182,7 @@
         │   │   │   @ ArgumentsNode (location: (104...105))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (104...105))
+        │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (106...112))
@@ -225,6 +230,7 @@
         │   │   │   @ ArgumentsNode (location: (131...132))
         │   │   │   └── arguments: (length: 1)
         │   │   │       └── @ IntegerNode (location: (131...132))
+        │   │   │           └── flags: decimal
         │   │   ├── closing_loc: ∅
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (133...139))
@@ -266,6 +272,7 @@
             │   │   @ ArgumentsNode (location: (155...156))
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (155...156))
+            │   │           └── flags: decimal
             │   ├── closing_loc: ∅
             │   ├── block:
             │   │   @ BlockNode (location: (157...163))

@@ -168,6 +168,7 @@
         │   │       │   ├── left: ∅
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (134...136))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── operator_loc: (131...134) = "..."
         │   │       │   └── flags: exclude_end
         │   │       ├── statements: ∅
@@ -190,6 +191,7 @@
         │   │       │   ├── left: ∅
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (157...159))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── operator_loc: (155...157) = ".."
         │   │       │   └── flags: 
         │   │       ├── statements: ∅
@@ -211,6 +213,7 @@
         │   │       │   @ RangeNode (location: (178...182))
         │   │       │   ├── left:
         │   │       │   │   @ IntegerNode (location: (178...179))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── right: ∅
         │   │       │   ├── operator_loc: (179...182) = "..."
         │   │       │   └── flags: exclude_end
@@ -233,8 +236,10 @@
         │   │       │   @ RangeNode (location: (201...206))
         │   │       │   ├── left:
         │   │       │   │   @ IntegerNode (location: (201...202))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (205...206))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── operator_loc: (202...205) = "..."
         │   │       │   └── flags: exclude_end
         │   │       ├── statements: ∅
@@ -254,6 +259,7 @@
         │   │   └── @ InNode (location: (221...227))
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (225...227))
+        │   │       │   └── flags: decimal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (221...223) = "in"
         │   │       └── then_loc: ∅

@@ -18,7 +18,9 @@
         │       @ ArrayNode (location: (13...17))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (13...14))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (16...17))
+        │       │       └── flags: decimal
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ MultiWriteNode (location: (19...34))
@@ -36,7 +38,9 @@
         │       @ ArrayNode (location: (30...34))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (30...31))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (33...34))
+        │       │       └── flags: decimal
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         └── @ MultiWriteNode (location: (36...56))
@@ -57,6 +61,8 @@
                 @ ArrayNode (location: (52...56))
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (52...53))
+                │   │   └── flags: decimal
                 │   └── @ IntegerNode (location: (55...56))
+                │       └── flags: decimal
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

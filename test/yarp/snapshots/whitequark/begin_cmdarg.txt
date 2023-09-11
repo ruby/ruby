@@ -19,6 +19,7 @@
             │           │       └── @ CallNode (location: (8...24))
             │           │           ├── receiver:
             │           │           │   @ IntegerNode (location: (8...9))
+            │           │           │   └── flags: decimal
             │           │           ├── call_operator_loc: (9...10) = "."
             │           │           ├── message_loc: (10...15) = "times"
             │           │           ├── opening_loc: ∅
@@ -32,6 +33,7 @@
             │           │           │   │   @ StatementsNode (location: (19...20))
             │           │           │   │   └── body: (length: 1)
             │           │           │   │       └── @ IntegerNode (location: (19...20))
+            │           │           │   │           └── flags: decimal
             │           │           │   ├── opening_loc: (16...18) = "do"
             │           │           │   └── closing_loc: (21...24) = "end"
             │           │           ├── flags: 

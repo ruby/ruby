@@ -12,6 +12,7 @@
         │   │   @ StatementsNode (location: (10...11))
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (10...11))
+        │   │           └── flags: decimal
         │   ├── locals: []
         │   ├── def_keyword_loc: (0...3) = "def"
         │   ├── operator_loc: ∅
@@ -64,6 +65,7 @@
             │           │   @ CallNode (location: (42...47))
             │           │   ├── receiver:
             │           │   │   @ IntegerNode (location: (42...43))
+            │           │   │   └── flags: decimal
             │           │   ├── call_operator_loc: ∅
             │           │   ├── message_loc: (44...45) = "+"
             │           │   ├── opening_loc: ∅
@@ -71,6 +73,7 @@
             │           │   │   @ ArgumentsNode (location: (46...47))
             │           │   │   └── arguments: (length: 1)
             │           │   │       └── @ IntegerNode (location: (46...47))
+            │           │   │           └── flags: decimal
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
             │           │   ├── flags: 
@@ -82,6 +85,7 @@
             │           │   @ ArgumentsNode (location: (50...51))
             │           │   └── arguments: (length: 1)
             │           │       └── @ IntegerNode (location: (50...51))
+            │           │           └── flags: decimal
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: 

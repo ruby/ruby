@@ -18,6 +18,7 @@
         │   │   @ ArgumentsNode (location: (22...23))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (22...23))
+        │   │           └── flags: decimal
         │   ├── rparen_loc: (23...24) = ")"
         │   └── block: ∅
         └── @ SuperNode (location: (26...40))
@@ -27,7 +28,10 @@
             │   @ ArgumentsNode (location: (32...39))
             │   └── arguments: (length: 3)
             │       ├── @ IntegerNode (location: (32...33))
+            │       │   └── flags: decimal
             │       ├── @ IntegerNode (location: (35...36))
+            │       │   └── flags: decimal
             │       └── @ IntegerNode (location: (38...39))
+            │           └── flags: decimal
             ├── rparen_loc: (39...40) = ")"
             └── block: ∅

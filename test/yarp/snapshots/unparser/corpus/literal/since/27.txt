@@ -52,6 +52,7 @@
             │           ├── left: ∅
             │           ├── right:
             │           │   @ IntegerNode (location: (20...21))
+            │           │   └── flags: decimal
             │           ├── operator_loc: (18...20) = ".."
             │           └── flags: 
             ├── opening_loc: (17...18) = "("

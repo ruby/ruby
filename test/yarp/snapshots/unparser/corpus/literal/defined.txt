@@ -39,7 +39,9 @@
             │   │               @ ArrayNode (location: (48...54))
             │   │               ├── elements: (length: 2)
             │   │               │   ├── @ IntegerNode (location: (49...50))
+            │   │               │   │   └── flags: decimal
             │   │               │   └── @ IntegerNode (location: (52...53))
+            │   │               │       └── flags: decimal
             │   │               ├── opening_loc: (48...49) = "["
             │   │               └── closing_loc: (53...54) = "]"
             │   ├── opening_loc: (38...39) = "("

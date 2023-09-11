@@ -31,6 +31,8 @@
                 @ ArrayNode (location: (10...14))
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (10...11))
+                │   │   └── flags: decimal
                 │   └── @ IntegerNode (location: (13...14))
+                │       └── flags: decimal
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

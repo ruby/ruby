@@ -27,6 +27,7 @@
         │   ├── operator_loc: (6...8) = "+="
         │   └── value:
         │       @ IntegerNode (location: (9...10))
+        │       └── flags: decimal
         ├── @ CallOperatorWriteNode (location: (12...22))
         │   ├── receiver:
         │   │   @ CallNode (location: (12...15))
@@ -51,6 +52,7 @@
         │   ├── operator_loc: (18...20) = "+="
         │   └── value:
         │       @ IntegerNode (location: (21...22))
+        │       └── flags: decimal
         └── @ CallOperatorWriteNode (location: (24...35))
             ├── receiver:
             │   @ CallNode (location: (24...27))
@@ -75,3 +77,4 @@
             ├── operator_loc: (31...33) = "+="
             └── value:
                 @ IntegerNode (location: (34...35))
+                └── flags: decimal

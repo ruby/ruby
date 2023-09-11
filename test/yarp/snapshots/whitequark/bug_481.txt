@@ -31,6 +31,7 @@
         └── @ CallNode (location: (16...28))
             ├── receiver:
             │   @ IntegerNode (location: (16...17))
+            │   └── flags: decimal
             ├── call_operator_loc: (17...18) = "."
             ├── message_loc: (18...21) = "tap"
             ├── opening_loc: ∅

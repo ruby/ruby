@@ -14,8 +14,10 @@
         ├── @ ImaginaryNode (location: (15...18))
         │   └── numeric:
         │       @ IntegerNode (location: (15...17))
+        │       └── flags: decimal
         └── @ ImaginaryNode (location: (20...24))
             └── numeric:
                 @ RationalNode (location: (20...23))
                 └── numeric:
                     @ IntegerNode (location: (20...22))
+                    └── flags: decimal

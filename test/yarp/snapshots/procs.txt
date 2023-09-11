@@ -140,6 +140,7 @@
         │   │   │   │       ├── operator_loc: (108...109) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (110...111))
+        │   │   │   │           └── flags: decimal
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest: ∅
         │   │   │   ├── keywords: (length: 2)
@@ -185,6 +186,7 @@
         │   │   │   │       ├── operator_loc: (140...141) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (142...143))
+        │   │   │   │           └── flags: decimal
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest:
         │   │   │   │   @ RestParameterNode (location: (145...147))
@@ -238,6 +240,7 @@
         │   │   │   │       ├── operator_loc: (182...183) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ IntegerNode (location: (184...185))
+        │   │   │   │           └── flags: decimal
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── rest:
         │   │   │   │   @ RestParameterNode (location: (187...189))

@@ -19,6 +19,7 @@
             │       │   │   @ ArgumentsNode (location: (12...13))
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ IntegerNode (location: (12...13))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -42,6 +43,7 @@
             │       │   │   @ ArgumentsNode (location: (20...21))
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ IntegerNode (location: (20...21))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -65,7 +67,9 @@
             │       │   │   @ ArgumentsNode (location: (28...32))
             │       │   │   └── arguments: (length: 2)
             │       │   │       ├── @ IntegerNode (location: (28...29))
+            │       │   │       │   └── flags: decimal
             │       │   │       └── @ IntegerNode (location: (31...32))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -89,6 +93,7 @@
             │       │   │   @ ArgumentsNode (location: (39...40))
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ IntegerNode (location: (39...40))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -112,7 +117,9 @@
             │       │   │   @ ArgumentsNode (location: (47...51))
             │       │   │   └── arguments: (length: 2)
             │       │   │       ├── @ IntegerNode (location: (47...48))
+            │       │   │       │   └── flags: decimal
             │       │   │       └── @ IntegerNode (location: (50...51))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -126,6 +133,7 @@
             │       │   │   @ ArgumentsNode (location: (56...57))
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ IntegerNode (location: (56...57))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (57...58) = ")"
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -149,6 +157,7 @@
             │       │   │   @ ArgumentsNode (location: (65...66))
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ IntegerNode (location: (65...66))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (66...67) = ")"
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -172,7 +181,9 @@
             │       │   │   @ ArgumentsNode (location: (74...78))
             │       │   │   └── arguments: (length: 2)
             │       │   │       ├── @ IntegerNode (location: (74...75))
+            │       │   │       │   └── flags: decimal
             │       │   │       └── @ IntegerNode (location: (77...78))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (78...79) = ")"
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -196,6 +207,7 @@
             │       │   │   @ ArgumentsNode (location: (86...87))
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ IntegerNode (location: (86...87))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (87...88) = ")"
             │       │   ├── block: ∅
             │       │   ├── flags: 
@@ -219,7 +231,9 @@
             │           │   @ ArgumentsNode (location: (95...99))
             │           │   └── arguments: (length: 2)
             │           │       ├── @ IntegerNode (location: (95...96))
+            │           │       │   └── flags: decimal
             │           │       └── @ IntegerNode (location: (98...99))
+            │           │           └── flags: decimal
             │           ├── closing_loc: (99...100) = ")"
             │           ├── block: ∅
             │           ├── flags: 

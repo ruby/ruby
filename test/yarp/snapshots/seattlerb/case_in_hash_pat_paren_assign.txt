@@ -27,6 +27,7 @@
             │       │   │       │   └── unescaped: "a"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (16...18))
+            │       │   │       │   └── flags: decimal
             │       │   │       └── operator_loc: ∅
             │       │   ├── kwrest: ∅
             │       │   ├── opening_loc: (12...13) = "("

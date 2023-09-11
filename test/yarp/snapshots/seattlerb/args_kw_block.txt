@@ -19,6 +19,7 @@
             │   │       ├── name_loc: (6...8) = "a:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (9...10))
+            │   │           └── flags: decimal
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (12...14))

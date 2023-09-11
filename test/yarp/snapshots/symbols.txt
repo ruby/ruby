@@ -42,6 +42,7 @@
         │   │       │   @ StatementsNode (location: (26...27))
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ IntegerNode (location: (26...27))
+        │   │       │           └── flags: decimal
         │   │       └── closing_loc: (27...28) = "}"
         │   └── closing_loc: (28...29) = "\""
         ├── @ ArrayNode (location: (31...51))
@@ -121,13 +122,16 @@
         ├── @ ArrayNode (location: (97...113))
         │   ├── elements: (length: 4)
         │   │   ├── @ IntegerNode (location: (98...99))
+        │   │   │   └── flags: decimal
         │   │   ├── @ FloatNode (location: (101...104))
         │   │   ├── @ RationalNode (location: (106...108))
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (106...107))
+        │   │   │       └── flags: decimal
         │   │   └── @ ImaginaryNode (location: (110...112))
         │   │       └── numeric:
         │   │           @ IntegerNode (location: (110...111))
+        │   │           └── flags: decimal
         │   ├── opening_loc: (97...98) = "["
         │   └── closing_loc: (112...113) = "]"
         ├── @ SymbolNode (location: (115...117))
@@ -204,6 +208,7 @@
         │   │   │   │       │   @ StatementsNode (location: (168...169))
         │   │   │   │       │   └── body: (length: 1)
         │   │   │   │       │       └── @ IntegerNode (location: (168...169))
+        │   │   │   │       │           └── flags: decimal
         │   │   │   │       └── closing_loc: (169...170) = "}"
         │   │   │   └── closing_loc: ∅
         │   │   ├── @ InterpolatedSymbolNode (location: (171...176))
@@ -215,6 +220,7 @@
         │   │   │   │   │   │   @ StatementsNode (location: (173...174))
         │   │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │   │       └── @ IntegerNode (location: (173...174))
+        │   │   │   │   │   │           └── flags: decimal
         │   │   │   │   │   └── closing_loc: (174...175) = "}"
         │   │   │   │   └── @ StringNode (location: (175...176))
         │   │   │   │       ├── opening_loc: ∅
@@ -236,6 +242,7 @@
         │   │       │   │   │   @ StatementsNode (location: (180...181))
         │   │       │   │   │   └── body: (length: 1)
         │   │       │   │   │       └── @ IntegerNode (location: (180...181))
+        │   │       │   │   │           └── flags: decimal
         │   │       │   │   └── closing_loc: (181...182) = "}"
         │   │       │   └── @ StringNode (location: (182...183))
         │   │       │       ├── opening_loc: ∅

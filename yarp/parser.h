@@ -384,6 +384,12 @@ struct yp_parser {
 
     // This is the list of newline offsets in the source file.
     yp_newline_list_t newline_list;
+
+    // We want to add a flag to integer nodes that indicates their base. We only
+    // want to parse these once, but we don't have space on the token itself to
+    // communicate this information. So we store it here and pass it through
+    // when we find tokens that we need it for.
+    yp_node_flags_t integer_base;
 };
 
 #endif // YARP_PARSER_H

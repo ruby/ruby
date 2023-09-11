@@ -107,6 +107,7 @@
             │       └── @ CallNode (location: (69...89))
             │           ├── receiver:
             │           │   @ IntegerNode (location: (69...70))
+            │           │   └── flags: decimal
             │           ├── call_operator_loc: (70...71) = "."
             │           ├── message_loc: (71...74) = "tap"
             │           ├── opening_loc: ∅
@@ -160,5 +161,6 @@
             │   │   @ StatementsNode (location: (92...93))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (92...93))
+            │   │           └── flags: decimal
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

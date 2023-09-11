@@ -333,6 +333,16 @@ flags:
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+  - name: IntegerBaseFlags
+    values:
+      - name: BINARY
+        comment: "0b prefix"
+      - name: OCTAL
+        comment: "0o or 0 prefix"
+      - name: DECIMAL
+        comment: "0d or no prefix"
+      - name: HEXADECIMAL
+        comment: "0x prefix"
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
@@ -1483,6 +1493,10 @@ nodes:
           @foo = 1
           ^^^^^^^^
   - name: IntegerNode
+    fields:
+      - name: flags
+        type: flags
+        kind: IntegerBaseFlags
     comment: |
       Represents an integer number literal.
 

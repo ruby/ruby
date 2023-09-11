@@ -10,6 +10,7 @@
         │   │       └── @ RangeNode (location: (1...4))
         │   │           ├── left:
         │   │           │   @ IntegerNode (location: (1...2))
+        │   │           │   └── flags: decimal
         │   │           ├── right: ∅
         │   │           ├── operator_loc: (2...4) = ".."
         │   │           └── flags: 
@@ -18,8 +19,10 @@
         ├── @ RangeNode (location: (6...10))
         │   ├── left:
         │   │   @ IntegerNode (location: (6...7))
+        │   │   └── flags: decimal
         │   ├── right:
         │   │   @ IntegerNode (location: (9...10))
+        │   │   └── flags: decimal
         │   ├── operator_loc: (7...9) = ".."
         │   └── flags: 
         ├── @ ParenthesesNode (location: (11...17))
@@ -29,6 +32,7 @@
         │   │       └── @ RangeNode (location: (12...16))
         │   │           ├── left:
         │   │           │   @ IntegerNode (location: (12...13))
+        │   │           │   └── flags: decimal
         │   │           ├── right: ∅
         │   │           ├── operator_loc: (13...16) = "..."
         │   │           └── flags: exclude_end
@@ -37,7 +41,9 @@
         └── @ RangeNode (location: (18...23))
             ├── left:
             │   @ IntegerNode (location: (18...19))
+            │   └── flags: decimal
             ├── right:
             │   @ IntegerNode (location: (22...23))
+            │   └── flags: decimal
             ├── operator_loc: (19...22) = "..."
             └── flags: exclude_end

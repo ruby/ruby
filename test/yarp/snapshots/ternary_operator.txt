@@ -271,6 +271,7 @@
             │           ├── name_loc: (124...126) = "_a"
             │           ├── value:
             │           │   @ IntegerNode (location: (128...129))
+            │           │   └── flags: decimal
             │           └── operator_loc: (127...128) = "="
             ├── consequent:
             │   @ ElseNode (location: (129...131))
@@ -279,5 +280,6 @@
             │   │   @ StatementsNode (location: (130...131))
             │   │   └── body: (length: 1)
             │   │       └── @ IntegerNode (location: (130...131))
+            │   │           └── flags: decimal
             │   └── end_keyword_loc: ∅
             └── end_keyword_loc: ∅

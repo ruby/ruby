@@ -634,6 +634,7 @@
         │   │   │       ├── name_loc: (459...463) = "bar:"
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (464...465))
+        │   │   │           └── flags: decimal
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅

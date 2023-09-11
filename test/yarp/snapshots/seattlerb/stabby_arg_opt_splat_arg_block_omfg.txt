@@ -22,6 +22,7 @@
             │   │   │       ├── operator_loc: (7...8) = "="
             │   │   │       └── value:
             │   │   │           @ IntegerNode (location: (8...9))
+            │   │   │           └── flags: decimal
             │   │   ├── posts: (length: 1)
             │   │   │   └── @ RequiredParameterNode (location: (15...16))
             │   │   │       └── name: :e

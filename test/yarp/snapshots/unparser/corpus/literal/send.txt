@@ -63,6 +63,7 @@
         │   │       │   ├── name_loc: (48...53) = "local"
         │   │       │   ├── value:
         │   │       │   │   @ IntegerNode (location: (56...57))
+        │   │       │   │   └── flags: decimal
         │   │       │   └── operator_loc: (54...55) = "="
         │   │       └── @ CallNode (location: (60...69))
         │   │           ├── receiver:
@@ -454,8 +455,10 @@
         │   │   │       └── @ RangeNode (location: (340...344))
         │   │   │           ├── left:
         │   │   │           │   @ IntegerNode (location: (340...341))
+        │   │   │           │   └── flags: decimal
         │   │   │           ├── right:
         │   │   │           │   @ IntegerNode (location: (343...344))
+        │   │   │           │   └── flags: decimal
         │   │   │           ├── operator_loc: (341...343) = ".."
         │   │   │           └── flags: 
         │   │   ├── opening_loc: (339...340) = "("
@@ -566,10 +569,12 @@
         ├── @ RangeNode (location: (396...404))
         │   ├── left:
         │   │   @ IntegerNode (location: (396...397))
+        │   │   └── flags: decimal
         │   ├── right:
         │   │   @ CallNode (location: (399...404))
         │   │   ├── receiver:
         │   │   │   @ IntegerNode (location: (399...400))
+        │   │   │   └── flags: decimal
         │   │   ├── call_operator_loc: (400...401) = "."
         │   │   ├── message_loc: (401...404) = "max"
         │   │   ├── opening_loc: ∅
@@ -882,7 +887,9 @@
         │   │   @ ArgumentsNode (location: (534...538))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (534...535))
+        │   │       │   └── flags: decimal
         │   │       └── @ IntegerNode (location: (537...538))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (538...539) = ")"
         │   ├── block: ∅
         │   ├── flags: 
@@ -1681,7 +1688,9 @@
         │   │   @ ArgumentsNode (location: (876...880))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (876...877))
+        │   │       │   └── flags: decimal
         │   │       └── @ IntegerNode (location: (879...880))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (880...881) = "]"
         │   ├── block: ∅
         │   ├── flags: 

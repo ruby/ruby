@@ -16,6 +16,7 @@
             │       │   @ RangeNode (location: (11...14))
             │       │   ├── left:
             │       │   │   @ IntegerNode (location: (11...12))
+            │       │   │   └── flags: decimal
             │       │   ├── right: ∅
             │       │   ├── operator_loc: (12...14) = ".."
             │       │   └── flags: 

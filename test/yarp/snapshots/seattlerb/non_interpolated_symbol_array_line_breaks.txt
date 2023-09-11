@@ -18,3 +18,4 @@
         │   ├── opening_loc: (0...3) = "%i("
         │   └── closing_loc: (8...9) = ")"
         └── @ IntegerNode (location: (10...11))
+            └── flags: decimal

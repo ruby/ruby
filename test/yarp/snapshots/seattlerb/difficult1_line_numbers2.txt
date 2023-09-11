@@ -33,6 +33,7 @@
         │   │       │   ├── name_loc: (24...25) = "b"
         │   │       │   ├── value:
         │   │       │   │   @ IntegerNode (location: (28...29))
+        │   │       │   │   └── flags: decimal
         │   │       │   └── operator_loc: (26...27) = "="
         │   │       ├── @ CallNode (location: (32...35))
         │   │       │   ├── receiver: ∅
@@ -55,6 +56,7 @@
         │   │           ├── name_loc: (38...39) = "c"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (41...42))
+        │   │           │   └── flags: decimal
         │   │           └── operator_loc: (40...41) = "="
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (43...46) = "end"

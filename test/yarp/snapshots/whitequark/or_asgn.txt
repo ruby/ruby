@@ -26,6 +26,7 @@
         │   ├── operator_loc: (6...9) = "||="
         │   └── value:
         │       @ IntegerNode (location: (10...11))
+        │       └── flags: decimal
         └── @ CallOrWriteNode (location: (13...28))
             ├── receiver:
             │   @ CallNode (location: (13...16))
@@ -45,7 +46,9 @@
             │   @ ArgumentsNode (location: (17...21))
             │   └── arguments: (length: 2)
             │       ├── @ IntegerNode (location: (17...18))
+            │       │   └── flags: decimal
             │       └── @ IntegerNode (location: (20...21))
+            │           └── flags: decimal
             ├── closing_loc: (21...22) = "]"
             ├── flags: 
             ├── read_name: "[]"
@@ -53,3 +56,4 @@
             ├── operator_loc: (23...26) = "||="
             └── value:
                 @ IntegerNode (location: (27...28))
+                └── flags: decimal

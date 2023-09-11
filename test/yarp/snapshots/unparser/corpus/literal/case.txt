@@ -418,6 +418,7 @@
             │       │           │   @ ArgumentsNode (location: (279...280))
             │       │           │   └── arguments: (length: 1)
             │       │           │       └── @ IntegerNode (location: (279...280))
+            │       │           │           └── flags: decimal
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
             │       │           ├── flags: 

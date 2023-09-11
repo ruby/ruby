@@ -9,8 +9,10 @@
         │   │   @ FlipFlopNode (location: (3...7))
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (3...4))
+        │   │   │   └── flags: decimal
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (6...7))
+        │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (4...6) = ".."
         │   │   └── flags: 
         │   ├── statements: ∅
@@ -23,6 +25,7 @@
         │   │   ├── left: ∅
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (19...20))
+        │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (17...19) = ".."
         │   │   └── flags: 
         │   ├── statements: ∅
@@ -34,6 +37,7 @@
             │   @ FlipFlopNode (location: (30...33))
             │   ├── left:
             │   │   @ IntegerNode (location: (30...31))
+            │   │   └── flags: decimal
             │   ├── right: ∅
             │   ├── operator_loc: (31...33) = ".."
             │   └── flags: 

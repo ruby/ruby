@@ -8,6 +8,7 @@
         │   ├── name_loc: (0...2) = "$a"
         │   ├── value:
         │   │   @ IntegerNode (location: (5...6))
+        │   │   └── flags: decimal
         │   └── operator_loc: (3...4) = "="
         ├── @ MultiWriteNode (location: (7...24))
         │   ├── targets: (length: 2)
@@ -22,7 +23,9 @@
         │       @ ArrayNode (location: (18...24))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (19...20))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (22...23))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (18...19) = "["
         │       └── closing_loc: (23...24) = "]"
         ├── @ MultiWriteNode (location: (25...38))
@@ -45,6 +48,7 @@
         │   ├── operator_loc: (35...36) = "="
         │   └── value:
         │       @ IntegerNode (location: (37...38))
+        │       └── flags: decimal
         ├── @ MultiWriteNode (location: (39...48))
         │   ├── targets: (length: 1)
         │   │   └── @ SplatNode (location: (40...42))
@@ -76,7 +80,9 @@
         │       @ ArrayNode (location: (58...64))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (59...60))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (62...63))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (58...59) = "["
         │       └── closing_loc: (63...64) = "]"
         ├── @ MultiWriteNode (location: (65...84))
@@ -92,7 +98,9 @@
         │       @ ArrayNode (location: (78...84))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (79...80))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (82...83))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (78...79) = "["
         │       └── closing_loc: (83...84) = "]"
         ├── @ MultiWriteNode (location: (85...102))
@@ -108,7 +116,9 @@
         │       @ ArrayNode (location: (96...102))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (97...98))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (100...101))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (96...97) = "["
         │       └── closing_loc: (101...102) = "]"
         ├── @ MultiWriteNode (location: (103...128))
@@ -133,10 +143,13 @@
         │       @ ArrayNode (location: (117...128))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (118...119))
+        │       │   │   └── flags: decimal
         │       │   └── @ ArrayNode (location: (121...127))
         │       │       ├── elements: (length: 2)
         │       │       │   ├── @ IntegerNode (location: (122...123))
+        │       │       │   │   └── flags: decimal
         │       │       │   └── @ IntegerNode (location: (125...126))
+        │       │       │       └── flags: decimal
         │       │       ├── opening_loc: (121...122) = "["
         │       │       └── closing_loc: (126...127) = "]"
         │       ├── opening_loc: (117...118) = "["
@@ -156,7 +169,9 @@
         │       @ ArrayNode (location: (138...144))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (139...140))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (142...143))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (138...139) = "["
         │       └── closing_loc: (143...144) = "]"
         ├── @ MultiWriteNode (location: (145...163))
@@ -177,7 +192,9 @@
         │       @ ArrayNode (location: (157...163))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (158...159))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (161...162))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (157...158) = "["
         │       └── closing_loc: (162...163) = "]"
         ├── @ MultiWriteNode (location: (164...179))
@@ -195,7 +212,9 @@
         │       @ ArrayNode (location: (173...179))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (174...175))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (177...178))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (173...174) = "["
         │       └── closing_loc: (178...179) = "]"
         ├── @ MultiWriteNode (location: (180...192))
@@ -263,7 +282,9 @@
         │       @ ArrayNode (location: (221...227))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (222...223))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (225...226))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (221...222) = "["
         │       └── closing_loc: (226...227) = "]"
         ├── @ MultiWriteNode (location: (228...252))
@@ -301,6 +322,7 @@
         │   │       │   @ ArgumentsNode (location: (240...241))
         │   │       │   └── arguments: (length: 1)
         │   │       │       └── @ IntegerNode (location: (240...241))
+        │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (241...242) = "]"
         │   │       ├── block: ∅
         │   │       ├── flags: 
@@ -312,7 +334,9 @@
         │       @ ArrayNode (location: (246...252))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (247...248))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (250...251))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (246...247) = "["
         │       └── closing_loc: (251...252) = "]"
         ├── @ MultiWriteNode (location: (253...274))
@@ -329,6 +353,7 @@
         │   │   │   │   @ ArgumentsNode (location: (256...257))
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (256...257))
+        │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (257...258) = "]"
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: 
@@ -345,6 +370,7 @@
         │   │       │   @ ArgumentsNode (location: (262...263))
         │   │       │   └── arguments: (length: 1)
         │   │       │       └── @ IntegerNode (location: (262...263))
+        │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (263...264) = "]"
         │   │       ├── block: ∅
         │   │       ├── flags: 
@@ -356,7 +382,9 @@
         │       @ ArrayNode (location: (268...274))
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (269...270))
+        │       │   │   └── flags: decimal
         │       │   └── @ IntegerNode (location: (272...273))
+        │       │       └── flags: decimal
         │       ├── opening_loc: (268...269) = "["
         │       └── closing_loc: (273...274) = "]"
         ├── @ MultiWriteNode (location: (275...287))
@@ -382,6 +410,7 @@
         │   ├── operator_loc: (284...285) = "="
         │   └── value:
         │       @ IntegerNode (location: (286...287))
+        │       └── flags: decimal
         ├── @ ConstantPathWriteNode (location: (288...301))
         │   ├── target:
         │   │   @ ConstantPathNode (location: (288...293))
@@ -403,18 +432,21 @@
         │   ├── name_loc: (302...305) = "@@a"
         │   ├── value:
         │   │   @ IntegerNode (location: (308...309))
+        │   │   └── flags: decimal
         │   └── operator_loc: (306...307) = "="
         ├── @ InstanceVariableWriteNode (location: (310...316))
         │   ├── name: :@a
         │   ├── name_loc: (310...312) = "@a"
         │   ├── value:
         │   │   @ IntegerNode (location: (315...316))
+        │   │   └── flags: decimal
         │   └── operator_loc: (313...314) = "="
         ├── @ ConstantWriteNode (location: (317...326))
         │   ├── name: :CONST
         │   ├── name_loc: (317...322) = "CONST"
         │   ├── value:
         │   │   @ IntegerNode (location: (325...326))
+        │   │   └── flags: decimal
         │   └── operator_loc: (323...324) = "="
         ├── @ ConstantPathWriteNode (location: (327...350))
         │   ├── target:
@@ -435,6 +467,7 @@
         │   ├── operator_loc: (347...348) = "="
         │   └── value:
         │       @ IntegerNode (location: (349...350))
+        │       └── flags: decimal
         ├── @ LocalVariableWriteNode (location: (351...367))
         │   ├── name: :a
         │   ├── depth: 0
@@ -457,6 +490,7 @@
         │   │   │           ├── operator_loc: (363...364) = "="
         │   │   │           └── value:
         │   │   │               @ IntegerNode (location: (365...366))
+        │   │   │               └── flags: decimal
         │   │   ├── opening_loc: (355...356) = "("
         │   │   └── closing_loc: (366...367) = ")"
         │   └── operator_loc: (353...354) = "="
@@ -466,6 +500,7 @@
         │   ├── name_loc: (368...369) = "a"
         │   ├── value:
         │   │   @ IntegerNode (location: (372...373))
+        │   │   └── flags: decimal
         │   └── operator_loc: (370...371) = "="
         ├── @ LocalVariableWriteNode (location: (374...385))
         │   ├── name: :foo
@@ -508,7 +543,9 @@
         │   │   @ ArgumentsNode (location: (404...408))
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (404...405))
+        │   │       │   └── flags: decimal
         │   │       └── @ IntegerNode (location: (407...408))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (408...409) = ")"
         │   ├── block: ∅
         │   ├── flags: 
@@ -581,8 +618,10 @@
         │   │       ├── @ RangeNode (location: (446...450))
         │   │       │   ├── left:
         │   │       │   │   @ IntegerNode (location: (446...447))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── right:
         │   │       │   │   @ IntegerNode (location: (449...450))
+        │   │       │   │   └── flags: decimal
         │   │       │   ├── operator_loc: (447...449) = ".."
         │   │       │   └── flags: 
         │   │       └── @ CallNode (location: (454...459))
@@ -611,6 +650,7 @@
         │   │   @ ArgumentsNode (location: (468...469))
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (468...469))
+        │   │           └── flags: decimal
         │   ├── closing_loc: (464...465) = "]"
         │   ├── block: ∅
         │   ├── flags: 

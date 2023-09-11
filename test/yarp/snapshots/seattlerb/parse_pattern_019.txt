@@ -6,14 +6,17 @@
         └── @ CaseNode (location: (0...26))
             ├── predicate:
             │   @ IntegerNode (location: (5...6))
+            │   └── flags: decimal
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (7...22))
             │       ├── pattern:
             │       │   @ RangeNode (location: (10...15))
             │       │   ├── left:
             │       │   │   @ IntegerNode (location: (10...12))
+            │       │   │   └── flags: decimal
             │       │   ├── right:
             │       │   │   @ IntegerNode (location: (14...15))
+            │       │   │   └── flags: decimal
             │       │   ├── operator_loc: (12...14) = ".."
             │       │   └── flags: 
             │       ├── statements:

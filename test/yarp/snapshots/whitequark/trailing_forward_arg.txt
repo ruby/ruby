@@ -36,6 +36,7 @@
             │           │       │   ├── name: :a
             │           │       │   └── depth: 0
             │           │       ├── @ IntegerNode (location: (27...29))
+            │           │       │   └── flags: decimal
             │           │       └── @ ForwardingArgumentsNode (location: (31...34))
             │           ├── closing_loc: (34...35) = ")"
             │           ├── block: ∅

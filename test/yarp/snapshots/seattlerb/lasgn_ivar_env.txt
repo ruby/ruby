@@ -8,4 +8,5 @@
             ├── name_loc: (0...2) = "@a"
             ├── value:
             │   @ IntegerNode (location: (5...7))
+            │   └── flags: decimal
             └── operator_loc: (3...4) = "="

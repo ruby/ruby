@@ -9,3 +9,4 @@
         │   ├── closing_loc: (10...11) = "\""
         │   └── unescaped: "\n\n\n\n#"
         └── @ IntegerNode (location: (12...13))
+            └── flags: decimal

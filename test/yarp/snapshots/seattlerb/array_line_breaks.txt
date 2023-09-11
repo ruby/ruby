@@ -18,3 +18,4 @@
         │   ├── opening_loc: (0...1) = "["
         │   └── closing_loc: (10...11) = "]"
         └── @ IntegerNode (location: (12...13))
+            └── flags: decimal

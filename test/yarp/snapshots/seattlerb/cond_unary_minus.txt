@@ -7,6 +7,7 @@
             ├── if_keyword_loc: (0...2) = "if"
             ├── predicate:
             │   @ IntegerNode (location: (3...5))
+            │   └── flags: decimal
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (7...10) = "end"

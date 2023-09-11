@@ -7,6 +7,7 @@
         │   ├── if_keyword_loc: ∅
         │   ├── predicate:
         │   │   @ IntegerNode (location: (0...1))
+        │   │   └── flags: decimal
         │   ├── statements:
         │   │   @ StatementsNode (location: (4...9))
         │   │   └── body: (length: 1)
@@ -34,6 +35,7 @@
         │   │   │   @ StatementsNode (location: (12...13))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ IntegerNode (location: (12...13))
+        │   │   │           └── flags: decimal
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         └── @ CallNode (location: (14...20))
@@ -55,6 +57,7 @@
             │                   │   └── unescaped: "d"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (19...20))
+            │                   │   └── flags: decimal
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             ├── block: ∅

@@ -37,6 +37,7 @@
             │           │   @ StatementsNode (location: (18...20))
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (18...20))
+            │           │           └── flags: decimal
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅

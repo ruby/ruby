@@ -27,6 +27,7 @@
             │   │   │   │       ├── operator_loc: (10...11) = "="
             │   │   │   │       └── value:
             │   │   │   │           @ IntegerNode (location: (12...13))
+            │   │   │   │           └── flags: decimal
             │   │   │   ├── posts: (length: 0)
             │   │   │   ├── rest:
             │   │   │   │   @ RestParameterNode (location: (15...17))

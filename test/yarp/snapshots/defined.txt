@@ -9,6 +9,7 @@
         │   │   ├── lparen_loc: ∅
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (9...10))
+        │   │   │   └── flags: decimal
         │   │   ├── rparen_loc: ∅
         │   │   └── keyword_loc: (0...8) = "defined?"
         │   ├── right:
@@ -16,6 +17,7 @@
         │   │   ├── lparen_loc: ∅
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (24...25))
+        │   │   │   └── flags: decimal
         │   │   ├── rparen_loc: ∅
         │   │   └── keyword_loc: (15...23) = "defined?"
         │   └── operator_loc: (11...14) = "and"
@@ -27,6 +29,7 @@
         │   │   ├── operator_loc: (38...40) = "%="
         │   │   ├── value:
         │   │   │   @ IntegerNode (location: (41...42))
+        │   │   │   └── flags: decimal
         │   │   ├── name: :x
         │   │   ├── operator: :%
         │   │   └── depth: 0
@@ -65,5 +68,6 @@
             ├── lparen_loc: ∅
             ├── value:
             │   @ IntegerNode (location: (77...78))
+            │   └── flags: decimal
             ├── rparen_loc: ∅
             └── keyword_loc: (68...76) = "defined?"

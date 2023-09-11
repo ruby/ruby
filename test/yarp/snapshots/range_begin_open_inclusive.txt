@@ -7,5 +7,6 @@
             ├── left: ∅
             ├── right:
             │   @ IntegerNode (location: (2...3))
+            │   └── flags: decimal
             ├── operator_loc: (0...2) = ".."
             └── flags: 

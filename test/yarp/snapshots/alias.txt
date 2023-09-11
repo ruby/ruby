@@ -61,6 +61,7 @@
         │   │   │       │   @ StatementsNode (location: (74...75))
         │   │   │       │   └── body: (length: 1)
         │   │   │       │       └── @ IntegerNode (location: (74...75))
+        │   │   │       │           └── flags: decimal
         │   │   │       └── closing_loc: (75...76) = "}"
         │   │   └── closing_loc: (76...77) = "\""
         │   ├── old_name:

@@ -9,8 +9,11 @@
         ├── @ RationalNode (location: (5...8))
         │   └── numeric:
         │       @ IntegerNode (location: (5...7))
+        │       └── flags: decimal
         ├── @ IntegerNode (location: (9...12))
+        │   └── flags: hexadecimal
         ├── @ IntegerNode (location: (13...18))
+        │   └── flags: decimal
         ├── @ FloatNode (location: (19...23))
         ├── @ FloatNode (location: (24...38))
         ├── @ FloatNode (location: (39...54))

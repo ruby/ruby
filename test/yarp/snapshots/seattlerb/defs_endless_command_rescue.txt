@@ -32,9 +32,11 @@
             │           │       └── @ RescueModifierNode (location: (33...45))
             │           │           ├── expression:
             │           │           │   @ IntegerNode (location: (33...35))
+            │           │           │   └── flags: decimal
             │           │           ├── keyword_loc: (36...42) = "rescue"
             │           │           └── rescue_expression:
             │           │               @ IntegerNode (location: (43...45))
+            │           │               └── flags: decimal
             │           ├── closing_loc: ∅
             │           ├── block: ∅
             │           ├── flags: 

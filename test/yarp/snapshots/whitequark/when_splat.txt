@@ -20,6 +20,7 @@
             │   │   ├── keyword_loc: (10...14) = "when"
             │   │   ├── conditions: (length: 2)
             │   │   │   ├── @ IntegerNode (location: (15...16))
+            │   │   │   │   └── flags: decimal
             │   │   │   └── @ SplatNode (location: (18...22))
             │   │   │       ├── operator_loc: (18...19) = "*"
             │   │   │       └── expression:

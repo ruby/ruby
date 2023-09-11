@@ -8,7 +8,9 @@
         │   │   @ ArrayNode (location: (0...6))
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (1...2))
+        │   │   │   │   └── flags: decimal
         │   │   │   └── @ IntegerNode (location: (4...5))
+        │   │   │       └── flags: decimal
         │   │   ├── opening_loc: (0...1) = "["
         │   │   └── closing_loc: (5...6) = "]"
         │   ├── pattern:
@@ -34,7 +36,9 @@
         │   │   @ ArrayNode (location: (19...25))
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (20...21))
+        │   │   │   │   └── flags: decimal
         │   │   │   └── @ IntegerNode (location: (23...24))
+        │   │   │       └── flags: decimal
         │   │   ├── opening_loc: (19...20) = "["
         │   │   └── closing_loc: (24...25) = "]"
         │   ├── pattern:
@@ -69,6 +73,7 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (42...43))
+        │   │   │       │   └── flags: decimal
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (43...44) = "}"
         │   ├── pattern:
@@ -105,6 +110,7 @@
         │   │   │       │   └── unescaped: "a"
         │   │   │       ├── value:
         │   │   │       │   @ IntegerNode (location: (59...60))
+        │   │   │       │   └── flags: decimal
         │   │   │       └── operator_loc: ∅
         │   │   └── closing_loc: (60...61) = "}"
         │   ├── pattern:
