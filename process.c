@@ -713,7 +713,7 @@ pst_status(VALUE pst)
  *  Returns the system-dependent integer status of +self+:
  *
  *    `cat /nop`
- *    $?.to_i # => 256*
+ *    $?.to_i # => 256
  */
 
 static VALUE
@@ -822,7 +822,7 @@ pst_to_s(VALUE st)
  *  Returns a string representation of +self+:
  *
  *    system("false")
- *    $? # => #<Process::Status: pid 1246759 exit 1>
+ *    $?.inspect # => "#<Process::Status: pid 1303494 exit 1>"
  *
  */
 
@@ -936,7 +936,7 @@ pst_wifstopped(VALUE st)
  *    stopsig -> integer or nil
  *
  *  Returns the number of the signal that caused the process to stop,
- *  or +nil+ if the process is not stopped,
+ *  or +nil+ if the process is not stopped.
  */
 
 static VALUE
