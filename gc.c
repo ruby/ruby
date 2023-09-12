@@ -5672,8 +5672,10 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 __attribute__((noinline))
 #endif
 
+#if GC_CAN_COMPILE_COMPACTION
 static void gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func compare_func);
 static int compare_pinned_slots(const void *left, const void *right, void *d);
+#endif
 
 static void
 gc_sweep_start(rb_objspace_t *objspace)
@@ -5681,12 +5683,14 @@ gc_sweep_start(rb_objspace_t *objspace)
     gc_mode_transition(objspace, gc_mode_sweeping);
     objspace->rincgc.pooled_slots = 0;
 
+#if GC_CAN_COMPILE_COMPACTION
     if (objspace->flags.during_compacting) {
         gc_sort_heap_by_compare_func(
             objspace,
             objspace->rcompactor.compare_func ? objspace->rcompactor.compare_func : compare_pinned_slots
         );
     }
+#endif
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
