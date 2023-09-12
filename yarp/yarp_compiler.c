@@ -534,8 +534,8 @@ yp_compile_node(rb_iseq_t *iseq, const yp_node_t *node, LINK_ANCHOR *const ret, 
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
     switch (YP_NODE_TYPE(node)) {
-      case YP_ALIAS_NODE: {
-          yp_alias_node_t *alias_node = (yp_alias_node_t *) node;
+      case YP_ALIAS_METHOD_NODE: {
+          yp_alias_method_node_t *alias_node = (yp_alias_method_node_t *) node;
 
           ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
           ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
